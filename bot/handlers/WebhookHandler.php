@@ -68,7 +68,7 @@ final class WebhookHandler
         if (!$chatId) return;
 
         $action = substr($data, strlen('admin:'));
-        $db = new JsonDatabase(__DIR__ . '/../data');
+        $db = new JsonDatabase($this->dataDir());
 
         if ($action === 'fix_payout_done') {
             $text = $db->transaction(function (array &$dbData) use ($admin, $fromId) {
@@ -163,7 +163,7 @@ final class WebhookHandler
             return;
         }
 
-        $db = new JsonDatabase(__DIR__ . '/../data');
+        $db = new JsonDatabase($this->dataDir());
 
         if ($this->startsWithCommand($text, (string)($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done'))) {
             $message = $db->transaction(function (array &$data) use ($admin, $text, $fromId) {
@@ -239,6 +239,11 @@ final class WebhookHandler
             'reply_markup' => $admin->keyboard(),
             'disable_web_page_preview' => true,
         ]);
+    }
+
+    private function dataDir(): string
+    {
+        return (string)($this->config['data_dir'] ?? (__DIR__ . '/../data'));
     }
 
     private function startsWithCommand(string $text, string $command): bool
