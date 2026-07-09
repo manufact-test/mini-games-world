@@ -11,7 +11,7 @@ try {
     $action = (string)($payload['action'] ?? '');
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
 
-    $db = new JsonDatabase(__DIR__ . '/data');
+    $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $auth = new AuthService($config);
     $users = new UserService($config);
     $games = new GameService($config);
