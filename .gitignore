@@ -1,0 +1,16 @@
+# Runtime JSON storage. These files are created and updated on Hostinger.
+bot/data/*.json
+bot/data/*.lock
+bot/data/*.tmp
+bot/data/*.bak
+
+# Local config overrides and secrets.
+bot/config/config.local.php
+.env
+*.local.php
+
+# System/editor files.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
