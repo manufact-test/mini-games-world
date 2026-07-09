@@ -1,0 +1,92 @@
+.btn{
+  min-height:46px;
+  border-radius:16px;
+  padding:12px 14px;
+  font-weight:900;
+  background:rgba(255,255,255,.075);
+  border:1px solid var(--stroke);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:transform .14s ease,filter .14s ease,background .14s ease;
+  text-align:center;
+  line-height:1.15;
+}
+.btn:active{transform:scale(.975)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-dark));border-color:rgba(255,255,255,.08);box-shadow:0 12px 24px rgba(124,92,255,.18)}
+.btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#241700;border-color:rgba(255,255,255,.08);box-shadow:0 12px 24px rgba(255,200,87,.15)}
+.btn.green{background:linear-gradient(135deg,var(--accent2),var(--accent2-dark));color:#04140f}
+.btn.danger{background:rgba(255,95,109,.13);border-color:rgba(255,95,109,.25);color:#ffd8dc}
+.btn.ghost{background:rgba(255,255,255,.045)}
+.btn.full{width:100%}
+.btn.disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
+.choice{
+  min-height:54px;
+  border-radius:17px;
+  background:rgba(255,255,255,.055);
+  border:1px solid var(--stroke);
+  color:var(--soft);
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:8px 10px;
+  line-height:1.15;
+  box-shadow:none;
+  min-width:0;
+}
+.choice.active{background:rgba(124,92,255,.22);border-color:rgba(124,92,255,.55);color:#fff}
+.choice.gold.active{background:rgba(255,200,87,.19);border-color:rgba(255,200,87,.55);color:#ffe3a3}
+.setup-start-btn{margin-top:12px}
+
+
+/* v11 button spacing consistency */
+.btn-row{
+  margin-top:12px;
+}
+
+.btn.full + .btn.full{
+  margin-top:10px;
+}
+
+
+/* v17 vertical button spacing fix */
+.stack{
+  gap:10px;
+}
+
+.stack .btn,
+.btn-row .btn{
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+
+.stack .btn + .btn,
+.btn.full + .btn.full,
+.sheet .btn.full + .btn.full,
+.sheet .stack .btn + .btn{
+  margin-top:0 !important;
+}
+
+.btn-row{
+  gap:10px;
+  margin-top:10px;
+}
+
+.sheet .btn-row{
+  margin-top:0;
+}
+
+.menu-list{
+  gap:10px;
+}
+
+@media (max-height:620px){
+  .stack,
+  .btn-row,
+  .menu-list{
+    gap:8px;
+  }
+}

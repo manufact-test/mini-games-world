@@ -1,0 +1,12 @@
+@media (max-width:380px){
+  .content{padding-left:12px;padding-right:12px}
+  .hero-title{font-size:26px}
+  .btn-row,.grid-2,.balances{grid-template-columns:1fr}
+  .room-actions{grid-template-columns:1fr}
+  .user-mini{max-width:calc(100% - 98px)}
+  .user-name{max-width:150px}
+  .icon-row{gap:7px}
+  .icon-btn{width:38px;height:38px;border-radius:14px}
+}
+.app,.screen,.content{max-width:100%}
+.content{overflow-x:hidden}

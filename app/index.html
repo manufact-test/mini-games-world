@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mini Games World</title>
+  <link rel="stylesheet" href="./assets/css/main.css?v=27" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="app" id="app" data-build="v27-history-tabs-matches">
+    <div class="preloader" id="preloader">
+      <div class="load-card">
+        <div class="abstract-loader" aria-hidden="true">
+          <div class="shape s1"></div>
+          <div class="shape s2"></div>
+          <div class="shape s3"></div>
+          <div class="node n1"></div>
+          <div class="node n2"></div>
+          <div class="node n3"></div>
+        </div>
+        <h1>Mini Games World</h1>
+        <p>Готовим игровую комнату</p>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <section class="screen active" id="screen-home" data-screen="home">
+      <div class="content">
+        <header class="topbar">
+          <div class="user-mini" id="profileOpen" role="button" tabindex="0" aria-label="Открыть профиль">
+            <div class="avatar" id="topAvatar">MG</div>
+            <div class="user-text">
+              <div class="user-name" id="topName">@player_demo</div>
+              <div class="user-status"><span class="dot-online"></span><span>онлайн</span></div>
+            </div>
+          </div>
+
+          <div class="icon-row">
+            <button class="icon-btn" id="notificationsOpen" type="button" aria-label="Уведомления">🔔</button>
+            <button class="icon-btn" id="moreMenuOpen" type="button" aria-label="Меню">⋯</button>
+          </div>
+        </header>
+
+        <section class="hero">
+          <h1 class="hero-title">Мировые мини-игры</h1>
+          <p class="hero-sub">Играйте в быстрые матчи, приглашайте друзей и собирайте победы в своём профиле.</p>
+        </section>
+
+        <div class="seg" aria-label="Выбор комнаты">
+          <button class="active" type="button" data-room="match">Матч-комната</button>
+          <button type="button" data-room="gold">Gold-комната</button>
+        </div>
+
+        <section class="card" id="roomCard"></section>
+
+        <section class="balances">
+          <div class="balance-card">
+            <div class="balance-label">🎲 Матч-комната</div>
+            <div class="balance-value" id="balanceMatch">—</div>
+            <div class="balance-note">коины для обычных матчей</div>
+          </div>
+          <div class="balance-card">
+            <div class="balance-label">✨ Gold-комната</div>
+            <div class="balance-value" id="balanceGold">—</div>
+            <div class="balance-note">для магазина доступно: <span id="shopAvailable">—</span></div>
+          </div>
+        </section>
+
+        <section class="section-title"><h2>Сейчас в игре</h2></section>
+        <div class="activity-grid" id="activityGrid"></div>
+
+        <section class="section-title"><h2>Игры</h2></section>
+        <section class="game-card">
+          <div class="game-top">
+            <div class="game-icon">✕○</div>
+            <div>
+              <h3>Крестики-нолики</h3>
+              <p>Классический матч 1 на 1. Можно играть со случайным соперником или пригласить друга.</p>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" id="playTicTacToe" type="button">Играть</button>
+            <button class="btn ghost" id="inviteFriend" type="button">Пригласить друга</button>
+          </div>
+        </section>
+
+        <section class="game-card locked">
+          <div class="game-top">
+            <div class="game-icon">⚓</div>
+            <div>
+              <h3>Морской бой</h3>
+              <p>Новые форматы появятся позже.</p>
+            </div>
+          </div>
+          <div class="btn-row"><button class="btn disabled" disabled type="button">Скоро будет доступно</button></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-search" data-screen="search">
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">Поиск соперника</h1>
+            <p class="page-sub" id="searchInfo">Подбираем игрока с такими же условиями.</p>
+          </div>
+          <button class="close" id="cancelSearch" type="button">×</button>
+        </div>
+        <div class="search-wrap">
+          <div class="radar"></div>
+          <div class="vs-cards">
+            <div class="player-card"><div class="avatar" id="searchMeAvatar">MG</div><strong id="searchMeName">Вы</strong></div>
+            <div class="vs">VS</div>
+            <div class="player-card"><div class="avatar">?</div><strong>Соперник</strong></div>
+          </div>
+          <button class="btn ghost full" id="changeSearch" type="button">Выйти из поиска</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen game-board-screen" id="screen-game" data-screen="game">
+      <div class="content">
+        <div class="game-header">
+          <div class="match-info">
+            <div><h2>Крестики-нолики</h2><span id="matchMeta">Матч</span></div>
+            <button class="icon-btn" id="gameMenuOpen" type="button" aria-label="Меню">⋯</button>
+          </div>
+          <div class="turn-box">
+            <div class="turn-text" id="turnText">Ваш ход</div>
+            <div class="timer" id="timerText">60</div>
+          </div>
+          <div class="players-row" id="playersRow"></div>
+        </div>
+        <div class="board-wrap"><div class="board size-3" id="gameBoard"></div></div>
+        <button class="btn ghost full" id="leaveGame" type="button">В меню</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-profile" data-screen="profile">
+      <div class="content">
+        <div class="page-head">
+          <div><h1 class="page-title">Профиль</h1><p class="page-sub">Ваши игры, балансы и статистика.</p></div>
+          <button class="close" data-back-home type="button">×</button>
+        </div>
+        <section class="profile-card">
+          <div class="profile-main">
+            <div class="avatar" id="profileAvatar">MG</div>
+            <div>
+              <div class="profile-name" id="profileName">Игрок</div>
+              <div class="profile-note" id="profileDate">Дата регистрации появится после входа</div>
+            </div>
+          </div>
+          <div class="stats-grid" id="profileStats"></div>
+        </section>
+      </div>
+    </section>
+
+    <div class="overlay" id="sheetOverlay">
+      <div class="sheet" id="sheet"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./assets/js/main.js?v=27"></script>
+</body>
+</html>

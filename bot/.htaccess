@@ -1,0 +1,4 @@
+Options -Indexes
+<FilesMatch "^(config|bootstrap|JsonDatabase|AuthService|UserService|GameService|StatsService|TelegramService|WebhookHandler)\.php$">
+  Require all denied
+</FilesMatch>

@@ -1,0 +1,6 @@
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:5px;background:rgba(255,255,255,.06);border:1px solid var(--stroke);border-radius:20px;margin:14px 0}
+.seg button{padding:12px 10px;border-radius:16px;background:transparent;color:var(--muted);font-weight:850;transition:background .18s ease,color .18s ease,transform .16s ease}
+.seg button.active{background:linear-gradient(135deg,rgba(124,92,255,.96),rgba(98,64,235,.96));color:#fff;box-shadow:0 12px 26px rgba(124,92,255,.22)}
+.seg button[data-room="gold"].active{background:linear-gradient(135deg,rgba(255,200,87,.95),rgba(218,143,23,.94));color:#241700;box-shadow:0 12px 26px rgba(255,200,87,.18)}
+.room-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.room-actions.single{grid-template-columns:1fr}

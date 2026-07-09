@@ -1,0 +1,4 @@
+.profile-card{border:1px solid var(--stroke);border-radius:28px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.035));box-shadow:var(--shadow)}
+.profile-main{display:flex;align-items:center;gap:14px}.profile-main .avatar{width:62px;height:62px;border-radius:22px;font-size:22px}
+.profile-name{font-size:22px;font-weight:950;letter-spacing:-.04em}.profile-note{font-size:13px;color:var(--muted);margin-top:4px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.stat{border:1px solid var(--stroke);border-radius:19px;background:rgba(255,255,255,.045);padding:12px}.stat .num{font-size:23px;font-weight:950}.stat .label{color:var(--muted);font-size:12px;margin-top:2px}

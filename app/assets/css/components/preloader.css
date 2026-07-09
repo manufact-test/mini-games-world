@@ -1,0 +1,11 @@
+.preloader{position:absolute;inset:0;z-index:100;background:radial-gradient(circle at 20% 20%,rgba(124,92,255,.25),transparent 34%),radial-gradient(circle at 80% 78%,rgba(46,230,166,.16),transparent 30%),#090c14;display:flex;align-items:center;justify-content:center;padding:28px;transition:opacity .35s ease,visibility .35s ease}
+.preloader.hidden{opacity:0;visibility:hidden}
+.load-card{width:100%;border:1px solid var(--stroke);border-radius:34px;background:rgba(255,255,255,.055);padding:26px 20px;text-align:center;box-shadow:var(--shadow)}
+.abstract-loader{height:104px;position:relative;margin-bottom:16px}
+.shape{position:absolute;border-radius:24px;border:1px solid rgba(255,255,255,.16);background:linear-gradient(135deg,rgba(124,92,255,.8),rgba(46,230,166,.42));animation:float 2.8s ease-in-out infinite;box-shadow:0 18px 42px rgba(124,92,255,.20)}
+.shape.s1{width:54px;height:54px;left:28%;top:18%;transform:rotate(12deg)}
+.shape.s2{width:42px;height:42px;right:26%;top:28%;border-radius:50%;animation-delay:.25s;background:linear-gradient(135deg,rgba(255,200,87,.9),rgba(124,92,255,.42))}
+.shape.s3{width:74px;height:30px;left:39%;bottom:11%;border-radius:99px;animation-delay:.5s;background:linear-gradient(135deg,rgba(46,230,166,.75),rgba(255,255,255,.2))}
+.node{position:absolute;width:9px;height:9px;border-radius:99px;background:#fff;opacity:.7;animation:pulse 1.8s ease-in-out infinite}
+.node.n1{left:25%;top:68%}.node.n2{left:57%;top:14%;animation-delay:.3s}.node.n3{right:22%;bottom:24%;animation-delay:.6s}
+.load-card h1{margin:0;font-size:28px;letter-spacing:-.055em}.load-card p{margin:8px 0 0;color:var(--muted);font-size:14px}
