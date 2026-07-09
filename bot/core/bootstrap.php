@@ -5,6 +5,19 @@ define('MINIGAMES_INTERNAL', true);
 
 $config = require __DIR__ . '/../config/config.php';
 
+$localConfigFile = __DIR__ . '/../config/config.local.php';
+if (is_file($localConfigFile)) {
+    $localConfig = require $localConfigFile;
+    if (is_array($localConfig)) {
+        $config = array_replace_recursive($config, $localConfig);
+    }
+}
+
+if (empty($config['data_dir'])) {
+    $externalDataDir = dirname(__DIR__, 3) . '/mgw_data';
+    $config['data_dir'] = is_dir($externalDataDir) ? $externalDataDir : __DIR__ . '/../data';
+}
+
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/validators.php';
 require_once __DIR__ . '/../storage/JsonDatabase.php';
