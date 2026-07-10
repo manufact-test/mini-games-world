@@ -1,18 +1,18 @@
-window.__MGW_BUILD__ = 'v27-history-tabs-matches';
-import { initTelegramApp } from './telegram/telegram-app.js?v=27';
-import { api } from './api/client.js?v=27';
-import { state } from './state.js?v=27';
-import { APP_CONFIG } from './config.js?v=27';
-import { hidePreloader } from './components/preloader.js?v=27';
-import { initSheet } from './components/sheet.js?v=27';
-import { toast } from './components/toast.js?v=27';
-import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
-import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=27';
-import { initSearchScreen } from './screens/search-screen.js?v=27';
-import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=27';
-import { initProfileScreen } from './screens/profile-screen.js?v=27';
-import { showScreen } from './router.js?v=27';
-import { isSessionLocked, sessionMessage } from './session.js?v=27';
+window.__MGW_BUILD__ = 'v29-random-first-and-clean-game-header';
+import { initTelegramApp } from './telegram/telegram-app.js?v=29';
+import { api } from './api/client.js?v=29';
+import { state } from './state.js?v=29';
+import { APP_CONFIG } from './config.js?v=29';
+import { hidePreloader } from './components/preloader.js?v=29';
+import { initSheet } from './components/sheet.js?v=29';
+import { toast } from './components/toast.js?v=29';
+import { renderUser, renderBalances, clearTimer } from './ui.js?v=29';
+import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=29';
+import { initSearchScreen } from './screens/search-screen.js?v=29';
+import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=29';
+import { initProfileScreen } from './screens/profile-screen.js?v=29';
+import { showScreen } from './router.js?v=29';
+import { isSessionLocked, sessionMessage } from './session.js?v=29';
 
 initTelegramApp();
 initSheet();
@@ -52,7 +52,7 @@ function startStatsPolling(){
     try {
       const result = await api.stats();
       state.stats = result.stats;
-    state.session = result.session || state.session;
+      state.session = result.session || state.session;
       renderStats(state.stats);
     } catch (error) {}
   }, APP_CONFIG.statsIntervalMs);
