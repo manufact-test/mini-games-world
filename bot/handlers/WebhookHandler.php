@@ -74,6 +74,8 @@ final class WebhookHandler
         $action = substr($data, strlen('admin:'));
         $db = new JsonDatabase($this->dataDir());
         $playerNotification = null;
+        $replyMarkup = $admin->keyboard();
+        $callbackText = '';
 
         if ($action === 'fix_payout_done') {
             $text = $db->transaction(function (array &$dbData) use ($admin, $fromId) {
@@ -84,14 +86,24 @@ final class WebhookHandler
             $text = $db->readOnly(function (array $dbData) use ($admin, $paymentId) {
                 return $admin->paymentDetails($dbData, $paymentId);
             });
+            $replyMarkup = $this->paymentActionKeyboard($paymentId);
+            $callbackText = 'Открываю заявку';
         } elseif (str_starts_with($action, 'payment_apply:')) {
             $paymentId = $this->callbackArgument($action);
             $result = $this->processPaymentDecision($db, $admin, $paymentId, $fromId, 'applied');
             $text = (string)($result['message'] ?? '');
             $playerNotification = $result['player_notification'] ?? null;
+            $replyMarkup = $admin->keyboard();
+            $callbackText = 'Начисление обработано';
         } elseif (str_starts_with($action, 'payment_reject_prompt:')) {
             $paymentId = $this->callbackArgument($action);
             $text = $this->setPendingPaymentReject($db, $paymentId, $fromId);
+            $replyMarkup = $this->pendingRejectKeyboard();
+            $callbackText = 'Теперь напишите причину сообщением';
+        } elseif ($action === 'payment_reject_cancel') {
+            $text = $this->cancelPendingPaymentReject($db, $fromId);
+            $replyMarkup = $admin->keyboard();
+            $callbackText = 'Отменено';
         } else {
             $text = $db->readOnly(function (array $dbData) use ($admin, $action) {
                 return match ($action) {
@@ -108,10 +120,13 @@ final class WebhookHandler
         }
 
         if ($callbackId !== '') {
-            $this->telegram->api('answerCallbackQuery', ['callback_query_id' => $callbackId]);
+            $answer = ['callback_query_id' => $callbackId];
+            if ($callbackText !== '') {
+                $answer['text'] = $callbackText;
+                $answer['show_alert'] = false;
+            }
+            $this->telegram->api('answerCallbackQuery', $answer);
         }
-
-        $replyMarkup = $admin->keyboard();
 
         if ($messageId) {
             $result = $this->telegram->api('editMessageText', [
@@ -299,25 +314,40 @@ final class WebhookHandler
             if ($text === '/cancel') {
                 unset($data['system']['admin_pending_actions'][$fromId]);
                 return [
-                    'message' => "Отклонение заявки отменено.",
+                    'message' => "❌ Отклонение заявки отменено. Ни одна заявка не изменилась.",
+                    'player_notification' => null,
+                ];
+            }
+
+            $reason = trim($text);
+            if (mb_strlen($reason) < 3) {
+                return [
+                    'message' => "⚠️ Причина слишком короткая. Напишите причину отклонения одним сообщением или отправьте /cancel.",
                     'player_notification' => null,
                 ];
             }
 
             $paymentId = trim((string)($pending['payment_id'] ?? ''));
+            $before = $paymentId !== '' ? $this->paymentForNotification($data, $paymentId) : null;
             unset($data['system']['admin_pending_actions'][$fromId]);
 
-            if ($paymentId === '') {
+            if ($paymentId === '' || !$before) {
                 return [
-                    'message' => "⚠️ Не найден ID заявки для отклонения. Откройте список платежей и повторите действие.",
+                    'message' => "⚠️ Не найден ID заявки для отклонения. Заявка не изменена.",
                     'player_notification' => null,
                 ];
             }
 
-            $argument = trim($paymentId . ' ' . $text);
-            $before = $this->paymentForNotification($data, $argument);
+            if (!empty($before['balance_applied']) || in_array((string)($before['status'] ?? ''), ['paid', 'rejected', 'cancelled'], true)) {
+                return [
+                    'message' => "⚠️ Заявка уже обработана. Повторное отклонение не выполнено.\n\n" . $admin->paymentDetails($data, $paymentId),
+                    'player_notification' => null,
+                ];
+            }
+
+            $argument = trim($paymentId . ' ' . $reason);
             $message = $admin->rejectPayment($data, $argument, $fromId);
-            $after = $this->paymentForNotification($data, $argument);
+            $after = $this->paymentForNotification($data, $paymentId);
 
             return [
                 'message' => $message,
@@ -349,8 +379,13 @@ final class WebhookHandler
         }
 
         return $db->transaction(function (array &$data) use ($paymentId, $adminId) {
-            if (!$this->paymentForNotification($data, $paymentId)) {
-                return "⚠️ Заявка не найдена: {$paymentId}";
+            $payment = $this->paymentForNotification($data, $paymentId);
+            if (!$payment) {
+                return "⚠️ Заявка не найдена: {$paymentId}\n\nНажмите «💳 Платежи» и проверьте список актуальных заявок.";
+            }
+
+            if (!empty($payment['balance_applied']) || in_array((string)($payment['status'] ?? ''), ['paid', 'rejected', 'cancelled'], true)) {
+                return "⚠️ Эта заявка уже обработана. Отклонение не запущено.\n\n" . (new AdminService($this->config))->paymentDetails($data, $paymentId);
             }
 
             if (!isset($data['system']) || !is_array($data['system'])) {
@@ -360,13 +395,41 @@ final class WebhookHandler
                 $data['system']['admin_pending_actions'] = [];
             }
 
+            $existing = $data['system']['admin_pending_actions'][$adminId] ?? null;
+            if (is_array($existing) && (string)($existing['type'] ?? '') === 'payment_reject') {
+                $createdAt = strtotime((string)($existing['created_at'] ?? '')) ?: 0;
+                $isFresh = $createdAt <= 0 || time() - $createdAt <= 1800;
+                $existingPaymentId = trim((string)($existing['payment_id'] ?? ''));
+
+                if ($isFresh && $existingPaymentId !== '' && strtoupper($existingPaymentId) !== strtoupper($paymentId)) {
+                    return "⚠️ У вас уже открыт режим отклонения другой заявки: {$existingPaymentId}\n\nСначала отправьте причину для неё одним сообщением или отправьте /cancel.\n\nНовая заявка {$paymentId} не изменилась.";
+                }
+            }
+
+            $shortId = $this->shortPaymentId((string)($payment['id'] ?? $paymentId));
             $data['system']['admin_pending_actions'][$adminId] = [
                 'type' => 'payment_reject',
-                'payment_id' => $paymentId,
+                'payment_id' => $shortId,
                 'created_at' => now_iso(),
             ];
 
-            return "🚫 Отклонение заявки {$paymentId}\n\nВведите следующим сообщением причину отклонения.\n\nНапример:\nоплата не найдена\n\nЧтобы отменить действие, отправьте /cancel";
+            return "🚫 Отклонение заявки {$shortId}\n\n"
+                . "Сейчас бот ждёт причину отклонения именно для этой заявки.\n\n"
+                . "Напишите следующим сообщением причину, например:\n"
+                . "оплата не найдена\n\n"
+                . "После вашего сообщения заявка будет отклонена, а игрок получит эту причину.\n\n"
+                . "Чтобы отменить действие, отправьте /cancel.";
+        });
+    }
+
+    private function cancelPendingPaymentReject(JsonDatabase $db, string $adminId): string
+    {
+        return $db->transaction(function (array &$data) use ($adminId) {
+            if (isset($data['system']['admin_pending_actions'][$adminId])) {
+                unset($data['system']['admin_pending_actions'][$adminId]);
+            }
+
+            return "❌ Отклонение заявки отменено. Ни одна заявка не изменилась.";
         });
     }
 
@@ -382,12 +445,27 @@ final class WebhookHandler
             }
 
             $after = $this->paymentForNotification($data, $argument);
+            $this->clearPendingPaymentRejectForSamePayment($data, $fromId, $argument);
 
             return [
                 'message' => $message,
                 'player_notification' => $this->paymentDecisionNotification($before, $after, $decision),
             ];
         });
+    }
+
+    private function clearPendingPaymentRejectForSamePayment(array &$data, string $adminId, string $argument): void
+    {
+        $pending = $data['system']['admin_pending_actions'][$adminId] ?? null;
+        if (!is_array($pending) || (string)($pending['type'] ?? '') !== 'payment_reject') {
+            return;
+        }
+
+        $pendingId = strtoupper(trim((string)($pending['payment_id'] ?? '')));
+        $query = strtoupper($this->paymentQueryFromArgument($argument));
+        if ($pendingId !== '' && $query !== '' && ($pendingId === $query || str_starts_with($pendingId, $query) || str_starts_with($query, $pendingId))) {
+            unset($data['system']['admin_pending_actions'][$adminId]);
+        }
     }
 
     private function sendPaymentDecisionNotification(mixed $playerNotification): void
@@ -434,8 +512,8 @@ final class WebhookHandler
 
     private function callbackArgument(string $action): string
     {
-        $parts = explode(':', $action, 2);
-        return trim((string)($parts[1] ?? ''));
+        $parts = explode(':', $action);
+        return trim((string)end($parts));
     }
 
     private function paymentForNotification(array $data, string $argument): ?array
@@ -506,5 +584,36 @@ final class WebhookHandler
         $id = preg_replace('/^(pay_)/', '', $id);
         $id = strtoupper(substr((string)$id, 0, 8));
         return $id !== '' ? $id : '-';
+    }
+
+    private function paymentActionKeyboard(string $paymentId): array
+    {
+        $paymentId = strtoupper(trim($paymentId));
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => '✅ Начислить', 'callback_data' => 'admin:payment_apply:' . $paymentId],
+                    ['text' => '🚫 Отклонить', 'callback_data' => 'admin:payment_reject_prompt:' . $paymentId],
+                ],
+                [
+                    ['text' => '💳 Все платежи', 'callback_data' => 'admin:payments'],
+                    ['text' => '📊 Панель', 'callback_data' => 'admin:dashboard'],
+                ],
+            ],
+        ];
+    }
+
+    private function pendingRejectKeyboard(): array
+    {
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => '❌ Отменить отклонение', 'callback_data' => 'admin:payment_reject_cancel'],
+                ],
+                [
+                    ['text' => '💳 Все платежи', 'callback_data' => 'admin:payments'],
+                ],
+            ],
+        ];
     }
 }
