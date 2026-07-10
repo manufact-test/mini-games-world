@@ -59,6 +59,12 @@ final class ShopCatalogService
         }
 
         $items = $this->normalizeItems($raw['items'] ?? [], $countryNames);
+        $usedCountryCodes = array_fill_keys(array_map(fn(array $item) => (string)$item['country_code'], $items), true);
+        $countries = array_values(array_filter(
+            $countries,
+            fn(array $country) => isset($usedCountryCodes[(string)$country['code']])
+        ));
+
         $this->catalog = [
             'version' => max(1, (int)($raw['version'] ?? 1)),
             'currency' => trim((string)($raw['currency'] ?? 'GOLD')) ?: 'GOLD',
@@ -136,7 +142,7 @@ final class ShopCatalogService
             $providerCode = trim((string)($item['provider_code'] ?? ''));
             $title = trim((string)($item['title'] ?? $provider));
 
-            if ($id === '' || isset($seenItems[$id]) || !isset($countryNames[$countryCode]) || $provider === '' || $providerCode === '') {
+            if (!$this->isValidId($id) || isset($seenItems[$id]) || !isset($countryNames[$countryCode]) || $provider === '' || !$this->isValidId($providerCode)) {
                 continue;
             }
 
@@ -148,14 +154,15 @@ final class ShopCatalogService
 
                 $denominationId = trim((string)($denomination['id'] ?? ''));
                 $goldCost = (int)($denomination['gold_cost'] ?? 0);
-                if ($denominationId === '' || $goldCost <= 0 || isset($seenDenominations[$denominationId])) {
+                if (!$this->isValidId($denominationId) || $goldCost <= 0 || isset($seenDenominations[$denominationId])) {
                     continue;
                 }
 
                 $seenDenominations[$denominationId] = true;
+                $label = trim((string)($denomination['label'] ?? ''));
                 $denominations[] = [
                     'id' => $denominationId,
-                    'label' => trim((string)($denomination['label'] ?? ($goldCost . ' Gold'))),
+                    'label' => $label !== '' ? $label : ($goldCost . ' Gold'),
                     'gold_cost' => $goldCost,
                     'sort_order' => (int)($denomination['sort_order'] ?? 1000),
                 ];
@@ -167,24 +174,32 @@ final class ShopCatalogService
             }
 
             $seenItems[$id] = true;
+            $displayTitle = $title !== '' ? $title : $provider;
+            $minAmount = min(array_map(fn(array $denomination) => (int)$denomination['gold_cost'], $denominations));
+
             $result[] = [
                 'id' => $id,
                 'country_code' => $countryCode,
                 'country' => $countryNames[$countryCode],
                 'provider_code' => $providerCode,
                 'provider' => $provider,
-                'title' => $title !== '' ? $title : $provider,
+                'title' => $displayTitle,
                 'description' => trim((string)($item['description'] ?? '')),
                 'delivery_type' => trim((string)($item['delivery_type'] ?? 'manual_code')) ?: 'manual_code',
                 'image' => trim((string)($item['image'] ?? '')),
-                'image_alt' => trim((string)($item['image_alt'] ?? $title)),
+                'image_alt' => trim((string)($item['image_alt'] ?? $displayTitle)),
                 'sort_order' => (int)($item['sort_order'] ?? 1000),
-                'min_amount' => (int)$denominations[0]['gold_cost'],
+                'min_amount' => $minAmount,
                 'denominations' => $denominations,
             ];
         }
 
         usort($result, fn(array $a, array $b) => ($a['sort_order'] <=> $b['sort_order']) ?: strcmp($a['title'], $b['title']));
         return $result;
+    }
+
+    private function isValidId(string $id): bool
+    {
+        return $id !== '' && preg_match('/^[a-z0-9][a-z0-9_-]{1,79}$/i', $id) === 1;
     }
 }
