@@ -5,4 +5,4 @@ RewriteRule ^favicon\.ico$ favicon.svg [L]
 
 # Keep the Telegram Mini App, bot, blog and static files untouched.
 RewriteCond %{REQUEST_URI} ^/$
-RewriteRule ^$ landing-v5.php [L]
+RewriteRule ^$ landing-v6.php [L]
