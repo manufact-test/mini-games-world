@@ -78,20 +78,25 @@ final class HistoryService
                 return null;
             }
 
+            $category = (string)($tx['category'] ?? '');
+            if ($this->isTopupCategory($category)) {
+                return null;
+            }
+
             $amount = (int)($tx['amount'] ?? 0);
             $gameId = (string)($tx['game_id'] ?? '');
             $game = $gameId !== '' ? ($db['games'][$gameId] ?? null) : null;
             $description = $this->cleanDescription((string)($tx['description'] ?? ''));
 
             if ($game) {
-                $description = $this->operationGameDescription($game, $userId, (string)($tx['category'] ?? ''));
+                $description = $this->operationGameDescription($game, $userId, $category);
             } elseif ($description === '') {
                 $description = $this->balanceDescription($tx);
             }
 
             return [
                 'id' => (string)($tx['id'] ?? ''),
-                'title' => $this->balanceTitle((string)($tx['category'] ?? '')),
+                'title' => $this->balanceTitle($category),
                 'description' => $description,
                 'amount' => $amount,
                 'amount_label' => $this->amountLabel($amount),
@@ -257,6 +262,17 @@ final class HistoryService
         return $description;
     }
 
+    private function isTopupCategory(string $category): bool
+    {
+        return in_array($category, [
+            'payment_draft',
+            'payment_paid',
+            'payment_apply',
+            'payment_reject',
+            'admin_gold_topup',
+        ], true);
+    }
+
     private function balanceTitle(string $category): string
     {
         return match ($category) {
@@ -265,11 +281,6 @@ final class HistoryService
             'game_refund' => 'Возврат при ничьей',
             'shop_order' => 'Заказ приза',
             'shop_refund' => 'Возврат за приз',
-            'payment_draft' => 'Заявка на пополнение',
-            'payment_paid' => 'Платёж оплачен',
-            'payment_apply' => 'Пополнение начислено',
-            'payment_reject' => 'Заявка отклонена',
-            'admin_gold_topup' => 'Пополнение Gold',
             'system_migration' => 'Системная миграция',
             'weekly_bonus' => 'Еженедельное начисление',
             default => 'Операция баланса',
