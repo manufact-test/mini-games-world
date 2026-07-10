@@ -73,6 +73,7 @@ try {
     $games = new GameService($config);
     $shop = new ShopService($config, $users);
     $payments = new PaymentService($config, $users);
+    $telegram = new TelegramService($config);
     $sessions = new SessionService($config);
     $statsService = new StatsService();
     $history = new HistoryService($config, $users);
@@ -347,6 +348,17 @@ try {
                 throw new RuntimeException('Неизвестное действие.');
         }
     });
+
+    if ($action === 'payment_create_draft'
+        && !empty($result['saved'])
+        && isset($result['payment'])
+        && is_array($result['payment'])) {
+        try {
+            $telegram->notifyAdminsAboutPayment($result['payment']);
+        } catch (Throwable $notifyError) {
+            error_log('Mini Games World payment admin notification failed: ' . $notifyError->getMessage());
+        }
+    }
 
     api_ok($result);
 } catch (Throwable $e) {
