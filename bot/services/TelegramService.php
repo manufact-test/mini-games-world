@@ -7,6 +7,8 @@ final class TelegramService
 
     public function api(string $method, array $params = []): array
     {
+        [$method, $params] = $this->prepareAdminUxRequest($method, $params);
+
         $token = (string)$this->config['bot_token'];
         if ($token === '' || $token === 'PASTE_BOT_TOKEN_HERE') {
             throw new RuntimeException('Не указан токен бота в config.php.');
@@ -100,6 +102,96 @@ final class TelegramService
         } catch (Throwable $e) {
             error_log('Mini Games World user payment notification failed for ' . $chatId . ': ' . $e->getMessage());
         }
+    }
+
+    private function prepareAdminUxRequest(string $method, array $params): array
+    {
+        if (isset($params['reply_markup']) && is_array($params['reply_markup'])) {
+            $params['reply_markup'] = $this->renameAdminButtons($params['reply_markup']);
+        }
+
+        $text = (string)($params['text'] ?? '');
+        if ($text !== '') {
+            $text = $this->renameAdminSections($text);
+        }
+
+        if ($method === 'editMessageText' && str_starts_with($text, '🚫 Отклонение заявки')) {
+            $shortId = '-';
+            if (preg_match('/^🚫 Отклонение заявки\s+([^\n]+)/u', $text, $matches)) {
+                $shortId = trim((string)($matches[1] ?? '-'));
+            }
+
+            $method = 'sendMessage';
+            unset($params['message_id']);
+            $text = "🚫 Отклонение пополнения {$shortId}\n\n"
+                . "Ответьте прямо на это сообщение одной причиной. Telegram откроет отдельное поле ответа.\n\n"
+                . "Пример: оплата не найдена\n\n"
+                . "ВАЖНО: пока вы не отправили причину, заявка НЕ отклонена и остаётся в ожидании.\n\n"
+                . "Чтобы отменить действие, отправьте /cancel или откройте раздел «💳 Пополнения».";
+            $params['reply_markup'] = [
+                'force_reply' => true,
+                'selective' => true,
+                'input_field_placeholder' => "Причина для заявки {$shortId}",
+            ];
+        }
+
+        if ($text !== '') {
+            $params['text'] = $text;
+        }
+
+        return [$method, $params];
+    }
+
+    private function renameAdminButtons(array $replyMarkup): array
+    {
+        if (!isset($replyMarkup['inline_keyboard']) || !is_array($replyMarkup['inline_keyboard'])) {
+            return $replyMarkup;
+        }
+
+        foreach ($replyMarkup['inline_keyboard'] as $rowIndex => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            foreach ($row as $buttonIndex => $button) {
+                if (!is_array($button)) {
+                    continue;
+                }
+
+                $callbackData = (string)($button['callback_data'] ?? '');
+                if ($callbackData === 'admin:orders') {
+                    $replyMarkup['inline_keyboard'][$rowIndex][$buttonIndex]['text'] = '🎁 Заказы призов';
+                }
+
+                if ($callbackData === 'admin:payments') {
+                    $oldText = (string)($button['text'] ?? '');
+                    $replyMarkup['inline_keyboard'][$rowIndex][$buttonIndex]['text'] = str_contains($oldText, 'Все')
+                        ? '💳 Все пополнения'
+                        : '💳 Пополнения';
+                }
+            }
+        }
+
+        return $replyMarkup;
+    }
+
+    private function renameAdminSections(string $text): string
+    {
+        $isShopOrders = str_contains($text, '🎁 Заявки магазина');
+
+        $text = str_replace('🎁 Заявки магазина', '🎁 Заказы призов', $text);
+        $text = str_replace('💳 Платежи', '💳 Пополнения', $text);
+
+        if ($isShopOrders) {
+            $text = str_replace(
+                'Заявок пока нет.',
+                "Заказов призов пока нет.\n\nЗаявки на покупку коинов находятся в разделе «💳 Пополнения».",
+                $text
+            );
+            $text = str_replace('Нет ожидающих заявок.', 'Нет ожидающих заказов призов.', $text);
+        }
+
+        return $text;
     }
 
     private function paymentAdminNotificationText(array $payment): string
