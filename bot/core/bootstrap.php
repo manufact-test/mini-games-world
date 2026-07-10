@@ -3,7 +3,18 @@ declare(strict_types=1);
 
 define('MINIGAMES_INTERNAL', true);
 
-$config = require __DIR__ . '/../config/config.php';
+$externalConfigFile = getenv('MGW_CONFIG_FILE') ?: dirname(__DIR__, 3) . '/_private_mgw/config.php';
+$legacyConfigFile = __DIR__ . '/../config/config.php';
+$configFile = is_file($externalConfigFile) ? $externalConfigFile : $legacyConfigFile;
+
+if (!is_file($configFile)) {
+    throw new RuntimeException('Mini Games World config file not found. Expected external config at: ' . $externalConfigFile);
+}
+
+$config = require $configFile;
+if (!is_array($config)) {
+    throw new RuntimeException('Mini Games World config must return an array.');
+}
 
 $localConfigFile = __DIR__ . '/../config/config.local.php';
 if (is_file($localConfigFile)) {
