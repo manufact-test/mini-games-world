@@ -27,6 +27,7 @@ final class PaymentService
         $amountRub = $this->normalizeAmount($amountRub);
         $rate = $this->rateForRoom($room);
         $coins = $amountRub * $rate;
+        $now = now_iso();
 
         $payment = [
             'id' => make_id('pay'),
@@ -43,8 +44,8 @@ final class PaymentService
             'currency' => 'RUB',
             'rate' => $rate,
             'balance_applied' => false,
-            'created_at' => now_iso(),
-            'updated_at' => now_iso(),
+            'created_at' => $now,
+            'updated_at' => $now,
             'note' => 'Draft only. No real payment, no balance changes.',
         ];
 
@@ -63,7 +64,7 @@ final class PaymentService
             'amount_rub' => $amountRub,
             'currency' => 'RUB',
             'description' => 'Создана заявка на пополнение',
-            'created_at' => now_iso(),
+            'created_at' => $now,
         ];
 
         return $payment;
@@ -87,7 +88,7 @@ final class PaymentService
 
         $index = $this->findPaymentIndex($db, $query);
         if ($index === null) {
-            return "💳 Заявка не найдена: {$query}";
+            return "💳 Заявка не найдена: {$query}\n\nИспользуйте полный ID или точный короткий ID из списка платежей.";
         }
 
         if (!isset($db['payments'][$index]) || !is_array($db['payments'][$index])) {
@@ -95,14 +96,34 @@ final class PaymentService
         }
 
         $payment =& $db['payments'][$index];
+        $status = (string)($payment['status'] ?? 'draft');
+        $applied = !empty($payment['balance_applied']);
 
-        if (!empty($payment['balance_applied'])) {
-            return "✅ Эта заявка уже была начислена ранее.\n\n" . $this->adminDetailsFromPayment($payment);
+        if ($applied) {
+            if ($status === 'paid') {
+                return "✅ Эта заявка уже была начислена ранее. Повторное начисление заблокировано.\n\n"
+                    . $this->adminDetailsFromPayment($payment);
+            }
+
+            return "⚠️ У заявки уже стоит признак начисления, но её статус не равен paid. "
+                . "Повторное начисление заблокировано до ручной проверки.\n\n"
+                . $this->adminDetailsFromPayment($payment);
         }
 
-        $status = (string)($payment['status'] ?? 'draft');
         if (in_array($status, ['rejected', 'cancelled'], true)) {
-            return "⚠️ Нельзя начислить отклонённую или отменённую заявку.\n\n" . $this->adminDetailsFromPayment($payment);
+            return "⚠️ Нельзя начислить отклонённую или отменённую заявку.\n\n"
+                . $this->adminDetailsFromPayment($payment);
+        }
+
+        if ($status === 'paid') {
+            return "⚠️ У заявки уже стоит статус paid, но нет признака начисления на баланс. "
+                . "Автоматическое начисление остановлено до ручной проверки.\n\n"
+                . $this->adminDetailsFromPayment($payment);
+        }
+
+        if (!$this->isWaitingStatus($status)) {
+            return "⚠️ Неизвестный статус заявки: {$status}. Начисление остановлено.\n\n"
+                . $this->adminDetailsFromPayment($payment);
         }
 
         $userId = (string)($payment['user_id'] ?? '');
@@ -114,33 +135,34 @@ final class PaymentService
         $coins = (int)($payment['coins'] ?? 0);
         $amountRub = (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
 
-        if ($coins <= 0) {
-            return "⚠️ В заявке некорректное количество коинов. Начисление остановлено.";
+        if ($coins <= 0 || $amountRub <= 0) {
+            return "⚠️ В заявке некорректная сумма или количество коинов. Начисление остановлено.";
         }
 
         $balanceField = $room === 'match' ? 'balance_match' : 'balance_gold';
         $before = (int)($db['users'][$userId][$balanceField] ?? 0);
         $after = $before + $coins;
+        $now = now_iso();
 
         $db['users'][$userId][$balanceField] = $after;
-        $db['users'][$userId]['last_payment_apply_at'] = now_iso();
+        $db['users'][$userId]['last_payment_apply_at'] = $now;
 
         if ($room === 'gold') {
             $depositedBefore = (int)($db['users'][$userId]['gold_deposited_total'] ?? 0);
             $db['users'][$userId]['gold_deposited_total'] = $depositedBefore + $coins;
-            $db['users'][$userId]['last_gold_topup_at'] = now_iso();
+            $db['users'][$userId]['last_gold_topup_at'] = $now;
         } else {
             $matchDepositedBefore = (int)($db['users'][$userId]['match_deposited_total'] ?? 0);
             $db['users'][$userId]['match_deposited_total'] = $matchDepositedBefore + $coins;
-            $db['users'][$userId]['last_match_topup_at'] = now_iso();
+            $db['users'][$userId]['last_match_topup_at'] = $now;
         }
 
         $payment['status'] = 'paid';
         $payment['balance_applied'] = true;
-        $payment['paid_at'] = $payment['paid_at'] ?? now_iso();
-        $payment['applied_at'] = now_iso();
+        $payment['paid_at'] = $payment['paid_at'] ?? $now;
+        $payment['applied_at'] = $now;
         $payment['applied_by'] = $adminId;
-        $payment['updated_at'] = now_iso();
+        $payment['updated_at'] = $now;
 
         $db['transactions'][] = [
             'id' => make_id('tx'),
@@ -157,7 +179,7 @@ final class PaymentService
             'balance_after' => $after,
             'description' => $room === 'gold' ? 'Пополнение Gold по заявке' : 'Пополнение Match по заявке',
             'admin_id' => $adminId,
-            'created_at' => now_iso(),
+            'created_at' => $now,
         ];
 
         $roomLabel = $room === 'gold' ? 'Gold' : 'Match';
@@ -181,9 +203,14 @@ final class PaymentService
                 . "/mgw_private_admin_7291_payment_reject ID_ЗАЯВКИ причина";
         }
 
+        if (mb_strlen($reason) < 3) {
+            return "⚠️ Укажите причину отклонения длиной не менее трёх символов.\n\n"
+                . "/mgw_private_admin_7291_payment_reject {$query} причина";
+        }
+
         $index = $this->findPaymentIndex($db, $query);
         if ($index === null) {
-            return "💳 Заявка не найдена: {$query}";
+            return "💳 Заявка не найдена: {$query}\n\nИспользуйте полный ID или точный короткий ID из списка платежей.";
         }
 
         if (!isset($db['payments'][$index]) || !is_array($db['payments'][$index])) {
@@ -191,16 +218,39 @@ final class PaymentService
         }
 
         $payment =& $db['payments'][$index];
+        $status = (string)($payment['status'] ?? 'draft');
 
         if (!empty($payment['balance_applied'])) {
-            return "⚠️ Нельзя отклонить заявку, которая уже начислена.\n\n" . $this->adminDetailsFromPayment($payment);
+            return "⚠️ Нельзя отклонить заявку, которая уже начислена.\n\n"
+                . $this->adminDetailsFromPayment($payment);
         }
 
+        if ($status === 'rejected') {
+            return "🚫 Эта заявка уже была отклонена ранее. Повторное отклонение не записано.\n\n"
+                . $this->adminDetailsFromPayment($payment);
+        }
+
+        if ($status === 'cancelled') {
+            return "⚠️ Заявка уже отменена. Отклонение не выполнено.\n\n"
+                . $this->adminDetailsFromPayment($payment);
+        }
+
+        if ($status === 'paid') {
+            return "⚠️ У заявки уже стоит статус paid. Отклонение заблокировано.\n\n"
+                . $this->adminDetailsFromPayment($payment);
+        }
+
+        if (!$this->isWaitingStatus($status)) {
+            return "⚠️ Неизвестный статус заявки: {$status}. Отклонение остановлено.\n\n"
+                . $this->adminDetailsFromPayment($payment);
+        }
+
+        $now = now_iso();
         $payment['status'] = 'rejected';
-        $payment['rejected_at'] = now_iso();
+        $payment['rejected_at'] = $now;
         $payment['rejected_by'] = $adminId;
-        $payment['reject_reason'] = clean_string($reason !== '' ? $reason : 'отклонено администратором', 300);
-        $payment['updated_at'] = now_iso();
+        $payment['reject_reason'] = clean_string($reason, 300);
+        $payment['updated_at'] = $now;
 
         $db['transactions'][] = [
             'id' => make_id('tx'),
@@ -213,7 +263,7 @@ final class PaymentService
             'amount' => 0,
             'reason' => (string)$payment['reject_reason'],
             'admin_id' => $adminId,
-            'created_at' => now_iso(),
+            'created_at' => $now,
         ];
 
         return "🚫 Заявка отклонена\n\n" . $this->adminDetailsFromPayment($payment);
@@ -230,7 +280,7 @@ final class PaymentService
 
         $index = $this->findPaymentIndex($db, $query);
         if ($index === null) {
-            return "💳 Заявка не найдена: {$query}";
+            return "💳 Заявка не найдена: {$query}\n\nИспользуйте полный ID или точный короткий ID из списка платежей.";
         }
 
         return $this->adminDetailsFromPayment($db['payments'][$index]);
@@ -260,16 +310,24 @@ final class PaymentService
         $payments = array_reverse($db['payments'] ?? []);
 
         $lines = ["💳 Платежи"];
-        $lines[] = "
-Заявки создаются из Mini App. Начисление делает админ вручную.";
+        $lines[] = "\nЗаявки создаются из Mini App. Начисление делает админ вручную.";
         $lines[] = "Всего заявок: " . $summary['total'];
-        $lines[] = "Новые: " . $summary['draft'];
+        $lines[] = "Ожидают решения: " . $summary['waiting'];
         $lines[] = "Начислены: " . $summary['paid'];
         $lines[] = "Отклонены: " . $summary['rejected'];
 
+        if ($summary['cancelled'] > 0) {
+            $lines[] = "Отменены: " . $summary['cancelled'];
+        }
+        if ($summary['inconsistent'] > 0) {
+            $lines[] = "⚠️ Несогласованные записи: " . $summary['inconsistent'];
+        }
+        if ($summary['invalid'] > 0) {
+            $lines[] = "⚠️ Некорректные записи: " . $summary['invalid'];
+        }
+
         if ($payments) {
-            $lines[] = "
-Последние заявки:";
+            $lines[] = "\nПоследние заявки:";
             $shown = 0;
 
             foreach ($payments as $payment) {
@@ -277,8 +335,7 @@ final class PaymentService
                     continue;
                 }
 
-                $lines[] = "
-" . $this->adminPaymentCard($payment, $db);
+                $lines[] = "\n" . $this->adminPaymentCard($payment, $db);
                 $shown++;
 
                 if ($shown >= $limit) {
@@ -286,18 +343,15 @@ final class PaymentService
                 }
             }
         } else {
-            $lines[] = "
-Платежных заявок пока нет.";
+            $lines[] = "\nПлатежных заявок пока нет.";
         }
 
-        $lines[] = "
-Команды:";
+        $lines[] = "\nКоманды:";
         $lines[] = "/mgw_private_admin_7291_payment ID — открыть заявку";
         $lines[] = "/mgw_private_admin_7291_payment_apply ID — подтвердить и начислить";
         $lines[] = "/mgw_private_admin_7291_payment_reject ID причина — отклонить";
 
-        return implode("
-", $lines);
+        return implode("\n", $lines);
     }
 
     public function adminSummary(array $db): array
@@ -307,25 +361,45 @@ final class PaymentService
             'total' => count($payments),
             'draft' => 0,
             'pending' => 0,
+            'waiting' => 0,
             'paid' => 0,
             'rejected' => 0,
             'cancelled' => 0,
             'applied' => 0,
+            'inconsistent' => 0,
+            'invalid' => 0,
             'coins_paid_total' => 0,
             'money_paid_total' => 0,
         ];
 
         foreach ($payments as $payment) {
+            if (!is_array($payment)) {
+                $summary['invalid']++;
+                continue;
+            }
+
             $status = (string)($payment['status'] ?? 'draft');
+            $applied = !empty($payment['balance_applied']);
+
             if (isset($summary[$status])) {
                 $summary[$status]++;
             }
-
-            if (!empty($payment['balance_applied'])) {
+            if ($this->isWaitingStatus($status)) {
+                $summary['waiting']++;
+            }
+            if ($applied) {
                 $summary['applied']++;
             }
 
-            if ($status === 'paid') {
+            $isConsistentPaid = $status === 'paid' && $applied;
+            $isInconsistent = ($status === 'paid' && !$applied)
+                || ($status !== 'paid' && $applied);
+
+            if ($isInconsistent) {
+                $summary['inconsistent']++;
+            }
+
+            if ($isConsistentPaid) {
                 $summary['coins_paid_total'] += (int)($payment['coins'] ?? 0);
                 $summary['money_paid_total'] += (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
             }
@@ -342,13 +416,15 @@ final class PaymentService
 
         $items = [];
         foreach (array_reverse($db['payments'] ?? []) as $payment) {
-            if ((string)($payment['user_id'] ?? '') !== $userId) {
+            if (!is_array($payment) || (string)($payment['user_id'] ?? '') !== $userId) {
                 continue;
             }
 
+            $status = (string)($payment['status'] ?? 'draft');
             $items[] = [
                 'id' => (string)($payment['id'] ?? ''),
-                'status' => (string)($payment['status'] ?? 'draft'),
+                'status' => $status,
+                'status_label' => $this->statusLabel($status),
                 'room' => (string)($payment['room'] ?? 'gold'),
                 'coins' => (int)($payment['coins'] ?? 0),
                 'price' => (int)($payment['price'] ?? $payment['amount_rub'] ?? 0),
@@ -378,11 +454,13 @@ final class PaymentService
 
             $id = (string)($payment['id'] ?? '');
             $room = $this->normalizeRoom((string)($payment['room'] ?? 'gold'));
+            $status = (string)($payment['status'] ?? 'draft');
 
             $items[] = [
                 'id' => $id,
                 'short_id' => $this->shortPaymentId($id),
-                'status' => (string)($payment['status'] ?? 'draft'),
+                'status' => $status,
+                'status_label' => $this->statusLabel($status),
                 'room' => $room,
                 'coins' => (int)($payment['coins'] ?? 0),
                 'price' => (int)($payment['price'] ?? $payment['amount_rub'] ?? 0),
@@ -426,10 +504,6 @@ final class PaymentService
             if ($query === $normalizedId || $query === $short) {
                 return $i;
             }
-
-            if (strlen($query) >= 4 && str_starts_with($short, $query)) {
-                return $i;
-            }
         }
 
         return null;
@@ -439,12 +513,14 @@ final class PaymentService
     {
         $id = (string)($payment['id'] ?? '');
         $short = $this->shortPaymentId($id);
-        $status = $this->statusLabel((string)($payment['status'] ?? 'draft'));
+        $statusRaw = (string)($payment['status'] ?? 'draft');
+        $status = $this->statusLabel($statusRaw);
         $room = $this->normalizeRoom((string)($payment['room'] ?? 'gold'));
         $roomLabel = $room === 'gold' ? 'Gold' : 'Match';
         $username = (string)($payment['username'] ?? '');
         $name = trim((string)($payment['first_name'] ?? '') . ' ' . (string)($payment['last_name'] ?? ''));
         $userLabelParts = [];
+
         if ($name !== '') {
             $userLabelParts[] = $name;
         }
@@ -452,6 +528,7 @@ final class PaymentService
             $userLabelParts[] = '@' . ltrim($username, '@');
         }
         $userLabelParts[] = 'TG ID ' . (string)($payment['user_id'] ?? '-');
+
         $userLabel = implode(' · ', $userLabelParts);
         $coins = (int)($payment['coins'] ?? 0);
         $price = (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
@@ -470,13 +547,15 @@ final class PaymentService
         if (!empty($payment['applied_at'])) {
             $lines[] = "Начислена: " . (string)$payment['applied_at'];
         }
-
+        if (!empty($payment['rejected_at'])) {
+            $lines[] = "Отклонена: " . (string)$payment['rejected_at'];
+        }
         if (!empty($payment['reject_reason'])) {
             $lines[] = "Причина отклонения: " . (string)$payment['reject_reason'];
         }
 
         $lines[] = "\nКоманды:";
-        if (empty($payment['balance_applied']) && !in_array((string)($payment['status'] ?? ''), ['rejected', 'cancelled'], true)) {
+        if ($this->isActionablePayment($payment)) {
             $lines[] = "/mgw_private_admin_7291_payment_apply {$short} — подтвердить и начислить";
             $lines[] = "/mgw_private_admin_7291_payment_reject {$short} причина — отклонить";
         } else {
@@ -531,7 +610,7 @@ final class PaymentService
         $lines[] = "Сумма: {$price} {$currency} → {$coins} коинов";
         $lines[] = "Создана: {$date}";
 
-        if (empty($payment['balance_applied']) && !in_array($statusRaw, ['rejected', 'cancelled'], true)) {
+        if ($this->isActionablePayment($payment)) {
             $lines[] = "Начислить: /mgw_private_admin_7291_payment_apply {$short}";
             $lines[] = "Отклонить: /mgw_private_admin_7291_payment_reject {$short} причина";
         } else {
@@ -560,11 +639,9 @@ final class PaymentService
         if ($name !== '') {
             $parts[] = $name;
         }
-
         if ($username !== '') {
             $parts[] = '@' . ltrim($username, '@');
         }
-
         if (!$parts) {
             $parts[] = 'Без имени';
         }
@@ -572,32 +649,26 @@ final class PaymentService
         return implode(' · ', $parts);
     }
 
-    private function adminPaymentLine(array $payment): string
-    {
-        $short = $this->shortPaymentId((string)($payment['id'] ?? ''));
-        $status = $this->statusLabel((string)($payment['status'] ?? 'draft'));
-        $username = (string)($payment['username'] ?? '');
-        $user = $username !== '' ? '@' . ltrim($username, '@') : ('ID ' . (string)($payment['user_id'] ?? '-'));
-        $room = $this->normalizeRoom((string)($payment['room'] ?? 'gold'));
-        $roomLabel = $room === 'match' ? 'Match' : 'Gold';
-        $coins = (int)($payment['coins'] ?? 0);
-        $price = (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
-        $currency = (string)($payment['currency'] ?? 'RUB');
-        $date = (string)($payment['created_at'] ?? '');
-
-        return "№{$short} · {$status} · {$user} · {$roomLabel} · {$price} {$currency} → {$coins} коинов · {$date}";
-    }
-
     private function statusLabel(string $status): string
     {
         return match ($status) {
-            'draft' => 'заявка',
-            'pending' => 'ожидает',
-            'paid' => 'оплачено/начислено',
+            'draft', 'pending' => 'ожидает решения',
+            'paid' => 'начислено',
             'rejected' => 'отклонено',
             'cancelled' => 'отменено',
             default => $status !== '' ? $status : '—',
         };
+    }
+
+    private function isWaitingStatus(string $status): bool
+    {
+        return in_array($status, ['draft', 'pending'], true);
+    }
+
+    private function isActionablePayment(array $payment): bool
+    {
+        return empty($payment['balance_applied'])
+            && $this->isWaitingStatus((string)($payment['status'] ?? 'draft'));
     }
 
     private function shortPaymentId(string $id): string
