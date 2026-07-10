@@ -26,19 +26,23 @@ final class HistoryService
             }
 
             // В ранних MVP один матч мог попасть в историю и как старый game_finish,
-            // и как новый balance_change. Для игрока это выглядит как дубль операции.
-            // Показываем только одну понятную запись.
-            $key = implode('|', [
-                (string)($item['title'] ?? ''),
-                (string)($item['game_id'] ?? ''),
-                (string)($item['amount'] ?? 0),
-            ]);
+            // и как новый balance_change. Дедупликация нужна только внутри конкретного
+            // матча; обычные бонусы, возвраты и другие операции нельзя склеивать.
+            $gameId = (string)($item['game_id'] ?? '');
+            if ($gameId !== '') {
+                $key = implode('|', [
+                    (string)($item['title'] ?? ''),
+                    $gameId,
+                    (string)($item['amount'] ?? 0),
+                ]);
 
-            if (isset($seen[$key])) {
-                continue;
+                if (isset($seen[$key])) {
+                    continue;
+                }
+
+                $seen[$key] = true;
             }
 
-            $seen[$key] = true;
             $items[] = $item;
 
             if (count($items) >= $limit) {
