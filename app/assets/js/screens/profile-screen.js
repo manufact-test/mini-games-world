@@ -1,8 +1,8 @@
-import { api } from '../api/client.js?v=27';
-import { state } from '../state.js?v=27';
-import { showScreen } from '../router.js?v=27';
-import { toast } from '../components/toast.js?v=27';
-import { renderUser, renderBalances } from '../ui.js?v=27';
+import { api } from '../api/client.js?v=29';
+import { state } from '../state.js?v=29';
+import { showScreen } from '../router.js?v=29';
+import { toast } from '../components/toast.js?v=29';
+import { renderUser, renderBalances } from '../ui.js?v=29';
 
 export function initProfileScreen(){
   document.addEventListener('mgw:open-profile', openProfile);
@@ -12,7 +12,7 @@ export async function openProfile(){
     const result = await api.profile();
     state.user = result.user;
     state.session = result.session || state.session;
-renderUser(state.user);
+    renderUser(state.user);
     renderBalances(state.user);
     renderProfileStats(result.stats);
     showScreen('profile');
