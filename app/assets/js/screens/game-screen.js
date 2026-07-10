@@ -1,11 +1,11 @@
-import { state } from '../state.js?v=21';
-import { api } from '../api/client.js?v=21';
-import { toast } from '../components/toast.js?v=21';
-import { openSheet, closeSheet } from '../components/sheet.js?v=21';
-import { showScreen } from '../router.js?v=21';
-import { clearTimer, renderBalances } from '../ui.js?v=21';
-import { APP_CONFIG } from '../config.js?v=21';
-import { haptic } from '../telegram/telegram-app.js?v=21';
+import { state } from '../state.js?v=29';
+import { api } from '../api/client.js?v=29';
+import { toast } from '../components/toast.js?v=29';
+import { openSheet, closeSheet } from '../components/sheet.js?v=29';
+import { showScreen } from '../router.js?v=29';
+import { clearTimer, renderBalances } from '../ui.js?v=29';
+import { APP_CONFIG } from '../config.js?v=29';
+import { haptic } from '../telegram/telegram-app.js?v=29';
 
 export function initGameScreen(){
   document.getElementById('leaveGame')?.addEventListener('click', requestLeaveGame);
@@ -13,16 +13,27 @@ export function initGameScreen(){
 
 export function startGamePolling(gameId){
   state.timers.search = clearTimer(state.timers.search);
+  state.polling.search = false;
   state.timers.game = clearTimer(state.timers.game);
+  state.polling.game = false;
+  state.ignoredFinishedGameId = null;
   state.timers.game = setInterval(() => refreshGame(gameId), APP_CONFIG.gameIntervalMs);
   refreshGame(gameId);
 }
 
 async function refreshGame(gameId){
+  if (state.polling.game) return;
+  state.polling.game = true;
+
   try {
     const result = await api.gameState(gameId);
     if (result.user) { state.user = result.user; state.session = result.session || state.session; renderBalances(state.user); }
     if (!result.game) { state.timers.game = clearTimer(state.timers.game); state.activeGame = null; showScreen('home'); return; }
+
+    if (result.game.status === 'finished' && state.ignoredFinishedGameId && String(result.game.id) === String(state.ignoredFinishedGameId)) {
+      state.timers.game = clearTimer(state.timers.game);
+      return;
+    }
 
     state.activeGame = result.game;
     renderGame(result.game, result.me);
@@ -32,7 +43,9 @@ async function refreshGame(gameId){
       openResultSheet(result.game, result.me);
     }
   } catch (error) {
-    toast(error.message);
+    handleGameError(error);
+  } finally {
+    state.polling.game = false;
   }
 }
 
@@ -43,9 +56,11 @@ function renderGame(game, me){
   const players = document.getElementById('playersRow');
   const board = document.getElementById('gameBoard');
 
-  if (!meta || !turn || !timer || !players || !board) return;
+  if (!turn || !timer || !players || !board) return;
 
-  meta.textContent = `${game.room_name} · ${game.bet} коинов · ${game.board_size}×${game.board_size}`;
+  if (meta) {
+    meta.textContent = `${game.room_name} · ${game.bet} коинов · ${game.board_size}×${game.board_size}`;
+  }
   turn.textContent = game.status === 'finished' ? 'Игра завершена' : (String(game.turn) === String(me.id) ? 'Ваш ход' : 'Ход соперника');
   timer.textContent = game.status === 'active' ? `${game.time_left ?? 60} сек` : '—';
 
@@ -69,6 +84,9 @@ function renderGame(game, me){
 }
 
 async function makeMove(gameId, cell){
+  if (state.locks.move) return;
+  state.locks.move = true;
+
   try {
     haptic('light');
     const result = await api.makeMove(gameId, cell);
@@ -85,7 +103,9 @@ async function makeMove(gameId, cell){
       }
     }
   } catch (error) {
-    toast(error.message);
+    handleGameError(error);
+  } finally {
+    state.locks.move = false;
   }
 }
 
@@ -145,9 +165,19 @@ async function confirmLeaveGame(){
 }
 
 async function startSameSearchFromResult(){
+  if (state.locks.startSearch) return;
+  state.locks.startSearch = true;
+
+  const trigger = document.getElementById('newOpponent');
+  if (trigger) {
+    trigger.disabled = true;
+    trigger.textContent = 'Ищем…';
+  }
+
   const lastGame = state.activeGame;
 
   if (!lastGame) {
+    state.locks.startSearch = false;
     closeSheet();
     showScreen('home');
     return;
@@ -160,7 +190,12 @@ async function startSameSearchFromResult(){
   state.room = room;
   state.selectedBoardSize = boardSize;
   state.selectedBet = bet;
+  state.ignoredFinishedGameId = lastGame.id || null;
   state.activeGame = null;
+  state.timers.search = clearTimer(state.timers.search);
+  state.timers.game = clearTimer(state.timers.game);
+  state.polling.search = false;
+  state.polling.game = false;
 
   closeSheet();
 
@@ -174,27 +209,35 @@ async function startSameSearchFromResult(){
     }
 
     if (result.game) {
+      state.ignoredFinishedGameId = null;
       state.activeGame = result.game;
       showScreen('game');
       startGamePolling(result.game.id);
+      state.locks.startSearch = false;
       return;
     }
 
     showScreen('search');
     startResultSearchPolling();
+    state.locks.startSearch = false;
   } catch (error) {
-    toast(error.message);
+    handleGameError(error);
     showScreen('home');
+    state.locks.startSearch = false;
   }
 }
 
 function startResultSearchPolling(){
   state.timers.search = clearTimer(state.timers.search);
+  state.polling.search = false;
   state.timers.search = setInterval(checkResultSearch, APP_CONFIG.searchIntervalMs);
   checkResultSearch();
 }
 
 async function checkResultSearch(){
+  if (state.polling.search) return;
+  state.polling.search = true;
+
   try {
     const result = await api.gameState();
 
@@ -205,10 +248,12 @@ async function checkResultSearch(){
     }
 
     if (result.game && result.game.status === 'active') {
+      state.ignoredFinishedGameId = null;
       state.activeGame = result.game;
       state.timers.search = clearTimer(state.timers.search);
       showScreen('game');
       startGamePolling(result.game.id);
+      state.locks.startSearch = false;
       return;
     }
 
@@ -218,8 +263,23 @@ async function checkResultSearch(){
       toast('Поиск остановлен. Соперник не найден или связь прервалась.');
     }
   } catch (error) {
-    toast(error.message);
+    handleGameError(error);
+  } finally {
+    state.polling.search = false;
   }
+}
+
+function handleGameError(error){
+  if (error?.status === 429 || error?.retryable) {
+    const now = Date.now();
+    if (!state.rateLimitNoticeAt || now - state.rateLimitNoticeAt > 12000) {
+      toast('Сервер занят. Автоматически повторяем запрос.');
+      state.rateLimitNoticeAt = now;
+    }
+    return;
+  }
+
+  toast(error.message || 'Не удалось обновить игру.');
 }
 
 function openResultSheet(game, me){
