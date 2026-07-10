@@ -79,6 +79,26 @@ final class TelegramService
         }
     }
 
+    public function notifyUserAboutPaymentDecision(array $payment, string $decision): void
+    {
+        $chatId = trim((string)($payment['user_id'] ?? ''));
+        if ($chatId === '') {
+            return;
+        }
+
+        $text = $this->paymentUserDecisionText($payment, $decision);
+
+        try {
+            $this->api('sendMessage', [
+                'chat_id' => $chatId,
+                'text' => $text,
+                'disable_web_page_preview' => true,
+            ]);
+        } catch (Throwable $e) {
+            error_log('Mini Games World user payment notification failed for ' . $chatId . ': ' . $e->getMessage());
+        }
+    }
+
     private function paymentAdminNotificationText(array $payment): string
     {
         $id = (string)($payment['id'] ?? '');
@@ -115,6 +135,38 @@ final class TelegramService
             . "Открыть:\n/mgw_private_admin_7291_payment {$shortId}\n\n"
             . "Начислить:\n/mgw_private_admin_7291_payment_apply {$shortId}\n\n"
             . "Отклонить:\n/mgw_private_admin_7291_payment_reject {$shortId} причина";
+    }
+
+    private function paymentUserDecisionText(array $payment, string $decision): string
+    {
+        $shortId = $this->shortPaymentId((string)($payment['id'] ?? ''));
+        $room = (string)($payment['room'] ?? 'gold');
+        $roomLabel = $room === 'match' ? 'Match' : 'Gold';
+        $price = (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
+        $currency = (string)($payment['currency'] ?? 'RUB');
+        $coins = (int)($payment['coins'] ?? 0);
+
+        if ($decision === 'applied') {
+            return "✅ Пополнение подтверждено\n\n"
+                . "Заявка: {$shortId}\n"
+                . "Комната: {$roomLabel}\n"
+                . "Сумма: {$price} {$currency}\n"
+                . "Начислено: {$coins} коинов\n\n"
+                . "Баланс уже обновлён. Откройте Mini App и проверьте счёт.";
+        }
+
+        $reason = trim((string)($payment['reject_reason'] ?? ''));
+        if ($reason === '') {
+            $reason = 'отклонено администратором';
+        }
+
+        return "🚫 Заявка на пополнение отклонена\n\n"
+            . "Заявка: {$shortId}\n"
+            . "Комната: {$roomLabel}\n"
+            . "Сумма: {$price} {$currency}\n"
+            . "К зачислению было: {$coins} коинов\n"
+            . "Причина: {$reason}\n\n"
+            . "Баланс не изменён. При необходимости напишите в поддержку.";
     }
 
     private function shortPaymentId(string $id): string
