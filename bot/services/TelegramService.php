@@ -52,4 +52,75 @@ final class TelegramService
             ],
         ]);
     }
+
+    public function notifyAdminsAboutPayment(array $payment): void
+    {
+        $adminIds = $this->config['admin_ids'] ?? [];
+        if (!is_array($adminIds) || !$adminIds) {
+            return;
+        }
+
+        $text = $this->paymentAdminNotificationText($payment);
+        foreach ($adminIds as $adminId) {
+            $chatId = trim((string)$adminId);
+            if ($chatId === '') {
+                continue;
+            }
+
+            try {
+                $this->api('sendMessage', [
+                    'chat_id' => $chatId,
+                    'text' => $text,
+                    'disable_web_page_preview' => true,
+                ]);
+            } catch (Throwable $e) {
+                error_log('Mini Games World admin notification failed for ' . $chatId . ': ' . $e->getMessage());
+            }
+        }
+    }
+
+    private function paymentAdminNotificationText(array $payment): string
+    {
+        $id = (string)($payment['id'] ?? '');
+        $shortId = $this->shortPaymentId($id);
+        $room = (string)($payment['room'] ?? 'gold');
+        $roomLabel = $room === 'match' ? 'Match' : 'Gold';
+        $price = (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
+        $currency = (string)($payment['currency'] ?? 'RUB');
+        $coins = (int)($payment['coins'] ?? 0);
+        $username = (string)($payment['username'] ?? '');
+        $name = trim((string)($payment['first_name'] ?? '') . ' ' . (string)($payment['last_name'] ?? ''));
+        $userId = (string)($payment['user_id'] ?? '');
+        $createdAt = (string)($payment['created_at'] ?? '');
+
+        $playerParts = [];
+        if ($name !== '') {
+            $playerParts[] = $name;
+        }
+        if ($username !== '') {
+            $playerParts[] = '@' . ltrim($username, '@');
+        }
+        if (!$playerParts) {
+            $playerParts[] = 'Без имени';
+        }
+
+        return "💳 Новая заявка на пополнение\n\n"
+            . "Игрок: " . implode(' · ', $playerParts) . "\n"
+            . "Telegram ID: " . ($userId !== '' ? $userId : '—') . "\n"
+            . "Комната: {$roomLabel}\n"
+            . "Сумма: {$price} {$currency}\n"
+            . "К зачислению: {$coins} коинов\n"
+            . "Заявка: {$shortId}\n"
+            . "Создана: " . ($createdAt !== '' ? $createdAt : '—') . "\n\n"
+            . "Открыть:\n/mgw_private_admin_7291_payment {$shortId}\n\n"
+            . "Начислить:\n/mgw_private_admin_7291_payment_apply {$shortId}\n\n"
+            . "Отклонить:\n/mgw_private_admin_7291_payment_reject {$shortId} причина";
+    }
+
+    private function shortPaymentId(string $id): string
+    {
+        $id = preg_replace('/^(pay_)/', '', $id);
+        $id = strtoupper(substr((string)$id, 0, 8));
+        return $id !== '' ? $id : '-';
+    }
 }
