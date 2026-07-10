@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Serve the branded SVG when a browser requests the conventional favicon path.
+RewriteRule ^favicon\.ico$ favicon.svg [L]
+
 # Keep the Telegram Mini App, bot, blog and static files untouched.
 RewriteCond %{REQUEST_URI} ^/$
 RewriteRule ^$ landing.php [L]
