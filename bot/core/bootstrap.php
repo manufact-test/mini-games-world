@@ -37,6 +37,7 @@ require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/GameService.php';
 require_once __DIR__ . '/../services/StatsService.php';
 require_once __DIR__ . '/../services/HistoryService.php';
+require_once __DIR__ . '/../services/ShopCatalogService.php';
 require_once __DIR__ . '/../services/ShopService.php';
 require_once __DIR__ . '/../services/PaymentService.php';
 require_once __DIR__ . '/../services/SessionService.php';
