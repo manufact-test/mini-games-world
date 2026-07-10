@@ -61,6 +61,8 @@ final class TelegramService
         }
 
         $text = $this->paymentAdminNotificationText($payment);
+        $replyMarkup = $this->paymentAdminNotificationKeyboard($payment);
+
         foreach ($adminIds as $adminId) {
             $chatId = trim((string)$adminId);
             if ($chatId === '') {
@@ -71,6 +73,7 @@ final class TelegramService
                 $this->api('sendMessage', [
                     'chat_id' => $chatId,
                     'text' => $text,
+                    'reply_markup' => $replyMarkup,
                     'disable_web_page_preview' => true,
                 ]);
             } catch (Throwable $e) {
@@ -132,9 +135,24 @@ final class TelegramService
             . "К зачислению: {$coins} коинов\n"
             . "Заявка: {$shortId}\n"
             . "Создана: " . ($createdAt !== '' ? $createdAt : '—') . "\n\n"
-            . "Открыть:\n/mgw_private_admin_7291_payment {$shortId}\n\n"
-            . "Начислить:\n/mgw_private_admin_7291_payment_apply {$shortId}\n\n"
-            . "Отклонить:\n/mgw_private_admin_7291_payment_reject {$shortId} причина";
+            . "Выберите действие кнопками ниже.";
+    }
+
+    private function paymentAdminNotificationKeyboard(array $payment): array
+    {
+        $shortId = $this->shortPaymentId((string)($payment['id'] ?? ''));
+
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => '👁 Открыть заявку', 'callback_data' => 'admin:payment_open:' . $shortId],
+                ],
+                [
+                    ['text' => '✅ Начислить', 'callback_data' => 'admin:payment_apply:' . $shortId],
+                    ['text' => '🚫 Отклонить', 'callback_data' => 'admin:payment_reject_prompt:' . $shortId],
+                ],
+            ],
+        ];
     }
 
     private function paymentUserDecisionText(array $payment, string $decision): string
