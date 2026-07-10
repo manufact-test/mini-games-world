@@ -164,6 +164,7 @@ final class WebhookHandler
         }
 
         $db = new JsonDatabase($this->dataDir());
+        $playerNotification = null;
 
         if ($this->startsWithCommand($text, (string)($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done'))) {
             $message = $db->transaction(function (array &$data) use ($admin, $text, $fromId) {
@@ -174,13 +175,33 @@ final class WebhookHandler
                 return $admin->rejectOrder($data, $this->commandArgument($text), $fromId);
             });
         } elseif ($this->startsWithCommand($text, (string)($this->config['admin_payment_apply_command'] ?? '/mgw_private_admin_7291_payment_apply'))) {
-            $message = $db->transaction(function (array &$data) use ($admin, $text, $fromId) {
-                return $admin->applyPayment($data, $this->commandArgument($text), $fromId);
+            $argument = $this->commandArgument($text);
+            $result = $db->transaction(function (array &$data) use ($admin, $argument, $fromId) {
+                $before = $this->paymentForNotification($data, $argument);
+                $message = $admin->applyPayment($data, $argument, $fromId);
+                $after = $this->paymentForNotification($data, $argument);
+
+                return [
+                    'message' => $message,
+                    'player_notification' => $this->paymentDecisionNotification($before, $after, 'applied'),
+                ];
             });
+            $message = (string)($result['message'] ?? '');
+            $playerNotification = $result['player_notification'] ?? null;
         } elseif ($this->startsWithCommand($text, (string)($this->config['admin_payment_reject_command'] ?? '/mgw_private_admin_7291_payment_reject'))) {
-            $message = $db->transaction(function (array &$data) use ($admin, $text, $fromId) {
-                return $admin->rejectPayment($data, $this->commandArgument($text), $fromId);
+            $argument = $this->commandArgument($text);
+            $result = $db->transaction(function (array &$data) use ($admin, $argument, $fromId) {
+                $before = $this->paymentForNotification($data, $argument);
+                $message = $admin->rejectPayment($data, $argument, $fromId);
+                $after = $this->paymentForNotification($data, $argument);
+
+                return [
+                    'message' => $message,
+                    'player_notification' => $this->paymentDecisionNotification($before, $after, 'rejected'),
+                ];
             });
+            $message = (string)($result['message'] ?? '');
+            $playerNotification = $result['player_notification'] ?? null;
         } elseif ($this->startsWithCommand($text, (string)($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add'))) {
             $message = $db->transaction(function (array &$data) use ($admin, $text, $fromId) {
                 return $admin->addGoldToUser($data, $this->commandArgument($text), $fromId);
@@ -239,6 +260,15 @@ final class WebhookHandler
             'reply_markup' => $admin->keyboard(),
             'disable_web_page_preview' => true,
         ]);
+
+        if (is_array($playerNotification)
+            && isset($playerNotification['payment'], $playerNotification['decision'])
+            && is_array($playerNotification['payment'])) {
+            $this->telegram->notifyUserAboutPaymentDecision(
+                $playerNotification['payment'],
+                (string)$playerNotification['decision']
+            );
+        }
     }
 
     private function dataDir(): string
@@ -269,5 +299,75 @@ final class WebhookHandler
     {
         $parts = preg_split('/\s+/', trim($text), 2);
         return (string)($parts[0] ?? '');
+    }
+
+    private function paymentForNotification(array $data, string $argument): ?array
+    {
+        $query = $this->paymentQueryFromArgument($argument);
+        if ($query === '') {
+            return null;
+        }
+
+        $query = strtoupper($query);
+        foreach (($data['payments'] ?? []) as $payment) {
+            if (!is_array($payment)) {
+                continue;
+            }
+
+            $id = (string)($payment['id'] ?? '');
+            $short = $this->shortPaymentId($id);
+            $normalizedId = strtoupper($id);
+
+            if ($query === $normalizedId || $query === $short) {
+                return $payment;
+            }
+
+            if (strlen($query) >= 4 && str_starts_with($short, $query)) {
+                return $payment;
+            }
+        }
+
+        return null;
+    }
+
+    private function paymentDecisionNotification(?array $before, ?array $after, string $decision): ?array
+    {
+        if (!$after || (string)($after['user_id'] ?? '') === '') {
+            return null;
+        }
+
+        if ($decision === 'applied') {
+            $wasApplied = !empty($before['balance_applied']);
+            $isApplied = !empty($after['balance_applied']) && (string)($after['status'] ?? '') === 'paid';
+
+            if (!$wasApplied && $isApplied) {
+                return ['decision' => 'applied', 'payment' => $after];
+            }
+        }
+
+        if ($decision === 'rejected') {
+            $beforeStatus = (string)($before['status'] ?? '');
+            $afterStatus = (string)($after['status'] ?? '');
+            $wasApplied = !empty($before['balance_applied']);
+
+            if (!$wasApplied && $beforeStatus !== 'rejected' && $afterStatus === 'rejected') {
+                return ['decision' => 'rejected', 'payment' => $after];
+            }
+        }
+
+        return null;
+    }
+
+    private function paymentQueryFromArgument(string $argument): string
+    {
+        $parts = preg_split('/\s+/', trim($argument), 2);
+        return trim((string)($parts[0] ?? ''));
+    }
+
+    private function shortPaymentId(string $id): string
+    {
+        $id = preg_replace('/^(pay_)/', '', $id);
+        $id = strtoupper(substr((string)$id, 0, 8));
+        return $id !== '' ? $id : '-';
     }
 }
