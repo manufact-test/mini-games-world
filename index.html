@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090c14">
+  <meta name="description" content="Mini Games World — быстрые мини-игры, матчи с друзьями и соперниками прямо в Telegram.">
+  <title>Mini Games World — играй прямо в Telegram</title>
+  <style>
+    :root{
+      --bg:#090c14;
+      --panel:rgba(18,23,38,.72);
+      --panel-strong:#121726;
+      --text:#f7f8fc;
+      --muted:#aab1c5;
+      --line:rgba(255,255,255,.09);
+      --purple:#7c5cff;
+      --green:#2ee6a6;
+      --gold:#ffc857;
+      --pink:#fe1c69;
+      --orange:#ff5c01;
+      --radius:24px;
+      --shadow:0 24px 80px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      min-width:320px;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 8%,rgba(124,92,255,.18),transparent 30%),
+        radial-gradient(circle at 88% 28%,rgba(46,230,166,.11),transparent 28%),
+        radial-gradient(circle at 50% 88%,rgba(255,200,87,.10),transparent 32%),
+        var(--bg);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      overflow-x:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+    button{font:inherit}
+    .wrap{width:min(1160px,calc(100% - 40px));margin:0 auto}
+    .nav{
+      position:sticky;top:0;z-index:20;
+      backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+      background:rgba(9,12,20,.66);border-bottom:1px solid var(--line)
+    }
+    .nav-inner{height:76px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:-.02em}
+    .logo{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--purple),var(--pink) 55%,var(--orange));box-shadow:0 10px 30px rgba(124,92,255,.3);font-weight:900}
+    .nav-actions{display:flex;align-items:center;gap:12px}
+    .lang{display:flex;padding:4px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.035)}
+    .lang button{border:0;background:transparent;color:var(--muted);padding:8px 11px;border-radius:10px;cursor:pointer;font-weight:700}
+    .lang button.active{color:#fff;background:rgba(255,255,255,.10)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:15px;padding:14px 20px;font-weight:800;cursor:pointer;transition:.25s ease}
+    .btn:hover{transform:translateY(-2px);filter:brightness(1.08)}
+    .btn-primary{color:#fff;background:linear-gradient(100deg,var(--orange),var(--pink) 72%);box-shadow:0 14px 34px rgba(254,28,105,.2)}
+    .btn-secondary{border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff}
+    .hero{padding:92px 0 64px;position:relative}
+    .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:72px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(46,230,166,.22);background:rgba(46,230,166,.07);color:#8ff5d0;font-weight:700;font-size:14px}
+    h1{font-size:clamp(48px,7vw,82px);line-height:.98;letter-spacing:-.065em;margin:24px 0 22px;max-width:760px}
+    .gradient-text{background:linear-gradient(90deg,#fff 0%,#c8bcff 35%,#82f2cd 70%,#ffd98b 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .lead{font-size:clamp(18px,2vw,22px);line-height:1.6;color:var(--muted);max-width:650px;margin:0 0 34px}
+    .hero-actions{display:flex;gap:14px;flex-wrap:wrap}
+    .mini-note{margin-top:18px;color:#7f879c;font-size:14px}
+    .phone-wrap{position:relative;display:flex;justify-content:center}
+    .glow{position:absolute;inset:12% 8%;filter:blur(65px);background:linear-gradient(135deg,rgba(124,92,255,.38),rgba(46,230,166,.20),rgba(255,200,87,.20));border-radius:50%}
+    .phone{position:relative;width:min(390px,100%);border-radius:38px;padding:10px;background:linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,.04));box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.14);transform:rotate(2deg)}
+    .screen{border-radius:30px;overflow:hidden;background:#0d111c;padding:18px;min-height:650px;position:relative}
+    .screen:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 10% 0,rgba(124,92,255,.22),transparent 28%),radial-gradient(circle at 100% 38%,rgba(46,230,166,.12),transparent 32%);pointer-events:none}
+    .top{display:flex;justify-content:space-between;align-items:center;position:relative}.avatar{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--purple),var(--pink));display:grid;place-items:center;font-weight:900}.user{display:flex;align-items:center;gap:11px}.online{font-size:12px;color:#88e8c6}.dots{font-size:24px;color:#bec5d6}.app-title{position:relative;margin:34px 0 18px}.app-title h3{font-size:28px;margin:0 0 8px;letter-spacing:-.04em}.app-title p{margin:0;color:var(--muted);line-height:1.5}.switch{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:4px;background:#171c2b;border:1px solid var(--line);border-radius:14px;margin:18px 0}.switch span{padding:10px;text-align:center;border-radius:10px;font-size:13px;font-weight:800}.switch span:first-child{background:rgba(255,255,255,.09)}.room{position:relative;padding:18px;border:1px solid var(--line);background:rgba(20,26,42,.85);border-radius:20px}.room-head{display:flex;justify-content:space-between;align-items:center}.room h4{margin:0;font-size:20px}.coin{color:var(--gold);font-weight:900}.room p{color:var(--muted);line-height:1.5;font-size:14px}.play{margin-top:16px;width:100%;padding:13px;border-radius:13px;border:0;color:#fff;font-weight:900;background:linear-gradient(100deg,var(--orange),var(--pink))}.balance-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.balance{padding:14px;border-radius:17px;background:rgba(255,255,255,.045);border:1px solid var(--line)}.balance small{color:var(--muted)}.balance strong{display:block;font-size:22px;margin-top:7px}.game-card{position:relative;margin-top:12px;padding:16px;border-radius:18px;background:linear-gradient(145deg,rgba(124,92,255,.16),rgba(255,255,255,.035));border:1px solid var(--line)}.game-line{display:flex;align-items:center;gap:12px}.game-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#1b2133;font-size:21px}.game-card h5{font-size:16px;margin:0 0 4px}.game-card small{color:var(--muted)}
+    .section{padding:72px 0}.section-head{max-width:730px;margin-bottom:38px}.section h2{font-size:clamp(34px,5vw,56px);letter-spacing:-.05em;line-height:1.05;margin:0 0 16px}.section-head p{font-size:18px;line-height:1.65;color:var(--muted);margin:0}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{padding:26px;border-radius:var(--radius);background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025));border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.12)}.icon{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;font-size:24px;background:rgba(124,92,255,.15);border:1px solid rgba(124,92,255,.25)}.card:nth-child(2) .icon{background:rgba(46,230,166,.11);border-color:rgba(46,230,166,.22)}.card:nth-child(3) .icon{background:rgba(255,200,87,.11);border-color:rgba(255,200,87,.22)}.card h3{font-size:22px;margin:20px 0 10px}.card p{margin:0;color:var(--muted);line-height:1.65}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:step}.step{position:relative;padding:26px 26px 28px;border-top:1px solid var(--line)}.step:before{counter-increment:step;content:"0" counter(step);display:block;color:#777f94;font-weight:900;margin-bottom:22px}.step h3{font-size:22px;margin:0 0 10px}.step p{color:var(--muted);line-height:1.6;margin:0}.cta{margin:54px 0 80px;padding:44px;border-radius:32px;background:radial-gradient(circle at 10% 20%,rgba(124,92,255,.34),transparent 38%),radial-gradient(circle at 88% 80%,rgba(46,230,166,.18),transparent 36%),#121827;border:1px solid rgba(255,255,255,.11);display:flex;align-items:center;justify-content:space-between;gap:28px}.cta h2{margin:0 0 10px;font-size:clamp(30px,4vw,48px);letter-spacing:-.045em}.cta p{margin:0;color:var(--muted);font-size:17px}.footer{border-top:1px solid var(--line);padding:28px 0;color:#81899d}.footer-inner{display:flex;justify-content:space-between;gap:20px;align-items:center}.hidden-lang{display:none!important}
+    @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:52px}.hero{padding-top:70px}.phone{transform:none}.features,.steps{grid-template-columns:1fr}.cta{align-items:flex-start;flex-direction:column}.nav .btn-primary{display:none}}
+    @media(max-width:560px){.wrap{width:min(100% - 24px,1160px)}.nav-inner{height:66px}.brand span:last-child{display:none}.hero{padding:54px 0 34px}h1{font-size:48px}.lead{font-size:17px}.hero-actions{flex-direction:column}.hero-actions .btn{width:100%}.screen{min-height:590px}.section{padding:52px 0}.cta{padding:28px;margin-bottom:56px}.footer-inner{align-items:flex-start;flex-direction:column}.lang button{padding:7px 9px}}
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top" aria-label="Mini Games World">
+        <span class="logo">MG</span><span>Mini Games World</span>
+      </a>
+      <div class="nav-actions">
+        <div class="lang" aria-label="Language switcher">
+          <button class="active" type="button" data-lang-btn="ru">RU</button>
+          <button type="button" data-lang-btn="en">EN</button>
+        </div>
+        <a class="btn btn-primary" href="https://t.me/MiniGamesWorld_bot" target="_blank" rel="noopener noreferrer" data-i18n="navPlay">Играть</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow"><span>●</span><span data-i18n="eyebrow">Мини-игры прямо в Telegram</span></div>
+          <h1><span data-i18n="heroA">Играй быстро.</span><br><span class="gradient-text" data-i18n="heroB">Побеждай красиво.</span></h1>
+          <p class="lead" data-i18n="lead">Mini Games World — игровая площадка внутри Telegram. Находи соперников, приглашай друзей и играй в короткие матчи без лишней регистрации.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="https://t.me/MiniGamesWorld_bot" target="_blank" rel="noopener noreferrer" data-i18n="start">Запустить в Telegram</a>
+            <a class="btn btn-secondary" href="#how" data-i18n="howBtn">Как это работает</a>
+          </div>
+          <div class="mini-note" data-i18n="note">Нужен только Telegram. Открывается за несколько секунд.</div>
+        </div>
+
+        <div class="phone-wrap" aria-label="Предпросмотр приложения">
+          <div class="glow"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="top">
+                <div class="user"><div class="avatar">MG</div><div><strong>@player</strong><div class="online">● online</div></div></div>
+                <div class="dots">•••</div>
+              </div>
+              <div class="app-title"><h3 data-i18n="mockTitle">Мировые мини-игры</h3><p data-i18n="mockSub">Быстрые матчи, друзья и победы.</p></div>
+              <div class="switch"><span data-i18n="matchRoom">Матч-комната</span><span>Gold</span></div>
+              <div class="room">
+                <div class="room-head"><h4 data-i18n="warmup">Обычная игра</h4><span class="coin">10 coins</span></div>
+                <p data-i18n="roomText">Сыграй со случайным соперником или пригласи друга.</p>
+                <button class="play" type="button" data-i18n="playNow">Играть сейчас</button>
+              </div>
+              <div class="balance-grid"><div class="balance"><small>Match</small><strong>50</strong></div><div class="balance"><small>Gold</small><strong>120</strong></div></div>
+              <div class="game-card"><div class="game-line"><div class="game-icon">✕○</div><div><h5 data-i18n="tic">Крестики-нолики</h5><small data-i18n="oneVsOne">Матч 1 на 1</small></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="section-head"><h2 data-i18n="whyTitle">Одна кнопка до следующего матча</h2><p data-i18n="whyText">Никаких сложных установок и длинных анкет. Игра запускается внутри Telegram и сразу готова к матчу.</p></div>
+        <div class="features">
+          <article class="card"><div class="icon">⚡</div><h3 data-i18n="f1t">Быстрый старт</h3><p data-i18n="f1p">Открой бота, запусти Mini App и начинай играть. Профиль Telegram уже с тобой.</p></article>
+          <article class="card"><div class="icon">🎮</div><h3 data-i18n="f2t">Матчи с людьми</h3><p data-i18n="f2p">Играй со случайным соперником или создавай матч специально для друга.</p></article>
+          <article class="card"><div class="icon">🏆</div><h3 data-i18n="f3t">История побед</h3><p data-i18n="f3p">Следи за матчами, балансом и своей статистикой в едином игровом профиле.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="wrap">
+        <div class="section-head"><h2 data-i18n="stepsTitle">Начать проще, чем выбрать соперника</h2></div>
+        <div class="steps">
+          <article class="step"><h3 data-i18n="s1t">Открой Telegram-бота</h3><p data-i18n="s1p">Перейди в Mini Games World по кнопке на этой странице.</p></article>
+          <article class="step"><h3 data-i18n="s2t">Выбери комнату</h3><p data-i18n="s2p">Играй в обычной Match-комнате или переходи в Gold.</p></article>
+          <article class="step"><h3 data-i18n="s3t">Запусти матч</h3><p data-i18n="s3p">Найди соперника, пригласи друга и забери победу.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <section class="cta">
+        <div><h2 data-i18n="ctaTitle">Твой следующий матч уже рядом</h2><p data-i18n="ctaText">Открывай Mini Games World и присоединяйся к игре.</p></div>
+        <a class="btn btn-primary" href="https://t.me/MiniGamesWorld_bot" target="_blank" rel="noopener noreferrer" data-i18n="ctaBtn">Начать играть</a>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer"><div class="wrap footer-inner"><div>© <span id="year"></span> Mini Games World</div><div data-i18n="footer">Играй ответственно и с удовольствием.</div></div></footer>
+
+  <script>
+    const copy={
+      ru:{navPlay:'Играть',eyebrow:'Мини-игры прямо в Telegram',heroA:'Играй быстро.',heroB:'Побеждай красиво.',lead:'Mini Games World — игровая площадка внутри Telegram. Находи соперников, приглашай друзей и играй в короткие матчи без лишней регистрации.',start:'Запустить в Telegram',howBtn:'Как это работает',note:'Нужен только Telegram. Открывается за несколько секунд.',mockTitle:'Мировые мини-игры',mockSub:'Быстрые матчи, друзья и победы.',matchRoom:'Матч-комната',warmup:'Обычная игра',roomText:'Сыграй со случайным соперником или пригласи друга.',playNow:'Играть сейчас',tic:'Крестики-нолики',oneVsOne:'Матч 1 на 1',whyTitle:'Одна кнопка до следующего матча',whyText:'Никаких сложных установок и длинных анкет. Игра запускается внутри Telegram и сразу готова к матчу.',f1t:'Быстрый старт',f1p:'Открой бота, запусти Mini App и начинай играть. Профиль Telegram уже с тобой.',f2t:'Матчи с людьми',f2p:'Играй со случайным соперником или создавай матч специально для друга.',f3t:'История побед',f3p:'Следи за матчами, балансом и своей статистикой в едином игровом профиле.',stepsTitle:'Начать проще, чем выбрать соперника',s1t:'Открой Telegram-бота',s1p:'Перейди в Mini Games World по кнопке на этой странице.',s2t:'Выбери комнату',s2p:'Играй в обычной Match-комнате или переходи в Gold.',s3t:'Запусти матч',s3p:'Найди соперника, пригласи друга и забери победу.',ctaTitle:'Твой следующий матч уже рядом',ctaText:'Открывай Mini Games World и присоединяйся к игре.',ctaBtn:'Начать играть',footer:'Играй ответственно и с удовольствием.'},
+      en:{navPlay:'Play',eyebrow:'Mini games right inside Telegram',heroA:'Play fast.',heroB:'Win in style.',lead:'Mini Games World is a gaming space inside Telegram. Find opponents, invite friends and enjoy quick matches without extra registration.',start:'Launch in Telegram',howBtn:'How it works',note:'All you need is Telegram. Opens in seconds.',mockTitle:'Mini Games World',mockSub:'Quick matches, friends and wins.',matchRoom:'Match room',warmup:'Regular game',roomText:'Play against a random opponent or invite a friend.',playNow:'Play now',tic:'Tic-tac-toe',oneVsOne:'1 vs 1 match',whyTitle:'One tap away from your next match',whyText:'No complicated setup or long forms. The game opens inside Telegram and is instantly ready to play.',f1t:'Instant start',f1p:'Open the bot, launch the Mini App and start playing. Your Telegram profile is already with you.',f2t:'Real opponents',f2p:'Play against a random opponent or create a private match for a friend.',f3t:'Track your wins',f3p:'Follow your matches, balances and personal stats in one gaming profile.',stepsTitle:'Starting is easier than choosing an opponent',s1t:'Open the Telegram bot',s1p:'Enter Mini Games World using the button on this page.',s2t:'Choose a room',s2p:'Play in the regular Match room or switch to Gold.',s3t:'Start a match',s3p:'Find an opponent, invite a friend and claim the win.',ctaTitle:'Your next match is one tap away',ctaText:'Open Mini Games World and join the game.',ctaBtn:'Start playing',footer:'Play responsibly and enjoy the game.'}
+    };
+    function setLang(lang){
+      document.documentElement.lang=lang;
+      document.querySelectorAll('[data-i18n]').forEach(el=>{const key=el.dataset.i18n;if(copy[lang][key])el.textContent=copy[lang][key]});
+      document.querySelectorAll('[data-lang-btn]').forEach(btn=>btn.classList.toggle('active',btn.dataset.langBtn===lang));
+      document.title=lang==='ru'?'Mini Games World — играй прямо в Telegram':'Mini Games World — play right inside Telegram';
+      localStorage.setItem('mgw_lang',lang);
+    }
+    document.querySelectorAll('[data-lang-btn]').forEach(btn=>btn.addEventListener('click',()=>setLang(btn.dataset.langBtn)));
+    document.getElementById('year').textContent=new Date().getFullYear();
+    setLang(localStorage.getItem('mgw_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
+  </script>
+</body>
+</html>
