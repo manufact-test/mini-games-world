@@ -1,8 +1,25 @@
 RewriteEngine On
 
-# Serve the branded SVG when a browser requests the conventional favicon path.
-RewriteRule ^favicon\.ico$ favicon.svg [L]
+# Keep the Telegram Mini App and bot completely independent from the public site.
+RewriteRule ^(?:app|bot)(?:/|$) - [L]
 
-# Keep the Telegram Mini App, bot, blog and static files untouched.
-RewriteCond %{REQUEST_URI} ^/$
-RewriteRule ^$ landing-v9.php [L]
+# Do not expose the internal physical site directory as a second public URL.
+RewriteCond %{THE_REQUEST} \s/+site(?:[/?\s]) [NC]
+RewriteRule ^site(?:/|$) - [F,L]
+
+# Public root assets keep their existing URLs.
+RewriteRule ^favicon\.ico$ favicon.svg [L]
+RewriteRule ^legal\.css$ site/legal/legal.css [L]
+
+# Main landing page.
+RewriteRule ^$ site/landing/landing-v9.php [L]
+
+# Blog index, articles and their shared assets.
+RewriteRule ^blog/?$ site/blog/index.html [L]
+RewriteRule ^blog/(tic-tac-toe-online|telegram-mini-app-games|telegram-games-with-friends|upcoming-games|gold-room|bot-and-match-coins)/?$ site/blog/$1/index.html [L]
+RewriteRule ^blog/(.+)$ site/blog/$1 [L]
+
+# Legal pages keep their current public addresses.
+RewriteRule ^privacy/?$ site/legal/privacy/index.html [L]
+RewriteRule ^cookies/?$ site/legal/cookies/index.html [L]
+RewriteRule ^terms/?$ site/legal/terms/index.html [L]
