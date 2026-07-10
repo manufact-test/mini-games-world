@@ -26,6 +26,10 @@ final class WebhookHandler
             return;
         }
 
+        if ($this->handlePendingAdminPaymentReject((string)$chatId, (string)$fromId, $text)) {
+            return;
+        }
+
         if ($text === '/start' || $text === '/app' || $text === '/help' || $text === '') {
             $this->telegram->sendStartMessage($chatId);
             return;
@@ -69,11 +73,25 @@ final class WebhookHandler
 
         $action = substr($data, strlen('admin:'));
         $db = new JsonDatabase($this->dataDir());
+        $playerNotification = null;
 
         if ($action === 'fix_payout_done') {
             $text = $db->transaction(function (array &$dbData) use ($admin, $fromId) {
                 return $admin->fixLegacyPayoutDone($dbData, $fromId);
             });
+        } elseif (str_starts_with($action, 'payment_open:')) {
+            $paymentId = $this->callbackArgument($action);
+            $text = $db->readOnly(function (array $dbData) use ($admin, $paymentId) {
+                return $admin->paymentDetails($dbData, $paymentId);
+            });
+        } elseif (str_starts_with($action, 'payment_apply:')) {
+            $paymentId = $this->callbackArgument($action);
+            $result = $this->processPaymentDecision($db, $admin, $paymentId, $fromId, 'applied');
+            $text = (string)($result['message'] ?? '');
+            $playerNotification = $result['player_notification'] ?? null;
+        } elseif (str_starts_with($action, 'payment_reject_prompt:')) {
+            $paymentId = $this->callbackArgument($action);
+            $text = $this->setPendingPaymentReject($db, $paymentId, $fromId);
         } else {
             $text = $db->readOnly(function (array $dbData) use ($admin, $action) {
                 return match ($action) {
@@ -112,15 +130,16 @@ final class WebhookHandler
                     'disable_web_page_preview' => true,
                 ]);
             }
-            return;
+        } else {
+            $this->telegram->api('sendMessage', [
+                'chat_id' => $chatId,
+                'text' => $text,
+                'reply_markup' => $replyMarkup,
+                'disable_web_page_preview' => true,
+            ]);
         }
 
-        $this->telegram->api('sendMessage', [
-            'chat_id' => $chatId,
-            'text' => $text,
-            'reply_markup' => $replyMarkup,
-            'disable_web_page_preview' => true,
-        ]);
+        $this->sendPaymentDecisionNotification($playerNotification);
     }
 
     private function isAdminCommand(string $text): bool
@@ -176,30 +195,12 @@ final class WebhookHandler
             });
         } elseif ($this->startsWithCommand($text, (string)($this->config['admin_payment_apply_command'] ?? '/mgw_private_admin_7291_payment_apply'))) {
             $argument = $this->commandArgument($text);
-            $result = $db->transaction(function (array &$data) use ($admin, $argument, $fromId) {
-                $before = $this->paymentForNotification($data, $argument);
-                $message = $admin->applyPayment($data, $argument, $fromId);
-                $after = $this->paymentForNotification($data, $argument);
-
-                return [
-                    'message' => $message,
-                    'player_notification' => $this->paymentDecisionNotification($before, $after, 'applied'),
-                ];
-            });
+            $result = $this->processPaymentDecision($db, $admin, $argument, $fromId, 'applied');
             $message = (string)($result['message'] ?? '');
             $playerNotification = $result['player_notification'] ?? null;
         } elseif ($this->startsWithCommand($text, (string)($this->config['admin_payment_reject_command'] ?? '/mgw_private_admin_7291_payment_reject'))) {
             $argument = $this->commandArgument($text);
-            $result = $db->transaction(function (array &$data) use ($admin, $argument, $fromId) {
-                $before = $this->paymentForNotification($data, $argument);
-                $message = $admin->rejectPayment($data, $argument, $fromId);
-                $after = $this->paymentForNotification($data, $argument);
-
-                return [
-                    'message' => $message,
-                    'player_notification' => $this->paymentDecisionNotification($before, $after, 'rejected'),
-                ];
-            });
+            $result = $this->processPaymentDecision($db, $admin, $argument, $fromId, 'rejected');
             $message = (string)($result['message'] ?? '');
             $playerNotification = $result['player_notification'] ?? null;
         } elseif ($this->startsWithCommand($text, (string)($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add'))) {
@@ -261,6 +262,136 @@ final class WebhookHandler
             'disable_web_page_preview' => true,
         ]);
 
+        $this->sendPaymentDecisionNotification($playerNotification);
+    }
+
+    private function handlePendingAdminPaymentReject(string $chatId, string $fromId, string $text): bool
+    {
+        if ($text === '') {
+            return false;
+        }
+
+        if (str_starts_with($text, '/') && $text !== '/cancel') {
+            return false;
+        }
+
+        $admin = new AdminService($this->config);
+        if (!$admin->isAdmin($fromId)) {
+            return false;
+        }
+
+        $db = new JsonDatabase($this->dataDir());
+        $result = $db->transaction(function (array &$data) use ($admin, $fromId, $text) {
+            $pending = $data['system']['admin_pending_actions'][$fromId] ?? null;
+            if (!is_array($pending) || (string)($pending['type'] ?? '') !== 'payment_reject') {
+                return null;
+            }
+
+            $createdAt = strtotime((string)($pending['created_at'] ?? '')) ?: 0;
+            if ($createdAt > 0 && time() - $createdAt > 1800) {
+                unset($data['system']['admin_pending_actions'][$fromId]);
+                return [
+                    'message' => "⏱ Отклонение заявки отменено\n\nПрошло больше 30 минут. Нажмите «Отклонить» ещё раз.",
+                    'player_notification' => null,
+                ];
+            }
+
+            if ($text === '/cancel') {
+                unset($data['system']['admin_pending_actions'][$fromId]);
+                return [
+                    'message' => "Отклонение заявки отменено.",
+                    'player_notification' => null,
+                ];
+            }
+
+            $paymentId = trim((string)($pending['payment_id'] ?? ''));
+            unset($data['system']['admin_pending_actions'][$fromId]);
+
+            if ($paymentId === '') {
+                return [
+                    'message' => "⚠️ Не найден ID заявки для отклонения. Откройте список платежей и повторите действие.",
+                    'player_notification' => null,
+                ];
+            }
+
+            $argument = trim($paymentId . ' ' . $text);
+            $before = $this->paymentForNotification($data, $argument);
+            $message = $admin->rejectPayment($data, $argument, $fromId);
+            $after = $this->paymentForNotification($data, $argument);
+
+            return [
+                'message' => $message,
+                'player_notification' => $this->paymentDecisionNotification($before, $after, 'rejected'),
+            ];
+        });
+
+        if (!is_array($result)) {
+            return false;
+        }
+
+        $this->telegram->api('sendMessage', [
+            'chat_id' => $chatId,
+            'text' => (string)($result['message'] ?? ''),
+            'reply_markup' => $admin->keyboard(),
+            'disable_web_page_preview' => true,
+        ]);
+
+        $this->sendPaymentDecisionNotification($result['player_notification'] ?? null);
+
+        return true;
+    }
+
+    private function setPendingPaymentReject(JsonDatabase $db, string $paymentId, string $adminId): string
+    {
+        $paymentId = trim($paymentId);
+        if ($paymentId === '') {
+            return "⚠️ Не найден ID заявки для отклонения.";
+        }
+
+        return $db->transaction(function (array &$data) use ($paymentId, $adminId) {
+            if (!$this->paymentForNotification($data, $paymentId)) {
+                return "⚠️ Заявка не найдена: {$paymentId}";
+            }
+
+            if (!isset($data['system']) || !is_array($data['system'])) {
+                $data['system'] = [];
+            }
+            if (!isset($data['system']['admin_pending_actions']) || !is_array($data['system']['admin_pending_actions'])) {
+                $data['system']['admin_pending_actions'] = [];
+            }
+
+            $data['system']['admin_pending_actions'][$adminId] = [
+                'type' => 'payment_reject',
+                'payment_id' => $paymentId,
+                'created_at' => now_iso(),
+            ];
+
+            return "🚫 Отклонение заявки {$paymentId}\n\nВведите следующим сообщением причину отклонения.\n\nНапример:\nоплата не найдена\n\nЧтобы отменить действие, отправьте /cancel";
+        });
+    }
+
+    private function processPaymentDecision(JsonDatabase $db, AdminService $admin, string $argument, string $fromId, string $decision): array
+    {
+        return $db->transaction(function (array &$data) use ($admin, $argument, $fromId, $decision) {
+            $before = $this->paymentForNotification($data, $argument);
+
+            if ($decision === 'applied') {
+                $message = $admin->applyPayment($data, $argument, $fromId);
+            } else {
+                $message = $admin->rejectPayment($data, $argument, $fromId);
+            }
+
+            $after = $this->paymentForNotification($data, $argument);
+
+            return [
+                'message' => $message,
+                'player_notification' => $this->paymentDecisionNotification($before, $after, $decision),
+            ];
+        });
+    }
+
+    private function sendPaymentDecisionNotification(mixed $playerNotification): void
+    {
         if (is_array($playerNotification)
             && isset($playerNotification['payment'], $playerNotification['decision'])
             && is_array($playerNotification['payment'])) {
@@ -299,6 +430,12 @@ final class WebhookHandler
     {
         $parts = preg_split('/\s+/', trim($text), 2);
         return (string)($parts[0] ?? '');
+    }
+
+    private function callbackArgument(string $action): string
+    {
+        $parts = explode(':', $action, 2);
+        return trim((string)($parts[1] ?? ''));
     }
 
     private function paymentForNotification(array $data, string $argument): ?array
