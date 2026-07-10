@@ -3,20 +3,31 @@ declare(strict_types=1);
 
 final class ShopService
 {
-    public function __construct(private array $config, private UserService $users) {}
+    private ShopCatalogService $catalog;
+
+    public function __construct(private array $config, private UserService $users, ?ShopCatalogService $catalog = null)
+    {
+        $this->catalog = $catalog ?? new ShopCatalogService($config);
+    }
 
     public function status(array $user): array
     {
-        $min = (int)($this->config['shop_min_order'] ?? 1000);
+        $min = $this->catalog->minGoldCost();
         $available = $this->users->goldShopAvailable($user);
+        $catalog = $this->catalog->publicCatalog();
+
         return [
             'balance_gold' => (int)($user['balance_gold'] ?? 0),
             'available' => $available,
             'min_order' => $min,
             'wagered_total' => (int)($user['gold_wagered_total'] ?? 0),
             'spent_total' => (int)($user['gold_shop_spent_total'] ?? 0),
-            'items' => $this->items(),
-            'can_order' => $available >= $min,
+            'catalog_version' => (int)($catalog['version'] ?? 1),
+            'catalog_updated_at' => (string)($catalog['updated_at'] ?? ''),
+            'catalog_currency' => (string)($catalog['currency'] ?? 'GOLD'),
+            'countries' => $catalog['countries'] ?? [],
+            'items' => $catalog['items'] ?? [],
+            'can_order' => $available >= $min && !empty($catalog['items']),
         ];
     }
 
@@ -24,7 +35,7 @@ final class ShopService
     {
         $country = clean_string($country, 40);
         $provider = clean_string($provider, 80);
-        $min = (int)($this->config['shop_min_order'] ?? 1000);
+        $min = $this->catalog->minGoldCost();
         if ($amount < $min) {
             throw new RuntimeException('Минимальная сумма заказа — ' . $min . ' коинов.');
         }
@@ -74,15 +85,5 @@ final class ShopService
             'created_at' => now_iso(),
         ];
         return $order;
-    }
-
-    private function items(): array
-    {
-        return [
-            ['country' => 'Россия', 'provider' => 'Ozon', 'min_amount' => (int)($this->config['shop_min_order'] ?? 1000)],
-            ['country' => 'Россия', 'provider' => 'Wildberries', 'min_amount' => (int)($this->config['shop_min_order'] ?? 1000)],
-            ['country' => 'Беларусь', 'provider' => 'Wildberries', 'min_amount' => (int)($this->config['shop_min_order'] ?? 1000)],
-            ['country' => 'Мир', 'provider' => 'AliExpress', 'min_amount' => (int)($this->config['shop_min_order'] ?? 1000)],
-        ];
     }
 }
