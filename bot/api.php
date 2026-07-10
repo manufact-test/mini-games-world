@@ -2,6 +2,58 @@
 declare(strict_types=1);
 require __DIR__ . '/core/bootstrap.php';
 
+function mgw_randomize_first_turn_if_needed(array &$data, array $game): array
+{
+    if (($game['status'] ?? '') !== 'active') {
+        return $game;
+    }
+
+    $gameId = (string)($game['id'] ?? '');
+    if ($gameId === '' || !isset($data['games'][$gameId]) || !is_array($data['games'][$gameId])) {
+        return $game;
+    }
+
+    $stored =& $data['games'][$gameId];
+    if (!empty($stored['symbols_randomized'])) {
+        return $stored;
+    }
+
+    $boardSize = (int)($stored['board_size'] ?? 3);
+    $emptyBoard = str_repeat('-', max(1, $boardSize * $boardSize));
+    if ((string)($stored['board'] ?? '') !== $emptyBoard) {
+        $stored['symbols_randomized'] = true;
+        return $stored;
+    }
+
+    $playerIds = array_values(array_map('strval', $stored['player_ids'] ?? []));
+    if (count($playerIds) < 2) {
+        $stored['symbols_randomized'] = true;
+        return $stored;
+    }
+
+    [$xPlayerId, $oPlayerId] = random_int(0, 1) === 0
+        ? [$playerIds[0], $playerIds[1]]
+        : [$playerIds[1], $playerIds[0]];
+
+    $now = now_iso();
+    $stored['symbols'] = [$xPlayerId => 'X', $oPlayerId => 'O'];
+    $stored['turn'] = $xPlayerId;
+    $stored['turn_started_at'] = $now;
+    $stored['updated_at'] = $now;
+    $stored['symbols_randomized'] = true;
+
+    if (!empty($stored['is_bot_game'])) {
+        $botId = (string)($stored['bot_id'] ?? '');
+        if ($botId !== '' && $xPlayerId === $botId) {
+            $stored['bot_move_after_at'] = gmdate('c', time() + 1);
+        } else {
+            unset($stored['bot_move_after_at']);
+        }
+    }
+
+    return $stored;
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
@@ -138,6 +190,13 @@ try {
                 $bet = (int)($payload['bet'] ?? 10);
                 $boardSize = (int)($payload['boardSize'] ?? 3);
                 $search = $games->startSearch($data, $user, $room, $bet, $boardSize);
+                if (!empty($search['game']['id'])) {
+                    $gameId = (string)$search['game']['id'];
+                    if (isset($data['games'][$gameId])) {
+                        $randomizedGame = mgw_randomize_first_turn_if_needed($data, $data['games'][$gameId]);
+                        $search['game'] = $games->publicGame($randomizedGame, $userId);
+                    }
+                }
 
                 return $search + [
                     'user' => $users->publicUser($user),
@@ -186,6 +245,10 @@ try {
 
                 if ($game && ($game['status'] ?? '') === 'finished') {
                     $sessions->releaseIfCurrent($user, $sessionId);
+                }
+
+                if ($game) {
+                    $game = mgw_randomize_first_turn_if_needed($data, $game);
                 }
 
                 return [
