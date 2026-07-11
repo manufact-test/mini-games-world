@@ -91,13 +91,18 @@ final class NotificationService
         }
 
         $games = max(0, (int)($bonus['qualifying_games'] ?? 0));
+        $qualification = (string)($bonus['qualification'] ?? 'activity');
+        $message = $qualification === 'first_grant'
+            ? "+{$amount} коинов в Матч-комнату — ваше первое еженедельное начисление."
+            : "+{$amount} коинов в Матч-комнату за игровую активность. За неделю завершено игр: {$games}.";
+
         $notification = [
             'id' => make_id('notification'),
             'event_key' => $eventKey,
             'user_id' => $userId,
             'type' => 'weekly_match_bonus',
             'title' => 'Еженедельные коины',
-            'message' => "+{$amount} коинов в Матч-комнату за активность. За квалификационную неделю завершено матчей: {$games}.",
+            'message' => $message,
             'tone' => 'success',
             'cycle_key' => $cycleKey,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
