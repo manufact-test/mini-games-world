@@ -1,11 +1,11 @@
-window.__MGW_BUILD__ = 'v40-account-hub';
+window.__MGW_BUILD__ = 'v41-notification-alerts';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=38';
 import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { hidePreloader } from './components/preloader.js?v=27';
 import { initSheet } from './components/sheet.js?v=27';
-import { toast } from './components/toast.js?v=27';
+import { toast } from './components/toast.js?v=41';
 import { initAccountShortcuts } from './components/account-shortcuts.js?v=40';
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
@@ -13,7 +13,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=34';
-import { initNotificationsScreen } from './screens/notifications-screen.js?v=38';
+import { initNotificationsScreen } from './screens/notifications-screen.js?v=41';
 import { initSearchScreen } from './screens/search-screen.js?v=27';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=27';
 import { initProfileScreen } from './screens/profile-screen.js?v=40';
