@@ -13,7 +13,8 @@ export function renderCheckersSurface({ game, me, container, onAction }){
   const viewerSide = String(game?.viewer_side || sideForPlayer(game, me?.id));
   const board = Array.from({ length:64 }, (_, index) => String(game?.board?.[index] || ''));
   const legalMoves = myTurn && Array.isArray(game?.legal_moves) ? game.legal_moves : [];
-  const forcedPiece = Number.isInteger(Number(game?.forced_piece)) ? Number(game.forced_piece) : null;
+  const hasForcedPiece = game?.forced_piece !== null && game?.forced_piece !== undefined && Number.isInteger(Number(game.forced_piece));
+  const forcedPiece = hasForcedPiece ? Number(game.forced_piece) : null;
   const captureRequired = Boolean(game?.capture_required);
   const pendingCaptures = new Set((game?.pending_captures || []).map(Number));
 
@@ -33,7 +34,8 @@ export function renderCheckersSurface({ game, me, container, onAction }){
   const freshMove = Boolean(moveKey && moveKey !== lastAnimatedMoveKey);
   const lastMove = game?.last_move || null;
   const lastCaptured = new Set((game?.last_captured_cells || []).map(Number));
-  const lastPromotion = Number.isInteger(Number(game?.last_promotion)) ? Number(game.last_promotion) : -1;
+  const hasLastPromotion = game?.last_promotion !== null && game?.last_promotion !== undefined && Number.isInteger(Number(game.last_promotion));
+  const lastPromotion = hasLastPromotion ? Number(game.last_promotion) : -1;
 
   const myPieces = viewerSide === 'white' ? Number(game?.white_pieces ?? 0) : Number(game?.black_pieces ?? 0);
   const enemyPieces = viewerSide === 'white' ? Number(game?.black_pieces ?? 0) : Number(game?.white_pieces ?? 0);
