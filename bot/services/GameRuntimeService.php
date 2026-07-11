@@ -43,7 +43,9 @@ final class GameRuntimeService
         $game = $this->withIsolatedQueue(
             $db,
             $gameType,
-            fn(): ?array => $this->legacyGame->maybeCreateBotGameForSearchingUser($db, $user)
+            function () use (&$db, &$user): ?array {
+                return $this->legacyGame->maybeCreateBotGameForSearchingUser($db, $user);
+            }
         );
 
         if (is_array($game)) {
@@ -87,7 +89,9 @@ final class GameRuntimeService
         $result = $this->withIsolatedQueue(
             $db,
             $gameType,
-            fn(): array => $this->legacyGame->startSearch($db, $user, $room, $bet, $boardSize),
+            function () use (&$db, &$user, $room, $bet, $boardSize): array {
+                return $this->legacyGame->startSearch($db, $user, $room, $bet, $boardSize);
+            },
             $userId
         );
 
