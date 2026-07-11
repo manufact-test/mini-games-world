@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=31';
+import { api } from '../api/client.js?v=34';
 import { state } from '../state.js?v=27';
 import { openSheet } from '../components/sheet.js?v=27';
 import { toast } from '../components/toast.js?v=27';
@@ -118,6 +118,14 @@ function renderStore(){
       <div class="store-note">
         ${escapeHtml(storeNote)}
       </div>
+
+      <button class="store-orders-entry" data-open-store-orders type="button">
+        <div>
+          <strong>Мои заявки</strong>
+          <span>Статусы, причины отклонения и возвраты Gold</span>
+        </div>
+        <b>›</b>
+      </button>
 
       ${items.length ? renderCatalog(countries, filteredItems, selectedItem, selectedDenomination, available) : renderEmptyCatalog()}
     </div>
