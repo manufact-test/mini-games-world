@@ -20,16 +20,16 @@ This avoids depending on the server operating-system timezone and remains correc
 
 Safety rules:
 
-- `+50` coins to the Match-room balance by default.
-- The first weekly grant is available once for a player who has not received it yet.
-- After the first grant, at least `3` completed games are required in the closed qualifying window.
+- A player receives one welcome grant of `+50` coins to the Match-room balance on first real app activity. The cron does not create welcome grants for users who have not opened the app.
+- Weekly bonus: `+50` coins to the Match-room balance by default.
+- After the welcome grant, at least `3` completed games are required in the closed qualifying window.
 - Any completed Mini Games World game counts: any game type, board size, and room.
 - Matchmaking/search without a completed game does not count.
 - Qualifying window: Monday 12:00 inclusive to the next Monday 12:00 exclusive.
-- One award per user and cycle key.
-- Browser development users do not receive the bonus.
-- The first production cycle starts at `2026-07-13 12:00:00 Europe/Warsaw` by default, so no older weeks are paid retroactively.
-- Mini App requests also perform a per-user catch-up, so a temporary cron failure does not permanently lose an earned bonus.
+- One weekly award per user and cycle key.
+- Browser development users do not receive these grants.
+- The first production weekly cycle starts at `2026-07-13 12:00:00 Europe/Warsaw` by default, so no older weeks are paid retroactively.
+- Mini App requests also perform a per-user weekly catch-up, so a temporary cron failure does not permanently lose an earned bonus.
 
 The HTTP fallback is protected by `setup_secret`:
 
