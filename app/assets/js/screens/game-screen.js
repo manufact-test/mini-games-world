@@ -1,17 +1,17 @@
-import { state } from '../state.js?v=27';
+import { state } from '../state.js?v=21';
 import { api } from '../api/client.js?v=47';
-import { toast } from '../components/toast.js?v=41';
-import { openSheet, closeSheet } from '../components/sheet.js?v=27';
-import { showScreen } from '../router.js?v=27';
-import { clearTimer, renderBalances } from '../ui.js?v=27';
-import { APP_CONFIG } from '../config.js?v=38';
-import { haptic } from '../telegram/telegram-app.js?v=27';
+import { toast } from '../components/toast.js?v=21';
+import { openSheet, closeSheet } from '../components/sheet.js?v=21';
+import { showScreen } from '../router.js?v=21';
+import { clearTimer, renderBalances } from '../ui.js?v=21';
+import { APP_CONFIG } from '../config.js?v=21';
+import { haptic } from '../telegram/telegram-app.js?v=21';
 import {
   gameMetaText,
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=51';
+} from '../games/game-router.js?v=52';
 
 const weeklyProgressNotifiedGames = new Set();
 
@@ -54,7 +54,6 @@ function renderGame(game, me){
 
   if (!meta || !turn || !timer || !players || !surface) return;
 
-  state.selectedGame = gameTypeOf(game);
   meta.textContent = gameMetaText(game);
   turn.textContent = game.status === 'finished' ? 'Игра завершена' : (String(game.turn) === String(me.id) ? 'Ваш ход' : 'Ход соперника');
   timer.textContent = game.status === 'active' ? `${game.time_left ?? 60} сек` : '—';
@@ -83,7 +82,6 @@ async function applyGameAction(gameId, gameAction){
 
     if (result.game) {
       state.activeGame = result.game;
-      state.selectedGame = gameTypeOf(result.game);
       renderGame(result.game, result.me);
 
       if (result.game.status === 'finished') {
@@ -138,7 +136,6 @@ async function confirmLeaveGame(){
 
     if (result.game) {
       state.activeGame = result.game;
-      state.selectedGame = gameTypeOf(result.game);
       renderGame(result.game, result.me);
       state.timers.game = clearTimer(state.timers.game);
       openResultSheet(result.game, result.me);
@@ -167,7 +164,6 @@ async function startSameSearchFromResult(){
   const gameType = gameTypeOf(lastGame);
 
   state.room = room;
-  state.selectedGame = gameType;
   if (gameType === 'tictactoe') {
     state.selectedBoardSize = boardSize;
   } else if (gameType === 'four_in_a_row') {
@@ -189,7 +185,6 @@ async function startSameSearchFromResult(){
 
     if (result.game) {
       state.activeGame = result.game;
-      state.selectedGame = gameTypeOf(result.game);
       showScreen('game');
       startGamePolling(result.game.id);
       return;
@@ -221,7 +216,6 @@ async function checkResultSearch(){
 
     if (result.game && result.game.status === 'active') {
       state.activeGame = result.game;
-      state.selectedGame = gameTypeOf(result.game);
       state.timers.search = clearTimer(state.timers.search);
       showScreen('game');
       startGamePolling(result.game.id);
