@@ -14,6 +14,12 @@ final class AdminPaymentRejectGuard
     {
         $shopOrderGuard = new AdminShopOrderNotificationGuard($this->telegram, $this->config);
         if ($shopOrderGuard->handle($update)) {
+            // A shop action means the admin has left any unfinished payment-reject
+            // input mode. Clear only that pending mode; the payment itself is untouched.
+            $adminId = $this->adminIdFromUpdate($update);
+            if ($adminId !== '' && $this->isAdmin($adminId) && $this->pendingReject($adminId)) {
+                $this->clearPendingReject($adminId);
+            }
             return true;
         }
 
@@ -166,6 +172,18 @@ final class AdminPaymentRejectGuard
                 ],
             ],
         ];
+    }
+
+    private function adminIdFromUpdate(array $update): string
+    {
+        if (!empty($update['callback_query']) && is_array($update['callback_query'])) {
+            return (string)($update['callback_query']['from']['id'] ?? '');
+        }
+
+        $message = $update['message'] ?? $update['edited_message'] ?? null;
+        return is_array($message)
+            ? (string)($message['from']['id'] ?? $message['chat']['id'] ?? '')
+            : '';
     }
 
     private function isAdmin(string $telegramId): bool
