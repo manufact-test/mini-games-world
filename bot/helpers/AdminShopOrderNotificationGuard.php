@@ -16,6 +16,8 @@ final class AdminShopOrderNotificationGuard
      */
     public function handle(array $update): bool
     {
+        $this->clearPendingShopRejectWhenNavigatingAway($update);
+
         if ($this->handleDirectDecisionCommand($update)) {
             return true;
         }
@@ -111,11 +113,6 @@ final class AdminShopOrderNotificationGuard
             $after = $this->findOrderByQuery($stored, $query);
             $transition = $before && $after ? $this->decisionTransition($before, $after) : null;
 
-            if ($transition !== null) {
-                $notifications = new NotificationService();
-                $notifications->addShopOrderDecision($stored, $after, $transition);
-            }
-
             return [
                 'message' => $adminMessage,
                 'order' => $after,
@@ -131,10 +128,61 @@ final class AdminShopOrderNotificationGuard
         ]);
 
         if (is_array($result['order'] ?? null) && is_string($result['decision'] ?? null)) {
+            $this->persistInAppNotification($result['order'], $result['decision']);
             $this->sendTelegramNotification($result['order'], $result['decision']);
         }
 
         return true;
+    }
+
+    private function clearPendingShopRejectWhenNavigatingAway(array $update): void
+    {
+        $callback = $update['callback_query'] ?? null;
+        if (is_array($callback)) {
+            $fromId = (string)($callback['from']['id'] ?? '');
+            $data = trim((string)($callback['data'] ?? ''));
+
+            if ($fromId === '' || !$this->isAdmin($fromId)) {
+                return;
+            }
+
+            $leavesPrompt = $data === 'admin:orders'
+                || str_starts_with($data, 'admin:order_open:')
+                || str_starts_with($data, 'admin:order_done:');
+
+            if ($leavesPrompt) {
+                $this->clearPendingShopReject($fromId);
+            }
+            return;
+        }
+
+        $message = $update['message'] ?? $update['edited_message'] ?? null;
+        if (!is_array($message)) {
+            return;
+        }
+
+        $fromId = (string)($message['from']['id'] ?? $message['chat']['id'] ?? '');
+        $text = trim((string)($message['text'] ?? ''));
+        if ($fromId === '' || $text === '' || !$this->isAdmin($fromId)) {
+            return;
+        }
+
+        $doneCommand = (string)($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done');
+        $rejectCommand = (string)($this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject');
+        if ($this->startsWithCommand($text, $doneCommand) || $this->startsWithCommand($text, $rejectCommand)) {
+            $this->clearPendingShopReject($fromId);
+        }
+    }
+
+    private function clearPendingShopReject(string $adminId): void
+    {
+        $db = new JsonDatabase($this->dataDir());
+        $db->transaction(function (array &$stored) use ($adminId): void {
+            $pending = $stored['system']['admin_pending_actions'][$adminId] ?? null;
+            if (is_array($pending) && (string)($pending['type'] ?? '') === 'shop_order_reject') {
+                unset($stored['system']['admin_pending_actions'][$adminId]);
+            }
+        });
     }
 
     private function decisionSnapshot(array $update): ?array
