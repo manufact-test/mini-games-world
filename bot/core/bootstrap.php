@@ -34,6 +34,7 @@ require_once __DIR__ . '/../helpers/validators.php';
 require_once __DIR__ . '/../storage/JsonDatabase.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
+require_once __DIR__ . '/../services/GameCatalogService.php';
 require_once __DIR__ . '/../services/GameService.php';
 require_once __DIR__ . '/../services/StatsService.php';
 require_once __DIR__ . '/../services/HistoryService.php';
