@@ -76,6 +76,20 @@ final class AuthService
             return null;
         }
 
+        // Telegram signs auth_date together with the rest of initData. A valid
+        // signature alone is not enough: without an age check an old captured
+        // initData string could be replayed indefinitely.
+        $authDate = (int)($data['auth_date'] ?? 0);
+        $maxAge = max(60, (int)($this->config['telegram_init_data_max_age_sec'] ?? 86400));
+        $clockSkew = max(0, (int)($this->config['telegram_init_data_clock_skew_sec'] ?? 300));
+        $now = time();
+
+        if ($authDate <= 0
+            || $authDate > $now + $clockSkew
+            || $now - $authDate > $maxAge) {
+            return null;
+        }
+
         $user = json_decode((string)$data['user'], true);
         return is_array($user) ? $user : null;
     }
