@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/AdminShopOrderUiGuard.php';
 
 final class AdminPaymentRejectGuard
 {
@@ -11,6 +12,11 @@ final class AdminPaymentRejectGuard
      */
     public function handle(array $update): bool
     {
+        $shopOrderGuard = new AdminShopOrderUiGuard($this->telegram, $this->config);
+        if ($shopOrderGuard->handle($update)) {
+            return true;
+        }
+
         if (!empty($update['callback_query']) && is_array($update['callback_query'])) {
             return $this->handleCallback($update['callback_query']);
         }
