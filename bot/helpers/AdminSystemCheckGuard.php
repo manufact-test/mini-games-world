@@ -87,7 +87,8 @@ final class AdminSystemCheckGuard
             $base = (new AdminService($this->config))->systemCheck($data);
             return $base
                 . "\n\n" . $this->paymentAudit($data)
-                . "\n\n" . $this->shopAudit($data);
+                . "\n\n" . $this->shopAudit($data)
+                . "\n\n" . $this->weeklyEconomyAudit($data);
         });
     }
 
@@ -436,6 +437,120 @@ final class AdminSystemCheckGuard
         else $lines[] = '✅ критичных ошибок не найдено';
 
         $lines[] = "\nПредупреждения магазина:";
+        if ($warnings) foreach (array_slice(array_values(array_unique($warnings)), 0, 14) as $warning) $lines[] = "⚠️ {$warning}";
+        else $lines[] = '✅ предупреждений нет';
+
+        return implode("\n", $lines);
+    }
+
+    private function weeklyEconomyAudit(array $data): string
+    {
+        $users = is_array($data['users'] ?? null) ? $data['users'] : [];
+        $transactions = is_array($data['transactions'] ?? null) ? $data['transactions'] : [];
+        $notifications = is_array($data['notifications'] ?? null) ? $data['notifications'] : [];
+        $expectedAmount = max(1, (int)($this->config['weekly_match_bonus_amount'] ?? 50));
+
+        $issues = [];
+        $warnings = [];
+        $welcomeTransactions = [];
+        $weeklyTransactions = [];
+        $notificationKeys = [];
+
+        foreach ($transactions as $index => $tx) {
+            if (!is_array($tx)) continue;
+
+            $category = (string)($tx['category'] ?? '');
+            if (!in_array($category, ['welcome_bonus', 'weekly_bonus'], true)) continue;
+
+            $userId = trim((string)($tx['user_id'] ?? ''));
+            $amount = (int)($tx['amount'] ?? 0);
+            $room = (string)($tx['room'] ?? '');
+            $label = $userId !== '' ? $userId : ('transaction #' . $index);
+
+            if ($userId === '' || !isset($users[$userId])) {
+                $issues[] = "бонус {$label}: пользователь не найден";
+            }
+            if ($amount !== $expectedAmount) {
+                $issues[] = "бонус {$label}: сумма {$amount}, ожидалось {$expectedAmount}";
+            }
+            if ($room !== 'match') {
+                $issues[] = "бонус {$label}: начисление проведено не в Match-баланс";
+            }
+
+            if ($category === 'welcome_bonus') {
+                if ($userId !== '') {
+                    $welcomeTransactions[$userId] = ($welcomeTransactions[$userId] ?? 0) + 1;
+                }
+            } else {
+                $cycleKey = trim((string)($tx['cycle_key'] ?? ''));
+                if ($cycleKey === '') {
+                    $issues[] = "недельный бонус {$label}: отсутствует cycle_key";
+                } elseif ($userId !== '') {
+                    $key = $userId . '|' . $cycleKey;
+                    $weeklyTransactions[$key] = ($weeklyTransactions[$key] ?? 0) + 1;
+                }
+            }
+        }
+
+        foreach ($welcomeTransactions as $userId => $count) {
+            if ($count > 1) {
+                $issues[] = "игрок {$userId}: стартовый бонус начислен {$count} раз";
+            }
+        }
+        foreach ($weeklyTransactions as $key => $count) {
+            if ($count > 1) {
+                [$userId, $cycleKey] = array_pad(explode('|', $key, 2), 2, '');
+                $issues[] = "игрок {$userId}: недельный бонус за {$cycleKey} начислен {$count} раз";
+            }
+        }
+
+        foreach ($notifications as $notification) {
+            if (!is_array($notification)) continue;
+            $type = (string)($notification['type'] ?? '');
+            if (!in_array($type, ['welcome_match_grant', 'weekly_match_bonus'], true)) continue;
+
+            $eventKey = trim((string)($notification['event_key'] ?? ''));
+            if ($eventKey === '') {
+                $warnings[] = "уведомление {$type}: отсутствует event_key";
+                continue;
+            }
+
+            $notificationKeys[$eventKey] = ($notificationKeys[$eventKey] ?? 0) + 1;
+        }
+
+        foreach ($notificationKeys as $eventKey => $count) {
+            if ($count > 1) {
+                $issues[] = "уведомление {$eventKey}: создано {$count} дубля";
+            }
+        }
+
+        foreach ($users as $userId => $user) {
+            if (!is_array($user) || !empty($user['is_dev_user'])) continue;
+
+            if (!empty($user['weekly_match_welcome_grant_done'])
+                && empty($user['weekly_match_welcome_grant_migrated_at'])
+                && (int)($welcomeTransactions[(string)$userId] ?? 0) === 0) {
+                $warnings[] = "игрок {$userId}: стартовый бонус отмечен выданным, но операции welcome_bonus нет";
+            }
+
+            $lastKey = trim((string)($user['weekly_match_bonus_last_key'] ?? ''));
+            if ($lastKey !== '') {
+                $txKey = (string)$userId . '|' . $lastKey;
+                if ((int)($weeklyTransactions[$txKey] ?? 0) === 0) {
+                    $warnings[] = "игрок {$userId}: last_key {$lastKey} без операции weekly_bonus";
+                }
+            }
+        }
+
+        $lines = ['🎲 Контроль бесплатных коинов'];
+        $lines[] = 'Стартовых начислений: ' . array_sum($welcomeTransactions);
+        $lines[] = 'Недельных начислений: ' . array_sum($weeklyTransactions);
+
+        $lines[] = "\nОшибки бонусов:";
+        if ($issues) foreach (array_slice(array_values(array_unique($issues)), 0, 14) as $issue) $lines[] = "❌ {$issue}";
+        else $lines[] = '✅ критичных ошибок не найдено';
+
+        $lines[] = "\nПредупреждения бонусов:";
         if ($warnings) foreach (array_slice(array_values(array_unique($warnings)), 0, 14) as $warning) $lines[] = "⚠️ {$warning}";
         else $lines[] = '✅ предупреждений нет';
 
