@@ -45,6 +45,50 @@ final class ShopCatalogService
         return $costs ? min($costs) : (int)($this->config['shop_min_order'] ?? 1000);
     }
 
+    public function resolveSelection(string $itemId, string $denominationId): array
+    {
+        $itemId = trim($itemId);
+        $denominationId = trim($denominationId);
+
+        if (!$this->isValidId($itemId) || !$this->isValidId($denominationId)) {
+            throw new RuntimeException('Некорректный выбор приза. Обновите магазин и попробуйте снова.');
+        }
+
+        $catalog = $this->catalog();
+        $selectedItem = null;
+
+        foreach (($catalog['items'] ?? []) as $item) {
+            if ((string)($item['id'] ?? '') === $itemId) {
+                $selectedItem = $item;
+                break;
+            }
+        }
+
+        if (!$selectedItem) {
+            throw new RuntimeException('Выбранный приз больше недоступен. Обновите магазин.');
+        }
+
+        $selectedDenomination = null;
+        foreach (($selectedItem['denominations'] ?? []) as $denomination) {
+            if ((string)($denomination['id'] ?? '') === $denominationId) {
+                $selectedDenomination = $denomination;
+                break;
+            }
+        }
+
+        if (!$selectedDenomination) {
+            throw new RuntimeException('Выбранный номинал больше недоступен. Обновите магазин.');
+        }
+
+        return [
+            'catalog_version' => (int)($catalog['version'] ?? 1),
+            'catalog_updated_at' => (string)($catalog['updated_at'] ?? ''),
+            'currency' => (string)($catalog['currency'] ?? 'GOLD'),
+            'item' => $selectedItem,
+            'denomination' => $selectedDenomination,
+        ];
+    }
+
     private function catalog(): array
     {
         if ($this->catalog !== null) {
