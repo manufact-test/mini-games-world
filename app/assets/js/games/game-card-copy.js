@@ -1,7 +1,7 @@
 import { TIC_TAC_TOE_META } from './tictactoe/meta.js?v=53';
 import { FOUR_IN_A_ROW_META } from './four-in-a-row/meta.js?v=53';
 import { BATTLESHIP_META } from './battleship/meta.js?v=53';
-import { CHECKERS_META } from './checkers/meta.js?v=57';
+import { CHECKERS_META } from './checkers/meta.js?v=58';
 
 const GAME_META = {
   [TIC_TAC_TOE_META.id]: TIC_TAC_TOE_META,
