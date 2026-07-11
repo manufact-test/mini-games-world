@@ -13,7 +13,7 @@ import {
   battleshipMeta,
   battleshipPlayerMark,
   battleshipStatus,
-} from './battleship/renderer.js?v=53';
+} from './battleship/renderer.js?v=54';
 
 const routes = {
   tictactoe: {
