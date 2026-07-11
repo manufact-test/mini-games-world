@@ -21,16 +21,12 @@ final class ShopOrderNotificationService
                 continue;
             }
 
-            try {
-                $this->telegram->api('sendMessage', [
-                    'chat_id' => $chatId,
-                    'text' => $text,
-                    'reply_markup' => $replyMarkup,
-                    'disable_web_page_preview' => true,
-                ]);
-            } catch (Throwable $e) {
-                error_log('Mini Games World shop admin notification failed for ' . $chatId . ': ' . $e->getMessage());
-            }
+            $this->sendMessageReliable([
+                'chat_id' => $chatId,
+                'text' => $text,
+                'reply_markup' => $replyMarkup,
+                'disable_web_page_preview' => true,
+            ], 'shop admin notification for ' . $chatId);
         }
     }
 
@@ -45,15 +41,36 @@ final class ShopOrderNotificationService
             return;
         }
 
-        try {
-            $this->telegram->api('sendMessage', [
-                'chat_id' => $chatId,
-                'text' => $this->userDecisionText($order, $decision),
-                'disable_web_page_preview' => true,
-            ]);
-        } catch (Throwable $e) {
-            error_log('Mini Games World shop user notification failed for ' . $chatId . ': ' . $e->getMessage());
+        $this->sendMessageReliable([
+            'chat_id' => $chatId,
+            'text' => $this->userDecisionText($order, $decision),
+            'disable_web_page_preview' => true,
+        ], 'shop user notification for ' . $chatId);
+    }
+
+    private function sendMessageReliable(array $params, string $context): bool
+    {
+        $lastDescription = '';
+
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            try {
+                $result = $this->telegram->api('sendMessage', $params);
+                if (!empty($result['ok'])) {
+                    return true;
+                }
+
+                $lastDescription = trim((string)($result['description'] ?? 'Telegram API returned ok=false'));
+            } catch (Throwable $e) {
+                $lastDescription = $e->getMessage();
+            }
+
+            if ($attempt < 2) {
+                usleep(150000);
+            }
         }
+
+        error_log('Mini Games World ' . $context . ' failed after retry: ' . ($lastDescription !== '' ? $lastDescription : 'unknown error'));
+        return false;
     }
 
     private function adminNewOrderText(array $order): string
