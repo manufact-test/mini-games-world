@@ -23,9 +23,6 @@ final class GameActionService
             throw new RuntimeException('Вы не участвуете в этой игре.');
         }
 
-        // A timeout or bot move can finish the game between the client tap and
-        // this request. Return the already-finished game instead of surfacing a
-        // stale-action error. The payout was already protected by payout_done.
         if ((string)($game['status'] ?? '') === 'finished') {
             return $game;
         }
@@ -41,6 +38,7 @@ final class GameActionService
 
         return match ((string)($definition['engine'] ?? '')) {
             'tictactoe' => $this->applyTicTacToeAction($db, $user, $gameId, $actionType, $action),
+            'four_in_a_row' => $this->applyFourInARowAction($db, $user, $gameId, $actionType, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
     }
@@ -62,5 +60,24 @@ final class GameActionService
         }
 
         return $this->runtime->makeMove($db, $user, $gameId, (int)$cell);
+    }
+
+    private function applyFourInARowAction(
+        array &$db,
+        array &$user,
+        string $gameId,
+        string $actionType,
+        array $action
+    ): array {
+        if ($actionType !== 'column') {
+            throw new RuntimeException('Некорректное действие для этой игры.');
+        }
+
+        $column = filter_var($action['column'] ?? null, FILTER_VALIDATE_INT);
+        if ($column === false) {
+            throw new RuntimeException('Не выбран столбец.');
+        }
+
+        return $this->runtime->dropFourInARowDisc($db, $user, $gameId, (int)$column);
     }
 }
