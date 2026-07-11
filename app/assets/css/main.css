@@ -9,6 +9,7 @@
 @import url('./components/account-shortcuts.css?v=40');
 @import url('./screens/home.css?v=27');
 @import url('./screens/store.css?v=28');
+@import url('./screens/store-cleanup.css?v=43');
 @import url('./screens/store-order.css?v=38');
 @import url('./screens/store-orders.css?v=36');
 @import url('./screens/notifications.css?v=38');
