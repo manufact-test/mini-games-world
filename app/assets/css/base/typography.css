@@ -1,4 +1,4 @@
-/* Adaptive typography system */
+/* Global adaptive typography system */
 html{
   -webkit-text-size-adjust:100%;
   text-size-adjust:100%;
@@ -7,8 +7,12 @@ html{
 body{
   font-kerning:normal;
   font-synthesis:none;
+  text-rendering:optimizeLegibility;
 }
 
+h1,
+h2,
+h3,
 .hero-title,
 .page-title,
 .section-title h2,
@@ -18,13 +22,19 @@ body{
 .history-section h3,
 .store-section-head strong,
 .store-order-success strong,
-.store-order-history-head strong{
+.store-order-history-head strong,
+.store-orders-entry strong,
+.notification-head strong,
+.notifications-empty strong,
+.notifications-loading strong{
   text-wrap:balance;
   word-break:normal;
   overflow-wrap:normal;
   hyphens:none;
 }
 
+p,
+small,
 .hero-sub,
 .page-sub,
 .card p,
@@ -32,12 +42,22 @@ body{
 .small-note,
 .rules-content p,
 .sheet-head p,
+.balance-note,
+.activity-card .label,
+.profile-note,
 .store-product-copy p,
+.store-section-head small,
 .store-order-warning,
 .store-order-status-copy,
 .store-orders-entry span,
 .store-orders-empty span,
-.store-loading span{
+.store-orders-loading span,
+.store-loading span,
+.notification-copy p,
+.notifications-empty span,
+.notifications-loading span,
+.history-item span,
+.history-item em{
   text-wrap:pretty;
   word-break:normal;
   overflow-wrap:break-word;
@@ -61,6 +81,8 @@ button,
 
 .store-order-status,
 .store-order-history-meta span,
-.balance-value{
+.balance-value,
+.timer,
+.turn-text{
   white-space:nowrap;
 }
