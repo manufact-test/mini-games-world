@@ -1,10 +1,11 @@
-import { state } from '../state.js?v=21';
-import { api } from '../api/client.js?v=21';
-import { toast } from '../components/toast.js?v=21';
-import { showScreen } from '../router.js?v=21';
-import { clearTimer, renderBalances } from '../ui.js?v=21';
-import { startGamePolling } from './game-screen.js?v=21';
-import { APP_CONFIG } from '../config.js?v=21';
+import { state } from '../state.js?v=27';
+import { api } from '../api/client.js?v=47';
+import { toast } from '../components/toast.js?v=41';
+import { showScreen } from '../router.js?v=27';
+import { clearTimer, renderBalances } from '../ui.js?v=27';
+import { startGamePolling } from './game-screen.js?v=51';
+import { gameTypeOf } from '../games/game-router.js?v=51';
+import { APP_CONFIG } from '../config.js?v=38';
 
 export function initSearchScreen(){
   document.getElementById('cancelSearch')?.addEventListener('click', cancelSearch);
@@ -21,10 +22,15 @@ async function checkSearch(){
   try {
     const result = await api.gameState();
 
-    if (result.user) { state.user = result.user; state.session = result.session || state.session; renderBalances(state.user); }
+    if (result.user) {
+      state.user = result.user;
+      state.session = result.session || state.session;
+      renderBalances(state.user);
+    }
 
     if (result.game && result.game.status === 'active') {
       state.activeGame = result.game;
+      state.selectedGame = gameTypeOf(result.game);
       state.timers.search = clearTimer(state.timers.search);
       showScreen('game');
       startGamePolling(result.game.id);
