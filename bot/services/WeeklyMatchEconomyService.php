@@ -102,7 +102,7 @@ final class WeeklyMatchEconomyService
             'qualifying_from' => $from->format(DATE_ATOM),
             'qualifying_to' => $cycleAt->format(DATE_ATOM),
             'qualifying_games' => $games,
-            'description' => 'Еженедельный бонус за активность в Match-комнате',
+            'description' => 'Еженедельный бонус за активность в Матч-комнате',
             'created_at' => $awardedAt,
         ];
 
@@ -148,13 +148,15 @@ final class WeeklyMatchEconomyService
         ];
 
         if ($cycleAt !== null) {
-            foreach (($db['users'] ?? []) as $userId => &$user) {
-                if (!is_array($user)) {
+            foreach (array_keys($db['users'] ?? []) as $userId) {
+                if (!isset($db['users'][$userId]) || !is_array($db['users'][$userId])) {
                     continue;
                 }
 
+                $user =& $db['users'][$userId];
                 if (!empty($user['is_dev_user'])) {
                     $summary['skipped_dev']++;
+                    unset($user);
                     continue;
                 }
 
@@ -163,6 +165,7 @@ final class WeeklyMatchEconomyService
 
                 if ($reason === 'already_checked') {
                     $summary['already_checked']++;
+                    unset($user);
                     continue;
                 }
 
@@ -175,9 +178,8 @@ final class WeeklyMatchEconomyService
                     $summary['ineligible']++;
                 }
 
-                $db['users'][(string)$userId] = $user;
+                unset($user);
             }
-            unset($user);
         }
 
         if (!isset($db['system']) || !is_array($db['system'])) {
