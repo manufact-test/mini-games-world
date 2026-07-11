@@ -12,7 +12,7 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=55';
+} from '../games/game-router.js?v=56';
 
 const weeklyProgressNotifiedGames = new Set();
 
@@ -52,8 +52,15 @@ function renderGame(game, me){
   const timer = document.getElementById('timerText');
   const players = document.getElementById('playersRow');
   const surface = document.getElementById('gameBoard');
+  const screen = document.getElementById('screen-game');
 
   if (!meta || !turn || !timer || !players || !surface) return;
+
+  const gameType = gameTypeOf(game);
+  if (screen) {
+    screen.dataset.gameType = gameType;
+    screen.dataset.gamePhase = String(game?.phase || '');
+  }
 
   meta.textContent = gameMetaText(game);
   turn.textContent = gameStatusText(game, me);
