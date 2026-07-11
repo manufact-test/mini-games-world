@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=38';
+import { api } from '../api/client.js?v=47';
 
 export function initAccountShortcuts(){
   document.addEventListener('click', event => {
@@ -24,7 +24,6 @@ async function enhanceCurrentMenu(){
     <span class="account-menu-icon" aria-hidden="true">🎁</span>
     <span class="account-menu-copy">
       <strong>Мои заявки</strong>
-      <small>Проверяем историю заказов…</small>
     </span>
     <b class="account-menu-count" hidden>0</b>
   `;
@@ -36,22 +35,13 @@ async function enhanceCurrentMenu(){
     if (!document.body.contains(button)) return;
 
     const orders = Array.isArray(result.orders) ? result.orders : [];
-    const active = orders.filter(order => ['pending', 'processing'].includes(String(order.status || ''))).length;
-    const meta = button.querySelector('small');
     const badge = button.querySelector('.account-menu-count');
-
-    if (meta) {
-      meta.textContent = orders.length
-        ? (active > 0 ? `${active} ожидают обработки` : `${orders.length} в истории`)
-        : 'Заказов пока нет';
-    }
 
     if (badge && orders.length > 0) {
       badge.hidden = false;
       badge.textContent = orders.length > 99 ? '99+' : String(orders.length);
     }
   } catch (error) {
-    const meta = button.querySelector('small');
-    if (meta) meta.textContent = 'Открыть историю заказов';
+    // Keep the shortcut usable even if the count cannot be refreshed.
   }
 }
