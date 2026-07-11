@@ -6,8 +6,8 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from '../ui.js?v=27';
-import { startSearchPolling } from '../screens/search-screen.js?v=27';
-import { startGamePolling } from '../screens/game-screen.js?v=50';
+import { startSearchPolling } from '../screens/search-screen.js?v=51';
+import { startGamePolling } from '../screens/game-screen.js?v=51';
 import { isSessionLocked, sessionMessage } from '../session.js?v=27';
 
 const FOUR_VARIANTS = {
@@ -32,6 +32,7 @@ export function initFourInARowEntry(){
 function openFourInARowSetup(){
   if (isSessionLocked(state.session)) return toast(sessionMessage(state.session));
   haptic('light');
+  state.selectedGame = 'four_in_a_row';
 
   const isGold = state.room === 'gold';
   const selectedSize = normalizeFourSize(state.selectedFourBoardSize || 7);
@@ -97,6 +98,7 @@ async function startFourInARowSearch(){
     : Number(state.selectedBet || APP_CONFIG.goldBets[0]);
   const boardSize = normalizeFourSize(state.selectedFourBoardSize || 7);
   const variant = FOUR_VARIANTS[boardSize];
+  state.selectedGame = 'four_in_a_row';
 
   try {
     closeSheet();
@@ -108,6 +110,7 @@ async function startFourInARowSearch(){
 
     if (result.game) {
       state.activeGame = result.game;
+      state.selectedGame = 'four_in_a_row';
       showScreen('game');
       startGamePolling(result.game.id);
       return;
