@@ -8,10 +8,11 @@ import { APP_CONFIG } from '../config.js?v=21';
 import { haptic } from '../telegram/telegram-app.js?v=21';
 import {
   gameMetaText,
+  gameStatusText,
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=52';
+} from '../games/game-router.js?v=53';
 
 const weeklyProgressNotifiedGames = new Set();
 
@@ -55,7 +56,7 @@ function renderGame(game, me){
   if (!meta || !turn || !timer || !players || !surface) return;
 
   meta.textContent = gameMetaText(game);
-  turn.textContent = game.status === 'finished' ? 'Игра завершена' : (String(game.turn) === String(me.id) ? 'Ваш ход' : 'Ход соперника');
+  turn.textContent = gameStatusText(game, me);
   timer.textContent = game.status === 'active' ? `${game.time_left ?? 60} сек` : '—';
 
   players.innerHTML = game.players.map(player => `
@@ -82,6 +83,7 @@ async function applyGameAction(gameId, gameAction){
 
     if (result.game) {
       state.activeGame = result.game;
+      state.selectedGame = gameTypeOf(result.game);
       renderGame(result.game, result.me);
 
       if (result.game.status === 'finished') {
@@ -185,6 +187,7 @@ async function startSameSearchFromResult(){
 
     if (result.game) {
       state.activeGame = result.game;
+      state.selectedGame = gameTypeOf(result.game);
       showScreen('game');
       startGamePolling(result.game.id);
       return;
@@ -216,6 +219,7 @@ async function checkResultSearch(){
 
     if (result.game && result.game.status === 'active') {
       state.activeGame = result.game;
+      state.selectedGame = gameTypeOf(result.game);
       state.timers.search = clearTimer(state.timers.search);
       showScreen('game');
       startGamePolling(result.game.id);
