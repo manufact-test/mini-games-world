@@ -69,6 +69,41 @@ final class NotificationService
         return $notification;
     }
 
+    public function addWelcomeMatchGrant(array &$db, array $user, array $grant): ?array
+    {
+        $userId = trim((string)($user['id'] ?? ''));
+        $amount = max(0, (int)($grant['amount'] ?? 0));
+        if ($userId === '' || $amount <= 0) {
+            return null;
+        }
+
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) {
+            $db['notifications'] = [];
+        }
+
+        $eventKey = 'welcome_match_grant:' . $userId;
+        foreach ($db['notifications'] as $existing) {
+            if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) {
+                return $existing;
+            }
+        }
+
+        $notification = [
+            'id' => make_id('notification'),
+            'event_key' => $eventKey,
+            'user_id' => $userId,
+            'type' => 'welcome_match_grant',
+            'title' => 'Добро пожаловать!',
+            'message' => "Спасибо, что заглянули в Mini Games World. Мы начислили вам первые +{$amount} коинов в Матч-комнату.",
+            'tone' => 'success',
+            'created_at' => (string)($grant['created_at'] ?? now_iso()),
+            'read_at' => null,
+        ];
+
+        $db['notifications'][] = $notification;
+        return $notification;
+    }
+
     public function addWeeklyMatchBonus(array &$db, array $user, array $bonus): ?array
     {
         $userId = trim((string)($user['id'] ?? ''));
@@ -91,18 +126,13 @@ final class NotificationService
         }
 
         $games = max(0, (int)($bonus['qualifying_games'] ?? 0));
-        $qualification = (string)($bonus['qualification'] ?? 'activity');
-        $message = $qualification === 'first_grant'
-            ? "+{$amount} коинов в Матч-комнату — ваше первое еженедельное начисление."
-            : "+{$amount} коинов в Матч-комнату за игровую активность. За неделю завершено игр: {$games}.";
-
         $notification = [
             'id' => make_id('notification'),
             'event_key' => $eventKey,
             'user_id' => $userId,
             'type' => 'weekly_match_bonus',
-            'title' => 'Еженедельные коины',
-            'message' => $message,
+            'title' => 'Еженедельные коины начислены',
+            'message' => "Спасибо, что играете в Mini Games World. За {$games} завершённые игры на этой неделе вам начислено +{$amount} коинов в Матч-комнату.",
             'tone' => 'success',
             'cycle_key' => $cycleKey,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
