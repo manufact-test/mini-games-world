@@ -1,18 +1,22 @@
-import { APP_CONFIG } from '../config.js?v=21';
+import { APP_CONFIG } from '../config.js?v=34';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
 import { getSessionId } from '../session.js?v=21';
 
-async function request(action, payload = {}){
-  const response = await fetch(APP_CONFIG.apiBase, {
+async function requestUrl(url, payload = {}){
+  const response = await fetch(url, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ action, initData:getInitData(), sessionId:getSessionId(), ...payload })
+    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), ...payload })
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
     throw new Error(data?.error || `Ошибка API: ${response.status}`);
   }
   return data;
+}
+
+async function request(action, payload = {}){
+  return requestUrl(APP_CONFIG.apiBase, { action, ...payload });
 }
 
 export const api = {
@@ -27,6 +31,7 @@ export const api = {
   history: () => request('history'),
   support: (type, message) => request('support', { type, message }),
   shopStatus: () => request('shop_status'),
+  shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   shopOrder: (itemId, denominationId, requestToken) => request('shop_order', {
     itemId,
     denominationId,
