@@ -2,12 +2,12 @@ import {
   renderTicTacToeSurface,
   ticTacToeMeta,
   ticTacToePlayerMark,
-} from './tictactoe-renderer.js?v=47';
+} from './tictactoe/renderer.js?v=52';
 import {
   renderFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './four-in-a-row-renderer.js?v=51';
+} from './four-in-a-row/renderer.js?v=52';
 
 const routes = {
   tictactoe: {
@@ -36,7 +36,6 @@ export function gameTypeOf(game){
     && rows === columns - 1
     && boardLength === columns * rows;
 
-  // Recover safely from old/cached or partially migrated Four in a Row records.
   if (
     explicit === 'four_in_a_row'
     || renderer === 'four_in_a_row'
