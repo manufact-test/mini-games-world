@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mini Games World</title>
-  <link rel="stylesheet" href="./assets/css/main.css?v=52" />
+  <link rel="stylesheet" href="./assets/css/main.css?v=53" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="app" id="app" data-build="v52-game-modules">
+  <div class="app" id="app" data-build="v53-battleship">
     <div class="preloader" id="preloader">
       <div class="load-card">
         <div class="abstract-loader" aria-hidden="true">
@@ -101,15 +101,18 @@
           </div>
         </section>
 
-        <section class="game-card locked">
+        <section class="game-card has-rules" data-game-card="battleship">
+          <button class="game-rules-button" data-game-rules="battleship" type="button" aria-label="Правила игры">?</button>
           <div class="game-top">
-            <div class="game-icon">⚓</div>
+            <div class="game-icon" data-game-icon></div>
             <div>
-              <h3>Морской бой</h3>
-              <p>Новые форматы появятся позже.</p>
+              <h3 data-game-title></h3>
+              <p data-game-description></p>
             </div>
           </div>
-          <div class="btn-row"><button class="btn disabled" disabled type="button">Скоро будет доступно</button></div>
+          <div class="btn-row single">
+            <button class="btn primary" id="playBattleship" type="button">Играть</button>
+          </div>
         </section>
       </div>
     </section>
@@ -178,6 +181,6 @@
     </div>
   </div>
 
-  <script type="module" src="./assets/js/main.js?v=52"></script>
+  <script type="module" src="./assets/js/main.js?v=53"></script>
 </body>
 </html>
