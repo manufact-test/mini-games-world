@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 final class ShopService
 {
+    private const ORDER_TOKEN_BASE = 1000000000;
+
     private ShopCatalogService $catalog;
 
     public function __construct(private array $config, private UserService $users, ?ShopCatalogService $catalog = null)
@@ -37,13 +39,16 @@ final class ShopService
      * - $denominationId приходит через старое поле provider;
      * - $requestToken приходит через старое числовое поле amount.
      *
-     * ВАЖНО: $requestToken никогда не используется как стоимость.
-     * Стоимость всегда берётся только из активного каталога.
+     * В requestToken зашиты подтверждённая пользователем цена и случайный nonce.
+     * Сам requestToken никогда не используется как стоимость заказа.
      */
     public function createOrder(array &$db, array &$user, string $itemId, string $denominationId, int $requestToken): array
     {
-        if ($requestToken <= 0) {
-            throw new RuntimeException('Не удалось подтвердить уникальность заказа. Обновите магазин и попробуйте снова.');
+        $expectedAmount = intdiv($requestToken, self::ORDER_TOKEN_BASE);
+        $nonce = $requestToken % self::ORDER_TOKEN_BASE;
+
+        if ($requestToken <= 0 || $expectedAmount <= 0 || $nonce <= 0) {
+            throw new RuntimeException('Не удалось подтвердить параметры заказа. Обновите магазин и попробуйте снова.');
         }
 
         $result = $this->createCatalogOrder(
@@ -51,7 +56,8 @@ final class ShopService
             $user,
             trim($itemId),
             trim($denominationId),
-            (string)$requestToken
+            (string)$requestToken,
+            $expectedAmount
         );
 
         $order = $result['order'];
@@ -64,7 +70,8 @@ final class ShopService
         array &$user,
         string $itemId,
         string $denominationId,
-        string $requestId
+        string $requestId,
+        int $expectedAmount
     ): array {
         $userId = (string)($user['id'] ?? '');
         if ($userId === '') {
@@ -72,8 +79,8 @@ final class ShopService
         }
 
         $requestId = trim($requestId);
-        if (!$this->isValidRequestId($requestId)) {
-            throw new RuntimeException('Не удалось подтвердить уникальность заказа. Обновите магазин и попробуйте снова.');
+        if (!$this->isValidRequestId($requestId) || $expectedAmount <= 0) {
+            throw new RuntimeException('Не удалось подтвердить параметры заказа. Обновите магазин и попробуйте снова.');
         }
 
         // Проверяем повтор ДО чтения текущего каталога. Если первый запрос успел
@@ -98,6 +105,9 @@ final class ShopService
 
         if ($amount <= 0) {
             throw new RuntimeException('У выбранного номинала некорректная стоимость.');
+        }
+        if ($amount !== $expectedAmount) {
+            throw new RuntimeException('Стоимость приза изменилась. Обновите магазин и подтвердите заказ заново.');
         }
 
         $available = $this->users->goldShopAvailable($user);
