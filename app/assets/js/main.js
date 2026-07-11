@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v27-history-tabs-matches';
+window.__MGW_BUILD__ = 'v28-storefront';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=27';
 import { state } from './state.js?v=27';
@@ -8,6 +8,7 @@ import { initSheet } from './components/sheet.js?v=27';
 import { toast } from './components/toast.js?v=27';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
 import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=27';
+import { initStoreScreen } from './screens/store-screen.js?v=28';
 import { initSearchScreen } from './screens/search-screen.js?v=27';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=27';
 import { initProfileScreen } from './screens/profile-screen.js?v=27';
@@ -16,6 +17,7 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 initTelegramApp();
 initSheet();
+initStoreScreen();
 initHomeScreen();
 initSearchScreen();
 initGameScreen();
@@ -52,7 +54,7 @@ function startStatsPolling(){
     try {
       const result = await api.stats();
       state.stats = result.stats;
-    state.session = result.session || state.session;
+      state.session = result.session || state.session;
       renderStats(state.stats);
     } catch (error) {}
   }, APP_CONFIG.statsIntervalMs);
