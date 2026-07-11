@@ -1,5 +1,6 @@
 export const APP_CONFIG = {
   apiBase: `${window.location.origin}/bot/api.php`,
+  shopHistoryBase: `${window.location.origin}/bot/shop-history.php`,
   statsIntervalMs: 5000,
   searchIntervalMs: 2500,
   gameIntervalMs: 1500,
