@@ -4,7 +4,8 @@ require __DIR__ . '/core/bootstrap.php';
 
 function mgw_randomize_symbols_for_new_game(array &$data, array $game): array
 {
-    if (($game['status'] ?? '') !== 'active') {
+    $gameType = (string)($game['game_type'] ?? 'tictactoe');
+    if ($gameType !== 'tictactoe' || ($game['status'] ?? '') !== 'active') {
         return $game;
     }
 
@@ -14,7 +15,8 @@ function mgw_randomize_symbols_for_new_game(array &$data, array $game): array
     }
 
     $stored =& $data['games'][$gameId];
-    if (!empty($stored['symbols_randomized'])) {
+    $stored['game_type'] = (string)($stored['game_type'] ?? 'tictactoe');
+    if ($stored['game_type'] !== 'tictactoe' || !empty($stored['symbols_randomized'])) {
         return $stored;
     }
 
@@ -70,7 +72,8 @@ try {
     $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $auth = new AuthService($config);
     $users = new UserService($config);
-    $games = new GameService($config);
+    $gameCatalog = new GameCatalogService($config);
+    $games = new GameRuntimeService($config, $gameCatalog, new GameService($config));
     $shop = new ShopService($config, $users);
     $payments = new PaymentService($config, $users);
     $telegram = new TelegramService($config);
@@ -95,6 +98,7 @@ try {
         $weeklyMatch->applyDueForUser($data, $user);
 
         // MVP-3: каждая API-команда чистит старую очередь и просроченные ходы.
+        // MVP-10: runtime также нормализует game_type у старых записей.
         $games->cleanup($data);
 
         switch ($action) {
@@ -106,6 +110,7 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                     'shop' => $shop->status($user),
                     'weekly_match' => $weeklyMatch->status($data, $user),
+                    'games' => $games->catalog(),
                     'stats' => $statsService->build($data),
                     'active_game' => $active ? $games->publicGame($active, $userId) : null,
                 ];
@@ -208,7 +213,8 @@ try {
                 $room = (string)($payload['room'] ?? 'match');
                 $bet = (int)($payload['bet'] ?? 10);
                 $boardSize = (int)($payload['boardSize'] ?? 3);
-                $search = $games->startSearch($data, $user, $room, $bet, $boardSize);
+                $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
+                $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
 
                 if (!empty($search['game']['id'])) {
                     $gameId = (string)$search['game']['id'];
