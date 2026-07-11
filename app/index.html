@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mini Games World</title>
-  <link rel="stylesheet" href="./assets/css/main.css?v=56" />
+  <link rel="stylesheet" href="./assets/css/main.css?v=57" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="app" id="app" data-build="v56-battleship-compact">
+  <div class="app" id="app" data-build="v57-checkers">
     <div class="preloader" id="preloader">
       <div class="load-card">
         <div class="abstract-loader" aria-hidden="true">
@@ -116,6 +116,21 @@
             <button class="btn ghost" data-invite-friend="battleship" type="button">Пригласить друга</button>
           </div>
         </section>
+
+        <section class="game-card has-rules" data-game-card="checkers">
+          <button class="game-rules-button" data-game-rules="checkers" type="button" aria-label="Правила игры">?</button>
+          <div class="game-top">
+            <div class="game-icon" data-game-icon></div>
+            <div>
+              <h3 data-game-title></h3>
+              <p data-game-description></p>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" id="playCheckers" type="button">Играть</button>
+            <button class="btn ghost" data-invite-friend="checkers" type="button">Пригласить друга</button>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -183,6 +198,6 @@
     </div>
   </div>
 
-  <script type="module" src="./assets/js/main.js?v=56"></script>
+  <script type="module" src="./assets/js/main.js?v=57"></script>
 </body>
 </html>
