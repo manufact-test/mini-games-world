@@ -21,12 +21,8 @@ final class HistoryService
 
         foreach ($transactions as $tx) {
             $item = $this->operationFromTransaction($db, $tx, $userId);
-            if ($item === null) {
-                continue;
-            }
+            if ($item === null) continue;
 
-            // In early MVPs one match could appear both as game_finish and as a newer
-            // balance_change. Deduplicate only matching operations inside one game.
             $gameId = (string)($item['game_id'] ?? '');
             if ($gameId !== '') {
                 $key = implode('|', [
@@ -34,18 +30,12 @@ final class HistoryService
                     $gameId,
                     (string)($item['amount'] ?? 0),
                 ]);
-
-                if (isset($seen[$key])) {
-                    continue;
-                }
-
+                if (isset($seen[$key])) continue;
                 $seen[$key] = true;
             }
 
             $items[] = $item;
-            if (count($items) >= $limit) {
-                break;
-            }
+            if (count($items) >= $limit) break;
         }
 
         return $items;
@@ -54,19 +44,12 @@ final class HistoryService
     public function matchHistory(array $db, string $userId, int $limit = 12): array
     {
         $items = [];
-
         foreach (array_reverse($db['games'] ?? []) as $game) {
             $players = array_map('strval', $game['player_ids'] ?? []);
-            if (!in_array($userId, $players, true)) {
-                continue;
-            }
-
+            if (!in_array($userId, $players, true)) continue;
             $items[] = $this->matchItem($game, $userId);
-            if (count($items) >= $limit) {
-                break;
-            }
+            if (count($items) >= $limit) break;
         }
-
         return $items;
     }
 
@@ -76,14 +59,10 @@ final class HistoryService
         $createdAt = (string)($tx['created_at'] ?? '');
 
         if ($type === 'balance_change') {
-            if ((string)($tx['user_id'] ?? '') !== $userId) {
-                return null;
-            }
+            if ((string)($tx['user_id'] ?? '') !== $userId) return null;
 
             $category = (string)($tx['category'] ?? '');
-            if ($this->isTopupCategory($category)) {
-                return null;
-            }
+            if ($this->isTopupCategory($category)) return null;
 
             $amount = (int)($tx['amount'] ?? 0);
             $gameId = (string)($tx['game_id'] ?? '');
@@ -124,7 +103,6 @@ final class HistoryService
             ];
         }
 
-        // Support old logs from before balance_change became the main history source.
         if ($type === 'game_start' && in_array($userId, array_map('strval', $tx['players'] ?? []), true)) {
             $amount = -abs((int)($tx['bet'] ?? 0));
             $room = (string)($tx['room'] ?? 'match');
@@ -134,9 +112,7 @@ final class HistoryService
             return [
                 'id' => (string)($tx['id'] ?? ''),
                 'title' => $this->operationTitle('game_entry', is_array($game) ? $game : null, $userId),
-                'description' => $game
-                    ? $this->operationGameDescription($game, $userId, 'game_entry')
-                    : $this->roomLabel($room),
+                'description' => $game ? $this->operationGameDescription($game, $userId, 'game_entry') : $this->roomLabel($room),
                 'amount' => $amount,
                 'amount_label' => $this->amountLabel($amount),
                 'tone' => 'neg',
@@ -149,9 +125,7 @@ final class HistoryService
         if ($type === 'game_finish') {
             $gameId = (string)($tx['game_id'] ?? '');
             $game = $db['games'][$gameId] ?? null;
-            if (!$game || !in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-                return null;
-            }
+            if (!$game || !in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) return null;
 
             $winnerId = isset($tx['winner_id']) ? (string)$tx['winner_id'] : null;
             $room = (string)($tx['room'] ?? ($game['room'] ?? 'match'));
@@ -161,9 +135,7 @@ final class HistoryService
                 $amount = (int)($tx['payout'] ?? 0);
                 return [
                     'id' => (string)($tx['id'] ?? ''),
-                    'title' => $reason === 'timeout'
-                        ? 'Победа по таймауту'
-                        : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Выигрыш'),
+                    'title' => $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Выигрыш'),
                     'description' => $this->operationGameDescription($game, $userId, 'game_win'),
                     'amount' => $amount,
                     'amount_label' => $this->amountLabel($amount),
@@ -208,14 +180,10 @@ final class HistoryService
             $result = 'Ничья';
             $tone = 'zero';
         } elseif ($winnerId === $userId) {
-            $result = $reason === 'timeout'
-                ? 'Победа по таймауту'
-                : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа');
+            $result = $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа');
             $tone = 'pos';
         } else {
-            $result = in_array($reason, ['timeout', 'player_left'], true)
-                ? 'Техническое поражение'
-                : 'Поражение';
+            $result = in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение';
             $tone = 'neg';
         }
 
@@ -257,10 +225,7 @@ final class HistoryService
 
         $opponentId = $this->otherPlayerId($game, $userId);
         $opponentName = trim((string)($game['player_names'][$opponentId] ?? ''));
-        if ($opponentName !== '') {
-            $parts[] = 'против ' . $opponentName;
-        }
-
+        if ($opponentName !== '') $parts[] = 'против ' . $opponentName;
         return implode(' · ', array_filter($parts));
     }
 
@@ -271,20 +236,17 @@ final class HistoryService
         }
 
         $winnerId = isset($game['winner_id']) ? (string)$game['winner_id'] : '';
-        if ($winnerId === '' || $winnerId === $userId) {
-            return $this->balanceTitle($category);
-        }
+        if ($winnerId === '' || $winnerId === $userId) return $this->balanceTitle($category);
 
         $reason = (string)($game['finish_reason'] ?? '');
-        return in_array($reason, ['timeout', 'player_left'], true)
-            ? 'Техническое поражение'
-            : 'Поражение';
+        return in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение';
     }
 
     private function gameLabel(array $game): string
     {
         return match ((string)($game['game_type'] ?? 'tictactoe')) {
             'four_in_a_row' => '4 в ряд',
+            'battleship' => 'Морской бой',
             default => 'Крестики-нолики',
         };
     }
@@ -292,16 +254,8 @@ final class HistoryService
     private function cleanDescription(string $description): string
     {
         $description = trim($description);
-
-        if ($description === '') {
-            return '';
-        }
-
-        // Technical match IDs are not useful to players.
-        if (str_contains($description, '#game_') || str_contains($description, 'game_')) {
-            return '';
-        }
-
+        if ($description === '') return '';
+        if (str_contains($description, '#game_') || str_contains($description, 'game_')) return '';
         return $description;
     }
 
@@ -337,12 +291,8 @@ final class HistoryService
 
     private function amountLabel(int $amount): string
     {
-        if ($amount > 0) {
-            return '+' . $amount . ' коинов';
-        }
-        if ($amount < 0) {
-            return (string)$amount . ' коинов';
-        }
+        if ($amount > 0) return '+' . $amount . ' коинов';
+        if ($amount < 0) return (string)$amount . ' коинов';
         return '0 коинов';
     }
 
@@ -361,9 +311,7 @@ final class HistoryService
     private function otherPlayerId(array $game, string $userId): string
     {
         foreach ($game['player_ids'] ?? [] as $playerId) {
-            if ((string)$playerId !== $userId) {
-                return (string)$playerId;
-            }
+            if ((string)$playerId !== $userId) return (string)$playerId;
         }
         return '';
     }
