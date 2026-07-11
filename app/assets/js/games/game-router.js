@@ -7,7 +7,7 @@ import {
   renderFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './four-in-a-row-renderer.js?v=50';
+} from './four-in-a-row-renderer.js?v=51';
 
 const routes = {
   tictactoe: {
@@ -25,16 +25,27 @@ const routes = {
 export function gameTypeOf(game){
   const explicit = String(game?.game_type || '');
   const renderer = String(game?.renderer || '');
+  const actionType = String(game?.action_type || '');
+  const title = String(game?.game_title || '').toLowerCase();
+  const columns = Number(game?.board_columns || 0);
   const rows = Number(game?.board_rows || 0);
   const connectLength = Number(game?.connect_length || 0);
+  const boardLength = String(game?.board || '').length;
+  const looksLikeFourBoard = columns >= 6
+    && columns <= 8
+    && rows === columns - 1
+    && boardLength === columns * rows;
 
-  // Be tolerant of a partially cached response from the first v49 deployment.
-  // The server still exposes renderer/dimensions, so the client can recover the
-  // correct game instead of falling back to the tic-tac-toe renderer.
+  // Recover safely from old/cached or partially migrated Four in a Row records.
   if (
     explicit === 'four_in_a_row'
     || renderer === 'four_in_a_row'
+    || actionType === 'column'
+    || title.includes('4 в ряд')
+    || title.includes('four in a row')
+    || Boolean(game?.four_in_a_row_initialized)
     || (rows >= 5 && connectLength === 4)
+    || looksLikeFourBoard
   ) {
     return 'four_in_a_row';
   }
