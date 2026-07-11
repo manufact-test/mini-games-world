@@ -1,6 +1,6 @@
-window.__MGW_BUILD__ = 'v42-notification-ready-fix';
+window.__MGW_BUILD__ = 'v43-pre-mvp9-regression';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
-import { api } from './api/client.js?v=38';
+import { api } from './api/client.js?v=43';
 import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { hidePreloader } from './components/preloader.js?v=42';
