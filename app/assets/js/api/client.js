@@ -22,6 +22,7 @@ async function request(action, payload = {}){
 export const api = {
   bootstrap: () => request('bootstrap'),
   stats: () => request('stats'),
+  weeklyMatchStatus: () => request('weekly_match_status'),
   startSearch: (room, bet, boardSize) => request('start_search', { room, bet, boardSize, gameType:'tictactoe' }),
   leaveSearch: () => request('leave_search'),
   gameState: (gameId = null) => request('game_state', { gameId }),
