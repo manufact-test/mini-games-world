@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/AdminShopOrderUiGuard.php';
+require_once __DIR__ . '/AdminShopOrderNotificationGuard.php';
 
 final class AdminPaymentRejectGuard
 {
@@ -12,7 +12,7 @@ final class AdminPaymentRejectGuard
      */
     public function handle(array $update): bool
     {
-        $shopOrderGuard = new AdminShopOrderUiGuard($this->telegram, $this->config);
+        $shopOrderGuard = new AdminShopOrderNotificationGuard($this->telegram, $this->config);
         if ($shopOrderGuard->handle($update)) {
             return true;
         }
