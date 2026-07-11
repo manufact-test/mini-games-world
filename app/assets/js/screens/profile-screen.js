@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=38';
+import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=27';
@@ -14,7 +14,6 @@ export async function openProfile(){
       api.profile(),
       api.shopOrders().catch(() => null),
     ]);
-
     state.user = result.user;
     state.session = result.session || state.session;
     renderUser(state.user);
@@ -48,25 +47,7 @@ function renderProfileOverview(user = {}, orders = null){
   const match = Number(user.balance_match || 0);
   const gold = Number(user.balance_gold || 0);
   const shopAvailable = Number(user.gold_shop_available || 0);
-  const ordersAvailable = Array.isArray(orders);
-  const orderItems = ordersAvailable ? orders : [];
-  const activeOrders = orderItems.filter(order => ['pending', 'processing'].includes(String(order.status || ''))).length;
-  const latest = orderItems[0] || null;
-  const latestStatus = latest ? String(latest.status_label || statusLabel(latest.status)) : '';
-  const latestTitle = latest ? String(latest.prize_title || latest.provider || 'Приз') : '';
-  const tone = safeTone(latest?.status_tone);
-
-  const ordersMeta = !ordersAvailable
-    ? 'Не удалось обновить историю заказов.'
-    : orderItems.length === 0
-      ? 'Заказов пока нет.'
-      : activeOrders > 0
-        ? `${plural(activeOrders, 'активная заявка', 'активные заявки', 'активных заявок')} · последняя: ${latestStatus}`
-        : `${plural(orderItems.length, 'заявка в истории', 'заявки в истории', 'заявок в истории')} · последняя: ${latestStatus}`;
-
-  const ordersDetail = latest
-    ? `${latestTitle}${latest.denomination_label ? ` · ${latest.denomination_label}` : ''}`
-    : 'Здесь будут статусы заказов, причины отклонения и возвраты Gold.';
+  const orderItems = Array.isArray(orders) ? orders : [];
 
   el.innerHTML = `
     <section class="profile-overview-section">
@@ -99,21 +80,12 @@ function renderProfileOverview(user = {}, orders = null){
     </section>
 
     <section class="profile-overview-section">
-      <div class="profile-section-head compact">
-        <div>
-          <h2>Мои заявки</h2>
-          <p>Быстрый доступ к истории заказов.</p>
-        </div>
-      </div>
-
       <button class="profile-orders-action" data-open-store-orders type="button">
-        <span class="profile-orders-icon" aria-hidden="true">🧾</span>
+        <span class="profile-orders-icon" aria-hidden="true">🎁</span>
         <span class="profile-orders-copy">
-          <strong>${escapeHtml(ordersMeta)}</strong>
-          <small>${escapeHtml(ordersDetail)}</small>
+          <strong>Мои заявки</strong>
         </span>
-        ${orderItems.length > 0 ? `<b class="profile-orders-badge ${tone}">${orderItems.length > 99 ? '99+' : orderItems.length}</b>` : ''}
-        <span class="profile-orders-arrow" aria-hidden="true">›</span>
+        ${orderItems.length > 0 ? `<b class="profile-orders-badge">${orderItems.length > 99 ? '99+' : orderItems.length}</b>` : ''}
       </button>
     </section>
   `;
@@ -133,40 +105,6 @@ function ensureProfileOverview(){
   return el;
 }
 
-function statusLabel(status){
-  return {
-    pending: 'Ожидает обработки',
-    processing: 'В обработке',
-    done: 'Выполнена',
-    rejected: 'Отклонена',
-    cancelled: 'Отменена',
-  }[String(status || '')] || 'Статус уточняется';
-}
-
-function safeTone(value){
-  const tone = String(value || 'muted');
-  return ['success', 'danger', 'info', 'warning', 'muted'].includes(tone) ? tone : 'muted';
-}
-
-function plural(value, one, few, many){
-  const number = Math.abs(Number(value || 0));
-  const mod100 = number % 100;
-  const mod10 = number % 10;
-  if (mod100 >= 11 && mod100 <= 19) return `${number} ${many}`;
-  if (mod10 === 1) return `${number} ${one}`;
-  if (mod10 >= 2 && mod10 <= 4) return `${number} ${few}`;
-  return `${number} ${many}`;
-}
-
 function formatNumber(value){
   return Number(value || 0).toLocaleString('ru-RU');
-}
-
-function escapeHtml(value){
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
 }
