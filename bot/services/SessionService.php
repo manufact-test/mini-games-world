@@ -67,10 +67,22 @@ final class SessionService
         return $this->isExpired($user);
     }
 
-    public function publicState(array $user, string $sessionId): array
+    public function publicState(array &$user, string $sessionId): array
     {
+        $this->ensureSessionShape($user);
+
         $status = (string)($user['status'] ?? 'idle');
         $activeId = (string)($user['active_session_id'] ?? '');
+
+        // Polling from the device that already owns the active search/game keeps
+        // that ownership alive. Requests from another session never refresh it.
+        if ($sessionId !== ''
+            && in_array($status, ['searching', 'playing'], true)
+            && $activeId !== ''
+            && $activeId === $sessionId) {
+            $user['active_session_at'] = now_iso();
+        }
+
         $locked = $sessionId !== ''
             && in_array($status, ['searching', 'playing'], true)
             && $activeId !== ''
