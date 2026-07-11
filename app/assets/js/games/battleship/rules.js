@@ -17,7 +17,7 @@ export function battleshipRules(){
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Расстановка</strong><span>Корабли ставятся горизонтально или вертикально. Они не могут пересекаться и соприкасаться даже по диагонали.</span></div>
+        <div class="game-rule-copy"><strong>Расстановка</strong><span>Выберите корабль и нажмите нужное количество соседних клеток по прямой. Корабли не могут пересекаться и соприкасаться даже по диагонали.</span></div>
         <div class="battleship-rule-placement">
           <div class="valid"><strong>Можно</strong>${placementGrid(false)}</div>
           <div class="invalid"><strong>Нельзя</strong>${placementGrid(true)}</div>
@@ -25,7 +25,7 @@ export function battleshipRules(){
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>2 минуты на расстановку</strong><span>Кнопку «Перемешать флот» можно нажимать сколько угодно раз. Можно также расставить корабли вручную. Если время закончится, уже поставленные корабли сохранятся, а сервер добавит только недостающие.</span></div>
+        <div class="game-rule-copy"><strong>2 минуты на расстановку</strong><span>Кнопку «Перемешать флот» можно нажимать сколько угодно раз. Можно также расставить корабли вручную. Если время закончится, уже поставленные корабли сохранятся, а система добавит только недостающие.</span></div>
       </section>
 
       <section class="game-rule-card">
@@ -44,8 +44,6 @@ export function battleshipRules(){
       <section class="game-rule-card compact">
         <div class="game-rule-copy"><strong>Как победить</strong><span>Первым уничтожьте все 10 кораблей соперника.</span></div>
       </section>
-
-      <section class="game-rule-tip">🔒 Живые корабли соперника скрыты сервером. Их координат нет в данных, которые получает ваш телефон.</section>
     </div>
 
     <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
