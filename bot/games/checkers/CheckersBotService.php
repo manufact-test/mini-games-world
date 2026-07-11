@@ -10,19 +10,32 @@ final class CheckersBotService
         }
 
         $difficulty = in_array($difficulty, ['easy', 'medium', 'hard'], true) ? $difficulty : 'medium';
-        if ($difficulty === 'easy') {
+
+        // Лёгкий бот остаётся слабее, но больше не играет как в поддавки:
+        // совсем случайный ход возможен редко, в остальных случаях он выбирает
+        // один из нескольких разумных вариантов без глубокого расчёта.
+        if ($difficulty === 'easy' && random_int(1, 100) <= 12) {
             return $moves[array_rand($moves)];
         }
 
         $scored = [];
         foreach ($moves as $move) {
             $score = $this->scoreMove($board, $move, $side, $difficulty);
-            $jitter = $difficulty === 'hard' ? random_int(0, 3) : random_int(0, 12);
+            $jitter = match ($difficulty) {
+                'hard' => random_int(0, 3),
+                'medium' => random_int(0, 12),
+                default => random_int(0, 22),
+            };
             $scored[] = ['move' => $move, 'score' => $score + $jitter];
         }
 
         usort($scored, static fn(array $a, array $b): int => $b['score'] <=> $a['score']);
-        $poolSize = $difficulty === 'hard' ? min(2, count($scored)) : min(4, count($scored));
+
+        $poolSize = match ($difficulty) {
+            'hard' => min(2, count($scored)),
+            'medium' => min(4, count($scored)),
+            default => min(5, count($scored)),
+        };
         $pool = array_slice($scored, 0, max(1, $poolSize));
 
         if ($difficulty === 'hard' || count($pool) === 1) {
