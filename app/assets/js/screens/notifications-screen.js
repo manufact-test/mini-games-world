@@ -3,11 +3,13 @@ import { openSheet } from '../components/sheet.js?v=27';
 import { toast } from '../components/toast.js?v=41';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
-const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v1';
+const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v2';
 const MAX_ANNOUNCED_IDS = 50;
 
 let notificationPoll = null;
 let refreshingBadge = false;
+let appReady = false;
+let pendingAnnouncementRefresh = false;
 let announcedIds = loadAnnouncedIds();
 
 export function initNotificationsScreen(){
@@ -20,31 +22,51 @@ export function initNotificationsScreen(){
     openNotificationsSheet();
   }, true);
 
+  document.addEventListener('mgw:app-ready', () => {
+    appReady = true;
+    refreshNotificationBadge(true);
+  }, { once:true });
+
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      refreshNotificationBadge();
+      refreshNotificationBadge(appReady);
     }
   });
 
-  refreshNotificationBadge();
+  // Before the preloader is gone we may update only the bell badge.
+  // Showing a toast here would place it underneath the loading screen.
+  refreshNotificationBadge(false);
+
   if (!notificationPoll) {
-    notificationPoll = setInterval(refreshNotificationBadge, 10000);
+    notificationPoll = setInterval(() => refreshNotificationBadge(appReady), 10000);
   }
 }
 
-export async function refreshNotificationBadge(){
-  if (refreshingBadge) return;
+export async function refreshNotificationBadge(announce = appReady){
+  if (refreshingBadge) {
+    if (announce) pendingAnnouncementRefresh = true;
+    return;
+  }
+
   refreshingBadge = true;
 
   try {
     const result = await api.notifications(false);
     const items = Array.isArray(result.items) ? result.items : [];
     setUnreadCount(Number(result.unread_count || 0));
-    announceNewestUnread(items);
+
+    if (announce && appReady) {
+      announceNewestUnread(items);
+    }
   } catch (error) {
     // Keep the current badge state on a temporary network error.
   } finally {
     refreshingBadge = false;
+
+    if (pendingAnnouncementRefresh) {
+      pendingAnnouncementRefresh = false;
+      queueMicrotask(() => refreshNotificationBadge(true));
+    }
   }
 }
 
