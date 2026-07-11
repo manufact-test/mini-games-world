@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=34';
+import { api } from '../api/client.js?v=38';
 import { state } from '../state.js?v=27';
 import { openSheet } from '../components/sheet.js?v=27';
 import { toast } from '../components/toast.js?v=27';
