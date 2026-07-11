@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=45';
+import { api } from '../api/client.js?v=46';
 import { openSheet } from '../components/sheet.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
@@ -36,9 +36,8 @@ export function initWeeklyMatchInfo(){
 export function syncWeeklyMatchButton(status = null){
   if (status && typeof status === 'object') cachedStatus = status;
 
-  const roomCard = document.getElementById('roomCard');
   const topUpButton = document.getElementById('topUpMatch');
-  if (!roomCard || !topUpButton) return;
+  if (!topUpButton) return;
 
   const actions = topUpButton.closest('.room-actions');
   if (!actions) return;
@@ -48,23 +47,15 @@ export function syncWeeklyMatchButton(status = null){
   let button = document.getElementById('weeklyMatchInfo');
   if (!button) {
     actions.insertAdjacentHTML('beforeend', `
-      <button class="btn ghost" id="weeklyMatchInfo" type="button">Прогресс</button>
+      <button class="btn ghost" id="weeklyMatchInfo" type="button">Подробнее</button>
     `);
     button = document.getElementById('weeklyMatchInfo');
   }
 
-  if (!button) return;
-
-  const minGames = Number(cachedStatus?.min_completed_games ?? cachedStatus?.min_completed_matches ?? 3);
-  const completed = Math.min(
-    minGames,
-    Math.max(0, Number(cachedStatus?.completed_games ?? cachedStatus?.completed_match_games ?? 0))
-  );
-
-  button.textContent = cachedStatus ? `Прогресс ${completed}/${minGames}` : 'Прогресс';
-  button.setAttribute('aria-label', cachedStatus
-    ? `Прогресс еженедельного бонуса: ${completed} из ${minGames} игр`
-    : 'Прогресс еженедельного бонуса');
+  if (button) {
+    button.textContent = 'Подробнее';
+    button.setAttribute('aria-label', 'Подробнее о еженедельных бесплатных коинах');
+  }
 }
 
 export async function refreshWeeklyMatchProgress(){
@@ -73,7 +64,6 @@ export async function refreshWeeklyMatchProgress(){
   refreshPromise = api.weeklyMatchStatus()
     .then(result => {
       cachedStatus = result.weekly_match || {};
-      syncWeeklyMatchButton(cachedStatus);
       return cachedStatus;
     })
     .catch(() => cachedStatus)
@@ -88,7 +78,7 @@ async function openWeeklyMatchInfo(){
   haptic('light');
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бесплатные коины</h2><p>Проверяем ваш прогресс за текущую неделю.</p></div>
+      <div><h2>Бесплатные коины</h2><p>Еженедельный бонус за игровую активность.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="notifications-loading">
@@ -114,18 +104,11 @@ function renderWeeklyMatchInfo(status){
     Math.max(0, Number(status.completed_games ?? status.completed_match_games ?? 0))
   );
   const remaining = Math.max(0, Number(status.remaining_games ?? status.remaining_match_games ?? 0));
-  const eligible = Boolean(status.eligible_for_next);
-  const firstGrantPending = Boolean(status.first_grant_pending);
   const nextDate = formatScheduleDate(status.next_bonus_at, status.timezone);
 
-  let eligibilityText = '';
-  if (firstGrantPending) {
-    eligibilityText = `Это ваше первое еженедельное начисление: +${amount.toLocaleString('ru-RU')} коинов будет доступно независимо от текущего прогресса. После первого начисления для следующих недель нужно завершать ${minGames} игры.`;
-  } else if (eligible) {
-    eligibilityText = `Условие выполнено. В ближайший понедельник в 12:00 в Матч-комнату будет начислено +${amount.toLocaleString('ru-RU')} коинов.`;
-  } else {
-    eligibilityText = `Завершите ещё ${remaining} ${pluralizeGames(remaining)}, чтобы получить ближайшее еженедельное начисление.`;
-  }
+  const progressText = remaining === 0
+    ? 'Условие на эту неделю выполнено.'
+    : `До бонуса осталось завершить ${remaining} ${pluralizeGames(remaining)}.`;
 
   openSheet(`
     <div class="sheet-head">
@@ -148,10 +131,8 @@ function renderWeeklyMatchInfo(status){
       </div>
     </div>
 
-    <div class="small-note">${escapeHtml(eligibilityText)}</div>
-
     <div class="small-note">
-      Для прогресса подходит любая завершённая игра в Mini Games World: любая мини-игра, размер поля и игровая комната. Поиск соперника без завершённой игры не считается. Начисление добавляет +${amount.toLocaleString('ru-RU')} коинов к текущему балансу Матч-комнаты.
+      Каждый понедельник в 12:00 начисляем +${amount.toLocaleString('ru-RU')} коинов в Матч-комнату, если за неделю завершены ${minGames} любые игры. ${escapeHtml(progressText)}
     </div>
 
     <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
