@@ -19,6 +19,10 @@ export function initTicTacToeEntry(){
   document.addEventListener('click', event => {
     const button = event.target.closest('#playTicTacToe');
     if (!button) return;
+
+    // This game module is the single active owner of the Tic Tac Toe setup flow.
+    // Stop the legacy home-screen listener from opening its old duplicate setup.
+    event.stopImmediatePropagation();
     openGameSetup();
   });
 }
