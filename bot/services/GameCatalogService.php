@@ -18,41 +18,14 @@ final class GameCatalogService
 
         sort($boardSizes);
         $defaultBoardSize = in_array(3, $boardSizes, true) ? 3 : $boardSizes[0];
+        $gamesDir = dirname(__DIR__) . '/games';
+
+        $ticTacToe = require $gamesDir . '/tictactoe/definition.php';
+        $fourInARow = require $gamesDir . '/four-in-a-row/definition.php';
 
         $this->games = [
-            'tictactoe' => [
-                'id' => 'tictactoe',
-                'title' => 'Крестики-нолики',
-                'enabled' => true,
-                'engine' => 'tictactoe',
-                'renderer' => 'grid_marks',
-                'action_type' => 'cell',
-                'min_players' => 2,
-                'max_players' => 2,
-                'rooms' => ['match', 'gold'],
-                'supports_bot' => true,
-                'board_sizes' => $boardSizes,
-                'default_board_size' => $defaultBoardSize,
-                'board_columns' => $defaultBoardSize,
-                'board_rows' => $defaultBoardSize,
-            ],
-            'four_in_a_row' => [
-                'id' => 'four_in_a_row',
-                'title' => '4 в ряд',
-                'enabled' => true,
-                'engine' => 'four_in_a_row',
-                'renderer' => 'four_in_a_row',
-                'action_type' => 'column',
-                'min_players' => 2,
-                'max_players' => 2,
-                'rooms' => ['match', 'gold'],
-                'supports_bot' => true,
-                // Three size variants. The win condition remains four connected discs.
-                'board_sizes' => [6, 7, 8],
-                'default_board_size' => 7,
-                'board_columns' => 7,
-                'board_rows' => 6,
-            ],
+            'tictactoe' => $ticTacToe,
+            'four_in_a_row' => $fourInARow,
         ];
     }
 
