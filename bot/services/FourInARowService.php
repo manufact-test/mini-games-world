@@ -3,9 +3,7 @@ declare(strict_types=1);
 
 final class FourInARowService
 {
-    private const COLUMNS = 7;
-    private const ROWS = 6;
-    private const CELLS = self::COLUMNS * self::ROWS;
+    private const CONNECT_LENGTH = 4;
 
     public function __construct(
         private array $config,
@@ -17,13 +15,17 @@ final class FourInARowService
 
     public function initializeGame(array &$game): void
     {
-        $game['game_type'] = 'four_in_a_row';
-        $game['board_size'] = self::COLUMNS;
-        $game['board_columns'] = self::COLUMNS;
-        $game['board_rows'] = self::ROWS;
-        $game['connect_length'] = 4;
+        [$columns, $rows] = $this->dimensionsForGame($game);
+        $cells = $columns * $rows;
 
-        $validBoard = is_string($game['board'] ?? null) && strlen((string)$game['board']) === self::CELLS;
+        $game['game_type'] = 'four_in_a_row';
+        $game['game_variant_size'] = $columns;
+        $game['board_size'] = $columns;
+        $game['board_columns'] = $columns;
+        $game['board_rows'] = $rows;
+        $game['connect_length'] = self::CONNECT_LENGTH;
+
+        $validBoard = is_string($game['board'] ?? null) && strlen((string)$game['board']) === $cells;
         if (!empty($game['four_in_a_row_initialized']) && $validBoard) {
             return;
         }
@@ -38,7 +40,7 @@ final class FourInARowService
         $redId = $playerIds[1 - $first];
         $now = now_iso();
 
-        $game['board'] = str_repeat('-', self::CELLS);
+        $game['board'] = str_repeat('-', $cells);
         $game['symbols'] = [
             $yellowId => 'Y',
             $redId => 'R',
@@ -51,7 +53,7 @@ final class FourInARowService
         $game['last_move_at'] = $now;
         $game['updated_at'] = $now;
         $game['four_in_a_row_initialized'] = true;
-        $game['engine_version'] = 1;
+        $game['engine_version'] = 2;
 
         if (!empty($game['is_bot_game'])) {
             $botId = (string)($game['bot_id'] ?? '');
@@ -113,6 +115,7 @@ final class FourInARowService
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
+        [$columns, $rows] = $this->dimensionsForGame($game);
 
         if (($game['status'] ?? '') !== 'active') {
             return $game;
@@ -127,7 +130,7 @@ final class FourInARowService
             throw new RuntimeException('Сейчас не ваш ход.');
         }
 
-        if ($column < 0 || $column >= self::COLUMNS) {
+        if ($column < 0 || $column >= $columns) {
             throw new RuntimeException('Выберите доступный столбец.');
         }
 
@@ -137,7 +140,7 @@ final class FourInARowService
         }
 
         $board = (string)$game['board'];
-        $cell = $this->lowestEmptyCell($board, $column);
+        $cell = $this->lowestEmptyCell($board, $columns, $rows, $column);
         if ($cell === null) {
             throw new RuntimeException('Этот столбец уже заполнен.');
         }
@@ -150,7 +153,7 @@ final class FourInARowService
         $game['updated_at'] = now_iso();
         unset($game['bot_move_after_at']);
 
-        $winningCells = $this->winningCells($board, $symbol);
+        $winningCells = $this->winningCells($board, $columns, $rows, $symbol);
         if ($winningCells !== []) {
             $game['winning_cells'] = $winningCells;
             $this->settlement->finish($db, $game, $userId, 'normal_win');
@@ -200,6 +203,8 @@ final class FourInARowService
     public function publicGame(array $game, string $viewerId): array
     {
         $this->initializeGame($game);
+        [$columns, $rows] = $this->dimensionsForGame($game);
+
         $players = [];
         foreach ($game['player_ids'] ?? [] as $playerId) {
             $pid = (string)$playerId;
@@ -221,9 +226,10 @@ final class FourInARowService
             'room' => (string)($game['room'] ?? 'match'),
             'room_name' => ($game['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
             'bet' => (int)($game['bet'] ?? 0),
-            'board_size' => self::COLUMNS,
-            'board_columns' => self::COLUMNS,
-            'board_rows' => self::ROWS,
+            'board_size' => $columns,
+            'board_columns' => $columns,
+            'board_rows' => $rows,
+            'connect_length' => self::CONNECT_LENGTH,
             'board' => (string)$game['board'],
             'turn' => (string)($game['turn'] ?? ''),
             'players' => $players,
@@ -243,6 +249,7 @@ final class FourInARowService
 
     private function makeBotMove(array &$db, array &$game): void
     {
+        [$columns, $rows] = $this->dimensionsForGame($game);
         $botId = (string)($game['bot_id'] ?? '');
         $humanId = $this->otherPlayerId($game, $botId);
         $board = (string)$game['board'];
@@ -250,21 +257,22 @@ final class FourInARowService
         $humanSymbol = (string)($game['symbols'][$humanId] ?? 'Y');
         $difficulty = (string)($game['bot_difficulty'] ?? 'medium');
 
-        $column = $this->bot->chooseColumn($board, $botSymbol, $humanSymbol, $difficulty);
+        $column = $this->bot->chooseColumn($board, $columns, $rows, $botSymbol, $humanSymbol, $difficulty);
         if ($column === null) {
             $this->settlement->finish($db, $game, null, 'draw');
             return;
         }
 
-        $cell = $this->lowestEmptyCell($board, $column);
+        $cell = $this->lowestEmptyCell($board, $columns, $rows, $column);
         if ($cell === null) {
-            $available = $this->availableColumns($board);
+            $available = $this->availableColumns($board, $columns);
             if ($available === []) {
                 $this->settlement->finish($db, $game, null, 'draw');
                 return;
             }
+
             $column = $available[array_rand($available)];
-            $cell = $this->lowestEmptyCell($board, $column);
+            $cell = $this->lowestEmptyCell($board, $columns, $rows, $column);
         }
 
         if ($cell === null) {
@@ -280,7 +288,7 @@ final class FourInARowService
         $game['updated_at'] = now_iso();
         unset($game['bot_move_after_at']);
 
-        $winningCells = $this->winningCells($board, $botSymbol);
+        $winningCells = $this->winningCells($board, $columns, $rows, $botSymbol);
         if ($winningCells !== []) {
             $game['winning_cells'] = $winningCells;
             $this->settlement->finish($db, $game, $botId, 'normal_win', $humanId);
@@ -297,55 +305,89 @@ final class FourInARowService
         $game['turn_started_at'] = now_iso();
     }
 
-    private function winningCells(string $board, string $symbol): array
-    {
+    private function winningCells(
+        string $board,
+        int $columns,
+        int $rows,
+        string $symbol
+    ): array {
         foreach ([[0, 1], [1, 0], [1, 1], [1, -1]] as [$dr, $dc]) {
-            for ($row = 0; $row < self::ROWS; $row++) {
-                for ($col = 0; $col < self::COLUMNS; $col++) {
+            for ($row = 0; $row < $rows; $row++) {
+                for ($col = 0; $col < $columns; $col++) {
                     $cells = [];
-                    for ($step = 0; $step < 4; $step++) {
+
+                    for ($step = 0; $step < self::CONNECT_LENGTH; $step++) {
                         $r = $row + ($dr * $step);
                         $c = $col + ($dc * $step);
-                        if ($r < 0 || $r >= self::ROWS || $c < 0 || $c >= self::COLUMNS) {
+
+                        if ($r < 0 || $r >= $rows || $c < 0 || $c >= $columns) {
                             $cells = [];
                             break;
                         }
-                        $index = $r * self::COLUMNS + $c;
+
+                        $index = $r * $columns + $c;
                         if (($board[$index] ?? '-') !== $symbol) {
                             $cells = [];
                             break;
                         }
+
                         $cells[] = $index;
                     }
-                    if (count($cells) === 4) {
+
+                    if (count($cells) === self::CONNECT_LENGTH) {
                         return $cells;
                     }
                 }
             }
         }
+
         return [];
     }
 
-    private function lowestEmptyCell(string $board, int $column): ?int
-    {
-        for ($row = self::ROWS - 1; $row >= 0; $row--) {
-            $index = $row * self::COLUMNS + $column;
+    private function lowestEmptyCell(
+        string $board,
+        int $columns,
+        int $rows,
+        int $column
+    ): ?int {
+        for ($row = $rows - 1; $row >= 0; $row--) {
+            $index = $row * $columns + $column;
             if (($board[$index] ?? '-') === '-') {
                 return $index;
             }
         }
+
         return null;
     }
 
-    private function availableColumns(string $board): array
+    private function availableColumns(string $board, int $columns): array
     {
-        $columns = [];
-        for ($column = 0; $column < self::COLUMNS; $column++) {
+        $available = [];
+        for ($column = 0; $column < $columns; $column++) {
             if (($board[$column] ?? '-') === '-') {
-                $columns[] = $column;
+                $available[] = $column;
             }
         }
-        return $columns;
+        return $available;
+    }
+
+    private function dimensionsForGame(array $game): array
+    {
+        $requested = (int)($game['game_variant_size'] ?? $game['board_size'] ?? 7);
+
+        // Backward compatibility with temporary proxy sizes used by the first v49 build.
+        $requested = match ($requested) {
+            3 => 6,
+            5 => 7,
+            9 => 8,
+            default => $requested,
+        };
+
+        return match ($requested) {
+            6 => [6, 5],
+            8 => [8, 7],
+            default => [7, 6],
+        };
     }
 
     private function otherPlayerId(array $game, string $userId): string
