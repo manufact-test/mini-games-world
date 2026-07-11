@@ -1,11 +1,17 @@
 import { state } from '../state.js?v=21';
-import { api } from '../api/client.js?v=45';
+import { api } from '../api/client.js?v=47';
 import { toast } from '../components/toast.js?v=21';
 import { openSheet, closeSheet } from '../components/sheet.js?v=21';
 import { showScreen } from '../router.js?v=21';
 import { clearTimer, renderBalances } from '../ui.js?v=21';
 import { APP_CONFIG } from '../config.js?v=21';
 import { haptic } from '../telegram/telegram-app.js?v=21';
+import {
+  gameMetaText,
+  gameTypeOf,
+  playerMarkText,
+  renderGameSurface,
+} from '../games/game-router.js?v=47';
 
 const weeklyProgressNotifiedGames = new Set();
 
@@ -43,37 +49,33 @@ function renderGame(game, me){
   const turn = document.getElementById('turnText');
   const timer = document.getElementById('timerText');
   const players = document.getElementById('playersRow');
-  const board = document.getElementById('gameBoard');
+  const surface = document.getElementById('gameBoard');
 
-  if (!meta || !turn || !timer || !players || !board) return;
+  if (!meta || !turn || !timer || !players || !surface) return;
 
-  meta.textContent = `${game.room_name} · ${game.bet} коинов · ${game.board_size}×${game.board_size}`;
+  meta.textContent = gameMetaText(game);
   turn.textContent = game.status === 'finished' ? 'Игра завершена' : (String(game.turn) === String(me.id) ? 'Ваш ход' : 'Ход соперника');
   timer.textContent = game.status === 'active' ? `${game.time_left ?? 60} сек` : '—';
 
   players.innerHTML = game.players.map(player => `
     <div class="game-player ${String(game.turn) === String(player.id) && game.status === 'active' ? 'active' : ''}">
       <div class="name">${escapeHtml(player.name)}</div>
-      <div class="mark">${player.symbol === 'X' ? '✕' : '○'} · ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</div>
+      <div class="mark">${escapeHtml(playerMarkText(game, player))} · ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</div>
     </div>
   `).join('');
 
-  board.className = `board size-${game.board_size}`;
-  board.innerHTML = game.board.split('').map((cell, index) => {
-    const isEmpty = cell === '-';
-    const canMove = game.status === 'active' && String(game.turn) === String(me.id) && isEmpty;
-    const label = cell === '-' ? '' : (cell === 'X' ? '✕' : '○');
-
-    return `<button class="cell ${cell === 'X' ? 'x' : ''} ${cell === 'O' ? 'o' : ''} ${canMove ? '' : 'locked'}" data-cell="${index}" ${canMove ? '' : 'disabled'} type="button">${label}</button>`;
-  }).join('');
-
-  board.querySelectorAll('[data-cell]').forEach(btn => btn.addEventListener('click', () => makeMove(game.id, Number(btn.dataset.cell))));
+  renderGameSurface({
+    game,
+    me,
+    container: surface,
+    onAction: gameAction => applyGameAction(game.id, gameAction),
+  });
 }
 
-async function makeMove(gameId, cell){
+async function applyGameAction(gameId, gameAction){
   try {
     haptic('light');
-    const result = await api.makeMove(gameId, cell);
+    const result = await api.gameAction(gameId, gameAction);
 
     if (result.user) { state.user = result.user; state.session = result.session || state.session; renderBalances(state.user); }
 
@@ -158,6 +160,7 @@ async function startSameSearchFromResult(){
   const room = lastGame.room || state.room || 'match';
   const boardSize = Number(lastGame.board_size || state.selectedBoardSize || 3);
   const bet = room === 'match' ? APP_CONFIG.matchBet : Number(lastGame.bet || state.selectedBet || APP_CONFIG.matchBet);
+  const gameType = gameTypeOf(lastGame);
 
   state.room = room;
   state.selectedBoardSize = boardSize;
@@ -167,7 +170,7 @@ async function startSameSearchFromResult(){
   closeSheet();
 
   try {
-    const result = await api.startSearch(room, bet, boardSize);
+    const result = await api.startSearch(room, bet, boardSize, gameType);
 
     if (result.user) {
       state.user = result.user;
