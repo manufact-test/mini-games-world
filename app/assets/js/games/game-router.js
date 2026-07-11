@@ -3,12 +3,22 @@ import {
   ticTacToeMeta,
   ticTacToePlayerMark,
 } from './tictactoe-renderer.js?v=47';
+import {
+  renderFourInARowSurface,
+  fourInARowMeta,
+  fourInARowPlayerMark,
+} from './four-in-a-row-renderer.js?v=49';
 
 const routes = {
   tictactoe: {
     render: renderTicTacToeSurface,
     meta: ticTacToeMeta,
     playerMark: ticTacToePlayerMark,
+  },
+  four_in_a_row: {
+    render: renderFourInARowSurface,
+    meta: fourInARowMeta,
+    playerMark: fourInARowPlayerMark,
   },
 };
 
