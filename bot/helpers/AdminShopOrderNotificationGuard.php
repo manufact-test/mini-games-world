@@ -29,11 +29,12 @@ final class AdminShopOrderNotificationGuard
 
         $beforeStatus = (string)($before['status'] ?? 'pending');
         $afterStatus = (string)($after['status'] ?? '');
+        $notifications = new ShopOrderNotificationService($this->telegram, $this->config);
 
         if ($beforeStatus === 'pending' && $afterStatus === 'done') {
-            $this->telegram->notifyUserAboutShopOrderDecision($after, 'done');
+            $notifications->notifyUserAboutDecision($after, 'done');
         } elseif ($beforeStatus === 'pending' && $afterStatus === 'rejected') {
-            $this->telegram->notifyUserAboutShopOrderDecision($after, 'rejected');
+            $notifications->notifyUserAboutDecision($after, 'rejected');
         }
 
         return true;
