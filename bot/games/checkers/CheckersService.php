@@ -25,6 +25,10 @@ final class CheckersService
             throw new RuntimeException('Для шашек нужны два игрока.');
         }
 
+        if (random_int(0, 1) === 1) {
+            [$playerIds[0], $playerIds[1]] = [$playerIds[1], $playerIds[0]];
+        }
+
         $whiteId = $playerIds[0];
         $blackId = $playerIds[1];
         $now = now_iso();
