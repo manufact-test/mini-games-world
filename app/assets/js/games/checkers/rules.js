@@ -22,11 +22,11 @@ export function checkersRules(){
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Серия взятий</strong><span>Если после первого взятия той же шашкой можно побить ещё одну фигуру, нужно продолжать ход этой же шашкой. Если есть несколько допустимых путей взятия, можно выбрать любой из них.</span></div>
+        <div class="game-rule-copy"><strong>Серия взятий</strong><span>Если после первого взятия той же шашкой можно побить ещё одну фигуру, нужно продолжать ход этой же шашкой. Если есть несколько допустимых путей взятия, можно выбрать любой.</span></div>
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Дамка</strong><span>Дойдя до последнего ряда, шашка становится дамкой. Дамка ходит по диагонали на любое свободное расстояние. При взятии она перепрыгивает фигуру соперника и может приземлиться на любую допустимую свободную клетку дальше по этой диагонали.</span></div>
+        <div class="game-rule-copy"><strong>Дамка</strong><span>Дойдя до последнего ряда, шашка становится дамкой. Дамка ходит по диагонали на любое свободное расстояние. При взятии она перепрыгивает фигуру соперника и может приземлиться на любую допустимую свободную клетку дальше по диагонали.</span></div>
         ${ruleBoard('king')}
       </section>
 
@@ -44,36 +44,50 @@ export function checkersRules(){
 }
 
 function ruleBoard(type){
-  const cells = Array.from({ length:25 }, () => '');
+  const cells = Array.from({ length:64 }, () => '');
   const set = (index, value) => { cells[index] = value; };
 
   if (type === 'start') {
-    [1,3,5,7,9].forEach(index => set(index, 'black'));
-    [15,17,19,21,23].forEach(index => set(index, 'white'));
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < 8; col += 1) {
+        if ((row + col) % 2 === 1) set(row * 8 + col, 'black');
+      }
+    }
+    for (let row = 5; row < 8; row += 1) {
+      for (let col = 0; col < 8; col += 1) {
+        if ((row + col) % 2 === 1) set(row * 8 + col, 'white');
+      }
+    }
   }
+
   if (type === 'move') {
-    set(17, 'white selected');
-    set(11, 'target');
-    set(13, 'target');
+    set(42, 'white selected');
+    set(33, 'target');
+    set(35, 'target');
   }
+
   if (type === 'capture') {
-    set(17, 'white selected');
-    set(13, 'black danger');
-    set(9, 'capture-target');
+    set(42, 'white selected');
+    set(35, 'black danger');
+    set(28, 'capture-target');
   }
+
   if (type === 'king') {
-    set(21, 'white king selected');
-    set(17, 'ray');
-    set(13, 'black danger');
-    set(9, 'capture-target');
+    set(56, 'white king selected');
+    set(49, 'ray');
+    set(42, 'ray');
+    set(35, 'black danger');
+    [28,21,14,7].forEach(index => set(index, 'capture-target'));
   }
 
   return `<div class="checkers-rule-board ${type}">${cells.map((value, index) => {
-    const row = Math.floor(index / 5);
-    const col = index % 5;
+    const row = Math.floor(index / 8);
+    const col = index % 8;
     const dark = (row + col) % 2 === 1;
     const parts = value.split(' ').filter(Boolean);
     const piece = parts.includes('white') || parts.includes('black');
-    return `<i class="${dark ? 'dark' : 'light'} ${parts.filter(part => !['white','black','king'].includes(part)).join(' ')}">${piece ? `<b class="${parts.includes('white') ? 'white' : 'black'} ${parts.includes('king') ? 'king' : ''}">${parts.includes('king') ? '♛' : ''}</b>` : ''}</i>`;
+    const cellClasses = parts.filter(part => !['white','black','king'].includes(part)).join(' ');
+    const pieceClasses = [parts.includes('white') ? 'white' : 'black', parts.includes('king') ? 'king' : ''].filter(Boolean).join(' ');
+    return `<i class="${dark ? 'dark' : 'light'} ${cellClasses}">${piece ? `<b class="${pieceClasses}">${parts.includes('king') ? '♛' : ''}</b>` : ''}</i>`;
   }).join('')}</div>`;
 }
