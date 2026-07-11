@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mini Games World</title>
-  <link rel="stylesheet" href="./assets/css/main.css?v=50" />
+  <link rel="stylesheet" href="./assets/css/main.css?v=52" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="app" id="app" data-build="v51-four-in-a-row-runtime-fix">
+  <div class="app" id="app" data-build="v52-game-modules">
     <div class="preloader" id="preloader">
       <div class="load-card">
         <div class="abstract-loader" aria-hidden="true">
@@ -72,13 +72,13 @@
         <div class="activity-grid" id="activityGrid"></div>
 
         <section class="section-title"><h2>Игры</h2></section>
-        <section class="game-card has-rules">
-          <button class="game-rules-button" data-game-rules="tictactoe" type="button" aria-label="Правила игры Крестики-нолики">?</button>
+        <section class="game-card has-rules" data-game-card="tictactoe">
+          <button class="game-rules-button" data-game-rules="tictactoe" type="button" aria-label="Правила игры">?</button>
           <div class="game-top">
-            <div class="game-icon">✕○</div>
+            <div class="game-icon" data-game-icon></div>
             <div>
-              <h3>Крестики-нолики</h3>
-              <p>Соберите линию из своих знаков раньше соперника.</p>
+              <h3 data-game-title></h3>
+              <p data-game-description></p>
             </div>
           </div>
           <div class="btn-row">
@@ -87,13 +87,13 @@
           </div>
         </section>
 
-        <section class="game-card has-rules">
-          <button class="game-rules-button" data-game-rules="four_in_a_row" type="button" aria-label="Правила игры 4 в ряд">?</button>
+        <section class="game-card has-rules" data-game-card="four_in_a_row">
+          <button class="game-rules-button" data-game-rules="four_in_a_row" type="button" aria-label="Правила игры">?</button>
           <div class="game-top">
-            <div class="game-icon">🔴🟡</div>
+            <div class="game-icon" data-game-icon></div>
             <div>
-              <h3>4 в ряд</h3>
-              <p>Соберите четыре свои фишки подряд раньше соперника.</p>
+              <h3 data-game-title></h3>
+              <p data-game-description></p>
             </div>
           </div>
           <div class="btn-row single">
@@ -178,6 +178,6 @@
     </div>
   </div>
 
-  <script type="module" src="./assets/js/main.js?v=51"></script>
+  <script type="module" src="./assets/js/main.js?v=52"></script>
 </body>
 </html>
