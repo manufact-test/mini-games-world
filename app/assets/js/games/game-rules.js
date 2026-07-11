@@ -4,7 +4,7 @@ import { gameTypeOf } from './game-router.js?v=57';
 import { ticTacToeRules } from './tictactoe/rules.js?v=53';
 import { fourInARowRules } from './four-in-a-row/rules.js?v=53';
 import { battleshipRules } from './battleship/rules.js?v=54';
-import { checkersRules } from './checkers/rules.js?v=57';
+import { checkersRules } from './checkers/rules.js?v=58';
 
 const RULE_RENDERERS = {
   tictactoe: ticTacToeRules,
