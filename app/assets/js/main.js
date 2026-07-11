@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v35-shop-admin-ux';
+window.__MGW_BUILD__ = 'v36-shop-admin-ux';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=34';
 import { state } from './state.js?v=27';
