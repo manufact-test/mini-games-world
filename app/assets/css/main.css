@@ -7,7 +7,10 @@
 @import url('./components/modals.css?v=27');
 @import url('./components/preloader.css?v=27');
 @import url('./components/account-shortcuts.css?v=40');
-@import url('./components/game-rules.css?v=50');
+@import url('./components/game-rules.css?v=52');
+@import url('./games/tictactoe/rules.css?v=52');
+@import url('./games/four-in-a-row/rules.css?v=52');
+@import url('./games/four-in-a-row/game.css?v=52');
 @import url('./screens/home.css?v=27');
 @import url('./screens/store.css?v=28');
 @import url('./screens/store-cleanup.css?v=43');
@@ -16,11 +19,9 @@
 @import url('./screens/notifications.css?v=38');
 @import url('./screens/search.css?v=27');
 @import url('./screens/game.css?v=27');
-@import url('./screens/four-in-a-row.css?v=50');
 @import url('./screens/profile.css?v=48');
 @import url('./animations.css?v=27');
 @import url('./responsive.css?v=37');
-
 
 /* MVP-7.1.2 history tabs */
 .history-tabs{
@@ -29,7 +30,6 @@
   gap:8px;
   margin-bottom:12px;
 }
-
 .history-tab{
   border:1px solid var(--stroke);
   background:rgba(255,255,255,.055);
@@ -41,17 +41,10 @@
   font-weight:950;
   transition:background .15s ease, color .15s ease, border-color .15s ease;
 }
-
 .history-tab.active{
   color:var(--text);
   border-color:rgba(124,92,255,.45);
   background:rgba(124,92,255,.18);
 }
-
-.history-tab-panel{
-  display:none;
-}
-
-.history-tab-panel.active{
-  display:block;
-}
+.history-tab-panel{display:none}
+.history-tab-panel.active{display:block}
