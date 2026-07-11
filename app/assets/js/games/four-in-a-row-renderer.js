@@ -1,6 +1,6 @@
 export function renderFourInARowSurface({ game, me, container, onAction }){
-  const columns = Number(game?.board_columns || 7);
-  const rows = Number(game?.board_rows || 6);
+  const columns = Math.max(4, Number(game?.board_columns || game?.board_size || 7));
+  const rows = Math.max(4, Number(game?.board_rows || Math.max(5, columns - 1)));
   const expectedCells = columns * rows;
   const board = String(game?.board || '').padEnd(expectedCells, '-').slice(0, expectedCells);
   const winning = new Set((game?.winning_cells || []).map(Number));
@@ -18,7 +18,7 @@ export function renderFourInARowSurface({ game, me, container, onAction }){
       index === lastMove ? 'last-move' : '',
     ].filter(Boolean).join(' ');
 
-    return `<div class="${classes}" aria-hidden="true"><span></span></div>`;
+    return `<div class="${classes}" role="gridcell" aria-label="${discLabel(value)}"><span></span></div>`;
   }).join('');
 
   const controls = Array.from({ length: columns }, (_, column) => {
@@ -28,8 +28,14 @@ export function renderFourInARowSurface({ game, me, container, onAction }){
   }).join('');
 
   container.className = 'board four-in-a-row-board';
+  container.dataset.gameType = 'four_in_a_row';
   container.innerHTML = `
-    <div class="four-board-frame" style="--four-columns:${columns};--four-rows:${rows}">
+    <div
+      class="four-board-frame"
+      style="--four-columns:${columns};--four-rows:${rows}"
+      role="grid"
+      aria-label="Поле игры 4 в ряд ${columns} на ${rows}"
+    >
       <div class="four-disc-grid">${cells}</div>
       <div class="four-column-controls">${controls}</div>
     </div>
@@ -46,11 +52,19 @@ export function renderFourInARowSurface({ game, me, container, onAction }){
 }
 
 export function fourInARowMeta(game){
-  return `${game.room_name} · ${game.bet} коинов · 7×6`;
+  const columns = Number(game?.board_columns || game?.board_size || 7);
+  const rows = Number(game?.board_rows || Math.max(5, columns - 1));
+  return `${game.room_name} · ${game.bet} коинов · ${columns}×${rows}`;
 }
 
 export function fourInARowPlayerMark(player){
   if (player?.symbol === 'Y') return '🟡';
   if (player?.symbol === 'R') return '🔴';
   return '●';
+}
+
+function discLabel(value){
+  if (value === 'Y') return 'Жёлтая фишка';
+  if (value === 'R') return 'Красная фишка';
+  return 'Пустая клетка';
 }
