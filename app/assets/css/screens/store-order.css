@@ -1,0 +1,101 @@
+/* MVP-8.3 safe shop order confirmation */
+.store-order-review{
+  display:flex;
+  flex-direction:column;
+  border:1px solid var(--stroke);
+  border-radius:20px;
+  overflow:hidden;
+  background:rgba(255,255,255,.045);
+}
+.store-order-review.compact{border-radius:18px}
+.store-order-review-row{
+  min-height:48px;
+  padding:11px 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.store-order-review-row:last-child{border-bottom:0}
+.store-order-review-row span{
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+}
+.store-order-review-row strong{
+  max-width:62%;
+  color:var(--text);
+  font-size:13px;
+  line-height:1.35;
+  text-align:right;
+  word-break:break-word;
+}
+.store-order-review-row.total{
+  background:rgba(242,197,75,.09);
+}
+.store-order-review-row.total span,
+.store-order-review-row.total strong{
+  color:var(--text);
+  font-weight:950;
+}
+
+.store-order-warning{
+  padding:12px 13px;
+  border-radius:17px;
+  border:1px solid rgba(242,197,75,.24);
+  background:rgba(242,197,75,.09);
+  color:var(--soft);
+  font-size:12.5px;
+  line-height:1.5;
+}
+.store-order-warning.safe{
+  border-color:rgba(83,201,126,.25);
+  background:rgba(83,201,126,.09);
+}
+
+.store-order-actions{
+  display:grid;
+  grid-template-columns:1fr 1.25fr;
+  gap:10px;
+}
+
+.store-order-success{
+  min-height:150px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:7px;
+  padding:20px 16px;
+  border:1px solid rgba(83,201,126,.22);
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(83,201,126,.10),rgba(255,255,255,.04));
+}
+.store-order-success-icon{
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  border-radius:20px;
+  background:rgba(83,201,126,.16);
+  border:1px solid rgba(83,201,126,.28);
+  font-size:28px;
+  font-weight:950;
+}
+.store-order-success strong{
+  margin-top:3px;
+  font-size:18px;
+  letter-spacing:-.025em;
+}
+.store-order-success span{
+  color:var(--muted);
+  font-size:13px;
+}
+
+@media (max-height:680px){
+  .store-order-review-row{min-height:44px;padding:9px 11px}
+  .store-order-success{min-height:128px;padding:15px}
+  .store-order-success-icon{width:50px;height:50px;border-radius:17px;font-size:24px}
+}
