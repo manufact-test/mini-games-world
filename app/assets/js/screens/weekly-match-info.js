@@ -40,7 +40,7 @@ async function openWeeklyMatchInfo(){
   haptic('light');
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бесплатные Match-коины</h2><p>Проверяем ваш прогресс за текущую неделю.</p></div>
+      <div><h2>Бесплатные коины</h2><p>Проверяем ваш прогресс за текущую неделю.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="notifications-loading">
@@ -68,7 +68,7 @@ function renderWeeklyMatchInfo(status){
 
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бесплатные Match-коины</h2><p>Еженедельный бонус за активность.</p></div>
+      <div><h2>Бесплатные коины</h2><p>Еженедельный бонус за активность в Матч-комнате.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
@@ -79,7 +79,7 @@ function renderWeeklyMatchInfo(status){
       </div>
       <div>
         <span>Размер бонуса</span>
-        <strong>+${amount.toLocaleString('ru-RU')} Match</strong>
+        <strong>+${amount.toLocaleString('ru-RU')} коинов</strong>
       </div>
       <div>
         <span>Ваш прогресс</span>
@@ -89,12 +89,12 @@ function renderWeeklyMatchInfo(status){
 
     <div class="small-note">
       ${eligible
-        ? `Условие выполнено. В ближайший понедельник в 12:00 вам будет начислено +${amount.toLocaleString('ru-RU')} Match-коинов.`
+        ? `Условие выполнено. В ближайший понедельник в 12:00 в Матч-комнату будет начислено +${amount.toLocaleString('ru-RU')} коинов.`
         : `Завершите ещё ${remaining} ${pluralizeMatches(remaining)}, чтобы получить ближайшее еженедельное начисление.`}
     </div>
 
     <div class="small-note">
-      Считаются только завершённые матчи в Match-комнате. Gold-матчи не учитываются. Начисление добавляет +${amount.toLocaleString('ru-RU')} к текущему балансу и не пополняет его «до» фиксированной суммы.
+      Считаются только завершённые матчи в Матч-комнате. Gold-матчи не учитываются. Начисление добавляет +${amount.toLocaleString('ru-RU')} коинов к текущему балансу и не пополняет его «до» фиксированной суммы.
     </div>
 
     <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
@@ -104,7 +104,7 @@ function renderWeeklyMatchInfo(status){
 function renderWeeklyMatchError(error){
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бесплатные Match-коины</h2><p>Не удалось загрузить прогресс.</p></div>
+      <div><h2>Бесплатные коины</h2><p>Не удалось загрузить прогресс.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="small-note">${escapeHtml(error?.message || 'Попробуйте открыть раздел ещё раз.')}</div>
