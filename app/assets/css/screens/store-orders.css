@@ -1,0 +1,150 @@
+/* MVP-8.4 shop order history */
+.store-orders-scroll{
+  min-height:0;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding-right:1px;
+}
+.store-orders-scroll::-webkit-scrollbar{display:none}
+
+.store-orders-loading,
+.store-orders-empty{
+  min-height:220px;
+  border:1px solid var(--stroke);
+  border-radius:22px;
+  background:rgba(255,255,255,.045);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:8px;
+  padding:24px 18px;
+}
+.store-orders-loading > div,
+.store-orders-empty > div{
+  width:58px;
+  height:58px;
+  border-radius:20px;
+  display:grid;
+  place-items:center;
+  font-size:28px;
+  background:rgba(255,255,255,.07);
+  border:1px solid var(--stroke);
+}
+.store-orders-loading strong,
+.store-orders-empty strong{font-size:17px;letter-spacing:-.02em}
+.store-orders-loading span,
+.store-orders-empty span{max-width:290px;color:var(--muted);font-size:13px;line-height:1.45}
+.store-orders-empty.error{min-height:190px}
+
+.store-orders-entry{
+  width:100%;
+  min-height:52px;
+  border:1px solid var(--stroke);
+  border-radius:17px;
+  background:rgba(255,255,255,.045);
+  color:var(--text);
+  padding:11px 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  text-align:left;
+}
+.store-orders-entry > div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.store-orders-entry strong{font-size:13.5px}
+.store-orders-entry span{color:var(--muted);font-size:11px;line-height:1.35}
+.store-orders-entry > b{font-size:20px;line-height:1;color:var(--muted)}
+
+.store-order-history-card{
+  border:1px solid var(--stroke);
+  border-radius:20px;
+  background:rgba(255,255,255,.045);
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+}
+.store-order-history-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.store-order-history-head > div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.store-order-history-head span{color:var(--muted);font-size:10.5px;font-weight:800}
+.store-order-history-head strong{font-size:15px;line-height:1.25;letter-spacing:-.02em}
+
+.store-order-status{
+  flex:0 0 auto;
+  border-radius:999px;
+  padding:6px 9px;
+  font-size:10px;
+  line-height:1;
+  font-weight:950;
+  white-space:nowrap;
+  border:1px solid var(--stroke);
+  background:rgba(255,255,255,.06);
+}
+.store-order-status.warning{color:#ffe19a;border-color:rgba(242,197,75,.28);background:rgba(242,197,75,.12)}
+.store-order-status.info{color:#b8c8ff;border-color:rgba(124,92,255,.34);background:rgba(124,92,255,.14)}
+.store-order-status.success{color:#9fe5b3;border-color:rgba(83,201,125,.3);background:rgba(83,201,125,.12)}
+.store-order-status.danger{color:#ffb2b2;border-color:rgba(255,107,107,.3);background:rgba(255,107,107,.12)}
+.store-order-status.muted{color:var(--muted)}
+
+.store-order-history-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.store-order-history-meta span{
+  border-radius:999px;
+  padding:5px 8px;
+  background:rgba(255,255,255,.055);
+  color:var(--soft);
+  font-size:10.5px;
+  font-weight:800;
+}
+
+.store-order-status-copy{
+  border-radius:15px;
+  border:1px solid var(--stroke);
+  background:rgba(255,255,255,.035);
+  color:var(--soft);
+  font-size:12px;
+  line-height:1.45;
+  padding:10px 11px;
+}
+.store-order-status-copy strong{color:var(--text)}
+.store-order-status-copy.danger{border-color:rgba(255,107,107,.2);background:rgba(255,107,107,.07)}
+.store-order-status-copy.success{border-color:rgba(83,201,125,.18);background:rgba(83,201,125,.06)}
+
+.store-order-refund{
+  border-radius:14px;
+  border:1px solid rgba(83,201,125,.26);
+  background:rgba(83,201,125,.1);
+  color:#9fe5b3;
+  font-size:11.5px;
+  font-weight:900;
+  padding:9px 10px;
+}
+
+.store-order-history-date{
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:5px 10px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:750;
+}
+
+@media (max-width:360px){
+  .store-order-history-head{flex-direction:column}
+  .store-order-status{align-self:flex-start}
+}
