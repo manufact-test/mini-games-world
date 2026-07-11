@@ -1,6 +1,6 @@
-window.__MGW_BUILD__ = 'v45-weekly-progress-fix';
+window.__MGW_BUILD__ = 'v46-weekly-bonus-ux';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
-import { api } from './api/client.js?v=45';
+import { api } from './api/client.js?v=46';
 import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { hidePreloader } from './components/preloader.js?v=42';
@@ -14,7 +14,7 @@ import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=34';
 import { initNotificationsScreen } from './screens/notifications-screen.js?v=42';
-import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=45';
+import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=46';
 import { initSearchScreen } from './screens/search-screen.js?v=27';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=45';
 import { initProfileScreen } from './screens/profile-screen.js?v=40';
