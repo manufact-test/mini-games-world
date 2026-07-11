@@ -36,6 +36,7 @@ final class GameActionService
         return match ($engine) {
             'tictactoe' => $this->applyTicTacToeAction($db, $user, $gameId, $actionType, $action),
             'four_in_a_row' => $this->applyFourInARowAction($db, $user, $gameId, $actionType, $action),
+            'battleship' => $this->runtime->applyBattleshipAction($db, $user, $gameId, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
     }
@@ -69,7 +70,7 @@ final class GameActionService
         $column = filter_var($action['column'] ?? null, FILTER_VALIDATE_INT);
 
         // Compatibility fallback for a stale v49 client that rendered the board as
-        // tic-tac-toe cells but was already connected to the new Four in a Row engine.
+        // tic-tac-toe cells but was already connected to the Four in a Row engine.
         if ($column === false && $actionType === 'cell') {
             $cell = filter_var($action['cell'] ?? null, FILTER_VALIDATE_INT);
             if ($cell !== false) {
