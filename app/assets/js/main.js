@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v48-mvp10-polish';
+window.__MGW_BUILD__ = 'v49-four-in-a-row';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -16,8 +16,10 @@ import { initStoreOrders } from './screens/store-orders.js?v=34';
 import { initNotificationsScreen } from './screens/notifications-screen.js?v=42';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=46';
 import { initSearchScreen } from './screens/search-screen.js?v=27';
-import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=47';
+import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=49';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
+import { initGameRules } from './games/game-rules.js?v=49';
+import { initFourInARowEntry } from './games/four-in-a-row-entry.js?v=49';
 import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
@@ -34,6 +36,8 @@ initAccountShortcuts();
 initSearchScreen();
 initGameScreen();
 initProfileScreen();
+initGameRules();
+initFourInARowEntry();
 
 async function boot(){
   try {
