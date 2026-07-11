@@ -112,8 +112,13 @@ final class NotificationService
 
     public function markAllRead(array &$db, string $userId): void
     {
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) {
+            $db['notifications'] = [];
+            return;
+        }
+
         $now = now_iso();
-        foreach ($db['notifications'] ?? [] as &$notification) {
+        foreach ($db['notifications'] as &$notification) {
             if (!is_array($notification)) {
                 continue;
             }
