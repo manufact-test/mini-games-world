@@ -13,6 +13,84 @@ final class WeeklyMatchEconomyService
         private ?NotificationService $notifications = null
     ) {}
 
+    public function ensureWelcomeGrant(array &$db, array &$user): array
+    {
+        $userId = trim((string)($user['id'] ?? ''));
+        if ($userId === '' || !empty($user['is_dev_user'])) {
+            return [
+                'processed' => false,
+                'awarded' => false,
+                'reason' => $userId === '' ? 'missing_user' : 'dev_user',
+            ];
+        }
+
+        if (!empty($user['weekly_match_welcome_grant_done'])) {
+            return [
+                'processed' => false,
+                'awarded' => false,
+                'reason' => 'already_awarded',
+            ];
+        }
+
+        // Compatibility with the short-lived v45 implementation: if a player
+        // already received its first special grant there, never pay it again.
+        if (!empty($user['weekly_match_first_grant_done'])
+            || (string)($user['weekly_match_bonus_last_qualification'] ?? '') === 'first_grant') {
+            $user['weekly_match_welcome_grant_done'] = true;
+            $user['weekly_match_welcome_grant_migrated_at'] = now_iso();
+            return [
+                'processed' => true,
+                'awarded' => false,
+                'reason' => 'migrated_existing_grant',
+            ];
+        }
+
+        $amount = $this->bonusAmount();
+        $before = (int)($user['balance_match'] ?? 0);
+        $after = $before + $amount;
+        $createdAt = now_iso();
+
+        $user['balance_match'] = $after;
+        $user['weekly_match_welcome_grant_done'] = true;
+        $user['weekly_match_welcome_grant_at'] = $createdAt;
+        $user['weekly_match_welcome_grant_amount'] = $amount;
+        $user['weekly_match_first_grant_done'] = true;
+
+        if (!isset($db['transactions']) || !is_array($db['transactions'])) {
+            $db['transactions'] = [];
+        }
+
+        $db['transactions'][] = [
+            'id' => make_id('tx'),
+            'type' => 'balance_change',
+            'category' => 'welcome_bonus',
+            'user_id' => $userId,
+            'username' => (string)($user['username'] ?? ''),
+            'room' => 'match',
+            'amount' => $amount,
+            'balance_before' => $before,
+            'balance_after' => $after,
+            'description' => 'Первые коины в Матч-комнате',
+            'created_at' => $createdAt,
+        ];
+
+        if ($this->notifications !== null) {
+            $this->notifications->addWelcomeMatchGrant($db, $user, [
+                'amount' => $amount,
+                'created_at' => $createdAt,
+            ]);
+        }
+
+        return [
+            'processed' => true,
+            'awarded' => true,
+            'reason' => 'awarded',
+            'amount' => $amount,
+            'balance_before' => $before,
+            'balance_after' => $after,
+        ];
+    }
+
     public function applyDueForUser(array &$db, array &$user, ?DateTimeImmutable $now = null): array
     {
         $userId = trim((string)($user['id'] ?? ''));
@@ -48,14 +126,12 @@ final class WeeklyMatchEconomyService
 
         $from = $cycleAt->modify('-7 days');
         $games = $this->countCompletedGames($db, $userId, $from, $cycleAt);
-        $firstGrant = empty($user['weekly_match_first_grant_done']);
-        $eligibleByActivity = $games >= $this->minGames();
 
         $user['weekly_match_bonus_checked_key'] = $cycleKey;
         $user['weekly_match_bonus_checked_at'] = now_iso();
         $user['weekly_match_bonus_checked_games'] = $games;
 
-        if (!$firstGrant && !$eligibleByActivity) {
+        if ($games < $this->minGames()) {
             return [
                 'processed' => true,
                 'awarded' => false,
@@ -75,7 +151,6 @@ final class WeeklyMatchEconomyService
             ];
         }
 
-        $qualification = $firstGrant ? 'first_grant' : 'activity';
         $amount = $this->bonusAmount();
         $before = (int)($user['balance_match'] ?? 0);
         $after = $before + $amount;
@@ -85,8 +160,7 @@ final class WeeklyMatchEconomyService
         $user['weekly_match_bonus_last_key'] = $cycleKey;
         $user['weekly_match_bonus_last_at'] = $awardedAt;
         $user['weekly_match_bonus_last_amount'] = $amount;
-        $user['weekly_match_bonus_last_qualification'] = $qualification;
-        $user['weekly_match_first_grant_done'] = true;
+        $user['weekly_match_bonus_last_qualification'] = 'activity';
         $user['weekly_bonus_last'] = $cycleKey;
 
         if (!isset($db['transactions']) || !is_array($db['transactions'])) {
@@ -104,13 +178,11 @@ final class WeeklyMatchEconomyService
             'balance_before' => $before,
             'balance_after' => $after,
             'cycle_key' => $cycleKey,
-            'qualification' => $qualification,
+            'qualification' => 'activity',
             'qualifying_from' => $from->format(DATE_ATOM),
             'qualifying_to' => $cycleAt->format(DATE_ATOM),
             'qualifying_games' => $games,
-            'description' => $qualification === 'first_grant'
-                ? 'Первое еженедельное начисление в Матч-комнату'
-                : 'Еженедельный бонус за игровую активность',
+            'description' => 'Еженедельный бонус за игровую активность',
             'created_at' => $awardedAt,
         ];
 
@@ -119,7 +191,6 @@ final class WeeklyMatchEconomyService
                 'cycle_key' => $cycleKey,
                 'amount' => $amount,
                 'qualifying_games' => $games,
-                'qualification' => $qualification,
                 'created_at' => $awardedAt,
             ]);
         }
@@ -130,7 +201,6 @@ final class WeeklyMatchEconomyService
             'reason' => 'awarded',
             'cycle_key' => $cycleKey,
             'qualifying_games' => $games,
-            'qualification' => $qualification,
             'amount' => $amount,
             'balance_before' => $before,
             'balance_after' => $after,
@@ -232,7 +302,6 @@ final class WeeklyMatchEconomyService
 
         $min = $this->minGames();
         $lastKey = (string)($user['weekly_match_bonus_last_key'] ?? '');
-        $firstGrantPending = empty($user['weekly_match_first_grant_done']);
 
         return [
             'enabled' => true,
@@ -240,8 +309,7 @@ final class WeeklyMatchEconomyService
             'min_completed_games' => $min,
             'completed_games' => $games,
             'remaining_games' => max(0, $min - $games),
-            'eligible_for_next' => $firstGrantPending || $games >= $min,
-            'first_grant_pending' => $firstGrantPending,
+            'eligible_for_next' => $games >= $min,
             'next_bonus_at' => $nextCycle->format(DATE_ATOM),
             'qualifying_from' => $from->format(DATE_ATOM),
             'qualifying_to' => $to->format(DATE_ATOM),
@@ -250,10 +318,11 @@ final class WeeklyMatchEconomyService
             'last_bonus_at' => $user['weekly_match_bonus_last_at'] ?? null,
             'last_bonus_amount' => (int)($user['weekly_match_bonus_last_amount'] ?? 0),
 
-            // Backward-compatible aliases for any already cached v44 client.
+            // Backward-compatible aliases for any cached v44-v45 client.
             'min_completed_matches' => $min,
             'completed_match_games' => $games,
             'remaining_match_games' => max(0, $min - $games),
+            'first_grant_pending' => false,
         ];
     }
 
