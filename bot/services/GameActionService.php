@@ -18,8 +18,14 @@ final class GameActionService
         $game = $db['games'][$gameId];
         $userId = (string)($user['id'] ?? '');
         $playerIds = array_map('strval', $game['player_ids'] ?? []);
-        if ($userId === '' || !in_array($userId, $playerIds, true)) throw new RuntimeException('Вы не участвуете в этой игре.');
-        if ((string)($game['status'] ?? '') === 'finished') return $game;
+
+        if ($userId === '' || !in_array($userId, $playerIds, true)) {
+            throw new RuntimeException('Вы не участвуете в этой игре.');
+        }
+
+        if ((string)($game['status'] ?? '') === 'finished') {
+            return $game;
+        }
 
         $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? ''));
         $definition = $this->catalog->get($gameType);
@@ -36,17 +42,36 @@ final class GameActionService
         };
     }
 
-    private function applyTicTacToeAction(array &$db, array &$user, string $gameId, string $actionType, array $action): array
-    {
-        if ($actionType !== 'cell') throw new RuntimeException('Некорректное действие для этой игры.');
+    private function applyTicTacToeAction(
+        array &$db,
+        array &$user,
+        string $gameId,
+        string $actionType,
+        array $action
+    ): array {
+        if ($actionType !== 'cell') {
+            throw new RuntimeException('Некорректное действие для этой игры.');
+        }
+
         $cell = filter_var($action['cell'] ?? null, FILTER_VALIDATE_INT);
-        if ($cell === false) throw new RuntimeException('Не выбрана клетка.');
+        if ($cell === false) {
+            throw new RuntimeException('Не выбрана клетка.');
+        }
+
         return $this->runtime->makeMove($db, $user, $gameId, (int)$cell);
     }
 
-    private function applyFourInARowAction(array &$db, array &$user, string $gameId, string $actionType, array $action): array
-    {
+    private function applyFourInARowAction(
+        array &$db,
+        array &$user,
+        string $gameId,
+        string $actionType,
+        array $action
+    ): array {
         $column = filter_var($action['column'] ?? null, FILTER_VALIDATE_INT);
+
+        // Compatibility fallback for a stale v49 client that rendered the board as
+        // tic-tac-toe cells but was already connected to the Four in a Row engine.
         if ($column === false && $actionType === 'cell') {
             $cell = filter_var($action['cell'] ?? null, FILTER_VALIDATE_INT);
             if ($cell !== false) {
@@ -54,9 +79,11 @@ final class GameActionService
                 $column = (int)$cell % $columns;
             }
         }
+
         if (!in_array($actionType, ['column', 'drop_disc', 'cell'], true) || $column === false) {
             throw new RuntimeException('Выберите столбец для хода.');
         }
+
         return $this->runtime->dropFourInARowDisc($db, $user, $gameId, (int)$column);
     }
 }
