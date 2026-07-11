@@ -6,8 +6,8 @@ import { openSheet, closeSheet } from '../../components/sheet.js?v=27';
 import { showScreen } from '../../router.js?v=27';
 import { haptic } from '../../telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from '../../ui.js?v=27';
-import { startSearchPolling } from '../../screens/search-screen.js?v=53';
-import { startGamePolling } from '../../screens/game-screen.js?v=53';
+import { startSearchPolling } from '../../screens/search-screen.js?v=54';
+import { startGamePolling } from '../../screens/game-screen.js?v=54';
 import { isSessionLocked, sessionMessage } from '../../session.js?v=27';
 
 let initialized = false;
@@ -53,10 +53,10 @@ function openBattleshipSetup(){
       <div class="battleship-preview-caption">Поле 10×10 · 10 кораблей</div>
 
       <div class="battleship-start-fleet">
-        <div><span class="ship-shape size-4"></span><strong>×1</strong></div>
-        <div><span class="ship-shape size-3"></span><strong>×2</strong></div>
-        <div><span class="ship-shape size-2"></span><strong>×3</strong></div>
-        <div><span class="ship-shape size-1"></span><strong>×4</strong></div>
+        ${fleetPreviewItem(4, 1)}
+        ${fleetPreviewItem(3, 2)}
+        ${fleetPreviewItem(2, 3)}
+        ${fleetPreviewItem(1, 4)}
       </div>
 
       <div class="section-title"><h2>Стоимость участия</h2></div>
@@ -115,4 +115,13 @@ function previewCells(){
   ]);
 
   return Array.from({ length: 100 }, (_, cell) => `<span class="${ships.has(cell) ? 'ship' : ''}"></span>`).join('');
+}
+
+function fleetPreviewItem(size, count){
+  return `
+    <div>
+      <span class="ship-shape">${'<i></i>'.repeat(size)}</span>
+      <strong>×${count}</strong>
+    </div>
+  `;
 }
