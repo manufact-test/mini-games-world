@@ -1,4 +1,6 @@
 /* MVP-8.4 shop order history */
+.store-note{display:none!important}
+
 .store-orders-scroll{
   min-height:0;
   overflow:auto;
@@ -44,22 +46,46 @@
 
 .store-orders-entry{
   width:100%;
-  min-height:52px;
-  border:1px solid var(--stroke);
-  border-radius:17px;
-  background:rgba(255,255,255,.045);
+  min-height:72px;
+  border:1px solid rgba(242,197,75,.34);
+  border-radius:20px;
+  background:linear-gradient(135deg,rgba(242,197,75,.16),rgba(255,255,255,.05));
   color:var(--text);
-  padding:11px 13px;
+  padding:14px 15px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:12px;
   text-align:left;
+  box-shadow:0 10px 28px rgba(0,0,0,.16);
 }
-.store-orders-entry > div{display:flex;flex-direction:column;gap:3px;min-width:0}
-.store-orders-entry strong{font-size:13.5px}
-.store-orders-entry span{color:var(--muted);font-size:11px;line-height:1.35}
-.store-orders-entry > b{font-size:20px;line-height:1;color:var(--muted)}
+.store-orders-entry::before{
+  content:'🧾';
+  flex:0 0 auto;
+  width:42px;
+  height:42px;
+  border-radius:15px;
+  display:grid;
+  place-items:center;
+  font-size:21px;
+  background:rgba(242,197,75,.16);
+  border:1px solid rgba(242,197,75,.24);
+}
+.store-orders-entry > div{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.store-orders-entry strong{font-size:16px;letter-spacing:-.02em}
+.store-orders-entry span{color:var(--soft);font-size:12px;line-height:1.35}
+.store-orders-entry > b{
+  flex:0 0 auto;
+  min-width:34px;
+  height:34px;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  font-size:20px;
+  line-height:1;
+  color:#17120a;
+  background:var(--gold);
+}
 
 .store-order-history-card{
   border:1px solid var(--stroke);
@@ -145,6 +171,9 @@
 }
 
 @media (max-width:360px){
+  .store-orders-entry{padding:12px}
+  .store-orders-entry::before{width:38px;height:38px;border-radius:13px}
+  .store-orders-entry strong{font-size:15px}
   .store-order-history-head{flex-direction:column}
   .store-order-status{align-self:flex-start}
 }
