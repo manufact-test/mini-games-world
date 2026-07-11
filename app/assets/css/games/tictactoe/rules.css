@@ -1,0 +1,2 @@
+.rule-tic-grid{display:grid;grid-template-columns:repeat(3,48px);gap:5px;justify-content:center}
+.rule-tic-grid span{aspect-ratio:1;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-size:22px;font-weight:950}
