@@ -79,7 +79,16 @@ function renderSetup({ game, container, onAction }){
   container.innerHTML = `
     <div class="battleship-panel battleship-setup-panel">
       <div class="battleship-setup-head">
-        <div><strong>Расставьте флот</strong><span>${placedCount}/10 кораблей</span></div>
+        <div class="battleship-setup-title"><strong>Расставьте флот</strong><span>${placedCount}/10 кораблей</span></div>
+        <div class="battleship-current-ship ${complete ? 'ready' : ''}" aria-live="polite">
+          ${complete ? `
+            <strong>Флот готов</strong>
+          ` : `
+            <small>Ставите</small>
+            <span class="battleship-current-ship-dots">${'<i></i>'.repeat(selectedShipSize)}</span>
+            <b>×${selectedLeft}</b>
+          `}
+        </div>
         <span class="battleship-setup-time">${formatTime(game?.setup_time_left ?? game?.time_left ?? 120)}</span>
       </div>
 
@@ -290,9 +299,10 @@ function renderBattle({ game, me, container, onAction }){
 
   container.innerHTML = `
     <div class="battleship-panel battleship-battle-panel">
-      <div class="battleship-battle-summary">
-        <div><span>Ваш флот</span><strong>${Number(game?.my_ships_remaining ?? 0)}/10</strong></div>
-        <div><span>Флот соперника</span><strong>${Number(game?.enemy_ships_remaining ?? 0)}/10</strong></div>
+      <div class="battleship-fleet-status-line">
+        <span>Ваш флот <strong>${Number(game?.my_ships_remaining ?? 0)}/10</strong></span>
+        <i>•</i>
+        <span>Соперник <strong>${Number(game?.enemy_ships_remaining ?? 0)}/10</strong></span>
       </div>
 
       <div class="battleship-board-tabs">
@@ -301,11 +311,6 @@ function renderBattle({ game, me, container, onAction }){
       </div>
 
       ${battleEventMarkup({ myTurn, showingEnemy })}
-
-      <div class="battleship-board-title">
-        <strong>${showingEnemy ? 'Поле соперника' : 'Ваше поле'}</strong>
-        <span>${myTurn ? 'Ваш ход' : 'Ход соперника'}</span>
-      </div>
 
       ${renderCoordinateBoard(board, {
         mode: showingEnemy ? 'enemy' : 'own',
@@ -383,12 +388,12 @@ function clearBattleTransitionTimer(){
 
 function shotNotice(result, shooterIsMe){
   if (shooterIsMe) {
-    if (result === 'miss') return { text:'Мимо — ход переходит сопернику', tone:'neutral' };
+    if (result === 'miss') return { text:'Мимо — ход соперника', tone:'neutral' };
     if (result === 'hit') return { text:'Попадание! Стреляйте ещё', tone:'warning' };
     if (result === 'sunk') return { text:'Корабль потоплен! Стреляйте ещё', tone:'success' };
   } else {
-    if (result === 'miss') return { text:'Соперник промахнулся — теперь ваш ход', tone:'success' };
-    if (result === 'hit') return { text:'Попадание по вашему кораблю — соперник стреляет ещё', tone:'warning' };
+    if (result === 'miss') return { text:'Соперник промахнулся — ваш ход', tone:'success' };
+    if (result === 'hit') return { text:'По вашему кораблю попали — соперник стреляет ещё', tone:'warning' };
     if (result === 'sunk') return { text:'Ваш корабль потоплен — соперник стреляет ещё', tone:'danger' };
   }
   return null;
@@ -396,8 +401,8 @@ function shotNotice(result, shooterIsMe){
 
 function battleEventMarkup({ myTurn, showingEnemy }){
   const fallback = myTurn
-    ? (showingEnemy ? 'Ваш ход — выберите клетку для выстрела' : 'Ваш ход — можно вернуться к полю соперника')
-    : (showingEnemy ? 'Ход соперника — можно посмотреть своё поле' : 'Ход соперника — следим за вашим полем');
+    ? (showingEnemy ? 'Ваш ход — выберите клетку' : 'Ваш ход — откройте поле соперника')
+    : (showingEnemy ? 'Ход соперника' : 'Ход соперника — следим за вашим полем');
   const text = battleNotice?.text || fallback;
   const tone = battleNotice?.tone || (myTurn ? 'your-turn' : 'opponent-turn');
   return `<div class="battleship-event-slot"><div class="battleship-event-banner ${tone}">${text}</div></div>`;
