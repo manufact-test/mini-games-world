@@ -67,7 +67,7 @@ async function prepareOrderConfirmation(button){
     pendingOrder = {
       itemId,
       denominationId,
-      requestToken: createRequestToken(),
+      requestToken: createRequestToken(cost),
       item,
       denomination,
       available,
@@ -209,16 +209,27 @@ function renderOrderSuccess(order, replayed){
   document.getElementById('storeSuccessBack')?.addEventListener('click', openStoreSheet);
 }
 
-function createRequestToken(){
-  let randomPart = Math.floor(Math.random() * 1000);
+function createRequestToken(cost){
+  const normalizedCost = Math.trunc(Number(cost || 0));
+  if (normalizedCost <= 0 || normalizedCost > 9000000) {
+    throw new Error('Стоимость приза выходит за допустимый диапазон.');
+  }
+
+  let nonce = Math.floor(Math.random() * 999999999) + 1;
   try {
     const buffer = new Uint32Array(1);
     crypto.getRandomValues(buffer);
-    randomPart = Number(buffer[0] % 1000);
+    nonce = Number(buffer[0] % 999999999) + 1;
   } catch (error) {}
 
-  // 13 цифр времени + 3 цифры случайной части. Значение остаётся безопасным integer в JS.
-  return (Date.now() * 1000) + randomPart;
+  const token = (normalizedCost * 1000000000) + nonce;
+  if (!Number.isSafeInteger(token)) {
+    throw new Error('Не удалось безопасно сформировать заказ.');
+  }
+
+  // В старом числовом transport-поле кодируем подтверждённую цену и nonce.
+  // Сервер разделяет их и отдельно сверяет цену с текущим каталогом.
+  return token;
 }
 
 function shortOrderId(value){
