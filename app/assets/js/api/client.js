@@ -14,6 +14,7 @@ async function request(action, payload = {}){
   }
   return data;
 }
+
 export const api = {
   bootstrap: () => request('bootstrap'),
   stats: () => request('stats'),
@@ -26,6 +27,12 @@ export const api = {
   history: () => request('history'),
   support: (type, message) => request('support', { type, message }),
   shopStatus: () => request('shop_status'),
-  shopOrder: (country, provider, amount) => request('shop_order', { country, provider, amount }),
+  // Текущий endpoint пока использует старые транспортные имена полей.
+  // На сервере amount трактуется только как ключ повтора и никогда как цена заказа.
+  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', {
+    country: itemId,
+    provider: denominationId,
+    amount: requestToken,
+  }),
   paymentCreateDraft: (room, amount) => request('payment_create_draft', { room, amount })
 };
