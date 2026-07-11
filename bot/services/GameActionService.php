@@ -16,6 +16,20 @@ final class GameActionService
         }
 
         $game = $db['games'][$gameId];
+        $userId = (string)($user['id'] ?? '');
+        $playerIds = array_map('strval', $game['player_ids'] ?? []);
+
+        if ($userId === '' || !in_array($userId, $playerIds, true)) {
+            throw new RuntimeException('Вы не участвуете в этой игре.');
+        }
+
+        // A timeout or bot move can finish the game between the client tap and
+        // this request. Return the already-finished game instead of surfacing a
+        // stale-action error. The payout was already protected by payout_done.
+        if ((string)($game['status'] ?? '') === 'finished') {
+            return $game;
+        }
+
         $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? ''));
         $definition = $this->catalog->get($gameType);
         $expectedActionType = (string)($definition['action_type'] ?? '');
