@@ -1,19 +1,20 @@
 @import url('./base/tokens.css?v=27');
 @import url('./base/reset.css?v=27');
+@import url('./base/typography.css?v=37');
 @import url('./base/layout.css?v=27');
-@import url('./components/buttons.css?v=27');
+@import url('./components/buttons.css?v=37');
 @import url('./components/cards.css?v=27');
 @import url('./components/modals.css?v=27');
 @import url('./components/preloader.css?v=27');
 @import url('./screens/home.css?v=27');
 @import url('./screens/store.css?v=28');
-@import url('./screens/store-order.css?v=29');
+@import url('./screens/store-order.css?v=37');
 @import url('./screens/store-orders.css?v=36');
 @import url('./screens/search.css?v=27');
 @import url('./screens/game.css?v=27');
 @import url('./screens/profile.css?v=27');
 @import url('./animations.css?v=27');
-@import url('./responsive.css?v=27');
+@import url('./responsive.css?v=37');
 
 
 /* MVP-7.1.2 history tabs */
