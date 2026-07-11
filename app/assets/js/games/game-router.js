@@ -2,12 +2,18 @@ import {
   renderTicTacToeSurface,
   ticTacToeMeta,
   ticTacToePlayerMark,
-} from './tictactoe/renderer.js?v=52';
+} from './tictactoe/renderer.js?v=53';
 import {
   renderFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './four-in-a-row/renderer.js?v=52';
+} from './four-in-a-row/renderer.js?v=53';
+import {
+  renderBattleshipSurface,
+  battleshipMeta,
+  battleshipPlayerMark,
+  battleshipStatus,
+} from './battleship/renderer.js?v=53';
 
 const routes = {
   tictactoe: {
@@ -20,6 +26,12 @@ const routes = {
     meta: fourInARowMeta,
     playerMark: fourInARowPlayerMark,
   },
+  battleship: {
+    render: renderBattleshipSurface,
+    meta: battleshipMeta,
+    playerMark: battleshipPlayerMark,
+    status: battleshipStatus,
+  },
 };
 
 export function gameTypeOf(game){
@@ -31,6 +43,21 @@ export function gameTypeOf(game){
   const rows = Number(game?.board_rows || 0);
   const connectLength = Number(game?.connect_length || 0);
   const boardLength = String(game?.board || '').length;
+
+  if (
+    explicit === 'battleship'
+    || renderer === 'battleship'
+    || actionType === 'battleship_action'
+    || title.includes('морской бой')
+    || title.includes('battleship')
+    || Boolean(game?.battleship_initialized)
+    || Array.isArray(game?.my_board)
+    || Array.isArray(game?.enemy_board)
+    || Boolean(game?.phase === 'setup' && Number(game?.board_size) === 10)
+  ) {
+    return 'battleship';
+  }
+
   const looksLikeFourBoard = columns >= 6
     && columns <= 8
     && rows === columns - 1
@@ -74,6 +101,13 @@ export function gameMetaText(game){
 export function playerMarkText(game, player){
   const route = routeFor(game);
   return route?.playerMark ? route.playerMark(player) : '•';
+}
+
+export function gameStatusText(game, me){
+  const route = routeFor(game);
+  if (route?.status) return route.status(game, me);
+  if (game?.status === 'finished') return 'Игра завершена';
+  return String(game?.turn || '') === String(me?.id || '') ? 'Ваш ход' : 'Ход соперника';
 }
 
 function routeFor(game){
