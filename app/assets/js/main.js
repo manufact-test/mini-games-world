@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v29-safe-shop-orders';
+window.__MGW_BUILD__ = 'v30-safe-shop-orders';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=29';
 import { state } from './state.js?v=27';
@@ -9,7 +9,7 @@ import { toast } from './components/toast.js?v=27';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
 import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=27';
 import { initStoreScreen } from './screens/store-screen.js?v=28';
-import { initStoreOrder } from './screens/store-order.js?v=29';
+import { initStoreOrder } from './screens/store-order.js?v=30';
 import { initSearchScreen } from './screens/search-screen.js?v=27';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=27';
 import { initProfileScreen } from './screens/profile-screen.js?v=27';
