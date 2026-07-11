@@ -43,18 +43,25 @@ final class AdminShopOrderNotificationGuard
             return true;
         }
 
-        // First persist an in-app notification. The event key inside the service
-        // makes this idempotent even if the same update is delivered again.
-        $db = new JsonDatabase($this->dataDir());
-        $db->transaction(function (array &$stored) use ($after, $decision): void {
-            $notifications = new NotificationService();
-            $notifications->addShopOrderDecision($stored, $after, $decision);
-        });
+        // In-app notification and Telegram are independent delivery channels.
+        // A failure in one channel must never block the other or affect the
+        // already-persisted order status / financial result.
+        try {
+            $db = new JsonDatabase($this->dataDir());
+            $db->transaction(function (array &$stored) use ($after, $decision): void {
+                $notifications = new NotificationService();
+                $notifications->addShopOrderDecision($stored, $after, $decision);
+            });
+        } catch (Throwable $e) {
+            error_log('Mini Games World in-app shop notification failed: ' . $e->getMessage());
+        }
 
-        // Telegram is an additional delivery channel. Failure here must not erase
-        // the already-saved in-app notification or change the financial result.
-        $telegramNotifications = new ShopOrderNotificationService($this->telegram, $this->config);
-        $telegramNotifications->notifyUserAboutDecision($after, $decision);
+        try {
+            $telegramNotifications = new ShopOrderNotificationService($this->telegram, $this->config);
+            $telegramNotifications->notifyUserAboutDecision($after, $decision);
+        } catch (Throwable $e) {
+            error_log('Mini Games World Telegram shop notification failed: ' . $e->getMessage());
+        }
 
         return true;
     }
