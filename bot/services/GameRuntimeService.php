@@ -264,6 +264,11 @@ final class GameRuntimeService
         }
     }
 
+    /**
+     * Runs the legacy matcher against only one queue type and only legacy game records.
+     * This is necessary because GameService::startSearch() performs its own cleanup.
+     * Non-legacy games must never be visible to that cleanup pass.
+     */
     private function withIsolatedQueue(
         array &$db,
         string $gameType,
@@ -271,7 +276,9 @@ final class GameRuntimeService
         ?string $dropUserId = null
     ): mixed {
         $originalQueue = is_array($db['queue'] ?? null) ? array_values($db['queue']) : [];
+        $originalGames = is_array($db['games'] ?? null) ? $db['games'] : [];
         $workingQueue = [];
+        $legacyGames = [];
 
         foreach ($originalQueue as $item) {
             if (!is_array($item)) continue;
@@ -279,13 +286,52 @@ final class GameRuntimeService
             if ($this->gameTypeFromRecord($item) === $gameType) $workingQueue[] = $item;
         }
 
+        foreach ($originalGames as $id => $game) {
+            if (!is_array($game)) continue;
+            if ($this->gameTypeFromRecord($game) === 'tictactoe') {
+                $legacyGames[$id] = $game;
+            }
+        }
+
         $db['queue'] = $workingQueue;
+        $db['games'] = $legacyGames;
+
         try {
             return $callback();
         } finally {
             $updatedWorkingQueue = is_array($db['queue'] ?? null) ? array_values($db['queue']) : [];
+            $updatedLegacyGames = is_array($db['games'] ?? null) ? $db['games'] : [];
             $db['queue'] = $this->mergeIsolatedQueue($originalQueue, $updatedWorkingQueue, $gameType, $dropUserId);
+            $db['games'] = $this->mergeLegacyGameIsolation($originalGames, $updatedLegacyGames);
         }
+    }
+
+    private function mergeLegacyGameIsolation(array $originalGames, array $updatedLegacyGames): array
+    {
+        $merged = [];
+
+        foreach ($originalGames as $id => $game) {
+            if (!is_array($game)) {
+                $merged[$id] = $game;
+                continue;
+            }
+
+            if ($this->gameTypeFromRecord($game) !== 'tictactoe') {
+                $merged[$id] = $game;
+                continue;
+            }
+
+            if (array_key_exists($id, $updatedLegacyGames)) {
+                $merged[$id] = $updatedLegacyGames[$id];
+                unset($updatedLegacyGames[$id]);
+            }
+        }
+
+        foreach ($updatedLegacyGames as $id => $game) {
+            $merged[$id] = $game;
+        }
+
+        return $merged;
     }
 
     private function mergeIsolatedQueue(
