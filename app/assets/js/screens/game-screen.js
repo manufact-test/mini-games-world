@@ -12,7 +12,7 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=54';
+} from '../games/game-router.js?v=55';
 
 const weeklyProgressNotifiedGames = new Set();
 
