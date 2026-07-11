@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v50-four-in-a-row-fixes';
+window.__MGW_BUILD__ = 'v51-four-in-a-row-runtime-fix';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -15,11 +15,11 @@ import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=34';
 import { initNotificationsScreen } from './screens/notifications-screen.js?v=42';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=46';
-import { initSearchScreen } from './screens/search-screen.js?v=27';
-import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=50';
+import { initSearchScreen } from './screens/search-screen.js?v=51';
+import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=51';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
-import { initGameRules } from './games/game-rules.js?v=50';
-import { initFourInARowEntry } from './games/four-in-a-row-entry.js?v=50';
+import { initGameRules } from './games/game-rules.js?v=51';
+import { initFourInARowEntry } from './games/four-in-a-row-entry.js?v=51';
 import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
