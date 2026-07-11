@@ -34,13 +34,9 @@ final class ShopService
     }
 
     /**
-     * Совместимый транспорт для текущего API:
-     * - $itemId приходит через старое поле country;
-     * - $denominationId приходит через старое поле provider;
-     * - $requestToken приходит через старое числовое поле amount.
-     *
-     * В requestToken зашиты подтверждённая пользователем цена и случайный nonce.
-     * Сам requestToken никогда не используется как стоимость заказа.
+     * requestToken содержит подтверждённую пользователем цену и случайный nonce.
+     * Сам requestToken никогда не используется как стоимость заказа: сервер
+     * отдельно извлекает ожидаемую цену и сверяет её с активным каталогом.
      */
     public function createOrder(array &$db, array &$user, string $itemId, string $denominationId, int $requestToken): array
     {
