@@ -60,6 +60,11 @@ final class ShopService
 
         $order = $result['order'];
         $order['request_replayed'] = empty($result['created']);
+
+        if (!empty($result['created']) && !empty($order['id'])) {
+            $this->scheduleAdminNotificationAfterPersist((string)$order['id']);
+        }
+
         return $order;
     }
 
@@ -205,6 +210,36 @@ final class ShopService
             'created' => true,
             'order' => $order,
         ];
+    }
+
+    private function scheduleAdminNotificationAfterPersist(string $orderId): void
+    {
+        $config = $this->config;
+
+        register_shutdown_function(static function () use ($config, $orderId): void {
+            try {
+                $dataDir = (string)($config['data_dir'] ?? (__DIR__ . '/../data'));
+                $database = new JsonDatabase($dataDir);
+                $order = $database->readOnly(static function (array $stored) use ($orderId): ?array {
+                    foreach (($stored['shop_orders'] ?? []) as $candidate) {
+                        if (is_array($candidate) && (string)($candidate['id'] ?? '') === $orderId) {
+                            return $candidate;
+                        }
+                    }
+                    return null;
+                });
+
+                if (!$order) {
+                    return;
+                }
+
+                $telegram = new TelegramService($config);
+                $notifications = new ShopOrderNotificationService($telegram, $config);
+                $notifications->notifyAdminsAboutNewOrder($order);
+            } catch (Throwable $e) {
+                error_log('Mini Games World shop order admin notification failed: ' . $e->getMessage());
+            }
+        });
     }
 
     private function findOrderByRequestId(array $db, string $userId, string $requestId): ?array
