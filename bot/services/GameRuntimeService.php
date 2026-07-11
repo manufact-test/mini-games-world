@@ -3,11 +3,14 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/games/battleship/BattleshipBotService.php';
 require_once dirname(__DIR__) . '/games/battleship/BattleshipService.php';
+require_once dirname(__DIR__) . '/games/checkers/CheckersBotService.php';
+require_once dirname(__DIR__) . '/games/checkers/CheckersService.php';
 
 final class GameRuntimeService
 {
     private FourInARowService $fourInARow;
     private BattleshipService $battleship;
+    private CheckersService $checkers;
 
     public function __construct(
         private array $config,
@@ -17,6 +20,7 @@ final class GameRuntimeService
         $settlement = new GameSettlementService($this->config);
         $this->fourInARow = new FourInARowService($this->config, $settlement);
         $this->battleship = new BattleshipService($this->config, $settlement);
+        $this->checkers = new CheckersService($this->config, $settlement);
     }
 
     public function cleanup(array &$db): void
@@ -40,6 +44,7 @@ final class GameRuntimeService
 
         $this->fourInARow->cleanup($db);
         $this->battleship->cleanup($db);
+        $this->checkers->cleanup($db);
     }
 
     public function cleanupQueue(array &$db): void
@@ -111,7 +116,7 @@ final class GameRuntimeService
         $definition = $this->catalog->get($gameType);
         $engine = (string)($definition['engine'] ?? '');
 
-        if (!in_array($engine, ['tictactoe', 'four_in_a_row', 'battleship'], true)) {
+        if (!in_array($engine, ['tictactoe', 'four_in_a_row', 'battleship', 'checkers'], true)) {
             throw new RuntimeException('Движок этой игры пока не подключён.');
         }
 
@@ -158,6 +163,7 @@ final class GameRuntimeService
             return match ($this->gameTypeFromRecord($game)) {
                 'four_in_a_row' => $this->fourInARow->surrender($db, $user, $gameId),
                 'battleship' => $this->battleship->surrender($db, $user, $gameId),
+                'checkers' => $this->checkers->surrender($db, $user, $gameId),
                 default => $this->surrenderLegacyGame($db, $user, $gameId),
             };
         }
@@ -204,6 +210,11 @@ final class GameRuntimeService
         return $this->battleship->applyAction($db, $user, $gameId, $action);
     }
 
+    public function applyCheckersAction(array &$db, array &$user, string $gameId, array $action): array
+    {
+        return $this->checkers->applyAction($db, $user, $gameId, $action);
+    }
+
     public function publicGame(array $game, string $viewerId): array
     {
         $this->ensureGameType($game);
@@ -213,6 +224,7 @@ final class GameRuntimeService
         $public = match ($gameType) {
             'four_in_a_row' => $this->fourInARow->publicGame($game, $viewerId),
             'battleship' => $this->battleship->publicGame($game, $viewerId),
+            'checkers' => $this->checkers->publicGame($game, $viewerId),
             default => $this->legacyGame->publicGame($game, $viewerId),
         };
 
@@ -245,6 +257,7 @@ final class GameRuntimeService
         match ($this->gameTypeFromRecord($game)) {
             'four_in_a_row' => $this->fourInARow->initializeGame($game),
             'battleship' => $this->battleship->initializeGame($game),
+            'checkers' => $this->checkers->initializeGame($game),
             default => null,
         };
     }
@@ -261,13 +274,19 @@ final class GameRuntimeService
             $game['board_size'] = 10;
             $game['board_columns'] = 10;
             $game['board_rows'] = 10;
+            return;
+        }
+
+        if ($gameType === 'checkers') {
+            $game['board_size'] = 8;
+            $game['board_columns'] = 8;
+            $game['board_rows'] = 8;
         }
     }
 
     /**
      * Runs the legacy matcher against only one queue type and only legacy game records.
-     * This is necessary because GameService::startSearch() performs its own cleanup.
-     * Non-legacy games must never be visible to that cleanup pass.
+     * Non-legacy games are temporarily hidden because GameService performs its own cleanup.
      */
     private function withIsolatedQueue(
         array &$db,
@@ -288,9 +307,7 @@ final class GameRuntimeService
 
         foreach ($originalGames as $id => $game) {
             if (!is_array($game)) continue;
-            if ($this->gameTypeFromRecord($game) === 'tictactoe') {
-                $legacyGames[$id] = $game;
-            }
+            if ($this->gameTypeFromRecord($game) === 'tictactoe') $legacyGames[$id] = $game;
         }
 
         $db['queue'] = $workingQueue;
@@ -309,28 +326,21 @@ final class GameRuntimeService
     private function mergeLegacyGameIsolation(array $originalGames, array $updatedLegacyGames): array
     {
         $merged = [];
-
         foreach ($originalGames as $id => $game) {
             if (!is_array($game)) {
                 $merged[$id] = $game;
                 continue;
             }
-
             if ($this->gameTypeFromRecord($game) !== 'tictactoe') {
                 $merged[$id] = $game;
                 continue;
             }
-
             if (array_key_exists($id, $updatedLegacyGames)) {
                 $merged[$id] = $updatedLegacyGames[$id];
                 unset($updatedLegacyGames[$id]);
             }
         }
-
-        foreach ($updatedLegacyGames as $id => $game) {
-            $merged[$id] = $game;
-        }
-
+        foreach ($updatedLegacyGames as $id => $game) $merged[$id] = $game;
         return $merged;
     }
 
@@ -446,6 +456,12 @@ final class GameRuntimeService
     private function gameTypeFromRecord(array $record): string
     {
         if (
+            (string)($record['game_type'] ?? '') === 'checkers'
+            || !empty($record['checkers_initialized'])
+            || isset($record['checkers_sides'])
+        ) return 'checkers';
+
+        if (
             (string)($record['game_type'] ?? '') === 'battleship'
             || !empty($record['battleship_initialized'])
             || isset($record['battleship_fleets'])
@@ -495,6 +511,7 @@ final class GameRuntimeService
     private function requestedBoardSizeFromQueue(string $gameType, array $queueItem): int
     {
         if ($gameType === 'battleship') return 10;
+        if ($gameType === 'checkers') return 8;
         if ($gameType !== 'four_in_a_row') {
             return $this->catalog->normalizeBoardSize($gameType, (int)($queueItem['requested_board_size'] ?? $queueItem['board_size'] ?? 3));
         }
