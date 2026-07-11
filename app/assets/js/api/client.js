@@ -27,12 +27,10 @@ export const api = {
   history: () => request('history'),
   support: (type, message) => request('support', { type, message }),
   shopStatus: () => request('shop_status'),
-  // Текущий endpoint пока использует старые транспортные имена полей.
-  // На сервере amount трактуется только как ключ повтора и никогда как цена заказа.
   shopOrder: (itemId, denominationId, requestToken) => request('shop_order', {
-    country: itemId,
-    provider: denominationId,
-    amount: requestToken,
+    itemId,
+    denominationId,
+    requestToken,
   }),
   paymentCreateDraft: (room, amount) => request('payment_create_draft', { room, amount })
 };
