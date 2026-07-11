@@ -12,6 +12,7 @@ const SKIP_SELECTOR = [
 ].join(',');
 
 const SHORT_WORDS = /(^|[\s([{"«„“])((?:а|и|но|да|не|ни|в|во|на|за|к|ко|с|со|у|о|об|от|до|по|из|для|под|над|при|без|про|через|или|ли|же|бы)) +(?=\S)/giu;
+const THOUSANDS_GROUPS = /(\d) +(?=\d{3}(?:\D|$))/gu;
 const NUMBER_UNITS = /(\d(?:[\d \u00A0]*\d)?) +(Gold|Match|коин(?:а|ы|ов)?|₽|руб(?:\.|ля|лей)?|%|час(?:а|ов)?|минут(?:а|ы)?|секунд(?:а|ы)?)/giu;
 const WORD_TOKEN = /([А-ЯЁа-яёA-Za-z][А-ЯЁа-яёA-Za-z-]{2,}) +(Gold|Match)\b/gu;
 const NUMBER_SIGN = /№ +([A-ZА-ЯЁ0-9])/gu;
@@ -22,6 +23,7 @@ export function typographText(value){
   if (/https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.\w+/i.test(value)) return value;
 
   return value
+    .replace(THOUSANDS_GROUPS, '$1\u00A0')
     .replace(NUMBER_UNITS, '$1\u00A0$2')
     .replace(WORD_TOKEN, '$1\u00A0$2')
     .replace(NUMBER_SIGN, '№\u00A0$1')
