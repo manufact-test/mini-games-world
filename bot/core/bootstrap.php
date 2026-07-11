@@ -43,5 +43,7 @@ require_once __DIR__ . '/../services/PaymentService.php';
 require_once __DIR__ . '/../services/SessionService.php';
 require_once __DIR__ . '/../services/AdminService.php';
 require_once __DIR__ . '/../services/TelegramService.php';
+require_once __DIR__ . '/../services/NotificationService.php';
+require_once __DIR__ . '/../services/WeeklyMatchEconomyService.php';
 require_once __DIR__ . '/../services/ShopOrderNotificationService.php';
 require_once __DIR__ . '/../handlers/WebhookHandler.php';
