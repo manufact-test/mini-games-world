@@ -22,7 +22,7 @@ export function initWeeklyMatchInfo(){
   setTimeout(syncWeeklyMatchButton, 0);
 }
 
-function syncWeeklyMatchButton(){
+export function syncWeeklyMatchButton(){
   const roomCard = document.getElementById('roomCard');
   const topUpButton = document.getElementById('topUpMatch');
   if (!roomCard || !topUpButton || document.getElementById('weeklyMatchInfo')) return;
