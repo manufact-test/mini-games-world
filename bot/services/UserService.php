@@ -67,6 +67,7 @@ final class UserService
             'gold_wagered_total' => (int)($user['gold_wagered_total'] ?? 0),
             'gold_shop_spent_total' => (int)($user['gold_shop_spent_total'] ?? 0),
             'gold_shop_available' => $this->goldShopAvailable($user),
+            'shop_test_mode' => $this->shopTestMode($user),
             'shop_min_order' => (int)($this->config['shop_min_order'] ?? 1000),
             'registered_at' => $user['registered_at'] ?? null,
             'status' => $user['status'] ?? 'idle',
@@ -141,11 +142,33 @@ final class UserService
 
     public function goldShopAvailable(array $user): int
     {
-        $balance = (int)($user['balance_gold'] ?? 0);
+        $balance = max(0, (int)($user['balance_gold'] ?? 0));
+
+        // Администраторы могут проверять магазин на текущем тестовом Gold без
+        // искусственного отыгрыша сотен матчей. Для обычных игроков правило
+        // оборота Gold остаётся неизменным.
+        if ($this->shopTestMode($user)) {
+            return $balance;
+        }
+
         $wagered = (int)($user['gold_wagered_total'] ?? 0);
         $spent = (int)($user['gold_shop_spent_total'] ?? 0);
         $turnoverAvailable = max(0, $wagered - $spent);
         return max(0, min($balance, $turnoverAvailable));
+    }
+
+    public function shopTestMode(array $user): bool
+    {
+        $userId = (string)($user['telegram_id'] ?? $user['id'] ?? '');
+        if ($userId === '') return false;
+
+        foreach (($this->config['admin_ids'] ?? []) as $adminId) {
+            if ((string)$adminId === $userId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function ensureStatsShape(array &$user): void
