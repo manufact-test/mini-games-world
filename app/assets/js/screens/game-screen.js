@@ -1,11 +1,11 @@
 import { state } from '../state.js?v=27';
 import { api } from '../api/client.js?v=47';
-import { toast } from '../components/toast.js?v=21';
-import { openSheet, closeSheet } from '../components/sheet.js?v=21';
-import { showScreen } from '../router.js?v=21';
-import { clearTimer, renderBalances } from '../ui.js?v=21';
-import { APP_CONFIG } from '../config.js?v=21';
-import { haptic } from '../telegram/telegram-app.js?v=21';
+import { toast } from '../components/toast.js?v=41';
+import { openSheet, closeSheet } from '../components/sheet.js?v=27';
+import { showScreen } from '../router.js?v=27';
+import { clearTimer, renderBalances } from '../ui.js?v=27';
+import { APP_CONFIG } from '../config.js?v=38';
+import { haptic } from '../telegram/telegram-app.js?v=27';
 import {
   gameMetaText,
   gameStatusText,
