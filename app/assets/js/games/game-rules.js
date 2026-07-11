@@ -1,14 +1,16 @@
 import { openSheet } from '../components/sheet.js?v=27';
 import { state } from '../state.js?v=27';
-import { gameTypeOf } from './game-router.js?v=54';
+import { gameTypeOf } from './game-router.js?v=57';
 import { ticTacToeRules } from './tictactoe/rules.js?v=53';
 import { fourInARowRules } from './four-in-a-row/rules.js?v=53';
 import { battleshipRules } from './battleship/rules.js?v=54';
+import { checkersRules } from './checkers/rules.js?v=57';
 
 const RULE_RENDERERS = {
   tictactoe: ticTacToeRules,
   four_in_a_row: fourInARowRules,
   battleship: battleshipRules,
+  checkers: checkersRules,
 };
 
 let initialized = false;
