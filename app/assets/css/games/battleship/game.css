@@ -27,34 +27,39 @@
   min-width:0;
   min-height:0;
   border:1px solid rgba(255,255,255,.08);
-  border-radius:5px;
+  border-radius:50%;
   background:linear-gradient(145deg,rgba(51,94,162,.52),rgba(27,56,106,.52));
   padding:0;
   overflow:hidden;
+  transition:transform .12s ease,background .18s ease,box-shadow .18s ease;
 }
 .battleship-cell i{position:absolute;inset:20%;border-radius:50%}
 .battleship-cell.interactive{cursor:pointer}
-.battleship-cell.interactive:active{transform:scale(.94)}
-.battleship-cell.ship{background:linear-gradient(145deg,rgba(166,183,209,.92),rgba(87,105,136,.92));box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
-.battleship-cell.miss i{inset:36%;background:rgba(205,231,255,.9);box-shadow:0 0 8px rgba(176,219,255,.45)}
-.battleship-cell.hit{background:linear-gradient(145deg,rgba(156,49,59,.7),rgba(83,20,31,.85))}
-.battleship-cell.hit i{inset:23%;background:#ff6675;box-shadow:0 0 10px rgba(255,83,104,.75)}
-.battleship-cell.sunk{background:linear-gradient(145deg,rgba(105,25,34,.92),rgba(39,10,18,.96));box-shadow:inset 0 0 0 1px rgba(255,109,122,.36)}
-.battleship-cell.sunk i{inset:20%;background:#ff394f;box-shadow:0 0 12px rgba(255,57,79,.65)}
-.battleship-cell.last-shot{outline:2px solid rgba(255,255,255,.9);outline-offset:-2px}
+.battleship-cell.interactive:active{transform:scale(.92)}
+.battleship-cell.ship{background:linear-gradient(145deg,rgba(166,183,209,.96),rgba(87,105,136,.96));box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.battleship-cell.pending{background:linear-gradient(145deg,rgba(151,121,255,.98),rgba(91,63,210,.98));box-shadow:0 0 0 2px rgba(184,166,255,.42),0 0 14px rgba(124,92,255,.35)}
+.battleship-cell.miss i{inset:35%;background:rgba(219,240,255,.98);box-shadow:0 0 9px rgba(176,219,255,.58)}
+.battleship-cell.hit{background:linear-gradient(145deg,rgba(255,200,69,.98),rgba(190,120,19,.98));box-shadow:inset 0 0 0 1px rgba(255,238,163,.5)}
+.battleship-cell.hit i{inset:27%;background:#fff1a8;box-shadow:0 0 12px rgba(255,218,77,.9)}
+.battleship-cell.sunk{background:linear-gradient(145deg,rgba(220,45,64,.98),rgba(91,12,27,.98));box-shadow:inset 0 0 0 1px rgba(255,150,160,.45)}
+.battleship-cell.sunk i{display:none}
+.battleship-cell.sunk::after{content:'💥';position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(9px,3vw,14px);line-height:1;filter:saturate(1.15)}
+.battleship-cell.last-shot{outline:2px solid rgba(255,255,255,.95);outline-offset:-2px}
+.battleship-cell.shot-impact.hit{animation:battleship-hit-impact .55s ease-out}
+.battleship-cell.shot-impact.sunk{animation:battleship-sunk-impact .7s ease-out}
+@keyframes battleship-hit-impact{0%{transform:scale(.55);filter:brightness(1.7)}55%{transform:scale(1.18)}100%{transform:scale(1);filter:brightness(1)}}
+@keyframes battleship-sunk-impact{0%{transform:scale(.5) rotate(-8deg);filter:brightness(2)}50%{transform:scale(1.24) rotate(5deg)}100%{transform:scale(1) rotate(0);filter:brightness(1)}}
 
 .battleship-fleet-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.battleship-ship-choice{display:grid;gap:3px;min-height:48px;border:1px solid var(--stroke);border-radius:14px;background:rgba(255,255,255,.045);color:var(--text);padding:8px 10px;text-align:left}
-.battleship-ship-choice span{font-size:12px;letter-spacing:1px;color:#b9c8e5;white-space:nowrap}
+.battleship-ship-choice{display:grid;gap:5px;min-height:54px;border:1px solid var(--stroke);border-radius:14px;background:rgba(255,255,255,.045);color:var(--text);padding:9px 10px;text-align:left}
+.battleship-ship-dots{display:flex;align-items:center;gap:4px;min-height:14px}
+.battleship-ship-dots i{display:block;width:11px;height:11px;border-radius:50%;background:#b9c8e5;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
 .battleship-ship-choice small{color:var(--muted);font-size:10px;font-weight:800}
 .battleship-ship-choice.active{border-color:rgba(124,92,255,.68);background:rgba(124,92,255,.18)}
 .battleship-ship-choice.done{opacity:.48}
-
-.battleship-orientation-row{display:grid;gap:7px}
-.battleship-orientation-row>span{font-size:11px;color:var(--muted);font-weight:850}
-.battleship-orientation-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.battleship-orientation-switch button{border:1px solid var(--stroke);border-radius:13px;background:rgba(255,255,255,.045);color:var(--muted);min-height:40px;padding:0 8px;font-size:11px;font-weight:900}
-.battleship-orientation-switch button.active{background:rgba(124,92,255,.18);border-color:rgba(124,92,255,.55);color:var(--text)}
+.battleship-placement-guide{display:grid;gap:4px;border:1px solid rgba(124,92,255,.3);border-radius:14px;background:rgba(124,92,255,.1);padding:10px 11px;min-height:62px}
+.battleship-placement-guide strong{font-size:12px}
+.battleship-placement-guide span{font-size:11px;line-height:1.35;color:var(--muted)}
 .battleship-setup-actions{display:grid;grid-template-columns:1.2fr .8fr;gap:7px}
 .battleship-setup-actions .btn{min-width:0;font-size:12px;padding-left:8px;padding-right:8px}
 .battleship-placement-note{text-align:left}
@@ -72,35 +77,34 @@
 .battleship-board-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border-radius:15px;background:rgba(255,255,255,.045);border:1px solid var(--stroke)}
 .battleship-board-tabs button{min-height:36px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-size:11px;font-weight:900}
 .battleship-board-tabs button.active{background:rgba(124,92,255,.22);color:var(--text)}
-.battleship-board-title{align-items:flex-end}
-.battleship-board-title span{text-align:right;max-width:58%}
+.battleship-board-title{align-items:center;min-height:34px}
+.battleship-board-title strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58%}
+.battleship-board-title span{text-align:right;max-width:40%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:14px}
 .battleship-legend{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
 .battleship-legend span{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:10px;font-weight:800}
 .battleship-legend i{display:block;width:11px;height:11px;border-radius:50%}
 .battleship-legend .miss{background:#cde7ff}
-.battleship-legend .hit{background:#ff6675}
+.battleship-legend .hit{background:#ffd34f;box-shadow:0 0 0 3px rgba(147,91,13,.35)}
 .battleship-legend .sunk{background:#ff394f;box-shadow:0 0 0 3px rgba(90,18,29,.8)}
 
 .battleship-start-scroll{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .battleship-start-scroll::-webkit-scrollbar{display:none}
-.battleship-start-preview{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px;width:100%;aspect-ratio:1;margin:12px 0 5px;padding:7px;border-radius:18px;background:linear-gradient(145deg,rgba(50,91,158,.78),rgba(25,53,102,.86))}
-.battleship-start-preview span{border:1px solid rgba(255,255,255,.07);border-radius:3px;background:rgba(8,20,44,.28)}
-.battleship-start-preview span.ship{background:linear-gradient(145deg,#aebfd8,#647996)}
+.battleship-start-preview{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;width:100%;aspect-ratio:1;margin:12px 0 5px;padding:8px;border-radius:18px;background:linear-gradient(145deg,rgba(50,91,158,.78),rgba(25,53,102,.86))}
+.battleship-start-preview span{border:1px solid rgba(255,255,255,.08);border-radius:50%;background:rgba(8,20,44,.28)}
+.battleship-start-preview span.ship{background:linear-gradient(145deg,#c0cee2,#7186a4);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
 .battleship-preview-caption{text-align:center;color:var(--muted);font-size:11px;font-weight:850}
 .battleship-start-fleet{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:10px 0 4px}
-.battleship-start-fleet>div{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--stroke);border-radius:13px;background:rgba(255,255,255,.04);padding:8px}
-.ship-shape{display:grid;grid-auto-flow:column;grid-auto-columns:9px;gap:2px}
-.ship-shape::before{content:'';display:block;width:9px;height:9px;border-radius:3px;background:#9fb1cf;box-shadow:12px 0 #9fb1cf,24px 0 #9fb1cf,36px 0 #9fb1cf}
-.ship-shape.size-3::before{box-shadow:12px 0 #9fb1cf,24px 0 #9fb1cf}
-.ship-shape.size-2::before{box-shadow:12px 0 #9fb1cf}
-.ship-shape.size-1::before{box-shadow:none}
-.battleship-start-fleet strong{font-size:11px}
+.battleship-start-fleet>div{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--stroke);border-radius:13px;background:rgba(255,255,255,.04);padding:9px 11px;min-width:0}
+.ship-shape{display:flex;align-items:center;gap:4px;min-width:0}
+.ship-shape i{display:block;width:11px;height:11px;border-radius:50%;background:#9fb1cf;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);flex:0 0 11px}
+.battleship-start-fleet strong{font-size:11px;white-space:nowrap;flex:0 0 auto}
 
 @media (max-width:380px){
   .battleship-coordinate-board{grid-template-columns:17px repeat(10,minmax(0,1fr));grid-template-rows:17px repeat(10,minmax(0,1fr));gap:1px}
-  .battleship-cell{border-radius:3px}
   .battleship-col-label,.battleship-row-label{font-size:8px}
   .battleship-fleet-picker{gap:5px}
   .battleship-ship-choice{padding:7px 8px}
   .battleship-setup-actions{grid-template-columns:1fr}
+  .battleship-board-title strong{max-width:54%}
+  .battleship-board-title span{max-width:44%}
 }
