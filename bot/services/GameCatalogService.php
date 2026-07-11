@@ -33,6 +33,24 @@ final class GameCatalogService
                 'supports_bot' => true,
                 'board_sizes' => $boardSizes,
                 'default_board_size' => $defaultBoardSize,
+                'board_columns' => $defaultBoardSize,
+                'board_rows' => $defaultBoardSize,
+            ],
+            'four_in_a_row' => [
+                'id' => 'four_in_a_row',
+                'title' => '4 в ряд',
+                'enabled' => true,
+                'engine' => 'four_in_a_row',
+                'renderer' => 'four_in_a_row',
+                'action_type' => 'column',
+                'min_players' => 2,
+                'max_players' => 2,
+                'rooms' => ['match', 'gold'],
+                'supports_bot' => true,
+                'board_sizes' => [7],
+                'default_board_size' => 7,
+                'board_columns' => 7,
+                'board_rows' => 6,
             ],
         ];
     }
@@ -86,6 +104,7 @@ final class GameCatalogService
     public function publicGameDefinition(string $gameType): array
     {
         $game = $this->get($gameType);
+        $defaultBoardSize = (int)($game['default_board_size'] ?? 3);
 
         return [
             'id' => (string)$game['id'],
@@ -95,7 +114,9 @@ final class GameCatalogService
             'rooms' => array_values($game['rooms'] ?? []),
             'supports_bot' => !empty($game['supports_bot']),
             'board_sizes' => array_values(array_map('intval', $game['board_sizes'] ?? [])),
-            'default_board_size' => (int)($game['default_board_size'] ?? 3),
+            'default_board_size' => $defaultBoardSize,
+            'board_columns' => (int)($game['board_columns'] ?? $defaultBoardSize),
+            'board_rows' => (int)($game['board_rows'] ?? $defaultBoardSize),
         ];
     }
 
