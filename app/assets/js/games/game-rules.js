@@ -1,5 +1,6 @@
 import { openSheet } from '../components/sheet.js?v=27';
 import { state } from '../state.js?v=27';
+import { gameTypeOf } from './game-router.js?v=50';
 
 let initialized = false;
 
@@ -12,7 +13,7 @@ export function initGameRules(){
     if (!button) return;
 
     const gameType = button.hasAttribute('data-game-rules-current')
-      ? String(state.activeGame?.game_type || 'tictactoe')
+      ? gameTypeOf(state.activeGame)
       : String(button.dataset.gameRules || 'tictactoe');
 
     openGameRules(gameType);
@@ -58,6 +59,10 @@ function fourInARowRules(){
       </section>
 
       <section class="game-rule-card compact">
+        <div class="game-rule-copy"><strong>Размер поля</strong><span>Можно выбрать компактное 6×5, классическое 7×6 или большое 8×7 поле. Во всех вариантах нужно собрать 4 фишки подряд.</span></div>
+      </section>
+
+      <section class="game-rule-card compact">
         <div class="game-rule-copy"><strong>Ничья</strong><span>Если поле заполнено полностью и никто не собрал четыре фишки подряд.</span></div>
       </section>
 
@@ -71,7 +76,7 @@ function fourInARowRules(){
 function ticTacToeRules(){
   return `
     <div class="sheet-head game-rules-head">
-      <div><h2>Крестики-нолики</h2><p>Соберите нужную линию своих знаков раньше соперника.</p></div>
+      <div><h2>Крестики-нолики</h2><p>Соберите победную линию своих знаков раньше соперника.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="game-rules-content">
