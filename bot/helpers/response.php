@@ -14,29 +14,55 @@ function mgw_normalize_api_data(array $data): array {
         return $data;
     }
 
-    $seenShopOrders = [];
-    $normalized = [];
-
-    foreach ($operations as $item) {
+    // Старые версии магазина создавали две записи на один заказ:
+    // 1) реальное balance_change со списанием;
+    // 2) техническую shop_order с той же датой и суммой.
+    // Сопоставляем их попарно, а не через простой unique-key, чтобы два
+    // настоящих одинаковых заказа в одну секунду не схлопнулись в один.
+    $groups = [];
+    foreach ($operations as $index => $item) {
         if (!is_array($item) || (string)($item['title'] ?? '') !== 'Заказ приза') {
-            $normalized[] = $item;
             continue;
         }
 
-        // A shop order currently has both a financial ledger row and a technical
-        // shop_order row with the same timestamp and amount. Present it once.
+        $description = (string)($item['description'] ?? '');
+        $kind = null;
+        if (str_starts_with($description, 'Заказ приза:')) {
+            $kind = 'financial';
+        } elseif (str_starts_with($description, 'Магазин призов ·')) {
+            $kind = 'technical';
+        }
+
+        if ($kind === null) {
+            continue;
+        }
+
         $key = implode('|', [
             (string)($item['created_at'] ?? ''),
             (string)($item['amount'] ?? 0),
-            (string)($item['title'] ?? ''),
         ]);
+        $groups[$key][$kind][] = $index;
+    }
 
-        if (isset($seenShopOrders[$key])) {
-            continue;
+    $dropIndexes = [];
+    foreach ($groups as $group) {
+        $financial = $group['financial'] ?? [];
+        $technical = $group['technical'] ?? [];
+        $pairs = min(count($financial), count($technical));
+        for ($i = 0; $i < $pairs; $i++) {
+            $dropIndexes[$technical[$i]] = true;
         }
+    }
 
-        $seenShopOrders[$key] = true;
-        $normalized[] = $item;
+    if (!$dropIndexes) {
+        return $data;
+    }
+
+    $normalized = [];
+    foreach ($operations as $index => $item) {
+        if (!isset($dropIndexes[$index])) {
+            $normalized[] = $item;
+        }
     }
 
     $data['history']['operations'] = $normalized;
