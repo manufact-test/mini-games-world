@@ -29,14 +29,11 @@ final class GameActionService
 
         $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? ''));
         $definition = $this->catalog->get($gameType);
+        $engine = (string)($definition['engine'] ?? '');
         $expectedActionType = (string)($definition['action_type'] ?? '');
         $actionType = trim((string)($action['type'] ?? $expectedActionType));
 
-        if ($actionType === '' || $actionType !== $expectedActionType) {
-            throw new RuntimeException('Это действие не поддерживается выбранной игрой.');
-        }
-
-        return match ((string)($definition['engine'] ?? '')) {
+        return match ($engine) {
             'tictactoe' => $this->applyTicTacToeAction($db, $user, $gameId, $actionType, $action),
             'four_in_a_row' => $this->applyFourInARowAction($db, $user, $gameId, $actionType, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
@@ -69,13 +66,20 @@ final class GameActionService
         string $actionType,
         array $action
     ): array {
-        if ($actionType !== 'column') {
-            throw new RuntimeException('Некорректное действие для этой игры.');
+        $column = filter_var($action['column'] ?? null, FILTER_VALIDATE_INT);
+
+        // Compatibility fallback for a stale v49 client that rendered the board as
+        // tic-tac-toe cells but was already connected to the new Four in a Row engine.
+        if ($column === false && $actionType === 'cell') {
+            $cell = filter_var($action['cell'] ?? null, FILTER_VALIDATE_INT);
+            if ($cell !== false) {
+                $columns = max(1, (int)($db['games'][$gameId]['board_columns'] ?? 7));
+                $column = (int)$cell % $columns;
+            }
         }
 
-        $column = filter_var($action['column'] ?? null, FILTER_VALIDATE_INT);
-        if ($column === false) {
-            throw new RuntimeException('Не выбран столбец.');
+        if (!in_array($actionType, ['column', 'drop_disc', 'cell'], true) || $column === false) {
+            throw new RuntimeException('Выберите столбец для хода.');
         }
 
         return $this->runtime->dropFourInARowDisc($db, $user, $gameId, (int)$column);
