@@ -11,7 +11,7 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=47';
+} from '../games/game-router.js?v=49';
 
 const weeklyProgressNotifiedGames = new Set();
 
@@ -163,7 +163,7 @@ async function startSameSearchFromResult(){
   const gameType = gameTypeOf(lastGame);
 
   state.room = room;
-  state.selectedBoardSize = boardSize;
+  if (gameType === 'tictactoe') state.selectedBoardSize = boardSize;
   state.selectedBet = bet;
   state.activeGame = null;
 
