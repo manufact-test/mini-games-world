@@ -85,7 +85,9 @@ final class AdminSystemCheckGuard
         $db = new JsonDatabase($this->dataDir());
         return $db->readOnly(function (array $data) {
             $base = (new AdminService($this->config))->systemCheck($data);
-            return $base . "\n\n" . $this->paymentAudit($data);
+            return $base
+                . "\n\n" . $this->paymentAudit($data)
+                . "\n\n" . $this->shopAudit($data);
         });
     }
 
@@ -205,6 +207,241 @@ final class AdminSystemCheckGuard
         return implode("\n", $lines);
     }
 
+    private function shopAudit(array $data): string
+    {
+        $orders = $data['shop_orders'] ?? [];
+        $users = $data['users'] ?? [];
+        $transactions = $data['transactions'] ?? [];
+        $pendingActions = $data['system']['admin_pending_actions'] ?? [];
+
+        $issues = [];
+        $warnings = [];
+        $statusCounts = [
+            'pending' => 0,
+            'processing' => 0,
+            'done' => 0,
+            'rejected' => 0,
+            'cancelled' => 0,
+            'unknown' => 0,
+        ];
+
+        $seenIds = [];
+        $seenRequests = [];
+        $ordersById = [];
+        $debitTransactions = [];
+        $refundTransactions = [];
+        $doneTransactions = [];
+        $rejectTransactions = [];
+
+        foreach ($transactions as $tx) {
+            if (!is_array($tx)) continue;
+
+            $orderId = trim((string)($tx['order_id'] ?? ''));
+            if ($orderId === '') continue;
+
+            $type = (string)($tx['type'] ?? '');
+            $category = (string)($tx['category'] ?? '');
+            $amount = (int)($tx['amount'] ?? 0);
+
+            if ($type === 'balance_change' && $category === 'shop_order' && $amount < 0) {
+                $debitTransactions[$orderId] = ($debitTransactions[$orderId] ?? 0) + 1;
+            }
+            if ($type === 'balance_change' && $category === 'shop_refund' && $amount > 0) {
+                $refundTransactions[$orderId] = ($refundTransactions[$orderId] ?? 0) + 1;
+            }
+            if ($type === 'shop_order_done' || $category === 'shop_order_done') {
+                $doneTransactions[$orderId] = ($doneTransactions[$orderId] ?? 0) + 1;
+            }
+            if ($type === 'shop_order_reject' || $category === 'shop_order_reject') {
+                $rejectTransactions[$orderId] = ($rejectTransactions[$orderId] ?? 0) + 1;
+            }
+        }
+
+        foreach ($orders as $index => $order) {
+            if (!is_array($order)) {
+                $issues[] = "заказ #{$index} имеет некорректный формат";
+                continue;
+            }
+
+            $id = trim((string)($order['id'] ?? ''));
+            $label = $id !== '' ? $this->shortOrderId($id) : ('#' . $index);
+            $userId = trim((string)($order['user_id'] ?? ''));
+            $status = strtolower(trim((string)($order['status'] ?? 'pending')));
+            $amount = abs((int)($order['gold_cost'] ?? $order['amount'] ?? 0));
+            $requestId = trim((string)($order['client_request_id'] ?? ''));
+            $refundDone = !empty($order['refund_done']);
+
+            if ($id === '') {
+                $issues[] = "заказ {$label}: отсутствует ID";
+            } elseif (isset($seenIds[$id])) {
+                $issues[] = "дублирующийся ID заказа {$label}";
+            } else {
+                $seenIds[$id] = true;
+                $ordersById[$id] = $order;
+            }
+
+            if ($requestId !== '' && $userId !== '') {
+                $requestKey = $userId . '|' . $requestId;
+                if (isset($seenRequests[$requestKey])) {
+                    $issues[] = "заказ {$label}: повторный client_request_id у одного игрока";
+                } else {
+                    $seenRequests[$requestKey] = true;
+                }
+            }
+
+            if ($userId === '' || !isset($users[$userId])) {
+                $issues[] = "заказ {$label}: пользователь не найден";
+            }
+            if ($amount <= 0) {
+                $issues[] = "заказ {$label}: некорректная стоимость";
+            }
+            if (empty($order['created_at'])) {
+                $warnings[] = "заказ {$label}: отсутствует дата создания";
+            }
+
+            if (!isset($statusCounts[$status])) {
+                $statusCounts['unknown']++;
+                $issues[] = "заказ {$label}: неизвестный статус {$status}";
+            } else {
+                $statusCounts[$status]++;
+            }
+
+            $debitCount = $id !== '' ? (int)($debitTransactions[$id] ?? 0) : 0;
+            $refundCount = $id !== '' ? (int)($refundTransactions[$id] ?? 0) : 0;
+            $doneCount = $id !== '' ? (int)($doneTransactions[$id] ?? 0) : 0;
+            $rejectCount = $id !== '' ? (int)($rejectTransactions[$id] ?? 0) : 0;
+
+            if ($debitCount === 0) {
+                $warnings[] = "заказ {$label}: нет финансовой операции списания";
+            } elseif ($debitCount > 1) {
+                $issues[] = "заказ {$label}: несколько финансовых списаний";
+            }
+
+            if ($refundCount > 1) {
+                $issues[] = "заказ {$label}: несколько операций возврата";
+            }
+            if ($refundDone && $refundCount === 0) {
+                $warnings[] = "заказ {$label}: отмечен возврат, но нет операции shop_refund";
+            }
+            if (!$refundDone && $refundCount > 0) {
+                $issues[] = "заказ {$label}: есть возврат, но refund_done не установлен";
+            }
+
+            if (in_array($status, ['pending', 'processing'], true)) {
+                if ($refundDone) {
+                    $issues[] = "заказ {$label}: активный статус после возврата Gold";
+                }
+                if (!empty($order['completed_at']) || !empty($order['rejected_at'])) {
+                    $warnings[] = "заказ {$label}: активный статус с датой завершения";
+                }
+            }
+
+            if ($status === 'done') {
+                if ($refundDone) {
+                    $issues[] = "заказ {$label}: выполнен, но Gold возвращён";
+                }
+                if (empty($order['completed_at'])) {
+                    $warnings[] = "заказ {$label}: выполнен без completed_at";
+                }
+                if ($doneCount === 0) {
+                    $warnings[] = "заказ {$label}: нет операции shop_order_done";
+                } elseif ($doneCount > 1) {
+                    $warnings[] = "заказ {$label}: несколько операций выполнения";
+                }
+                if ($rejectCount > 0) {
+                    $issues[] = "заказ {$label}: одновременно есть операция отклонения";
+                }
+            }
+
+            if ($status === 'rejected') {
+                if (!$refundDone) {
+                    $issues[] = "заказ {$label}: отклонён без подтверждённого возврата";
+                }
+                if (empty($order['rejected_at'])) {
+                    $warnings[] = "заказ {$label}: отклонён без rejected_at";
+                }
+                if (trim((string)($order['reject_reason'] ?? $order['admin_note'] ?? '')) === '') {
+                    $warnings[] = "заказ {$label}: нет причины отклонения";
+                }
+                if ($refundDone && $amount > 0 && abs((int)($order['refund_amount'] ?? 0)) !== $amount) {
+                    $issues[] = "заказ {$label}: сумма возврата не совпадает со стоимостью заказа";
+                }
+                if ($refundCount === 0) {
+                    $warnings[] = "заказ {$label}: нет операции shop_refund";
+                }
+                if ($rejectCount === 0) {
+                    $warnings[] = "заказ {$label}: нет операции shop_order_reject";
+                } elseif ($rejectCount > 1) {
+                    $warnings[] = "заказ {$label}: несколько операций отклонения";
+                }
+                if ($doneCount > 0) {
+                    $issues[] = "заказ {$label}: одновременно есть операция выполнения";
+                }
+            }
+
+            if ($status === 'cancelled' && $debitCount > 0 && !$refundDone) {
+                $issues[] = "заказ {$label}: отменён после списания без возврата Gold";
+            }
+        }
+
+        foreach ($debitTransactions as $orderId => $count) {
+            if (!isset($ordersById[$orderId])) {
+                $issues[] = 'списание связано с несуществующим заказом ' . $this->shortOrderId($orderId);
+            }
+        }
+        foreach ($refundTransactions as $orderId => $count) {
+            if (!isset($ordersById[$orderId])) {
+                $issues[] = 'возврат связан с несуществующим заказом ' . $this->shortOrderId($orderId);
+            }
+        }
+
+        $activeRejectModes = 0;
+        $staleRejectModes = 0;
+        foreach ($pendingActions as $adminId => $pendingAction) {
+            if (!is_array($pendingAction) || (string)($pendingAction['type'] ?? '') !== 'shop_order_reject') {
+                continue;
+            }
+
+            $activeRejectModes++;
+            $createdAt = strtotime((string)($pendingAction['created_at'] ?? '')) ?: 0;
+            if ($createdAt > 0 && time() - $createdAt > 1800) {
+                $staleRejectModes++;
+                $warnings[] = "у администратора {$adminId} просрочен ввод причины отклонения заказа";
+            }
+
+            $orderId = trim((string)($pendingAction['order_id'] ?? ''));
+            if ($orderId === '' || !isset($ordersById[$orderId])) {
+                $warnings[] = "режим отклонения у администратора {$adminId} не связан с существующим заказом";
+                continue;
+            }
+
+            if ((string)($ordersById[$orderId]['status'] ?? 'pending') !== 'pending') {
+                $warnings[] = "режим отклонения относится к уже обработанному заказу " . $this->shortOrderId($orderId);
+            }
+        }
+
+        $lines = ['🎁 Контроль магазина'];
+        $lines[] = 'Всего заказов: ' . count($orders);
+        $lines[] = 'Ожидают: ' . $statusCounts['pending'];
+        if ($statusCounts['processing'] > 0) $lines[] = 'В обработке: ' . $statusCounts['processing'];
+        $lines[] = 'Выполнены: ' . $statusCounts['done'];
+        $lines[] = 'Отклонены: ' . $statusCounts['rejected'];
+        if ($statusCounts['cancelled'] > 0) $lines[] = 'Отменены: ' . $statusCounts['cancelled'];
+        if ($statusCounts['unknown'] > 0) $lines[] = 'Неизвестный статус: ' . $statusCounts['unknown'];
+        $lines[] = "Активных вводов причины: {$activeRejectModes}";
+        if ($staleRejectModes > 0) $lines[] = "Просроченных вводов причины: {$staleRejectModes}";
+
+        $lines[] = "\nОшибки магазина:";
+        if ($issues) foreach (array_slice(array_values(array_unique($issues)), 0, 14) as $issue) $lines[] = "❌ {$issue}";
+        else $lines[] = '✅ критичных ошибок не найдено';
+
+        $lines[] = "\nПредупреждения магазина:";
+        if ($warnings) foreach (array_slice(array_values(array_unique($warnings)), 0, 14) as $warning) $lines[] = "⚠️ {$warning}";
+        else $lines[] = '✅ предупреждений нет';
+
+        return implode("\n", $lines);
+    }
+
     private function startsWithCommand(string $text, string $command): bool
     {
         if ($command === '') return false;
@@ -216,6 +453,13 @@ final class AdminSystemCheckGuard
     private function shortPaymentId(string $id): string
     {
         $id = preg_replace('/^(pay_)/i', '', $id);
+        $id = strtoupper(substr((string)$id, 0, 8));
+        return $id !== '' ? $id : '-';
+    }
+
+    private function shortOrderId(string $id): string
+    {
+        $id = preg_replace('/^(shop_|order_)/i', '', $id);
         $id = strtoupper(substr((string)$id, 0, 8));
         return $id !== '' ? $id : '-';
     }
