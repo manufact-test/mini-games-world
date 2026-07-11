@@ -47,7 +47,8 @@ final class GameCatalogService
                 'max_players' => 2,
                 'rooms' => ['match', 'gold'],
                 'supports_bot' => true,
-                'board_sizes' => [7],
+                // Three size variants. The win condition remains four connected discs.
+                'board_sizes' => [6, 7, 8],
                 'default_board_size' => 7,
                 'board_columns' => 7,
                 'board_rows' => 6,
@@ -123,11 +124,11 @@ final class GameCatalogService
     public function publicCatalog(): array
     {
         $items = [];
-        foreach ($this->games as $gameType => $game) {
+        foreach ($this->games as $game) {
             if (empty($game['enabled'])) {
                 continue;
             }
-            $items[] = $this->publicGameDefinition($gameType);
+            $items[] = $this->publicGameDefinition((string)$game['id']);
         }
         return $items;
     }
