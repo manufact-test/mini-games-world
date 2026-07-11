@@ -77,16 +77,22 @@ try {
     $sessions = new SessionService($config);
     $statsService = new StatsService();
     $history = new HistoryService($config, $users);
+    $weeklyMatch = new WeeklyMatchEconomyService($config, new NotificationService());
 
     $tgUser = $auth->getUserFromRequest($payload);
 
-    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $shop, $payments, $sessions, $statsService, $history, $sessionId) {
+    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId) {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)$user['id'];
         $data['users'][$userId] = $user;
         $user =& $data['users'][$userId];
 
         $sessions->ensureSessionShape($user);
+
+        // MVP-9: если плановый cron был пропущен, первый вход игрока безопасно
+        // догоняет только его собственное недельное начисление. Повтор невозможен
+        // благодаря cycle key на пользователе.
+        $weeklyMatch->applyDueForUser($data, $user);
 
         // MVP-3: каждая API-команда чистит старую очередь и просроченные ходы.
         $games->cleanup($data);
@@ -99,6 +105,7 @@ try {
                     'user' => $users->publicUser($user),
                     'session' => $sessions->publicState($user, $sessionId),
                     'shop' => $shop->status($user),
+                    'weekly_match' => $weeklyMatch->status($data, $user),
                     'stats' => $statsService->build($data),
                     'active_game' => $active ? $games->publicGame($active, $userId) : null,
                 ];
@@ -106,6 +113,13 @@ try {
             case 'stats':
                 return [
                     'stats' => $statsService->build($data),
+                    'session' => $sessions->publicState($user, $sessionId),
+                ];
+
+            case 'weekly_match_status':
+                return [
+                    'user' => $users->publicUser($user),
+                    'weekly_match' => $weeklyMatch->status($data, $user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
 
