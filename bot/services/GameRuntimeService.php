@@ -21,7 +21,7 @@ final class GameRuntimeService
         $this->normalizeDatabaseGameTypes($db);
 
         // The legacy service still owns tic-tac-toe cleanup and bot turns.
-        // Temporarily isolate new-engine games so the old bot AI cannot touch them.
+        // Temporarily isolate Four in a Row games so the old engine cannot touch them.
         $fourGames = [];
         foreach ($db['games'] ?? [] as $gameId => $game) {
             if (is_array($game) && $this->gameTypeFromRecord($game) === 'four_in_a_row') {
@@ -64,6 +64,8 @@ final class GameRuntimeService
             return null;
         }
 
+        $requestedBoardSize = $this->requestedBoardSizeFromQueue($gameType, $queueItem);
+
         $game = $this->withIsolatedQueue(
             $db,
             $gameType,
@@ -82,8 +84,15 @@ final class GameRuntimeService
         }
 
         $db['games'][$gameId]['game_type'] = $gameType;
+        if ($gameType === 'four_in_a_row') {
+            $db['games'][$gameId]['game_variant_size'] = $requestedBoardSize;
+            $db['games'][$gameId]['board_size'] = $requestedBoardSize;
+        }
+
         $this->initializeEngineGame($db['games'][$gameId]);
+        $this->syncGameMetadataTransactions($db, $gameId);
         $this->rebalanceNewBotDifficulty($db, $user, $gameId);
+
         return $db['games'][$gameId];
     }
 
@@ -103,6 +112,12 @@ final class GameRuntimeService
             throw new RuntimeException('Эта игра недоступна в выбранной комнате.');
         }
 
+        $userId = (string)($user['id'] ?? '');
+        $active = $this->findActiveGameForUser($db, $userId);
+        if ($active) {
+            return ['game' => $this->publicGame($active, $userId)];
+        }
+
         $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
         $definition = $this->catalog->get($gameType);
         $engine = (string)($definition['engine'] ?? '');
@@ -111,11 +126,12 @@ final class GameRuntimeService
             throw new RuntimeException('Движок этой игры пока не подключён.');
         }
 
-        // The legacy matcher validates square tic-tac-toe sizes. Four in a Row has
-        // one fixed 7x6 variant, so a stable 3x3 proxy key is enough inside the
-        // game-type-isolated queue. The created record is immediately converted.
-        $legacyBoardSize = $engine === 'tictactoe' ? $boardSize : 3;
-        $userId = (string)($user['id'] ?? '');
+        // The proven legacy matcher is reused only for queueing, entry fees and human
+        // matching. Four in a Row uses safe proxy sizes that are converted immediately
+        // after a match is created.
+        $legacyBoardSize = $engine === 'tictactoe'
+            ? $boardSize
+            : $this->legacyProxyBoardSize($boardSize);
 
         $result = $this->withIsolatedQueue(
             $db,
@@ -130,11 +146,18 @@ final class GameRuntimeService
             $gameId = (string)($result['game']['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;
+
+                if ($gameType === 'four_in_a_row') {
+                    $db['games'][$gameId]['game_variant_size'] = $boardSize;
+                    $db['games'][$gameId]['board_size'] = $boardSize;
+                }
+
                 $this->initializeEngineGame($db['games'][$gameId]);
+                $this->syncGameMetadataTransactions($db, $gameId);
                 $result['game'] = $this->publicGame($db['games'][$gameId], $userId);
             }
         } else {
-            $this->setQueuedGameType($db, $userId, $gameType);
+            $this->setQueuedGameType($db, $userId, $gameType, $boardSize);
         }
 
         return $result;
@@ -156,10 +179,12 @@ final class GameRuntimeService
 
         $result = $this->legacyGame->surrenderGame($db, $user, $gameId);
         $this->ensureGameType($result);
+
         if (isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
             $this->ensureGameType($db['games'][$gameId]);
             return $db['games'][$gameId];
         }
+
         return $result;
     }
 
@@ -169,6 +194,7 @@ final class GameRuntimeService
         if (!$game) {
             return null;
         }
+
         $this->ensureGameType($game);
         return $game;
     }
@@ -177,6 +203,7 @@ final class GameRuntimeService
     {
         $this->normalizeDatabaseGameTypes($db);
         $game = $db['games'][$gameId] ?? null;
+
         if (is_array($game)) {
             $definition = $this->catalog->get($this->gameTypeFromRecord($game));
             if ((string)($definition['engine'] ?? '') !== 'tictactoe') {
@@ -185,10 +212,12 @@ final class GameRuntimeService
         }
 
         $result = $this->legacyGame->makeMove($db, $user, $gameId, $cell);
+
         if (isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
             $this->ensureGameType($db['games'][$gameId]);
             return $db['games'][$gameId];
         }
+
         $this->ensureGameType($result);
         return $result;
     }
@@ -229,6 +258,10 @@ final class GameRuntimeService
         }
     }
 
+    /**
+     * Runs the legacy matcher against only one game type, then merges untouched
+     * queues back in their original order. This prevents cross-game matches.
+     */
     private function withIsolatedQueue(
         array &$db,
         string $gameType,
@@ -242,9 +275,11 @@ final class GameRuntimeService
             if (!is_array($item)) {
                 continue;
             }
+
             if ($dropUserId !== null && (string)($item['user_id'] ?? '') === $dropUserId) {
                 continue;
             }
+
             if ($this->gameTypeFromRecord($item) === $gameType) {
                 $workingQueue[] = $item;
             }
@@ -278,6 +313,7 @@ final class GameRuntimeService
             if (!is_array($item)) {
                 continue;
             }
+
             $id = trim((string)($item['id'] ?? ''));
             if ($id !== '') {
                 $updatedById[$id] = $item;
@@ -333,11 +369,14 @@ final class GameRuntimeService
         }
 
         foreach ($db['transactions'] as &$transaction) {
-            if (!is_array($transaction)
+            if (
+                !is_array($transaction)
                 || (string)($transaction['game_id'] ?? '') !== $gameId
-                || !array_key_exists('bot_difficulty', $transaction)) {
+                || !array_key_exists('bot_difficulty', $transaction)
+            ) {
                 continue;
             }
+
             $transaction['bot_difficulty'] = $difficulty;
             $transaction['game_type'] = (string)($db['games'][$gameId]['game_type'] ?? 'tictactoe');
         }
@@ -415,20 +454,38 @@ final class GameRuntimeService
 
     private function gameTypeFromRecord(array $record): string
     {
+        if (
+            (string)($record['game_type'] ?? '') === 'four_in_a_row'
+            || !empty($record['four_in_a_row_initialized'])
+            || ((int)($record['connect_length'] ?? 0) === 4 && (int)($record['board_rows'] ?? 0) >= 5)
+        ) {
+            return 'four_in_a_row';
+        }
+
         return $this->catalog->normalizeGameType((string)($record['game_type'] ?? ''));
     }
 
-    private function setQueuedGameType(array &$db, string $userId, string $gameType): void
-    {
+    private function setQueuedGameType(
+        array &$db,
+        string $userId,
+        string $gameType,
+        int $requestedBoardSize
+    ): void {
         if ($userId === '' || !isset($db['queue']) || !is_array($db['queue'])) {
             return;
         }
 
         foreach ($db['queue'] as &$item) {
-            if (is_array($item) && (string)($item['user_id'] ?? '') === $userId) {
-                $item['game_type'] = $gameType;
-                return;
+            if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) {
+                continue;
             }
+
+            $item['game_type'] = $gameType;
+            if ($gameType === 'four_in_a_row') {
+                $item['game_variant_size'] = $requestedBoardSize;
+            }
+            unset($item);
+            return;
         }
         unset($item);
     }
@@ -444,6 +501,66 @@ final class GameRuntimeService
                 return $item;
             }
         }
+
         return null;
+    }
+
+    private function legacyProxyBoardSize(int $boardSize): int
+    {
+        return match ($boardSize) {
+            6 => 3,
+            8 => 9,
+            default => 5,
+        };
+    }
+
+    private function requestedBoardSizeFromQueue(string $gameType, array $queueItem): int
+    {
+        if ($gameType !== 'four_in_a_row') {
+            return $this->catalog->normalizeBoardSize(
+                $gameType,
+                (int)($queueItem['board_size'] ?? 3)
+            );
+        }
+
+        $requested = (int)($queueItem['game_variant_size'] ?? 0);
+        if (in_array($requested, [6, 7, 8], true)) {
+            return $requested;
+        }
+
+        return match ((int)($queueItem['board_size'] ?? 5)) {
+            3 => 6,
+            9 => 8,
+            default => 7,
+        };
+    }
+
+    private function syncGameMetadataTransactions(array &$db, string $gameId): void
+    {
+        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
+            return;
+        }
+
+        if (!isset($db['transactions']) || !is_array($db['transactions'])) {
+            return;
+        }
+
+        $game = $db['games'][$gameId];
+        foreach ($db['transactions'] as &$transaction) {
+            if (!is_array($transaction) || (string)($transaction['game_id'] ?? '') !== $gameId) {
+                continue;
+            }
+
+            $transaction['game_type'] = (string)($game['game_type'] ?? 'tictactoe');
+            $transaction['board_size'] = (int)($game['board_size'] ?? 0);
+
+            if (isset($game['board_columns'])) {
+                $transaction['board_columns'] = (int)$game['board_columns'];
+            }
+            if (isset($game['board_rows'])) {
+                $transaction['board_rows'] = (int)$game['board_rows'];
+            }
+        }
+        unset($transaction);
     }
 }
