@@ -53,6 +53,7 @@ final class GameRuntimeService
             $gameId = (string)($game['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;
+                $this->rebalanceNewBotDifficulty($db, $user, $gameId);
                 return $db['games'][$gameId];
             }
         }
@@ -271,6 +272,74 @@ final class GameRuntimeService
         }
 
         return array_values($merged);
+    }
+
+    private function rebalanceNewBotDifficulty(array &$db, array $user, string $gameId): void
+    {
+        $game = $db['games'][$gameId] ?? null;
+        if (!is_array($game) || empty($game['is_bot_game'])) {
+            return;
+        }
+
+        $difficulty = $this->chooseBotDifficulty($user);
+        $db['games'][$gameId]['bot_difficulty'] = $difficulty;
+
+        if (!isset($db['transactions']) || !is_array($db['transactions'])) {
+            return;
+        }
+
+        foreach ($db['transactions'] as &$transaction) {
+            if (!is_array($transaction)
+                || (string)($transaction['game_id'] ?? '') !== $gameId
+                || !array_key_exists('bot_difficulty', $transaction)) {
+                continue;
+            }
+            $transaction['bot_difficulty'] = $difficulty;
+        }
+        unset($transaction);
+    }
+
+    private function chooseBotDifficulty(array $user): string
+    {
+        $stats = is_array($user['stats'] ?? null) ? $user['stats'] : [];
+        $games = (int)($stats['games_played'] ?? 0);
+        $wins = (int)($stats['wins'] ?? 0);
+        $botGames = (int)($stats['bot_games_played'] ?? 0);
+        $botWins = (int)($stats['bot_wins'] ?? 0);
+        $botStreak = (int)($stats['bot_win_streak'] ?? 0);
+
+        $winRate = $games > 0 ? $wins / max(1, $games) : 0.0;
+        $botWinRate = $botGames > 0 ? $botWins / max(1, $botGames) : 0.0;
+
+        if ($botStreak >= 5 || ($botGames >= 8 && $botWinRate >= 0.70) || ($games >= 30 && $winRate >= 0.65)) {
+            return $this->weightedDifficulty(['medium' => 20, 'hard' => 80]);
+        }
+
+        if ($botStreak >= 3 || ($games >= 20 && $winRate >= 0.55)) {
+            return $this->weightedDifficulty(['medium' => 45, 'hard' => 55]);
+        }
+
+        if ($games < 5 && $botGames < 3) {
+            return $this->weightedDifficulty(['easy' => 8, 'medium' => 62, 'hard' => 30]);
+        }
+
+        return $this->weightedDifficulty(['easy' => 5, 'medium' => 65, 'hard' => 30]);
+    }
+
+    private function weightedDifficulty(array $weights): string
+    {
+        $total = array_sum($weights);
+        $roll = random_int(1, max(1, $total));
+        $acc = 0;
+
+        foreach ($weights as $difficulty => $weight) {
+            $acc += (int)$weight;
+            if ($roll <= $acc) {
+                return (string)$difficulty;
+            }
+        }
+
+        return 'medium';
     }
 
     private function normalizeDatabaseGameTypes(array &$db): void
