@@ -174,10 +174,10 @@ try {
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
 
-                $country = clean_string($payload['country'] ?? '', 40);
-                $provider = clean_string($payload['provider'] ?? '', 80);
-                $amount = (int)($payload['amount'] ?? 0);
-                $order = $shop->createOrder($data, $user, $country, $provider, $amount);
+                $itemId = clean_string($payload['itemId'] ?? '', 80);
+                $denominationId = clean_string($payload['denominationId'] ?? '', 80);
+                $requestToken = (int)($payload['requestToken'] ?? 0);
+                $order = $shop->createOrder($data, $user, $itemId, $denominationId, $requestToken);
 
                 return [
                     'saved' => true,
