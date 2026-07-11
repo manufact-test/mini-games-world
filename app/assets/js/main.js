@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v58-checkers-ui-fix';
+window.__MGW_BUILD__ = 'v59-checkers-preview-fix';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
