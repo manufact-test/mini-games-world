@@ -6,7 +6,7 @@ final class WeeklyMatchEconomyService
     private const DEFAULT_TIMEZONE = 'Europe/Warsaw';
     private const DEFAULT_START_AT = '2026-07-13 12:00:00';
     private const DEFAULT_BONUS_AMOUNT = 50;
-    private const DEFAULT_MIN_MATCHES = 3;
+    private const DEFAULT_MIN_GAMES = 3;
 
     public function __construct(
         private array $config,
@@ -47,13 +47,15 @@ final class WeeklyMatchEconomyService
         }
 
         $from = $cycleAt->modify('-7 days');
-        $games = $this->countCompletedMatchGames($db, $userId, $from, $cycleAt);
+        $games = $this->countCompletedGames($db, $userId, $from, $cycleAt);
+        $firstGrant = empty($user['weekly_match_first_grant_done']);
+        $eligibleByActivity = $games >= $this->minGames();
 
         $user['weekly_match_bonus_checked_key'] = $cycleKey;
         $user['weekly_match_bonus_checked_at'] = now_iso();
         $user['weekly_match_bonus_checked_games'] = $games;
 
-        if ($games < $this->minMatches()) {
+        if (!$firstGrant && !$eligibleByActivity) {
             return [
                 'processed' => true,
                 'awarded' => false,
@@ -73,6 +75,7 @@ final class WeeklyMatchEconomyService
             ];
         }
 
+        $qualification = $firstGrant ? 'first_grant' : 'activity';
         $amount = $this->bonusAmount();
         $before = (int)($user['balance_match'] ?? 0);
         $after = $before + $amount;
@@ -82,6 +85,8 @@ final class WeeklyMatchEconomyService
         $user['weekly_match_bonus_last_key'] = $cycleKey;
         $user['weekly_match_bonus_last_at'] = $awardedAt;
         $user['weekly_match_bonus_last_amount'] = $amount;
+        $user['weekly_match_bonus_last_qualification'] = $qualification;
+        $user['weekly_match_first_grant_done'] = true;
         $user['weekly_bonus_last'] = $cycleKey;
 
         if (!isset($db['transactions']) || !is_array($db['transactions'])) {
@@ -99,10 +104,13 @@ final class WeeklyMatchEconomyService
             'balance_before' => $before,
             'balance_after' => $after,
             'cycle_key' => $cycleKey,
+            'qualification' => $qualification,
             'qualifying_from' => $from->format(DATE_ATOM),
             'qualifying_to' => $cycleAt->format(DATE_ATOM),
             'qualifying_games' => $games,
-            'description' => 'Еженедельный бонус за активность в Матч-комнате',
+            'description' => $qualification === 'first_grant'
+                ? 'Первое еженедельное начисление в Матч-комнату'
+                : 'Еженедельный бонус за игровую активность',
             'created_at' => $awardedAt,
         ];
 
@@ -111,6 +119,7 @@ final class WeeklyMatchEconomyService
                 'cycle_key' => $cycleKey,
                 'amount' => $amount,
                 'qualifying_games' => $games,
+                'qualification' => $qualification,
                 'created_at' => $awardedAt,
             ]);
         }
@@ -121,6 +130,7 @@ final class WeeklyMatchEconomyService
             'reason' => 'awarded',
             'cycle_key' => $cycleKey,
             'qualifying_games' => $games,
+            'qualification' => $qualification,
             'amount' => $amount,
             'balance_before' => $before,
             'balance_after' => $after,
@@ -142,7 +152,7 @@ final class WeeklyMatchEconomyService
             'already_checked' => 0,
             'skipped_dev' => 0,
             'bonus_amount' => $this->bonusAmount(),
-            'min_completed_matches' => $this->minMatches(),
+            'min_completed_games' => $this->minGames(),
             'timezone' => $this->timezone()->getName(),
             'run_at' => $now->format(DATE_ATOM),
         ];
@@ -192,7 +202,7 @@ final class WeeklyMatchEconomyService
                 'start_at' => $this->startAt()->format(DATE_ATOM),
                 'timezone' => $this->timezone()->getName(),
                 'bonus_amount' => $this->bonusAmount(),
-                'min_completed_matches' => $this->minMatches(),
+                'min_completed_games' => $this->minGames(),
                 'last_run_at' => $now->format(DATE_ATOM),
                 'last_cycle_key' => $summary['cycle_key'],
                 'last_result' => $summary,
@@ -213,23 +223,25 @@ final class WeeklyMatchEconomyService
         $from = $nextCycle->modify('-7 days');
         $to = $nextCycle;
         $countTo = $now < $to ? $now : $to;
-        $games = $this->countCompletedMatchGames(
+        $games = $this->countCompletedGames(
             $db,
             (string)($user['id'] ?? ''),
             $from,
             $countTo
         );
 
-        $min = $this->minMatches();
+        $min = $this->minGames();
         $lastKey = (string)($user['weekly_match_bonus_last_key'] ?? '');
+        $firstGrantPending = empty($user['weekly_match_first_grant_done']);
 
         return [
             'enabled' => true,
             'bonus_amount' => $this->bonusAmount(),
-            'min_completed_matches' => $min,
-            'completed_match_games' => $games,
-            'remaining_match_games' => max(0, $min - $games),
-            'eligible_for_next' => $games >= $min,
+            'min_completed_games' => $min,
+            'completed_games' => $games,
+            'remaining_games' => max(0, $min - $games),
+            'eligible_for_next' => $firstGrantPending || $games >= $min,
+            'first_grant_pending' => $firstGrantPending,
             'next_bonus_at' => $nextCycle->format(DATE_ATOM),
             'qualifying_from' => $from->format(DATE_ATOM),
             'qualifying_to' => $to->format(DATE_ATOM),
@@ -237,10 +249,15 @@ final class WeeklyMatchEconomyService
             'last_bonus_key' => $lastKey !== '' ? $lastKey : null,
             'last_bonus_at' => $user['weekly_match_bonus_last_at'] ?? null,
             'last_bonus_amount' => (int)($user['weekly_match_bonus_last_amount'] ?? 0),
+
+            // Backward-compatible aliases for any already cached v44 client.
+            'min_completed_matches' => $min,
+            'completed_match_games' => $games,
+            'remaining_match_games' => max(0, $min - $games),
         ];
     }
 
-    private function countCompletedMatchGames(
+    private function countCompletedGames(
         array $db,
         string $userId,
         DateTimeImmutable $from,
@@ -255,9 +272,7 @@ final class WeeklyMatchEconomyService
         $count = 0;
 
         foreach (($db['games'] ?? []) as $game) {
-            if (!is_array($game)
-                || (string)($game['status'] ?? '') !== 'finished'
-                || (string)($game['room'] ?? '') !== 'match') {
+            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished') {
                 continue;
             }
 
@@ -342,8 +357,8 @@ final class WeeklyMatchEconomyService
         return max(1, (int)($this->config['weekly_match_bonus_amount'] ?? self::DEFAULT_BONUS_AMOUNT));
     }
 
-    private function minMatches(): int
+    private function minGames(): int
     {
-        return max(1, (int)($this->config['weekly_match_min_completed'] ?? self::DEFAULT_MIN_MATCHES));
+        return max(1, (int)($this->config['weekly_match_min_completed'] ?? self::DEFAULT_MIN_GAMES));
     }
 }
