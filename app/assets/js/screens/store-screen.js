@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=27';
+import { api } from '../api/client.js?v=31';
 import { state } from '../state.js?v=27';
 import { openSheet } from '../components/sheet.js?v=27';
 import { toast } from '../components/toast.js?v=27';
@@ -93,6 +93,10 @@ function renderStore(){
     storeState.selectedDenominationId = String(selectedDenomination.id || '');
   }
 
+  const storeNote = shop.test_mode
+    ? 'Тестовый режим администратора: весь текущий Gold доступен для проверки магазина. Для обычных игроков действует правило отыгрыша Gold в завершённых матчах.'
+    : 'В магазине доступен только Gold, который уже участвовал в завершённых Gold-матчах.';
+
   openSheet(`
     <div class="sheet-head">
       <div><h2>Магазин призов</h2><p>Выберите страну, сертификат и номинал.</p></div>
@@ -112,7 +116,7 @@ function renderStore(){
       </section>
 
       <div class="store-note">
-        В магазине доступен только Gold, который уже участвовал в завершённых Gold-матчах.
+        ${escapeHtml(storeNote)}
       </div>
 
       ${items.length ? renderCatalog(countries, filteredItems, selectedItem, selectedDenomination, available) : renderEmptyCatalog()}
