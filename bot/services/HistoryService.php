@@ -60,7 +60,6 @@ final class HistoryService
 
         if ($type === 'balance_change') {
             if ((string)($tx['user_id'] ?? '') !== $userId) return null;
-
             $category = (string)($tx['category'] ?? '');
             if ($this->isTopupCategory($category)) return null;
 
@@ -68,12 +67,8 @@ final class HistoryService
             $gameId = (string)($tx['game_id'] ?? '');
             $game = $gameId !== '' ? ($db['games'][$gameId] ?? null) : null;
             $description = $this->cleanDescription((string)($tx['description'] ?? ''));
-
-            if ($game) {
-                $description = $this->operationGameDescription($game, $userId, $category);
-            } elseif ($description === '') {
-                $description = $this->balanceDescription($tx);
-            }
+            if ($game) $description = $this->operationGameDescription($game, $userId, $category);
+            elseif ($description === '') $description = $this->balanceDescription($tx);
 
             return [
                 'id' => (string)($tx['id'] ?? ''),
@@ -108,7 +103,6 @@ final class HistoryService
             $room = (string)($tx['room'] ?? 'match');
             $gameId = (string)($tx['game_id'] ?? '');
             $game = $gameId !== '' ? ($db['games'][$gameId] ?? null) : null;
-
             return [
                 'id' => (string)($tx['id'] ?? ''),
                 'title' => $this->operationTitle('game_entry', is_array($game) ? $game : null, $userId),
@@ -173,19 +167,10 @@ final class HistoryService
         $opponentId = $this->otherPlayerId($game, $userId);
         $opponentName = (string)($game['player_names'][$opponentId] ?? 'Соперник');
 
-        if ($status !== 'finished') {
-            $result = 'Игра активна';
-            $tone = 'zero';
-        } elseif ($winnerId === null || $winnerId === '') {
-            $result = 'Ничья';
-            $tone = 'zero';
-        } elseif ($winnerId === $userId) {
-            $result = $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа');
-            $tone = 'pos';
-        } else {
-            $result = in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение';
-            $tone = 'neg';
-        }
+        if ($status !== 'finished') { $result = 'Игра активна'; $tone = 'zero'; }
+        elseif ($winnerId === null || $winnerId === '') { $result = 'Ничья'; $tone = 'zero'; }
+        elseif ($winnerId === $userId) { $result = $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа'); $tone = 'pos'; }
+        else { $result = in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение'; $tone = 'neg'; }
 
         return [
             'id' => (string)($game['id'] ?? ''),
@@ -213,16 +198,11 @@ final class HistoryService
 
     private function operationGameDescription(array $game, string $userId, string $category): string
     {
-        $parts = [
-            $this->roomLabel((string)($game['room'] ?? 'match')),
-            $this->gameLabel($game),
-        ];
-
+        $parts = [$this->roomLabel((string)($game['room'] ?? 'match')), $this->gameLabel($game)];
         if ($category === 'game_refund') {
             $parts[] = 'ничья';
             return implode(' · ', array_filter($parts));
         }
-
         $opponentId = $this->otherPlayerId($game, $userId);
         $opponentName = trim((string)($game['player_names'][$opponentId] ?? ''));
         if ($opponentName !== '') $parts[] = 'против ' . $opponentName;
@@ -231,13 +211,9 @@ final class HistoryService
 
     private function operationTitle(string $category, ?array $game, string $userId): string
     {
-        if ($category !== 'game_entry' || !$game || (string)($game['status'] ?? '') !== 'finished') {
-            return $this->balanceTitle($category);
-        }
-
+        if ($category !== 'game_entry' || !$game || (string)($game['status'] ?? '') !== 'finished') return $this->balanceTitle($category);
         $winnerId = isset($game['winner_id']) ? (string)$game['winner_id'] : '';
         if ($winnerId === '' || $winnerId === $userId) return $this->balanceTitle($category);
-
         $reason = (string)($game['finish_reason'] ?? '');
         return in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение';
     }
@@ -247,6 +223,7 @@ final class HistoryService
         return match ((string)($game['game_type'] ?? 'tictactoe')) {
             'four_in_a_row' => '4 в ряд',
             'battleship' => 'Морской бой',
+            'checkers' => 'Шашки',
             default => 'Крестики-нолики',
         };
     }
@@ -261,13 +238,7 @@ final class HistoryService
 
     private function isTopupCategory(string $category): bool
     {
-        return in_array($category, [
-            'payment_draft',
-            'payment_paid',
-            'payment_apply',
-            'payment_reject',
-            'admin_gold_topup',
-        ], true);
+        return in_array($category, ['payment_draft','payment_paid','payment_apply','payment_reject','admin_gold_topup'], true);
     }
 
     private function balanceTitle(string $category): string
@@ -284,35 +255,9 @@ final class HistoryService
         };
     }
 
-    private function balanceDescription(array $tx): string
-    {
-        return $this->roomLabel((string)($tx['room'] ?? ''));
-    }
-
-    private function amountLabel(int $amount): string
-    {
-        if ($amount > 0) return '+' . $amount . ' коинов';
-        if ($amount < 0) return (string)$amount . ' коинов';
-        return '0 коинов';
-    }
-
-    private function roomLabel(string $room): string
-    {
-        return $room === 'gold' ? 'Gold-комната' : ($room === 'match' ? 'Match-комната' : '');
-    }
-
-    private function prettyMatchId(string $id): string
-    {
-        $id = preg_replace('/^(game_|tx_|support_|queue_)/', '', $id);
-        $id = strtoupper(substr((string)$id, 0, 6));
-        return $id !== '' ? $id : '-';
-    }
-
-    private function otherPlayerId(array $game, string $userId): string
-    {
-        foreach ($game['player_ids'] ?? [] as $playerId) {
-            if ((string)$playerId !== $userId) return (string)$playerId;
-        }
-        return '';
-    }
+    private function balanceDescription(array $tx): string { return $this->roomLabel((string)($tx['room'] ?? '')); }
+    private function amountLabel(int $amount): string { if ($amount > 0) return '+' . $amount . ' коинов'; if ($amount < 0) return (string)$amount . ' коинов'; return '0 коинов'; }
+    private function roomLabel(string $room): string { return $room === 'gold' ? 'Gold-комната' : ($room === 'match' ? 'Match-комната' : ''); }
+    private function prettyMatchId(string $id): string { $id = preg_replace('/^(game_|tx_|support_|queue_)/', '', $id); $id = strtoupper(substr((string)$id, 0, 6)); return $id !== '' ? $id : '-'; }
+    private function otherPlayerId(array $game, string $userId): string { foreach ($game['player_ids'] ?? [] as $playerId) if ((string)$playerId !== $userId) return (string)$playerId; return ''; }
 }
