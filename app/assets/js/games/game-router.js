@@ -7,7 +7,7 @@ import {
   renderFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './four-in-a-row-renderer.js?v=49';
+} from './four-in-a-row-renderer.js?v=50';
 
 const routes = {
   tictactoe: {
@@ -23,7 +23,23 @@ const routes = {
 };
 
 export function gameTypeOf(game){
-  return String(game?.game_type || 'tictactoe');
+  const explicit = String(game?.game_type || '');
+  const renderer = String(game?.renderer || '');
+  const rows = Number(game?.board_rows || 0);
+  const connectLength = Number(game?.connect_length || 0);
+
+  // Be tolerant of a partially cached response from the first v49 deployment.
+  // The server still exposes renderer/dimensions, so the client can recover the
+  // correct game instead of falling back to the tic-tac-toe renderer.
+  if (
+    explicit === 'four_in_a_row'
+    || renderer === 'four_in_a_row'
+    || (rows >= 5 && connectLength === 4)
+  ) {
+    return 'four_in_a_row';
+  }
+
+  return explicit || 'tictactoe';
 }
 
 export function renderGameSurface({ game, me, container, onAction }){
@@ -51,8 +67,7 @@ export function playerMarkText(game, player){
 }
 
 function routeFor(game){
-  const gameType = gameTypeOf(game);
-  return routes[gameType] || null;
+  return routes[gameTypeOf(game)] || null;
 }
 
 function renderUnsupportedGame(container, game){
