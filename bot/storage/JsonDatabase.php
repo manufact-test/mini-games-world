@@ -71,6 +71,7 @@ final class JsonDatabase
             'support.json' => [],
             'shop_orders.json' => [],
             'payments.json' => [],
+            'notifications.json' => [],
             'system.json' => ['fees_match' => 0, 'fees_gold' => 0],
         ];
         foreach ($defaults as $file => $value) {
@@ -91,6 +92,7 @@ final class JsonDatabase
             'support' => $this->readFile('support.json'),
             'shop_orders' => $this->readFile('shop_orders.json'),
             'payments' => $this->readFile('payments.json'),
+            'notifications' => $this->readFile('notifications.json'),
             'system' => $this->readFile('system.json'),
         ];
     }
@@ -104,6 +106,7 @@ final class JsonDatabase
         $this->writeFile('support.json', $db['support'] ?? []);
         $this->writeFile('shop_orders.json', $db['shop_orders'] ?? []);
         $this->writeFile('payments.json', $db['payments'] ?? []);
+        $this->writeFile('notifications.json', $db['notifications'] ?? []);
         $this->writeFile('system.json', $db['system'] ?? []);
     }
 
