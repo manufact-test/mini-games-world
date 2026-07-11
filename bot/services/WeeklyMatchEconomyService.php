@@ -91,8 +91,12 @@ final class WeeklyMatchEconomyService
         ];
     }
 
-    public function applyDueForUser(array &$db, array &$user, ?DateTimeImmutable $now = null): array
-    {
+    public function applyDueForUser(
+        array &$db,
+        array &$user,
+        ?DateTimeImmutable $now = null,
+        bool $allowWelcomeGrant = true
+    ): array {
         $userId = trim((string)($user['id'] ?? ''));
         if ($userId === '' || !empty($user['is_dev_user'])) {
             return [
@@ -102,13 +106,18 @@ final class WeeklyMatchEconomyService
             ];
         }
 
+        $welcomeResult = $allowWelcomeGrant
+            ? $this->ensureWelcomeGrant($db, $user)
+            : ['processed' => false, 'awarded' => false, 'reason' => 'not_requested'];
+
         $now = $this->localNow($now);
         $cycleAt = $this->latestDueCycle($now);
         if ($cycleAt === null) {
             return [
-                'processed' => false,
-                'awarded' => false,
-                'reason' => 'not_started',
+                'processed' => !empty($welcomeResult['processed']),
+                'awarded' => !empty($welcomeResult['awarded']),
+                'reason' => !empty($welcomeResult['awarded']) ? 'welcome_awarded' : 'not_started',
+                'welcome' => $welcomeResult,
             ];
         }
 
@@ -116,11 +125,13 @@ final class WeeklyMatchEconomyService
         $checkedKey = (string)($user['weekly_match_bonus_checked_key'] ?? '');
         if ($checkedKey === $cycleKey) {
             return [
-                'processed' => false,
-                'awarded' => (string)($user['weekly_match_bonus_last_key'] ?? '') === $cycleKey,
-                'reason' => 'already_checked',
+                'processed' => !empty($welcomeResult['processed']),
+                'awarded' => !empty($welcomeResult['awarded'])
+                    || (string)($user['weekly_match_bonus_last_key'] ?? '') === $cycleKey,
+                'reason' => !empty($welcomeResult['awarded']) ? 'welcome_awarded' : 'already_checked',
                 'cycle_key' => $cycleKey,
                 'qualifying_games' => (int)($user['weekly_match_bonus_checked_games'] ?? 0),
+                'welcome' => $welcomeResult,
             ];
         }
 
@@ -134,20 +145,22 @@ final class WeeklyMatchEconomyService
         if ($games < $this->minGames()) {
             return [
                 'processed' => true,
-                'awarded' => false,
-                'reason' => 'not_eligible',
+                'awarded' => !empty($welcomeResult['awarded']),
+                'reason' => !empty($welcomeResult['awarded']) ? 'welcome_awarded' : 'not_eligible',
                 'cycle_key' => $cycleKey,
                 'qualifying_games' => $games,
+                'welcome' => $welcomeResult,
             ];
         }
 
         if ((string)($user['weekly_match_bonus_last_key'] ?? '') === $cycleKey) {
             return [
                 'processed' => true,
-                'awarded' => false,
-                'reason' => 'already_awarded',
+                'awarded' => !empty($welcomeResult['awarded']),
+                'reason' => !empty($welcomeResult['awarded']) ? 'welcome_awarded' : 'already_awarded',
                 'cycle_key' => $cycleKey,
                 'qualifying_games' => $games,
+                'welcome' => $welcomeResult,
             ];
         }
 
@@ -204,6 +217,7 @@ final class WeeklyMatchEconomyService
             'amount' => $amount,
             'balance_before' => $before,
             'balance_after' => $after,
+            'welcome' => $welcomeResult,
         ];
     }
 
@@ -240,7 +254,7 @@ final class WeeklyMatchEconomyService
                     continue;
                 }
 
-                $result = $this->applyDueForUser($db, $user, $now);
+                $result = $this->applyDueForUser($db, $user, $now, false);
                 $reason = (string)($result['reason'] ?? '');
 
                 if ($reason === 'already_checked') {
