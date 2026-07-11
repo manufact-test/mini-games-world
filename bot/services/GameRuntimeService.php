@@ -3,16 +3,40 @@ declare(strict_types=1);
 
 final class GameRuntimeService
 {
+    private FourInARowService $fourInARow;
+
     public function __construct(
         private array $config,
         private GameCatalogService $catalog,
         private GameService $legacyGame
-    ) {}
+    ) {
+        $this->fourInARow = new FourInARowService(
+            $this->config,
+            new GameSettlementService($this->config)
+        );
+    }
 
     public function cleanup(array &$db): void
     {
         $this->normalizeDatabaseGameTypes($db);
+
+        // The legacy service still owns tic-tac-toe cleanup and bot turns.
+        // Temporarily isolate new-engine games so the old bot AI cannot touch them.
+        $fourGames = [];
+        foreach ($db['games'] ?? [] as $gameId => $game) {
+            if (is_array($game) && $this->gameTypeFromRecord($game) === 'four_in_a_row') {
+                $fourGames[(string)$gameId] = $game;
+                unset($db['games'][$gameId]);
+            }
+        }
+
         $this->legacyGame->cleanup($db);
+
+        foreach ($fourGames as $gameId => $game) {
+            $db['games'][$gameId] = $game;
+        }
+
+        $this->fourInARow->cleanup($db);
     }
 
     public function cleanupQueue(array &$db): void
@@ -48,17 +72,19 @@ final class GameRuntimeService
             }
         );
 
-        if (is_array($game)) {
-            $this->ensureGameType($game);
-            $gameId = (string)($game['id'] ?? '');
-            if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
-                $db['games'][$gameId]['game_type'] = $gameType;
-                $this->rebalanceNewBotDifficulty($db, $user, $gameId);
-                return $db['games'][$gameId];
-            }
+        if (!is_array($game)) {
+            return null;
         }
 
-        return $game;
+        $gameId = (string)($game['id'] ?? '');
+        if ($gameId === '' || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
+            return $game;
+        }
+
+        $db['games'][$gameId]['game_type'] = $gameType;
+        $this->initializeEngineGame($db['games'][$gameId]);
+        $this->rebalanceNewBotDifficulty($db, $user, $gameId);
+        return $db['games'][$gameId];
     }
 
     public function startSearch(
@@ -78,32 +104,33 @@ final class GameRuntimeService
         }
 
         $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
-
-        // Until the generic engines are introduced, the only registered engine
-        // is the proven tic-tac-toe implementation.
         $definition = $this->catalog->get($gameType);
-        if ((string)($definition['engine'] ?? '') !== 'tictactoe') {
+        $engine = (string)($definition['engine'] ?? '');
+
+        if (!in_array($engine, ['tictactoe', 'four_in_a_row'], true)) {
             throw new RuntimeException('Движок этой игры пока не подключён.');
         }
 
+        // The legacy matcher validates square tic-tac-toe sizes. Four in a Row has
+        // one fixed 7x6 variant, so a stable 3x3 proxy key is enough inside the
+        // game-type-isolated queue. The created record is immediately converted.
+        $legacyBoardSize = $engine === 'tictactoe' ? $boardSize : 3;
         $userId = (string)($user['id'] ?? '');
+
         $result = $this->withIsolatedQueue(
             $db,
             $gameType,
-            function () use (&$db, &$user, $room, $bet, $boardSize): array {
-                return $this->legacyGame->startSearch($db, $user, $room, $bet, $boardSize);
+            function () use (&$db, &$user, $room, $bet, $legacyBoardSize): array {
+                return $this->legacyGame->startSearch($db, $user, $room, $bet, $legacyBoardSize);
             },
             $userId
         );
-
-        // Existing GameService currently creates tic-tac-toe records itself.
-        // Normalize them through the registry so old and new records share one model.
-        $this->normalizeDatabaseGameTypes($db);
 
         if (isset($result['game']) && is_array($result['game'])) {
             $gameId = (string)($result['game']['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;
+                $this->initializeEngineGame($db['games'][$gameId]);
                 $result['game'] = $this->publicGame($db['games'][$gameId], $userId);
             }
         } else {
@@ -121,13 +148,19 @@ final class GameRuntimeService
     public function surrenderGame(array &$db, array &$user, string $gameId): array
     {
         $this->normalizeDatabaseGameTypes($db);
-        $game = $this->legacyGame->surrenderGame($db, $user, $gameId);
-        $this->ensureGameType($game);
+        $game = $db['games'][$gameId] ?? null;
+
+        if (is_array($game) && $this->gameTypeFromRecord($game) === 'four_in_a_row') {
+            return $this->fourInARow->surrender($db, $user, $gameId);
+        }
+
+        $result = $this->legacyGame->surrenderGame($db, $user, $gameId);
+        $this->ensureGameType($result);
         if (isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
             $this->ensureGameType($db['games'][$gameId]);
             return $db['games'][$gameId];
         }
-        return $game;
+        return $result;
     }
 
     public function findActiveGameForUser(array $db, string $userId): ?array
@@ -160,12 +193,20 @@ final class GameRuntimeService
         return $result;
     }
 
+    public function dropFourInARowDisc(array &$db, array &$user, string $gameId, int $column): array
+    {
+        return $this->fourInARow->dropDisc($db, $user, $gameId, $column);
+    }
+
     public function publicGame(array $game, string $viewerId): array
     {
         $this->ensureGameType($game);
         $gameType = $this->gameTypeFromRecord($game);
         $definition = $this->catalog->publicGameDefinition($gameType);
-        $public = $this->legacyGame->publicGame($game, $viewerId);
+
+        $public = $gameType === 'four_in_a_row'
+            ? $this->fourInARow->publicGame($game, $viewerId)
+            : $this->legacyGame->publicGame($game, $viewerId);
 
         return [
             'game_type' => $gameType,
@@ -180,11 +221,14 @@ final class GameRuntimeService
         return $this->catalog->publicCatalog();
     }
 
-    /**
-     * Runs the legacy matcher against only one game type, then merges untouched
-     * queues back in their original order. This prevents cross-game matches
-     * before the legacy GameService itself is split into engines.
-     */
+    private function initializeEngineGame(array &$game): void
+    {
+        $gameType = $this->gameTypeFromRecord($game);
+        if ($gameType === 'four_in_a_row') {
+            $this->fourInARow->initializeGame($game);
+        }
+    }
+
     private function withIsolatedQueue(
         array &$db,
         string $gameType,
@@ -295,6 +339,7 @@ final class GameRuntimeService
                 continue;
             }
             $transaction['bot_difficulty'] = $difficulty;
+            $transaction['game_type'] = (string)($db['games'][$gameId]['game_type'] ?? 'tictactoe');
         }
         unset($transaction);
     }
