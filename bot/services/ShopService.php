@@ -203,18 +203,6 @@ final class ShopService
             'description' => 'Заказ приза: ' . $snapshot['title'] . ' · ' . $snapshot['denomination_label'],
             'created_at' => $now,
         ];
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'shop_order',
-            'order_id' => $order['id'],
-            'client_request_id' => $requestId,
-            'user_id' => $userId,
-            'item_id' => $snapshot['item_id'],
-            'denomination_id' => $snapshot['denomination_id'],
-            'provider' => $snapshot['provider'],
-            'amount' => $amount,
-            'created_at' => $now,
-        ];
 
         return [
             'created' => true,
