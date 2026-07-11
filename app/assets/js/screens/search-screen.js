@@ -3,8 +3,8 @@ import { api } from '../api/client.js?v=47';
 import { toast } from '../components/toast.js?v=41';
 import { showScreen } from '../router.js?v=27';
 import { clearTimer, renderBalances } from '../ui.js?v=27';
-import { startGamePolling } from './game-screen.js?v=56';
-import { gameTypeOf } from '../games/game-router.js?v=56';
+import { startGamePolling } from './game-screen.js?v=57';
+import { gameTypeOf } from '../games/game-router.js?v=57';
 import { APP_CONFIG } from '../config.js?v=38';
 
 export function initSearchScreen(){
