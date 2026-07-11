@@ -25,9 +25,8 @@ final class HistoryService
                 continue;
             }
 
-            // В ранних MVP один матч мог попасть в историю и как старый game_finish,
-            // и как новый balance_change. Дедупликация нужна только внутри конкретного
-            // матча; обычные бонусы, возвраты и другие операции нельзя склеивать.
+            // In early MVPs one match could appear both as game_finish and as a newer
+            // balance_change. Deduplicate only matching operations inside one game.
             $gameId = (string)($item['game_id'] ?? '');
             if ($gameId !== '') {
                 $key = implode('|', [
@@ -44,7 +43,6 @@ final class HistoryService
             }
 
             $items[] = $item;
-
             if (count($items) >= $limit) {
                 break;
             }
@@ -100,7 +98,7 @@ final class HistoryService
 
             return [
                 'id' => (string)($tx['id'] ?? ''),
-                'title' => $this->balanceTitle($category),
+                'title' => $this->operationTitle($category, is_array($game) ? $game : null, $userId),
                 'description' => $description,
                 'amount' => $amount,
                 'amount_label' => $this->amountLabel($amount),
@@ -126,7 +124,7 @@ final class HistoryService
             ];
         }
 
-        // Поддержка старых логов до v18.
+        // Support old logs from before balance_change became the main history source.
         if ($type === 'game_start' && in_array($userId, array_map('strval', $tx['players'] ?? []), true)) {
             $amount = -abs((int)($tx['bet'] ?? 0));
             $room = (string)($tx['room'] ?? 'match');
@@ -135,8 +133,10 @@ final class HistoryService
 
             return [
                 'id' => (string)($tx['id'] ?? ''),
-                'title' => 'Участие в матче',
-                'description' => $game ? $this->operationGameDescription($game, $userId, 'game_entry') : $this->roomLabel($room),
+                'title' => $this->operationTitle('game_entry', is_array($game) ? $game : null, $userId),
+                'description' => $game
+                    ? $this->operationGameDescription($game, $userId, 'game_entry')
+                    : $this->roomLabel($room),
                 'amount' => $amount,
                 'amount_label' => $this->amountLabel($amount),
                 'tone' => 'neg',
@@ -161,7 +161,9 @@ final class HistoryService
                 $amount = (int)($tx['payout'] ?? 0);
                 return [
                     'id' => (string)($tx['id'] ?? ''),
-                    'title' => $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Выигрыш'),
+                    'title' => $reason === 'timeout'
+                        ? 'Победа по таймауту'
+                        : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Выигрыш'),
                     'description' => $this->operationGameDescription($game, $userId, 'game_win'),
                     'amount' => $amount,
                     'amount_label' => $this->amountLabel($amount),
@@ -206,10 +208,14 @@ final class HistoryService
             $result = 'Ничья';
             $tone = 'zero';
         } elseif ($winnerId === $userId) {
-            $result = $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа');
+            $result = $reason === 'timeout'
+                ? 'Победа по таймауту'
+                : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа');
             $tone = 'pos';
         } else {
-            $result = $reason === 'timeout' ? 'Поражение по таймауту' : ($reason === 'player_left' ? 'Выход из матча' : 'Поражение');
+            $result = in_array($reason, ['timeout', 'player_left'], true)
+                ? 'Техническое поражение'
+                : 'Поражение';
             $tone = 'neg';
         }
 
@@ -221,7 +227,11 @@ final class HistoryService
             'opponent' => $opponentName,
             'result' => $result,
             'tone' => $tone,
+            'game_type' => (string)($game['game_type'] ?? 'tictactoe'),
+            'game_title' => $this->gameLabel($game),
             'board_size' => (int)($game['board_size'] ?? 3),
+            'board_columns' => (int)($game['board_columns'] ?? $game['board_size'] ?? 3),
+            'board_rows' => (int)($game['board_rows'] ?? $game['board_size'] ?? 3),
             'bet' => (int)($game['bet'] ?? 0),
             'payout' => (int)($game['payout'] ?? 0),
             'commission' => (int)($game['commission'] ?? 0),
@@ -235,19 +245,48 @@ final class HistoryService
 
     private function operationGameDescription(array $game, string $userId, string $category): string
     {
-        $room = $this->roomLabel((string)($game['room'] ?? 'match'));
-        $opponentId = $this->otherPlayerId($game, $userId);
-        $opponentName = trim((string)($game['player_names'][$opponentId] ?? ''));
+        $parts = [
+            $this->roomLabel((string)($game['room'] ?? 'match')),
+            $this->gameLabel($game),
+        ];
 
         if ($category === 'game_refund') {
-            return "{$room} · ничья";
+            $parts[] = 'ничья';
+            return implode(' · ', array_filter($parts));
         }
 
+        $opponentId = $this->otherPlayerId($game, $userId);
+        $opponentName = trim((string)($game['player_names'][$opponentId] ?? ''));
         if ($opponentName !== '') {
-            return "{$room} · против {$opponentName}";
+            $parts[] = 'против ' . $opponentName;
         }
 
-        return $room;
+        return implode(' · ', array_filter($parts));
+    }
+
+    private function operationTitle(string $category, ?array $game, string $userId): string
+    {
+        if ($category !== 'game_entry' || !$game || (string)($game['status'] ?? '') !== 'finished') {
+            return $this->balanceTitle($category);
+        }
+
+        $winnerId = isset($game['winner_id']) ? (string)$game['winner_id'] : '';
+        if ($winnerId === '' || $winnerId === $userId) {
+            return $this->balanceTitle($category);
+        }
+
+        $reason = (string)($game['finish_reason'] ?? '');
+        return in_array($reason, ['timeout', 'player_left'], true)
+            ? 'Техническое поражение'
+            : 'Поражение';
+    }
+
+    private function gameLabel(array $game): string
+    {
+        return match ((string)($game['game_type'] ?? 'tictactoe')) {
+            'four_in_a_row' => '4 в ряд',
+            default => 'Крестики-нолики',
+        };
     }
 
     private function cleanDescription(string $description): string
@@ -258,7 +297,7 @@ final class HistoryService
             return '';
         }
 
-        // Технические ID матчей не показываем пользователю.
+        // Technical match IDs are not useful to players.
         if (str_contains($description, '#game_') || str_contains($description, 'game_')) {
             return '';
         }
