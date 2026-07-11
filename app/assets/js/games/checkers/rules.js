@@ -22,11 +22,11 @@ export function checkersRules(){
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Серия взятий</strong><span>Если после первого взятия той же шашкой можно побить ещё одну фигуру, нужно продолжать ход этой же шашкой. Игра сама подсветит продолжение.</span></div>
+        <div class="game-rule-copy"><strong>Серия взятий</strong><span>Если после первого взятия той же шашкой можно побить ещё одну фигуру, нужно продолжать ход этой же шашкой. Если есть несколько допустимых путей взятия, можно выбрать любой из них.</span></div>
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Дамка</strong><span>Дойдя до последнего ряда, шашка становится дамкой. Дамка ходит по диагонали на любое свободное расстояние и может бить фигуры на расстоянии.</span></div>
+        <div class="game-rule-copy"><strong>Дамка</strong><span>Дойдя до последнего ряда, шашка становится дамкой. Дамка ходит по диагонали на любое свободное расстояние. При взятии она перепрыгивает фигуру соперника и может приземлиться на любую допустимую свободную клетку дальше по этой диагонали.</span></div>
         ${ruleBoard('king')}
       </section>
 
@@ -66,7 +66,6 @@ function ruleBoard(type){
     set(17, 'ray');
     set(13, 'black danger');
     set(9, 'capture-target');
-    set(5, 'capture-target');
   }
 
   return `<div class="checkers-rule-board ${type}">${cells.map((value, index) => {
