@@ -12,10 +12,7 @@ final class GameCatalogService
             fn(int $size): bool => $size >= 3
         )));
 
-        if (!$boardSizes) {
-            $boardSizes = [3];
-        }
-
+        if (!$boardSizes) $boardSizes = [3];
         sort($boardSizes);
         $defaultBoardSize = in_array(3, $boardSizes, true) ? 3 : $boardSizes[0];
         $gamesDir = dirname(__DIR__) . '/games';
@@ -23,31 +20,24 @@ final class GameCatalogService
         $ticTacToe = require $gamesDir . '/tictactoe/definition.php';
         $fourInARow = require $gamesDir . '/four-in-a-row/definition.php';
         $battleship = require $gamesDir . '/battleship/definition.php';
+        $checkers = require $gamesDir . '/checkers/definition.php';
 
         $this->games = [
             'tictactoe' => $ticTacToe,
             'four_in_a_row' => $fourInARow,
             'battleship' => $battleship,
+            'checkers' => $checkers,
         ];
     }
 
-    public function defaultGameType(): string
-    {
-        return 'tictactoe';
-    }
+    public function defaultGameType(): string { return 'tictactoe'; }
 
     public function normalizeGameType(?string $gameType): string
     {
         $gameType = trim((string)$gameType);
-        if ($gameType === '') {
-            return $this->defaultGameType();
-        }
-
+        if ($gameType === '') return $this->defaultGameType();
         $game = $this->games[$gameType] ?? null;
-        if (!is_array($game) || empty($game['enabled'])) {
-            throw new RuntimeException('Эта игра пока недоступна.');
-        }
-
+        if (!is_array($game) || empty($game['enabled'])) throw new RuntimeException('Эта игра пока недоступна.');
         return $gameType;
     }
 
@@ -59,8 +49,7 @@ final class GameCatalogService
 
     public function supportsRoom(string $gameType, string $room): bool
     {
-        $game = $this->get($gameType);
-        return in_array($room, $game['rooms'] ?? [], true);
+        return in_array($room, $this->get($gameType)['rooms'] ?? [], true);
     }
 
     public function supportsBot(string $gameType): bool
@@ -73,7 +62,6 @@ final class GameCatalogService
         $game = $this->get($gameType);
         $allowed = array_values(array_map('intval', $game['board_sizes'] ?? []));
         $default = (int)($game['default_board_size'] ?? ($allowed[0] ?? 3));
-
         return in_array($boardSize, $allowed, true) ? $boardSize : $default;
     }
 
@@ -81,7 +69,6 @@ final class GameCatalogService
     {
         $game = $this->get($gameType);
         $defaultBoardSize = (int)($game['default_board_size'] ?? 3);
-
         return [
             'id' => (string)$game['id'],
             'title' => (string)$game['title'],
@@ -100,9 +87,7 @@ final class GameCatalogService
     {
         $items = [];
         foreach ($this->games as $game) {
-            if (empty($game['enabled'])) {
-                continue;
-            }
+            if (empty($game['enabled'])) continue;
             $items[] = $this->publicGameDefinition((string)$game['id']);
         }
         return $items;
