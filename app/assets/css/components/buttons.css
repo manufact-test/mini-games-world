@@ -1,5 +1,6 @@
 .btn{
-  min-height:46px;
+  min-height:48px;
+  min-width:0;
   border-radius:16px;
   padding:12px 14px;
   font-weight:900;
@@ -11,7 +12,11 @@
   gap:8px;
   transition:transform .14s ease,filter .14s ease,background .14s ease;
   text-align:center;
-  line-height:1.15;
+  line-height:1.22;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:normal;
+  hyphens:none;
 }
 .btn:active{transform:scale(.975)}
 .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-dark));border-color:rgba(255,255,255,.08);box-shadow:0 12px 24px rgba(124,92,255,.18)}
@@ -23,6 +28,7 @@
 .btn.disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
 .choice{
   min-height:54px;
+  min-width:0;
   border-radius:17px;
   background:rgba(255,255,255,.055);
   border:1px solid var(--stroke);
@@ -33,9 +39,12 @@
   justify-content:center;
   text-align:center;
   padding:8px 10px;
-  line-height:1.15;
+  line-height:1.2;
   box-shadow:none;
-  min-width:0;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:normal;
+  hyphens:none;
 }
 .choice.active{background:rgba(124,92,255,.22);border-color:rgba(124,92,255,.55);color:#fff}
 .choice.gold.active{background:rgba(255,200,87,.19);border-color:rgba(255,200,87,.55);color:#ffe3a3}
@@ -73,6 +82,14 @@
 .btn-row{
   gap:10px;
   margin-top:10px;
+}
+
+.btn-row > .btn,
+.room-actions > .btn,
+.store-order-actions > .btn,
+.sheet .btn-row > .btn{
+  width:100%;
+  height:100%;
 }
 
 .sheet .btn-row{
