@@ -74,6 +74,7 @@ try {
     $users = new UserService($config);
     $gameCatalog = new GameCatalogService($config);
     $games = new GameRuntimeService($config, $gameCatalog, new GameService($config));
+    $gameActions = new GameActionService($gameCatalog, $games);
     $shop = new ShopService($config, $users);
     $payments = new PaymentService($config, $users);
     $telegram = new TelegramService($config);
@@ -84,7 +85,7 @@ try {
 
     $tgUser = $auth->getUserFromRequest($payload);
 
-    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId) {
+    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId) {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)$user['id'];
         $data['users'][$userId] = $user;
@@ -284,6 +285,33 @@ try {
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
                     'stats' => $statsService->build($data),
+                ];
+
+            case 'game_action':
+                $sessions->assertCanPlay($user, $sessionId);
+                $sessions->touch($user, $sessionId);
+
+                $gameId = clean_string($payload['gameId'] ?? '', 80);
+                $gameAction = $payload['gameAction'] ?? null;
+                if (!is_array($gameAction)) {
+                    $gameAction = [
+                        'type' => clean_string($payload['actionType'] ?? '', 40),
+                        'cell' => $payload['cell'] ?? null,
+                    ];
+                }
+
+                $game = $gameActions->apply($data, $user, $gameId, $gameAction);
+
+                if (($game['status'] ?? '') === 'finished') {
+                    $sessions->releaseIfCurrent($user, $sessionId);
+                }
+
+                return [
+                    'user' => $users->publicUser($user),
+                    'me' => ['id' => $userId],
+                    'game' => $games->publicGame($game, $userId),
+                    'shop' => $shop->status($user),
+                    'session' => $sessions->publicState($user, $sessionId),
                 ];
 
             case 'make_move':
