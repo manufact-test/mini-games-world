@@ -66,7 +66,16 @@ function mgw_normalize_api_data(array $data): array {
     // distinct for those clients by adding response-only milliseconds.
     $seenShopKeys = [];
     foreach ($normalized as &$item) {
-        if (!is_array($item) || (string)($item['title'] ?? '') !== 'Заказ приза') {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        if ((string)($item['title'] ?? '') === 'Операция баланса'
+            && (string)($item['description'] ?? '') === 'Первые коины в Матч-комнате') {
+            $item['title'] = 'Стартовый бонус';
+        }
+
+        if ((string)($item['title'] ?? '') !== 'Заказ приза') {
             continue;
         }
 
