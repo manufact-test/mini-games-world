@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=29';
+import { api } from '../api/client.js?v=31';
 import { state } from '../state.js?v=27';
 import { openSheet } from '../components/sheet.js?v=27';
 import { toast } from '../components/toast.js?v=27';
@@ -227,7 +227,7 @@ function createRequestToken(cost){
     throw new Error('Не удалось безопасно сформировать заказ.');
   }
 
-  // В старом числовом transport-поле кодируем подтверждённую цену и nonce.
+  // В requestToken кодируем подтверждённую цену и nonce.
   // Сервер разделяет их и отдельно сверяет цену с текущим каталогом.
   return token;
 }
