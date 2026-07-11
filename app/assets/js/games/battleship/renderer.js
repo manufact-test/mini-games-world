@@ -3,11 +3,14 @@ import { toast } from '../../components/toast.js?v=41';
 let activeGameId = '';
 let selectedShipSize = 4;
 let pendingPlacementCells = [];
+let invalidPlacementCell = -1;
+let invalidPlacementTimer = null;
 let battleView = 'enemy';
 let lastTurnViewKey = '';
 let lastShotViewKey = '';
 let lastAnimatedShotKey = '';
-let autoSwitchTimer = null;
+let battleNotice = null;
+let battleTransitionTimer = null;
 
 export function renderBattleshipSurface({ game, me, container, onAction }){
   resetUiForNewGame(game);
@@ -49,12 +52,14 @@ function resetUiForNewGame(game){
   activeGameId = gameId;
   selectedShipSize = 4;
   pendingPlacementCells = [];
+  invalidPlacementCell = -1;
   battleView = 'enemy';
   lastTurnViewKey = '';
   lastShotViewKey = '';
   lastAnimatedShotKey = '';
-  if (autoSwitchTimer) clearTimeout(autoSwitchTimer);
-  autoSwitchTimer = null;
+  battleNotice = null;
+  clearInvalidPlacementTimer();
+  clearBattleTransitionTimer();
 }
 
 function renderSetup({ game, container, onAction }){
@@ -78,10 +83,21 @@ function renderSetup({ game, container, onAction }){
         <span class="battleship-setup-time">${formatTime(game?.setup_time_left ?? game?.time_left ?? 120)}</span>
       </div>
 
+      ${complete ? `
+        <div class="battleship-ready-callout">
+          <div>
+            <strong>Флот готов к бою</strong>
+            <span>Все 10 кораблей размещены. Подтвердите расстановку.</span>
+          </div>
+          <button class="btn primary" data-battleship-ready type="button">Готов к бою</button>
+        </div>
+      ` : ''}
+
       ${renderCoordinateBoard(game?.my_board || [], {
         mode:'setup',
         interactive:true,
         pendingCells:pendingPlacementCells,
+        invalidCell:invalidPlacementCell,
       })}
 
       <div class="battleship-fleet-picker">
@@ -94,14 +110,16 @@ function renderSetup({ game, container, onAction }){
         }).join('')}
       </div>
 
-      <div class="battleship-placement-guide">
-        <strong>${selectedLeft > 0 ? `Корабль на ${selectedShipSize} ${cellWord(selectedShipSize)}` : 'Все корабли размещены'}</strong>
-        <span>${selectedLeft > 0
-          ? (selectedProgress > 0
-            ? `Выбрано ${selectedProgress}/${selectedShipSize}. Продолжайте по прямой без пропусков.`
-            : `Нажмите ${selectedShipSize} ${cellWord(selectedShipSize)} подряд по горизонтали или вертикали.`)
-          : 'Можно подтвердить флот или изменить расстановку.'}</span>
-      </div>
+      ${!complete ? `
+        <div class="battleship-placement-guide">
+          <strong>${selectedLeft > 0 ? `Корабль на ${selectedShipSize} ${cellWord(selectedShipSize)}` : 'Выберите следующий корабль'}</strong>
+          <span>${selectedLeft > 0
+            ? (selectedProgress > 0
+              ? `Выбрано ${selectedProgress}/${selectedShipSize}. Выбранные клетки подсвечены фиолетовым.`
+              : `Нажмите ${selectedShipSize} ${cellWord(selectedShipSize)} подряд по горизонтали или вертикали.`)
+            : 'Выберите корабль, который ещё остался во флоте.'}</span>
+        </div>
+      ` : ''}
 
       <div class="battleship-setup-actions">
         <button class="btn primary" data-battleship-randomize type="button">🎲 Перемешать флот</button>
@@ -109,29 +127,32 @@ function renderSetup({ game, container, onAction }){
       </div>
 
       <div class="small-note battleship-placement-note">Выберите корабль и отмечайте его клетки прямо на поле. Нажмите на уже поставленный корабль, чтобы убрать его целиком.</div>
-      <button class="btn primary full" data-battleship-ready type="button" ${complete ? '' : 'disabled'}>Готов к бою</button>
     </div>
   `;
 
   container.querySelectorAll('[data-battleship-size]').forEach(button => button.addEventListener('click', () => {
     selectedShipSize = Number(button.dataset.battleshipSize);
     pendingPlacementCells = [];
+    invalidPlacementCell = -1;
     renderSetup({ game, container, onAction });
   }));
 
   container.querySelector('[data-battleship-randomize]')?.addEventListener('click', () => {
     pendingPlacementCells = [];
+    invalidPlacementCell = -1;
     onAction?.({ type:'randomize_fleet' });
   });
 
   container.querySelector('[data-battleship-clear]')?.addEventListener('click', () => {
     pendingPlacementCells = [];
+    invalidPlacementCell = -1;
     selectedShipSize = 4;
     onAction?.({ type:'clear_fleet' });
   });
 
   container.querySelector('[data-battleship-ready]')?.addEventListener('click', () => {
     pendingPlacementCells = [];
+    invalidPlacementCell = -1;
     onAction?.({ type:'ready' });
   });
 
@@ -141,6 +162,7 @@ function renderSetup({ game, container, onAction }){
 
     if (cellState === 'ship') {
       pendingPlacementCells = [];
+      invalidPlacementCell = -1;
       onAction?.({ type:'remove_ship', cell });
       return;
     }
@@ -158,6 +180,7 @@ function selectPlacementCell({ cell, game, container, onAction }){
       pendingPlacementCells = [];
       toast('Выбор клеток сброшен. Начните корабль заново.');
     }
+    invalidPlacementCell = -1;
     renderSetup({ game, container, onAction });
     return;
   }
@@ -165,10 +188,11 @@ function selectPlacementCell({ cell, game, container, onAction }){
   const candidate = [...pendingPlacementCells, cell];
   const error = placementSelectionError(candidate, selectedShipSize, game?.my_board || []);
   if (error) {
-    toast(error);
+    flashInvalidPlacement({ cell, game, container, onAction, message:error });
     return;
   }
 
+  invalidPlacementCell = -1;
   pendingPlacementCells = candidate;
   if (pendingPlacementCells.length < selectedShipSize) {
     renderSetup({ game, container, onAction });
@@ -178,8 +202,7 @@ function selectPlacementCell({ cell, game, container, onAction }){
   const placement = placementFromCells(pendingPlacementCells);
   pendingPlacementCells = [];
   if (!placement) {
-    toast('Корабль должен идти по прямой без пропусков.');
-    renderSetup({ game, container, onAction });
+    flashInvalidPlacement({ cell, game, container, onAction, message:'Корабль должен идти по прямой без пропусков.' });
     return;
   }
 
@@ -191,9 +214,26 @@ function selectPlacementCell({ cell, game, container, onAction }){
   });
 }
 
+function flashInvalidPlacement({ cell, game, container, onAction, message }){
+  invalidPlacementCell = cell;
+  toast(message);
+  renderSetup({ game, container, onAction });
+  clearInvalidPlacementTimer();
+  invalidPlacementTimer = setTimeout(() => {
+    invalidPlacementCell = -1;
+    invalidPlacementTimer = null;
+    renderSetup({ game, container, onAction });
+  }, 520);
+}
+
+function clearInvalidPlacementTimer(){
+  if (invalidPlacementTimer) clearTimeout(invalidPlacementTimer);
+  invalidPlacementTimer = null;
+}
+
 function placementSelectionError(cells, size, board){
   if (cells.length > size) return 'Вы уже выбрали все клетки этого корабля.';
-  if (!cellsFormStraightContinuousLine(cells)) return 'Корабль нужно ставить по прямой, без изгибов и пропусков.';
+  if (!cellsFormStraightContinuousLine(cells)) return 'Так нельзя: корабль должен идти по прямой без изгибов и пропусков.';
 
   const occupied = new Set();
   Array.from({ length:100 }, (_, cell) => {
@@ -241,7 +281,7 @@ function placementFromCells(cells){
 
 function renderBattle({ game, me, container, onAction }){
   const myTurn = game?.status === 'active' && String(game?.turn || '') === String(me?.id || '');
-  syncAutomaticBattleView({ game, me, myTurn, container, onAction });
+  syncBattleExperience({ game, me, myTurn, container, onAction });
 
   const showingEnemy = battleView !== 'own';
   const board = showingEnemy ? (game?.enemy_board || []) : (game?.my_board || []);
@@ -260,9 +300,11 @@ function renderBattle({ game, me, container, onAction }){
         <button class="${!showingEnemy ? 'active' : ''}" data-battleship-view="own" type="button">Моё поле</button>
       </div>
 
+      ${battleEventMarkup({ myTurn, showingEnemy })}
+
       <div class="battleship-board-title">
-        <strong>${showingEnemy ? (myTurn ? 'Выберите клетку для выстрела' : 'Поле соперника') : 'Ваш флот'}</strong>
-        <span>${lastResultText(game, me)}</span>
+        <strong>${showingEnemy ? 'Поле соперника' : 'Ваше поле'}</strong>
+        <span>${myTurn ? 'Ваш ход' : 'Ход соперника'}</span>
       </div>
 
       ${renderCoordinateBoard(board, {
@@ -285,8 +327,8 @@ function renderBattle({ game, me, container, onAction }){
   if (freshShot) lastAnimatedShotKey = shotKey;
 
   container.querySelectorAll('[data-battleship-view]').forEach(button => button.addEventListener('click', () => {
-    if (autoSwitchTimer) clearTimeout(autoSwitchTimer);
-    autoSwitchTimer = null;
+    clearBattleTransitionTimer();
+    battleNotice = null;
     battleView = button.dataset.battleshipView === 'own' ? 'own' : 'enemy';
     renderBattle({ game, me, container, onAction });
   }));
@@ -298,32 +340,67 @@ function renderBattle({ game, me, container, onAction }){
   }
 }
 
-function syncAutomaticBattleView({ game, me, myTurn, container, onAction }){
+function syncBattleExperience({ game, me, myTurn, container, onAction }){
   const turnKey = `${String(game?.id || '')}:${String(game?.phase || '')}:${String(game?.turn || '')}`;
   const shotKey = shotSignature(game);
-  const shooterIsMe = String(game?.last_shooter_id || '') === String(me?.id || '');
-  const newOpponentShot = Boolean(shotKey && shotKey !== lastShotViewKey && !shooterIsMe);
 
-  if (turnKey !== lastTurnViewKey) {
+  if (shotKey && shotKey !== lastShotViewKey) {
+    lastShotViewKey = shotKey;
+    lastTurnViewKey = turnKey;
+    clearBattleTransitionTimer();
+
+    const shooterIsMe = String(game?.last_shooter_id || '') === String(me?.id || '');
+    const result = String(game?.last_result || '');
+    battleView = shooterIsMe ? 'enemy' : 'own';
+    battleNotice = shotNotice(result, shooterIsMe);
+
+    if (game?.status !== 'active') return;
+
+    const nextView = result === 'miss'
+      ? (shooterIsMe ? 'own' : 'enemy')
+      : battleView;
+    const delay = result === 'miss' ? 1450 : 1250;
+
+    battleTransitionTimer = setTimeout(() => {
+      battleNotice = null;
+      battleView = nextView;
+      battleTransitionTimer = null;
+      renderBattle({ game, me, container, onAction });
+    }, delay);
+    return;
+  }
+
+  if (turnKey !== lastTurnViewKey && !battleNotice) {
     battleView = myTurn ? 'enemy' : 'own';
     lastTurnViewKey = turnKey;
   }
+}
 
-  if (shotKey && shotKey !== lastShotViewKey) lastShotViewKey = shotKey;
+function clearBattleTransitionTimer(){
+  if (battleTransitionTimer) clearTimeout(battleTransitionTimer);
+  battleTransitionTimer = null;
+}
 
-  if (newOpponentShot) {
-    battleView = 'own';
-    if (autoSwitchTimer) clearTimeout(autoSwitchTimer);
-    autoSwitchTimer = null;
-
-    if (myTurn) {
-      autoSwitchTimer = setTimeout(() => {
-        battleView = 'enemy';
-        autoSwitchTimer = null;
-        renderBattle({ game, me, container, onAction });
-      }, 1100);
-    }
+function shotNotice(result, shooterIsMe){
+  if (shooterIsMe) {
+    if (result === 'miss') return { text:'Мимо — ход переходит сопернику', tone:'neutral' };
+    if (result === 'hit') return { text:'Попадание! Стреляйте ещё', tone:'warning' };
+    if (result === 'sunk') return { text:'Корабль потоплен! Стреляйте ещё', tone:'success' };
+  } else {
+    if (result === 'miss') return { text:'Соперник промахнулся — теперь ваш ход', tone:'success' };
+    if (result === 'hit') return { text:'Попадание по вашему кораблю — соперник стреляет ещё', tone:'warning' };
+    if (result === 'sunk') return { text:'Ваш корабль потоплен — соперник стреляет ещё', tone:'danger' };
   }
+  return null;
+}
+
+function battleEventMarkup({ myTurn, showingEnemy }){
+  const fallback = myTurn
+    ? (showingEnemy ? 'Ваш ход — выберите клетку для выстрела' : 'Ваш ход — можно вернуться к полю соперника')
+    : (showingEnemy ? 'Ход соперника — можно посмотреть своё поле' : 'Ход соперника — следим за вашим полем');
+  const text = battleNotice?.text || fallback;
+  const tone = battleNotice?.tone || (myTurn ? 'your-turn' : 'opponent-turn');
+  return `<div class="battleship-event-slot"><div class="battleship-event-banner ${tone}">${text}</div></div>`;
 }
 
 function shotSignature(game){
@@ -339,6 +416,7 @@ function shotSignature(game){
 function renderCoordinateBoard(board, options = {}){
   const values = Array.from({ length:100 }, (_, index) => String(board?.[index] || (options.mode === 'enemy' ? 'unknown' : 'water')));
   const pending = new Set((options.pendingCells || []).map(Number));
+  const invalidCell = Number.isInteger(Number(options.invalidCell)) ? Number(options.invalidCell) : -1;
   const hasLastShot = options.lastShot !== null && options.lastShot !== undefined && Number.isInteger(Number(options.lastShot));
   const lastShot = hasLastShot ? Number(options.lastShot) : -1;
   const shooterIsMe = String(options.lastShooterId || '') === String(options.meId || '');
@@ -356,8 +434,9 @@ function renderCoordinateBoard(board, options = {}){
           const interactive = Boolean(options.interactive) && (value === 'unknown' || value === 'water' || value === 'ship');
           const isLast = markLast && cell === lastShot;
           const isPending = pending.has(cell);
+          const isInvalid = cell === invalidCell;
           return `<button
-            class="battleship-cell ${escapeClass(value)} ${isLast ? 'last-shot' : ''} ${isLast && options.freshShot ? 'shot-impact' : ''} ${isPending ? 'pending' : ''} ${interactive ? 'interactive' : ''}"
+            class="battleship-cell ${escapeClass(value)} ${isLast ? 'last-shot' : ''} ${isLast && options.freshShot ? 'shot-impact' : ''} ${isPending ? 'pending' : ''} ${isInvalid ? 'invalid-pick' : ''} ${interactive ? 'interactive' : ''}"
             data-battleship-cell="${cell}"
             data-cell-state="${escapeClass(value)}"
             type="button"
@@ -392,24 +471,6 @@ function formatTime(seconds){
   const minutes = Math.floor(safe / 60);
   const rest = Math.floor(safe % 60);
   return `${String(minutes).padStart(2,'0')}:${String(rest).padStart(2,'0')}`;
-}
-
-function lastResultText(game, me){
-  const result = String(game?.last_result || '');
-  if (!result) return '';
-  const mine = String(game?.last_shooter_id || '') === String(me?.id || '');
-
-  if (mine) {
-    if (result === 'miss') return 'Мимо';
-    if (result === 'hit') return 'Попадание';
-    if (result === 'sunk') return 'Корабль потоплен';
-  } else {
-    if (result === 'miss') return 'Соперник промахнулся';
-    if (result === 'hit') return 'По вам попали';
-    if (result === 'sunk') return 'Ваш корабль потоплен';
-  }
-
-  return '';
 }
 
 function cellStateLabel(value){
