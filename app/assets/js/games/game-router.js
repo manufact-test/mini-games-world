@@ -14,6 +14,12 @@ import {
   battleshipPlayerMark,
   battleshipStatus,
 } from './battleship/renderer.js?v=56';
+import {
+  renderCheckersSurface,
+  checkersMeta,
+  checkersPlayerMark,
+  checkersStatus,
+} from './checkers/renderer.js?v=57';
 
 const routes = {
   tictactoe: {
@@ -32,6 +38,12 @@ const routes = {
     playerMark: battleshipPlayerMark,
     status: battleshipStatus,
   },
+  checkers: {
+    render: renderCheckersSurface,
+    meta: checkersMeta,
+    playerMark: checkersPlayerMark,
+    status: checkersStatus,
+  },
 };
 
 export function gameTypeOf(game){
@@ -42,7 +54,21 @@ export function gameTypeOf(game){
   const columns = Number(game?.board_columns || 0);
   const rows = Number(game?.board_rows || 0);
   const connectLength = Number(game?.connect_length || 0);
-  const boardLength = String(game?.board || '').length;
+  const boardArrayLength = Array.isArray(game?.board) ? game.board.length : 0;
+  const boardStringLength = typeof game?.board === 'string' ? game.board.length : 0;
+
+  if (
+    explicit === 'checkers'
+    || renderer === 'checkers'
+    || actionType === 'checkers_move'
+    || title.includes('шашк')
+    || title.includes('checkers')
+    || Boolean(game?.checkers_initialized)
+    || Boolean(game?.checkers_sides)
+    || (boardArrayLength === 64 && Number(game?.board_size) === 8 && Boolean(game?.viewer_side))
+  ) {
+    return 'checkers';
+  }
 
   if (
     explicit === 'battleship'
@@ -61,7 +87,7 @@ export function gameTypeOf(game){
   const looksLikeFourBoard = columns >= 6
     && columns <= 8
     && rows === columns - 1
-    && boardLength === columns * rows;
+    && boardStringLength === columns * rows;
 
   if (
     explicit === 'four_in_a_row'
@@ -85,14 +111,12 @@ export function renderGameSurface({ game, me, container, onAction }){
     renderUnsupportedGame(container, game);
     return;
   }
-
   route.render({ game, me, container, onAction });
 }
 
 export function gameMetaText(game){
   const route = routeFor(game);
   if (route?.meta) return route.meta(game);
-
   const room = String(game?.room_name || 'Игра');
   const bet = Number(game?.bet || 0);
   return bet > 0 ? `${room} · ${bet} коинов` : room;
