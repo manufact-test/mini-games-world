@@ -1,0 +1,103 @@
+/* Shop order notifications */
+.icon-btn#notificationsOpen{position:relative}
+.icon-btn#notificationsOpen.has-unread::after{
+  content:attr(data-unread);
+  position:absolute;
+  top:-6px;
+  right:-6px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:var(--danger);
+  color:#fff;
+  border:2px solid var(--bg2);
+  font-size:9px;
+  line-height:1;
+  font-weight:950;
+  box-shadow:0 5px 14px rgba(0,0,0,.3);
+}
+
+.notifications-loading,
+.notifications-empty{
+  min-height:220px;
+  border:1px solid var(--stroke);
+  border-radius:22px;
+  background:rgba(255,255,255,.045);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:8px;
+  padding:24px 18px;
+}
+.notifications-loading > div,
+.notifications-empty > div{
+  width:58px;
+  height:58px;
+  border-radius:20px;
+  display:grid;
+  place-items:center;
+  font-size:27px;
+  background:rgba(255,255,255,.07);
+  border:1px solid var(--stroke);
+}
+.notifications-loading strong,
+.notifications-empty strong{font-size:17px;letter-spacing:-.02em}
+.notifications-loading span,
+.notifications-empty span{max-width:290px;color:var(--muted);font-size:13px;line-height:1.45}
+.notifications-empty.error{min-height:190px}
+
+.notifications-list{
+  min-height:0;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding-right:1px;
+}
+.notifications-list::-webkit-scrollbar{display:none}
+
+.notification-card{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  gap:11px;
+  padding:13px;
+  border-radius:19px;
+  border:1px solid var(--stroke);
+  background:rgba(255,255,255,.045);
+}
+.notification-card.success{border-color:rgba(83,201,125,.25);background:rgba(83,201,125,.07)}
+.notification-card.danger{border-color:rgba(255,95,109,.25);background:rgba(255,95,109,.07)}
+.notification-card.warning{border-color:rgba(255,176,32,.25);background:rgba(255,176,32,.07)}
+
+.notification-icon{
+  width:42px;
+  height:42px;
+  border-radius:15px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.07);
+  border:1px solid var(--stroke);
+  font-size:20px;
+  font-weight:950;
+}
+.notification-card.success .notification-icon{color:#9fe5b3;background:rgba(83,201,125,.12);border-color:rgba(83,201,125,.25)}
+.notification-card.danger .notification-icon{color:#ffb2b2;background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.25)}
+
+.notification-copy{min-width:0;display:flex;flex-direction:column;gap:6px}
+.notification-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.notification-head strong{font-size:14px;line-height:1.25}
+.notification-head span{flex:0 0 auto;color:var(--muted);font-size:10px;font-weight:800}
+.notification-copy p{margin:0;color:var(--soft);font-size:12px;line-height:1.45;text-wrap:pretty}
+
+@media (max-width:360px){
+  .notification-card{grid-template-columns:36px minmax(0,1fr);padding:11px;gap:9px}
+  .notification-icon{width:36px;height:36px;border-radius:13px;font-size:17px}
+  .notification-head{flex-direction:column;gap:3px}
+}
