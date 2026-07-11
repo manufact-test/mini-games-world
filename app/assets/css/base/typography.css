@@ -1,0 +1,66 @@
+/* Adaptive typography system */
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+body{
+  font-kerning:normal;
+  font-synthesis:none;
+}
+
+.hero-title,
+.page-title,
+.section-title h2,
+.sheet-head h2,
+.card h3,
+.game-card h3,
+.history-section h3,
+.store-section-head strong,
+.store-order-success strong,
+.store-order-history-head strong{
+  text-wrap:balance;
+  word-break:normal;
+  overflow-wrap:normal;
+  hyphens:none;
+}
+
+.hero-sub,
+.page-sub,
+.card p,
+.game-card p,
+.small-note,
+.rules-content p,
+.sheet-head p,
+.store-product-copy p,
+.store-order-warning,
+.store-order-status-copy,
+.store-orders-entry span,
+.store-orders-empty span,
+.store-loading span{
+  text-wrap:pretty;
+  word-break:normal;
+  overflow-wrap:break-word;
+  hyphens:none;
+}
+
+button,
+.btn,
+.choice,
+.seg button,
+.menu-item,
+.history-tab,
+.store-country-tab,
+.store-denomination,
+.store-orders-entry{
+  text-wrap:balance;
+  word-break:normal;
+  overflow-wrap:normal;
+  hyphens:none;
+}
+
+.store-order-status,
+.store-order-history-meta span,
+.balance-value{
+  white-space:nowrap;
+}
