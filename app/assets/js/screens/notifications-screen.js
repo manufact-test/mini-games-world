@@ -2,6 +2,9 @@ import { api } from '../api/client.js?v=38';
 import { openSheet } from '../components/sheet.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
+let notificationPoll = null;
+let refreshingBadge = false;
+
 export function initNotificationsScreen(){
   document.addEventListener('click', event => {
     const trigger = event.target.closest('#notificationsOpen');
@@ -13,14 +16,22 @@ export function initNotificationsScreen(){
   }, true);
 
   refreshNotificationBadge();
+  if (!notificationPoll) {
+    notificationPoll = setInterval(refreshNotificationBadge, 10000);
+  }
 }
 
 export async function refreshNotificationBadge(){
+  if (refreshingBadge) return;
+  refreshingBadge = true;
+
   try {
     const result = await api.notifications(false);
     setUnreadCount(Number(result.unread_count || 0));
   } catch (error) {
-    setUnreadCount(0);
+    // Keep the current badge state on a temporary network error.
+  } finally {
+    refreshingBadge = false;
   }
 }
 
