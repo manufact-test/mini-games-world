@@ -2,14 +2,16 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/AdminShopOrderUiGuard.php';
+require_once __DIR__ . '/../services/NotificationService.php';
+require_once __DIR__ . '/../services/ShopOrderNotificationService.php';
 
 final class AdminShopOrderNotificationGuard
 {
     public function __construct(private TelegramService $telegram, private array $config) {}
 
     /**
-     * Delegates the existing shop-order admin UI and sends a player notification
-     * only when the order really changes from pending to a terminal status.
+     * Delegates the existing shop-order admin UI and notifies the player only when
+     * the order really changes from pending to a terminal status.
      */
     public function handle(array $update): bool
     {
@@ -29,13 +31,30 @@ final class AdminShopOrderNotificationGuard
 
         $beforeStatus = (string)($before['status'] ?? 'pending');
         $afterStatus = (string)($after['status'] ?? '');
-        $notifications = new ShopOrderNotificationService($this->telegram, $this->config);
+        $decision = null;
 
         if ($beforeStatus === 'pending' && $afterStatus === 'done') {
-            $notifications->notifyUserAboutDecision($after, 'done');
+            $decision = 'done';
         } elseif ($beforeStatus === 'pending' && $afterStatus === 'rejected') {
-            $notifications->notifyUserAboutDecision($after, 'rejected');
+            $decision = 'rejected';
         }
+
+        if ($decision === null) {
+            return true;
+        }
+
+        // First persist an in-app notification. The event key inside the service
+        // makes this idempotent even if the same update is delivered again.
+        $db = new JsonDatabase($this->dataDir());
+        $db->transaction(function (array &$stored) use ($after, $decision): void {
+            $notifications = new NotificationService();
+            $notifications->addShopOrderDecision($stored, $after, $decision);
+        });
+
+        // Telegram is an additional delivery channel. Failure here must not erase
+        // the already-saved in-app notification or change the financial result.
+        $telegramNotifications = new ShopOrderNotificationService($this->telegram, $this->config);
+        $telegramNotifications->notifyUserAboutDecision($after, $decision);
 
         return true;
     }
