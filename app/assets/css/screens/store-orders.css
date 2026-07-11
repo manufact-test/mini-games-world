@@ -45,6 +45,7 @@
 .store-orders-empty.error{min-height:190px}
 
 .store-orders-entry{
+  order:-1;
   width:100%;
   min-height:72px;
   border:1px solid rgba(242,197,75,.34);
