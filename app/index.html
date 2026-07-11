@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mini Games World</title>
-  <link rel="stylesheet" href="./assets/css/main.css?v=54" />
+  <link rel="stylesheet" href="./assets/css/main.css?v=55" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="app" id="app" data-build="v54-battleship-ux">
+  <div class="app" id="app" data-build="v55-battleship-final-ux">
     <div class="preloader" id="preloader">
       <div class="load-card">
         <div class="abstract-loader" aria-hidden="true">
@@ -83,7 +83,7 @@
           </div>
           <div class="btn-row">
             <button class="btn primary" id="playTicTacToe" type="button">Играть</button>
-            <button class="btn ghost" id="inviteFriend" type="button">Пригласить друга</button>
+            <button class="btn ghost" id="inviteFriend" data-invite-friend="tictactoe" type="button">Пригласить друга</button>
           </div>
         </section>
 
@@ -96,8 +96,9 @@
               <p data-game-description></p>
             </div>
           </div>
-          <div class="btn-row single">
+          <div class="btn-row">
             <button class="btn primary" id="playFourInARow" type="button">Играть</button>
+            <button class="btn ghost" data-invite-friend="four_in_a_row" type="button">Пригласить друга</button>
           </div>
         </section>
 
@@ -110,8 +111,9 @@
               <p data-game-description></p>
             </div>
           </div>
-          <div class="btn-row single">
+          <div class="btn-row">
             <button class="btn primary" id="playBattleship" type="button">Играть</button>
+            <button class="btn ghost" data-invite-friend="battleship" type="button">Пригласить друга</button>
           </div>
         </section>
       </div>
@@ -181,6 +183,6 @@
     </div>
   </div>
 
-  <script type="module" src="./assets/js/main.js?v=54"></script>
+  <script type="module" src="./assets/js/main.js?v=55"></script>
 </body>
 </html>
