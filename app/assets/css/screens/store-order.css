@@ -29,7 +29,10 @@
   font-size:13px;
   line-height:1.35;
   text-align:right;
-  word-break:break-word;
+  word-break:normal;
+  overflow-wrap:break-word;
+  hyphens:none;
+  text-wrap:pretty;
 }
 .store-order-review-row.total{
   background:rgba(242,197,75,.09);
