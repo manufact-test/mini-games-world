@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v57-checkers';
+window.__MGW_BUILD__ = 'v58-checkers-ui-fix';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -18,8 +18,8 @@ import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-mat
 import { initSearchScreen } from './screens/search-screen.js?v=57';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=57';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
-import { initGameRules } from './games/game-rules.js?v=57';
-import { initGameCardCopy } from './games/game-card-copy.js?v=57';
+import { initGameRules } from './games/game-rules.js?v=58';
+import { initGameCardCopy } from './games/game-card-copy.js?v=58';
 import { initGameInvites } from './games/game-invites.js?v=55';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=57';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=57';
