@@ -1,11 +1,13 @@
 import { state } from '../state.js?v=21';
-import { api } from '../api/client.js?v=21';
+import { api } from '../api/client.js?v=45';
 import { toast } from '../components/toast.js?v=21';
 import { openSheet, closeSheet } from '../components/sheet.js?v=21';
 import { showScreen } from '../router.js?v=21';
 import { clearTimer, renderBalances } from '../ui.js?v=21';
 import { APP_CONFIG } from '../config.js?v=21';
 import { haptic } from '../telegram/telegram-app.js?v=21';
+
+const weeklyProgressNotifiedGames = new Set();
 
 export function initGameScreen(){
   document.getElementById('leaveGame')?.addEventListener('click', requestLeaveGame);
@@ -223,6 +225,8 @@ async function checkResultSearch(){
 }
 
 function openResultSheet(game, me){
+  notifyWeeklyProgress(game);
+
   let title = 'Ничья';
   let text = 'Коины возвращены на баланс.';
 
@@ -256,6 +260,16 @@ function openResultSheet(game, me){
 
   document.getElementById('newOpponent')?.addEventListener('click', startSameSearchFromResult);
   document.getElementById('goHome')?.addEventListener('click', () => { closeSheet(); state.activeGame = null; showScreen('home'); });
+}
+
+function notifyWeeklyProgress(game){
+  const gameId = String(game?.id || '');
+  if (!gameId || weeklyProgressNotifiedGames.has(gameId)) return;
+
+  weeklyProgressNotifiedGames.add(gameId);
+  document.dispatchEvent(new CustomEvent('mgw:game-finished', {
+    detail: { gameId }
+  }));
 }
 
 function escapeHtml(value){
