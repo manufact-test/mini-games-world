@@ -17,6 +17,7 @@ final class ShopService
         $min = $this->catalog->minGoldCost();
         $available = $this->users->goldShopAvailable($user);
         $catalog = $this->catalog->publicCatalog();
+        $testMode = $this->users->shopTestMode($user);
 
         return [
             'balance_gold' => (int)($user['balance_gold'] ?? 0),
@@ -24,6 +25,7 @@ final class ShopService
             'min_order' => $min,
             'wagered_total' => (int)($user['gold_wagered_total'] ?? 0),
             'spent_total' => (int)($user['gold_shop_spent_total'] ?? 0),
+            'test_mode' => $testMode,
             'catalog_version' => (int)($catalog['version'] ?? 1),
             'catalog_updated_at' => (string)($catalog['updated_at'] ?? ''),
             'catalog_currency' => (string)($catalog['currency'] ?? 'GOLD'),
