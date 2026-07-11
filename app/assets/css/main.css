@@ -7,10 +7,12 @@
 @import url('./components/modals.css?v=27');
 @import url('./components/preloader.css?v=27');
 @import url('./components/account-shortcuts.css?v=40');
-@import url('./components/game-rules.css?v=52');
-@import url('./games/tictactoe/rules.css?v=52');
-@import url('./games/four-in-a-row/rules.css?v=52');
-@import url('./games/four-in-a-row/game.css?v=52');
+@import url('./components/game-rules.css?v=53');
+@import url('./games/tictactoe/rules.css?v=53');
+@import url('./games/four-in-a-row/rules.css?v=53');
+@import url('./games/four-in-a-row/game.css?v=53');
+@import url('./games/battleship/rules.css?v=53');
+@import url('./games/battleship/game.css?v=53');
 @import url('./screens/home.css?v=27');
 @import url('./screens/store.css?v=28');
 @import url('./screens/store-cleanup.css?v=43');
