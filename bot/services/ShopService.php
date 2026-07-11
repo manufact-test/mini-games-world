@@ -31,6 +31,34 @@ final class ShopService
         ];
     }
 
+    /**
+     * Совместимый транспорт для текущего API:
+     * - $itemId приходит через старое поле country;
+     * - $denominationId приходит через старое поле provider;
+     * - $requestToken приходит через старое числовое поле amount.
+     *
+     * ВАЖНО: $requestToken никогда не используется как стоимость.
+     * Стоимость всегда берётся только из активного каталога.
+     */
+    public function createOrder(array &$db, array &$user, string $itemId, string $denominationId, int $requestToken): array
+    {
+        if ($requestToken <= 0) {
+            throw new RuntimeException('Не удалось подтвердить уникальность заказа. Обновите магазин и попробуйте снова.');
+        }
+
+        $result = $this->createCatalogOrder(
+            $db,
+            $user,
+            trim($itemId),
+            trim($denominationId),
+            (string)$requestToken
+        );
+
+        $order = $result['order'];
+        $order['request_replayed'] = empty($result['created']);
+        return $order;
+    }
+
     public function createCatalogOrder(
         array &$db,
         array &$user,
@@ -48,6 +76,8 @@ final class ShopService
             throw new RuntimeException('Не удалось подтвердить уникальность заказа. Обновите магазин и попробуйте снова.');
         }
 
+        // Проверяем повтор ДО чтения текущего каталога. Если первый запрос успел
+        // создать заказ, повтор с тем же ключом вернёт его даже после изменения каталога.
         $existing = $this->findOrderByRequestId($db, $userId, $requestId);
         if ($existing !== null) {
             if ((string)($existing['item_id'] ?? '') !== $itemId
@@ -167,66 +197,6 @@ final class ShopService
             'created' => true,
             'order' => $order,
         ];
-    }
-
-    /**
-     * Временная совместимость со старым API до переключения endpoint на каталог.
-     * После MVP-8.3 удаляется.
-     */
-    public function createOrder(array &$db, array &$user, string $country, string $provider, int $amount): array
-    {
-        $country = clean_string($country, 40);
-        $provider = clean_string($provider, 80);
-        $min = $this->catalog->minGoldCost();
-        if ($amount < $min) {
-            throw new RuntimeException('Минимальная сумма заказа — ' . $min . ' коинов.');
-        }
-        $available = $this->users->goldShopAvailable($user);
-        if ($available < $amount) {
-            throw new RuntimeException('Недостаточно коинов, доступных для магазина.');
-        }
-        if ((int)($user['balance_gold'] ?? 0) < $amount) {
-            throw new RuntimeException('Недостаточно коинов на балансе Gold-комнаты.');
-        }
-
-        $user['balance_gold'] = (int)$user['balance_gold'] - $amount;
-        $user['gold_shop_spent_total'] = (int)($user['gold_shop_spent_total'] ?? 0) + $amount;
-
-        $order = [
-            'id' => make_id('shop'),
-            'user_id' => (string)$user['id'],
-            'username' => $user['username'] ?? '',
-            'country' => $country,
-            'provider' => $provider,
-            'amount' => $amount,
-            'status' => 'pending',
-            'created_at' => now_iso(),
-        ];
-        $db['shop_orders'][] = $order;
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'balance_change',
-            'category' => 'shop_order',
-            'order_id' => $order['id'],
-            'user_id' => (string)$user['id'],
-            'username' => (string)($user['username'] ?? ''),
-            'room' => 'gold',
-            'provider' => $provider,
-            'amount' => -$amount,
-            'balance_after' => (int)($user['balance_gold'] ?? 0),
-            'description' => 'Заказ приза: ' . $provider,
-            'created_at' => now_iso(),
-        ];
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'shop_order',
-            'order_id' => $order['id'],
-            'user_id' => (string)$user['id'],
-            'provider' => $provider,
-            'amount' => $amount,
-            'created_at' => now_iso(),
-        ];
-        return $order;
     }
 
     private function findOrderByRequestId(array $db, string $userId, string $requestId): ?array
