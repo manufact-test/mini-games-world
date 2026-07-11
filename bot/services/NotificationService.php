@@ -69,6 +69,45 @@ final class NotificationService
         return $notification;
     }
 
+    public function addWeeklyMatchBonus(array &$db, array $user, array $bonus): ?array
+    {
+        $userId = trim((string)($user['id'] ?? ''));
+        $cycleKey = trim((string)($bonus['cycle_key'] ?? ''));
+        $amount = max(0, (int)($bonus['amount'] ?? 0));
+
+        if ($userId === '' || $cycleKey === '' || $amount <= 0) {
+            return null;
+        }
+
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) {
+            $db['notifications'] = [];
+        }
+
+        $eventKey = 'weekly_match_bonus:' . $userId . ':' . $cycleKey;
+        foreach ($db['notifications'] as $existing) {
+            if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) {
+                return $existing;
+            }
+        }
+
+        $games = max(0, (int)($bonus['qualifying_games'] ?? 0));
+        $notification = [
+            'id' => make_id('notification'),
+            'event_key' => $eventKey,
+            'user_id' => $userId,
+            'type' => 'weekly_match_bonus',
+            'title' => 'Еженедельные Match-коины',
+            'message' => "+{$amount} Match-коинов за активность. За квалификационную неделю завершено матчей: {$games}.",
+            'tone' => 'success',
+            'cycle_key' => $cycleKey,
+            'created_at' => (string)($bonus['created_at'] ?? now_iso()),
+            'read_at' => null,
+        ];
+
+        $db['notifications'][] = $notification;
+        return $notification;
+    }
+
     public function userNotifications(array $db, string $userId, int $limit = 30): array
     {
         $items = [];
