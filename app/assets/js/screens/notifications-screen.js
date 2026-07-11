@@ -1,9 +1,14 @@
 import { api } from '../api/client.js?v=38';
 import { openSheet } from '../components/sheet.js?v=27';
+import { toast } from '../components/toast.js?v=41';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+
+const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v1';
+const MAX_ANNOUNCED_IDS = 50;
 
 let notificationPoll = null;
 let refreshingBadge = false;
+let announcedIds = loadAnnouncedIds();
 
 export function initNotificationsScreen(){
   document.addEventListener('click', event => {
@@ -14,6 +19,12 @@ export function initNotificationsScreen(){
     event.stopImmediatePropagation();
     openNotificationsSheet();
   }, true);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      refreshNotificationBadge();
+    }
+  });
 
   refreshNotificationBadge();
   if (!notificationPoll) {
@@ -27,7 +38,9 @@ export async function refreshNotificationBadge(){
 
   try {
     const result = await api.notifications(false);
+    const items = Array.isArray(result.items) ? result.items : [];
     setUnreadCount(Number(result.unread_count || 0));
+    announceNewestUnread(items);
   } catch (error) {
     // Keep the current badge state on a temporary network error.
   } finally {
@@ -51,11 +64,39 @@ async function openNotificationsSheet(){
 
   try {
     const result = await api.notifications(true);
+    const items = Array.isArray(result.items) ? result.items : [];
+    rememberNotifications(items);
     setUnreadCount(0);
-    renderNotifications(Array.isArray(result.items) ? result.items : []);
+    renderNotifications(items);
   } catch (error) {
     renderNotificationsError(error);
   }
+}
+
+function announceNewestUnread(items){
+  const notification = items.find(item => {
+    const id = String(item?.id || '');
+    return id !== '' && !item?.read && !announcedIds.has(id);
+  });
+
+  if (!notification) return;
+
+  rememberNotificationId(String(notification.id || ''));
+
+  const tone = String(notification.tone || 'info');
+  const icon = tone === 'danger'
+    ? '🚫'
+    : tone === 'success'
+      ? '✅'
+      : tone === 'warning'
+        ? '⚠️'
+        : '🔔';
+  const title = String(notification.title || 'Важное уведомление').trim();
+  const message = String(notification.message || '').trim();
+  const text = message ? `${icon} ${title}. ${message}` : `${icon} ${title}`;
+
+  haptic(tone === 'danger' ? 'medium' : 'light');
+  toast(text, 6000);
 }
 
 function renderNotifications(items){
@@ -120,6 +161,39 @@ function setUnreadCount(count){
   button.dataset.unread = safeCount > 99 ? '99+' : String(safeCount);
   button.classList.toggle('has-unread', safeCount > 0);
   button.setAttribute('aria-label', safeCount > 0 ? `Уведомления: ${safeCount} новых` : 'Уведомления');
+}
+
+function rememberNotifications(items){
+  for (const item of items) {
+    const id = String(item?.id || '');
+    if (id) announcedIds.add(id);
+  }
+  persistAnnouncedIds();
+}
+
+function rememberNotificationId(id){
+  if (!id) return;
+  announcedIds.add(id);
+  persistAnnouncedIds();
+}
+
+function loadAnnouncedIds(){
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ANNOUNCED_STORAGE_KEY) || '[]');
+    return new Set(Array.isArray(parsed) ? parsed.map(String).filter(Boolean).slice(-MAX_ANNOUNCED_IDS) : []);
+  } catch (error) {
+    return new Set();
+  }
+}
+
+function persistAnnouncedIds(){
+  try {
+    const ids = Array.from(announcedIds).slice(-MAX_ANNOUNCED_IDS);
+    announcedIds = new Set(ids);
+    localStorage.setItem(ANNOUNCED_STORAGE_KEY, JSON.stringify(ids));
+  } catch (error) {
+    // Notifications still work even when WebView storage is unavailable.
+  }
 }
 
 function formatDate(value){
