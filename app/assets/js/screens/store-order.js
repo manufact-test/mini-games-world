@@ -1,10 +1,10 @@
-import { api } from '../api/client.js?v=31';
+import { api } from '../api/client.js?v=34';
 import { state } from '../state.js?v=27';
 import { openSheet } from '../components/sheet.js?v=27';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
-import { openStoreSheet } from './store-screen.js?v=28';
+import { openStoreSheet } from './store-screen.js?v=34';
 
 let preparingOrder = false;
 let pendingOrder = null;
@@ -14,7 +14,6 @@ export function initStoreOrder(){
     const button = event.target.closest('#storeContinue');
     if (!button) return;
 
-    // Перехватываем старую заглушку MVP-8.2 до её прямого click-handler.
     event.preventDefault();
     event.stopImmediatePropagation();
 
@@ -38,7 +37,6 @@ async function prepareOrderConfirmation(button){
   button.textContent = 'Проверяем выбор...';
 
   try {
-    // Перед подтверждением всегда получаем свежий каталог и доступный Gold.
     const result = await api.shopStatus();
     if (!document.body.contains(button)) return;
 
@@ -156,8 +154,6 @@ async function submitPendingOrder(){
     haptic('medium');
     renderOrderSuccess(order, replayed);
   } catch (error) {
-    // requestToken сохраняется. Повторное нажатие после сетевой ошибки отправит
-    // тот же ключ, поэтому сервер не сможет списать Gold второй раз.
     button.disabled = false;
     button.textContent = 'Повторить создание';
     toast(error?.message || 'Не удалось создать заявку.');
@@ -200,10 +196,13 @@ function renderOrderSuccess(order, replayed){
     <div class="store-order-warning ${replayed ? 'safe' : ''}">
       ${replayed
         ? 'Повторный запрос распознан. Новая заявка не создавалась, Gold повторно не списывался.'
-        : 'Gold списан один раз. Следить за статусом заявки можно будет в истории магазина на следующем этапе.'}
+        : 'Gold списан один раз. Текущий статус и дальнейшие изменения доступны в разделе «Мои заявки».'}
     </div>
 
-    <button class="btn gold full" id="storeSuccessBack" type="button">Вернуться в магазин</button>
+    <div class="store-order-actions">
+      <button class="btn ghost full" data-open-store-orders type="button">Мои заявки</button>
+      <button class="btn gold full" id="storeSuccessBack" type="button">Вернуться в магазин</button>
+    </div>
   `);
 
   document.getElementById('storeSuccessBack')?.addEventListener('click', openStoreSheet);
@@ -227,8 +226,6 @@ function createRequestToken(cost){
     throw new Error('Не удалось безопасно сформировать заказ.');
   }
 
-  // В requestToken кодируем подтверждённую цену и nonce.
-  // Сервер разделяет их и отдельно сверяет цену с текущим каталогом.
   return token;
 }
 
