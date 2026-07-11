@@ -22,10 +22,12 @@ final class GameCatalogService
 
         $ticTacToe = require $gamesDir . '/tictactoe/definition.php';
         $fourInARow = require $gamesDir . '/four-in-a-row/definition.php';
+        $battleship = require $gamesDir . '/battleship/definition.php';
 
         $this->games = [
             'tictactoe' => $ticTacToe,
             'four_in_a_row' => $fourInARow,
+            'battleship' => $battleship,
         ];
     }
 
