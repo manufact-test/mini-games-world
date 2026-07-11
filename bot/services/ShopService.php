@@ -4,6 +4,7 @@ declare(strict_types=1);
 final class ShopService
 {
     private const ORDER_TOKEN_BASE = 1000000000;
+    private const RECENT_DUPLICATE_WINDOW_SECONDS = 20;
 
     private ShopCatalogService $catalog;
 
@@ -86,8 +87,7 @@ final class ShopService
             throw new RuntimeException('Не удалось подтвердить параметры заказа. Обновите магазин и попробуйте снова.');
         }
 
-        // Проверяем повтор ДО чтения текущего каталога. Если первый запрос успел
-        // создать заказ, повтор с тем же ключом вернёт его даже после изменения каталога.
+        // Exact idempotency: same request key always returns the same order.
         $existing = $this->findOrderByRequestId($db, $userId, $requestId);
         if ($existing !== null) {
             if ((string)($existing['item_id'] ?? '') !== $itemId
@@ -98,6 +98,16 @@ final class ShopService
             return [
                 'created' => false,
                 'order' => $existing,
+            ];
+        }
+
+        // Additional financial guard: two different client keys for the same pending
+        // selection within a few seconds are treated as one accidental double submit.
+        $recentDuplicate = $this->findRecentPendingDuplicate($db, $userId, $itemId, $denominationId);
+        if ($recentDuplicate !== null) {
+            return [
+                'created' => false,
+                'order' => $recentDuplicate,
             ];
         }
 
@@ -248,6 +258,35 @@ final class ShopService
             if ((string)($order['user_id'] ?? '') === $userId
                 && (string)($order['client_request_id'] ?? '') === $requestId) {
                 return $order;
+            }
+        }
+
+        return null;
+    }
+
+    private function findRecentPendingDuplicate(array $db, string $userId, string $itemId, string $denominationId): ?array
+    {
+        $now = time();
+        foreach (array_reverse($db['shop_orders'] ?? []) as $order) {
+            if (!is_array($order)) {
+                continue;
+            }
+            if ((string)($order['user_id'] ?? '') !== $userId
+                || (string)($order['item_id'] ?? '') !== $itemId
+                || (string)($order['denomination_id'] ?? '') !== $denominationId
+                || (string)($order['status'] ?? 'pending') !== 'pending') {
+                continue;
+            }
+
+            $createdAt = strtotime((string)($order['created_at'] ?? '')) ?: 0;
+            if ($createdAt > 0 && ($now - $createdAt) <= self::RECENT_DUPLICATE_WINDOW_SECONDS) {
+                return $order;
+            }
+
+            // Orders are appended chronologically. Once the newest matching pending
+            // order is outside the protection window, older ones cannot qualify.
+            if ($createdAt > 0 && ($now - $createdAt) > self::RECENT_DUPLICATE_WINDOW_SECONDS) {
+                break;
             }
         }
 
