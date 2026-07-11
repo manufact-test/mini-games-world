@@ -15,7 +15,7 @@ import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen.js?v=42';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=46';
-import { initSearchScreen } from './screens/search-screen.js?v=54';
+import { initSearchScreen } from './screens/search-screen.js?v=55';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=55';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
 import { initGameRules } from './games/game-rules.js?v=54';
@@ -23,7 +23,7 @@ import { initGameCardCopy } from './games/game-card-copy.js?v=53';
 import { initGameInvites } from './games/game-invites.js?v=55';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=54';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=54';
-import { initBattleshipEntry } from './games/battleship/entry.js?v=54';
+import { initBattleshipEntry } from './games/battleship/entry.js?v=55';
 import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
