@@ -132,7 +132,7 @@ final class NotificationService
             'user_id' => $userId,
             'type' => 'weekly_match_bonus',
             'title' => 'Еженедельные коины начислены',
-            'message' => "Спасибо, что играете в Mini Games World. За {$games} завершённые игры на этой неделе вам начислено +{$amount} коинов в Матч-комнату.",
+            'message' => "Спасибо, что играете в Mini Games World. За неделю вы завершили {$games} игр — вам начислено +{$amount} коинов в Матч-комнату.",
             'tone' => 'success',
             'cycle_key' => $cycleKey,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
