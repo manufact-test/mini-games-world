@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v38-shop-notifications-fix';
+window.__MGW_BUILD__ = 'v39-global-typography';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=38';
 import { state } from './state.js?v=27';
@@ -6,6 +6,7 @@ import { APP_CONFIG } from './config.js?v=38';
 import { hidePreloader } from './components/preloader.js?v=27';
 import { initSheet } from './components/sheet.js?v=27';
 import { toast } from './components/toast.js?v=27';
+import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
 import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=27';
 import { initStoreScreen } from './screens/store-screen.js?v=34';
@@ -19,6 +20,7 @@ import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 initTelegramApp();
+initTypography();
 initSheet();
 initStoreScreen();
 initStoreOrder();
