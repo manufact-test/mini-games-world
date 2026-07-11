@@ -31,19 +31,26 @@ final class GameRuntimeService
     {
         $this->normalizeDatabaseGameTypes($db);
         $queueItem = $this->queueItemForUser($db, (string)($user['id'] ?? ''));
-        if ($queueItem) {
-            $gameType = $this->gameTypeFromRecord($queueItem);
-            if (!$this->catalog->supportsBot($gameType)) {
-                return null;
-            }
+        if (!$queueItem) {
+            return null;
         }
 
-        $game = $this->legacyGame->maybeCreateBotGameForSearchingUser($db, $user);
+        $gameType = $this->gameTypeFromRecord($queueItem);
+        if (!$this->catalog->supportsBot($gameType)) {
+            return null;
+        }
+
+        $game = $this->withIsolatedQueue(
+            $db,
+            $gameType,
+            fn(): ?array => $this->legacyGame->maybeCreateBotGameForSearchingUser($db, $user)
+        );
+
         if (is_array($game)) {
             $this->ensureGameType($game);
             $gameId = (string)($game['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
-                $this->ensureGameType($db['games'][$gameId]);
+                $db['games'][$gameId]['game_type'] = $gameType;
                 return $db['games'][$gameId];
             }
         }
@@ -76,7 +83,13 @@ final class GameRuntimeService
             throw new RuntimeException('Движок этой игры пока не подключён.');
         }
 
-        $result = $this->legacyGame->startSearch($db, $user, $room, $bet, $boardSize);
+        $userId = (string)($user['id'] ?? '');
+        $result = $this->withIsolatedQueue(
+            $db,
+            $gameType,
+            fn(): array => $this->legacyGame->startSearch($db, $user, $room, $bet, $boardSize),
+            $userId
+        );
 
         // Existing GameService currently creates tic-tac-toe records itself.
         // Normalize them through the registry so old and new records share one model.
@@ -86,10 +99,10 @@ final class GameRuntimeService
             $gameId = (string)($result['game']['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;
-                $result['game'] = $this->publicGame($db['games'][$gameId], (string)($user['id'] ?? ''));
+                $result['game'] = $this->publicGame($db['games'][$gameId], $userId);
             }
         } else {
-            $this->setQueuedGameType($db, (string)($user['id'] ?? ''), $gameType);
+            $this->setQueuedGameType($db, $userId, $gameType);
         }
 
         return $result;
@@ -160,6 +173,100 @@ final class GameRuntimeService
     public function catalog(): array
     {
         return $this->catalog->publicCatalog();
+    }
+
+    /**
+     * Runs the legacy matcher against only one game type, then merges untouched
+     * queues back in their original order. This prevents cross-game matches
+     * before the legacy GameService itself is split into engines.
+     */
+    private function withIsolatedQueue(
+        array &$db,
+        string $gameType,
+        callable $callback,
+        ?string $dropUserId = null
+    ): mixed {
+        $originalQueue = is_array($db['queue'] ?? null) ? array_values($db['queue']) : [];
+        $workingQueue = [];
+
+        foreach ($originalQueue as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            if ($dropUserId !== null && (string)($item['user_id'] ?? '') === $dropUserId) {
+                continue;
+            }
+            if ($this->gameTypeFromRecord($item) === $gameType) {
+                $workingQueue[] = $item;
+            }
+        }
+
+        $db['queue'] = $workingQueue;
+
+        try {
+            return $callback();
+        } finally {
+            $updatedWorkingQueue = is_array($db['queue'] ?? null) ? array_values($db['queue']) : [];
+            $db['queue'] = $this->mergeIsolatedQueue(
+                $originalQueue,
+                $updatedWorkingQueue,
+                $gameType,
+                $dropUserId
+            );
+        }
+    }
+
+    private function mergeIsolatedQueue(
+        array $originalQueue,
+        array $updatedWorkingQueue,
+        string $gameType,
+        ?string $dropUserId
+    ): array {
+        $updatedById = [];
+        $updatedWithoutId = [];
+
+        foreach ($updatedWorkingQueue as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $id = trim((string)($item['id'] ?? ''));
+            if ($id !== '') {
+                $updatedById[$id] = $item;
+            } else {
+                $updatedWithoutId[] = $item;
+            }
+        }
+
+        $merged = [];
+        foreach ($originalQueue as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            if ($dropUserId !== null && (string)($item['user_id'] ?? '') === $dropUserId) {
+                continue;
+            }
+
+            if ($this->gameTypeFromRecord($item) !== $gameType) {
+                $merged[] = $item;
+                continue;
+            }
+
+            $id = trim((string)($item['id'] ?? ''));
+            if ($id !== '' && isset($updatedById[$id])) {
+                $merged[] = $updatedById[$id];
+                unset($updatedById[$id]);
+            }
+        }
+
+        foreach ($updatedById as $item) {
+            $merged[] = $item;
+        }
+        foreach ($updatedWithoutId as $item) {
+            $merged[] = $item;
+        }
+
+        return array_values($merged);
     }
 
     private function normalizeDatabaseGameTypes(array &$db): void
