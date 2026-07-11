@@ -1,6 +1,6 @@
 import { openSheet } from '../components/sheet.js?v=27';
 import { state } from '../state.js?v=27';
-import { gameTypeOf } from './game-router.js?v=50';
+import { gameTypeOf } from './game-router.js?v=51';
 
 let initialized = false;
 
