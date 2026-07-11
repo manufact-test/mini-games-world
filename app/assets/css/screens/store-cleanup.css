@@ -1,0 +1,4 @@
+/* User-facing shop cleanup: internal availability/test notes must not appear in the storefront. */
+.store-note{
+  display:none !important;
+}
