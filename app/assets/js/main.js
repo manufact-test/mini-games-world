@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v47-multi-game-router';
+window.__MGW_BUILD__ = 'v48-mvp10-polish';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -6,7 +6,7 @@ import { APP_CONFIG } from './config.js?v=38';
 import { hidePreloader } from './components/preloader.js?v=42';
 import { initSheet } from './components/sheet.js?v=27';
 import { toast } from './components/toast.js?v=41';
-import { initAccountShortcuts } from './components/account-shortcuts.js?v=40';
+import { initAccountShortcuts } from './components/account-shortcuts.js?v=48';
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
 import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=27';
@@ -17,7 +17,7 @@ import { initNotificationsScreen } from './screens/notifications-screen.js?v=42'
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=46';
 import { initSearchScreen } from './screens/search-screen.js?v=27';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=47';
-import { initProfileScreen } from './screens/profile-screen.js?v=40';
+import { initProfileScreen } from './screens/profile-screen.js?v=48';
 import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
