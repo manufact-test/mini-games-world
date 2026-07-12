@@ -26,11 +26,14 @@ export function renderChessSurface({ game, me, container, onAction }){
     moveByTarget.get(to).push(move);
   });
 
-  const order = mySide === 'black' ? Array.from({ length:64 }, (_, index) => 63 - index) : Array.from({ length:64 }, (_, index) => index);
+  const order = mySide === 'black'
+    ? Array.from({ length:64 }, (_, index) => 63 - index)
+    : Array.from({ length:64 }, (_, index) => index);
   const lastMove = game?.last_move || null;
   const lastKey = lastMove ? `${lastMove.from}:${lastMove.to}:${game?.move_count || 0}` : '';
   const animateDestination = Boolean(lastKey && animatedMoveByGame.get(gameId) !== lastKey);
   if (lastKey) animatedMoveByGame.set(gameId, lastKey);
+  const motionByCell = animateDestination ? moveMotions(lastMove, mySide) : new Map();
 
   container.className = `board chess-board ${isMyTurn ? 'is-my-turn' : ''}`;
   container.dataset.viewerSide = mySide;
@@ -46,14 +49,18 @@ export function renderChessSurface({ game, me, container, onAction }){
     const isLastTo = Number(lastMove?.to) === cell;
     const checkedSide = String(game?.checked_side || '');
     const checkedKing = piece === `${checkedSide === 'white' ? 'w' : 'b'}K` && checkedSide !== '';
+    const motion = motionByCell.get(cell) || null;
     const classes = ['chess-cell',(row + col) % 2 ? 'dark' : 'light',selected === cell ? 'selected' : '',targets.length ? (capture ? 'capture-target' : 'legal-target') : '',isLastFrom ? 'last-from' : '',isLastTo ? 'last-to' : '',checkedKing ? 'in-check' : ''].filter(Boolean).join(' ');
-    const pieceClasses = ['chess-piece',pieceSide(piece),animateDestination && isLastTo ? 'moved-fresh' : ''].filter(Boolean).join(' ');
+    const pieceClasses = ['chess-piece',pieceSide(piece),motion ? 'moved-fresh' : '',motion?.role === 'rook' ? 'castle-rook-fresh' : ''].filter(Boolean).join(' ');
+    const pieceStyle = motion
+      ? ` style="--chess-move-x:${motion.x}%;--chess-move-y:${motion.y}%;--chess-move-delay:${motion.delay}ms"`
+      : '';
     const file = 'abcdefgh'[col];
     const rank = String(8 - row);
     return `<button class="${classes}" data-chess-cell="${cell}" type="button" ${!isMyTurn ? 'disabled' : ''}>
       ${displayCol === 0 ? `<small class="chess-rank">${rank}</small>` : ''}
       ${displayRow === 7 ? `<small class="chess-file">${file}</small>` : ''}
-      ${piece ? `<span class="${pieceClasses}" aria-label="${pieceName(piece)}">${GLYPHS[piece] || ''}</span>` : ''}
+      ${piece ? `<span class="${pieceClasses}"${pieceStyle} aria-label="${pieceName(piece)}">${GLYPHS[piece] || ''}</span>` : ''}
       ${targets.length && !capture ? '<i class="chess-move-dot"></i>' : ''}
       ${targets.length && capture ? '<i class="chess-capture-ring"></i>' : ''}
     </button>`;
@@ -104,6 +111,40 @@ function openPromotionChoice(game, from, to, side, promotions, onAction){
     onAction({ type:'chess_move', from, to, promotion:String(button.dataset.chessPromotion || 'q') });
   }));
 }
+
+function moveMotions(lastMove, viewerSide){
+  const motions = new Map();
+  const from = Number(lastMove?.from);
+  const to = Number(lastMove?.to);
+  if (Number.isInteger(from) && Number.isInteger(to)) {
+    motions.set(to, motionBetween(from, to, viewerSide, 0, 'piece'));
+  }
+
+  const castle = String(lastMove?.castle || '');
+  const side = String(lastMove?.side || 'white');
+  if (castle === 'king') {
+    const rookFrom = side === 'white' ? 63 : 7;
+    const rookTo = side === 'white' ? 61 : 5;
+    motions.set(rookTo, motionBetween(rookFrom, rookTo, viewerSide, 90, 'rook'));
+  } else if (castle === 'queen') {
+    const rookFrom = side === 'white' ? 56 : 0;
+    const rookTo = side === 'white' ? 59 : 3;
+    motions.set(rookTo, motionBetween(rookFrom, rookTo, viewerSide, 90, 'rook'));
+  }
+  return motions;
+}
+
+function motionBetween(from, to, viewerSide, delay, role){
+  const fromDisplay = viewerSide === 'black' ? 63 - from : from;
+  const toDisplay = viewerSide === 'black' ? 63 - to : to;
+  return {
+    x: (fromDisplay % 8 - toDisplay % 8) * 100,
+    y: (Math.floor(fromDisplay / 8) - Math.floor(toDisplay / 8)) * 100,
+    delay,
+    role,
+  };
+}
+
 function playerSide(game, playerId){ return (game?.players || []).find(player => String(player?.id || '') === playerId)?.side || ''; }
 function pieceSide(piece){ return !piece ? '' : (piece[0] === 'w' ? 'white' : 'black'); }
 function pieceName(piece){ const type=({K:'король',Q:'ферзь',R:'ладья',B:'слон',N:'конь',P:'пешка'})[piece?.[1]]||'фигура'; return `${pieceSide(piece)==='white'?'Белая':'Чёрная'} ${type}`; }
