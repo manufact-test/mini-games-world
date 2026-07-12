@@ -38,6 +38,7 @@ final class GameActionService
             'four_in_a_row' => $this->applyFourInARowAction($db, $user, $gameId, $actionType, $action),
             'battleship' => $this->runtime->applyBattleshipAction($db, $user, $gameId, $action),
             'checkers' => $this->runtime->applyCheckersAction($db, $user, $gameId, $action),
+            'reversi' => $this->runtime->applyReversiAction($db, $user, $gameId, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
     }
