@@ -19,8 +19,9 @@ function cleanCurrentSheet(sheet){
     sheet.querySelector('.sheet-head p')?.remove();
 
     const note = sheet.querySelector('.small-note');
-    if (note) {
-      note.textContent = 'Баланс изменится после подтверждения администратором.';
+    const message = 'Баланс изменится после подтверждения администратором.';
+    if (note && note.textContent.trim() !== message) {
+      note.textContent = message;
     }
   }
 
@@ -30,9 +31,13 @@ function cleanCurrentSheet(sheet){
     const note = sheet.querySelector('.store-order-warning');
     if (note) {
       const repeated = note.textContent.includes('Повторный запрос');
-      note.textContent = repeated
+      const message = repeated
         ? 'Эта заявка уже была создана.'
         : 'Следите за статусом в разделе «Мои заявки».';
+
+      if (note.textContent.trim() !== message) {
+        note.textContent = message;
+      }
     }
   }
 }
