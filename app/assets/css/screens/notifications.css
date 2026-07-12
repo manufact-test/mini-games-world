@@ -1,4 +1,4 @@
-/* Notification center and actionable notification toast */
+/* Notification center */
 .icon-btn#notificationsOpen{position:relative}
 .icon-btn#notificationsOpen.has-unread::after{
   content:attr(data-unread);
@@ -19,101 +19,6 @@
   font-weight:950;
   box-shadow:0 5px 14px rgba(0,0,0,.3);
 }
-
-.notification-toast{
-  position:absolute;
-  z-index:95;
-  top:max(14px,env(safe-area-inset-top));
-  left:14px;
-  right:14px;
-  display:grid;
-  grid-template-columns:40px minmax(0,1fr) 32px;
-  align-items:center;
-  gap:10px;
-  padding:11px 10px 11px 12px;
-  border-radius:19px;
-  border:1px solid var(--stroke);
-  background:rgba(20,27,43,.97);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  box-shadow:0 16px 44px rgba(0,0,0,.42);
-  opacity:0;
-  transform:translateY(-18px) scale(.98);
-  pointer-events:none;
-  transition:opacity .18s ease,transform .2s ease,border-color .18s ease;
-  touch-action:none;
-  user-select:none;
-  -webkit-user-select:none;
-  cursor:pointer;
-}
-.notification-toast.show{
-  opacity:1;
-  transform:translateY(0) scale(1);
-  pointer-events:auto;
-}
-.notification-toast.dragging{transition:none}
-.notification-toast.success{border-color:rgba(83,201,125,.38)}
-.notification-toast.danger{border-color:rgba(255,95,109,.42)}
-.notification-toast.warning{border-color:rgba(255,176,32,.4)}
-
-.notification-toast-icon{
-  width:40px;
-  height:40px;
-  border-radius:14px;
-  display:grid;
-  place-items:center;
-  background:rgba(255,255,255,.07);
-  border:1px solid var(--stroke);
-  font-size:19px;
-  font-weight:950;
-}
-.notification-toast.success .notification-toast-icon{
-  color:#9fe5b3;
-  background:rgba(83,201,125,.13);
-  border-color:rgba(83,201,125,.28);
-}
-.notification-toast.danger .notification-toast-icon{
-  color:#ffb2b2;
-  background:rgba(255,95,109,.13);
-  border-color:rgba(255,95,109,.28);
-}
-.notification-toast.warning .notification-toast-icon{
-  color:#ffd18a;
-  background:rgba(255,176,32,.13);
-  border-color:rgba(255,176,32,.28);
-}
-
-.notification-toast-copy{
-  min-width:0;
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-}
-.notification-toast-copy strong{
-  font-size:13px;
-  line-height:1.25;
-  letter-spacing:-.01em;
-}
-.notification-toast-copy span{
-  color:var(--soft);
-  font-size:11.5px;
-  line-height:1.38;
-  text-wrap:pretty;
-}
-.notification-toast-close{
-  width:32px;
-  height:32px;
-  border-radius:11px;
-  display:grid;
-  place-items:center;
-  border:1px solid var(--stroke);
-  background:rgba(255,255,255,.065);
-  color:var(--muted);
-  font-size:18px;
-  line-height:1;
-  font-weight:900;
-}
-.notification-toast-close:active{transform:scale(.93)}
 
 .notifications-loading,
 .notifications-empty{
@@ -184,6 +89,7 @@
 }
 .notification-card.success .notification-icon{color:#9fe5b3;background:rgba(83,201,125,.12);border-color:rgba(83,201,125,.25)}
 .notification-card.danger .notification-icon{color:#ffb2b2;background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.25)}
+.notification-card.warning .notification-icon{color:#ffd18a;background:rgba(255,176,32,.12);border-color:rgba(255,176,32,.25)}
 
 .notification-copy{min-width:0;display:flex;flex-direction:column;gap:6px}
 .notification-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -191,19 +97,74 @@
 .notification-head span{flex:0 0 auto;color:var(--muted);font-size:10px;font-weight:800}
 .notification-copy p{margin:0;color:var(--soft);font-size:12px;line-height:1.45;text-wrap:pretty}
 
+/* Interactive notification shown only on the safe home screen. */
+.notification-toast{
+  position:absolute;
+  z-index:95;
+  top:max(12px,env(safe-area-inset-top));
+  left:12px;
+  right:12px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:11px;
+  padding:12px;
+  border-radius:20px;
+  border:1px solid var(--stroke);
+  background:rgba(20,27,43,.97);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 18px 48px rgba(0,0,0,.46);
+  opacity:0;
+  transform:translateY(-14px);
+  pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  cursor:pointer;
+}
+.notification-toast.show{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+.notification-toast.dragging{transition:none}
+.notification-toast.success{border-color:rgba(83,201,125,.32);background:rgba(22,42,38,.97)}
+.notification-toast.danger{border-color:rgba(255,95,109,.34);background:rgba(47,28,39,.97)}
+.notification-toast.warning{border-color:rgba(255,176,32,.34);background:rgba(48,39,24,.97)}
+
+.notification-toast-icon{
+  width:42px;
+  height:42px;
+  border-radius:15px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--stroke);
+  background:rgba(255,255,255,.075);
+  font-size:20px;
+  font-weight:950;
+}
+.notification-toast.success .notification-toast-icon{color:#9fe5b3;background:rgba(83,201,125,.13);border-color:rgba(83,201,125,.28)}
+.notification-toast.danger .notification-toast-icon{color:#ffb2b2;background:rgba(255,95,109,.13);border-color:rgba(255,95,109,.28)}
+.notification-toast.warning .notification-toast-icon{color:#ffd18a;background:rgba(255,176,32,.13);border-color:rgba(255,176,32,.28)}
+
+.notification-toast-copy{min-width:0;display:flex;flex-direction:column;gap:4px}
+.notification-toast-copy strong{font-size:14px;line-height:1.25}
+.notification-toast-copy span{
+  color:var(--soft);
+  font-size:12px;
+  line-height:1.4;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
 @media (max-width:360px){
-  .notification-toast{
-    left:10px;
-    right:10px;
-    grid-template-columns:36px minmax(0,1fr) 30px;
-    gap:8px;
-    padding:10px 8px 10px 10px;
-  }
-  .notification-toast-icon{width:36px;height:36px;border-radius:13px;font-size:17px}
-  .notification-toast-close{width:30px;height:30px}
-  .notification-toast-copy strong{font-size:12.5px}
-  .notification-toast-copy span{font-size:11px}
   .notification-card{grid-template-columns:36px minmax(0,1fr);padding:11px;gap:9px}
   .notification-icon{width:36px;height:36px;border-radius:13px;font-size:17px}
   .notification-head{flex-direction:column;gap:3px}
+  .notification-toast{grid-template-columns:36px minmax(0,1fr);padding:11px;gap:9px}
+  .notification-toast-icon{width:36px;height:36px;border-radius:13px;font-size:17px}
 }
