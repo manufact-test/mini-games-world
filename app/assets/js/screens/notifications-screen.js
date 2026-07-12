@@ -4,6 +4,7 @@ import { haptic } from '../telegram/telegram-app.js?v=27';
 
 const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v2';
 const MAX_ANNOUNCED_IDS = 50;
+const NOTIFICATION_POLL_MS = 10000;
 const NOTIFICATION_TOAST_DURATION = 8000;
 
 let notificationPoll = null;
@@ -14,9 +15,12 @@ let announcedIds = loadAnnouncedIds();
 let notificationToastTimer = null;
 let notificationToastPointer = null;
 let suppressNotificationToastClickUntil = 0;
+let contextObserver = null;
+let contextRefreshTimer = null;
 
 export function initNotificationsScreen(){
   ensureNotificationToast();
+  initNotificationContextObserver();
 
   document.addEventListener('click', event => {
     const trigger = event.target.closest('#notificationsOpen');
@@ -35,6 +39,8 @@ export function initNotificationsScreen(){
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       refreshNotificationBadge(appReady);
+    } else {
+      dismissNotificationToast();
     }
   });
 
@@ -42,7 +48,7 @@ export function initNotificationsScreen(){
   refreshNotificationBadge(false);
 
   if (!notificationPoll) {
-    notificationPoll = setInterval(() => refreshNotificationBadge(appReady), 10000);
+    notificationPoll = setInterval(() => refreshNotificationBadge(appReady), NOTIFICATION_POLL_MS);
   }
 }
 
@@ -100,16 +106,59 @@ async function openNotificationsSheet(){
 }
 
 function announceNewestUnread(items){
+  if (!canShowNotificationToast()) return;
+  if (document.getElementById('notificationToast')?.classList.contains('show')) return;
+
   const notification = items.find(item => {
     const id = String(item?.id || '');
     return id !== '' && !item?.read && !announcedIds.has(id);
   });
 
   if (!notification) return;
+  if (!showNotificationToast(notification)) return;
 
   rememberNotificationId(String(notification.id || ''));
   haptic(String(notification.tone || '') === 'danger' ? 'medium' : 'light');
-  showNotificationToast(notification);
+}
+
+function canShowNotificationToast(){
+  if (!appReady || document.visibilityState !== 'visible') return false;
+
+  const activeScreen = document.querySelector('.screen.active');
+  if (!activeScreen || String(activeScreen.dataset.screen || '') !== 'home') return false;
+
+  const overlay = document.getElementById('sheetOverlay');
+  if (overlay?.classList.contains('active')) return false;
+
+  return true;
+}
+
+function initNotificationContextObserver(){
+  const app = document.getElementById('app');
+  if (!app || contextObserver) return;
+
+  contextObserver = new MutationObserver(mutations => {
+    const contextChanged = mutations.some(mutation => {
+      const target = mutation.target;
+      return target instanceof Element && target.id !== 'notificationToast';
+    });
+
+    if (!contextChanged) return;
+
+    if (!canShowNotificationToast()) {
+      dismissNotificationToast();
+      return;
+    }
+
+    clearTimeout(contextRefreshTimer);
+    contextRefreshTimer = setTimeout(() => refreshNotificationBadge(true), 140);
+  });
+
+  contextObserver.observe(app, {
+    subtree:true,
+    attributes:true,
+    attributeFilter:['class'],
+  });
 }
 
 function ensureNotificationToast(){
@@ -128,21 +177,12 @@ function ensureNotificationToast(){
       <strong></strong>
       <span></span>
     </div>
-    <button class="notification-toast-close" data-notification-toast-close type="button" aria-label="Закрыть уведомление">×</button>
   `;
 
   (document.getElementById('app') || document.body).appendChild(el);
 
-  el.addEventListener('click', event => {
+  el.addEventListener('click', () => {
     if (!el.classList.contains('show') || Date.now() < suppressNotificationToastClickUntil) return;
-
-    if (event.target.closest('[data-notification-toast-close]')) {
-      event.preventDefault();
-      event.stopPropagation();
-      dismissNotificationToast();
-      return;
-    }
-
     dismissNotificationToast();
     openNotificationsSheet();
   });
@@ -164,7 +204,7 @@ function ensureNotificationToast(){
   });
 
   el.addEventListener('pointerdown', event => {
-    if (!el.classList.contains('show') || event.target.closest('[data-notification-toast-close]')) return;
+    if (!el.classList.contains('show')) return;
 
     notificationToastPointer = {
       id: event.pointerId,
@@ -184,10 +224,10 @@ function ensureNotificationToast(){
     notificationToastPointer.dy = event.clientY - notificationToastPointer.startY;
 
     const x = notificationToastPointer.dx;
-    const y = Math.min(0, notificationToastPointer.dy);
+    const y = notificationToastPointer.dy;
     const distance = Math.max(Math.abs(x), Math.abs(y));
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-    el.style.opacity = String(Math.max(0.35, 1 - distance / 220));
+    el.style.opacity = String(Math.max(0.3, 1 - distance / 220));
   });
 
   const finishPointer = (event, cancelled = false) => {
@@ -198,9 +238,9 @@ function ensureNotificationToast(){
     el.classList.remove('dragging');
     el.releasePointerCapture?.(event.pointerId);
 
-    const shouldDismiss = !cancelled && (Math.abs(dx) >= 72 || dy <= -48);
+    const shouldDismiss = !cancelled && Math.max(Math.abs(dx), Math.abs(dy)) >= 64;
     if (shouldDismiss) {
-      suppressNotificationToastClickUntil = Date.now() + 350;
+      suppressNotificationToastClickUntil = Date.now() + 400;
       dismissNotificationToast();
       return;
     }
@@ -216,6 +256,8 @@ function ensureNotificationToast(){
 }
 
 function showNotificationToast(item){
+  if (!canShowNotificationToast()) return false;
+
   const el = ensureNotificationToast();
   const tone = ['success', 'danger', 'warning', 'info'].includes(String(item?.tone || ''))
     ? String(item.tone)
@@ -243,6 +285,7 @@ function showNotificationToast(item){
 
   requestAnimationFrame(() => el.classList.add('show'));
   notificationToastTimer = setTimeout(dismissNotificationToast, NOTIFICATION_TOAST_DURATION);
+  return true;
 }
 
 function dismissNotificationToast(){
@@ -308,7 +351,9 @@ function notificationMessage(item){
     /\s*Баланс:\s*-?[\d\s]+\s*→\s*-?[\d\s]+\.?/giu,
     /\s*Статус (?:уже )?обновлён[^.]*\.?/giu,
     /\s*Проверьте статус возврата[^.]*\.?/giu,
+    /\s*Статус и возврат можно проверить[^.]*\.?/giu,
     /\s*Возвращено\s*\+\s*[\d\s]+\s*Gold\.?/giu,
+    /\s*Откройте Mini App[^.]*\.?/giu,
   ];
 
   for (const pattern of technicalFragments) {
