@@ -20,6 +20,12 @@ import {
   checkersPlayerMark,
   checkersStatus,
 } from './checkers/renderer.js?v=57';
+import {
+  renderReversiSurface,
+  reversiMeta,
+  reversiPlayerMark,
+  reversiStatus,
+} from './reversi/renderer.js?v=65';
 
 const routes = {
   tictactoe: {
@@ -44,6 +50,12 @@ const routes = {
     playerMark: checkersPlayerMark,
     status: checkersStatus,
   },
+  reversi: {
+    render: renderReversiSurface,
+    meta: reversiMeta,
+    playerMark: reversiPlayerMark,
+    status: reversiStatus,
+  },
 };
 
 export function gameTypeOf(game){
@@ -56,6 +68,18 @@ export function gameTypeOf(game){
   const connectLength = Number(game?.connect_length || 0);
   const boardArrayLength = Array.isArray(game?.board) ? game.board.length : 0;
   const boardStringLength = typeof game?.board === 'string' ? game.board.length : 0;
+
+  if (
+    explicit === 'reversi'
+    || renderer === 'reversi'
+    || title.includes('реверси')
+    || title.includes('reversi')
+    || Boolean(game?.reversi_initialized)
+    || Boolean(game?.reversi_sides)
+    || Boolean(game?.final_counts && Object.prototype.hasOwnProperty.call(game.final_counts, 'black'))
+  ) {
+    return 'reversi';
+  }
 
   if (
     explicit === 'checkers'
