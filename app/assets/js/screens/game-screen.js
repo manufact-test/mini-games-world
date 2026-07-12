@@ -1,7 +1,7 @@
 import { state } from '../state.js?v=27';
 import { api } from '../api/client.js?v=47';
 import { toast } from '../components/toast.js?v=41';
-import { openSheet, closeSheet } from '../components/sheet.js?v=27';
+import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
 import { clearTimer, renderBalances } from '../ui.js?v=27';
 import { APP_CONFIG } from '../config.js?v=38';
@@ -12,10 +12,11 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=67';
+} from '../games/game-router.js?v=68';
 
 const weeklyProgressNotifiedGames = new Set();
 const resultSheetScheduledGames = new Set();
+const resultSheetOpenedGames = new Set();
 
 export function initGameScreen(){
   document.getElementById('leaveGame')?.addEventListener('click', requestLeaveGame);
@@ -148,7 +149,7 @@ async function confirmLeaveGame(){
       state.activeGame = result.game;
       renderGame(result.game, result.me);
       state.timers.game = clearTimer(state.timers.game);
-      openResultSheet(result.game, result.me);
+      scheduleResultSheet(result.game, result.me);
       return;
     }
 
@@ -248,7 +249,7 @@ async function checkResultSearch(){
 
 function scheduleResultSheet(game, me){
   const gameId = String(game?.id || '');
-  if (!gameId || resultSheetScheduledGames.has(gameId)) return;
+  if (!gameId || resultSheetScheduledGames.has(gameId) || resultSheetOpenedGames.has(gameId)) return;
   resultSheetScheduledGames.add(gameId);
 
   const flippedCount = Array.isArray(game?.last_flipped_cells) ? game.last_flipped_cells.length : 0;
@@ -265,6 +266,10 @@ function scheduleResultSheet(game, me){
 }
 
 function openResultSheet(game, me){
+  const gameId = String(game?.id || '');
+  if (!gameId || resultSheetOpenedGames.has(gameId)) return;
+  resultSheetOpenedGames.add(gameId);
+  resultSheetScheduledGames.add(gameId);
   notifyWeeklyProgress(game);
 
   let title = 'Ничья';
