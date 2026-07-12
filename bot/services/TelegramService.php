@@ -42,7 +42,7 @@ final class TelegramService
 
     public function sendStartMessage(int|string $chatId): void
     {
-        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=21';
+        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=61';
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
@@ -296,8 +296,7 @@ final class TelegramService
                 . "Заявка: {$shortId}\n"
                 . "Комната: {$roomLabel}\n"
                 . "Сумма: {$price} {$currency}\n"
-                . "Начислено: {$coins} коинов\n\n"
-                . "Баланс уже обновлён. Откройте Mini App и проверьте счёт.";
+                . "Начислено: {$coins} коинов";
         }
 
         $reason = trim((string)($payment['reject_reason'] ?? ''));
@@ -310,8 +309,7 @@ final class TelegramService
             . "Комната: {$roomLabel}\n"
             . "Сумма: {$price} {$currency}\n"
             . "К зачислению было: {$coins} коинов\n"
-            . "Причина: {$reason}\n\n"
-            . "Баланс не изменён. При необходимости напишите в поддержку.";
+            . "Причина: {$reason}";
     }
 
     private function shortPaymentId(string $id): string
