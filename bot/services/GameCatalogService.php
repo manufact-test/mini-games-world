@@ -25,6 +25,7 @@ final class GameCatalogService
         $battleship = require $gamesDir . '/battleship/definition.php';
         $checkers = require $gamesDir . '/checkers/definition.php';
         $reversi = require $gamesDir . '/reversi/definition.php';
+        $chess = require $gamesDir . '/chess/definition.php';
 
         $this->games = [
             'tictactoe' => $ticTacToe,
@@ -32,6 +33,7 @@ final class GameCatalogService
             'battleship' => $battleship,
             'checkers' => $checkers,
             'reversi' => $reversi,
+            'chess' => $chess,
         ];
     }
 
