@@ -33,7 +33,28 @@
 @import url('./animations.css?v=27');
 @import url('./responsive.css?v=37');
 
-.history-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.history-tab{border:1px solid var(--stroke);background:rgba(255,255,255,.055);color:var(--muted);border-radius:16px;min-height:42px;padding:0 12px;font-size:14px;font-weight:950;transition:background .15s ease,color .15s ease,border-color .15s ease}
-.history-tab.active{color:var(--text);border-color:rgba(124,92,255,.45);background:rgba(124,92,255,.18)}
-.history-tab-panel{display:none}.history-tab-panel.active{display:block}
+/* MVP-7.1.2 history tabs */
+.history-tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:12px;
+}
+.history-tab{
+  border:1px solid var(--stroke);
+  background:rgba(255,255,255,.055);
+  color:var(--muted);
+  border-radius:16px;
+  min-height:42px;
+  padding:0 12px;
+  font-size:14px;
+  font-weight:950;
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+.history-tab.active{
+  color:var(--text);
+  border-color:rgba(124,92,255,.45);
+  background:rgba(124,92,255,.18);
+}
+.history-tab-panel{display:none}
+.history-tab-panel.active{display:block}
