@@ -60,6 +60,21 @@ function mgw_randomize_symbols_for_new_game(array &$data, array $game): array
     return $stored;
 }
 
+function mgw_cleanup_games_if_due(array &$data, GameRuntimeService $games, bool $force = false): void
+{
+    if (!isset($data['system']) || !is_array($data['system'])) {
+        $data['system'] = [];
+    }
+
+    $lastCleanup = strtotime((string)($data['system']['game_cleanup_at'] ?? '')) ?: 0;
+    if (!$force && $lastCleanup > 0 && time() - $lastCleanup < 2) {
+        return;
+    }
+
+    $games->cleanup($data);
+    $data['system']['game_cleanup_at'] = now_iso();
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
@@ -98,9 +113,10 @@ try {
         // благодаря cycle key на пользователе.
         $weeklyMatch->applyDueForUser($data, $user);
 
-        // MVP-3: каждая API-команда чистит старую очередь и просроченные ходы.
-        // MVP-10: runtime также нормализует game_type у старых записей.
-        $games->cleanup($data);
+        // Cleanup scans all stored games, so background reads share one global pass.
+        // Mutating game actions still force cleanup before validation.
+        $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move', 'leave_game'], true);
+        mgw_cleanup_games_if_due($data, $games, $forceCleanup);
 
         switch ($action) {
             case 'bootstrap':
