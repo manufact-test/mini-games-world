@@ -7,6 +7,8 @@ import { startGamePolling } from './game-screen.js?v=67';
 import { gameTypeOf } from '../games/game-router.js?v=67';
 import { APP_CONFIG } from '../config.js?v=38';
 
+let emptyRoomBotCheckTimer = null;
+
 export function initSearchScreen(){
   document.getElementById('cancelSearch')?.addEventListener('click', cancelSearch);
   document.getElementById('changeSearch')?.addEventListener('click', cancelSearch);
@@ -14,7 +16,9 @@ export function initSearchScreen(){
 
 export function startSearchPolling(){
   state.timers.search = clearTimer(state.timers.search);
+  clearEmptyRoomBotCheck();
   state.timers.search = setInterval(checkSearch, APP_CONFIG.searchIntervalMs);
+  emptyRoomBotCheckTimer = window.setTimeout(checkSearch, 3000);
   checkSearch();
 }
 
@@ -29,6 +33,7 @@ async function checkSearch(){
     }
 
     if (result.game && result.game.status === 'active') {
+      clearEmptyRoomBotCheck();
       state.activeGame = result.game;
       state.selectedGame = gameTypeOf(result.game);
       state.timers.search = clearTimer(state.timers.search);
@@ -38,6 +43,7 @@ async function checkSearch(){
     }
 
     if (!result.game && result.user && result.user.status !== 'searching') {
+      clearEmptyRoomBotCheck();
       state.timers.search = clearTimer(state.timers.search);
       showScreen('home');
       toast('Поиск остановлен. Соперник не найден или связь прервалась.');
@@ -48,7 +54,15 @@ async function checkSearch(){
 }
 
 async function cancelSearch(){
+  clearEmptyRoomBotCheck();
   try { await api.leaveSearch(); } catch(e) {}
   state.timers.search = clearTimer(state.timers.search);
   showScreen('home');
+}
+
+function clearEmptyRoomBotCheck(){
+  if (emptyRoomBotCheckTimer !== null) {
+    window.clearTimeout(emptyRoomBotCheckTimer);
+    emptyRoomBotCheckTimer = null;
+  }
 }
