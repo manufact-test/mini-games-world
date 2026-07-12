@@ -4,6 +4,8 @@ const inFlight = new Map();
 const nextAllowedAt = new Map();
 const responseCache = new Map();
 const DEFAULT_RATE_LIMIT_BACKOFF_MS = 5000;
+const MAX_RATE_LIMIT_BACKOFF_MS = 60000;
+const RATE_LIMIT_JITTER_MS = 3000;
 const GAME_STATE_MIN_GAP_MS = 2400;
 const SEARCH_STATE_MIN_GAP_MS = 3500;
 const STATS_MIN_GAP_MS = 30000;
@@ -11,6 +13,7 @@ const NOTIFICATIONS_MIN_GAP_MS = 30000;
 
 let installed = false;
 let rateLimitedUntil = 0;
+let consecutiveRateLimits = 0;
 
 export function initRequestGuard(){
   if (installed) return;
@@ -63,6 +66,7 @@ async function executeGuardedRequest(input, init, meta){
 
   let response = await nativeFetch(input, init);
   if (response.status !== 429) {
+    registerSuccessfulRequest();
     await rememberResponse(meta, response);
     return response;
   }
@@ -79,6 +83,7 @@ async function executeGuardedRequest(input, init, meta){
     return cachedResponse(meta.cacheKey) || friendlyRateLimitResponse(response);
   }
 
+  registerSuccessfulRequest();
   await rememberResponse(meta, response);
   return response;
 }
@@ -185,12 +190,19 @@ function randomJitter(maxMs){
   return safeMax > 0 ? Math.floor(Math.random() * (safeMax + 1)) : 0;
 }
 
+function registerSuccessfulRequest(){
+  consecutiveRateLimits = 0;
+}
+
 function registerRateLimit(response){
+  consecutiveRateLimits = Math.min(5, consecutiveRateLimits + 1);
   const retryAfterMs = parseRetryAfterMs(response);
-  rateLimitedUntil = Math.max(
-    rateLimitedUntil,
-    Date.now() + Math.max(DEFAULT_RATE_LIMIT_BACKOFF_MS, retryAfterMs)
+  const exponentialBackoffMs = Math.min(
+    MAX_RATE_LIMIT_BACKOFF_MS,
+    DEFAULT_RATE_LIMIT_BACKOFF_MS * (2 ** (consecutiveRateLimits - 1))
   );
+  const delayMs = Math.max(exponentialBackoffMs, retryAfterMs) + randomJitter(RATE_LIMIT_JITTER_MS);
+  rateLimitedUntil = Math.max(rateLimitedUntil, Date.now() + delayMs);
 }
 
 function parseRetryAfterMs(response){
