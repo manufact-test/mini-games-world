@@ -212,12 +212,20 @@ final class HistoryService
     private function operationTitle(string $category, ?array $game, string $userId): string
     {
         if (!$game || (string)($game['status'] ?? '') !== 'finished') return $this->balanceTitle($category);
+
         $winnerId = isset($game['winner_id']) ? (string)$game['winner_id'] : '';
         $reason = (string)($game['finish_reason'] ?? '');
+
         if ($category === 'game_win' && $winnerId === $userId) {
-            return $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Выигрыш');
+            return $reason === 'timeout'
+                ? 'Победа по таймауту'
+                : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Выигрыш');
         }
-        if ($category !== 'game_entry' || $winnerId === '' || $winnerId === $userId) return $this->balanceTitle($category);
+
+        if ($category !== 'game_entry' || $winnerId === '' || $winnerId === $userId) {
+            return $this->balanceTitle($category);
+        }
+
         return in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение';
     }
 
