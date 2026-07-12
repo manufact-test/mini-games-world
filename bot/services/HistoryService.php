@@ -237,6 +237,7 @@ final class HistoryService
             'checkers' => 'Шашки',
             'reversi' => 'Реверси',
             'chess' => 'Шахматы',
+            'go' => 'Го',
             default => 'Крестики-нолики',
         };
     }

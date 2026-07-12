@@ -1,0 +1,57 @@
+.go-surface{display:block;width:100%;max-width:100%;margin:0}
+.game-board-screen[data-game-type="go"] .board.go-surface{display:block;width:100%;max-width:100%;margin:0;gap:0}
+.go-panel{display:grid;gap:8px;width:100%;min-width:0}
+.go-event-banner{display:flex;align-items:center;justify-content:center;text-align:center;min-height:40px;padding:8px 10px;border-radius:14px;border:1px solid var(--stroke);font-size:11px;line-height:1.25;font-weight:900;background:rgba(255,255,255,.045);color:var(--text)}
+.go-event-banner.your-turn{background:rgba(46,230,166,.11);border-color:rgba(46,230,166,.3)}
+.go-event-banner.opponent{background:rgba(124,92,255,.11);border-color:rgba(124,92,255,.27)}
+.go-event-banner.capture,.go-event-banner.move{background:rgba(255,199,70,.12);border-color:rgba(255,199,70,.32);color:#fff0b8}
+.go-event-banner.pass{background:rgba(255,199,70,.14);border-color:rgba(255,199,70,.38);color:#fff0b8;animation:go-pass-pulse .8s ease-in-out 2 alternate}
+.go-event-banner.finished{background:rgba(255,255,255,.06)}
+.go-board,.go-start-preview,.go-rule-board{position:relative;width:100%;aspect-ratio:1;overflow:hidden;box-sizing:border-box;border:1px solid rgba(63,38,12,.85);border-radius:10px;background:radial-gradient(circle at 30% 22%,rgba(255,220,150,.18),transparent 36%),linear-gradient(145deg,#9a6933,#6c431d);box-shadow:0 16px 38px rgba(0,0,0,.3),inset 0 0 32px rgba(52,25,6,.2)}
+.go-grid-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.go-grid-svg line{stroke:rgba(42,24,8,.88);stroke-width:.42;vector-effect:non-scaling-stroke}
+.go-star{position:absolute;left:var(--go-x);top:var(--go-y);width:1.35%;min-width:4px;aspect-ratio:1;border-radius:50%;background:rgba(40,22,7,.92);transform:translate(-50%,-50%);pointer-events:none;z-index:1}
+.go-point{position:absolute;left:var(--go-x);top:var(--go-y);width:var(--go-point-size);max-width:44px;aspect-ratio:1;transform:translate(-50%,-50%);display:grid;place-items:center;border:0;border-radius:50%;padding:0;margin:0;background:transparent;touch-action:manipulation;-webkit-tap-highlight-color:transparent;z-index:3}
+.go-point:not(:disabled){cursor:pointer}
+.go-point:not(:disabled):active{background:rgba(255,255,255,.08)}
+.go-surface.is-submitting .go-point,.go-surface.is-animating .go-point{pointer-events:none}
+.go-stone{position:relative;z-index:4;display:block;width:90%;aspect-ratio:1;border-radius:50%;pointer-events:none;transform-style:preserve-3d}
+.go-stone::after{content:"";position:absolute;inset:14%;border-radius:50%;border:1px solid rgba(255,255,255,.1)}
+.go-stone.black{background:radial-gradient(circle at 35% 28%,#4a566f 0,#202838 38%,#07090e 80%);box-shadow:0 5px 10px rgba(0,0,0,.52),inset 0 0 0 1px rgba(176,191,230,.25),inset 0 -5px 8px rgba(0,0,0,.44)}
+.go-stone.white{background:radial-gradient(circle at 35% 28%,#fff 0,#eef0f2 43%,#b7bcc4 82%);box-shadow:0 5px 10px rgba(0,0,0,.3),inset 0 0 0 2px rgba(255,255,255,.86),inset 0 -5px 8px rgba(80,86,98,.18)}
+.go-point.last-move .go-stone::before{content:"";position:absolute;inset:33%;border-radius:50%;border:2px solid #ffd85b;box-shadow:0 0 9px rgba(255,216,91,.55)}
+.go-point.placed-fresh .go-stone{animation:go-place .42s cubic-bezier(.2,.9,.25,1.25)}
+.go-point.capture-out .go-stone{animation:go-capture-out .23s ease-in forwards}
+.go-territory-marker{position:relative;z-index:5;display:block;width:35%;aspect-ratio:1;border-radius:3px;pointer-events:none}
+.go-point.territory-black .go-territory-marker{background:rgba(18,23,32,.78);box-shadow:0 0 0 2px rgba(255,255,255,.13)}
+.go-point.territory-white .go-territory-marker{background:rgba(245,246,248,.82);box-shadow:0 0 0 2px rgba(0,0,0,.18)}
+.go-point.territory-neutral .go-territory-marker{background:rgba(255,199,70,.6);transform:rotate(45deg);border-radius:1px}
+.go-pass-button{min-height:42px}
+.go-pass-button:disabled{opacity:.5;cursor:default}
+.go-final-score{display:grid;gap:3px;text-align:center;border:1px solid var(--stroke);border-radius:14px;background:rgba(255,255,255,.045);padding:8px 10px}
+.go-final-score strong{font-size:14px}
+.go-final-score span{color:var(--muted);font-size:10px;line-height:1.35}
+.go-start-scroll{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.go-start-scroll::-webkit-scrollbar{display:none}
+.go-size-grid{grid-template-columns:1fr 1fr}
+.go-size-grid .choice{display:grid;gap:2px;min-width:0}
+.go-size-grid .choice strong{font-size:15px}
+.go-size-grid .choice span{font-size:10px;color:var(--muted)}
+.go-size-grid .choice.active span{color:rgba(255,255,255,.78)}
+.go-start-preview{margin:12px 0 6px}
+.go-preview-caption{text-align:center;color:var(--muted);font-size:11px;font-weight:850}
+.game-board-screen[data-game-type="go"] .content{padding:8px 8px 14px}
+.game-board-screen[data-game-type="go"] .game-header{position:sticky;top:0;z-index:12;background:linear-gradient(180deg,rgba(10,14,24,.98) 0%,rgba(10,14,24,.93) 82%,rgba(10,14,24,0) 100%);padding-bottom:5px;margin-bottom:2px}
+.game-board-screen[data-game-type="go"] .turn-box{padding:8px 10px;border-radius:16px}
+.game-board-screen[data-game-type="go"] .turn-text{font-size:15px}
+.game-board-screen[data-game-type="go"] .players-row{gap:6px}
+.game-board-screen[data-game-type="go"] .game-player{padding:7px 8px;border-radius:14px}
+.game-board-screen[data-game-type="go"] .game-player .name{font-size:12px}
+.game-board-screen[data-game-type="go"] .game-player .mark{font-size:10px;margin-top:2px}
+.game-board-screen[data-game-type="go"] .board-wrap{width:100%;padding:0;margin:4px 0 8px;border:0;border-radius:0;background:transparent;overflow:visible}
+@keyframes go-place{0%{transform:scale(.12);opacity:.2}65%{transform:scale(1.13);opacity:1}100%{transform:scale(1)}}
+@keyframes go-capture-out{0%{transform:scale(1);opacity:1;filter:brightness(1)}60%{transform:scale(.78);opacity:.8;filter:brightness(1.4)}100%{transform:scale(.18);opacity:0;filter:brightness(1.7)}}
+@keyframes go-pass-pulse{from{transform:scale(.985);filter:brightness(.98)}to{transform:scale(1.01);filter:brightness(1.1)}}
+@media (max-height:700px){.game-board-screen[data-game-type="go"] .content{padding-top:6px}.go-event-banner{min-height:34px;padding:6px 8px;font-size:10px}.go-panel{gap:6px}.go-pass-button{min-height:38px}}
+@media (max-width:380px){.game-board-screen[data-game-type="go"] .content{padding-left:5px;padding-right:5px}.go-event-banner{font-size:10px}.go-point{width:var(--go-point-size)}}
+@media (prefers-reduced-motion:reduce){.go-point.placed-fresh .go-stone,.go-point.capture-out .go-stone,.go-event-banner.pass{animation:none}}

@@ -30,8 +30,8 @@ final class UserWelcomeGuard
             return false;
         }
 
-        $webAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=69';
-        if ($webAppUrl === '/app/?v=69') {
+        $webAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=70';
+        if ($webAppUrl === '/app/?v=70') {
             return false;
         }
 

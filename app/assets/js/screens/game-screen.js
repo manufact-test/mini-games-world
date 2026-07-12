@@ -12,13 +12,19 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=68';
+} from '../games/game-router.js?v=70';
 
-const weeklyProgressNotifiedGames = new Set();
-const resultSheetScheduledGames = new Set();
-const resultSheetOpenedGames = new Set();
+const gameScreenRuntime = window.__MGW_GAME_SCREEN_RUNTIME__ ||= {
+  initialized:false,
+  weeklyProgressNotifiedGames:new Set(),
+  resultSheetScheduledGames:new Set(),
+  resultSheetOpenedGames:new Set(),
+};
+const { weeklyProgressNotifiedGames, resultSheetScheduledGames, resultSheetOpenedGames } = gameScreenRuntime;
 
 export function initGameScreen(){
+  if (gameScreenRuntime.initialized) return;
+  gameScreenRuntime.initialized = true;
   document.getElementById('leaveGame')?.addEventListener('click', requestLeaveGame);
 }
 
@@ -87,27 +93,24 @@ async function applyGameAction(gameId, gameAction){
   try {
     haptic('light');
     const result = await api.gameAction(gameId, gameAction);
-
     if (result.user) { state.user = result.user; state.session = result.session || state.session; renderBalances(state.user); }
-
     if (result.game) {
       state.activeGame = result.game;
       state.selectedGame = gameTypeOf(result.game);
       renderGame(result.game, result.me);
-
       if (result.game.status === 'finished') {
         state.timers.game = clearTimer(state.timers.game);
         scheduleResultSheet(result.game, result.me);
       }
     }
   } catch (error) {
+    document.getElementById('gameBoard')?.classList.remove('is-submitting');
     toast(error.message);
   }
 }
 
 function requestLeaveGame(){
   const game = state.activeGame;
-
   if (!game || game.status !== 'active') {
     state.timers.game = clearTimer(state.timers.game);
     showScreen('home');
@@ -125,7 +128,6 @@ function requestLeaveGame(){
       <button class="btn danger full" id="confirmLeaveGame" type="button">Выйти и завершить матч</button>
     </div>
   `);
-
   document.getElementById('confirmLeaveGame')?.addEventListener('click', confirmLeaveGame);
 }
 
@@ -140,11 +142,8 @@ async function confirmLeaveGame(){
   try {
     haptic('medium');
     const result = await api.leaveGame(game.id);
-
     closeSheet();
-
     if (result.user) { state.user = result.user; state.session = result.session || state.session; renderBalances(state.user); }
-
     if (result.game) {
       state.activeGame = result.game;
       renderGame(result.game, result.me);
@@ -152,7 +151,6 @@ async function confirmLeaveGame(){
       scheduleResultSheet(result.game, result.me);
       return;
     }
-
     state.timers.game = clearTimer(state.timers.game);
     showScreen('home');
   } catch (error) {
@@ -162,7 +160,6 @@ async function confirmLeaveGame(){
 
 async function startSameSearchFromResult(){
   const lastGame = state.activeGame;
-
   if (!lastGame) {
     closeSheet();
     showScreen('home');
@@ -175,27 +172,21 @@ async function startSameSearchFromResult(){
   const gameType = gameTypeOf(lastGame);
 
   state.room = room;
-  if (gameType === 'tictactoe') {
-    state.selectedBoardSize = boardSize;
-  } else if (gameType === 'four_in_a_row') {
-    state.selectedFourBoardSize = boardSize;
-  } else if (gameType === 'reversi') {
-    state.selectedReversiBoardSize = boardSize;
-  }
+  if (gameType === 'tictactoe') state.selectedBoardSize = boardSize;
+  else if (gameType === 'four_in_a_row') state.selectedFourBoardSize = boardSize;
+  else if (gameType === 'reversi') state.selectedReversiBoardSize = boardSize;
+  else if (gameType === 'go') state.selectedGoBoardSize = boardSize;
   state.selectedBet = bet;
   state.activeGame = null;
-
   closeSheet();
 
   try {
     const result = await api.startSearch(room, bet, boardSize, gameType);
-
     if (result.user) {
       state.user = result.user;
       state.session = result.session || state.session;
       renderBalances(state.user);
     }
-
     if (result.game) {
       state.activeGame = result.game;
       state.selectedGame = gameTypeOf(result.game);
@@ -203,7 +194,6 @@ async function startSameSearchFromResult(){
       startGamePolling(result.game.id);
       return;
     }
-
     showScreen('search');
     startResultSearchPolling();
   } catch (error) {
@@ -221,13 +211,11 @@ function startResultSearchPolling(){
 async function checkResultSearch(){
   try {
     const result = await api.gameState();
-
     if (result.user) {
       state.user = result.user;
       state.session = result.session || state.session;
       renderBalances(state.user);
     }
-
     if (result.game && result.game.status === 'active') {
       state.activeGame = result.game;
       state.selectedGame = gameTypeOf(result.game);
@@ -236,7 +224,6 @@ async function checkResultSearch(){
       startGamePolling(result.game.id);
       return;
     }
-
     if (!result.game && result.user && result.user.status !== 'searching') {
       state.timers.search = clearTimer(state.timers.search);
       showScreen('home');
@@ -252,16 +239,17 @@ function scheduleResultSheet(game, me){
   if (!gameId || resultSheetScheduledGames.has(gameId) || resultSheetOpenedGames.has(gameId)) return;
   resultSheetScheduledGames.add(gameId);
 
+  const gameType = gameTypeOf(game);
   const flippedCount = Array.isArray(game?.last_flipped_cells) ? game.last_flipped_cells.length : 0;
-  const delay = gameTypeOf(game) === 'reversi'
+  const capturedCount = Array.isArray(game?.last_captured_cells) ? game.last_captured_cells.length : 0;
+  const delay = gameType === 'reversi'
     ? Math.min(4200, 650 + flippedCount * 150)
-    : 0;
+    : (gameType === 'go' ? Math.min(2600, 1450 + capturedCount * 35) : 0);
 
   if (delay <= 0) {
     openResultSheet(game, me);
     return;
   }
-
   window.setTimeout(() => openResultSheet(game, me), delay);
 }
 
@@ -278,7 +266,6 @@ function openResultSheet(game, me){
   if (game.winner_id) {
     const isWin = String(game.winner_id) === String(me.id);
     title = isWin ? 'Победа!' : 'Поражение';
-
     if (game.finish_reason === 'timeout') {
       text = isWin
         ? `Соперник не сделал ход вовремя. Вы получили ${game.payout ?? 0} коинов.`
@@ -288,15 +275,14 @@ function openResultSheet(game, me){
         ? `Соперник вышел из матча. Вы получили ${game.payout ?? 0} коинов.`
         : 'Вы вышли из матча. Засчитано техническое поражение.';
     } else if (gameTypeOf(game) === 'chess' && game.chess_end_reason === 'checkmate') {
-      text = isWin
-        ? `Мат. Вы получили ${game.payout ?? 0} коинов.`
-        : 'Вашему королю поставлен мат.';
+      text = isWin ? `Мат. Вы получили ${game.payout ?? 0} коинов.` : 'Вашему королю поставлен мат.';
     } else {
       text = isWin ? `Вы получили ${game.payout ?? 0} коинов.` : 'Соперник оказался сильнее.';
     }
   }
 
   text += reversiScoreText(game, me);
+  text += goScoreText(game, me);
 
   openSheet(`
     <div class="sheet-head">
@@ -336,14 +322,27 @@ function reversiScoreText(game, me){
   return ` Итоговый счёт: ${mine}:${theirs}.`;
 }
 
+function goScoreText(game, me){
+  if (gameTypeOf(game) !== 'go' || !game?.final_score) return '';
+  const player = (game?.players || []).find(item => String(item?.id || '') === String(me?.id || ''));
+  const side = String(player?.side || game?.viewer_side || 'black');
+  const black = formatScore(game.final_score.black_total);
+  const white = formatScore(game.final_score.white_total);
+  const mine = side === 'black' ? black : white;
+  const theirs = side === 'black' ? white : black;
+  return ` Итоговый счёт: ${mine}:${theirs}.`;
+}
+
+function formatScore(value){
+  const number = Number(value || 0);
+  return Number.isInteger(number) ? String(number) : number.toFixed(1).replace('.', ',');
+}
+
 function notifyWeeklyProgress(game){
   const gameId = String(game?.id || '');
   if (!gameId || weeklyProgressNotifiedGames.has(gameId)) return;
-
   weeklyProgressNotifiedGames.add(gameId);
-  document.dispatchEvent(new CustomEvent('mgw:game-finished', {
-    detail: { gameId }
-  }));
+  document.dispatchEvent(new CustomEvent('mgw:game-finished', { detail: { gameId } }));
 }
 
 function escapeHtml(value){

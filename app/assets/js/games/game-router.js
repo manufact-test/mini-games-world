@@ -32,6 +32,12 @@ import {
   chessPlayerMark,
   chessStatus,
 } from './chess/renderer.js?v=68';
+import {
+  renderGoSurface,
+  goMeta,
+  goPlayerMark,
+  goStatus,
+} from './go/renderer.js?v=70';
 
 const routes = {
   tictactoe: {
@@ -68,6 +74,12 @@ const routes = {
     playerMark: chessPlayerMark,
     status: chessStatus,
   },
+  go: {
+    render: renderGoSurface,
+    meta: goMeta,
+    playerMark: goPlayerMark,
+    status: goStatus,
+  },
 };
 
 export function gameTypeOf(game){
@@ -80,6 +92,19 @@ export function gameTypeOf(game){
   const connectLength = Number(game?.connect_length || 0);
   const boardArrayLength = Array.isArray(game?.board) ? game.board.length : 0;
   const boardStringLength = typeof game?.board === 'string' ? game.board.length : 0;
+
+  if (
+    explicit === 'go'
+    || renderer === 'go'
+    || actionType === 'go_action'
+    || title === 'го'
+    || title.includes('go')
+    || Boolean(game?.go_initialized)
+    || Boolean(game?.go_sides)
+    || Boolean(game?.final_score?.komi)
+  ) {
+    return 'go';
+  }
 
   if (
     explicit === 'chess'
