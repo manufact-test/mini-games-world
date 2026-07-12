@@ -15,6 +15,7 @@ import {
 } from '../games/game-router.js?v=66';
 
 const weeklyProgressNotifiedGames = new Set();
+const resultSheetScheduledGames = new Set();
 
 export function initGameScreen(){
   document.getElementById('leaveGame')?.addEventListener('click', requestLeaveGame);
@@ -39,7 +40,7 @@ async function refreshGame(gameId){
 
     if (result.game.status === 'finished') {
       state.timers.game = clearTimer(state.timers.game);
-      openResultSheet(result.game, result.me);
+      scheduleResultSheet(result.game, result.me);
     }
   } catch (error) {
     toast(error.message);
@@ -95,7 +96,7 @@ async function applyGameAction(gameId, gameAction){
 
       if (result.game.status === 'finished') {
         state.timers.game = clearTimer(state.timers.game);
-        openResultSheet(result.game, result.me);
+        scheduleResultSheet(result.game, result.me);
       }
     }
   } catch (error) {
@@ -243,6 +244,24 @@ async function checkResultSearch(){
   } catch (error) {
     toast(error.message);
   }
+}
+
+function scheduleResultSheet(game, me){
+  const gameId = String(game?.id || '');
+  if (!gameId || resultSheetScheduledGames.has(gameId)) return;
+  resultSheetScheduledGames.add(gameId);
+
+  const flippedCount = Array.isArray(game?.last_flipped_cells) ? game.last_flipped_cells.length : 0;
+  const delay = gameTypeOf(game) === 'reversi'
+    ? Math.min(4200, 650 + flippedCount * 150)
+    : 0;
+
+  if (delay <= 0) {
+    openResultSheet(game, me);
+    return;
+  }
+
+  window.setTimeout(() => openResultSheet(game, me), delay);
 }
 
 function openResultSheet(game, me){
