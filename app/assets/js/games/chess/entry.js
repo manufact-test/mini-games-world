@@ -6,8 +6,8 @@ import { openSheet, closeSheet } from '../../components/sheet.js?v=27';
 import { showScreen } from '../../router.js?v=27';
 import { haptic } from '../../telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from '../../ui.js?v=27';
-import { startSearchPolling } from '../../screens/search-screen.js?v=67';
-import { startGamePolling } from '../../screens/game-screen.js?v=67';
+import { startSearchPolling } from '../../screens/search-screen.js?v=68';
+import { startGamePolling } from '../../screens/game-screen.js?v=68';
 import { isSessionLocked, sessionMessage } from '../../session.js?v=27';
 
 let initialized = false;
@@ -94,5 +94,6 @@ function chessPreviewMarkup(){
 }
 
 function pieceGlyph(piece){
-  return ({wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'})[piece] || '';
+  const type = String(piece || '').slice(1);
+  return ({K:'♚',Q:'♛',R:'♜',B:'♝',N:'♞',P:'♟'})[type] || '';
 }
