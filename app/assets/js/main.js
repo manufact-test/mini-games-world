@@ -1,4 +1,5 @@
-window.__MGW_BUILD__ = 'v62-notification-context';
+window.__MGW_BUILD__ = 'v63-api-rate-guard';
+import { initRequestGuard } from './api/request-guard.js?v=63';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -29,6 +30,9 @@ import { initCheckersEntry } from './games/checkers/entry.js?v=60';
 import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
+let statsRefreshing = false;
+
+initRequestGuard();
 initTelegramApp();
 initTypography();
 initSheet();
@@ -77,15 +81,35 @@ async function boot(){
     hidePreloader();
   }
 }
+
 function startStatsPolling(){
   state.timers.stats = clearTimer(state.timers.stats);
-  state.timers.stats = setInterval(async () => {
-    try {
-      const result = await api.stats();
-      state.stats = result.stats;
-      state.session = result.session || state.session;
-      renderStats(state.stats);
-    } catch (error) {}
-  }, APP_CONFIG.statsIntervalMs);
+  state.timers.stats = setInterval(refreshStatsIfVisible, APP_CONFIG.statsIntervalMs);
 }
+
+async function refreshStatsIfVisible(){
+  if (statsRefreshing || !canRefreshHomeStats()) return;
+  statsRefreshing = true;
+
+  try {
+    const result = await api.stats();
+    state.stats = result.stats;
+    state.session = result.session || state.session;
+    renderStats(state.stats);
+  } catch (error) {
+    // Background statistics must never interrupt a match or another user action.
+  } finally {
+    statsRefreshing = false;
+  }
+}
+
+function canRefreshHomeStats(){
+  if (document.visibilityState !== 'visible') return false;
+
+  const activeScreen = document.querySelector('.screen.active');
+  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
+
+  return !document.getElementById('sheetOverlay')?.classList.contains('active');
+}
+
 boot();
