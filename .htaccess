@@ -12,7 +12,7 @@ RewriteRule ^favicon\.ico$ favicon.svg [L]
 RewriteRule ^legal\.css$ site/legal/legal.css [L]
 
 # Russian-only main landing page.
-RewriteRule ^$ site/landing/landing-v11.php [L]
+RewriteRule ^$ site/landing/landing-v12.php [L]
 
 # Russian-only blog pages. Static assets retain their existing URLs.
 RewriteRule ^blog/?$ site/russian-page.php?page=blog [L,QSA]
