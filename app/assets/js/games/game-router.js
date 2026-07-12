@@ -25,7 +25,7 @@ import {
   reversiMeta,
   reversiPlayerMark,
   reversiStatus,
-} from './reversi/renderer.js?v=65';
+} from './reversi/renderer.js?v=66';
 
 const routes = {
   tictactoe: {
