@@ -40,6 +40,7 @@ require_once __DIR__ . '/../services/GameSettlementService.php';
 require_once __DIR__ . '/../services/FourInARowBotService.php';
 require_once __DIR__ . '/../services/FourInARowService.php';
 require_once __DIR__ . '/../services/GameRuntimeService.php';
+require_once __DIR__ . '/../services/ChessRuntimeService.php';
 require_once __DIR__ . '/../services/GameActionService.php';
 require_once __DIR__ . '/../services/StatsService.php';
 require_once __DIR__ . '/../services/HistoryService.php';
