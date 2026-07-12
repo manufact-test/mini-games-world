@@ -18,12 +18,12 @@ final class ChessBotService
         // The current JSON storage uses one global lock. Keep bot calculation short
         // so one Chess move cannot pause unrelated players or payment requests.
         $deadline = hrtime(true) + max(20, min(40, $budgetMs)) * 1_000_000;
-        $depth = $difficulty === 'hard' ? 2 : ($difficulty === 'medium' ? 1 : 0);
         $ranked = [];
 
+        // First inspect every legal move with a cheap evaluation. This prevents a
+        // short time budget from considering only the first pawn in board order.
         foreach ($moves as $move) {
-            if (hrtime(true) >= $deadline) break;
-            $score = (float)$scoreMove($move, $depth, $deadline);
+            $score = (float)$scoreMove($move, 0, $deadline);
             if ($difficulty === 'easy') {
                 $score += random_int(-140, 140);
             } elseif ($difficulty === 'medium') {
@@ -34,11 +34,20 @@ final class ChessBotService
             $ranked[] = ['move' => $move, 'score' => $score];
         }
 
-        if ($ranked === []) {
-            return $moves[array_rand($moves)];
-        }
-
         usort($ranked, static fn(array $a, array $b): int => $b['score'] <=> $a['score']);
+
+        if ($difficulty !== 'easy' && hrtime(true) < $deadline) {
+            $depth = $difficulty === 'hard' ? 2 : 1;
+            $deepCount = $difficulty === 'hard' ? 5 : 3;
+            $limit = min($deepCount, count($ranked));
+
+            for ($index = 0; $index < $limit; $index++) {
+                if (hrtime(true) >= $deadline) break;
+                $ranked[$index]['score'] = (float)$scoreMove($ranked[$index]['move'], $depth, $deadline);
+            }
+
+            usort($ranked, static fn(array $a, array $b): int => $b['score'] <=> $a['score']);
+        }
 
         if ($difficulty === 'easy') {
             $pool = array_slice($ranked, 0, min(8, count($ranked)));
