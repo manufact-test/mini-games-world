@@ -30,7 +30,7 @@ function cleanCurrentSheet(sheet){
 
     const note = sheet.querySelector('.store-order-warning');
     if (note) {
-      const repeated = note.textContent.includes('Повторный запрос');
+      const repeated = heading.includes('уже');
       const message = repeated
         ? 'Эта заявка уже была создана.'
         : 'Следите за статусом в разделе «Мои заявки».';
