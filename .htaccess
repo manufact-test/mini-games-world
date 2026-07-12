@@ -12,7 +12,7 @@ RewriteRule ^favicon\.ico$ favicon.svg [L]
 RewriteRule ^legal\.css$ site/legal/legal.css [L]
 
 # Main landing page.
-RewriteRule ^$ site/landing/landing-v9.php [L]
+RewriteRule ^$ site/landing/landing-v10.php [L]
 
 # Blog index, articles and their shared assets.
 RewriteRule ^blog/?$ site/blog/index.html [L]
