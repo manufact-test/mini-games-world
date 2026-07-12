@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/helpers/AdminPaymentRejectGuard.php';
+require_once __DIR__ . '/helpers/AdminGoldTopupNotificationGuard.php';
 require_once __DIR__ . '/helpers/AdminSystemCheckGuard.php';
 
 try {
@@ -13,8 +14,11 @@ try {
 
     $telegram = new TelegramService($config);
     $guard = new AdminPaymentRejectGuard($telegram, $config);
+    $goldTopupGuard = new AdminGoldTopupNotificationGuard($telegram, $config);
     $auditGuard = new AdminSystemCheckGuard($telegram, $config);
-    if (!$guard->handle($update) && !$auditGuard->handle($update)) {
+    if (!$guard->handle($update)
+        && !$goldTopupGuard->handle($update)
+        && !$auditGuard->handle($update)) {
         $handler = new WebhookHandler($telegram, $config);
         $handler->handle($update);
     }
