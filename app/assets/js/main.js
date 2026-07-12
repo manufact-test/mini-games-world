@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v60-four-games-regression';
+window.__MGW_BUILD__ = 'v61-notification-ux';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -13,7 +13,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen.js?v=42';
+import { initNotificationsScreen } from './screens/notifications-screen.js?v=61';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=46';
 import { initSearchScreen } from './screens/search-screen.js?v=60';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=60';
