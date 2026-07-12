@@ -1,6 +1,6 @@
-import { openSheet } from '../components/sheet.js?v=27';
+import { openSheet } from '../components/sheet.js?v=68';
 import { state } from '../state.js?v=27';
-import { gameTypeOf } from './game-router.js?v=67';
+import { gameTypeOf } from './game-router.js?v=68';
 import { ticTacToeRules } from './tictactoe/rules.js?v=53';
 import { fourInARowRules } from './four-in-a-row/rules.js?v=53';
 import { battleshipRules } from './battleship/rules.js?v=54';
