@@ -235,7 +235,7 @@ final class NotificationService
             'user_id' => $userId,
             'type' => 'weekly_match_bonus',
             'title' => 'Еженедельные коины начислены',
-            'message' => "За {$games} завершённых Match-матча начислено +{$amount} коинов.",
+            'message' => "Завершено Match-матчей: {$games}. Начислено +{$amount} коинов.",
             'tone' => 'success',
             'cycle_key' => $cycleKey,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
