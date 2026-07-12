@@ -1,4 +1,4 @@
-const GLYPHS={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+const GLYPHS={wK:'♚',wQ:'♛',wR:'♜',wB:'♝',wN:'♞',wP:'♟',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 export function chessRules(){return `<div class="sheet-head game-rules-head"><div><h2>Шахматы</h2><p>Поставьте королю соперника мат.</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="game-rules-content">
 <section class="game-rule-card"><div class="game-rule-copy"><strong>Старт партии</strong><span>Классическое поле 8×8. Стороны распределяются случайно, белые ходят первыми.</span></div>${board('start')}</section>
 <section class="game-rule-card"><div class="game-rule-copy"><strong>Пешка</strong><span>Ходит вперёд на одну клетку, с начальной позиции — на две. Бьёт по диагонали. Доступно взятие на проходе.</span></div>${board('pawn')}</section>
