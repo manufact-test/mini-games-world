@@ -27,8 +27,9 @@ final class JsonDatabase
                 throw new RuntimeException('Не удалось заблокировать хранилище.');
             }
             $db = $this->loadAll();
+            $before = $db;
             $result = $callback($db);
-            $this->saveAll($db);
+            $this->saveChanged($before, $db);
             flock($lockHandle, LOCK_UN);
             fclose($lockHandle);
             return $result;
@@ -97,17 +98,28 @@ final class JsonDatabase
         ];
     }
 
-    private function saveAll(array $db): void
+    private function saveChanged(array $before, array $after): void
     {
-        $this->writeFile('users.json', $db['users'] ?? []);
-        $this->writeFile('games.json', $db['games'] ?? []);
-        $this->writeFile('queue.json', $db['queue'] ?? []);
-        $this->writeFile('transactions.json', $db['transactions'] ?? []);
-        $this->writeFile('support.json', $db['support'] ?? []);
-        $this->writeFile('shop_orders.json', $db['shop_orders'] ?? []);
-        $this->writeFile('payments.json', $db['payments'] ?? []);
-        $this->writeFile('notifications.json', $db['notifications'] ?? []);
-        $this->writeFile('system.json', $db['system'] ?? []);
+        $files = [
+            'users' => 'users.json',
+            'games' => 'games.json',
+            'queue' => 'queue.json',
+            'transactions' => 'transactions.json',
+            'support' => 'support.json',
+            'shop_orders' => 'shop_orders.json',
+            'payments' => 'payments.json',
+            'notifications' => 'notifications.json',
+            'system' => 'system.json',
+        ];
+
+        foreach ($files as $key => $file) {
+            $previous = $before[$key] ?? [];
+            $current = $after[$key] ?? [];
+            if ($previous === $current) {
+                continue;
+            }
+            $this->writeFile($file, is_array($current) ? $current : []);
+        }
     }
 
     private function readFile(string $file): array
