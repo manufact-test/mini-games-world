@@ -2,6 +2,7 @@ const nativeFetch = window.fetch.bind(window);
 
 const inFlight = new Map();
 const nextAllowedAt = new Map();
+const responseCache = new Map();
 const DEFAULT_RATE_LIMIT_BACKOFF_MS = 5000;
 const GAME_STATE_MIN_GAP_MS = 2200;
 
@@ -20,6 +21,11 @@ async function guardedFetch(input, init = {}){
 
   if (meta.kind === 'notifications' && !meta.markRead && !isHomeScreen()) {
     return idleNotificationsResponse();
+  }
+
+  if (meta.cacheWhenHidden && document.visibilityState !== 'visible') {
+    const cached = cachedResponse(meta.cacheKey);
+    if (cached) return cached;
   }
 
   if (!meta.singleFlightKey) {
@@ -53,7 +59,10 @@ async function executeGuardedRequest(input, init, meta){
   markRequestStarted(meta);
 
   let response = await nativeFetch(input, init);
-  if (response.status !== 429) return response;
+  if (response.status !== 429) {
+    await rememberResponse(meta, response);
+    return response;
+  }
 
   registerRateLimit(response);
   if (!meta.safeRetry) return friendlyRateLimitResponse(response);
@@ -64,9 +73,10 @@ async function executeGuardedRequest(input, init, meta){
 
   if (response.status === 429) {
     registerRateLimit(response);
-    return friendlyRateLimitResponse(response);
+    return cachedResponse(meta.cacheKey) || friendlyRateLimitResponse(response);
   }
 
+  await rememberResponse(meta, response);
   return response;
 }
 
@@ -88,13 +98,16 @@ function requestMeta(input, init){
 
     if (action === 'game_state') {
       const gameId = String(payload.gameId || 'current');
+      const key = `game_state:${gameId}`;
       return {
         kind:'game_state',
-        singleFlightKey:`game_state:${gameId}`,
+        singleFlightKey:key,
+        cacheKey:key,
+        cacheWhenHidden:true,
         throttleKey:'game_state',
         minGapMs:GAME_STATE_MIN_GAP_MS,
         safeRetry:true,
-        waitForVisible:true,
+        waitForVisible:false,
       };
     }
 
@@ -102,10 +115,12 @@ function requestMeta(input, init){
       return {
         kind:'stats',
         singleFlightKey:'stats',
+        cacheKey:'stats',
+        cacheWhenHidden:true,
         throttleKey:'stats',
         minGapMs:5000,
         safeRetry:true,
-        waitForVisible:true,
+        waitForVisible:false,
       };
     }
 
@@ -113,6 +128,8 @@ function requestMeta(input, init){
       return {
         kind:'game_action',
         singleFlightKey:`game_action:${String(payload.gameId || 'current')}`,
+        cacheKey:'',
+        cacheWhenHidden:false,
         throttleKey:'',
         minGapMs:0,
         safeRetry:false,
@@ -129,6 +146,8 @@ function requestMeta(input, init){
       kind:'notifications',
       markRead,
       singleFlightKey:markRead ? '' : 'notifications:unread',
+      cacheKey:'',
+      cacheWhenHidden:false,
       throttleKey:markRead ? '' : 'notifications',
       minGapMs:markRead ? 0 : 10000,
       safeRetry:!markRead,
@@ -170,6 +189,30 @@ function parseRetryAfterMs(response){
 
   const date = Date.parse(raw);
   return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
+}
+
+async function rememberResponse(meta, response){
+  if (!meta.cacheKey || !response.ok) return;
+
+  try {
+    responseCache.set(meta.cacheKey, {
+      body:await response.clone().text(),
+      contentType:response.headers.get('Content-Type') || 'application/json; charset=utf-8',
+    });
+  } catch (error) {
+    // The live response still works even when a browser refuses to clone it.
+  }
+}
+
+function cachedResponse(key){
+  if (!key) return null;
+  const cached = responseCache.get(key);
+  if (!cached) return null;
+
+  return new Response(cached.body, {
+    status:200,
+    headers:{'Content-Type':cached.contentType},
+  });
 }
 
 function friendlyRateLimitResponse(response){
