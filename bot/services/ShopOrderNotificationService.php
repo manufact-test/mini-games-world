@@ -133,8 +133,7 @@ final class ShopOrderNotificationService
                 . "Заявка: #{$shortId}\n"
                 . "Приз: {$prize}\n"
                 . "Номинал: {$denomination}\n"
-                . "Стоимость: {$amount} Gold\n\n"
-                . "Статус уже обновлён в Mini App → Магазин → Мои заявки.";
+                . "Стоимость: {$amount} Gold";
         }
 
         $reason = trim((string)($order['reject_reason'] ?? $order['admin_note'] ?? ''));
@@ -142,19 +141,11 @@ final class ShopOrderNotificationService
             $reason = 'Причина не указана.';
         }
 
-        $refundDone = !empty($order['refund_done']);
-        $refundAmount = abs((int)($order['refund_amount'] ?? $amount));
-        $refundLine = $refundDone
-            ? "Возвращено: +{$refundAmount} Gold\n"
-            : "Возврат Gold пока не подтверждён.\n";
-
         return "🚫 Заказ отклонён\n\n"
             . "Заявка: #{$shortId}\n"
             . "Приз: {$prize}\n"
             . "Номинал: {$denomination}\n"
-            . "Причина: {$reason}\n"
-            . $refundLine . "\n"
-            . "Статус и возврат можно проверить в Mini App → Магазин → Мои заявки.";
+            . "Причина: {$reason}";
     }
 
     private function prizeLabel(array $order): string
