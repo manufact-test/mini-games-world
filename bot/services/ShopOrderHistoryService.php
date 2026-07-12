@@ -20,7 +20,9 @@ final class ShopOrderHistoryService
         }
 
         usort($orders, static function (array $a, array $b): int {
-            return strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? ''));
+            $aActivityAt = (string)(($a['updated_at'] ?? '') ?: ($a['created_at'] ?? ''));
+            $bActivityAt = (string)(($b['updated_at'] ?? '') ?: ($b['created_at'] ?? ''));
+            return strcmp($bActivityAt, $aActivityAt);
         });
 
         $limit = max(1, min(50, $limit));
