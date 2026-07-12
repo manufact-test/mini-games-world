@@ -9,8 +9,102 @@ import { renderBalances, roomName } from '../../ui.js?v=27';
 import { startSearchPolling } from '../../screens/search-screen.js?v=67';
 import { startGamePolling } from '../../screens/game-screen.js?v=67';
 import { isSessionLocked, sessionMessage } from '../../session.js?v=27';
-let initialized=false;
-export function initCheckersEntry(){if(initialized)return;initialized=true;document.addEventListener('click',event=>{if(event.target.closest('#playCheckers'))openCheckersSetup();});}
-function openCheckersSetup(){if(isSessionLocked(state.session))return toast(sessionMessage(state.session));haptic('light');state.selectedGame='checkers';const isGold=state.room==='gold';const selectedBet=state.room==='match'?APP_CONFIG.matchBet:Number(state.selectedBet||APP_CONFIG.goldBets[0]);state.selectedBet=selectedBet;const betChoices=isGold?APP_CONFIG.goldBets.map(bet=>`<button class="choice gold ${bet===selectedBet?'active':''}" data-checkers-bet="${bet}" type="button">${bet} коинов</button>`).join(''):`<button class="choice active" data-checkers-bet="${APP_CONFIG.matchBet}" type="button">${APP_CONFIG.matchBet} коинов</button>`;openSheet(`<div class="sheet-head"><div><h2>Шашки</h2><p>${roomName(state.room)}. Классическое поле 8×8.</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="setup-scroll checkers-start-scroll"><div class="small-note">По 12 шашек у каждого. Взятие обязательно, обычная шашка бьёт вперёд и назад, а дамка ходит по всей диагонали.</div><div class="checkers-start-preview" aria-hidden="true">${previewBoard()}</div><div class="checkers-preview-caption">Поле 8×8 · 12 шашек у каждого</div><div class="section-title"><h2>Стоимость участия</h2></div><div class="choice-grid ${isGold?'':'single-choice'}" id="checkersBetChoices">${betChoices}</div></div><button class="btn ${isGold?'gold':'primary'} full setup-start-btn" id="startCheckersSearchBtn" type="button">Начать поиск</button>`);document.querySelectorAll('[data-checkers-bet]').forEach(button=>button.addEventListener('click',()=>{state.selectedBet=Number(button.dataset.checkersBet);document.querySelectorAll('[data-checkers-bet]').forEach(item=>item.classList.toggle('active',item===button));}));document.getElementById('startCheckersSearchBtn')?.addEventListener('click',startCheckersSearch);}
-async function startCheckersSearch(){if(isSessionLocked(state.session))return toast(sessionMessage(state.session));const bet=state.room==='match'?APP_CONFIG.matchBet:Number(state.selectedBet||APP_CONFIG.goldBets[0]);state.selectedGame='checkers';try{closeSheet();const result=await api.startSearch(state.room,bet,8,'checkers');state.user=result.user||state.user;state.selectedBet=bet;renderBalances(state.user);if(result.game){state.activeGame=result.game;state.selectedGame='checkers';showScreen('game');startGamePolling(result.game.id);return;}const info=document.getElementById('searchInfo');if(info)info.textContent=`Шашки · ${roomName(state.room)} · участие ${bet} коинов · поле 8×8`;showScreen('search');startSearchPolling();}catch(error){toast(error.message);}}
-function previewBoard(){return Array.from({length:64},(_,cell)=>{const row=Math.floor(cell/8);const col=cell%8;const dark=(row+col)%2===1;let piece='';if(dark&&row<3)piece='black';if(dark&&row>4)piece='white';return `<span class="${dark?'dark':'light'}">${piece?`<i class="${piece}"></i>`:''}</span>`;}).join('');}
+
+let initialized = false;
+
+export function initCheckersEntry(){
+  if (initialized) return;
+  initialized = true;
+
+  document.addEventListener('click', event => {
+    const button = event.target.closest('#playCheckers');
+    if (!button) return;
+    openCheckersSetup();
+  });
+}
+
+function openCheckersSetup(){
+  if (isSessionLocked(state.session)) return toast(sessionMessage(state.session));
+  haptic('light');
+  state.selectedGame = 'checkers';
+
+  const isGold = state.room === 'gold';
+  const selectedBet = state.room === 'match'
+    ? APP_CONFIG.matchBet
+    : Number(state.selectedBet || APP_CONFIG.goldBets[0]);
+  state.selectedBet = selectedBet;
+
+  const betChoices = isGold
+    ? APP_CONFIG.goldBets.map(bet => `<button class="choice gold ${bet === selectedBet ? 'active' : ''}" data-checkers-bet="${bet}" type="button">${bet} коинов</button>`).join('')
+    : `<button class="choice active" data-checkers-bet="${APP_CONFIG.matchBet}" type="button">${APP_CONFIG.matchBet} коинов</button>`;
+
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Шашки</h2><p>${roomName(state.room)}. Классическое поле 8×8.</p></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+
+    <div class="setup-scroll checkers-start-scroll">
+      <div class="small-note">По 12 шашек у каждого. Взятие обязательно, обычная шашка бьёт вперёд и назад, а дамка ходит по всей диагонали.</div>
+
+      <div class="checkers-start-preview" aria-hidden="true">${previewBoard()}</div>
+      <div class="checkers-preview-caption">Поле 8×8 · 12 шашек у каждого</div>
+
+      <div class="section-title"><h2>Стоимость участия</h2></div>
+      <div class="choice-grid ${isGold ? '' : 'single-choice'}" id="checkersBetChoices">${betChoices}</div>
+    </div>
+
+    <button class="btn ${isGold ? 'gold' : 'primary'} full setup-start-btn" id="startCheckersSearchBtn" type="button">Начать поиск</button>
+  `);
+
+  document.querySelectorAll('[data-checkers-bet]').forEach(button => button.addEventListener('click', () => {
+    state.selectedBet = Number(button.dataset.checkersBet);
+    document.querySelectorAll('[data-checkers-bet]').forEach(item => item.classList.toggle('active', item === button));
+  }));
+
+  document.getElementById('startCheckersSearchBtn')?.addEventListener('click', startCheckersSearch);
+}
+
+async function startCheckersSearch(){
+  if (isSessionLocked(state.session)) return toast(sessionMessage(state.session));
+
+  const bet = state.room === 'match'
+    ? APP_CONFIG.matchBet
+    : Number(state.selectedBet || APP_CONFIG.goldBets[0]);
+  state.selectedGame = 'checkers';
+
+  try {
+    closeSheet();
+    const result = await api.startSearch(state.room, bet, 8, 'checkers');
+    state.user = result.user || state.user;
+    state.selectedBet = bet;
+    renderBalances(state.user);
+
+    if (result.game) {
+      state.activeGame = result.game;
+      state.selectedGame = 'checkers';
+      showScreen('game');
+      startGamePolling(result.game.id);
+      return;
+    }
+
+    const info = document.getElementById('searchInfo');
+    if (info) info.textContent = `Шашки · ${roomName(state.room)} · участие ${bet} коинов · поле 8×8`;
+    showScreen('search');
+    startSearchPolling();
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+function previewBoard(){
+  return Array.from({ length:64 }, (_, cell) => {
+    const row = Math.floor(cell / 8);
+    const col = cell % 8;
+    const dark = (row + col) % 2 === 1;
+    let piece = '';
+    if (dark && row < 3) piece = 'black';
+    if (dark && row > 4) piece = 'white';
+    return `<span class="${dark ? 'dark' : 'light'}">${piece ? `<i class="${piece}"></i>` : ''}</span>`;
+  }).join('');
+}
