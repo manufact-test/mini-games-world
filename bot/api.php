@@ -133,7 +133,9 @@ function mgw_make_search_ready_for_bot(array &$data, string $userId): ?string
     foreach ($data['queue'] as &$item) {
         if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
         $originalCreatedAt = (string)($item['created_at'] ?? '');
-        $item['created_at'] = gmdate('c', time() - 31);
+        // Standard bot fallback is 15 seconds. Backdating by 12 seconds leaves
+        // an actual three-second window for a live player to join first.
+        $item['created_at'] = gmdate('c', time() - 12);
         unset($item);
         return $originalCreatedAt;
     }
@@ -318,15 +320,7 @@ try {
                 if (empty($search['game'])
                     && $room === 'match'
                     && !mgw_has_other_recent_human_in_room($data, $userId, $room)) {
-                    $originalCreatedAt = mgw_make_search_ready_for_bot($data, $userId);
-                    if ($originalCreatedAt !== null) {
-                        $immediateGame = $games->maybeCreateBotGameForSearchingUser($data, $user);
-                        if (is_array($immediateGame)) {
-                            $search = ['game' => $games->publicGame($immediateGame, $userId)];
-                        } else {
-                            mgw_restore_search_created_at($data, $userId, $originalCreatedAt);
-                        }
-                    }
+                    mgw_make_search_ready_for_bot($data, $userId);
                 }
 
                 if (!empty($search['game']['id'])) {
