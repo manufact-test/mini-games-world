@@ -130,6 +130,56 @@ final class NotificationService
         return $notification;
     }
 
+    public function addAdminGoldTopup(array &$db, array $transaction): ?array
+    {
+        if ((string)($transaction['category'] ?? '') !== 'admin_gold_topup') {
+            return null;
+        }
+
+        $userId = trim((string)($transaction['user_id'] ?? ''));
+        $transactionId = trim((string)($transaction['id'] ?? ''));
+        $amount = max(0, (int)($transaction['amount'] ?? 0));
+        if ($userId === '' || $transactionId === '' || $amount <= 0) {
+            return null;
+        }
+
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) {
+            $db['notifications'] = [];
+        }
+
+        $eventKey = 'admin_gold_topup:' . $transactionId;
+        foreach ($db['notifications'] as $existing) {
+            if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) {
+                return $existing;
+            }
+        }
+
+        $before = (int)($transaction['balance_before'] ?? 0);
+        $after = (int)($transaction['balance_after'] ?? ($before + $amount));
+        $reason = trim((string)($transaction['reason'] ?? ''));
+
+        $message = "Администратор начислил +{$amount} Gold. Баланс: {$before} → {$after}.";
+        if ($reason !== '') {
+            $message .= " Причина: {$reason}.";
+        }
+
+        $notification = [
+            'id' => make_id('notification'),
+            'event_key' => $eventKey,
+            'user_id' => $userId,
+            'type' => 'admin_gold_topup',
+            'title' => 'Gold начислен',
+            'message' => $message,
+            'tone' => 'success',
+            'transaction_id' => $transactionId,
+            'created_at' => (string)($transaction['created_at'] ?? now_iso()),
+            'read_at' => null,
+        ];
+
+        $db['notifications'][] = $notification;
+        return $notification;
+    }
+
     public function addWelcomeMatchGrant(array &$db, array $user, array $grant): ?array
     {
         $userId = trim((string)($user['id'] ?? ''));
@@ -220,6 +270,7 @@ final class NotificationService
                 'tone' => (string)($notification['tone'] ?? 'info'),
                 'order_id' => (string)($notification['order_id'] ?? ''),
                 'payment_id' => (string)($notification['payment_id'] ?? ''),
+                'transaction_id' => (string)($notification['transaction_id'] ?? ''),
                 'created_at' => (string)($notification['created_at'] ?? ''),
                 'read' => !empty($notification['read_at']),
             ];
