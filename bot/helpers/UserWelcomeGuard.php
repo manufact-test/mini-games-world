@@ -11,7 +11,7 @@ final class UserWelcomeGuard
             return false;
         }
 
-        $message = $update['message'] ?? $update['edited_message'] ?? null;
+        $message = $update['message'] ?? null;
         if (!is_array($message)) {
             return false;
         }
