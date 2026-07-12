@@ -1,18 +1,23 @@
 import { api } from '../api/client.js?v=38';
 import { openSheet } from '../components/sheet.js?v=27';
-import { toast } from '../components/toast.js?v=41';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
 const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v2';
 const MAX_ANNOUNCED_IDS = 50;
+const NOTIFICATION_TOAST_DURATION = 8000;
 
 let notificationPoll = null;
 let refreshingBadge = false;
 let appReady = false;
 let pendingAnnouncementRefresh = false;
 let announcedIds = loadAnnouncedIds();
+let notificationToastTimer = null;
+let notificationToastPointer = null;
+let suppressNotificationToastClickUntil = 0;
 
 export function initNotificationsScreen(){
+  ensureNotificationToast();
+
   document.addEventListener('click', event => {
     const trigger = event.target.closest('#notificationsOpen');
     if (!trigger) return;
@@ -34,7 +39,6 @@ export function initNotificationsScreen(){
   });
 
   // Before the preloader is gone we may update only the bell badge.
-  // Showing a toast here would place it underneath the loading screen.
   refreshNotificationBadge(false);
 
   if (!notificationPoll) {
@@ -71,16 +75,16 @@ export async function refreshNotificationBadge(announce = appReady){
 }
 
 async function openNotificationsSheet(){
+  dismissNotificationToast();
   haptic('light');
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Уведомления</h2><p>Изменения по вашим заявкам и важные сообщения.</p></div>
+      <div><h2>Уведомления</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="notifications-loading">
       <div>🔔</div>
-      <strong>Загружаем уведомления</strong>
-      <span>Проверяем последние изменения.</span>
+      <strong>Загружаем…</strong>
     </div>
   `);
 
@@ -91,7 +95,7 @@ async function openNotificationsSheet(){
     setUnreadCount(0);
     renderNotifications(items);
   } catch (error) {
-    renderNotificationsError(error);
+    renderNotificationsError();
   }
 }
 
@@ -104,21 +108,154 @@ function announceNewestUnread(items){
   if (!notification) return;
 
   rememberNotificationId(String(notification.id || ''));
+  haptic(String(notification.tone || '') === 'danger' ? 'medium' : 'light');
+  showNotificationToast(notification);
+}
 
-  const tone = String(notification.tone || 'info');
+function ensureNotificationToast(){
+  let el = document.getElementById('notificationToast');
+  if (el) return el;
+
+  el = document.createElement('div');
+  el.id = 'notificationToast';
+  el.className = 'notification-toast';
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('aria-label', 'Открыть уведомления');
+  el.innerHTML = `
+    <div class="notification-toast-icon" aria-hidden="true">🔔</div>
+    <div class="notification-toast-copy">
+      <strong></strong>
+      <span></span>
+    </div>
+    <button class="notification-toast-close" data-notification-toast-close type="button" aria-label="Закрыть уведомление">×</button>
+  `;
+
+  (document.getElementById('app') || document.body).appendChild(el);
+
+  el.addEventListener('click', event => {
+    if (!el.classList.contains('show') || Date.now() < suppressNotificationToastClickUntil) return;
+
+    if (event.target.closest('[data-notification-toast-close]')) {
+      event.preventDefault();
+      event.stopPropagation();
+      dismissNotificationToast();
+      return;
+    }
+
+    dismissNotificationToast();
+    openNotificationsSheet();
+  });
+
+  el.addEventListener('keydown', event => {
+    if (!el.classList.contains('show')) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      dismissNotificationToast();
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      dismissNotificationToast();
+      openNotificationsSheet();
+    }
+  });
+
+  el.addEventListener('pointerdown', event => {
+    if (!el.classList.contains('show') || event.target.closest('[data-notification-toast-close]')) return;
+
+    notificationToastPointer = {
+      id: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      dx: 0,
+      dy: 0,
+    };
+    el.classList.add('dragging');
+    el.setPointerCapture?.(event.pointerId);
+  });
+
+  el.addEventListener('pointermove', event => {
+    if (!notificationToastPointer || notificationToastPointer.id !== event.pointerId) return;
+
+    notificationToastPointer.dx = event.clientX - notificationToastPointer.startX;
+    notificationToastPointer.dy = event.clientY - notificationToastPointer.startY;
+
+    const x = notificationToastPointer.dx;
+    const y = Math.min(0, notificationToastPointer.dy);
+    const distance = Math.max(Math.abs(x), Math.abs(y));
+    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    el.style.opacity = String(Math.max(0.35, 1 - distance / 220));
+  });
+
+  const finishPointer = (event, cancelled = false) => {
+    if (!notificationToastPointer || notificationToastPointer.id !== event.pointerId) return;
+
+    const { dx, dy } = notificationToastPointer;
+    notificationToastPointer = null;
+    el.classList.remove('dragging');
+    el.releasePointerCapture?.(event.pointerId);
+
+    const shouldDismiss = !cancelled && (Math.abs(dx) >= 72 || dy <= -48);
+    if (shouldDismiss) {
+      suppressNotificationToastClickUntil = Date.now() + 350;
+      dismissNotificationToast();
+      return;
+    }
+
+    el.style.transform = '';
+    el.style.opacity = '';
+  };
+
+  el.addEventListener('pointerup', event => finishPointer(event));
+  el.addEventListener('pointercancel', event => finishPointer(event, true));
+
+  return el;
+}
+
+function showNotificationToast(item){
+  const el = ensureNotificationToast();
+  const tone = ['success', 'danger', 'warning', 'info'].includes(String(item?.tone || ''))
+    ? String(item.tone)
+    : 'info';
   const icon = tone === 'danger'
-    ? '🚫'
+    ? '!'
     : tone === 'success'
-      ? '✅'
+      ? '✓'
       : tone === 'warning'
-        ? '⚠️'
-        : '🔔';
-  const title = String(notification.title || 'Важное уведомление').trim();
-  const message = String(notification.message || '').trim();
-  const text = message ? `${icon} ${title}. ${message}` : `${icon} ${title}`;
+        ? '⚠'
+        : '•';
+  const title = String(item?.title || 'Уведомление').trim();
+  const message = notificationMessage(item);
 
-  haptic(tone === 'danger' ? 'medium' : 'light');
-  toast(text, 6000);
+  clearTimeout(notificationToastTimer);
+  notificationToastPointer = null;
+  el.className = `notification-toast ${tone}`;
+  el.style.transform = '';
+  el.style.opacity = '';
+  el.querySelector('.notification-toast-icon').textContent = icon;
+  el.querySelector('.notification-toast-copy strong').textContent = title;
+  el.querySelector('.notification-toast-copy span').textContent = message;
+  el.querySelector('.notification-toast-copy span').hidden = message === '';
+  el.setAttribute('aria-label', `${title}${message ? `. ${message}` : ''}. Нажмите, чтобы открыть уведомления.`);
+
+  requestAnimationFrame(() => el.classList.add('show'));
+  notificationToastTimer = setTimeout(dismissNotificationToast, NOTIFICATION_TOAST_DURATION);
+}
+
+function dismissNotificationToast(){
+  clearTimeout(notificationToastTimer);
+  notificationToastTimer = null;
+  notificationToastPointer = null;
+
+  const el = document.getElementById('notificationToast');
+  if (!el) return;
+
+  el.classList.remove('show', 'dragging');
+  el.style.transform = '';
+  el.style.opacity = '';
 }
 
 function renderNotifications(items){
@@ -128,13 +265,12 @@ function renderNotifications(items){
       <div class="notifications-empty">
         <div>🔔</div>
         <strong>Пока уведомлений нет</strong>
-        <span>Когда изменится статус заявки, сообщение появится здесь.</span>
       </div>
     `;
 
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Уведомления</h2><p>${items.length ? 'Последние изменения по вашему аккаунту.' : 'Здесь появятся важные изменения.'}</p></div>
+      <div><h2>Уведомления</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${body}
@@ -146,6 +282,7 @@ function renderNotification(item){
     ? String(item.tone)
     : 'info';
   const icon = tone === 'success' ? '✓' : (tone === 'danger' ? '!' : '•');
+  const message = notificationMessage(item);
 
   return `
     <article class="notification-card ${tone}">
@@ -155,22 +292,46 @@ function renderNotification(item){
           <strong>${escapeHtml(item.title || 'Уведомление')}</strong>
           <span>${escapeHtml(formatDate(item.created_at))}</span>
         </div>
-        <p>${escapeHtml(item.message || '')}</p>
+        ${message ? `<p>${escapeHtml(message)}</p>` : ''}
       </div>
     </article>
   `;
 }
 
-function renderNotificationsError(error){
+function notificationMessage(item){
+  let message = String(item?.message || '').trim();
+  if (!message) return '';
+
+  const technicalFragments = [
+    /\s*Баланс уже обновлён\.?/giu,
+    /\s*Баланс не изменён\.?/giu,
+    /\s*Баланс:\s*-?[\d\s]+\s*→\s*-?[\d\s]+\.?/giu,
+    /\s*Статус (?:уже )?обновлён[^.]*\.?/giu,
+    /\s*Проверьте статус возврата[^.]*\.?/giu,
+    /\s*Возвращено\s*\+\s*[\d\s]+\s*Gold\.?/giu,
+  ];
+
+  for (const pattern of technicalFragments) {
+    message = message.replace(pattern, ' ');
+  }
+
+  return message
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1')
+    .replace(/\.{2,}/g, '.')
+    .trim();
+}
+
+function renderNotificationsError(){
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Уведомления</h2><p>Не удалось загрузить сообщения.</p></div>
+      <div><h2>Уведомления</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="notifications-empty error">
       <div>⚠️</div>
-      <strong>Что-то пошло не так</strong>
-      <span>${escapeHtml(error?.message || 'Попробуйте открыть уведомления ещё раз.')}</span>
+      <strong>Не удалось открыть уведомления</strong>
+      <span>Попробуйте ещё раз.</span>
     </div>
   `);
 }
