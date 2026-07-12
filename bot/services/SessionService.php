@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 final class SessionService
 {
+    private const HEARTBEAT_WRITE_INTERVAL_SEC = 30;
+
     public function __construct(private array $config) {}
 
     public function ensureSessionShape(array &$user): void
@@ -19,8 +21,11 @@ final class SessionService
         }
 
         if ($this->canTakeSession($user, $sessionId)) {
+            $previousId = (string)($user['active_session_id'] ?? '');
             $user['active_session_id'] = $sessionId;
-            $user['active_session_at'] = now_iso();
+            if ($previousId !== $sessionId || $this->heartbeatWriteIsDue($user)) {
+                $user['active_session_at'] = now_iso();
+            }
         }
     }
 
@@ -76,10 +81,13 @@ final class SessionService
 
         // Polling from the device that already owns the active search/game keeps
         // that ownership alive. Requests from another session never refresh it.
+        // The timestamp is persisted at a coarse interval so background polling
+        // does not rewrite users.json on every request.
         if ($sessionId !== ''
             && in_array($status, ['searching', 'playing'], true)
             && $activeId !== ''
-            && $activeId === $sessionId) {
+            && $activeId === $sessionId
+            && $this->heartbeatWriteIsDue($user)) {
             $user['active_session_at'] = now_iso();
         }
 
@@ -122,6 +130,20 @@ final class SessionService
         }
 
         return time() - $activeAt > $this->timeoutSec();
+    }
+
+    private function heartbeatWriteIsDue(array $user): bool
+    {
+        $activeAt = strtotime((string)($user['active_session_at'] ?? '')) ?: 0;
+        if ($activeAt <= 0) {
+            return true;
+        }
+
+        $safeInterval = min(
+            self::HEARTBEAT_WRITE_INTERVAL_SEC,
+            max(10, intdiv(max(30, $this->timeoutSec()), 3))
+        );
+        return time() - $activeAt >= $safeInterval;
     }
 
     private function timeoutSec(): int
