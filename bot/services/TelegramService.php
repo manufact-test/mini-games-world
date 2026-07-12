@@ -86,6 +86,8 @@ final class TelegramService
 
     public function notifyUserAboutPaymentDecision(array $payment, string $decision): void
     {
+        $this->persistPaymentDecisionActivity($payment, $decision);
+
         $chatId = trim((string)($payment['user_id'] ?? ''));
         if ($chatId === '') {
             return;
@@ -101,6 +103,39 @@ final class TelegramService
             ]);
         } catch (Throwable $e) {
             error_log('Mini Games World user payment notification failed for ' . $chatId . ': ' . $e->getMessage());
+        }
+    }
+
+    private function persistPaymentDecisionActivity(array $payment, string $decision): void
+    {
+        try {
+            $paymentId = trim((string)($payment['id'] ?? ''));
+            if ($paymentId === '') {
+                return;
+            }
+
+            $db = new JsonDatabase((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
+            $db->transaction(function (array &$data) use ($payment, $decision, $paymentId): void {
+                $notifications = new NotificationService();
+                $notifications->addPaymentDecision($data, $payment, $decision);
+
+                if (!isset($data['payments']) || !is_array($data['payments'])) {
+                    return;
+                }
+
+                foreach ($data['payments'] as $index => $storedPayment) {
+                    if (!is_array($storedPayment) || (string)($storedPayment['id'] ?? '') !== $paymentId) {
+                        continue;
+                    }
+
+                    unset($data['payments'][$index]);
+                    $data['payments'] = array_values($data['payments']);
+                    $data['payments'][] = $storedPayment;
+                    break;
+                }
+            });
+        } catch (Throwable $e) {
+            error_log('Mini Games World in-app payment notification failed: ' . $e->getMessage());
         }
     }
 
