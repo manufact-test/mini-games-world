@@ -33,9 +33,87 @@ import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
-initRequestGuard();initTelegramApp();initTypography();initSheet();initUserCopy();initGameCardCopy();initGameInvites();initTicTacToeEntry();initFourInARowEntry();initBattleshipEntry();initCheckersEntry();initReversiEntry();initChessEntry();initStoreScreen();initStoreOrder();initStoreOrders();initNotificationsScreen();initWeeklyMatchInfo();initHomeScreen();initAccountShortcuts();initSearchScreen();initGameScreen();initProfileScreen();initGameRules();
-async function boot(){try{setRoom(APP_CONFIG.defaultRoom);const result=await api.bootstrap();state.user=result.user;state.stats=result.stats;state.session=result.session||state.session;renderUser(state.user);renderBalances(state.user);renderStats(state.stats);renderRoomCard();syncWeeklyMatchButton(result.weekly_match||null);if(isSessionLocked(state.session))toast(sessionMessage(state.session));else if(result.active_game){state.activeGame=result.active_game;showScreen('game');startGamePolling(result.active_game.id);}startStatsPolling();}catch(error){toast(error.message);}finally{hidePreloader();}}
-function startStatsPolling(){state.timers.stats=clearTimer(state.timers.stats);state.timers.stats=setInterval(refreshStatsIfVisible,APP_CONFIG.statsIntervalMs);}
-async function refreshStatsIfVisible(){if(statsRefreshing||!canRefreshHomeStats())return;statsRefreshing=true;try{const result=await api.stats();state.stats=result.stats;state.session=result.session||state.session;renderStats(state.stats);}catch(error){}finally{statsRefreshing=false;}}
-function canRefreshHomeStats(){if(document.visibilityState!=='visible')return false;const activeScreen=document.querySelector('.screen.active');if(String(activeScreen?.dataset.screen||'')!=='home')return false;return !document.getElementById('sheetOverlay')?.classList.contains('active');}
+
+initRequestGuard();
+initTelegramApp();
+initTypography();
+initSheet();
+initUserCopy();
+initGameCardCopy();
+initGameInvites();
+initTicTacToeEntry();
+initFourInARowEntry();
+initBattleshipEntry();
+initCheckersEntry();
+initReversiEntry();
+initChessEntry();
+initStoreScreen();
+initStoreOrder();
+initStoreOrders();
+initNotificationsScreen();
+initWeeklyMatchInfo();
+initHomeScreen();
+initAccountShortcuts();
+initSearchScreen();
+initGameScreen();
+initProfileScreen();
+initGameRules();
+
+async function boot(){
+  try {
+    setRoom(APP_CONFIG.defaultRoom);
+    const result = await api.bootstrap();
+    state.user = result.user;
+    state.stats = result.stats;
+    state.session = result.session || state.session;
+    renderUser(state.user);
+    renderBalances(state.user);
+    renderStats(state.stats);
+    renderRoomCard();
+    syncWeeklyMatchButton(result.weekly_match || null);
+    if (isSessionLocked(state.session)) {
+      toast(sessionMessage(state.session));
+    } else if (result.active_game) {
+      state.activeGame = result.active_game;
+      showScreen('game');
+      startGamePolling(result.active_game.id);
+    }
+    startStatsPolling();
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    hidePreloader();
+  }
+}
+
+function startStatsPolling(){
+  state.timers.stats = clearTimer(state.timers.stats);
+  state.timers.stats = setInterval(refreshStatsIfVisible, APP_CONFIG.statsIntervalMs);
+}
+
+async function refreshStatsIfVisible(){
+  if (statsRefreshing || !canRefreshHomeStats()) return;
+  statsRefreshing = true;
+
+  try {
+    const result = await api.stats();
+    state.stats = result.stats;
+    state.session = result.session || state.session;
+    renderStats(state.stats);
+  } catch (error) {
+    // Background statistics must never interrupt a match or another user action.
+  } finally {
+    statsRefreshing = false;
+  }
+}
+
+function canRefreshHomeStats(){
+  if (document.visibilityState !== 'visible') return false;
+
+  const activeScreen = document.querySelector('.screen.active');
+  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
+
+  return !document.getElementById('sheetOverlay')?.classList.contains('active');
+}
+
 boot();
