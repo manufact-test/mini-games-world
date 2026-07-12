@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 final class UserService
 {
+    private const LAST_SEEN_WRITE_INTERVAL_SEC = 30;
+
     public function __construct(private array $config) {}
 
     public function ensureUser(array &$db, array $tgUser): array
@@ -44,7 +46,9 @@ final class UserService
         } else {
             $db['users'][$id]['first_name'] = clean_string($tgUser['first_name'] ?? $db['users'][$id]['first_name'] ?? 'Игрок', 80);
             $db['users'][$id]['username'] = clean_string($tgUser['username'] ?? $db['users'][$id]['username'] ?? $db['users'][$id]['first_name'], 80);
-            $db['users'][$id]['last_seen_at'] = $now;
+            if ($this->activityWriteIsDue($db['users'][$id]['last_seen_at'] ?? null)) {
+                $db['users'][$id]['last_seen_at'] = $now;
+            }
             if (!empty($tgUser['is_dev_user'])) {
                 $db['users'][$id]['is_dev_user'] = true;
             }
@@ -204,5 +208,11 @@ final class UserService
             $user['stats']['match_games_this_week'] = 0;
             $user['stats']['week_key'] = $currentWeek;
         }
+    }
+
+    private function activityWriteIsDue(mixed $value): bool
+    {
+        $lastSeen = strtotime((string)$value) ?: 0;
+        return $lastSeen <= 0 || time() - $lastSeen >= self::LAST_SEEN_WRITE_INTERVAL_SEC;
     }
 }
