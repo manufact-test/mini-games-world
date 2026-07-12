@@ -1,0 +1,19 @@
+.go-rule-board{margin:12px 0 0}
+.go-rule-point{position:absolute;left:var(--go-x);top:var(--go-y);width:var(--go-rule-point-size);max-width:44px;aspect-ratio:1;transform:translate(-50%,-50%);display:grid;place-items:center;z-index:3;font-style:normal;pointer-events:none}
+.go-rule-point b{position:relative;z-index:3;display:block;width:90%;aspect-ratio:1;border-radius:50%}
+.go-rule-point b.black{background:radial-gradient(circle at 35% 28%,#4a566f,#10151f 72%);box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 0 0 1px rgba(180,194,235,.22)}
+.go-rule-point b.white{background:radial-gradient(circle at 35% 28%,#fff,#c5cad1 76%);box-shadow:0 3px 8px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.75)}
+.go-rule-point b.capture{box-shadow:0 0 0 3px rgba(255,216,91,.72),0 0 16px rgba(255,199,70,.38),0 3px 8px rgba(0,0,0,.35)}
+.go-rule-point em{position:relative;z-index:5;display:block;font-style:normal}
+.go-rule-point em.first{width:34%;aspect-ratio:1;border-radius:50%;background:#171d28;box-shadow:0 0 0 5px rgba(255,216,91,.26),0 0 16px rgba(255,216,91,.42)}
+.go-rule-point em.first::after{content:"1";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:950}
+.go-rule-point em.liberty{width:27%;aspect-ratio:1;border-radius:50%;background:#75efbd;box-shadow:0 0 0 4px rgba(46,230,166,.15),0 0 14px rgba(46,230,166,.6)}
+.go-rule-point em.target-black{width:35%;aspect-ratio:1;border-radius:50%;background:#171d28;box-shadow:0 0 0 4px rgba(255,216,91,.3)}
+.go-rule-point em.forbidden{width:56%;aspect-ratio:1;border-radius:50%;border:3px solid #ff6875;box-shadow:0 0 13px rgba(255,104,117,.52)}
+.go-rule-point em.forbidden::after{content:"×";position:absolute;inset:0;display:grid;place-items:center;color:#ff8d97;font-size:18px;font-weight:950}
+.go-rule-point em.ko{width:54%;aspect-ratio:1;border-radius:50%;border:3px solid #ffd85b;box-shadow:0 0 13px rgba(255,216,91,.48)}
+.go-rule-point em.ko::after{content:"↺";position:absolute;inset:0;display:grid;place-items:center;color:#ffe89b;font-size:16px;font-weight:950}
+.go-rule-point em.territory-black,.go-rule-point em.territory-white,.go-rule-point em.neutral{width:34%;aspect-ratio:1;border-radius:3px}
+.go-rule-point em.territory-black{background:rgba(18,23,32,.82);box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.go-rule-point em.territory-white{background:rgba(245,246,248,.86);box-shadow:0 0 0 2px rgba(0,0,0,.2)}
+.go-rule-point em.neutral{background:rgba(255,199,70,.68);transform:rotate(45deg);border-radius:1px}
