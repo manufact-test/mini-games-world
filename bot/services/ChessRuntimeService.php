@@ -188,7 +188,9 @@ final class ChessRuntimeService
 
     private function setQueuedChessType(array &$db, string $userId): void
     {
-        foreach ($db['queue'] ?? [] as &$item) {
+        if (!isset($db['queue']) || !is_array($db['queue'])) return;
+
+        foreach ($db['queue'] as &$item) {
             if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
             $item['game_type'] = 'chess';
             $item['requested_board_size'] = 8;
