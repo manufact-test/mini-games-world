@@ -300,7 +300,6 @@ try {
                     'game' => $game ? $games->publicGame($game, $userId) : null,
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
-                    'stats' => $statsService->build($data),
                 ];
 
             case 'game_action':
