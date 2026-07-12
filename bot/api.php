@@ -60,7 +60,7 @@ function mgw_randomize_symbols_for_new_game(array &$data, array $game): array
     return $stored;
 }
 
-function mgw_cleanup_games_if_due(array &$data, GameRuntimeService $games, bool $force = false): void
+function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
     if (!isset($data['system']) || !is_array($data['system'])) {
         $data['system'] = [];
@@ -169,7 +169,7 @@ try {
     $auth = new AuthService($config);
     $users = new UserService($config);
     $gameCatalog = new GameCatalogService($config);
-    $games = new GameRuntimeService($config, $gameCatalog, new GameService($config));
+    $games = new ChessRuntimeService($config, $gameCatalog, new GameService($config));
     $gameActions = new GameActionService($gameCatalog, $games);
     $shop = new ShopService($config, $users);
     $payments = new PaymentService($config, $users);
