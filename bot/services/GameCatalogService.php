@@ -26,6 +26,7 @@ final class GameCatalogService
         $checkers = require $gamesDir . '/checkers/definition.php';
         $reversi = require $gamesDir . '/reversi/definition.php';
         $chess = require $gamesDir . '/chess/definition.php';
+        $go = require $gamesDir . '/go/definition.php';
 
         $this->games = [
             'tictactoe' => $ticTacToe,
@@ -34,6 +35,7 @@ final class GameCatalogService
             'checkers' => $checkers,
             'reversi' => $reversi,
             'chess' => $chess,
+            'go' => $go,
         ];
     }
 
