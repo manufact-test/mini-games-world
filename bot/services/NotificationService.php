@@ -69,6 +69,67 @@ final class NotificationService
         return $notification;
     }
 
+    public function addPaymentDecision(array &$db, array $payment, string $decision): ?array
+    {
+        if (!in_array($decision, ['applied', 'rejected'], true)) {
+            return null;
+        }
+
+        $userId = trim((string)($payment['user_id'] ?? ''));
+        $paymentId = trim((string)($payment['id'] ?? ''));
+        if ($userId === '' || $paymentId === '') {
+            return null;
+        }
+
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) {
+            $db['notifications'] = [];
+        }
+
+        $eventKey = 'payment:' . $paymentId . ':' . $decision;
+        foreach ($db['notifications'] as $existing) {
+            if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) {
+                return $existing;
+            }
+        }
+
+        $shortId = $this->shortPaymentId($paymentId);
+        $room = (string)($payment['room'] ?? 'gold') === 'match' ? 'Match' : 'Gold';
+        $coins = max(0, (int)($payment['coins'] ?? 0));
+        $price = max(0, (int)($payment['price'] ?? $payment['amount_rub'] ?? 0));
+        $currency = trim((string)($payment['currency'] ?? 'RUB')) ?: 'RUB';
+
+        if ($decision === 'applied') {
+            $title = 'Пополнение подтверждено';
+            $message = "Заявка #{$shortId}: начислено +{$coins} {$room}-коинов."
+                . ($price > 0 ? " Сумма: {$price} {$currency}." : '')
+                . ' Баланс уже обновлён.';
+            $tone = 'success';
+        } else {
+            $reason = trim((string)($payment['reject_reason'] ?? ''));
+            $title = 'Пополнение отклонено';
+            $message = "Заявка #{$shortId} на {$coins} {$room}-коинов отклонена."
+                . ($reason !== '' ? " Причина: {$reason}." : '')
+                . ' Баланс не изменён.';
+            $tone = 'danger';
+        }
+
+        $notification = [
+            'id' => make_id('notification'),
+            'event_key' => $eventKey,
+            'user_id' => $userId,
+            'type' => 'payment_' . $decision,
+            'title' => $title,
+            'message' => $message,
+            'tone' => $tone,
+            'payment_id' => $paymentId,
+            'created_at' => now_iso(),
+            'read_at' => null,
+        ];
+
+        $db['notifications'][] = $notification;
+        return $notification;
+    }
+
     public function addWelcomeMatchGrant(array &$db, array $user, array $grant): ?array
     {
         $userId = trim((string)($user['id'] ?? ''));
@@ -158,6 +219,7 @@ final class NotificationService
                 'message' => (string)($notification['message'] ?? ''),
                 'tone' => (string)($notification['tone'] ?? 'info'),
                 'order_id' => (string)($notification['order_id'] ?? ''),
+                'payment_id' => (string)($notification['payment_id'] ?? ''),
                 'created_at' => (string)($notification['created_at'] ?? ''),
                 'read' => !empty($notification['read_at']),
             ];
@@ -206,6 +268,13 @@ final class NotificationService
     private function shortOrderId(string $id): string
     {
         $id = preg_replace('/^(shop_|order_)/i', '', $id);
+        $id = strtoupper(substr((string)$id, 0, 8));
+        return $id !== '' ? $id : '—';
+    }
+
+    private function shortPaymentId(string $id): string
+    {
+        $id = preg_replace('/^(pay_)/i', '', $id);
         $id = strtoupper(substr((string)$id, 0, 8));
         return $id !== '' ? $id : '—';
     }
