@@ -1,11 +1,11 @@
 import { openSheet } from '../components/sheet.js?v=27';
 import { state } from '../state.js?v=27';
-import { gameTypeOf } from './game-router.js?v=65';
+import { gameTypeOf } from './game-router.js?v=66';
 import { ticTacToeRules } from './tictactoe/rules.js?v=53';
 import { fourInARowRules } from './four-in-a-row/rules.js?v=53';
 import { battleshipRules } from './battleship/rules.js?v=54';
 import { checkersRules } from './checkers/rules.js?v=58';
-import { reversiRules } from './reversi/rules.js?v=65';
+import { reversiRules } from './reversi/rules.js?v=66';
 
 const RULE_RENDERERS = {
   tictactoe: ticTacToeRules,
