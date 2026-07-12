@@ -5,7 +5,7 @@ final class GameActionService
 {
     public function __construct(
         private GameCatalogService $catalog,
-        private object $runtime
+        private GameRuntimeService|ChessRuntimeService $runtime
     ) {}
 
     public function apply(array &$db, array &$user, string $gameId, array $action): array
