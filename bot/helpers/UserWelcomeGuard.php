@@ -19,12 +19,14 @@ final class UserWelcomeGuard
         $chatId = trim((string)($message['chat']['id'] ?? ''));
         $fromId = trim((string)($message['from']['id'] ?? $chatId));
         $chatType = (string)($message['chat']['type'] ?? 'private');
+        $text = trim((string)($message['text'] ?? ''));
 
         if ($chatId === '' || $chatType !== 'private') {
             return false;
         }
 
-        if ((new AdminService($this->config))->isAdmin($fromId)) {
+        $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
+        if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) {
             return false;
         }
 
@@ -34,18 +36,20 @@ final class UserWelcomeGuard
         }
 
         // Telegram itself shows the native Start button before the first message.
-        // After that first tap, keep a permanent "Играть" menu button for the chat.
-        try {
-            $this->telegram->api('setChatMenuButton', [
-                'chat_id' => $chatId,
-                'menu_button' => [
-                    'type' => 'web_app',
-                    'text' => 'Играть',
-                    'web_app' => ['url' => $webAppUrl],
-                ],
-            ]);
-        } catch (Throwable $e) {
-            error_log('Mini Games World user menu button setup failed for ' . $chatId . ': ' . $e->getMessage());
+        // Regular players then keep a permanent "Играть" menu button in the chat.
+        if (!$isAdmin) {
+            try {
+                $this->telegram->api('setChatMenuButton', [
+                    'chat_id' => $chatId,
+                    'menu_button' => [
+                        'type' => 'web_app',
+                        'text' => 'Играть',
+                        'web_app' => ['url' => $webAppUrl],
+                    ],
+                ]);
+            } catch (Throwable $e) {
+                error_log('Mini Games World user menu button setup failed for ' . $chatId . ': ' . $e->getMessage());
+            }
         }
 
         $this->telegram->api('sendMessage', [
