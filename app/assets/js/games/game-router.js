@@ -31,7 +31,7 @@ import {
   chessMeta,
   chessPlayerMark,
   chessStatus,
-} from './chess/renderer.js?v=67';
+} from './chess/renderer.js?v=68';
 
 const routes = {
   tictactoe: {
