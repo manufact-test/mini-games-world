@@ -11,15 +11,15 @@ RewriteRule ^site(?:/|$) - [F,L]
 RewriteRule ^favicon\.ico$ favicon.svg [L]
 RewriteRule ^legal\.css$ site/legal/legal.css [L]
 
-# Main landing page.
-RewriteRule ^$ site/landing/landing-v10.php [L]
+# Russian-only main landing page.
+RewriteRule ^$ site/landing/landing-v11.php [L]
 
-# Blog index, articles and their shared assets.
-RewriteRule ^blog/?$ site/blog/index.html [L]
-RewriteRule ^blog/(tic-tac-toe-online|telegram-mini-app-games|telegram-games-with-friends|upcoming-games|gold-room|bot-and-match-coins)/?$ site/blog/$1/index.html [L]
+# Russian-only blog pages. Static assets retain their existing URLs.
+RewriteRule ^blog/?$ site/russian-page.php?page=blog [L,QSA]
+RewriteRule ^blog/(tic-tac-toe-online|telegram-mini-app-games|telegram-games-with-friends|upcoming-games|gold-room|bot-and-match-coins)/?$ site/russian-page.php?page=$1 [L,QSA]
 RewriteRule ^blog/(.+)$ site/blog/$1 [L]
 
-# Legal pages keep their current public addresses.
-RewriteRule ^privacy/?$ site/legal/privacy/index.html [L]
-RewriteRule ^cookies/?$ site/legal/cookies/index.html [L]
-RewriteRule ^terms/?$ site/legal/terms/index.html [L]
+# Russian-only legal pages.
+RewriteRule ^privacy/?$ site/russian-page.php?page=privacy [L,QSA]
+RewriteRule ^cookies/?$ site/russian-page.php?page=cookies [L,QSA]
+RewriteRule ^terms/?$ site/russian-page.php?page=terms [L,QSA]
