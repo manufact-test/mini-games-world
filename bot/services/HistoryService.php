@@ -249,7 +249,7 @@ final class HistoryService
 
     private function isTopupCategory(string $category): bool
     {
-        return in_array($category, ['payment_draft','payment_paid','payment_apply','payment_reject','admin_gold_topup'], true);
+        return in_array($category, ['payment_draft','payment_paid','payment_apply','payment_reject'], true);
     }
 
     private function balanceTitle(string $category): string
@@ -261,7 +261,9 @@ final class HistoryService
             'shop_order' => 'Заказ приза',
             'shop_refund' => 'Возврат за приз',
             'system_migration' => 'Системная миграция',
+            'welcome_bonus' => 'Стартовые коины',
             'weekly_bonus' => 'Еженедельное начисление',
+            'admin_gold_topup' => 'Начисление Gold',
             default => 'Операция баланса',
         };
     }
