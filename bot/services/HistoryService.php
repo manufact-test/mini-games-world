@@ -236,6 +236,7 @@ final class HistoryService
             'battleship' => 'Морской бой',
             'checkers' => 'Шашки',
             'reversi' => 'Реверси',
+            'chess' => 'Шахматы',
             default => 'Крестики-нолики',
         };
     }
