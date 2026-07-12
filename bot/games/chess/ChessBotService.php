@@ -8,14 +8,16 @@ final class ChessBotService
      * @param callable(array<string,mixed>,int,int):float $scoreMove
      * @return array<string,mixed>
      */
-    public function chooseMove(array $moves, string $difficulty, callable $scoreMove, int $budgetMs = 160): array
+    public function chooseMove(array $moves, string $difficulty, callable $scoreMove, int $budgetMs = 40): array
     {
         if ($moves === []) {
             throw new RuntimeException('У бота нет допустимых ходов.');
         }
 
         $difficulty = in_array($difficulty, ['easy', 'medium', 'hard'], true) ? $difficulty : 'medium';
-        $deadline = hrtime(true) + max(20, min(200, $budgetMs)) * 1_000_000;
+        // The current JSON storage uses one global lock. Keep bot calculation short
+        // so one Chess move cannot pause unrelated players or payment requests.
+        $deadline = hrtime(true) + max(20, min(40, $budgetMs)) * 1_000_000;
         $depth = $difficulty === 'hard' ? 2 : ($difficulty === 'medium' ? 1 : 0);
         $ranked = [];
 
