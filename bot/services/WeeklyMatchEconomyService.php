@@ -359,6 +359,12 @@ final class WeeklyMatchEconomyService
                 continue;
             }
 
+            // Weekly Match rewards must never be unlocked by Gold-room games.
+            // Old records without an explicit room are treated as Match for compatibility.
+            if ((string)($game['room'] ?? 'match') !== 'match') {
+                continue;
+            }
+
             $players = array_map('strval', $game['player_ids'] ?? []);
             if (!in_array($userId, $players, true)) {
                 continue;
