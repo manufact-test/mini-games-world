@@ -5,12 +5,15 @@ require_once dirname(__DIR__) . '/games/battleship/BattleshipBotService.php';
 require_once dirname(__DIR__) . '/games/battleship/BattleshipService.php';
 require_once dirname(__DIR__) . '/games/checkers/CheckersBotService.php';
 require_once dirname(__DIR__) . '/games/checkers/CheckersService.php';
+require_once dirname(__DIR__) . '/games/reversi/ReversiBotService.php';
+require_once dirname(__DIR__) . '/games/reversi/ReversiService.php';
 
 final class GameRuntimeService
 {
     private FourInARowService $fourInARow;
     private BattleshipService $battleship;
     private CheckersService $checkers;
+    private ReversiService $reversi;
 
     public function __construct(
         private array $config,
@@ -21,6 +24,7 @@ final class GameRuntimeService
         $this->fourInARow = new FourInARowService($this->config, $settlement);
         $this->battleship = new BattleshipService($this->config, $settlement);
         $this->checkers = new CheckersService($this->config, $settlement);
+        $this->reversi = new ReversiService($this->config, $settlement);
     }
 
     public function cleanup(array &$db): void
@@ -45,6 +49,7 @@ final class GameRuntimeService
         $this->fourInARow->cleanup($db);
         $this->battleship->cleanup($db);
         $this->checkers->cleanup($db);
+        $this->reversi->cleanup($db);
     }
 
     public function cleanupQueue(array &$db): void
@@ -116,7 +121,7 @@ final class GameRuntimeService
         $definition = $this->catalog->get($gameType);
         $engine = (string)($definition['engine'] ?? '');
 
-        if (!in_array($engine, ['tictactoe', 'four_in_a_row', 'battleship', 'checkers'], true)) {
+        if (!in_array($engine, ['tictactoe', 'four_in_a_row', 'battleship', 'checkers', 'reversi'], true)) {
             throw new RuntimeException('Движок этой игры пока не подключён.');
         }
 
@@ -164,6 +169,7 @@ final class GameRuntimeService
                 'four_in_a_row' => $this->fourInARow->surrender($db, $user, $gameId),
                 'battleship' => $this->battleship->surrender($db, $user, $gameId),
                 'checkers' => $this->checkers->surrender($db, $user, $gameId),
+                'reversi' => $this->reversi->surrender($db, $user, $gameId),
                 default => $this->surrenderLegacyGame($db, $user, $gameId),
             };
         }
@@ -215,6 +221,11 @@ final class GameRuntimeService
         return $this->checkers->applyAction($db, $user, $gameId, $action);
     }
 
+    public function applyReversiAction(array &$db, array &$user, string $gameId, array $action): array
+    {
+        return $this->reversi->applyAction($db, $user, $gameId, $action);
+    }
+
     public function publicGame(array $game, string $viewerId): array
     {
         $this->ensureGameType($game);
@@ -225,6 +236,7 @@ final class GameRuntimeService
             'four_in_a_row' => $this->fourInARow->publicGame($game, $viewerId),
             'battleship' => $this->battleship->publicGame($game, $viewerId),
             'checkers' => $this->checkers->publicGame($game, $viewerId),
+            'reversi' => $this->reversi->publicGame($game, $viewerId),
             default => $this->legacyGame->publicGame($game, $viewerId),
         };
 
@@ -258,6 +270,7 @@ final class GameRuntimeService
             'four_in_a_row' => $this->fourInARow->initializeGame($game),
             'battleship' => $this->battleship->initializeGame($game),
             'checkers' => $this->checkers->initializeGame($game),
+            'reversi' => $this->reversi->initializeGame($game),
             default => null,
         };
     }
@@ -281,6 +294,13 @@ final class GameRuntimeService
             $game['board_size'] = 8;
             $game['board_columns'] = 8;
             $game['board_rows'] = 8;
+            return;
+        }
+
+        if ($gameType === 'reversi') {
+            $game['board_size'] = $boardSize;
+            $game['board_columns'] = $boardSize;
+            $game['board_rows'] = $boardSize;
         }
     }
 
@@ -456,6 +476,12 @@ final class GameRuntimeService
     private function gameTypeFromRecord(array $record): string
     {
         if (
+            (string)($record['game_type'] ?? '') === 'reversi'
+            || !empty($record['reversi_initialized'])
+            || isset($record['reversi_sides'])
+        ) return 'reversi';
+
+        if (
             (string)($record['game_type'] ?? '') === 'checkers'
             || !empty($record['checkers_initialized'])
             || isset($record['checkers_sides'])
@@ -504,6 +530,7 @@ final class GameRuntimeService
         return match ($boardSize) {
             6 => 3,
             8 => 9,
+            10 => 5,
             default => 5,
         };
     }
@@ -512,8 +539,22 @@ final class GameRuntimeService
     {
         if ($gameType === 'battleship') return 10;
         if ($gameType === 'checkers') return 8;
+
+        if ($gameType === 'reversi') {
+            $requested = (int)($queueItem['requested_board_size'] ?? 0);
+            if (in_array($requested, [6, 8, 10], true)) return $requested;
+            return match ((int)($queueItem['board_size'] ?? 5)) {
+                3 => 6,
+                9 => 8,
+                default => 10,
+            };
+        }
+
         if ($gameType !== 'four_in_a_row') {
-            return $this->catalog->normalizeBoardSize($gameType, (int)($queueItem['requested_board_size'] ?? $queueItem['board_size'] ?? 3));
+            return $this->catalog->normalizeBoardSize(
+                $gameType,
+                (int)($queueItem['requested_board_size'] ?? $queueItem['board_size'] ?? 3)
+            );
         }
 
         $requested = (int)($queueItem['game_variant_size'] ?? $queueItem['requested_board_size'] ?? 0);
