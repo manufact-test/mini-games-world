@@ -2,12 +2,14 @@ import { TIC_TAC_TOE_META } from './tictactoe/meta.js?v=53';
 import { FOUR_IN_A_ROW_META } from './four-in-a-row/meta.js?v=53';
 import { BATTLESHIP_META } from './battleship/meta.js?v=53';
 import { CHECKERS_META } from './checkers/meta.js?v=58';
+import { REVERSI_META } from './reversi/meta.js?v=65';
 
 const GAME_META = {
   [TIC_TAC_TOE_META.id]: TIC_TAC_TOE_META,
   [FOUR_IN_A_ROW_META.id]: FOUR_IN_A_ROW_META,
   [BATTLESHIP_META.id]: BATTLESHIP_META,
   [CHECKERS_META.id]: CHECKERS_META,
+  [REVERSI_META.id]: REVERSI_META,
 };
 
 export function initGameCardCopy(){
