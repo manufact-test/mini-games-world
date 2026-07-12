@@ -75,6 +75,85 @@ function mgw_cleanup_games_if_due(array &$data, GameRuntimeService $games, bool 
     $data['system']['game_cleanup_at'] = now_iso();
 }
 
+function mgw_mark_matchmaking_presence(array &$user, string $room, string $gameType, int $boardSize): void
+{
+    $user['last_matchmaking_room'] = $room === 'gold' ? 'gold' : 'match';
+    $user['last_matchmaking_game_type'] = $gameType;
+    $user['last_matchmaking_board_size'] = $boardSize;
+    $user['last_matchmaking_at'] = now_iso();
+}
+
+function mgw_room_for_recent_user(array $data, string $userId): ?string
+{
+    foreach ($data['queue'] ?? [] as $item) {
+        if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
+        return ($item['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
+    }
+
+    $currentGameId = trim((string)($data['users'][$userId]['current_game_id'] ?? ''));
+    if ($currentGameId !== '' && isset($data['games'][$currentGameId]) && is_array($data['games'][$currentGameId])) {
+        return ($data['games'][$currentGameId]['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
+    }
+
+    $lastRoom = (string)($data['users'][$userId]['last_matchmaking_room'] ?? '');
+    return in_array($lastRoom, ['match', 'gold'], true) ? $lastRoom : null;
+}
+
+function mgw_has_other_recent_human_in_room(array $data, string $userId, string $room): bool
+{
+    $now = time();
+    $presenceWindowSec = 90;
+
+    foreach ($data['users'] ?? [] as $otherId => $other) {
+        $otherId = (string)$otherId;
+        if ($otherId === '' || $otherId === $userId || str_starts_with($otherId, 'bot_') || !is_array($other)) {
+            continue;
+        }
+
+        $lastSeen = strtotime((string)($other['last_seen_at'] ?? '')) ?: 0;
+        if ($lastSeen <= 0 || $now - $lastSeen > $presenceWindowSec) {
+            continue;
+        }
+
+        $knownRoom = mgw_room_for_recent_user($data, $otherId);
+        if ($knownRoom !== null && $knownRoom !== $room) {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+function mgw_make_search_ready_for_bot(array &$data, string $userId): ?string
+{
+    if (!isset($data['queue']) || !is_array($data['queue'])) return null;
+
+    foreach ($data['queue'] as &$item) {
+        if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
+        $originalCreatedAt = (string)($item['created_at'] ?? '');
+        $item['created_at'] = gmdate('c', time() - 31);
+        unset($item);
+        return $originalCreatedAt;
+    }
+    unset($item);
+    return null;
+}
+
+function mgw_restore_search_created_at(array &$data, string $userId, ?string $createdAt): void
+{
+    if ($createdAt === null || !isset($data['queue']) || !is_array($data['queue'])) return;
+
+    foreach ($data['queue'] as &$item) {
+        if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
+        $item['created_at'] = $createdAt !== '' ? $createdAt : now_iso();
+        unset($item);
+        return;
+    }
+    unset($item);
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
@@ -228,10 +307,27 @@ try {
                 $sessions->touch($user, $sessionId);
 
                 $room = (string)($payload['room'] ?? 'match');
+                $room = $room === 'gold' ? 'gold' : 'match';
                 $bet = (int)($payload['bet'] ?? 10);
                 $boardSize = (int)($payload['boardSize'] ?? 3);
                 $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
+                mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);
+
                 $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
+
+                if (empty($search['game'])
+                    && $room === 'match'
+                    && !mgw_has_other_recent_human_in_room($data, $userId, $room)) {
+                    $originalCreatedAt = mgw_make_search_ready_for_bot($data, $userId);
+                    if ($originalCreatedAt !== null) {
+                        $immediateGame = $games->maybeCreateBotGameForSearchingUser($data, $user);
+                        if (is_array($immediateGame)) {
+                            $search = ['game' => $games->publicGame($immediateGame, $userId)];
+                        } else {
+                            mgw_restore_search_created_at($data, $userId, $originalCreatedAt);
+                        }
+                    }
+                }
 
                 if (!empty($search['game']['id'])) {
                     $gameId = (string)$search['game']['id'];
