@@ -17,8 +17,11 @@ export function initSearchScreen(){
 export function startSearchPolling(){
   state.timers.search = clearTimer(state.timers.search);
   clearEmptyRoomBotCheck();
-  state.timers.search = setInterval(checkSearch, APP_CONFIG.searchIntervalMs);
-  emptyRoomBotCheckTimer = window.setTimeout(checkSearch, 3000);
+  emptyRoomBotCheckTimer = window.setTimeout(() => {
+    emptyRoomBotCheckTimer = null;
+    checkSearch();
+    state.timers.search = setInterval(checkSearch, APP_CONFIG.searchIntervalMs);
+  }, 3000);
   checkSearch();
 }
 
