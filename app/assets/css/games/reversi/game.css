@@ -1,0 +1,137 @@
+.reversi-surface{
+  display:block;
+  width:100%;
+  max-width:100%;
+  margin:0;
+}
+.game-board-screen[data-game-type="reversi"] .board.reversi-surface{
+  display:block;
+  width:100%;
+  max-width:100%;
+  margin:0;
+  gap:0;
+}
+.reversi-panel{display:grid;gap:8px;width:100%;min-width:0}
+.reversi-score-line{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  min-height:30px;padding:5px 10px;border:1px solid var(--stroke);border-radius:13px;
+  background:rgba(255,255,255,.045);color:var(--muted);font-size:10px;font-weight:850;
+}
+.reversi-score-line span{display:flex;align-items:center;gap:5px}
+.reversi-score-line strong{color:var(--text);font-size:13px}
+.reversi-score-line b{opacity:.5}
+.reversi-mini-disc{display:block;width:13px;aspect-ratio:1;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.35)}
+.reversi-mini-disc.black{background:linear-gradient(145deg,#3b455d,#080b12);box-shadow:inset 0 0 0 1px rgba(174,189,234,.3),0 2px 5px rgba(0,0,0,.45)}
+.reversi-mini-disc.white{background:linear-gradient(145deg,#fff,#c9ced5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),0 2px 5px rgba(0,0,0,.28)}
+
+.reversi-event-banner{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  min-height:40px;padding:8px 10px;border-radius:14px;border:1px solid var(--stroke);
+  font-size:11px;line-height:1.25;font-weight:900;background:rgba(255,255,255,.045);color:var(--text);
+}
+.reversi-event-banner.your-turn{background:rgba(46,230,166,.11);border-color:rgba(46,230,166,.3)}
+.reversi-event-banner.opponent{background:rgba(124,92,255,.11);border-color:rgba(124,92,255,.27)}
+.reversi-event-banner.pass{background:rgba(255,199,70,.14);border-color:rgba(255,199,70,.38);color:#fff0b8}
+.reversi-event-banner.pass.fresh{animation:reversi-pass-pulse .8s ease-in-out 2 alternate}
+.reversi-event-banner.finished{background:rgba(255,255,255,.06)}
+
+.reversi-board{
+  display:grid;
+  grid-template-columns:repeat(var(--reversi-size),minmax(0,1fr));
+  grid-template-rows:repeat(var(--reversi-size),minmax(0,1fr));
+  width:100%;aspect-ratio:1;overflow:hidden;gap:1px;
+  border-radius:8px;border:2px solid rgba(159,236,197,.28);
+  background:#0d3328;
+  box-shadow:0 16px 38px rgba(0,0,0,.28),inset 0 0 24px rgba(5,28,21,.5);
+}
+.reversi-cell{
+  position:relative;display:grid;place-items:center;width:100%;height:100%;min-width:0;min-height:0;
+  border:0;border-radius:0;padding:0;margin:0;overflow:hidden;
+  background:linear-gradient(145deg,#28775b,#1c5f49);touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;transition:filter .14s ease,box-shadow .14s ease;
+}
+.reversi-cell:nth-child(even){background:linear-gradient(145deg,#2a7b5e,#20664e)}
+.reversi-cell:not(:disabled){cursor:pointer}
+.reversi-cell:not(:disabled):active{filter:brightness(1.12)}
+.reversi-cell.legal{box-shadow:inset 0 0 0 2px rgba(122,255,203,.18)}
+.reversi-cell.last-move{box-shadow:inset 0 0 0 3px rgba(255,216,91,.7)}
+.reversi-cell.last-move.legal{box-shadow:inset 0 0 0 3px rgba(255,216,91,.7)}
+.reversi-surface.is-submitting .reversi-cell{pointer-events:none}
+
+.reversi-disc{
+  position:relative;z-index:3;display:block;width:78%;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  transform-style:preserve-3d;backface-visibility:hidden;
+}
+.reversi-disc::after{content:'';position:absolute;inset:13%;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
+.reversi-disc.black{
+  background:radial-gradient(circle at 35% 28%,#4a566f 0,#222b3c 38%,#080b11 78%);
+  box-shadow:0 5px 10px rgba(0,0,0,.48),inset 0 0 0 2px rgba(160,177,226,.2),inset 0 -5px 8px rgba(0,0,0,.42);
+}
+.reversi-disc.white{
+  background:radial-gradient(circle at 35% 28%,#fff 0,#eef0f2 43%,#b9bec6 82%);
+  box-shadow:0 5px 10px rgba(0,0,0,.3),inset 0 0 0 2px rgba(255,255,255,.86),inset 0 -5px 8px rgba(80,86,98,.18);
+}
+.reversi-move-dot{
+  position:absolute;z-index:2;display:grid;place-items:center;width:31%;aspect-ratio:1;border-radius:50%;
+  background:#75efbd;box-shadow:0 0 0 4px rgba(46,230,166,.16),0 0 16px rgba(46,230,166,.58);
+  animation:reversi-target-pulse .72s ease-in-out infinite alternate;pointer-events:none;
+}
+.reversi-move-dot b{font-style:normal;font-size:clamp(7px,2.5vw,11px);line-height:1;color:#0a3e2e;font-weight:950}
+.reversi-cell.placed-fresh .reversi-disc{animation:reversi-place .5s cubic-bezier(.2,.9,.25,1.25)}
+.reversi-cell.flipped-fresh .reversi-disc{animation:reversi-flip .62s ease both;animation-delay:var(--flip-delay,0ms)}
+
+.reversi-legend{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:9px;font-weight:850}
+.reversi-legend span{display:flex;align-items:center;gap:4px}
+.reversi-legend i{display:block;width:9px;height:9px;border-radius:50%}
+.reversi-legend .available{background:#75efbd;box-shadow:0 0 0 3px rgba(46,230,166,.15)}
+.reversi-legend .last{background:transparent;border:2px solid #ffd85b}
+.reversi-legend .flip{background:#a78cff;box-shadow:0 0 8px rgba(124,92,255,.55)}
+
+.reversi-start-scroll{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.reversi-start-scroll::-webkit-scrollbar{display:none}
+.reversi-size-grid .choice{display:grid;gap:2px;min-width:0}
+.reversi-size-grid .choice strong{font-size:15px}
+.reversi-size-grid .choice span{font-size:10px;color:var(--muted)}
+.reversi-size-grid .choice.active span{color:rgba(255,255,255,.78)}
+.reversi-start-preview{
+  display:grid;grid-template-columns:repeat(var(--reversi-size),minmax(0,1fr));grid-template-rows:repeat(var(--reversi-size),minmax(0,1fr));
+  width:min(100%,300px);aspect-ratio:1;margin:12px auto 6px;gap:1px;overflow:hidden;border-radius:8px;
+  border:2px solid rgba(159,236,197,.25);background:#0d3328;
+}
+.reversi-start-preview span{display:grid;place-items:center;min-width:0;min-height:0;background:#246f54}
+.reversi-start-preview span:nth-child(even){background:#28775a}
+.reversi-start-preview i{display:block;width:76%;aspect-ratio:1;border-radius:50%}
+.reversi-start-preview i.black{background:radial-gradient(circle at 35% 28%,#4a566f,#10151f 72%);box-shadow:0 3px 8px rgba(0,0,0,.42),inset 0 0 0 1px rgba(180,194,235,.22)}
+.reversi-start-preview i.white{background:radial-gradient(circle at 35% 28%,#fff,#c5cad1 76%);box-shadow:0 3px 8px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.75)}
+.reversi-preview-caption{text-align:center;color:var(--muted);font-size:11px;font-weight:850}
+
+.game-board-screen[data-game-type="reversi"] .content{padding:8px 8px 14px}
+.game-board-screen[data-game-type="reversi"] .game-header{position:sticky;top:0;z-index:12;background:linear-gradient(180deg,rgba(10,14,24,.98) 0%,rgba(10,14,24,.93) 82%,rgba(10,14,24,0) 100%);padding-bottom:5px;margin-bottom:2px}
+.game-board-screen[data-game-type="reversi"] .turn-box{padding:8px 10px;border-radius:16px}
+.game-board-screen[data-game-type="reversi"] .turn-text{font-size:15px}
+.game-board-screen[data-game-type="reversi"] .players-row{gap:6px}
+.game-board-screen[data-game-type="reversi"] .game-player{padding:7px 8px;border-radius:14px}
+.game-board-screen[data-game-type="reversi"] .game-player .name{font-size:12px}
+.game-board-screen[data-game-type="reversi"] .game-player .mark{font-size:10px;margin-top:2px}
+.game-board-screen[data-game-type="reversi"] .board-wrap{padding:3px;margin:4px auto 8px;border-radius:12px;overflow:visible}
+
+@keyframes reversi-target-pulse{from{transform:scale(.78);filter:brightness(.95)}to{transform:scale(1.08);filter:brightness(1.15)}}
+@keyframes reversi-place{0%{transform:scale(.15);opacity:.2}65%{transform:scale(1.14);opacity:1}100%{transform:scale(1)}}
+@keyframes reversi-flip{0%{transform:perspective(180px) rotateY(0deg) scale(1)}45%{transform:perspective(180px) rotateY(90deg) scale(.82);filter:brightness(1.5)}100%{transform:perspective(180px) rotateY(180deg) scale(1);filter:brightness(1)}}
+@keyframes reversi-pass-pulse{from{transform:scale(.985);filter:brightness(.98)}to{transform:scale(1.01);filter:brightness(1.1)}}
+
+@media (max-height:700px){
+  .game-board-screen[data-game-type="reversi"] .content{padding-top:6px}
+  .reversi-event-banner{min-height:34px;padding:6px 8px;font-size:10px}
+  .reversi-score-line{min-height:25px;padding:4px 7px}
+  .reversi-panel{gap:6px}
+}
+@media (max-width:380px){
+  .game-board-screen[data-game-type="reversi"] .content{padding-left:5px;padding-right:5px}
+  .game-board-screen[data-game-type="reversi"] .board-wrap{padding:2px;border-radius:8px}
+  .reversi-event-banner{font-size:10px}
+  .reversi-legend{gap:7px}
+}
+@media (prefers-reduced-motion:reduce){
+  .reversi-move-dot,.reversi-cell.placed-fresh .reversi-disc,.reversi-cell.flipped-fresh .reversi-disc,.reversi-event-banner.pass.fresh{animation:none}
+}
