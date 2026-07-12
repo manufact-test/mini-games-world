@@ -40,13 +40,46 @@ import {
 } from './go/renderer.js?v=70';
 
 const routes = {
-  tictactoe: { render: renderTicTacToeSurface, meta: ticTacToeMeta, playerMark: ticTacToePlayerMark },
-  four_in_a_row: { render: renderFourInARowSurface, meta: fourInARowMeta, playerMark: fourInARowPlayerMark },
-  battleship: { render: renderBattleshipSurface, meta: battleshipMeta, playerMark: battleshipPlayerMark, status: battleshipStatus },
-  checkers: { render: renderCheckersSurface, meta: checkersMeta, playerMark: checkersPlayerMark, status: checkersStatus },
-  reversi: { render: renderReversiSurface, meta: reversiMeta, playerMark: reversiPlayerMark, status: reversiStatus },
-  chess: { render: renderChessSurface, meta: chessMeta, playerMark: chessPlayerMark, status: chessStatus },
-  go: { render: renderGoSurface, meta: goMeta, playerMark: goPlayerMark, status: goStatus },
+  tictactoe: {
+    render: renderTicTacToeSurface,
+    meta: ticTacToeMeta,
+    playerMark: ticTacToePlayerMark,
+  },
+  four_in_a_row: {
+    render: renderFourInARowSurface,
+    meta: fourInARowMeta,
+    playerMark: fourInARowPlayerMark,
+  },
+  battleship: {
+    render: renderBattleshipSurface,
+    meta: battleshipMeta,
+    playerMark: battleshipPlayerMark,
+    status: battleshipStatus,
+  },
+  checkers: {
+    render: renderCheckersSurface,
+    meta: checkersMeta,
+    playerMark: checkersPlayerMark,
+    status: checkersStatus,
+  },
+  reversi: {
+    render: renderReversiSurface,
+    meta: reversiMeta,
+    playerMark: reversiPlayerMark,
+    status: reversiStatus,
+  },
+  chess: {
+    render: renderChessSurface,
+    meta: chessMeta,
+    playerMark: chessPlayerMark,
+    status: chessStatus,
+  },
+  go: {
+    render: renderGoSurface,
+    meta: goMeta,
+    playerMark: goPlayerMark,
+    status: goStatus,
+  },
 };
 
 export function gameTypeOf(game){
@@ -69,7 +102,9 @@ export function gameTypeOf(game){
     || Boolean(game?.go_initialized)
     || Boolean(game?.go_sides)
     || Boolean(game?.final_score?.komi)
-  ) return 'go';
+  ) {
+    return 'go';
+  }
 
   if (
     explicit === 'chess'
@@ -80,7 +115,9 @@ export function gameTypeOf(game){
     || Boolean(game?.chess_initialized)
     || Boolean(game?.chess_sides)
     || (boardArrayLength === 64 && Boolean(game?.king_cells))
-  ) return 'chess';
+  ) {
+    return 'chess';
+  }
 
   if (
     explicit === 'reversi'
@@ -90,7 +127,9 @@ export function gameTypeOf(game){
     || Boolean(game?.reversi_initialized)
     || Boolean(game?.reversi_sides)
     || Boolean(game?.final_counts && Object.prototype.hasOwnProperty.call(game.final_counts, 'black'))
-  ) return 'reversi';
+  ) {
+    return 'reversi';
+  }
 
   if (
     explicit === 'checkers'
@@ -101,7 +140,9 @@ export function gameTypeOf(game){
     || Boolean(game?.checkers_initialized)
     || Boolean(game?.checkers_sides)
     || (boardArrayLength === 64 && Number(game?.board_size) === 8 && Boolean(game?.viewer_side))
-  ) return 'checkers';
+  ) {
+    return 'checkers';
+  }
 
   if (
     explicit === 'battleship'
@@ -113,9 +154,15 @@ export function gameTypeOf(game){
     || Array.isArray(game?.my_board)
     || Array.isArray(game?.enemy_board)
     || Boolean(game?.phase === 'setup' && Number(game?.board_size) === 10)
-  ) return 'battleship';
+  ) {
+    return 'battleship';
+  }
 
-  const looksLikeFourBoard = columns >= 6 && columns <= 8 && rows === columns - 1 && boardStringLength === columns * rows;
+  const looksLikeFourBoard = columns >= 6
+    && columns <= 8
+    && rows === columns - 1
+    && boardStringLength === columns * rows;
+
   if (
     explicit === 'four_in_a_row'
     || renderer === 'four_in_a_row'
@@ -125,7 +172,9 @@ export function gameTypeOf(game){
     || Boolean(game?.four_in_a_row_initialized)
     || (rows >= 5 && connectLength === 4)
     || looksLikeFourBoard
-  ) return 'four_in_a_row';
+  ) {
+    return 'four_in_a_row';
+  }
 
   return explicit || 'tictactoe';
 }
@@ -159,11 +208,17 @@ export function gameStatusText(game, me){
   return String(game?.turn || '') === String(me?.id || '') ? 'Ваш ход' : 'Ход соперника';
 }
 
-function routeFor(game){ return routes[gameTypeOf(game)] || null; }
+function routeFor(game){
+  return routes[gameTypeOf(game)] || null;
+}
 
 function renderUnsupportedGame(container, game){
   container.className = 'board game-surface-unsupported';
-  container.innerHTML = `<div class="small-note">Экран игры «${escapeHtml(game?.game_title || gameTypeOf(game))}» пока не подключён.</div>`;
+  container.innerHTML = `
+    <div class="small-note">
+      Экран игры «${escapeHtml(game?.game_title || gameTypeOf(game))}» пока не подключён.
+    </div>
+  `;
 }
 
 function escapeHtml(value){
