@@ -12,7 +12,7 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=57';
+} from '../games/game-router.js?v=65';
 
 const weeklyProgressNotifiedGames = new Set();
 
@@ -177,6 +177,8 @@ async function startSameSearchFromResult(){
     state.selectedBoardSize = boardSize;
   } else if (gameType === 'four_in_a_row') {
     state.selectedFourBoardSize = boardSize;
+  } else if (gameType === 'reversi') {
+    state.selectedReversiBoardSize = boardSize;
   }
   state.selectedBet = bet;
   state.activeGame = null;
@@ -266,6 +268,8 @@ function openResultSheet(game, me){
     }
   }
 
+  text += reversiScoreText(game, me);
+
   openSheet(`
     <div class="sheet-head">
       <div><h2>${title}</h2><p>${text}</p></div>
@@ -279,6 +283,17 @@ function openResultSheet(game, me){
 
   document.getElementById('newOpponent')?.addEventListener('click', startSameSearchFromResult);
   document.getElementById('goHome')?.addEventListener('click', () => { closeSheet(); state.activeGame = null; showScreen('home'); });
+}
+
+function reversiScoreText(game, me){
+  if (gameTypeOf(game) !== 'reversi') return '';
+  const player = (game?.players || []).find(item => String(item?.id || '') === String(me?.id || ''));
+  const side = String(player?.side || game?.viewer_side || 'black');
+  const black = Number(game?.final_counts?.black ?? game?.black_count ?? 0);
+  const white = Number(game?.final_counts?.white ?? game?.white_count ?? 0);
+  const mine = side === 'black' ? black : white;
+  const theirs = side === 'black' ? white : black;
+  return ` Итоговый счёт: ${mine}:${theirs}.`;
 }
 
 function notifyWeeklyProgress(game){
