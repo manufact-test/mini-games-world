@@ -76,19 +76,12 @@ final class AdminGoldTopupNotificationGuard
         }
 
         $amount = max(0, (int)($transaction['amount'] ?? 0));
-        $before = (int)($transaction['balance_before'] ?? 0);
-        $after = (int)($transaction['balance_after'] ?? ($before + $amount));
         $reason = trim((string)($transaction['reason'] ?? ''));
 
-        $text = "🪙 Gold начислен\n\n"
-            . "Начислено: +{$amount} Gold\n"
-            . "Баланс: {$before} → {$after}";
-
+        $text = "🪙 Gold начислен\n\nНачислено: +{$amount} Gold";
         if ($reason !== '') {
             $text .= "\nПричина: {$reason}";
         }
-
-        $text .= "\n\nНачисление сохранено в истории и в уведомлениях Mini App.";
 
         try {
             $this->telegram->api('sendMessage', [
