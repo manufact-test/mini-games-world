@@ -4,7 +4,10 @@ const inFlight = new Map();
 const nextAllowedAt = new Map();
 const responseCache = new Map();
 const DEFAULT_RATE_LIMIT_BACKOFF_MS = 5000;
-const GAME_STATE_MIN_GAP_MS = 2200;
+const GAME_STATE_MIN_GAP_MS = 2400;
+const SEARCH_STATE_MIN_GAP_MS = 3500;
+const STATS_MIN_GAP_MS = 30000;
+const NOTIFICATIONS_MIN_GAP_MS = 30000;
 
 let installed = false;
 let rateLimitedUntil = 0;
@@ -97,15 +100,18 @@ function requestMeta(input, init){
     const action = String(payload.action || '');
 
     if (action === 'game_state') {
+      const hasGameId = String(payload.gameId || '') !== '';
       const gameId = String(payload.gameId || 'current');
       const key = `game_state:${gameId}`;
+      const minGapMs = hasGameId ? GAME_STATE_MIN_GAP_MS : SEARCH_STATE_MIN_GAP_MS;
       return {
         kind:'game_state',
         singleFlightKey:key,
         cacheKey:key,
         cacheWhenHidden:true,
-        throttleKey:'game_state',
-        minGapMs:GAME_STATE_MIN_GAP_MS,
+        throttleKey:hasGameId ? 'game_state' : 'search_state',
+        minGapMs,
+        jitterMs:Math.round(minGapMs * 0.2),
         safeRetry:true,
         waitForVisible:false,
       };
@@ -118,7 +124,8 @@ function requestMeta(input, init){
         cacheKey:'stats',
         cacheWhenHidden:true,
         throttleKey:'stats',
-        minGapMs:5000,
+        minGapMs:STATS_MIN_GAP_MS,
+        jitterMs:5000,
         safeRetry:true,
         waitForVisible:false,
       };
@@ -132,6 +139,7 @@ function requestMeta(input, init){
         cacheWhenHidden:false,
         throttleKey:'',
         minGapMs:0,
+        jitterMs:0,
         safeRetry:false,
         waitForVisible:true,
       };
@@ -149,7 +157,8 @@ function requestMeta(input, init){
       cacheKey:'',
       cacheWhenHidden:false,
       throttleKey:markRead ? '' : 'notifications',
-      minGapMs:markRead ? 0 : 10000,
+      minGapMs:markRead ? 0 : NOTIFICATIONS_MIN_GAP_MS,
+      jitterMs:markRead ? 0 : 5000,
       safeRetry:!markRead,
       waitForVisible:!markRead,
     };
@@ -167,7 +176,13 @@ async function waitForRequestWindow(meta){
 
 function markRequestStarted(meta){
   if (!meta.throttleKey || !meta.minGapMs) return;
-  nextAllowedAt.set(meta.throttleKey, Date.now() + meta.minGapMs);
+  const jitter = randomJitter(meta.jitterMs || 0);
+  nextAllowedAt.set(meta.throttleKey, Date.now() + meta.minGapMs + jitter);
+}
+
+function randomJitter(maxMs){
+  const safeMax = Math.max(0, Math.trunc(Number(maxMs || 0)));
+  return safeMax > 0 ? Math.floor(Math.random() * (safeMax + 1)) : 0;
 }
 
 function registerRateLimit(response){
