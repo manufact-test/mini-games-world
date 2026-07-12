@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'v63-api-rate-guard';
-import { initRequestGuard } from './api/request-guard.js?v=63';
+window.__MGW_BUILD__ = 'v64-scalability-guard';
+import { initRequestGuard } from './api/request-guard.js?v=64';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
