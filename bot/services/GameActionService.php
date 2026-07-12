@@ -5,7 +5,7 @@ final class GameActionService
 {
     public function __construct(
         private GameCatalogService $catalog,
-        private GameRuntimeService $runtime
+        private object $runtime
     ) {}
 
     public function apply(array &$db, array &$user, string $gameId, array $action): array
@@ -39,6 +39,7 @@ final class GameActionService
             'battleship' => $this->runtime->applyBattleshipAction($db, $user, $gameId, $action),
             'checkers' => $this->runtime->applyCheckersAction($db, $user, $gameId, $action),
             'reversi' => $this->runtime->applyReversiAction($db, $user, $gameId, $action),
+            'chess' => $this->runtime->applyChessAction($db, $user, $gameId, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
     }
