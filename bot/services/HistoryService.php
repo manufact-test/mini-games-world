@@ -235,6 +235,7 @@ final class HistoryService
             'four_in_a_row' => '4 в ряд',
             'battleship' => 'Морской бой',
             'checkers' => 'Шашки',
+            'reversi' => 'Реверси',
             default => 'Крестики-нолики',
         };
     }
