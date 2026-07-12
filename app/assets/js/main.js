@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v69-chess-rules-style';
+window.__MGW_BUILD__ = 'v70-go';
 import { initRequestGuard } from './api/request-guard.js?v=64';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -11,24 +11,25 @@ import { initAccountShortcuts } from './components/account-shortcuts.js?v=48';
 import { initUserCopy } from './components/user-copy.js?v=62';
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
-import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=27';
+import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=70';
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen.js?v=62';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=46';
-import { initSearchScreen } from './screens/search-screen.js?v=68';
-import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=68';
+import { initSearchScreen } from './screens/search-screen.js?v=70';
+import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=70';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
-import { initGameRules } from './games/game-rules.js?v=69';
-import { initGameCardCopy } from './games/game-card-copy.js?v=67';
+import { initGameRules } from './games/game-rules.js?v=70';
+import { initGameCardCopy } from './games/game-card-copy.js?v=70';
 import { initGameInvites } from './games/game-invites.js?v=55';
-import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=68';
-import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=68';
-import { initBattleshipEntry } from './games/battleship/entry.js?v=68';
-import { initCheckersEntry } from './games/checkers/entry.js?v=68';
-import { initReversiEntry } from './games/reversi/entry.js?v=68';
-import { initChessEntry } from './games/chess/entry.js?v=68';
+import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=70';
+import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=70';
+import { initBattleshipEntry } from './games/battleship/entry.js?v=70';
+import { initCheckersEntry } from './games/checkers/entry.js?v=70';
+import { initReversiEntry } from './games/reversi/entry.js?v=70';
+import { initChessEntry } from './games/chess/entry.js?v=70';
+import { initGoEntry } from './games/go/entry.js?v=70';
 import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
@@ -47,6 +48,7 @@ initBattleshipEntry();
 initCheckersEntry();
 initReversiEntry();
 initChessEntry();
+initGoEntry();
 initStoreScreen();
 initStoreOrder();
 initStoreOrders();
@@ -109,10 +111,8 @@ async function refreshStatsIfVisible(){
 
 function canRefreshHomeStats(){
   if (document.visibilityState !== 'visible') return false;
-
   const activeScreen = document.querySelector('.screen.active');
   if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
-
   return !document.getElementById('sheetOverlay')?.classList.contains('active');
 }
 
