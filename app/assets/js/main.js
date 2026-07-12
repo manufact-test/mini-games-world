@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v68-chess-ux-fix';
+window.__MGW_BUILD__ = 'v69-chess-rules-style';
 import { initRequestGuard } from './api/request-guard.js?v=64';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -20,7 +20,7 @@ import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-mat
 import { initSearchScreen } from './screens/search-screen.js?v=68';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=68';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
-import { initGameRules } from './games/game-rules.js?v=68';
+import { initGameRules } from './games/game-rules.js?v=69';
 import { initGameCardCopy } from './games/game-card-copy.js?v=67';
 import { initGameInvites } from './games/game-invites.js?v=55';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=68';
