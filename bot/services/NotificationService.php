@@ -26,7 +26,6 @@ final class NotificationService
             }
         }
 
-        $amount = abs((int)($order['gold_cost'] ?? $order['amount'] ?? 0));
         $shortId = $this->shortOrderId($orderId);
         $prize = trim((string)(($order['prize_title'] ?? '') ?: ($order['provider'] ?? '') ?: 'Приз'));
         $denomination = trim((string)($order['denomination_label'] ?? ''));
@@ -35,20 +34,15 @@ final class NotificationService
             $title = 'Заказ выполнен';
             $message = "Заявка #{$shortId}: {$prize}"
                 . ($denomination !== '' ? " · {$denomination}" : '')
-                . '. Статус обновлён в разделе «Мои заявки».';
+                . '.';
             $tone = 'success';
         } else {
             $reason = trim((string)($order['reject_reason'] ?? $order['admin_note'] ?? ''));
-            $refundDone = !empty($order['refund_done']);
-            $refundAmount = abs((int)($order['refund_amount'] ?? $amount));
             $title = 'Заказ отклонён';
             $message = "Заявка #{$shortId}: {$prize}.";
             if ($reason !== '') {
                 $message .= " Причина: {$reason}.";
             }
-            $message .= $refundDone
-                ? " Возвращено +{$refundAmount} Gold."
-                : ' Проверьте статус возврата в разделе «Мои заявки».';
             $tone = 'danger';
         }
 
@@ -100,16 +94,17 @@ final class NotificationService
 
         if ($decision === 'applied') {
             $title = 'Пополнение подтверждено';
-            $message = "Заявка #{$shortId}: начислено +{$coins} {$room}-коинов."
-                . ($price > 0 ? " Сумма: {$price} {$currency}." : '')
-                . ' Баланс уже обновлён.';
+            $message = "Заявка #{$shortId}: начислено +{$coins} {$room}-коинов"
+                . ($price > 0 ? " за {$price} {$currency}" : '')
+                . '.';
             $tone = 'success';
         } else {
             $reason = trim((string)($payment['reject_reason'] ?? ''));
             $title = 'Пополнение отклонено';
-            $message = "Заявка #{$shortId} на {$coins} {$room}-коинов отклонена."
-                . ($reason !== '' ? " Причина: {$reason}." : '')
-                . ' Баланс не изменён.';
+            $message = "Заявка #{$shortId} на {$coins} {$room}-коинов отклонена.";
+            if ($reason !== '') {
+                $message .= " Причина: {$reason}.";
+            }
             $tone = 'danger';
         }
 
@@ -154,11 +149,8 @@ final class NotificationService
             }
         }
 
-        $before = (int)($transaction['balance_before'] ?? 0);
-        $after = (int)($transaction['balance_after'] ?? ($before + $amount));
         $reason = trim((string)($transaction['reason'] ?? ''));
-
-        $message = "Администратор начислил +{$amount} Gold. Баланс: {$before} → {$after}.";
+        $message = "Начислено +{$amount} Gold.";
         if ($reason !== '') {
             $message .= " Причина: {$reason}.";
         }
@@ -243,7 +235,7 @@ final class NotificationService
             'user_id' => $userId,
             'type' => 'weekly_match_bonus',
             'title' => 'Еженедельные коины начислены',
-            'message' => "Спасибо, что играете в Mini Games World. За неделю вы завершили {$games} игр — вам начислено +{$amount} коинов в Матч-комнату.",
+            'message' => "За {$games} завершённых Match-матча начислено +{$amount} коинов.",
             'tone' => 'success',
             'cycle_key' => $cycleKey,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
