@@ -9,7 +9,7 @@ import { reversiRules } from './reversi/rules.js?v=66';
 import { chessRules } from './chess/rules.js?v=69';
 import { goRules } from './go/rules.js?v=70';
 
-const ruleRenderers = {
+const RULE_RENDERERS = {
   tictactoe: ticTacToeRules,
   four_in_a_row: fourInARowRules,
   battleship: battleshipRules,
@@ -19,16 +19,25 @@ const ruleRenderers = {
   go: goRules,
 };
 
+let initialized = false;
+
 export function initGameRules(){
+  if (initialized) return;
+  initialized = true;
+
   document.addEventListener('click', event => {
-    const button = event.target.closest('[data-game-rules]');
+    const button = event.target.closest('[data-game-rules], [data-game-rules-current]');
     if (!button) return;
-    const explicit = String(button.dataset.gameRules || '');
-    const gameType = explicit || gameTypeOf(state.activeGame || {});
-    const renderer = ruleRenderers[gameType];
-    if (!renderer) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    openSheet(renderer());
-  }, true);
+
+    const gameType = button.hasAttribute('data-game-rules-current')
+      ? gameTypeOf(state.activeGame)
+      : String(button.dataset.gameRules || 'tictactoe');
+
+    openGameRules(gameType);
+  });
+}
+
+export function openGameRules(gameType){
+  const renderer = RULE_RENDERERS[gameType] || RULE_RENDERERS.tictactoe;
+  openSheet(renderer());
 }
