@@ -369,7 +369,11 @@ final class GameInviteFlowService
         if ($userId === '') return;
         if (!isset($db['notifications']) || !is_array($db['notifications'])) $db['notifications'] = [];
         foreach ($db['notifications'] as $existing) {
-            if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) return;
+            if (!is_array($existing)) continue;
+            if ((string)($existing['event_key'] ?? '') === $eventKey
+                && (string)($existing['user_id'] ?? '') === $userId) {
+                return;
+            }
         }
 
         $db['notifications'][] = [
