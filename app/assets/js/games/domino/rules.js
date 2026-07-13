@@ -27,7 +27,7 @@ export function dominoRules(){
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Добор и пропуск</strong><span>Если подходящей костяшки нет, нажмите «Добрать». Игра возьмёт костяшки из запаса, пока не появится ход или запас не закончится. Когда запас пуст, ход пропускается автоматически.</span></div>
+        <div class="game-rule-copy"><strong>Добор и пропуск</strong><span>Если подходящей костяшки нет, нажмите «Добрать». За одно нажатие берётся одна костяшка. Если она не подошла, нажмите «Добрать» ещё раз. Когда запас пуст, ход пропускается автоматически.</span></div>
         ${drawRule()}
       </section>
 
@@ -90,7 +90,7 @@ function drawRule(){
     <div class="domino-rule-scene draw">
       <div class="domino-rule-stock">${Array.from({length:4}, () => '<i></i>').join('')}<b>8</b></div>
       <div class="domino-rule-draw-arrow">→</div>
-      <div class="domino-rule-drawn">${tileMarkup(2,6)}${tileMarkup(1,4)}${tileMarkup(3,5)}<span>Добор прекращается после подходящей костяшки</span></div>
+      <div class="domino-rule-drawn">${tileMarkup(2,6)}<span>Одно нажатие — одна костяшка</span></div>
     </div>
   `;
 }

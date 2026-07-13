@@ -341,13 +341,12 @@ final class DominoService
             return $game;
         }
 
-        $drawn = [];
-        while ($stock !== [] && !$this->hasLegalPlay($hand, $game['domino_chain'] ?? [])) {
-            $tile = (string)array_pop($stock);
-            $hand[] = $tile;
-            $drawn[] = $tile;
-        }
+        // Одна кнопка — одна костяшка. Игрок видит каждый добор отдельно
+        // и нажимает «Добрать» снова, пока не появится допустимый ход.
+        $tile = (string)array_pop($stock);
+        $hand[] = $tile;
         $game['domino_hands'][$playerId] = array_values($hand);
+        $playableFound = $this->hasLegalPlay($hand, $game['domino_chain'] ?? []);
 
         $now = now_iso();
         $game['domino_move_count'] = (int)($game['domino_move_count'] ?? 0) + 1;
@@ -357,18 +356,18 @@ final class DominoService
         $game['domino_last_action'] = [
             'type' => 'draw',
             'player_id' => $playerId,
-            'drawn_count' => count($drawn),
-            'drawn_tiles' => array_values($drawn),
-            'playable_found' => $this->hasLegalPlay($hand, $game['domino_chain'] ?? []),
+            'drawn_count' => 1,
+            'drawn_tiles' => [$tile],
+            'playable_found' => $playableFound,
         ];
         unset($game['bot_move_after_at']);
 
-        if ($this->hasLegalPlay($hand, $game['domino_chain'] ?? [])) {
+        if ($playableFound || $stock !== []) {
             $this->scheduleBotIfNeeded($game);
             return $game;
         }
 
-        $this->resolveAutomaticPasses($db, $game, count($drawn));
+        $this->resolveAutomaticPasses($db, $game, 1);
         if (($game['status'] ?? '') === 'active') $this->scheduleBotIfNeeded($game);
         return $game;
     }

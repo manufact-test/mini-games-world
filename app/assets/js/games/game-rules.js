@@ -8,7 +8,7 @@ import { checkersRules } from './checkers/rules.js?v=58';
 import { reversiRules } from './reversi/rules.js?v=66';
 import { chessRules } from './chess/rules.js?v=69';
 import { goRules } from './go/rules.js?v=71';
-import { dominoRules } from './domino/rules.js?v=74';
+import { dominoRules } from './domino/rules.js?v=75';
 
 const RULE_RENDERERS = {
   tictactoe: ticTacToeRules,
