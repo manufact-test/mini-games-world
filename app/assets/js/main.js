@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v78-mvp12-invite-ready-check';
+window.__MGW_BUILD__ = 'v79-mvp12-invite-notification-actions';
 import { initRequestGuard } from './api/request-guard.js?v=64';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -23,6 +23,7 @@ import { initProfileScreen } from './screens/profile-screen.js?v=48';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=72';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=78';
+import { initInviteInboxActions } from './games/invite-inbox-actions.js?v=79';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
 import { initBattleshipEntry } from './games/battleship/entry.js?v=74';
@@ -42,7 +43,13 @@ initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
+
+// The notification center must register before the invite guard so a bell click
+// marks the notification as read and shows its action button instead of reopening a stale sheet.
+initNotificationsScreen();
+initInviteInboxActions();
 initGameInvites();
+
 initTicTacToeEntry();
 initFourInARowEntry();
 initBattleshipEntry();
@@ -54,7 +61,6 @@ initDominoEntry();
 initStoreScreen();
 initStoreOrder();
 initStoreOrders();
-initNotificationsScreen();
 initWeeklyMatchInfo();
 initHomeScreen();
 initAccountShortcuts();
