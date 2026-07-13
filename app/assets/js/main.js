@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v80-mvp12-invite-stability';
+window.__MGW_BUILD__ = 'v81-domino-readable-chain';
 import { initRequestGuard } from './api/request-guard.js?v=80';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -24,6 +24,7 @@ import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=80';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
+import { initDominoChainLayout } from './games/domino/chain-layout.js?v=81';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
 import { initBattleshipEntry } from './games/battleship/entry.js?v=74';
@@ -46,6 +47,7 @@ initGameCardCopy();
 initNotificationsScreen();
 initGameInvites();
 initGameFinishStability();
+initDominoChainLayout();
 
 initTicTacToeEntry();
 initFourInARowEntry();
