@@ -12,7 +12,7 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=73';
+} from '../games/game-router.js?v=74';
 
 const gameScreenRuntime = window.__MGW_GAME_SCREEN_RUNTIME__ ||= {
   initialized:false,

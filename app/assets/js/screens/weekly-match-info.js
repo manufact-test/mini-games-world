@@ -132,7 +132,7 @@ function renderWeeklyMatchInfo(status){
     </div>
 
     <div class="small-note">
-      Каждый понедельник в 12:00 начисляем +${amount.toLocaleString('ru-RU')} коинов в Матч-комнату, если за неделю завершены ${minGames} любые игры. ${escapeHtml(progressText)}
+      Каждый понедельник в 12:00 по московскому времени начисляем +${amount.toLocaleString('ru-RU')} коинов в Матч-комнату, если за неделю завершены ${minGames} матча в Матч-комнате. ${escapeHtml(progressText)}
     </div>
 
     <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
@@ -157,7 +157,7 @@ function formatScheduleDate(value, timezone){
   if (Number.isNaN(date.getTime())) return 'Ближайший понедельник, 12:00';
 
   return new Intl.DateTimeFormat('ru-RU', {
-    timeZone: timezone || 'Europe/Warsaw',
+    timeZone: timezone || 'Europe/Moscow',
     weekday: 'long',
     day: 'numeric',
     month: 'long',

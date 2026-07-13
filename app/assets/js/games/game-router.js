@@ -43,7 +43,7 @@ import {
   dominoMeta,
   dominoPlayerMark,
   dominoStatus,
-} from './domino/renderer.js?v=73';
+} from './domino/renderer.js?v=74';
 
 const routes = {
   tictactoe: {

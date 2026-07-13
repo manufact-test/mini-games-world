@@ -6,8 +6,8 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from '../ui.js?v=27';
-import { startSearchPolling } from './search-screen.js?v=73';
-import { startGamePolling } from './game-screen.js?v=73';
+import { startSearchPolling } from './search-screen.js?v=74';
+import { startGamePolling } from './game-screen.js?v=74';
 import { isSessionLocked, sessionMessage } from '../session.js?v=27';
 
 export function initHomeScreen(){
@@ -321,9 +321,9 @@ function openRulesSheet(){
 
         <p>Если матч закончился ничьей, коины возвращаются игрокам.</p>
 
-        <p>Каждый понедельник в <strong>12:00</strong> активным игрокам начисляется <strong>+50 коинов</strong>.</p>
+        <p>Каждый понедельник в <strong>12:00 по московскому времени</strong> активным игрокам начисляется <strong>+50 коинов</strong>.</p>
 
-        <p>Активным считается игрок, который впервые вошёл в игру или сыграл минимум <strong>3 завершённых матча</strong> за неделю.</p>
+        <p>Активным считается игрок, который впервые вошёл в игру или сыграл минимум <strong>3 завершённых матча в Match-комнате</strong> за неделю.</p>
 
         <p>Начисление происходит один раз в неделю. Если игрок не был активен, еженедельные коины не начисляются.</p>
 

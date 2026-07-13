@@ -1,6 +1,7 @@
 import { toast } from '../../components/toast.js?v=41';
 
-const ROUTE = createRoute();
+const MEDIUM_ROUTE = createMediumRoute();
+const LONG_ROUTE = createLongRoute();
 let activeGameId = '';
 let selectedTileId = '';
 let lastAnimatedMove = -1;
@@ -66,12 +67,12 @@ export function dominoStatus(game, me){
 
 function tableMarkup(game, selectedId){
   const chain = Array.isArray(game?.chain) ? game.chain : [];
-  const layout = layoutChain(chain);
+  const density = chainDensity(chain.length);
+  const layout = layoutChain(chain, density);
   const lastAction = game?.last_action || {};
-  const density = chain.length <= 7 ? 'short' : (chain.length <= 16 ? 'medium' : 'long');
 
   const tiles = chain.map((item, index) => {
-    const slot = layout.slots[index] || ROUTE[Math.min(index, ROUTE.length - 1)];
+    const slot = layout.slots[index] || layout.fallback;
     const isLatest = String(lastAction?.type || '') === 'play'
       && Number(item?.move_number || -1) === Number(game?.move_count || -2);
     const isDouble = Number(item?.left) === Number(item?.right);
@@ -107,7 +108,7 @@ function tableMarkup(game, selectedId){
     : '';
 
   const caption = selectedId
-    ? 'Нажмите на подсвеченное место слева или справа.'
+    ? 'Выберите один из подсвеченных концов цепочки.'
     : `Открытые концы: <strong>${leftEnd}</strong> и <strong>${rightEnd}</strong>`;
 
   return `
@@ -154,8 +155,8 @@ function actionsMarkup(game, myTurn, selectedId){
       </button>
     `;
   }
-  if (selectedId) return '<div class="domino-action-note active">Теперь нажмите на место для костяшки на столе.</div>';
-  return '<div class="domino-action-note">Подходящие костяшки отмечены аккуратной зелёной рамкой.</div>';
+  if (selectedId) return '<div class="domino-action-note active">Нажмите на подсвеченный конец цепочки.</div>';
+  return '<div class="domino-action-note">Подходящие костяшки отмечены зелёной рамкой.</div>';
 }
 
 function finalMarkup(game){
@@ -270,9 +271,8 @@ function placementTargetMarkup(tileId, side, openValue, slot){
       data-domino-side="${side}"
       type="button"
       style="--domino-x:${slot.x}%;--domino-y:${slot.y}%;--domino-rotation:${slot.rotation}deg"
-      aria-label="Поставить костяшку ${a}–${b} ${side === 'left' ? 'слева' : 'справа'}">
+      aria-label="Поставить костяшку ${a}–${b} к ${side === 'left' ? 'первому' : 'второму'} концу цепочки">
       ${tileMarkup(left, right, {vertical:slot.vertical, double:isDouble, compact:true, title:`${a}-${b}`})}
-      <span>Сюда</span>
     </button>
   `;
 }
@@ -298,48 +298,90 @@ function parseTileId(tileId){
   return [Number(parts[0] || 0), Number(parts[1] || 0)];
 }
 
-function layoutChain(chain){
-  if (chain.length <= 7) {
+function chainDensity(count){
+  if (count <= 1) return 'solo';
+  if (count <= 3) return 'short';
+  if (count <= 6) return 'wide';
+  if (count <= 16) return 'medium';
+  return 'long';
+}
+
+function layoutChain(chain, density){
+  if (density === 'solo' || density === 'short' || density === 'wide') {
     const count = Math.max(1, chain.length);
-    const spacing = count <= 3 ? 18 : (count <= 5 ? 15 : 12.5);
+    const spacing = density === 'solo' ? 24 : (density === 'short' ? 19 : 12);
     const startX = 50 - ((count - 1) * spacing) / 2;
-    const slots = chain.map((_, index) => ({x:startX + index * spacing, y:50, vertical:false, rotation:0}));
+    const slots = chain.map((_, index) => ({
+      x:startX + index * spacing,
+      y:50,
+      vertical:false,
+      rotation:0,
+    }));
+
     return {
       slots,
-      leftTarget:{x:Math.max(5, startX - spacing), y:50, vertical:false, rotation:0},
-      rightTarget:{x:Math.min(95, startX + count * spacing), y:50, vertical:false, rotation:0},
+      leftTarget:{x:clamp(startX - spacing, 3, 97), y:50, vertical:false, rotation:0},
+      rightTarget:{x:clamp(startX + count * spacing, 3, 97), y:50, vertical:false, rotation:0},
+      fallback:{x:50, y:50, vertical:false, rotation:0},
     };
   }
 
+  const route = density === 'medium' ? MEDIUM_ROUTE : LONG_ROUTE;
   const foundStartIndex = chain.findIndex(item => item?.is_start);
   const startIndex = foundStartIndex >= 0 ? foundStartIndex : 0;
   const before = startIndex;
   const after = Math.max(0, chain.length - startIndex - 1);
-  const startSlot = Math.max(before, Math.min(13, ROUTE.length - 1 - after));
+  const minAnchor = before + 1;
+  const maxAnchor = route.length - 2 - after;
+  const preferredAnchor = density === 'medium' ? 4 : 8;
+  const startSlot = clamp(preferredAnchor, minAnchor, maxAnchor);
   const slots = chain.map((_, index) => {
     const routeIndex = startSlot + index - startIndex;
-    return ROUTE[Math.max(0, Math.min(ROUTE.length - 1, routeIndex))];
+    return route[Math.max(0, Math.min(route.length - 1, routeIndex))];
   });
-  const firstIndex = Math.max(0, startSlot - before);
-  const lastIndex = Math.min(ROUTE.length - 1, startSlot + after);
+  const firstIndex = startSlot - before;
+  const lastIndex = startSlot + after;
 
   return {
     slots,
-    leftTarget:firstIndex > 0 ? ROUTE[firstIndex - 1] : null,
-    rightTarget:lastIndex < ROUTE.length - 1 ? ROUTE[lastIndex + 1] : null,
+    leftTarget:route[firstIndex - 1] || null,
+    rightTarget:route[lastIndex + 1] || null,
+    fallback:route[Math.min(startSlot, route.length - 1)],
   };
 }
 
-function createRoute(){
+function createMediumRoute(){
   const route = [];
-  for (let index = 0; index < 8; index++) route.push({x:12 + index * 10.8, y:20, vertical:false, rotation:0});
-  route.push({x:88, y:34, vertical:true, rotation:0});
-  route.push({x:88, y:48, vertical:true, rotation:0});
-  for (let index = 0; index < 8; index++) route.push({x:77 - index * 9.3, y:48, vertical:false, rotation:180});
-  route.push({x:12, y:63, vertical:true, rotation:180});
-  route.push({x:12, y:78, vertical:true, rotation:180});
-  for (let index = 0; index < 8; index++) route.push({x:23 + index * 9.3, y:78, vertical:false, rotation:0});
+  const xs = [8,20,32,44,56,68,80,92];
+
+  xs.forEach(x => route.push({x,y:25,vertical:false,rotation:0}));
+  route.push({x:95,y:39,vertical:true,rotation:0});
+  route.push({x:95,y:55,vertical:true,rotation:0});
+  [...xs].reverse().forEach(x => route.push({x,y:70,vertical:false,rotation:180}));
+
   return route;
+}
+
+function createLongRoute(){
+  const route = [];
+  const xs = [10,20,30,40,50,60,70,80,90];
+
+  xs.forEach(x => route.push({x,y:14,vertical:false,rotation:0}));
+  route.push({x:95,y:22,vertical:true,rotation:0});
+  route.push({x:95,y:30,vertical:true,rotation:0});
+  [...xs].reverse().forEach(x => route.push({x,y:38,vertical:false,rotation:180}));
+  route.push({x:5,y:46,vertical:true,rotation:0});
+  route.push({x:5,y:54,vertical:true,rotation:0});
+  xs.forEach(x => route.push({x,y:62,vertical:false,rotation:0}));
+  route.push({x:95,y:70,vertical:true,rotation:0});
+  route.push({x:95,y:78,vertical:true,rotation:0});
+  [...xs].reverse().forEach(x => route.push({x,y:86,vertical:false,rotation:180}));
+
+  return route;
+}
+
+function clamp(value, min, max){
+  return Math.max(min, Math.min(max, value));
 }
 
 function declension(value, one, few, many){

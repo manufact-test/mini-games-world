@@ -15,7 +15,12 @@
 .domino-table-topline{display:flex;align-items:center;justify-content:space-between;min-height:27px;color:rgba(255,255,255,.8);font-size:10px;font-weight:850}
 .domino-opponent-back,.domino-stock-count{display:flex;align-items:center;gap:6px}
 .domino-opponent-back i,.domino-stock-count i{display:block;width:18px;height:11px;border-radius:3px;border:1px solid rgba(255,255,255,.25);background:repeating-linear-gradient(135deg,#263148 0 3px,#131b2d 3px 6px);box-shadow:0 2px 5px rgba(0,0,0,.28)}
-.domino-chain-area{position:relative;width:100%;aspect-ratio:1.24;min-height:238px}
+.domino-chain-area{position:relative;width:100%;height:155px;transition:height .2s ease}
+.domino-table[data-chain-density="solo"] .domino-chain-area{height:120px}
+.domino-table[data-chain-density="short"] .domino-chain-area{height:136px}
+.domino-table[data-chain-density="wide"] .domino-chain-area{height:156px}
+.domino-table[data-chain-density="medium"] .domino-chain-area{height:220px}
+.domino-table[data-chain-density="long"] .domino-chain-area{height:320px}
 .domino-chain-slot,.domino-placement-target{position:absolute;left:var(--domino-x);top:var(--domino-y);transform:translate(-50%,-50%) rotate(var(--domino-rotation));z-index:3}
 .domino-chain-slot.vertical .domino-tile,.domino-placement-target.vertical .domino-tile{transform:rotate(90deg)}
 .domino-chain-slot.horizontal.is-double .domino-tile,.domino-placement-target.horizontal.is-double .domino-tile{transform:rotate(90deg)}
@@ -24,12 +29,14 @@
 .domino-chain-slot.latest .domino-tile{box-shadow:0 0 0 2px rgba(255,216,91,.72),0 7px 14px rgba(0,0,0,.35)}
 .domino-chain-slot.animate-in{animation:domino-place .42s cubic-bezier(.2,.8,.25,1.2)}
 .domino-placement-target{display:grid;place-items:center;border:0;padding:0;background:transparent;z-index:8;cursor:pointer;touch-action:manipulation;animation:domino-target-pulse .85s ease-in-out infinite alternate}
-.domino-placement-target .domino-tile{opacity:.92;box-shadow:0 0 0 3px rgba(46,230,166,.8),0 0 18px rgba(46,230,166,.42),0 7px 14px rgba(0,0,0,.3)}
-.domino-placement-target>span{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);padding:2px 6px;border-radius:999px;background:#2ee6a6;color:#0c1913;font-size:8px;font-weight:950;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.28)}
-.domino-table[data-chain-density="short"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="short"] .domino-placement-target .domino-tile.compact{width:48px;height:25px}
-.domino-table[data-chain-density="medium"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="medium"] .domino-placement-target .domino-tile.compact{width:42px;height:22px}
-.domino-table[data-chain-density="long"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="long"] .domino-placement-target .domino-tile.compact{width:36px;height:19px}
-.domino-table-caption{text-align:center;color:rgba(255,255,255,.72);font-size:10px;font-weight:800;margin-top:-2px;min-height:15px}
+.domino-placement-target .domino-tile{opacity:.82;filter:saturate(.86);box-shadow:0 0 0 3px rgba(46,230,166,.88),0 0 18px rgba(46,230,166,.5),0 7px 14px rgba(0,0,0,.3)}
+.domino-placement-target::after{content:"+";position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#2ee6a6;color:#0b1a13;font-size:14px;line-height:1;font-weight:950;box-shadow:0 3px 9px rgba(0,0,0,.35);pointer-events:none}
+.domino-table[data-chain-density="solo"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="solo"] .domino-placement-target .domino-tile.compact{width:78px;height:40px}
+.domino-table[data-chain-density="short"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="short"] .domino-placement-target .domino-tile.compact{width:64px;height:33px}
+.domino-table[data-chain-density="wide"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="wide"] .domino-placement-target .domino-tile.compact{width:44px;height:23px}
+.domino-table[data-chain-density="medium"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="medium"] .domino-placement-target .domino-tile.compact{width:40px;height:21px}
+.domino-table[data-chain-density="long"] .domino-chain-slot .domino-tile.compact,.domino-table[data-chain-density="long"] .domino-placement-target .domino-tile.compact{width:32px;height:17px}
+.domino-table-caption{text-align:center;color:rgba(255,255,255,.72);font-size:10px;font-weight:800;margin-top:0;min-height:15px}
 .domino-table-caption strong{color:#ffd85b}
 .domino-tile{display:flex;flex-direction:row;width:47px;height:24px;border-radius:5px;border:1px solid rgba(53,58,70,.55);background:linear-gradient(155deg,#fff,#dfe3e8);box-shadow:0 5px 10px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.76);overflow:hidden;box-sizing:border-box;color:#10141d}
 .domino-tile.compact{width:clamp(30px,9.2vw,41px);height:clamp(16px,4.8vw,21px)}
@@ -68,21 +75,21 @@
 .domino-reveal>div{display:flex;justify-content:center;gap:3px;flex-wrap:wrap}
 .domino-start-scroll{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .domino-start-scroll::-webkit-scrollbar{display:none}
-.domino-start-preview{display:grid;gap:10px;margin:8px 0 6px;padding:14px 12px 12px;border:1px solid rgba(95,137,101,.48);border-radius:20px;background:radial-gradient(circle at 48% 42%,rgba(67,141,82,.3),transparent 54%),linear-gradient(145deg,#183c2c,#10261d);overflow:hidden}
+.domino-start-preview{display:grid;gap:10px;margin:8px 0 6px;padding:14px 12px 16px;border:1px solid rgba(95,137,101,.48);border-radius:20px;background:radial-gradient(circle at 48% 42%,rgba(67,141,82,.3),transparent 54%),linear-gradient(145deg,#183c2c,#10261d);overflow:hidden}
 .domino-preview-stock{display:flex;justify-content:flex-end;align-items:center;gap:9px;min-height:22px;padding-right:2px}
 .domino-preview-stock-deck{display:flex;align-items:center;padding-left:12px}
 .domino-preview-stock-deck i{width:22px;height:13px;margin-left:-12px;border-radius:3px;border:1px solid rgba(255,255,255,.23);background:repeating-linear-gradient(135deg,#263148 0 3px,#131b2d 3px 6px);box-shadow:0 2px 5px rgba(0,0,0,.28)}
 .domino-preview-stock b{font-size:10px;color:rgba(255,255,255,.8)}
-.domino-preview-chain{display:flex;align-items:center;justify-content:center;min-height:68px;padding:4px 0}
+.domino-preview-chain{display:flex;align-items:center;justify-content:center;min-height:74px;padding:8px 0}
 .domino-mini-tile{display:flex;width:54px;height:28px;border-radius:5px;border:1px solid rgba(53,58,70,.55);background:linear-gradient(155deg,#fff,#dfe3e8);box-shadow:0 5px 10px rgba(0,0,0,.32);overflow:hidden;margin-left:-1px}
 .domino-mini-tile.is-double{transform:rotate(90deg);margin:0 13px;background:linear-gradient(155deg,#fff6d4,#e7d79c)}
 .domino-mini-half{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;width:50%;height:100%;padding:3px;box-sizing:border-box}
 .domino-mini-half+ .domino-mini-half{border-left:1px solid rgba(32,38,49,.45)}
 .domino-mini-half b{width:4px;height:4px;border-radius:50%;background:transparent}
 .domino-mini-half b.active{background:#151923}
-.domino-preview-hand{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:end;gap:3px;min-height:58px;padding:2px 4px 0}
-.domino-preview-hand-slot{display:grid;place-items:center;min-width:0;height:56px}
-.domino-preview-hand-slot .domino-mini-tile{width:52px;height:27px;transform:rotate(90deg);margin:0}
+.domino-preview-hand{display:flex;justify-content:center;align-items:center;gap:7px;min-height:66px;padding:7px 0 9px}
+.domino-preview-hand-slot{display:grid;place-items:center;flex:0 0 30px;width:30px;height:58px;min-width:0}
+.domino-preview-hand-slot .domino-mini-tile{width:54px;height:28px;transform:rotate(90deg);margin:0}
 .domino-preview-caption{text-align:center;color:var(--muted);font-size:10px;font-weight:850}
 .domino-setup-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
 .domino-setup-facts>div{display:grid;gap:2px;text-align:center;padding:8px 5px;border:1px solid var(--stroke);border-radius:13px;background:rgba(255,255,255,.035)}
@@ -92,6 +99,22 @@
 @keyframes domino-target-pulse{from{filter:brightness(.94);transform:translate(-50%,-50%) rotate(var(--domino-rotation)) scale(.97)}to{filter:brightness(1.08);transform:translate(-50%,-50%) rotate(var(--domino-rotation)) scale(1.03)}}
 @keyframes domino-hand-pulse{0%{filter:brightness(1)}50%{filter:brightness(1.22)}100%{filter:brightness(1)}}
 @keyframes domino-invalid{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-@media (max-width:380px){.domino-chain-area{min-height:218px}.domino-hand{padding-left:5px;padding-right:5px}.domino-hand.roomy .domino-hand-tile .domino-tile{width:61px;height:31px}.domino-preview-hand-slot .domino-mini-tile{width:48px;height:25px}}
-@media (max-height:700px){.domino-chain-area{min-height:205px}.domino-event-banner{min-height:32px;padding:5px 8px}.domino-hand{min-height:66px}.domino-hand-tile{height:62px}.domino-hand.roomy .domino-hand-tile .domino-tile{width:58px;height:30px}}
+@media (max-width:380px){
+  .domino-hand{padding-left:5px;padding-right:5px}
+  .domino-hand.roomy .domino-hand-tile .domino-tile{width:61px;height:31px}
+  .domino-preview-hand{gap:4px}
+  .domino-preview-hand-slot{flex-basis:28px;width:28px}
+  .domino-preview-hand-slot .domino-mini-tile{width:50px;height:26px}
+}
+@media (max-height:700px){
+  .domino-table[data-chain-density="solo"] .domino-chain-area{height:108px}
+  .domino-table[data-chain-density="short"] .domino-chain-area{height:124px}
+  .domino-table[data-chain-density="wide"] .domino-chain-area{height:142px}
+  .domino-table[data-chain-density="medium"] .domino-chain-area{height:196px}
+  .domino-table[data-chain-density="long"] .domino-chain-area{height:286px}
+  .domino-event-banner{min-height:32px;padding:5px 8px}
+  .domino-hand{min-height:66px}
+  .domino-hand-tile{height:62px}
+  .domino-hand.roomy .domino-hand-tile .domino-tile{width:58px;height:30px}
+}
 @media (prefers-reduced-motion:reduce){.domino-chain-slot.animate-in,.domino-placement-target,.domino-hand.draw-pulse,.domino-hand-tile.invalid{animation:none}}
