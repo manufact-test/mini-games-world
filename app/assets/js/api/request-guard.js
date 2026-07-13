@@ -9,7 +9,7 @@ const RATE_LIMIT_JITTER_MS = 3000;
 const GAME_STATE_MIN_GAP_MS = 2400;
 const SEARCH_STATE_MIN_GAP_MS = 3500;
 const STATS_MIN_GAP_MS = 30000;
-const NOTIFICATIONS_MIN_GAP_MS = 30000;
+const NOTIFICATIONS_MIN_GAP_MS = 1800;
 
 let installed = false;
 let rateLimitedUntil = 0;
@@ -163,7 +163,7 @@ function requestMeta(input, init){
       cacheWhenHidden:false,
       throttleKey:markRead ? '' : 'notifications',
       minGapMs:markRead ? 0 : NOTIFICATIONS_MIN_GAP_MS,
-      jitterMs:markRead ? 0 : 5000,
+      jitterMs:markRead ? 0 : 300,
       safeRetry:!markRead,
       waitForVisible:!markRead,
     };
