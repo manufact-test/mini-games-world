@@ -30,10 +30,18 @@ final class UserWelcomeGuard
             return false;
         }
 
-        $webAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=76';
-        if ($webAppUrl === '/app/?v=76') {
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=76';
+        if ($baseWebAppUrl === '/app/?v=76') {
             return false;
         }
+
+        $inviteToken = '';
+        if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
+            $inviteToken = strtolower((string)$matches[1]);
+        }
+        $buttonWebAppUrl = $inviteToken !== ''
+            ? $baseWebAppUrl . '&invite=' . rawurlencode($inviteToken)
+            : $baseWebAppUrl;
 
         // Telegram itself shows the native Start button before the first message.
         // Regular players then keep a permanent "Играть" menu button in the chat.
@@ -44,7 +52,7 @@ final class UserWelcomeGuard
                     'menu_button' => [
                         'type' => 'web_app',
                         'text' => 'Играть',
-                        'web_app' => ['url' => $webAppUrl],
+                        'web_app' => ['url' => $baseWebAppUrl],
                     ],
                 ]);
             } catch (Throwable $e) {
@@ -54,12 +62,14 @@ final class UserWelcomeGuard
 
         $this->telegram->api('sendMessage', [
             'chat_id' => $chatId,
-            'text' => "🎮 Mini Games World\n\nНажмите кнопку ниже, чтобы начать играть.",
+            'text' => $inviteToken !== ''
+                ? "🎮 Вас пригласили сыграть в Mini Games World.\n\nОткройте приглашение и проверьте условия матча."
+                : "🎮 Mini Games World\n\nНажмите кнопку ниже, чтобы начать играть.",
             'reply_markup' => [
                 'inline_keyboard' => [[
                     [
-                        'text' => '🎮 Начать игру',
-                        'web_app' => ['url' => $webAppUrl],
+                        'text' => $inviteToken !== '' ? '🎮 Открыть приглашение' : '🎮 Начать игру',
+                        'web_app' => ['url' => $buttonWebAppUrl],
                     ],
                 ]],
             ],
