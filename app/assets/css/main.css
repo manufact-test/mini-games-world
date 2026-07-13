@@ -3,7 +3,7 @@
 @import url('./base/typography.css?v=39');
 @import url('./base/layout.css?v=27');
 @import url('./components/buttons.css?v=37');
-@import url('./components/cards.css?v=27');
+@import url('./components/cards.css?v=80');
 @import url('./components/modals.css?v=27');
 @import url('./components/game-invites.css?v=77');
 @import url('./components/preloader.css?v=27');
@@ -29,7 +29,7 @@
 @import url('./screens/store-cleanup.css?v=43');
 @import url('./screens/store-order.css?v=38');
 @import url('./screens/store-orders.css?v=36');
-@import url('./screens/notifications.css?v=62');
+@import url('./screens/notifications.css?v=80');
 @import url('./screens/search.css?v=27');
 @import url('./screens/game.css?v=56');
 @import url('./screens/profile.css?v=48');
