@@ -1,0 +1,37 @@
+/* MVP-12 invitation sheets */
+.overlay:has([data-invite-sheet]){
+  background:rgba(3,6,12,.84);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+
+.sheet [data-invite-sheet][hidden]{
+  display:none;
+}
+
+.sheet .invite-actions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:10px;
+  margin:0;
+}
+
+.sheet .invite-actions .btn{
+  width:100%;
+  min-height:52px;
+  margin:0 !important;
+}
+
+.invite-status-note{
+  margin:0 !important;
+}
+
+@media (max-height:620px){
+  .sheet .invite-actions{
+    gap:8px;
+  }
+
+  .sheet .invite-actions .btn{
+    min-height:46px;
+  }
+}
