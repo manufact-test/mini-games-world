@@ -18,6 +18,8 @@
 .domino-chain-area{position:relative;width:100%;aspect-ratio:1.24;min-height:238px}
 .domino-chain-slot{position:absolute;left:var(--domino-x);top:var(--domino-y);transform:translate(-50%,-50%) rotate(var(--domino-rotation));z-index:3}
 .domino-chain-slot.vertical .domino-tile{transform:rotate(90deg)}
+.domino-chain-slot.horizontal.is-double .domino-tile{transform:rotate(90deg)}
+.domino-chain-slot.vertical.is-double .domino-tile{transform:rotate(0deg)}
 .domino-chain-slot.latest{z-index:5}
 .domino-chain-slot.latest .domino-tile{box-shadow:0 0 0 2px rgba(255,216,91,.72),0 7px 14px rgba(0,0,0,.35)}
 .domino-chain-slot.animate-in{animation:domino-place .42s cubic-bezier(.2,.8,.25,1.2)}
