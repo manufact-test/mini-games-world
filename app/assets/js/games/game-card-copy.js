@@ -22,13 +22,29 @@ export function initGameCardCopy(){
   document.querySelectorAll('[data-game-card]').forEach(card => {
     const meta = GAME_META[String(card.dataset.gameCard || '')];
     if (!meta) return;
+
     const title = card.querySelector('[data-game-title]');
     const icon = card.querySelector('[data-game-icon]');
     const description = card.querySelector('[data-game-description]');
     const rulesButton = card.querySelector('[data-game-rules]');
+
     if (title) title.textContent = meta.title;
-    if (icon) icon.textContent = meta.icon;
+    if (icon) renderGameIcon(icon, meta);
     if (description) description.textContent = meta.description;
     if (rulesButton) rulesButton.setAttribute('aria-label', `Правила игры ${meta.title}`);
   });
+}
+
+function renderGameIcon(icon, meta){
+  if (meta.id === 'four_in_a_row') {
+    icon.classList.add('game-icon-four');
+    icon.innerHTML = `
+      <span class="four-card-disc red" aria-hidden="true"></span>
+      <span class="four-card-disc yellow" aria-hidden="true"></span>
+    `;
+    return;
+  }
+
+  icon.classList.remove('game-icon-four');
+  icon.textContent = meta.icon;
 }
