@@ -75,6 +75,7 @@
 .notification-card.success{border-color:rgba(83,201,125,.25);background:rgba(83,201,125,.07)}
 .notification-card.danger{border-color:rgba(255,95,109,.25);background:rgba(255,95,109,.07)}
 .notification-card.warning{border-color:rgba(255,176,32,.25);background:rgba(255,176,32,.07)}
+.notification-card.info{border-color:rgba(124,92,255,.24);background:rgba(124,92,255,.07)}
 
 .notification-icon{
   width:42px;
@@ -85,17 +86,22 @@
   background:rgba(255,255,255,.07);
   border:1px solid var(--stroke);
   font-size:20px;
+  line-height:1;
   font-weight:950;
+  text-align:center;
 }
 .notification-card.success .notification-icon{color:#9fe5b3;background:rgba(83,201,125,.12);border-color:rgba(83,201,125,.25)}
 .notification-card.danger .notification-icon{color:#ffb2b2;background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.25)}
 .notification-card.warning .notification-icon{color:#ffd18a;background:rgba(255,176,32,.12);border-color:rgba(255,176,32,.25)}
+.notification-card.info .notification-icon{color:#c9bcff;background:rgba(124,92,255,.12);border-color:rgba(124,92,255,.25)}
 
 .notification-copy{min-width:0;display:flex;flex-direction:column;gap:6px}
 .notification-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .notification-head strong{font-size:14px;line-height:1.25}
 .notification-head span{flex:0 0 auto;color:var(--muted);font-size:10px;font-weight:800}
 .notification-copy p{margin:0;color:var(--soft);font-size:12px;line-height:1.45;text-wrap:pretty}
+.notification-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px}
+.notification-actions .btn{min-height:42px;padding:10px 12px}
 
 /* Interactive notification shown only on the safe home screen. */
 .notification-toast{
@@ -133,6 +139,7 @@
 .notification-toast.success{border-color:rgba(83,201,125,.32);background:rgba(22,42,38,.97)}
 .notification-toast.danger{border-color:rgba(255,95,109,.34);background:rgba(47,28,39,.97)}
 .notification-toast.warning{border-color:rgba(255,176,32,.34);background:rgba(48,39,24,.97)}
+.notification-toast.info{border-color:rgba(124,92,255,.34);background:rgba(29,27,52,.97)}
 
 .notification-toast-icon{
   width:42px;
@@ -143,11 +150,14 @@
   border:1px solid var(--stroke);
   background:rgba(255,255,255,.075);
   font-size:20px;
+  line-height:1;
   font-weight:950;
+  text-align:center;
 }
 .notification-toast.success .notification-toast-icon{color:#9fe5b3;background:rgba(83,201,125,.13);border-color:rgba(83,201,125,.28)}
 .notification-toast.danger .notification-toast-icon{color:#ffb2b2;background:rgba(255,95,109,.13);border-color:rgba(255,95,109,.28)}
 .notification-toast.warning .notification-toast-icon{color:#ffd18a;background:rgba(255,176,32,.13);border-color:rgba(255,176,32,.28)}
+.notification-toast.info .notification-toast-icon{color:#c9bcff;background:rgba(124,92,255,.13);border-color:rgba(124,92,255,.28)}
 
 .notification-toast-copy{min-width:0;display:flex;flex-direction:column;gap:4px}
 .notification-toast-copy strong{font-size:14px;line-height:1.25}
