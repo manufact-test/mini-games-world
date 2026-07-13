@@ -116,6 +116,32 @@ function mgw_invite_game_for_viewer(
     return $games->publicGame($data['games'][$gameId], $userId);
 }
 
+function mgw_raw_invite_by_token(array $data, string $token): ?array
+{
+    foreach ($data['invites'] ?? [] as $invite) {
+        if (is_array($invite) && hash_equals((string)($invite['token'] ?? ''), $token)) {
+            return $invite;
+        }
+    }
+    return null;
+}
+
+function mgw_assert_no_other_ready_check(array $data, string $userId, string $currentToken): void
+{
+    if ($userId === '') return;
+
+    foreach ($data['invites'] ?? [] as $invite) {
+        if (!is_array($invite) || (string)($invite['status'] ?? '') !== 'awaiting_start') continue;
+        if ((string)($invite['token'] ?? '') === $currentToken) continue;
+
+        $isParticipant = (string)($invite['inviter_id'] ?? '') === $userId
+            || (string)($invite['invitee_id'] ?? '') === $userId;
+        if ($isParticipant) {
+            throw new RuntimeException('Сначала завершите другое подтверждённое приглашение.');
+        }
+    }
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
@@ -184,11 +210,18 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
             })(),
-            'accept' => (function () use (&$data, &$user, $payload, $users, $sessions, $inviteFlow, $sessionId): array {
+            'accept' => (function () use (&$data, &$user, $payload, $users, $sessions, $inviteFlow, $sessionId, $userId): array {
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
+                $token = clean_string($payload['token'] ?? '', 80);
+                $rawInvite = mgw_raw_invite_by_token($data, $token);
+                if (!$rawInvite) throw new RuntimeException('Приглашение не найдено или уже недоступно.');
+
+                mgw_assert_no_other_ready_check($data, $userId, $token);
+                mgw_assert_no_other_ready_check($data, (string)($rawInvite['inviter_id'] ?? ''), $token);
+
                 return [
-                    'invite' => $inviteFlow->accept($data, $user, clean_string($payload['token'] ?? '', 80)),
+                    'invite' => $inviteFlow->accept($data, $user, $token),
                     'user' => $users->publicUser($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
