@@ -15,9 +15,8 @@ return [
     // otherwise bot/data inside the project.
     'data_dir' => '',
 
-    // MVP-9 weekly Match economy. These values are also the code defaults,
-    // so the private production config does not need an immediate change.
-    'weekly_match_timezone' => 'Europe/Warsaw',
+    // MVP-9 weekly Match economy. The product schedule is Monday 12:00 Moscow time.
+    'weekly_match_timezone' => 'Europe/Moscow',
     'weekly_match_start_at' => '2026-07-13 12:00:00',
     'weekly_match_bonus_amount' => 50,
     'weekly_match_min_completed' => 3,
