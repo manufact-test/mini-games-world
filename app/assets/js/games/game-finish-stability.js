@@ -26,6 +26,15 @@ export function initGameFinishStability(){
   if (timer) {
     const observer = new MutationObserver(() => syncFinishedTimer(timer));
     observer.observe(timer, { childList:true, characterData:true, subtree:true });
+
+    const gameScreen = document.getElementById('screen-game');
+    if (gameScreen) {
+      const screenObserver = new MutationObserver(() => {
+        window.setTimeout(() => syncFinishedTimer(timer), 0);
+      });
+      screenObserver.observe(gameScreen, { attributes:true, attributeFilter:['class'] });
+    }
+
     syncFinishedTimer(timer);
   }
 
