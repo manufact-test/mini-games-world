@@ -38,28 +38,15 @@ final class GameInviteInboxService
         return $this->publicInvite($invite, $userId);
     }
 
-    public function actionableForUser(array &$db, array $user): ?array
+    public function actionableForUser(array $db, array $user): ?array
     {
         $userId = trim((string)($user['id'] ?? ''));
         if ($userId === '') {
             return null;
         }
 
-        if (!isset($db['invites']) || !is_array($db['invites'])) {
-            $db['invites'] = [];
-            return null;
-        }
-
         $now = time();
-        foreach ($db['invites'] as &$invite) {
-            if (!is_array($invite)) {
-                continue;
-            }
-            $this->expirePendingIfDue($invite, $now);
-        }
-        unset($invite);
-
-        foreach (array_reverse($db['invites']) as $invite) {
+        foreach (array_reverse($db['invites'] ?? []) as $invite) {
             if (!is_array($invite)) {
                 continue;
             }
@@ -69,11 +56,17 @@ final class GameInviteInboxService
             $isInvitee = (string)($invite['invitee_id'] ?? '') === $userId;
 
             if ($status === 'pending' && $isInvitee) {
-                return $this->publicInvite($invite, $userId);
+                $expiresAt = strtotime((string)($invite['expires_at'] ?? '')) ?: 0;
+                if ($expiresAt <= 0 || $expiresAt > $now) {
+                    return $this->publicInvite($invite, $userId);
+                }
             }
 
             if ($status === 'awaiting_start' && ($isOwner || $isInvitee)) {
-                return $this->publicInvite($invite, $userId);
+                $deadline = strtotime((string)($invite['start_deadline_at'] ?? '')) ?: 0;
+                if ($deadline <= 0 || $deadline > $now) {
+                    return $this->publicInvite($invite, $userId);
+                }
             }
         }
 
