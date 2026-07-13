@@ -6,10 +6,6 @@ export function goRules(){
     </div>
 
     <div class="game-rules-content">
-      <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Два размера поля</strong><span>Доступны быстрое поле 9×9 и большое 13×13. По умолчанию выбрано 9×9. Правила одинаковые в Match- и Gold-комнатах.</span></div>
-      </section>
-
       <section class="game-rule-card">
         <div class="game-rule-copy"><strong>Пустое поле и первый ход</strong><span>Партия начинается на пустом поле. Камни ставятся на пересечения линий и больше не двигаются. Стороны распределяются случайно, первыми ходят чёрные.</span></div>
         ${ruleBoard('start')}
@@ -31,7 +27,7 @@ export function goRules(){
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Правило ko</strong><span>Нельзя повторить уже существовавшую в этой партии позицию. После взаимного захвата сначала нужно сделать ход в другом месте.</span></div>
+        <div class="game-rule-copy"><strong>Запрет повтора позиции</strong><span>Нельзя сразу вернуть поле к позиции, которая уже была в этой партии. После взаимного захвата сначала нужно сделать ход в другом месте.</span></div>
         ${ruleBoard('ko')}
       </section>
 
@@ -41,7 +37,7 @@ export function goRules(){
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Подсчёт</strong><span>За каждый камень на поле и каждое окружённое пустое пересечение начисляется одно очко. Смешанные области нейтральны. Белые получают 6,5 komi. Все камни, оставшиеся после второго паса, считаются живыми.</span></div>
+        <div class="game-rule-copy"><strong>Подсчёт</strong><span>За каждый камень на поле и каждое окружённое пустое пересечение начисляется одно очко. Смешанные области нейтральны. К счёту белых добавляется 6,5 очка, потому что чёрные ходят первыми. Все камни, оставшиеся после второго паса, считаются живыми.</span></div>
       </section>
 
       <section class="game-rule-card compact">
@@ -61,7 +57,7 @@ function ruleBoard(type){
   const setMarker = (row, col, marker) => markers.set(row * size + col, marker);
 
   if (type === 'start') {
-    setMarker(4, 4, 'first');
+    setStone(4, 4, 'black', 'first-stone');
   }
 
   if (type === 'liberties') {
