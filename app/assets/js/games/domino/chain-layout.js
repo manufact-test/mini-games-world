@@ -21,7 +21,10 @@ function scheduleEnhancement(){
   if (scheduled) return;
   scheduled = true;
 
-  requestAnimationFrame(() => {
+  // Apply the snake layout before the browser paints the freshly rendered board.
+  // Waiting for requestAnimationFrame exposed the old height for one frame and
+  // made the table visibly jump on every game-state refresh.
+  queueMicrotask(() => {
     scheduled = false;
     enhanceCurrentChain();
   });
