@@ -1,16 +1,17 @@
-import { api } from '../api/client.js?v=38';
-import { openSheet } from '../components/sheet.js?v=27';
+import { api } from '../api/client.js?v=47';
+import { openSheet } from '../components/sheet.js?v=68';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
 const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v2';
-const MAX_ANNOUNCED_IDS = 50;
-const NOTIFICATION_POLL_MS = 10000;
+const MAX_ANNOUNCED_IDS = 300;
+const NOTIFICATION_POLL_MS = 5000;
 const NOTIFICATION_TOAST_DURATION = 8000;
 
 let notificationPoll = null;
 let refreshingBadge = false;
 let appReady = false;
 let pendingAnnouncementRefresh = false;
+let baselineLoaded = false;
 let announcedIds = loadAnnouncedIds();
 let notificationToastTimer = null;
 let notificationToastPointer = null;
@@ -44,11 +45,12 @@ export function initNotificationsScreen(){
     }
   });
 
-  // Before the preloader is gone we may update only the bell badge.
+  // The first read is a baseline, not a new event. This prevents old unread
+  // weekly/payment notifications from popping again after a build update.
   refreshNotificationBadge(false);
 
   if (!notificationPoll) {
-    notificationPoll = setInterval(() => refreshNotificationBadge(appReady), NOTIFICATION_POLL_MS);
+    notificationPoll = window.setInterval(() => refreshNotificationBadge(appReady), NOTIFICATION_POLL_MS);
   }
 }
 
@@ -65,7 +67,10 @@ export async function refreshNotificationBadge(announce = appReady){
     const items = Array.isArray(result.items) ? result.items : [];
     setUnreadCount(Number(result.unread_count || 0));
 
-    if (announce && appReady) {
+    if (!baselineLoaded || !announce || !appReady) {
+      rememberNotifications(items);
+      baselineLoaded = true;
+    } else {
       announceNewestUnread(items);
     }
   } catch (error) {
@@ -98,6 +103,7 @@ async function openNotificationsSheet(){
     const result = await api.notifications(true);
     const items = Array.isArray(result.items) ? result.items : [];
     rememberNotifications(items);
+    baselineLoaded = true;
     setUnreadCount(0);
     renderNotifications(items);
   } catch (error) {
@@ -150,8 +156,8 @@ function initNotificationContextObserver(){
       return;
     }
 
-    clearTimeout(contextRefreshTimer);
-    contextRefreshTimer = setTimeout(() => refreshNotificationBadge(true), 140);
+    window.clearTimeout(contextRefreshTimer);
+    contextRefreshTimer = window.setTimeout(() => refreshNotificationBadge(true), 120);
   });
 
   contextObserver.observe(app, {
@@ -207,11 +213,11 @@ function ensureNotificationToast(){
     if (!el.classList.contains('show')) return;
 
     notificationToastPointer = {
-      id: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      dx: 0,
-      dy: 0,
+      id:event.pointerId,
+      startX:event.clientX,
+      startY:event.clientY,
+      dx:0,
+      dy:0,
     };
     el.classList.add('dragging');
     el.setPointerCapture?.(event.pointerId);
@@ -223,10 +229,8 @@ function ensureNotificationToast(){
     notificationToastPointer.dx = event.clientX - notificationToastPointer.startX;
     notificationToastPointer.dy = event.clientY - notificationToastPointer.startY;
 
-    const x = notificationToastPointer.dx;
-    const y = notificationToastPointer.dy;
-    const distance = Math.max(Math.abs(x), Math.abs(y));
-    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    const distance = Math.max(Math.abs(notificationToastPointer.dx), Math.abs(notificationToastPointer.dy));
+    el.style.transform = `translate3d(${notificationToastPointer.dx}px,${notificationToastPointer.dy}px,0)`;
     el.style.opacity = String(Math.max(0.3, 1 - distance / 220));
   });
 
@@ -262,34 +266,27 @@ function showNotificationToast(item){
   const tone = ['success', 'danger', 'warning', 'info'].includes(String(item?.tone || ''))
     ? String(item.tone)
     : 'info';
-  const icon = tone === 'danger'
-    ? '!'
-    : tone === 'success'
-      ? '✓'
-      : tone === 'warning'
-        ? '⚠'
-        : '•';
   const title = String(item?.title || 'Уведомление').trim();
   const message = notificationMessage(item);
 
-  clearTimeout(notificationToastTimer);
+  window.clearTimeout(notificationToastTimer);
   notificationToastPointer = null;
   el.className = `notification-toast ${tone}`;
   el.style.transform = '';
   el.style.opacity = '';
-  el.querySelector('.notification-toast-icon').textContent = icon;
+  el.querySelector('.notification-toast-icon').textContent = notificationIcon(tone, item?.type);
   el.querySelector('.notification-toast-copy strong').textContent = title;
   el.querySelector('.notification-toast-copy span').textContent = message;
   el.querySelector('.notification-toast-copy span').hidden = message === '';
   el.setAttribute('aria-label', `${title}${message ? `. ${message}` : ''}. Нажмите, чтобы открыть уведомления.`);
 
   requestAnimationFrame(() => el.classList.add('show'));
-  notificationToastTimer = setTimeout(dismissNotificationToast, NOTIFICATION_TOAST_DURATION);
+  notificationToastTimer = window.setTimeout(dismissNotificationToast, NOTIFICATION_TOAST_DURATION);
   return true;
 }
 
 function dismissNotificationToast(){
-  clearTimeout(notificationToastTimer);
+  window.clearTimeout(notificationToastTimer);
   notificationToastTimer = null;
   notificationToastPointer = null;
 
@@ -324,12 +321,11 @@ function renderNotification(item){
   const tone = ['success', 'danger', 'info', 'warning'].includes(String(item.tone || ''))
     ? String(item.tone)
     : 'info';
-  const icon = tone === 'success' ? '✓' : (tone === 'danger' ? '!' : '•');
   const message = notificationMessage(item);
 
   return `
     <article class="notification-card ${tone}">
-      <div class="notification-icon">${icon}</div>
+      <div class="notification-icon">${notificationIcon(tone, item.type)}</div>
       <div class="notification-copy">
         <div class="notification-head">
           <strong>${escapeHtml(item.title || 'Уведомление')}</strong>
@@ -339,6 +335,13 @@ function renderNotification(item){
       </div>
     </article>
   `;
+}
+
+function notificationIcon(tone, type = ''){
+  if (String(type).startsWith('invite_')) return '🎮';
+  if (tone === 'success') return '✓';
+  if (tone === 'danger' || tone === 'warning') return '!';
+  return 'i';
 }
 
 function notificationMessage(item){
