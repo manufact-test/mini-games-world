@@ -4,9 +4,8 @@
 .go-rule-point b.black{background:radial-gradient(circle at 35% 28%,#4a566f,#10151f 72%);box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 0 0 1px rgba(180,194,235,.22)}
 .go-rule-point b.white{background:radial-gradient(circle at 35% 28%,#fff,#c5cad1 76%);box-shadow:0 3px 8px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.75)}
 .go-rule-point b.capture{box-shadow:0 0 0 3px rgba(255,216,91,.72),0 0 16px rgba(255,199,70,.38),0 3px 8px rgba(0,0,0,.35)}
+.go-rule-point b.first-stone{box-shadow:0 0 0 4px rgba(255,216,91,.82),0 0 18px rgba(255,216,91,.5),0 3px 8px rgba(0,0,0,.45),inset 0 0 0 1px rgba(180,194,235,.22)}
 .go-rule-point em{position:relative;z-index:5;display:block;font-style:normal}
-.go-rule-point em.first{width:34%;aspect-ratio:1;border-radius:50%;background:#171d28;box-shadow:0 0 0 5px rgba(255,216,91,.26),0 0 16px rgba(255,216,91,.42)}
-.go-rule-point em.first::after{content:"1";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:950}
 .go-rule-point em.liberty{width:27%;aspect-ratio:1;border-radius:50%;background:#75efbd;box-shadow:0 0 0 4px rgba(46,230,166,.15),0 0 14px rgba(46,230,166,.6)}
 .go-rule-point em.target-black{width:35%;aspect-ratio:1;border-radius:50%;background:#171d28;box-shadow:0 0 0 4px rgba(255,216,91,.3)}
 .go-rule-point em.forbidden{width:56%;aspect-ratio:1;border-radius:50%;border:3px solid #ff6875;box-shadow:0 0 13px rgba(255,104,117,.52)}

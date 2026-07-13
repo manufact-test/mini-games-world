@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v70-go';
+window.__MGW_BUILD__ = 'v71-go-rules-admin-reply';
 import { initRequestGuard } from './api/request-guard.js?v=64';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -20,7 +20,7 @@ import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-mat
 import { initSearchScreen } from './screens/search-screen.js?v=70';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=70';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
-import { initGameRules } from './games/game-rules.js?v=70';
+import { initGameRules } from './games/game-rules.js?v=71';
 import { initGameCardCopy } from './games/game-card-copy.js?v=70';
 import { initGameInvites } from './games/game-invites.js?v=55';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=70';
