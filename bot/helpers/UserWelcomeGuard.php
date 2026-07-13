@@ -30,8 +30,8 @@ final class UserWelcomeGuard
             return false;
         }
 
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=76';
-        if ($baseWebAppUrl === '/app/?v=76') {
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=77';
+        if ($baseWebAppUrl === '/app/?v=77') {
             return false;
         }
 
@@ -63,7 +63,7 @@ final class UserWelcomeGuard
         $this->telegram->api('sendMessage', [
             'chat_id' => $chatId,
             'text' => $inviteToken !== ''
-                ? "🎮 Вас пригласили сыграть в Mini Games World.\n\nОткройте приглашение и проверьте условия матча."
+                ? "🎮 Вам бросили вызов в Mini Games World!\n\nОткройте приглашение, проверьте условия и примите матч."
                 : "🎮 Mini Games World\n\nНажмите кнопку ниже, чтобы начать играть.",
             'reply_markup' => [
                 'inline_keyboard' => [[
