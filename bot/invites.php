@@ -49,7 +49,6 @@ try {
         $tgUser,
         $users,
         $sessions,
-        $catalog,
         $invites,
         $sessionId
     ): array {
@@ -75,10 +74,15 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
             })(),
-            'resolve' => [
-                'invite' => $invites->resolve($data, $user, clean_string($payload['token'] ?? '', 80)),
-                'session' => $sessions->publicState($user, $sessionId),
-            ],
+            'resolve' => (function () use (&$data, &$user, $payload, $sessions, $invites, $sessionId): array {
+                if (in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) {
+                    throw new RuntimeException('Сначала завершите текущий поиск или игру.');
+                }
+                return [
+                    'invite' => $invites->resolve($data, $user, clean_string($payload['token'] ?? '', 80)),
+                    'session' => $sessions->publicState($user, $sessionId),
+                ];
+            })(),
             'decline' => [
                 'invite' => $invites->decline($data, $user, clean_string($payload['token'] ?? '', 80)),
                 'session' => $sessions->publicState($user, $sessionId),
