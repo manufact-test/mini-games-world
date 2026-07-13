@@ -117,5 +117,10 @@ function tileMarkup(a, b, double){
 }
 
 function halfMarkup(value){
-  return `<i class="domino-mini-half pips-${value}">${Array.from({length:value}, () => '<b></b>').join('')}</i>`;
+  const active = new Set(pipPositions(value));
+  return `<i class="domino-mini-half">${Array.from({length:9}, (_, index) => `<b class="${active.has(index + 1) ? 'active' : ''}"></b>`).join('')}</i>`;
+}
+
+function pipPositions(value){
+  return ({0:[],1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]})[Number(value)] || [];
 }
