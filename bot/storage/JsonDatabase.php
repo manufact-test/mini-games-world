@@ -73,6 +73,7 @@ final class JsonDatabase
             'shop_orders.json' => [],
             'payments.json' => [],
             'notifications.json' => [],
+            'invites.json' => [],
             'system.json' => ['fees_match' => 0, 'fees_gold' => 0],
         ];
         foreach ($defaults as $file => $value) {
@@ -94,6 +95,7 @@ final class JsonDatabase
             'shop_orders' => $this->readFile('shop_orders.json'),
             'payments' => $this->readFile('payments.json'),
             'notifications' => $this->readFile('notifications.json'),
+            'invites' => $this->readFile('invites.json'),
             'system' => $this->readFile('system.json'),
         ];
     }
@@ -109,6 +111,7 @@ final class JsonDatabase
             'shop_orders' => 'shop_orders.json',
             'payments' => 'payments.json',
             'notifications' => 'notifications.json',
+            'invites' => 'invites.json',
             'system' => 'system.json',
         ];
 
