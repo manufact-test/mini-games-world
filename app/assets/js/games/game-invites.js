@@ -35,7 +35,7 @@ export function initGameInvites(){
     const target = event.target.closest('button, [role="button"]');
     if (!target) return;
 
-    if (target.id === 'notificationsOpen' && hasReadyCheck()) {
+    if ((target.id === 'notificationsOpen' || target.id === 'notificationToast') && hasReadyCheck()) {
       event.preventDefault();
       event.stopImmediatePropagation();
       openStoredInvite();
@@ -362,7 +362,7 @@ function showInviteeWaiting(invite){
 }
 
 function showTerminalInvite(invite){
-  activeInviteData = { ...(activeInviteData || {}), ...invite };
+  activeInviteData = { ...(invite || {}) };
 
   openSheet(`
     ${inviteMarker(activeInviteData)}
@@ -434,13 +434,14 @@ function handleInviteResult(result, { forceOpen = false } = {}){
     return;
   }
 
-  if (status === 'started') {
+  if (status === 'started' || status === 'starting') {
     toast('Матч запускается…');
     return;
   }
 
+  const terminalInvite = { ...activeInviteData };
   clearActiveInvite();
-  if (forceOpen || sheetOpen) showTerminalInvite(activeInviteData);
+  if (forceOpen || sheetOpen) showTerminalInvite(terminalInvite);
 }
 
 function startInvitePolling(){
