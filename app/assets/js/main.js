@@ -24,6 +24,7 @@ import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=72';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=78';
 import { initInviteNotificationActions } from './games/invite-notification-actions.js?v=79';
+import { initInviteNotificationDedupe } from './games/invite-notification-dedupe.js?v=79';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
 import { initBattleshipEntry } from './games/battleship/entry.js?v=74';
@@ -48,6 +49,7 @@ initGameCardCopy();
 // marks the notification as read and shows its action button instead of reopening a stale sheet.
 initNotificationsScreen();
 initInviteNotificationActions();
+initInviteNotificationDedupe();
 initGameInvites();
 
 initTicTacToeEntry();
