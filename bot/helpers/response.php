@@ -8,7 +8,39 @@ function json_response(array $data, int $status = 200): void {
     exit;
 }
 
+function mgw_payment_activity_at(array $payment): int {
+    foreach (['applied_at', 'rejected_at', 'cancelled_at', 'updated_at', 'created_at'] as $field) {
+        $timestamp = strtotime((string)($payment[$field] ?? '')) ?: 0;
+        if ($timestamp > 0) return $timestamp;
+    }
+    return 0;
+}
+
+function mgw_sort_payments_by_activity(array $payments): array {
+    $payments = array_values(array_filter($payments, 'is_array'));
+    usort($payments, static function (array $left, array $right): int {
+        return mgw_payment_activity_at($right) <=> mgw_payment_activity_at($left);
+    });
+    return $payments;
+}
+
 function mgw_normalize_api_data(array $data): array {
+    if ((string)($data['message'] ?? '') === 'Заявка на пополнение создана. Баланс не изменён.') {
+        $data['message'] = 'Баланс изменится после подтверждения администратором.';
+    }
+
+    if (isset($data['payments']['message']) && is_string($data['payments']['message'])) {
+        $data['payments']['message'] = 'Баланс изменится после подтверждения администратором.';
+    }
+
+    if (isset($data['payments']['recent_payments']) && is_array($data['payments']['recent_payments'])) {
+        $data['payments']['recent_payments'] = mgw_sort_payments_by_activity($data['payments']['recent_payments']);
+    }
+
+    if (isset($data['topups']) && is_array($data['topups'])) {
+        $data['topups'] = mgw_sort_payments_by_activity($data['topups']);
+    }
+
     $operations = $data['history']['operations'] ?? null;
     if (!is_array($operations)) {
         return $data;
