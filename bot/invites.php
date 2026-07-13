@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameInviteService.php';
+require_once __DIR__ . '/services/GameInviteFlowService.php';
 
 function mgw_invite_share_url(array $config, string $token): string
 {
@@ -24,7 +25,7 @@ function mgw_invite_share_url(array $config, string $token): string
     }
 
     $baseUrl = rtrim((string)($config['base_url'] ?? ''), '/');
-    return $baseUrl . '/app/?v=77&invite=' . rawurlencode($token);
+    return $baseUrl . '/app/?v=78&invite=' . rawurlencode($token);
 }
 
 function mgw_invite_board_label(array $invite): string
@@ -39,7 +40,7 @@ function mgw_invite_board_label(array $invite): string
     return $size . '×' . $size;
 }
 
-function mgw_invite_share_text(array $invite): string
+function mgw_invite_share_text(array $invite, string $shareUrl): string
 {
     $inviter = trim((string)($invite['inviter_name'] ?? 'Игрок'));
     $game = (string)($invite['game_title'] ?? 'Игра');
@@ -53,7 +54,54 @@ function mgw_invite_share_text(array $invite): string
         . "🏠 Комната: {$room}\n"
         . "📐 Вариант: {$variant}\n"
         . "🪙 Ставка: {$bet} коинов\n\n"
-        . "Откройте приглашение и примите вызов 👇";
+        . "Откройте приглашение и примите вызов 👇\n"
+        . $shareUrl;
+}
+
+function mgw_prepare_invite_message(
+    array $config,
+    string $userId,
+    array $invite,
+    string $shareUrl,
+    string $shareText
+): string {
+    if ($userId === '' || $shareUrl === '') return '';
+
+    try {
+        $telegram = new TelegramService($config);
+        $response = $telegram->api('savePreparedInlineMessage', [
+            'user_id' => (int)$userId,
+            'result' => [
+                'type' => 'article',
+                'id' => 'invite_' . (string)($invite['token'] ?? ''),
+                'title' => 'Приглашение в Mini Games World',
+                'description' => (string)($invite['game_title'] ?? 'Игра')
+                    . ' · ' . (string)($invite['room_label'] ?? 'Матч-комната')
+                    . ' · ' . mgw_invite_board_label($invite),
+                'input_message_content' => [
+                    'message_text' => $shareText,
+                    'link_preview_options' => ['is_disabled' => true],
+                ],
+                'reply_markup' => [
+                    'inline_keyboard' => [[
+                        ['text' => '🎮 Открыть приглашение', 'url' => $shareUrl],
+                    ]],
+                ],
+            ],
+            'allow_user_chats' => true,
+            'allow_bot_chats' => false,
+            'allow_group_chats' => false,
+            'allow_channel_chats' => false,
+        ]);
+
+        if (!empty($response['ok']) && is_array($response['result'] ?? null)) {
+            return (string)($response['result']['id'] ?? '');
+        }
+    } catch (Throwable $e) {
+        error_log('Mini Games World prepared invite failed: ' . $e->getMessage());
+    }
+
+    return '';
 }
 
 function mgw_invite_game_for_viewer(
@@ -70,9 +118,7 @@ function mgw_invite_game_for_viewer(
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) {
-        api_error('Некорректный запрос.');
-    }
+    if (!is_array($payload)) api_error('Некорректный запрос.');
 
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
@@ -82,7 +128,8 @@ try {
     $sessions = new SessionService($config);
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
-    $invites = new GameInviteService($config, $catalog, $games);
+    $legacyInvites = new GameInviteService($config, $catalog, $games);
+    $inviteFlow = new GameInviteFlowService($config, $catalog, $games);
     $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
     $result = $db->transaction(function (array &$data) use (
@@ -92,7 +139,8 @@ try {
         $users,
         $sessions,
         $games,
-        $invites,
+        $legacyInvites,
+        $inviteFlow,
         $sessionId
     ): array {
         $user = $users->ensureUser($data, $tgUser);
@@ -102,24 +150,33 @@ try {
         $sessions->ensureSessionShape($user);
 
         return match ($action) {
-            'create' => (function () use (&$data, &$user, $payload, $users, $sessions, $invites, $sessionId): array {
+            'create' => (function () use (&$data, &$user, $payload, $users, $sessions, $legacyInvites, $inviteFlow, $sessionId): array {
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
+                $created = $legacyInvites->create(
+                    $data,
+                    $user,
+                    clean_string($payload['gameType'] ?? 'tictactoe', 60),
+                    clean_string($payload['room'] ?? 'match', 20),
+                    (int)($payload['bet'] ?? 10),
+                    (int)($payload['boardSize'] ?? 3)
+                );
+                $invite = $inviteFlow->resolve($data, $user, (string)($created['token'] ?? ''));
                 return [
-                    'invite' => $invites->create(
-                        $data,
-                        $user,
-                        clean_string($payload['gameType'] ?? 'tictactoe', 60),
-                        clean_string($payload['room'] ?? 'match', 20),
-                        (int)($payload['bet'] ?? 10),
-                        (int)($payload['boardSize'] ?? 3)
-                    ),
+                    'invite' => $invite,
                     'user' => $users->publicUser($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
             })(),
-            'resolve' => (function () use (&$data, &$user, $payload, $users, $sessions, $games, $invites, $sessionId, $userId): array {
-                $invite = $invites->resolve($data, $user, clean_string($payload['token'] ?? '', 80));
+            'active' => (function () use (&$data, &$user, $users, $sessions, $inviteFlow, $sessionId): array {
+                return [
+                    'invite' => $inviteFlow->activeForUser($data, $user),
+                    'user' => $users->publicUser($user),
+                    'session' => $sessions->publicState($user, $sessionId),
+                ];
+            })(),
+            'resolve' => (function () use (&$data, &$user, $payload, $users, $sessions, $games, $inviteFlow, $sessionId, $userId): array {
+                $invite = $inviteFlow->resolve($data, $user, clean_string($payload['token'] ?? '', 80));
                 return [
                     'invite' => $invite,
                     'game' => mgw_invite_game_for_viewer($data, $games, $invite, $userId),
@@ -127,10 +184,19 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
             })(),
-            'accept' => (function () use (&$data, &$user, $payload, $users, $sessions, $games, $invites, $sessionId, $userId): array {
+            'accept' => (function () use (&$data, &$user, $payload, $users, $sessions, $inviteFlow, $sessionId): array {
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
-                $invite = $invites->accept($data, $user, clean_string($payload['token'] ?? '', 80));
+                return [
+                    'invite' => $inviteFlow->accept($data, $user, clean_string($payload['token'] ?? '', 80)),
+                    'user' => $users->publicUser($user),
+                    'session' => $sessions->publicState($user, $sessionId),
+                ];
+            })(),
+            'start' => (function () use (&$data, &$user, $payload, $users, $sessions, $games, $inviteFlow, $sessionId, $userId): array {
+                $sessions->assertCanPlay($user, $sessionId);
+                $sessions->touch($user, $sessionId);
+                $invite = $inviteFlow->start($data, $user, clean_string($payload['token'] ?? '', 80));
                 return [
                     'invite' => $invite,
                     'game' => mgw_invite_game_for_viewer($data, $games, $invite, $userId),
@@ -138,10 +204,16 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
             })(),
-            'decline' => (function () use (&$data, &$user, $payload, $users, $sessions, $invites, $sessionId): array {
-                $invite = $invites->decline($data, $user, clean_string($payload['token'] ?? '', 80));
+            'decline' => (function () use (&$data, &$user, $payload, $users, $sessions, $inviteFlow, $sessionId): array {
                 return [
-                    'invite' => $invite,
+                    'invite' => $inviteFlow->decline($data, $user, clean_string($payload['token'] ?? '', 80)),
+                    'user' => $users->publicUser($user),
+                    'session' => $sessions->publicState($user, $sessionId),
+                ];
+            })(),
+            'cancel' => (function () use (&$data, &$user, $payload, $users, $sessions, $inviteFlow, $sessionId): array {
+                return [
+                    'invite' => $inviteFlow->cancel($data, $user, clean_string($payload['token'] ?? '', 80)),
                     'user' => $users->publicUser($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
@@ -152,8 +224,17 @@ try {
 
     if ($action === 'create' && is_array($result['invite'] ?? null)) {
         $token = (string)($result['invite']['token'] ?? '');
-        $result['invite']['share_url'] = mgw_invite_share_url($config, $token);
-        $result['invite']['share_text'] = mgw_invite_share_text($result['invite']);
+        $shareUrl = mgw_invite_share_url($config, $token);
+        $shareText = mgw_invite_share_text($result['invite'], $shareUrl);
+        $result['invite']['share_url'] = $shareUrl;
+        $result['invite']['share_text'] = $shareText;
+        $result['invite']['prepared_message_id'] = mgw_prepare_invite_message(
+            $config,
+            (string)($tgUser['id'] ?? ''),
+            $result['invite'],
+            $shareUrl,
+            $shareText
+        );
     }
 
     api_ok($result);
