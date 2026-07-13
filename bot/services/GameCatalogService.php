@@ -27,6 +27,7 @@ final class GameCatalogService
         $reversi = require $gamesDir . '/reversi/definition.php';
         $chess = require $gamesDir . '/chess/definition.php';
         $go = require $gamesDir . '/go/definition.php';
+        $domino = require $gamesDir . '/domino/definition.php';
 
         $this->games = [
             'tictactoe' => $ticTacToe,
@@ -36,6 +37,7 @@ final class GameCatalogService
             'reversi' => $reversi,
             'chess' => $chess,
             'go' => $go,
+            'domino' => $domino,
         ];
     }
 
