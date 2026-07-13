@@ -23,7 +23,7 @@ export function renderDominoSurface({ game, me, container, onAction }){
   container.innerHTML = `
     <div class="domino-panel">
       ${eventBanner(game, myId, myTurn)}
-      ${tableMarkup(game, myId)}
+      ${tableMarkup(game)}
       ${sidePickerMarkup(game)}
       ${handMarkup(game, hand, myTurn)}
       ${actionsMarkup(game, myTurn)}
@@ -59,9 +59,10 @@ export function dominoStatus(game, me){
   return myTurn ? 'Ваш ход' : 'Ход соперника';
 }
 
-function tableMarkup(game, myId){
+function tableMarkup(game){
   const chain = Array.isArray(game?.chain) ? game.chain : [];
-  const startIndex = Math.max(0, chain.findIndex(item => item?.is_start));
+  const foundStartIndex = chain.findIndex(item => item?.is_start);
+  const startIndex = foundStartIndex >= 0 ? foundStartIndex : 0;
   const before = startIndex;
   const after = Math.max(0, chain.length - startIndex - 1);
   const startSlot = Math.max(before, Math.min(13, ROUTE.length - 1 - after));
@@ -72,13 +73,14 @@ function tableMarkup(game, myId){
     const slot = ROUTE[Math.max(0, Math.min(ROUTE.length - 1, routeIndex))];
     const isLatest = String(lastAction?.type || '') === 'play'
       && Number(item?.move_number || -1) === Number(game?.move_count || -2);
+    const isDouble = Number(item?.left) === Number(item?.right);
     return `
-      <div class="domino-chain-slot ${slot.vertical ? 'vertical' : 'horizontal'} ${isLatest ? 'latest' : ''}"
+      <div class="domino-chain-slot ${slot.vertical ? 'vertical' : 'horizontal'} ${isDouble ? 'is-double' : ''} ${isLatest ? 'latest' : ''}"
         style="--domino-x:${slot.x}%;--domino-y:${slot.y}%;--domino-rotation:${slot.rotation}deg"
         data-domino-chain-tile="${escapeHtml(String(item?.tile || ''))}">
         ${tileMarkup(Number(item?.left || 0), Number(item?.right || 0), {
           vertical:slot.vertical,
-          double:Number(item?.left) === Number(item?.right),
+          double:isDouble,
           compact:true,
           title:`${item?.left ?? 0}–${item?.right ?? 0}`,
         })}
@@ -143,8 +145,8 @@ function handMarkup(game, hand, myTurn){
 
 function actionsMarkup(game, myTurn){
   if (game?.status !== 'active') return '';
-  const canDraw = Boolean(game?.can_draw) && myTurn;
-  if (!canDraw) return '<div class="domino-action-note">Выберите подходящую костяшку.</div>';
+  if (!myTurn) return '<div class="domino-action-note">Ожидаем ход соперника.</div>';
+  if (!game?.can_draw) return '<div class="domino-action-note">Выберите подходящую костяшку.</div>';
   return `
     <button class="btn primary full domino-draw-button" data-domino-draw type="button">
       Добрать из запаса
@@ -184,7 +186,8 @@ function eventBanner(game, myId, myTurn){
     return `<div class="domino-event-banner pass">${actorMe ? 'У вас' : 'У соперника'} нет хода — пропуск</div>`;
   }
   if (type === 'play') {
-    return `<div class="domino-event-banner play">${actorMe ? 'Вы поставили' : 'Соперник поставил'} ${escapeHtml(String(action?.tile || ''))}</div>`;
+    const [a,b] = parseTileId(String(action?.tile || '0-0'));
+    return `<div class="domino-event-banner play">${actorMe ? 'Вы поставили' : 'Соперник поставил'} ${a}–${b}</div>`;
   }
   return myTurn
     ? '<div class="domino-event-banner your-turn">Ваш ход — выберите костяшку</div>'
