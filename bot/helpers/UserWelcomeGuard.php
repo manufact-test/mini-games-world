@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/services/GameInviteInboxService.php';
+
 final class UserWelcomeGuard
 {
     public function __construct(private TelegramService $telegram, private array $config) {}
@@ -30,15 +32,17 @@ final class UserWelcomeGuard
             return false;
         }
 
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=78';
-        if ($baseWebAppUrl === '/app/?v=78') {
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=79';
+        if ($baseWebAppUrl === '/app/?v=79') {
             return false;
         }
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
             $inviteToken = strtolower((string)$matches[1]);
+            $this->registerInviteRecipient($message, $inviteToken);
         }
+
         $buttonWebAppUrl = $inviteToken !== ''
             ? $baseWebAppUrl . '&invite=' . rawurlencode($inviteToken)
             : $baseWebAppUrl;
@@ -77,5 +81,29 @@ final class UserWelcomeGuard
         ]);
 
         return true;
+    }
+
+    private function registerInviteRecipient(array $message, string $token): void
+    {
+        try {
+            $telegramUser = is_array($message['from'] ?? null) ? $message['from'] : [];
+            $telegramUser['id'] = (string)($telegramUser['id'] ?? $message['chat']['id'] ?? '');
+            if ($telegramUser['id'] === '') {
+                return;
+            }
+
+            $db = new JsonDatabase((string)($this->config['data_dir'] ?? (dirname(__DIR__) . '/data')));
+            $users = new UserService($this->config);
+            $inbox = new GameInviteInboxService();
+
+            $db->transaction(function (array &$data) use ($users, $inbox, $telegramUser, $token): void {
+                $user = $users->ensureUser($data, $telegramUser);
+                $userId = (string)($user['id'] ?? '');
+                $data['users'][$userId] = $user;
+                $inbox->registerRecipient($data, $data['users'][$userId], $token);
+            });
+        } catch (Throwable $e) {
+            error_log('Mini Games World invite recipient registration failed: ' . $e->getMessage());
+        }
     }
 }
