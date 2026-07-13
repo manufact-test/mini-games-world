@@ -5,6 +5,7 @@ import { CHECKERS_META } from './checkers/meta.js?v=58';
 import { REVERSI_META } from './reversi/meta.js?v=65';
 import { CHESS_META } from './chess/meta.js?v=67';
 import { GO_META } from './go/meta.js?v=70';
+import { DOMINO_META } from './domino/meta.js?v=72';
 
 const GAME_META = {
   [TIC_TAC_TOE_META.id]: TIC_TAC_TOE_META,
@@ -14,6 +15,7 @@ const GAME_META = {
   [REVERSI_META.id]: REVERSI_META,
   [CHESS_META.id]: CHESS_META,
   [GO_META.id]: GO_META,
+  [DOMINO_META.id]: DOMINO_META,
 };
 
 export function initGameCardCopy(){

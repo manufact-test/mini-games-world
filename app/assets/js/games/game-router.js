@@ -38,6 +38,12 @@ import {
   goPlayerMark,
   goStatus,
 } from './go/renderer.js?v=70';
+import {
+  renderDominoSurface,
+  dominoMeta,
+  dominoPlayerMark,
+  dominoStatus,
+} from './domino/renderer.js?v=72';
 
 const routes = {
   tictactoe: {
@@ -80,6 +86,12 @@ const routes = {
     playerMark: goPlayerMark,
     status: goStatus,
   },
+  domino: {
+    render: renderDominoSurface,
+    meta: dominoMeta,
+    playerMark: dominoPlayerMark,
+    status: dominoStatus,
+  },
 };
 
 export function gameTypeOf(game){
@@ -92,6 +104,19 @@ export function gameTypeOf(game){
   const connectLength = Number(game?.connect_length || 0);
   const boardArrayLength = Array.isArray(game?.board) ? game.board.length : 0;
   const boardStringLength = typeof game?.board === 'string' ? game.board.length : 0;
+
+  if (
+    explicit === 'domino'
+    || renderer === 'domino'
+    || actionType === 'domino_action'
+    || title.includes('домино')
+    || title.includes('domino')
+    || Boolean(game?.domino_initialized)
+    || Array.isArray(game?.viewer_hand)
+    || Array.isArray(game?.chain)
+  ) {
+    return 'domino';
+  }
 
   if (
     explicit === 'go'

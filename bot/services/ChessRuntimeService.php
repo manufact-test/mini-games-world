@@ -5,16 +5,19 @@ require_once dirname(__DIR__) . '/games/chess/ChessBotService.php';
 require_once dirname(__DIR__) . '/games/chess/ChessService.php';
 require_once dirname(__DIR__) . '/games/go/GoBotService.php';
 require_once dirname(__DIR__) . '/games/go/GoService.php';
+require_once dirname(__DIR__) . '/games/domino/DominoBotService.php';
+require_once dirname(__DIR__) . '/games/domino/DominoService.php';
 
 /**
  * Adds the newest isolated engines without changing the stable runtime paths of
- * previously released games. Calls outside Chess and Go are delegated unchanged.
+ * previously released games. Calls outside Chess, Go and Domino are delegated unchanged.
  */
 final class ChessRuntimeService
 {
     private GameRuntimeService $base;
     private ChessService $chess;
     private GoService $go;
+    private DominoService $domino;
 
     public function __construct(
         private array $config,
@@ -25,6 +28,7 @@ final class ChessRuntimeService
         $this->base = new GameRuntimeService($config, $catalog, $legacyGame);
         $this->chess = new ChessService($config, $settlement);
         $this->go = new GoService($config, $settlement);
+        $this->domino = new DominoService($config, $settlement);
     }
 
     public function cleanup(array &$db): void
@@ -32,6 +36,7 @@ final class ChessRuntimeService
         $this->base->cleanup($db);
         $this->chess->cleanup($db);
         $this->go->cleanup($db);
+        $this->domino->cleanup($db);
     }
 
     public function cleanupQueue(array &$db): void
@@ -76,6 +81,10 @@ final class ChessRuntimeService
             $this->prepareStoredGoGame($db, $gameId, $queuedGoSize);
             return $db['games'][$gameId];
         }
+        if ($gameType === 'domino') {
+            $this->prepareStoredDominoGame($db, $gameId);
+            return $db['games'][$gameId];
+        }
 
         return $game;
     }
@@ -89,7 +98,7 @@ final class ChessRuntimeService
         ?string $gameType = null
     ): array {
         $gameType = $this->catalog->normalizeGameType($gameType);
-        if (!in_array($gameType, ['chess', 'go'], true)) {
+        if (!in_array($gameType, ['chess', 'go', 'domino'], true)) {
             return $this->base->startSearch($db, $user, $room, $bet, $boardSize, $gameType);
         }
 
@@ -102,12 +111,16 @@ final class ChessRuntimeService
         $active = $this->findActiveGameForUser($db, $userId);
         if ($active) return ['game' => $this->publicGame($active, $userId)];
 
-        $requestedBoardSize = $gameType === 'chess'
-            ? 8
-            : $this->catalog->normalizeBoardSize('go', $boardSize);
-        $legacyBoardSize = $gameType === 'chess'
-            ? 9
-            : ($requestedBoardSize === 9 ? 9 : 5);
+        $requestedBoardSize = match ($gameType) {
+            'chess' => 8,
+            'domino' => 7,
+            default => $this->catalog->normalizeBoardSize('go', $boardSize),
+        };
+        $legacyBoardSize = match ($gameType) {
+            'chess' => 9,
+            'domino' => 3,
+            default => $requestedBoardSize === 9 ? 9 : 5,
+        };
 
         $result = $this->withIsolatedQueue(
             $db,
@@ -122,11 +135,18 @@ final class ChessRuntimeService
             $gameId = (string)($result['game']['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;
-                $db['games'][$gameId]['board_size'] = $requestedBoardSize;
-                $db['games'][$gameId]['board_columns'] = $requestedBoardSize;
-                $db['games'][$gameId]['board_rows'] = $requestedBoardSize;
-                if ($gameType === 'chess') $this->chess->initializeGame($db['games'][$gameId]);
-                else $this->go->initializeGame($db['games'][$gameId]);
+                if ($gameType === 'domino') {
+                    $db['games'][$gameId]['board_size'] = 7;
+                    $db['games'][$gameId]['board_columns'] = 7;
+                    $db['games'][$gameId]['board_rows'] = 1;
+                    $this->domino->initializeGame($db['games'][$gameId]);
+                } else {
+                    $db['games'][$gameId]['board_size'] = $requestedBoardSize;
+                    $db['games'][$gameId]['board_columns'] = $requestedBoardSize;
+                    $db['games'][$gameId]['board_rows'] = $requestedBoardSize;
+                    if ($gameType === 'chess') $this->chess->initializeGame($db['games'][$gameId]);
+                    else $this->go->initializeGame($db['games'][$gameId]);
+                }
                 $this->syncGameMetadataTransactions($db, $gameId, $gameType, $requestedBoardSize);
                 $result['game'] = $this->publicGame($db['games'][$gameId], $userId);
             }
@@ -149,6 +169,7 @@ final class ChessRuntimeService
             $gameType = (string)($game['game_type'] ?? '');
             if ($gameType === 'chess') return $this->chess->surrender($db, $user, $gameId);
             if ($gameType === 'go') return $this->go->surrender($db, $user, $gameId);
+            if ($gameType === 'domino') return $this->domino->surrender($db, $user, $gameId);
         }
         return $this->base->surrenderGame($db, $user, $gameId);
     }
@@ -193,17 +214,24 @@ final class ChessRuntimeService
         return $this->go->applyAction($db, $user, $gameId, $action);
     }
 
+    public function applyDominoAction(array &$db, array &$user, string $gameId, array $action): array
+    {
+        return $this->domino->applyAction($db, $user, $gameId, $action);
+    }
+
     public function publicGame(array $game, string $viewerId): array
     {
         $gameType = (string)($game['game_type'] ?? '');
-        if (!in_array($gameType, ['chess', 'go'], true)) {
+        if (!in_array($gameType, ['chess', 'go', 'domino'], true)) {
             return $this->base->publicGame($game, $viewerId);
         }
 
         $definition = $this->catalog->publicGameDefinition($gameType);
-        $public = $gameType === 'chess'
-            ? $this->chess->publicGame($game, $viewerId)
-            : $this->go->publicGame($game, $viewerId);
+        $public = match ($gameType) {
+            'chess' => $this->chess->publicGame($game, $viewerId),
+            'go' => $this->go->publicGame($game, $viewerId),
+            'domino' => $this->domino->publicGame($game, $viewerId),
+        };
 
         return [
             'game_type' => $gameType,
@@ -238,6 +266,16 @@ final class ChessRuntimeService
         $db['games'][$gameId]['board_rows'] = $size;
         $this->go->initializeGame($db['games'][$gameId]);
         $this->syncGameMetadataTransactions($db, $gameId, 'go', $size);
+    }
+
+    private function prepareStoredDominoGame(array &$db, string $gameId): void
+    {
+        $db['games'][$gameId]['game_type'] = 'domino';
+        $db['games'][$gameId]['board_size'] = 7;
+        $db['games'][$gameId]['board_columns'] = 7;
+        $db['games'][$gameId]['board_rows'] = 1;
+        $this->domino->initializeGame($db['games'][$gameId]);
+        $this->syncGameMetadataTransactions($db, $gameId, 'domino', 7);
     }
 
     private function setQueuedSpecialType(
@@ -363,7 +401,7 @@ final class ChessRuntimeService
             $transaction['game_type'] = $gameType;
             $transaction['board_size'] = $boardSize;
             $transaction['board_columns'] = $boardSize;
-            $transaction['board_rows'] = $boardSize;
+            $transaction['board_rows'] = $gameType === 'domino' ? 1 : $boardSize;
         }
         unset($transaction);
     }

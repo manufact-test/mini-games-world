@@ -12,7 +12,7 @@ import {
   gameTypeOf,
   playerMarkText,
   renderGameSurface,
-} from '../games/game-router.js?v=70';
+} from '../games/game-router.js?v=72';
 
 const gameScreenRuntime = window.__MGW_GAME_SCREEN_RUNTIME__ ||= {
   initialized:false,
@@ -244,7 +244,9 @@ function scheduleResultSheet(game, me){
   const capturedCount = Array.isArray(game?.last_captured_cells) ? game.last_captured_cells.length : 0;
   const delay = gameType === 'reversi'
     ? Math.min(4200, 650 + flippedCount * 150)
-    : (gameType === 'go' ? Math.min(2600, 1450 + capturedCount * 35) : 0);
+    : (gameType === 'go'
+      ? Math.min(2600, 1450 + capturedCount * 35)
+      : (gameType === 'domino' ? 1100 : 0));
 
   if (delay <= 0) {
     openResultSheet(game, me);
@@ -276,6 +278,10 @@ function openResultSheet(game, me){
         : 'Вы вышли из матча. Засчитано техническое поражение.';
     } else if (gameTypeOf(game) === 'chess' && game.chess_end_reason === 'checkmate') {
       text = isWin ? `Мат. Вы получили ${game.payout ?? 0} коинов.` : 'Вашему королю поставлен мат.';
+    } else if (gameTypeOf(game) === 'domino' && game.end_reason === 'empty_hand') {
+      text = isWin
+        ? `Вы первыми избавились от всех костяшек и получили ${game.payout ?? 0} коинов.`
+        : 'Соперник первым избавился от всех костяшек.';
     } else {
       text = isWin ? `Вы получили ${game.payout ?? 0} коинов.` : 'Соперник оказался сильнее.';
     }
@@ -283,6 +289,7 @@ function openResultSheet(game, me){
 
   text += reversiScoreText(game, me);
   text += goScoreText(game, me);
+  text += dominoScoreText(game);
 
   openSheet(`
     <div class="sheet-head">
@@ -331,6 +338,14 @@ function goScoreText(game, me){
   const mine = side === 'black' ? black : white;
   const theirs = side === 'black' ? white : black;
   return ` Итоговый счёт: ${mine}:${theirs}.`;
+}
+
+function dominoScoreText(game){
+  if (gameTypeOf(game) !== 'domino' || game?.my_points === null || game?.my_points === undefined) return '';
+  const mine = Number(game.my_points || 0);
+  const theirs = Number(game.opponent_points || 0);
+  if (game?.end_reason === 'blocked') return ` Партия заблокирована. Оставшиеся точки: ${mine}:${theirs}.`;
+  return ` Оставшиеся точки: ${mine}:${theirs}.`;
 }
 
 function formatScore(value){
