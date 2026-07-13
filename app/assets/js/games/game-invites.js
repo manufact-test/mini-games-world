@@ -426,8 +426,6 @@ function handleInviteResult(result, { forceOpen = false } = {}){
   }
 
   if (status === 'starting' || status === 'started') {
-    // The active game is returned by the same endpoint as soon as it exists.
-    // Finished games are deliberately ignored by the backend.
     return;
   }
 
@@ -463,7 +461,6 @@ async function pollInvitesNow(){
     enhanceNotificationSheet();
     return null;
   } catch (error) {
-    // Temporary background errors must not destroy a still-valid invitation.
     return null;
   } finally {
     pollBusy = false;
@@ -505,13 +502,28 @@ function scheduleNotificationEnhancement(){
 function enhanceNotificationSheet(){
   if (!isNotificationsSheetOpen()) return;
 
-  document.querySelectorAll('[data-invite-action-card]').forEach(card => card.remove());
-  if (!activeInviteData?.token) return;
+  if (!activeInviteData?.token) {
+    document.querySelectorAll('[data-invite-action-card]').forEach(card => card.remove());
+    return;
+  }
 
   const status = String(activeInviteData.status || '');
   const actionable = (status === 'pending' && activeInviteData.is_invitee)
     || (status === 'awaiting_start' && (activeInviteData.is_owner || activeInviteData.is_invitee));
-  if (!actionable) return;
+  if (!actionable) {
+    document.querySelectorAll('[data-invite-action-card]').forEach(card => card.remove());
+    return;
+  }
+
+  const signature = [
+    String(activeInviteData.token || ''),
+    status,
+    activeInviteData.is_owner ? 'owner' : 'invitee',
+  ].join(':');
+  const existingActionCard = document.querySelector('[data-invite-action-card]');
+  if (existingActionCard?.dataset.inviteSignature === signature) return;
+
+  document.querySelectorAll('[data-invite-action-card]').forEach(card => card.remove());
 
   const duplicateTitle = status === 'pending'
     ? 'Вас пригласили сыграть'
@@ -525,6 +537,7 @@ function enhanceNotificationSheet(){
   const card = document.createElement('article');
   card.className = `notification-card ${status === 'pending' ? 'info' : 'success'}`;
   card.dataset.inviteActionCard = '1';
+  card.dataset.inviteSignature = signature;
   card.innerHTML = notificationActionCard(activeInviteData);
 
   const sheet = document.getElementById('sheet');
