@@ -20,7 +20,7 @@ function mgw_invite_share_url(array $config, string $token): string
     }
 
     if ($username !== '') {
-        return 'https://t.me/' . rawurlencode($username) . '?startapp=invite_' . rawurlencode($token);
+        return 'https://t.me/' . rawurlencode($username) . '?start=invite_' . rawurlencode($token);
     }
 
     $baseUrl = rtrim((string)($config['base_url'] ?? ''), '/');
