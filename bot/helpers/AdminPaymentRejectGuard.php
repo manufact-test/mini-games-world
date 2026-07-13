@@ -91,41 +91,9 @@ final class AdminPaymentRejectGuard
             return true;
         }
 
-        if ($this->isReplyToCurrentRejectPrompt($message, $pending)) {
-            return false;
-        }
-
-        $shortId = $this->pendingShortId($pending);
-        $this->telegram->api('sendMessage', [
-            'chat_id' => $chatId,
-            'text' => "⚠️ Это сообщение не принято как причина отклонения.\n\n"
-                . "Заявка {$shortId} НЕ отклонена и всё ещё ожидает решения.\n\n"
-                . "Чтобы отклонить именно её, ответьте на сообщение бота «Отклонение пополнения {$shortId}». "
-                . "Либо отмените действие кнопкой ниже.",
-            'reply_markup' => $this->navigationKeyboard(),
-            'disable_web_page_preview' => true,
-        ]);
-
-        return true;
-    }
-
-    private function isReplyToCurrentRejectPrompt(array $message, array $pending): bool
-    {
-        $reply = $message['reply_to_message'] ?? null;
-        if (!is_array($reply)) {
-            return false;
-        }
-
-        $replyText = trim((string)($reply['text'] ?? ''));
-        if ($replyText === '') {
-            return false;
-        }
-
-        $shortId = $this->pendingShortId($pending);
-        $hasPromptTitle = str_contains($replyText, 'Отклонение пополнения')
-            || str_contains($replyText, 'Отклонение заявки');
-
-        return $hasPromptTitle && $shortId !== '-' && str_contains(strtoupper($replyText), strtoupper($shortId));
+        // While the mode is active, the next ordinary admin message is the reason.
+        // WebhookHandler validates it, rejects the payment and clears the pending mode.
+        return false;
     }
 
     private function pendingReject(string $adminId): ?array
@@ -150,14 +118,6 @@ final class AdminPaymentRejectGuard
             }
             return null;
         });
-    }
-
-    private function pendingShortId(array $pending): string
-    {
-        $id = trim((string)($pending['payment_id'] ?? ''));
-        $id = preg_replace('/^(pay_)/i', '', $id);
-        $id = strtoupper(substr((string)$id, 0, 8));
-        return $id !== '' ? $id : '-';
     }
 
     private function navigationKeyboard(): array
