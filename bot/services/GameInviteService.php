@@ -51,7 +51,7 @@ final class GameInviteService
 
         $token = $this->uniqueToken($db['invites']);
         $now = now_iso();
-        [$columns, $rows] = $this->dimensions($gameType, $boardSize, $definition);
+        [$columns, $rows] = $this->dimensions($gameType, $boardSize);
         $invite = [
             'id' => make_id('invite'),
             'token' => $token,
@@ -221,14 +221,11 @@ final class GameInviteService
         return $bet;
     }
 
-    private function dimensions(string $gameType, int $boardSize, array $definition): array
+    private function dimensions(string $gameType, int $boardSize): array
     {
         if ($gameType === 'four_in_a_row') return [$boardSize, max(5, $boardSize - 1)];
         if ($gameType === 'domino') return [7, 1];
-        return [
-            (int)($definition['board_columns'] ?? $boardSize),
-            (int)($definition['board_rows'] ?? $boardSize),
-        ];
+        return [$boardSize, $boardSize];
     }
 
     private function ttlSec(): int
