@@ -6,10 +6,15 @@ import { getTelegram, getInitData, haptic } from '../telegram/telegram-app.js?v=
 import { getSessionId } from '../session.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { startGamePolling } from '../screens/game-screen.js?v=74';
+import { refreshNotificationBadge } from '../screens/notifications-screen.js?v=80';
 import { renderBalances } from '../ui.js?v=27';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
+const INBOX_URL = `${window.location.origin}/bot/invite-inbox.php`;
 const ACTIVE_INVITE_STORAGE_KEY = 'mgw_active_invite_v2';
+const AUTO_OPEN_STORAGE_KEY = 'mgw_invite_auto_opened_v2';
+const INVITE_POLL_MS = 1500;
+
 const GAME_OPTIONS = {
   tictactoe: { title:'Крестики-нолики', sizes:[3,5,9], defaultSize:3 },
   four_in_a_row: { title:'4 в ряд', sizes:[6,7,8], defaultSize:7 },
@@ -22,25 +27,29 @@ const GAME_OPTIONS = {
 };
 
 let initialized = false;
-let invitePollTimer = null;
-let invitePollBusy = false;
+let pollTimer = null;
+let pollBusy = false;
+let sheetObserver = null;
+let sheetEnhanceTimer = null;
 let activeInvite = loadStoredInvite();
 let activeInviteData = null;
+let autoOpenedToken = loadAutoOpenedToken();
 
 export function initGameInvites(){
   if (initialized) return;
   initialized = true;
 
   document.addEventListener('click', event => {
-    const target = event.target.closest('button, [role="button"]');
-    if (!target) return;
-
-    if ((target.id === 'notificationsOpen' || target.id === 'notificationToast') && hasReadyCheck()) {
+    const actionButton = event.target.closest('[data-invite-action]');
+    if (actionButton) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      openStoredInvite();
+      performInviteAction(String(actionButton.dataset.inviteAction || ''), actionButton);
       return;
     }
+
+    const target = event.target.closest('button, [role="button"]');
+    if (!target) return;
 
     if (hasReadyCheck() && isGameLaunchControl(target)) {
       event.preventDefault();
@@ -58,9 +67,29 @@ export function initGameInvites(){
     openInviteSetup(String(inviteButton.dataset.inviteFriend || 'tictactoe'));
   }, true);
 
+  const sheet = document.getElementById('sheet');
+  if (sheet) {
+    sheetObserver = new MutationObserver(scheduleNotificationEnhancement);
+    sheetObserver.observe(sheet, { childList:true, subtree:true });
+  }
+
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && activeInvite?.token) startInvitePolling();
+    if (document.visibilityState === 'visible') pollInvitesNow();
   });
+
+  document.addEventListener('mgw:app-ready', () => pollInvitesNow(), { once:true });
+  document.addEventListener('mgw:game-dismissed', () => clearActiveInvite());
+
+  const tg = getTelegram();
+  if (typeof tg?.onEvent === 'function') {
+    try {
+      tg.onEvent('activated', () => pollInvitesNow());
+    } catch (error) {
+      // Older Telegram clients may not expose the activated event.
+    }
+  }
+
+  startInvitePolling();
 }
 
 export async function openIncomingInviteIfPresent(){
@@ -77,18 +106,7 @@ export async function openIncomingInviteIfPresent(){
     return;
   }
 
-  try {
-    if (activeInvite?.token) {
-      const result = await inviteRequest('resolve', { token:activeInvite.token });
-      handleInviteResult(result, { forceOpen:false });
-      return;
-    }
-
-    const result = await inviteRequest('active');
-    if (result?.invite) handleInviteResult(result, { forceOpen:false });
-  } catch (error) {
-    clearActiveInvite();
-  }
+  await pollInvitesNow();
 }
 
 function openInviteSetup(gameType){
@@ -160,7 +178,6 @@ function openInviteSetup(gameType){
       activeInviteData = result.invite || {};
       rememberInvite(activeInviteData);
       showCreatedInvite(activeInviteData);
-      startInvitePolling();
       await shareInvite(activeInviteData);
     } catch (error) {
       toast(error.message || 'Не удалось создать приглашение.');
@@ -174,7 +191,6 @@ function showCreatedInvite(invite){
   activeInviteData = { ...(activeInviteData || {}), ...invite };
   rememberInvite(activeInviteData);
   const shareUrl = String(activeInviteData.share_url || '');
-  const canShare = shareUrl !== '';
 
   openSheet(`
     ${inviteMarker(activeInviteData)}
@@ -187,11 +203,11 @@ function showCreatedInvite(invite){
     <div class="small-note invite-status-note">Ссылка действует до ${escapeHtml(formatTime(activeInviteData.expires_at))}.</div>
 
     <div class="stack invite-actions">
-      ${canShare ? `
+      ${shareUrl ? `
         <button class="btn primary full" data-share-invite type="button">Отправить в Telegram</button>
         <button class="btn ghost full" data-copy-invite type="button">Скопировать ссылку</button>
       ` : ''}
-      <button class="btn ghost full" data-cancel-invite type="button">Отменить приглашение</button>
+      <button class="btn ghost full" data-invite-action="cancel" type="button">Отменить приглашение</button>
     </div>
   `);
 
@@ -205,7 +221,6 @@ function showCreatedInvite(invite){
       window.prompt('Скопируйте ссылку:', shareUrl);
     }
   });
-  bindCancelButton(activeInviteData);
 }
 
 async function shareInvite(invite){
@@ -214,12 +229,10 @@ async function shareInvite(invite){
 
   if (preparedId && typeof tg?.shareMessage === 'function') {
     try {
-      await new Promise(resolve => {
-        tg.shareMessage(preparedId, sent => {
-          if (sent) toast('Приглашение отправлено.');
-          resolve(Boolean(sent));
-        });
+      const sent = await new Promise(resolve => {
+        tg.shareMessage(preparedId, result => resolve(Boolean(result)));
       });
+      if (sent) toast('Приглашение отправлено.');
       return;
     } catch (error) {
       // Older Telegram clients fall back to the classic share link below.
@@ -242,6 +255,7 @@ async function shareInvite(invite){
 function showIncomingInvite(invite){
   activeInviteData = { ...(activeInviteData || {}), ...invite };
   rememberInvite(activeInviteData);
+  markAutoOpened(activeInviteData.token);
 
   openSheet(`
     ${inviteMarker(activeInviteData)}
@@ -256,42 +270,10 @@ function showIncomingInvite(invite){
     ${inviteSummary(activeInviteData)}
 
     <div class="stack invite-actions">
-      <button class="btn primary full" data-accept-invite type="button">Принять приглашение</button>
-      <button class="btn ghost full" data-decline-invite type="button">Отклонить приглашение</button>
+      <button class="btn primary full" data-invite-action="accept" type="button">Принять приглашение</button>
+      <button class="btn ghost full" data-invite-action="decline" type="button">Отклонить приглашение</button>
     </div>
   `);
-
-  document.querySelector('[data-accept-invite]')?.addEventListener('click', async event => {
-    const button = event.currentTarget;
-    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
-    setInviteButtonsDisabled(true);
-    button.textContent = 'Принимаем…';
-
-    try {
-      const result = await inviteRequest('accept', { token:String(activeInviteData.token || '') });
-      handleInviteResult(result, { forceOpen:true });
-    } catch (error) {
-      toast(error.message || 'Не удалось принять приглашение.');
-      setInviteButtonsDisabled(false);
-      button.textContent = 'Принять приглашение';
-    }
-  });
-
-  document.querySelector('[data-decline-invite]')?.addEventListener('click', async event => {
-    const button = event.currentTarget;
-    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
-    setInviteButtonsDisabled(true);
-    button.textContent = 'Отклоняем…';
-
-    try {
-      const result = await inviteRequest('decline', { token:String(activeInviteData.token || '') });
-      handleInviteResult(result, { forceOpen:true });
-    } catch (error) {
-      toast(error.message || 'Не удалось отклонить приглашение.');
-      setInviteButtonsDisabled(false);
-      button.textContent = 'Отклонить приглашение';
-    }
-  });
 }
 
 function showOwnerReady(invite){
@@ -312,28 +294,10 @@ function showOwnerReady(invite){
     <div class="small-note invite-status-note">Запустите матч до ${escapeHtml(formatTime(activeInviteData.start_deadline_at))}. Коины спишутся после запуска.</div>
 
     <div class="stack invite-actions">
-      <button class="btn primary full" data-start-invite type="button">Начать матч</button>
-      <button class="btn ghost full" data-cancel-invite type="button">Отменить приглашение</button>
+      <button class="btn primary full" data-invite-action="start" type="button">Начать игру</button>
+      <button class="btn ghost full" data-invite-action="cancel" type="button">Отменить приглашение</button>
     </div>
   `);
-
-  document.querySelector('[data-start-invite]')?.addEventListener('click', async event => {
-    const button = event.currentTarget;
-    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
-    setInviteButtonsDisabled(true);
-    button.textContent = 'Запускаем матч…';
-
-    try {
-      const result = await inviteRequest('start', { token:String(activeInviteData.token || '') });
-      handleInviteResult(result, { forceOpen:true });
-    } catch (error) {
-      toast(error.message || 'Не удалось запустить матч.');
-      setInviteButtonsDisabled(false);
-      button.textContent = 'Начать матч';
-    }
-  });
-
-  bindCancelButton(activeInviteData);
 }
 
 function showInviteeWaiting(invite){
@@ -351,14 +315,9 @@ function showInviteeWaiting(invite){
     </div>
 
     ${inviteSummary(activeInviteData)}
-    <div class="small-note invite-status-note">Ожидание до ${escapeHtml(formatTime(activeInviteData.start_deadline_at))}. Если матч не запустят, приглашение закроется автоматически.</div>
-
-    <div class="stack invite-actions">
-      <button class="btn ghost full" data-cancel-invite type="button">Отменить ожидание</button>
-    </div>
+    <div class="small-note invite-status-note">Ожидание до ${escapeHtml(formatTime(activeInviteData.start_deadline_at))}.</div>
+    <button class="btn ghost full" data-invite-action="cancel" type="button">Отменить ожидание</button>
   `);
-
-  bindCancelButton(activeInviteData);
 }
 
 function showTerminalInvite(invite){
@@ -377,27 +336,46 @@ function showTerminalInvite(invite){
   `);
 }
 
-function bindCancelButton(invite){
-  document.querySelector('[data-cancel-invite]')?.addEventListener('click', async event => {
-    const button = event.currentTarget;
-    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
-    setInviteButtonsDisabled(true);
-    button.textContent = 'Отменяем…';
+async function performInviteAction(action, button){
+  if (!activeInviteData?.token || !action) {
+    await pollInvitesNow();
+  }
+  if (!activeInviteData?.token || !action) return;
 
-    try {
-      const result = await inviteRequest('cancel', { token:String(invite.token || '') });
-      handleInviteResult(result, { forceOpen:true });
-    } catch (error) {
-      toast(error.message || 'Не удалось отменить приглашение.');
-      setInviteButtonsDisabled(false);
-      button.textContent = invite.is_invitee ? 'Отменить ожидание' : 'Отменить приглашение';
+  if (action === 'wait') {
+    showInviteeWaiting(activeInviteData);
+    return;
+  }
+
+  const originalText = button.textContent;
+  setInviteButtonsDisabled(true);
+  button.textContent = action === 'start'
+    ? 'Запускаем…'
+    : action === 'accept'
+      ? 'Принимаем…'
+      : action === 'decline'
+        ? 'Отклоняем…'
+        : 'Отменяем…';
+
+  try {
+    const result = await inviteRequest(action, { token:String(activeInviteData.token || '') });
+    handleInviteResult(result, { forceOpen:action === 'accept' });
+
+    if (action === 'decline' || action === 'cancel') {
+      closeSheet();
+      toast(action === 'decline' ? 'Приглашение отклонено.' : 'Приглашение отменено.');
     }
-  });
+  } catch (error) {
+    toast(error.message || 'Не удалось выполнить действие.');
+    setInviteButtonsDisabled(false);
+    button.textContent = originalText;
+  }
 }
 
 function handleInviteResult(result, { forceOpen = false } = {}){
   syncInviteState(result);
-  if (result?.game?.id) {
+
+  if (result?.game?.id && String(result.game.status || '') === 'active') {
     enterInviteGame(result);
     return;
   }
@@ -405,72 +383,99 @@ function handleInviteResult(result, { forceOpen = false } = {}){
   const invite = result?.invite;
   if (!invite?.token) {
     clearActiveInvite();
+    enhanceNotificationSheet();
     return;
   }
 
-  const previousStatus = String(activeInvite?.status || '');
+  const previousToken = String(activeInvite?.token || '');
+  const previousStatus = previousToken === String(invite.token || '')
+    ? String(activeInvite?.status || '')
+    : '';
+
   activeInviteData = { ...(activeInviteData || {}), ...invite };
   rememberInvite(activeInviteData);
-  startInvitePolling();
 
   const status = String(activeInviteData.status || 'pending');
-  const sheetOpen = isInviteSheetOpen(String(activeInviteData.token || ''));
+  const statusChanged = previousStatus !== '' && previousStatus !== status;
+  const isNewInvite = previousToken !== String(activeInviteData.token || '');
+
+  if (statusChanged || isNewInvite) {
+    refreshNotificationBadge(true);
+  }
+
+  enhanceNotificationSheet();
 
   if (status === 'pending') {
-    if (forceOpen) {
-      if (activeInviteData.is_owner) showCreatedInvite(activeInviteData);
-      else showIncomingInvite(activeInviteData);
+    if (forceOpen && !activeInviteData.is_owner) {
+      showIncomingInvite(activeInviteData);
+    } else if (forceOpen && activeInviteData.is_owner) {
+      showCreatedInvite(activeInviteData);
+    } else if (shouldAutoOpenIncoming(activeInviteData)) {
+      showIncomingInvite(activeInviteData);
     }
     return;
   }
 
   if (status === 'awaiting_start') {
+    const sheetOpen = isInviteSheetOpen(String(activeInviteData.token || ''));
     if (forceOpen || sheetOpen) {
       if (activeInviteData.is_owner) showOwnerReady(activeInviteData);
       else showInviteeWaiting(activeInviteData);
-    } else if (activeInviteData.is_owner && previousStatus === 'pending') {
-      toast('Соперник согласен. Откройте колокольчик и запустите матч.');
     }
     return;
   }
 
-  if (status === 'started' || status === 'starting') {
-    toast('Матч запускается…');
+  if (status === 'starting' || status === 'started') {
+    // The active game is returned by the same endpoint as soon as it exists.
+    // Finished games are deliberately ignored by the backend.
     return;
   }
 
   const terminalInvite = { ...activeInviteData };
+  const sheetOpen = isInviteSheetOpen(String(terminalInvite.token || ''));
   clearActiveInvite();
+  refreshNotificationBadge(true);
   if (forceOpen || sheetOpen) showTerminalInvite(terminalInvite);
 }
 
 function startInvitePolling(){
-  if (!activeInvite?.token || state.activeGame) return;
-  if (invitePollTimer !== null) return;
-
-  invitePollTimer = window.setInterval(async () => {
-    if (invitePollBusy || document.visibilityState !== 'visible' || state.activeGame || !activeInvite?.token) return;
-    invitePollBusy = true;
-
-    try {
-      const result = await inviteRequest('resolve', { token:activeInvite.token });
-      handleInviteResult(result, { forceOpen:false });
-    } catch (error) {
-      clearActiveInvite();
-    } finally {
-      invitePollBusy = false;
-    }
-  }, Math.max(3000, Number(APP_CONFIG.searchIntervalMs || 3500)));
+  if (pollTimer !== null) return;
+  pollTimer = window.setInterval(() => pollInvitesNow(), INVITE_POLL_MS);
 }
 
-function clearInvitePolling(){
-  if (invitePollTimer !== null) window.clearInterval(invitePollTimer);
-  invitePollTimer = null;
-  invitePollBusy = false;
+async function pollInvitesNow(){
+  if (pollBusy || document.visibilityState !== 'visible' || state.activeGame) return null;
+  pollBusy = true;
+
+  try {
+    if (activeInvite?.token) {
+      const result = await inviteRequest('resolve', { token:activeInvite.token });
+      handleInviteResult(result, { forceOpen:false });
+      return result?.invite || null;
+    }
+
+    const result = await inboxRequest();
+    if (result?.invite) {
+      handleInviteResult(result, { forceOpen:false });
+      return result.invite;
+    }
+
+    enhanceNotificationSheet();
+    return null;
+  } catch (error) {
+    // Temporary background errors must not destroy a still-valid invitation.
+    return null;
+  } finally {
+    pollBusy = false;
+  }
 }
 
 async function openStoredInvite(){
+  if (!activeInvite?.token) {
+    await pollInvitesNow();
+  }
   if (!activeInvite?.token) return;
+
   try {
     const result = await inviteRequest('resolve', { token:activeInvite.token });
     handleInviteResult(result, { forceOpen:true });
@@ -482,7 +487,7 @@ async function openStoredInvite(){
 
 function enterInviteGame(result){
   const game = result?.game;
-  if (!game?.id) return;
+  if (!game?.id || String(game.status || '') !== 'active') return;
 
   clearActiveInvite();
   syncInviteState(result);
@@ -490,6 +495,86 @@ function enterInviteGame(result){
   closeSheet();
   showScreen('game');
   startGamePolling(game.id);
+}
+
+function scheduleNotificationEnhancement(){
+  window.clearTimeout(sheetEnhanceTimer);
+  sheetEnhanceTimer = window.setTimeout(enhanceNotificationSheet, 60);
+}
+
+function enhanceNotificationSheet(){
+  if (!isNotificationsSheetOpen()) return;
+
+  document.querySelectorAll('[data-invite-action-card]').forEach(card => card.remove());
+  if (!activeInviteData?.token) return;
+
+  const status = String(activeInviteData.status || '');
+  const actionable = (status === 'pending' && activeInviteData.is_invitee)
+    || (status === 'awaiting_start' && (activeInviteData.is_owner || activeInviteData.is_invitee));
+  if (!actionable) return;
+
+  const duplicateTitle = status === 'pending'
+    ? 'Вас пригласили сыграть'
+    : (activeInviteData.is_owner ? 'Соперник согласен' : 'Приглашение принято');
+
+  document.querySelectorAll('.notification-card:not([data-invite-action-card])').forEach(card => {
+    const title = String(card.querySelector('.notification-head strong')?.textContent || '').trim();
+    if (title === duplicateTitle) card.remove();
+  });
+
+  const card = document.createElement('article');
+  card.className = `notification-card ${status === 'pending' ? 'info' : 'success'}`;
+  card.dataset.inviteActionCard = '1';
+  card.innerHTML = notificationActionCard(activeInviteData);
+
+  const sheet = document.getElementById('sheet');
+  const anchor = sheet?.querySelector('.notifications-list, .notifications-empty');
+  if (anchor) anchor.insertAdjacentElement('beforebegin', card);
+  else sheet?.appendChild(card);
+}
+
+function notificationActionCard(invite){
+  const status = String(invite.status || '');
+
+  if (status === 'awaiting_start' && invite.is_owner) {
+    return `
+      <div class="notification-icon">✓</div>
+      <div class="notification-copy">
+        <div class="notification-head"><strong>Соперник согласен</strong></div>
+        <p>${escapeHtml(invite.invitee_name || 'Игрок')} готов сыграть в «${escapeHtml(invite.game_title || 'игру')}».</p>
+        <div class="notification-actions">
+          <button class="btn primary full" data-invite-action="start" type="button">Начать игру</button>
+          <button class="btn ghost full" data-invite-action="cancel" type="button">Отменить</button>
+        </div>
+      </div>
+    `;
+  }
+
+  if (status === 'pending' && invite.is_invitee) {
+    return `
+      <div class="notification-icon">🎮</div>
+      <div class="notification-copy">
+        <div class="notification-head"><strong>Вас пригласили сыграть</strong></div>
+        <p>${escapeHtml(invite.inviter_name || 'Игрок')} приглашает вас в «${escapeHtml(invite.game_title || 'игру')}».</p>
+        <div class="notification-actions">
+          <button class="btn primary full" data-invite-action="accept" type="button">Принять приглашение</button>
+          <button class="btn ghost full" data-invite-action="decline" type="button">Отклонить</button>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="notification-icon">✓</div>
+    <div class="notification-copy">
+      <div class="notification-head"><strong>Приглашение принято</strong></div>
+      <p>Ждём, когда ${escapeHtml(invite.inviter_name || 'игрок')} запустит матч.</p>
+      <div class="notification-actions">
+        <button class="btn primary full" data-invite-action="wait" type="button">Открыть ожидание</button>
+        <button class="btn ghost full" data-invite-action="cancel" type="button">Отменить</button>
+      </div>
+    </div>
+  `;
 }
 
 function syncInviteState(result){
@@ -503,15 +588,17 @@ function syncInviteState(result){
 function rememberInvite(invite){
   const token = String(invite?.token || '');
   if (!token) return;
+
   activeInvite = {
     token,
     status:String(invite.status || 'pending'),
     role:invite.is_owner ? 'owner' : (invite.is_invitee ? 'invitee' : 'guest'),
   };
+
   try {
     localStorage.setItem(ACTIVE_INVITE_STORAGE_KEY, JSON.stringify(activeInvite));
   } catch (error) {
-    // The current in-memory invitation remains usable when storage is unavailable.
+    // In-memory state remains enough for the current Mini App session.
   }
 }
 
@@ -520,19 +607,47 @@ function loadStoredInvite(){
     const value = JSON.parse(localStorage.getItem(ACTIVE_INVITE_STORAGE_KEY) || 'null');
     if (value && /^[a-f0-9]{24}$/.test(String(value.token || ''))) return value;
   } catch (error) {
-    // Ignore a malformed or unavailable local storage value.
+    // Ignore malformed or unavailable local storage.
   }
   return null;
 }
 
 function clearActiveInvite(){
-  clearInvitePolling();
   activeInvite = null;
   activeInviteData = null;
+  document.querySelectorAll('[data-invite-action-card]').forEach(card => card.remove());
   try {
     localStorage.removeItem(ACTIVE_INVITE_STORAGE_KEY);
   } catch (error) {
     // Nothing else is required when local storage is unavailable.
+  }
+}
+
+function shouldAutoOpenIncoming(invite){
+  const token = String(invite?.token || '');
+  if (!token || token === autoOpenedToken) return false;
+  if (!invite.is_invitee || String(invite.status || '') !== 'pending') return false;
+  if (document.visibilityState !== 'visible' || state.activeGame) return false;
+
+  const activeScreen = document.querySelector('.screen.active');
+  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
+  return !document.getElementById('sheetOverlay')?.classList.contains('active');
+}
+
+function markAutoOpened(token){
+  autoOpenedToken = String(token || '');
+  try {
+    sessionStorage.setItem(AUTO_OPEN_STORAGE_KEY, autoOpenedToken);
+  } catch (error) {
+    // In-memory protection is enough for the current session.
+  }
+}
+
+function loadAutoOpenedToken(){
+  try {
+    return String(sessionStorage.getItem(AUTO_OPEN_STORAGE_KEY) || '');
+  } catch (error) {
+    return '';
   }
 }
 
@@ -542,7 +657,9 @@ function hasReadyCheck(){
 
 function isGameLaunchControl(target){
   const id = String(target?.id || '');
-  return id === 'startSearchBtn' || id.startsWith('play') || Boolean(target?.closest?.('[data-invite-friend]'));
+  return id === 'startSearchBtn'
+    || id.startsWith('play')
+    || Boolean(target?.closest?.('[data-invite-friend]'));
 }
 
 function isInviteSheetOpen(token){
@@ -551,12 +668,18 @@ function isInviteSheetOpen(token){
   return Boolean(document.querySelector(`[data-invite-sheet][data-invite-token="${token}"]`));
 }
 
+function isNotificationsSheetOpen(){
+  const overlay = document.getElementById('sheetOverlay');
+  if (!overlay?.classList.contains('active')) return false;
+  return String(document.querySelector('#sheet .sheet-head h2')?.textContent || '').trim() === 'Уведомления';
+}
+
 function inviteMarker(invite){
   return `<span data-invite-sheet data-invite-token="${escapeHtml(invite.token || '')}" hidden></span>`;
 }
 
 function setInviteButtonsDisabled(disabled){
-  document.querySelectorAll('[data-accept-invite], [data-decline-invite], [data-start-invite], [data-cancel-invite]').forEach(button => {
+  document.querySelectorAll('[data-invite-action]').forEach(button => {
     button.disabled = disabled;
   });
 }
@@ -573,13 +696,20 @@ function inviteSummary(invite){
 }
 
 async function inviteRequest(action, payload = {}){
-  const response = await fetch(INVITES_URL, {
+  return postJson(INVITES_URL, { action, ...payload });
+}
+
+async function inboxRequest(){
+  return postJson(INBOX_URL, {});
+}
+
+async function postJson(url, payload){
+  const response = await fetch(url, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
     body:JSON.stringify({
       initData:getInitData(),
       sessionId:getSessionId(),
-      action,
       ...payload,
     }),
   });
