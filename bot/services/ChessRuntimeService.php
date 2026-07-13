@@ -395,23 +395,17 @@ final class ChessRuntimeService
         $userId = trim((string)($user['id'] ?? ''));
         if ($userId === '') return;
 
-        foreach ($db['invites'] ?? [] as &$invite) {
+        foreach ($db['invites'] ?? [] as $invite) {
             if (!is_array($invite) || (string)($invite['status'] ?? '') !== 'awaiting_start') continue;
             $isParticipant = (string)($invite['inviter_id'] ?? '') === $userId
                 || (string)($invite['invitee_id'] ?? '') === $userId;
             if (!$isParticipant) continue;
 
             $deadline = strtotime((string)($invite['start_deadline_at'] ?? '')) ?: 0;
-            if ($deadline > 0 && $deadline <= time()) {
-                $invite['status'] = 'timed_out';
-                $invite['updated_at'] = now_iso();
-                continue;
-            }
+            if ($deadline > 0 && $deadline <= time()) continue;
 
-            unset($invite);
             throw new RuntimeException('Сначала запустите или отмените подтверждённое приглашение.');
         }
-        unset($invite);
     }
 
     private function syncGameMetadataTransactions(
