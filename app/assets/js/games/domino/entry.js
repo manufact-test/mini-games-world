@@ -6,8 +6,8 @@ import { openSheet, closeSheet } from '../../components/sheet.js?v=68';
 import { showScreen } from '../../router.js?v=27';
 import { haptic } from '../../telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from '../../ui.js?v=27';
-import { startSearchPolling } from '../../screens/search-screen.js?v=72';
-import { startGamePolling } from '../../screens/game-screen.js?v=72';
+import { startSearchPolling } from '../../screens/search-screen.js?v=73';
+import { startGamePolling } from '../../screens/game-screen.js?v=73';
 import { isSessionLocked, sessionMessage } from '../../session.js?v=27';
 import { DOMINO_META } from './meta.js?v=72';
 
@@ -97,15 +97,20 @@ async function startDominoSearch(){
 }
 
 function dominoPreviewMarkup(){
-  const tiles = [[6,6],[6,3],[3,1],[1,4],[4,4]];
+  const tiles = [[6,6],[6,3],[3,1],[1,4]];
+  const hand = [[0,5],[2,5],[2,2],[1,6],[0,3],[3,5],[1,1]];
+
   return `
     <div class="domino-start-preview" aria-hidden="true">
-      <div class="domino-preview-stock">${Array.from({length:6}, () => '<i></i>').join('')}<b>+8</b></div>
+      <div class="domino-preview-stock">
+        <span class="domino-preview-stock-deck">${Array.from({length:4}, () => '<i></i>').join('')}</span>
+        <b>14 в запасе</b>
+      </div>
       <div class="domino-preview-chain">
         ${tiles.map(([a,b], index) => tileMarkup(a, b, index === 0)).join('')}
       </div>
       <div class="domino-preview-hand">
-        ${[[0,5],[2,5],[2,2],[1,6],[0,3],[3,5],[1,1]].map(([a,b]) => tileMarkup(a,b,false)).join('')}
+        ${hand.map(([a,b]) => `<span class="domino-preview-hand-slot">${tileMarkup(a,b,false)}</span>`).join('')}
       </div>
     </div>
     <div class="domino-preview-caption">28 уникальных костяшек · от 0–0 до 6–6</div>
