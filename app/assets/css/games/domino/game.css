@@ -114,3 +114,27 @@
   .domino-hand.roomy .domino-hand-tile .domino-tile{width:58px;height:30px}
 }
 @media (prefers-reduced-motion:reduce){.domino-chain-slot.animate-in,.domino-placement-target,.domino-hand.draw-pulse,.domino-hand-tile.invalid{animation:none}}
+
+/* v81: keep long chains readable by wrapping them into a roomy snake. */
+.domino-table[data-chain-layout="snake"] .domino-chain-area{height:var(--domino-chain-height) !important}
+.domino-table[data-chain-layout="snake"] .domino-table-caption{font-size:11px;min-height:17px;margin-top:2px}
+.domino-table[data-chain-layout="snake"] .domino-half{padding:3px}
+.domino-table[data-chain-layout="snake"] .domino-half i{width:4px;height:4px}
+.domino-table[data-chain-layout="snake"][data-chain-rows="2"] .domino-chain-slot .domino-tile.compact,
+.domino-table[data-chain-layout="snake"][data-chain-rows="2"] .domino-placement-target .domino-tile.compact{width:52px;height:27px}
+.domino-table[data-chain-layout="snake"][data-chain-rows="3"] .domino-chain-slot .domino-tile.compact,
+.domino-table[data-chain-layout="snake"][data-chain-rows="3"] .domino-placement-target .domino-tile.compact{width:48px;height:25px}
+.domino-table[data-chain-layout="snake"][data-chain-rows="4"] .domino-chain-slot .domino-tile.compact,
+.domino-table[data-chain-layout="snake"][data-chain-rows="4"] .domino-placement-target .domino-tile.compact{width:44px;height:23px}
+.domino-table[data-chain-layout="snake"][data-chain-rows="5"] .domino-chain-slot .domino-tile.compact,
+.domino-table[data-chain-layout="snake"][data-chain-rows="5"] .domino-placement-target .domino-tile.compact{width:40px;height:21px}
+@media (max-width:380px){
+  .domino-table[data-chain-layout="snake"][data-chain-rows="2"] .domino-chain-slot .domino-tile.compact,
+  .domino-table[data-chain-layout="snake"][data-chain-rows="2"] .domino-placement-target .domino-tile.compact{width:44px;height:23px}
+  .domino-table[data-chain-layout="snake"][data-chain-rows="3"] .domino-chain-slot .domino-tile.compact,
+  .domino-table[data-chain-layout="snake"][data-chain-rows="3"] .domino-placement-target .domino-tile.compact{width:42px;height:22px}
+  .domino-table[data-chain-layout="snake"][data-chain-rows="4"] .domino-chain-slot .domino-tile.compact,
+  .domino-table[data-chain-layout="snake"][data-chain-rows="4"] .domino-placement-target .domino-tile.compact{width:40px;height:21px}
+  .domino-table[data-chain-layout="snake"][data-chain-rows="5"] .domino-chain-slot .domino-tile.compact,
+  .domino-table[data-chain-layout="snake"][data-chain-rows="5"] .domino-placement-target .domino-tile.compact{width:38px;height:20px}
+}
