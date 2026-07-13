@@ -25,7 +25,7 @@ function mgw_invite_share_url(array $config, string $token): string
     }
 
     $baseUrl = rtrim((string)($config['base_url'] ?? ''), '/');
-    return $baseUrl . '/app/?v=78&invite=' . rawurlencode($token);
+    return $baseUrl . '/app/?v=80&invite=' . rawurlencode($token);
 }
 
 function mgw_invite_board_label(array $invite): string
@@ -113,6 +113,10 @@ function mgw_invite_game_for_viewer(
     $gameId = trim((string)($invite['game_id'] ?? ''));
     if ($gameId === '' || empty($invite['is_participant'])) return null;
     if (!isset($data['games'][$gameId]) || !is_array($data['games'][$gameId])) return null;
+
+    // A completed private match must never pull either player back from the menu.
+    if ((string)($data['games'][$gameId]['status'] ?? '') !== 'active') return null;
+
     return $games->publicGame($data['games'][$gameId], $userId);
 }
 
