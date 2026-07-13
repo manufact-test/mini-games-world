@@ -64,6 +64,16 @@ final class AdminPaymentRejectGuard
             return false;
         }
 
+        /*
+         * Builds before v71 used Telegram ForceReply for payment rejection. Telegram
+         * Desktop may keep that old reply draft for days even though the server no
+         * longer creates it. When the admin sends any message from that stale draft,
+         * remove only the legacy bot prompt and clear its obsolete pending state.
+         */
+        if ($this->clearLegacyForceReply($message, $fromId)) {
+            return false;
+        }
+
         $pending = $this->pendingReject($fromId);
         if (!$pending) {
             return false;
@@ -94,6 +104,41 @@ final class AdminPaymentRejectGuard
         // While the mode is active, the next ordinary admin message is the reason.
         // WebhookHandler validates it, rejects the payment and clears the pending mode.
         return false;
+    }
+
+    private function clearLegacyForceReply(array $message, string $adminId): bool
+    {
+        $reply = $message['reply_to_message'] ?? null;
+        if (!is_array($reply)) {
+            return false;
+        }
+
+        $replyText = trim((string)($reply['text'] ?? ''));
+        $isLegacyPrompt = str_contains($replyText, 'Отклонение пополнения')
+            && (str_contains($replyText, 'Ответьте прямо на это сообщение')
+                || str_contains($replyText, 'Telegram откроет отдельное поле ответа'));
+        if (!$isLegacyPrompt) {
+            return false;
+        }
+
+        $this->clearPendingReject($adminId);
+
+        $chatId = (string)($message['chat']['id'] ?? '');
+        $messageId = (int)($reply['message_id'] ?? 0);
+        if ($chatId !== '' && $messageId > 0) {
+            try {
+                $this->telegram->api('deleteMessage', [
+                    'chat_id' => $chatId,
+                    'message_id' => $messageId,
+                ]);
+            } catch (Throwable $e) {
+                // Telegram may refuse deletion for messages older than its limit.
+                // Sending the current message still exits the stale reply draft.
+                error_log('Mini Games World legacy ForceReply cleanup failed: ' . $e->getMessage());
+            }
+        }
+
+        return true;
     }
 
     private function pendingReject(string $adminId): ?array
