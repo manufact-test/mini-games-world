@@ -39,11 +39,14 @@
 .game-card.locked{opacity:.63}
 .game-top{display:flex;gap:13px;align-items:flex-start}
 .game-icon{width:48px;height:48px;border-radius:18px;display:grid;place-items:center;background:rgba(124,92,255,.16);font-size:22px;flex:0 0 auto}
+.game-icon-four{position:relative;display:block;overflow:hidden}
+.four-card-disc{position:absolute;width:19px;height:19px;border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,.32),inset 0 0 0 1px rgba(255,255,255,.22)}
+.four-card-disc.red{left:7px;top:7px;background:linear-gradient(145deg,#ff5061,#d90d31)}
+.four-card-disc.yellow{right:7px;bottom:7px;background:linear-gradient(145deg,#ffe764,#f2bf09)}
 .game-card h3{margin:0 0 5px;font-size:18px;letter-spacing:-.02em}
 .game-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
 .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .small-note{color:var(--muted);font-size:12px;line-height:1.45;background:rgba(255,255,255,.04);border:1px solid var(--stroke);border-radius:17px;padding:11px;margin:10px 0 0}
-
 
 /* v11 card spacing consistency */
 .card,
