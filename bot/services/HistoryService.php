@@ -238,6 +238,7 @@ final class HistoryService
             'reversi' => 'Реверси',
             'chess' => 'Шахматы',
             'go' => 'Го',
+            'domino' => 'Домино',
             default => 'Крестики-нолики',
         };
     }
