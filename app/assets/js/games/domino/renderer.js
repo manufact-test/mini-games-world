@@ -309,7 +309,7 @@ function chainDensity(count){
 function layoutChain(chain, density){
   if (density === 'solo' || density === 'short' || density === 'wide') {
     const count = Math.max(1, chain.length);
-    const spacing = density === 'solo' ? 24 : (density === 'short' ? 19 : 13.5);
+    const spacing = density === 'solo' ? 24 : (density === 'short' ? 19 : 12);
     const startX = 50 - ((count - 1) * spacing) / 2;
     const slots = chain.map((_, index) => ({
       x:startX + index * spacing,
