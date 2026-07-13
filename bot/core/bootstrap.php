@@ -24,6 +24,13 @@ if (is_file($localConfigFile)) {
     }
 }
 
+// Weekly Match coins are a product-wide Moscow schedule. Older private configs
+// copied the former Warsaw default, so migrate that legacy value safely here.
+$weeklyTimezone = trim((string)($config['weekly_match_timezone'] ?? ''));
+if ($weeklyTimezone === '' || $weeklyTimezone === 'Europe/Warsaw') {
+    $config['weekly_match_timezone'] = 'Europe/Moscow';
+}
+
 if (empty($config['data_dir'])) {
     $externalDataDir = dirname(__DIR__, 3) . '/mgw_data';
     $config['data_dir'] = is_dir($externalDataDir) ? $externalDataDir : __DIR__ . '/../data';
