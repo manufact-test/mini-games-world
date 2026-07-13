@@ -12,12 +12,12 @@ export function dominoRules(){
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Соединяйте одинаковые числа</strong><span>Костяшку можно поставить к левому или правому концу цепочки, если одно из её чисел совпадает с открытым числом.</span></div>
+        <div class="game-rule-copy"><strong>Соединяйте одинаковые числа</strong><span>Костяшку можно поставить к одному из двух концов цепочки, если одно из её чисел совпадает с открытым числом.</span></div>
         ${matchRule()}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Выбор стороны</strong><span>Если костяшка подходит к обоим концам, сначала выберите её, затем нажмите на левый или правый конец цепочки.</span></div>
+        <div class="game-rule-copy"><strong>Выбор конца цепочки</strong><span>Если костяшка подходит к обоим концам, сначала выберите её, затем нажмите на одно из двух подсвеченных мест на столе.</span></div>
         ${sideRule()}
       </section>
 
@@ -71,7 +71,7 @@ function sideRule(){
       <button type="button" tabindex="-1">← 3</button>
       <div class="domino-rule-chain">${tileMarkup(3,6)}${tileMarkup(6,2)}${tileMarkup(2,3)}</div>
       <button type="button" tabindex="-1">3 →</button>
-      <div class="domino-rule-selected">${tileMarkup(3,3,true)}<span>Подходит с обеих сторон</span></div>
+      <div class="domino-rule-selected">${tileMarkup(3,3,true)}<span>Подходит к обоим концам</span></div>
     </div>
   `;
 }
