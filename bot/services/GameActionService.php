@@ -41,6 +41,7 @@ final class GameActionService
             'reversi' => $this->runtime->applyReversiAction($db, $user, $gameId, $action),
             'chess' => $this->runtime->applyChessAction($db, $user, $gameId, $action),
             'go' => $this->runtime->applyGoAction($db, $user, $gameId, $action),
+            'domino' => $this->runtime->applyDominoAction($db, $user, $gameId, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
     }
