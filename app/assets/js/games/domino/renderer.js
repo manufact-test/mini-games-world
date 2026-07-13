@@ -331,19 +331,21 @@ function layoutChain(chain, density){
   const startIndex = foundStartIndex >= 0 ? foundStartIndex : 0;
   const before = startIndex;
   const after = Math.max(0, chain.length - startIndex - 1);
-  const preferredAnchor = 4;
-  const startSlot = Math.max(before, Math.min(preferredAnchor, route.length - 1 - after));
+  const minAnchor = before + 1;
+  const maxAnchor = route.length - 2 - after;
+  const preferredAnchor = density === 'medium' ? 4 : 8;
+  const startSlot = clamp(preferredAnchor, minAnchor, maxAnchor);
   const slots = chain.map((_, index) => {
     const routeIndex = startSlot + index - startIndex;
     return route[Math.max(0, Math.min(route.length - 1, routeIndex))];
   });
-  const firstIndex = Math.max(0, startSlot - before);
-  const lastIndex = Math.min(route.length - 1, startSlot + after);
+  const firstIndex = startSlot - before;
+  const lastIndex = startSlot + after;
 
   return {
     slots,
-    leftTarget:firstIndex > 0 ? route[firstIndex - 1] : null,
-    rightTarget:lastIndex < route.length - 1 ? route[lastIndex + 1] : null,
+    leftTarget:route[firstIndex - 1] || null,
+    rightTarget:route[lastIndex + 1] || null,
     fallback:route[Math.min(startSlot, route.length - 1)],
   };
 }
