@@ -42,7 +42,7 @@ final class TelegramService
 
     public function sendStartMessage(int|string $chatId): void
     {
-        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=61';
+        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=71';
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
@@ -148,29 +148,6 @@ final class TelegramService
         $text = (string)($params['text'] ?? '');
         if ($text !== '') {
             $text = $this->renameAdminSections($text);
-        }
-
-        if ($method === 'editMessageText' && str_starts_with($text, '🚫 Отклонение заявки')) {
-            $shortId = '-';
-            if (preg_match('/^🚫 Отклонение заявки\s+([^\n]+)/u', $text, $matches)) {
-                $shortId = trim((string)($matches[1] ?? '-'));
-            }
-
-            $method = 'sendMessage';
-            unset($params['message_id']);
-            $text = "🚫 Отклонение пополнения {$shortId}\n\n"
-                . "Ответьте прямо на это сообщение одной причиной. Telegram откроет отдельное поле ответа.\n\n"
-                . "Пример: оплата не найдена\n\n"
-                . "ВАЖНО: пока вы не отправили причину, заявка НЕ отклонена и остаётся в ожидании.\n\n"
-                . "Чтобы отменить действие, отправьте /cancel или откройте раздел «💳 Пополнения».";
-            $params['reply_markup'] = [
-                'force_reply' => true,
-                'selective' => true,
-                'input_field_placeholder' => "Причина для заявки {$shortId}",
-            ];
-        }
-
-        if ($text !== '') {
             $params['text'] = $text;
         }
 
