@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v76-mvp12-invite-links';
+window.__MGW_BUILD__ = 'v77-mvp12-invite-accept';
 import { initRequestGuard } from './api/request-guard.js?v=64';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -22,7 +22,7 @@ import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74'
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=72';
-import { initGameInvites } from './games/game-invites.js?v=76';
+import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=77';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
 import { initBattleshipEntry } from './games/battleship/entry.js?v=74';
@@ -81,6 +81,8 @@ async function boot(){
       state.activeGame = result.active_game;
       showScreen('game');
       startGamePolling(result.active_game.id);
+    } else {
+      await openIncomingInviteIfPresent();
     }
     startStatsPolling();
   } catch (error) {
