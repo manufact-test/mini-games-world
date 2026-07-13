@@ -1,5 +1,5 @@
 window.__MGW_BUILD__ = 'v80-mvp12-invite-stability';
-import { initRequestGuard } from './api/request-guard.js?v=64';
+import { initRequestGuard } from './api/request-guard.js?v=80';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
