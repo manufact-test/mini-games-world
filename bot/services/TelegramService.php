@@ -42,7 +42,7 @@ final class TelegramService
 
     public function sendStartMessage(int|string $chatId): void
     {
-        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=72';
+        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=76';
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
@@ -151,7 +151,33 @@ final class TelegramService
             $params['text'] = $text;
         }
 
+        // Admin buttons may be pressed in an old message. Always append the result
+        // to the bottom of the chat instead of silently rewriting that old card.
+        if ($method === 'editMessageText' && $this->hasAdminCallback($params['reply_markup'] ?? null)) {
+            $method = 'sendMessage';
+            unset($params['message_id']);
+        }
+
         return [$method, $params];
+    }
+
+    private function hasAdminCallback(mixed $replyMarkup): bool
+    {
+        if (!is_array($replyMarkup) || !isset($replyMarkup['inline_keyboard']) || !is_array($replyMarkup['inline_keyboard'])) {
+            return false;
+        }
+
+        foreach ($replyMarkup['inline_keyboard'] as $row) {
+            if (!is_array($row)) continue;
+            foreach ($row as $button) {
+                if (!is_array($button)) continue;
+                if (str_starts_with((string)($button['callback_data'] ?? ''), 'admin:')) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function renameAdminButtons(array $replyMarkup): array
