@@ -56,7 +56,6 @@ final class GameInviteInboxService
                 continue;
             }
             $this->expirePendingIfDue($invite, $now);
-            $this->expireReadyCheckIfDue($invite, $now);
         }
         unset($invite);
 
@@ -161,19 +160,6 @@ final class GameInviteInboxService
         $now ??= time();
         if ($expiresAt > 0 && $expiresAt <= $now) {
             $invite['status'] = 'expired';
-            $invite['updated_at'] = now_iso();
-        }
-    }
-
-    private function expireReadyCheckIfDue(array &$invite, int $now): void
-    {
-        if ((string)($invite['status'] ?? '') !== 'awaiting_start') {
-            return;
-        }
-
-        $deadline = strtotime((string)($invite['start_deadline_at'] ?? '')) ?: 0;
-        if ($deadline > 0 && $deadline <= $now) {
-            $invite['status'] = 'timed_out';
             $invite['updated_at'] = now_iso();
         }
     }
