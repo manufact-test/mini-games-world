@@ -70,7 +70,8 @@
 .domino-mini-tile.is-double{transform:rotate(90deg);margin:0 12px;background:linear-gradient(155deg,#fff6d4,#e7d79c)}
 .domino-mini-half{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;width:50%;height:100%;padding:3px;box-sizing:border-box}
 .domino-mini-half+ .domino-mini-half{border-left:1px solid rgba(32,38,49,.45)}
-.domino-mini-half b{width:4px;height:4px;border-radius:50%;background:#151923}
+.domino-mini-half b{width:4px;height:4px;border-radius:50%;background:transparent}
+.domino-mini-half b.active{background:#151923}
 .domino-preview-hand{display:flex;justify-content:center;align-items:center;gap:1px;min-height:42px;overflow:hidden}
 .domino-preview-hand .domino-mini-tile{width:43px;height:22px;transform:rotate(90deg);margin:0 -6px}
 .domino-preview-caption{text-align:center;color:var(--muted);font-size:10px;font-weight:850}
