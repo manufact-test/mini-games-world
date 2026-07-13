@@ -134,6 +134,9 @@ function mgw_assert_no_other_ready_check(array $data, string $userId, string $cu
         if (!is_array($invite) || (string)($invite['status'] ?? '') !== 'awaiting_start') continue;
         if ((string)($invite['token'] ?? '') === $currentToken) continue;
 
+        $deadline = strtotime((string)($invite['start_deadline_at'] ?? '')) ?: 0;
+        if ($deadline > 0 && $deadline <= time()) continue;
+
         $isParticipant = (string)($invite['inviter_id'] ?? '') === $userId
             || (string)($invite['invitee_id'] ?? '') === $userId;
         if ($isParticipant) {
