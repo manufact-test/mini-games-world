@@ -9,6 +9,7 @@ import { startGamePolling } from '../screens/game-screen.js?v=74';
 import { renderBalances } from '../ui.js?v=27';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
+const ACTIVE_INVITE_STORAGE_KEY = 'mgw_active_invite_v2';
 const GAME_OPTIONS = {
   tictactoe: { title:'Крестики-нолики', sizes:[3,5,9], defaultSize:3 },
   four_in_a_row: { title:'4 в ряд', sizes:[6,7,8], defaultSize:7 },
@@ -21,44 +22,78 @@ const GAME_OPTIONS = {
 };
 
 let initialized = false;
-let handledIncomingToken = '';
 let invitePollTimer = null;
 let invitePollBusy = false;
+let activeInvite = loadStoredInvite();
+let activeInviteData = null;
 
 export function initGameInvites(){
   if (initialized) return;
   initialized = true;
 
   document.addEventListener('click', event => {
-    const button = event.target.closest('[data-invite-friend]');
-    if (!button) return;
+    const target = event.target.closest('button, [role="button"]');
+    if (!target) return;
+
+    if (target.id === 'notificationsOpen' && hasReadyCheck()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openStoredInvite();
+      return;
+    }
+
+    if (hasReadyCheck() && isGameLaunchControl(target)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      toast('Сначала запустите или отмените подтверждённое приглашение.');
+      openStoredInvite();
+      return;
+    }
+
+    const inviteButton = target.closest('[data-invite-friend]');
+    if (!inviteButton) return;
 
     event.preventDefault();
     event.stopImmediatePropagation();
-    openInviteSetup(String(button.dataset.inviteFriend || 'tictactoe'));
+    openInviteSetup(String(inviteButton.dataset.inviteFriend || 'tictactoe'));
+  }, true);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && activeInvite?.token) startInvitePolling();
   });
 }
 
 export async function openIncomingInviteIfPresent(){
-  const token = incomingToken();
-  if (!token || token === handledIncomingToken || state.activeGame) return;
-  handledIncomingToken = token;
+  if (state.activeGame) return;
+
+  const directToken = incomingToken();
+  if (directToken) {
+    try {
+      const result = await inviteRequest('resolve', { token:directToken });
+      handleInviteResult(result, { forceOpen:true });
+    } catch (error) {
+      toast(error.message || 'Приглашение уже недоступно.');
+    }
+    return;
+  }
 
   try {
-    const result = await inviteRequest('resolve', { token });
-    syncInviteState(result);
-    if (result.game) {
-      enterInviteGame(result);
+    if (activeInvite?.token) {
+      const result = await inviteRequest('resolve', { token:activeInvite.token });
+      handleInviteResult(result, { forceOpen:false });
       return;
     }
-    showIncomingInvite(result.invite || {});
+
+    const result = await inviteRequest('active');
+    if (result?.invite) handleInviteResult(result, { forceOpen:false });
   } catch (error) {
-    toast(error.message || 'Приглашение уже недоступно.');
+    clearActiveInvite();
   }
 }
 
 function openInviteSetup(gameType){
-  clearInvitePolling();
+  if (hasReadyCheck()) return openStoredInvite();
+
   const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
   const room = state.room === 'gold' ? 'gold' : 'match';
   let boardSize = option.defaultSize;
@@ -78,7 +113,7 @@ function openInviteSetup(gameType){
     </div>
 
     <div class="setup-scroll">
-      <div class="small-note">Ссылка действует 15 минут. Коины спишутся только после начала матча.</div>
+      <div class="small-note">Ссылка действует 15 минут. Коины спишутся только после запуска матча.</div>
       <div class="section-title"><h2>Вариант игры</h2></div>
       <div class="choice-grid field-size-grid" data-invite-sizes>
         ${option.sizes.map(size => `
@@ -117,14 +152,16 @@ function openInviteSetup(gameType){
     if (!(submit instanceof HTMLButtonElement) || submit.disabled) return;
 
     submit.disabled = true;
-    submit.textContent = 'Создаём ссылку…';
+    submit.textContent = 'Создаём приглашение…';
 
     try {
       const result = await inviteRequest('create', { gameType, room, bet, boardSize });
       syncInviteState(result);
-      const invite = result.invite || {};
-      showCreatedInvite(invite);
-      shareInvite(invite);
+      activeInviteData = result.invite || {};
+      rememberInvite(activeInviteData);
+      showCreatedInvite(activeInviteData);
+      startInvitePolling();
+      await shareInvite(activeInviteData);
     } catch (error) {
       toast(error.message || 'Не удалось создать приглашение.');
       submit.disabled = false;
@@ -134,34 +171,31 @@ function openInviteSetup(gameType){
 }
 
 function showCreatedInvite(invite){
-  clearInvitePolling();
-  const shareUrl = String(invite.share_url || '');
-  const pending = String(invite.status || 'pending') === 'pending';
-  const statusNote = pending
-    ? `Ссылка действует до ${escapeHtml(formatTime(invite.expires_at))}.`
-    : `Статус: ${escapeHtml(invite.status_label || 'недоступно')}.`;
+  activeInviteData = { ...(activeInviteData || {}), ...invite };
+  rememberInvite(activeInviteData);
+  const shareUrl = String(activeInviteData.share_url || '');
+  const canShare = shareUrl !== '';
 
   openSheet(`
-    <span data-invite-sheet data-created-invite="${escapeHtml(invite.token || '')}" hidden></span>
+    ${inviteMarker(activeInviteData)}
     <div class="sheet-head">
-      <div><h2>${pending ? 'Приглашение готово' : 'Приглашение обновлено'}</h2></div>
+      <div><h2>Приглашение готово</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
-    ${inviteSummary(invite)}
-    <div class="small-note invite-status-note">${statusNote}</div>
+    ${inviteSummary(activeInviteData)}
+    <div class="small-note invite-status-note">Ссылка действует до ${escapeHtml(formatTime(activeInviteData.expires_at))}.</div>
 
     <div class="stack invite-actions">
-      ${pending ? `
+      ${canShare ? `
         <button class="btn primary full" data-share-invite type="button">Отправить в Telegram</button>
         <button class="btn ghost full" data-copy-invite type="button">Скопировать ссылку</button>
-      ` : `
-        <button class="btn primary full" data-close-sheet type="button">Понятно</button>
-      `}
+      ` : ''}
+      <button class="btn ghost full" data-cancel-invite type="button">Отменить приглашение</button>
     </div>
   `);
 
-  document.querySelector('[data-share-invite]')?.addEventListener('click', () => shareInvite(invite));
+  document.querySelector('[data-share-invite]')?.addEventListener('click', () => shareInvite(activeInviteData));
   document.querySelector('[data-copy-invite]')?.addEventListener('click', async () => {
     if (!shareUrl) return toast('Ссылка временно недоступна.');
     try {
@@ -171,17 +205,31 @@ function showCreatedInvite(invite){
       window.prompt('Скопируйте ссылку:', shareUrl);
     }
   });
-
-  if (pending) startInvitePolling(invite);
+  bindCancelButton(activeInviteData);
 }
 
-function shareInvite(invite){
+async function shareInvite(invite){
+  const tg = getTelegram();
+  const preparedId = String(invite.prepared_message_id || '');
+
+  if (preparedId && typeof tg?.shareMessage === 'function') {
+    try {
+      await new Promise(resolve => {
+        tg.shareMessage(preparedId, sent => {
+          if (sent) toast('Приглашение отправлено.');
+          resolve(Boolean(sent));
+        });
+      });
+      return;
+    } catch (error) {
+      // Older Telegram clients fall back to the classic share link below.
+    }
+  }
+
   const shareUrl = String(invite.share_url || '');
   if (!shareUrl) return toast('Ссылка временно недоступна.');
-
-  const text = String(invite.share_text || `🎮 Приглашение в Mini Games World\n\nСыграем в «${invite.game_title || 'игру'}»?`);
-  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
-  const tg = getTelegram();
+  const text = String(invite.share_text || `🎮 Приглашение в Mini Games World\n\n${shareUrl}`);
+  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text.replace(shareUrl, '').trim())}`;
 
   try {
     if (tg?.openTelegramLink) tg.openTelegramLink(telegramShareUrl);
@@ -192,34 +240,24 @@ function shareInvite(invite){
 }
 
 function showIncomingInvite(invite){
-  clearInvitePolling();
-  const pending = String(invite.status || '') === 'pending';
-  const isOwner = Boolean(invite.is_owner);
-  const title = isOwner ? 'Ваше приглашение' : 'Вас приглашают сыграть';
-  const statusNote = isOwner && pending
-    ? '<div class="small-note invite-status-note">Ожидаем ответ друга.</div>'
-    : (!pending ? `<div class="small-note invite-status-note">Статус: ${escapeHtml(invite.status_label || 'недоступно')}.</div>` : '');
+  activeInviteData = { ...(activeInviteData || {}), ...invite };
+  rememberInvite(activeInviteData);
 
   openSheet(`
-    <span data-invite-sheet hidden></span>
+    ${inviteMarker(activeInviteData)}
     <div class="sheet-head">
       <div>
-        <h2>${escapeHtml(title)}</h2>
-        ${isOwner ? '' : `<p>От ${escapeHtml(invite.inviter_name || 'игрока')}</p>`}
+        <h2>Вас приглашают сыграть</h2>
+        <p>От ${escapeHtml(activeInviteData.inviter_name || 'игрока')}</p>
       </div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
-    ${inviteSummary(invite)}
-    ${statusNote}
+    ${inviteSummary(activeInviteData)}
 
     <div class="stack invite-actions">
-      ${!isOwner && pending ? `
-        <button class="btn primary full" data-accept-invite type="button">Принять приглашение</button>
-        <button class="btn ghost full" data-decline-invite type="button">Отклонить приглашение</button>
-      ` : `
-        <button class="btn primary full" data-close-sheet type="button">Понятно</button>
-      `}
+      <button class="btn primary full" data-accept-invite type="button">Принять приглашение</button>
+      <button class="btn ghost full" data-decline-invite type="button">Отклонить приглашение</button>
     </div>
   `);
 
@@ -227,13 +265,11 @@ function showIncomingInvite(invite){
     const button = event.currentTarget;
     if (!(button instanceof HTMLButtonElement) || button.disabled) return;
     setInviteButtonsDisabled(true);
-    button.textContent = 'Запускаем матч…';
+    button.textContent = 'Принимаем…';
 
     try {
-      const result = await inviteRequest('accept', { token:String(invite.token || '') });
-      syncInviteState(result);
-      if (!result.game) throw new Error('Матч создан, но игровая комната ещё не готова.');
-      enterInviteGame(result);
+      const result = await inviteRequest('accept', { token:String(activeInviteData.token || '') });
+      handleInviteResult(result, { forceOpen:true });
     } catch (error) {
       toast(error.message || 'Не удалось принять приглашение.');
       setInviteButtonsDisabled(false);
@@ -248,9 +284,8 @@ function showIncomingInvite(invite){
     button.textContent = 'Отклоняем…';
 
     try {
-      const result = await inviteRequest('decline', { token:String(invite.token || '') });
-      syncInviteState(result);
-      showIncomingInvite(result.invite || invite);
+      const result = await inviteRequest('decline', { token:String(activeInviteData.token || '') });
+      handleInviteResult(result, { forceOpen:true });
     } catch (error) {
       toast(error.message || 'Не удалось отклонить приглашение.');
       setInviteButtonsDisabled(false);
@@ -259,38 +294,172 @@ function showIncomingInvite(invite){
   });
 }
 
-function startInvitePolling(invite){
-  const token = String(invite.token || '');
-  if (!token) return;
+function showOwnerReady(invite){
+  activeInviteData = { ...(activeInviteData || {}), ...invite };
+  rememberInvite(activeInviteData);
+
+  openSheet(`
+    ${inviteMarker(activeInviteData)}
+    <div class="sheet-head">
+      <div>
+        <h2>Соперник согласен</h2>
+        <p>${escapeHtml(activeInviteData.invitee_name || 'Игрок')} готов играть.</p>
+      </div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+
+    ${inviteSummary(activeInviteData)}
+    <div class="small-note invite-status-note">Запустите матч до ${escapeHtml(formatTime(activeInviteData.start_deadline_at))}. Коины спишутся после запуска.</div>
+
+    <div class="stack invite-actions">
+      <button class="btn primary full" data-start-invite type="button">Начать матч</button>
+      <button class="btn ghost full" data-cancel-invite type="button">Отменить приглашение</button>
+    </div>
+  `);
+
+  document.querySelector('[data-start-invite]')?.addEventListener('click', async event => {
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
+    setInviteButtonsDisabled(true);
+    button.textContent = 'Запускаем матч…';
+
+    try {
+      const result = await inviteRequest('start', { token:String(activeInviteData.token || '') });
+      handleInviteResult(result, { forceOpen:true });
+    } catch (error) {
+      toast(error.message || 'Не удалось запустить матч.');
+      setInviteButtonsDisabled(false);
+      button.textContent = 'Начать матч';
+    }
+  });
+
+  bindCancelButton(activeInviteData);
+}
+
+function showInviteeWaiting(invite){
+  activeInviteData = { ...(activeInviteData || {}), ...invite };
+  rememberInvite(activeInviteData);
+
+  openSheet(`
+    ${inviteMarker(activeInviteData)}
+    <div class="sheet-head">
+      <div>
+        <h2>Ждём запуска матча</h2>
+        <p>${escapeHtml(activeInviteData.inviter_name || 'Игрок')} должен подтвердить начало.</p>
+      </div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+
+    ${inviteSummary(activeInviteData)}
+    <div class="small-note invite-status-note">Ожидание до ${escapeHtml(formatTime(activeInviteData.start_deadline_at))}. Если матч не запустят, приглашение закроется автоматически.</div>
+
+    <div class="stack invite-actions">
+      <button class="btn ghost full" data-cancel-invite type="button">Отменить ожидание</button>
+    </div>
+  `);
+
+  bindCancelButton(activeInviteData);
+}
+
+function showTerminalInvite(invite){
+  activeInviteData = { ...(activeInviteData || {}), ...invite };
+
+  openSheet(`
+    ${inviteMarker(activeInviteData)}
+    <div class="sheet-head">
+      <div><h2>${escapeHtml(activeInviteData.status_label || 'Приглашение закрыто')}</h2></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+
+    ${inviteSummary(activeInviteData)}
+    <div class="small-note invite-status-note">Это приглашение больше нельзя использовать.</div>
+    <button class="btn primary full" data-close-sheet type="button">Понятно</button>
+  `);
+}
+
+function bindCancelButton(invite){
+  document.querySelector('[data-cancel-invite]')?.addEventListener('click', async event => {
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
+    setInviteButtonsDisabled(true);
+    button.textContent = 'Отменяем…';
+
+    try {
+      const result = await inviteRequest('cancel', { token:String(invite.token || '') });
+      handleInviteResult(result, { forceOpen:true });
+    } catch (error) {
+      toast(error.message || 'Не удалось отменить приглашение.');
+      setInviteButtonsDisabled(false);
+      button.textContent = invite.is_invitee ? 'Отменить ожидание' : 'Отменить приглашение';
+    }
+  });
+}
+
+function handleInviteResult(result, { forceOpen = false } = {}){
+  syncInviteState(result);
+  if (result?.game?.id) {
+    enterInviteGame(result);
+    return;
+  }
+
+  const invite = result?.invite;
+  if (!invite?.token) {
+    clearActiveInvite();
+    return;
+  }
+
+  const previousStatus = String(activeInvite?.status || '');
+  activeInviteData = { ...(activeInviteData || {}), ...invite };
+  rememberInvite(activeInviteData);
+  startInvitePolling();
+
+  const status = String(activeInviteData.status || 'pending');
+  const sheetOpen = isInviteSheetOpen(String(activeInviteData.token || ''));
+
+  if (status === 'pending') {
+    if (forceOpen) {
+      if (activeInviteData.is_owner) showCreatedInvite(activeInviteData);
+      else showIncomingInvite(activeInviteData);
+    }
+    return;
+  }
+
+  if (status === 'awaiting_start') {
+    if (forceOpen || sheetOpen) {
+      if (activeInviteData.is_owner) showOwnerReady(activeInviteData);
+      else showInviteeWaiting(activeInviteData);
+    } else if (activeInviteData.is_owner && previousStatus === 'pending') {
+      toast('Соперник согласен. Откройте колокольчик и запустите матч.');
+    }
+    return;
+  }
+
+  if (status === 'started') {
+    toast('Матч запускается…');
+    return;
+  }
+
+  clearActiveInvite();
+  if (forceOpen || sheetOpen) showTerminalInvite(activeInviteData);
+}
+
+function startInvitePolling(){
+  if (!activeInvite?.token || state.activeGame) return;
+  if (invitePollTimer !== null) return;
 
   invitePollTimer = window.setInterval(async () => {
-    const overlay = document.getElementById('sheetOverlay');
-    const marker = document.querySelector(`[data-created-invite="${token}"]`);
-    if (!overlay?.classList.contains('active') || !marker) {
-      clearInvitePolling();
-      return;
-    }
-    if (invitePollBusy || document.visibilityState !== 'visible') return;
-
+    if (invitePollBusy || document.visibilityState !== 'visible' || state.activeGame || !activeInvite?.token) return;
     invitePollBusy = true;
-    try {
-      const result = await inviteRequest('resolve', { token });
-      syncInviteState(result);
-      if (result.game) {
-        enterInviteGame(result);
-        return;
-      }
 
-      const updated = result.invite || {};
-      if (String(updated.status || 'pending') !== 'pending') {
-        showCreatedInvite({ ...invite, ...updated });
-      }
+    try {
+      const result = await inviteRequest('resolve', { token:activeInvite.token });
+      handleInviteResult(result, { forceOpen:false });
     } catch (error) {
-      // A background status check must not interrupt the current screen.
+      clearActiveInvite();
     } finally {
       invitePollBusy = false;
     }
-  }, Math.max(2000, Number(APP_CONFIG.searchIntervalMs || 2500)));
+  }, Math.max(3000, Number(APP_CONFIG.searchIntervalMs || 3500)));
 }
 
 function clearInvitePolling(){
@@ -299,11 +468,22 @@ function clearInvitePolling(){
   invitePollBusy = false;
 }
 
+async function openStoredInvite(){
+  if (!activeInvite?.token) return;
+  try {
+    const result = await inviteRequest('resolve', { token:activeInvite.token });
+    handleInviteResult(result, { forceOpen:true });
+  } catch (error) {
+    clearActiveInvite();
+    toast(error.message || 'Приглашение уже недоступно.');
+  }
+}
+
 function enterInviteGame(result){
   const game = result?.game;
   if (!game?.id) return;
 
-  clearInvitePolling();
+  clearActiveInvite();
   syncInviteState(result);
   state.activeGame = game;
   closeSheet();
@@ -319,8 +499,63 @@ function syncInviteState(result){
   if (result?.session) state.session = result.session;
 }
 
+function rememberInvite(invite){
+  const token = String(invite?.token || '');
+  if (!token) return;
+  activeInvite = {
+    token,
+    status:String(invite.status || 'pending'),
+    role:invite.is_owner ? 'owner' : (invite.is_invitee ? 'invitee' : 'guest'),
+  };
+  try {
+    localStorage.setItem(ACTIVE_INVITE_STORAGE_KEY, JSON.stringify(activeInvite));
+  } catch (error) {
+    // The current in-memory invitation remains usable when storage is unavailable.
+  }
+}
+
+function loadStoredInvite(){
+  try {
+    const value = JSON.parse(localStorage.getItem(ACTIVE_INVITE_STORAGE_KEY) || 'null');
+    if (value && /^[a-f0-9]{24}$/.test(String(value.token || ''))) return value;
+  } catch (error) {
+    // Ignore a malformed or unavailable local storage value.
+  }
+  return null;
+}
+
+function clearActiveInvite(){
+  clearInvitePolling();
+  activeInvite = null;
+  activeInviteData = null;
+  try {
+    localStorage.removeItem(ACTIVE_INVITE_STORAGE_KEY);
+  } catch (error) {
+    // Nothing else is required when local storage is unavailable.
+  }
+}
+
+function hasReadyCheck(){
+  return String(activeInvite?.status || '') === 'awaiting_start';
+}
+
+function isGameLaunchControl(target){
+  const id = String(target?.id || '');
+  return id === 'startSearchBtn' || id.startsWith('play') || Boolean(target?.closest?.('[data-invite-friend]'));
+}
+
+function isInviteSheetOpen(token){
+  const overlay = document.getElementById('sheetOverlay');
+  if (!overlay?.classList.contains('active')) return false;
+  return Boolean(document.querySelector(`[data-invite-sheet][data-invite-token="${token}"]`));
+}
+
+function inviteMarker(invite){
+  return `<span data-invite-sheet data-invite-token="${escapeHtml(invite.token || '')}" hidden></span>`;
+}
+
 function setInviteButtonsDisabled(disabled){
-  document.querySelectorAll('[data-accept-invite], [data-decline-invite]').forEach(button => {
+  document.querySelectorAll('[data-accept-invite], [data-decline-invite], [data-start-invite], [data-cancel-invite]').forEach(button => {
     button.disabled = disabled;
   });
 }
