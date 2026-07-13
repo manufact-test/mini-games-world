@@ -12,17 +12,26 @@ try {
 
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
+    $userId = (string)($tgUser['id'] ?? '');
+    if ($userId === '') {
+        api_error('Пользователь не найден.');
+    }
+
     $users = new UserService($config);
     $sessions = new SessionService($config);
     $inbox = new GameInviteInboxService();
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
-    $result = $db->transaction(function (array &$data) use ($tgUser, $users, $sessions, $inbox, $sessionId): array {
-        $user = $users->ensureUser($data, $tgUser);
-        $userId = (string)($user['id'] ?? '');
-        $data['users'][$userId] = $user;
-        $user =& $data['users'][$userId];
+    $result = $db->readOnly(function (array $data) use ($tgUser, $userId, $users, $sessions, $inbox, $sessionId): array {
+        $user = is_array($data['users'][$userId] ?? null)
+            ? $data['users'][$userId]
+            : [
+                'id' => $userId,
+                'first_name' => (string)($tgUser['first_name'] ?? 'Игрок'),
+                'username' => (string)($tgUser['username'] ?? $tgUser['first_name'] ?? 'Игрок'),
+                'status' => 'idle',
+            ];
         $sessions->ensureSessionShape($user);
 
         return [
