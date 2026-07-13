@@ -7,7 +7,7 @@ import { battleshipRules } from './battleship/rules.js?v=54';
 import { checkersRules } from './checkers/rules.js?v=58';
 import { reversiRules } from './reversi/rules.js?v=66';
 import { chessRules } from './chess/rules.js?v=69';
-import { goRules } from './go/rules.js?v=70';
+import { goRules } from './go/rules.js?v=71';
 
 const RULE_RENDERERS = {
   tictactoe: ticTacToeRules,
