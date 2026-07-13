@@ -37,7 +37,7 @@ final class GameInviteFlowService
             if ($status === 'pending' && $isOwner) {
                 return $this->publicInvite($invite, $userId);
             }
-            if (in_array($status, ['awaiting_start', 'started'], true) && ($isOwner || $isInvitee)) {
+            if ($status === 'awaiting_start' && ($isOwner || $isInvitee)) {
                 return $this->publicInvite($invite, $userId);
             }
         }
@@ -127,9 +127,23 @@ final class GameInviteFlowService
         $this->assertAvailable($db, $invitee, 'Приглашённый игрок сейчас занят в другой игре.');
         $this->assertBalances($inviter, $invitee, $invite);
 
-        $game = $this->createIsolatedGame($db, $inviter, $invitee, $invite);
+        /* Temporarily leave awaiting_start so the normal matchmaking guard allows only this private start. */
+        $invite['status'] = 'starting';
+        $invite['updated_at'] = now_iso();
+        try {
+            $game = $this->createIsolatedGame($db, $inviter, $invitee, $invite);
+        } catch (Throwable $e) {
+            $invite['status'] = 'awaiting_start';
+            $invite['updated_at'] = now_iso();
+            throw $e;
+        }
+
         $gameId = (string)($game['id'] ?? '');
-        if ($gameId === '') throw new RuntimeException('Не удалось создать приватный матч.');
+        if ($gameId === '') {
+            $invite['status'] = 'awaiting_start';
+            $invite['updated_at'] = now_iso();
+            throw new RuntimeException('Не удалось создать приватный матч.');
+        }
 
         $now = now_iso();
         $invite['status'] = 'started';
@@ -450,6 +464,7 @@ final class GameInviteFlowService
         return match ($status) {
             'pending' => 'Ожидает ответа',
             'awaiting_start' => 'Ожидает запуска',
+            'starting' => 'Матч запускается',
             'started', 'accepted' => 'Матч начат',
             'declined' => 'Отклонено',
             'expired' => 'Срок истёк',
