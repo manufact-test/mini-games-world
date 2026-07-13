@@ -6,8 +6,8 @@ import { openSheet, closeSheet } from '../../components/sheet.js?v=68';
 import { showScreen } from '../../router.js?v=27';
 import { haptic } from '../../telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from '../../ui.js?v=27';
-import { startSearchPolling } from '../../screens/search-screen.js?v=72';
-import { startGamePolling } from '../../screens/game-screen.js?v=72';
+import { startSearchPolling } from '../../screens/search-screen.js?v=73';
+import { startGamePolling } from '../../screens/game-screen.js?v=73';
 import { isSessionLocked, sessionMessage } from '../../session.js?v=27';
 import { GO_BOARD_SIZES, GO_DEFAULT_BOARD_SIZE } from './meta.js?v=70';
 
