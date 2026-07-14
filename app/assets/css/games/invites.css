@@ -132,6 +132,10 @@
   min-height:46px;
 }
 
+.notification-copy:has(> .invite-live-actions) > .notification-actions:not(.invite-live-actions){
+  display:none;
+}
+
 @media (max-width:380px){
   .invite-player-card{
     grid-template-columns:44px minmax(0, 1fr) 16px;
