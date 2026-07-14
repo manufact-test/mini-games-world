@@ -60,13 +60,25 @@ trait GameInviteCreationTrait
             throw new RuntimeException('Подтвердить отправку может только создатель приглашения.');
         }
 
-        if ((string)($invite['status'] ?? '') === 'draft') {
-            $now = now_iso();
-            $invite['status'] = 'pending';
-            $invite['shared_at'] = $now;
-            $invite['updated_at'] = $now;
+        $status = (string)($invite['status'] ?? '');
+        if ($status === 'pending') {
+            return $this->publicInvite($invite, $userId);
+        }
+        if ($status !== 'draft') {
+            throw new RuntimeException('Этот черновик приглашения больше недоступен.');
         }
 
+        $this->assertAvailableForStart(
+            $db,
+            $user,
+            (string)($invite['token'] ?? ''),
+            'Сначала завершите текущий поиск, матч или другое приглашение.'
+        );
+
+        $now = now_iso();
+        $invite['status'] = 'pending';
+        $invite['shared_at'] = $now;
+        $invite['updated_at'] = $now;
         return $this->publicInvite($invite, $userId);
     }
 
