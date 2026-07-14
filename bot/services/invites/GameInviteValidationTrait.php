@@ -13,6 +13,12 @@ trait GameInviteValidationTrait
         $this->assertNoOpenInvite($db, $userId, '', $message);
     }
 
+    private function assertCanReceiveInvite(array $db, array $user, string $message): void
+    {
+        $userId = $this->requireUserId($user);
+        $this->assertNoOpenInvite($db, $userId, '', $message);
+    }
+
     private function assertAvailableForStart(array $db, array $user, string $currentToken, string $message): void
     {
         $userId = $this->requireUserId($user);
