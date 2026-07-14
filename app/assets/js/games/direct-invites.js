@@ -9,14 +9,14 @@ import { refreshNotificationBadge } from '../screens/notifications-screen.js?v=8
 const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
 const INVITE_SEEN_URL = `${window.location.origin}/bot/invite-seen.php`;
-const ACTIVE_INVITE_STORAGE_KEY = 'mgw_active_invite_v2';
+const MAX_VISIBLE_OPPONENTS = 10;
 
 let initialized = false;
 let sheetObserver = null;
 let lastInviteTrigger = null;
 let lastGameType = 'tictactoe';
 let suppressingIncomingSheet = false;
-const seenDirectTokens = new Set();
+const seenDeepLinkTokens = new Set();
 
 export function initDirectInvites(){
   if (initialized) return;
@@ -40,20 +40,20 @@ export function initDirectInvites(){
 }
 
 function enhanceInviteSetup(){
-  const createLinkButton = document.querySelector('#sheet [data-create-invite]');
-  if (!(createLinkButton instanceof HTMLButtonElement)) return;
+  const linkButton = document.querySelector('#sheet [data-create-invite]');
+  if (!(linkButton instanceof HTMLButtonElement)) return;
 
-  if (createLinkButton.dataset.directEnhanced === '1') {
-    if (!createLinkButton.disabled && createLinkButton.textContent.trim() === 'Создать и отправить') {
-      createLinkButton.textContent = 'Пригласить по ссылке';
+  if (linkButton.dataset.directEnhanced === '1') {
+    if (!linkButton.disabled && linkButton.textContent.trim() === 'Создать и отправить') {
+      linkButton.textContent = 'Поделиться ссылкой с новым игроком';
     }
     return;
   }
 
-  createLinkButton.dataset.directEnhanced = '1';
-  createLinkButton.textContent = 'Пригласить по ссылке';
-  createLinkButton.classList.remove('primary', 'gold');
-  createLinkButton.classList.add('ghost');
+  linkButton.dataset.directEnhanced = '1';
+  linkButton.textContent = 'Поделиться ссылкой с новым игроком';
+  linkButton.classList.remove('primary', 'gold');
+  linkButton.classList.add('ghost');
 
   const directButton = document.createElement('button');
   directButton.className = `btn ${state.room === 'gold' ? 'gold' : 'primary'} full setup-start-btn`;
@@ -62,7 +62,12 @@ function enhanceInviteSetup(){
   directButton.textContent = 'Пригласить игрока';
   directButton.addEventListener('click', openRecentOpponentPicker);
 
-  createLinkButton.insertAdjacentElement('beforebegin', directButton);
+  const note = document.createElement('div');
+  note.className = 'invite-method-note';
+  note.textContent = 'Знакомому сопернику приглашение сразу придёт в приложение. Ссылка нужна для нового игрока.';
+
+  linkButton.insertAdjacentElement('beforebegin', note);
+  note.insertAdjacentElement('beforebegin', directButton);
 }
 
 async function openRecentOpponentPicker(){
@@ -73,7 +78,7 @@ async function openRecentOpponentPicker(){
     <div class="sheet-head">
       <div>
         <h2>Выберите игрока</h2>
-        <p>Приглашение сразу появится у него в колокольчике.</p>
+        <p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p>
       </div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
@@ -85,32 +90,22 @@ async function openRecentOpponentPicker(){
 
   try {
     const result = await postJson(OPPONENTS_URL, {});
-    renderOpponentPicker(Array.isArray(result.items) ? result.items : [], context);
+    const items = Array.isArray(result.items) ? result.items.slice(0, MAX_VISIBLE_OPPONENTS) : [];
+    items.sort((left, right) => Number(Boolean(right.online)) - Number(Boolean(left.online)));
+    renderOpponentPicker(items, context);
   } catch (error) {
-    openSheet(`
-      <div class="sheet-head">
-        <div><h2>Не удалось загрузить игроков</h2></div>
-        <button class="close" data-close-sheet type="button">×</button>
-      </div>
-      <div class="small-note">${escapeHtml(error.message || 'Попробуйте ещё раз.')}</div>
-      <button class="btn ghost full" data-return-invite-setup type="button">Назад</button>
-    `);
-    document.querySelector('[data-return-invite-setup]')?.addEventListener('click', returnToInviteSetup);
+    renderPickerError(error.message || 'Попробуйте ещё раз.');
   }
 }
 
 function renderOpponentPicker(items, context){
   const list = items.length
-    ? `<div class="stack">${items.map(item => `
-        <button class="btn ghost full" data-direct-opponent="${escapeHtml(item.id || '')}" type="button">
-          ${escapeHtml(item.name || 'Игрок')} · ${escapeHtml(item.activity || 'недавний соперник')}
-        </button>
-      `).join('')}</div>`
+    ? `<div class="invite-player-list">${items.map(item => playerCard(item)).join('')}</div>`
     : `
-      <div class="notifications-empty">
+      <div class="notifications-empty invite-empty-state">
         <div>👥</div>
         <strong>Недавних соперников пока нет</strong>
-        <span>Для нового человека используйте приглашение по ссылке.</span>
+        <span>Вернитесь назад и отправьте ссылку новому игроку.</span>
       </div>
     `;
 
@@ -132,12 +127,33 @@ function renderOpponentPicker(items, context){
   });
 }
 
+function playerCard(item){
+  const id = String(item?.id || '');
+  const name = String(item?.name || 'Игрок');
+  const activity = String(item?.activity || 'недавний соперник');
+  const online = Boolean(item?.online);
+  const busy = Boolean(item?.busy);
+  const statusClass = busy ? 'busy' : (online ? 'online' : 'offline');
+  const hue = avatarHue(id);
+
+  return `
+    <button class="invite-player-card" data-direct-opponent="${escapeHtml(id)}" type="button">
+      <span class="invite-player-avatar" style="--invite-avatar-hue:${hue}" aria-hidden="true">${escapeHtml(initials(name))}</span>
+      <span class="invite-player-copy">
+        <strong>${escapeHtml(name)}</strong>
+        <span><i class="invite-player-dot ${statusClass}"></i>${escapeHtml(activity)}</span>
+      </span>
+      <span class="invite-player-arrow" aria-hidden="true">›</span>
+    </button>
+  `;
+}
+
 async function createDirectInvite(context, inviteeId, button){
   if (!inviteeId || !(button instanceof HTMLButtonElement) || button.disabled) return;
 
-  const opponentName = button.textContent.split('·')[0].trim() || 'Игрок';
+  const opponentName = String(button.querySelector('.invite-player-copy strong')?.textContent || 'Игрок').trim();
   document.querySelectorAll('[data-direct-opponent]').forEach(item => { item.disabled = true; });
-  button.textContent = 'Отправляем приглашение…';
+  button.classList.add('loading');
 
   try {
     const result = await postJson(INVITES_URL, {
@@ -153,18 +169,18 @@ async function createDirectInvite(context, inviteeId, button){
     const invite = result.invite || {};
     if (!invite.token) throw new Error('Не удалось создать приглашение.');
 
-    rememberOwnerInvite(invite);
+    document.dispatchEvent(new CustomEvent('mgw:invite-adopt', { detail:{ result } }));
     showDirectInviteSent(invite, opponentName, String(result.delivery || 'in_app'));
   } catch (error) {
     toast(error.message || 'Не удалось отправить приглашение.');
     document.querySelectorAll('[data-direct-opponent]').forEach(item => { item.disabled = false; });
-    button.textContent = `${opponentName} · повторить`;
+    button.classList.remove('loading');
   }
 }
 
 function showDirectInviteSent(invite, opponentName, delivery){
   const deliveryText = delivery === 'telegram'
-    ? `${opponentName} получил сообщение от бота.`
+    ? `${opponentName} получил сообщение от бота и увидит приглашение в приложении.`
     : `${opponentName} получит приглашение в колокольчике.`;
 
   openSheet(`
@@ -178,30 +194,8 @@ function showDirectInviteSent(invite, opponentName, delivery){
     </div>
     ${inviteSummary(invite)}
     <div class="small-note invite-status-note">Ждём ответа игрока. Коины пока не списываются.</div>
-    <button class="btn ghost full" data-cancel-direct-invite type="button">Отменить приглашение</button>
+    <button class="btn ghost full" data-live-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
   `);
-
-  document.querySelector('[data-cancel-direct-invite]')?.addEventListener('click', event => {
-    cancelDirectInvite(String(invite.token || ''), event.currentTarget);
-  });
-}
-
-async function cancelDirectInvite(token, button){
-  if (!token || !(button instanceof HTMLButtonElement) || button.disabled) return;
-  button.disabled = true;
-  button.textContent = 'Отменяем…';
-
-  try {
-    const result = await postJson(INVITES_URL, { action:'cancel', token });
-    syncState(result);
-    forgetOwnerInvite(token);
-    closeSheet();
-    toast('Приглашение отменено.');
-  } catch (error) {
-    toast(error.message || 'Не удалось отменить приглашение.');
-    button.disabled = false;
-    button.textContent = 'Отменить приглашение';
-  }
 }
 
 function normalizeIncomingInvitePresentation(){
@@ -212,9 +206,8 @@ function normalizeIncomingInvitePresentation(){
   const token = String(marker?.dataset.inviteToken || '');
   if (!token) return;
 
-  const launchedToken = incomingToken();
-  if (launchedToken === token) {
-    markDirectInviteSeen(token);
+  if (incomingToken() === token) {
+    markDeepLinkSeen(token);
     return;
   }
 
@@ -228,16 +221,28 @@ function normalizeIncomingInvitePresentation(){
   }, 0);
 }
 
-async function markDirectInviteSeen(token){
-  if (!token || seenDirectTokens.has(token)) return;
-  seenDirectTokens.add(token);
+async function markDeepLinkSeen(token){
+  if (!token || seenDeepLinkTokens.has(token)) return;
+  seenDeepLinkTokens.add(token);
 
   try {
     await postJson(INVITE_SEEN_URL, { token });
     refreshNotificationBadge(false);
   } catch (error) {
-    // The invitation itself remains usable even if read-state syncing fails.
+    // The invitation remains usable even if read-state syncing fails.
   }
+}
+
+function renderPickerError(message){
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Не удалось загрузить игроков</h2></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    <div class="small-note">${escapeHtml(message)}</div>
+    <button class="btn ghost full" data-return-invite-setup type="button">Назад</button>
+  `);
+  document.querySelector('[data-return-invite-setup]')?.addEventListener('click', returnToInviteSetup);
 }
 
 function currentInviteContext(){
@@ -254,27 +259,6 @@ function currentInviteContext(){
 function returnToInviteSetup(){
   closeSheet();
   window.setTimeout(() => lastInviteTrigger?.click(), 0);
-}
-
-function rememberOwnerInvite(invite){
-  try {
-    localStorage.setItem(ACTIVE_INVITE_STORAGE_KEY, JSON.stringify({
-      token:String(invite.token || ''),
-      status:String(invite.status || 'pending'),
-      role:'owner',
-    }));
-  } catch (error) {
-    // Current-session polling is enough when storage is unavailable.
-  }
-}
-
-function forgetOwnerInvite(token){
-  try {
-    const stored = JSON.parse(localStorage.getItem(ACTIVE_INVITE_STORAGE_KEY) || 'null');
-    if (String(stored?.token || '') === token) localStorage.removeItem(ACTIVE_INVITE_STORAGE_KEY);
-  } catch (error) {
-    // Nothing else is required.
-  }
 }
 
 function syncState(result){
@@ -302,6 +286,18 @@ function incomingToken(){
   const fromQuery = new URLSearchParams(window.location.search).get('invite') || '';
   const token = String(fromTelegram || fromQuery).toLowerCase();
   return /^[a-f0-9]{24}$/.test(token) ? token : '';
+}
+
+function initials(name){
+  const cleaned = String(name || 'И').replace(/^@/, '').replace(/[_-]+/g, ' ').trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  return (parts[0]?.[0] || 'И') + (parts[1]?.[0] || parts[0]?.[1] || '');
+}
+
+function avatarHue(value){
+  let hash = 0;
+  for (const char of String(value || '')) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+  return Math.abs(hash) % 360;
 }
 
 function boardLabel(invite){
