@@ -24,7 +24,7 @@ trait GameInviteActionTrait
             return ['invite' => $this->publicInvite($invite, $userId), 'game' => null];
         }
         if ($status !== 'pending') {
-            throw new RuntimeException('Это приглашение уже ' . mb_strtolower($this->statusLabel($status)) . '.');
+            throw new RuntimeException('Это приглашение больше недоступно.');
         }
 
         $inviterId = (string)($invite['inviter_id'] ?? '');
@@ -348,11 +348,13 @@ trait GameInviteActionTrait
     private function inviteEventsForUser(array $db, string $userId): array
     {
         $events = [];
+        $invites = $this->invitesByToken($db);
         foreach ($db['notifications'] ?? [] as $notification) {
             if (!is_array($notification)) continue;
             if ((string)($notification['user_id'] ?? '') !== $userId) continue;
             if (!empty($notification['hidden_at'])) continue;
             if (!str_starts_with((string)($notification['type'] ?? ''), 'invite_')) continue;
+            if (!$this->inviteNotificationVisible($notification, $invites)) continue;
             $events[] = [
                 'id' => (string)($notification['id'] ?? ''),
                 'type' => (string)($notification['type'] ?? ''),
