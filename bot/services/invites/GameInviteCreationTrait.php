@@ -109,12 +109,7 @@ trait GameInviteCreationTrait
         }
 
         $status = (string)($invite['status'] ?? '');
-        if ($status === 'draft') {
-            $invite['status'] = 'pending';
-            $invite['shared_at'] = (string)($invite['shared_at'] ?? now_iso());
-            $status = 'pending';
-        }
-        if ($status !== 'pending') {
+        if (!in_array($status, ['draft', 'pending'], true)) {
             return $this->publicInvite($invite, $userId);
         }
 
@@ -137,6 +132,10 @@ trait GameInviteCreationTrait
         );
 
         $now = now_iso();
+        if ($status === 'draft') {
+            $invite['status'] = 'pending';
+            $invite['shared_at'] = (string)($invite['shared_at'] ?? $now);
+        }
         $invite['invitee_id'] = $userId;
         $invite['invitee_name'] = $this->userName($user);
         $invite['opened_at'] = (string)($invite['opened_at'] ?? $now);
