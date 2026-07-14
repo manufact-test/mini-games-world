@@ -205,6 +205,8 @@ try {
                 $core['invite'] = $invites->createDirect($data, $user, $invitee, $gameType, $room, $bet, $boardSize);
                 $core['recipient_id'] = $inviteeId;
                 $core['recipient_name'] = (string)($core['invite']['invitee_name'] ?? 'Игрок');
+                $lastSeen = strtotime((string)($invitee['last_seen_at'] ?? '')) ?: 0;
+                $core['recipient_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
                 break;
 
             case 'open_link':
@@ -244,6 +246,11 @@ try {
                     $user,
                     clean_string($payload['gameId'] ?? '', 120)
                 );
+                $opponentId = (string)($core['opponent_id'] ?? '');
+                if ($opponentId !== '' && isset($data['users'][$opponentId]) && is_array($data['users'][$opponentId])) {
+                    $lastSeen = strtotime((string)($data['users'][$opponentId]['last_seen_at'] ?? '')) ?: 0;
+                    $core['opponent_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
+                }
                 break;
 
             case 'seen':
@@ -279,7 +286,10 @@ try {
         && is_array($result['invite'] ?? null)
         && (string)($result['invite']['status'] ?? '') === 'pending') {
         $recipientId = (string)($result['recipient_id'] ?? $result['opponent_id'] ?? '');
-        $result['telegram_sent'] = mgw_send_invite_message($config, $result['invite'], $recipientId);
+        $recipientRecent = !empty($result['recipient_recently_active'])
+            || !empty($result['opponent_recently_active']);
+        $result['telegram_sent'] = !$recipientRecent
+            && mgw_send_invite_message($config, $result['invite'], $recipientId);
     }
 
     api_ok($result);
