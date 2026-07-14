@@ -126,6 +126,16 @@ trait GameInviteCreationTrait
             $this->assertNoOpenInvite($db, $userId, (string)($invite['token'] ?? ''), 'Сначала завершите другое приглашение.');
         }
 
+        if (!isset($db['users'][$inviterId]) || !is_array($db['users'][$inviterId])) {
+            throw new RuntimeException('Пригласивший игрок больше недоступен.');
+        }
+        $this->assertAvailableForStart(
+            $db,
+            $db['users'][$inviterId],
+            (string)($invite['token'] ?? ''),
+            'Пригласивший игрок уже занят другим матчем или приглашением.'
+        );
+
         $now = now_iso();
         $invite['invitee_id'] = $userId;
         $invite['invitee_name'] = $this->userName($user);
