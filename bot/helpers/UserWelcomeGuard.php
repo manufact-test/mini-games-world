@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/services/GameInviteInboxService.php';
+require_once dirname(__DIR__) . '/services/GameInviteService.php';
 
 final class UserWelcomeGuard
 {
@@ -9,33 +9,22 @@ final class UserWelcomeGuard
 
     public function handle(array $update): bool
     {
-        if (!empty($update['callback_query'])) {
-            return false;
-        }
+        if (!empty($update['callback_query'])) return false;
 
         $message = $update['message'] ?? null;
-        if (!is_array($message)) {
-            return false;
-        }
+        if (!is_array($message)) return false;
 
         $chatId = trim((string)($message['chat']['id'] ?? ''));
         $fromId = trim((string)($message['from']['id'] ?? $chatId));
         $chatType = (string)($message['chat']['type'] ?? 'private');
         $text = trim((string)($message['text'] ?? ''));
-
-        if ($chatId === '' || $chatType !== 'private') {
-            return false;
-        }
+        if ($chatId === '' || $chatType !== 'private') return false;
 
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
-        if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) {
-            return false;
-        }
+        if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=84';
-        if ($baseWebAppUrl === '/app/?v=84') {
-            return false;
-        }
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=85';
+        if ($baseWebAppUrl === '/app/?v=85') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
@@ -47,8 +36,6 @@ final class UserWelcomeGuard
             ? $baseWebAppUrl . '&invite=' . rawurlencode($inviteToken)
             : $baseWebAppUrl;
 
-        // Telegram itself shows the native Start button before the first message.
-        // Regular players then keep a permanent "Играть" menu button in the chat.
         if (!$isAdmin) {
             try {
                 $this->telegram->api('setChatMenuButton', [
@@ -88,19 +75,22 @@ final class UserWelcomeGuard
         try {
             $telegramUser = is_array($message['from'] ?? null) ? $message['from'] : [];
             $telegramUser['id'] = (string)($telegramUser['id'] ?? $message['chat']['id'] ?? '');
-            if ($telegramUser['id'] === '') {
-                return;
-            }
+            if ($telegramUser['id'] === '') return;
 
             $db = new JsonDatabase((string)($this->config['data_dir'] ?? (dirname(__DIR__) . '/data')));
             $users = new UserService($this->config);
-            $inbox = new GameInviteInboxService();
+            $catalog = new GameCatalogService($this->config);
+            $games = new ChessRuntimeService($this->config, $catalog, new GameService($this->config));
+            $invites = new GameInviteService($this->config, $catalog, $games);
 
-            $db->transaction(function (array &$data) use ($users, $inbox, $telegramUser, $token): void {
+            $db->transaction(function (array &$data) use ($users, $invites, $telegramUser, $token): void {
                 $user = $users->ensureUser($data, $telegramUser);
                 $userId = (string)($user['id'] ?? '');
+                if ($userId === '') return;
                 $data['users'][$userId] = $user;
-                $inbox->registerRecipient($data, $data['users'][$userId], $token);
+                /* The bot command knows the recipient. Create the in-app bell event
+                 * even when the Mini App is already open in another Telegram window. */
+                $invites->bindFromLink($data, $data['users'][$userId], $token, false, false);
             });
         } catch (Throwable $e) {
             error_log('Mini Games World invite recipient registration failed: ' . $e->getMessage());
