@@ -92,7 +92,12 @@ trait GameInviteCreationTrait
             throw new RuntimeException('Вы не создавали это приглашение.');
         }
 
-        if ((string)($invite['status'] ?? '') === 'draft') {
+        $status = (string)($invite['status'] ?? '');
+        if ($status === 'pending') {
+            unset($invite);
+            return $this->cancel($db, $user, $token);
+        }
+        if ($status === 'draft') {
             $now = now_iso();
             $invite['status'] = 'cancelled';
             $invite['cancelled_at'] = $now;
