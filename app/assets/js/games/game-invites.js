@@ -36,8 +36,6 @@ let seenInviteEventIds = new Set();
 let resultObserver = null;
 let resultEnhanceTimer = null;
 let lastFinishedGame = null;
-let lastInviteTrigger = null;
-let currentSetup = null;
 
 export function initGameInvites(){
   if (initialized) return;
@@ -85,7 +83,7 @@ export async function openIncomingInviteIfPresent(){
       const result = await inviteRequest('open_link', { token });
       syncState(result);
       currentInvite = result.invite || null;
-      if (currentInvite?.token) showIncomingInvite(currentInvite);
+      if (currentInvite?.token) openCurrentInvite();
     } catch (error) {
       toast(error.message || 'Приглашение уже недоступно.');
     }
@@ -129,7 +127,6 @@ function handleDocumentClick(event){
   if (!inviteButton) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  lastInviteTrigger = inviteButton;
   openInviteSetup(String(inviteButton.dataset.inviteFriend || 'tictactoe'));
 }
 
@@ -145,7 +142,6 @@ function openInviteSetup(gameType, preserved = null){
       : (room === 'gold' ? APP_CONFIG.goldBets[0] : APP_CONFIG.matchBet)
   ));
 
-  currentSetup = { gameType, room, boardSize, bet };
   haptic('light');
   openSheet(`
     <span data-invite-setup hidden></span>
@@ -186,12 +182,10 @@ function openInviteSetup(gameType, preserved = null){
 
   document.querySelectorAll('[data-invite-size]').forEach(button => button.addEventListener('click', () => {
     boardSize = Number(button.dataset.inviteSize || option.defaultSize);
-    currentSetup = { gameType, room, boardSize, bet };
     document.querySelectorAll('[data-invite-size]').forEach(item => item.classList.toggle('active', item === button));
   }));
   document.querySelectorAll('[data-invite-bet]').forEach(button => button.addEventListener('click', () => {
     bet = Number(button.dataset.inviteBet || APP_CONFIG.matchBet);
-    currentSetup = { gameType, room, boardSize, bet };
     document.querySelectorAll('[data-invite-bet]').forEach(item => item.classList.toggle('active', item === button));
   }));
   document.querySelector('[data-open-player-picker]')?.addEventListener('click', () => openPlayerPicker({ gameType, room, boardSize, bet }));
@@ -199,7 +193,6 @@ function openInviteSetup(gameType, preserved = null){
 }
 
 async function openPlayerPicker(context){
-  currentSetup = { ...context };
   openSheet(`
     <div class="sheet-head">
       <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p></div>
@@ -289,31 +282,34 @@ async function createLinkDraft(context, button){
   try {
     const result = await inviteRequest('create_link_draft', context);
     syncState(result);
-    currentInvite = result.invite || null;
-    if (!currentInvite?.token) throw new Error('Не удалось подготовить ссылку.');
+    const draftInvite = result.invite || null;
+    const draftToken = String(draftInvite?.token || '');
+    if (!draftToken) throw new Error('Не удалось подготовить ссылку.');
+    currentInvite = draftInvite;
 
     const tg = getTelegram();
-    const preparedId = String(currentInvite.prepared_message_id || '');
+    const preparedId = String(draftInvite.prepared_message_id || '');
     if (preparedId && typeof tg?.shareMessage === 'function') {
-      showSharingSheet(currentInvite);
+      showSharingSheet(draftInvite);
       const sent = await sharePreparedMessage(tg, preparedId);
       if (sent === true) {
-        const confirmed = await inviteRequest('confirm_shared', { token:currentInvite.token });
+        const confirmed = await inviteRequest('confirm_shared', { token:draftToken });
         syncState(confirmed);
-        currentInvite = confirmed.invite || currentInvite;
+        currentInvite = confirmed.invite || draftInvite;
         showOwnerWaiting(currentInvite, 'Приглашение отправлено. Ждём ответа игрока.');
         scheduleSync(0);
         return;
       }
 
-      await inviteRequest('discard_draft', { token:currentInvite.token }).catch(() => null);
-      currentInvite = null;
+      await inviteRequest('discard_draft', { token:draftToken }).catch(() => null);
+      if (String(currentInvite?.token || '') === draftToken) currentInvite = null;
       openInviteSetup(context.gameType, context);
       toast(sent === false ? 'Отправка отменена.' : 'Telegram не подтвердил отправку.');
+      scheduleSync(0);
       return;
     }
 
-    showPreparedLink(currentInvite, context);
+    showPreparedLink(draftInvite, context);
   } catch (error) {
     toast(error.message || 'Не удалось подготовить приглашение.');
     openInviteSetup(context.gameType, context);
@@ -413,7 +409,6 @@ async function performInviteAction(action, token, button){
     }
 
     currentInvite = result.invite || currentInvite;
-    dispatchNotificationsRefresh();
 
     if (action === 'accept') {
       if (currentInvite?.source === 'rematch') {
@@ -428,6 +423,7 @@ async function performInviteAction(action, token, button){
       if (sheetToken === token) closeSheet();
       currentInvite = null;
       toast(action === 'decline' ? 'Приглашение отклонено.' : 'Приглашение отменено.');
+      dispatchNotificationsRefresh();
       scheduleSync(0);
       return;
     }
@@ -489,13 +485,12 @@ async function syncNow({ announce = true } = {}){
 
     const nextInvite = chooseSyncInvite(result);
     if (nextInvite?.token) {
-      const previousToken = String(currentInvite?.token || '');
-      const previousStatus = String(currentInvite?.status || '');
       currentInvite = nextInvite;
-      updateOpenInviteSheet(previousToken, previousStatus);
-    } else if (currentInvite && isTerminal(currentInvite.status)) {
-      updateOpenInviteSheet(String(currentInvite.token || ''), String(currentInvite.status || ''));
-    } else if (!nextInvite && currentInvite && !isDraft(currentInvite)) {
+      updateOpenInviteSheet();
+      if (isTerminal(nextInvite.status) && openSheetInviteToken() !== String(nextInvite.token || '')) {
+        currentInvite = null;
+      }
+    } else if (currentInvite && !isDraft(currentInvite)) {
       currentInvite = null;
     }
 
@@ -510,7 +505,7 @@ async function syncNow({ announce = true } = {}){
 function chooseSyncInvite(result){
   const active = result?.invite || null;
   const tracked = result?.tracked_invite || null;
-  if (tracked?.token && isTerminal(tracked.status)) return tracked;
+  /* A new actionable invitation must always outrank an old tracked terminal token. */
   if (active?.token) return active;
   if (tracked?.token) return tracked;
   return null;
@@ -545,14 +540,15 @@ function processInviteEvents(items, unreadCount, announce){
   }
 }
 
-function updateOpenInviteSheet(previousToken, previousStatus){
+function updateOpenInviteSheet(){
   if (!currentInvite?.token) return;
   const openToken = openSheetInviteToken();
   if (openToken !== String(currentInvite.token || '')) return;
+  if (openSheetInviteState() === inviteSheetState(currentInvite)) return;
 
   const status = String(currentInvite.status || '');
   if (status === 'pending' && currentInvite.is_owner) {
-    if (previousStatus !== status || previousToken !== currentInvite.token) showOwnerWaiting(currentInvite);
+    showOwnerWaiting(currentInvite);
     return;
   }
   if (status === 'accepted') {
@@ -730,8 +726,17 @@ function openSheetInviteToken(){
   return String(document.querySelector('#sheet [data-invite-sheet][data-invite-token]')?.dataset.inviteToken || '');
 }
 
+function openSheetInviteState(){
+  return String(document.querySelector('#sheet [data-invite-sheet][data-invite-state]')?.dataset.inviteState || '');
+}
+
+function inviteSheetState(invite){
+  const role = invite?.is_owner ? 'owner' : (invite?.is_invitee ? 'invitee' : 'guest');
+  return `${String(invite?.status || '')}:${role}`;
+}
+
 function inviteMarker(invite){
-  return `<span data-invite-sheet data-invite-token="${escapeHtml(invite?.token || '')}" hidden></span>`;
+  return `<span data-invite-sheet data-invite-token="${escapeHtml(invite?.token || '')}" data-invite-state="${escapeHtml(inviteSheetState(invite))}" hidden></span>`;
 }
 
 function inviteSummary(invite){
