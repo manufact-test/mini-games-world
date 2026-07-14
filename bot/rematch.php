@@ -157,7 +157,7 @@ try {
         if ($token === '') throw new RuntimeException('Не удалось создать предложение реванша.');
 
         mgw_rematch_annotate($data, $token, $gameId);
-        $registered = $inbox->registerRecipient($data, $opponent, $token);
+        $registered = $inbox->registerDirectRecipient($data, $opponent, $token);
         if (!is_array($registered)) {
             throw new RuntimeException('Не удалось отправить предложение сопернику.');
         }
