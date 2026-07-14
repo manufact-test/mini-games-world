@@ -182,14 +182,42 @@ trait GameInviteStorageTrait
 
     private function unreadNotificationCount(array $db, string $userId): int
     {
+        $invites = $this->invitesByToken($db);
         $count = 0;
         foreach ($db['notifications'] ?? [] as $notification) {
             if (!is_array($notification)) continue;
             if ((string)($notification['user_id'] ?? '') !== $userId) continue;
             if (!empty($notification['hidden_at']) || !empty($notification['read_at'])) continue;
+            if (!$this->inviteNotificationVisible($notification, $invites)) continue;
             $count++;
         }
         return $count;
+    }
+
+    private function invitesByToken(array $db): array
+    {
+        $result = [];
+        foreach ($db['invites'] ?? [] as $invite) {
+            if (!is_array($invite)) continue;
+            $token = (string)($invite['token'] ?? '');
+            if ($token !== '') $result[$token] = $invite;
+        }
+        return $result;
+    }
+
+    private function inviteNotificationVisible(array $notification, array $invitesByToken): bool
+    {
+        $type = (string)($notification['type'] ?? '');
+        if (!str_starts_with($type, 'invite_')) return true;
+        $token = (string)($notification['invite_token'] ?? '');
+        $invite = $token !== '' ? ($invitesByToken[$token] ?? null) : null;
+        if (!is_array($invite)) return true;
+
+        $status = (string)($invite['status'] ?? '');
+        if (in_array($type, ['invite_received', 'invite_rematch_received'], true)) return $status === 'pending';
+        if ($type === 'invite_accepted') return $status === 'awaiting_start';
+        if ($type === 'invite_started') return $status === 'active';
+        return true;
     }
 
     private function expireIfDue(array &$db, array &$invite, int $now): void
