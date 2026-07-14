@@ -42,7 +42,7 @@ final class TelegramService
 
     public function sendStartMessage(int|string $chatId): void
     {
-        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=84';
+        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=85';
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
