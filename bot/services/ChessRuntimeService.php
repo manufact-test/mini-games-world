@@ -97,7 +97,7 @@ final class ChessRuntimeService
         int $boardSize,
         ?string $gameType = null
     ): array {
-        $this->assertNoInviteReadyCheck($db, $user);
+        $this->assertNoOpenInviteBeforeSearch($db, $user);
         $gameType = $this->catalog->normalizeGameType($gameType);
         if (!in_array($gameType, ['chess', 'go', 'domino'], true)) {
             return $this->base->startSearch($db, $user, $room, $bet, $boardSize, $gameType);
@@ -390,21 +390,29 @@ final class ChessRuntimeService
         return array_values($merged);
     }
 
-    private function assertNoInviteReadyCheck(array &$db, array $user): void
+    private function assertNoOpenInviteBeforeSearch(array &$db, array $user): void
     {
         $userId = trim((string)($user['id'] ?? ''));
         if ($userId === '') return;
 
         foreach ($db['invites'] ?? [] as $invite) {
-            if (!is_array($invite) || (string)($invite['status'] ?? '') !== 'awaiting_start') continue;
+            if (!is_array($invite)) continue;
+            $status = (string)($invite['status'] ?? '');
+            if (!in_array($status, ['pending', 'awaiting_start'], true)) continue;
+
             $isParticipant = (string)($invite['inviter_id'] ?? '') === $userId
                 || (string)($invite['invitee_id'] ?? '') === $userId;
             if (!$isParticipant) continue;
 
-            $deadline = strtotime((string)($invite['start_deadline_at'] ?? '')) ?: 0;
+            $deadlineField = $status === 'awaiting_start' ? 'ready_deadline_at' : 'expires_at';
+            $deadline = strtotime((string)($invite[$deadlineField] ?? $invite['start_deadline_at'] ?? '')) ?: 0;
             if ($deadline > 0 && $deadline <= time()) continue;
 
-            throw new RuntimeException('Сначала запустите или отмените подтверждённое приглашение.');
+            throw new RuntimeException(
+                $status === 'awaiting_start'
+                    ? 'Сначала запустите или отмените подтверждённое приглашение.'
+                    : 'Сначала ответьте на текущее приглашение или отмените его.'
+            );
         }
     }
 
