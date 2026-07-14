@@ -2,31 +2,30 @@ import { api } from '../api/client.js?v=47';
 import { openSheet } from '../components/sheet.js?v=68';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
-const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v2';
+const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v3';
 const MAX_ANNOUNCED_IDS = 300;
-const NOTIFICATION_POLL_MS = 5000;
+const NOTIFICATION_POLL_MS = 30000;
 const NOTIFICATION_TOAST_DURATION = 8000;
 
+let initialized = false;
 let notificationPoll = null;
 let refreshingBadge = false;
+let openingSheet = false;
 let appReady = false;
-let pendingAnnouncementRefresh = false;
 let baselineLoaded = false;
 let announcedIds = loadAnnouncedIds();
 let notificationToastTimer = null;
 let notificationToastPointer = null;
 let suppressNotificationToastClickUntil = 0;
-let contextObserver = null;
-let contextRefreshTimer = null;
 
 export function initNotificationsScreen(){
+  if (initialized) return;
+  initialized = true;
   ensureNotificationToast();
-  initNotificationContextObserver();
 
   document.addEventListener('click', event => {
     const trigger = event.target.closest('#notificationsOpen');
     if (!trigger) return;
-
     event.preventDefault();
     event.stopImmediatePropagation();
     openNotificationsSheet();
@@ -34,34 +33,49 @@ export function initNotificationsScreen(){
 
   document.addEventListener('mgw:app-ready', () => {
     appReady = true;
-    refreshNotificationBadge(true);
+    refreshNotificationBadge(false);
   }, { once:true });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      refreshNotificationBadge(appReady);
-    } else {
-      dismissNotificationToast();
-    }
+    if (document.visibilityState === 'visible') refreshNotificationBadge(true);
+    else dismissNotificationToast();
   });
 
-  // The first read is a baseline, not a new event. This prevents old unread
-  // weekly/payment notifications from popping again after a build update.
-  refreshNotificationBadge(false);
+  document.addEventListener('mgw:notification-count', event => {
+    setUnreadCount(Number(event.detail?.unreadCount || 0));
+  });
 
-  if (!notificationPoll) {
-    notificationPoll = window.setInterval(() => refreshNotificationBadge(appReady), NOTIFICATION_POLL_MS);
-  }
+  document.addEventListener('mgw:notification-sync', event => {
+    const item = event.detail?.item || null;
+    const unreadCount = Number(event.detail?.unreadCount || 0);
+    setUnreadCount(unreadCount);
+    if (!item?.id) return;
+
+    if (isNotificationsSheetOpen()) {
+      openNotificationsSheet({ hapticFeedback:false });
+      return;
+    }
+
+    const id = String(item.id || '');
+    if (!id || announcedIds.has(id)) return;
+    rememberNotificationId(id);
+    if (appReady) showNotificationToast(item);
+  });
+
+  document.addEventListener('mgw:notifications-refresh', () => {
+    if (isNotificationsSheetOpen()) openNotificationsSheet({ hapticFeedback:false });
+    else refreshNotificationBadge(false);
+  });
+
+  // The first request is only a baseline. Historical weekly/payment events are
+  // remembered before the application is allowed to display live alerts.
+  refreshNotificationBadge(false);
+  notificationPoll = window.setInterval(() => refreshNotificationBadge(true), NOTIFICATION_POLL_MS);
 }
 
-export async function refreshNotificationBadge(announce = appReady){
-  if (refreshingBadge) {
-    if (announce) pendingAnnouncementRefresh = true;
-    return;
-  }
-
+export async function refreshNotificationBadge(announce = false){
+  if (refreshingBadge) return;
   refreshingBadge = true;
-
   try {
     const result = await api.notifications(false);
     const items = Array.isArray(result.items) ? result.items : [];
@@ -70,33 +84,36 @@ export async function refreshNotificationBadge(announce = appReady){
     if (!baselineLoaded || !announce || !appReady) {
       rememberNotifications(items);
       baselineLoaded = true;
-    } else {
-      announceNewestUnread(items);
+      return;
+    }
+
+    const item = items.find(notification => {
+      const id = String(notification?.id || '');
+      return id && !notification?.read && !announcedIds.has(id);
+    });
+    if (item) {
+      rememberNotificationId(String(item.id || ''));
+      showNotificationToast(item);
     }
   } catch (error) {
-    // Keep the current badge state on a temporary network error.
+    // Keep the last visible count during a temporary network error.
   } finally {
     refreshingBadge = false;
-
-    if (pendingAnnouncementRefresh) {
-      pendingAnnouncementRefresh = false;
-      queueMicrotask(() => refreshNotificationBadge(true));
-    }
   }
 }
 
-async function openNotificationsSheet(){
+async function openNotificationsSheet({ hapticFeedback = true } = {}){
+  if (openingSheet) return;
+  openingSheet = true;
   dismissNotificationToast();
-  haptic('light');
+  if (hapticFeedback) haptic('light');
+
   openSheet(`
     <div class="sheet-head">
       <div><h2>Уведомления</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    <div class="notifications-loading">
-      <div>🔔</div>
-      <strong>Загружаем…</strong>
-    </div>
+    <div class="notifications-loading"><div>🔔</div><strong>Загружаем…</strong></div>
   `);
 
   try {
@@ -108,63 +125,66 @@ async function openNotificationsSheet(){
     renderNotifications(items);
   } catch (error) {
     renderNotificationsError();
+  } finally {
+    openingSheet = false;
   }
 }
 
-function announceNewestUnread(items){
-  if (!canShowNotificationToast()) return;
-  if (document.getElementById('notificationToast')?.classList.contains('show')) return;
+function renderNotifications(items){
+  const body = items.length
+    ? `<div class="notifications-list">${items.map(renderNotification).join('')}</div>`
+    : `<div class="notifications-empty"><div>🔔</div><strong>Пока уведомлений нет</strong></div>`;
 
-  const notification = items.find(item => {
-    const id = String(item?.id || '');
-    return id !== '' && !item?.read && !announcedIds.has(id);
-  });
-
-  if (!notification) return;
-  if (!showNotificationToast(notification)) return;
-
-  rememberNotificationId(String(notification.id || ''));
-  haptic(String(notification.tone || '') === 'danger' ? 'medium' : 'light');
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Уведомления</h2></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    ${body}
+  `);
 }
 
-function canShowNotificationToast(){
-  if (!appReady || document.visibilityState !== 'visible') return false;
+function renderNotification(item){
+  const tone = ['success', 'danger', 'info', 'warning'].includes(String(item?.tone || ''))
+    ? String(item.tone)
+    : 'info';
+  const message = notificationMessage(item);
+  const actions = renderInviteActions(item);
 
-  const activeScreen = document.querySelector('.screen.active');
-  if (!activeScreen || String(activeScreen.dataset.screen || '') !== 'home') return false;
-
-  const overlay = document.getElementById('sheetOverlay');
-  if (overlay?.classList.contains('active')) return false;
-
-  return true;
+  return `
+    <article class="notification-card ${tone}">
+      <div class="notification-icon">${notificationIcon(tone, item?.type)}</div>
+      <div class="notification-copy">
+        <div class="notification-head">
+          <strong>${escapeHtml(item?.title || 'Уведомление')}</strong>
+          <span>${escapeHtml(formatDate(item?.created_at))}</span>
+        </div>
+        ${message ? `<p>${escapeHtml(message)}</p>` : ''}
+        ${actions}
+      </div>
+    </article>
+  `;
 }
 
-function initNotificationContextObserver(){
-  const app = document.getElementById('app');
-  if (!app || contextObserver) return;
+function renderInviteActions(item){
+  const actions = Array.isArray(item?.actions) ? item.actions : [];
+  const token = String(item?.invite_token || '');
+  if (!token || !actions.length) return '';
 
-  contextObserver = new MutationObserver(mutations => {
-    const contextChanged = mutations.some(mutation => {
-      const target = mutation.target;
-      return target instanceof Element && target.id !== 'notificationToast';
-    });
+  const buttons = actions.map(action => {
+    const primary = action === 'accept' || action === 'start';
+    return `<button class="btn ${primary ? 'primary' : 'ghost'} full" data-invite-action="${escapeHtml(action)}" data-invite-token="${escapeHtml(token)}" type="button">${escapeHtml(actionLabel(action))}</button>`;
+  }).join('');
+  return `<div class="notification-actions invite-actions">${buttons}</div>`;
+}
 
-    if (!contextChanged) return;
-
-    if (!canShowNotificationToast()) {
-      dismissNotificationToast();
-      return;
-    }
-
-    window.clearTimeout(contextRefreshTimer);
-    contextRefreshTimer = window.setTimeout(() => refreshNotificationBadge(true), 120);
-  });
-
-  contextObserver.observe(app, {
-    subtree:true,
-    attributes:true,
-    attributeFilter:['class'],
-  });
+function actionLabel(action){
+  return {
+    accept:'Принять приглашение',
+    decline:'Отклонить',
+    start:'Начать игру',
+    cancel:'Отменить',
+  }[String(action || '')] || 'Открыть';
 }
 
 function ensureNotificationToast(){
@@ -179,12 +199,8 @@ function ensureNotificationToast(){
   el.setAttribute('aria-label', 'Открыть уведомления');
   el.innerHTML = `
     <div class="notification-toast-icon" aria-hidden="true">🔔</div>
-    <div class="notification-toast-copy">
-      <strong></strong>
-      <span></span>
-    </div>
+    <div class="notification-toast-copy"><strong></strong><span></span></div>
   `;
-
   (document.getElementById('app') || document.body).appendChild(el);
 
   el.addEventListener('click', () => {
@@ -192,76 +208,53 @@ function ensureNotificationToast(){
     dismissNotificationToast();
     openNotificationsSheet();
   });
-
   el.addEventListener('keydown', event => {
     if (!el.classList.contains('show')) return;
-
     if (event.key === 'Escape') {
       event.preventDefault();
       dismissNotificationToast();
-      return;
-    }
-
-    if (event.key === 'Enter' || event.key === ' ') {
+    } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       dismissNotificationToast();
       openNotificationsSheet();
     }
   });
-
   el.addEventListener('pointerdown', event => {
     if (!el.classList.contains('show')) return;
-
-    notificationToastPointer = {
-      id:event.pointerId,
-      startX:event.clientX,
-      startY:event.clientY,
-      dx:0,
-      dy:0,
-    };
+    notificationToastPointer = { id:event.pointerId, startX:event.clientX, startY:event.clientY, dx:0, dy:0 };
     el.classList.add('dragging');
     el.setPointerCapture?.(event.pointerId);
   });
-
   el.addEventListener('pointermove', event => {
     if (!notificationToastPointer || notificationToastPointer.id !== event.pointerId) return;
-
     notificationToastPointer.dx = event.clientX - notificationToastPointer.startX;
     notificationToastPointer.dy = event.clientY - notificationToastPointer.startY;
-
     const distance = Math.max(Math.abs(notificationToastPointer.dx), Math.abs(notificationToastPointer.dy));
     el.style.transform = `translate3d(${notificationToastPointer.dx}px,${notificationToastPointer.dy}px,0)`;
-    el.style.opacity = String(Math.max(0.3, 1 - distance / 220));
+    el.style.opacity = String(Math.max(.3, 1 - distance / 220));
   });
 
   const finishPointer = (event, cancelled = false) => {
     if (!notificationToastPointer || notificationToastPointer.id !== event.pointerId) return;
-
     const { dx, dy } = notificationToastPointer;
     notificationToastPointer = null;
     el.classList.remove('dragging');
     el.releasePointerCapture?.(event.pointerId);
-
-    const shouldDismiss = !cancelled && Math.max(Math.abs(dx), Math.abs(dy)) >= 64;
-    if (shouldDismiss) {
+    if (!cancelled && Math.max(Math.abs(dx), Math.abs(dy)) >= 64) {
       suppressNotificationToastClickUntil = Date.now() + 400;
       dismissNotificationToast();
       return;
     }
-
     el.style.transform = '';
     el.style.opacity = '';
   };
-
   el.addEventListener('pointerup', event => finishPointer(event));
   el.addEventListener('pointercancel', event => finishPointer(event, true));
-
   return el;
 }
 
 function showNotificationToast(item){
   if (!canShowNotificationToast()) return false;
-
   const el = ensureNotificationToast();
   const tone = ['success', 'danger', 'warning', 'info'].includes(String(item?.tone || ''))
     ? String(item.tone)
@@ -278,63 +271,29 @@ function showNotificationToast(item){
   el.querySelector('.notification-toast-copy strong').textContent = title;
   el.querySelector('.notification-toast-copy span').textContent = message;
   el.querySelector('.notification-toast-copy span').hidden = message === '';
-  el.setAttribute('aria-label', `${title}${message ? `. ${message}` : ''}. Нажмите, чтобы открыть уведомления.`);
-
+  el.setAttribute('aria-label', `${title}${message ? `. ${message}` : ''}`);
   requestAnimationFrame(() => el.classList.add('show'));
   notificationToastTimer = window.setTimeout(dismissNotificationToast, NOTIFICATION_TOAST_DURATION);
+  haptic(tone === 'danger' ? 'medium' : 'light');
   return true;
+}
+
+function canShowNotificationToast(){
+  if (!appReady || document.visibilityState !== 'visible') return false;
+  const activeScreen = document.querySelector('.screen.active');
+  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
+  return !document.getElementById('sheetOverlay')?.classList.contains('active');
 }
 
 function dismissNotificationToast(){
   window.clearTimeout(notificationToastTimer);
   notificationToastTimer = null;
   notificationToastPointer = null;
-
   const el = document.getElementById('notificationToast');
   if (!el) return;
-
   el.classList.remove('show', 'dragging');
   el.style.transform = '';
   el.style.opacity = '';
-}
-
-function renderNotifications(items){
-  const body = items.length
-    ? `<div class="notifications-list">${items.map(renderNotification).join('')}</div>`
-    : `
-      <div class="notifications-empty">
-        <div>🔔</div>
-        <strong>Пока уведомлений нет</strong>
-      </div>
-    `;
-
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>Уведомления</h2></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-    ${body}
-  `);
-}
-
-function renderNotification(item){
-  const tone = ['success', 'danger', 'info', 'warning'].includes(String(item.tone || ''))
-    ? String(item.tone)
-    : 'info';
-  const message = notificationMessage(item);
-
-  return `
-    <article class="notification-card ${tone}">
-      <div class="notification-icon">${notificationIcon(tone, item.type)}</div>
-      <div class="notification-copy">
-        <div class="notification-head">
-          <strong>${escapeHtml(item.title || 'Уведомление')}</strong>
-          <span>${escapeHtml(formatDate(item.created_at))}</span>
-        </div>
-        ${message ? `<p>${escapeHtml(message)}</p>` : ''}
-      </div>
-    </article>
-  `;
 }
 
 function notificationIcon(tone, type = ''){
@@ -347,7 +306,6 @@ function notificationIcon(tone, type = ''){
 function notificationMessage(item){
   let message = String(item?.message || '').trim();
   if (!message) return '';
-
   const technicalFragments = [
     /\s*Баланс уже обновлён\.?/giu,
     /\s*Баланс не изменён\.?/giu,
@@ -358,40 +316,30 @@ function notificationMessage(item){
     /\s*Возвращено\s*\+\s*[\d\s]+\s*Gold\.?/giu,
     /\s*Откройте Mini App[^.]*\.?/giu,
   ];
-
-  for (const pattern of technicalFragments) {
-    message = message.replace(pattern, ' ');
-  }
-
-  return message
-    .replace(/\s+/g, ' ')
-    .replace(/\s+([.,!?])/g, '$1')
-    .replace(/\.{2,}/g, '.')
-    .trim();
+  for (const pattern of technicalFragments) message = message.replace(pattern, ' ');
+  return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/\.{2,}/g, '.').trim();
 }
 
 function renderNotificationsError(){
   openSheet(`
-    <div class="sheet-head">
-      <div><h2>Уведомления</h2></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-    <div class="notifications-empty error">
-      <div>⚠️</div>
-      <strong>Не удалось открыть уведомления</strong>
-      <span>Попробуйте ещё раз.</span>
-    </div>
+    <div class="sheet-head"><div><h2>Уведомления</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="notifications-empty error"><div>⚠️</div><strong>Не удалось открыть уведомления</strong><span>Попробуйте ещё раз.</span></div>
   `);
 }
 
 function setUnreadCount(count){
   const button = document.getElementById('notificationsOpen');
   if (!button) return;
-
   const safeCount = Math.max(0, Math.trunc(Number(count || 0)));
   button.dataset.unread = safeCount > 99 ? '99+' : String(safeCount);
   button.classList.toggle('has-unread', safeCount > 0);
   button.setAttribute('aria-label', safeCount > 0 ? `Уведомления: ${safeCount} новых` : 'Уведомления');
+}
+
+function isNotificationsSheetOpen(){
+  const overlay = document.getElementById('sheetOverlay');
+  if (!overlay?.classList.contains('active')) return false;
+  return String(document.querySelector('#sheet .sheet-head h2')?.textContent || '').trim() === 'Уведомления';
 }
 
 function rememberNotifications(items){
@@ -423,7 +371,7 @@ function persistAnnouncedIds(){
     announcedIds = new Set(ids);
     localStorage.setItem(ANNOUNCED_STORAGE_KEY, JSON.stringify(ids));
   } catch (error) {
-    // Notifications still work even when WebView storage is unavailable.
+    // Notifications still work when storage is unavailable.
   }
 }
 
@@ -431,10 +379,7 @@ function formatDate(value){
   const date = new Date(value || '');
   if (Number.isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('ru-RU', {
-    day:'2-digit',
-    month:'2-digit',
-    hour:'2-digit',
-    minute:'2-digit',
+    day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit',
   }).format(date);
 }
 
