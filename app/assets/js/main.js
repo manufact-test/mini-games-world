@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v83-mvp12-direct-invites-rematch';
+window.__MGW_BUILD__ = 'v84-mvp12-invite-flow-stability';
 import { initRequestGuard } from './api/request-guard.js?v=80';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -23,10 +23,11 @@ import { initProfileScreen } from './screens/profile-screen.js?v=48';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=80';
-import { initDirectInvites } from './games/direct-invites.js?v=83';
+import { initInviteLiveFlow } from './games/invite-live-flow.js?v=84';
+import { initDirectInvites } from './games/direct-invites.js?v=84';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
-import { initRematch } from './games/rematch.js?v=83';
+import { initRematch } from './games/rematch.js?v=84';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
 import { initBattleshipEntry } from './games/battleship/entry.js?v=74';
@@ -46,7 +47,10 @@ initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
+/* Prime the notification baseline before any invitation poll may announce events. */
+initInviteLiveFlow();
 initNotificationsScreen();
+/* Direct invitations must register their click before the legacy capture handler opens setup. */
 initDirectInvites();
 initGameInvites();
 initGameFinishStability();
