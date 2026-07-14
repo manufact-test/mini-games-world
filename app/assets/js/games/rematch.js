@@ -1,5 +1,5 @@
 import { state } from '../state.js?v=27';
-import { openSheet, closeSheet } from '../components/sheet.js?v=68';
+import { openSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=41';
 import { getInitData, haptic } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
@@ -7,22 +7,41 @@ import { showScreen } from '../router.js?v=27';
 import { renderBalances } from '../ui.js?v=27';
 
 const REMATCH_URL = `${window.location.origin}/bot/rematch.php`;
-const INVITES_URL = `${window.location.origin}/bot/invites.php`;
 
 let initialized = false;
 let observer = null;
-let pendingToken = '';
+let enhanceTimer = null;
+let lastFinishedGame = null;
 
 export function initRematch(){
   if (initialized) return;
   initialized = true;
 
+  document.addEventListener('mgw:game-finished', () => {
+    rememberFinishedGame(state.activeGame);
+    scheduleEnhance();
+  });
+
   const sheet = document.getElementById('sheet');
   if (!sheet) return;
 
-  observer = new MutationObserver(enhanceResultSheet);
+  observer = new MutationObserver(() => {
+    rememberFinishedGame(state.activeGame);
+    scheduleEnhance();
+  });
   observer.observe(sheet, { childList:true, subtree:true });
-  enhanceResultSheet();
+  scheduleEnhance();
+}
+
+function rememberFinishedGame(game){
+  if (!game || String(game.status || '') !== 'finished') return;
+  if (!Array.isArray(game.players) || game.players.length !== 2) return;
+  lastFinishedGame = game;
+}
+
+function scheduleEnhance(){
+  window.clearTimeout(enhanceTimer);
+  enhanceTimer = window.setTimeout(enhanceResultSheet, 40);
 }
 
 function enhanceResultSheet(){
@@ -30,8 +49,8 @@ function enhanceResultSheet(){
   const goHome = document.getElementById('goHome');
   if (!newOpponent || !goHome || document.getElementById('rematchOpponent')) return;
 
-  const game = state.activeGame;
-  if (!game || String(game.status || '') !== 'finished' || Boolean(game.is_bot_game)) return;
+  const game = finishedGameCandidate();
+  if (!game || Boolean(game.is_bot_game)) return;
   if (!Array.isArray(game.players) || game.players.length !== 2) return;
 
   const button = document.createElement('button');
@@ -46,6 +65,15 @@ function enhanceResultSheet(){
   newOpponent.insertAdjacentElement('beforebegin', button);
 }
 
+function finishedGameCandidate(){
+  const current = state.activeGame;
+  if (current && String(current.status || '') === 'finished') {
+    rememberFinishedGame(current);
+    return current;
+  }
+  return lastFinishedGame;
+}
+
 async function createRematch(game, button){
   if (!game?.id || button.disabled) return;
 
@@ -58,9 +86,9 @@ async function createRematch(game, button){
     syncState(result);
 
     const invite = result.invite || {};
-    pendingToken = String(invite.token || '');
-    if (!pendingToken) throw new Error('Не удалось создать предложение реванша.');
+    if (!invite.token) throw new Error('Не удалось создать предложение реванша.');
 
+    document.dispatchEvent(new CustomEvent('mgw:invite-adopt', { detail:{ result } }));
     state.activeGame = null;
     showScreen('home');
     showRematchWaiting(invite, String(result.opponent_name || invite.invitee_name || 'Соперник'));
@@ -73,50 +101,18 @@ async function createRematch(game, button){
 
 function showRematchWaiting(invite, opponentName){
   openSheet(`
+    <span data-invite-sheet data-invite-token="${escapeHtml(invite.token || '')}" hidden></span>
     <div class="sheet-head">
       <div>
         <h2>Реванш предложен</h2>
-        <p>${escapeHtml(opponentName)} получил уведомление.</p>
+        <p>${escapeHtml(opponentName)} получит уведомление.</p>
       </div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-
     ${inviteSummary(invite)}
-    <div class="small-note invite-status-note">
-      Ждём ответа соперника. После согласия у вас будет 90 секунд, чтобы начать матч.
-    </div>
-
-    <button class="btn ghost full" id="cancelRematchInvite" type="button">Отменить предложение</button>
+    <div class="small-note invite-status-note">Ждём ответа соперника. После согласия у вас будет 90 секунд, чтобы начать матч.</div>
+    <button class="btn ghost full" data-live-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить предложение</button>
   `);
-
-  document.getElementById('cancelRematchInvite')?.addEventListener('click', cancelRematch);
-}
-
-async function cancelRematch(){
-  if (!pendingToken) {
-    closeSheet();
-    return;
-  }
-
-  const button = document.getElementById('cancelRematchInvite');
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Отменяем…';
-  }
-
-  try {
-    const result = await postJson(INVITES_URL, { action:'cancel', token:pendingToken });
-    syncState(result);
-    pendingToken = '';
-    closeSheet();
-    toast('Предложение реванша отменено.');
-  } catch (error) {
-    toast(error.message || 'Не удалось отменить предложение.');
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Отменить предложение';
-    }
-  }
 }
 
 function inviteSummary(invite){
@@ -134,9 +130,7 @@ function boardLabel(invite){
   const gameType = String(invite.game_type || '');
   const size = Number(invite.board_size || 0);
   if (gameType === 'domino') return 'Классика 0–6';
-  if (gameType === 'four_in_a_row') {
-    return `${size}×${Number(invite.board_rows || Math.max(5, size - 1))}`;
-  }
+  if (gameType === 'four_in_a_row') return `${size}×${Number(invite.board_rows || Math.max(5, size - 1))}`;
   return `${size}×${size}`;
 }
 
