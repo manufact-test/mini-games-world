@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v84-mvp12-invite-flow-stability';
+window.__MGW_BUILD__ = 'v85-mvp12-invite-rebuild';
 import { initRequestGuard } from './api/request-guard.js?v=80';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { api } from './api/client.js?v=47';
@@ -15,19 +15,16 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen.js?v=80';
+import { initNotificationsScreen } from './screens/notifications-screen.js?v=85';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
 import { initProfileScreen } from './screens/profile-screen.js?v=48';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=80';
-import { initInviteLiveFlow } from './games/invite-live-flow.js?v=84';
-import { initDirectInvites } from './games/direct-invites.js?v=84';
+import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=85';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
-import { initRematch } from './games/rematch.js?v=84';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
 import { initBattleshipEntry } from './games/battleship/entry.js?v=74';
@@ -47,15 +44,12 @@ initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
-/* Prime the notification baseline before any invitation poll may announce events. */
-initInviteLiveFlow();
+/* Notification baseline must exist before the invitation synchronizer starts. */
 initNotificationsScreen();
-/* Direct invitations must register their click before the legacy capture handler opens setup. */
-initDirectInvites();
+/* One coordinator owns links, direct invitations, notification actions and rematches. */
 initGameInvites();
 initGameFinishStability();
 initDominoChainLayout();
-initRematch();
 
 initTicTacToeEntry();
 initFourInARowEntry();
@@ -115,7 +109,6 @@ function startStatsPolling(){
 async function refreshStatsIfVisible(){
   if (statsRefreshing || !canRefreshHomeStats()) return;
   statsRefreshing = true;
-
   try {
     const result = await api.stats();
     state.stats = result.stats;
