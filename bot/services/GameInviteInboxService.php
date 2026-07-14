@@ -3,39 +3,22 @@ declare(strict_types=1);
 
 final class GameInviteInboxService
 {
+    /**
+     * A Telegram deep link already opens the invitation itself, so it must not
+     * create a second unread bell notification for the same action.
+     */
     public function registerRecipient(array &$db, array $user, string $token): ?array
     {
-        $index = $this->findIndex($db, $token);
-        if ($index === null) {
-            return null;
-        }
+        return $this->bindRecipient($db, $user, $token, true, false);
+    }
 
-        $invite =& $db['invites'][$index];
-        $this->expirePendingIfDue($invite);
-
-        if ((string)($invite['status'] ?? '') !== 'pending') {
-            return null;
-        }
-
-        $userId = trim((string)($user['id'] ?? ''));
-        $inviterId = trim((string)($invite['inviter_id'] ?? ''));
-        if ($userId === '' || $userId === $inviterId) {
-            return null;
-        }
-
-        $boundInviteeId = trim((string)($invite['invitee_id'] ?? ''));
-        if ($boundInviteeId !== '' && $boundInviteeId !== $userId) {
-            return null;
-        }
-
-        $now = now_iso();
-        $invite['invitee_id'] = $userId;
-        $invite['invitee_name'] = $this->userName($user);
-        $invite['opened_at'] = (string)($invite['opened_at'] ?? $now);
-        $invite['updated_at'] = $now;
-
-        $this->addReceivedNotification($db, $invite, $userId);
-        return $this->publicInvite($invite, $userId);
+    /**
+     * Direct invitations and rematches know the recipient in advance and must
+     * immediately appear in the recipient's in-app notification feed.
+     */
+    public function registerDirectRecipient(array &$db, array $user, string $token): ?array
+    {
+        return $this->bindRecipient($db, $user, $token, false, true);
     }
 
     public function actionableForUser(array $db, array $user): ?array
@@ -73,6 +56,51 @@ final class GameInviteInboxService
         return null;
     }
 
+    private function bindRecipient(
+        array &$db,
+        array $user,
+        string $token,
+        bool $markOpened,
+        bool $notify
+    ): ?array {
+        $index = $this->findIndex($db, $token);
+        if ($index === null) {
+            return null;
+        }
+
+        $invite =& $db['invites'][$index];
+        $this->expirePendingIfDue($invite);
+
+        if ((string)($invite['status'] ?? '') !== 'pending') {
+            return null;
+        }
+
+        $userId = trim((string)($user['id'] ?? ''));
+        $inviterId = trim((string)($invite['inviter_id'] ?? ''));
+        if ($userId === '' || $userId === $inviterId) {
+            return null;
+        }
+
+        $boundInviteeId = trim((string)($invite['invitee_id'] ?? ''));
+        if ($boundInviteeId !== '' && $boundInviteeId !== $userId) {
+            return null;
+        }
+
+        $now = now_iso();
+        $invite['invitee_id'] = $userId;
+        $invite['invitee_name'] = $this->userName($user);
+        if ($markOpened) {
+            $invite['opened_at'] = (string)($invite['opened_at'] ?? $now);
+        }
+        $invite['updated_at'] = $now;
+
+        if ($notify) {
+            $this->addReceivedNotification($db, $invite, $userId);
+        }
+
+        return $this->publicInvite($invite, $userId);
+    }
+
     private function addReceivedNotification(array &$db, array $invite, string $userId): void
     {
         if (!isset($db['notifications']) || !is_array($db['notifications'])) {
@@ -93,13 +121,18 @@ final class GameInviteInboxService
 
         $inviter = (string)($invite['inviter_name'] ?? 'Игрок');
         $game = (string)($invite['game_title'] ?? 'игру');
+        $isRematch = (string)($invite['source'] ?? '') === 'rematch';
+        $message = $isRematch
+            ? $inviter . ' предлагает реванш в «' . $game . '».'
+            : $inviter . ' приглашает вас в «' . $game . '».';
+
         $db['notifications'][] = [
             'id' => make_id('notification'),
             'event_key' => $eventKey,
             'user_id' => $userId,
-            'type' => 'invite_received',
+            'type' => $isRematch ? 'invite_rematch_received' : 'invite_received',
             'title' => 'Вас пригласили сыграть',
-            'message' => $inviter . ' приглашает вас в «' . $game . '». Откройте уведомление, чтобы принять приглашение.',
+            'message' => $message,
             'tone' => 'info',
             'invite_token' => (string)($invite['token'] ?? ''),
             'created_at' => now_iso(),
