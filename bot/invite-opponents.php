@@ -27,6 +27,9 @@ function mgw_recent_opponent_activity(array $user): array
     if ($secondsAgo !== null && $secondsAgo <= 90) {
         return ['label' => 'онлайн', 'online' => true, 'busy' => false];
     }
+    if ($secondsAgo !== null && $secondsAgo <= 3600) {
+        return ['label' => 'был недавно', 'online' => false, 'busy' => false];
+    }
 
     return ['label' => 'недавний соперник', 'online' => false, 'busy' => false];
 }
@@ -76,8 +79,16 @@ try {
             ];
             $seen[$opponentId] = true;
 
-            if (count($result) >= 12) break;
+            if (count($result) >= 10) break;
         }
+
+        usort($result, static function (array $left, array $right): int {
+            $onlineCompare = (int)!empty($right['online']) <=> (int)!empty($left['online']);
+            if ($onlineCompare !== 0) return $onlineCompare;
+            $leftTime = strtotime((string)($left['last_game_at'] ?? '')) ?: 0;
+            $rightTime = strtotime((string)($right['last_game_at'] ?? '')) ?: 0;
+            return $rightTime <=> $leftTime;
+        });
 
         return $result;
     });
