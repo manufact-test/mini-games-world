@@ -38,7 +38,7 @@ trait GameInviteCreationTrait
         }
 
         $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');
-        $this->assertAvailableForInvite($db, $invitee, 'Игрок сейчас занят поиском, матчем или другим приглашением.');
+        $this->assertCanReceiveInvite($db, $invitee, 'Игрок сейчас занят поиском, матчем или другим приглашением.');
 
         $invite = $this->newInvite($db, $user, $gameType, $room, $bet, $boardSize, 'direct', 'pending');
         $invite['invitee_id'] = $inviteeId;
