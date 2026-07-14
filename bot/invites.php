@@ -31,7 +31,7 @@ function mgw_invite_share_url(array $config, string $token): string
 function mgw_invite_webapp_url(array $config, string $token): string
 {
     $baseUrl = rtrim((string)($config['base_url'] ?? ''), '/');
-    return $baseUrl . '/app/?v=83&invite=' . rawurlencode($token);
+    return $baseUrl . '/app/?v=84&invite=' . rawurlencode($token);
 }
 
 function mgw_invite_board_label(array $invite): string
@@ -359,14 +359,13 @@ try {
 
         $directRecipient = is_array($result['direct_recipient'] ?? null) ? $result['direct_recipient'] : null;
         if ($directRecipient) {
-            $telegramSent = false;
-            if (empty($directRecipient['recently_active'])) {
-                $telegramSent = mgw_notify_direct_invitee(
-                    $config,
-                    $result['invite'],
-                    (string)($directRecipient['id'] ?? '')
-                );
-            }
+            /* A known recipient receives the same invitation in-app immediately.
+             * The bot message is an additional fallback and never replaces the bell. */
+            $telegramSent = mgw_notify_direct_invitee(
+                $config,
+                $result['invite'],
+                (string)($directRecipient['id'] ?? '')
+            );
             $result['delivery'] = $telegramSent ? 'telegram' : 'in_app';
             $result['invite']['prepared_message_id'] = '';
         } else {
