@@ -8,10 +8,6 @@ RewriteEngine On
   Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=mgw_staging_host
 </IfModule>
 
-# Serve the staging robots policy only on the staging host.
-RewriteCond %{HTTP_HOST} ^seashell-okapi-889488\.hostingersite\.com(?::[0-9]+)?$ [NC]
-RewriteRule ^robots\.txt$ ops/staging/robots.txt [L]
-
 # Keep the Telegram Mini App and bot completely independent from the public site.
 RewriteRule ^(?:app|bot)(?:/|$) - [L]
 
