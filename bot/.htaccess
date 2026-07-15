@@ -1,4 +1,11 @@
 Options -Indexes
+
+# Parent staging password protection must not block Telegram deliveries.
+# This exception is limited to the webhook entry point only.
+<Files "webhook.php">
+  Require all granted
+</Files>
+
 <FilesMatch "^(config|bootstrap|JsonDatabase|AuthService|UserService|GameService|StatsService|TelegramService|WebhookHandler)\.php$">
   Require all denied
 </FilesMatch>
