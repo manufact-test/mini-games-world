@@ -40,4 +40,13 @@ jobs:
           node-version: '22'
 
       - name: Run repository checks
-        run: bash scripts/ci/run.sh
+        run: bash scripts/ci/run.sh 2>&1 | tee ci-report.txt
+
+      - name: Upload CI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-report
+          path: ci-report.txt
+          if-no-files-found: error
+          retention-days: 3
