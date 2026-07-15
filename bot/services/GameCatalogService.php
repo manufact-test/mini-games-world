@@ -55,11 +55,13 @@ final class GameCatalogService
         return $gameType;
     }
 
+    /**
+     * Backward-compatible normalization for stored/active records.
+     * Runtime availability is deliberately checked at new-match boundaries.
+     */
     public function normalizeGameType(?string $gameType): string
     {
-        $gameType = $this->resolveGameType($gameType);
-        $this->featureFlags->assertNewMatchAllowed($gameType);
-        return $gameType;
+        return $this->resolveGameType($gameType);
     }
 
     public function get(string $gameType): array
@@ -69,6 +71,7 @@ final class GameCatalogService
 
     public function supportsRoom(string $gameType, string $room): bool
     {
+        if ($this->featureFlags->newMatchBlockReason($gameType) !== null) return false;
         $game = $this->get($gameType);
         return in_array($room, $game['rooms'] ?? [], true);
     }
