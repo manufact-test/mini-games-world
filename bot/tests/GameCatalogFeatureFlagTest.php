@@ -40,4 +40,16 @@ try {
 $assertSame(true, $blocked, 'Disabled domino must reject new match normalization');
 $assertSame('chess', $catalog->normalizeGameType('chess'), 'Enabled chess must still start');
 
+$actionSource = file_get_contents(dirname(__DIR__) . '/services/GameActionService.php') ?: '';
+$assertSame(
+    false,
+    str_contains($actionSource, 'catalog->normalizeGameType'),
+    'Active game actions must not re-run new-match availability checks'
+);
+$assertSame(
+    true,
+    str_contains($actionSource, 'catalog->get($gameType)'),
+    'Active game actions must resolve their existing engine directly'
+);
+
 fwrite(STDOUT, "GameCatalogFeatureFlagTest: {$assertions} assertions passed\n");
