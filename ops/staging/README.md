@@ -23,7 +23,7 @@ This directory contains deployment-only templates. Real domains, tokens, passwor
 5. Point `MGW_CONFIG_FILE` to the private staging config if the default private-config location is not used.
 6. Create the dedicated staging data directory and make it writable by PHP.
 7. Create a separate Telegram bot and put only its token in the private staging config.
-8. Generate a random setup key outside GitHub and store only its SHA-256 in `staging_setup_key_sha256`.
+8. Generate a separate random setup key of at least 20 characters and store it only in the private `staging_setup_key` value.
 9. Open `/bot/tools/staging-webhook.php` through Basic Auth, enter the setup key and install the webhook.
 10. Verify that the displayed bot username and webhook URL are the staging values.
 
