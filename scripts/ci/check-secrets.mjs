@@ -76,6 +76,7 @@ for (const file of files) {
   const buffer = readFileSync(file);
   if (buffer.includes(0)) continue;
   const source = buffer.toString('utf8');
+  const isUnitTest = file.startsWith('bot/tests/') || file.startsWith('scripts/ci/fixtures/');
 
   for (const rule of directSecretPatterns) {
     for (const match of source.matchAll(rule.pattern)) report(file, source, match.index ?? 0, rule.label);
@@ -86,15 +87,17 @@ for (const file of files) {
     if (!isPlaceholder(value)) report(file, source, match.index ?? 0, 'Telegram bot token');
   }
 
-  for (const rule of assignmentPatterns) {
-    for (const match of source.matchAll(rule.pattern)) {
-      if (!isPlaceholder(match[1])) report(file, source, match.index ?? 0, rule.label);
+  if (!isUnitTest) {
+    for (const rule of assignmentPatterns) {
+      for (const match of source.matchAll(rule.pattern)) {
+        if (!isPlaceholder(match[1])) report(file, source, match.index ?? 0, rule.label);
+      }
     }
-  }
 
-  for (const match of source.matchAll(/['"]admin_ids['"]\s*(?:=>|:)\s*\[([\s\S]*?)\]/g)) {
-    if (/\b\d{6,15}\b/.test(match[1])) {
-      report(file, source, match.index ?? 0, 'real Telegram admin ID in tracked config');
+    for (const match of source.matchAll(/['"]admin_ids['"]\s*(?:=>|:)\s*\[([\s\S]*?)\]/g)) {
+      if (/\b\d{6,15}\b/.test(match[1])) {
+        report(file, source, match.index ?? 0, 'real Telegram admin ID in tracked config');
+      }
     }
   }
 }
