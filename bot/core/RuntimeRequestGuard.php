@@ -13,23 +13,34 @@ final class RuntimeRequestGuard
         if (!in_array($script, ['api.php', 'invites.php'], true)) return;
 
         $payload = self::payload();
+        $reason = self::blockReason($config, $script, $payload);
+        if ($reason !== null) {
+            self::respondBlocked(new FeatureFlagService($config), $reason);
+        }
+    }
+
+    public static function blockReason(array $config, string $script, array $payload): ?string
+    {
+        $script = basename(trim($script));
+        if (!in_array($script, ['api.php', 'invites.php'], true)) return null;
+
         $action = trim((string)($payload['action'] ?? ''));
-        if ($action === '') return;
+        if ($action === '') return null;
 
         $flags = new FeatureFlagService($config);
-        $reason = null;
 
         if ($script === 'api.php') {
-            if ($action === 'start_search') {
-                $reason = $flags->newMatchBlockReason(trim((string)($payload['gameType'] ?? 'tictactoe')));
-            } elseif ($action === 'payment_create_draft') {
-                $reason = $flags->paymentBlockReason();
-            } elseif ($action === 'shop_order') {
-                $reason = $flags->shopBlockReason();
-            }
+            return match ($action) {
+                'start_search' => $flags->newMatchBlockReason(
+                    trim((string)($payload['gameType'] ?? 'tictactoe'))
+                ),
+                'payment_create_draft' => $flags->paymentBlockReason(),
+                'shop_order' => $flags->shopBlockReason(),
+                default => null,
+            };
         }
 
-        if ($script === 'invites.php' && in_array($action, [
+        if (in_array($action, [
             'create_link_draft',
             'confirm_shared',
             'create_direct',
@@ -38,10 +49,10 @@ final class RuntimeRequestGuard
             'rematch',
         ], true)) {
             $gameType = trim((string)($payload['gameType'] ?? ''));
-            $reason = $flags->invitationBlockReason($gameType !== '' ? $gameType : null);
+            return $flags->invitationBlockReason($gameType !== '' ? $gameType : null);
         }
 
-        if ($reason !== null) self::respondBlocked($flags, $reason);
+        return null;
     }
 
     private static function payload(): array
