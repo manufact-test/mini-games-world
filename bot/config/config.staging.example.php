@@ -22,8 +22,8 @@ return [
     'bot_token' => 'PASTE_STAGING_BOT_TOKEN_HERE',
     'staging_bot_username' => 'example_mgw_test_bot',
 
-    /* Store only SHA-256 of the setup key. Generate outside the repository. */
-    'staging_setup_key_sha256' => 'PASTE_64_CHARACTER_SHA256_HERE',
+    /* Separate long key for the staging webhook setup page. */
+    'staging_setup_key' => 'PASTE_RANDOM_SETUP_KEY_AT_LEAST_20_CHARACTERS',
 
     'allow_browser_dev_user' => false,
     'force_browser_dev_user' => false,
