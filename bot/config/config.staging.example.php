@@ -36,6 +36,30 @@ return [
     'telegram_stars_mode' => 'disabled',
     'google_play_billing_mode' => 'disabled',
 
+    'feature_flags' => [
+        'maintenance_mode' => false,
+        'maintenance_message' => '',
+        'financial_read_only' => false,
+        'features' => [
+            'matchmaking' => true,
+            'invitations' => true,
+            'payments' => true,
+            'shop' => true,
+            'tournaments' => false,
+            'ads' => false,
+        ],
+        'games' => [
+            'tictactoe' => true,
+            'four_in_a_row' => true,
+            'battleship' => true,
+            'checkers' => true,
+            'reversi' => true,
+            'chess' => true,
+            'go' => true,
+            'domino' => true,
+        ],
+    ],
+
     'weekly_match_timezone' => 'Europe/Moscow',
     'weekly_match_start_at' => '2026-07-13 12:00:00',
     'weekly_match_bonus_amount' => 50,
