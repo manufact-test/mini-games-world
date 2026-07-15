@@ -24,7 +24,8 @@ final class RuntimeAdminGuard
             return false;
         }
 
-        if (!$flags->financialReadOnly()) return false;
+        $writesBlocked = $flags->financialReadOnly() || $flags->maintenanceEnabled();
+        if (!$writesBlocked) return false;
 
         $isMutation = self::isFinancialMutationForConfig($this->config, $text, $callbackData);
         $hasPendingReason = $text !== ''
@@ -34,14 +35,17 @@ final class RuntimeAdminGuard
 
         if ($hasPendingReason) $this->clearPendingFinancialAction($adminId);
 
-        $notice = 'Финансовые изменения временно отключены: включён режим только для чтения.';
+        $notice = $flags->maintenanceEnabled()
+            ? 'Финансовые изменения временно отключены на время технических работ.'
+            : 'Финансовые изменения временно отключены: включён режим только для чтения.';
+        $callbackNotice = $flags->maintenanceEnabled() ? 'Технические работы' : 'Режим только для чтения';
         $chatId = $message['chat']['id'] ?? $callback['message']['chat']['id'] ?? null;
         $callbackId = (string)($callback['id'] ?? '');
 
         if ($callbackId !== '') {
             $this->telegram->api('answerCallbackQuery', [
                 'callback_query_id' => $callbackId,
-                'text' => 'Режим только для чтения',
+                'text' => $callbackNotice,
                 'show_alert' => true,
             ]);
         }
