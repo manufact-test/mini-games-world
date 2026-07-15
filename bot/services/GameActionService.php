@@ -27,7 +27,10 @@ final class GameActionService
             return $game;
         }
 
-        $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? ''));
+        // Runtime flags block only creation of new games. An already active match
+        // must keep resolving its engine and accepting legal actions safely.
+        $gameType = trim((string)($game['game_type'] ?? ''));
+        if ($gameType === '') $gameType = $this->catalog->defaultGameType();
         $definition = $this->catalog->get($gameType);
         $engine = (string)($definition['engine'] ?? '');
         $expectedActionType = (string)($definition['action_type'] ?? '');
