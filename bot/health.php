@@ -5,6 +5,8 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('X-Content-Type-Options: nosniff');
 
+$build = 'v86-mvp13-runtime-controls';
+
 try {
     require __DIR__ . '/core/bootstrap.php';
 
@@ -39,7 +41,7 @@ try {
         'ok' => false,
         'service' => 'mini-games-world',
         'status' => 'unavailable',
-        'build' => FeatureFlagService::BUILD,
+        'build' => $build,
         'server_time' => gmdate(DATE_ATOM),
         'checks' => [
             'config' => false,
