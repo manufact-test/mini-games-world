@@ -32,7 +32,7 @@ foreach ([
     'admin:payment_apply:PAY123',
     'admin:payment_reject_prompt:PAY123',
     'admin:order_done:ABC123',
-    'admin:order_reject:ABC123',
+    'admin:order_reject_prompt:ABC123',
     'admin:gold_add:PLAYER123',
 ] as $callback) {
     $assertSame(
@@ -60,6 +60,7 @@ foreach ([
     'admin:system_check',
     'admin:users',
     'admin:payments',
+    'admin:order_reject_cancel',
 ] as $callback) {
     $assertSame(
         false,
@@ -78,6 +79,11 @@ $assertSame(
     true,
     str_contains($source, 'clearPendingFinancialAction'),
     'Pending financial action must be cleared safely'
+);
+$assertSame(
+    true,
+    str_contains($source, 'maintenanceEnabled'),
+    'Maintenance mode must also stop admin financial writes'
 );
 
 fwrite(STDOUT, "RuntimeAdminGuardTest: {$assertions} assertions passed\n");
