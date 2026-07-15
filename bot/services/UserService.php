@@ -12,13 +12,18 @@ final class UserService
         $id = (string)$tgUser['id'];
         $now = now_iso();
         if (!isset($db['users'][$id])) {
+            $isDevUser = !empty($tgUser['is_dev_user']);
             $db['users'][$id] = [
                 'id' => $id,
                 'telegram_id' => $id,
-                'is_dev_user' => !empty($tgUser['is_dev_user']),
+                'is_dev_user' => $isDevUser,
                 'first_name' => clean_string($tgUser['first_name'] ?? 'Игрок', 80),
                 'username' => clean_string($tgUser['username'] ?? ($tgUser['first_name'] ?? 'Игрок'), 80),
-                'balance_match' => (int)$this->config['initial_match_coins'],
+                // Real Telegram users receive their single +50 grant through
+                // WeeklyMatchEconomyService so it has its own history and notice.
+                // Browser dev users keep the configured test balance because the
+                // welcome-grant service intentionally skips development accounts.
+                'balance_match' => $isDevUser ? (int)$this->config['initial_match_coins'] : 0,
                 'balance_gold' => (int)$this->config['initial_gold_coins'],
                 'gold_deposited_total' => 0,
                 'gold_wagered_total' => 0,
