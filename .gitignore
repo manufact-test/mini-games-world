@@ -7,6 +7,7 @@ bot/data/*.bak
 # Local config overrides and secrets.
 bot/config/config.php
 bot/config/config.local.php
+bot/config/runtime.php
 _private_mgw/
 .env
 *.local.php
