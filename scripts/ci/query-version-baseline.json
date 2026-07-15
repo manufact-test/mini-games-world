@@ -1,0 +1,8 @@
+{
+  "app/assets/js/telegram/telegram-app.js": ["21", "27"],
+  "app/assets/js/session.js": ["21", "27"],
+  "app/assets/js/api/client.js": ["34", "38", "46", "47"],
+  "app/assets/js/components/toast.js": ["27", "41"],
+  "app/assets/js/components/sheet.js": ["27", "68"],
+  "app/assets/js/games/four-in-a-row/entry.js": ["52", "74"]
+}
