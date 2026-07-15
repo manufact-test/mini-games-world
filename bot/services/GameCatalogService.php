@@ -19,6 +19,7 @@ final class GameCatalogService
         }
 
         sort($boardSizes);
+        $defaultBoardSize = in_array(3, $boardSizes, true) ? 3 : $boardSizes[0];
         $gamesDir = dirname(__DIR__) . '/games';
 
         $ticTacToe = require $gamesDir . '/tictactoe/definition.php';
