@@ -152,7 +152,7 @@ final class ConfigValidator
     private static function validateProductionConfig(array $config): void
     {
         $token = trim((string)($config['bot_token'] ?? ''));
-        if ($token === '' || $token === 'PASTE_BOT_TOKEN_HERE') {
+        if (self::isPlaceholderToken($token)) {
             throw new RuntimeException('Production Telegram bot token is not configured.');
         }
     }
@@ -190,18 +190,22 @@ final class ConfigValidator
     private static function validateBotTokenIsolation(array $config, array $guard, Environment $environment): void
     {
         $token = trim((string)($config['bot_token'] ?? ''));
+        if ($environment === Environment::Staging) {
+            if (self::isPlaceholderToken($token)) {
+                throw new RuntimeException('Staging Telegram bot token is not configured.');
+            }
+
+            $expectedBot = ltrim(strtolower(trim((string)($config['staging_bot_username'] ?? ''))), '@');
+            if ($expectedBot === '') {
+                throw new RuntimeException('Staging requires an expected Telegram bot username.');
+            }
+        }
+
         $productionHash = self::normalizeSha256((string)($guard['production_bot_token_sha256'] ?? ''));
-
-        if ($environment === Environment::Staging && $productionHash === '') {
-            throw new RuntimeException('Staging requires a protected production bot-token fingerprint.');
-        }
-
-        if ($token === '' || $token === 'PASTE_BOT_TOKEN_HERE' || $productionHash === '') {
-            return;
-        }
-
-        if (hash_equals($productionHash, hash('sha256', $token))) {
-            throw new RuntimeException('Non-production Telegram bot token matches production.');
+        if ($productionHash !== '' && !self::isPlaceholderToken($token)) {
+            if (hash_equals($productionHash, hash('sha256', $token))) {
+                throw new RuntimeException('Non-production Telegram bot token matches production.');
+            }
         }
     }
 
@@ -331,6 +335,16 @@ final class ConfigValidator
     private static function isLocalHost(string $host): bool
     {
         return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    }
+
+    private static function isPlaceholderToken(string $token): bool
+    {
+        return $token === ''
+            || in_array($token, [
+                'PASTE_BOT_TOKEN_HERE',
+                'PASTE_STAGING_BOT_TOKEN_HERE',
+                'PUT_TELEGRAM_BOT_TOKEN_HERE',
+            ], true);
     }
 
     private static function normalizeSha256(string $value): string

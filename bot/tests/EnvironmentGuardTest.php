@@ -17,6 +17,8 @@ final class EnvironmentGuardTest
         $this->testProductionDevUserFails();
         $this->testStagingProductionHostFails();
         $this->testStagingProductionTokenFails();
+        $this->testStagingMissingTokenFails();
+        $this->testStagingMissingExpectedBotFails();
         $this->testStagingProductionDataFails();
         $this->testStagingLivePaymentFails();
         $this->testIsolatedStagingPasses();
@@ -108,6 +110,20 @@ final class EnvironmentGuardTest
         ])), 'token matches production');
     }
 
+    private function testStagingMissingTokenFails(): void
+    {
+        $this->throws(fn () => ConfigValidator::validate($this->stagingConfig([
+            'bot_token' => 'PASTE_STAGING_BOT_TOKEN_HERE',
+        ])), 'token is not configured');
+    }
+
+    private function testStagingMissingExpectedBotFails(): void
+    {
+        $this->throws(fn () => ConfigValidator::validate($this->stagingConfig([
+            'staging_bot_username' => '',
+        ])), 'expected Telegram bot username');
+    }
+
     private function testStagingProductionDataFails(): void
     {
         $this->throws(fn () => ConfigValidator::validate($this->stagingConfig([
@@ -139,10 +155,10 @@ final class EnvironmentGuardTest
             'base_url' => 'https://staging.example.com',
             'allowed_hosts' => ['staging.example.com'],
             'bot_token' => '200000:staging_token_value_for_test',
+            'staging_bot_username' => 'mgw_test_bot',
             'data_dir' => '/srv/mgw_staging_data',
             'environment_guard' => [
                 'production_hosts' => ['play.example.com'],
-                'production_bot_token_sha256' => hash('sha256', '100000:production_token_value_for_test'),
                 'production_data_dir' => '/srv/mgw_data',
             ],
         ];

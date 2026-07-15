@@ -1,0 +1,23 @@
+Options -Indexes
+
+# Replace with an absolute path outside the public staging directory.
+AuthType Basic
+AuthName "Mini Games World staging"
+AuthUserFile /home/ACCOUNT/.mgw_staging_htpasswd
+
+# Telegram must reach only the webhook without browser authentication.
+SetEnvIf Request_URI "^/bot/webhook\.php$" mgw_staging_webhook=1
+<RequireAny>
+  Require env mgw_staging_webhook
+  Require valid-user
+</RequireAny>
+
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+  Header always set Cache-Control "no-store" "expr=%{REQUEST_URI} =~ m#^/bot/tools/#"
+</IfModule>
+
+RewriteEngine On
+RewriteRule ^(?:app|bot)(?:/|$) - [L]
+RewriteRule ^robots\.txt$ ops/staging/robots.txt [L]
+RewriteRule ^$ app/ [R=302,L]
