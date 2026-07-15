@@ -5,6 +5,7 @@ define('MINIGAMES_INTERNAL', true);
 
 require_once __DIR__ . '/Environment.php';
 require_once __DIR__ . '/ConfigValidator.php';
+require_once __DIR__ . '/RuntimeRequestGuard.php';
 
 $externalConfigFile = getenv('MGW_CONFIG_FILE') ?: dirname(__DIR__, 3) . '/_private_mgw/config.php';
 $legacyConfigFile = __DIR__ . '/../config/config.php';
@@ -46,6 +47,7 @@ require_once __DIR__ . '/../helpers/validators.php';
 require_once __DIR__ . '/../storage/JsonDatabase.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
+require_once __DIR__ . '/../services/FeatureFlagService.php';
 require_once __DIR__ . '/../services/GameCatalogService.php';
 require_once __DIR__ . '/../services/GameService.php';
 require_once __DIR__ . '/../services/GameSettlementService.php';
@@ -66,3 +68,5 @@ require_once __DIR__ . '/../services/NotificationService.php';
 require_once __DIR__ . '/../services/WeeklyMatchEconomyService.php';
 require_once __DIR__ . '/../services/ShopOrderNotificationService.php';
 require_once __DIR__ . '/../handlers/WebhookHandler.php';
+
+RuntimeRequestGuard::enforce($config, $_SERVER);
