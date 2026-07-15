@@ -10,7 +10,7 @@ final class StagingSetupGuardTest
     public function run(): void
     {
         $this->testProductionIsRejected();
-        $this->testMissingKeyFingerprintIsRejected();
+        $this->testMissingKeyIsRejected();
         $this->testWrongKeyIsRejected();
         $this->testCorrectKeyPasses();
         $this->testWebhookUrlUsesStagingBaseUrl();
@@ -25,7 +25,7 @@ final class StagingSetupGuardTest
         return array_replace_recursive([
             'environment' => 'staging',
             'base_url' => 'https://staging.example.com',
-            'staging_setup_key_sha256' => hash('sha256', 'correct-key'),
+            'staging_setup_key' => 'correct-key-with-20-characters',
             'staging_bot_username' => 'mgw_test_bot',
         ], $overrides);
     }
@@ -38,10 +38,10 @@ final class StagingSetupGuardTest
         );
     }
 
-    private function testMissingKeyFingerprintIsRejected(): void
+    private function testMissingKeyIsRejected(): void
     {
         $this->throws(
-            fn () => StagingSetupGuard::authorize($this->config(['staging_setup_key_sha256' => '']), 'correct-key'),
+            fn () => StagingSetupGuard::authorize($this->config(['staging_setup_key' => '']), 'correct-key-with-20-characters'),
             'not configured'
         );
     }
@@ -49,14 +49,14 @@ final class StagingSetupGuardTest
     private function testWrongKeyIsRejected(): void
     {
         $this->throws(
-            fn () => StagingSetupGuard::authorize($this->config(), 'wrong-key'),
+            fn () => StagingSetupGuard::authorize($this->config(), 'wrong-key-with-20-characters'),
             'access denied'
         );
     }
 
     private function testCorrectKeyPasses(): void
     {
-        StagingSetupGuard::authorize($this->config(), 'correct-key');
+        StagingSetupGuard::authorize($this->config(), 'correct-key-with-20-characters');
         $this->true(true);
     }
 
