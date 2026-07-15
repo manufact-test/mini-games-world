@@ -15,6 +15,7 @@ const files = trackedFiles();
 const forbiddenPathPatterns = [
   { pattern: /(^|\/)bot\/config\/config\.php$/, label: 'live bot config' },
   { pattern: /(^|\/)bot\/config\/config\.local\.php$/, label: 'local private config' },
+  { pattern: /(^|\/)bot\/config\/runtime\.php$/, label: 'private runtime config' },
   { pattern: /(^|\/)_private_mgw\//, label: 'private config directory' },
   { pattern: /(^|\/)mgw_(?:staging_)?data(?:\/|$)/, label: 'runtime data directory' },
   { pattern: /(^|\/)\.env$/, label: 'environment secret file' },
