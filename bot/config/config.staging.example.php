@@ -7,16 +7,16 @@ if (!defined('MINIGAMES_INTERNAL')) {
 }
 
 /*
- * Copy only the required keys into the private staging config.
- * Never commit real domains, paths, bot tokens, setup keys or admin IDs.
+ * Copy these keys into ../_private_mgw/config.php next to public_html.
+ * Never commit real domains, bot tokens, setup keys or admin IDs.
  */
 return [
     'environment' => 'staging',
     'base_url' => 'https://staging.example.invalid',
     'allowed_hosts' => ['staging.example.invalid'],
 
-    /* Must be a dedicated staging directory, never the production mgw_data. */
-    'data_dir' => '/home/ACCOUNT/mgw_staging_data',
+    /* config.php is inside _private_mgw, so this resolves to its sibling folder. */
+    'data_dir' => dirname(__DIR__) . '/mgw_staging_data',
 
     /* Token and username of the separate Telegram test bot. */
     'bot_token' => 'PASTE_STAGING_BOT_TOKEN_HERE',
@@ -25,6 +25,7 @@ return [
     /* Separate long key for the staging webhook setup page. */
     'staging_setup_key' => 'PASTE_RANDOM_SETUP_KEY_AT_LEAST_20_CHARACTERS',
 
+    'admin_ids' => [],
     'allow_browser_dev_user' => false,
     'force_browser_dev_user' => false,
     'external_payments_enabled' => false,
@@ -32,11 +33,16 @@ return [
     'telegram_stars_mode' => 'disabled',
     'google_play_billing_mode' => 'disabled',
 
+    'weekly_match_timezone' => 'Europe/Moscow',
+    'weekly_match_start_at' => '2026-07-13 12:00:00',
+    'weekly_match_bonus_amount' => 50,
+    'weekly_match_min_completed' => 3,
+
     /* Production metadata is used only for collision detection. */
     'environment_guard' => [
         'production_hosts' => ['production.example.invalid'],
-        'production_bot_token_sha256' => 'PASTE_PRODUCTION_BOT_TOKEN_SHA256_HERE',
-        'production_data_dir' => '/home/ACCOUNT/mgw_data',
+        'production_bot_token_sha256' => '',
+        'production_data_dir' => dirname(__DIR__) . '/mgw_data',
         'production_database_sha256' => '',
     ],
 ];
