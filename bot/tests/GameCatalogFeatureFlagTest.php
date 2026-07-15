@@ -27,18 +27,13 @@ $catalog = new GameCatalogService($config);
 
 $domino = $catalog->get('domino');
 $assertSame('domino', $domino['id'], 'Disabled game definition must remain readable for active games');
+$assertSame('domino', $catalog->normalizeGameType('domino'), 'Stored disabled game type must remain normalizable');
 $assertSame(false, $catalog->publicGameDefinition('domino')['available'], 'Public catalog must mark disabled domino unavailable');
 $assertSame(true, $catalog->publicGameDefinition('chess')['available'], 'Other games must remain available');
+$assertSame(false, $catalog->supportsRoom('domino', 'match'), 'Disabled game must reject a new room entry');
+$assertSame(true, $catalog->supportsRoom('chess', 'match'), 'Enabled Chess must retain its room support');
 $assertSame(false, $catalog->supportsBot('domino'), 'Disabled game must not create a bot match');
-
-$blocked = false;
-try {
-    $catalog->normalizeGameType('domino');
-} catch (RuntimeException $e) {
-    $blocked = str_contains($e->getMessage(), 'временно недоступна');
-}
-$assertSame(true, $blocked, 'Disabled domino must reject new match normalization');
-$assertSame('chess', $catalog->normalizeGameType('chess'), 'Enabled chess must still start');
+$assertSame('chess', $catalog->normalizeGameType('chess'), 'Enabled Chess must remain normalizable');
 
 $actionSource = file_get_contents(dirname(__DIR__) . '/services/GameActionService.php') ?: '';
 $assertSame(
@@ -50,6 +45,18 @@ $assertSame(
     true,
     str_contains($actionSource, 'catalog->get($gameType)'),
     'Active game actions must resolve their existing engine directly'
+);
+
+$catalogSource = file_get_contents(dirname(__DIR__) . '/services/GameCatalogService.php') ?: '';
+$normalizeStart = strpos($catalogSource, 'public function normalizeGameType');
+$normalizeEnd = strpos($catalogSource, 'public function get', $normalizeStart !== false ? $normalizeStart : 0);
+$normalizeBody = $normalizeStart !== false && $normalizeEnd !== false
+    ? substr($catalogSource, $normalizeStart, $normalizeEnd - $normalizeStart)
+    : '';
+$assertSame(
+    false,
+    str_contains($normalizeBody, 'assertNewMatchAllowed'),
+    'Stored-record normalization must never block an active game'
 );
 
 fwrite(STDOUT, "GameCatalogFeatureFlagTest: {$assertions} assertions passed\n");
