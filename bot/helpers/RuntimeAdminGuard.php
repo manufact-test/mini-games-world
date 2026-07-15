@@ -25,7 +25,14 @@ final class RuntimeAdminGuard
         }
 
         if (!$flags->financialReadOnly()) return false;
-        if (!$this->isFinancialMutation($text, $callbackData)) return false;
+
+        $isMutation = self::isFinancialMutationForConfig($this->config, $text, $callbackData);
+        $hasPendingReason = $text !== ''
+            && !str_starts_with($text, '/')
+            && $this->hasPendingFinancialAction($adminId);
+        if (!$isMutation && !$hasPendingReason) return false;
+
+        if ($hasPendingReason) $this->clearPendingFinancialAction($adminId);
 
         $notice = 'Финансовые изменения временно отключены: включён режим только для чтения.';
         $chatId = $message['chat']['id'] ?? $callback['message']['chat']['id'] ?? null;
@@ -46,6 +53,35 @@ final class RuntimeAdminGuard
         }
 
         return true;
+    }
+
+    public static function isFinancialMutationForConfig(
+        array $config,
+        string $text,
+        string $callbackData
+    ): bool {
+        $commands = [
+            (string)($config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done'),
+            (string)($config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject'),
+            (string)($config['admin_payment_apply_command'] ?? '/mgw_private_admin_7291_payment_apply'),
+            (string)($config['admin_payment_reject_command'] ?? '/mgw_private_admin_7291_payment_reject'),
+            (string)($config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add'),
+        ];
+        foreach (array_filter($commands) as $command) {
+            if ($text === $command || str_starts_with($text, $command . ' ')) return true;
+        }
+
+        foreach ([
+            'admin:payment_apply:',
+            'admin:payment_reject_prompt:',
+            'admin:order_done:',
+            'admin:order_reject:',
+            'admin:gold_add:',
+        ] as $prefix) {
+            if (str_starts_with($callbackData, $prefix)) return true;
+        }
+
+        return false;
     }
 
     private function sendAlerts(FeatureFlagService $flags, mixed $message, mixed $callback): void
@@ -73,30 +109,25 @@ final class RuntimeAdminGuard
             || ($command !== '' && ($text === $command || str_starts_with($text, $command . ' ')));
     }
 
-    private function isFinancialMutation(string $text, string $callbackData): bool
+    private function hasPendingFinancialAction(string $adminId): bool
     {
-        $commands = [
-            (string)($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done'),
-            (string)($this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject'),
-            (string)($this->config['admin_payment_apply_command'] ?? '/mgw_private_admin_7291_payment_apply'),
-            (string)($this->config['admin_payment_reject_command'] ?? '/mgw_private_admin_7291_payment_reject'),
-            (string)($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add'),
-        ];
-        foreach (array_filter($commands) as $command) {
-            if ($text === $command || str_starts_with($text, $command . ' ')) return true;
-        }
+        $db = new JsonDatabase($this->dataDir());
+        return $db->readOnly(static function (array $data) use ($adminId): bool {
+            $pending = $data['system']['admin_pending_actions'][$adminId] ?? null;
+            return is_array($pending)
+                && in_array((string)($pending['type'] ?? ''), ['payment_reject', 'shop_order_reject'], true);
+        });
+    }
 
-        foreach ([
-            'admin:payment_apply:',
-            'admin:payment_reject_prompt:',
-            'admin:order_done:',
-            'admin:order_reject:',
-            'admin:gold_add:',
-        ] as $prefix) {
-            if (str_starts_with($callbackData, $prefix)) return true;
-        }
-
-        return false;
+    private function clearPendingFinancialAction(string $adminId): void
+    {
+        $db = new JsonDatabase($this->dataDir());
+        $db->transaction(static function (array &$data) use ($adminId): void {
+            $pending = $data['system']['admin_pending_actions'][$adminId] ?? null;
+            if (!is_array($pending)) return;
+            if (!in_array((string)($pending['type'] ?? ''), ['payment_reject', 'shop_order_reject'], true)) return;
+            unset($data['system']['admin_pending_actions'][$adminId]);
+        });
     }
 
     private function adminId(array $update): string
@@ -115,5 +146,10 @@ final class RuntimeAdminGuard
             if ((string)$adminId === $id) return true;
         }
         return false;
+    }
+
+    private function dataDir(): string
+    {
+        return (string)($this->config['data_dir'] ?? (__DIR__ . '/../data'));
     }
 }
