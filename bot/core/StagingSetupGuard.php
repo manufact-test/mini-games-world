@@ -14,12 +14,12 @@ final class StagingSetupGuard
     {
         self::assertStaging($config);
 
-        $expectedHash = strtolower(trim((string)($config['staging_setup_key_sha256'] ?? '')));
-        if (!preg_match('/^[a-f0-9]{64}$/', $expectedHash)) {
-            throw new RuntimeException('Staging setup key fingerprint is not configured.');
+        $expectedKey = trim((string)($config['staging_setup_key'] ?? ''));
+        if (strlen($expectedKey) < 20) {
+            throw new RuntimeException('Staging setup key is not configured.');
         }
 
-        if ($providedKey === '' || !hash_equals($expectedHash, hash('sha256', $providedKey))) {
+        if ($providedKey === '' || !hash_equals($expectedKey, $providedKey)) {
             throw new RuntimeException('Staging setup access denied.');
         }
     }
