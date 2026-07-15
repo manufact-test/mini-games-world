@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 define('MINIGAMES_INTERNAL', true);
 
+require_once __DIR__ . '/Environment.php';
+require_once __DIR__ . '/ConfigValidator.php';
+
 $externalConfigFile = getenv('MGW_CONFIG_FILE') ?: dirname(__DIR__, 3) . '/_private_mgw/config.php';
 $legacyConfigFile = __DIR__ . '/../config/config.php';
 $configFile = is_file($externalConfigFile) ? $externalConfigFile : $legacyConfigFile;
@@ -35,6 +38,8 @@ if (empty($config['data_dir'])) {
     $externalDataDir = dirname(__DIR__, 3) . '/mgw_data';
     $config['data_dir'] = is_dir($externalDataDir) ? $externalDataDir : __DIR__ . '/../data';
 }
+
+$config = ConfigValidator::validate($config, $_SERVER);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/validators.php';
