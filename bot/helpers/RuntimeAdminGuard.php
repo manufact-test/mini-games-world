@@ -79,7 +79,7 @@ final class RuntimeAdminGuard
             'admin:payment_apply:',
             'admin:payment_reject_prompt:',
             'admin:order_done:',
-            'admin:order_reject:',
+            'admin:order_reject_prompt:',
             'admin:gold_add:',
         ] as $prefix) {
             if (str_starts_with($callbackData, $prefix)) return true;
