@@ -19,7 +19,6 @@ final class GameCatalogService
         }
 
         sort($boardSizes);
-        $defaultBoardSize = in_array(3, $boardSizes, true) ? 3 : $boardSizes[0];
         $gamesDir = dirname(__DIR__) . '/games';
 
         $ticTacToe = require $gamesDir . '/tictactoe/definition.php';
@@ -48,23 +47,24 @@ final class GameCatalogService
         return 'tictactoe';
     }
 
-    public function normalizeGameType(?string $gameType): string
+    public function resolveGameType(?string $gameType): string
     {
         $gameType = trim((string)$gameType);
-        if ($gameType === '') {
-            $gameType = $this->defaultGameType();
-        }
-
+        if ($gameType === '') $gameType = $this->defaultGameType();
         $this->definition($gameType);
+        return $gameType;
+    }
+
+    public function normalizeGameType(?string $gameType): string
+    {
+        $gameType = $this->resolveGameType($gameType);
         $this->featureFlags->assertNewMatchAllowed($gameType);
         return $gameType;
     }
 
     public function get(string $gameType): array
     {
-        $gameType = trim($gameType);
-        if ($gameType === '') $gameType = $this->defaultGameType();
-        return $this->definition($gameType);
+        return $this->definition($this->resolveGameType($gameType));
     }
 
     public function supportsRoom(string $gameType, string $room): bool
@@ -90,6 +90,7 @@ final class GameCatalogService
 
     public function publicGameDefinition(string $gameType): array
     {
+        $gameType = $this->resolveGameType($gameType);
         $game = $this->get($gameType);
         $defaultBoardSize = (int)($game['default_board_size'] ?? 3);
         $blockReason = $this->featureFlags->newMatchBlockReason($gameType);
