@@ -16,6 +16,8 @@ function trackedFiles(pattern = '*') {
     .sort();
 }
 
+const baselinePath = 'scripts/ci/query-version-baseline.json';
+const queryVersionBaseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
 const allFiles = new Set(trackedFiles());
 const jsFiles = trackedFiles('*.js');
 const errors = [];
@@ -62,6 +64,16 @@ function versionFromSpecifier(specifier) {
   return match ? match[1] : null;
 }
 
+function sortedVersions(values) {
+  return [...values].map(String).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
+function sameVersions(actual, expected) {
+  const left = sortedVersions(actual);
+  const right = sortedVersions(expected);
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 for (const file of jsFiles) {
   const source = readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
   const syntax = spawnSync(process.execPath, ['--input-type=module', '--check'], {
@@ -100,8 +112,32 @@ for (const file of jsFiles) {
 }
 
 for (const [target, versions] of explicitVersions) {
-  if (versions.size > 1) {
-    errors.push(`${target}: conflicting query versions: ${[...versions].sort().join(', ')}`);
+  if (versions.size <= 1) continue;
+
+  const expected = queryVersionBaseline[target];
+  if (!Array.isArray(expected)) {
+    errors.push(`${target}: new conflicting query versions: ${sortedVersions(versions).join(', ')}`);
+    continue;
+  }
+
+  if (!sameVersions(versions, expected)) {
+    errors.push(
+      `${target}: query-version baseline changed; expected ${sortedVersions(expected).join(', ')}, found ${sortedVersions(versions).join(', ')}`
+    );
+  }
+}
+
+for (const [target, expected] of Object.entries(queryVersionBaseline)) {
+  if (!Array.isArray(expected) || expected.length < 2) {
+    errors.push(`${baselinePath}: ${target} must list at least two known conflicting versions`);
+    continue;
+  }
+
+  const actual = explicitVersions.get(target) || new Set();
+  if (!sameVersions(actual, expected)) {
+    errors.push(
+      `${baselinePath}: stale entry for ${target}; expected ${sortedVersions(expected).join(', ')}, found ${sortedVersions(actual).join(', ') || 'none'}`
+    );
   }
 }
 
@@ -122,7 +158,7 @@ for (const target of criticalSingletons) {
   }
 
   if (versions.size !== 1) {
-    errors.push(`${target}: critical singleton must use one query version, found ${[...versions].sort().join(', ') || 'none'}`);
+    errors.push(`${target}: critical singleton must use one query version, found ${sortedVersions(versions).join(', ') || 'none'}`);
   }
 }
 
@@ -133,4 +169,4 @@ if (errors.length > 0) {
 }
 
 console.log(`JavaScript checks passed: ${jsFiles.length} files`);
-console.log(`Query-version checks passed: ${explicitVersions.size} imported modules`);
+console.log(`Query-version checks passed: ${explicitVersions.size} imported modules; ${Object.keys(queryVersionBaseline).length} known conflicts frozen`);
