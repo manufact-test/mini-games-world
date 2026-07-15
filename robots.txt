@@ -1,2 +1,6 @@
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /bot/
+Disallow: /storage/
+
+Sitemap: https://lemonchiffon-gerbil-545102.hostingersite.com/sitemap.xml
