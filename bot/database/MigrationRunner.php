@@ -30,11 +30,7 @@ final class MigrationRunner
             }
         }
 
-        foreach (array_keys($applied) as $version) {
-            if (!isset($available[$version])) {
-                throw new RuntimeException('Applied migration file is missing: ' . $version);
-            }
-        }
+        $this->assertNoAppliedMigrationIsMissing($available, $applied);
 
         return [
             'ok' => true,
@@ -54,6 +50,8 @@ final class MigrationRunner
             $available = $this->discover();
             $applied = $repository->applied();
             $pending = [];
+
+            $this->assertNoAppliedMigrationIsMissing($available, $applied);
 
             foreach ($available as $version => $item) {
                 if (isset($applied[$version])) {
@@ -135,6 +133,15 @@ final class MigrationRunner
 
         ksort($migrations, SORT_STRING);
         return $migrations;
+    }
+
+    private function assertNoAppliedMigrationIsMissing(array $available, array $applied): void
+    {
+        foreach (array_keys($applied) as $version) {
+            if (!isset($available[$version])) {
+                throw new RuntimeException('Applied migration file is missing: ' . $version);
+            }
+        }
     }
 
     private function withMigrationLock(callable $callback): mixed
