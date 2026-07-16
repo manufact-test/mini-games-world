@@ -76,9 +76,11 @@ try {
     $manifestText = file_get_contents($snapshot . '/manifest.json') ?: '';
     $assertTrue(!str_contains($manifestText, $root), 'Manifest must not expose absolute filesystem paths');
     $verified = $manager->verify($snapshot);
+    $externalVerified = $manager->verify($externalSnapshot);
     $assertSame(true, $verified['ok'], 'Created backup must verify');
+    $assertSame($verified['snapshot_sha256'], $externalVerified['snapshot_sha256'], 'External copy must match primary snapshot');
 
-    $restored = $manager->restore($snapshot, $restore);
+    $restored = $manager->restore($externalSnapshot, $restore);
     $assertSame(true, $restored['target_ready'], 'Restore target must be ready');
     $assertSame($users, json_decode(file_get_contents($restore . '/users.json') ?: '[]', true, 512, JSON_THROW_ON_ERROR), 'Users must restore exactly');
     $assertSame($games, json_decode(file_get_contents($restore . '/games.json') ?: '[]', true, 512, JSON_THROW_ON_ERROR), 'Games must restore exactly');
