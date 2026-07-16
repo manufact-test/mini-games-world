@@ -1,0 +1,53 @@
+name: Temporary canonical database fingerprint refactor
+
+on:
+  push:
+    branches:
+      - agent/mvp-14-2-database-migrations
+
+permissions:
+  contents: write
+
+jobs:
+  update-fingerprint:
+    if: ${{ !contains(github.event.head_commit.message, '[canonical-db-fingerprint]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-14-2-database-migrations
+          fetch-depth: 0
+
+      - name: Replace duplicate fingerprint logic
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('bot/core/ConfigValidator.php')
+          source = path.read_text(encoding='utf-8')
+          start_marker = "    private static function databaseFingerprint(array $config): string\n    {"
+          end_marker = "\n    private static function normalizeHostList"
+          start = source.find(start_marker)
+          if start < 0:
+              raise SystemExit('databaseFingerprint start marker not found')
+          end = source.find(end_marker, start)
+          if end < 0:
+              raise SystemExit('databaseFingerprint end marker not found')
+          replacement = """    private static function databaseFingerprint(array $config): string
+    {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        return $databaseConfig->enabled() ? $databaseConfig->identityFingerprint() : '';
+    }
+"""
+          path.write_text(source[:start] + replacement + source[end:], encoding='utf-8')
+          PY
+
+      - name: Commit canonical fingerprint
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bot/core/ConfigValidator.php
+          git commit -m "Use canonical database fingerprint [canonical-db-fingerprint]"
+          git push origin HEAD:agent/mvp-14-2-database-migrations
