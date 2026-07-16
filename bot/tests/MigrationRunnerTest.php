@@ -61,6 +61,7 @@ try {
     $status = $runner->status();
     $assertSame(1, $status['available_count'], 'One initial migration must be discoverable');
     $assertSame(1, $status['pending_count'], 'Initial migration must be pending');
+    $assertSame(false, $status['pending'][0]['transactional'], 'MySQL DDL migration must explicitly avoid a wrapping transaction');
 
     $dryRun = $runner->migrate(true);
     $assertSame(true, $dryRun['dry_run'], 'Dry-run must be reported');
@@ -102,6 +103,7 @@ declare(strict_types=1);
 return new class implements DatabaseMigrationInterface {
     public function version(): string { return '20260716_0002_failing_migration'; }
     public function description(): string { return 'Intentional rollback test.'; }
+    public function transactional(): bool { return true; }
     public function up(DatabaseConnectionInterface $database): void {
         $database->execute('CREATE TABLE must_rollback (id INTEGER PRIMARY KEY)');
         throw new RuntimeException('migration-failed');
@@ -112,10 +114,10 @@ PHP);
     $assertThrows(
         static fn() => $runner->migrate(false),
         'migration-failed',
-        'Failed migration must propagate its error'
+        'Failed transactional migration must propagate its error'
     );
     $rolledBackTable = $database->fetchValue("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='must_rollback'");
-    $assertSame(0, (int)$rolledBackTable, 'Failed migration DDL must roll back');
+    $assertSame(0, (int)$rolledBackTable, 'Failed transactional migration must roll back');
     $appliedRows = $database->fetchValue('SELECT COUNT(*) FROM mgw_schema_migrations');
     $assertSame(1, (int)$appliedRows, 'Failed migration must not be recorded');
     unlink($failingMigration);
