@@ -11,7 +11,7 @@ if ($dsn === '') {
 }
 
 $dsnValue = static function (string $key) use ($dsn): string {
-    return preg_match('/(?:^|;)' . preg_quote($key, '/') . '=([^;]+)/', $dsn, $matches) === 1
+    return preg_match('/(?:^|[:;])' . preg_quote($key, '/') . '=([^;]+)/', $dsn, $matches) === 1
         ? trim((string)$matches[1])
         : '';
 };
