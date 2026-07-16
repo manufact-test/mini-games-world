@@ -39,11 +39,15 @@ final class DatabaseConfig
         $user = trim((string)($database['user'] ?? ''));
         $password = (string)($database['password'] ?? '');
         $charset = strtolower(trim((string)($database['charset'] ?? 'utf8mb4')));
+        $identityConfigured = $host !== '' || $name !== '' || $user !== '' || $password !== '';
 
-        if ($enabled) {
-            if ($host === '' || $name === '' || $user === '' || $password === '') {
-                throw new RuntimeException('Enabled database configuration is incomplete.');
-            }
+        if ($identityConfigured && ($host === '' || $name === '')) {
+            throw new RuntimeException('Database identity configuration is incomplete.');
+        }
+        if ($enabled && ($user === '' || $password === '')) {
+            throw new RuntimeException('Enabled database configuration is incomplete.');
+        }
+        if ($enabled || $identityConfigured) {
             if ($port === false || $port < 1 || $port > 65535) {
                 throw new RuntimeException('Database port is invalid.');
             }
@@ -51,6 +55,7 @@ final class DatabaseConfig
                 throw new RuntimeException('Mini Games World database charset must be utf8mb4.');
             }
             foreach ([$name, $user] as $identifier) {
+                if ($identifier === '') continue;
                 if (preg_match('/^[A-Za-z0-9_$.-]{1,128}$/', $identifier) !== 1) {
                     throw new RuntimeException('Database name or user contains unsupported characters.');
                 }
@@ -128,6 +133,7 @@ final class DatabaseConfig
                 && $this->name !== ''
                 && $this->user !== ''
                 && $this->password !== '',
+            'identity_configured' => $this->host !== '' && $this->name !== '',
             'charset' => $this->charset,
         ];
     }
