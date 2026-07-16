@@ -18,8 +18,22 @@ try {
         && is_readable($dataDir)
         && is_writable($dataDir);
 
+    $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+    $databaseStatus = $databaseConfig->safeSummary();
+    $databaseStatus['connected'] = null;
+    if ($databaseConfig->enabled()) {
+        try {
+            $database = PdoConnectionFactory::create($databaseConfig);
+            $databaseStatus['connected'] = (int)$database->fetchValue('SELECT 1') === 1;
+        } catch (Throwable $databaseError) {
+            $databaseStatus['connected'] = false;
+            error_log('[MiniGamesWorld database health] ' . $databaseError->getMessage());
+        }
+    }
+
+    $databaseReady = !$databaseConfig->enabled() || $databaseStatus['connected'] === true;
     $runtime = $flags->publicStatus();
-    $ok = $storageReady;
+    $ok = $storageReady && $databaseReady;
     if (!$ok) http_response_code(503);
 
     echo json_encode([
@@ -32,6 +46,7 @@ try {
         'checks' => [
             'config' => true,
             'storage' => $storageReady,
+            'database' => $databaseStatus,
         ],
         'storage_driver' => $storage->driver(),
         'runtime' => $runtime,
@@ -48,6 +63,11 @@ try {
         'checks' => [
             'config' => false,
             'storage' => false,
+            'database' => [
+                'enabled' => false,
+                'configured' => false,
+                'connected' => null,
+            ],
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
