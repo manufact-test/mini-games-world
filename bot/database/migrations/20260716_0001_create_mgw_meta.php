@@ -12,6 +12,11 @@ return new class implements DatabaseMigrationInterface {
         return 'Create the database metadata table used by later schema versions.';
     }
 
+    public function transactional(): bool
+    {
+        return false;
+    }
+
     public function up(DatabaseConnectionInterface $database): void
     {
         $sql = $database->driver() === 'sqlite'
