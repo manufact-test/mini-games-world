@@ -77,10 +77,17 @@ final class MigrationRunner
             foreach ($pending as $version => $item) {
                 /** @var DatabaseMigrationInterface $migration */
                 $migration = $item['migration'];
-                $this->database->transaction(function (DatabaseConnectionInterface $database) use ($repository, $migration, $item, $version): void {
+                $apply = function (DatabaseConnectionInterface $database) use ($repository, $migration, $item, $version): void {
                     $migration->up($database);
                     $repository->record($version, (string)$item['checksum'], $migration->description());
-                });
+                };
+
+                if ($migration->transactional()) {
+                    $this->database->transaction($apply);
+                } else {
+                    $apply($this->database);
+                }
+
                 $executed[] = $this->publicMigration($item);
             }
 
@@ -174,10 +181,14 @@ final class MigrationRunner
 
     private function publicMigration(array $item): array
     {
+        /** @var DatabaseMigrationInterface $migration */
+        $migration = $item['migration'];
+
         return [
             'version' => (string)$item['version'],
             'description' => (string)$item['description'],
             'checksum' => (string)$item['checksum'],
+            'transactional' => $migration->transactional(),
         ];
     }
 }
