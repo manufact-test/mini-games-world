@@ -52,7 +52,8 @@ $database = [
     'enabled' => true,
     'driver' => 'mysql',
     'host' => 'staging-db.internal',
-    'port' => 3306,
+    // Deliberately omit port: the canonical default 3306 must still participate
+    // in the isolation fingerprint.
     'name' => 'mgw_staging',
     'user' => 'mgw_staging_user',
     'password' => 'private-staging-password',
@@ -70,7 +71,7 @@ $assertThrows(
 $identity = [
     'dsn' => '',
     'host' => strtolower($database['host']),
-    'port' => (string)$database['port'],
+    'port' => '3306',
     'name' => $database['name'],
 ];
 $fingerprint = hash('sha256', json_encode($identity, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
@@ -81,7 +82,7 @@ $matching['environment_guard']['production_database_sha256'] = $fingerprint;
 $assertThrows(
     static fn() => ConfigValidator::validate($matching),
     'database matches production',
-    'Staging database fingerprint must not match production'
+    'Staging database fingerprint must match the canonical default port'
 );
 
 $isolated = $base;
