@@ -130,8 +130,8 @@ foreach ($targets as $label => $target) {
             ['seat' => 1, 'player_ref' => $playerB, 'mgw_id' => 'mgw_rt_b', 'legacy_user_id' => '3002', 'display_name' => 'B'],
         ];
         $private = [
-            $playerA => ['hand' => [['1', '2']]],
-            $playerB => ['hand' => [['3', '4']]],
+            $playerA => ['hand' => [['1', '2']], 'sentinel' => 'player-a-secret'],
+            $playerB => ['hand' => [['3', '4']], 'sentinel' => 'opponent-private-secret'],
         ];
 
         $store->saveMatchSnapshot($match, $players, $private);
@@ -139,7 +139,7 @@ foreach ($targets as $label => $target) {
         $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_match_snapshots'), "{$label} repeated snapshots must be idempotent");
         $viewA = $store->loadMatchForPlayer('db-hidden-match', $playerA);
         $assertSame([['1', '2']], $viewA['private_state']['hand'], "{$label} must return only Player A hidden state");
-        $assertTrue(!str_contains(json_encode($viewA, JSON_THROW_ON_ERROR), '3'), "{$label} Player A view must not leak Player B hand");
+        $assertTrue(!str_contains(json_encode($viewA, JSON_THROW_ON_ERROR), 'opponent-private-secret'), "{$label} Player A view must not leak Player B hidden state");
         $assertTrue(!array_key_exists('server_state', $viewA['match']), "{$label} player view must not expose server state");
         $assertSame('server-only', $store->loadServerMatch('db-hidden-match')['server_state']['audit'], "{$label} trusted server load must include server state");
 
