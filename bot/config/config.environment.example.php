@@ -8,7 +8,8 @@ if (!defined('MINIGAMES_INTERNAL')) {
 
 /*
  * Copy these keys into the private config for the selected environment.
- * Never commit real hosts, tokens, data paths, database names or admin IDs.
+ * Never commit real hosts, tokens, data paths or admin IDs.
+ * Database settings live separately in _private_mgw/database.php.
  */
 return [
     'environment' => 'local', // production | staging | local
@@ -16,20 +17,8 @@ return [
     'allowed_hosts' => ['localhost', '127.0.0.1'],
     'data_dir' => dirname(__DIR__) . '/data',
 
-    /* MVP-14.2 prepares the database and migrations, but the product still uses
-     * JSON until the later cutover MVP. */
+    /* JSON remains active until the later database cutover MVP. */
     'storage_driver' => 'json',
-    'database' => [
-        'enabled' => false,
-        'driver' => 'mysql', // MySQL and MariaDB both use the PDO mysql driver.
-        'host' => 'localhost',
-        'port' => 3306,
-        'name' => 'PRIVATE_DATABASE_NAME',
-        'user' => 'PRIVATE_DATABASE_USER',
-        'password' => 'PRIVATE_DATABASE_PASSWORD',
-        'charset' => 'utf8mb4',
-    ],
-    'database_migrations_allow_production' => false,
 
     /* Local may use the placeholder. Production and staging require real,
      * different Telegram bot tokens in their private configs. */
@@ -64,12 +53,11 @@ return [
         ],
     ],
 
-    /* Required for staging. Values belong only in the private config or
-     * environment variables; they are fingerprints/locations, not secrets. */
+    /* Required for staging. Database isolation is stored in the separate
+     * _private_mgw/database.php file. */
     'environment_guard' => [
         'production_hosts' => [],
         'production_bot_token_sha256' => '',
         'production_data_dir' => '',
-        'production_database_sha256' => '',
     ],
 ];
