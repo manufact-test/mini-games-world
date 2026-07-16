@@ -5,7 +5,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('X-Content-Type-Options: nosniff');
 
-$build = 'v86-mvp13-runtime-controls';
+$build = 'v89-mvp14-managed-migrations';
 
 try {
     require __DIR__ . '/core/bootstrap.php';
@@ -19,11 +19,13 @@ try {
         && is_writable($dataDir);
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+    $managedMigrationConfig = ManagedMigrationConfig::fromApplicationConfig($config);
     $databaseStatus = $databaseConfig->safeSummary();
     $databaseStatus['connected'] = null;
     $databaseStatus['schema_current'] = null;
     $databaseStatus['applied_migrations'] = null;
     $databaseStatus['pending_migrations'] = null;
+    $databaseStatus['managed_migrations'] = $managedMigrationConfig->safeSummary();
     if ($databaseConfig->enabled()) {
         try {
             $database = PdoConnectionFactory::create($databaseConfig);
@@ -79,6 +81,7 @@ try {
                 'schema_current' => null,
                 'applied_migrations' => null,
                 'pending_migrations' => null,
+                'managed_migrations' => null,
             ],
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
