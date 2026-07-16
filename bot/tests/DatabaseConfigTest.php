@@ -29,7 +29,23 @@ $disabled = DatabaseConfig::fromApplicationConfig([]);
 $assertSame(false, $disabled->enabled(), 'Database must be disabled by default');
 $assertSame('mysql', $disabled->driver(), 'Default private database driver must be mysql');
 $assertSame(false, $disabled->safeSummary()['configured'], 'Disabled database must not be reported as configured');
+$assertSame(false, $disabled->safeSummary()['identity_configured'], 'Empty database identity must not be reported as configured');
 $assertSame('', $disabled->identityFingerprint(), 'Unconfigured database must have no identity fingerprint');
+
+$reserved = DatabaseConfig::fromApplicationConfig([
+    'database' => [
+        'enabled' => false,
+        'driver' => 'mysql',
+        'host' => 'prod-db.internal',
+        'port' => 3306,
+        'name' => 'mgw_production',
+        'charset' => 'utf8mb4',
+    ],
+]);
+$assertSame(false, $reserved->enabled(), 'Reserved production identity must stay disabled');
+$assertSame(false, $reserved->safeSummary()['configured'], 'Reserved identity without credentials must not be connection-ready');
+$assertSame(true, $reserved->safeSummary()['identity_configured'], 'Reserved identity must be reported safely');
+$assertSame(64, strlen($reserved->identityFingerprint()), 'Reserved identity must produce a protected fingerprint');
 
 $config = DatabaseConfig::fromApplicationConfig([
     'database' => [
@@ -63,6 +79,14 @@ $assertThrows(
     static fn() => DatabaseConfig::fromApplicationConfig(['database' => ['enabled' => true]]),
     'incomplete',
     'Incomplete enabled database config must fail'
+);
+$assertThrows(
+    static fn() => DatabaseConfig::fromApplicationConfig(['database' => [
+        'enabled' => false,
+        'host' => 'reserved-db.internal',
+    ]]),
+    'identity configuration is incomplete',
+    'Incomplete disabled database identity must fail'
 );
 $assertThrows(
     static fn() => DatabaseConfig::fromApplicationConfig(['database' => [
