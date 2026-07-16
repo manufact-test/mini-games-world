@@ -77,7 +77,7 @@ final class UserWelcomeGuard
             $telegramUser['id'] = (string)($telegramUser['id'] ?? $message['chat']['id'] ?? '');
             if ($telegramUser['id'] === '') return;
 
-            $db = new JsonDatabase((string)($this->config['data_dir'] ?? (dirname(__DIR__) . '/data')));
+            $db = StorageFactory::createJson((string)($this->config['data_dir'] ?? (dirname(__DIR__) . '/data')));
             $users = new UserService($this->config);
             $catalog = new GameCatalogService($this->config);
             $games = new ChessRuntimeService($this->config, $catalog, new GameService($this->config));

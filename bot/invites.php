@@ -154,7 +154,7 @@ try {
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $invites = new GameInviteService($config, $catalog, $games);
-    $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
     $result = $db->transaction(function (array &$data) use (
         $action,

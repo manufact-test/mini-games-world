@@ -217,7 +217,7 @@ final class ShopService
         register_shutdown_function(static function () use ($config, $orderId): void {
             try {
                 $dataDir = (string)($config['data_dir'] ?? (__DIR__ . '/../data'));
-                $database = new JsonDatabase($dataDir);
+                $database = StorageFactory::createJson($dataDir);
                 $order = $database->readOnly(static function (array $stored) use ($orderId): ?array {
                     foreach (($stored['shop_orders'] ?? []) as $candidate) {
                         if (is_array($candidate) && (string)($candidate['id'] ?? '') === $orderId) {

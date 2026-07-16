@@ -100,7 +100,7 @@ final class AdminShopOrderNotificationGuard
             return true;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $admin = new AdminService($this->config);
 
         $result = $db->transaction(function (array &$stored) use ($admin, $argument, $fromId, $decision, $query): array {
@@ -176,7 +176,7 @@ final class AdminShopOrderNotificationGuard
 
     private function clearPendingShopReject(string $adminId): void
     {
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $db->transaction(function (array &$stored) use ($adminId): void {
             $pending = $stored['system']['admin_pending_actions'][$adminId] ?? null;
             if (is_array($pending) && (string)($pending['type'] ?? '') === 'shop_order_reject') {
@@ -213,7 +213,7 @@ final class AdminShopOrderNotificationGuard
             return null;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         return $db->readOnly(function (array $stored) use ($fromId): ?array {
             $pending = $stored['system']['admin_pending_actions'][$fromId] ?? null;
             if (!is_array($pending) || (string)($pending['type'] ?? '') !== 'shop_order_reject') {
@@ -243,7 +243,7 @@ final class AdminShopOrderNotificationGuard
     private function persistInAppNotification(array $order, string $decision): void
     {
         try {
-            $db = new JsonDatabase($this->dataDir());
+            $db = StorageFactory::createJson($this->dataDir());
             $db->transaction(function (array &$stored) use ($order, $decision): void {
                 $notifications = new NotificationService();
                 $notifications->addShopOrderDecision($stored, $order, $decision);
@@ -270,7 +270,7 @@ final class AdminShopOrderNotificationGuard
             return null;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         return $db->readOnly(fn(array $stored): ?array => $this->findOrder($stored, $orderId));
     }
 

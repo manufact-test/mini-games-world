@@ -47,7 +47,7 @@ final class AdminShopOrderUiGuard
             return false;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $text = '';
         $replyMarkup = $this->ordersKeyboard([]);
         $callbackText = '';
@@ -198,7 +198,7 @@ final class AdminShopOrderUiGuard
             return true;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $result = $db->transaction(function (array &$stored) use ($fromId, $text): array {
             $pending = $stored['system']['admin_pending_actions'][$fromId] ?? null;
             if (!is_array($pending) || (string)($pending['type'] ?? '') !== self::PENDING_TYPE) {
@@ -482,7 +482,7 @@ final class AdminShopOrderUiGuard
 
     private function pendingReject(string $adminId): ?array
     {
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         return $db->readOnly(function (array $stored) use ($adminId) {
             $pending = $stored['system']['admin_pending_actions'][$adminId] ?? null;
             return is_array($pending) && (string)($pending['type'] ?? '') === self::PENDING_TYPE
@@ -502,7 +502,7 @@ final class AdminShopOrderUiGuard
             return;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $db->transaction(function (array &$stored) use ($adminId) {
             $pending = $stored['system']['admin_pending_actions'][$adminId] ?? null;
             if (is_array($pending) && (string)($pending['type'] ?? '') === self::PENDING_TYPE) {

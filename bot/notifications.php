@@ -101,7 +101,7 @@ try {
     if ($userId === '') api_error('Пользователь не найден.');
 
     $markRead = !empty($payload['markRead']);
-    $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $notifications = new NotificationService();
 
     if ($markRead) {
