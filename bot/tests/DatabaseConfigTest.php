@@ -91,6 +91,17 @@ $assertThrows(
 $assertThrows(
     static fn() => DatabaseConfig::fromApplicationConfig(['database' => [
         'enabled' => true,
+        'host' => 'db.internal;dbname=other',
+        'name' => 'mgw',
+        'user' => 'user',
+        'password' => 'pass',
+    ]]),
+    'host contains unsupported characters',
+    'Database host must not inject extra DSN parameters'
+);
+$assertThrows(
+    static fn() => DatabaseConfig::fromApplicationConfig(['database' => [
+        'enabled' => true,
         'host' => 'db',
         'name' => 'mgw',
         'user' => 'user',
