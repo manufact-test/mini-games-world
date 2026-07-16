@@ -16,6 +16,21 @@ return [
     'allowed_hosts' => ['localhost', '127.0.0.1'],
     'data_dir' => dirname(__DIR__) . '/data',
 
+    /* MVP-14.2 prepares the database and migrations, but the product still uses
+     * JSON until the later cutover MVP. */
+    'storage_driver' => 'json',
+    'database' => [
+        'enabled' => false,
+        'driver' => 'mysql', // MySQL and MariaDB both use the PDO mysql driver.
+        'host' => 'localhost',
+        'port' => 3306,
+        'name' => 'PRIVATE_DATABASE_NAME',
+        'user' => 'PRIVATE_DATABASE_USER',
+        'password' => 'PRIVATE_DATABASE_PASSWORD',
+        'charset' => 'utf8mb4',
+    ],
+    'database_migrations_allow_production' => false,
+
     /* Local may use the placeholder. Production and staging require real,
      * different Telegram bot tokens in their private configs. */
     'bot_token' => 'PASTE_BOT_TOKEN_HERE',
