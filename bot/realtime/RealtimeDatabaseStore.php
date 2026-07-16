@@ -7,25 +7,16 @@ final class RealtimeDatabaseStore
 
     public static function playerReference(?string $mgwId, ?string $legacyUserId, ?string $botId = null): string
     {
-        $mgwId = trim((string)$mgwId);
-        if ($mgwId !== '') return 'mgw:' . $mgwId;
-
-        $legacyUserId = trim((string)$legacyUserId);
-        if ($legacyUserId !== '') return 'legacy:' . $legacyUserId;
-
-        $botId = trim((string)$botId);
-        if ($botId !== '') return 'bot:' . $botId;
-
+        foreach (['mgw' => $mgwId, 'legacy' => $legacyUserId, 'bot' => $botId] as $prefix => $value) {
+            $value = trim((string)$value);
+            if ($value !== '') return $prefix . ':' . $value;
+        }
         throw new InvalidArgumentException('A stable player identity is required.');
     }
 
     public function saveMatchSnapshot(array $match, array $players, array $privateStates = []): array
     {
         $matchId = $this->required($match, 'match_id', 96);
-        $gameType = $this->required($match, 'game_type', 32);
-        $room = $this->required($match, 'room', 16);
-        $status = $this->required($match, 'status', 32);
-        $boardSize = max(1, (int)($match['board_size'] ?? 0));
         $version = (int)($match['state_version'] ?? 0);
         if ($version < 1) throw new InvalidArgumentException('Match state_version must be at least 1.');
         if ($players === []) throw new InvalidArgumentException('At least one match player is required.');
@@ -34,51 +25,45 @@ final class RealtimeDatabaseStore
         $updatedAt = $this->timestamp($match['updated_at_utc'] ?? null);
         $publicJson = $this->encodeJson($match['public_state'] ?? null);
         $serverJson = $this->encodeJson($match['server_state'] ?? null);
+        $params = [
+            'match_id' => $matchId,
+            'game_type' => $this->required($match, 'game_type', 32),
+            'room' => $this->required($match, 'room', 16),
+            'status' => $this->required($match, 'status', 32),
+            'board_size' => max(1, (int)($match['board_size'] ?? 0)),
+            'bet' => max(0, (int)($match['bet'] ?? 0)),
+            'match_source' => $this->nullable($match['match_source'] ?? null, 32),
+            'invite_id' => $this->nullable($match['invite_id'] ?? null, 96),
+            'source_match_id' => $this->nullable($match['source_match_id'] ?? null, 96),
+            'turn_player_ref' => $this->nullable($match['turn_player_ref'] ?? null, 255),
+            'winner_player_ref' => $this->nullable($match['winner_player_ref'] ?? null, 255),
+            'finish_reason' => $this->nullable($match['finish_reason'] ?? null, 64),
+            'state_version' => $version,
+            'public_state_json' => $publicJson,
+            'server_state_json' => $serverJson,
+            'created_at_utc' => $createdAt,
+            'started_at_utc' => $this->nullableTimestamp($match['started_at_utc'] ?? null),
+            'updated_at_utc' => $updatedAt,
+            'finished_at_utc' => $this->nullableTimestamp($match['finished_at_utc'] ?? null),
+        ];
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
-            $match,
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
+            $matchId,
+            $version,
             $players,
             $privateStates,
-            $matchId,
-            $gameType,
-            $room,
-            $status,
-            $boardSize,
-            $version,
-            $createdAt,
-            $updatedAt,
             $publicJson,
-            $serverJson
+            $serverJson,
+            $updatedAt,
+            $params
         ): array {
-            $existing = $database->fetchAll(
-                'SELECT match_id FROM mgw_matches WHERE match_id = :match_id' . $this->forUpdate(),
+            $exists = $db->fetchAll(
+                'SELECT match_id FROM mgw_matches WHERE match_id = :match_id' . $this->forUpdate($db),
                 ['match_id' => $matchId]
-            );
+            ) !== [];
 
-            $parameters = [
-                'match_id' => $matchId,
-                'game_type' => $gameType,
-                'room' => $room,
-                'status' => $status,
-                'board_size' => $boardSize,
-                'bet' => max(0, (int)($match['bet'] ?? 0)),
-                'match_source' => $this->nullable($match['match_source'] ?? null, 32),
-                'invite_id' => $this->nullable($match['invite_id'] ?? null, 96),
-                'source_match_id' => $this->nullable($match['source_match_id'] ?? null, 96),
-                'turn_player_ref' => $this->nullable($match['turn_player_ref'] ?? null, 255),
-                'winner_player_ref' => $this->nullable($match['winner_player_ref'] ?? null, 255),
-                'finish_reason' => $this->nullable($match['finish_reason'] ?? null, 64),
-                'state_version' => $version,
-                'public_state_json' => $publicJson,
-                'server_state_json' => $serverJson,
-                'created_at_utc' => $createdAt,
-                'started_at_utc' => $this->nullableTimestamp($match['started_at_utc'] ?? null),
-                'updated_at_utc' => $updatedAt,
-                'finished_at_utc' => $this->nullableTimestamp($match['finished_at_utc'] ?? null),
-            ];
-
-            if ($existing === []) {
-                $database->execute(
+            if (!$exists) {
+                $db->execute(
                     'INSERT INTO mgw_matches (
                         match_id, game_type, room, status, board_size, bet, match_source, invite_id,
                         source_match_id, turn_player_ref, winner_player_ref, finish_reason, state_version,
@@ -90,35 +75,27 @@ final class RealtimeDatabaseStore
                         :public_state_json, :server_state_json, :created_at_utc, :started_at_utc,
                         :updated_at_utc, :finished_at_utc
                      )',
-                    $parameters
+                    $params
                 );
             } else {
-                $database->execute(
+                $update = $params;
+                unset($update['created_at_utc']);
+                $db->execute(
                     'UPDATE mgw_matches SET
-                        game_type = :game_type,
-                        room = :room,
-                        status = :status,
-                        board_size = :board_size,
-                        bet = :bet,
-                        match_source = :match_source,
-                        invite_id = :invite_id,
-                        source_match_id = :source_match_id,
-                        turn_player_ref = :turn_player_ref,
-                        winner_player_ref = :winner_player_ref,
-                        finish_reason = :finish_reason,
-                        state_version = :state_version,
-                        public_state_json = :public_state_json,
-                        server_state_json = :server_state_json,
-                        started_at_utc = :started_at_utc,
-                        updated_at_utc = :updated_at_utc,
-                        finished_at_utc = :finished_at_utc
+                        game_type = :game_type, room = :room, status = :status, board_size = :board_size,
+                        bet = :bet, match_source = :match_source, invite_id = :invite_id,
+                        source_match_id = :source_match_id, turn_player_ref = :turn_player_ref,
+                        winner_player_ref = :winner_player_ref, finish_reason = :finish_reason,
+                        state_version = :state_version, public_state_json = :public_state_json,
+                        server_state_json = :server_state_json, started_at_utc = :started_at_utc,
+                        updated_at_utc = :updated_at_utc, finished_at_utc = :finished_at_utc
                      WHERE match_id = :match_id',
-                    $parameters
+                    $update
                 );
             }
 
-            $this->replacePlayers($database, $matchId, $players, $updatedAt);
-            $this->persistSnapshot($database, $matchId, $version, $publicJson, $serverJson, $privateStates, $updatedAt);
+            $this->replacePlayers($db, $matchId, $players, $updatedAt);
+            $this->persistSnapshot($db, $matchId, $version, $publicJson, $serverJson, $privateStates, $updatedAt);
 
             return [
                 'match_id' => $matchId,
@@ -145,34 +122,27 @@ final class RealtimeDatabaseStore
         if ($rows === []) return null;
 
         $match = $rows[0];
-        $players = $this->database->fetchAll(
-            'SELECT seat, player_ref, mgw_id, legacy_user_id, player_type, symbol, display_name, result,
-                    joined_at_utc, updated_at_utc
-             FROM mgw_match_players WHERE match_id = :match_id ORDER BY seat',
-            ['match_id' => $matchId]
-        );
-        $privateRows = $this->database->fetchAll(
-            'SELECT private_state_json FROM mgw_match_player_snapshots
-             WHERE match_id = :match_id AND state_version = :state_version AND player_ref = :player_ref',
-            [
-                'match_id' => $matchId,
-                'state_version' => (int)$match['state_version'],
-                'player_ref' => $playerRef,
-            ]
-        );
-
         $match['board_size'] = (int)$match['board_size'];
         $match['bet'] = (int)$match['bet'];
         $match['state_version'] = (int)$match['state_version'];
         $match['public_state'] = $this->decodeJson($match['public_state_json'] ?? null);
         unset($match['public_state_json']);
 
+        $private = $this->database->fetchAll(
+            'SELECT private_state_json FROM mgw_match_player_snapshots
+             WHERE match_id = :match_id AND state_version = :state_version AND player_ref = :player_ref',
+            ['match_id' => $matchId, 'state_version' => $match['state_version'], 'player_ref' => $playerRef]
+        );
+
         return [
             'match' => $match,
-            'players' => $players,
-            'private_state' => $privateRows === []
-                ? null
-                : $this->decodeJson($privateRows[0]['private_state_json'] ?? null),
+            'players' => $this->database->fetchAll(
+                'SELECT seat, player_ref, mgw_id, legacy_user_id, player_type, symbol, display_name, result,
+                        joined_at_utc, updated_at_utc
+                 FROM mgw_match_players WHERE match_id = :match_id ORDER BY seat',
+                ['match_id' => $matchId]
+            ),
+            'private_state' => $private === [] ? null : $this->decodeJson($private[0]['private_state_json'] ?? null),
         ];
     }
 
@@ -184,6 +154,9 @@ final class RealtimeDatabaseStore
         if ($rows === []) return null;
 
         $match = $rows[0];
+        $match['board_size'] = (int)$match['board_size'];
+        $match['bet'] = (int)$match['bet'];
+        $match['state_version'] = (int)$match['state_version'];
         $match['public_state'] = $this->decodeJson($match['public_state_json'] ?? null);
         $match['server_state'] = $this->decodeJson($match['server_state_json'] ?? null);
         unset($match['public_state_json'], $match['server_state_json']);
@@ -191,13 +164,12 @@ final class RealtimeDatabaseStore
             'SELECT * FROM mgw_match_players WHERE match_id = :match_id ORDER BY seat',
             ['match_id' => $matchId]
         );
-        $privateRows = $this->database->fetchAll(
+        $match['private_states'] = [];
+        foreach ($this->database->fetchAll(
             'SELECT player_ref, private_state_json FROM mgw_match_player_snapshots
              WHERE match_id = :match_id AND state_version = :state_version',
-            ['match_id' => $matchId, 'state_version' => (int)$match['state_version']]
-        );
-        $match['private_states'] = [];
-        foreach ($privateRows as $row) {
+            ['match_id' => $matchId, 'state_version' => $match['state_version']]
+        ) as $row) {
             $match['private_states'][(string)$row['player_ref']] = $this->decodeJson($row['private_state_json'] ?? null);
         }
         return $match;
@@ -210,19 +182,19 @@ final class RealtimeDatabaseStore
         $createdAt = $this->timestamp($entry['created_at_utc'] ?? null);
         $updatedAt = $this->timestamp($entry['updated_at_utc'] ?? null);
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $entry,
             $queueId,
             $playerRef,
             $createdAt,
             $updatedAt
         ): array {
-            $existing = $database->fetchAll(
-                'SELECT queue_id FROM mgw_match_queue WHERE player_ref = :player_ref' . $this->forUpdate(),
+            $existing = $db->fetchAll(
+                'SELECT queue_id, created_at_utc FROM mgw_match_queue WHERE player_ref = :player_ref' . $this->forUpdate($db),
                 ['player_ref' => $playerRef]
             );
-            $parameters = [
-                'queue_id' => $existing[0]['queue_id'] ?? $queueId,
+            $params = [
+                'queue_id' => (string)($existing[0]['queue_id'] ?? $queueId),
                 'player_ref' => $playerRef,
                 'mgw_id' => $this->nullable($entry['mgw_id'] ?? null, 24),
                 'legacy_user_id' => $this->nullable($entry['legacy_user_id'] ?? null, 191),
@@ -232,13 +204,13 @@ final class RealtimeDatabaseStore
                 'board_size' => max(1, (int)($entry['board_size'] ?? 0)),
                 'status' => $this->nullable($entry['status'] ?? 'waiting', 32) ?? 'waiting',
                 'reserved_match_id' => $this->nullable($entry['reserved_match_id'] ?? null, 96),
-                'created_at_utc' => $existing === [] ? $createdAt : $updatedAt,
+                'created_at_utc' => (string)($existing[0]['created_at_utc'] ?? $createdAt),
                 'updated_at_utc' => $updatedAt,
                 'expires_at_utc' => $this->nullableTimestamp($entry['expires_at_utc'] ?? null),
             ];
 
             if ($existing === []) {
-                $database->execute(
+                $db->execute(
                     'INSERT INTO mgw_match_queue (
                         queue_id, player_ref, mgw_id, legacy_user_id, game_type, room, bet, board_size,
                         status, reserved_match_id, created_at_utc, updated_at_utc, expires_at_utc
@@ -246,26 +218,21 @@ final class RealtimeDatabaseStore
                         :queue_id, :player_ref, :mgw_id, :legacy_user_id, :game_type, :room, :bet, :board_size,
                         :status, :reserved_match_id, :created_at_utc, :updated_at_utc, :expires_at_utc
                      )',
-                    $parameters
+                    $params
                 );
             } else {
-                $database->execute(
+                $update = $params;
+                unset($update['queue_id'], $update['created_at_utc']);
+                $db->execute(
                     'UPDATE mgw_match_queue SET
-                        mgw_id = :mgw_id,
-                        legacy_user_id = :legacy_user_id,
-                        game_type = :game_type,
-                        room = :room,
-                        bet = :bet,
-                        board_size = :board_size,
-                        status = :status,
-                        reserved_match_id = :reserved_match_id,
-                        updated_at_utc = :updated_at_utc,
+                        mgw_id = :mgw_id, legacy_user_id = :legacy_user_id, game_type = :game_type,
+                        room = :room, bet = :bet, board_size = :board_size, status = :status,
+                        reserved_match_id = :reserved_match_id, updated_at_utc = :updated_at_utc,
                         expires_at_utc = :expires_at_utc
                      WHERE player_ref = :player_ref',
-                    $parameters
+                    $update
                 );
             }
-
             return $this->findQueueEntry($playerRef) ?? [];
         });
     }
@@ -274,10 +241,7 @@ final class RealtimeDatabaseStore
     {
         $playerRef = $this->text($playerRef, 255);
         if ($playerRef === '') return null;
-        $rows = $this->database->fetchAll(
-            'SELECT * FROM mgw_match_queue WHERE player_ref = :player_ref',
-            ['player_ref' => $playerRef]
-        );
+        $rows = $this->database->fetchAll('SELECT * FROM mgw_match_queue WHERE player_ref = :player_ref', ['player_ref' => $playerRef]);
         if ($rows === []) return null;
         $rows[0]['bet'] = (int)$rows[0]['bet'];
         $rows[0]['board_size'] = (int)$rows[0]['board_size'];
@@ -287,8 +251,7 @@ final class RealtimeDatabaseStore
     public function removeQueueEntry(string $playerRef): int
     {
         $playerRef = $this->text($playerRef, 255);
-        if ($playerRef === '') return 0;
-        return $this->database->execute(
+        return $playerRef === '' ? 0 : $this->database->execute(
             'DELETE FROM mgw_match_queue WHERE player_ref = :player_ref',
             ['player_ref' => $playerRef]
         );
@@ -298,22 +261,21 @@ final class RealtimeDatabaseStore
     {
         $inviteId = $this->required($invite, 'invite_id', 96);
         $token = $this->required($invite, 'token', 96);
-        $updatedAt = $this->timestamp($invite['updated_at_utc'] ?? null);
         $createdAt = $this->timestamp($invite['created_at_utc'] ?? null);
+        $updatedAt = $this->timestamp($invite['updated_at_utc'] ?? null);
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $invite,
             $inviteId,
             $token,
-            $updatedAt,
-            $createdAt
+            $createdAt,
+            $updatedAt
         ): array {
-            $existing = $database->fetchAll(
-                'SELECT invite_id, version FROM mgw_invites WHERE invite_id = :invite_id' . $this->forUpdate(),
+            $existing = $db->fetchAll(
+                'SELECT invite_id, version, created_at_utc FROM mgw_invites WHERE invite_id = :invite_id' . $this->forUpdate($db),
                 ['invite_id' => $inviteId]
             );
-            $version = $existing === [] ? max(1, (int)($invite['version'] ?? 1)) : ((int)$existing[0]['version'] + 1);
-            $parameters = [
+            $params = [
                 'invite_id' => $inviteId,
                 'token' => $token,
                 'status' => $this->required($invite, 'status', 32),
@@ -335,8 +297,8 @@ final class RealtimeDatabaseStore
                 'board_rows' => isset($invite['board_rows']) ? max(1, (int)$invite['board_rows']) : null,
                 'source_match_id' => $this->nullable($invite['source_match_id'] ?? null, 96),
                 'match_id' => $this->nullable($invite['match_id'] ?? null, 96),
-                'version' => $version,
-                'created_at_utc' => $existing === [] ? $createdAt : $updatedAt,
+                'version' => $existing === [] ? max(1, (int)($invite['version'] ?? 1)) : ((int)$existing[0]['version'] + 1),
+                'created_at_utc' => (string)($existing[0]['created_at_utc'] ?? $createdAt),
                 'updated_at_utc' => $updatedAt,
                 'expires_at_utc' => $this->nullableTimestamp($invite['expires_at_utc'] ?? null),
                 'shared_at_utc' => $this->nullableTimestamp($invite['shared_at_utc'] ?? null),
@@ -350,23 +312,22 @@ final class RealtimeDatabaseStore
             ];
 
             if ($existing === []) {
-                $columns = implode(', ', array_keys($parameters));
-                $values = ':' . implode(', :', array_keys($parameters));
-                $database->execute('INSERT INTO mgw_invites (' . $columns . ') VALUES (' . $values . ')', $parameters);
-            } else {
-                $assignments = [];
-                foreach (array_keys($parameters) as $column) {
-                    if (in_array($column, ['invite_id', 'created_at_utc'], true)) continue;
-                    $assignments[] = $column . ' = :' . $column;
-                }
-                $database->execute(
-                    'UPDATE mgw_invites SET ' . implode(', ', $assignments) . ' WHERE invite_id = :invite_id',
-                    $parameters
+                $db->execute(
+                    'INSERT INTO mgw_invites (' . implode(', ', array_keys($params)) . ')
+                     VALUES (:' . implode(', :', array_keys($params)) . ')',
+                    $params
                 );
+            } else {
+                $update = $params;
+                unset($update['created_at_utc']);
+                $assignments = [];
+                foreach (array_keys($update) as $column) {
+                    if ($column !== 'invite_id') $assignments[] = $column . ' = :' . $column;
+                }
+                $db->execute('UPDATE mgw_invites SET ' . implode(', ', $assignments) . ' WHERE invite_id = :invite_id', $update);
             }
 
-            $rows = $database->fetchAll('SELECT * FROM mgw_invites WHERE invite_id = :invite_id', ['invite_id' => $inviteId]);
-            return $rows[0] ?? [];
+            return $db->fetchAll('SELECT * FROM mgw_invites WHERE invite_id = :invite_id', ['invite_id' => $inviteId])[0] ?? [];
         });
     }
 
@@ -384,9 +345,10 @@ final class RealtimeDatabaseStore
         if ($inviteId === '' || $eventKey === '' || $eventType === '') {
             throw new InvalidArgumentException('Invite event identifiers are required.');
         }
+        $actorRef = $this->nullable($actorRef, 255);
         $payloadJson = $this->encodeJson($payload);
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $inviteId,
             $eventKey,
             $eventType,
@@ -394,20 +356,19 @@ final class RealtimeDatabaseStore
             $payloadJson,
             $createdAt
         ): bool {
-            $existing = $database->fetchAll(
+            $existing = $db->fetchAll(
                 'SELECT event_type, actor_ref, payload_json FROM mgw_invite_events
-                 WHERE invite_id = :invite_id AND event_key = :event_key' . $this->forUpdate(),
+                 WHERE invite_id = :invite_id AND event_key = :event_key' . $this->forUpdate($db),
                 ['invite_id' => $inviteId, 'event_key' => $eventKey]
             );
             if ($existing !== []) {
                 $same = (string)$existing[0]['event_type'] === $eventType
-                    && (string)($existing[0]['actor_ref'] ?? '') === (string)$this->nullable($actorRef, 255)
+                    && (string)($existing[0]['actor_ref'] ?? '') === (string)$actorRef
                     && (string)($existing[0]['payload_json'] ?? '') === (string)$payloadJson;
                 if (!$same) throw new RuntimeException('Invite event key was reused with different content.');
                 return false;
             }
-
-            $database->execute(
+            $db->execute(
                 'INSERT INTO mgw_invite_events (
                     invite_id, event_key, event_type, actor_ref, payload_json, created_at_utc
                  ) VALUES (
@@ -417,7 +378,7 @@ final class RealtimeDatabaseStore
                     'invite_id' => $inviteId,
                     'event_key' => $eventKey,
                     'event_type' => $eventType,
-                    'actor_ref' => $this->nullable($actorRef, 255),
+                    'actor_ref' => $actorRef,
                     'payload_json' => $payloadJson,
                     'created_at_utc' => $this->timestamp($createdAt),
                 ]
@@ -432,20 +393,20 @@ final class RealtimeDatabaseStore
         $eventKey = $this->required($notification, 'event_key', 191);
         $recipientRef = $this->required($notification, 'recipient_ref', 255);
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $notification,
             $notificationId,
             $eventKey,
             $recipientRef
         ): array {
-            $existing = $database->fetchAll(
+            $existing = $db->fetchAll(
                 'SELECT * FROM mgw_notifications
-                 WHERE recipient_ref = :recipient_ref AND event_key = :event_key' . $this->forUpdate(),
+                 WHERE recipient_ref = :recipient_ref AND event_key = :event_key' . $this->forUpdate($db),
                 ['recipient_ref' => $recipientRef, 'event_key' => $eventKey]
             );
             if ($existing !== []) return $existing[0];
 
-            $database->execute(
+            $db->execute(
                 'INSERT INTO mgw_notifications (
                     notification_id, event_key, recipient_ref, mgw_id, legacy_user_id, type, title,
                     message, tone, invite_token, payload_json, created_at_utc, read_at_utc, hidden_at_utc
@@ -470,12 +431,10 @@ final class RealtimeDatabaseStore
                     'hidden_at_utc' => $this->nullableTimestamp($notification['hidden_at_utc'] ?? null),
                 ]
             );
-
-            $rows = $database->fetchAll(
+            return $db->fetchAll(
                 'SELECT * FROM mgw_notifications WHERE notification_id = :notification_id',
                 ['notification_id' => $notificationId]
-            );
-            return $rows[0] ?? [];
+            )[0] ?? [];
         });
     }
 
@@ -514,13 +473,9 @@ final class RealtimeDatabaseStore
         return $rows;
     }
 
-    private function replacePlayers(
-        DatabaseConnectionInterface $database,
-        string $matchId,
-        array $players,
-        string $updatedAt
-    ): void {
-        $database->execute('DELETE FROM mgw_match_players WHERE match_id = :match_id', ['match_id' => $matchId]);
+    private function replacePlayers(DatabaseConnectionInterface $db, string $matchId, array $players, string $updatedAt): void
+    {
+        $db->execute('DELETE FROM mgw_match_players WHERE match_id = :match_id', ['match_id' => $matchId]);
         $seenRefs = [];
         $seenSeats = [];
         foreach (array_values($players) as $index => $player) {
@@ -532,7 +487,7 @@ final class RealtimeDatabaseStore
             }
             $seenRefs[$playerRef] = true;
             $seenSeats[$seat] = true;
-            $database->execute(
+            $db->execute(
                 'INSERT INTO mgw_match_players (
                     match_id, seat, player_ref, mgw_id, legacy_user_id, player_type, symbol,
                     display_name, result, joined_at_utc, updated_at_utc
@@ -558,7 +513,7 @@ final class RealtimeDatabaseStore
     }
 
     private function persistSnapshot(
-        DatabaseConnectionInterface $database,
+        DatabaseConnectionInterface $db,
         string $matchId,
         int $version,
         ?string $publicJson,
@@ -566,9 +521,9 @@ final class RealtimeDatabaseStore
         array $privateStates,
         string $createdAt
     ): void {
-        $existing = $database->fetchAll(
+        $existing = $db->fetchAll(
             'SELECT public_state_json, server_state_json FROM mgw_match_snapshots
-             WHERE match_id = :match_id AND state_version = :state_version' . $this->forUpdate(),
+             WHERE match_id = :match_id AND state_version = :state_version' . $this->forUpdate($db),
             ['match_id' => $matchId, 'state_version' => $version]
         );
         if ($existing !== []) {
@@ -577,7 +532,7 @@ final class RealtimeDatabaseStore
                 throw new RuntimeException('Match snapshot version was reused with different state.');
             }
         } else {
-            $database->execute(
+            $db->execute(
                 'INSERT INTO mgw_match_snapshots (
                     match_id, state_version, public_state_json, server_state_json, created_at_utc
                  ) VALUES (
@@ -597,9 +552,9 @@ final class RealtimeDatabaseStore
             $playerRef = $this->text((string)$playerRef, 255);
             if ($playerRef === '') throw new InvalidArgumentException('Private match state requires a player reference.');
             $json = $this->encodeJson($state);
-            $privateExisting = $database->fetchAll(
+            $privateExisting = $db->fetchAll(
                 'SELECT private_state_json FROM mgw_match_player_snapshots
-                 WHERE match_id = :match_id AND state_version = :state_version AND player_ref = :player_ref' . $this->forUpdate(),
+                 WHERE match_id = :match_id AND state_version = :state_version AND player_ref = :player_ref' . $this->forUpdate($db),
                 ['match_id' => $matchId, 'state_version' => $version, 'player_ref' => $playerRef]
             );
             if ($privateExisting !== []) {
@@ -608,7 +563,7 @@ final class RealtimeDatabaseStore
                 }
                 continue;
             }
-            $database->execute(
+            $db->execute(
                 'INSERT INTO mgw_match_player_snapshots (
                     match_id, state_version, player_ref, private_state_json, created_at_utc
                  ) VALUES (
@@ -625,9 +580,9 @@ final class RealtimeDatabaseStore
         }
     }
 
-    private function forUpdate(): string
+    private function forUpdate(DatabaseConnectionInterface $db): string
     {
-        return $this->database->driver() === 'sqlite' ? '' : ' FOR UPDATE';
+        return $db->driver() === 'sqlite' ? '' : ' FOR UPDATE';
     }
 
     private function required(array $source, string $key, int $maxLength): string
@@ -646,8 +601,7 @@ final class RealtimeDatabaseStore
     private function text(string $value, int $maxLength): string
     {
         $value = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', $value) ?? '');
-        if (function_exists('mb_substr')) return mb_substr($value, 0, $maxLength);
-        return substr($value, 0, $maxLength);
+        return function_exists('mb_substr') ? mb_substr($value, 0, $maxLength) : substr($value, 0, $maxLength);
     }
 
     private function timestamp(mixed $value): string
@@ -675,10 +629,7 @@ final class RealtimeDatabaseStore
     private function encodeJson(mixed $value): ?string
     {
         if ($value === null) return null;
-        return json_encode(
-            $this->canonicalize($value),
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
-        );
+        return json_encode($this->canonicalize($value), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
     }
 
     private function decodeJson(mixed $value): mixed
