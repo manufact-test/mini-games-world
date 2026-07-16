@@ -29,6 +29,7 @@ $disabled = DatabaseConfig::fromApplicationConfig([]);
 $assertSame(false, $disabled->enabled(), 'Database must be disabled by default');
 $assertSame('mysql', $disabled->driver(), 'Default private database driver must be mysql');
 $assertSame(false, $disabled->safeSummary()['configured'], 'Disabled database must not be reported as configured');
+$assertSame('', $disabled->identityFingerprint(), 'Unconfigured database must have no identity fingerprint');
 
 $config = DatabaseConfig::fromApplicationConfig([
     'database' => [
@@ -47,8 +48,16 @@ $assertSame('mysql', $config->driver(), 'MariaDB must use the PDO mysql driver')
 $assertSame('mysql:host=db.internal;port=3307;dbname=mgw_stage;charset=utf8mb4', $config->dsn(), 'DSN must be deterministic');
 $assertSame('mgw_user', $config->user(), 'Database user must be available to the PDO factory');
 $assertSame('super-private-password', $config->password(), 'Database password must be available only to the PDO factory');
+$expectedFingerprint = hash('sha256', json_encode([
+    'dsn' => '',
+    'host' => 'db.internal',
+    'port' => '3307',
+    'name' => 'mgw_stage',
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+$assertSame($expectedFingerprint, $config->identityFingerprint(), 'Database identity fingerprint must be deterministic');
 $assertTrue(!str_contains(json_encode($config->safeSummary(), JSON_THROW_ON_ERROR), 'super-private-password'), 'Safe summary must not expose the password');
 $assertTrue(!str_contains($config->dsn(), 'super-private-password'), 'DSN must not contain the password');
+$assertTrue(!str_contains($config->identityFingerprint(), 'super-private-password'), 'Identity fingerprint must not expose the password');
 
 $assertThrows(
     static fn() => DatabaseConfig::fromApplicationConfig(['database' => ['enabled' => true]]),
