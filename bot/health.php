@@ -11,6 +11,7 @@ try {
     require __DIR__ . '/core/bootstrap.php';
 
     $flags = new FeatureFlagService($config);
+    $storage = StorageFactory::create($config);
     $dataDir = (string)($config['data_dir'] ?? '');
     $storageReady = $dataDir !== ''
         && is_dir($dataDir)
@@ -32,6 +33,7 @@ try {
             'config' => true,
             'storage' => $storageReady,
         ],
+        'storage_driver' => $storage->driver(),
         'runtime' => $runtime,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
