@@ -22,20 +22,26 @@ Add the following only to the environment's private `_private_mgw/config.php`:
 'database_migrations_allow_production' => false,
 ```
 
-Staging additionally requires `environment_guard.production_database_sha256`. The
-fingerprint contains only connection identity fields (host, port, database name and
-optional DSN), never the database password.
+The production config may keep `database.enabled = false` while reserving its real
+host/port/name. Its CLI-only fingerprint command still produces the protected
+identity hash needed by the test environment. The fingerprint never contains the
+user or password.
 
 ## CLI commands
 
-Run from Hostinger Cron Jobs as a temporary Custom command or over SSH. The script
-is CLI-only and the directory is denied over HTTP.
+Run from Hostinger Cron Jobs as a temporary Custom command or over SSH. The scripts
+are CLI-only and the directory is denied over HTTP.
 
 ```bash
+/usr/bin/php /absolute/path/public_html/bot/database/fingerprint.php
 /usr/bin/php /absolute/path/public_html/bot/database/migrate.php --status
 /usr/bin/php /absolute/path/public_html/bot/database/migrate.php --dry-run
 /usr/bin/php /absolute/path/public_html/bot/database/migrate.php --migrate
 ```
+
+Copy only `database_identity_sha256` from the production fingerprint output into
+`environment_guard.production_database_sha256` in the private test-environment
+config. Do not copy database credentials between environments.
 
 `--migrate` on production is blocked unless both the private config explicitly sets
 `database_migrations_allow_production = true` and the CLI command also includes
