@@ -10,8 +10,8 @@ final class BackupManager
         private string $dataDir,
         private string $backupRoot,
         private ?string $externalDir = null,
-        private int $retentionDays = 14,
-        private int $retentionCount = 30,
+        private int $retentionDays = 7,
+        private int $retentionCount = 7,
         private bool $includeReleaseFiles = true
     ) {
         $this->projectRoot = $this->normalizePath($this->projectRoot);
@@ -128,6 +128,13 @@ final class BackupManager
         } catch (Throwable $e) {
             if (is_dir($temporaryDir)) {
                 $this->removeDirectory($temporaryDir);
+            }
+            if (is_dir($finalDir)) {
+                try {
+                    $this->applyRetention($this->backupRoot);
+                } catch (Throwable) {
+                    // Preserve the original backup failure.
+                }
             }
             $failure = [
                 'ok' => false,
@@ -455,8 +462,15 @@ final class BackupManager
                 'snapshot_sha256' => $verified['snapshot_sha256'],
             ];
         } catch (Throwable $e) {
-            if (is_dir($temporaryDir)) {
-                $this->removeDirectory($temporaryDir);
+            foreach ([$temporaryDir, $finalDir] as $failedDir) {
+                if (!is_dir($failedDir)) {
+                    continue;
+                }
+                try {
+                    $this->removeDirectory($failedDir);
+                } catch (Throwable) {
+                    // Preserve the original external-copy failure.
+                }
             }
             throw $e;
         }
