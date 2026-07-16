@@ -64,8 +64,8 @@ checksum first, requires an empty/new target, and writes only into that target.
 Default policy:
 
 - run once per day;
-- keep at most 30 completed snapshots;
-- delete completed snapshots older than 14 days;
+- keep at most 7 completed snapshots;
+- delete completed snapshots older than 7 days;
 - never delete the newest completed snapshot;
 - apply the same policy to the external directory.
 
