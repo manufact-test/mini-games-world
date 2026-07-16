@@ -20,7 +20,28 @@ jobs:
   quality:
     name: Quality and smoke checks
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: mgw_ci
+          MYSQL_USER: mgw_ci_user
+          MYSQL_PASSWORD: ci_database_password_not_secret
+          MYSQL_ROOT_PASSWORD: ci_root_password_not_secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      MGW_TEST_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_ci;charset=utf8mb4
+      MGW_TEST_MYSQL_USER: mgw_ci_user
+      MGW_TEST_MYSQL_PASSWORD: ci_database_password_not_secret
 
     steps:
       - name: Checkout repository
@@ -32,6 +53,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite
           coverage: none
 
       - name: Set up Node.js
