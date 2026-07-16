@@ -273,6 +273,11 @@ final class ConfigValidator
 
     private static function databaseFingerprint(array $config): string
     {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if (!$databaseConfig->enabled()) {
+            return '';
+        }
+
         $database = is_array($config['database'] ?? null) ? $config['database'] : [];
         $identity = [
             'dsn' => trim((string)($database['dsn'] ?? $config['db_dsn'] ?? '')),
