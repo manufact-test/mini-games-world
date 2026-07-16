@@ -55,7 +55,15 @@ $config = DatabaseConfig::fromApplicationConfig([
 $database = PdoConnectionFactory::create($config);
 
 $cleanup = static function () use ($database): void {
-    foreach (['mgw_ci_transaction', 'mgw_meta', 'mgw_schema_migrations'] as $table) {
+    foreach ([
+        'mgw_sessions',
+        'mgw_devices',
+        'mgw_identities',
+        'mgw_users',
+        'mgw_ci_transaction',
+        'mgw_meta',
+        'mgw_schema_migrations',
+    ] as $table) {
         $database->execute('DROP TABLE IF EXISTS `' . $table . '`');
     }
 };
@@ -70,14 +78,15 @@ try {
 
     $before = $runner->status();
     $assertSame('mysql', $before['driver'], 'CI integration must use PDO mysql');
-    $assertSame(1, $before['pending_count'], 'Clean MySQL schema must have one pending migration');
+    $assertSame(2, $before['pending_count'], 'Clean MySQL schema must have two pending migrations');
 
     $migrated = $runner->migrate(false);
-    $assertSame(1, $migrated['executed_count'], 'Initial MySQL migration must execute once');
-    $assertSame(false, $migrated['executed'][0]['transactional'], 'MySQL DDL migration must not use a wrapping transaction');
+    $assertSame(2, $migrated['executed_count'], 'MySQL migrations must execute once');
+    $assertSame(false, $migrated['executed'][0]['transactional'], 'MySQL metadata DDL migration must not use a wrapping transaction');
+    $assertSame(false, $migrated['executed'][1]['transactional'], 'MySQL account DDL migration must not use a wrapping transaction');
 
     $after = $runner->status();
-    $assertSame(1, $after['applied_count'], 'MySQL migration record must be persisted');
+    $assertSame(2, $after['applied_count'], 'MySQL migration records must be persisted');
     $assertSame(0, $after['pending_count'], 'MySQL schema must be current after migration');
 
     $secondRun = $runner->migrate(false);
@@ -92,12 +101,23 @@ try {
     $migrationEngine = strtoupper((string)$database->fetchValue(
         "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_schema_migrations'"
     ));
+    $userEngine = strtoupper((string)$database->fetchValue(
+        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_users'"
+    ));
+    $identityEngine = strtoupper((string)$database->fetchValue(
+        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_identities'"
+    ));
     $assertSame('INNODB', $metaEngine, 'mgw_meta must use InnoDB');
     $assertTrue(str_starts_with($metaCollation, 'utf8mb4_'), 'mgw_meta must use utf8mb4 collation');
     $assertSame('INNODB', $migrationEngine, 'Migration registry must use InnoDB');
+    $assertSame('INNODB', $userEngine, 'MGW users must use InnoDB');
+    $assertSame('INNODB', $identityEngine, 'MGW identities must use InnoDB');
 
-    $checksum = (string)$database->fetchValue('SELECT checksum FROM mgw_schema_migrations LIMIT 1');
-    $assertSame(64, strlen($checksum), 'Applied migration checksum must be stored');
+    $checksumRows = $database->fetchAll('SELECT checksum FROM mgw_schema_migrations ORDER BY version');
+    $assertSame(2, count($checksumRows), 'Every applied migration must store a checksum');
+    foreach ($checksumRows as $row) {
+        $assertSame(64, strlen((string)$row['checksum']), 'Applied migration checksum must be stored');
+    }
 
     $database->execute('CREATE TABLE mgw_ci_transaction (id INT NOT NULL PRIMARY KEY, value VARCHAR(32) NOT NULL) ENGINE=InnoDB');
     try {
