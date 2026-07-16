@@ -16,7 +16,7 @@ echo "== PHP smoke tests =="
 test_count=0
 while IFS= read -r test_file; do
   [[ -z "$test_file" ]] && continue
-  php "$test_file"
+  php -d auto_prepend_file="$ROOT/scripts/ci/php-strict.php" "$test_file"
   test_count=$((test_count + 1))
 done < <(git ls-files 'bot/tests/*Test.php' | LC_ALL=C sort)
 echo "PHP smoke tests passed: ${test_count} files"

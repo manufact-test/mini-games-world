@@ -4,9 +4,11 @@ declare(strict_types=1);
 final class GameCatalogService
 {
     private array $games;
+    private FeatureFlagService $featureFlags;
 
     public function __construct(private array $config)
     {
+        $this->featureFlags = new FeatureFlagService($config);
         $boardSizes = array_values(array_unique(array_filter(
             array_map('intval', $this->config['board_sizes'] ?? [3, 5, 9]),
             fn(int $size): bool => $size >= 3
@@ -46,36 +48,39 @@ final class GameCatalogService
         return 'tictactoe';
     }
 
-    public function normalizeGameType(?string $gameType): string
+    public function resolveGameType(?string $gameType): string
     {
         $gameType = trim((string)$gameType);
-        if ($gameType === '') {
-            return $this->defaultGameType();
-        }
-
-        $game = $this->games[$gameType] ?? null;
-        if (!is_array($game) || empty($game['enabled'])) {
-            throw new RuntimeException('Эта игра пока недоступна.');
-        }
-
+        if ($gameType === '') $gameType = $this->defaultGameType();
+        $this->definition($gameType);
         return $gameType;
+    }
+
+    /**
+     * Backward-compatible normalization for stored/active records.
+     * Runtime availability is deliberately checked at new-match boundaries.
+     */
+    public function normalizeGameType(?string $gameType): string
+    {
+        return $this->resolveGameType($gameType);
     }
 
     public function get(string $gameType): array
     {
-        $gameType = $this->normalizeGameType($gameType);
-        return $this->games[$gameType];
+        return $this->definition($this->resolveGameType($gameType));
     }
 
     public function supportsRoom(string $gameType, string $room): bool
     {
+        if ($this->featureFlags->newMatchBlockReason($gameType) !== null) return false;
         $game = $this->get($gameType);
         return in_array($room, $game['rooms'] ?? [], true);
     }
 
     public function supportsBot(string $gameType): bool
     {
-        return !empty($this->get($gameType)['supports_bot']);
+        return $this->featureFlags->newMatchBlockReason($gameType) === null
+            && !empty($this->get($gameType)['supports_bot']);
     }
 
     public function normalizeBoardSize(string $gameType, int $boardSize): int
@@ -89,8 +94,10 @@ final class GameCatalogService
 
     public function publicGameDefinition(string $gameType): array
     {
+        $gameType = $this->resolveGameType($gameType);
         $game = $this->get($gameType);
         $defaultBoardSize = (int)($game['default_board_size'] ?? 3);
+        $blockReason = $this->featureFlags->newMatchBlockReason($gameType);
 
         return [
             'id' => (string)$game['id'],
@@ -98,7 +105,9 @@ final class GameCatalogService
             'renderer' => (string)$game['renderer'],
             'action_type' => (string)$game['action_type'],
             'rooms' => array_values($game['rooms'] ?? []),
-            'supports_bot' => !empty($game['supports_bot']),
+            'supports_bot' => $blockReason === null && !empty($game['supports_bot']),
+            'available' => $blockReason === null,
+            'unavailable_reason' => $blockReason,
             'board_sizes' => array_values(array_map('intval', $game['board_sizes'] ?? [])),
             'default_board_size' => $defaultBoardSize,
             'board_columns' => (int)($game['board_columns'] ?? $defaultBoardSize),
@@ -110,11 +119,18 @@ final class GameCatalogService
     {
         $items = [];
         foreach ($this->games as $game) {
-            if (empty($game['enabled'])) {
-                continue;
-            }
+            if (empty($game['enabled'])) continue;
             $items[] = $this->publicGameDefinition((string)$game['id']);
         }
         return $items;
+    }
+
+    private function definition(string $gameType): array
+    {
+        $game = $this->games[$gameType] ?? null;
+        if (!is_array($game) || empty($game['enabled'])) {
+            throw new RuntimeException('Эта игра пока недоступна.');
+        }
+        return $game;
     }
 }

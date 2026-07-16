@@ -23,6 +23,32 @@ return [
     'allow_browser_dev_user' => true,
     'force_browser_dev_user' => false,
 
+    /* Runtime controls are safe by default and preserve the current product.
+     * Active games remain playable even when maintenance or a game flag is off. */
+    'feature_flags' => [
+        'maintenance_mode' => false,
+        'maintenance_message' => '',
+        'financial_read_only' => false,
+        'features' => [
+            'matchmaking' => true,
+            'invitations' => true,
+            'payments' => true,
+            'shop' => true,
+            'tournaments' => false,
+            'ads' => false,
+        ],
+        'games' => [
+            'tictactoe' => true,
+            'four_in_a_row' => true,
+            'battleship' => true,
+            'checkers' => true,
+            'reversi' => true,
+            'chess' => true,
+            'go' => true,
+            'domino' => true,
+        ],
+    ],
+
     /* Required for staging. Values belong only in the private config or
      * environment variables; they are fingerprints/locations, not secrets. */
     'environment_guard' => [
