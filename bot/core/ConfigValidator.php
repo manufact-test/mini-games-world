@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/database/DatabaseConfig.php';
+
 final class ConfigValidator
 {
     public static function validate(array $config, array $server = []): array
@@ -15,6 +17,7 @@ final class ConfigValidator
         self::validateBaseUrl($environment, $baseUrl, $baseHost);
         self::validateHostAllowlist($baseHost, $requestHost, $allowedHosts);
         self::validateRuntimeFlags($config, $environment);
+        self::validateDatabaseSettings($config);
 
         if ($environment === Environment::Production) {
             self::validateProductionConfig($config);
@@ -240,6 +243,19 @@ final class ConfigValidator
         }
     }
 
+    private static function validateDatabaseSettings(array $config): void
+    {
+        DatabaseConfig::fromApplicationConfig($config);
+
+        $storageDriver = strtolower(trim((string)($config['storage_driver'] ?? 'json')));
+        if ($storageDriver === '') {
+            $storageDriver = 'json';
+        }
+        if ($storageDriver !== 'json') {
+            throw new RuntimeException('Only the JSON storage driver is available before the database cutover.');
+        }
+    }
+
     private static function liveExternalServiceEnabled(array $config): bool
     {
         if (!empty($config['external_payments_enabled'])) {
@@ -257,19 +273,8 @@ final class ConfigValidator
 
     private static function databaseFingerprint(array $config): string
     {
-        $database = is_array($config['database'] ?? null) ? $config['database'] : [];
-        $identity = [
-            'dsn' => trim((string)($database['dsn'] ?? $config['db_dsn'] ?? '')),
-            'host' => strtolower(trim((string)($database['host'] ?? $config['db_host'] ?? ''))),
-            'port' => (string)($database['port'] ?? $config['db_port'] ?? ''),
-            'name' => trim((string)($database['name'] ?? $config['db_name'] ?? '')),
-        ];
-
-        if (implode('', $identity) === '') {
-            return '';
-        }
-
-        return hash('sha256', json_encode($identity, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        return $databaseConfig->enabled() ? $databaseConfig->identityFingerprint() : '';
     }
 
     private static function normalizeHostList(mixed $raw): array

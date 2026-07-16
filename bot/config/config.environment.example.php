@@ -8,13 +8,17 @@ if (!defined('MINIGAMES_INTERNAL')) {
 
 /*
  * Copy these keys into the private config for the selected environment.
- * Never commit real hosts, tokens, data paths, database names or admin IDs.
+ * Never commit real hosts, tokens, data paths or admin IDs.
+ * Database settings live separately in _private_mgw/database.php.
  */
 return [
     'environment' => 'local', // production | staging | local
     'base_url' => 'http://localhost:8080',
     'allowed_hosts' => ['localhost', '127.0.0.1'],
     'data_dir' => dirname(__DIR__) . '/data',
+
+    /* JSON remains active until the later database cutover MVP. */
+    'storage_driver' => 'json',
 
     /* Local may use the placeholder. Production and staging require real,
      * different Telegram bot tokens in their private configs. */
@@ -49,12 +53,11 @@ return [
         ],
     ],
 
-    /* Required for staging. Values belong only in the private config or
-     * environment variables; they are fingerprints/locations, not secrets. */
+    /* Required for staging. Database isolation is stored in the separate
+     * _private_mgw/database.php file. */
     'environment_guard' => [
         'production_hosts' => [],
         'production_bot_token_sha256' => '',
         'production_data_dir' => '',
-        'production_database_sha256' => '',
     ],
 ];
