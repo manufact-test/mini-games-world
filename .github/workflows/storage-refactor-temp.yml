@@ -1,0 +1,79 @@
+name: Temporary storage factory refactor
+
+on:
+  push:
+    branches:
+      - agent/mvp-14-1-storage-adapter
+
+permissions:
+  contents: write
+
+jobs:
+  replace-direct-json-construction:
+    if: ${{ !contains(github.event.head_commit.message, '[storage-factory-refactor]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-14-1-storage-adapter
+          fetch-depth: 0
+
+      - name: Replace direct JsonDatabase construction
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          expected = {
+              'bot/api.php',
+              'bot/cron/weekly-match.php',
+              'bot/handlers/WebhookHandler.php',
+              'bot/helpers/AdminGoldTopupNotificationGuard.php',
+              'bot/helpers/AdminPaymentRejectGuard.php',
+              'bot/helpers/AdminShopOrderNotificationGuard.php',
+              'bot/helpers/AdminShopOrderUiGuard.php',
+              'bot/helpers/AdminSystemCheckGuard.php',
+              'bot/helpers/RuntimeAdminGuard.php',
+              'bot/helpers/UserWelcomeGuard.php',
+              'bot/invite-opponents.php',
+              'bot/invites.php',
+              'bot/notifications.php',
+              'bot/services/ShopService.php',
+              'bot/services/TelegramService.php',
+              'bot/shop-history.php',
+          }
+          excluded = {
+              'bot/storage/JsonStorageAdapter.php',
+              'bot/tests/StorageAdapterTest.php',
+          }
+          changed = set()
+
+          for path in Path('bot').rglob('*.php'):
+              relative = path.as_posix()
+              if relative in excluded:
+                  continue
+              source = path.read_text(encoding='utf-8')
+              updated = source.replace('new JsonDatabase(', 'StorageFactory::createJson(')
+              if updated != source:
+                  path.write_text(updated, encoding='utf-8')
+                  changed.add(relative)
+
+          if changed != expected:
+              missing = sorted(expected - changed)
+              unexpected = sorted(changed - expected)
+              raise SystemExit(f'Unexpected replacement set. Missing={missing}; unexpected={unexpected}')
+
+          print('Updated files:')
+          for path in sorted(changed):
+              print(path)
+          PY
+
+      - name: Commit refactor
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bot
+          git commit -m "Route legacy storage construction through factory [storage-factory-refactor]"
+          git push origin HEAD:agent/mvp-14-1-storage-adapter
