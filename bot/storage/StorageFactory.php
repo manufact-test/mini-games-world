@@ -11,8 +11,17 @@ final class StorageFactory
         }
 
         return match ($driver) {
-            'json' => new JsonStorageAdapter((string)($config['data_dir'] ?? '')),
+            'json' => self::createJson((string)($config['data_dir'] ?? '')),
             default => throw new RuntimeException('Unsupported storage driver: ' . $driver),
         };
+    }
+
+    /**
+     * Compatibility factory for legacy call sites that currently know only data_dir.
+     * These call sites can be migrated to create(array $config) independently.
+     */
+    public static function createJson(string $dataDir): StorageAdapterInterface
+    {
+        return new JsonStorageAdapter($dataDir);
     }
 }
