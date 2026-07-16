@@ -43,7 +43,7 @@ try {
     $userId = (string)($tgUser['id'] ?? '');
     if ($userId === '') api_error('Пользователь не найден.');
 
-    $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $items = $db->readOnly(function (array $data) use ($userId): array {
         $games = array_values(array_filter($data['games'] ?? [], static function ($game) use ($userId): bool {
             if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished') return false;

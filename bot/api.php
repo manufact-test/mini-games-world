@@ -165,7 +165,7 @@ try {
     $action = (string)($payload['action'] ?? '');
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
 
-    $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $auth = new AuthService($config);
     $users = new UserService($config);
     $gameCatalog = new GameCatalogService($config);

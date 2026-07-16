@@ -16,7 +16,7 @@ if (!$isCli) {
 }
 
 try {
-    $db = new JsonDatabase((string)($config['data_dir'] ?? (dirname(__DIR__) . '/data')));
+    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (dirname(__DIR__) . '/data')));
     $service = new WeeklyMatchEconomyService($config, new NotificationService());
     $result = $db->transaction(fn(array &$data): array => $service->runDue($data));
 

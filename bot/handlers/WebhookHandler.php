@@ -72,7 +72,7 @@ final class WebhookHandler
         if (!$chatId) return;
 
         $action = substr($data, strlen('admin:'));
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $playerNotification = null;
         $replyMarkup = $admin->keyboard();
         $callbackText = '';
@@ -197,7 +197,7 @@ final class WebhookHandler
             return;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $playerNotification = null;
 
         if ($this->startsWithCommand($text, (string)($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done'))) {
@@ -295,7 +295,7 @@ final class WebhookHandler
             return false;
         }
 
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $result = $db->transaction(function (array &$data) use ($admin, $fromId, $text) {
             $pending = $data['system']['admin_pending_actions'][$fromId] ?? null;
             if (!is_array($pending) || (string)($pending['type'] ?? '') !== 'payment_reject') {

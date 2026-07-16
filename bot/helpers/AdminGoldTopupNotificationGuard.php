@@ -31,7 +31,7 @@ final class AdminGoldTopupNotificationGuard
 
         $argument = $this->commandArgument($text);
         $admin = new AdminService($this->config);
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
 
         $result = $db->transaction(function (array &$data) use ($admin, $argument, $fromId): array {
             $beforeCount = count($data['transactions'] ?? []);

@@ -143,7 +143,7 @@ final class AdminPaymentRejectGuard
 
     private function pendingReject(string $adminId): ?array
     {
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         return $db->readOnly(function (array $data) use ($adminId) {
             $pending = $data['system']['admin_pending_actions'][$adminId] ?? null;
             if (!is_array($pending) || (string)($pending['type'] ?? '') !== 'payment_reject') {
@@ -155,7 +155,7 @@ final class AdminPaymentRejectGuard
 
     private function clearPendingReject(string $adminId): void
     {
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $db->transaction(function (array &$data) use ($adminId) {
             $pending = $data['system']['admin_pending_actions'][$adminId] ?? null;
             if (is_array($pending) && (string)($pending['type'] ?? '') === 'payment_reject') {

@@ -114,7 +114,7 @@ final class TelegramService
                 return;
             }
 
-            $db = new JsonDatabase((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
+            $db = StorageFactory::createJson((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
             $db->transaction(function (array &$data) use ($payment, $decision, $paymentId): void {
                 $notifications = new NotificationService();
                 $notifications->addPaymentDecision($data, $payment, $decision);

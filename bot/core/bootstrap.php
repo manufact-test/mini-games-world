@@ -47,7 +47,11 @@ $config = ConfigValidator::validate($config, $_SERVER);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/validators.php';
+require_once __DIR__ . '/../storage/contracts/StorageTransactionInterface.php';
+require_once __DIR__ . '/../storage/contracts/StorageAdapterInterface.php';
 require_once __DIR__ . '/../storage/JsonDatabase.php';
+require_once __DIR__ . '/../storage/JsonStorageAdapter.php';
+require_once __DIR__ . '/../storage/StorageFactory.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/FeatureFlagService.php';

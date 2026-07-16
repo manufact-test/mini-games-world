@@ -82,7 +82,7 @@ final class AdminSystemCheckGuard
 
     private function buildReport(): string
     {
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         return $db->readOnly(function (array $data) {
             $base = (new AdminService($this->config))->systemCheck($data);
             return $base

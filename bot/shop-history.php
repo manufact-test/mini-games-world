@@ -18,7 +18,7 @@ try {
         api_error('Пользователь не найден.');
     }
 
-    $db = new JsonDatabase((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $history = new ShopOrderHistoryService();
 
     $orders = $db->readOnly(function (array $data) use ($history, $userId): array {

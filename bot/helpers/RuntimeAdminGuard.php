@@ -115,7 +115,7 @@ final class RuntimeAdminGuard
 
     private function hasPendingFinancialAction(string $adminId): bool
     {
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         return $db->readOnly(static function (array $data) use ($adminId): bool {
             $pending = $data['system']['admin_pending_actions'][$adminId] ?? null;
             return is_array($pending)
@@ -125,7 +125,7 @@ final class RuntimeAdminGuard
 
     private function clearPendingFinancialAction(string $adminId): void
     {
-        $db = new JsonDatabase($this->dataDir());
+        $db = StorageFactory::createJson($this->dataDir());
         $db->transaction(static function (array &$data) use ($adminId): void {
             $pending = $data['system']['admin_pending_actions'][$adminId] ?? null;
             if (!is_array($pending)) return;
