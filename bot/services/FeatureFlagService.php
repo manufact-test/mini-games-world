@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 final class FeatureFlagService
 {
-    public const BUILD = 'v86-mvp13-runtime-controls';
+    public const BUILD = 'v89-mvp14-managed-migrations';
 
     private const GAME_IDS = [
         'tictactoe',
