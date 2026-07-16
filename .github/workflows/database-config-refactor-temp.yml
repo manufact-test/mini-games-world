@@ -1,0 +1,56 @@
+name: Temporary database config validation refactor
+
+on:
+  push:
+    branches:
+      - agent/mvp-14-2-database-migrations
+
+permissions:
+  contents: write
+
+jobs:
+  update-config-validator:
+    if: ${{ !contains(github.event.head_commit.message, '[database-config-refactor]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-14-2-database-migrations
+          fetch-depth: 0
+
+      - name: Update ConfigValidator
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('bot/core/ConfigValidator.php')
+          source = path.read_text(encoding='utf-8')
+
+          old = "<?php\ndeclare(strict_types=1);\n\nfinal class ConfigValidator"
+          new = "<?php\ndeclare(strict_types=1);\n\nrequire_once dirname(__DIR__) . '/database/DatabaseConfig.php';\n\nfinal class ConfigValidator"
+          if source.count(old) != 1:
+              raise SystemExit('ConfigValidator header anchor mismatch')
+          source = source.replace(old, new, 1)
+
+          old = "        self::validateRuntimeFlags($config, $environment);\n\n        if ($environment === Environment::Production) {"
+          new = "        self::validateRuntimeFlags($config, $environment);\n        self::validateDatabaseSettings($config);\n\n        if ($environment === Environment::Production) {"
+          if source.count(old) != 1:
+              raise SystemExit('ConfigValidator validation anchor mismatch')
+          source = source.replace(old, new, 1)
+
+          old = "    private static function liveExternalServiceEnabled(array $config): bool\n    {"
+          new = "    private static function validateDatabaseSettings(array $config): void\n    {\n        DatabaseConfig::fromApplicationConfig($config);\n\n        $storageDriver = strtolower(trim((string)($config['storage_driver'] ?? 'json')));\n        if ($storageDriver === '') {\n            $storageDriver = 'json';\n        }\n        if ($storageDriver !== 'json') {\n            throw new RuntimeException('Only the JSON storage driver is available before the database cutover.');\n        }\n    }\n\n    private static function liveExternalServiceEnabled(array $config): bool\n    {"
+          if source.count(old) != 1:
+              raise SystemExit('ConfigValidator method anchor mismatch')
+          source = source.replace(old, new, 1)
+
+          path.write_text(source, encoding='utf-8')
+          PY
+
+      - name: Commit validator update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bot/core/ConfigValidator.php
+          git commit -m "Validate private database configuration [database-config-refactor]"
+          git push origin HEAD:agent/mvp-14-2-database-migrations
