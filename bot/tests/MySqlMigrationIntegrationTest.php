@@ -10,9 +10,20 @@ if ($dsn === '') {
     return;
 }
 
+$dsnValue = static function (string $key) use ($dsn): string {
+    return preg_match('/(?:^|;)' . preg_quote($key, '/') . '=([^;]+)/', $dsn, $matches) === 1
+        ? trim((string)$matches[1])
+        : '';
+};
+$host = $dsnValue('host');
+$port = (int)($dsnValue('port') !== '' ? $dsnValue('port') : '3306');
+$name = $dsnValue('dbname');
+
 $databaseDir = dirname(__DIR__) . '/database';
 require $databaseDir . '/DatabaseConnectionInterface.php';
+require $databaseDir . '/DatabaseConfig.php';
 require $databaseDir . '/PdoDatabaseConnection.php';
+require $databaseDir . '/PdoConnectionFactory.php';
 require $databaseDir . '/DatabaseMigrationInterface.php';
 require $databaseDir . '/MigrationRepository.php';
 require $databaseDir . '/MigrationRunner.php';
@@ -29,12 +40,19 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
     if (!$condition) throw new RuntimeException($message);
 };
 
-$pdo = new PDO($dsn, $user, $password, [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES => false,
+$config = DatabaseConfig::fromApplicationConfig([
+    'database' => [
+        'enabled' => true,
+        'driver' => 'mysql',
+        'host' => $host,
+        'port' => $port,
+        'name' => $name,
+        'user' => $user,
+        'password' => $password,
+        'charset' => 'utf8mb4',
+    ],
 ]);
-$database = new PdoDatabaseConnection($pdo);
+$database = PdoConnectionFactory::create($config);
 
 $cleanup = static function () use ($database): void {
     foreach (['mgw_ci_transaction', 'mgw_meta', 'mgw_schema_migrations'] as $table) {
@@ -45,6 +63,9 @@ $cleanup = static function () use ($database): void {
 $cleanup();
 
 try {
+    $assertSame('mysql', $database->driver(), 'PDO connection factory must create the mysql driver');
+    $assertTrue((int)$database->fetchValue('SELECT 1') === 1, 'PDO connection factory must connect to MySQL');
+
     $runner = new MigrationRunner($database, $databaseDir . '/migrations');
 
     $before = $runner->status();
