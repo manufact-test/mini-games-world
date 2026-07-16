@@ -61,6 +61,8 @@ require_once __DIR__ . '/../database/PdoConnectionFactory.php';
 require_once __DIR__ . '/../database/DatabaseMigrationInterface.php';
 require_once __DIR__ . '/../database/MigrationRepository.php';
 require_once __DIR__ . '/../database/MigrationRunner.php';
+require_once __DIR__ . '/../database/ManagedMigrationConfig.php';
+require_once __DIR__ . '/../database/ManagedMigrationController.php';
 require_once __DIR__ . '/../accounts/MgwIdGenerator.php';
 require_once __DIR__ . '/../accounts/AccountIdentityService.php';
 require_once __DIR__ . '/../services/AuthService.php';
