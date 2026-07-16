@@ -28,7 +28,22 @@ final class PdoDatabaseConnection implements DatabaseConnectionInterface
         $statement = $this->pdo->prepare($sql);
         $statement->execute($parameters);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
-        return is_array($rows) ? $rows : [];
+        if (!is_array($rows)) return [];
+
+        if ($this->driver() === 'mysql') {
+            foreach ($rows as &$row) {
+                if (!is_array($row)) continue;
+                foreach ($row as $column => &$value) {
+                    if (!is_string($column) || !str_ends_with(strtolower($column), '_json')) continue;
+                    if (!is_string($value) || trim($value) === '') continue;
+                    $value = $this->canonicalJson($value);
+                }
+                unset($value);
+            }
+            unset($row);
+        }
+
+        return $rows;
     }
 
     public function fetchValue(string $sql, array $parameters = []): mixed
@@ -75,5 +90,26 @@ final class PdoDatabaseConnection implements DatabaseConnectionInterface
 
             throw $error;
         }
+    }
+
+    private function canonicalJson(string $json): string
+    {
+        try {
+            $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            return json_encode(
+                $this->canonicalize($decoded),
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+            );
+        } catch (JsonException) {
+            return $json;
+        }
+    }
+
+    private function canonicalize(mixed $value): mixed
+    {
+        if (!is_array($value)) return $value;
+        if (!array_is_list($value)) ksort($value, SORT_STRING);
+        foreach ($value as $key => $item) $value[$key] = $this->canonicalize($item);
+        return $value;
     }
 }
