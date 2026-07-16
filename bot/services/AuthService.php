@@ -11,7 +11,7 @@ final class AuthService
         if ($initData !== '') {
             $user = $this->validateTelegramInitData($initData);
             if ($user) {
-                return $user;
+                return $this->attachMgwIdentity($user, (string)($payload['sessionId'] ?? ''));
             }
         }
 
@@ -21,16 +21,34 @@ final class AuthService
                 $devId = 'dev_' . random_int(100000, 999999);
                 setcookie('mgw_dev_user_id', $devId, time() + 60 * 60 * 24 * 365, '/');
             }
-            return [
+            return $this->attachMgwIdentity([
                 'id' => $devId,
                 'first_name' => 'Тестовый игрок',
                 'username' => 'test_' . preg_replace('/\D+/', '', $devId),
                 'language_code' => 'ru',
                 'is_dev_user' => true,
-            ];
+            ], (string)($payload['sessionId'] ?? ''));
         }
 
         throw new RuntimeException('Откройте приложение через Telegram.');
+    }
+
+    private function attachMgwIdentity(array $user, string $sessionId): array
+    {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        if (!$databaseConfig->enabled()) {
+            return $user;
+        }
+
+        $database = PdoConnectionFactory::create($databaseConfig);
+        $accounts = new AccountIdentityService(
+            $database,
+            (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000)
+        );
+        $identity = $accounts->resolveTelegramUser($user, $sessionId);
+        $user['mgw_id'] = $identity['mgw_id'];
+        $user['mgw_identity_provider'] = $identity['provider'];
+        return $user;
     }
 
     private function browserDevUserAllowed(): bool
