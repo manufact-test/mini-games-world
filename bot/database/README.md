@@ -46,7 +46,11 @@ is CLI-only and the directory is denied over HTTP.
 - migration filenames and declared versions must match;
 - applied migration checksums may not change;
 - repeated runs are idempotent;
-- each migration is recorded only after its transaction succeeds;
+- each migration is recorded only after its `up()` method completes successfully;
+- DML migrations may opt into an atomic transaction;
+- MySQL/MariaDB schema DDL explicitly runs without a wrapping transaction because
+  those servers implicitly commit DDL; schema migrations must therefore be
+  expand-first and idempotent;
 - MySQL/MariaDB runs use a named advisory lock to prevent concurrent migration jobs;
 - schema tables use InnoDB and utf8mb4;
 - errors and status output never print database credentials;
