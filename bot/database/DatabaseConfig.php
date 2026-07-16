@@ -104,6 +104,20 @@ final class DatabaseConfig
         return $this->password;
     }
 
+    public function identityFingerprint(): string
+    {
+        if ($this->host === '' || $this->name === '') {
+            return '';
+        }
+
+        return hash('sha256', json_encode([
+            'dsn' => '',
+            'host' => strtolower($this->host),
+            'port' => (string)$this->port,
+            'name' => $this->name,
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+    }
+
     public function safeSummary(): array
     {
         return [
