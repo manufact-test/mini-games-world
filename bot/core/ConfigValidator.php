@@ -274,23 +274,7 @@ final class ConfigValidator
     private static function databaseFingerprint(array $config): string
     {
         $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
-        if (!$databaseConfig->enabled()) {
-            return '';
-        }
-
-        $database = is_array($config['database'] ?? null) ? $config['database'] : [];
-        $identity = [
-            'dsn' => trim((string)($database['dsn'] ?? $config['db_dsn'] ?? '')),
-            'host' => strtolower(trim((string)($database['host'] ?? $config['db_host'] ?? ''))),
-            'port' => (string)($database['port'] ?? $config['db_port'] ?? ''),
-            'name' => trim((string)($database['name'] ?? $config['db_name'] ?? '')),
-        ];
-
-        if (implode('', $identity) === '') {
-            return '';
-        }
-
-        return hash('sha256', json_encode($identity, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        return $databaseConfig->enabled() ? $databaseConfig->identityFingerprint() : '';
     }
 
     private static function normalizeHostList(mixed $raw): array
