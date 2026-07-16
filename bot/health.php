@@ -21,17 +21,26 @@ try {
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $databaseStatus = $databaseConfig->safeSummary();
     $databaseStatus['connected'] = null;
+    $databaseStatus['schema_current'] = null;
+    $databaseStatus['applied_migrations'] = null;
+    $databaseStatus['pending_migrations'] = null;
     if ($databaseConfig->enabled()) {
         try {
             $database = PdoConnectionFactory::create($databaseConfig);
             $databaseStatus['connected'] = (int)$database->fetchValue('SELECT 1') === 1;
+            $migrationStatus = (new MigrationRunner($database, __DIR__ . '/database/migrations'))->status();
+            $databaseStatus['applied_migrations'] = (int)$migrationStatus['applied_count'];
+            $databaseStatus['pending_migrations'] = (int)$migrationStatus['pending_count'];
+            $databaseStatus['schema_current'] = $databaseStatus['pending_migrations'] === 0;
         } catch (Throwable $databaseError) {
             $databaseStatus['connected'] = false;
+            $databaseStatus['schema_current'] = false;
             error_log('[MiniGamesWorld database health] ' . $databaseError->getMessage());
         }
     }
 
-    $databaseReady = !$databaseConfig->enabled() || $databaseStatus['connected'] === true;
+    $databaseReady = !$databaseConfig->enabled()
+        || ($databaseStatus['connected'] === true && $databaseStatus['schema_current'] === true);
     $runtime = $flags->publicStatus();
     $ok = $storageReady && $databaseReady;
     if (!$ok) http_response_code(503);
@@ -67,6 +76,9 @@ try {
                 'enabled' => false,
                 'configured' => false,
                 'connected' => null,
+                'schema_current' => null,
+                'applied_migrations' => null,
+                'pending_migrations' => null,
             ],
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
