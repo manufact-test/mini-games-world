@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/database/DatabaseConfig.php';
+
 final class ConfigValidator
 {
     public static function validate(array $config, array $server = []): array
@@ -15,6 +17,7 @@ final class ConfigValidator
         self::validateBaseUrl($environment, $baseUrl, $baseHost);
         self::validateHostAllowlist($baseHost, $requestHost, $allowedHosts);
         self::validateRuntimeFlags($config, $environment);
+        self::validateDatabaseSettings($config);
 
         if ($environment === Environment::Production) {
             self::validateProductionConfig($config);
@@ -237,6 +240,19 @@ final class ConfigValidator
 
         if ($productionFingerprint !== '' && hash_equals($productionFingerprint, $databaseFingerprint)) {
             throw new RuntimeException('Non-production database matches production.');
+        }
+    }
+
+    private static function validateDatabaseSettings(array $config): void
+    {
+        DatabaseConfig::fromApplicationConfig($config);
+
+        $storageDriver = strtolower(trim((string)($config['storage_driver'] ?? 'json')));
+        if ($storageDriver === '') {
+            $storageDriver = 'json';
+        }
+        if ($storageDriver !== 'json') {
+            throw new RuntimeException('Only the JSON storage driver is available before the database cutover.');
         }
     }
 
