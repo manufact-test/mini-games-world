@@ -74,7 +74,22 @@ foreach ($targets as $label => $target) {
     ]);
     $database = PdoConnectionFactory::create($config);
     $cleanup = static function () use ($database): void {
-        foreach (['mgw_sessions', 'mgw_devices', 'mgw_identities', 'mgw_users', 'mgw_meta', 'mgw_schema_migrations'] as $table) {
+        foreach ([
+            'mgw_notifications',
+            'mgw_invite_events',
+            'mgw_invites',
+            'mgw_match_player_snapshots',
+            'mgw_match_snapshots',
+            'mgw_match_players',
+            'mgw_match_queue',
+            'mgw_matches',
+            'mgw_sessions',
+            'mgw_devices',
+            'mgw_identities',
+            'mgw_users',
+            'mgw_meta',
+            'mgw_schema_migrations',
+        ] as $table) {
             $database->execute('DROP TABLE IF EXISTS `' . $table . '`');
         }
     };
@@ -82,7 +97,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(2, $runner->migrate(false)['executed_count'], "{$label} account schema must migrate from empty");
+        $assertSame(3, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
 
         $accounts = new AccountIdentityService($database, 3600);
         $first = $accounts->resolveTelegramUser([
