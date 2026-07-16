@@ -6,6 +6,7 @@ define('MINIGAMES_INTERNAL', true);
 require_once __DIR__ . '/Environment.php';
 require_once __DIR__ . '/ConfigValidator.php';
 require_once __DIR__ . '/RuntimeConfigLoader.php';
+require_once __DIR__ . '/DatabaseConfigLoader.php';
 require_once __DIR__ . '/RuntimeRequestGuard.php';
 
 $externalConfigFile = getenv('MGW_CONFIG_FILE') ?: dirname(__DIR__, 3) . '/_private_mgw/config.php';
@@ -30,6 +31,7 @@ if (is_file($localConfigFile)) {
 }
 
 $config = RuntimeConfigLoader::merge($config, $configFile);
+$config = DatabaseConfigLoader::merge($config, $configFile);
 
 // Weekly Match coins are a product-wide Moscow schedule. Older private configs
 // copied the former Warsaw default, so migrate that legacy value safely here.
