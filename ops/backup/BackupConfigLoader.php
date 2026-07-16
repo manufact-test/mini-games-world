@@ -28,12 +28,12 @@ final class BackupConfigLoader
             ?: dirname($projectRoot) . '/mgw_backups';
         $externalDir = self::envOrConfig('MGW_BACKUP_EXTERNAL_DIR', $private, 'external_dir');
         $retentionDays = self::positiveInt(
-            getenv('MGW_BACKUP_RETENTION_DAYS') ?: ($private['retention_days'] ?? 14),
-            14
+            getenv('MGW_BACKUP_RETENTION_DAYS') ?: ($private['retention_days'] ?? 7),
+            7
         );
         $retentionCount = self::positiveInt(
-            getenv('MGW_BACKUP_RETENTION_COUNT') ?: ($private['retention_count'] ?? 30),
-            30
+            getenv('MGW_BACKUP_RETENTION_COUNT') ?: ($private['retention_count'] ?? 7),
+            7
         );
         $includeRelease = self::boolValue(
             getenv('MGW_BACKUP_INCLUDE_RELEASE') !== false
