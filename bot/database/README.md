@@ -5,27 +5,50 @@ MVP-14.2 prepares a separate MySQL/MariaDB schema. The live product continues to
 
 ## Private configuration
 
-Add the following only to the environment's private `_private_mgw/config.php`:
+Copy the complete template `bot/config/database.environment.example.php` to:
 
-```php
-'storage_driver' => 'json',
-'database' => [
-    'enabled' => true,
-    'driver' => 'mysql',
-    'host' => 'PRIVATE_HOST',
-    'port' => 3306,
-    'name' => 'PRIVATE_DATABASE_NAME',
-    'user' => 'PRIVATE_DATABASE_USER',
-    'password' => 'PRIVATE_DATABASE_PASSWORD',
-    'charset' => 'utf8mb4',
-],
-'database_migrations_allow_production' => false,
+```text
+_private_mgw/database.php
 ```
 
-The production config may keep `database.enabled = false` while reserving its real
-host/port/name. Its CLI-only fingerprint command still produces the protected
-identity hash needed by the test environment. The fingerprint never contains the
-user or password.
+The standalone file is loaded beside the existing private `config.php`, so bot
+tokens, admin IDs and current product settings do not need to be edited for database
+work. Only these top-level keys are accepted in `database.php`:
+
+- `database`;
+- `database_migrations_allow_production`;
+- `environment_guard.production_database_sha256`.
+
+Example structure:
+
+```php
+<?php
+declare(strict_types=1);
+
+return [
+    'database' => [
+        'enabled' => true,
+        'driver' => 'mysql',
+        'host' => 'PRIVATE_HOST',
+        'port' => 3306,
+        'name' => 'PRIVATE_DATABASE_NAME',
+        'user' => 'PRIVATE_DATABASE_USER',
+        'password' => 'PRIVATE_DATABASE_PASSWORD',
+        'charset' => 'utf8mb4',
+    ],
+    'database_migrations_allow_production' => false,
+    'environment_guard' => [
+        'production_database_sha256' => '',
+    ],
+];
+```
+
+The production database identity may stay `enabled = false`. It can still produce
+the protected identity fingerprint needed by the test environment. The fingerprint
+never contains the database user or password.
+
+`MGW_DATABASE_CONFIG_FILE` may override the standalone file path for local or future
+infrastructure, but the Hostinger environments use `_private_mgw/database.php`.
 
 ## CLI commands
 
@@ -41,9 +64,9 @@ are CLI-only and the directory is denied over HTTP.
 
 Copy only `database_identity_sha256` from the production fingerprint output into
 `environment_guard.production_database_sha256` in the private test-environment
-config. Do not copy database credentials between environments.
+`database.php`. Do not copy database credentials between environments.
 
-`--migrate` on production is blocked unless both the private config explicitly sets
+`--migrate` on production is blocked unless both the private file explicitly sets
 `database_migrations_allow_production = true` and the CLI command also includes
 `--allow-production`. MVP-14.2 uses migrations only in the test environment.
 
@@ -64,6 +87,7 @@ config. Do not copy database credentials between environments.
 
 ## Rollback
 
-Before product data is stored in MySQL/MariaDB, rollback is simply disabling the
-private `database.enabled` flag and dropping the empty test schema if required. JSON
-remains the active storage until the later cutover MVP.
+Before product data is stored in MySQL/MariaDB, rollback is simply setting
+`database.enabled = false` or removing `_private_mgw/database.php`, then dropping the
+empty test schema if required. JSON remains the active storage until the later
+cutover MVP.
