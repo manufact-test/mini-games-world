@@ -4,6 +4,13 @@ bot/data/*.lock
 bot/data/*.tmp
 bot/data/*.bak
 
+# Backup and restore runtime artifacts.
+mgw_backups/
+mgw_backup_external/
+mgw_restore_*/
+*.backup-history.jsonl
+mgw_backup_cron.log
+
 # Local config overrides and secrets.
 bot/config/config.php
 bot/config/config.local.php

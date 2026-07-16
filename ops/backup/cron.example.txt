@@ -1,0 +1,5 @@
+# Hostinger Cron Jobs sets the schedule separately.
+# Run once per day, for example around 03:15 server time.
+# Replace USER and DOMAIN with the real private server path.
+
+/usr/bin/php /home/USER/domains/DOMAIN/public_html/ops/backup/backup.php >> /home/USER/mgw_backup_cron.log 2>&1
