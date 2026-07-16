@@ -48,6 +48,9 @@ final class DatabaseConfig
             throw new RuntimeException('Enabled database configuration is incomplete.');
         }
         if ($enabled || $identityConfigured) {
+            if (preg_match('/^[A-Za-z0-9._:\-\[\]]{1,255}$/', $host) !== 1) {
+                throw new RuntimeException('Database host contains unsupported characters.');
+            }
             if ($port === false || $port < 1 || $port > 65535) {
                 throw new RuntimeException('Database port is invalid.');
             }
