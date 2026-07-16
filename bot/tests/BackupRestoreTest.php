@@ -17,6 +17,14 @@ $assertSame = static function (mixed $expected, mixed $actual, string $message) 
     }
 };
 
+$constructor = (new ReflectionClass(BackupManager::class))->getConstructor();
+$constructorParameters = [];
+foreach ($constructor?->getParameters() ?? [] as $parameter) {
+    $constructorParameters[$parameter->getName()] = $parameter;
+}
+$assertSame(7, $constructorParameters['retentionDays']->getDefaultValue(), 'BackupManager default retention days must match the seven-day policy');
+$assertSame(7, $constructorParameters['retentionCount']->getDefaultValue(), 'BackupManager default retention count must match the seven-snapshot policy');
+
 $root = sys_get_temp_dir() . '/mgw-backup-test-' . bin2hex(random_bytes(5));
 $project = $root . '/public_html';
 $data = $root . '/mgw_data';
