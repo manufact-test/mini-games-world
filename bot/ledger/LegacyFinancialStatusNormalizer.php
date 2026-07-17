@@ -17,7 +17,7 @@ final class LegacyFinancialStatusNormalizer
     public function order(string $rawStatus): string
     {
         return match ($this->normalize($rawStatus)) {
-            'fulfilled', 'completed', 'delivered', 'issued' => 'completed',
+            'done', 'fulfilled', 'completed', 'delivered', 'issued' => 'completed',
             'rejected', 'declined', 'failed' => 'rejected',
             'cancelled', 'canceled', 'refunded' => 'cancelled',
             'draft', 'pending', 'processing', 'created' => 'pending',
@@ -27,17 +27,27 @@ final class LegacyFinancialStatusNormalizer
 
     public function transaction(array $transaction): string
     {
-        $category = $this->normalize((string)($transaction['category'] ?? $transaction['type'] ?? ''));
+        $category = $this->normalize((string)($transaction['category'] ?? ''));
+        if ($category === '') {
+            $category = $this->normalize((string)($transaction['type'] ?? ''));
+        }
+
         if (in_array($category, ['payment_reject', 'shop_order_reject'], true)) {
             return 'rejected';
         }
-        if (in_array($category, ['payment_cancel', 'shop_order_refund', 'shop_order_cancel'], true)) {
+        if (in_array($category, [
+            'payment_cancel',
+            'shop_refund',
+            'shop_order_refund',
+            'shop_order_cancel',
+        ], true)) {
             return 'cancelled';
         }
         if (in_array($category, [
             'payment_draft',
             'payment_apply',
             'shop_order',
+            'shop_order_done',
             'shop_order_complete',
             'shop_order_fulfill',
         ], true)) {
