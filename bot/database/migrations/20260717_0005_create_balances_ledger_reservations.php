@@ -9,7 +9,7 @@ return new class implements DatabaseMigrationInterface {
 
     public function description(): string
     {
-        return 'Create balances, immutable ledger, reservations and idempotency foundations without runtime cutover.';
+        return 'Create balances, append-only ledger, reservations and idempotency foundations without runtime cutover.';
     }
 
     public function transactional(): bool
@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS mgw_ledger_entries (
     source_ref VARCHAR(191) COLLATE utf8mb4_bin NULL,
     reservation_id VARCHAR(96) CHARACTER SET ascii COLLATE ascii_bin NULL,
     metadata_json JSON NULL,
+    previous_entry_sha256 CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    entry_sha256 CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     created_at_utc DATETIME(6) NOT NULL,
     UNIQUE KEY uq_mgw_ledger_entry_id (entry_id),
     UNIQUE KEY uq_mgw_ledger_idempotency (idempotency_key),
@@ -117,6 +119,7 @@ CREATE TABLE IF NOT EXISTS mgw_ledger_entries (
     INDEX idx_mgw_ledger_mgw_created (mgw_id, created_at_utc),
     INDEX idx_mgw_ledger_legacy_created (legacy_user_id, created_at_utc),
     INDEX idx_mgw_ledger_source (source_type, source_ref),
+    INDEX idx_mgw_ledger_integrity (account_ref, asset_code, entry_sha256),
     CONSTRAINT chk_mgw_ledger_available_before_nonnegative CHECK (available_before >= 0),
     CONSTRAINT chk_mgw_ledger_available_after_nonnegative CHECK (available_after >= 0),
     CONSTRAINT chk_mgw_ledger_reserved_before_nonnegative CHECK (reserved_before >= 0),
@@ -140,6 +143,7 @@ CREATE TABLE IF NOT EXISTS mgw_reservation_events (
     available_delta BIGINT NOT NULL DEFAULT 0,
     reserved_delta BIGINT NOT NULL DEFAULT 0,
     metadata_json JSON NULL,
+    event_sha256 CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     created_at_utc DATETIME(6) NOT NULL,
     UNIQUE KEY uq_mgw_reservation_event_id (event_id),
     UNIQUE KEY uq_mgw_reservation_event_key (reservation_id, event_key),
@@ -148,8 +152,6 @@ CREATE TABLE IF NOT EXISTS mgw_reservation_events (
         REFERENCES mgw_reservations (reservation_id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
-
-        $this->installMySqlImmutabilityTriggers($database);
     }
 
     private function upSqlite(DatabaseConnectionInterface $database): void
@@ -234,6 +236,8 @@ CREATE TABLE IF NOT EXISTS mgw_ledger_entries (
     source_ref TEXT NULL,
     reservation_id TEXT NULL,
     metadata_json TEXT NULL,
+    previous_entry_sha256 TEXT NULL,
+    entry_sha256 TEXT NOT NULL,
     created_at_utc TEXT NOT NULL,
     CHECK (available_after = available_before + available_delta),
     CHECK (reserved_after = reserved_before + reserved_delta),
@@ -245,6 +249,7 @@ SQL);
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_ledger_mgw_created ON mgw_ledger_entries (mgw_id, created_at_utc)');
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_ledger_legacy_created ON mgw_ledger_entries (legacy_user_id, created_at_utc)');
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_ledger_source ON mgw_ledger_entries (source_type, source_ref)');
+        $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_ledger_integrity ON mgw_ledger_entries (account_ref, asset_code, entry_sha256)');
 
         $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_reservation_events (
@@ -256,51 +261,12 @@ CREATE TABLE IF NOT EXISTS mgw_reservation_events (
     available_delta INTEGER NOT NULL DEFAULT 0,
     reserved_delta INTEGER NOT NULL DEFAULT 0,
     metadata_json TEXT NULL,
+    event_sha256 TEXT NOT NULL,
     created_at_utc TEXT NOT NULL,
     UNIQUE (reservation_id, event_key),
     FOREIGN KEY (reservation_id) REFERENCES mgw_reservations (reservation_id) ON DELETE RESTRICT ON UPDATE RESTRICT
 )
 SQL);
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_reservation_events_created ON mgw_reservation_events (reservation_id, created_at_utc)');
-
-        $this->installSqliteImmutabilityTriggers($database);
-    }
-
-    private function installMySqlImmutabilityTriggers(DatabaseConnectionInterface $database): void
-    {
-        foreach ([
-            'trg_mgw_ledger_entries_no_update',
-            'trg_mgw_ledger_entries_no_delete',
-            'trg_mgw_reservation_events_no_update',
-            'trg_mgw_reservation_events_no_delete',
-            'trg_mgw_reservations_no_delete',
-        ] as $trigger) {
-            $database->execute('DROP TRIGGER IF EXISTS `' . $trigger . '`');
-        }
-
-        $database->execute("CREATE TRIGGER trg_mgw_ledger_entries_no_update BEFORE UPDATE ON mgw_ledger_entries FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ledger entries are immutable'");
-        $database->execute("CREATE TRIGGER trg_mgw_ledger_entries_no_delete BEFORE DELETE ON mgw_ledger_entries FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ledger entries are immutable'");
-        $database->execute("CREATE TRIGGER trg_mgw_reservation_events_no_update BEFORE UPDATE ON mgw_reservation_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Reservation events are immutable'");
-        $database->execute("CREATE TRIGGER trg_mgw_reservation_events_no_delete BEFORE DELETE ON mgw_reservation_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Reservation events are immutable'");
-        $database->execute("CREATE TRIGGER trg_mgw_reservations_no_delete BEFORE DELETE ON mgw_reservations FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Reservations must be released or consumed, not deleted'");
-    }
-
-    private function installSqliteImmutabilityTriggers(DatabaseConnectionInterface $database): void
-    {
-        foreach ([
-            'trg_mgw_ledger_entries_no_update',
-            'trg_mgw_ledger_entries_no_delete',
-            'trg_mgw_reservation_events_no_update',
-            'trg_mgw_reservation_events_no_delete',
-            'trg_mgw_reservations_no_delete',
-        ] as $trigger) {
-            $database->execute('DROP TRIGGER IF EXISTS ' . $trigger);
-        }
-
-        $database->execute("CREATE TRIGGER trg_mgw_ledger_entries_no_update BEFORE UPDATE ON mgw_ledger_entries BEGIN SELECT RAISE(ABORT, 'Ledger entries are immutable'); END");
-        $database->execute("CREATE TRIGGER trg_mgw_ledger_entries_no_delete BEFORE DELETE ON mgw_ledger_entries BEGIN SELECT RAISE(ABORT, 'Ledger entries are immutable'); END");
-        $database->execute("CREATE TRIGGER trg_mgw_reservation_events_no_update BEFORE UPDATE ON mgw_reservation_events BEGIN SELECT RAISE(ABORT, 'Reservation events are immutable'); END");
-        $database->execute("CREATE TRIGGER trg_mgw_reservation_events_no_delete BEFORE DELETE ON mgw_reservation_events BEGIN SELECT RAISE(ABORT, 'Reservation events are immutable'); END");
-        $database->execute("CREATE TRIGGER trg_mgw_reservations_no_delete BEFORE DELETE ON mgw_reservations BEGIN SELECT RAISE(ABORT, 'Reservations must be released or consumed, not deleted'); END");
     }
 };
