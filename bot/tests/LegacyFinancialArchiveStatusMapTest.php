@@ -37,7 +37,7 @@ $transactionCases = [
     [['category' => 'shop_order_done'], 'completed'],
     [['category' => 'shop_refund'], 'cancelled'],
     [['category' => 'shop_order_reject'], 'rejected'],
-    [['category' => ''], 'type' => 'shop_order_done'], 'completed'],
+    [['category' => '', 'type' => 'shop_order_done'], 'completed'],
     [['category' => 'future_category'], 'unknown'],
 ];
 foreach ($transactionCases as [$transaction, $expected]) {
