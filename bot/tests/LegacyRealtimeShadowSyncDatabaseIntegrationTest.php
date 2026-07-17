@@ -92,6 +92,11 @@ foreach ($targets as $label => $target) {
     $database = PdoConnectionFactory::create($databaseConfig);
     $cleanup = static function () use ($database): void {
         foreach ([
+            'mgw_reservation_events',
+            'mgw_ledger_entries',
+            'mgw_reservations',
+            'mgw_idempotency_keys',
+            'mgw_balances',
             'mgw_legacy_realtime_shadow',
             'mgw_notifications',
             'mgw_invite_events',
@@ -115,7 +120,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $root . '/database/migrations');
-        $assertSame(4, $runner->migrate(false)['executed_count'], "{$label} must build all shadow schemas");
+        $assertSame(5, $runner->migrate(false)['executed_count'], "{$label} must build all shadow schemas");
 
         $source = [
             'games' => ['db-game-1' => [
