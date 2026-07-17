@@ -28,7 +28,12 @@ Every row keeps:
 - unknown legacy statuses remain preserved as raw text and normalize to `unknown` later;
 - source links are preserved even when an old transaction is orphaned;
 - runtime payment, shop, settlement and balance code remains unchanged;
-- no production import is part of this schema step.
+- no production import is part of this schema step;
+- later admin access must be read-only: no edit or delete endpoint for archive rows.
+
+## Rollback
+
+Before any archive import, rollback is deploying the previous release; the unused expand-only tables may remain. After an archive import, rows must not be edited or deleted. A retry uses a clean test database or a restored database backup.
 
 ## Next step
 
