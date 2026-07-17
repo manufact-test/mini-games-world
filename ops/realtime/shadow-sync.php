@@ -14,6 +14,7 @@ $mode = array_key_exists('run', $options)
     ? 'run'
     : (array_key_exists('dry-run', $options) ? 'dry-run' : 'status');
 $lockHandle = null;
+$exitCode = 0;
 
 try {
     $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
@@ -60,16 +61,17 @@ try {
         $result,
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
     ) . PHP_EOL);
-    exit(0);
 } catch (Throwable $error) {
+    $exitCode = 1;
     fwrite(STDERR, json_encode([
         'ok' => false,
         'error' => $error->getMessage(),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . PHP_EOL);
-    exit(1);
 } finally {
     if (is_resource($lockHandle)) {
         flock($lockHandle, LOCK_UN);
         fclose($lockHandle);
     }
 }
+
+exit($exitCode);
