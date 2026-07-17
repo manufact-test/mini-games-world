@@ -32,9 +32,9 @@ Status-only command:
 
 ## Hostinger deployment troubleshooting
 
-A deployment that fails immediately with `0s` and an empty build log did not reach the application build. Check the Hostinger Git connection and deployment branch before changing application code. Do not treat such a record as a PHP, migration or CI failure.
+A deployment that fails immediately with `0s` and an empty build log did not reach the application build. Check the Hostinger Git connection and connected branch before changing PHP or migration code.
 
-Keep the staging deployment branch moving forward from the last successfully deployed commit. After a squash merge, avoid force-moving the connected Hostinger branch to unrelated history; publish a normal follow-up commit or reconnect the Git deployment if Hostinger no longer accepts new revisions.
+Keep the test deployment branch moving forward from the last successfully deployed commit. After a squash merge, do not force-move the connected Hostinger branch to unrelated history; publish a normal follow-up commit or reconnect the Git deployment.
 
 ## Production
 
