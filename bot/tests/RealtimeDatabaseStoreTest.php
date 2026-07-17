@@ -39,7 +39,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(5, $runner->migrate(false)['executed_count'], 'Realtime store test must create all schemas');
+$assertSame(6, $runner->migrate(false)['executed_count'], 'Realtime store test must create all schemas');
 
 $now = '2026-07-16T20:00:00+00:00';
 foreach ([['mgw_a', 'Player A'], ['mgw_b', 'Player B']] as [$mgwId, $name]) {

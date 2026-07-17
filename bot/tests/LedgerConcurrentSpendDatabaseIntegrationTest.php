@@ -71,6 +71,9 @@ foreach ($targets as $label => $target) {
     $cleanup = static function () use ($config): void {
         $cleanupDatabase = PdoConnectionFactory::create($config);
         foreach ([
+            'mgw_legacy_financial_transactions',
+            'mgw_legacy_shop_orders',
+            'mgw_legacy_payments',
             'mgw_reservation_events',
             'mgw_ledger_entries',
             'mgw_reservations',
@@ -109,7 +112,7 @@ foreach ($targets as $label => $target) {
     try {
         $database = PdoConnectionFactory::create($config);
         $runner = new MigrationRunner($database, $root . '/database/migrations');
-        $assertSame(5, $runner->migrate(false)['executed_count'], "{$label} must build the ledger schema");
+        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} must build the ledger schema");
 
         $mgwId = $label === 'MySQL' ? 'MGW-CONCURMYSQL001' : 'MGW-CONCURMARIA001';
         $now = '2026-07-17 15:00:00.000000';

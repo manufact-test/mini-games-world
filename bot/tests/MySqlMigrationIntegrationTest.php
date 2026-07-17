@@ -56,6 +56,9 @@ $database = PdoConnectionFactory::create($config);
 
 $cleanup = static function () use ($database): void {
     foreach ([
+        'mgw_legacy_financial_transactions',
+        'mgw_legacy_shop_orders',
+        'mgw_legacy_payments',
         'mgw_reservation_events',
         'mgw_ledger_entries',
         'mgw_reservations',
@@ -92,16 +95,16 @@ try {
 
     $before = $runner->status();
     $assertSame('mysql', $before['driver'], 'CI integration must use PDO mysql');
-    $assertSame(5, $before['pending_count'], 'Clean MySQL schema must have five pending migrations');
+    $assertSame(6, $before['pending_count'], 'Clean MySQL schema must have six pending migrations');
 
     $migrated = $runner->migrate(false);
-    $assertSame(5, $migrated['executed_count'], 'MySQL migrations must execute once');
+    $assertSame(6, $migrated['executed_count'], 'MySQL migrations must execute once');
     foreach ($migrated['executed'] as $migration) {
         $assertSame(false, $migration['transactional'], 'MySQL DDL migrations must not use a wrapping transaction');
     }
 
     $after = $runner->status();
-    $assertSame(5, $after['applied_count'], 'MySQL migration records must be persisted');
+    $assertSame(6, $after['applied_count'], 'MySQL migration records must be persisted');
     $assertSame(0, $after['pending_count'], 'MySQL schema must be current after migration');
 
     $secondRun = $runner->migrate(false);
@@ -130,12 +133,15 @@ try {
         'mgw_reservations',
         'mgw_ledger_entries',
         'mgw_reservation_events',
+        'mgw_legacy_payments',
+        'mgw_legacy_shop_orders',
+        'mgw_legacy_financial_transactions',
     ] as $table) {
         $assertSame('INNODB', $tableEngine($table), $table . ' must use InnoDB');
     }
 
     $checksumRows = $database->fetchAll('SELECT checksum FROM mgw_schema_migrations ORDER BY version');
-    $assertSame(5, count($checksumRows), 'Every applied migration must store a checksum');
+    $assertSame(6, count($checksumRows), 'Every applied migration must store a checksum');
     foreach ($checksumRows as $row) {
         $assertSame(64, strlen((string)$row['checksum']), 'Applied migration checksum must be stored');
     }

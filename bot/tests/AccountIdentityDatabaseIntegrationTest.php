@@ -75,6 +75,9 @@ foreach ($targets as $label => $target) {
     $database = PdoConnectionFactory::create($config);
     $cleanup = static function () use ($database): void {
         foreach ([
+            'mgw_legacy_financial_transactions',
+            'mgw_legacy_shop_orders',
+            'mgw_legacy_payments',
             'mgw_reservation_events',
             'mgw_ledger_entries',
             'mgw_reservations',
@@ -103,7 +106,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(5, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
+        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
 
         $accounts = new AccountIdentityService($database, 3600);
         $first = $accounts->resolveTelegramUser([
