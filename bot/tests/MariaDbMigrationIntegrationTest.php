@@ -56,6 +56,11 @@ $database = PdoConnectionFactory::create($config);
 
 $cleanup = static function () use ($database): void {
     foreach ([
+        'mgw_reservation_events',
+        'mgw_ledger_entries',
+        'mgw_reservations',
+        'mgw_idempotency_keys',
+        'mgw_balances',
         'mgw_legacy_realtime_shadow',
         'mgw_notifications',
         'mgw_invite_events',
@@ -87,17 +92,16 @@ try {
 
     $before = $runner->status();
     $assertSame('mysql', $before['driver'], 'MariaDB must use PDO mysql');
-    $assertSame(4, $before['pending_count'], 'Clean MariaDB schema must have four pending migrations');
+    $assertSame(5, $before['pending_count'], 'Clean MariaDB schema must have five pending migrations');
 
     $migrated = $runner->migrate(false);
-    $assertSame(4, $migrated['executed_count'], 'MariaDB migrations must execute once');
-    $assertSame(false, $migrated['executed'][0]['transactional'], 'MariaDB metadata DDL migration must not use a wrapping transaction');
-    $assertSame(false, $migrated['executed'][1]['transactional'], 'MariaDB account DDL migration must not use a wrapping transaction');
-    $assertSame(false, $migrated['executed'][2]['transactional'], 'MariaDB realtime DDL migration must not use a wrapping transaction');
-    $assertSame(false, $migrated['executed'][3]['transactional'], 'MariaDB shadow DDL migration must not use a wrapping transaction');
+    $assertSame(5, $migrated['executed_count'], 'MariaDB migrations must execute once');
+    foreach ($migrated['executed'] as $migration) {
+        $assertSame(false, $migration['transactional'], 'MariaDB DDL migrations must not use a wrapping transaction');
+    }
 
     $after = $runner->status();
-    $assertSame(4, $after['applied_count'], 'MariaDB migration records must be persisted');
+    $assertSame(5, $after['applied_count'], 'MariaDB migration records must be persisted');
     $assertSame(0, $after['pending_count'], 'MariaDB schema must be current after migration');
 
     $secondRun = $runner->migrate(false);
@@ -112,17 +116,26 @@ try {
 
     $assertSame('INNODB', $tableEngine('mgw_meta'), 'MariaDB mgw_meta must use InnoDB');
     $assertTrue(str_starts_with($metaCollation, 'utf8mb4_'), 'MariaDB mgw_meta must use utf8mb4 collation');
-    $assertSame('INNODB', $tableEngine('mgw_schema_migrations'), 'MariaDB migration registry must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_users'), 'MariaDB MGW users must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_identities'), 'MariaDB MGW identities must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_matches'), 'MariaDB MGW matches must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_match_player_snapshots'), 'MariaDB private match snapshots must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_invites'), 'MariaDB MGW invites must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_notifications'), 'MariaDB MGW notifications must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_legacy_realtime_shadow'), 'MariaDB legacy realtime shadow must use InnoDB');
+    foreach ([
+        'mgw_schema_migrations',
+        'mgw_users',
+        'mgw_identities',
+        'mgw_matches',
+        'mgw_match_player_snapshots',
+        'mgw_invites',
+        'mgw_notifications',
+        'mgw_legacy_realtime_shadow',
+        'mgw_balances',
+        'mgw_idempotency_keys',
+        'mgw_reservations',
+        'mgw_ledger_entries',
+        'mgw_reservation_events',
+    ] as $table) {
+        $assertSame('INNODB', $tableEngine($table), 'MariaDB ' . $table . ' must use InnoDB');
+    }
 
     $checksumRows = $database->fetchAll('SELECT checksum FROM mgw_schema_migrations ORDER BY version');
-    $assertSame(4, count($checksumRows), 'Every MariaDB migration must store a checksum');
+    $assertSame(5, count($checksumRows), 'Every MariaDB migration must store a checksum');
     foreach ($checksumRows as $row) {
         $assertSame(64, strlen((string)$row['checksum']), 'MariaDB applied migration checksum must be stored');
     }
