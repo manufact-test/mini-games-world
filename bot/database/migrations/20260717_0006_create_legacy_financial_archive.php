@@ -51,9 +51,7 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_payments (
     UNIQUE KEY uq_mgw_legacy_payments_source (source_file, source_index),
     INDEX idx_mgw_legacy_payments_account (account_ref, source_created_at_utc),
     INDEX idx_mgw_legacy_payments_status (status_normalized, source_created_at_utc),
-    INDEX idx_mgw_legacy_payments_hash (snapshot_sha256),
-    CONSTRAINT fk_mgw_legacy_payments_user FOREIGN KEY (mgw_id)
-        REFERENCES mgw_users (mgw_id) ON DELETE SET NULL ON UPDATE RESTRICT
+    INDEX idx_mgw_legacy_payments_hash (snapshot_sha256)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
 
@@ -83,9 +81,7 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_shop_orders (
     UNIQUE KEY uq_mgw_legacy_orders_source (source_file, source_index),
     INDEX idx_mgw_legacy_orders_account (account_ref, source_created_at_utc),
     INDEX idx_mgw_legacy_orders_status (status_normalized, source_created_at_utc),
-    INDEX idx_mgw_legacy_orders_hash (snapshot_sha256),
-    CONSTRAINT fk_mgw_legacy_orders_user FOREIGN KEY (mgw_id)
-        REFERENCES mgw_users (mgw_id) ON DELETE SET NULL ON UPDATE RESTRICT
+    INDEX idx_mgw_legacy_orders_hash (snapshot_sha256)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
 
@@ -118,9 +114,7 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_financial_transactions (
     INDEX idx_mgw_legacy_financial_tx_account (account_ref, source_created_at_utc),
     INDEX idx_mgw_legacy_financial_tx_payment (legacy_payment_id),
     INDEX idx_mgw_legacy_financial_tx_order (legacy_order_id),
-    INDEX idx_mgw_legacy_financial_tx_hash (snapshot_sha256),
-    CONSTRAINT fk_mgw_legacy_financial_tx_user FOREIGN KEY (mgw_id)
-        REFERENCES mgw_users (mgw_id) ON DELETE SET NULL ON UPDATE RESTRICT
+    INDEX idx_mgw_legacy_financial_tx_hash (snapshot_sha256)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
     }
@@ -151,8 +145,7 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_payments (
     source_file TEXT NOT NULL,
     source_index INTEGER NOT NULL CHECK (source_index >= 0),
     archived_at_utc TEXT NOT NULL,
-    UNIQUE (source_file, source_index),
-    FOREIGN KEY (mgw_id) REFERENCES mgw_users (mgw_id) ON DELETE SET NULL ON UPDATE RESTRICT
+    UNIQUE (source_file, source_index)
 )
 SQL);
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_legacy_payments_account ON mgw_legacy_payments (account_ref, source_created_at_utc)');
@@ -182,8 +175,7 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_shop_orders (
     source_file TEXT NOT NULL,
     source_index INTEGER NOT NULL CHECK (source_index >= 0),
     archived_at_utc TEXT NOT NULL,
-    UNIQUE (source_file, source_index),
-    FOREIGN KEY (mgw_id) REFERENCES mgw_users (mgw_id) ON DELETE SET NULL ON UPDATE RESTRICT
+    UNIQUE (source_file, source_index)
 )
 SQL);
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_legacy_orders_account ON mgw_legacy_shop_orders (account_ref, source_created_at_utc)');
@@ -215,8 +207,7 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_financial_transactions (
     source_file TEXT NOT NULL,
     source_index INTEGER NOT NULL CHECK (source_index >= 0),
     archived_at_utc TEXT NOT NULL,
-    UNIQUE (source_file, source_index),
-    FOREIGN KEY (mgw_id) REFERENCES mgw_users (mgw_id) ON DELETE SET NULL ON UPDATE RESTRICT
+    UNIQUE (source_file, source_index)
 )
 SQL);
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_legacy_financial_tx_account ON mgw_legacy_financial_transactions (account_ref, source_created_at_utc)');
