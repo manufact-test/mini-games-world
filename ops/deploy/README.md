@@ -30,12 +30,6 @@ Status-only command:
 /usr/bin/php /absolute/path/public_html/ops/deploy/managed-migrations.php --status
 ```
 
-## Hostinger deployment troubleshooting
-
-A deployment that fails immediately with `0s` and an empty build log did not reach the application build. Check the Hostinger Git connection and connected branch before changing PHP or migration code.
-
-Keep the test deployment branch moving forward from the last successfully deployed commit. After a squash merge, do not force-move the connected Hostinger branch to unrelated history; publish a normal follow-up commit or reconnect the Git deployment.
-
 ## Production
 
 Production defaults to disabled. A production migration requires all of the following at the same time:
