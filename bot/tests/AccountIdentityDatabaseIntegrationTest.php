@@ -103,7 +103,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(5, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
+        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
 
         $accounts = new AccountIdentityService($database, 3600);
         $first = $accounts->resolveTelegramUser([
