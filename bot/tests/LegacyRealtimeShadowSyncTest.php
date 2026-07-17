@@ -18,16 +18,35 @@ if (!extension_loaded('pdo_sqlite')) {
 final class ArrayRealtimeShadowStorage implements StorageAdapterInterface
 {
     public function __construct(private array $data) {}
-    public function replace(array $data): void { $this->data = $data; }
-    public function transaction(callable $callback): mixed { return $callback($this->data); }
-    public function readOnly(callable $callback): mixed { $snapshot = $this->data; return $callback($snapshot); }
-    public function driver(): string { return 'json'; }
+
+    public function replace(array $data): void
+    {
+        $this->data = $data;
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        return $callback($this->data);
+    }
+
+    public function readOnly(callable $callback): mixed
+    {
+        $snapshot = $this->data;
+        return $callback($snapshot);
+    }
+
+    public function driver(): string
+    {
+        return 'json';
+    }
 }
 
 $assertions = 0;
 $assertSame = static function (mixed $expected, mixed $actual, string $message) use (&$assertions): void {
     $assertions++;
-    if ($expected !== $actual) throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+    if ($expected !== $actual) {
+        throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+    }
 };
 $assertTrue = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
@@ -35,7 +54,9 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
 };
 $assertThrows = static function (callable $callback, string $contains, string $message) use (&$assertions): void {
     $assertions++;
-    try { $callback(); } catch (Throwable $error) {
+    try {
+        $callback();
+    } catch (Throwable $error) {
         if (str_contains(strtolower($error->getMessage()), strtolower($contains))) return;
         throw new RuntimeException($message . ': unexpected error ' . $error->getMessage());
     }
@@ -49,28 +70,38 @@ $runner = new MigrationRunner($database, $root . '/database/migrations');
 $assertSame(4, $runner->migrate(false)['executed_count'], 'Shadow test schema must include all migrations');
 
 $initial = [
-    'games' => ['game-1' => [
-        'id' => 'game-1', 'status' => 'active',
-        'updated_at' => '2026-07-17T09:00:00+00:00',
-        'server_state' => ['z' => 2, 'a' => 1],
-    ]],
+    'games' => [
+        'game-1' => [
+            'id' => 'game-1',
+            'status' => 'active',
+            'updated_at' => '2026-07-17T09:00:00+00:00',
+            'server_state' => ['z' => 2, 'a' => 1],
+        ],
+    ],
     'queue' => [[
-        'id' => 'queue-1', 'user_id' => '1001', 'game_type' => 'domino',
+        'id' => 'queue-1',
+        'user_id' => '1001',
+        'game_type' => 'domino',
         'updated_at' => '2026-07-17T09:00:01+00:00',
     ]],
     'invites' => [[
-        'id' => 'invite-1', 'token' => 'token-1', 'status' => 'pending',
+        'id' => 'invite-1',
+        'token' => 'token-1',
+        'status' => 'pending',
         'updated_at' => '2026-07-17T09:00:02+00:00',
     ]],
     'notifications' => [[
-        'id' => 'notification-1', 'event_key' => 'invite:invite-1:received',
-        'user_id' => '1002', 'message' => 'Первое уведомление',
+        'id' => 'notification-1',
+        'event_key' => 'invite:invite-1:received',
+        'user_id' => '1002',
+        'message' => 'Первое уведомление',
         'created_at' => '2026-07-17T09:00:03+00:00',
     ]],
 ];
 
 $storage = new ArrayRealtimeShadowStorage($initial);
 $service = new LegacyRealtimeShadowSyncService($storage, $database);
+
 $preview = $service->preview();
 $assertSame(true, $preview['dry_run'], 'Preview must be dry-run');
 foreach (['games', 'queue', 'invites', 'notifications'] as $section) {
@@ -94,8 +125,13 @@ foreach (['games', 'queue', 'invites', 'notifications'] as $section) {
 $assertSame($first['source_fingerprint'], $repeat['source_fingerprint'], 'Repeated source fingerprint must be stable');
 
 $database->execute(
-    'UPDATE mgw_legacy_realtime_shadow SET payload_json = :payload_json WHERE entity_type = :entity_type AND entity_key = :entity_key',
-    ['payload_json' => '{"id":"game-1","status":"tampered"}', 'entity_type' => 'games', 'entity_key' => 'game-1']
+    'UPDATE mgw_legacy_realtime_shadow SET payload_json = :payload_json
+     WHERE entity_type = :entity_type AND entity_key = :entity_key',
+    [
+        'payload_json' => '{"id":"game-1","status":"tampered"}',
+        'entity_type' => 'games',
+        'entity_key' => 'game-1',
+    ]
 );
 $repairPreview = $service->preview();
 $assertSame(1, $repairPreview['sections']['games']['repair_count'], 'Payload/hash corruption must be detected');
@@ -103,7 +139,8 @@ $assertSame(1, $repairPreview['sections']['games']['updated_count'], 'Corrupted 
 $repairRun = $service->run();
 $assertSame(1, $repairRun['sections']['games']['repair_count'], 'Run must report the repaired row');
 $repairedPayload = json_decode((string)$database->fetchValue(
-    'SELECT payload_json FROM mgw_legacy_realtime_shadow WHERE entity_type = :entity_type AND entity_key = :entity_key',
+    'SELECT payload_json FROM mgw_legacy_realtime_shadow
+     WHERE entity_type = :entity_type AND entity_key = :entity_key',
     ['entity_type' => 'games', 'entity_key' => 'game-1']
 ), true, 512, JSON_THROW_ON_ERROR);
 $assertSame('active', $repairedPayload['status'] ?? null, 'Run must restore exact source payload after corruption');
@@ -113,7 +150,8 @@ $reordered = $initial;
 $reordered['games']['game-1'] = [
     'server_state' => ['a' => 1, 'z' => 2],
     'updated_at' => '2026-07-17T09:00:00+00:00',
-    'status' => 'active', 'id' => 'game-1',
+    'status' => 'active',
+    'id' => 'game-1',
 ];
 $storage->replace($reordered);
 $canonical = $service->preview();
@@ -129,11 +167,17 @@ $delta = $service->run();
 $assertSame(1, $delta['sections']['notifications']['updated_count'], 'Changed notification must update once');
 $assertSame(1, $delta['sections']['invites']['deleted_count'], 'Removed invite must be pruned');
 $assertSame(3, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_legacy_realtime_shadow'), 'Pruned shadow must match source count');
-$assertSame(0, (int)$database->fetchValue(
-    'SELECT COUNT(*) FROM mgw_legacy_realtime_shadow WHERE entity_type = :type', ['type' => 'invites']
-), 'Removed invite must not remain in shadow storage');
+$assertSame(
+    0,
+    (int)$database->fetchValue(
+        'SELECT COUNT(*) FROM mgw_legacy_realtime_shadow WHERE entity_type = :type',
+        ['type' => 'invites']
+    ),
+    'Removed invite must not remain in shadow storage'
+);
 $payload = (string)$database->fetchValue(
-    'SELECT payload_json FROM mgw_legacy_realtime_shadow WHERE entity_type = :type AND entity_key = :key',
+    'SELECT payload_json FROM mgw_legacy_realtime_shadow
+     WHERE entity_type = :type AND entity_key = :key',
     ['type' => 'notifications', 'key' => 'notification-1']
 );
 $assertTrue(str_contains($payload, 'Обновлённое уведомление'), 'Updated exact JSON payload must be stored');
@@ -144,6 +188,10 @@ $duplicate['queue'] = [
     ['user_id' => '1001', 'game_type' => 'chess'],
 ];
 $storage->replace($duplicate);
-$assertThrows(static fn() => $service->preview(), 'duplicate legacy shadow key', 'Duplicate source identities must fail closed');
+$assertThrows(
+    static fn() => $service->preview(),
+    'duplicate legacy shadow key',
+    'Duplicate source identities must fail closed'
+);
 
 fwrite(STDOUT, "LegacyRealtimeShadowSyncTest: {$assertions} assertions passed\n");
