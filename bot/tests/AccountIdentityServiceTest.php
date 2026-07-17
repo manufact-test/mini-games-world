@@ -41,7 +41,7 @@ $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
 $migration = $runner->migrate(false);
-$assertSame(3, $migration['executed_count'], 'Account test schema must include all migrations');
+$assertSame(4, $migration['executed_count'], 'Account test schema must include all migrations');
 
 $accounts = new AccountIdentityService($database, 3600);
 $telegram = [
