@@ -64,6 +64,7 @@ foreach ($targets as $label => $target) {
     $database = PdoConnectionFactory::create($databaseConfig);
     $cleanup = static function () use ($database): void {
         foreach ([
+            'mgw_legacy_realtime_shadow',
             'mgw_notifications',
             'mgw_invite_events',
             'mgw_invites',
@@ -86,7 +87,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(3, $runner->migrate(false)['executed_count'], "{$label} must build the realtime schema");
+        $assertSame(4, $runner->migrate(false)['executed_count'], "{$label} must build the realtime schema");
 
         foreach ([['mgw_rt_a', 'A'], ['mgw_rt_b', 'B']] as [$mgwId, $name]) {
             $database->execute(
