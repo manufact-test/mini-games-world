@@ -120,8 +120,31 @@ $repeat = $service->run();
 foreach (['games', 'queue', 'invites', 'notifications'] as $section) {
     $assertSame(1, $repeat['sections'][$section]['unchanged_count'], $section . ' repeat must be unchanged');
     $assertSame(0, $repeat['sections'][$section]['updated_count'], $section . ' repeat must not update');
+    $assertSame(0, $repeat['sections'][$section]['repair_count'], $section . ' repeat must not repair healthy rows');
 }
 $assertSame($first['source_fingerprint'], $repeat['source_fingerprint'], 'Repeated source fingerprint must be stable');
+
+$database->execute(
+    'UPDATE mgw_legacy_realtime_shadow SET payload_json = :payload_json
+     WHERE entity_type = :entity_type AND entity_key = :entity_key',
+    [
+        'payload_json' => '{"id":"game-1","status":"tampered"}',
+        'entity_type' => 'games',
+        'entity_key' => 'game-1',
+    ]
+);
+$repairPreview = $service->preview();
+$assertSame(1, $repairPreview['sections']['games']['repair_count'], 'Payload/hash corruption must be detected');
+$assertSame(1, $repairPreview['sections']['games']['updated_count'], 'Corrupted payload must be scheduled for update');
+$repairRun = $service->run();
+$assertSame(1, $repairRun['sections']['games']['repair_count'], 'Run must report the repaired row');
+$repairedPayload = json_decode((string)$database->fetchValue(
+    'SELECT payload_json FROM mgw_legacy_realtime_shadow
+     WHERE entity_type = :entity_type AND entity_key = :entity_key',
+    ['entity_type' => 'games', 'entity_key' => 'game-1']
+), true, 512, JSON_THROW_ON_ERROR);
+$assertSame('active', $repairedPayload['status'] ?? null, 'Run must restore exact source payload after corruption');
+$assertSame(0, $service->preview()['sections']['games']['repair_count'], 'Repaired row must become healthy');
 
 $reordered = $initial;
 $reordered['games']['game-1'] = [
