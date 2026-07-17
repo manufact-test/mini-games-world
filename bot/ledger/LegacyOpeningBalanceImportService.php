@@ -19,20 +19,25 @@ final class LegacyOpeningBalanceImportService
 
     public function preview(): array
     {
-        return $this->inspect(false);
+        return $this->inspect();
     }
 
     public function run(): array
     {
-        $plan = $this->inspect(true);
+        $plan = $this->inspect();
         if (!$plan['ready']) {
             throw new RuntimeException('Legacy opening balance import is not ready: ' . implode('; ', $plan['blocking_reasons']));
         }
 
-        $fingerprint = (string)$plan['source_fingerprint'];
+        $source = $this->loadSource();
+        $fingerprint = $source['fingerprint'];
+        if (!hash_equals((string)$plan['source_fingerprint'], $fingerprint)) {
+            throw new RuntimeException('Legacy economy shadow changed before opening balance import started.');
+        }
+
         $this->writeMeta('started', $fingerprint, [
-            'source_user_count' => $plan['source_user_count'],
-            'source_asset_count' => $plan['source_asset_count'],
+            'source_user_count' => $source['user_count'],
+            'source_asset_count' => count($source['items']),
             'started_at_utc' => $this->now(),
         ]);
 
@@ -40,7 +45,7 @@ final class LegacyOpeningBalanceImportService
         $createdLedgerCount = 0;
         $replayedLedgerCount = 0;
 
-        foreach ($this->loadSource()['items'] as $item) {
+        foreach ($source['items'] as $item) {
             if ($item['amount'] === 0) {
                 if ($this->ensureZeroBalance($item)) $createdBalanceCount++;
                 continue;
@@ -65,8 +70,12 @@ final class LegacyOpeningBalanceImportService
                 ],
                 'occurred_at_utc' => $item['occurred_at_utc'],
             ]);
-            if (!empty($result['replayed'])) $replayedLedgerCount++;
-            else $createdLedgerCount++;
+            if (!empty($result['replayed'])) {
+                $replayedLedgerCount++;
+            } else {
+                $createdBalanceCount++;
+                $createdLedgerCount++;
+            }
         }
 
         $current = $this->loadSource();
@@ -80,7 +89,7 @@ final class LegacyOpeningBalanceImportService
         }
 
         $completedAt = $this->now();
-        $this->writeMeta('completed', $fingerprint, [
+        $details = [
             'source_user_count' => $current['user_count'],
             'source_asset_count' => count($current['items']),
             'created_balance_count' => $createdBalanceCount,
@@ -89,7 +98,8 @@ final class LegacyOpeningBalanceImportService
             'completed_at_utc' => $completedAt,
             'source_totals' => $verification['source_totals'],
             'database_totals' => $verification['database_totals'],
-        ]);
+        ];
+        $this->writeMeta('completed', $fingerprint, $details);
 
         return [
             'ok' => true,
@@ -106,7 +116,7 @@ final class LegacyOpeningBalanceImportService
         ];
     }
 
-    private function inspect(bool $forRun): array
+    private function inspect(): array
     {
         $source = $this->loadSource();
         $meta = $this->loadMeta();
@@ -139,7 +149,7 @@ final class LegacyOpeningBalanceImportService
                 ['account_ref' => $item['account_ref'], 'asset_code' => $item['asset_code']]
             );
             $entryRows = $this->database->fetchAll(
-                'SELECT idempotency_key, account_ref, legacy_user_id, asset_code,
+                'SELECT idempotency_key, account_ref, mgw_id, legacy_user_id, asset_code,
                         available_delta, reserved_delta, available_before, available_after,
                         reserved_before, reserved_after, category, source_type, source_ref
                  FROM mgw_ledger_entries WHERE idempotency_key = :idempotency_key',
@@ -182,7 +192,6 @@ final class LegacyOpeningBalanceImportService
                 $conflictCount++;
                 $blocking[] = $item['legacy_user_id'] . '/' . $item['asset_code'] . ': ' . $reason;
             }
-
             if (count($items) < 50) {
                 $items[] = [
                     'legacy_user_id' => $item['legacy_user_id'],
@@ -204,19 +213,12 @@ final class LegacyOpeningBalanceImportService
         foreach ($this->database->fetchAll('SELECT idempotency_key FROM mgw_ledger_entries') as $row) {
             if (!isset($expectedOperationKeys[(string)$row['idempotency_key']])) $unmanagedLedgerCount++;
         }
-        if ($unmanagedBalanceCount > 0) {
-            $blocking[] = 'Target contains balances outside the opening import plan.';
-        }
-        if ($unmanagedLedgerCount > 0) {
-            $blocking[] = 'Target contains ledger entries outside the opening import plan.';
-        }
+        if ($unmanagedBalanceCount > 0) $blocking[] = 'Target contains balances outside the opening import plan.';
+        if ($unmanagedLedgerCount > 0) $blocking[] = 'Target contains ledger entries outside the opening import plan.';
 
         $status = $meta['status'] ?? 'not_started';
         if ($status === 'completed' && $blocking === [] && ($plannedBalanceCreates > 0 || $plannedLedgerCreates > 0)) {
             $blocking[] = 'Completed opening import is missing expected target rows.';
-        }
-        if ($forRun && $status === 'completed' && $blocking === []) {
-            // Re-running the same completed import is allowed and must be a no-op/replay.
         }
 
         return [
@@ -263,6 +265,7 @@ final class LegacyOpeningBalanceImportService
                 throw new RuntimeException('Economy shadow payload is invalid for legacy user ' . $legacyUserId . '.');
             }
             if (!is_array($payload)) throw new RuntimeException('Economy shadow payload is not an object.');
+
             $canonical = LedgerIntegrity::canonicalJson($payload);
             $actualHash = hash('sha256', $canonical);
             $storedHash = strtolower(trim((string)($row['payload_sha256'] ?? '')));
@@ -284,7 +287,7 @@ final class LegacyOpeningBalanceImportService
             foreach (self::ASSETS as $assetCode => $field) {
                 $amount = $this->nonNegativeInteger($payload[$field] ?? null, $field, $legacyUserId);
                 $operationKey = 'legacy_opening:v1:' . substr(hash('sha256', $legacyUserId . '|' . $assetCode), 0, 48);
-                $item = [
+                $items[] = [
                     'legacy_user_id' => $legacyUserId,
                     'mgw_id' => $mgwId,
                     'account_ref' => $accountRef,
@@ -296,7 +299,6 @@ final class LegacyOpeningBalanceImportService
                     'source_ref' => 'economy_user_balance:' . $this->safeSourceRef($legacyUserId),
                     'occurred_at_utc' => $occurredAt,
                 ];
-                $items[] = $item;
                 $totals[$assetCode] += $amount;
                 $fingerprintParts[] = $legacyUserId . "\0" . $assetCode . "\0" . $amount . "\0" . $storedHash;
             }
@@ -433,6 +435,7 @@ final class LegacyOpeningBalanceImportService
     {
         return (string)($entry['idempotency_key'] ?? '') === $item['operation_key']
             && (string)($entry['account_ref'] ?? '') === $item['account_ref']
+            && $this->nullable((string)($entry['mgw_id'] ?? '')) === $item['mgw_id']
             && $this->nullable((string)($entry['legacy_user_id'] ?? '')) === $item['legacy_user_id']
             && (string)($entry['asset_code'] ?? '') === $item['asset_code']
             && (int)($entry['available_delta'] ?? 0) === $item['amount']
