@@ -23,9 +23,10 @@ Every row keeps:
 
 ## Safety
 
-- archive tables are append-only by design and have no mutable `updated_at_utc` field;
+- archive writes are insert-only at the application layer and the tables have no mutable `updated_at_utc` field;
 - exact source positions are unique, so a repeated import cannot silently duplicate rows;
 - unknown legacy statuses remain preserved as raw text and normalize to `unknown` later;
+- archive records do not depend on mutable user rows and keep their original account references;
 - source links are preserved even when an old transaction is orphaned;
 - runtime payment, shop, settlement and balance code remains unchanged;
 - no production import is part of this schema step;
