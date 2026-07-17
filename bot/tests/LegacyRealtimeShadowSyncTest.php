@@ -67,7 +67,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(5, $runner->migrate(false)['executed_count'], 'Shadow test schema must include all migrations');
+$assertSame(6, $runner->migrate(false)['executed_count'], 'Shadow test schema must include all migrations');
 
 $initial = [
     'games' => [
