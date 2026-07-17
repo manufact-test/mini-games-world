@@ -49,7 +49,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(5, $runner->migrate(false)['executed_count'], 'Economy shadow test must include all migrations');
+$assertSame(6, $runner->migrate(false)['executed_count'], 'Economy shadow test must include all migrations');
 
 $now = '2026-07-17 16:00:00.000000';
 $mgwId = 'MGW-0123456789ABCDEF';
