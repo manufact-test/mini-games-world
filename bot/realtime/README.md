@@ -40,3 +40,5 @@ Nullable MGW foreign keys allow legacy JSON records to be imported before every 
 - queue has one row per player reference;
 - invite events and notifications have idempotency keys;
 - runtime cutover requires a later tested adapter/import step.
+
+<!-- temporary Hostinger fast-forward bridge -->
