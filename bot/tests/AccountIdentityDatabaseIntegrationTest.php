@@ -75,6 +75,7 @@ foreach ($targets as $label => $target) {
     $database = PdoConnectionFactory::create($config);
     $cleanup = static function () use ($database): void {
         foreach ([
+            'mgw_legacy_realtime_shadow',
             'mgw_notifications',
             'mgw_invite_events',
             'mgw_invites',
@@ -97,7 +98,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(3, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
+        $assertSame(4, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
 
         $accounts = new AccountIdentityService($database, 3600);
         $first = $accounts->resolveTelegramUser([

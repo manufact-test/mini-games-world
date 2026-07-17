@@ -56,6 +56,7 @@ $database = PdoConnectionFactory::create($config);
 
 $cleanup = static function () use ($database): void {
     foreach ([
+        'mgw_legacy_realtime_shadow',
         'mgw_notifications',
         'mgw_invite_events',
         'mgw_invites',
@@ -86,16 +87,17 @@ try {
 
     $before = $runner->status();
     $assertSame('mysql', $before['driver'], 'MariaDB must use PDO mysql');
-    $assertSame(3, $before['pending_count'], 'Clean MariaDB schema must have three pending migrations');
+    $assertSame(4, $before['pending_count'], 'Clean MariaDB schema must have four pending migrations');
 
     $migrated = $runner->migrate(false);
-    $assertSame(3, $migrated['executed_count'], 'MariaDB migrations must execute once');
+    $assertSame(4, $migrated['executed_count'], 'MariaDB migrations must execute once');
     $assertSame(false, $migrated['executed'][0]['transactional'], 'MariaDB metadata DDL migration must not use a wrapping transaction');
     $assertSame(false, $migrated['executed'][1]['transactional'], 'MariaDB account DDL migration must not use a wrapping transaction');
     $assertSame(false, $migrated['executed'][2]['transactional'], 'MariaDB realtime DDL migration must not use a wrapping transaction');
+    $assertSame(false, $migrated['executed'][3]['transactional'], 'MariaDB shadow DDL migration must not use a wrapping transaction');
 
     $after = $runner->status();
-    $assertSame(3, $after['applied_count'], 'MariaDB migration records must be persisted');
+    $assertSame(4, $after['applied_count'], 'MariaDB migration records must be persisted');
     $assertSame(0, $after['pending_count'], 'MariaDB schema must be current after migration');
 
     $secondRun = $runner->migrate(false);
@@ -117,9 +119,10 @@ try {
     $assertSame('INNODB', $tableEngine('mgw_match_player_snapshots'), 'MariaDB private match snapshots must use InnoDB');
     $assertSame('INNODB', $tableEngine('mgw_invites'), 'MariaDB MGW invites must use InnoDB');
     $assertSame('INNODB', $tableEngine('mgw_notifications'), 'MariaDB MGW notifications must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_legacy_realtime_shadow'), 'MariaDB legacy realtime shadow must use InnoDB');
 
     $checksumRows = $database->fetchAll('SELECT checksum FROM mgw_schema_migrations ORDER BY version');
-    $assertSame(3, count($checksumRows), 'Every MariaDB migration must store a checksum');
+    $assertSame(4, count($checksumRows), 'Every MariaDB migration must store a checksum');
     foreach ($checksumRows as $row) {
         $assertSame(64, strlen((string)$row['checksum']), 'MariaDB applied migration checksum must be stored');
     }
