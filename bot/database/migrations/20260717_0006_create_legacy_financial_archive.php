@@ -9,7 +9,7 @@ return new class implements DatabaseMigrationInterface {
 
     public function description(): string
     {
-        return 'Create immutable legacy payment, shop order and related transaction archives without runtime cutover.';
+        return 'Create historical legacy payment, shop order and related transaction archives without runtime cutover.';
     }
 
     public function transactional(): bool
@@ -51,7 +51,9 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_payments (
     UNIQUE KEY uq_mgw_legacy_payments_source (source_file, source_index),
     INDEX idx_mgw_legacy_payments_account (account_ref, source_created_at_utc),
     INDEX idx_mgw_legacy_payments_status (status_normalized, source_created_at_utc),
-    INDEX idx_mgw_legacy_payments_hash (snapshot_sha256)
+    INDEX idx_mgw_legacy_payments_hash (snapshot_sha256),
+    CONSTRAINT chk_mgw_legacy_payments_status CHECK (status_normalized IN ('pending', 'completed', 'rejected', 'cancelled', 'unknown')),
+    CONSTRAINT chk_mgw_legacy_payments_applied CHECK (balance_applied IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
 
@@ -81,7 +83,9 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_shop_orders (
     UNIQUE KEY uq_mgw_legacy_orders_source (source_file, source_index),
     INDEX idx_mgw_legacy_orders_account (account_ref, source_created_at_utc),
     INDEX idx_mgw_legacy_orders_status (status_normalized, source_created_at_utc),
-    INDEX idx_mgw_legacy_orders_hash (snapshot_sha256)
+    INDEX idx_mgw_legacy_orders_hash (snapshot_sha256),
+    CONSTRAINT chk_mgw_legacy_orders_status CHECK (status_normalized IN ('pending', 'completed', 'rejected', 'cancelled', 'unknown')),
+    CONSTRAINT chk_mgw_legacy_orders_refund CHECK (refund_done IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
 
@@ -114,7 +118,8 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_financial_transactions (
     INDEX idx_mgw_legacy_financial_tx_account (account_ref, source_created_at_utc),
     INDEX idx_mgw_legacy_financial_tx_payment (legacy_payment_id),
     INDEX idx_mgw_legacy_financial_tx_order (legacy_order_id),
-    INDEX idx_mgw_legacy_financial_tx_hash (snapshot_sha256)
+    INDEX idx_mgw_legacy_financial_tx_hash (snapshot_sha256),
+    CONSTRAINT chk_mgw_legacy_financial_tx_status CHECK (status_normalized IN ('pending', 'completed', 'rejected', 'cancelled', 'unknown'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
     }
@@ -129,13 +134,13 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_payments (
     legacy_user_id TEXT NULL,
     provider TEXT NULL,
     status_raw TEXT NOT NULL,
-    status_normalized TEXT NOT NULL,
+    status_normalized TEXT NOT NULL CHECK (status_normalized IN ('pending', 'completed', 'rejected', 'cancelled', 'unknown')),
     room_raw TEXT NULL,
     asset_code TEXT NULL,
     coin_amount INTEGER NULL,
     fiat_amount_minor INTEGER NULL,
     currency TEXT NULL,
-    balance_applied INTEGER NOT NULL DEFAULT 0,
+    balance_applied INTEGER NOT NULL DEFAULT 0 CHECK (balance_applied IN (0, 1)),
     source_created_at_utc TEXT NULL,
     source_updated_at_utc TEXT NULL,
     source_decided_at_utc TEXT NULL,
@@ -159,8 +164,8 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_shop_orders (
     mgw_id TEXT NULL,
     legacy_user_id TEXT NULL,
     status_raw TEXT NOT NULL,
-    status_normalized TEXT NOT NULL,
-    refund_done INTEGER NOT NULL DEFAULT 0,
+    status_normalized TEXT NOT NULL CHECK (status_normalized IN ('pending', 'completed', 'rejected', 'cancelled', 'unknown')),
+    refund_done INTEGER NOT NULL DEFAULT 0 CHECK (refund_done IN (0, 1)),
     gold_amount INTEGER NULL,
     item_id TEXT NULL,
     denomination_id TEXT NULL,
@@ -192,7 +197,7 @@ CREATE TABLE IF NOT EXISTS mgw_legacy_financial_transactions (
     legacy_order_id TEXT NULL,
     type_raw TEXT NULL,
     category_raw TEXT NULL,
-    status_normalized TEXT NOT NULL,
+    status_normalized TEXT NOT NULL CHECK (status_normalized IN ('pending', 'completed', 'rejected', 'cancelled', 'unknown')),
     room_raw TEXT NULL,
     asset_code TEXT NULL,
     amount INTEGER NULL,
