@@ -56,6 +56,11 @@ $database = PdoConnectionFactory::create($config);
 
 $cleanup = static function () use ($database): void {
     foreach ([
+        'mgw_reservation_events',
+        'mgw_ledger_entries',
+        'mgw_reservations',
+        'mgw_idempotency_keys',
+        'mgw_balances',
         'mgw_legacy_realtime_shadow',
         'mgw_notifications',
         'mgw_invite_events',
@@ -87,17 +92,16 @@ try {
 
     $before = $runner->status();
     $assertSame('mysql', $before['driver'], 'CI integration must use PDO mysql');
-    $assertSame(4, $before['pending_count'], 'Clean MySQL schema must have four pending migrations');
+    $assertSame(5, $before['pending_count'], 'Clean MySQL schema must have five pending migrations');
 
     $migrated = $runner->migrate(false);
-    $assertSame(4, $migrated['executed_count'], 'MySQL migrations must execute once');
-    $assertSame(false, $migrated['executed'][0]['transactional'], 'MySQL metadata DDL migration must not use a wrapping transaction');
-    $assertSame(false, $migrated['executed'][1]['transactional'], 'MySQL account DDL migration must not use a wrapping transaction');
-    $assertSame(false, $migrated['executed'][2]['transactional'], 'MySQL realtime DDL migration must not use a wrapping transaction');
-    $assertSame(false, $migrated['executed'][3]['transactional'], 'MySQL shadow DDL migration must not use a wrapping transaction');
+    $assertSame(5, $migrated['executed_count'], 'MySQL migrations must execute once');
+    foreach ($migrated['executed'] as $migration) {
+        $assertSame(false, $migration['transactional'], 'MySQL DDL migrations must not use a wrapping transaction');
+    }
 
     $after = $runner->status();
-    $assertSame(4, $after['applied_count'], 'MySQL migration records must be persisted');
+    $assertSame(5, $after['applied_count'], 'MySQL migration records must be persisted');
     $assertSame(0, $after['pending_count'], 'MySQL schema must be current after migration');
 
     $secondRun = $runner->migrate(false);
@@ -112,17 +116,26 @@ try {
 
     $assertSame('INNODB', $tableEngine('mgw_meta'), 'mgw_meta must use InnoDB');
     $assertTrue(str_starts_with($metaCollation, 'utf8mb4_'), 'mgw_meta must use utf8mb4 collation');
-    $assertSame('INNODB', $tableEngine('mgw_schema_migrations'), 'Migration registry must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_users'), 'MGW users must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_identities'), 'MGW identities must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_matches'), 'MGW matches must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_match_player_snapshots'), 'Private match snapshots must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_invites'), 'MGW invites must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_notifications'), 'MGW notifications must use InnoDB');
-    $assertSame('INNODB', $tableEngine('mgw_legacy_realtime_shadow'), 'Legacy realtime shadow must use InnoDB');
+    foreach ([
+        'mgw_schema_migrations',
+        'mgw_users',
+        'mgw_identities',
+        'mgw_matches',
+        'mgw_match_player_snapshots',
+        'mgw_invites',
+        'mgw_notifications',
+        'mgw_legacy_realtime_shadow',
+        'mgw_balances',
+        'mgw_idempotency_keys',
+        'mgw_reservations',
+        'mgw_ledger_entries',
+        'mgw_reservation_events',
+    ] as $table) {
+        $assertSame('INNODB', $tableEngine($table), $table . ' must use InnoDB');
+    }
 
     $checksumRows = $database->fetchAll('SELECT checksum FROM mgw_schema_migrations ORDER BY version');
-    $assertSame(4, count($checksumRows), 'Every applied migration must store a checksum');
+    $assertSame(5, count($checksumRows), 'Every applied migration must store a checksum');
     foreach ($checksumRows as $row) {
         $assertSame(64, strlen((string)$row['checksum']), 'Applied migration checksum must be stored');
     }
