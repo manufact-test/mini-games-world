@@ -56,6 +56,14 @@ $database = PdoConnectionFactory::create($config);
 
 $cleanup = static function () use ($database): void {
     foreach ([
+        'mgw_notifications',
+        'mgw_invite_events',
+        'mgw_invites',
+        'mgw_match_player_snapshots',
+        'mgw_match_snapshots',
+        'mgw_match_players',
+        'mgw_match_queue',
+        'mgw_matches',
         'mgw_sessions',
         'mgw_devices',
         'mgw_identities',
@@ -78,43 +86,40 @@ try {
 
     $before = $runner->status();
     $assertSame('mysql', $before['driver'], 'MariaDB must use PDO mysql');
-    $assertSame(2, $before['pending_count'], 'Clean MariaDB schema must have two pending migrations');
+    $assertSame(3, $before['pending_count'], 'Clean MariaDB schema must have three pending migrations');
 
     $migrated = $runner->migrate(false);
-    $assertSame(2, $migrated['executed_count'], 'MariaDB migrations must execute once');
+    $assertSame(3, $migrated['executed_count'], 'MariaDB migrations must execute once');
     $assertSame(false, $migrated['executed'][0]['transactional'], 'MariaDB metadata DDL migration must not use a wrapping transaction');
     $assertSame(false, $migrated['executed'][1]['transactional'], 'MariaDB account DDL migration must not use a wrapping transaction');
+    $assertSame(false, $migrated['executed'][2]['transactional'], 'MariaDB realtime DDL migration must not use a wrapping transaction');
 
     $after = $runner->status();
-    $assertSame(2, $after['applied_count'], 'MariaDB migration records must be persisted');
+    $assertSame(3, $after['applied_count'], 'MariaDB migration records must be persisted');
     $assertSame(0, $after['pending_count'], 'MariaDB schema must be current after migration');
 
     $secondRun = $runner->migrate(false);
     $assertSame(0, $secondRun['executed_count'], 'Repeated MariaDB migration must be idempotent');
 
-    $metaEngine = strtoupper((string)$database->fetchValue(
-        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_meta'"
+    $tableEngine = static fn(string $table): string => strtoupper((string)$database->fetchValue(
+        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '" . $table . "'"
     ));
     $metaCollation = strtolower((string)$database->fetchValue(
         "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_meta'"
     ));
-    $migrationEngine = strtoupper((string)$database->fetchValue(
-        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_schema_migrations'"
-    ));
-    $userEngine = strtoupper((string)$database->fetchValue(
-        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_users'"
-    ));
-    $identityEngine = strtoupper((string)$database->fetchValue(
-        "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mgw_identities'"
-    ));
-    $assertSame('INNODB', $metaEngine, 'MariaDB mgw_meta must use InnoDB');
+
+    $assertSame('INNODB', $tableEngine('mgw_meta'), 'MariaDB mgw_meta must use InnoDB');
     $assertTrue(str_starts_with($metaCollation, 'utf8mb4_'), 'MariaDB mgw_meta must use utf8mb4 collation');
-    $assertSame('INNODB', $migrationEngine, 'MariaDB migration registry must use InnoDB');
-    $assertSame('INNODB', $userEngine, 'MariaDB MGW users must use InnoDB');
-    $assertSame('INNODB', $identityEngine, 'MariaDB MGW identities must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_schema_migrations'), 'MariaDB migration registry must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_users'), 'MariaDB MGW users must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_identities'), 'MariaDB MGW identities must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_matches'), 'MariaDB MGW matches must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_match_player_snapshots'), 'MariaDB private match snapshots must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_invites'), 'MariaDB MGW invites must use InnoDB');
+    $assertSame('INNODB', $tableEngine('mgw_notifications'), 'MariaDB MGW notifications must use InnoDB');
 
     $checksumRows = $database->fetchAll('SELECT checksum FROM mgw_schema_migrations ORDER BY version');
-    $assertSame(2, count($checksumRows), 'Every MariaDB migration must store a checksum');
+    $assertSame(3, count($checksumRows), 'Every MariaDB migration must store a checksum');
     foreach ($checksumRows as $row) {
         $assertSame(64, strlen((string)$row['checksum']), 'MariaDB applied migration checksum must be stored');
     }

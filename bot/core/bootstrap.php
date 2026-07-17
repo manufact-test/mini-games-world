@@ -65,6 +65,7 @@ require_once __DIR__ . '/../database/ManagedMigrationConfig.php';
 require_once __DIR__ . '/../database/ManagedMigrationController.php';
 require_once __DIR__ . '/../accounts/MgwIdGenerator.php';
 require_once __DIR__ . '/../accounts/AccountIdentityService.php';
+require_once __DIR__ . '/../realtime/RealtimeDatabaseStore.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/FeatureFlagService.php';
