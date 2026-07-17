@@ -71,6 +71,9 @@ foreach ($targets as $label => $target) {
     $cleanup = static function () use ($config): void {
         $cleanupDatabase = PdoConnectionFactory::create($config);
         foreach ([
+            'mgw_legacy_financial_transactions',
+            'mgw_legacy_shop_orders',
+            'mgw_legacy_payments',
             'mgw_reservation_events',
             'mgw_ledger_entries',
             'mgw_reservations',
@@ -139,6 +142,7 @@ foreach ($targets as $label => $target) {
             'source_type' => 'concurrency_test',
         ]);
 
+        // PDO connections must never be inherited by forked workers.
         unset($service, $runner, $database);
         $service = null;
         $runner = null;
@@ -198,6 +202,7 @@ foreach ($targets as $label => $target) {
         )), 'message');
         $assertSame(true, str_contains(strtolower((string)($errorMessages[0] ?? '')), 'insufficient'), "{$label} losing debit must fail for insufficient balance");
 
+        // Reconnect after all workers have exited; the parent owns a fresh PDO connection.
         $database = PdoConnectionFactory::create($config);
         $service = new LedgerWriteService($database, static fn(): string => '2026-07-17 15:02:00.000000');
         $finalBalance = $service->getBalance($accountRef, 'match_coin');
