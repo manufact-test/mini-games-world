@@ -1,6 +1,6 @@
 # Ledger foundation
 
-This module is the inactive schema foundation for balances, immutable ledger entries, reservations and idempotency.
+This module is the inactive schema foundation for balances, append-only ledger entries, reservations and idempotency.
 
 ## Current authority
 
@@ -22,11 +22,13 @@ Rows support both:
 - `mgw:<MGW-ID>` with optional `mgw_id` foreign key;
 - `legacy:<current user ID>` with `legacy_user_id` preserved for reconciliation.
 
-## Immutability
+## Append-only contract
 
-`mgw_ledger_entries` and `mgw_reservation_events` are append-only. Database triggers reject updates and deletes. Corrections must be represented by compensating entries, never by editing history.
+`mgw_ledger_entries` and `mgw_reservation_events` intentionally have creation timestamps but no update timestamps. Each row stores an integrity SHA-256 value; ledger rows can also point to the previous integrity hash for later chain verification.
 
-Reservations may change status, but they cannot be deleted. They must finish as released or consumed so the audit trail remains complete.
+The later ledger write service will be the only application path allowed to insert these rows and will expose no update/delete methods. Corrections must be represented by compensating entries, never by editing history. This schema step does not install database triggers because shared MySQL/MariaDB environments with binary logging commonly reject trigger creation for non-privileged application users.
+
+Reservations may change status. Once they have linked ledger/events, foreign-key restrictions preserve their audit relationship; the future service must finish them as released or consumed rather than deleting them.
 
 ## Idempotency
 
@@ -36,6 +38,7 @@ Every future money-changing operation must use a stable operation key and reques
 
 - JSON balance import;
 - dual-write or DB read path;
+- ledger write service and hash-chain verification;
 - settlement changes;
 - combining Match and Gold;
 - production migration;
