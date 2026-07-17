@@ -69,6 +69,9 @@ foreach ($targets as $label => $target) {
     $database = PdoConnectionFactory::create($config);
     $cleanup = static function () use ($database): void {
         foreach ([
+            'mgw_legacy_financial_transactions',
+            'mgw_legacy_shop_orders',
+            'mgw_legacy_payments',
             'mgw_reservation_events',
             'mgw_ledger_entries',
             'mgw_reservations',
@@ -97,7 +100,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(5, $runner->migrate(false)['executed_count'], "{$label} must build the ledger schema");
+        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} must build the ledger schema");
 
         $now = '2026-07-17 12:00:00.000000';
         $database->execute(
