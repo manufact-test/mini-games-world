@@ -52,14 +52,12 @@ try {
         throw new RuntimeException('Another legacy account import is already running.');
     }
 
-    $service = new LegacyAccountImportService(
-        StorageFactory::create($config),
-        $database
-    );
+    $storage = StorageFactory::create($config);
+    $service = new LegacyAccountImportService($storage, $database);
     $result = $mode === 'run' ? $service->run() : $service->preview();
     $result['mode'] = $mode;
     $result['environment'] = $environment;
-    $result['storage_driver'] = StorageFactory::create($config)->driver();
+    $result['storage_driver'] = $storage->driver();
     $result['database'] = $databaseConfig->safeSummary();
 
     fwrite(STDOUT, json_encode(
