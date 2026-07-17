@@ -1,27 +1,9 @@
 <?php
 declare(strict_types=1);
 
-$map = static function (string $entity, string $raw): string {
-    $status = strtolower(trim($raw));
-    if ($entity === 'payment') {
-        return match ($status) {
-            'paid', 'applied', 'completed', 'success', 'succeeded' => 'completed',
-            'rejected', 'declined', 'failed' => 'rejected',
-            'cancelled', 'canceled' => 'cancelled',
-            'draft', 'pending', 'waiting', 'created' => 'pending',
-            default => 'unknown',
-        };
-    }
+require dirname(__DIR__) . '/ledger/LegacyFinancialStatusNormalizer.php';
 
-    return match ($status) {
-        'fulfilled', 'completed', 'delivered', 'issued' => 'completed',
-        'rejected', 'declined', 'failed' => 'rejected',
-        'cancelled', 'canceled', 'refunded' => 'cancelled',
-        'draft', 'pending', 'processing', 'created' => 'pending',
-        default => 'unknown',
-    };
-};
-
+$normalizer = new LegacyFinancialStatusNormalizer();
 $cases = [
     ['payment', 'paid', 'completed'],
     ['payment', 'draft', 'pending'],
@@ -38,9 +20,27 @@ $cases = [
 $assertions = 0;
 foreach ($cases as [$entity, $raw, $expected]) {
     $assertions++;
-    $actual = $map($entity, $raw);
+    $actual = $entity === 'payment'
+        ? $normalizer->payment($raw)
+        : $normalizer->order($raw);
     if ($actual !== $expected) {
         throw new RuntimeException("Status map failed for {$entity}/{$raw}: expected {$expected}, got {$actual}");
+    }
+}
+
+$transactionCases = [
+    [['category' => 'payment_draft'], 'pending'],
+    [['category' => 'payment_apply'], 'completed'],
+    [['category' => 'payment_reject'], 'rejected'],
+    [['category' => 'shop_order'], 'completed'],
+    [['category' => 'shop_order_refund'], 'cancelled'],
+    [['category' => 'future_category'], 'unknown'],
+];
+foreach ($transactionCases as [$transaction, $expected]) {
+    $assertions++;
+    $actual = $normalizer->transaction($transaction);
+    if ($actual !== $expected) {
+        throw new RuntimeException('Transaction status map failed: expected ' . $expected . ', got ' . $actual);
     }
 }
 
