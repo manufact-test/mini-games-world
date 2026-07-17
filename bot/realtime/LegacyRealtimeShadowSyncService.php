@@ -36,14 +36,24 @@ final class LegacyRealtimeShadowSyncService
 
         $entities = $this->normalizeSnapshot($source);
         $existingRows = $this->database->fetchAll(
-            'SELECT entity_type, entity_key, payload_sha256 FROM mgw_legacy_realtime_shadow'
+            'SELECT entity_type, entity_key, payload_json, payload_sha256 FROM mgw_legacy_realtime_shadow'
         );
         $existing = [];
         foreach ($existingRows as $row) {
             $type = (string)($row['entity_type'] ?? '');
             $key = (string)($row['entity_key'] ?? '');
             if ($type === '' || $key === '') continue;
-            $existing[$type][$key] = (string)($row['payload_sha256'] ?? '');
+
+            $storedHash = strtolower(trim((string)($row['payload_sha256'] ?? '')));
+            $canonicalPayload = $this->canonicalStoredJson($row['payload_json'] ?? null);
+            $actualHash = $canonicalPayload === null ? '' : hash('sha256', $canonicalPayload);
+            $existing[$type][$key] = [
+                'actual_sha256' => $actualHash,
+                'stored_sha256' => $storedHash,
+                'needs_repair' => $canonicalPayload === null
+                    || !preg_match('/^[a-f0-9]{64}$/', $storedHash)
+                    || !hash_equals($storedHash, $actualHash),
+            ];
         }
 
         $summary = [];
@@ -53,15 +63,25 @@ final class LegacyRealtimeShadowSyncService
                 'source_count' => count($entities[$type]),
                 'inserted_count' => 0,
                 'updated_count' => 0,
+                'repair_count' => 0,
                 'unchanged_count' => 0,
                 'deleted_count' => 0,
             ];
 
             foreach ($entities[$type] as $key => $entity) {
                 $sourceFingerprintParts[] = $type . "\0" . $key . "\0" . $entity['payload_sha256'];
-                if (!array_key_exists($key, $existing[$type] ?? [])) {
+                $existingEntity = $existing[$type][$key] ?? null;
+                if ($existingEntity === null) {
                     $summary[$type]['inserted_count']++;
-                } elseif (($existing[$type][$key] ?? '') !== $entity['payload_sha256']) {
+                    continue;
+                }
+
+                if (!empty($existingEntity['needs_repair'])) {
+                    $summary[$type]['repair_count']++;
+                }
+
+                if (!empty($existingEntity['needs_repair'])
+                    || (string)($existingEntity['actual_sha256'] ?? '') !== $entity['payload_sha256']) {
                     $summary[$type]['updated_count']++;
                 } else {
                     $summary[$type]['unchanged_count']++;
@@ -79,7 +99,7 @@ final class LegacyRealtimeShadowSyncService
         $sourceFingerprint = hash('sha256', implode("\n", $sourceFingerprintParts));
 
         if (!$dryRun) {
-            $syncedAt = $this->timestamp(null);
+            $syncedAt = $this->timestamp();
             $this->database->transaction(function (DatabaseConnectionInterface $database) use (
                 $entities,
                 $existing,
@@ -87,7 +107,8 @@ final class LegacyRealtimeShadowSyncService
             ): void {
                 foreach (self::SECTIONS as $type) {
                     foreach ($entities[$type] as $key => $entity) {
-                        if (!array_key_exists($key, $existing[$type] ?? [])) {
+                        $existingEntity = $existing[$type][$key] ?? null;
+                        if ($existingEntity === null) {
                             $database->execute(
                                 'INSERT INTO mgw_legacy_realtime_shadow (
                                     entity_type, entity_key, payload_json, payload_sha256,
@@ -108,7 +129,8 @@ final class LegacyRealtimeShadowSyncService
                             continue;
                         }
 
-                        if (($existing[$type][$key] ?? '') === $entity['payload_sha256']) {
+                        if (empty($existingEntity['needs_repair'])
+                            && (string)($existingEntity['actual_sha256'] ?? '') === $entity['payload_sha256']) {
                             continue;
                         }
 
@@ -199,16 +221,36 @@ final class LegacyRealtimeShadowSyncService
 
     private function safeKey(string $key): string
     {
-        if (strlen($key) <= 180) return $key;
+        if (strlen($key) <= 180 && preg_match('/[\x00-\x1F\x7F]/', $key) !== 1) {
+            return $key;
+        }
         return 'sha256:' . hash('sha256', $key);
     }
 
     private function recordTimestamp(array $record): ?string
     {
         foreach (['updated_at', 'created_at', 'last_move_at', 'finished_at'] as $field) {
-            if (!empty($record[$field])) return $this->timestamp((string)$record[$field]);
+            $value = trim((string)($record[$field] ?? ''));
+            if ($value === '') continue;
+            try {
+                return (new DateTimeImmutable($value))
+                    ->setTimezone(new DateTimeZone('UTC'))
+                    ->format('Y-m-d H:i:s.u');
+            } catch (Throwable) {
+                continue;
+            }
         }
         return null;
+    }
+
+    private function canonicalStoredJson(mixed $value): ?string
+    {
+        if (!is_string($value) || trim($value) === '') return null;
+        try {
+            return $this->canonicalJson(json_decode($value, true, 512, JSON_THROW_ON_ERROR));
+        } catch (JsonException) {
+            return null;
+        }
     }
 
     private function canonicalJson(mixed $value): string
@@ -227,15 +269,8 @@ final class LegacyRealtimeShadowSyncService
         return $value;
     }
 
-    private function timestamp(?string $value): string
+    private function timestamp(): string
     {
-        try {
-            $date = $value === null || trim($value) === ''
-                ? new DateTimeImmutable('now', new DateTimeZone('UTC'))
-                : new DateTimeImmutable($value);
-        } catch (Throwable) {
-            $date = new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        }
-        return $date->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
+        return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s.u');
     }
 }
