@@ -68,8 +68,8 @@ foreach ($targets as $label => $target) {
     }
 
     $config = $connectionConfig($target);
-    $database = PdoConnectionFactory::create($config);
-    $cleanup = static function () use ($database): void {
+    $cleanup = static function () use ($config): void {
+        $cleanupDatabase = PdoConnectionFactory::create($config);
         foreach ([
             'mgw_reservation_events',
             'mgw_ledger_entries',
@@ -92,7 +92,7 @@ foreach ($targets as $label => $target) {
             'mgw_meta',
             'mgw_schema_migrations',
         ] as $table) {
-            $database->execute('DROP TABLE IF EXISTS `' . $table . '`');
+            $cleanupDatabase->execute('DROP TABLE IF EXISTS `' . $table . '`');
         }
     };
 
@@ -102,7 +102,12 @@ foreach ($targets as $label => $target) {
         throw new RuntimeException('Could not create concurrency test directory.');
     }
 
+    $database = null;
+    $runner = null;
+    $service = null;
+
     try {
+        $database = PdoConnectionFactory::create($config);
         $runner = new MigrationRunner($database, $root . '/database/migrations');
         $assertSame(5, $runner->migrate(false)['executed_count'], "{$label} must build the ledger schema");
 
@@ -133,6 +138,12 @@ foreach ($targets as $label => $target) {
             'category' => 'legacy_grant',
             'source_type' => 'concurrency_test',
         ]);
+
+        // PDO connections must never be inherited by forked workers.
+        unset($service, $runner, $database);
+        $service = null;
+        $runner = null;
+        $database = null;
 
         $children = [];
         for ($index = 1; $index <= 2; $index++) {
@@ -188,6 +199,9 @@ foreach ($targets as $label => $target) {
         )), 'message');
         $assertSame(true, str_contains(strtolower((string)($errorMessages[0] ?? '')), 'insufficient'), "{$label} losing debit must fail for insufficient balance");
 
+        // Reconnect after all workers have exited; the parent owns a fresh PDO connection.
+        $database = PdoConnectionFactory::create($config);
+        $service = new LedgerWriteService($database, static fn(): string => '2026-07-17 15:02:00.000000');
         $finalBalance = $service->getBalance($accountRef, 'match_coin');
         $assertSame(20, $finalBalance['available_amount'], "{$label} concurrent debit must not make balance negative");
         $assertSame(0, $finalBalance['reserved_amount'], "{$label} concurrent debit must not alter reserved balance");
@@ -195,6 +209,7 @@ foreach ($targets as $label => $target) {
         $assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_idempotency_keys'), "{$label} failed debit claim must roll back");
         $assertSame(true, (new LedgerIntegrityVerifier($database))->verifyAccountAsset($accountRef, 'match_coin')['ok'], "{$label} concurrent ledger chain must verify");
     } finally {
+        unset($service, $runner, $database);
         foreach (glob($tempDir . '/*') ?: [] as $path) @unlink($path);
         @rmdir($tempDir);
         $cleanup();
