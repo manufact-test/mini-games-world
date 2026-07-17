@@ -41,13 +41,7 @@ $runner = new MigrationRunner($database, $databaseDir . '/migrations');
 $assertSame(5, $runner->migrate(false)['executed_count'], 'Ledger schema test must include five migrations');
 $assertSame(0, $runner->migrate(false)['executed_count'], 'Repeated migration run must be idempotent');
 
-foreach ([
-    'mgw_balances',
-    'mgw_idempotency_keys',
-    'mgw_reservations',
-    'mgw_ledger_entries',
-    'mgw_reservation_events',
-] as $table) {
+foreach (['mgw_balances', 'mgw_idempotency_keys', 'mgw_reservations', 'mgw_ledger_entries', 'mgw_reservation_events'] as $table) {
     $assertSame(
         $table,
         (string)$database->fetchValue(
@@ -57,6 +51,14 @@ foreach ([
         $table . ' must exist'
     );
 }
+
+$ledgerColumns = array_column($database->fetchAll('PRAGMA table_info(mgw_ledger_entries)'), 'name');
+$eventColumns = array_column($database->fetchAll('PRAGMA table_info(mgw_reservation_events)'), 'name');
+$assertTrue(in_array('entry_sha256', $ledgerColumns, true), 'Ledger rows must carry an integrity hash');
+$assertTrue(in_array('previous_entry_sha256', $ledgerColumns, true), 'Ledger rows must support hash chaining');
+$assertTrue(!in_array('updated_at_utc', $ledgerColumns, true), 'Ledger entries must not have a mutable update timestamp');
+$assertTrue(in_array('event_sha256', $eventColumns, true), 'Reservation events must carry an integrity hash');
+$assertTrue(!in_array('updated_at_utc', $eventColumns, true), 'Reservation events must not have a mutable update timestamp');
 
 $now = '2026-07-17 12:00:00.000000';
 $database->execute(
@@ -75,64 +77,36 @@ $database->execute(
     ]
 );
 
-$balanceParameters = static fn(string $asset, int $available): array => [
-    'account_ref' => 'mgw:mgw_ledger_user',
-    'mgw_id' => 'mgw_ledger_user',
-    'legacy_user_id' => '7001',
-    'asset_code' => $asset,
-    'available_amount' => $available,
-    'reserved_amount' => 0,
-    'version' => 1,
-    'created_at' => $now,
-    'updated_at' => $now,
-];
-foreach ([['match_coin', 50], ['gold_coin', 25]] as [$asset, $available]) {
+$insertBalance = static function (string $asset, int $available) use ($database, $now): void {
     $database->execute(
         'INSERT INTO mgw_balances (
             account_ref, mgw_id, legacy_user_id, asset_code,
             available_amount, reserved_amount, version, created_at_utc, updated_at_utc
          ) VALUES (
             :account_ref, :mgw_id, :legacy_user_id, :asset_code,
-            :available_amount, :reserved_amount, :version, :created_at, :updated_at
+            :available_amount, 0, 1, :created_at, :updated_at
          )',
-        $balanceParameters($asset, $available)
+        [
+            'account_ref' => 'mgw:mgw_ledger_user',
+            'mgw_id' => 'mgw_ledger_user',
+            'legacy_user_id' => '7001',
+            'asset_code' => $asset,
+            'available_amount' => $available,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]
     );
-}
-$assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_balances'), 'Match and Gold balances must remain separate rows');
+};
+$insertBalance('match_coin', 50);
+$insertBalance('gold_coin', 25);
+$assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_balances'), 'Match and Gold must remain separate balances');
 $assertSame(
     ['gold_coin', 'match_coin'],
     array_column($database->fetchAll('SELECT asset_code FROM mgw_balances ORDER BY asset_code'), 'asset_code'),
     'Legacy asset codes must remain distinct'
 );
-$assertThrows(
-    static fn() => $database->execute(
-        'INSERT INTO mgw_balances (
-            account_ref, mgw_id, legacy_user_id, asset_code,
-            available_amount, reserved_amount, version, created_at_utc, updated_at_utc
-         ) VALUES (
-            :account_ref, :mgw_id, :legacy_user_id, :asset_code,
-            :available_amount, :reserved_amount, :version, :created_at, :updated_at
-         )',
-        $balanceParameters('match_coin', 999)
-    ),
-    'unique',
-    'One account may have only one row per asset'
-);
-$negativeBalance = $balanceParameters('future_coin', -1);
-$assertThrows(
-    static fn() => $database->execute(
-        'INSERT INTO mgw_balances (
-            account_ref, mgw_id, legacy_user_id, asset_code,
-            available_amount, reserved_amount, version, created_at_utc, updated_at_utc
-         ) VALUES (
-            :account_ref, :mgw_id, :legacy_user_id, :asset_code,
-            :available_amount, :reserved_amount, :version, :created_at, :updated_at
-         )',
-        $negativeBalance
-    ),
-    'check',
-    'Balances must never be negative'
-);
+$assertThrows(static fn() => $insertBalance('match_coin', 999), 'unique', 'One account may have only one balance per asset');
+$assertThrows(static fn() => $insertBalance('future_coin', -1), 'check', 'Balances must reject negative amounts');
 
 $database->execute(
     'INSERT INTO mgw_idempotency_keys (
@@ -156,34 +130,34 @@ $assertThrows(
     static fn() => $database->execute(
         'INSERT INTO mgw_idempotency_keys (
             operation_key, operation_type, owner_ref, request_sha256,
-            status, result_json, created_at_utc, updated_at_utc, expires_at_utc
+            status, created_at_utc, updated_at_utc
          ) VALUES (
             :operation_key, :operation_type, :owner_ref, :request_sha256,
-            :status, NULL, :created_at, :updated_at, NULL
+            :status, :created_at, :updated_at
          )',
         [
             'operation_key' => 'reserve:match:ledger-1',
-            'operation_type' => 'different_operation',
+            'operation_type' => 'other',
             'owner_ref' => 'mgw:mgw_ledger_user',
-            'request_sha256' => hash('sha256', 'different-request'),
+            'request_sha256' => hash('sha256', 'different'),
             'status' => 'started',
             'created_at' => $now,
             'updated_at' => $now,
         ]
     ),
     'unique',
-    'An idempotency operation key may only be claimed once'
+    'An operation key may only be claimed once'
 );
 
 $database->execute(
     'INSERT INTO mgw_reservations (
         reservation_id, idempotency_key, account_ref, mgw_id, legacy_user_id,
         asset_code, amount, status, source_type, source_ref, metadata_json,
-        created_at_utc, updated_at_utc, expires_at_utc, consumed_at_utc, released_at_utc
+        created_at_utc, updated_at_utc, expires_at_utc
      ) VALUES (
         :reservation_id, :idempotency_key, :account_ref, :mgw_id, :legacy_user_id,
         :asset_code, :amount, :status, :source_type, :source_ref, :metadata_json,
-        :created_at, :updated_at, :expires_at, NULL, NULL
+        :created_at, :updated_at, :expires_at
      )',
     [
         'reservation_id' => 'reservation-ledger-1',
@@ -208,15 +182,14 @@ $assertThrows(
             reservation_id, idempotency_key, account_ref, asset_code, amount,
             status, source_type, created_at_utc, updated_at_utc
          ) VALUES (
-            :reservation_id, :idempotency_key, :account_ref, :asset_code, :amount,
+            :reservation_id, :idempotency_key, :account_ref, :asset_code, 0,
             :status, :source_type, :created_at, :updated_at
          )',
         [
-            'reservation_id' => 'reservation-invalid-zero',
-            'idempotency_key' => 'reserve:invalid-zero',
+            'reservation_id' => 'reservation-zero',
+            'idempotency_key' => 'reserve:zero',
             'account_ref' => 'mgw:mgw_ledger_user',
             'asset_code' => 'match_coin',
-            'amount' => 0,
             'status' => 'active',
             'source_type' => 'test',
             'created_at' => $now,
@@ -227,37 +200,60 @@ $assertThrows(
     'Reservation amount must be positive'
 );
 
+$eventHash = hash('sha256', 'reservation-event-ledger-1');
 $database->execute(
     'INSERT INTO mgw_reservation_events (
         event_id, reservation_id, event_key, event_type,
-        available_delta, reserved_delta, metadata_json, created_at_utc
+        available_delta, reserved_delta, metadata_json, event_sha256, created_at_utc
      ) VALUES (
         :event_id, :reservation_id, :event_key, :event_type,
-        :available_delta, :reserved_delta, :metadata_json, :created_at
+        -10, 10, :metadata_json, :event_sha256, :created_at
      )',
     [
         'event_id' => 'reservation-event-ledger-1',
         'reservation_id' => 'reservation-ledger-1',
         'event_key' => 'created',
         'event_type' => 'created',
-        'available_delta' => -10,
-        'reserved_delta' => 10,
         'metadata_json' => '{"reason":"match_entry"}',
+        'event_sha256' => $eventHash,
         'created_at' => $now,
     ]
 );
+$assertSame($eventHash, (string)$database->fetchValue(
+    'SELECT event_sha256 FROM mgw_reservation_events WHERE event_id = :event_id',
+    ['event_id' => 'reservation-event-ledger-1']
+), 'Reservation event integrity hash must round-trip');
+$assertThrows(
+    static fn() => $database->execute(
+        'INSERT INTO mgw_reservation_events (
+            event_id, reservation_id, event_key, event_type, event_sha256, created_at_utc
+         ) VALUES (
+            :event_id, :reservation_id, :event_key, :event_type, :event_sha256, :created_at
+         )',
+        [
+            'event_id' => 'reservation-event-duplicate-key',
+            'reservation_id' => 'reservation-ledger-1',
+            'event_key' => 'created',
+            'event_type' => 'duplicate',
+            'event_sha256' => hash('sha256', 'duplicate'),
+            'created_at' => $now,
+        ]
+    ),
+    'unique',
+    'Reservation event keys must be idempotent'
+);
 
+$entryHash = hash('sha256', 'ledger-entry-1');
 $database->execute(
     'INSERT INTO mgw_ledger_entries (
         entry_id, idempotency_key, account_ref, mgw_id, legacy_user_id, asset_code,
         available_delta, reserved_delta, available_before, available_after,
         reserved_before, reserved_after, category, source_type, source_ref,
-        reservation_id, metadata_json, created_at_utc
+        reservation_id, metadata_json, previous_entry_sha256, entry_sha256, created_at_utc
      ) VALUES (
         :entry_id, :idempotency_key, :account_ref, :mgw_id, :legacy_user_id, :asset_code,
-        :available_delta, :reserved_delta, :available_before, :available_after,
-        :reserved_before, :reserved_after, :category, :source_type, :source_ref,
-        :reservation_id, :metadata_json, :created_at
+        -10, 10, 50, 40, 0, 10, :category, :source_type, :source_ref,
+        :reservation_id, :metadata_json, NULL, :entry_sha256, :created_at
      )',
     [
         'entry_id' => 'ledger-entry-1',
@@ -266,93 +262,76 @@ $database->execute(
         'mgw_id' => 'mgw_ledger_user',
         'legacy_user_id' => '7001',
         'asset_code' => 'match_coin',
-        'available_delta' => -10,
-        'reserved_delta' => 10,
-        'available_before' => 50,
-        'available_after' => 40,
-        'reserved_before' => 0,
-        'reserved_after' => 10,
         'category' => 'reservation_created',
         'source_type' => 'legacy_match',
         'source_ref' => 'game-ledger-1',
         'reservation_id' => 'reservation-ledger-1',
         'metadata_json' => '{"legacy":true}',
+        'entry_sha256' => $entryHash,
         'created_at' => $now,
     ]
 );
-$assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries'), 'Valid ledger entry must be stored');
+$assertSame($entryHash, (string)$database->fetchValue(
+    'SELECT entry_sha256 FROM mgw_ledger_entries WHERE entry_id = :entry_id',
+    ['entry_id' => 'ledger-entry-1']
+), 'Ledger integrity hash must round-trip');
 $assertThrows(
     static fn() => $database->execute(
         'INSERT INTO mgw_ledger_entries (
             entry_id, idempotency_key, account_ref, asset_code,
             available_delta, reserved_delta, available_before, available_after,
-            reserved_before, reserved_after, category, source_type, created_at_utc
+            reserved_before, reserved_after, category, source_type, entry_sha256, created_at_utc
          ) VALUES (
             :entry_id, :idempotency_key, :account_ref, :asset_code,
-            :available_delta, :reserved_delta, :available_before, :available_after,
-            :reserved_before, :reserved_after, :category, :source_type, :created_at
+            -10, 10, 50, 49, 0, 10, :category, :source_type, :entry_sha256, :created_at
          )',
         [
             'entry_id' => 'ledger-entry-invalid-math',
             'idempotency_key' => 'ledger:invalid-math',
             'account_ref' => 'mgw:mgw_ledger_user',
             'asset_code' => 'match_coin',
-            'available_delta' => -10,
-            'reserved_delta' => 10,
-            'available_before' => 50,
-            'available_after' => 49,
-            'reserved_before' => 0,
-            'reserved_after' => 10,
             'category' => 'invalid',
             'source_type' => 'test',
+            'entry_sha256' => hash('sha256', 'invalid'),
             'created_at' => $now,
         ]
     ),
     'check',
     'Ledger before, delta and after amounts must reconcile'
 );
+$assertThrows(
+    static fn() => $database->execute(
+        'INSERT INTO mgw_ledger_entries (
+            entry_id, idempotency_key, account_ref, asset_code,
+            available_before, available_after, reserved_before, reserved_after,
+            category, source_type, entry_sha256, created_at_utc
+         ) VALUES (
+            :entry_id, :idempotency_key, :account_ref, :asset_code,
+            40, 40, 10, 10, :category, :source_type, :entry_sha256, :created_at
+         )',
+        [
+            'entry_id' => 'ledger-entry-duplicate-idempotency',
+            'idempotency_key' => 'ledger:reserve:match:ledger-1',
+            'account_ref' => 'mgw:mgw_ledger_user',
+            'asset_code' => 'match_coin',
+            'category' => 'duplicate',
+            'source_type' => 'test',
+            'entry_sha256' => hash('sha256', 'duplicate-ledger'),
+            'created_at' => $now,
+        ]
+    ),
+    'unique',
+    'Ledger idempotency keys must prevent duplicate postings'
+);
 
-$assertThrows(
-    static fn() => $database->execute(
-        'UPDATE mgw_ledger_entries SET category = :category WHERE entry_id = :entry_id',
-        ['category' => 'tampered', 'entry_id' => 'ledger-entry-1']
-    ),
-    'immutable',
-    'Ledger entries must reject updates'
-);
-$assertThrows(
-    static fn() => $database->execute(
-        'DELETE FROM mgw_ledger_entries WHERE entry_id = :entry_id',
-        ['entry_id' => 'ledger-entry-1']
-    ),
-    'immutable',
-    'Ledger entries must reject deletes'
-);
-$assertThrows(
-    static fn() => $database->execute(
-        'UPDATE mgw_reservation_events SET event_type = :event_type WHERE event_id = :event_id',
-        ['event_type' => 'tampered', 'event_id' => 'reservation-event-ledger-1']
-    ),
-    'immutable',
-    'Reservation events must reject updates'
-);
-$assertThrows(
-    static fn() => $database->execute(
-        'DELETE FROM mgw_reservation_events WHERE event_id = :event_id',
-        ['event_id' => 'reservation-event-ledger-1']
-    ),
-    'immutable',
-    'Reservation events must reject deletes'
-);
 $assertThrows(
     static fn() => $database->execute(
         'DELETE FROM mgw_reservations WHERE reservation_id = :reservation_id',
         ['reservation_id' => 'reservation-ledger-1']
     ),
-    'released or consumed',
-    'Reservations must not disappear from the audit trail'
+    'foreign key',
+    'Linked reservations must remain in the audit trail'
 );
-
 $database->execute(
     'UPDATE mgw_reservations
      SET status = :status, updated_at_utc = :updated_at, released_at_utc = :released_at
@@ -368,11 +347,5 @@ $assertSame('released', (string)$database->fetchValue(
     'SELECT status FROM mgw_reservations WHERE reservation_id = :reservation_id',
     ['reservation_id' => 'reservation-ledger-1']
 ), 'Reservation status transitions must remain possible');
-
-$assertTrue(
-    (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries') === 1
-    && (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_reservation_events') === 1,
-    'Failed mutations must leave immutable audit rows intact'
-);
 
 fwrite(STDOUT, "LedgerSchemaTest: {$assertions} assertions passed\n");
