@@ -13,10 +13,10 @@ JSON remains the active product and rollback source while matches, players, snap
 - creates immutable snapshot versions and advances the version only when JSON changes;
 - checks match IDs, game identity, player seats and player references before updating;
 - blocks DB state that is newer than the JSON rollback source;
-- deletes queue rows removed from JSON;
-- deletes a match missing from JSON only when the DB match is already terminal;
+- mirrors queue removal from JSON because queue rows are temporary;
+- preserves DB-only terminal matches as retained history instead of deleting them;
 - blocks a missing active or otherwise non-terminal JSON match;
-- supports a CLI-only read-only parity audit in the next substep.
+- separates source-managed match parity from retained terminal history counts.
 
 ## Boundary
 
