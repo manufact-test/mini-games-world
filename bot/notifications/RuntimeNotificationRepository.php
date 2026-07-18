@@ -175,6 +175,11 @@ final class RuntimeNotificationRepository
             $this->decodePayload($row['payload_json'] ?? null)
         );
         $expectedPayload = $this->normalizeLegacyNotification($expected['payload']);
+        $actualPayload['read_at'] = null;
+        $actualPayload['hidden_at'] = null;
+        $expectedPayload['read_at'] = null;
+        $expectedPayload['hidden_at'] = null;
+
         $checks = [
             'notification_id' => (string)($row['notification_id'] ?? ''),
             'event_key' => (string)($row['event_key'] ?? ''),
