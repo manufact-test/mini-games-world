@@ -69,13 +69,13 @@ jobs:
 
       - name: Package branch source snapshot
         shell: bash
-        run: tar --exclude=.git -czf branch-source.tar.gz .
+        run: tar --exclude=.git -czf /tmp/branch-source.tar.gz .
 
       - name: Upload branch source snapshot
         uses: actions/upload-artifact@v4
         with:
           name: branch-source
-          path: branch-source.tar.gz
+          path: /tmp/branch-source.tar.gz
           if-no-files-found: error
           retention-days: 1
 
