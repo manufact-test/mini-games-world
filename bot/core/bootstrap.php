@@ -54,6 +54,7 @@ require_once __DIR__ . '/../storage/contracts/StorageAdapterInterface.php';
 require_once __DIR__ . '/../storage/JsonDatabase.php';
 require_once __DIR__ . '/../storage/JsonStorageAdapter.php';
 require_once __DIR__ . '/../storage/StorageFactory.php';
+require_once __DIR__ . '/../storage/RuntimeStorageRouter.php';
 require_once __DIR__ . '/../database/DatabaseConnectionInterface.php';
 require_once __DIR__ . '/../database/DatabaseConfig.php';
 require_once __DIR__ . '/../database/PdoDatabaseConnection.php';
@@ -89,5 +90,9 @@ require_once __DIR__ . '/../services/NotificationService.php';
 require_once __DIR__ . '/../services/WeeklyMatchEconomyService.php';
 require_once __DIR__ . '/../services/ShopOrderNotificationService.php';
 require_once __DIR__ . '/../handlers/WebhookHandler.php';
+
+// Validate the staged DB routing contract on every boot. The global runtime
+// remains JSON until individual modules are explicitly enabled in staging.
+$runtimeStorageRouter = new RuntimeStorageRouter($config);
 
 RuntimeRequestGuard::enforce($config, $_SERVER);

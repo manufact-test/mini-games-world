@@ -1,9 +1,12 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/database/DatabaseConfig.php';
+require_once dirname(__DIR__) . '/storage/RuntimeStorageRouter.php';
+
 final class FeatureFlagService
 {
-    public const BUILD = 'v89-mvp14-managed-migrations';
+    public const BUILD = 'v90-mvp14-db-runtime-router';
 
     private const GAME_IDS = [
         'tictactoe',
@@ -128,6 +131,7 @@ final class FeatureFlagService
             'financial_read_only' => $this->financialReadOnly(),
             'features' => $features,
             'games' => $games,
+            'database_runtime' => (new RuntimeStorageRouter($this->config))->publicStatus(),
             'alerts' => $this->adminAlerts(),
         ];
     }
@@ -145,6 +149,11 @@ final class FeatureFlagService
         }
         foreach (self::GAME_IDS as $gameType) {
             if (!$this->gameEnabled($gameType)) $alerts[] = 'Отключена игра: ' . $gameType . '.';
+        }
+
+        $databaseRuntime = new RuntimeStorageRouter($this->config);
+        foreach ($databaseRuntime->enabledModules() as $module) {
+            $alerts[] = 'Тестовый DB runtime включён для модуля: ' . $module . '.';
         }
 
         return $alerts;
