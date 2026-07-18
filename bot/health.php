@@ -5,7 +5,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('X-Content-Type-Options: nosniff');
 
-$build = 'v92-mvp14-db-notification-routing';
+$build = 'v93-mvp14-db-invite-routing';
 
 try {
     require __DIR__ . '/core/bootstrap.php';
