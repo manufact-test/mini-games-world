@@ -155,6 +155,9 @@ try {
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $invites = new GameInviteService($config, $catalog, $games);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $runtimeInvites = $runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE
+        ? new RuntimeInviteRepository($config, $runtimeStorageRouter)
+        : null;
 
     $result = $db->transaction(function (array &$data) use (
         $action,
@@ -163,7 +166,8 @@ try {
         $tgUser,
         $users,
         $sessions,
-        $invites
+        $invites,
+        $runtimeInvites
     ): array {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)($user['id'] ?? '');
@@ -260,6 +264,10 @@ try {
 
             default:
                 throw new RuntimeException('Неизвестное действие приглашения.');
+        }
+
+        if ($runtimeInvites instanceof RuntimeInviteRepository) {
+            $runtimeInvites->synchronize($data);
         }
 
         $core['user'] = $users->publicUser($user);
