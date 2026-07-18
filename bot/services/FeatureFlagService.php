@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/database/DatabaseConfig.php';
+require_once dirname(__DIR__) . '/storage/RuntimeStorageRouter.php';
+
 final class FeatureFlagService
 {
     public const BUILD = 'v90-mvp14-db-runtime-router';
