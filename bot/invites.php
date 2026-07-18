@@ -166,8 +166,7 @@ try {
         $tgUser,
         $users,
         $sessions,
-        $invites,
-        $runtimeInvites
+        $invites
     ): array {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)($user['id'] ?? '');
@@ -266,14 +265,15 @@ try {
                 throw new RuntimeException('Неизвестное действие приглашения.');
         }
 
-        if ($runtimeInvites instanceof RuntimeInviteRepository) {
-            $runtimeInvites->synchronize($data);
-        }
-
         $core['user'] = $users->publicUser($user);
         $core['session'] = $sessions->publicState($user, $sessionId);
         return $core;
     });
+
+    if ($runtimeInvites instanceof RuntimeInviteRepository) {
+        $snapshot = $db->readOnly(static fn(array $data): array => $data);
+        $runtimeInvites->synchronize($snapshot);
+    }
 
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
         $token = (string)($result['invite']['token'] ?? '');
