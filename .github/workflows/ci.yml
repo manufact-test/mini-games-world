@@ -67,18 +67,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Package branch source snapshot
-        shell: bash
-        run: tar --exclude=.git -czf /tmp/branch-source.tar.gz .
-
-      - name: Upload branch source snapshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: branch-source
-          path: /tmp/branch-source.tar.gz
-          if-no-files-found: error
-          retention-days: 1
-
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
