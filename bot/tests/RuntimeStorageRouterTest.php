@@ -53,6 +53,7 @@ $enabledConfig = $base;
 $enabledConfig['feature_flags']['database_runtime'] = [
     'enabled' => true,
     'modules' => [
+        'accounts' => true,
         'notifications' => true,
         'invites' => 'enabled',
         'realtime' => false,
@@ -60,10 +61,11 @@ $enabledConfig['feature_flags']['database_runtime'] = [
 ];
 $enabled = new RuntimeStorageRouter($enabledConfig);
 $assertSame(true, $enabled->enabled(), 'Staging router must enable explicitly');
+$assertSame('database', $enabled->routeFor('accounts'), 'Account identity must route to DB first');
 $assertSame('database', $enabled->routeFor('notifications'), 'Enabled module must route to DB');
 $assertSame('database', $enabled->routeFor('invites'), 'Boolean-like module flag must route to DB');
 $assertSame('json', $enabled->routeFor('realtime'), 'Disabled module must stay on JSON');
-$assertSame(['invites', 'notifications'], $enabled->enabledModules(), 'Enabled modules must be stable and ordered');
+$assertSame(['accounts', 'invites', 'notifications'], $enabled->enabledModules(), 'Enabled modules must be stable and ordered');
 $assertSame(false, $enabled->publicStatus()['production_allowed'], 'Production must remain forbidden');
 
 $production = $enabledConfig;

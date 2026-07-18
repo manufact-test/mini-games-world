@@ -82,11 +82,14 @@ final class RuntimeStorageRouter
         if (!is_array($modules)) {
             throw new RuntimeException('database_runtime.modules must be an array.');
         }
+        $enabledModules = [];
         foreach ($modules as $module => $value) {
             if (!in_array((string)$module, self::MODULES, true)) {
                 throw new RuntimeException('database_runtime contains an unknown module: ' . (string)$module);
             }
-            $this->boolValue($value, true);
+            if ($this->boolValue($value, true)) {
+                $enabledModules[] = (string)$module;
+            }
         }
 
         if (!$this->enabled()) {
@@ -109,6 +112,10 @@ final class RuntimeStorageRouter
         $database = DatabaseConfig::fromApplicationConfig($this->config);
         if (!$database->enabled()) {
             throw new RuntimeException('Database runtime routing requires an enabled database configuration.');
+        }
+
+        if ($enabledModules !== [] && !in_array('accounts', $enabledModules, true)) {
+            throw new RuntimeException('Database runtime modules require accounts routing for stable MGW identity.');
         }
     }
 
