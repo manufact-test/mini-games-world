@@ -45,10 +45,10 @@ The global storage driver must still be `json` and production routing must remai
 ## Live staging check
 
 1. Open the Mini App through the staging Telegram bot.
-2. Open the existing notification center once.
+2. Tap the existing bell button once to open the notification center.
 3. Confirm the current notification list loads without an error or duplicate card.
-4. Use the existing mark-all-read action once.
-5. Reopen the notification center and confirm the unread count remains zero.
+4. No separate “mark all read” button exists. Opening the notification center itself sends `markRead: true`, marks current JSON notifications as read, synchronizes the same read state to DB, and resets the unread badge to zero.
+5. Close and reopen the notification center once. Confirm the list still loads normally and the bell has no unread indicator.
 6. Run the temporary read-only audit below.
 
 The notification endpoint updates JSON read state first, synchronizes the same state to DB, then serves the authenticated notification rows from DB after strict parity checks. Invite visibility and action buttons still use the current JSON invite state.
