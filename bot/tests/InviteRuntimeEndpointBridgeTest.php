@@ -45,7 +45,7 @@ $assertBefore(
 );
 $assertBefore(
     '$runtimeInvites->synchronize($snapshot);',
-    "if ($action === 'create_link_draft'",
+    '$result[\'invite\'][\'share_url\'] = $shareUrl;',
     'Invite parity must be proven before external share preparation'
 );
 
