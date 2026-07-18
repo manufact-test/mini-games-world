@@ -114,6 +114,36 @@ final class CutoverReadinessService
     ): array {
         $blockers = [];
         $environment = strtolower(trim((string)($runtime['environment'] ?? '')));
+        $primaryBackup = is_array($backups['primary'] ?? null) ? $backups['primary'] : [];
+        $externalBackup = is_array($backups['external'] ?? null) ? $backups['external'] : [];
+        $primaryBackupOk = ($primaryBackup['ok'] ?? false) === true;
+        $externalBackupOk = ($externalBackup['ok'] ?? false) === true;
+        $primaryEnvironmentMatches = $primaryBackupOk
+            && strtolower(trim((string)($primaryBackup['environment'] ?? ''))) === $environment;
+        $externalEnvironmentMatches = $externalBackupOk
+            && strtolower(trim((string)($externalBackup['environment'] ?? ''))) === $environment;
+        $sameBackupId = $primaryBackupOk
+            && $externalBackupOk
+            && trim((string)($primaryBackup['backup_id'] ?? '')) !== ''
+            && hash_equals(
+                (string)$primaryBackup['backup_id'],
+                (string)($externalBackup['backup_id'] ?? '')
+            );
+        $sameSnapshotHash = $primaryBackupOk
+            && $externalBackupOk
+            && trim((string)($primaryBackup['snapshot_sha256'] ?? '')) !== ''
+            && hash_equals(
+                (string)$primaryBackup['snapshot_sha256'],
+                (string)($externalBackup['snapshot_sha256'] ?? '')
+            );
+        $backupPair = [
+            'primary_environment_matches_runtime' => $primaryEnvironmentMatches,
+            'external_environment_matches_runtime' => $externalEnvironmentMatches,
+            'same_backup_id' => $sameBackupId,
+            'same_snapshot_sha256' => $sameSnapshotHash,
+            'same_verified_snapshot' => $sameBackupId && $sameSnapshotHash,
+        ];
+
         if (!in_array($environment, ['staging', 'local'], true)) {
             $blockers[] = 'environment must be staging or local';
         }
@@ -135,11 +165,18 @@ final class CutoverReadinessService
         if (($reconciliation['count_parity_complete'] ?? false) !== true) {
             $blockers[] = 'JSON to DB count parity is incomplete';
         }
-        if (($backups['primary']['ok'] ?? false) !== true) {
+        if (!$primaryBackupOk) {
             $blockers[] = 'latest primary JSON backup did not verify';
+        } elseif (!$primaryEnvironmentMatches) {
+            $blockers[] = 'primary backup environment does not match runtime environment';
         }
-        if (($backups['external']['ok'] ?? false) !== true) {
+        if (!$externalBackupOk) {
             $blockers[] = 'latest external JSON backup did not verify';
+        } elseif (!$externalEnvironmentMatches) {
+            $blockers[] = 'external backup environment does not match runtime environment';
+        }
+        if ($primaryBackupOk && $externalBackupOk && !($sameBackupId && $sameSnapshotHash)) {
+            $blockers[] = 'primary and external backups are not the same verified snapshot';
         }
         if (($sourceInventory['missing_required_paths'] ?? []) !== []) {
             $blockers[] = 'required cutover foundations are missing';
@@ -165,6 +202,7 @@ final class CutoverReadinessService
                 'migration_gaps' => array_values((array)($reconciliation['migration_gaps'] ?? [])),
             ],
             'backups' => $backups,
+            'backup_pair' => $backupPair,
             'source_inventory' => $sourceInventory,
         ];
         $report['readiness_fingerprint'] = hash('sha256', $this->canonicalJson($report));
