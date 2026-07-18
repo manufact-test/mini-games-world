@@ -155,6 +155,9 @@ try {
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $invites = new GameInviteService($config, $catalog, $games);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $runtimeInvites = $runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE
+        ? new RuntimeInviteRepository($config, $runtimeStorageRouter)
+        : null;
 
     $result = $db->transaction(function (array &$data) use (
         $action,
@@ -266,6 +269,11 @@ try {
         $core['session'] = $sessions->publicState($user, $sessionId);
         return $core;
     });
+
+    if ($runtimeInvites instanceof RuntimeInviteRepository) {
+        $snapshot = $db->readOnly(static fn(array $data): array => $data);
+        $runtimeInvites->synchronize($snapshot);
+    }
 
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
         $token = (string)($result['invite']['token'] ?? '');

@@ -96,6 +96,13 @@ $assertThrows(
     'unknown module'
 );
 
+$inviteWithoutNotifications = $enabledConfig;
+$inviteWithoutNotifications['feature_flags']['database_runtime']['modules']['notifications'] = false;
+$assertThrows(
+    static fn() => new RuntimeStorageRouter($inviteWithoutNotifications),
+    'requires notification db routing'
+);
+
 $assertThrows(
     static fn() => $enabled->routeFor('unknown'),
     'unknown runtime storage module'
