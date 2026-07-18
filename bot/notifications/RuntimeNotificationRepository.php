@@ -47,14 +47,7 @@ final class RuntimeNotificationRepository
             $existing === [] ? $created++ : $unchanged++;
         }
 
-        $rows = $database->fetchAll(
-            'SELECT * FROM mgw_notifications
-             WHERE recipient_ref = :recipient_ref
-             ORDER BY created_at_utc DESC, notification_id DESC',
-            ['recipient_ref' => $ownership['account_ref']]
-        );
-        $items = array_map(fn(array $row): array => $this->legacyNotification($row), $rows);
-
+        $items = $this->databaseItems($database, $ownership['account_ref']);
         $sourceFingerprint = $this->fingerprint($source);
         $databaseFingerprint = $this->fingerprint($items);
         if (count($source) !== count($items) || !hash_equals($sourceFingerprint, $databaseFingerprint)) {
@@ -72,6 +65,42 @@ final class RuntimeNotificationRepository
                 'database_fingerprint' => $databaseFingerprint,
                 'parity' => true,
             ],
+        ];
+    }
+
+    public function auditParity(
+        array $jsonData,
+        string $legacyUserId,
+        ?string $authenticatedMgwId = null
+    ): array {
+        $this->assertDatabaseRoute();
+        $legacyUserId = trim($legacyUserId);
+        if ($legacyUserId === '') {
+            throw new InvalidArgumentException('Notification audit requires a legacy user ID.');
+        }
+
+        $database = $this->database();
+        $ownership = $this->ownership($database, $legacyUserId, $authenticatedMgwId);
+        $source = $this->sourceNotifications($jsonData, $legacyUserId);
+        $items = $this->databaseItems($database, $ownership['account_ref']);
+        $sourceFingerprint = $this->fingerprint($source);
+        $databaseFingerprint = $this->fingerprint($items);
+        $blockers = [];
+        if (count($source) !== count($items)) {
+            $blockers[] = 'Notification JSON and DB counts differ.';
+        }
+        if (!hash_equals($sourceFingerprint, $databaseFingerprint)) {
+            $blockers[] = 'Notification JSON and DB fingerprints differ.';
+        }
+
+        return [
+            'ok' => $blockers === [],
+            'read_only' => true,
+            'source_count' => count($source),
+            'database_count' => count($items),
+            'source_fingerprint' => $sourceFingerprint,
+            'database_fingerprint' => $databaseFingerprint,
+            'blockers' => $blockers,
         ];
     }
 
@@ -147,6 +176,17 @@ final class RuntimeNotificationRepository
         $items = array_values($items);
         usort($items, fn(array $left, array $right): int => $this->compareNotifications($left, $right));
         return $items;
+    }
+
+    private function databaseItems(DatabaseConnectionInterface $database, string $accountRef): array
+    {
+        $rows = $database->fetchAll(
+            'SELECT * FROM mgw_notifications
+             WHERE recipient_ref = :recipient_ref
+             ORDER BY created_at_utc DESC, notification_id DESC',
+            ['recipient_ref' => $accountRef]
+        );
+        return array_map(fn(array $row): array => $this->legacyNotification($row), $rows);
     }
 
     private function databaseNotification(array $notification, array $ownership): array
