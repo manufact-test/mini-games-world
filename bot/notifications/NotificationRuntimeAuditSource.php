@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 final class NotificationRuntimeAuditSource
 {
+    /** @return list<string> */
     public function userIds(array $snapshot): array
     {
         $users = is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [];
