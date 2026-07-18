@@ -23,7 +23,7 @@ $assertBefore = static function (string $first, string $second, string $message)
 };
 
 $assertContains(
-    "$runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE",
+    '$runtimeStorageRouter->routeFor(\'invites\') === RuntimeStorageRouter::DRIVER_DATABASE',
     'Invite endpoint must activate the DB bridge only through the runtime router'
 );
 $assertContains(
