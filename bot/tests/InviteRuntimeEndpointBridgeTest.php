@@ -31,13 +31,22 @@ $assertContains(
     'Invite endpoint must construct the staged repository with the validated router'
 );
 $assertContains(
-    '$runtimeInvites->synchronize($data);',
-    'Invite endpoint must synchronize the mutated JSON snapshot before commit'
+    '$snapshot = $db->readOnly(static fn(array $data): array => $data);',
+    'Invite endpoint must reload the committed JSON rollback snapshot'
+);
+$assertContains(
+    '$runtimeInvites->synchronize($snapshot);',
+    'Invite endpoint must synchronize the committed JSON snapshot to DB'
 );
 $assertBefore(
-    '$runtimeInvites->synchronize($data);',
-    '$core[\'user\'] = $users->publicUser($user);',
-    'Invite parity must be proven before the endpoint returns public state'
+    '$result = $db->transaction(',
+    '$runtimeInvites->synchronize($snapshot);',
+    'JSON invite state must commit before DB mirroring starts'
+);
+$assertBefore(
+    '$runtimeInvites->synchronize($snapshot);',
+    "if ($action === 'create_link_draft'",
+    'Invite parity must be proven before external share preparation'
 );
 
 fwrite(STDOUT, "InviteRuntimeEndpointBridgeTest: {$assertions} assertions passed\n");
