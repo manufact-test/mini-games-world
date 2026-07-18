@@ -88,7 +88,7 @@ foreach ($targets as $label => $target) {
             'mgw_balances', 'mgw_legacy_realtime_shadow', 'mgw_notifications', 'mgw_invite_events',
             'mgw_invites', 'mgw_match_player_snapshots', 'mgw_match_snapshots', 'mgw_match_players',
             'mgw_match_queue', 'mgw_matches', 'mgw_sessions', 'mgw_devices', 'mgw_identities',
-            'mgw_users', 'mgw_meta', 'mgw_schema_migrations',
+            'mgw_account_ownership', 'mgw_users', 'mgw_meta', 'mgw_schema_migrations',
         ] as $table) {
             $database->execute('DROP TABLE IF EXISTS `' . $table . '`');
         }
@@ -97,7 +97,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $root . '/database/migrations');
-        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} must build all schemas");
+        $assertSame(7, $runner->migrate(false)['executed_count'], "{$label} must build all schemas");
 
         $legacyId = $target['legacy_id'];
         $data = [

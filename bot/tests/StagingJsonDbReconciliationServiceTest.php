@@ -116,7 +116,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(6, $runner->migrate(false)['executed_count'], 'Reconciliation test must apply six migrations');
+$assertSame(7, $runner->migrate(false)['executed_count'], 'Reconciliation test must apply seven migrations');
 
 $realtime = new LegacyRealtimeShadowSyncService($storage, $database);
 $economy = new LegacyEconomyShadowSyncService($storage, $database);

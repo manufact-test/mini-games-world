@@ -91,6 +91,7 @@ foreach ($targets as $label => $target) {
             'mgw_sessions',
             'mgw_devices',
             'mgw_identities',
+            'mgw_account_ownership',
             'mgw_users',
             'mgw_meta',
             'mgw_schema_migrations',
@@ -112,7 +113,7 @@ foreach ($targets as $label => $target) {
     try {
         $database = PdoConnectionFactory::create($config);
         $runner = new MigrationRunner($database, $root . '/database/migrations');
-        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} must build the ledger schema");
+        $assertSame(7, $runner->migrate(false)['executed_count'], "{$label} must build the ledger schema");
 
         $mgwId = $label === 'MySQL' ? 'MGW-CONCURMYSQL001' : 'MGW-CONCURMARIA001';
         $now = '2026-07-17 15:00:00.000000';
@@ -142,7 +143,6 @@ foreach ($targets as $label => $target) {
             'source_type' => 'concurrency_test',
         ]);
 
-        // PDO connections must never be inherited by forked workers.
         unset($service, $runner, $database);
         $service = null;
         $runner = null;
@@ -202,7 +202,6 @@ foreach ($targets as $label => $target) {
         )), 'message');
         $assertSame(true, str_contains(strtolower((string)($errorMessages[0] ?? '')), 'insufficient'), "{$label} losing debit must fail for insufficient balance");
 
-        // Reconnect after all workers have exited; the parent owns a fresh PDO connection.
         $database = PdoConnectionFactory::create($config);
         $service = new LedgerWriteService($database, static fn(): string => '2026-07-17 15:02:00.000000');
         $finalBalance = $service->getBalance($accountRef, 'match_coin');

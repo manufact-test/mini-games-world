@@ -76,6 +76,7 @@ $cleanup = static function () use ($database): void {
         'mgw_sessions',
         'mgw_devices',
         'mgw_identities',
+        'mgw_account_ownership',
         'mgw_users',
         'mgw_ci_transaction',
         'mgw_meta',
@@ -95,16 +96,16 @@ try {
 
     $before = $runner->status();
     $assertSame('mysql', $before['driver'], 'CI integration must use PDO mysql');
-    $assertSame(6, $before['pending_count'], 'Clean MySQL schema must have six pending migrations');
+    $assertSame(7, $before['pending_count'], 'Clean MySQL schema must have seven pending migrations');
 
     $migrated = $runner->migrate(false);
-    $assertSame(6, $migrated['executed_count'], 'MySQL migrations must execute once');
+    $assertSame(7, $migrated['executed_count'], 'MySQL migrations must execute once');
     foreach ($migrated['executed'] as $migration) {
         $assertSame(false, $migration['transactional'], 'MySQL DDL migrations must not use a wrapping transaction');
     }
 
     $after = $runner->status();
-    $assertSame(6, $after['applied_count'], 'MySQL migration records must be persisted');
+    $assertSame(7, $after['applied_count'], 'MySQL migration records must be persisted');
     $assertSame(0, $after['pending_count'], 'MySQL schema must be current after migration');
 
     $secondRun = $runner->migrate(false);
@@ -123,6 +124,7 @@ try {
         'mgw_schema_migrations',
         'mgw_users',
         'mgw_identities',
+        'mgw_account_ownership',
         'mgw_matches',
         'mgw_match_player_snapshots',
         'mgw_invites',
@@ -141,7 +143,7 @@ try {
     }
 
     $checksumRows = $database->fetchAll('SELECT checksum FROM mgw_schema_migrations ORDER BY version');
-    $assertSame(6, count($checksumRows), 'Every applied migration must store a checksum');
+    $assertSame(7, count($checksumRows), 'Every applied migration must store a checksum');
     foreach ($checksumRows as $row) {
         $assertSame(64, strlen((string)$row['checksum']), 'Applied migration checksum must be stored');
     }

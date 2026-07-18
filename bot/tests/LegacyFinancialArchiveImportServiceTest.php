@@ -51,7 +51,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(6, $runner->migrate(false)['executed_count'], 'Financial archive import test must create all schemas');
+$assertSame(7, $runner->migrate(false)['executed_count'], 'Financial archive import test must create all schemas');
 
 $now = '2026-07-17 21:00:00.000000';
 $mgwId = 'MGW-ARCHIVEIMPORT01';

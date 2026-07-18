@@ -38,7 +38,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(6, $runner->migrate(false)['executed_count'], 'Ledger schema test must include six migrations');
+$assertSame(7, $runner->migrate(false)['executed_count'], 'Ledger schema test must include seven migrations');
 $assertSame(0, $runner->migrate(false)['executed_count'], 'Repeated migration run must be idempotent');
 
 foreach (['mgw_balances', 'mgw_idempotency_keys', 'mgw_reservations', 'mgw_ledger_entries', 'mgw_reservation_events'] as $table) {
