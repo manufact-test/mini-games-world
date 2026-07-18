@@ -68,6 +68,7 @@ require_once __DIR__ . '/../accounts/MgwIdGenerator.php';
 require_once __DIR__ . '/../accounts/AccountIdentityService.php';
 require_once __DIR__ . '/../accounts/RuntimeAccountIdentityResolver.php';
 require_once __DIR__ . '/../realtime/RealtimeDatabaseStore.php';
+require_once __DIR__ . '/../realtime/RuntimeRealtimeRepository.php';
 require_once __DIR__ . '/../notifications/RuntimeNotificationRepository.php';
 require_once __DIR__ . '/../invites/RuntimeInviteRepository.php';
 require_once __DIR__ . '/../services/AuthService.php';
