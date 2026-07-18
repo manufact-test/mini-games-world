@@ -150,6 +150,18 @@ $assertSame(
     'JSON and DB fingerprints must match'
 );
 
+$audit = $repository->auditParity($data, $legacyUserId, $mgwId);
+$assertSame(true, $audit['ok'], 'Read-only parity audit must pass');
+$assertSame(true, $audit['read_only'], 'Parity audit must report read-only mode');
+$assertSame(1, $audit['source_count'], 'Audit must count one JSON notification');
+$assertSame(1, $audit['database_count'], 'Audit must count one DB notification');
+$assertSame([], $audit['blockers'], 'Clean audit must have no blockers');
+$assertSame(
+    $audit['source_fingerprint'],
+    $audit['database_fingerprint'],
+    'Audit fingerprints must match'
+);
+
 $data['notifications'][0]['read_at'] = '2026-07-18T17:31:00+00:00';
 $read = $repository->synchronizeAndList($data, $legacyUserId, $mgwId);
 $assertTrue(!empty($read['items'][0]['read_at']), 'JSON read state must propagate to DB');
@@ -161,6 +173,8 @@ $assertSame(
     ),
     'DB read timestamp must match the JSON rollback source'
 );
+$readAudit = $repository->auditParity($data, $legacyUserId, $mgwId);
+$assertSame(true, $readAudit['ok'], 'Read-only audit must pass after mark-read synchronization');
 
 $conflict = $data;
 $conflict['notifications'][0]['title'] = 'Conflicting title';
