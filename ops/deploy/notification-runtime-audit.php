@@ -8,6 +8,7 @@ if (PHP_SAPI !== 'cli') {
 
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
+require_once $projectRoot . '/bot/notifications/NotificationRuntimeAuditSource.php';
 
 $options = getopt('', ['expected-users:']);
 $expectedUsers = isset($options['expected-users']) ? max(1, (int)$options['expected-users']) : 1;
@@ -59,21 +60,7 @@ try {
     }
 
     $snapshot = $storage->readOnly(static fn(array $data): array => $data);
-    $users = is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [];
-    $userIds = [];
-    foreach ($users as $sourceKey => $record) {
-        if (!is_array($record)) {
-            throw new RuntimeException('JSON user record is not an object.');
-        }
-        $legacyUserId = trim((string)($record['id'] ?? (is_string($sourceKey) ? $sourceKey : '')));
-        if ($legacyUserId === '') {
-            throw new RuntimeException('JSON user record has no stable ID.');
-        }
-        if (isset($userIds[$legacyUserId])) {
-            throw new RuntimeException('JSON users contain a duplicate stable ID.');
-        }
-        $userIds[$legacyUserId] = true;
-    }
+    $userIds = (new NotificationRuntimeAuditSource())->userIds($snapshot);
 
     $blockers = [];
     if (count($userIds) !== $expectedUsers) {
@@ -86,7 +73,7 @@ try {
     $databaseCount = 0;
     $userReportFingerprints = [];
 
-    foreach (array_keys($userIds) as $legacyUserId) {
+    foreach ($userIds as $legacyUserId) {
         $userFingerprint = hash('sha256', 'mgw-notification-audit|' . $legacyUserId);
         try {
             $report = $repository->auditParity($snapshot, $legacyUserId);
