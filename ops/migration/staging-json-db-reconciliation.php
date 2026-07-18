@@ -16,6 +16,8 @@ require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyOpeningBalanceImportServic
 require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyFinancialStatusNormalizer.php';
 require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyFinancialArchiveImportService.php';
 require_once dirname(__DIR__, 2) . '/bot/migration/StagingJsonDbReconciliationService.php';
+require_once dirname(__DIR__, 2) . '/bot/migration/LegacyOpeningBalanceOwnershipReconciliationService.php';
+require_once dirname(__DIR__, 2) . '/bot/migration/StagingJsonDbFinalReconciliationService.php';
 
 $exitCode = 0;
 $lockHandle = null;
@@ -68,7 +70,7 @@ try {
         new LegacyFinancialStatusNormalizer()
     );
 
-    $result = (new StagingJsonDbReconciliationService(
+    $result = (new StagingJsonDbFinalReconciliationService(
         $database,
         $realtimeShadow,
         $economyShadow,
