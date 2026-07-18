@@ -90,9 +90,20 @@ PHPFILE);
         'blocking_reasons' => [],
         'migration_gaps' => [],
     ];
+    $snapshotHash = str_repeat('b', 64);
     $backups = [
-        'primary' => ['ok' => true, 'backup_id' => 'primary'],
-        'external' => ['ok' => true, 'backup_id' => 'external'],
+        'primary' => [
+            'ok' => true,
+            'backup_id' => '20260718T000000Z-snapshot',
+            'snapshot_sha256' => $snapshotHash,
+            'environment' => 'staging',
+        ],
+        'external' => [
+            'ok' => true,
+            'backup_id' => '20260718T000000Z-snapshot',
+            'snapshot_sha256' => $snapshotHash,
+            'environment' => 'staging',
+        ],
     ];
 
     $ready = $service->evaluate($runtime, $reconciliation, $backups, $inventory);
@@ -101,6 +112,9 @@ PHPFILE);
     $assertSame(false, $ready['production_cutover_allowed'], 'MVP-14.8.1 must never allow production cutover');
     $assertSame(false, $ready['production_switch_performed'], 'Readiness must not claim a switch');
     $assertSame([], $ready['blockers'], 'Expected adapter work items are not operational blockers');
+    $assertSame(true, $ready['backup_pair']['primary_environment_matches_runtime'], 'Primary backup must match the runtime environment');
+    $assertSame(true, $ready['backup_pair']['external_environment_matches_runtime'], 'External backup must match the runtime environment');
+    $assertSame(true, $ready['backup_pair']['same_verified_snapshot'], 'Primary and external backups must be the same snapshot');
     $assertTrue(strlen((string)$ready['readiness_fingerprint']) === 64, 'Readiness fingerprint must be SHA-256');
 
     $blockedBackups = $backups;
@@ -109,6 +123,17 @@ PHPFILE);
     $assertSame(false, $blocked['ready_for_mvp_14_8_2'], 'Failed reconciliation and external backup must block readiness');
     $assertTrue(in_array('final JSON to DB reconciliation is not clean', $blocked['blockers'], true), 'Reconciliation blocker must be explicit');
     $assertTrue(in_array('latest external JSON backup did not verify', $blocked['blockers'], true), 'External backup blocker must be explicit');
+
+    $mismatchedBackups = $backups;
+    $mismatchedBackups['external']['backup_id'] = 'older-external-snapshot';
+    $mismatched = $service->evaluate($runtime, $reconciliation, $mismatchedBackups, $inventory);
+    $assertSame(false, $mismatched['ready_for_mvp_14_8_2'], 'A stale or unrelated external snapshot must block readiness');
+    $assertTrue(in_array('primary and external backups are not the same verified snapshot', $mismatched['blockers'], true), 'Backup pair mismatch must be explicit');
+
+    $wrongEnvironmentBackups = $backups;
+    $wrongEnvironmentBackups['primary']['environment'] = 'production';
+    $wrongEnvironment = $service->evaluate($runtime, $reconciliation, $wrongEnvironmentBackups, $inventory);
+    $assertTrue(in_array('primary backup environment does not match runtime environment', $wrongEnvironment['blockers'], true), 'Cross-environment backup must block readiness');
 
     $unsafeConstructor = 'new ' . 'JsonDatabase' . "('/tmp/data')";
     $write('bot/unsafe.php', "<?php\n\$db = {$unsafeConstructor};\n");
