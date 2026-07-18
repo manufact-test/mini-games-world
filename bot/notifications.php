@@ -103,8 +103,30 @@ try {
     $markRead = !empty($payload['markRead']);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $notifications = new NotificationService();
+    $router = $runtimeStorageRouter instanceof RuntimeStorageRouter
+        ? $runtimeStorageRouter
+        : new RuntimeStorageRouter($config);
 
-    if ($markRead) {
+    if ($router->routeFor('notifications') === RuntimeStorageRouter::DRIVER_DATABASE) {
+        $snapshot = $markRead
+            ? $db->transaction(function (array &$data) use ($notifications, $userId): array {
+                $notifications->markAllRead($data, $userId);
+                return $data;
+            })
+            : $db->readOnly(static fn(array $data): array => $data);
+
+        $runtimeNotifications = new RuntimeNotificationRepository($config, $router);
+        $synchronized = $runtimeNotifications->synchronizeAndList(
+            $snapshot,
+            $userId,
+            (string)($tgUser['mgw_id'] ?? '')
+        );
+        $snapshot['notifications'] = $synchronized['items'];
+        $result = [
+            'items' => mgw_visible_notifications($snapshot, $notifications, $userId, 30),
+            'unread_count' => $markRead ? 0 : mgw_visible_unread_count($snapshot, $userId),
+        ];
+    } elseif ($markRead) {
         $result = $db->transaction(function (array &$data) use ($notifications, $userId): array {
             $items = mgw_visible_notifications($data, $notifications, $userId, 30);
             $notifications->markAllRead($data, $userId);
