@@ -38,7 +38,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(6, $runner->migrate(false)['executed_count'], 'Archive schema test must include six migrations');
+$assertSame(7, $runner->migrate(false)['executed_count'], 'Archive schema test must include seven migrations');
 $assertSame(0, $runner->migrate(false)['executed_count'], 'Repeated archive migration run must be idempotent');
 
 $tables = [

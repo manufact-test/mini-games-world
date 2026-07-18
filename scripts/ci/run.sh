@@ -14,11 +14,21 @@ echo "PHP syntax passed: ${php_count} files"
 
 echo "== PHP smoke tests =="
 test_count=0
+test_failures=0
 while IFS= read -r test_file; do
   [[ -z "$test_file" ]] && continue
-  php -d auto_prepend_file="$ROOT/scripts/ci/php-strict.php" "$test_file"
   test_count=$((test_count + 1))
+  if ! php -d auto_prepend_file="$ROOT/scripts/ci/php-strict.php" "$test_file"; then
+    echo "FAILED: ${test_file}" >&2
+    test_failures=$((test_failures + 1))
+  fi
 done < <(git ls-files 'bot/tests/*Test.php' | LC_ALL=C sort)
+
+if (( test_failures > 0 )); then
+  echo "PHP smoke tests failed: ${test_failures} of ${test_count} files" >&2
+  exit 1
+fi
+
 echo "PHP smoke tests passed: ${test_count} files"
 
 echo "== JSON validation =="

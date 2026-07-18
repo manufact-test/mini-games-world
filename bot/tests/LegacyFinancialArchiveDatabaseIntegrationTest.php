@@ -89,6 +89,7 @@ foreach ($targets as $label => $target) {
             'mgw_sessions',
             'mgw_devices',
             'mgw_identities',
+            'mgw_account_ownership',
             'mgw_users',
             'mgw_meta',
             'mgw_schema_migrations',
@@ -100,7 +101,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} must build the legacy financial archive schema");
+        $assertSame(7, $runner->migrate(false)['executed_count'], "{$label} must build the legacy financial archive schema");
         $assertSame(0, $runner->migrate(false)['executed_count'], "{$label} repeated archive migration must be idempotent");
 
         foreach (['mgw_legacy_payments', 'mgw_legacy_shop_orders', 'mgw_legacy_financial_transactions'] as $table) {

@@ -84,6 +84,7 @@ foreach ($targets as $label => $target) {
             'mgw_sessions',
             'mgw_devices',
             'mgw_identities',
+            'mgw_account_ownership',
             'mgw_users',
             'mgw_meta',
             'mgw_schema_migrations',
@@ -95,7 +96,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} must build the realtime schema");
+        $assertSame(7, $runner->migrate(false)['executed_count'], "{$label} must build the realtime schema");
 
         foreach ([['mgw_rt_a', 'A'], ['mgw_rt_b', 'B']] as [$mgwId, $name]) {
             $database->execute(

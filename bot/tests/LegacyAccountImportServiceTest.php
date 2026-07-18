@@ -87,7 +87,7 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(6, $runner->migrate(false)['executed_count'], 'Account import test must apply all migrations');
+$assertSame(7, $runner->migrate(false)['executed_count'], 'Account import test must apply all migrations');
 
 $economy = new LegacyEconomyShadowSyncService($storage, $database);
 $assertSame(true, $economy->run()['ok'], 'Economy shadow must be prepared');

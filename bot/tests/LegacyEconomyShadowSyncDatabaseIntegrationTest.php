@@ -91,6 +91,7 @@ foreach ($targets as $label => $target) {
             'mgw_sessions',
             'mgw_devices',
             'mgw_identities',
+            'mgw_account_ownership',
             'mgw_users',
             'mgw_meta',
             'mgw_schema_migrations',
@@ -102,7 +103,7 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $root . '/database/migrations');
-        $assertSame(6, $runner->migrate(false)['executed_count'], "{$label} must build all schemas");
+        $assertSame(7, $runner->migrate(false)['executed_count'], "{$label} must build all schemas");
 
         $mgwId = $label === 'MySQL' ? 'MGW-ECONMYSQL0001' : 'MGW-ECONMARIA0001';
         $now = '2026-07-17 16:30:00.000000';
