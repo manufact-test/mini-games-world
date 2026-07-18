@@ -32,15 +32,20 @@ The user-facing invite interface and API response contract are unchanged.
 2. Confirm health is `ok`, global storage is `json`, migrations are current and only `accounts` plus `notifications` are enabled.
 3. Add `invites => true` to staging `_private_mgw/runtime.php` only.
 4. Confirm health lists `accounts`, `invites` and `notifications`; production routing must remain false.
-5. Exercise one existing link-invite flow in the test application and leave the invite in a terminal state.
-6. Run one temporary read-only Cron:
-
-```bash
-/usr/bin/php /home/u235811320/domains/seashell-okapi-889488.hostingersite.com/public_html/ops/deploy/invite-runtime-audit.php --expected-invites=1
-```
-
-7. Require `ok=true`, equal JSON/DB counts and fingerprints, `parity=true`, and `blockers=[]`.
+5. Exercise one existing link-invite flow in the test application and leave the newly created invite in a terminal state.
+6. Run the temporary read-only invite audit. Do not assume staging invitation history is empty; validate the retained count shown by the audit.
+7. Require `ok=true`, equal JSON and DB counts and fingerprints, `parity=true`, and `blockers=[]`.
 8. Delete only the temporary invite audit Cron.
+
+## Verified staging result
+
+- build `v93-mvp14-db-invite-routing`;
+- active DB modules: `accounts`, `notifications`, `invites`;
+- global and rollback storage: `json`;
+- live flow: link-invite draft created, Telegram share cancelled without sending, invite moved to `cancelled`;
+- retained invitation history: JSON 2, DB 2;
+- fingerprints matched, `parity=true`, `blockers=[]`;
+- temporary invite audit Cron removed.
 
 ## Rollback
 
