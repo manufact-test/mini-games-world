@@ -110,7 +110,8 @@ PHPFILE);
     $assertTrue(in_array('final JSON to DB reconciliation is not clean', $blocked['blockers'], true), 'Reconciliation blocker must be explicit');
     $assertTrue(in_array('latest external JSON backup did not verify', $blocked['blockers'], true), 'External backup blocker must be explicit');
 
-    $write('bot/unsafe.php', "<?php\n\$db = new JsonDatabase('/tmp/data');\n");
+    $unsafeConstructor = 'new ' . 'JsonDatabase' . "('/tmp/data')";
+    $write('bot/unsafe.php', "<?php\n\$db = {$unsafeConstructor};\n");
     $unsafeInventory = $service->inspectSource();
     $unsafe = $service->evaluate($runtime, $reconciliation, $backups, $unsafeInventory);
     $assertSame(1, count($unsafeInventory['direct_json_database_instantiations']), 'Unsafe direct construction must be located');
