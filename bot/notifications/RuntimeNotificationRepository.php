@@ -171,7 +171,10 @@ final class RuntimeNotificationRepository
 
     private function assertImmutableRow(array $row, array $expected): void
     {
-        $actualPayload = $this->decodePayload($row['payload_json'] ?? null);
+        $actualPayload = $this->normalizeLegacyNotification(
+            $this->decodePayload($row['payload_json'] ?? null)
+        );
+        $expectedPayload = $this->normalizeLegacyNotification($expected['payload']);
         $checks = [
             'notification_id' => (string)($row['notification_id'] ?? ''),
             'event_key' => (string)($row['event_key'] ?? ''),
@@ -181,7 +184,7 @@ final class RuntimeNotificationRepository
             'type' => (string)($row['type'] ?? ''),
             'title' => (string)($row['title'] ?? ''),
             'message' => (string)($row['message'] ?? ''),
-            'tone' => (string)($row['tone'] ?? ''),
+            'tone' => trim((string)($row['tone'] ?? '')) ?: 'info',
             'invite_token' => (string)($row['invite_token'] ?? ''),
             'created_at_utc' => $this->requiredTimestamp($row['created_at_utc'] ?? null),
             'payload' => $actualPayload,
@@ -195,10 +198,10 @@ final class RuntimeNotificationRepository
             'type' => $expected['type'],
             'title' => $expected['title'],
             'message' => $expected['message'],
-            'tone' => (string)($expected['tone'] ?? ''),
+            'tone' => trim((string)($expected['tone'] ?? '')) ?: 'info',
             'invite_token' => (string)($expected['invite_token'] ?? ''),
             'created_at_utc' => $expected['created_at_utc'],
-            'payload' => $expected['payload'],
+            'payload' => $expectedPayload,
         ];
         if (!hash_equals($this->canonicalJson($expectedChecks), $this->canonicalJson($checks))) {
             throw new RuntimeException('Existing DB notification conflicts with JSON rollback source.');
@@ -254,20 +257,23 @@ final class RuntimeNotificationRepository
 
     private function legacyNotification(array $row): array
     {
-        $payload = $this->decodePayload($row['payload_json'] ?? null);
-        $legacy = is_array($payload) ? $payload : [];
+        $legacy = $this->decodePayload($row['payload_json'] ?? null);
         $legacy['id'] = (string)($row['notification_id'] ?? '');
         $legacy['event_key'] = (string)($row['event_key'] ?? '');
         $legacy['user_id'] = (string)($row['legacy_user_id'] ?? '');
         $legacy['type'] = (string)($row['type'] ?? '');
         $legacy['title'] = (string)($row['title'] ?? 'Уведомление');
         $legacy['message'] = (string)($row['message'] ?? '');
-        $legacy['tone'] = (string)($row['tone'] ?? 'info');
+        $legacy['tone'] = trim((string)($row['tone'] ?? '')) ?: 'info';
         $legacy['invite_token'] = (string)($row['invite_token'] ?? '');
         $legacy['created_at'] = $this->requiredTimestamp($row['created_at_utc'] ?? null);
         $legacy['read_at'] = $this->nullableTimestamp($row['read_at_utc'] ?? null);
         $legacy['hidden_at'] = $this->nullableTimestamp($row['hidden_at_utc'] ?? null);
-        return $this->normalizeLegacyNotification($legacy);
+        $normalized = $this->normalizeLegacyNotification($legacy);
+        $normalized['created_at'] = $this->isoTimestamp($normalized['created_at']);
+        $normalized['read_at'] = $normalized['read_at'] === null ? null : $this->isoTimestamp($normalized['read_at']);
+        $normalized['hidden_at'] = $normalized['hidden_at'] === null ? null : $this->isoTimestamp($normalized['hidden_at']);
+        return $normalized;
     }
 
     private function normalizeLegacyNotification(array $notification): array
@@ -339,6 +345,13 @@ final class RuntimeNotificationRepository
         } catch (Throwable) {
             throw new RuntimeException('Notification timestamp is invalid.');
         }
+    }
+
+    private function isoTimestamp(string $value): string
+    {
+        return (new DateTimeImmutable($value, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('UTC'))
+            ->format(DATE_ATOM);
     }
 
     private function canonicalJson(mixed $value): string
