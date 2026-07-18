@@ -37,7 +37,32 @@ After saving, `/bot/health.php` must show:
 - `database_runtime.enabled_modules: ["accounts"]`;
 - `database_runtime.production_allowed: false`.
 
-Then authenticate once through the staging Telegram bot and confirm the application opens the same user without creating a duplicate account.
+## Live staging proof
+
+Authenticate once through the staging Telegram bot, then run the CLI-only read-only audit:
+
+```bash
+php ops/deploy/account-runtime-audit.php --expected-users=1 --recent-minutes=20
+```
+
+The successful report must show:
+
+- `ok: true`;
+- `read_only: true`;
+- exactly one MGW user, Telegram identity and account ownership;
+- Telegram identity and ownership resolve to the same MGW account;
+- zero duplicate provider subjects;
+- zero orphan identity or ownership rows;
+- recent Telegram authentication observed;
+- at least one device and active session;
+- `sensitive_identifiers_exposed: false`;
+- `storage_driver: json`;
+- DB runtime enabled only for `accounts`;
+- `blockers: []`.
+
+The report emits only SHA-256 fingerprints for provider and ownership identities. It never returns the raw Telegram subject or raw client session ID.
+
+On Hostinger, this command may be run through one temporary five-minute Cron that writes its output into the private staging directory. Remove that temporary Cron immediately after collecting the result. Permanent backup and managed-migration Cron jobs must not be changed.
 
 ## Safety rules
 
@@ -45,7 +70,8 @@ Then authenticate once through the staging Telegram bot and confirm the applicat
 - every later normalized DB module requires `accounts: true`;
 - unknown module names fail boot;
 - database connection or identity ownership errors fail closed;
-- raw client session IDs are never stored.
+- raw client session IDs are never stored;
+- the audit is staging-only, CLI-only and read-only.
 
 ## Rollback
 
@@ -57,4 +83,4 @@ Expected rollback health:
 - `database_runtime.enabled: false`;
 - `database_runtime.enabled_modules: []`.
 
-No DB deletion, JSON restore, migration rollback or Cron change is required.
+No DB deletion, JSON restore, migration rollback or permanent Cron change is required.
