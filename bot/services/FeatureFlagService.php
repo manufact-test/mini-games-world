@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/storage/RuntimeStorageRouter.php';
 
 final class FeatureFlagService
 {
-    public const BUILD = 'v93-mvp14-db-invite-routing';
+    public const BUILD = 'v94-mvp14-db-realtime-routing';
 
     private const GAME_IDS = [
         'tictactoe',
