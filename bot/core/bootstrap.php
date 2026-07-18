@@ -69,6 +69,7 @@ require_once __DIR__ . '/../accounts/AccountIdentityService.php';
 require_once __DIR__ . '/../accounts/RuntimeAccountIdentityResolver.php';
 require_once __DIR__ . '/../realtime/RealtimeDatabaseStore.php';
 require_once __DIR__ . '/../realtime/RuntimeRealtimeRepository.php';
+require_once __DIR__ . '/../realtime/RealtimeRuntimeBridge.php';
 require_once __DIR__ . '/../notifications/RuntimeNotificationRepository.php';
 require_once __DIR__ . '/../invites/RuntimeInviteRepository.php';
 require_once __DIR__ . '/../services/AuthService.php';
@@ -98,5 +99,11 @@ require_once __DIR__ . '/../handlers/WebhookHandler.php';
 // Validate the staged DB routing contract on every boot. The global runtime
 // remains JSON until individual modules are explicitly enabled in staging.
 $runtimeStorageRouter = new RuntimeStorageRouter($config);
+$runtimeRealtimeBridge = new RealtimeRuntimeBridge($config, $runtimeStorageRouter);
+if ($runtimeRealtimeBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $GLOBALS['mgw_api_success_hook'] = static function () use ($runtimeRealtimeBridge): void {
+        $runtimeRealtimeBridge->synchronizeCurrentJson();
+    };
+}
 
 RuntimeRequestGuard::enforce($config, $_SERVER);
