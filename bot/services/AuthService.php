@@ -35,20 +35,7 @@ final class AuthService
 
     private function attachMgwIdentity(array $user, string $sessionId): array
     {
-        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
-        if (!$databaseConfig->enabled()) {
-            return $user;
-        }
-
-        $database = PdoConnectionFactory::create($databaseConfig);
-        $accounts = new AccountIdentityService(
-            $database,
-            (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000)
-        );
-        $identity = $accounts->resolveTelegramUser($user, $sessionId);
-        $user['mgw_id'] = $identity['mgw_id'];
-        $user['mgw_identity_provider'] = $identity['provider'];
-        return $user;
+        return (new RuntimeAccountIdentityResolver($this->config))->attach($user, $sessionId);
     }
 
     private function browserDevUserAllowed(): bool
