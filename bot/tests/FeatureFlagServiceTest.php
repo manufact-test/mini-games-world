@@ -28,6 +28,10 @@ $assertSame(false, $defaults->featureEnabled('tournaments'), 'Unavailable future
 $assertSame(true, $defaults->gameEnabled('domino'), 'Released games must default to enabled');
 $assertSame(null, $defaults->newMatchBlockReason('domino'), 'Default runtime must allow new games');
 $assertSame(true, $defaults->activeGameActionsAllowed(), 'Active games must always remain playable');
+$defaultRuntime = $defaults->publicStatus()['database_runtime'] ?? [];
+$assertSame(false, $defaultRuntime['enabled'] ?? null, 'DB runtime routing must default to disabled');
+$assertSame('json', $defaultRuntime['rollback_driver'] ?? null, 'DB runtime rollback must default to JSON');
+$assertSame([], $defaultRuntime['enabled_modules'] ?? null, 'No DB runtime modules may be enabled by default');
 
 $dominoDisabled = new FeatureFlagService([
     'environment' => 'staging',
