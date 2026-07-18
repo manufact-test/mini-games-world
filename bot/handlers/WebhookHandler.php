@@ -371,7 +371,7 @@ final class WebhookHandler
         return true;
     }
 
-    private function setPendingPaymentReject(JsonDatabase $db, string $paymentId, string $adminId): string
+    private function setPendingPaymentReject(StorageTransactionInterface $db, string $paymentId, string $adminId): string
     {
         $paymentId = trim($paymentId);
         if ($paymentId === '') {
@@ -422,7 +422,7 @@ final class WebhookHandler
         });
     }
 
-    private function cancelPendingPaymentReject(JsonDatabase $db, string $adminId): string
+    private function cancelPendingPaymentReject(StorageTransactionInterface $db, string $adminId): string
     {
         return $db->transaction(function (array &$data) use ($adminId) {
             if (isset($data['system']['admin_pending_actions'][$adminId])) {
@@ -433,7 +433,7 @@ final class WebhookHandler
         });
     }
 
-    private function processPaymentDecision(JsonDatabase $db, AdminService $admin, string $argument, string $fromId, string $decision): array
+    private function processPaymentDecision(StorageTransactionInterface $db, AdminService $admin, string $argument, string $fromId, string $decision): array
     {
         return $db->transaction(function (array &$data) use ($admin, $argument, $fromId, $decision) {
             $before = $this->paymentForNotification($data, $argument);
