@@ -134,6 +134,12 @@ function mgw_normalize_api_data(array $data): array {
 }
 
 function api_ok(array $data = []): void {
+    $hook = $GLOBALS['mgw_api_success_hook'] ?? null;
+    if (is_callable($hook)) {
+        unset($GLOBALS['mgw_api_success_hook']);
+        $hook();
+    }
+
     json_response(['ok' => true] + mgw_normalize_api_data($data));
 }
 
