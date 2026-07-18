@@ -47,7 +47,7 @@ $config = [
         'port' => 3306,
         'name' => 'mgw_test',
         'user' => 'mgw_test',
-        'password' => '',
+        'password' => str_repeat('x', 16),
         'charset' => 'utf8mb4',
     ],
     'feature_flags' => [
