@@ -41,7 +41,9 @@ final class LegacyEconomyDeltaImportService
                 'operation_key' => $this->operationKey(
                     $plan['source_fingerprint'],
                     $item['legacy_user_id'],
-                    $item['asset_code']
+                    $item['asset_code'],
+                    (int)$item['database_amount'],
+                    (int)$item['source_amount']
                 ),
                 'account_ref' => $item['account_ref'],
                 'mgw_id' => $item['mgw_id'],
@@ -53,6 +55,8 @@ final class LegacyEconomyDeltaImportService
                 'source_ref' => 'economy_snapshot:' . $plan['source_fingerprint'],
                 'metadata' => [
                     'source_fingerprint' => $plan['source_fingerprint'],
+                    'database_amount' => (int)$item['database_amount'],
+                    'source_amount' => (int)$item['source_amount'],
                     'reason' => 'frozen_json_final_delta',
                 ],
             ]);
@@ -260,10 +264,21 @@ final class LegacyEconomyDeltaImportService
         return $map;
     }
 
-    private function operationKey(string $fingerprint, string $legacyUserId, string $assetCode): string
-    {
+    private function operationKey(
+        string $fingerprint,
+        string $legacyUserId,
+        string $assetCode,
+        int $databaseAmount,
+        int $sourceAmount
+    ): string {
         return 'legacy_delta:v1:' . substr(
-            hash('sha256', $fingerprint . '|' . $legacyUserId . '|' . $assetCode),
+            hash('sha256', implode('|', [
+                $fingerprint,
+                $legacyUserId,
+                $assetCode,
+                (string)$databaseAmount,
+                (string)$sourceAmount,
+            ])),
             0,
             48
         );
