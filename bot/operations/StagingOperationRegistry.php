@@ -148,7 +148,7 @@ final class StagingOperationRegistry
                 $storage,
                 $database
             ))->definition(),
-            (new StagingRuntimeSwitchRollbackRehearsalOperation(
+            (new StagingRuntimeSwitchRollbackRehearsalRetryOperation(
                 $config,
                 $storage,
                 $database,
