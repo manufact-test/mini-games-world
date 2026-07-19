@@ -90,8 +90,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ci-report
-          path: |
-            ci-report.txt
-            bot/tests/**/*.php
+          path: ci-report.txt
           if-no-files-found: error
           retention-days: 3
