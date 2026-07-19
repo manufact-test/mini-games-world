@@ -84,7 +84,13 @@ require_once __DIR__ . '/../ledger/RuntimeEconomySnapshotStorage.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomyBalanceBootstrapService.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomyRepository.php';
 require_once __DIR__ . '/../ledger/EconomyRuntimeBridge.php';
+require_once __DIR__ . '/../ledger/LegacyFinancialStatusNormalizer.php';
+require_once __DIR__ . '/../ledger/LegacyFinancialArchiveImportService.php';
+require_once __DIR__ . '/../ledger/LegacyFinancialArchiveDeltaService.php';
 require_once __DIR__ . '/../history/RuntimeHistoryRepository.php';
+require_once __DIR__ . '/../shop/RuntimeShopSchemaInstaller.php';
+require_once __DIR__ . '/../shop/RuntimeShopRepository.php';
+require_once __DIR__ . '/../shop/ShopRuntimeBridge.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/FeatureFlagService.php';
@@ -114,6 +120,7 @@ require_once __DIR__ . '/../handlers/WebhookHandler.php';
 $runtimeStorageRouter = new RuntimeStorageRouter($config);
 $runtimeRealtimeBridge = new RealtimeRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeEconomyBridge = new EconomyRuntimeBridge($config, $runtimeStorageRouter);
+$runtimeShopBridge = new ShopRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeScript = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
 $runtimeApiSuccessHooks = [];
 
@@ -127,12 +134,32 @@ if ($runtimeScript === 'api.php' && $runtimeEconomyBridge->shouldAttachToCurrent
         $runtimeEconomyBridge->synchronizeCurrentJson();
     };
 }
+if ($runtimeScript === 'api.php' && $runtimeShopBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $runtimeApiSuccessHooks[] = static function () use ($runtimeShopBridge): void {
+        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
+        if ($runtimeShopBridge->shouldSynchronizeApiAction($action)) {
+            $runtimeShopBridge->synchronizeCurrentJson();
+        }
+    };
+}
 if ($runtimeApiSuccessHooks !== []) {
     $GLOBALS['mgw_api_success_hooks'] = $runtimeApiSuccessHooks;
 }
+
+$runtimeWebhookSuccessHooks = [];
 if ($runtimeScript === 'webhook.php' && $runtimeEconomyBridge->shouldAttachToCurrentRequest($_SERVER)) {
-    $GLOBALS['mgw_webhook_success_hook'] = static function () use ($runtimeEconomyBridge): void {
+    $runtimeWebhookSuccessHooks[] = static function () use ($runtimeEconomyBridge): void {
         $runtimeEconomyBridge->synchronizeCurrentJson();
+    };
+}
+if ($runtimeScript === 'webhook.php' && $runtimeShopBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $runtimeWebhookSuccessHooks[] = static function () use ($runtimeShopBridge): void {
+        $runtimeShopBridge->synchronizeCurrentJson();
+    };
+}
+if ($runtimeWebhookSuccessHooks !== []) {
+    $GLOBALS['mgw_webhook_success_hook'] = static function () use ($runtimeWebhookSuccessHooks): void {
+        foreach ($runtimeWebhookSuccessHooks as $hook) $hook();
     };
 }
 
