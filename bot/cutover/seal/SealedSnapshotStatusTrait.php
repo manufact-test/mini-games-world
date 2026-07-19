@@ -8,7 +8,8 @@ trait SealedSnapshotStatusTrait
         $environment = $this->assertSafeEnvironment();
         $control = $this->readControl();
         $state = (string)($control['state'] ?? 'absent');
-        $matches = strtolower(trim((string)($control['environment'] ?? ''))) === $environment;
+        $controlEnvironment = strtolower(trim((string)($control['environment'] ?? '')));
+        $matches = $controlEnvironment === $environment;
         $freezeActive = in_array($state, ['frozen', 'sealed'], true) && $matches;
         $sealed = $state === 'sealed' && $matches;
         $snapshot = $this->storage->readOnly(static function (array $data): array {
@@ -42,12 +43,25 @@ trait SealedSnapshotStatusTrait
         if ($snapshot['queue_entries'] > 0) $blockers[] = 'matchmaking queue must be empty';
         if ($snapshot['open_invites'] > 0) $blockers[] = 'open invitations must drain or expire';
         if ($snapshot['searching_users'] > 0) $blockers[] = 'searching users must be reset to idle';
+
         $marker = is_file($this->writeBlockFile());
+        $consistencyBlockers = [];
+        if (in_array($state, ['frozen', 'sealed'], true) && !$matches) {
+            $consistencyBlockers[] = 'cutover control environment does not match runtime environment';
+        }
+        if ($sealed && !$marker) {
+            $consistencyBlockers[] = 'sealed control is active without the JSON write block';
+        }
+        if (!$sealed && $marker) {
+            $consistencyBlockers[] = 'JSON write block is active without sealed control';
+        }
+
         $snapshotBlockers = $blockers;
         if (!$sealed) $snapshotBlockers[] = 'rehearsal is not sealed';
-        if ($sealed && !$marker) $snapshotBlockers[] = 'sealed JSON write block is not active';
+        foreach ($consistencyBlockers as $blocker) $snapshotBlockers[] = $blocker;
+
         return $this->withFingerprint([
-            'ok' => true,
+            'ok' => $consistencyBlockers === [],
             'report_type' => 'mvp-14.8.4-sealed-snapshot-control',
             'environment' => $environment,
             'freeze' => [
@@ -62,6 +76,10 @@ trait SealedSnapshotStatusTrait
             ],
             'drain' => $snapshot + ['ready' => $blockers === [], 'blockers' => $blockers],
             'frozen_snapshot' => ['ready' => $snapshotBlockers === [], 'blockers' => array_values(array_unique($snapshotBlockers))],
+            'control_consistency' => [
+                'ok' => $consistencyBlockers === [],
+                'blockers' => $consistencyBlockers,
+            ],
             'storage_driver' => 'json',
             'rollback_driver' => 'json',
             'production_changed' => false,
