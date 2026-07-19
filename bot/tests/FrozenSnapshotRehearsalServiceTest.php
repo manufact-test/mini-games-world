@@ -132,6 +132,42 @@ try {
     $seal->release('test complete');
     $assert(!is_file($dataDir . '/.cutover-write-block'), 'Explicit release must remove the JSON write barrier.');
 
+    file_put_contents($controlFile, json_encode([
+        'schema_version' => 2,
+        'environment' => 'staging',
+        'rehearsal_id' => 'rehearsal_cleanup_failure_test',
+        'state' => 'frozen',
+        'started_at_utc' => gmdate(DATE_ATOM),
+        'sealed_at_utc' => null,
+        'released_at_utc' => null,
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    $seal->seal();
+
+    $cleanupFailureCaught = false;
+    try {
+        $service->prepare('test-build', static function () use ($primaryRoot): array {
+            $snapshots = array_values(array_filter(glob($primaryRoot . '/*') ?: [], 'is_dir'));
+            rsort($snapshots, SORT_STRING);
+            $latest = $snapshots[0] ?? '';
+            foreach (glob($latest . '/data/*.json') ?: [] as $jsonFile) unlink($jsonFile);
+            return [
+                'ok' => true,
+                'read_only' => true,
+                'count_parity_complete' => true,
+                'report_fingerprint' => hash('sha256', 'cleanup-failure-reconciliation'),
+                'blocking_reasons' => [],
+                'migration_gaps' => [],
+            ];
+        });
+    } catch (Throwable) {
+        $cleanupFailureCaught = true;
+    }
+    $assert($cleanupFailureCaught, 'Corrupted post-backup fingerprint input must fail the rehearsal.');
+    $restoreDirsAfterFailure = array_values(array_filter(glob($restoreRoot . '/restore-*') ?: [], 'is_dir'));
+    $assert($restoreDirsAfterFailure === [], 'Failed fingerprint verification must still remove the isolated restore target.');
+    $seal->emergencyRelease('cleanup failure test complete');
+    $assert(!is_file($dataDir . '/.cutover-write-block'), 'Emergency release must remove the barrier after a failed rehearsal.');
+
     $production = $config;
     $production['environment'] = 'production';
     $productionBlocked = false;
