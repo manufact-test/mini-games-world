@@ -5,7 +5,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('X-Content-Type-Options: nosniff');
 
-$build = 'v95-mvp14-db-economy-routing';
+$build = 'v96-mvp14-db-history-routing';
 
 try {
     require __DIR__ . '/core/bootstrap.php';

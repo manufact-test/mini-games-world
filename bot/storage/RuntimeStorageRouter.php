@@ -106,6 +106,13 @@ final class RuntimeStorageRouter
             && !in_array('notifications', $enabledModules, true)) {
             throw new RuntimeException('Invite DB routing requires notification DB routing.');
         }
+        if (in_array('history', $enabledModules, true)) {
+            foreach (['realtime', 'economy'] as $dependency) {
+                if (!in_array($dependency, $enabledModules, true)) {
+                    throw new RuntimeException('History DB routing requires realtime and economy DB routing.');
+                }
+            }
+        }
     }
 
     private function settings(): array

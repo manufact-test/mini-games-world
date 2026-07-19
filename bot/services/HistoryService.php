@@ -7,6 +7,27 @@ final class HistoryService
 
     public function userHistory(array $db, string $userId, int $limit = 24): array
     {
+        $router = new RuntimeStorageRouter($this->config);
+        if ($router->routeFor('history') !== RuntimeStorageRouter::DRIVER_DATABASE) {
+            return $this->formatHistory($db, $userId, $limit);
+        }
+
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('History DB runtime requires an enabled database configuration.');
+        }
+        $repository = new RuntimeHistoryRepository(
+            $this->config,
+            $router,
+            PdoConnectionFactory::create($databaseConfig),
+            $this
+        );
+        $result = $repository->synchronizeAndRead($db, $userId, $limit);
+        return is_array($result['history'] ?? null) ? $result['history'] : [];
+    }
+
+    public function formatHistory(array $db, string $userId, int $limit = 24): array
+    {
         return [
             'operations' => $this->balanceOperations($db, $userId, $limit),
             'matches' => $this->matchHistory($db, $userId, 12),
