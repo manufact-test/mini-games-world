@@ -123,10 +123,15 @@ final class RuntimeEconomyRepository
 
     private function compactShadow(array $report): array
     {
+        $integrity = is_array($report['shadow_integrity'] ?? null)
+            ? $report['shadow_integrity']
+            : [];
         return [
             'source_fingerprint' => (string)($report['source_fingerprint'] ?? ''),
             'sections' => $report['sections'] ?? [],
-            'integrity_ok' => !empty($report['shadow_integrity']['ok']),
+            'integrity_ok' => (int)($integrity['corrupted_count'] ?? 0) === 0,
+            'checked_count' => (int)($integrity['checked_count'] ?? 0),
+            'corrupted_count' => (int)($integrity['corrupted_count'] ?? 0),
         ];
     }
 
