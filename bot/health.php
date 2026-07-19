@@ -5,7 +5,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('X-Content-Type-Options: nosniff');
 
-$build = 'v100-mvp14-db-weekly-bonus-routing';
+$build = 'v101-mvp14-db-switch-rollback-rehearsal';
 
 try {
     require __DIR__ . '/core/bootstrap.php';
