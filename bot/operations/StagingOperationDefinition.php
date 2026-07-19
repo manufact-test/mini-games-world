@@ -4,11 +4,13 @@ declare(strict_types=1);
 final class StagingOperationDefinition
 {
     private Closure $handler;
+    private ?Closure $rollback;
 
     public function __construct(
         private string $id,
         private string $build,
-        callable $handler
+        callable $handler,
+        ?callable $rollback = null
     ) {
         $this->id = strtolower(trim($this->id));
         $this->build = trim($this->build);
@@ -19,6 +21,7 @@ final class StagingOperationDefinition
             throw new InvalidArgumentException('Staging operation build is invalid.');
         }
         $this->handler = Closure::fromCallable($handler);
+        $this->rollback = $rollback !== null ? Closure::fromCallable($rollback) : null;
     }
 
     public function id(): string
@@ -38,5 +41,28 @@ final class StagingOperationDefinition
             throw new RuntimeException('Staging operation must return an array report.');
         }
         return $result;
+    }
+
+    public function hasRollback(): bool
+    {
+        return $this->rollback !== null;
+    }
+
+    public function rollback(?array $result, ?Throwable $error): array
+    {
+        if ($this->rollback === null) {
+            return [
+                'attempted' => false,
+                'ok' => true,
+            ];
+        }
+
+        $rollback = ($this->rollback)($result, $error);
+        if (!is_array($rollback)) {
+            throw new RuntimeException('Staging operation rollback must return an array report.');
+        }
+        $rollback['attempted'] = true;
+        $rollback['ok'] = ($rollback['ok'] ?? false) === true;
+        return $rollback;
     }
 }
