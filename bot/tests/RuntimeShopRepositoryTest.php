@@ -25,6 +25,7 @@ require $root . '/ledger/RuntimeEconomyRepository.php';
 require $root . '/ledger/LegacyFinancialStatusNormalizer.php';
 require $root . '/ledger/LegacyFinancialArchiveImportService.php';
 require $root . '/ledger/LegacyFinancialArchiveDeltaService.php';
+require $root . '/shop/RuntimeShopSchemaInstaller.php';
 require $root . '/shop/RuntimeShopRepository.php';
 
 if (!extension_loaded('pdo_sqlite')) {
@@ -55,7 +56,12 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(8, $runner->migrate(false)['executed_count'], 'Shop runtime test must apply every migration');
+$assertSame(7, $runner->migrate(false)['executed_count'], 'Shop runtime test must preserve the core migration baseline');
+$schemaInstaller = new RuntimeShopSchemaInstaller($database);
+$schemaInstall = $schemaInstaller->install();
+$assertSame(true, $schemaInstall['ok'], 'Shop runtime schema installer must complete');
+$assertSame(true, $schemaInstall['verification']['ok'], 'Shop runtime schema must verify after install');
+$assertSame(true, $schemaInstaller->install()['idempotent'], 'Repeated shop runtime schema install must be a no-op');
 
 $now = '2026-07-19 16:30:00.000000';
 $legacyUserId = '4101';
