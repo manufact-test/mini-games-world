@@ -35,7 +35,7 @@ $assertTrue(
     'Immutable operation definitions must remain bound to their exact build'
 );
 $assertTrue(
-    str_contains($entrypoint, "if ($environment !== 'staging')"),
+    str_contains($entrypoint, "if (\$environment !== 'staging')"),
     'Permanent operations runner must remain staging-only'
 );
 
