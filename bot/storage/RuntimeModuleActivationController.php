@@ -54,9 +54,7 @@ final class RuntimeModuleActivationController
             if (is_file($this->backupFile)) {
                 throw new RuntimeException('Cannot reset while a recovery backup exists. Run without --reset to recover first.');
             }
-            if (is_file($this->stateFile) && !unlink($this->stateFile)) {
-                throw new RuntimeException('Could not reset runtime module activation state.');
-            }
+            $this->deleteFileIfPresent($this->stateFile);
         }
 
         $existing = $this->readState();
@@ -123,7 +121,7 @@ final class RuntimeModuleActivationController
                 throw new RuntimeException('Runtime module audit failed.');
             }
 
-            @unlink($this->backupFile);
+            $this->deleteFileIfPresent($this->backupFile);
             $report = $this->baseReport('completed', true) + [
                 'complete' => true,
                 'action' => 'run',
@@ -162,7 +160,7 @@ final class RuntimeModuleActivationController
         $runtime = $this->readRuntime();
         $wasEnabled = $this->moduleEnabled($runtime);
         $this->writeRuntime($this->withModule($runtime, false));
-        @unlink($this->backupFile);
+        $this->deleteFileIfPresent($this->backupFile);
 
         $report = $this->baseReport('disabled', true) + [
             'complete' => false,
@@ -243,12 +241,12 @@ final class RuntimeModuleActivationController
         if (file_put_contents($temporary, $content, LOCK_EX) === false) {
             throw new RuntimeException('Could not write private runtime config.');
         }
-        @chmod($temporary, 0600);
+        chmod($temporary, 0600);
         if (!rename($temporary, $this->runtimeFile)) {
-            @unlink($temporary);
+            $this->deleteFileIfPresent($temporary);
             throw new RuntimeException('Could not publish private runtime config.');
         }
-        @chmod($this->runtimeFile, 0600);
+        chmod($this->runtimeFile, 0600);
     }
 
     private function createBackup(): void
@@ -262,26 +260,37 @@ final class RuntimeModuleActivationController
         if (file_put_contents($this->backupFile, $payload, LOCK_EX) === false) {
             throw new RuntimeException('Could not create private runtime config backup.');
         }
-        @chmod($this->backupFile, 0600);
+        chmod($this->backupFile, 0600);
     }
 
     private function restoreBackup(): bool
     {
         if (!is_file($this->backupFile)) return false;
-        $payload = file_get_contents($this->backupFile);
-        if (!is_string($payload) || $payload === '') return false;
 
-        if ($payload === '__MGW_RUNTIME_ABSENT__') {
-            $ok = !is_file($this->runtimeFile) || unlink($this->runtimeFile);
-        } else {
-            $temporary = $this->runtimeFile . '.restore-' . bin2hex(random_bytes(6));
-            $ok = file_put_contents($temporary, $payload, LOCK_EX) !== false
-                && rename($temporary, $this->runtimeFile);
-            if (is_file($temporary)) @unlink($temporary);
-            if ($ok) @chmod($this->runtimeFile, 0600);
+        try {
+            $payload = file_get_contents($this->backupFile);
+            if (!is_string($payload) || $payload === '') return false;
+
+            if ($payload === '__MGW_RUNTIME_ABSENT__') {
+                if (is_file($this->runtimeFile) && !unlink($this->runtimeFile)) return false;
+                $ok = true;
+            } else {
+                $temporary = $this->runtimeFile . '.restore-' . bin2hex(random_bytes(6));
+                if (file_put_contents($temporary, $payload, LOCK_EX) === false) return false;
+                chmod($temporary, 0600);
+                $ok = rename($temporary, $this->runtimeFile);
+                if (!$ok) {
+                    if (is_file($temporary)) unlink($temporary);
+                    return false;
+                }
+                chmod($this->runtimeFile, 0600);
+            }
+
+            if (is_file($this->backupFile) && !unlink($this->backupFile)) return false;
+            return true;
+        } catch (Throwable) {
+            return false;
         }
-        if ($ok) @unlink($this->backupFile);
-        return $ok;
     }
 
     private function readState(): array
@@ -309,12 +318,19 @@ final class RuntimeModuleActivationController
         if (file_put_contents($temporary, $json, LOCK_EX) === false) {
             throw new RuntimeException('Could not write runtime module activation state.');
         }
-        @chmod($temporary, 0600);
+        chmod($temporary, 0600);
         if (!rename($temporary, $this->stateFile)) {
-            @unlink($temporary);
+            $this->deleteFileIfPresent($temporary);
             throw new RuntimeException('Could not publish runtime module activation state.');
         }
-        @chmod($this->stateFile, 0600);
+        chmod($this->stateFile, 0600);
+    }
+
+    private function deleteFileIfPresent(string $path): void
+    {
+        if (is_file($path) && !unlink($path)) {
+            throw new RuntimeException('Could not remove runtime activation file.');
+        }
     }
 
     private function baseReport(string $state, bool $ok): array
