@@ -36,6 +36,7 @@ final class StagingShopRuntimeOperation
                     'module' => 'shop',
                     'module_enabled' => !empty($report['module_enabled']),
                     'controller_state' => (string)($report['state'] ?? ''),
+                    'schema_preserved_for_retry' => true,
                     'production_changed' => false,
                     'sensitive_identifiers_exposed' => false,
                 ];
@@ -64,10 +65,20 @@ final class StagingShopRuntimeOperation
         };
 
         $synchronize = function (array $runtime) use ($repository): array {
-            return $repository($runtime)->bootstrapCurrentJson();
+            $schema = (new RuntimeShopSchemaInstaller($this->database))->install();
+            $result = $repository($runtime)->bootstrapCurrentJson();
+            $result['schema'] = $schema;
+            return $result;
         };
         $audit = function (array $runtime) use ($repository): array {
-            return $repository($runtime)->auditParity();
+            $schema = (new RuntimeShopSchemaInstaller($this->database))->verify();
+            $result = $repository($runtime)->auditParity();
+            if (empty($schema['ok'])) {
+                $result['ok'] = false;
+                $result['blockers'][] = 'Shop runtime schema verification failed.';
+            }
+            $result['schema'] = $schema;
+            return $result;
         };
 
         return new RuntimeModuleActivationController(
