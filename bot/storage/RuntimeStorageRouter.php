@@ -120,6 +120,13 @@ final class RuntimeStorageRouter
                 }
             }
         }
+        if (in_array('payments', $enabledModules, true)) {
+            foreach (['economy', 'history'] as $dependency) {
+                if (!in_array($dependency, $enabledModules, true)) {
+                    throw new RuntimeException('Payment DB routing requires economy and history DB routing.');
+                }
+            }
+        }
     }
 
     private function settings(): array

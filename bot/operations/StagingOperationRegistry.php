@@ -131,6 +131,12 @@ final class StagingOperationRegistry
                 $database,
                 $privateDir
             ))->definition(),
+            (new StagingPaymentRuntimeOperation(
+                $config,
+                $storage,
+                $database,
+                $privateDir
+            ))->definition(),
         ];
     }
 }

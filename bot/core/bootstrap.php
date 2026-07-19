@@ -91,6 +91,9 @@ require_once __DIR__ . '/../history/RuntimeHistoryRepository.php';
 require_once __DIR__ . '/../shop/RuntimeShopSchemaInstaller.php';
 require_once __DIR__ . '/../shop/RuntimeShopRepository.php';
 require_once __DIR__ . '/../shop/ShopRuntimeBridge.php';
+require_once __DIR__ . '/../payments/RuntimePaymentSchemaInstaller.php';
+require_once __DIR__ . '/../payments/RuntimePaymentRepository.php';
+require_once __DIR__ . '/../payments/PaymentRuntimeBridge.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/FeatureFlagService.php';
@@ -121,6 +124,7 @@ $runtimeStorageRouter = new RuntimeStorageRouter($config);
 $runtimeRealtimeBridge = new RealtimeRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeEconomyBridge = new EconomyRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeShopBridge = new ShopRuntimeBridge($config, $runtimeStorageRouter);
+$runtimePaymentBridge = new PaymentRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeScript = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
 $runtimeApiSuccessHooks = [];
 
@@ -142,6 +146,23 @@ if ($runtimeScript === 'api.php' && $runtimeShopBridge->shouldAttachToCurrentReq
         }
     };
 }
+if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $runtimeApiSuccessHooks[] = static function () use ($runtimePaymentBridge): void {
+        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
+        if ($runtimePaymentBridge->shouldSynchronizeApiAction($action)) {
+            $runtimePaymentBridge->synchronizeCurrentJson();
+        }
+    };
+    $runtimeApiDataFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
+    if (!is_array($runtimeApiDataFilters)) $runtimeApiDataFilters = [];
+    $runtimeApiDataFilters[] = static function (array $data) use ($runtimePaymentBridge): array {
+        return $runtimePaymentBridge->normalizeApiData(
+            $data,
+            (string)($GLOBALS['mgw_api_action'] ?? '')
+        );
+    };
+    $GLOBALS['mgw_api_data_filters'] = $runtimeApiDataFilters;
+}
 if ($runtimeApiSuccessHooks !== []) {
     $GLOBALS['mgw_api_success_hooks'] = $runtimeApiSuccessHooks;
 }
@@ -155,6 +176,11 @@ if ($runtimeScript === 'webhook.php' && $runtimeEconomyBridge->shouldAttachToCur
 if ($runtimeScript === 'webhook.php' && $runtimeShopBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeWebhookSuccessHooks[] = static function () use ($runtimeShopBridge): void {
         $runtimeShopBridge->synchronizeCurrentJson();
+    };
+}
+if ($runtimeScript === 'webhook.php' && $runtimePaymentBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $runtimeWebhookSuccessHooks[] = static function () use ($runtimePaymentBridge): void {
+        $runtimePaymentBridge->synchronizeCurrentJson();
     };
 }
 if ($runtimeWebhookSuccessHooks !== []) {

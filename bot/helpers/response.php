@@ -24,7 +24,25 @@ function mgw_sort_payments_by_activity(array $payments): array {
     return $payments;
 }
 
+function mgw_run_api_data_filters(array $data): array {
+    $filters = $GLOBALS['mgw_api_data_filters'] ?? [];
+    unset($GLOBALS['mgw_api_data_filters']);
+    if (!is_array($filters)) return $data;
+
+    foreach ($filters as $filter) {
+        if (!is_callable($filter)) continue;
+        $filtered = $filter($data);
+        if (!is_array($filtered)) {
+            throw new RuntimeException('API data filter must return an array.');
+        }
+        $data = $filtered;
+    }
+    return $data;
+}
+
 function mgw_normalize_api_data(array $data): array {
+    $data = mgw_run_api_data_filters($data);
+
     if ((string)($data['message'] ?? '') === 'Заявка на пополнение создана. Баланс не изменён.') {
         $data['message'] = 'Баланс изменится после подтверждения администратором.';
     }
