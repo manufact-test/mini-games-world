@@ -10,8 +10,10 @@ if (PHP_SAPI !== 'cli') {
 
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
+require_once $projectRoot . '/bot/storage/RuntimeModuleActivationController.php';
 require_once $projectRoot . '/bot/operations/StagingOperationDefinition.php';
 require_once $projectRoot . '/bot/operations/StagingOperationsRunner.php';
+require_once $projectRoot . '/bot/operations/StagingShopRuntimeOperation.php';
 require_once $projectRoot . '/bot/operations/StagingOperationRegistry.php';
 
 $options = getopt('', ['run', 'status']);
@@ -43,7 +45,7 @@ try {
     if ($environment !== 'staging') {
         throw new RuntimeException('The permanent operations runner is enabled only in staging.');
     }
-    if (FeatureFlagService::BUILD !== 'v97-mvp14-staging-operations-runner') {
+    if (FeatureFlagService::BUILD !== 'v98-mvp14-db-shop-routing') {
         throw new RuntimeException('Unexpected application build for the staging operations runner.');
     }
 
@@ -125,7 +127,7 @@ try {
             $runner = new StagingOperationsRunner(
                 FeatureFlagService::BUILD,
                 $privateDir . '/staging-operations-runner.json',
-                StagingOperationRegistry::definitions($config, $storage, $database, $migrationStatus)
+                StagingOperationRegistry::definitions($config, $storage, $database, $migrationStatus, $privateDir)
             );
             $executionMode = isset($options['status']) ? 'status' : 'run';
             $result = $executionMode === 'status' ? $runner->status() : $runner->run();
