@@ -43,8 +43,6 @@ final class WeeklyBonusRuntimeBridge
         if (!$this->enabled() || !isset($data['weekly_match']) || !is_array($data['weekly_match'])) {
             return $data;
         }
-        $action = strtolower(trim($action));
-        if (!in_array($action, ['bootstrap', 'weekly_match_status'], true)) return $data;
 
         $legacyUserId = trim((string)($data['user']['id'] ?? ''));
         if ($legacyUserId === '') return $data;
