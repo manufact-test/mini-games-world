@@ -20,6 +20,7 @@ require $root . '/ledger/LegacyOpeningBalanceImportService.php';
 require $root . '/ledger/LegacyEconomyDeltaImportService.php';
 require $root . '/ledger/LegacyEconomyRuntimeReconciliationService.php';
 require $root . '/ledger/RuntimeEconomySnapshotStorage.php';
+require $root . '/ledger/RuntimeEconomyBalanceBootstrapService.php';
 require $root . '/ledger/RuntimeEconomyRepository.php';
 
 if (!extension_loaded('pdo_sqlite')) {
@@ -158,7 +159,63 @@ $assertSame(3, (int)$database->fetchValue(
     ['account' => $accountRef]
 ), 'Opening, credit and debit must remain separate immutable ledger entries');
 
-$drifted = $debited;
+$newLegacyUserId = '3002';
+$newMgwId = 'MGW-ECONOMYRT0002';
+$newAccountRef = 'mgw:' . $newMgwId;
+$database->execute(
+    'INSERT INTO mgw_users (mgw_id, status, display_name, created_at_utc, updated_at_utc, last_seen_at_utc) '
+    . 'VALUES (:id, :status, :name, :created, :updated, :seen)',
+    ['id' => $newMgwId, 'status' => 'active', 'name' => 'New Runtime User', 'created' => $now, 'updated' => $now, 'seen' => $now]
+);
+$database->execute(
+    'INSERT INTO mgw_identities (mgw_id, provider, provider_subject, linked_at_utc, last_authenticated_at_utc) '
+    . 'VALUES (:id, :provider, :subject, :linked, :authenticated)',
+    ['id' => $newMgwId, 'provider' => 'telegram', 'subject' => $newLegacyUserId, 'linked' => $now, 'authenticated' => $now]
+);
+$database->execute(
+    'INSERT INTO mgw_account_ownership (account_ref, mgw_id, legacy_user_id, ownership_status, source_type, source_ref, source_sha256, created_at_utc, verified_at_utc) '
+    . 'VALUES (:account, :id, :legacy, :status, :type, :ref, :hash, :created, :verified)',
+    [
+        'account' => $newAccountRef,
+        'id' => $newMgwId,
+        'legacy' => $newLegacyUserId,
+        'status' => 'active',
+        'type' => 'runtime_test',
+        'ref' => 'runtime:' . $newLegacyUserId,
+        'hash' => str_repeat('d', 64),
+        'created' => $now,
+        'verified' => $now,
+    ]
+);
+$withNewUser = $debited;
+$withNewUser['users'][$newLegacyUserId] = [
+    'id' => $newLegacyUserId,
+    'telegram_id' => $newLegacyUserId,
+    'balance_match' => 50,
+    'balance_gold' => 0,
+    'registered_at' => '2026-07-19T14:10:00+00:00',
+    'last_seen_at' => '2026-07-19T14:10:00+00:00',
+];
+$newUserSync = $repository->synchronize($withNewUser);
+$assertSame(2, $newUserSync['balance_bootstrap']['created_count'], 'New runtime account must receive both balance rows');
+$assertSame(1, $newUserSync['balance_bootstrap']['zero_balance_count'], 'Zero Gold must create a balance row without a fake ledger delta');
+$assertSame(50, $newUserSync['balance_bootstrap']['credited_total'], 'Positive opening Match balance must be ledger-backed');
+$assertSame(0, $newUserSync['delta']['applied_delta_count'], 'Runtime bootstrap must converge before generic delta import');
+$assertSame(50, (int)$database->fetchValue(
+    "SELECT available_amount FROM mgw_balances WHERE account_ref = :account AND asset_code = 'match_coin'",
+    ['account' => $newAccountRef]
+), 'New runtime Match balance must equal JSON');
+$assertSame(0, (int)$database->fetchValue(
+    "SELECT available_amount FROM mgw_balances WHERE account_ref = :account AND asset_code = 'gold_coin'",
+    ['account' => $newAccountRef]
+), 'New runtime Gold balance must preserve zero');
+$assertSame(1, (int)$database->fetchValue(
+    "SELECT COUNT(*) FROM mgw_ledger_entries WHERE account_ref = :account AND category = 'legacy_runtime_opening'",
+    ['account' => $newAccountRef]
+), 'Only the nonzero runtime opening balance may create a ledger entry');
+$assertSame(true, $repository->auditParity($withNewUser)['ok'], 'New runtime account must finish in full parity');
+
+$drifted = $withNewUser;
 $drifted['users'][$legacyUserId]['balance_match'] = 23;
 $driftAudit = $repository->auditParity($drifted);
 $assertSame(false, $driftAudit['ok'], 'Read-only audit must detect JSON state not yet synchronized');
@@ -172,7 +229,7 @@ $disabled = new RuntimeEconomyRepository(
     $database
 );
 $assertThrows(
-    static fn() => $disabled->auditParity($debited),
+    static fn() => $disabled->auditParity($withNewUser),
     'requires accounts and economy routing',
     'Disabled economy route must reject DB runtime access'
 );
