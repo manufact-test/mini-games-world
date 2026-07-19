@@ -64,7 +64,7 @@ final class StagingShopRuntimeOperation
         };
 
         $synchronize = function (array $runtime) use ($repository): array {
-            return $repository($runtime)->synchronizeCurrentJson();
+            return $repository($runtime)->bootstrapCurrentJson();
         };
         $audit = function (array $runtime) use ($repository): array {
             return $repository($runtime)->auditParity();
