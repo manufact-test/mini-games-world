@@ -127,6 +127,13 @@ final class RuntimeStorageRouter
                 }
             }
         }
+        if (in_array('weekly_bonus', $enabledModules, true)) {
+            foreach (['realtime', 'economy', 'history'] as $dependency) {
+                if (!in_array($dependency, $enabledModules, true)) {
+                    throw new RuntimeException('Weekly bonus DB routing requires realtime, economy and history DB routing.');
+                }
+            }
+        }
     }
 
     private function settings(): array
