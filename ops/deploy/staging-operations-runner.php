@@ -52,8 +52,8 @@ try {
     if ($environment !== 'staging') {
         throw new RuntimeException('The permanent operations runner is enabled only in staging.');
     }
-    if (FeatureFlagService::BUILD !== 'v101-mvp14-db-switch-rollback-rehearsal') {
-        throw new RuntimeException('Unexpected application build for the staging operations runner.');
+    if (trim(FeatureFlagService::BUILD) === '') {
+        throw new RuntimeException('Application build is unavailable for the staging operations runner.');
     }
 
     $privateDir = is_string($configFile ?? null)
