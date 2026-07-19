@@ -33,6 +33,16 @@ final class RuntimeAccountIdentityResolver
         $identity = $accounts->resolveTelegramUser($user, $sessionId);
         $user['mgw_id'] = $identity['mgw_id'];
         $user['mgw_identity_provider'] = $identity['provider'];
+
+        if ($this->router->enabled()) {
+            $ownership = (new RuntimeAccountOwnershipService($database))->ensure(
+                (string)$identity['provider'],
+                (string)$identity['provider_subject'],
+                (string)$identity['mgw_id']
+            );
+            $user['mgw_account_ref'] = $ownership['account_ref'];
+        }
+
         return $user;
     }
 }

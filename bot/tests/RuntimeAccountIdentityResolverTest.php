@@ -12,6 +12,7 @@ require $databaseDir . '/MigrationRunner.php';
 require $root . '/storage/RuntimeStorageRouter.php';
 require $root . '/accounts/MgwIdGenerator.php';
 require $root . '/accounts/AccountIdentityService.php';
+require $root . '/accounts/RuntimeAccountOwnershipService.php';
 require $root . '/accounts/RuntimeAccountIdentityResolver.php';
 
 if (!extension_loaded('pdo_sqlite')) {
@@ -72,6 +73,7 @@ $legacyUser = $legacy->attach([
 $assertTrue(MgwIdGenerator::isValid((string)($legacyUser['mgw_id'] ?? '')), 'Router-disabled compatibility must preserve DB account identity');
 $assertSame('telegram', $legacyUser['mgw_identity_provider'] ?? null, 'Compatibility route must preserve identity provider');
 $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_users'), 'Compatibility route must create one account');
+$assertSame(0, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_account_ownership'), 'Compatibility route must not silently change ownership behavior');
 
 $jsonConfig = $baseConfig;
 $jsonConfig['feature_flags'] = [
@@ -87,6 +89,7 @@ $jsonUser = $jsonResolver->attach([
 ], 'session-json');
 $assertSame(false, array_key_exists('mgw_id', $jsonUser), 'Explicit JSON account route must not write normalized identity');
 $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_users'), 'JSON account route must leave DB accounts unchanged');
+$assertSame(0, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_account_ownership'), 'JSON account route must leave ownership unchanged');
 
 $dbConfig = $baseConfig;
 $dbConfig['feature_flags'] = [
@@ -102,7 +105,24 @@ $dbUser = $dbResolver->attach([
     'username' => 'database_route',
 ], 'session-database');
 $assertTrue(MgwIdGenerator::isValid((string)($dbUser['mgw_id'] ?? '')), 'Enabled account DB route must attach MGW identity');
+$assertSame('legacy:telegram-database', $dbUser['mgw_account_ref'] ?? null, 'Enabled account DB route must attach stable ownership');
 $assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_users'), 'Enabled account DB route must create exactly one account');
+$assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_account_ownership'), 'Enabled account DB route must create exactly one ownership row');
+$assertSame(
+    (string)$dbUser['mgw_id'],
+    (string)$database->fetchValue(
+        'SELECT mgw_id FROM mgw_account_ownership WHERE legacy_user_id = :legacy_user_id',
+        ['legacy_user_id' => 'telegram-database']
+    ),
+    'Runtime ownership must point to the authenticated MGW account'
+);
+$repeatDbUser = $dbResolver->attach([
+    'id' => 'telegram-database',
+    'first_name' => 'Database route updated',
+    'username' => 'database_route',
+], 'session-database-repeat');
+$assertSame($dbUser['mgw_id'], $repeatDbUser['mgw_id'], 'Repeated DB route must preserve MGW identity');
+$assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_account_ownership'), 'Repeated DB route must not duplicate ownership');
 $assertSame('database', (new RuntimeStorageRouter($dbConfig))->routeFor('accounts'), 'Router must report account database route');
 
 $invalidDependency = $baseConfig;

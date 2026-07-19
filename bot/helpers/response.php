@@ -133,13 +133,24 @@ function mgw_normalize_api_data(array $data): array {
     return $data;
 }
 
-function api_ok(array $data = []): void {
-    $hook = $GLOBALS['mgw_api_success_hook'] ?? null;
-    if (is_callable($hook)) {
-        unset($GLOBALS['mgw_api_success_hook']);
-        $hook();
+function mgw_run_api_success_hooks(): void {
+    $hooks = [];
+    $legacyHook = $GLOBALS['mgw_api_success_hook'] ?? null;
+    if (is_callable($legacyHook)) $hooks[] = $legacyHook;
+
+    $configuredHooks = $GLOBALS['mgw_api_success_hooks'] ?? [];
+    if (is_array($configuredHooks)) {
+        foreach ($configuredHooks as $hook) {
+            if (is_callable($hook)) $hooks[] = $hook;
+        }
     }
 
+    unset($GLOBALS['mgw_api_success_hook'], $GLOBALS['mgw_api_success_hooks']);
+    foreach ($hooks as $hook) $hook();
+}
+
+function api_ok(array $data = []): void {
+    mgw_run_api_success_hooks();
     json_response(['ok' => true] + mgw_normalize_api_data($data));
 }
 
