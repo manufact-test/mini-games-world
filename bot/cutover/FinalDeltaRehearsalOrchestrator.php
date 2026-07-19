@@ -41,10 +41,10 @@ final class FinalDeltaRehearsalOrchestrator
     {
         $state = $this->readState();
         if ($state === []) {
-            return $this->baseReport('not_started', true) + [
+            return $this->withFingerprint($this->baseReport('not_started', true) + [
                 'complete' => false,
                 'idempotent' => true,
-            ];
+            ]);
         }
         $state['action'] = 'status';
         $state['idempotent'] = true;
@@ -74,7 +74,6 @@ final class FinalDeltaRehearsalOrchestrator
         }
 
         $step = 'initialize';
-        $freezeReport = [];
         $drainReport = [];
         $sealReport = [];
         $deltaReport = [];
@@ -84,38 +83,31 @@ final class FinalDeltaRehearsalOrchestrator
 
         try {
             $step = 'freeze';
-            $sealStatus = ($this->sealStatus)();
-            $alreadySealed = !empty($sealStatus['freeze']['active'])
-                && !empty($sealStatus['freeze']['sealed'])
-                && !empty($sealStatus['freeze']['storage_write_block_active'])
-                && !empty($sealStatus['control_consistency']['ok']);
+            $initialSealStatus = ($this->sealStatus)();
+            $alreadySealed = $this->isSealed($initialSealStatus);
             if (!$alreadySealed) {
-                $freezeReport = ($this->freeze)();
+                ($this->freeze)();
             }
 
             $step = 'drain';
-            $drainReport = ($this->freezeStatus)();
+            $drainReport = $alreadySealed
+                ? $initialSealStatus
+                : ($this->freezeStatus)();
             if (empty($drainReport['drain']['ready'])) {
-                $waiting = $this->baseReport('waiting_for_drain', true) + [
-                    'complete' => false,
-                    'action' => 'run',
-                    'idempotent' => false,
-                    'current_step' => 'drain',
-                    'drain' => $this->compactDrain($drainReport),
-                ];
-                $waiting = $this->withFingerprint($waiting);
-                $this->writeState($waiting);
-                return $waiting;
+                return $this->persistWaiting($drainReport);
             }
 
             $step = 'seal';
-            $sealStatus = ($this->sealStatus)();
-            if (empty($sealStatus['freeze']['sealed'])
-                || empty($sealStatus['freeze']['storage_write_block_active'])
-                || empty($sealStatus['control_consistency']['ok'])) {
-                $sealReport = ($this->seal)();
+            if ($alreadySealed) {
+                $sealReport = $initialSealStatus;
             } else {
-                $sealReport = $sealStatus;
+                $preSealStatus = ($this->sealStatus)();
+                if (isset($preSealStatus['drain']) && empty($preSealStatus['drain']['ready'])) {
+                    return $this->persistWaiting($preSealStatus);
+                }
+                $sealReport = $this->isSealed($preSealStatus)
+                    ? $preSealStatus
+                    : ($this->seal)();
             }
             if (empty($sealReport['frozen_snapshot']['ready'])
                 || empty($sealReport['control_consistency']['ok'])) {
@@ -189,6 +181,28 @@ final class FinalDeltaRehearsalOrchestrator
             $this->writeState($report);
             return $report;
         }
+    }
+
+    private function persistWaiting(array $drainReport): array
+    {
+        $waiting = $this->baseReport('waiting_for_drain', true) + [
+            'complete' => false,
+            'action' => 'run',
+            'idempotent' => false,
+            'current_step' => 'drain',
+            'drain' => $this->compactDrain($drainReport),
+        ];
+        $waiting = $this->withFingerprint($waiting);
+        $this->writeState($waiting);
+        return $waiting;
+    }
+
+    private function isSealed(array $status): bool
+    {
+        return !empty($status['freeze']['active'])
+            && !empty($status['freeze']['sealed'])
+            && !empty($status['freeze']['storage_write_block_active'])
+            && !empty($status['control_consistency']['ok']);
     }
 
     private function compactDrain(array $report): array
