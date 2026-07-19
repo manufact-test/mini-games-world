@@ -72,6 +72,15 @@ require_once __DIR__ . '/../realtime/RuntimeRealtimeRepository.php';
 require_once __DIR__ . '/../realtime/RealtimeRuntimeBridge.php';
 require_once __DIR__ . '/../notifications/RuntimeNotificationRepository.php';
 require_once __DIR__ . '/../invites/RuntimeInviteRepository.php';
+require_once __DIR__ . '/../ledger/LedgerIntegrity.php';
+require_once __DIR__ . '/../ledger/LedgerWriteService.php';
+require_once __DIR__ . '/../ledger/LedgerIntegrityVerifier.php';
+require_once __DIR__ . '/../ledger/LegacyEconomyShadowSyncService.php';
+require_once __DIR__ . '/../ledger/LegacyEconomyDeltaImportService.php';
+require_once __DIR__ . '/../ledger/LegacyEconomyRuntimeReconciliationService.php';
+require_once __DIR__ . '/../ledger/RuntimeEconomySnapshotStorage.php';
+require_once __DIR__ . '/../ledger/RuntimeEconomyRepository.php';
+require_once __DIR__ . '/../ledger/EconomyRuntimeBridge.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/FeatureFlagService.php';
@@ -96,13 +105,30 @@ require_once __DIR__ . '/../services/WeeklyMatchEconomyService.php';
 require_once __DIR__ . '/../services/ShopOrderNotificationService.php';
 require_once __DIR__ . '/../handlers/WebhookHandler.php';
 
-// Validate the staged DB routing contract on every boot. The global runtime
-// remains JSON until individual modules are explicitly enabled in staging.
+// Validate the staged DB routing contract on every boot. JSON remains the
+// global rollback source while individual modules prove DB parity in staging.
 $runtimeStorageRouter = new RuntimeStorageRouter($config);
 $runtimeRealtimeBridge = new RealtimeRuntimeBridge($config, $runtimeStorageRouter);
+$runtimeEconomyBridge = new EconomyRuntimeBridge($config, $runtimeStorageRouter);
+$runtimeScript = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
+$runtimeApiSuccessHooks = [];
+
 if ($runtimeRealtimeBridge->shouldAttachToCurrentRequest($_SERVER)) {
-    $GLOBALS['mgw_api_success_hook'] = static function () use ($runtimeRealtimeBridge): void {
+    $runtimeApiSuccessHooks[] = static function () use ($runtimeRealtimeBridge): void {
         $runtimeRealtimeBridge->synchronizeCurrentJson();
+    };
+}
+if ($runtimeScript === 'api.php' && $runtimeEconomyBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $runtimeApiSuccessHooks[] = static function () use ($runtimeEconomyBridge): void {
+        $runtimeEconomyBridge->synchronizeCurrentJson();
+    };
+}
+if ($runtimeApiSuccessHooks !== []) {
+    $GLOBALS['mgw_api_success_hooks'] = $runtimeApiSuccessHooks;
+}
+if ($runtimeScript === 'webhook.php' && $runtimeEconomyBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $GLOBALS['mgw_webhook_success_hook'] = static function () use ($runtimeEconomyBridge): void {
+        $runtimeEconomyBridge->synchronizeCurrentJson();
     };
 }
 
