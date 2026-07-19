@@ -32,7 +32,6 @@ trait SealedSnapshotLifecycleTrait
             $this->writeControl($control);
             throw $error;
         }
-        $this->appendHistory('seal', $control);
         $report = $this->status();
         $report['action'] = 'seal';
         $report['idempotent'] = false;
@@ -58,7 +57,6 @@ trait SealedSnapshotLifecycleTrait
         $control['release_reason'] = mb_substr(trim(preg_replace('/\s+/u', ' ', $reason) ?? ''), 0, 200);
         $this->writeControl($control);
         $this->removeWriteBlock();
-        $this->appendHistory('sealed_release', $control);
         $report = $this->status();
         $report['action'] = $wasActive ? 'release' : 'release_noop';
         $report['idempotent'] = !$wasActive;
