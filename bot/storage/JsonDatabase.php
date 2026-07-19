@@ -5,6 +5,7 @@ final class JsonDatabase
 {
     private string $dataDir;
     private string $lockFile;
+    private string $writeBlockFile;
 
     public function __construct(string $dataDir)
     {
@@ -13,6 +14,7 @@ final class JsonDatabase
             mkdir($this->dataDir, 0755, true);
         }
         $this->lockFile = $this->dataDir . '/app.lock';
+        $this->writeBlockFile = $this->dataDir . '/.cutover-write-block';
         $this->ensureFiles();
     }
 
@@ -25,6 +27,9 @@ final class JsonDatabase
         try {
             if (!flock($lockHandle, LOCK_EX)) {
                 throw new RuntimeException('Не удалось заблокировать хранилище.');
+            }
+            if (is_file($this->writeBlockFile)) {
+                throw new RuntimeException('Хранилище временно доступно только для чтения. Повторите действие после завершения технической проверки.');
             }
             $db = $this->loadAll();
             $before = $db;
@@ -79,6 +84,9 @@ final class JsonDatabase
         foreach ($defaults as $file => $value) {
             $path = $this->dataDir . '/' . $file;
             if (!file_exists($path)) {
+                if (is_file($this->writeBlockFile)) {
+                    throw new RuntimeException('Не удалось подготовить отсутствующий JSON-файл: хранилище временно доступно только для чтения.');
+                }
                 file_put_contents($path, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
             }
         }
