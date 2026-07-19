@@ -42,6 +42,7 @@ final class LegacyEconomyDeltaImportService
                     $plan['source_fingerprint'],
                     $item['legacy_user_id'],
                     $item['asset_code'],
+                    (int)$item['database_version'],
                     (int)$item['database_amount'],
                     (int)$item['source_amount']
                 ),
@@ -55,6 +56,7 @@ final class LegacyEconomyDeltaImportService
                 'source_ref' => 'economy_snapshot:' . $plan['source_fingerprint'],
                 'metadata' => [
                     'source_fingerprint' => $plan['source_fingerprint'],
+                    'database_version' => (int)$item['database_version'],
                     'database_amount' => (int)$item['database_amount'],
                     'source_amount' => (int)$item['source_amount'],
                     'reason' => 'frozen_json_final_delta',
@@ -160,7 +162,7 @@ final class LegacyEconomyDeltaImportService
                 $scope = $accountRef . "\0" . $assetCode;
                 $expectedScopes[$scope] = true;
                 $balanceRows = $this->database->fetchAll(
-                    'SELECT account_ref, mgw_id, legacy_user_id, asset_code, available_amount, reserved_amount '
+                    'SELECT account_ref, mgw_id, legacy_user_id, asset_code, available_amount, reserved_amount, version '
                     . 'FROM mgw_balances WHERE account_ref = :account_ref AND asset_code = :asset_code',
                     ['account_ref' => $accountRef, 'asset_code' => $assetCode]
                 );
@@ -180,8 +182,9 @@ final class LegacyEconomyDeltaImportService
                 }
                 $available = (int)($balance['available_amount'] ?? -1);
                 $reserved = (int)($balance['reserved_amount'] ?? -1);
-                if ($available < 0 || $reserved < 0) {
-                    $blocking[] = 'Database balance contains an invalid negative state.';
+                $version = (int)($balance['version'] ?? -1);
+                if ($available < 0 || $reserved < 0 || $version < 0) {
+                    $blocking[] = 'Database balance contains an invalid state.';
                     continue;
                 }
                 if ($reserved !== 0) {
@@ -201,6 +204,7 @@ final class LegacyEconomyDeltaImportService
                     'asset_code' => $assetCode,
                     'source_amount' => $sourceAmount,
                     'database_amount' => $available,
+                    'database_version' => $version,
                     'delta' => $delta,
                 ];
             }
@@ -268,6 +272,7 @@ final class LegacyEconomyDeltaImportService
         string $fingerprint,
         string $legacyUserId,
         string $assetCode,
+        int $databaseVersion,
         int $databaseAmount,
         int $sourceAmount
     ): string {
@@ -276,6 +281,7 @@ final class LegacyEconomyDeltaImportService
                 $fingerprint,
                 $legacyUserId,
                 $assetCode,
+                (string)$databaseVersion,
                 (string)$databaseAmount,
                 (string)$sourceAmount,
             ])),
