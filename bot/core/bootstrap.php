@@ -83,6 +83,7 @@ require_once __DIR__ . '/../ledger/RuntimeEconomySnapshotStorage.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomyBalanceBootstrapService.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomyRepository.php';
 require_once __DIR__ . '/../ledger/EconomyRuntimeBridge.php';
+require_once __DIR__ . '/../history/RuntimeHistoryRepository.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/FeatureFlagService.php';
