@@ -30,9 +30,7 @@ final class PaymentRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        if (!$this->enabled()) return false;
-        if (trim($action) === '') $action = (string)($GLOBALS['action'] ?? '');
-        return strtolower(trim($action)) === 'payment_create_draft';
+        return $this->enabled();
     }
 
     public function synchronizeCurrentJson(): ?array
@@ -44,8 +42,6 @@ final class PaymentRuntimeBridge
     public function normalizeApiData(array $data, string $action): array
     {
         if (!$this->enabled()) return $data;
-        if (trim($action) === '') $action = (string)($GLOBALS['action'] ?? '');
-        if (strtolower(trim($action)) === 'payment_create_draft') return $data;
 
         $userId = trim((string)($data['user']['id'] ?? ''));
         if ($userId === '') return $data;
