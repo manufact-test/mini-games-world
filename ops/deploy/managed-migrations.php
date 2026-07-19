@@ -10,6 +10,8 @@ $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
 require_once $projectRoot . '/ops/backup/BackupManager.php';
 require_once $projectRoot . '/ops/backup/BackupConfigLoader.php';
+require_once $projectRoot . '/bot/cutover/ProductionPreflightService.php';
+require_once $projectRoot . '/bot/cutover/ProductionPreflightRunner.php';
 
 $options = getopt('', ['status', 'run']);
 $mode = array_key_exists('status', $options) ? 'status' : 'run';
@@ -76,6 +78,41 @@ $environment = $environmentValue instanceof BackedEnum
 $startedAt = gmdate(DATE_ATOM);
 
 try {
+    $policy = ManagedMigrationConfig::fromApplicationConfig($config);
+
+    if ($environment === 'production' && !$policy->enabled()) {
+        $preflightRunner = new ProductionPreflightRunner(
+            $projectRoot,
+            $config,
+            $configPath !== '' ? $configPath : null
+        );
+        $preflight = $preflightRunner->run();
+        $result = [
+            'ok' => true,
+            'action' => 'production_preflight',
+            'mode' => 'read_only_preflight',
+            'environment' => $environment,
+            'technical_ready_for_window' => !empty($preflight['technical_ready_for_window']),
+            'production_switch_allowed' => false,
+            'production_switch_performed' => false,
+            'production_changed' => false,
+            'preflight' => $preflight,
+            'started_at_utc' => $startedAt,
+            'finished_at_utc' => gmdate(DATE_ATOM),
+        ];
+
+        $appendLog($logFile, [
+            'ok' => true,
+            'mode' => 'read_only_preflight',
+            'environment' => $environment,
+            'action' => 'production_preflight',
+            'technical_ready_for_window' => $result['technical_ready_for_window'],
+            'started_at_utc' => $startedAt,
+            'finished_at_utc' => $result['finished_at_utc'],
+        ]);
+        $print($result);
+    }
+
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     if (!$databaseConfig->enabled()) {
         throw new RuntimeException('Database is not enabled in the private configuration.');
@@ -83,7 +120,6 @@ try {
 
     $connection = PdoConnectionFactory::create($databaseConfig);
     $runner = new MigrationRunner($connection, $projectRoot . '/bot/database/migrations');
-    $policy = ManagedMigrationConfig::fromApplicationConfig($config);
 
     $backup = static function () use ($projectRoot, $config, $environment): array {
         $backupSettings = BackupConfigLoader::load($projectRoot, $environment);
