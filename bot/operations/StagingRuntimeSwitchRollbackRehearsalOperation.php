@@ -88,13 +88,17 @@ final class StagingRuntimeSwitchRollbackRehearsalOperation
             $this->controlFile
         );
         $seal = $sealService->seal();
-        if (empty($seal['seal']['active']) || empty($seal['write_block']['active'])) {
+        if (empty($seal['freeze']['sealed']) || empty($seal['freeze']['storage_write_block_active'])) {
             throw new RuntimeException('Frozen JSON snapshot could not be sealed.');
         }
 
         $snapshot = $this->snapshot();
         $sealedFingerprint = $this->snapshotFingerprint($snapshot);
         $finalSynchronization = $this->synchronizeAll($this->config, $snapshot);
+        if (empty($finalSynchronization['ok'])) {
+            throw new RuntimeException('Final DB synchronization failed before switch rehearsal.');
+        }
+
         $databaseBeforeRollback = $this->fullRegression($this->config);
         if (empty($databaseBeforeRollback['ok']) || !empty($databaseBeforeRollback['blockers'])) {
             throw new RuntimeException('DB runtime regression failed before rollback rehearsal.');
@@ -113,7 +117,9 @@ final class StagingRuntimeSwitchRollbackRehearsalOperation
             throw new RuntimeException('JSON rollback route smoke failed.');
         }
 
-        $this->restoreBackup(false);
+        if (!$this->restoreBackup(false)) {
+            throw new RuntimeException('Private runtime configuration backup could not be restored.');
+        }
         $restoredRuntime = $this->readRuntime();
         if (!hash_equals($this->fingerprint($originalRuntime), $this->fingerprint($restoredRuntime))) {
             throw new RuntimeException('Private runtime configuration was not restored exactly.');
@@ -125,7 +131,7 @@ final class StagingRuntimeSwitchRollbackRehearsalOperation
         }
 
         $release = $sealService->release('staging DB switch and JSON rollback rehearsal completed');
-        if (!empty($release['write_block']['active'])) {
+        if (!empty($release['freeze']['storage_write_block_active'])) {
             throw new RuntimeException('JSON write block remained active after rehearsal release.');
         }
 
@@ -152,8 +158,8 @@ final class StagingRuntimeSwitchRollbackRehearsalOperation
                 'open_invites' => (int)($freeze['drain']['open_invites'] ?? 0),
             ],
             'seal' => [
-                'active' => !empty($seal['seal']['active']),
-                'write_block_active_during_rehearsal' => !empty($seal['write_block']['active']),
+                'active' => !empty($seal['freeze']['sealed']),
+                'write_block_active_during_rehearsal' => !empty($seal['freeze']['storage_write_block_active']),
                 'snapshot_fingerprint' => $sealedFingerprint,
             ],
             'final_synchronization' => $finalSynchronization,
@@ -161,7 +167,7 @@ final class StagingRuntimeSwitchRollbackRehearsalOperation
             'json_rollback' => $jsonRollbackSmoke,
             'database_after_restore' => $this->compactRegression($databaseAfterRestore),
             'release' => [
-                'write_block_removed' => empty($release['write_block']['active']),
+                'write_block_removed' => empty($release['freeze']['storage_write_block_active']),
                 'snapshot_unchanged' => hash_equals($sealedFingerprint, $releasedFingerprint),
             ],
             'final_route' => 'database_modules',
@@ -466,11 +472,10 @@ final class StagingRuntimeSwitchRollbackRehearsalOperation
                 $this->storage,
                 $this->controlFile
             ))->emergencyRelease('automatic switch rehearsal rollback');
-            $writeBlockRemoved = empty($release['write_block']['active']);
-            $controlReleased = in_array((string)($release['freeze']['state'] ?? ''), ['released', 'absent'], true)
-                || in_array((string)($release['seal']['state'] ?? ''), ['released', 'absent'], true);
+            $writeBlockRemoved = empty($release['freeze']['storage_write_block_active']);
+            $controlReleased = in_array((string)($release['freeze']['state'] ?? ''), ['released', 'absent'], true);
         } catch (Throwable) {
-            $writeBlockRemoved = !is_file((string)($this->config['data_dir'] ?? '') . '/.cutover-write-block');
+            $writeBlockRemoved = !is_file(rtrim((string)($this->config['data_dir'] ?? ''), '/\\') . '/.cutover-write-block');
         }
 
         return [
