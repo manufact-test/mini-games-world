@@ -79,6 +79,7 @@ require_once __DIR__ . '/../ledger/LegacyEconomyShadowSyncService.php';
 require_once __DIR__ . '/../ledger/LegacyEconomyDeltaImportService.php';
 require_once __DIR__ . '/../ledger/LegacyEconomyRuntimeReconciliationService.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomySnapshotStorage.php';
+require_once __DIR__ . '/../ledger/RuntimeEconomyBalanceBootstrapService.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomyRepository.php';
 require_once __DIR__ . '/../ledger/EconomyRuntimeBridge.php';
 require_once __DIR__ . '/../services/AuthService.php';
