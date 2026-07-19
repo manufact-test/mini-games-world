@@ -173,8 +173,12 @@ final class RuntimeEconomyBalanceBootstrapService
 
     private function assertIdentity(array $balance, array $owner, string $legacyUserId): void
     {
-        if ((string)($balance['account_ref'] ?? '') !== $owner['account_ref']
-            || (string)($balance['mgw_id'] ?? '') !== $owner['mgw_id']
+        $accountRef = (string)($balance['account_ref'] ?? '');
+        $storedMgwId = trim((string)($balance['mgw_id'] ?? ''));
+        $mgwIdAccepted = $storedMgwId === $owner['mgw_id']
+            || ($storedMgwId === '' && str_starts_with($accountRef, 'legacy:'));
+        if ($accountRef !== $owner['account_ref']
+            || !$mgwIdAccepted
             || (string)($balance['legacy_user_id'] ?? '') !== $legacyUserId) {
             throw new RuntimeException('Runtime economy balance ownership is inconsistent.');
         }
