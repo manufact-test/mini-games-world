@@ -15,8 +15,9 @@ require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyEconomyShadowSyncService.p
 require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyOpeningBalanceImportService.php';
 require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyFinancialStatusNormalizer.php';
 require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyFinancialArchiveImportService.php';
+require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyEconomyDeltaImportService.php';
+require_once dirname(__DIR__, 2) . '/bot/ledger/LegacyEconomyRuntimeReconciliationService.php';
 require_once dirname(__DIR__, 2) . '/bot/migration/StagingJsonDbReconciliationService.php';
-require_once dirname(__DIR__, 2) . '/bot/migration/LegacyOpeningBalanceOwnershipReconciliationService.php';
 require_once dirname(__DIR__, 2) . '/bot/migration/StagingJsonDbFinalReconciliationService.php';
 
 $exitCode = 0;
