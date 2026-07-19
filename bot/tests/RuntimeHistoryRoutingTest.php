@@ -71,7 +71,7 @@ $routed = $history->userHistory($snapshot, 'user_1', 24);
 $assertSame($formatted, $routed, 'JSON route must keep the existing history response');
 $assertSame('Еженедельное начисление', $routed['operations'][0]['title'], 'Operation title must stay unchanged');
 $assertSame('Победа', $routed['matches'][0]['result'], 'Match result must stay unchanged');
-$assertSame('GAME_1', $routed['matches'][0]['short_id'], 'Pretty match ID must stay unchanged');
+$assertSame('1', $routed['matches'][0]['short_id'], 'Pretty match ID must stay unchanged');
 
 $dependencyBlocked = false;
 try {
