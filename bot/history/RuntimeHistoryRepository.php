@@ -19,7 +19,7 @@ final class RuntimeHistoryRepository
         $snapshot = $this->databaseSnapshot();
 
         return [
-            'history' => $this->formatter->userHistory($snapshot, $legacyUserId, $limit),
+            'history' => $this->formatter->formatHistory($snapshot, $legacyUserId, $limit),
             'synchronization' => [
                 'realtime' => $this->compactShadow($realtime),
                 'economy' => $this->compactEconomyShadow($economy),
@@ -30,7 +30,7 @@ final class RuntimeHistoryRepository
     public function read(string $legacyUserId, int $limit = 24): array
     {
         $this->assertDatabaseRoute();
-        return $this->formatter->userHistory($this->databaseSnapshot(), $legacyUserId, $limit);
+        return $this->formatter->formatHistory($this->databaseSnapshot(), $legacyUserId, $limit);
     }
 
     public function auditParity(array $jsonSnapshot): array
@@ -47,8 +47,8 @@ final class RuntimeHistoryRepository
         $legacyParts = [];
         $databaseParts = [];
         foreach ($userIds as $userId) {
-            $legacy = $this->formatter->userHistory($jsonSnapshot, $userId, 24);
-            $database = $this->formatter->userHistory($databaseSnapshot, $userId, 24);
+            $legacy = $this->formatter->formatHistory($jsonSnapshot, $userId, 24);
+            $database = $this->formatter->formatHistory($databaseSnapshot, $userId, 24);
             $legacyHash = hash('sha256', LedgerIntegrity::canonicalJson($legacy));
             $databaseHash = hash('sha256', LedgerIntegrity::canonicalJson($database));
             $legacyParts[] = hash('sha256', $userId) . ':' . $legacyHash;
