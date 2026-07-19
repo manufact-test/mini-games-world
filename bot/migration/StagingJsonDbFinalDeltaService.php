@@ -18,9 +18,20 @@ final class StagingJsonDbFinalDeltaService
         $archive = $this->financialArchive->preview();
         $economyDelta = $this->economyDelta->preview();
         $reconciliation = $this->reconciliation->report();
+        $preconditionBlockers = [];
+        foreach ((array)($archive['blocking_reasons'] ?? []) as $reason) {
+            $preconditionBlockers[] = 'financial_archive: ' . (string)$reason;
+        }
+        foreach ((array)($economyDelta['blocking_reasons'] ?? []) as $reason) {
+            $preconditionBlockers[] = 'economy_delta: ' . (string)$reason;
+        }
+        $ready = !empty($archive['ready'])
+            && !empty($economyDelta['ready'])
+            && $preconditionBlockers === [];
 
         return [
-            'ok' => true,
+            'ok' => $ready,
+            'ready' => $ready,
             'read_only' => true,
             'action' => 'preview',
             'realtime_shadow_delta_count' => $this->shadowDeltaCount($realtime),
@@ -29,6 +40,7 @@ final class StagingJsonDbFinalDeltaService
             'financial_archive_planned_count' => (int)($archive['planned_create_total'] ?? 0),
             'economy_delta_ready' => !empty($economyDelta['ready']),
             'economy_planned_delta_count' => (int)($economyDelta['planned_delta_count'] ?? 0),
+            'precondition_blocking_reasons' => array_values(array_unique($preconditionBlockers)),
             'reconciliation_ok' => !empty($reconciliation['ok']),
             'count_parity_complete' => !empty($reconciliation['count_parity_complete']),
             'blocking_reasons' => $reconciliation['blocking_reasons'] ?? [],
@@ -38,6 +50,7 @@ final class StagingJsonDbFinalDeltaService
                 'economy' => $economyShadow['source_fingerprint'] ?? '',
                 'archive' => $archive['source_fingerprint'] ?? '',
                 'economy_delta' => $economyDelta['source_fingerprint'] ?? '',
+                'preconditions' => $preconditionBlockers,
                 'reconciliation' => $reconciliation['report_fingerprint'] ?? '',
             ])),
             'sensitive_identifiers_exposed' => false,
@@ -102,7 +115,7 @@ final class StagingJsonDbFinalDeltaService
         $total = 0;
         foreach ((array)($report['sections'] ?? []) as $section) {
             if (!is_array($section)) continue;
-            foreach (['inserted_count', 'updated_count', 'repair_count', 'deleted_count'] as $field) {
+            foreach (['inserted_count', 'updated_count', 'deleted_count'] as $field) {
                 $total += max(0, (int)($section[$field] ?? 0));
             }
         }
