@@ -11,12 +11,15 @@ if (PHP_SAPI !== 'cli') {
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
 require_once $projectRoot . '/bot/storage/RuntimeModuleActivationController.php';
+require_once $projectRoot . '/bot/cutover/FreezeDrainRehearsalService.php';
+require_once $projectRoot . '/bot/cutover/seal/SealedSnapshotControlService.php';
 require_once $projectRoot . '/bot/operations/StagingOperationDefinition.php';
 require_once $projectRoot . '/bot/operations/StagingOperationsRunner.php';
 require_once $projectRoot . '/bot/operations/StagingShopRuntimeOperation.php';
 require_once $projectRoot . '/bot/operations/StagingPaymentRuntimeOperation.php';
 require_once $projectRoot . '/bot/operations/StagingWeeklyBonusRuntimeOperation.php';
 require_once $projectRoot . '/bot/operations/StagingDatabaseRuntimeRegressionOperation.php';
+require_once $projectRoot . '/bot/operations/StagingRuntimeSwitchRollbackRehearsalOperation.php';
 require_once $projectRoot . '/bot/operations/StagingOperationRegistry.php';
 
 $options = getopt('', ['run', 'status']);
@@ -48,7 +51,7 @@ try {
     if ($environment !== 'staging') {
         throw new RuntimeException('The permanent operations runner is enabled only in staging.');
     }
-    if (FeatureFlagService::BUILD !== 'v100-mvp14-db-weekly-bonus-routing') {
+    if (FeatureFlagService::BUILD !== 'v101-mvp14-db-switch-rollback-rehearsal') {
         throw new RuntimeException('Unexpected application build for the staging operations runner.');
     }
 
