@@ -34,7 +34,9 @@ final class RuntimeConfigLoader
         if (!is_array($control)) {
             throw new RuntimeException('Cutover rehearsal control must be an object.');
         }
-        if ((string)($control['state'] ?? '') !== 'frozen') return $config;
+
+        $state = (string)($control['state'] ?? '');
+        if (!in_array($state, ['frozen', 'sealed'], true)) return $config;
 
         $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
         $controlEnvironment = strtolower(trim((string)($control['environment'] ?? '')));
@@ -47,17 +49,24 @@ final class RuntimeConfigLoader
 
         $existing = $config['feature_flags'] ?? [];
         if (!is_array($existing)) $existing = [];
-        $config['feature_flags'] = array_replace_recursive($existing, [
+        $overrides = [
             'features' => [
                 'matchmaking' => false,
                 'invitations' => false,
             ],
             'cutover_rehearsal' => [
                 'active' => true,
+                'sealed' => $state === 'sealed',
+                'state' => $state,
                 'rehearsal_id' => (string)($control['rehearsal_id'] ?? ''),
                 'started_at_utc' => (string)($control['started_at_utc'] ?? ''),
+                'sealed_at_utc' => (string)($control['sealed_at_utc'] ?? ''),
             ],
-        ]);
+        ];
+        if ($state === 'sealed') {
+            $overrides['financial_read_only'] = true;
+        }
+        $config['feature_flags'] = array_replace_recursive($existing, $overrides);
 
         return $config;
     }
