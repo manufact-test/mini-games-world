@@ -45,7 +45,7 @@ $storage = new class($snapshot) implements StorageAdapterInterface {
     public function readOnly(callable $callback): mixed { return $callback($this->snapshot); }
 };
 $database = new class implements DatabaseConnectionInterface {
-    public function driver(): string { return 'sqlite'; }
+    public function driver(): string { return 'mysql'; }
     public function execute(string $sql, array $parameters = []): int { return 0; }
     public function fetchAll(string $sql, array $parameters = []): array { return []; }
     public function fetchValue(string $sql, array $parameters = []): mixed { return 0; }
@@ -76,8 +76,13 @@ $config = [
     'data_dir' => $directory,
     'database' => [
         'enabled' => true,
-        'driver' => 'sqlite',
-        'path' => ':memory:',
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'port' => 3306,
+        'name' => 'mgw_test',
+        'user' => 'mgw_test',
+        'password' => 'test-password',
+        'charset' => 'utf8mb4',
     ],
     'feature_flags' => $runtime,
 ];
