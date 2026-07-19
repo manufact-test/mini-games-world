@@ -20,6 +20,7 @@ require_once $projectRoot . '/bot/operations/StagingPaymentRuntimeOperation.php'
 require_once $projectRoot . '/bot/operations/StagingWeeklyBonusRuntimeOperation.php';
 require_once $projectRoot . '/bot/operations/StagingDatabaseRuntimeRegressionOperation.php';
 require_once $projectRoot . '/bot/operations/StagingRuntimeSwitchRollbackRehearsalOperation.php';
+require_once $projectRoot . '/bot/operations/StagingRuntimeSwitchRollbackRehearsalRetryOperation.php';
 require_once $projectRoot . '/bot/operations/StagingOperationRegistry.php';
 
 $options = getopt('', ['run', 'status']);

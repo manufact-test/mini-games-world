@@ -15,11 +15,11 @@ final class RuntimeNotificationRepository
 
     public function synchronizeAndList(
         array $jsonData,
-        string $legacyUserId,
+        string|int $legacyUserId,
         ?string $authenticatedMgwId = null
     ): array {
         $this->assertDatabaseRoute();
-        $legacyUserId = trim($legacyUserId);
+        $legacyUserId = trim((string)$legacyUserId);
         if ($legacyUserId === '') {
             throw new InvalidArgumentException('Notification runtime requires a legacy user ID.');
         }
@@ -70,11 +70,11 @@ final class RuntimeNotificationRepository
 
     public function auditParity(
         array $jsonData,
-        string $legacyUserId,
+        string|int $legacyUserId,
         ?string $authenticatedMgwId = null
     ): array {
         $this->assertDatabaseRoute();
-        $legacyUserId = trim($legacyUserId);
+        $legacyUserId = trim((string)$legacyUserId);
         if ($legacyUserId === '') {
             throw new InvalidArgumentException('Notification audit requires a legacy user ID.');
         }
