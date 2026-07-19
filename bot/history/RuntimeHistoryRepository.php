@@ -16,7 +16,7 @@ final class RuntimeHistoryRepository
         $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
         $realtime = (new LegacyRealtimeShadowSyncService($storage, $this->database))->run();
         $economy = (new LegacyEconomyShadowSyncService($storage, $this->database))->run();
-        $snapshot = $this->databaseSnapshot();
+        $snapshot = $this->databaseSnapshot($jsonSnapshot);
 
         return [
             'history' => $this->formatter->formatHistory($snapshot, $legacyUserId, $limit),
@@ -36,7 +36,7 @@ final class RuntimeHistoryRepository
     public function auditParity(array $jsonSnapshot): array
     {
         $this->assertDatabaseRoute();
-        $databaseSnapshot = $this->databaseSnapshot();
+        $databaseSnapshot = $this->databaseSnapshot($jsonSnapshot);
         $userIds = array_values(array_filter(
             array_map('strval', array_keys(is_array($jsonSnapshot['users'] ?? null) ? $jsonSnapshot['users'] : [])),
             static fn(string $value): bool => $value !== ''
@@ -44,8 +44,13 @@ final class RuntimeHistoryRepository
         sort($userIds, SORT_STRING);
 
         $mismatchCount = 0;
+        $operationMismatchCount = 0;
+        $matchMismatchCount = 0;
+        $operationCountDelta = 0;
+        $matchCountDelta = 0;
         $legacyParts = [];
         $databaseParts = [];
+
         foreach ($userIds as $userId) {
             $legacy = $this->formatter->formatHistory($jsonSnapshot, $userId, 24);
             $database = $this->formatter->formatHistory($databaseSnapshot, $userId, 24);
@@ -53,6 +58,26 @@ final class RuntimeHistoryRepository
             $databaseHash = hash('sha256', LedgerIntegrity::canonicalJson($database));
             $legacyParts[] = hash('sha256', $userId) . ':' . $legacyHash;
             $databaseParts[] = hash('sha256', $userId) . ':' . $databaseHash;
+
+            $legacyOperations = is_array($legacy['operations'] ?? null) ? $legacy['operations'] : [];
+            $databaseOperations = is_array($database['operations'] ?? null) ? $database['operations'] : [];
+            $legacyMatches = is_array($legacy['matches'] ?? null) ? $legacy['matches'] : [];
+            $databaseMatches = is_array($database['matches'] ?? null) ? $database['matches'] : [];
+
+            if (!hash_equals(
+                hash('sha256', LedgerIntegrity::canonicalJson($legacyOperations)),
+                hash('sha256', LedgerIntegrity::canonicalJson($databaseOperations))
+            )) {
+                $operationMismatchCount++;
+                $operationCountDelta += abs(count($legacyOperations) - count($databaseOperations));
+            }
+            if (!hash_equals(
+                hash('sha256', LedgerIntegrity::canonicalJson($legacyMatches)),
+                hash('sha256', LedgerIntegrity::canonicalJson($databaseMatches))
+            )) {
+                $matchMismatchCount++;
+                $matchCountDelta += abs(count($legacyMatches) - count($databaseMatches));
+            }
             if (!hash_equals($legacyHash, $databaseHash)) $mismatchCount++;
         }
 
@@ -61,8 +86,14 @@ final class RuntimeHistoryRepository
         $legacyFingerprint = hash('sha256', implode("\n", $legacyParts));
         $databaseFingerprint = hash('sha256', implode("\n", $databaseParts));
         $blockers = [];
+        if ($operationMismatchCount > 0) {
+            $blockers[] = 'Database operation history differs from the current JSON operation history.';
+        }
+        if ($matchMismatchCount > 0) {
+            $blockers[] = 'Database match history differs from the current JSON match history.';
+        }
         if ($mismatchCount > 0 || !hash_equals($legacyFingerprint, $databaseFingerprint)) {
-            $blockers[] = 'Database history differs from the current JSON history.';
+            $blockers[] = 'Database history fingerprint differs from the current JSON history fingerprint.';
         }
 
         return [
@@ -72,15 +103,19 @@ final class RuntimeHistoryRepository
             'transaction_count' => count($databaseSnapshot['transactions']),
             'game_count' => count($databaseSnapshot['games']),
             'mismatch_count' => $mismatchCount,
+            'operation_mismatch_count' => $operationMismatchCount,
+            'match_mismatch_count' => $matchMismatchCount,
+            'operation_count_delta' => $operationCountDelta,
+            'match_count_delta' => $matchCountDelta,
             'json_history_fingerprint' => $legacyFingerprint,
             'database_history_fingerprint' => $databaseFingerprint,
-            'blockers' => $blockers,
+            'blockers' => array_values(array_unique($blockers)),
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
     }
 
-    private function databaseSnapshot(): array
+    private function databaseSnapshot(?array $sourceSnapshot = null): array
     {
         $transactions = [];
         $games = [];
@@ -108,18 +143,75 @@ final class RuntimeHistoryRepository
             }
         }
 
-        usort($transactions, static function (array $left, array $right): int {
-            $date = strcmp((string)($left['created_at'] ?? ''), (string)($right['created_at'] ?? ''));
-            if ($date !== 0) return $date;
-            return strcmp((string)($left['id'] ?? ''), (string)($right['id'] ?? ''));
-        });
-        uasort($games, static function (array $left, array $right): int {
-            $date = strcmp((string)($left['created_at'] ?? ''), (string)($right['created_at'] ?? ''));
-            if ($date !== 0) return $date;
-            return strcmp((string)($left['id'] ?? ''), (string)($right['id'] ?? ''));
-        });
+        $transactionOrder = $this->sourceOrder($sourceSnapshot['transactions'] ?? null);
+        $gameOrder = $this->sourceOrder($sourceSnapshot['games'] ?? null);
+
+        usort($transactions, fn(array $left, array $right): int => $this->compareRecords(
+            $left,
+            $right,
+            $transactionOrder,
+            ['created_at']
+        ));
+        uasort($games, fn(array $left, array $right): int => $this->compareRecords(
+            $left,
+            $right,
+            $gameOrder,
+            ['created_at', 'started_at', 'updated_at']
+        ));
 
         return ['transactions' => $transactions, 'games' => $games];
+    }
+
+    private function sourceOrder(mixed $records): array
+    {
+        if (!is_array($records)) return [];
+        $order = [];
+        $position = 0;
+        foreach ($records as $record) {
+            if (!is_array($record)) continue;
+            $identity = $this->recordIdentity($record);
+            if (!array_key_exists($identity, $order)) $order[$identity] = $position;
+            $position++;
+        }
+        return $order;
+    }
+
+    private function compareRecords(array $left, array $right, array $sourceOrder, array $timestampFields): int
+    {
+        $leftIdentity = $this->recordIdentity($left);
+        $rightIdentity = $this->recordIdentity($right);
+        $leftPosition = $sourceOrder[$leftIdentity] ?? null;
+        $rightPosition = $sourceOrder[$rightIdentity] ?? null;
+
+        if (is_int($leftPosition) && is_int($rightPosition) && $leftPosition !== $rightPosition) {
+            return $leftPosition <=> $rightPosition;
+        }
+        if (is_int($leftPosition) !== is_int($rightPosition)) {
+            return is_int($leftPosition) ? -1 : 1;
+        }
+
+        $leftTimestamp = $this->recordTimestamp($left, $timestampFields);
+        $rightTimestamp = $this->recordTimestamp($right, $timestampFields);
+        $timestampComparison = strcmp($leftTimestamp, $rightTimestamp);
+        if ($timestampComparison !== 0) return $timestampComparison;
+
+        return strcmp($leftIdentity, $rightIdentity);
+    }
+
+    private function recordIdentity(array $record): string
+    {
+        $id = trim((string)($record['id'] ?? ''));
+        if ($id !== '') return 'id:' . $id;
+        return 'sha256:' . hash('sha256', LedgerIntegrity::canonicalJson($record));
+    }
+
+    private function recordTimestamp(array $record, array $fields): string
+    {
+        foreach ($fields as $field) {
+            $value = trim((string)($record[$field] ?? ''));
+            if ($value !== '') return $value;
+        }
+        return '';
     }
 
     private function verifiedPayload(string $payloadJson, string $storedHash): array

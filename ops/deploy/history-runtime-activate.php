@@ -105,18 +105,30 @@ try {
     };
 
     $audit = static function (array $runtime) use ($repository, $snapshot): array {
-        return $repository($runtime)->auditParity($snapshot());
+        $result = $repository($runtime)->auditParity($snapshot());
+        if (empty($result['ok'])) {
+            throw new RuntimeException(sprintf(
+                'History parity audit failed: users=%d, mismatches=%d, operation_mismatches=%d, match_mismatches=%d, operation_count_delta=%d, match_count_delta=%d.',
+                (int)($result['source_user_count'] ?? 0),
+                (int)($result['mismatch_count'] ?? 0),
+                (int)($result['operation_mismatch_count'] ?? 0),
+                (int)($result['match_mismatch_count'] ?? 0),
+                (int)($result['operation_count_delta'] ?? 0),
+                (int)($result['match_count_delta'] ?? 0)
+            ));
+        }
+        return $result;
     };
 
     $controller = new RuntimeModuleActivationController(
         'history',
         ['accounts', 'realtime', 'economy'],
         $privateDir . '/runtime.php',
-        $privateDir . '/history-runtime-activation.json',
-        $privateDir . '/history-runtime-activation.runtime.backup',
+        $privateDir . '/history-runtime-activation-v2.json',
+        $privateDir . '/history-runtime-activation-v2.runtime.backup',
         $synchronize,
         $audit,
-        'mvp-14.8.4e-history-runtime-activation'
+        'mvp-14.8.4e2-history-runtime-activation'
     );
 
     if (isset($options['run'])) {
@@ -132,6 +144,7 @@ try {
 
     $result['environment'] = $environment;
     $result['execution_mode'] = $executionMode;
+    $result['activation_revision'] = 2;
     $result['build'] = FeatureFlagService::BUILD;
     $result['storage_driver'] = $storage->driver();
     $result['rollback_driver'] = RuntimeStorageRouter::DRIVER_JSON;
@@ -152,8 +165,9 @@ try {
     $exitCode = 1;
     fwrite(STDERR, json_encode([
         'ok' => false,
-        'report_type' => 'mvp-14.8.4e-history-runtime-activation',
+        'report_type' => 'mvp-14.8.4e2-history-runtime-activation',
         'environment' => (string)($config['environment'] ?? 'unknown'),
+        'activation_revision' => 2,
         'error_class' => get_class($error),
         'error_message' => $error->getMessage(),
         'production_changed' => false,
