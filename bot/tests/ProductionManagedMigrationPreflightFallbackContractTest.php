@@ -24,6 +24,11 @@ $assertTrue(
     'Disabled production migrations must fall back to read-only preflight'
 );
 $assertTrue(
+    str_contains($entrypoint, 'new ProductionPreflightRunner(')
+        && str_contains($entrypoint, '$preflightRunner->run()'),
+    'Fallback must execute the existing read-only production preflight runner'
+);
+$assertTrue(
     str_contains($entrypoint, "'action' => 'production_preflight'")
         && str_contains($entrypoint, "'mode' => 'read_only_preflight'"),
     'Fallback output must identify the read-only production preflight action'
