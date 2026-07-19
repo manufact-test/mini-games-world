@@ -94,6 +94,9 @@ require_once __DIR__ . '/../shop/ShopRuntimeBridge.php';
 require_once __DIR__ . '/../payments/RuntimePaymentSchemaInstaller.php';
 require_once __DIR__ . '/../payments/RuntimePaymentRepository.php';
 require_once __DIR__ . '/../payments/PaymentRuntimeBridge.php';
+require_once __DIR__ . '/../weekly/RuntimeWeeklyBonusSchemaInstaller.php';
+require_once __DIR__ . '/../weekly/RuntimeWeeklyBonusRepository.php';
+require_once __DIR__ . '/../weekly/WeeklyBonusRuntimeBridge.php';
 require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../services/FeatureFlagService.php';
@@ -125,6 +128,7 @@ $runtimeRealtimeBridge = new RealtimeRuntimeBridge($config, $runtimeStorageRoute
 $runtimeEconomyBridge = new EconomyRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeShopBridge = new ShopRuntimeBridge($config, $runtimeStorageRouter);
 $runtimePaymentBridge = new PaymentRuntimeBridge($config, $runtimeStorageRouter);
+$runtimeWeeklyBonusBridge = new WeeklyBonusRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeScript = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
 $runtimeApiSuccessHooks = [];
 
@@ -157,6 +161,23 @@ if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrent
     if (!is_array($runtimeApiDataFilters)) $runtimeApiDataFilters = [];
     $runtimeApiDataFilters[] = static function (array $data) use ($runtimePaymentBridge): array {
         return $runtimePaymentBridge->normalizeApiData(
+            $data,
+            (string)($GLOBALS['mgw_api_action'] ?? '')
+        );
+    };
+    $GLOBALS['mgw_api_data_filters'] = $runtimeApiDataFilters;
+}
+if ($runtimeScript === 'api.php' && $runtimeWeeklyBonusBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $runtimeApiSuccessHooks[] = static function () use ($runtimeWeeklyBonusBridge): void {
+        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
+        if ($runtimeWeeklyBonusBridge->shouldSynchronizeApiAction($action)) {
+            $runtimeWeeklyBonusBridge->synchronizeCurrentJson();
+        }
+    };
+    $runtimeApiDataFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
+    if (!is_array($runtimeApiDataFilters)) $runtimeApiDataFilters = [];
+    $runtimeApiDataFilters[] = static function (array $data) use ($runtimeWeeklyBonusBridge): array {
+        return $runtimeWeeklyBonusBridge->normalizeApiData(
             $data,
             (string)($GLOBALS['mgw_api_action'] ?? '')
         );
