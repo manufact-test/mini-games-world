@@ -9,6 +9,7 @@ if (PHP_SAPI !== 'cli') {
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
 require_once $projectRoot . '/bot/cutover/FreezeDrainRehearsalService.php';
+require_once $projectRoot . '/bot/cutover/seal/SealedSnapshotControlService.php';
 
 $options = getopt('', ['freeze', 'release', 'status', 'require-drained', 'reason:']);
 $modeCount = (int)isset($options['freeze']) + (int)isset($options['release']) + (int)isset($options['status']);
@@ -37,27 +38,54 @@ try {
         throw new RuntimeException('Private runtime directory is unavailable.');
     }
 
-    $lockHandle = fopen($privateDir . '/freeze-drain-rehearsal.lock', 'c+');
+    $lockHandle = fopen($privateDir . '/cutover-rehearsal.lock', 'c+');
     if ($lockHandle === false || !flock($lockHandle, LOCK_EX | LOCK_NB)) {
-        throw new RuntimeException('Another freeze/drain rehearsal command is already running.');
+        throw new RuntimeException('Another cutover rehearsal command is already running.');
     }
 
+    $controlFile = $privateDir . '/cutover-rehearsal.json';
     $service = new FreezeDrainRehearsalService(
         $config,
         $storage,
-        $privateDir . '/cutover-rehearsal.json',
+        $controlFile,
         $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
     );
+    $sealedService = new SealedSnapshotControlService($config, $storage, $controlFile);
+
+    $controlState = 'absent';
+    $controlInvalid = false;
+    if (is_file($controlFile)) {
+        try {
+            $rawControl = file_get_contents($controlFile);
+            $decodedControl = json_decode(is_string($rawControl) ? $rawControl : '', true, 512, JSON_THROW_ON_ERROR);
+            $controlState = is_array($decodedControl) ? (string)($decodedControl['state'] ?? 'absent') : 'invalid';
+        } catch (Throwable) {
+            $controlState = 'invalid';
+            $controlInvalid = true;
+        }
+    }
+    $dataDir = rtrim(str_replace('\\', '/', trim((string)($config['data_dir'] ?? ''))), '/');
+    $writeBlockActive = $dataDir !== '' && is_file($dataDir . '/.cutover-write-block');
 
     if (isset($options['freeze'])) {
+        if ($writeBlockActive || $controlState === 'sealed') {
+            throw new RuntimeException('JSON is sealed. Release the sealed snapshot rehearsal before starting another freeze.');
+        }
         $result = $service->freeze();
         $result['execution_mode'] = 'freeze';
     } elseif (isset($options['release'])) {
-        $result = $service->release((string)($options['reason'] ?? 'manual rehearsal release'));
-        $result['execution_mode'] = 'release';
+        $reason = (string)($options['reason'] ?? 'manual rehearsal release');
+        $result = ($writeBlockActive || $controlInvalid)
+            ? $sealedService->emergencyRelease($reason)
+            : $sealedService->release($reason);
+        $result['execution_mode'] = $writeBlockActive || $controlInvalid ? 'emergency-release' : 'release';
+        $result['legacy_freeze_drain_cli'] = true;
     } else {
-        $result = $service->status();
+        $result = ($writeBlockActive || $controlState === 'sealed')
+            ? $sealedService->status()
+            : $service->status();
         $result['execution_mode'] = 'status';
+        $result['legacy_freeze_drain_cli'] = true;
     }
 
     $result['storage_driver'] = $storage->driver();
@@ -70,6 +98,9 @@ try {
     ) . PHP_EOL);
 
     if (isset($options['require-drained']) && empty($result['drain']['ready'])) {
+        $exitCode = 2;
+    }
+    if (($result['ok'] ?? false) !== true && !isset($options['status'])) {
         $exitCode = 2;
     }
 } catch (Throwable $error) {
