@@ -70,6 +70,7 @@ require_once __DIR__ . '/../accounts/RuntimeAccountOwnershipService.php';
 require_once __DIR__ . '/../accounts/RuntimeAccountIdentityResolver.php';
 require_once __DIR__ . '/../realtime/RealtimeDatabaseStore.php';
 require_once __DIR__ . '/../realtime/RuntimeRealtimeRepository.php';
+require_once __DIR__ . '/../realtime/LegacyRealtimeShadowSyncService.php';
 require_once __DIR__ . '/../realtime/RealtimeRuntimeBridge.php';
 require_once __DIR__ . '/../notifications/RuntimeNotificationRepository.php';
 require_once __DIR__ . '/../invites/RuntimeInviteRepository.php';
