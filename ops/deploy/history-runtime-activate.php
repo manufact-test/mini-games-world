@@ -24,7 +24,10 @@ try {
     if ($environment !== 'staging') {
         throw new RuntimeException('History runtime activation is enabled only in staging.');
     }
-    if (FeatureFlagService::BUILD !== 'v96-mvp14-db-history-routing') {
+    if (!in_array(FeatureFlagService::BUILD, [
+        'v96-mvp14-db-history-routing',
+        'v97-mvp14-staging-operations-runner',
+    ], true)) {
         throw new RuntimeException('Unexpected application build for history runtime activation.');
     }
 
