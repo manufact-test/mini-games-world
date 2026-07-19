@@ -49,12 +49,6 @@ final class RuntimeAccountOwnershipService
             $created = false;
             if ($rows === []) {
                 $timestamp = $this->timestamp();
-                $source = [
-                    'provider' => $provider,
-                    'provider_subject' => $legacyUserId,
-                    'mgw_id' => $mgwId,
-                    'account_ref' => $accountRef,
-                ];
                 $database->execute(
                     'INSERT INTO mgw_account_ownership (
                         account_ref, mgw_id, legacy_user_id, ownership_status,
@@ -70,7 +64,12 @@ final class RuntimeAccountOwnershipService
                         'ownership_status' => 'active',
                         'source_type' => 'runtime_identity',
                         'source_ref' => $provider . ':' . $legacyUserId,
-                        'source_sha256' => hash('sha256', LedgerIntegrity::canonicalJson($source)),
+                        'source_sha256' => hash('sha256', implode('|', [
+                            $provider,
+                            $legacyUserId,
+                            $mgwId,
+                            $accountRef,
+                        ])),
                         'created_at_utc' => $timestamp,
                         'verified_at_utc' => $timestamp,
                     ]
