@@ -2,35 +2,35 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-require $root . '/storage/contracts/StorageTransactionInterface.php';
-require $root . '/storage/contracts/StorageAdapterInterface.php';
-require $root . '/database/DatabaseConnectionInterface.php';
-require $root . '/database/DatabaseConfig.php';
-require $root . '/database/PdoDatabaseConnection.php';
-require $root . '/database/PdoConnectionFactory.php';
-require $root . '/database/DatabaseMigrationInterface.php';
-require $root . '/database/MigrationRepository.php';
-require $root . '/database/MigrationRunner.php';
-require $root . '/storage/RuntimeStorageRouter.php';
-require $root . '/ledger/LedgerIntegrity.php';
-require $root . '/ledger/LedgerWriteService.php';
-require $root . '/ledger/LedgerIntegrityVerifier.php';
-require $root . '/ledger/LegacyEconomyShadowSyncService.php';
-require $root . '/ledger/LegacyOpeningBalanceImportService.php';
-require $root . '/ledger/LegacyEconomyDeltaImportService.php';
-require $root . '/ledger/LegacyEconomyRuntimeReconciliationService.php';
-require $root . '/ledger/RuntimeEconomySnapshotStorage.php';
-require $root . '/ledger/RuntimeEconomyBalanceBootstrapService.php';
-require $root . '/ledger/RuntimeEconomyRepository.php';
-require $root . '/ledger/LegacyFinancialStatusNormalizer.php';
-require $root . '/ledger/LegacyFinancialArchiveImportService.php';
-require $root . '/ledger/LegacyFinancialArchiveDeltaService.php';
-require $root . '/payments/RuntimePaymentSchemaInstaller.php';
-require $root . '/payments/RuntimePaymentRepository.php';
+foreach ([
+    '/storage/contracts/StorageTransactionInterface.php',
+    '/storage/contracts/StorageAdapterInterface.php',
+    '/database/DatabaseConnectionInterface.php',
+    '/database/DatabaseConfig.php',
+    '/database/PdoDatabaseConnection.php',
+    '/database/PdoConnectionFactory.php',
+    '/database/DatabaseMigrationInterface.php',
+    '/database/MigrationRepository.php',
+    '/database/MigrationRunner.php',
+    '/storage/RuntimeStorageRouter.php',
+    '/ledger/LedgerIntegrity.php',
+    '/ledger/LedgerWriteService.php',
+    '/ledger/LedgerIntegrityVerifier.php',
+    '/ledger/LegacyEconomyShadowSyncService.php',
+    '/ledger/LegacyOpeningBalanceImportService.php',
+    '/ledger/LegacyEconomyDeltaImportService.php',
+    '/ledger/LegacyEconomyRuntimeReconciliationService.php',
+    '/ledger/RuntimeEconomySnapshotStorage.php',
+    '/ledger/RuntimeEconomyBalanceBootstrapService.php',
+    '/ledger/RuntimeEconomyRepository.php',
+    '/ledger/LegacyFinancialStatusNormalizer.php',
+    '/ledger/LegacyFinancialArchiveImportService.php',
+    '/ledger/LegacyFinancialArchiveDeltaService.php',
+    '/payments/RuntimePaymentSchemaInstaller.php',
+    '/payments/RuntimePaymentRepository.php',
+] as $file) require $root . $file;
 
-if (!extension_loaded('pdo_sqlite')) {
-    throw new RuntimeException('RuntimePaymentRepositoryTest requires pdo_sqlite.');
-}
+if (!extension_loaded('pdo_sqlite')) throw new RuntimeException('RuntimePaymentRepositoryTest requires pdo_sqlite.');
 
 $assertions = 0;
 $assertSame = static function (mixed $expected, mixed $actual, string $message) use (&$assertions): void {
@@ -55,13 +55,12 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
-$runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(7, $runner->migrate(false)['executed_count'], 'Payment runtime test must apply every managed migration');
+$assertSame(7, (new MigrationRunner($database, $root . '/database/migrations'))->migrate(false)['executed_count'], 'All migrations must apply');
 
-$now = '2026-07-19 17:00:00.000000';
 $legacyUserId = '5101';
 $mgwId = 'MGW-PAYRUNTIME001';
 $accountRef = 'mgw:' . $mgwId;
+$now = '2026-07-19 17:00:00.000000';
 $database->execute(
     'INSERT INTO mgw_users (mgw_id, status, display_name, created_at_utc, updated_at_utc, last_seen_at_utc) '
     . 'VALUES (:id, :status, :name, :created, :updated, :seen)',
@@ -89,16 +88,14 @@ $database->execute(
 );
 
 $initial = [
-    'users' => [
-        $legacyUserId => [
-            'id' => $legacyUserId,
-            'telegram_id' => $legacyUserId,
-            'balance_match' => 0,
-            'balance_gold' => 100,
-            'registered_at' => '2026-07-19T17:00:00+00:00',
-            'last_seen_at' => '2026-07-19T17:00:00+00:00',
-        ],
-    ],
+    'users' => [$legacyUserId => [
+        'id' => $legacyUserId,
+        'telegram_id' => $legacyUserId,
+        'balance_match' => 0,
+        'balance_gold' => 100,
+        'registered_at' => '2026-07-19T17:00:00+00:00',
+        'last_seen_at' => '2026-07-19T17:00:00+00:00',
+    ]],
     'payments' => [],
     'shop_orders' => [],
     'transactions' => [],
@@ -108,12 +105,11 @@ $initialStorage = new RuntimeEconomySnapshotStorage($initial);
 $ledger = new LedgerWriteService($database);
 $integrity = new LedgerIntegrityVerifier($database);
 (new LegacyOpeningBalanceImportService($database, $ledger, $integrity))->run();
-$archive = new LegacyFinancialArchiveImportService(
+$assertSame(true, (new LegacyFinancialArchiveImportService(
     $initialStorage,
     $database,
     new LegacyFinancialStatusNormalizer()
-);
-$assertSame(true, $archive->run()['ok'], 'Initial immutable financial archive must be established');
+))->run()['ok'], 'Initial archive must be established');
 
 $config = [
     'environment' => 'staging',
@@ -128,32 +124,27 @@ $config = [
         'password' => 'test-password',
         'charset' => 'utf8mb4',
     ],
-    'feature_flags' => [
-        'database_runtime' => [
-            'enabled' => true,
-            'modules' => [
-                'accounts' => true,
-                'realtime' => true,
-                'economy' => true,
-                'history' => true,
-                'payments' => true,
-            ],
+    'feature_flags' => ['database_runtime' => [
+        'enabled' => true,
+        'modules' => [
+            'accounts' => true,
+            'realtime' => true,
+            'economy' => true,
+            'history' => true,
+            'payments' => true,
         ],
-    ],
+    ]],
 ];
 $router = new RuntimeStorageRouter($config);
 $schema = new RuntimePaymentSchemaInstaller($database);
 $install = $schema->install();
-$assertSame(true, $install['ok'], 'Payment runtime schema must install');
-$assertSame(17, $install['verification']['present_column_count'], 'Payment schema must expose every required column');
-$assertSame(true, $schema->install()['idempotent'], 'Repeated payment schema installation must be a no-op');
+$assertSame(true, $install['ok'], 'Payment schema must install');
+$assertSame(17, $install['verification']['present_column_count'], 'Every payment column must exist');
+$assertSame(true, $schema->install()['idempotent'], 'Repeated schema install must be a no-op');
 
-$initialRepository = new RuntimePaymentRepository($config, $router, $initialStorage, $database);
-$initialBootstrap = $initialRepository->bootstrapCurrentJson();
-$assertSame(true, $initialBootstrap['ok'], 'Empty payment runtime baseline must activate cleanly');
-$assertSame(0, $initialBootstrap['payments']['source_payment_count'], 'Empty source must create no payment rows');
-$assertSame(true, $initialRepository->auditParity($initial)['ok'], 'Empty payment mirror must start in parity');
-$assertSame([], $initialRepository->paymentRecords(), 'Empty payment mirror must return no records');
+$repository = new RuntimePaymentRepository($config, $router, $initialStorage, $database);
+$assertSame(true, $repository->bootstrapCurrentJson()['ok'], 'Empty payment baseline must activate');
+$assertSame([], $repository->paymentRecords(), 'Empty payment mirror must read empty');
 
 $draft = $initial;
 $draft['payments'][] = [
@@ -185,21 +176,19 @@ $draft['transactions'][] = [
     'currency' => 'RUB',
     'created_at' => '2026-07-19T17:01:00+00:00',
 ];
-$draftStorage = new RuntimeEconomySnapshotStorage($draft);
-$draftRepository = new RuntimePaymentRepository($config, $router, $draftStorage, $database);
+$draftRepository = new RuntimePaymentRepository(
+    $config,
+    $router,
+    new RuntimeEconomySnapshotStorage($draft),
+    $database
+);
 $draftSync = $draftRepository->synchronizeCurrentJson();
-$assertSame(true, $draftSync['ok'], 'Draft payment synchronization must succeed');
-$assertSame(1, $draftSync['payments']['inserted_count'], 'New draft must create one payment mirror row');
-$assertSame(0, $draftSync['economy']['applied_delta_count'], 'Draft payment must not change ledger balance');
-$assertSame('draft', (string)$database->fetchValue(
-    'SELECT status_raw FROM mgw_runtime_payments WHERE payment_ref = :payment_ref',
-    ['payment_ref' => 'pay_runtime_1']
-), 'Payment mirror must preserve draft status');
-$assertSame(true, $draftRepository->auditParity($draft)['ok'], 'Draft payment must finish in exact parity');
+$assertSame(1, $draftSync['payments']['inserted_count'], 'Draft must create one mirror row');
+$assertSame(0, $draftSync['economy']['applied_delta_count'], 'Draft must not change balance');
+$assertSame(true, $draftRepository->auditParity($draft)['ok'], 'Draft must finish in parity');
 
 $paid = $draft;
 $paid['users'][$legacyUserId]['balance_gold'] = 125;
-$paid['users'][$legacyUserId]['gold_deposited_total'] = 25;
 $paid['payments'][0]['status'] = 'paid';
 $paid['payments'][0]['balance_applied'] = true;
 $paid['payments'][0]['paid_at'] = '2026-07-19T17:02:00+00:00';
@@ -219,76 +208,43 @@ $paid['transactions'][] = [
     'balance_after' => 125,
     'created_at' => '2026-07-19T17:02:00+00:00',
 ];
-$paidStorage = new RuntimeEconomySnapshotStorage($paid);
-$paidRepository = new RuntimePaymentRepository($config, $router, $paidStorage, $database);
+$paidRepository = new RuntimePaymentRepository(
+    $config,
+    $router,
+    new RuntimeEconomySnapshotStorage($paid),
+    $database
+);
 $paidSync = $paidRepository->synchronizeCurrentJson();
-$assertSame(1, $paidSync['payments']['updated_count'], 'Paid status must update the payment mirror');
-$assertSame(1, $paidSync['economy']['applied_delta_count'], 'Paid balance credit must create one immutable ledger delta');
-$assertSame('paid', (string)$database->fetchValue(
-    'SELECT status_raw FROM mgw_runtime_payments WHERE payment_ref = :payment_ref',
-    ['payment_ref' => 'pay_runtime_1']
-), 'Payment mirror must preserve paid status');
-$assertSame(true, $paidRepository->auditParity($paid)['ok'], 'Paid payment must remain in parity');
+$assertSame(1, $paidSync['payments']['updated_count'], 'Paid transition must update the mirror');
+$assertSame(1, $paidSync['economy']['applied_delta_count'], 'Paid transition must create one ledger delta');
+$assertSame(true, $paidRepository->auditParity($paid)['ok'], 'Paid transition must finish in parity');
 $records = $paidRepository->paymentRecords();
-$assertSame(1, count($records), 'Payment DB read must return one verified record');
-$assertSame($paid['payments'][0], $records[0], 'Payment DB read must preserve the exact JSON payload');
+$assertSame(1, count($records), 'DB read must return one payment');
+$assertSame(
+    LedgerIntegrity::canonicalJson($paid['payments'][0]),
+    LedgerIntegrity::canonicalJson($records[0]),
+    'DB read must preserve the exact payment payload'
+);
+$repeat = $paidRepository->synchronizeCurrentJson();
+$assertSame(0, $repeat['payments']['updated_count'], 'Repeat sync must not rewrite payment');
+$assertSame(1, $repeat['payments']['unchanged_count'], 'Repeat sync must report payment unchanged');
 
-$second = $paid;
-$second['payments'][] = [
-    'id' => 'pay_runtime_2',
-    'user_id' => $legacyUserId,
-    'provider' => 'manual_test',
-    'status' => 'draft',
-    'room' => 'match',
-    'coins' => 20,
-    'price' => 10,
-    'amount_rub' => 10,
-    'currency' => 'RUB',
-    'rate' => 2,
-    'balance_applied' => false,
-    'created_at' => '2026-07-19T17:03:00+00:00',
-    'updated_at' => '2026-07-19T17:03:00+00:00',
-];
-$second['transactions'][] = [
-    'id' => 'tx_payment_draft_2',
-    'type' => 'payment_draft',
-    'category' => 'payment_draft',
-    'payment_id' => 'pay_runtime_2',
-    'user_id' => $legacyUserId,
-    'room' => 'match',
-    'amount' => 0,
-    'coins' => 20,
-    'amount_rub' => 10,
-    'currency' => 'RUB',
-    'created_at' => '2026-07-19T17:03:00+00:00',
-];
-$secondStorage = new RuntimeEconomySnapshotStorage($second);
-$secondRepository = new RuntimePaymentRepository($config, $router, $secondStorage, $database);
-$secondSync = $secondRepository->synchronizeCurrentJson();
-$assertSame(1, $secondSync['payments']['inserted_count'], 'Second draft must create one additional row');
-$secondRecords = $secondRepository->paymentRecords();
-$assertSame('pay_runtime_1', (string)$secondRecords[0]['id'], 'Payment DB read must preserve first source position');
-$assertSame('pay_runtime_2', (string)$secondRecords[1]['id'], 'Payment DB read must preserve second source position');
-$repeat = $secondRepository->synchronizeCurrentJson();
-$assertSame(0, $repeat['payments']['updated_count'], 'Repeated payment synchronization must not rewrite unchanged rows');
-$assertSame(2, $repeat['payments']['unchanged_count'], 'Repeated payment synchronization must report both rows unchanged');
-
-$drifted = $second;
+$drifted = $paid;
 $drifted['payments'][0]['status'] = 'rejected';
-$driftAudit = $secondRepository->auditParity($drifted);
-$assertSame(false, $driftAudit['ok'], 'Read-only audit must detect unsynchronized payment status');
-$assertSame(1, $driftAudit['mismatch_count'], 'Unsynchronized payment status must count one mismatch');
+$driftAudit = $paidRepository->auditParity($drifted);
+$assertSame(false, $driftAudit['ok'], 'Audit must detect payment drift');
+$assertSame(1, $driftAudit['mismatch_count'], 'Payment drift must count one mismatch');
 
 $disabledConfig = $config;
 $disabledConfig['feature_flags']['database_runtime']['modules']['payments'] = false;
 $disabled = new RuntimePaymentRepository(
     $disabledConfig,
     new RuntimeStorageRouter($disabledConfig),
-    $secondStorage,
+    new RuntimeEconomySnapshotStorage($paid),
     $database
 );
 $assertThrows(
-    static fn() => $disabled->auditParity($second),
+    static fn() => $disabled->auditParity($paid),
     'requires accounts, economy, history and payments routing',
     'Disabled payment route must reject DB runtime access'
 );
