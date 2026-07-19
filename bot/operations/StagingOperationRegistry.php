@@ -137,6 +137,17 @@ final class StagingOperationRegistry
                 $database,
                 $privateDir
             ))->definition(),
+            (new StagingWeeklyBonusRuntimeOperation(
+                $config,
+                $storage,
+                $database,
+                $privateDir
+            ))->definition(),
+            (new StagingDatabaseRuntimeRegressionOperation(
+                $config,
+                $storage,
+                $database
+            ))->definition(),
         ];
     }
 }
