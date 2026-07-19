@@ -40,9 +40,34 @@ trait SealedSnapshotLifecycleTrait
 
     public function release(string $reason = ''): array
     {
+        return $this->releaseInternal($reason, false);
+    }
+
+    public function emergencyRelease(string $reason = ''): array
+    {
+        return $this->releaseInternal($reason, true);
+    }
+
+    private function releaseInternal(string $reason, bool $emergency): array
+    {
         $environment = $this->assertSafeEnvironment();
-        $control = $this->readControl();
-        $wasActive = in_array((string)($control['state'] ?? ''), ['frozen', 'sealed'], true);
+        $controlReadRecovered = false;
+        try {
+            $control = $this->readControl();
+        } catch (Throwable $error) {
+            if (!$emergency) throw $error;
+            $control = [];
+            $controlReadRecovered = true;
+        }
+
+        $state = (string)($control['state'] ?? '');
+        $wasActive = in_array($state, ['frozen', 'sealed'], true);
+        $markerWasActive = is_file($this->writeBlockFile());
+
+        // Remove the storage barrier first. If the following control write fails,
+        // matchmaking remains frozen by the old control state, but JSON writes resume.
+        $this->removeWriteBlock();
+
         if ($control === []) {
             $control = [
                 'schema_version' => 2,
@@ -52,14 +77,33 @@ trait SealedSnapshotLifecycleTrait
                 'sealed_at_utc' => null,
             ];
         }
+        $control['schema_version'] = 2;
+        $control['environment'] = $environment;
         $control['state'] = 'released';
         $control['released_at_utc'] = $this->nowUtc();
         $control['release_reason'] = mb_substr(trim(preg_replace('/\s+/u', ' ', $reason) ?? ''), 0, 200);
-        $this->writeControl($control);
-        $this->removeWriteBlock();
+        $control['emergency_release'] = $emergency;
+        $control['control_read_recovered'] = $controlReadRecovered;
+
+        try {
+            $this->writeControl($control);
+        } catch (Throwable $error) {
+            throw new RuntimeException(
+                'JSON write block was removed, but the cutover control could not be updated. Keep matchmaking frozen and repair the private control file before continuing.',
+                0,
+                $error
+            );
+        }
+
         $report = $this->status();
-        $report['action'] = $wasActive ? 'release' : 'release_noop';
-        $report['idempotent'] = !$wasActive;
+        $report['action'] = $emergency ? 'emergency_release' : ($wasActive ? 'release' : 'release_noop');
+        $report['idempotent'] = !$wasActive && !$markerWasActive && !$controlReadRecovered;
+        $report['recovery'] = [
+            'emergency' => $emergency,
+            'write_block_was_active' => $markerWasActive,
+            'write_block_removed' => !is_file($this->writeBlockFile()),
+            'control_read_recovered' => $controlReadRecovered,
+        ];
         return $this->withFingerprint($report);
     }
 }
