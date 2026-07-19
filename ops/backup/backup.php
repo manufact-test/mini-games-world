@@ -31,10 +31,47 @@ try {
     $manager = BackupCli::manager($context, [
         'data_dir' => isset($options['data-dir']) ? (string)$options['data-dir'] : null,
     ]);
-    BackupCli::printJson($manager->create(
+    $result = $manager->create(
         (string)$context['environment'],
         (string)$context['build']
-    ));
+    );
+
+    $environment = strtolower(trim((string)$context['environment']));
+    if ($environment === 'production'
+        && class_exists('FeatureFlagService')
+        && FeatureFlagService::BUILD === 'v102-mvp14-production-preflight') {
+        try {
+            $projectRoot = (string)$context['project_root'];
+            require_once $projectRoot . '/bot/cutover/ProductionPreflightService.php';
+            require_once $projectRoot . '/bot/cutover/ProductionPreflightRunner.php';
+            require_once $projectRoot . '/bot/database/ManagedMigrationController.php';
+
+            $result['production_preflight'] = (new ProductionPreflightRunner(
+                $projectRoot,
+                is_array($context['config'] ?? null) ? $context['config'] : [],
+                is_string($context['config_file'] ?? null) ? $context['config_file'] : null
+            ))->run();
+        } catch (Throwable $preflightError) {
+            $message = preg_replace(
+                '~/(?:home|var|tmp|srv)/[^\s\'\"]+~',
+                '[private-path]',
+                $preflightError->getMessage()
+            ) ?? $preflightError->getMessage();
+            $result['production_preflight'] = [
+                'ok' => false,
+                'report_type' => 'mvp-14.8.5-production-preflight',
+                'execution_mode' => 'read-only',
+                'production_switch_allowed' => false,
+                'production_switch_performed' => false,
+                'production_changed' => false,
+                'sensitive_identifiers_exposed' => false,
+                'error_class' => get_class($preflightError),
+                'error_message' => mb_substr(trim($message), 0, 500),
+            ];
+        }
+    }
+
+    BackupCli::printJson($result);
 } catch (Throwable $e) {
     BackupCli::fail($e);
 }
