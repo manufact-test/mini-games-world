@@ -31,7 +31,7 @@ final class EconomyRuntimeActivationController
             'report_type' => 'mvp-14.8.4d1-economy-runtime-activation',
             'state' => (string)($state['state'] ?? 'not_started'),
             'complete' => !empty($state['complete']),
-            'economy_enabled' => $this->economyEnabled($this->readRuntime()),
+            'economy_enabled' => $this->safeEconomyEnabled(),
             'recovery_backup_present' => is_file($this->backupFile),
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
@@ -42,8 +42,12 @@ final class EconomyRuntimeActivationController
     public function run(bool $reset = false): array
     {
         if ($reset) {
-            @unlink($this->stateFile);
-            @unlink($this->backupFile);
+            if (is_file($this->backupFile)) {
+                throw new RuntimeException('Cannot reset while a recovery backup exists. Run without --reset to recover first.');
+            }
+            if (is_file($this->stateFile) && !unlink($this->stateFile)) {
+                throw new RuntimeException('Could not reset economy runtime activation state.');
+            }
         }
 
         $existing = $this->readState();
@@ -51,14 +55,14 @@ final class EconomyRuntimeActivationController
         if ($state === 'completed') {
             $existing['action'] = 'run_noop';
             $existing['idempotent'] = true;
-            $existing['economy_enabled'] = $this->economyEnabled($this->readRuntime());
+            $existing['economy_enabled'] = $this->safeEconomyEnabled();
             $existing['generated_at_utc'] = $this->nowUtc();
             return $this->withFingerprint($existing);
         }
         if ($state === 'failed') {
             $existing['action'] = 'failed_noop';
             $existing['idempotent'] = true;
-            $existing['economy_enabled'] = $this->economyEnabled($this->readRuntime());
+            $existing['economy_enabled'] = $this->safeEconomyEnabled();
             $existing['generated_at_utc'] = $this->nowUtc();
             return $this->withFingerprint($existing);
         }
@@ -68,7 +72,7 @@ final class EconomyRuntimeActivationController
                 'complete' => false,
                 'action' => 'recover',
                 'idempotent' => false,
-                'economy_enabled' => $this->economyEnabled($this->readRuntime()),
+                'economy_enabled' => $this->safeEconomyEnabled(),
                 'rollback' => ['attempted' => true, 'ok' => $restored],
             ];
             $report = $this->withFingerprint($report);
@@ -110,7 +114,9 @@ final class EconomyRuntimeActivationController
                 throw new RuntimeException('Economy runtime audit failed.');
             }
 
-            @unlink($this->backupFile);
+            if (is_file($this->backupFile) && !unlink($this->backupFile)) {
+                throw new RuntimeException('Could not remove the economy runtime recovery backup.');
+            }
             $report = $this->baseReport('completed', true) + [
                 'complete' => true,
                 'action' => 'run',
@@ -134,7 +140,7 @@ final class EconomyRuntimeActivationController
                 'failed_step' => $step,
                 'error_class' => get_class($error),
                 'error_message' => $error->getMessage(),
-                'economy_enabled' => $this->economyEnabled($this->readRuntime()),
+                'economy_enabled' => $this->safeEconomyEnabled(),
                 'rollback' => ['attempted' => true, 'ok' => $rollbackOk],
                 'failed_at_utc' => $this->nowUtc(),
             ];
@@ -148,14 +154,17 @@ final class EconomyRuntimeActivationController
     {
         $runtime = $this->readRuntime();
         $this->writeRuntime($this->withEconomy($runtime, false));
-        @unlink($this->backupFile);
+        if (is_file($this->backupFile) && !unlink($this->backupFile)) {
+            throw new RuntimeException('Could not remove the economy runtime recovery backup.');
+        }
 
+        $cleanReason = trim($reason);
         $report = $this->baseReport('disabled', true) + [
             'complete' => false,
             'action' => 'disable',
             'idempotent' => !$this->economyEnabled($runtime),
             'economy_enabled' => false,
-            'reason' => trim($reason) !== '' ? mb_substr(trim($reason), 0, 180) : 'manual staging rollback',
+            'reason' => $cleanReason !== '' ? substr($cleanReason, 0, 180) : 'manual staging rollback',
             'disabled_at_utc' => $this->nowUtc(),
         ];
         $report = $this->withFingerprint($report);
@@ -190,7 +199,20 @@ final class EconomyRuntimeActivationController
 
     private function economyEnabled(array $runtime): bool
     {
-        return $this->boolValue($runtime['database_runtime']['modules']['economy'] ?? false);
+        $databaseRuntime = $runtime['database_runtime'] ?? [];
+        if (!is_array($databaseRuntime)) return false;
+        $modules = $databaseRuntime['modules'] ?? [];
+        if (!is_array($modules)) return false;
+        return $this->boolValue($modules['economy'] ?? false);
+    }
+
+    private function safeEconomyEnabled(): ?bool
+    {
+        try {
+            return $this->economyEnabled($this->readRuntime());
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function readRuntime(): array
@@ -226,9 +248,9 @@ final class EconomyRuntimeActivationController
     private function createBackup(): void
     {
         $payload = is_file($this->runtimeFile)
-            ? (string)file_get_contents($this->runtimeFile)
+            ? file_get_contents($this->runtimeFile)
             : '__MGW_RUNTIME_ABSENT__';
-        if ($payload === '') {
+        if (!is_string($payload) || $payload === '') {
             throw new RuntimeException('Private runtime config backup source is unreadable.');
         }
         if (file_put_contents($this->backupFile, $payload, LOCK_EX) === false) {
@@ -247,8 +269,9 @@ final class EconomyRuntimeActivationController
             $ok = !is_file($this->runtimeFile) || unlink($this->runtimeFile);
         } else {
             $temporary = $this->runtimeFile . '.restore-' . bin2hex(random_bytes(6));
-            $ok = file_put_contents($temporary, $payload, LOCK_EX) !== false
-                && rename($temporary, $this->runtimeFile);
+            $written = file_put_contents($temporary, $payload, LOCK_EX) !== false;
+            if ($written) @chmod($temporary, 0600);
+            $ok = $written && rename($temporary, $this->runtimeFile);
             if (is_file($temporary)) @unlink($temporary);
             if ($ok) @chmod($this->runtimeFile, 0600);
         }
@@ -277,7 +300,10 @@ final class EconomyRuntimeActivationController
         $directory = dirname($this->stateFile);
         if (!is_dir($directory)) throw new RuntimeException('Private activation state directory is unavailable.');
         $temporary = $this->stateFile . '.tmp-' . bin2hex(random_bytes(6));
-        $json = json_encode($state, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL;
+        $json = json_encode(
+            $state,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+        ) . PHP_EOL;
         if (file_put_contents($temporary, $json, LOCK_EX) === false) {
             throw new RuntimeException('Could not write economy runtime activation state.');
         }
@@ -334,7 +360,9 @@ final class EconomyRuntimeActivationController
     {
         if (is_bool($value)) return $value;
         if (is_int($value)) return $value !== 0;
-        if (is_string($value)) return in_array(strtolower(trim($value)), ['1', 'true', 'yes', 'on', 'enabled'], true);
+        if (is_string($value)) {
+            return in_array(strtolower(trim($value)), ['1', 'true', 'yes', 'on', 'enabled'], true);
+        }
         return false;
     }
 
