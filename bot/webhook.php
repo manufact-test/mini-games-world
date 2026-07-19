@@ -29,6 +29,10 @@ try {
         $handler->handle($update);
     }
 
+    $successHook = $GLOBALS['mgw_webhook_success_hook'] ?? null;
+    unset($GLOBALS['mgw_webhook_success_hook']);
+    if (is_callable($successHook)) $successHook();
+
     http_response_code(200);
     echo 'ok';
 } catch (Throwable $e) {
