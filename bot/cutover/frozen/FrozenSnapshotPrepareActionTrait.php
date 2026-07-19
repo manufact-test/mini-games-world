@@ -39,13 +39,23 @@ trait FrozenSnapshotPrepareActionTrait
         if ($backupId === '') throw new RuntimeException('Frozen snapshot backup ID is missing.');
         $target = $this->restoreRoot . '/restore-' . $this->safeName($backupId);
         if (file_exists($target)) throw new RuntimeException('Frozen snapshot restore target already exists.');
-        $restore = $this->backupManager->restore($externalPath, $target);
-        $primaryData = $this->dataFingerprint($primaryPath . '/data');
-        $externalData = $this->dataFingerprint($externalPath . '/data');
-        $restoredData = $this->dataFingerprint($target);
-        $restoreParity = hash_equals($primaryData['fingerprint'], $externalData['fingerprint'])
-            && hash_equals($primaryData['fingerprint'], $restoredData['fingerprint']);
-        $this->removeRestoreTarget($target);
+
+        $restore = [];
+        $primaryData = [];
+        $externalData = [];
+        $restoredData = [];
+        $restoreParity = false;
+        try {
+            $restore = $this->backupManager->restore($externalPath, $target);
+            $primaryData = $this->dataFingerprint($primaryPath . '/data');
+            $externalData = $this->dataFingerprint($externalPath . '/data');
+            $restoredData = $this->dataFingerprint($target);
+            $restoreParity = hash_equals($primaryData['fingerprint'], $externalData['fingerprint'])
+                && hash_equals($primaryData['fingerprint'], $restoredData['fingerprint']);
+        } finally {
+            if (file_exists($target)) $this->removeRestoreTarget($target);
+        }
+
         $restoreRemoved = !file_exists($target);
         $snapshotOk = ($pair['same_verified_snapshot'] ?? false) === true
             && ($restore['target_ready'] ?? false) === true
