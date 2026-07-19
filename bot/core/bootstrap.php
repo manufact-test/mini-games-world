@@ -88,6 +88,7 @@ require_once __DIR__ . '/../ledger/LegacyFinancialStatusNormalizer.php';
 require_once __DIR__ . '/../ledger/LegacyFinancialArchiveImportService.php';
 require_once __DIR__ . '/../ledger/LegacyFinancialArchiveDeltaService.php';
 require_once __DIR__ . '/../history/RuntimeHistoryRepository.php';
+require_once __DIR__ . '/../shop/RuntimeShopSchemaInstaller.php';
 require_once __DIR__ . '/../shop/RuntimeShopRepository.php';
 require_once __DIR__ . '/../shop/ShopRuntimeBridge.php';
 require_once __DIR__ . '/../services/AuthService.php';
