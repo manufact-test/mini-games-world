@@ -20,8 +20,9 @@ require_once $projectRoot . '/bot/ledger/LegacyEconomyShadowSyncService.php';
 require_once $projectRoot . '/bot/ledger/LegacyOpeningBalanceImportService.php';
 require_once $projectRoot . '/bot/ledger/LegacyFinancialStatusNormalizer.php';
 require_once $projectRoot . '/bot/ledger/LegacyFinancialArchiveImportService.php';
+require_once $projectRoot . '/bot/ledger/LegacyEconomyDeltaImportService.php';
+require_once $projectRoot . '/bot/ledger/LegacyEconomyRuntimeReconciliationService.php';
 require_once $projectRoot . '/bot/migration/StagingJsonDbReconciliationService.php';
-require_once $projectRoot . '/bot/migration/LegacyOpeningBalanceOwnershipReconciliationService.php';
 require_once $projectRoot . '/bot/migration/StagingJsonDbFinalReconciliationService.php';
 
 $options = getopt('', ['prepare', 'status']);
