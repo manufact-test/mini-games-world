@@ -10,13 +10,16 @@ $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
 require_once $projectRoot . '/bot/cutover/seal/SealedSnapshotControlService.php';
 
-$options = getopt('', ['seal', 'release', 'status', 'reason:']);
-$modes = (int)isset($options['seal']) + (int)isset($options['release']) + (int)isset($options['status']);
+$options = getopt('', ['seal', 'release', 'emergency-release', 'status', 'reason:']);
+$modes = (int)isset($options['seal'])
+    + (int)isset($options['release'])
+    + (int)isset($options['emergency-release'])
+    + (int)isset($options['status']);
 $lockHandle = null;
 $exitCode = 0;
 
 try {
-    if ($modes > 1) throw new InvalidArgumentException('Choose only one mode: --seal, --release or --status.');
+    if ($modes > 1) throw new InvalidArgumentException('Choose only one mode: --seal, --release, --emergency-release or --status.');
     $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
     if ($environment !== 'staging') throw new RuntimeException('Sealed snapshot control is enabled only in staging.');
 
@@ -25,9 +28,9 @@ try {
     $privateDir = is_string($configFile ?? null) ? dirname($configFile) : dirname($projectRoot) . '/_private_mgw';
     if (!is_dir($privateDir)) throw new RuntimeException('Private runtime directory is unavailable.');
 
-    $lockHandle = fopen($privateDir . '/sealed-snapshot-control.lock', 'c+');
+    $lockHandle = fopen($privateDir . '/cutover-rehearsal.lock', 'c+');
     if ($lockHandle === false || !flock($lockHandle, LOCK_EX | LOCK_NB)) {
-        throw new RuntimeException('Another sealed snapshot command is already running.');
+        throw new RuntimeException('Another cutover rehearsal command is already running.');
     }
 
     $service = new SealedSnapshotControlService(
@@ -38,6 +41,9 @@ try {
     if (isset($options['seal'])) {
         $result = $service->seal();
         $result['execution_mode'] = 'seal';
+    } elseif (isset($options['emergency-release'])) {
+        $result = $service->emergencyRelease((string)($options['reason'] ?? 'emergency sealed snapshot release'));
+        $result['execution_mode'] = 'emergency-release';
     } elseif (isset($options['release'])) {
         $result = $service->release((string)($options['reason'] ?? 'sealed snapshot rehearsal completed'));
         $result['execution_mode'] = 'release';
@@ -47,6 +53,7 @@ try {
     }
     $result['control_file_private'] = true;
     $result['production_changed'] = false;
+    if (($result['ok'] ?? false) !== true && !isset($options['status'])) $exitCode = 2;
     fwrite(STDOUT, json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL);
 } catch (Throwable $error) {
     $exitCode = 1;
