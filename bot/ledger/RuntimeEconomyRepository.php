@@ -24,6 +24,7 @@ final class RuntimeEconomyRepository
         $integrity = new LedgerIntegrityVerifier($database);
         $shadow = new LegacyEconomyShadowSyncService($storage, $database);
         $shadowReport = $shadow->run();
+        $bootstrapReport = (new RuntimeEconomyBalanceBootstrapService($database, $ledger))->ensureFromShadow();
         $delta = new LegacyEconomyDeltaImportService($database, $ledger, $integrity);
         $deltaReport = $delta->run();
         $reconciliation = (new LegacyEconomyRuntimeReconciliationService(
@@ -44,6 +45,7 @@ final class RuntimeEconomyRepository
             'action' => 'synchronize',
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
             'shadow' => $this->compactShadow($shadowReport),
+            'balance_bootstrap' => $this->compactBootstrap($bootstrapReport),
             'delta' => $this->compactDelta($deltaReport),
             'reconciliation' => $this->compactReconciliation($reconciliation),
             'production_changed' => false,
@@ -132,6 +134,17 @@ final class RuntimeEconomyRepository
             'integrity_ok' => (int)($integrity['corrupted_count'] ?? 0) === 0,
             'checked_count' => (int)($integrity['checked_count'] ?? 0),
             'corrupted_count' => (int)($integrity['corrupted_count'] ?? 0),
+        ];
+    }
+
+    private function compactBootstrap(array $report): array
+    {
+        return [
+            'source_user_count' => (int)($report['source_user_count'] ?? 0),
+            'created_count' => (int)($report['created_count'] ?? 0),
+            'unchanged_count' => (int)($report['unchanged_count'] ?? 0),
+            'zero_balance_count' => (int)($report['zero_balance_count'] ?? 0),
+            'credited_total' => (int)($report['credited_total'] ?? 0),
         ];
     }
 
