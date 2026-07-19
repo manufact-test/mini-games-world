@@ -80,9 +80,17 @@ final class StagingOperationsRunner
                 static fn(mixed $value): string => trim((string)$value),
                 is_array($result['blockers'] ?? null) ? $result['blockers'] : []
             ), static fn(string $value): bool => $value !== ''));
+            if (($result['production_changed'] ?? false) === true) {
+                $blockers[] = 'Operation reported an unexpected production change.';
+            }
+            if (($result['sensitive_identifiers_exposed'] ?? false) === true) {
+                $blockers[] = 'Operation reported exposed sensitive identifiers.';
+            }
+            $blockers = array_values(array_unique($blockers));
             $ok = ($result['ok'] ?? false) === true && $blockers === [];
 
             if (!$ok) {
+                $result['blockers'] = $blockers;
                 $rollback = $this->attemptRollback($pending, $result, null);
                 $safeResult = $this->safeResult($result);
                 $state['operations'][$id] = [
@@ -101,13 +109,17 @@ final class StagingOperationsRunner
 
                 $report = $this->statusFromState($state, 'failed');
                 $report += [
-                    'ok' => false,
                     'action' => 'run',
                     'idempotent' => false,
                     'operation_id' => $id,
                     'operation_result' => $safeResult,
                     'rollback' => $rollback,
                 ];
+                $report['ok'] = false;
+                $report['production_changed'] = !empty($safeResult['production_changed'])
+                    || !empty($rollback['production_changed']);
+                $report['sensitive_identifiers_exposed'] = !empty($safeResult['sensitive_identifiers_exposed'])
+                    || !empty($rollback['sensitive_identifiers_exposed']);
                 return $this->withFingerprint($report);
             }
 
@@ -126,7 +138,6 @@ final class StagingOperationsRunner
 
             $report = $this->statusFromState($state, 'completed');
             $report += [
-                'ok' => true,
                 'action' => 'run',
                 'idempotent' => false,
                 'operation_id' => $id,
@@ -134,6 +145,9 @@ final class StagingOperationsRunner
                 'rollback' => ['attempted' => false, 'ok' => true],
                 'completed_at_utc' => $this->nowUtc(),
             ];
+            $report['ok'] = true;
+            $report['production_changed'] = false;
+            $report['sensitive_identifiers_exposed'] = false;
             return $this->withFingerprint($report);
         } catch (Throwable $error) {
             $rollback = $this->attemptRollback($pending, $result, $error);
@@ -155,7 +169,6 @@ final class StagingOperationsRunner
 
             $report = $this->statusFromState($state, 'failed');
             $report += [
-                'ok' => false,
                 'action' => 'run',
                 'idempotent' => false,
                 'operation_id' => $id,
@@ -163,6 +176,9 @@ final class StagingOperationsRunner
                 'error_message' => $message,
                 'rollback' => $rollback,
             ];
+            $report['ok'] = false;
+            $report['production_changed'] = !empty($rollback['production_changed']);
+            $report['sensitive_identifiers_exposed'] = !empty($rollback['sensitive_identifiers_exposed']);
             return $this->withFingerprint($report);
         }
     }
@@ -208,13 +224,14 @@ final class StagingOperationsRunner
         $operations = [];
         foreach ($eligible as $id => $operation) {
             $item = is_array($state['operations'][$id] ?? null) ? $state['operations'][$id] : [];
+            $sameBuild = (string)($item['build'] ?? '') === $operation->build();
             $operationState = $this->operationState($state, $operation);
             $counts[$operationState]++;
             $operations[] = [
                 'id' => $id,
                 'build' => $operation->build(),
                 'state' => $operationState,
-                'attempts' => (int)($item['attempts'] ?? 0),
+                'attempts' => $sameBuild ? (int)($item['attempts'] ?? 0) : 0,
             ];
         }
 
@@ -255,10 +272,12 @@ final class StagingOperationsRunner
 
     private function safeResult(array $result): array
     {
+        $productionChanged = ($result['production_changed'] ?? false) === true;
+        $sensitiveExposed = ($result['sensitive_identifiers_exposed'] ?? false) === true;
         $safe = $this->scrub($result, 0);
         if (!is_array($safe)) $safe = [];
-        $safe['production_changed'] = false;
-        $safe['sensitive_identifiers_exposed'] = false;
+        $safe['production_changed'] = $productionChanged;
+        $safe['sensitive_identifiers_exposed'] = $sensitiveExposed;
         return $safe;
     }
 
@@ -285,7 +304,7 @@ final class StagingOperationsRunner
     {
         $value = preg_replace('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', '[redacted-email]', $value) ?? $value;
         $value = preg_replace('~/(?:home|var|tmp|srv)/[^\s\'\"]+~', '[private-path]', $value) ?? $value;
-        $value = preg_replace('/\b(?:user|account|mgw|game|tx)_[A-Za-z0-9-]{4,}\b/i', '[redacted-id]', $value) ?? $value;
+        $value = preg_replace('/\b(?:user|account|mgw|game|tx)_[A-Za-z0-9_-]{4,}\b/i', '[redacted-id]', $value) ?? $value;
         return mb_substr($value, 0, $limit);
     }
 
