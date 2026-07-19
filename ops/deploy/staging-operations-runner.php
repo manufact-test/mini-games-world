@@ -15,6 +15,8 @@ require_once $projectRoot . '/bot/operations/StagingOperationDefinition.php';
 require_once $projectRoot . '/bot/operations/StagingOperationsRunner.php';
 require_once $projectRoot . '/bot/operations/StagingShopRuntimeOperation.php';
 require_once $projectRoot . '/bot/operations/StagingPaymentRuntimeOperation.php';
+require_once $projectRoot . '/bot/operations/StagingWeeklyBonusRuntimeOperation.php';
+require_once $projectRoot . '/bot/operations/StagingDatabaseRuntimeRegressionOperation.php';
 require_once $projectRoot . '/bot/operations/StagingOperationRegistry.php';
 
 $options = getopt('', ['run', 'status']);
@@ -46,7 +48,7 @@ try {
     if ($environment !== 'staging') {
         throw new RuntimeException('The permanent operations runner is enabled only in staging.');
     }
-    if (FeatureFlagService::BUILD !== 'v99-mvp14-db-payment-routing') {
+    if (FeatureFlagService::BUILD !== 'v100-mvp14-db-weekly-bonus-routing') {
         throw new RuntimeException('Unexpected application build for the staging operations runner.');
     }
 
