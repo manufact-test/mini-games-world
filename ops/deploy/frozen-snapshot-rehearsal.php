@@ -45,9 +45,9 @@ try {
     $privateDir = is_string($configFile ?? null) ? dirname($configFile) : dirname($projectRoot) . '/_private_mgw';
     if (!is_dir($privateDir)) throw new RuntimeException('Private runtime directory is unavailable.');
 
-    $lockHandle = fopen($privateDir . '/frozen-snapshot-rehearsal.lock', 'c+');
+    $lockHandle = fopen($privateDir . '/cutover-rehearsal.lock', 'c+');
     if ($lockHandle === false || !flock($lockHandle, LOCK_EX | LOCK_NB)) {
-        throw new RuntimeException('Another frozen snapshot rehearsal command is already running.');
+        throw new RuntimeException('Another cutover rehearsal command is already running.');
     }
 
     $backupSettings = BackupConfigLoader::load($projectRoot, $environment);
