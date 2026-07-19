@@ -58,7 +58,10 @@ final class FreezeDrainRehearsalService
             $removed = count(is_array($data['queue'] ?? null) ? $data['queue'] : []);
             $resetUsers = 0;
 
-            foreach ($data['users'] ?? [] as &$user) {
+            if (!isset($data['users']) || !is_array($data['users'])) {
+                $data['users'] = [];
+            }
+            foreach ($data['users'] as &$user) {
                 if (!is_array($user) || (string)($user['status'] ?? '') !== 'searching') {
                     continue;
                 }
