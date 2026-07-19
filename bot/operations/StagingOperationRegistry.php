@@ -148,6 +148,12 @@ final class StagingOperationRegistry
                 $storage,
                 $database
             ))->definition(),
+            (new StagingRuntimeSwitchRollbackRehearsalOperation(
+                $config,
+                $storage,
+                $database,
+                $privateDir
+            ))->definition(),
         ];
     }
 }

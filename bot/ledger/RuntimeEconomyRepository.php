@@ -77,15 +77,24 @@ final class RuntimeEconomyRepository
             $blockers[] = (string)$reason;
         }
         $blockers = array_values(array_unique(array_filter($blockers, static fn(string $value): bool => $value !== '')));
+        $compactReconciliation = $this->compactReconciliation($reconciliation);
 
         return [
             'ok' => $blockers === [],
             'read_only' => true,
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
             'source_fingerprint' => (string)($shadowReport['source_fingerprint'] ?? ''),
+            'source_user_count' => (int)($compactReconciliation['source_user_count'] ?? 0),
+            'source_asset_count' => (int)($compactReconciliation['source_asset_count'] ?? 0),
+            'source_totals' => $compactReconciliation['source_totals'] ?? [],
+            'database_totals' => $compactReconciliation['database_totals'] ?? [],
+            'planned_delta_count' => (int)($compactReconciliation['planned_delta_count'] ?? 0),
+            'integrity_failure_count' => (int)($compactReconciliation['integrity_failure_count'] ?? 0),
+            'ledger_entry_count' => (int)($compactReconciliation['ledger_entry_count'] ?? 0),
+            'active_reservation_count' => (int)($compactReconciliation['active_reservation_count'] ?? 0),
             'shadow_delta_count' => $shadowDeltaCount,
             'shadow' => $this->compactShadow($shadowReport),
-            'reconciliation' => $this->compactReconciliation($reconciliation),
+            'reconciliation' => $compactReconciliation,
             'blockers' => $blockers,
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
