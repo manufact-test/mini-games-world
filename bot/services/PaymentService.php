@@ -307,10 +307,25 @@ final class PaymentService
     public function adminList(array $db, int $limit = 12): string
     {
         $summary = $this->adminSummary($db);
-        $payments = array_reverse($db['payments'] ?? []);
+        $payments = array_values(array_filter(
+            array_reverse($db['payments'] ?? []),
+            static fn(mixed $payment): bool => is_array($payment)
+        ));
+
+        $waitingPayments = [];
+        $processedPayments = [];
+        foreach ($payments as $payment) {
+            $status = (string)($payment['status'] ?? 'draft');
+            if ($this->isWaitingStatus($status)) {
+                $waitingPayments[] = $payment;
+            } else {
+                $processedPayments[] = $payment;
+            }
+        }
 
         $lines = ["💳 Платежи"];
-        $lines[] = "\nЗаявки создаются из Mini App. Начисление делает админ вручную.";
+        $lines[] = "
+Заявки создаются из Mini App. Начисление делает админ вручную.";
         $lines[] = "Всего заявок: " . $summary['total'];
         $lines[] = "Ожидают решения: " . $summary['waiting'];
         $lines[] = "Начислены: " . $summary['paid'];
@@ -327,31 +342,45 @@ final class PaymentService
         }
 
         if ($payments) {
-            $lines[] = "\nПоследние заявки:";
-            $shown = 0;
-
-            foreach ($payments as $payment) {
-                if (!is_array($payment)) {
-                    continue;
+            $visibleWaiting = array_slice($waitingPayments, 0, max(0, $limit));
+            if ($visibleWaiting) {
+                $lines[] = "
+⏳ Ожидают решения:";
+                foreach ($visibleWaiting as $payment) {
+                    $lines[] = "
+" . $this->adminPaymentCard($payment, $db);
                 }
+            }
 
-                $lines[] = "\n" . $this->adminPaymentCard($payment, $db);
-                $shown++;
+            $hiddenWaiting = count($waitingPayments) - count($visibleWaiting);
+            if ($hiddenWaiting > 0) {
+                $lines[] = "
+Ещё ожидают решения: {$hiddenWaiting}. Обработайте показанные заявки и обновите список.";
+            }
 
-                if ($shown >= $limit) {
-                    break;
+            $remaining = max(0, $limit - count($visibleWaiting));
+            $visibleProcessed = array_slice($processedPayments, 0, $remaining);
+            if ($visibleProcessed) {
+                $lines[] = "
+Последние обработанные:";
+                foreach ($visibleProcessed as $payment) {
+                    $lines[] = "
+" . $this->adminPaymentCard($payment, $db);
                 }
             }
         } else {
-            $lines[] = "\nПлатежных заявок пока нет.";
+            $lines[] = "
+Платежных заявок пока нет.";
         }
 
-        $lines[] = "\nКоманды:";
+        $lines[] = "
+Команды:";
         $lines[] = "/mgw_private_admin_7291_payment ID — открыть заявку";
         $lines[] = "/mgw_private_admin_7291_payment_apply ID — подтвердить и начислить";
         $lines[] = "/mgw_private_admin_7291_payment_reject ID причина — отклонить";
 
-        return implode("\n", $lines);
+        return implode("
+", $lines);
     }
 
     public function adminSummary(array $db): array
