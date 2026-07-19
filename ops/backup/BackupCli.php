@@ -28,6 +28,7 @@ final class BackupCli
         return [
             'project_root' => $projectRoot,
             'config' => $config,
+            'config_file' => isset($configFile) && is_string($configFile) ? $configFile : null,
             'environment' => $environment,
             'build' => self::detectBuild($projectRoot),
             'settings' => $settings,
