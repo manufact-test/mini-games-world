@@ -7,7 +7,8 @@ final class StagingOperationRegistry
         array $config,
         StorageAdapterInterface $storage,
         DatabaseConnectionInterface $database,
-        array $migrationStatus
+        array $migrationStatus,
+        string $privateDir
     ): array {
         return [
             new StagingOperationDefinition(
@@ -124,6 +125,12 @@ final class StagingOperationRegistry
                     ];
                 }
             ),
+            (new StagingShopRuntimeOperation(
+                $config,
+                $storage,
+                $database,
+                $privateDir
+            ))->definition(),
         ];
     }
 }
