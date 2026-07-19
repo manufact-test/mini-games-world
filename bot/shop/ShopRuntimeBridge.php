@@ -30,7 +30,9 @@ final class ShopRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        return $this->enabled() && strtolower(trim($action)) === 'shop_order';
+        if (!$this->enabled()) return false;
+        $action = strtolower(trim($action));
+        return $action === '' || $action === 'shop_order';
     }
 
     public function synchronizeCurrentJson(): ?array
