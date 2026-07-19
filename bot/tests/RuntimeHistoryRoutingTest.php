@@ -78,7 +78,16 @@ try {
     new RuntimeStorageRouter([
         'environment' => 'staging',
         'storage_driver' => 'json',
-        'database' => ['enabled' => true, 'dsn' => 'mysql:host=localhost;dbname=test', 'username' => 'test'],
+        'database' => [
+            'enabled' => true,
+            'driver' => 'mysql',
+            'host' => 'localhost',
+            'port' => 3306,
+            'name' => 'test',
+            'user' => 'test',
+            'password' => 'test-password',
+            'charset' => 'utf8mb4',
+        ],
         'feature_flags' => [
             'database_runtime' => [
                 'enabled' => true,
