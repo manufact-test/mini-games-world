@@ -14,6 +14,7 @@ require $root . '/database/MigrationRunner.php';
 require $root . '/storage/RuntimeStorageRouter.php';
 require $root . '/realtime/RealtimeDatabaseStore.php';
 require $root . '/realtime/RuntimeRealtimeRepository.php';
+require $root . '/realtime/LegacyRealtimeShadowSyncService.php';
 require $root . '/realtime/RealtimeRuntimeBridge.php';
 require $root . '/notifications/RuntimeNotificationRepository.php';
 require $root . '/ledger/LedgerIntegrity.php';
