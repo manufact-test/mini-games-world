@@ -60,9 +60,7 @@ trait ProductionCutoverPerformTrait
 
         $import = $this->importAll($snapshot);
         $context['mutation_stage'] = 'database_imported';
-        if (empty($import['ok'])) {
-            throw new RuntimeException('Production JSON to database import did not complete cleanly.');
-        }
+        $this->assertImportReportComplete($import);
 
         $activatedRuntime = $this->activatedRuntime(
             $maintenanceRuntime,
@@ -177,5 +175,38 @@ trait ProductionCutoverPerformTrait
             'finished_at_utc' => $finishedAt,
             'next_step' => 'Run the manual production smoke checklist. Roll back to JSON immediately if any check fails.',
         ];
+    }
+
+    private function assertImportReportComplete(array $import): void
+    {
+        if (($import['ok'] ?? false) !== true) {
+            throw new RuntimeException('Production JSON to database import did not complete cleanly.');
+        }
+
+        foreach ([
+            'realtime_shadow',
+            'economy_shadow',
+            'accounts',
+            'opening_balances',
+            'ownership',
+            'realtime_normalized',
+            'financial_archive',
+        ] as $section) {
+            $report = is_array($import[$section] ?? null) ? $import[$section] : [];
+            if (($report['ok'] ?? false) !== true) {
+                throw new RuntimeException('Production import section failed: ' . $section . '.');
+            }
+        }
+
+        if ((int)($import['financial_archive']['unknown_status_count'] ?? 0) !== 0) {
+            throw new RuntimeException('Production financial archive contains unknown statuses.');
+        }
+
+        $schemas = is_array($import['runtime_schemas'] ?? null) ? $import['runtime_schemas'] : [];
+        foreach (['shop_ok', 'payments_ok', 'weekly_bonus_ok'] as $schemaFlag) {
+            if (($schemas[$schemaFlag] ?? false) !== true) {
+                throw new RuntimeException('Production runtime schema verification failed: ' . $schemaFlag . '.');
+            }
+        }
     }
 }
