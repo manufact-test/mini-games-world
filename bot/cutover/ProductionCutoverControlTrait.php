@@ -40,7 +40,8 @@ trait ProductionCutoverControlTrait
             $stateContractError = $this->statusStateContractError(
                 $state,
                 $routerEnabled,
-                $enabledModules
+                $enabledModules,
+                $runtime
             );
         }
 
@@ -178,7 +179,8 @@ trait ProductionCutoverControlTrait
     private function statusStateContractError(
         array $state,
         bool $routerEnabled,
-        array $enabledModules
+        array $enabledModules,
+        array $runtime
     ): string {
         $stateName = strtolower(trim((string)($state['state'] ?? '')));
         $backupPresent = is_file($this->runtimeBackupFile)
@@ -191,10 +193,19 @@ trait ProductionCutoverControlTrait
                 ? 'Recovery artifacts exist without a production cutover state.'
                 : '';
         }
+
+        if (trim((string)($state['build'] ?? '')) !== self::BUILD) {
+            return 'Production cutover state is bound to an unexpected build.';
+        }
+
         if (in_array($stateName, self::ACTIVE_STATES, true)) {
-            return $backupPresent
-                ? ''
-                : 'Active production cutover state is missing the exact runtime backup.';
+            if (!$backupPresent) return 'Active production cutover state is missing the exact runtime backup.';
+            foreach (['plan_fingerprint', 'source_fingerprint'] as $fingerprint) {
+                if (preg_match('/^[a-f0-9]{64}$/', strtolower(trim((string)($state[$fingerprint] ?? '')))) !== 1) {
+                    return 'Active production cutover state has an invalid ' . $fingerprint . '.';
+                }
+            }
+            return '';
         }
         if ($stateName === 'rollback_failed') {
             return 'Production cutover rollback is incomplete and requires immediate operator review.';
@@ -214,9 +225,47 @@ trait ProductionCutoverControlTrait
             if (!$backupPresent) return 'Completed cutover is missing the preserved rollback runtime backup.';
             if (!$routerEnabled) return 'Completed cutover does not have database runtime routing enabled.';
             if ($writeBlockActive) return 'Completed cutover still has the JSON write block active.';
+            if (($state['runtime_backup_present'] ?? false) !== true
+                || ($state['database_runtime_published'] ?? false) !== true
+                || ($state['json_write_block_active'] ?? true) !== false) {
+                return 'Completed cutover state is missing required publication evidence.';
+            }
+            if (trim((string)($state['completed_at_utc'] ?? '')) === '') {
+                return 'Completed cutover state is missing its completion timestamp.';
+            }
             $missing = array_values(array_diff(self::MODULES, $enabledModules));
             if ($missing !== []) {
                 return 'Completed cutover is missing database runtime modules: ' . implode(', ', $missing) . '.';
+            }
+
+            $planFingerprint = strtolower(trim((string)($state['plan_fingerprint'] ?? '')));
+            $sourceFingerprint = strtolower(trim((string)($state['source_fingerprint'] ?? '')));
+            if (preg_match('/^[a-f0-9]{64}$/', $planFingerprint) !== 1
+                || preg_match('/^[a-f0-9]{64}$/', $sourceFingerprint) !== 1) {
+                return 'Completed cutover state contains invalid activation fingerprints.';
+            }
+
+            $databaseRuntime = is_array($runtime['database_runtime'] ?? null)
+                ? $runtime['database_runtime']
+                : [];
+            if (($databaseRuntime['production_activated'] ?? false) !== true
+                || trim((string)($databaseRuntime['activation_build'] ?? '')) !== self::BUILD) {
+                return 'Completed cutover runtime is missing the exact production activation marker.';
+            }
+            if (!hash_equals(
+                $planFingerprint,
+                strtolower(trim((string)($databaseRuntime['activation_plan_fingerprint'] ?? '')))
+            )) {
+                return 'Completed cutover plan fingerprint does not match the active runtime.';
+            }
+            if (!hash_equals(
+                $sourceFingerprint,
+                strtolower(trim((string)($databaseRuntime['activation_source_fingerprint'] ?? '')))
+            )) {
+                return 'Completed cutover source fingerprint does not match the active runtime.';
+            }
+            if (strtolower(trim((string)($databaseRuntime['rollback_driver'] ?? ''))) !== RuntimeStorageRouter::DRIVER_JSON) {
+                return 'Completed cutover runtime does not preserve JSON as the rollback driver.';
             }
             return '';
         }
