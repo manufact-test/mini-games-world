@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimePrimaryStagingEvidenceVerifier.php';
+
 final class RuntimePrimaryStagingEvidenceV2Verifier
 {
     public const MANIFEST_VERSION = 'v2-staging-db-primary-evidence';
