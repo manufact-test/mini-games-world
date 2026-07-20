@@ -77,6 +77,16 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
     $assertions++;
     if (!$condition) throw new RuntimeException($message);
 };
+$assertThrows = static function (callable $callback, string $messagePart) use (&$assertions): void {
+    $assertions++;
+    try {
+        $callback();
+    } catch (Throwable $error) {
+        if (str_contains(strtolower($error->getMessage()), strtolower($messagePart))) return;
+        throw new RuntimeException('Unexpected exception: ' . $error->getMessage());
+    }
+    throw new RuntimeException('Expected exception was not thrown.');
+};
 
 $makeFixture = static function () use ($projectRoot): array {
     $root = sys_get_temp_dir() . '/mgw-production-cutover-state-' . bin2hex(random_bytes(6));
@@ -141,12 +151,37 @@ try {
     $assertTrue(($rollbackNoop['state_written'] ?? true) === false, 'Rollback no-op must not create rolled_back state');
     $assertTrue(!is_file($private . '/production-cutover.json'), 'Rollback no-op must leave state absent');
 
-    file_put_contents($private . '/production-cutover.json', json_encode(['state' => 'rolled_back'], JSON_THROW_ON_ERROR));
+    file_put_contents($private . '/production-cutover.json', json_encode([
+        'state' => 'rolled_back',
+        'runtime_restored' => true,
+        'json_write_block_removed' => true,
+        'database_runtime_disabled' => true,
+    ], JSON_THROW_ON_ERROR));
     file_put_contents($private . '/production-cutover.runtime.backup', '__MGW_RUNTIME_ABSENT__');
     $rearmed = $emergencyControl->rearm();
     $assertTrue(($rearmed['action'] ?? '') === 'rearmed', 'Reviewed rollback must support explicit safe rearm');
     $assertTrue(!is_file($private . '/production-cutover.json'), 'Rearm must archive the terminal state');
     $assertTrue(!is_file($private . '/production-cutover.runtime.backup'), 'Rearm must archive the runtime backup');
+} finally {
+    $removeFixture($fixture);
+}
+
+[$fixture, $private, $data, $configFile] = $makeFixture();
+try {
+    file_put_contents($private . '/production-cutover.json', json_encode([
+        'state' => 'rollback_failed',
+        'runtime_restored' => false,
+        'json_write_block_removed' => true,
+        'database_runtime_disabled' => true,
+    ], JSON_THROW_ON_ERROR));
+    file_put_contents($private . '/production-cutover.runtime.backup', '__MGW_RUNTIME_ABSENT__');
+    $subject = $runner($data, $configFile, new ProductionCutoverConfig(false, false), false);
+    $assertThrows(
+        static fn() => $subject->rearm(),
+        'fully completed reviewed rollback'
+    );
+    $assertTrue(is_file($private . '/production-cutover.json'), 'Failed rollback state must remain available for incident review');
+    $assertTrue(is_file($private . '/production-cutover.runtime.backup'), 'Failed rollback backup must not be archived by rearm');
 } finally {
     $removeFixture($fixture);
 }
