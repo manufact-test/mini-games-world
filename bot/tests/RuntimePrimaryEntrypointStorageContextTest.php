@@ -44,10 +44,9 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
 
 $assertTrue(RuntimePrimaryEntrypointStorageContext::installed() === false, 'Context must start empty');
 $assertTrue(RuntimePrimaryEntrypointStorageContext::storageOrNull() === null, 'Empty context must expose null storage');
-$assertTrue(
-    (RuntimePrimaryEntrypointStorageContext::safeReport()['storage_driver'] ?? '') === 'json',
-    'Empty context must preserve the JSON default report'
-);
+$empty = RuntimePrimaryEntrypointStorageContext::safeReport();
+$assertTrue(($empty['storage_driver'] ?? '') === 'json', 'Empty context must preserve the JSON default report');
+$assertTrue(($empty['legacy_json_bridges_suppressed'] ?? true) === false, 'Empty context must preserve legacy JSON bridges');
 $assertThrows(
     static fn() => RuntimePrimaryEntrypointStorageContext::storage(),
     'context is not installed'
@@ -80,12 +79,25 @@ $assertThrows(
     static fn() => RuntimePrimaryEntrypointStorageContext::install($database, 'api', $missingV3),
     'requires selector-aware evidence v3'
 );
-$missingSelector = $report;
-$missingSelector['selector_evidence_fingerprint'] = '';
+$invalidRevision = $report;
+$invalidRevision['state_revision'] = 0;
 $assertThrows(
-    static fn() => RuntimePrimaryEntrypointStorageContext::install($database, 'api', $missingSelector),
-    'valid selector evidence fingerprint'
+    static fn() => RuntimePrimaryEntrypointStorageContext::install($database, 'api', $invalidRevision),
+    'valid state revision'
 );
+foreach ([
+    'state_sha256' => 'state fingerprint',
+    'database_identity_fingerprint' => 'database identity fingerprint',
+    'evidence_fingerprint' => 'evidence fingerprint',
+    'selector_evidence_fingerprint' => 'selector evidence fingerprint',
+] as $field => $message) {
+    $invalid = $report;
+    $invalid[$field] = '';
+    $assertThrows(
+        static fn() => RuntimePrimaryEntrypointStorageContext::install($database, 'api', $invalid),
+        'valid ' . $message
+    );
+}
 $assertThrows(
     static fn() => RuntimePrimaryEntrypointStorageContext::install($database, 'admin', $report),
     'supports only api or webhook'
@@ -99,6 +111,7 @@ $assertTrue(RuntimePrimaryEntrypointStorageContext::storage() === $database, 'Sa
 $safe = RuntimePrimaryEntrypointStorageContext::safeReport();
 $assertTrue(($safe['entrypoint'] ?? '') === 'api', 'Context report must preserve the entrypoint');
 $assertTrue(($safe['application_entrypoint_routed'] ?? false) === true, 'Installed context must report request-local routing');
+$assertTrue(($safe['legacy_json_bridges_suppressed'] ?? false) === true, 'Installed context must report legacy bridge suppression');
 $assertTrue(($safe['evidence_manifest_version'] ?? '') === RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION, 'Context must report evidence v3');
 $assertTrue(($safe['selector_contract_version'] ?? '') === RuntimePrimaryStagingSelectorEvidence::CONTRACT_VERSION, 'Context must report selector contract');
 $assertTrue(($safe['production_changed'] ?? true) === false, 'Context must not claim production mutation');
