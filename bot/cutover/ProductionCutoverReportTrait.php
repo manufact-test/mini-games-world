@@ -109,7 +109,7 @@ trait ProductionCutoverReportTrait
             'mutation_stage' => $mutationStage,
             'rollback' => $rollback,
             'rollback_succeeded' => $rollbackSucceeded,
-            'storage_driver' => $databaseRuntimeDisabled
+            'storage_driver' => $rollbackSucceeded
                 ? RuntimeStorageRouter::DRIVER_JSON
                 : 'unknown',
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
