@@ -77,6 +77,30 @@ trait ProductionCutoverControlTrait
     public function rollback(string $reason = 'manual production rollback'): array
     {
         $this->assertControlEnvironmentAndBuild();
+
+        try {
+            $state = $this->readState();
+        } catch (Throwable $error) {
+            if (!$this->recoveryArtifactsPresent()) {
+                return $this->recoveryBlockedReport(
+                    $error,
+                    'manual_rollback_invalid_state_without_recovery_artifacts',
+                    'invalid'
+                );
+            }
+            return $this->rollbackInternal($reason);
+        }
+
+        $stateName = strtolower(trim((string)($state['state'] ?? '')));
+        if ($stateName !== '' && !$this->recoveryArtifactsPresent()) {
+            return $this->recoveryBlockedReport(
+                new RuntimeException('Manual rollback requires exact recovery artifacts for the recorded cutover state.'),
+                'manual_rollback_state_without_recovery_artifacts',
+                $stateName,
+                (string)($state['started_at_utc'] ?? '')
+            );
+        }
+
         return $this->rollbackInternal($reason);
     }
 
