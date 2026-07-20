@@ -73,7 +73,7 @@ final class RuntimePrimaryStagingActivationGuard
         $evidence = (new RuntimePrimaryStagingEvidenceV2Gate($this->projectRoot))->verify($manifest);
         if (($evidence['ok'] ?? false) !== true) {
             throw new RuntimeException(
-                'Staging activation evidence v2 is not valid: '
+                'Staging activation evidence is not valid: '
                 . implode('; ', array_map('strval', (array)($evidence['blockers'] ?? [])))
             );
         }
@@ -101,7 +101,7 @@ final class RuntimePrimaryStagingActivationGuard
 
         $first = is_array($manifest['first_rehearsal'] ?? null) ? $manifest['first_rehearsal'] : [];
         $targetRevision = (int)($first['target_revision'] ?? 0);
-        $targetSha = strtolower(trim((string)($first['target_sha256'] ?? '')));
+        $targetSha = strtolower(trim((string)($first['target_sha256'] ?? ''));
         if ($targetRevision < 1 || preg_match('/^[a-f0-9]{64}$/', $targetSha) !== 1) {
             throw new RuntimeException('Staging activation evidence target revision or fingerprint is invalid.');
         }
@@ -147,7 +147,7 @@ final class RuntimePrimaryStagingActivationGuard
             'database_identity_fingerprint' => $databaseIdentity,
             'evidence_fingerprint' => $evidenceFingerprint,
             'evidence_file_sha256' => (string)($loaded['file_sha256'] ?? ''),
-            'evidence_manifest_version' => RuntimePrimaryStagingEvidenceV2Verifier::MANIFEST_VERSION,
+            'evidence_manifest_version' => (string)($manifest['manifest_version'] ?? ''),
             'evidence_age_seconds' => $this->timestamp() - (int)strtotime((string)$manifest['generated_at_utc']),
             'state_revision' => $targetRevision,
             'state_sha256' => $targetSha,
