@@ -87,9 +87,13 @@ final class ProductionCutoverConfig
     private static function timestampOrNull(mixed $value): ?int
     {
         if ($value === null || $value === '') return null;
-        if (is_int($value)) return $value > 0 ? $value : null;
+        if (!is_string($value)) {
+            throw new RuntimeException(
+                'Production cutover approval expiry must be an ISO-8601 string with an explicit UTC offset.'
+            );
+        }
 
-        $raw = trim((string)$value);
+        $raw = trim($value);
         if ($raw === '' || preg_match('/(?:Z|[+-]\d{2}:\d{2})$/', $raw) !== 1) {
             throw new RuntimeException('Production cutover approval expiry must include an explicit UTC offset.');
         }
