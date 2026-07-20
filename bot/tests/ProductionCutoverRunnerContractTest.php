@@ -90,6 +90,17 @@ $assertTrue(
     'Reviewed rollback must have an explicit safe rearm path with approval disabled'
 );
 $assertTrue(
+    str_contains($runner, 'private ?StorageAdapterInterface $storage')
+        && str_contains($runner, 'private ?DatabaseConnectionInterface $database')
+        && str_contains($runner, 'private ?BackupManager $backupManager'),
+    'Emergency controls must be constructible without DB and backup dependencies'
+);
+$assertTrue(
+    substr_count($runner, '$this->assertControlEnvironmentAndBuild();') >= 3
+        && str_contains($runner, 'private function assertControlEnvironmentAndBuild(): void'),
+    'Status, rollback and rearm must use the DB-independent control guard'
+);
+$assertTrue(
     str_contains($entrypoint, "['run', 'status', 'rollback', 'rearm']")
         && str_contains($entrypoint, "if (\$environment !== 'production')"),
     'Entrypoint must expose controlled modes and remain production-only'
@@ -98,6 +109,13 @@ $assertTrue(
     str_contains($entrypoint, 'production-cutover.lock')
         && str_contains($entrypoint, 'managed-migrations.lock'),
     'Cutover must serialize against itself and managed migrations'
+);
+$assertTrue(
+    str_contains($entrypoint, "if (\$requestedMode === 'run')")
+        && str_contains($entrypoint, '$storage = null;')
+        && str_contains($entrypoint, '$database = null;')
+        && str_contains($entrypoint, '$backupManager = null;'),
+    'DB, storage and backup initialization must be limited to the mutating run mode'
 );
 $assertTrue(
     str_contains($router, "'production_activated'")
