@@ -69,7 +69,12 @@ final class RuntimePrimaryStagingConcurrencyProbe
             if (is_resource($second)) fclose($second);
             flock($first, LOCK_UN);
             fclose($first);
-            @unlink($this->lockPath);
+            if (is_link($this->lockPath)) {
+                throw new RuntimeException('Staging concurrency probe lock path became a symbolic link.');
+            }
+            if (is_file($this->lockPath) && !unlink($this->lockPath)) {
+                throw new RuntimeException('Staging concurrency probe lock file cleanup failed.');
+            }
         }
     }
 
@@ -82,6 +87,7 @@ final class RuntimePrimaryStagingConcurrencyProbe
         $createdAt = gmdate(DATE_ATOM, $now);
         $leaseToken = bin2hex(random_bytes(24));
         $leaseExpiresAt = gmdate(DATE_ATOM, $now + $this->leaseSeconds);
+        $rowCreated = false;
 
         try {
             $inserted = $this->firstDatabase->execute(
@@ -105,6 +111,7 @@ final class RuntimePrimaryStagingConcurrencyProbe
             if ($inserted !== 1) {
                 throw new RuntimeException('Staging worker lease probe did not create exactly one row.');
             }
+            $rowCreated = true;
 
             $firstClaimed = $this->firstDatabase->transaction(function (DatabaseConnectionInterface $database) use (
                 $probeId,
@@ -181,12 +188,14 @@ final class RuntimePrimaryStagingConcurrencyProbe
                 'lease_seconds' => $this->leaseSeconds,
             ];
         } finally {
-            try {
-                $this->firstDatabase->execute(
+            if ($rowCreated) {
+                $deleted = $this->firstDatabase->execute(
                     'DELETE FROM ' . self::TABLE . ' WHERE probe_id = :probe_id',
                     ['probe_id' => $probeId]
                 );
-            } catch (Throwable) {
+                if ($deleted !== 1) {
+                    throw new RuntimeException('Staging worker lease probe row cleanup failed.');
+                }
             }
         }
     }
