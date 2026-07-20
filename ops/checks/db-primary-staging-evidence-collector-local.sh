@@ -12,6 +12,7 @@ FILES=(
   bot/runtime/RuntimePrimaryJsonEvidence.php
   bot/runtime/RuntimePrimaryStagingConcurrencyProbe.php
   bot/runtime/RuntimePrimaryStagingEvidenceApproval.php
+  bot/runtime/RuntimePrimaryPrivateConfigGuard.php
   bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php
   bot/runtime/RuntimePrimaryStagingEvidenceSource.php
   bot/runtime/RuntimePrimaryStagingEvidenceCollector.php
@@ -21,6 +22,7 @@ FILES=(
   bot/tests/RuntimePrimaryJsonEvidenceTest.php
   bot/tests/RuntimePrimaryStagingConcurrencyProbeTest.php
   bot/tests/RuntimePrimaryStagingEvidenceApprovalTest.php
+  bot/tests/RuntimePrimaryPrivateConfigGuardTest.php
   bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php
   bot/tests/RuntimePrimaryStagingEvidenceWriterTest.php
   bot/tests/RuntimePrimaryStagingEvidenceWriterNoClobberContractTest.php
@@ -38,6 +40,7 @@ TESTS=(
   bot/tests/RuntimePrimaryJsonEvidenceTest.php
   bot/tests/RuntimePrimaryStagingConcurrencyProbeTest.php
   bot/tests/RuntimePrimaryStagingEvidenceApprovalTest.php
+  bot/tests/RuntimePrimaryPrivateConfigGuardTest.php
   bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php
   bot/tests/RuntimePrimaryStagingEvidenceWriterTest.php
   bot/tests/RuntimePrimaryStagingEvidenceWriterNoClobberContractTest.php
