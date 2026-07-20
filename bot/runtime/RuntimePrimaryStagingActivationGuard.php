@@ -38,6 +38,7 @@ final class RuntimePrimaryStagingActivationGuard
         if ($environment !== 'staging') {
             throw new RuntimeException('DB-primary activation guard is staging-only.');
         }
+        $this->assertProjectionOutboxEnabled();
 
         $private = RuntimePrimaryPrivateConfigGuard::assertExternal(
             $this->configFile,
@@ -88,18 +89,7 @@ final class RuntimePrimaryStagingActivationGuard
 
         $jsonEvidence = RuntimePrimaryJsonEvidence::capture($this->jsonStorage);
         $source = is_array($manifest['source_snapshot'] ?? null) ? $manifest['source_snapshot'] : [];
-        if (!hash_equals(
-            strtolower(trim((string)($source['before_sha256'] ?? ''))),
-            strtolower(trim((string)($jsonEvidence['sha256'] ?? '')))
-        )) {
-            throw new RuntimeException('Current JSON rollback source does not match staging activation evidence.');
-        }
-        if (!hash_equals(
-            strtolower(trim((string)($source['inventory_fingerprint'] ?? ''))),
-            strtolower(trim((string)($jsonEvidence['inventory_fingerprint'] ?? '')))
-        )) {
-            throw new RuntimeException('Current JSON inventory does not match staging activation evidence.');
-        }
+        $this->assertJsonMatchesEvidence($source, $jsonEvidence);
         $snapshot = $this->jsonStorage->readOnly(static fn(array $data): array => $data);
         if (!is_array($snapshot)) {
             throw new RuntimeException('Current JSON rollback snapshot is unavailable.');
@@ -117,19 +107,9 @@ final class RuntimePrimaryStagingActivationGuard
         }
 
         $state = (new DatabasePrimaryStateStorageAdapter($this->database))->status();
-        if ((int)($state['revision'] ?? 0) !== $targetRevision
-            || !hash_equals($targetSha, strtolower(trim((string)($state['state_sha256'] ?? ''))))) {
-            throw new RuntimeException('Current DB-primary state does not match the evidenced target revision.');
-        }
-
+        $this->assertStateMatches($state, $targetRevision, $targetSha);
         $event = $this->targetEvent($targetRevision);
-        if (($event['status'] ?? '') !== 'completed'
-            || ($event['projection_version'] ?? '') !== RuntimePrimaryProjectionOutboxWriter::PROJECTION_VERSION
-            || !hash_equals($targetSha, (string)($event['state_sha256'] ?? ''))
-            || (int)($event['attempt_count'] ?? 0) < 1
-            || trim((string)($event['last_error'] ?? '')) !== '') {
-            throw new RuntimeException('Current projection event does not match a clean completed evidenced revision.');
-        }
+        $this->assertCompletedEvent($event, $targetSha);
         $queue = $this->queueStatus($targetRevision);
 
         $audit = $this->projector->auditOnly($snapshot, $targetRevision, $targetSha);
@@ -138,6 +118,23 @@ final class RuntimePrimaryStagingActivationGuard
             || ($audit['read_only'] ?? false) !== true
             || ($audit['projected_modules'] ?? []) !== self::MODULES) {
             throw new RuntimeException('Current all-module staging audit did not prove read-only parity.');
+        }
+
+        $postJsonEvidence = RuntimePrimaryJsonEvidence::capture($this->jsonStorage);
+        if (!hash_equals((string)$jsonEvidence['sha256'], (string)$postJsonEvidence['sha256'])
+            || !hash_equals(
+                (string)$jsonEvidence['inventory_fingerprint'],
+                (string)$postJsonEvidence['inventory_fingerprint']
+            )) {
+            throw new RuntimeException('JSON rollback source changed during the staging activation audit.');
+        }
+        $postState = (new DatabasePrimaryStateStorageAdapter($this->database))->status();
+        $this->assertStateMatches($postState, $targetRevision, $targetSha);
+        $postEvent = $this->targetEvent($targetRevision);
+        $this->assertCompletedEvent($postEvent, $targetSha);
+        $postQueue = $this->queueStatus($targetRevision);
+        if ($postQueue !== $queue) {
+            throw new RuntimeException('Projection queue changed during the staging activation audit.');
         }
 
         return [
@@ -156,6 +153,7 @@ final class RuntimePrimaryStagingActivationGuard
             'state_sha256' => $targetSha,
             'storage_driver' => 'database',
             'rollback_driver' => 'json',
+            'projection_outbox_enabled' => true,
             'schemas' => [
                 'state_fingerprint' => (string)$schemas['state']['schema_fingerprint'],
                 'outbox_fingerprint' => (string)$schemas['outbox']['schema_fingerprint'],
@@ -169,6 +167,7 @@ final class RuntimePrimaryStagingActivationGuard
             'projected_modules' => self::MODULES,
             'all_module_fingerprint' => (string)($audit['all_module_fingerprint'] ?? ''),
             'read_only_audit' => true,
+            'drift_check_passed' => true,
             'private_config_external' => true,
             'application_entrypoints_changed' => false,
             'cron_changed' => false,
@@ -176,6 +175,52 @@ final class RuntimePrimaryStagingActivationGuard
             'sensitive_identifiers_exposed' => false,
             'generated_at_utc' => gmdate(DATE_ATOM, $this->timestamp()),
         ];
+    }
+
+    private function assertProjectionOutboxEnabled(): void
+    {
+        if (!array_key_exists('runtime_primary_projection_outbox', $this->config)
+            || !is_array($this->config['runtime_primary_projection_outbox'])
+            || ($this->config['runtime_primary_projection_outbox']['enabled'] ?? null) !== true) {
+            throw new RuntimeException('Staging activation requires runtime_primary_projection_outbox.enabled to be boolean true.');
+        }
+    }
+
+    private function assertJsonMatchesEvidence(array $source, array $jsonEvidence): void
+    {
+        if (!hash_equals(
+            strtolower(trim((string)($source['before_sha256'] ?? ''))),
+            strtolower(trim((string)($jsonEvidence['sha256'] ?? '')))
+        )) {
+            throw new RuntimeException('Current JSON rollback source does not match staging activation evidence.');
+        }
+        if (!hash_equals(
+            strtolower(trim((string)($source['inventory_fingerprint'] ?? ''))),
+            strtolower(trim((string)($jsonEvidence['inventory_fingerprint'] ?? '')))
+        )) {
+            throw new RuntimeException('Current JSON inventory does not match staging activation evidence.');
+        }
+    }
+
+    private function assertStateMatches(array $state, int $revision, string $sha): void
+    {
+        if ((int)($state['revision'] ?? 0) !== $revision
+            || !hash_equals($sha, strtolower(trim((string)($state['state_sha256'] ?? ''))))) {
+            throw new RuntimeException('Current DB-primary state does not match the evidenced target revision.');
+        }
+    }
+
+    private function assertCompletedEvent(array $event, string $sha): void
+    {
+        if (($event['status'] ?? '') !== 'completed'
+            || ($event['projection_version'] ?? '') !== RuntimePrimaryProjectionOutboxWriter::PROJECTION_VERSION
+            || !hash_equals($sha, (string)($event['state_sha256'] ?? ''))
+            || (int)($event['attempt_count'] ?? 0) < 1
+            || trim((string)($event['lease_token'] ?? '')) !== ''
+            || trim((string)($event['lease_expires_at_utc'] ?? '')) !== ''
+            || trim((string)($event['last_error'] ?? '')) !== '') {
+            throw new RuntimeException('Current projection event does not match a clean completed evidenced revision.');
+        }
     }
 
     private function targetEvent(int $revision): array
