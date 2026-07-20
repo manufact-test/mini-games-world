@@ -61,6 +61,10 @@ Rearm after an explicitly reviewed rollback:
 /usr/bin/php /absolute/path/public_html/ops/deploy/production-cutover.php --rearm
 ```
 
+`--run` requires live JSON storage, a healthy production DB, current migrations, backup configuration and the managed-migrations lock.
+
+Emergency `--status`, `--rollback` and reviewed `--rearm` do **not** initialize the production DB or backup manager and do **not** acquire the managed-migrations lock. They still require the exact v103 build, production environment, private config/runtime directory and the exclusive cutover lock. This keeps JSON recovery available when the DB itself is unavailable.
+
 Hostinger scheduling uses one temporary five-minute Cron for the selected mode. Repeated ticks are locked and idempotent. Do not create the `--run` Cron until the exact build, preflight fingerprint and short-lived approval are confirmed.
 
 ## Automatic sequence
@@ -98,6 +102,8 @@ Resolve the blocker, generate a fresh preflight/fingerprint and try again only a
 Any exception after recovery artifacts exist restores the exact prior private runtime, removes the JSON write barrier and verifies DB routing is disabled. Database rows are preserved for incident analysis; schema and ledger rows are never deleted automatically.
 
 A successful rollback records `state: rolled_back`. Later `--run` ticks remain a safe no-op until an operator reviews the incident.
+
+The report is intentionally fail-closed: `rollback_succeeded` is true only when runtime restore, write-block removal, DB-route disablement and state persistence all succeed. If recovery is incomplete, the report does not claim that JSON is active and requires immediate manual review.
 
 ### Rearm after review
 
