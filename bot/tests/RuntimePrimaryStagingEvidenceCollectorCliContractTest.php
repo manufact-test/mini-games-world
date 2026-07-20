@@ -38,18 +38,27 @@ $assertTrue(
     'Private output path must be validated before application bootstrap or DB work'
 );
 $environmentGuard = strpos($source, "if (\$environment !== 'staging')");
+$privateConfigGuard = strpos($source, 'RuntimePrimaryPrivateConfigGuard::assertExternal(');
 $approval = strpos($source, 'RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->assertApproved(');
 $lockOpen = strpos($source, '$lockHandle = fopen($rehearsalLockPath');
 $databaseOpen = strpos($source, '$database = PdoConnectionFactory::create($databaseConfig);');
 $assertTrue(
     $environmentGuard !== false
+        && $privateConfigGuard !== false
         && $approval !== false
         && $lockOpen !== false
         && $databaseOpen !== false
-        && $environmentGuard < $approval
+        && $environmentGuard < $privateConfigGuard
+        && $privateConfigGuard < $approval
         && $approval < $lockOpen
         && $approval < $databaseOpen,
-    'Staging DB identity and commit approval must precede lock and database connections'
+    'Staging environment, external private config and exact approval must precede lock and database connections'
+);
+$assertTrue(
+    str_contains($source, "(string)(\$configFile ?? '')")
+        && str_contains($source, "\$privateDir = (string)\$privateConfig['private_dir'];")
+        && !str_contains($source, "dirname((string)\$configFile)"),
+    'Collector must derive lock paths only from the verified external private config directory'
 );
 $assertTrue(
     str_contains($source, 'RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot)')
@@ -65,8 +74,9 @@ $assertTrue(
 $assertTrue(
     str_contains($source, 'runtime-primary-rehearsal.lock')
         && str_contains($source, 'LOCK_EX | LOCK_NB')
+        && str_contains($source, '@chmod($rehearsalLockPath, 0600)')
         && str_contains($source, 'Another DB-primary rehearsal or evidence collection is already running.'),
-    'Collector must serialize against every manual rehearsal'
+    'Collector must serialize through a private 0600 rehearsal lock'
 );
 $assertTrue(
     str_contains($source, 'new RuntimePrimaryStagingConcurrencyProbe(')
@@ -80,6 +90,11 @@ $assertTrue(
         && str_contains($source, 'Written staging evidence failed verification')
         && str_contains($source, 'if ($outputWritten && is_file($outputPath)) @unlink($outputPath);'),
     'Collector must atomically write, re-verify and remove unverified output'
+);
+$assertTrue(
+    str_contains($source, "'publish_mode' => (string)(\$written['publish_mode'] ?? '')")
+        && str_contains($source, "'private_config_external' => true"),
+    'Collector success report must expose no-clobber publication and external private config evidence'
 );
 $assertTrue(
     !str_contains($source, 'crontab')
