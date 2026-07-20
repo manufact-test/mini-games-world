@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimePrimaryRepositoryCommitResolver.php';
+require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Verifier.php';
+
 final class RuntimePrimaryStagingEvidenceV2Gate
 {
     public function __construct(private string $projectRoot)
