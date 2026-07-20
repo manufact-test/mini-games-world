@@ -61,6 +61,8 @@ final class RuntimePrimaryStagingEvidenceV3Verifier
             'required_modules' => array_values((array)($legacyReport['required_modules'] ?? [])),
             'blocker_count' => count($blockers),
             'blockers' => $blockers,
+            'api_only' => true,
+            'webhook_allowed' => false,
             'application_entrypoints_changed' => false,
             'cron_changed' => false,
             'production_changed' => false,
@@ -83,6 +85,8 @@ final class RuntimePrimaryStagingEvidenceV3Verifier
             'selector_enabled_by_evidence',
             'default_storage_driver',
             'staging_selector_available',
+            'api_only',
+            'webhook_allowed',
             'production_selector_allowed',
             'application_entrypoints_changed',
             'cron_changed',
@@ -108,8 +112,10 @@ final class RuntimePrimaryStagingEvidenceV3Verifier
             || ($evidence['selector_enabled_by_evidence'] ?? true) !== false
             || ($evidence['default_storage_driver'] ?? '') !== 'json'
             || ($evidence['staging_selector_available'] ?? false) !== true
+            || ($evidence['api_only'] ?? false) !== true
+            || ($evidence['webhook_allowed'] ?? true) !== false
             || ($evidence['production_selector_allowed'] ?? true) !== false) {
-            $blockers[] = 'Selector evidence does not preserve the guarded staging-only JSON-default contract.';
+            $blockers[] = 'Selector evidence does not preserve the guarded API-only staging JSON-default contract.';
         }
         foreach ([
             'application_entrypoints_changed',
@@ -160,7 +166,8 @@ final class RuntimePrimaryStagingEvidenceV3Verifier
         )) {
             $blockers[] = 'Selector evidence does not match the current repository sources.';
         }
-        if (($current['ready'] ?? false) !== true || (array)($current['blockers'] ?? ['missing']) !== []) {
+        if (($current['ready'] ?? false) !== true
+            || (array)($current['blockers'] ?? ['missing']) !== []) {
             $blockers[] = 'Current guarded staging selector contract is not ready.';
         }
     }
