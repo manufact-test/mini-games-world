@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Verifier.php';
+require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Gate.php';
+
 final class RuntimePrimaryStagingEvidenceGate
 {
     public function __construct(private string $projectRoot)
@@ -13,6 +16,10 @@ final class RuntimePrimaryStagingEvidenceGate
 
     public function verify(array $manifest): array
     {
+        if (($manifest['manifest_version'] ?? '') === RuntimePrimaryStagingEvidenceV2Verifier::MANIFEST_VERSION) {
+            return (new RuntimePrimaryStagingEvidenceV2Gate($this->projectRoot))->verify($manifest);
+        }
+
         $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($this->projectRoot);
         $report = (new RuntimePrimaryStagingEvidenceVerifier($this->projectRoot))->verify($manifest);
         $manifestCommit = strtolower(trim((string)($manifest['repository_commit'] ?? '')));
