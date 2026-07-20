@@ -13,28 +13,37 @@ trait ProductionCutoverControlTrait
             $state = [];
             $stateError = $this->safeMessage($error->getMessage());
         }
-        $runtime = $this->readRuntime();
-        $runtimeConfig = $this->configWithRuntime($runtime);
+
+        $runtime = [];
+        $runtimeError = '';
+        try {
+            $runtime = $this->readRuntime();
+        } catch (Throwable $error) {
+            $runtimeError = $this->safeMessage($error->getMessage());
+        }
 
         $routerEnabled = false;
         $enabledModules = [];
         $routerError = '';
-        try {
-            $router = new RuntimeStorageRouter($runtimeConfig);
-            $routerEnabled = $router->enabled();
-            $enabledModules = $router->enabledModules();
-        } catch (Throwable $error) {
-            $routerError = $this->safeMessage($error->getMessage());
+        if ($runtimeError === '') {
+            try {
+                $router = new RuntimeStorageRouter($this->configWithRuntime($runtime));
+                $routerEnabled = $router->enabled();
+                $enabledModules = $router->enabledModules();
+            } catch (Throwable $error) {
+                $routerError = $this->safeMessage($error->getMessage());
+            }
         }
 
         return [
-            'ok' => $routerError === '' && $stateError === '',
+            'ok' => $routerError === '' && $runtimeError === '' && $stateError === '',
             'report_type' => 'mvp-14.9-production-cutover',
             'action' => 'status',
             'environment' => 'production',
             'build' => self::BUILD,
             'state' => $stateError === '' ? (string)($state['state'] ?? 'not_started') : 'invalid',
             'state_error' => $stateError,
+            'runtime_error' => $runtimeError,
             'database_runtime_enabled' => $routerEnabled,
             'enabled_modules' => $enabledModules,
             'router_error' => $routerError,
