@@ -5,6 +5,11 @@ trait ProductionCutoverRunTrait
 {
     public function run(): array
     {
+        if (!$this->storage instanceof StorageAdapterInterface
+            || !$this->database instanceof DatabaseConnectionInterface
+            || !$this->backupManager instanceof BackupManager) {
+            throw new RuntimeException('Production cutover execution dependencies are unavailable.');
+        }
         $this->assertEnvironmentAndBuild();
 
         try {
