@@ -137,14 +137,13 @@ final class RuntimePrimaryStagingEvidenceV3Verifier
         }
 
         $sources = is_array($evidence['sources'] ?? null) ? $evidence['sources'] : [];
-        $requiredSources = [
-            'api', 'webhook_handler', 'bootstrap', 'storage_factory',
-            'selector', 'selector_config', 'storage_context',
-        ];
+        $requiredSources = array_keys(is_array($current['sources'] ?? null)
+            ? $current['sources']
+            : []);
         $actualSources = array_keys($sources);
         sort($actualSources, SORT_STRING);
         sort($requiredSources, SORT_STRING);
-        if ($actualSources !== $requiredSources) {
+        if ($requiredSources === [] || $actualSources !== $requiredSources) {
             $blockers[] = 'Selector evidence source set is incomplete.';
         }
         foreach ($sources as $name => $sha) {
