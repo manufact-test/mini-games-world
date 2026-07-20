@@ -35,9 +35,8 @@ $isInside = static function (string $path, string $parent) use ($normalizePath):
     $parent = $normalizePath($parent);
     return $path === $parent || str_starts_with($path . '/', $parent . '/');
 };
-$print = static function (array $result, int $code = 0): void {
-    $stream = $code === 0 ? STDOUT : STDERR;
-    fwrite($stream, json_encode(
+$print = static function (array $result): void {
+    fwrite(STDOUT, json_encode(
         $result,
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
     ) . PHP_EOL);
@@ -150,7 +149,7 @@ try {
     }
 
     $ok = ($result['ok'] ?? false) === true;
-    $print($result, $ok ? 0 : 2);
+    $print($result);
     $exitCode = $ok ? 0 : 2;
 } catch (Throwable $error) {
     $exitCode = 1;
@@ -164,7 +163,7 @@ try {
         'production_changed' => false,
         'sensitive_identifiers_exposed' => false,
         'generated_at_utc' => gmdate(DATE_ATOM),
-    ], 1);
+    ]);
 } finally {
     if (is_resource($migrationLockHandle)) {
         flock($migrationLockHandle, LOCK_UN);
