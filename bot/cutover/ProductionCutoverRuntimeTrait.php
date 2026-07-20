@@ -115,6 +115,9 @@ trait ProductionCutoverRuntimeTrait
                 'json_write_block_removed' => true,
                 'database_runtime_disabled' => true,
                 'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
+                'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
+                'database_runtime_enabled' => false,
+                'database_runtime_status' => 'disabled',
                 'database_rows_preserved_for_analysis' => true,
                 'error' => '',
                 'rolled_back_at_utc' => $this->nowUtc(),
@@ -128,8 +131,6 @@ trait ProductionCutoverRuntimeTrait
         try {
             if ($backupPresent) {
                 $runtimeRestored = $this->restoreRuntimeBackup();
-            } elseif (!$routerInitiallyEnabled) {
-                $runtimeRestored = true;
             } else {
                 $error = trim($error . '; exact runtime backup is missing', '; ');
             }
@@ -178,7 +179,12 @@ trait ProductionCutoverRuntimeTrait
             'runtime_restored' => $runtimeRestored,
             'json_write_block_removed' => $writeBlockRemoved,
             'database_runtime_disabled' => $routerDisabled,
-            'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
+            'storage_driver' => $routerDisabled && $runtimeRestored
+                ? RuntimeStorageRouter::DRIVER_JSON
+                : 'unknown',
+            'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
+            'database_runtime_enabled' => $routerDisabled ? false : null,
+            'database_runtime_status' => $routerDisabled ? 'disabled' : 'unknown',
             'database_rows_preserved_for_analysis' => true,
             'error' => $error,
             'rolled_back_at_utc' => $this->nowUtc(),
