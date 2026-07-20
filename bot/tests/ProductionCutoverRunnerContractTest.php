@@ -86,13 +86,13 @@ $assertTrue(
 $assertTrue(
     str_contains($runner, '$stateWritten = false;')
         && str_contains($runner, '$stateWritten = true;')
-        && str_contains($runner, "'state_written' => $stateWritten"),
+        && str_contains($runner, "'state_written' => \$stateWritten"),
     'Rollback report must state whether the recovery state was actually persisted'
 );
 $assertTrue(
-    str_contains($runner, "'rollback_succeeded' => $rollbackSucceeded")
-        && str_contains($runner, "'storage_driver' => $databaseRuntimeDisabled")
-        && str_contains($runner, "'production_db_runtime_enabled' => !$databaseRuntimeDisabled"),
+    str_contains($runner, "'rollback_succeeded' => \$rollbackSucceeded")
+        && str_contains($runner, "'storage_driver' => \$databaseRuntimeDisabled")
+        && str_contains($runner, "'production_db_runtime_enabled' => !\$databaseRuntimeDisabled"),
     'Automatic rollback report must not claim JSON success after partial recovery failure'
 );
 $assertTrue(
@@ -120,14 +120,15 @@ $assertTrue(
 $assertTrue(
     str_contains($entrypoint, 'production-cutover.lock')
         && str_contains($entrypoint, 'managed-migrations.lock'),
-    'Cutover must serialize against itself and managed migrations'
+    'Cutover must serialize the mutating run against itself and managed migrations'
 );
 $assertTrue(
     str_contains($entrypoint, "if (\$requestedMode === 'run')")
         && str_contains($entrypoint, '$storage = null;')
         && str_contains($entrypoint, '$database = null;')
-        && str_contains($entrypoint, '$backupManager = null;'),
-    'DB, storage and backup initialization must be limited to the mutating run mode'
+        && str_contains($entrypoint, '$backupManager = null;')
+        && strpos($entrypoint, '$migrationLockHandle = fopen') > strpos($entrypoint, "if (\$requestedMode === 'run')"),
+    'DB, storage, backup and migration-lock initialization must be limited to the mutating run mode'
 );
 $assertTrue(
     str_contains($router, "'production_activated'")
