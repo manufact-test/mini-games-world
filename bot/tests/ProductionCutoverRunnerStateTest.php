@@ -129,6 +129,13 @@ try {
     $assertTrue(($statusWithoutDatabase['action'] ?? '') === 'status', 'Status must work without production DB dependencies');
     $assertTrue(($statusWithoutDatabase['ok'] ?? false) === true, 'Status without production DB dependencies must remain healthy');
 
+    file_put_contents($private . '/runtime.php', "<?php\nthrow new RuntimeException('broken runtime');\n");
+    $invalidRuntimeStatus = $emergencyControl->status();
+    $assertTrue(($invalidRuntimeStatus['action'] ?? '') === 'status', 'Malformed runtime must still return a structured status report');
+    $assertTrue(($invalidRuntimeStatus['ok'] ?? true) === false, 'Malformed runtime status must fail closed');
+    $assertTrue(($invalidRuntimeStatus['runtime_error'] ?? '') !== '', 'Malformed runtime status must expose a safe runtime error');
+    unlink($private . '/runtime.php');
+
     $rollbackNoop = $emergencyControl->rollback();
     $assertTrue(($rollbackNoop['action'] ?? '') === 'rollback_noop', 'Rollback before any operation must be a no-op');
     $assertTrue(($rollbackNoop['state_written'] ?? true) === false, 'Rollback no-op must not create rolled_back state');
