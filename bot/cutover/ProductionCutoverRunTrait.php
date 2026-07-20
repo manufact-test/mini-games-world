@@ -96,6 +96,17 @@ trait ProductionCutoverRunTrait
         ];
 
         try {
+            $primaryContract = ProductionRuntimePrimaryContract::inspect($this->projectRoot);
+            if (($primaryContract['ready'] ?? false) !== true) {
+                throw new RuntimeException(
+                    'Production DB-primary entrypoints are not ready: '
+                    . implode('; ', array_map(
+                        'strval',
+                        (array)($primaryContract['blockers'] ?? [])
+                    ))
+                );
+            }
+
             $runtime = $this->readRuntime();
             $preflightConfig = $this->configWithRuntime($runtime);
             $preflight = (new ProductionPreflightRunner(
