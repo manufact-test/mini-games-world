@@ -2,11 +2,21 @@
 declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__, 2);
-$runnerPath = $projectRoot . '/bot/cutover/ProductionCutoverRunner.php';
+$runnerPaths = [
+    $projectRoot . '/bot/cutover/ProductionCutoverRunner.php',
+    $projectRoot . '/bot/cutover/ProductionCutoverRunTrait.php',
+    $projectRoot . '/bot/cutover/ProductionCutoverPerformTrait.php',
+    $projectRoot . '/bot/cutover/ProductionCutoverControlTrait.php',
+    $projectRoot . '/bot/cutover/ProductionCutoverNoopTrait.php',
+    $projectRoot . '/bot/cutover/ProductionCutoverDataTrait.php',
+    $projectRoot . '/bot/cutover/ProductionCutoverRuntimeTrait.php',
+    $projectRoot . '/bot/cutover/ProductionCutoverReportTrait.php',
+];
 $entrypointPath = $projectRoot . '/ops/deploy/production-cutover.php';
 $routerPath = $projectRoot . '/bot/storage/RuntimeStorageRouter.php';
 
-$runner = file_get_contents($runnerPath);
+$runnerParts = array_map(static fn(string $path): string|false => file_get_contents($path), $runnerPaths);
+$runner = !in_array(false, $runnerParts, true) ? implode("\n", $runnerParts) : false;
 $entrypoint = file_get_contents($entrypointPath);
 $router = file_get_contents($routerPath);
 if (!is_string($runner) || !is_string($entrypoint) || !is_string($router)) {
@@ -60,10 +70,27 @@ $assertTrue(
     str_contains($runner, "'action' => 'automatic_rollback'")
         && str_contains($runner, 'rollbackInternal(')
         && str_contains($runner, 'database_rows_preserved_for_analysis'),
-    'Every cutover failure must restore JSON without deleting DB evidence'
+    'Mutating cutover failures must restore JSON without deleting DB evidence'
 );
 $assertTrue(
-    str_contains($entrypoint, "['run', 'status', 'rollback']")
+    str_contains($runner, "'action' => 'cutover_blocked'")
+        && str_contains($runner, "'attempted' => false")
+        && str_contains($runner, "'production_changed' => false"),
+    'Pre-mutation gate failures must remain retryable without false rolled_back state'
+);
+$assertTrue(
+    str_contains($runner, "'action' => 'rollback_noop'")
+        && str_contains($runner, "'state_written' => false"),
+    'Rollback before any mutation must be a state-free no-op'
+);
+$assertTrue(
+    str_contains($runner, 'public function rearm(): array')
+        && str_contains($runner, 'Disable the private production cutover approval before rearming')
+        && str_contains($runner, "'fresh_approval_required' => true"),
+    'Reviewed rollback must have an explicit safe rearm path with approval disabled'
+);
+$assertTrue(
+    str_contains($entrypoint, "['run', 'status', 'rollback', 'rearm']")
         && str_contains($entrypoint, "if (\$environment !== 'production')"),
     'Entrypoint must expose controlled modes and remain production-only'
 );
@@ -74,8 +101,9 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($router, "'production_activated'")
+        && str_contains($router, "'activation_build'")
         && str_contains($router, 'requires every approved module'),
-    'Production routing must fail closed without the durable all-module marker'
+    'Production routing must fail closed without exact build and all-module markers'
 );
 
 fwrite(STDOUT, "ProductionCutoverRunnerContractTest passed: {$assertions} assertions.\n");
