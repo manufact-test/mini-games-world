@@ -108,8 +108,15 @@ $assertTrue(
     str_contains($runner, "'rollback_succeeded' => \$rollbackSucceeded")
         && str_contains($runner, "\$rollbackAction === 'rollback_to_json'")
         && str_contains($runner, '&& $statePersisted;')
+        && str_contains($runner, "'storage_driver' => \$rollbackSucceeded")
         && str_contains($runner, "'production_db_runtime_enabled' => \$databaseRuntimeDisabled ? false : null"),
-    'Automatic rollback success must require real restored and persisted terminal recovery'
+    'Automatic rollback success and JSON reporting must require complete persisted recovery'
+);
+$assertTrue(
+    str_contains($runner, 'exact runtime backup is missing')
+        && str_contains($runner, "'storage_driver' => \$routerDisabled && \$runtimeRestored")
+        && !str_contains($runner, 'elseif (!$routerInitiallyEnabled)'),
+    'Non-noop rollback must require the exact runtime backup even when DB routing appears disabled'
 );
 $assertTrue(
     str_contains($runner, "'runtime_error' => \$runtimeError")
@@ -121,6 +128,14 @@ $assertTrue(
         && str_contains($runner, 'completed_state_contract_recovered')
         && str_contains($runner, 'rolled_back_state_runtime_validation_failed'),
     'Inconsistent terminal states must repair from exact runtime backup or block recovery'
+);
+$assertTrue(
+    str_contains($runner, "if (\$stateName !== 'rolled_back')")
+        && str_contains($runner, "'runtime_restored' => 'runtime restore'")
+        && str_contains($runner, "'json_write_block_removed' => 'JSON write-block removal'")
+        && str_contains($runner, "'database_runtime_disabled' => 'database runtime disablement'")
+        && str_contains($runner, 'rearm requires the preserved exact runtime backup'),
+    'Rearm must reject rollback_failed and require complete persisted recovery evidence'
 );
 $assertTrue(
     str_contains($runner, 'public function rearm(): array')
