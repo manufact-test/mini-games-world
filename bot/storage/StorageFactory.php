@@ -22,6 +22,11 @@ final class StorageFactory
 
     public static function createJson(string $dataDir): StorageAdapterInterface
     {
+        self::installGuardedEntrypointContextIfEligible();
+        if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+            && RuntimePrimaryEntrypointStorageContext::installed()) {
+            return RuntimePrimaryEntrypointStorageContext::storage();
+        }
         return new JsonStorageAdapter($dataDir);
     }
 
@@ -48,6 +53,65 @@ final class StorageFactory
             PdoConnectionFactory::create($databaseConfig),
             $outboxEnabled ? new RuntimePrimaryProjectionOutboxWriter() : null
         );
+    }
+
+    private static function installGuardedEntrypointContextIfEligible(): void
+    {
+        static $attempted = [];
+        static $failures = [];
+
+        if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+            && RuntimePrimaryEntrypointStorageContext::installed()) {
+            return;
+        }
+
+        $script = basename(trim((string)(
+            $_SERVER['SCRIPT_FILENAME']
+            ?? $_SERVER['PHP_SELF']
+            ?? ''
+        )));
+        $entrypoint = match ($script) {
+            'api.php' => 'api',
+            'webhook.php' => 'webhook',
+            default => '',
+        };
+        if ($entrypoint === '') {
+            return;
+        }
+        if (isset($failures[$entrypoint])) {
+            throw new RuntimeException(
+                'Guarded staging entrypoint storage selection previously failed in this request.',
+                0,
+                $failures[$entrypoint]
+            );
+        }
+        if (isset($attempted[$entrypoint])) {
+            return;
+        }
+        $attempted[$entrypoint] = true;
+
+        $config = $GLOBALS['config'] ?? null;
+        $configFile = $GLOBALS['configFile'] ?? null;
+        if (!is_array($config) || !is_string($configFile) || trim($configFile) === '') {
+            $error = new RuntimeException(
+                'Entrypoint storage selector requires the active application config context.'
+            );
+            $failures[$entrypoint] = $error;
+            throw $error;
+        }
+
+        try {
+            require_once __DIR__ . '/../runtime/RuntimePrimaryStagingEntrypointBootstrap.php';
+            (new RuntimePrimaryStagingEntrypointStorageSelector(
+                dirname(__DIR__, 2),
+                $config,
+                $configFile,
+                $entrypoint
+            ))->installIfEnabled();
+        } catch (Throwable $error) {
+            $failures[$entrypoint] = $error;
+            throw $error;
+        }
     }
 
     private static function strictBool(mixed $value, string $label): bool

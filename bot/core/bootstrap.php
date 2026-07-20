@@ -59,6 +59,7 @@ require_once __DIR__ . '/../database/PdoDatabaseConnection.php';
 require_once __DIR__ . '/../database/PdoConnectionFactory.php';
 require_once __DIR__ . '/../runtime/RuntimePrimaryStateSchemaInstaller.php';
 require_once __DIR__ . '/../runtime/DatabasePrimaryStateStorageAdapter.php';
+require_once __DIR__ . '/../runtime/RuntimePrimaryEntrypointBridgeGuard.php';
 require_once __DIR__ . '/../storage/StorageFactory.php';
 require_once __DIR__ . '/../storage/RuntimeStorageRouter.php';
 require_once __DIR__ . '/../database/DatabaseMigrationInterface.php';
@@ -136,16 +137,19 @@ $runtimeApiSuccessHooks = [];
 
 if ($runtimeRealtimeBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeRealtimeBridge): void {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
         $runtimeRealtimeBridge->synchronizeCurrentJson();
     };
 }
 if ($runtimeScript === 'api.php' && $runtimeEconomyBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeEconomyBridge): void {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
         $runtimeEconomyBridge->synchronizeCurrentJson();
     };
 }
 if ($runtimeScript === 'api.php' && $runtimeShopBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeShopBridge): void {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
         $action = (string)($GLOBALS['mgw_api_action'] ?? '');
         if ($runtimeShopBridge->shouldSynchronizeApiAction($action)) {
             $runtimeShopBridge->synchronizeCurrentJson();
@@ -154,6 +158,7 @@ if ($runtimeScript === 'api.php' && $runtimeShopBridge->shouldAttachToCurrentReq
 }
 if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimePaymentBridge): void {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
         $action = (string)($GLOBALS['mgw_api_action'] ?? '');
         if ($runtimePaymentBridge->shouldSynchronizeApiAction($action)) {
             $runtimePaymentBridge->synchronizeCurrentJson();
@@ -162,6 +167,7 @@ if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrent
     $runtimeApiDataFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
     if (!is_array($runtimeApiDataFilters)) $runtimeApiDataFilters = [];
     $runtimeApiDataFilters[] = static function (array $data) use ($runtimePaymentBridge): array {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return $data;
         return $runtimePaymentBridge->normalizeApiData(
             $data,
             (string)($GLOBALS['mgw_api_action'] ?? '')
@@ -171,6 +177,7 @@ if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrent
 }
 if ($runtimeScript === 'api.php' && $runtimeWeeklyBonusBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeWeeklyBonusBridge): void {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
         $action = (string)($GLOBALS['mgw_api_action'] ?? '');
         if ($runtimeWeeklyBonusBridge->shouldSynchronizeApiAction($action)) {
             $runtimeWeeklyBonusBridge->synchronizeCurrentJson();
@@ -179,6 +186,7 @@ if ($runtimeScript === 'api.php' && $runtimeWeeklyBonusBridge->shouldAttachToCur
     $runtimeApiDataFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
     if (!is_array($runtimeApiDataFilters)) $runtimeApiDataFilters = [];
     $runtimeApiDataFilters[] = static function (array $data) use ($runtimeWeeklyBonusBridge): array {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return $data;
         return $runtimeWeeklyBonusBridge->normalizeApiData(
             $data,
             (string)($GLOBALS['mgw_api_action'] ?? '')
@@ -208,6 +216,7 @@ if ($runtimeScript === 'webhook.php' && $runtimePaymentBridge->shouldAttachToCur
 }
 if ($runtimeWebhookSuccessHooks !== []) {
     $GLOBALS['mgw_webhook_success_hook'] = static function () use ($runtimeWebhookSuccessHooks): void {
+        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
         foreach ($runtimeWebhookSuccessHooks as $hook) $hook();
     };
 }
