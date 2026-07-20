@@ -1,14 +1,20 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/ProductionCutoverExecutionTrait.php';
+require_once __DIR__ . '/ProductionCutoverRunTrait.php';
+require_once __DIR__ . '/ProductionCutoverPerformTrait.php';
+require_once __DIR__ . '/ProductionCutoverControlTrait.php';
+require_once __DIR__ . '/ProductionCutoverNoopTrait.php';
 require_once __DIR__ . '/ProductionCutoverDataTrait.php';
 require_once __DIR__ . '/ProductionCutoverRuntimeTrait.php';
 require_once __DIR__ . '/ProductionCutoverReportTrait.php';
 
 final class ProductionCutoverRunner
 {
-    use ProductionCutoverExecutionTrait;
+    use ProductionCutoverRunTrait;
+    use ProductionCutoverPerformTrait;
+    use ProductionCutoverControlTrait;
+    use ProductionCutoverNoopTrait;
     use ProductionCutoverDataTrait;
     use ProductionCutoverRuntimeTrait;
     use ProductionCutoverReportTrait;
