@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/ProductionRuntimePrimaryContract.php';
 require_once __DIR__ . '/ProductionCutoverRunTrait.php';
 require_once __DIR__ . '/ProductionCutoverPerformTrait.php';
 require_once __DIR__ . '/ProductionCutoverReleaseTrait.php';
