@@ -77,5 +77,11 @@ $assertThrows(
     ]),
     'explicit utc offset'
 );
+$assertThrows(
+    static fn() => ProductionCutoverConfig::fromApplicationConfig([
+        'production_cutover' => ['approval_expires_at_utc' => 1784538000],
+    ]),
+    'iso-8601 string'
+);
 
 fwrite(STDOUT, "ProductionCutoverConfigTest passed: {$assertions} assertions.\n");
