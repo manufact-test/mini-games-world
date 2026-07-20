@@ -16,7 +16,15 @@ final class RuntimePrimaryStagingSelectorEvidence
 
         $paths = [
             'api' => $projectRoot . '/bot/api.php',
+            'webhook_entrypoint' => $projectRoot . '/bot/webhook.php',
             'webhook_handler' => $projectRoot . '/bot/handlers/WebhookHandler.php',
+            'runtime_admin_guard' => $projectRoot . '/bot/helpers/RuntimeAdminGuard.php',
+            'payment_reject_guard' => $projectRoot . '/bot/helpers/AdminPaymentRejectGuard.php',
+            'shop_notification_guard' => $projectRoot . '/bot/helpers/AdminShopOrderNotificationGuard.php',
+            'shop_ui_guard' => $projectRoot . '/bot/helpers/AdminShopOrderUiGuard.php',
+            'gold_topup_guard' => $projectRoot . '/bot/helpers/AdminGoldTopupNotificationGuard.php',
+            'system_check_guard' => $projectRoot . '/bot/helpers/AdminSystemCheckGuard.php',
+            'user_welcome_guard' => $projectRoot . '/bot/helpers/UserWelcomeGuard.php',
             'bootstrap' => $projectRoot . '/bot/core/bootstrap.php',
             'storage_factory' => $projectRoot . '/bot/storage/StorageFactory.php',
             'selector_bootstrap' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php',
@@ -45,9 +53,31 @@ final class RuntimePrimaryStagingSelectorEvidence
         $selectorConfig = $sourceText['selector_config'] ?? '';
         $context = $sourceText['storage_context'] ?? '';
         $selectorBootstrap = $sourceText['selector_bootstrap'] ?? '';
+        $requestSources = array_intersect_key($sourceText, array_fill_keys([
+            'api',
+            'webhook_entrypoint',
+            'webhook_handler',
+            'runtime_admin_guard',
+            'payment_reject_guard',
+            'shop_notification_guard',
+            'shop_ui_guard',
+            'gold_topup_guard',
+            'system_check_guard',
+            'user_welcome_guard',
+        ], true));
+        $directJsonConstructorAbsent = true;
+        foreach ($requestSources as $requestSource) {
+            if (str_contains($requestSource, 'new JsonStorageAdapter(')
+                || str_contains($requestSource, 'new JsonDatabase(')) {
+                $directJsonConstructorAbsent = false;
+                break;
+            }
+        }
+
         $checks = [
             'api_json_factory_present' => str_contains($sourceText['api'] ?? '', 'StorageFactory::createJson('),
             'webhook_json_factory_present' => str_contains($sourceText['webhook_handler'] ?? '', 'StorageFactory::createJson('),
+            'request_direct_json_constructor_absent' => $directJsonConstructorAbsent,
             'default_json_fallback_present' => str_contains($factory, 'return new JsonStorageAdapter($dataDir);'),
             'storage_factory_lazy_selector_present' => str_contains(
                 $factory,
@@ -69,6 +99,13 @@ final class RuntimePrimaryStagingSelectorEvidence
                 $factory,
                 'RuntimePrimaryEntrypointStorageContext::storage()'
             ),
+            'storage_factory_failure_sticky' => str_contains(
+                $factory,
+                'previously failed in this request'
+            ) && str_contains(
+                $factory,
+                '$failures[$entrypoint] = $error'
+            ),
             'selector_bootstrap_v3_present' => str_contains(
                 $selectorBootstrap,
                 'RuntimePrimaryStagingEvidenceV3Verifier.php'
@@ -81,6 +118,9 @@ final class RuntimePrimaryStagingSelectorEvidence
                 "if (\$environment !== 'staging')"
             ),
             'selector_v3_requirement_present' => str_contains(
+                $selector,
+                'verifySelectorEvidenceV3('
+            ) && str_contains(
                 $selector,
                 'RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION'
             ),
@@ -102,6 +142,10 @@ final class RuntimePrimaryStagingSelectorEvidence
             'context_database_only_present' => str_contains(
                 $context,
                 "if (\$storage->driver() !== 'database')"
+            ),
+            'context_v3_only_present' => str_contains(
+                $context,
+                'requires selector-aware evidence v3'
             ),
             'context_immutable_present' => str_contains(
                 $context,
