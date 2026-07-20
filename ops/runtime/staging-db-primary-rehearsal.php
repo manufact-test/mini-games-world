@@ -48,8 +48,8 @@ $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxWriter.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorker.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionBootstrap.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorker.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryRehearsalBackendInterface.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackend.php';
 require_once $projectRoot . '/bot/runtime/StagingPrimaryRehearsalOperation.php';
@@ -105,7 +105,7 @@ try {
     exit(($report['ok'] ?? false) ? 0 : 1);
 } catch (Throwable $error) {
     $message = preg_replace(
-        '~/(?:home|var|tmp|srv)/[^\s\'\"]+~',
+        "~/(?:home|var|tmp|srv)/[^\\s'\"]+~",
         '[private-path]',
         trim($error->getMessage())
     ) ?? trim($error->getMessage());
