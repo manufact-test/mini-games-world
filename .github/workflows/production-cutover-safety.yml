@@ -24,6 +24,7 @@ on:
       - 'bot/tests/ProductionCutoverRunnerContractTest.php'
       - 'bot/tests/ProductionCutoverRunnerStateTest.php'
       - 'bot/tests/RuntimeStorageRouterTest.php'
+      - 'ops/checks/production-cutover-local.sh'
       - 'ops/deploy/production-cutover.php'
       - 'ops/deploy/PRODUCTION_CUTOVER.md'
       - '.github/workflows/production-cutover-safety.yml'
@@ -53,33 +54,5 @@ jobs:
           extensions: mbstring, pdo_sqlite
           coverage: none
 
-      - name: Lint cutover sources
-        run: |
-          php -l bot/core/RuntimeConfigLoader.php
-          php -l bot/cutover/ProductionCutoverConfig.php
-          php -l bot/cutover/ProductionCutoverRunner.php
-          php -l bot/cutover/ProductionCutoverRunTrait.php
-          php -l bot/cutover/ProductionCutoverPerformTrait.php
-          php -l bot/cutover/ProductionCutoverControlTrait.php
-          php -l bot/cutover/ProductionCutoverNoopTrait.php
-          php -l bot/cutover/ProductionCutoverDataTrait.php
-          php -l bot/cutover/ProductionCutoverRuntimeTrait.php
-          php -l bot/cutover/ProductionCutoverReportTrait.php
-          php -l bot/cutover/ProductionPreflightRunner.php
-          php -l bot/storage/RuntimeStorageRouter.php
-          php -l bot/services/FeatureFlagService.php
-          php -l bot/health.php
-          php -l ops/deploy/production-cutover.php
-          php -l bot/tests/RuntimeConfigLoaderTest.php
-          php -l bot/tests/ProductionCutoverConfigTest.php
-          php -l bot/tests/ProductionCutoverRunnerContractTest.php
-          php -l bot/tests/ProductionCutoverRunnerStateTest.php
-          php -l bot/tests/RuntimeStorageRouterTest.php
-
-      - name: Run focused tests
-        run: |
-          php bot/tests/RuntimeConfigLoaderTest.php
-          php bot/tests/ProductionCutoverConfigTest.php
-          php bot/tests/RuntimeStorageRouterTest.php
-          php bot/tests/ProductionCutoverRunnerContractTest.php
-          php bot/tests/ProductionCutoverRunnerStateTest.php
+      - name: Run focused verification
+        run: bash ops/checks/production-cutover-local.sh
