@@ -18,6 +18,8 @@ if (!mkdir($tempDir, 0700, true) && !is_dir($tempDir)) {
     throw new RuntimeException('Unable to create runtime config test directory.');
 }
 $configFile = $tempDir . '/config.php';
+$runtimeFile = $tempDir . '/runtime.php';
+$controlFile = $tempDir . '/cutover-rehearsal.json';
 file_put_contents($configFile, "<?php return [];\n");
 
 $base = [
@@ -35,10 +37,11 @@ $base = [
     ],
 ];
 
-$withoutRuntime = RuntimeConfigLoader::merge($base, $configFile);
-$assertSame($base, $withoutRuntime, 'Missing runtime.php must preserve the primary config');
+try {
+    $withoutRuntime = RuntimeConfigLoader::merge($base, $configFile);
+    $assertSame($base, $withoutRuntime, 'Missing runtime.php must preserve the primary config');
 
-file_put_contents($tempDir . '/runtime.php', <<<'PHP'
+    file_put_contents($runtimeFile, <<<'PHP'
 <?php
 return [
     'maintenance_mode' => true,
@@ -49,27 +52,36 @@ return [
         'domino' => false,
     ],
 ];
-PHP);
+PHP
+    );
 
-$merged = RuntimeConfigLoader::merge($base, $configFile);
-$assertSame(true, $merged['feature_flags']['maintenance_mode'], 'runtime.php must override maintenance mode');
-$assertSame(false, $merged['feature_flags']['features']['matchmaking'], 'runtime.php must override one feature');
-$assertSame(true, $merged['feature_flags']['features']['payments'], 'runtime.php must preserve unspecified features');
-$assertSame(false, $merged['feature_flags']['games']['domino'], 'runtime.php must override one game');
-$assertSame(true, $merged['feature_flags']['games']['chess'], 'runtime.php must preserve unspecified games');
-$assertSame('TOKEN_VALUE_FOR_TEST_ONLY', $merged['bot_token'], 'runtime.php must not replace secrets or primary config');
+    $merged = RuntimeConfigLoader::merge($base, $configFile);
+    $assertSame(true, $merged['feature_flags']['maintenance_mode'], 'runtime.php must override maintenance mode');
+    $assertSame(false, $merged['feature_flags']['features']['matchmaking'], 'runtime.php must override one feature');
+    $assertSame(true, $merged['feature_flags']['features']['payments'], 'runtime.php must preserve unspecified features');
+    $assertSame(false, $merged['feature_flags']['games']['domino'], 'runtime.php must override one game');
+    $assertSame(true, $merged['feature_flags']['games']['chess'], 'runtime.php must preserve unspecified games');
+    $assertSame('TOKEN_VALUE_FOR_TEST_ONLY', $merged['bot_token'], 'runtime.php must not replace secrets or primary config');
 
-file_put_contents($tempDir . '/runtime.php', "<?php return 'invalid';\n");
-$failedSafely = false;
-try {
-    RuntimeConfigLoader::merge($base, $configFile);
-} catch (RuntimeException $e) {
-    $failedSafely = str_contains($e->getMessage(), 'runtime config');
+    file_put_contents($runtimeFile, "<?php return 'invalid';\n");
+    $failedSafely = false;
+    try {
+        RuntimeConfigLoader::merge($base, $configFile);
+    } catch (RuntimeException $e) {
+        $failedSafely = str_contains($e->getMessage(), 'runtime config');
+    }
+    $assertSame(true, $failedSafely, 'Invalid runtime.php must fail safely during normal bootstrap');
+
+    define('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP', true);
+    file_put_contents($runtimeFile, "<?php throw new RuntimeException('broken runtime');\n");
+    file_put_contents($controlFile, '{broken');
+    $bypassed = RuntimeConfigLoader::merge($base, $configFile);
+    $assertSame($base, $bypassed, 'Cutover control bootstrap must bypass broken runtime and rehearsal overrides');
+} finally {
+    @unlink($controlFile);
+    @unlink($runtimeFile);
+    @unlink($configFile);
+    @rmdir($tempDir);
 }
-$assertSame(true, $failedSafely, 'Invalid runtime.php must fail safely');
-
-@unlink($tempDir . '/runtime.php');
-@unlink($configFile);
-@rmdir($tempDir);
 
 fwrite(STDOUT, "RuntimeConfigLoaderTest: {$assertions} assertions passed\n");
