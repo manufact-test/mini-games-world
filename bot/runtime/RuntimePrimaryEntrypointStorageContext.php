@@ -34,11 +34,21 @@ final class RuntimePrimaryEntrypointStorageContext
             !== RuntimePrimaryStagingSelectorEvidence::CONTRACT_VERSION) {
             throw new RuntimeException('Entrypoint storage context requires the exact selector contract version.');
         }
-        $selectorFingerprint = strtolower(trim((string)(
-            $resolutionReport['selector_evidence_fingerprint'] ?? ''
-        )));
-        if (preg_match('/^[a-f0-9]{64}$/', $selectorFingerprint) !== 1) {
-            throw new RuntimeException('Entrypoint storage context requires a valid selector evidence fingerprint.');
+
+        $stateRevision = (int)($resolutionReport['state_revision'] ?? 0);
+        if ($stateRevision < 1) {
+            throw new RuntimeException('Entrypoint storage context requires a valid state revision.');
+        }
+        foreach ([
+            'state_sha256' => 'state fingerprint',
+            'database_identity_fingerprint' => 'database identity fingerprint',
+            'evidence_fingerprint' => 'evidence fingerprint',
+            'selector_evidence_fingerprint' => 'selector evidence fingerprint',
+        ] as $field => $label) {
+            $fingerprint = strtolower(trim((string)($resolutionReport[$field] ?? '')));
+            if (preg_match('/^[a-f0-9]{64}$/', $fingerprint) !== 1) {
+                throw new RuntimeException('Entrypoint storage context requires a valid ' . $label . '.');
+            }
         }
 
         if (self::$storage !== null) {
@@ -79,6 +89,7 @@ final class RuntimePrimaryEntrypointStorageContext
                 'entrypoint' => '',
                 'storage_driver' => 'json',
                 'application_entrypoint_routed' => false,
+                'legacy_json_bridges_suppressed' => false,
             ];
         }
         return [
@@ -95,6 +106,7 @@ final class RuntimePrimaryEntrypointStorageContext
                 self::$resolutionReport['selector_evidence_fingerprint'] ?? ''
             ))),
             'projection_outbox_enabled' => true,
+            'legacy_json_bridges_suppressed' => true,
             'application_entrypoint_routed' => true,
             'application_entrypoints_changed' => false,
             'cron_changed' => false,
