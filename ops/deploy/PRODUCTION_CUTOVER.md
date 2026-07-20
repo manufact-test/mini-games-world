@@ -67,7 +67,9 @@ Emergency `--status`, `--rollback` and reviewed `--rearm` do **not** initialize 
 
 The cutover CLI intentionally boots from the private base configuration without automatically executing `runtime.php` or the staging rehearsal control file. After recovery-state checks, the runner reads and merges `runtime.php` explicitly for the production preflight and the actual operation. This keeps `--status` and `--rollback` usable when `runtime.php` is malformed or interrupted. Normal web, API, webhook, bot and Cron bootstrap behavior is unchanged because the bypass constant exists only inside this cutover CLI entrypoint.
 
-`--status` is read-only and does not acquire the exclusive cutover lock, so it can report an active or interrupted operation from atomically published state/runtime files. `--rollback` and `--rearm` do acquire the exclusive cutover lock. If another cutover process still holds that lock, these commands return a non-success `*_blocked` report and exit non-zero instead of falsely claiming a successful no-op. Stop or confirm the active process and retry the emergency command.
+`--status` is read-only and does not acquire the exclusive cutover lock, so it can report an active or interrupted operation from atomically published state/runtime files. It also validates the persisted state against the actual runtime, write block, preserved backup and enabled module set. A mismatched terminal state returns `ok: false`, `state_contract_error` and `operator_action_required: true`.
+
+`--rollback` and `--rearm` do acquire the exclusive cutover lock. If another cutover process still holds that lock, these commands return a non-success `*_blocked` report and exit non-zero instead of falsely claiming a successful no-op. Stop or confirm the active process and retry the emergency command.
 
 Hostinger scheduling uses one temporary five-minute Cron for the selected mode. Repeated `--run` ticks are locked and idempotent. Do not create the `--run` Cron until the exact build, preflight fingerprint and short-lived approval are confirmed.
 
