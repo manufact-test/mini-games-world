@@ -8,6 +8,7 @@ The cutover runner refuses execution unless all of the following are true:
 
 - environment is exactly `production`;
 - build is exactly `v103-mvp14-production-cutover`;
+- the live application API and Telegram/admin webhook entrypoints are wired to the versioned DB-primary coordinator and no longer open direct JSON transactions;
 - production DB is connected and has zero pending migrations;
 - a fresh read-only production preflight is clean;
 - the private approval is enabled, bound to this build, bound to the exact current preflight plan fingerprint and not expired;
@@ -19,6 +20,12 @@ The cutover runner refuses execution unless all of the following are true:
 - primary and external backup locations are configured.
 
 A gate failure before the private runtime backup is created returns `action: cutover_blocked`, writes no terminal cutover state and remains safely retryable after the blocker is resolved.
+
+## Current DB-primary prerequisite blocker
+
+The existing application is still JSON-first at its real production entrypoints: `bot/api.php` and `bot/handlers/WebhookHandler.php` open direct JSON transactions, while the current runtime repositories and bridges primarily synchronize or audit JSON data against the DB. A routing marker alone therefore does not make the live application DB-primary.
+
+`ProductionRuntimePrimaryContract` blocks `--run` before preflight approval and before every mutation until both entrypoints use `ProductionPrimaryRuntimeCoordinator`, direct `StorageFactory::createJson(...)` calls are removed from them, and the versioned coordinator exposes the API and webhook mutation contracts. This blocker is intentional and cannot be bypassed by private Hostinger configuration. PR #66 must remain Draft and must not be deployed until the prerequisite DB-primary runtime work is complete and separately verified.
 
 ## Private approval
 
@@ -44,6 +51,8 @@ Start the protected cutover:
 ```bash
 /usr/bin/php /absolute/path/public_html/ops/deploy/production-cutover.php --run
 ```
+
+Until the DB-primary prerequisite is complete, this command returns `cutover_blocked` without changing production.
 
 Read status at any time:
 
@@ -85,20 +94,21 @@ The cutover CLI intentionally boots from the private base configuration without 
 
 ### Phase 1 — `--run`
 
-1. Repeat the production preflight and validate the exact short-lived approval.
-2. Save an exact private `runtime.php` backup outside the deployment.
-3. Enable maintenance and financial read-only mode.
-4. Disable new matchmaking, invitations, payments and shop orders.
-5. Clear stale queue/search state and require all traffic/financial counters to be zero.
-6. Seal JSON writes with the cutover write barrier.
-7. Create and verify a fresh primary and external production backup pair.
-8. Import accounts, opening balances, account ownership, normalized realtime data and the legacy financial archive.
-9. Reject any failed nested import, unknown financial status or incomplete runtime schema.
-10. Synchronize all nine runtime modules and run the full DB regression before publication.
-11. Publish the all-module DB routing marker bound to build v103 while JSON remains the rollback driver.
-12. Prove the sealed JSON fingerprint did not change and repeat the full DB regression.
-13. Persist `state: awaiting_release`.
-14. Keep maintenance, financial read-only and the JSON write block active.
+1. Verify the versioned DB-primary coordinator is active in the real API and webhook entrypoints.
+2. Repeat the production preflight and validate the exact short-lived approval.
+3. Save an exact private `runtime.php` backup outside the deployment.
+4. Enable maintenance and financial read-only mode.
+5. Disable new matchmaking, invitations, payments and shop orders.
+6. Clear stale queue/search state and require all traffic/financial counters to be zero.
+7. Seal JSON writes with the cutover write barrier.
+8. Create and verify a fresh primary and external production backup pair.
+9. Import accounts, opening balances, account ownership, normalized realtime data and the legacy financial archive.
+10. Reject any failed nested import, unknown financial status or incomplete runtime schema.
+11. Synchronize all nine runtime modules and run the full DB regression before publication.
+12. Publish the all-module DB routing marker bound to build v103 while JSON remains the rollback driver.
+13. Prove the sealed JSON fingerprint did not change and repeat the full DB regression.
+14. Persist `state: awaiting_release`.
+15. Keep maintenance, financial read-only and the JSON write block active.
 
 Required phase-1 result:
 
@@ -157,7 +167,7 @@ Required final result:
 
 ### Blocked before mutation
 
-A failed preflight, missing/expired approval, fingerprint mismatch or other gate failure before the runtime backup is created returns:
+A missing DB-primary entrypoint contract, failed preflight, missing/expired approval, fingerprint mismatch or other gate failure before the runtime backup is created returns:
 
 - `action: cutover_blocked`;
 - `production_changed: false`;
