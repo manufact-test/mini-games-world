@@ -26,7 +26,7 @@ $assertTrue(($current['ready'] ?? false) === true, 'Current guarded selector sou
 $assertTrue(($current['blockers'] ?? ['unexpected']) === [], 'Current selector evidence must have no blockers');
 $assertTrue(($current['default_storage_driver'] ?? '') === 'json', 'Selector evidence must preserve JSON default');
 $assertTrue(($current['production_selector_allowed'] ?? true) === false, 'Selector evidence must forbid production routing');
-$assertTrue(count((array)($current['sources'] ?? [])) === 8, 'Selector evidence must fingerprint eight source files');
+$assertTrue(count((array)($current['sources'] ?? [])) === 16, 'Selector evidence must fingerprint the complete sixteen-file request contour');
 foreach ((array)$current['sources'] as $sha) {
     $assertTrue(preg_match('/^[a-f0-9]{64}$/', (string)$sha) === 1, 'Every selector source fingerprint must be SHA-256');
 }
@@ -37,7 +37,15 @@ foreach ((array)$current['checks'] as $passed) {
 $fixture = sys_get_temp_dir() . '/mgw-selector-evidence-' . bin2hex(random_bytes(6));
 $paths = [
     'bot/api.php',
+    'bot/webhook.php',
     'bot/handlers/WebhookHandler.php',
+    'bot/helpers/RuntimeAdminGuard.php',
+    'bot/helpers/AdminPaymentRejectGuard.php',
+    'bot/helpers/AdminShopOrderNotificationGuard.php',
+    'bot/helpers/AdminShopOrderUiGuard.php',
+    'bot/helpers/AdminGoldTopupNotificationGuard.php',
+    'bot/helpers/AdminSystemCheckGuard.php',
+    'bot/helpers/UserWelcomeGuard.php',
     'bot/core/bootstrap.php',
     'bot/storage/StorageFactory.php',
     'bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php',
@@ -48,8 +56,12 @@ $paths = [
 try {
     foreach ($paths as $relative) {
         $destination = $fixture . '/' . $relative;
-        mkdir(dirname($destination), 0700, true);
-        copy($projectRoot . '/' . $relative, $destination);
+        if (!is_dir(dirname($destination)) && !mkdir(dirname($destination), 0700, true) && !is_dir(dirname($destination))) {
+            throw new RuntimeException('Could not create selector fixture directory.');
+        }
+        if (!copy($projectRoot . '/' . $relative, $destination)) {
+            throw new RuntimeException('Could not copy selector fixture source: ' . $relative);
+        }
     }
     $readyFixture = RuntimePrimaryStagingSelectorEvidence::inspect($fixture);
     $assertTrue(($readyFixture['ready'] ?? false) === true, 'Copied selector fixture must remain ready');
@@ -63,6 +75,18 @@ try {
     $assertTrue(
         in_array('Selector evidence check failed: storage_factory_lazy_selector_present.', (array)($blocked['blockers'] ?? []), true),
         'Blocked selector evidence must identify the missing lazy hook'
+    );
+
+    copy($projectRoot . '/bot/storage/StorageFactory.php', $factoryPath);
+    $guardPath = $fixture . '/bot/helpers/RuntimeAdminGuard.php';
+    $guard = (string)file_get_contents($guardPath);
+    $guard .= "\n/* forced bypass */ new JsonStorageAdapter('/tmp');\n";
+    file_put_contents($guardPath, $guard);
+    $direct = RuntimePrimaryStagingSelectorEvidence::inspect($fixture);
+    $assertTrue(($direct['ready'] ?? true) === false, 'Direct JSON construction inside request contour must block evidence');
+    $assertTrue(
+        in_array('Selector evidence check failed: request_direct_json_constructor_absent.', (array)($direct['blockers'] ?? []), true),
+        'Direct JSON bypass must remain explicit'
     );
 
     unlink($fixture . '/bot/runtime/RuntimePrimaryEntrypointStorageContext.php');
