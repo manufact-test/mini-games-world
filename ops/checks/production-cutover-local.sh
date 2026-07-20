@@ -12,6 +12,7 @@ FILES=(
   bot/cutover/ProductionCutoverRunner.php
   bot/cutover/ProductionCutoverRunTrait.php
   bot/cutover/ProductionCutoverPerformTrait.php
+  bot/cutover/ProductionCutoverReleaseTrait.php
   bot/cutover/ProductionCutoverControlTrait.php
   bot/cutover/ProductionCutoverNoopTrait.php
   bot/cutover/ProductionCutoverDataTrait.php
@@ -26,6 +27,8 @@ FILES=(
   bot/tests/ProductionCutoverConfigTest.php
   bot/tests/ProductionCutoverImportReportTest.php
   bot/tests/ProductionCutoverManualRollbackStateTest.php
+  bot/tests/ProductionCutoverReleaseStateTest.php
+  bot/tests/ProductionCutoverTerminalContractTest.php
   bot/tests/RuntimeStorageRouterTest.php
   bot/tests/ProductionCutoverRunnerContractTest.php
   bot/tests/ProductionCutoverRunnerStateTest.php
@@ -41,6 +44,8 @@ TESTS=(
   bot/tests/ProductionCutoverConfigTest.php
   bot/tests/ProductionCutoverImportReportTest.php
   bot/tests/ProductionCutoverManualRollbackStateTest.php
+  bot/tests/ProductionCutoverReleaseStateTest.php
+  bot/tests/ProductionCutoverTerminalContractTest.php
   bot/tests/RuntimeStorageRouterTest.php
   bot/tests/ProductionCutoverRunnerContractTest.php
   bot/tests/ProductionCutoverRunnerStateTest.php
