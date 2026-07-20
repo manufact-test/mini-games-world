@@ -28,9 +28,14 @@ trait ProductionCutoverNoopTrait
             );
         }
 
-        $writeBlockActive = is_file($this->writeBlockFile);
-        if ($router->enabled() || $writeBlockActive) {
-            $error = new RuntimeException('Rolled-back cutover state does not match the active runtime contract.');
+        $contractError = $this->statusStateContractError(
+            $state,
+            $router->enabled(),
+            $router->enabledModules(),
+            $runtime
+        );
+        if ($contractError !== '') {
+            $error = new RuntimeException($contractError);
             if ($this->recoveryArtifactsPresent()) {
                 return $this->automaticRollbackReport(
                     $error,
@@ -60,7 +65,7 @@ trait ProductionCutoverNoopTrait
             'build' => self::BUILD,
             'runtime_route' => RuntimeStorageRouter::DRIVER_JSON,
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
-            'runtime_backup_present' => is_file($this->runtimeBackupFile),
+            'runtime_backup_present' => true,
             'json_write_block_active' => false,
             'router_error' => '',
             'state_summary' => $this->compactState($state),
@@ -96,9 +101,14 @@ trait ProductionCutoverNoopTrait
             );
         }
 
-        $writeBlockActive = is_file($this->writeBlockFile);
-        if (!$router->enabled() || $writeBlockActive) {
-            $error = new RuntimeException('Completed cutover state does not match the published database runtime contract.');
+        $contractError = $this->statusStateContractError(
+            $state,
+            $router->enabled(),
+            $router->enabledModules(),
+            $runtime
+        );
+        if ($contractError !== '') {
+            $error = new RuntimeException($contractError);
             if ($this->recoveryArtifactsPresent()) {
                 return $this->automaticRollbackReport(
                     $error,
@@ -129,7 +139,7 @@ trait ProductionCutoverNoopTrait
             'runtime_route' => RuntimeStorageRouter::DRIVER_DATABASE,
             'enabled_modules' => $router->enabledModules(),
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
-            'runtime_backup_present' => is_file($this->runtimeBackupFile),
+            'runtime_backup_present' => true,
             'json_write_block_active' => false,
             'state_summary' => $this->compactState($state),
             'sensitive_identifiers_exposed' => false,
