@@ -162,8 +162,10 @@ trait ProductionCutoverRuntimeTrait
             'database_runtime_disabled' => $routerDisabled,
             'error' => $error,
         ];
+        $stateWritten = false;
         try {
             $this->writeState($state);
+            $stateWritten = true;
         } catch (Throwable $stateError) {
             $error = trim($error . '; ' . $this->safeMessage($stateError->getMessage()), '; ');
             $ok = false;
@@ -172,7 +174,7 @@ trait ProductionCutoverRuntimeTrait
         return [
             'ok' => $ok,
             'action' => 'rollback_to_json',
-            'state_written' => true,
+            'state_written' => $stateWritten,
             'runtime_restored' => $runtimeRestored,
             'json_write_block_removed' => $writeBlockRemoved,
             'database_runtime_disabled' => $routerDisabled,
