@@ -19,26 +19,29 @@ final class StagingPrimaryRehearsalOperation
 
     public function status(): array
     {
+        $status = $this->backend->status();
         return $this->report('status', [
-            'status' => $this->backend->status(),
+            'status' => $status,
             'read_only' => true,
-        ]);
+        ], !empty($status['ok']));
     }
 
     public function install(): array
     {
+        $schemas = $this->backend->installSchemas();
         return $this->report('schemas_installed', [
-            'schemas' => $this->backend->installSchemas(),
+            'schemas' => $schemas,
             'read_only' => false,
-        ]);
+        ], !empty($schemas['ok']));
     }
 
     public function seed(): array
     {
+        $snapshot = $this->backend->synchronizeCurrentSnapshot();
         return $this->report('snapshot_synchronized', [
-            'snapshot' => $this->backend->synchronizeCurrentSnapshot(),
+            'snapshot' => $snapshot,
             'read_only' => false,
-        ]);
+        ], !empty($snapshot['ok']));
     }
 
     public function runOnce(): array
@@ -53,7 +56,13 @@ final class StagingPrimaryRehearsalOperation
     public function rehearse(): array
     {
         $schemas = $this->backend->installSchemas();
+        if (empty($schemas['ok'])) {
+            throw new RuntimeException('DB-primary rehearsal schema preparation failed.');
+        }
         $snapshot = $this->backend->synchronizeCurrentSnapshot();
+        if (empty($snapshot['ok'])) {
+            throw new RuntimeException('DB-primary rehearsal snapshot synchronization failed.');
+        }
         $targetRevision = (int)($snapshot['state_revision'] ?? 0);
         $targetSha = strtolower(trim((string)($snapshot['state_sha256'] ?? '')));
         if ($targetRevision < 1 || preg_match('/^[a-f0-9]{64}$/', $targetSha) !== 1) {
@@ -86,6 +95,12 @@ final class StagingPrimaryRehearsalOperation
         }
 
         $targetEvent = $this->backend->eventStatus($targetRevision);
+        if (($targetEvent['present'] ?? false) !== true) {
+            throw new RuntimeException('DB-primary rehearsal target event disappeared after worker execution.');
+        }
+        if (!hash_equals($targetSha, strtolower(trim((string)($targetEvent['state_sha256'] ?? ''))))) {
+            throw new RuntimeException('DB-primary rehearsal target event fingerprint changed after worker execution.');
+        }
         if ((string)($targetEvent['status'] ?? '') === 'completed') $completed = true;
         $status = $this->backend->status();
 
@@ -105,7 +120,7 @@ final class StagingPrimaryRehearsalOperation
                     ? 'Review the non-sensitive parity report. Do not connect application entrypoints yet.'
                     : 'Resolve the worker blocker and rerun the staging rehearsal. Do not connect application entrypoints.',
             ],
-            $completed
+            $completed && !empty($status['ok'])
         );
     }
 
