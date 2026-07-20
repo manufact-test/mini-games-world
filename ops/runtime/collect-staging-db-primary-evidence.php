@@ -52,6 +52,7 @@ try {
 }
 
 require $projectRoot . '/bot/core/bootstrap.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryPrivateConfigGuard.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxWriter.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionBootstrap.php';
@@ -75,6 +76,18 @@ if ($environment !== 'staging') {
     fwrite(STDERR, "Automated DB-primary evidence collection is staging-only.\n");
     exit(2);
 }
+
+try {
+    $privateConfig = RuntimePrimaryPrivateConfigGuard::assertExternal(
+        (string)($configFile ?? ''),
+        $projectRoot
+    );
+    $privateDir = (string)$privateConfig['private_dir'];
+} catch (Throwable $error) {
+    fwrite(STDERR, trim($error->getMessage()) . PHP_EOL);
+    exit(2);
+}
+
 $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
 if (!$databaseConfig->enabled()) {
     fwrite(STDERR, "Automated DB-primary evidence collection requires an enabled database.\n");
@@ -92,11 +105,6 @@ try {
     exit(2);
 }
 
-$privateDir = rtrim(str_replace('\\', '/', dirname((string)$configFile)), '/');
-if ($privateDir === '' || !is_dir($privateDir)) {
-    fwrite(STDERR, "Private config directory is unavailable.\n");
-    exit(2);
-}
 $rehearsalLockPath = $privateDir . '/runtime-primary-rehearsal.lock';
 if (is_link($rehearsalLockPath)) {
     fwrite(STDERR, "Rehearsal lock file must not be a symbolic link.\n");
@@ -105,6 +113,13 @@ if (is_link($rehearsalLockPath)) {
 $lockHandle = fopen($rehearsalLockPath, 'c+');
 if (!is_resource($lockHandle)) {
     fwrite(STDERR, "Rehearsal lock file is unavailable.\n");
+    exit(2);
+}
+@chmod($rehearsalLockPath, 0600);
+clearstatcache(true, $rehearsalLockPath);
+if (is_link($rehearsalLockPath)) {
+    fclose($lockHandle);
+    fwrite(STDERR, "Rehearsal lock file became a symbolic link.\n");
     exit(2);
 }
 if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
@@ -177,6 +192,8 @@ try {
         'file_sha256' => (string)($written['file_sha256'] ?? ''),
         'bytes' => (int)($written['bytes'] ?? 0),
         'permissions' => (string)($written['permissions'] ?? ''),
+        'publish_mode' => (string)($written['publish_mode'] ?? ''),
+        'private_config_external' => true,
         'path_exposed' => false,
         'application_entrypoints_changed' => false,
         'cron_changed' => false,
