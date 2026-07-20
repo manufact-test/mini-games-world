@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
+require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionOutboxWriter.php';
+
 final class StorageFactory
 {
     public static function create(array $config): StorageAdapterInterface
@@ -17,10 +20,6 @@ final class StorageFactory
         };
     }
 
-    /**
-     * Compatibility factory for legacy call sites that currently know only data_dir.
-     * These call sites can be migrated to create(array $config) independently.
-     */
     public static function createJson(string $dataDir): StorageAdapterInterface
     {
         return new JsonStorageAdapter($dataDir);
@@ -32,8 +31,39 @@ final class StorageFactory
         if (!$databaseConfig->enabled()) {
             throw new RuntimeException('DB-primary storage requires an enabled database configuration.');
         }
-        return new DatabasePrimaryStateStorageAdapter(
-            PdoConnectionFactory::create($databaseConfig)
+
+        if (array_key_exists('runtime_primary_projection_outbox', $config)
+            && !is_array($config['runtime_primary_projection_outbox'])) {
+            throw new RuntimeException('runtime_primary_projection_outbox must be a configuration array.');
+        }
+        $outbox = is_array($config['runtime_primary_projection_outbox'] ?? null)
+            ? $config['runtime_primary_projection_outbox']
+            : [];
+        $outboxEnabled = self::strictBool(
+            $outbox['enabled'] ?? false,
+            'runtime_primary_projection_outbox.enabled'
         );
+
+        return new DatabasePrimaryStateStorageAdapter(
+            PdoConnectionFactory::create($databaseConfig),
+            $outboxEnabled ? new RuntimePrimaryProjectionOutboxWriter() : null
+        );
+    }
+
+    private static function strictBool(mixed $value, string $label): bool
+    {
+        if (is_bool($value)) return $value;
+        if (is_int($value)) {
+            if ($value === 0) return false;
+            if ($value === 1) return true;
+        }
+        if (is_string($value)) {
+            return match (strtolower(trim($value))) {
+                '1', 'true', 'yes', 'on', 'enabled' => true,
+                '0', 'false', 'no', 'off', 'disabled' => false,
+                default => throw new RuntimeException($label . ' must be a strict boolean value.'),
+            };
+        }
+        throw new RuntimeException($label . ' must be a strict boolean value.');
     }
 }
