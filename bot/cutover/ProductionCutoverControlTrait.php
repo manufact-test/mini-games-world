@@ -72,8 +72,22 @@ trait ProductionCutoverControlTrait
 
         $state = $this->readState();
         $stateName = strtolower(trim((string)($state['state'] ?? '')));
-        if (!in_array($stateName, ['rolled_back', 'rollback_failed'], true)) {
-            throw new RuntimeException('Production cutover can be rearmed only after an explicitly reviewed rollback.');
+        if ($stateName !== 'rolled_back') {
+            throw new RuntimeException('Production cutover can be rearmed only after a fully completed reviewed rollback.');
+        }
+        foreach ([
+            'runtime_restored' => 'runtime restore',
+            'json_write_block_removed' => 'JSON write-block removal',
+            'database_runtime_disabled' => 'database runtime disablement',
+        ] as $evidence => $label) {
+            if (($state[$evidence] ?? false) !== true) {
+                throw new RuntimeException('Production cutover rearm requires confirmed ' . $label . '.');
+            }
+        }
+        if (!is_file($this->runtimeBackupFile)
+            || !is_readable($this->runtimeBackupFile)
+            || (int)filesize($this->runtimeBackupFile) <= 0) {
+            throw new RuntimeException('Production cutover rearm requires the preserved exact runtime backup.');
         }
         if (is_file($this->writeBlockFile)) {
             throw new RuntimeException('Production cutover cannot be rearmed while the JSON write block is active.');
@@ -92,17 +106,14 @@ trait ProductionCutoverControlTrait
         }
         @chmod($archivedState, 0600);
 
-        $archivedRuntimeBackup = null;
-        if (is_file($this->runtimeBackupFile)) {
-            $archivedRuntimeBackup = $this->privateDir . '/production-cutover.runtime.backup.' . $suffix;
-            if (!rename($this->runtimeBackupFile, $archivedRuntimeBackup)) {
-                if (!rename($archivedState, $this->stateFile)) {
-                    throw new RuntimeException('Could not archive the runtime backup and could not restore the state file.');
-                }
-                throw new RuntimeException('Could not archive the reviewed production runtime backup.');
+        $archivedRuntimeBackup = $this->privateDir . '/production-cutover.runtime.backup.' . $suffix;
+        if (!rename($this->runtimeBackupFile, $archivedRuntimeBackup)) {
+            if (!rename($archivedState, $this->stateFile)) {
+                throw new RuntimeException('Could not archive the runtime backup and could not restore the state file.');
             }
-            @chmod($archivedRuntimeBackup, 0600);
+            throw new RuntimeException('Could not archive the reviewed production runtime backup.');
         }
+        @chmod($archivedRuntimeBackup, 0600);
 
         return [
             'ok' => true,
@@ -114,7 +125,7 @@ trait ProductionCutoverControlTrait
             'database_runtime_enabled' => false,
             'json_write_block_active' => false,
             'state_archived' => true,
-            'runtime_backup_archived' => $archivedRuntimeBackup !== null,
+            'runtime_backup_archived' => true,
             'fresh_preflight_required' => true,
             'fresh_approval_required' => true,
             'production_changed' => false,
