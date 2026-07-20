@@ -147,4 +147,47 @@ trait ProductionCutoverReleaseTrait
             );
         }
     }
+
+    private function readRuntimeBackup(): array
+    {
+        if (!is_file($this->runtimeBackupFile) || !is_readable($this->runtimeBackupFile)) {
+            throw new RuntimeException('Production cutover runtime backup is unavailable for release.');
+        }
+        $payload = file_get_contents($this->runtimeBackupFile);
+        if (!is_string($payload) || $payload === '') {
+            throw new RuntimeException('Production cutover runtime backup is unreadable for release.');
+        }
+        if ($payload === '__MGW_RUNTIME_ABSENT__') return [];
+
+        $runtime = require $this->runtimeBackupFile;
+        if (!is_array($runtime)) {
+            throw new RuntimeException('Production cutover runtime backup must return an array.');
+        }
+        return $runtime;
+    }
+
+    private function releaseBlockedReport(
+        Throwable $error,
+        string $reason,
+        string $state,
+        ?string $startedAt = null
+    ): array {
+        return [
+            'ok' => false,
+            'report_type' => 'mvp-14.9-production-cutover',
+            'action' => 'release_blocked',
+            'reason' => $reason,
+            'state' => $state,
+            'environment' => 'production',
+            'build' => self::BUILD,
+            'error_class' => get_class($error),
+            'error_message' => $this->safeMessage($error->getMessage()),
+            'production_changed' => false,
+            'maintenance_released' => false,
+            'manual_review_required' => true,
+            'sensitive_identifiers_exposed' => false,
+            'started_at_utc' => $startedAt,
+            'failed_at_utc' => $this->nowUtc(),
+        ];
+    }
 }
