@@ -130,6 +130,7 @@ $assertTrue(hash_equals($stateSha, (string)($result['state_sha256'] ?? '')), 'Al
 $assertTrue(($result['projected_modules'] ?? []) === $modules, 'All-module projection must preserve dependency order');
 $assertTrue(count((array)($result['project_reports'] ?? [])) === 9, 'All-module projection must return nine project reports');
 $assertTrue(count((array)($result['audit_reports'] ?? [])) === 9, 'All-module projection must return nine audit reports');
+$assertTrue(($result['read_only'] ?? true) === false, 'Projection pass must not claim read-only behavior');
 $assertTrue(
     preg_match('/^[a-f0-9]{64}$/', (string)($result['all_module_fingerprint'] ?? '')) === 1,
     'All-module projection must expose a deterministic fingerprint'
@@ -137,6 +138,23 @@ $assertTrue(
 foreach ($projectors as $projector) {
     $assertTrue($projector->projectCalls === 1, 'Each module must project exactly once');
     $assertTrue($projector->auditCalls === 1, 'Each module must audit exactly once');
+}
+
+$auditProjectors = $makeProjectors();
+$auditSubject = new RuntimePrimaryAllModuleProjector($auditProjectors);
+$audit = $auditSubject->auditOnly($snapshot, 7, $stateSha);
+$assertTrue(($audit['ok'] ?? false) === true, 'Audit-only pass must succeed');
+$assertTrue(($audit['parity_ok'] ?? false) === true, 'Audit-only pass must prove parity');
+$assertTrue(($audit['read_only'] ?? false) === true, 'Audit-only pass must identify itself as read-only');
+$assertTrue(($audit['projected_modules'] ?? []) === $modules, 'Audit-only pass must verify all nine modules');
+$assertTrue(count((array)($audit['audit_reports'] ?? [])) === 9, 'Audit-only pass must return nine audit reports');
+$assertTrue(
+    hash_equals((string)$result['all_module_fingerprint'], (string)$audit['all_module_fingerprint']),
+    'Projection and later audit-only pass must produce the same all-module fingerprint'
+);
+foreach ($auditProjectors as $projector) {
+    $assertTrue($projector->projectCalls === 0, 'Audit-only pass must never invoke a project mutation');
+    $assertTrue($projector->auditCalls === 1, 'Audit-only pass must audit every module exactly once');
 }
 
 $assertThrows(
@@ -160,7 +178,15 @@ $assertThrows(
     'revision must be positive'
 );
 $assertThrows(
+    static fn() => $auditSubject->auditOnly($snapshot, 0, $stateSha),
+    'revision must be positive'
+);
+$assertThrows(
     static fn() => $subject->project($snapshot, 7, str_repeat('0', 64)),
+    'snapshot fingerprint mismatch'
+);
+$assertThrows(
+    static fn() => $auditSubject->auditOnly($snapshot, 7, str_repeat('0', 64)),
     'snapshot fingerprint mismatch'
 );
 
@@ -175,35 +201,35 @@ $badAudit = new RuntimePrimaryAllModuleProjector($makeProjectors([
     'history' => ['audit' => ['read_only' => false]],
 ]));
 $assertThrows(
-    static fn() => $badAudit->project($snapshot, 7, $stateSha),
+    static fn() => $badAudit->auditOnly($snapshot, 7, $stateSha),
     'audit is not read-only: history'
 );
 $wrongRevision = new RuntimePrimaryAllModuleProjector($makeProjectors([
     'shop' => ['audit' => ['state_revision' => 8]],
 ]));
 $assertThrows(
-    static fn() => $wrongRevision->project($snapshot, 7, $stateSha),
+    static fn() => $wrongRevision->auditOnly($snapshot, 7, $stateSha),
     'wrong revision: shop'
 );
 $wrongState = new RuntimePrimaryAllModuleProjector($makeProjectors([
     'payments' => ['audit' => ['state_sha256' => str_repeat('a', 64)]],
 ]));
 $assertThrows(
-    static fn() => $wrongState->project($snapshot, 7, $stateSha),
+    static fn() => $wrongState->auditOnly($snapshot, 7, $stateSha),
     'wrong state fingerprint: payments'
 );
 $mismatch = new RuntimePrimaryAllModuleProjector($makeProjectors([
     'weekly_bonus' => ['audit' => ['database_fingerprint' => str_repeat('b', 64)]],
 ]));
 $assertThrows(
-    static fn() => $mismatch->project($snapshot, 7, $stateSha),
+    static fn() => $mismatch->auditOnly($snapshot, 7, $stateSha),
     'fingerprints differ: weekly_bonus'
 );
 $blockers = new RuntimePrimaryAllModuleProjector($makeProjectors([
     'notifications' => ['audit' => ['blockers' => ['notification mismatch']]],
 ]));
 $assertThrows(
-    static fn() => $blockers->project($snapshot, 7, $stateSha),
+    static fn() => $blockers->auditOnly($snapshot, 7, $stateSha),
     'contains blockers: notifications'
 );
 
