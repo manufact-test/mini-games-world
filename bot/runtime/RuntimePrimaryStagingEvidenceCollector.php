@@ -140,7 +140,7 @@ final class RuntimePrimaryStagingEvidenceCollector
         foreach ((array)($report['worker_ticks'] ?? []) as $tick) {
             if (!is_array($tick) || ($tick['action'] ?? '') !== 'projection_completed') continue;
             foreach ((array)($tick['projected_modules'] ?? []) as $module) {
-                $module = strtolower(trim((string)$module);
+                $module = strtolower(trim((string)$module));
                 if ($module !== '') $modules[$module] = true;
             }
         }
