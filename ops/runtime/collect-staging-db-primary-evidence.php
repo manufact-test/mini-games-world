@@ -68,6 +68,7 @@ require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingConcurrencyProbe.
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSource.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceCollector.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceApproval.php';
 
 $environment = strtolower(trim((string)($config['environment'] ?? '')));
 if ($environment !== 'staging') {
@@ -77,6 +78,17 @@ if ($environment !== 'staging') {
 $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
 if (!$databaseConfig->enabled()) {
     fwrite(STDERR, "Automated DB-primary evidence collection requires an enabled database.\n");
+    exit(2);
+}
+try {
+    $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot);
+    RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->assertApproved(
+        $databaseConfig,
+        $currentCommit,
+        time()
+    );
+} catch (Throwable $error) {
+    fwrite(STDERR, trim($error->getMessage()) . PHP_EOL);
     exit(2);
 }
 
