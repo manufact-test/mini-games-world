@@ -24,6 +24,7 @@ FILES=(
   ops/deploy/production-cutover.php
   bot/tests/RuntimeConfigLoaderTest.php
   bot/tests/ProductionCutoverConfigTest.php
+  bot/tests/ProductionCutoverImportReportTest.php
   bot/tests/RuntimeStorageRouterTest.php
   bot/tests/ProductionCutoverRunnerContractTest.php
   bot/tests/ProductionCutoverRunnerStateTest.php
@@ -37,6 +38,7 @@ done
 TESTS=(
   bot/tests/RuntimeConfigLoaderTest.php
   bot/tests/ProductionCutoverConfigTest.php
+  bot/tests/ProductionCutoverImportReportTest.php
   bot/tests/RuntimeStorageRouterTest.php
   bot/tests/ProductionCutoverRunnerContractTest.php
   bot/tests/ProductionCutoverRunnerStateTest.php
