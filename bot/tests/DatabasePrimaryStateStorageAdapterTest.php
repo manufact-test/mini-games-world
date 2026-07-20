@@ -5,13 +5,93 @@ $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/storage/contracts/StorageTransactionInterface.php';
 require $projectRoot . '/bot/storage/contracts/StorageAdapterInterface.php';
 require $projectRoot . '/bot/database/DatabaseConnectionInterface.php';
-require $projectRoot . '/bot/database/PdoDatabaseConnection.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryStateSchemaInstaller.php';
 require $projectRoot . '/bot/runtime/DatabasePrimaryStateStorageAdapter.php';
 
-if (!extension_loaded('pdo_sqlite')) {
-    fwrite(STDOUT, "DatabasePrimaryStateStorageAdapterTest skipped: pdo_sqlite unavailable.\n");
-    exit(0);
+final class DatabasePrimaryStateTestConnection implements DatabaseConnectionInterface
+{
+    private ?array $row = null;
+    private bool $schemaInstalled = false;
+
+    public function driver(): string
+    {
+        return 'sqlite';
+    }
+
+    public function execute(string $sql, array $params = []): int
+    {
+        $normalized = strtolower(preg_replace('/\s+/', ' ', trim($sql)) ?? '');
+        if (str_starts_with($normalized, 'create table if not exists')) {
+            $this->schemaInstalled = true;
+            return 0;
+        }
+        if (str_starts_with($normalized, 'insert into ' . RuntimePrimaryStateSchemaInstaller::TABLE)) {
+            if ($this->row !== null) throw new RuntimeException('duplicate singleton');
+            $this->row = [
+                'singleton_id' => 1,
+                'revision' => (int)$params['revision'],
+                'state_json' => (string)$params['state_json'],
+                'state_sha256' => (string)$params['state_sha256'],
+                'created_at_utc' => (string)$params['created_at_utc'],
+                'updated_at_utc' => (string)$params['updated_at_utc'],
+            ];
+            return 1;
+        }
+        if (str_starts_with($normalized, 'update ' . RuntimePrimaryStateSchemaInstaller::TABLE)
+            && str_contains($normalized, 'set revision = :next_revision')) {
+            if ($this->row === null
+                || (int)$this->row['revision'] !== (int)$params['expected_revision']) {
+                return 0;
+            }
+            $this->row['revision'] = (int)$params['next_revision'];
+            $this->row['state_json'] = (string)$params['state_json'];
+            $this->row['state_sha256'] = (string)$params['state_sha256'];
+            $this->row['updated_at_utc'] = (string)$params['updated_at_utc'];
+            return 1;
+        }
+        if (str_starts_with($normalized, 'update ' . RuntimePrimaryStateSchemaInstaller::TABLE)
+            && str_contains($normalized, 'set state_sha256 = :fingerprint')) {
+            if ($this->row === null) return 0;
+            $this->row['state_sha256'] = (string)$params['fingerprint'];
+            return 1;
+        }
+        throw new RuntimeException('Unexpected test SQL execute: ' . $normalized);
+    }
+
+    public function fetchAll(string $sql, array $params = []): array
+    {
+        $normalized = strtolower(preg_replace('/\s+/', ' ', trim($sql)) ?? '');
+        if (str_starts_with($normalized, 'pragma table_info(')) {
+            if (!$this->schemaInstalled) return [];
+            return array_map(
+                static fn(string $name): array => ['name' => $name],
+                [
+                    'singleton_id', 'revision', 'state_json',
+                    'state_sha256', 'created_at_utc', 'updated_at_utc',
+                ]
+            );
+        }
+        if (str_starts_with($normalized, 'select singleton_id, revision, state_json')) {
+            return $this->row === null ? [] : [$this->row];
+        }
+        throw new RuntimeException('Unexpected test SQL fetch: ' . $normalized);
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        $before = $this->row;
+        try {
+            return $callback($this);
+        } catch (Throwable $error) {
+            $this->row = $before;
+            throw $error;
+        }
+    }
+
+    public function pdo(): PDO
+    {
+        throw new RuntimeException('PDO is not used by the focused fake database.');
+    }
 }
 
 $assertions = 0;
@@ -30,16 +110,17 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     throw new RuntimeException('Expected exception was not thrown.');
 };
 
-$pdo = new PDO('sqlite::memory:');
-$database = new PdoDatabaseConnection($pdo);
+$database = new DatabasePrimaryStateTestConnection();
 $installer = new RuntimePrimaryStateSchemaInstaller($database);
 $installed = $installer->install();
 $assertTrue(($installed['ok'] ?? false) === true, 'Runtime primary state schema must install');
-$assertTrue(($installed['driver'] ?? '') === 'sqlite', 'Runtime primary state test must use SQLite');
+$assertTrue(($installed['driver'] ?? '') === 'sqlite', 'Focused schema contract must use SQLite-compatible SQL');
 $assertTrue(
     preg_match('/^[a-f0-9]{64}$/', (string)($installed['schema_fingerprint'] ?? '')) === 1,
     'Schema installer must produce a stable fingerprint'
 );
+$installedAgain = $installer->install();
+$assertTrue(($installedAgain['schema_fingerprint'] ?? '') === ($installed['schema_fingerprint'] ?? ''), 'Schema install must be idempotent');
 
 $adapter = new DatabasePrimaryStateStorageAdapter($database);
 $source = [
