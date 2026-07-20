@@ -26,7 +26,7 @@ $assertTrue(($current['ready'] ?? false) === true, 'Current guarded selector sou
 $assertTrue(($current['blockers'] ?? ['unexpected']) === [], 'Current selector evidence must have no blockers');
 $assertTrue(($current['default_storage_driver'] ?? '') === 'json', 'Selector evidence must preserve JSON default');
 $assertTrue(($current['production_selector_allowed'] ?? true) === false, 'Selector evidence must forbid production routing');
-$assertTrue(count((array)($current['sources'] ?? [])) === 16, 'Selector evidence must fingerprint the complete sixteen-file request contour');
+$assertTrue(count((array)($current['sources'] ?? [])) === 17, 'Selector evidence must fingerprint the complete seventeen-file request contour');
 foreach ((array)$current['sources'] as $sha) {
     $assertTrue(preg_match('/^[a-f0-9]{64}$/', (string)$sha) === 1, 'Every selector source fingerprint must be SHA-256');
 }
@@ -47,6 +47,7 @@ $paths = [
     'bot/helpers/AdminSystemCheckGuard.php',
     'bot/helpers/UserWelcomeGuard.php',
     'bot/core/bootstrap.php',
+    'bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php',
     'bot/storage/StorageFactory.php',
     'bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php',
     'bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php',
@@ -65,6 +66,16 @@ try {
     }
     $readyFixture = RuntimePrimaryStagingSelectorEvidence::inspect($fixture);
     $assertTrue(($readyFixture['ready'] ?? false) === true, 'Copied selector fixture must remain ready');
+
+    $bridgePath = $fixture . '/bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php';
+    unlink($bridgePath);
+    $missingBridge = RuntimePrimaryStagingSelectorEvidence::inspect($fixture);
+    $assertTrue(($missingBridge['ready'] ?? true) === false, 'Missing legacy bridge guard must block evidence');
+    $assertTrue(
+        in_array('Selector evidence source is unavailable: bridge_guard.', (array)($missingBridge['blockers'] ?? []), true),
+        'Missing legacy bridge guard must remain explicit'
+    );
+    copy($projectRoot . '/bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php', $bridgePath);
 
     $factoryPath = $fixture . '/bot/storage/StorageFactory.php';
     $factory = (string)file_get_contents($factoryPath);
