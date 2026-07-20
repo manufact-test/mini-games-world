@@ -5,7 +5,7 @@ require_once __DIR__ . '/RuntimePrimaryStagingEntrypointSelectorConfig.php';
 
 final class RuntimePrimaryStagingSelectorEvidence
 {
-    public const CONTRACT_VERSION = 'v1-guarded-staging-entrypoint-selector';
+    public const CONTRACT_VERSION = 'v2-api-session-staging-entrypoint-selector';
 
     public static function inspect(string $projectRoot): array
     {
@@ -32,6 +32,8 @@ final class RuntimePrimaryStagingSelectorEvidence
             'selector' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php',
             'selector_config' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php',
             'storage_context' => $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointStorageContext.php',
+            'api_session_coordinator' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php',
+            'api_finalization_hook' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiRequestFinalizationHook.php',
         ];
         $sources = [];
         $sourceText = [];
@@ -56,6 +58,8 @@ final class RuntimePrimaryStagingSelectorEvidence
         $selectorConfig = $sourceText['selector_config'] ?? '';
         $context = $sourceText['storage_context'] ?? '';
         $selectorBootstrap = $sourceText['selector_bootstrap'] ?? '';
+        $coordinator = $sourceText['api_session_coordinator'] ?? '';
+        $hook = $sourceText['api_finalization_hook'] ?? '';
         $requestSources = array_intersect_key($sourceText, array_fill_keys([
             'api',
             'webhook_entrypoint',
@@ -77,10 +81,6 @@ final class RuntimePrimaryStagingSelectorEvidence
             }
         }
 
-        $bridgeChecks = substr_count(
-            $bootstrap,
-            'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()'
-        );
         $checks = [
             'api_json_factory_present' => str_contains($sourceText['api'] ?? '', 'StorageFactory::createJson('),
             'webhook_json_factory_present' => str_contains($sourceText['webhook_handler'] ?? '', 'StorageFactory::createJson('),
@@ -96,18 +96,10 @@ final class RuntimePrimaryStagingSelectorEvidence
             'legacy_bridge_hooks_suppressed_for_db_context' => str_contains(
                 $bootstrap,
                 'RuntimePrimaryEntrypointBridgeGuard.php'
-            ) && $bridgeChecks >= 8,
-            'legacy_bridge_api_filters_preserve_db_response' => substr_count(
+            ) && substr_count(
                 $bootstrap,
-                'if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return $data;'
-            ) >= 2,
-            'legacy_bridge_webhook_batch_suppressed' => str_contains(
-                $bootstrap,
-                'if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;'
-            ) && str_contains(
-                $bootstrap,
-                'foreach ($runtimeWebhookSuccessHooks as $hook) $hook();'
-            ),
+                'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()'
+            ) >= 8,
             'storage_factory_lazy_selector_present' => str_contains(
                 $factory,
                 'installGuardedEntrypointContextIfEligible()'
@@ -135,34 +127,39 @@ final class RuntimePrimaryStagingSelectorEvidence
                 $factory,
                 '$failures[$entrypoint] = $error'
             ),
-            'selector_bootstrap_v3_present' => str_contains(
+            'selector_bootstrap_lifecycle_present' => str_contains(
                 $selectorBootstrap,
-                'RuntimePrimaryStagingEvidenceV3Verifier.php'
+                'RuntimePrimaryStagingEvidenceV4Verifier.php'
             ) && str_contains(
                 $selectorBootstrap,
-                'RuntimePrimaryStagingEvidenceV3Gate.php'
+                'RuntimePrimaryStagingApiSessionCoordinator.php'
+            ) && str_contains(
+                $selectorBootstrap,
+                'RuntimePrimaryStagingRequestFinalizer.php'
             ),
             'selector_staging_guard_present' => str_contains(
                 $selector,
                 "if (\$environment !== 'staging')"
             ),
-            'selector_v3_requirement_present' => str_contains(
+            'selector_api_only_present' => str_contains(
                 $selector,
-                'verifySelectorEvidenceV3('
+                "if (\$this->entrypoint === 'webhook')"
             ) && str_contains(
                 $selector,
-                'RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION'
-            ),
-            'selector_resolution_guard_present' => str_contains(
-                $selector,
-                'RuntimePrimaryStagingStorageResolver('
+                'DB-primary webhook routing is not allowed'
             ) && str_contains(
                 $selector,
-                'RuntimePrimaryEntrypointStorageContext::install('
+                'RuntimePrimaryStagingApiSessionCoordinator('
             ),
-            'selector_contract_version_present' => str_contains(
+            'selector_config_api_only_present' => str_contains(
                 $selectorConfig,
                 RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION
+            ) && str_contains(
+                $selectorConfig,
+                'supports only API'
+            ) && str_contains(
+                $selectorConfig,
+                "'webhook_allowed' => false"
             ),
             'selector_disabled_default_present' => str_contains(
                 $selectorConfig,
@@ -172,13 +169,50 @@ final class RuntimePrimaryStagingSelectorEvidence
                 $context,
                 "if (\$storage->driver() !== 'database')"
             ),
-            'context_v3_only_present' => str_contains(
+            'context_lifecycle_v4_only_present' => str_contains(
                 $context,
-                'requires selector-aware evidence v3'
+                'requires lifecycle evidence v4'
+            ) && str_contains(
+                $context,
+                'request_finalizer_registered'
+            ) && str_contains(
+                $context,
+                'dynamic_session_readiness'
+            ),
+            'context_api_only_present' => str_contains(
+                $context,
+                "if (\$entrypoint !== 'api')"
             ),
             'context_immutable_present' => str_contains(
                 $context,
                 'already installed for another storage or entrypoint'
+            ),
+            'coordinator_v4_before_database_present' => strpos(
+                $coordinator,
+                'RuntimePrimaryStagingEvidenceV4Gate('
+            ) !== false && strpos(
+                $coordinator,
+                'RuntimePrimaryStagingEvidenceV4Gate('
+            ) < strpos(
+                $coordinator,
+                'PdoConnectionFactory::create($databaseConfig)'
+            ),
+            'coordinator_dynamic_readiness_present' => str_contains(
+                $coordinator,
+                'RuntimePrimaryStagingRequestSessionReadiness('
+            ) && str_contains(
+                $coordinator,
+                'RuntimePrimaryStagingRequestFinalizer('
+            ) && str_contains(
+                $coordinator,
+                'array_unshift($hooks, $hook)'
+            ),
+            'finalization_hook_once_only_present' => str_contains(
+                $hook,
+                'was invoked more than once'
+            ) && str_contains(
+                $hook,
+                'RuntimePrimaryEntrypointStorageContext::storage() !== $this->storage'
             ),
         ];
         ksort($checks, SORT_STRING);
@@ -198,6 +232,8 @@ final class RuntimePrimaryStagingSelectorEvidence
             'selector_enabled_by_evidence' => false,
             'default_storage_driver' => 'json',
             'staging_selector_available' => true,
+            'api_only' => true,
+            'webhook_allowed' => false,
             'production_selector_allowed' => false,
             'application_entrypoints_changed' => false,
             'cron_changed' => false,
