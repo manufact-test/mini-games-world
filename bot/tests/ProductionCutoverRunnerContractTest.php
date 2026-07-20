@@ -36,6 +36,7 @@ $assertTrue(str_contains($runner, "private const BUILD = 'v103-mvp14-production-
 foreach (['accounts', 'realtime', 'invites', 'notifications', 'economy', 'history', 'shop', 'payments', 'weekly_bonus'] as $module) {
     $assertTrue(str_contains($runner, "'{$module}'"), 'Runner must include module ' . $module);
 }
+$assertTrue(str_contains($runner, 'ProductionRuntimePrimaryContract::inspect($this->projectRoot)') && str_contains($runner, 'Production DB-primary entrypoints are not ready:'), 'Cutover must block before preflight or mutation until live API and webhook entrypoints are DB-primary');
 $assertTrue(str_contains($runner, 'ProductionPreflightRunner(') && str_contains($runner, 'assertApproved(self::BUILD, $planFingerprint'), 'Cutover must require a fresh preflight and exact short-lived approval');
 $assertTrue(str_contains($runner, '$runtime = $this->readRuntime();') && str_contains($runner, '$preflightConfig = $this->configWithRuntime($runtime);') && str_contains($runner, '$preflightConfig,'), 'Cutover preflight must explicitly merge the runtime after recovery-state checks');
 $assertTrue(str_contains($runner, "'maintenance_mode'] = true") && str_contains($runner, "'financial_read_only'] = true"), 'Cutover must freeze new work and financial writes before import');
