@@ -96,6 +96,11 @@ $assertTrue(
     'Automatic rollback report must not claim JSON success after partial recovery failure'
 );
 $assertTrue(
+    str_contains($runner, "'runtime_error' => \$runtimeError")
+        && str_contains($runner, "'ok' => \$routerError === '' && \$runtimeError === '' && \$stateError === ''"),
+    'Emergency status must return a structured failure when runtime config is malformed'
+);
+$assertTrue(
     str_contains($runner, 'public function rearm(): array')
         && str_contains($runner, 'Disable the private production cutover approval before rearming')
         && str_contains($runner, "'fresh_approval_required' => true"),
@@ -121,6 +126,21 @@ $assertTrue(
     str_contains($entrypoint, 'production-cutover.lock')
         && str_contains($entrypoint, 'managed-migrations.lock'),
     'Cutover must serialize the mutating run against itself and managed migrations'
+);
+$cutoverLockScope = strpos($entrypoint, "if (\$requestedMode !== 'status')");
+$cutoverLockOpen = strpos($entrypoint, '$cutoverLockHandle = fopen');
+$assertTrue(
+    $cutoverLockScope !== false
+        && $cutoverLockOpen !== false
+        && $cutoverLockScope < $cutoverLockOpen,
+    'Read-only status must remain available without acquiring the exclusive cutover lock'
+);
+$assertTrue(
+    str_contains($entrypoint, '$safeNoop = $requestedMode === \'run\';')
+        && str_contains($entrypoint, "$requestedMode . '_blocked'")
+        && str_contains($entrypoint, "'manual_intervention_required' => !\$safeNoop")
+        && str_contains($entrypoint, "exit((\$lockResult['ok'] ?? false) ? 0 : 2);"),
+    'Busy rollback and rearm controls must fail closed instead of reporting a successful no-op'
 );
 $assertTrue(
     str_contains($entrypoint, "if (\$requestedMode === 'run')")
