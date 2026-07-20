@@ -54,14 +54,17 @@ $safeMessage = static function (string $message): string {
     $message = preg_replace('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', '[redacted-email]', $message) ?? $message;
     return mb_substr(trim($message), 0, 500);
 };
-$lockedNoop = static function (string $reason) use ($requestedMode): array {
+$lockUnavailable = static function (string $reason) use ($requestedMode): array {
+    $safeNoop = $requestedMode === 'run';
     return [
-        'ok' => true,
+        'ok' => $safeNoop,
         'report_type' => 'mvp-14.9-production-cutover',
-        'action' => $requestedMode . '_noop',
+        'action' => $safeNoop ? 'run_noop' : $requestedMode . '_blocked',
         'requested_mode' => $requestedMode,
         'reason' => $reason,
-        'idempotent' => true,
+        'idempotent' => $safeNoop,
+        'retry_required' => true,
+        'manual_intervention_required' => !$safeNoop,
         'environment' => 'production',
         'build' => FeatureFlagService::BUILD,
         'production_changed' => false,
@@ -86,17 +89,20 @@ try {
         throw new RuntimeException('Production cutover private directory is unavailable or unsafe.');
     }
 
-    $cutoverLockFile = $privateDir . '/production-cutover.lock';
-    if ($isInside($cutoverLockFile, $projectRoot)) {
-        throw new RuntimeException('Production cutover lock file must remain outside the deployed project.');
-    }
+    if ($requestedMode !== 'status') {
+        $cutoverLockFile = $privateDir . '/production-cutover.lock';
+        if ($isInside($cutoverLockFile, $projectRoot)) {
+            throw new RuntimeException('Production cutover lock file must remain outside the deployed project.');
+        }
 
-    $cutoverLockHandle = fopen($cutoverLockFile, 'c+');
-    if ($cutoverLockHandle === false) throw new RuntimeException('Could not open the production cutover lock.');
-    @chmod($cutoverLockFile, 0600);
-    if (!flock($cutoverLockHandle, LOCK_EX | LOCK_NB)) {
-        $print($lockedNoop('cutover_already_running'));
-        exit(0);
+        $cutoverLockHandle = fopen($cutoverLockFile, 'c+');
+        if ($cutoverLockHandle === false) throw new RuntimeException('Could not open the production cutover lock.');
+        @chmod($cutoverLockFile, 0600);
+        if (!flock($cutoverLockHandle, LOCK_EX | LOCK_NB)) {
+            $lockResult = $lockUnavailable('cutover_already_running');
+            $print($lockResult);
+            exit(($lockResult['ok'] ?? false) ? 0 : 2);
+        }
     }
 
     $storage = null;
@@ -115,8 +121,9 @@ try {
         if ($migrationLockHandle === false) throw new RuntimeException('Could not open the shared migration lock.');
         @chmod($migrationLockFile, 0600);
         if (!flock($migrationLockHandle, LOCK_EX | LOCK_NB)) {
-            $print($lockedNoop('managed_migrations_running'));
-            exit(0);
+            $lockResult = $lockUnavailable('managed_migrations_running');
+            $print($lockResult);
+            exit(($lockResult['ok'] ?? false) ? 0 : 2);
         }
 
         $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
