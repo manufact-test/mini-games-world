@@ -7,14 +7,23 @@ on:
     paths:
       - 'bot/cutover/ProductionCutoverConfig.php'
       - 'bot/cutover/ProductionCutoverRunner.php'
+      - 'bot/cutover/ProductionCutoverRunTrait.php'
+      - 'bot/cutover/ProductionCutoverPerformTrait.php'
+      - 'bot/cutover/ProductionCutoverControlTrait.php'
+      - 'bot/cutover/ProductionCutoverNoopTrait.php'
+      - 'bot/cutover/ProductionCutoverDataTrait.php'
+      - 'bot/cutover/ProductionCutoverRuntimeTrait.php'
+      - 'bot/cutover/ProductionCutoverReportTrait.php'
       - 'bot/cutover/ProductionPreflightRunner.php'
       - 'bot/storage/RuntimeStorageRouter.php'
       - 'bot/services/FeatureFlagService.php'
       - 'bot/health.php'
       - 'bot/tests/ProductionCutoverConfigTest.php'
       - 'bot/tests/ProductionCutoverRunnerContractTest.php'
+      - 'bot/tests/ProductionCutoverRunnerStateTest.php'
       - 'bot/tests/RuntimeStorageRouterTest.php'
       - 'ops/deploy/production-cutover.php'
+      - 'ops/deploy/PRODUCTION_CUTOVER.md'
       - '.github/workflows/production-cutover-safety.yml'
   workflow_dispatch:
 
@@ -39,21 +48,33 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_sqlite
+          extensions: mbstring, pdo_sqlite
           coverage: none
 
       - name: Lint cutover sources
         run: |
           php -l bot/cutover/ProductionCutoverConfig.php
           php -l bot/cutover/ProductionCutoverRunner.php
+          php -l bot/cutover/ProductionCutoverRunTrait.php
+          php -l bot/cutover/ProductionCutoverPerformTrait.php
+          php -l bot/cutover/ProductionCutoverControlTrait.php
+          php -l bot/cutover/ProductionCutoverNoopTrait.php
+          php -l bot/cutover/ProductionCutoverDataTrait.php
+          php -l bot/cutover/ProductionCutoverRuntimeTrait.php
+          php -l bot/cutover/ProductionCutoverReportTrait.php
           php -l bot/cutover/ProductionPreflightRunner.php
           php -l bot/storage/RuntimeStorageRouter.php
           php -l bot/services/FeatureFlagService.php
           php -l bot/health.php
           php -l ops/deploy/production-cutover.php
+          php -l bot/tests/ProductionCutoverConfigTest.php
+          php -l bot/tests/ProductionCutoverRunnerContractTest.php
+          php -l bot/tests/ProductionCutoverRunnerStateTest.php
+          php -l bot/tests/RuntimeStorageRouterTest.php
 
       - name: Run focused tests
         run: |
           php bot/tests/ProductionCutoverConfigTest.php
           php bot/tests/RuntimeStorageRouterTest.php
           php bot/tests/ProductionCutoverRunnerContractTest.php
+          php bot/tests/ProductionCutoverRunnerStateTest.php
