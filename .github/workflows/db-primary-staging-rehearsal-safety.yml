@@ -1,0 +1,44 @@
+name: DB Primary Staging Rehearsal Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6d-all-module-projector
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryRehearsalBackendInterface.php'
+      - 'bot/runtime/RuntimePrimaryStagingRehearsalBackend.php'
+      - 'bot/runtime/StagingPrimaryRehearsalOperation.php'
+      - 'ops/runtime/staging-db-primary-rehearsal.php'
+      - 'bot/tests/StagingPrimaryRehearsalOperationTest.php'
+      - 'bot/tests/StagingPrimaryRehearsalCliContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingRehearsalBackendContractTest.php'
+      - 'ops/checks/db-primary-staging-rehearsal-local.sh'
+      - '.github/workflows/db-primary-staging-rehearsal-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-rehearsal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging rehearsal checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-rehearsal-local.sh
