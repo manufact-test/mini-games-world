@@ -320,13 +320,14 @@ foreach ([
     );
 }
 
-$storage = new DatabasePrimaryStateStorageAdapter(5, ['sequence' => 5]);
+$storage = new DatabasePrimaryStateStorageAdapter(6, ['sequence' => 6]);
 $db = new RuntimePrimaryStagingRequestFinalizerTestDatabase([
     $event(1, str_repeat('1', 64), 'completed', 1),
     $event(2, str_repeat('2', 64), 'completed', 1),
     $event(3, str_repeat('3', 64), 'completed', 1),
     $event(4, str_repeat('4', 64), 'completed', 1),
-    $event(5, $storage->sha(), 'completed', 1),
+    $event(5, str_repeat('5', 64), 'completed', 1),
+    $event(6, $storage->sha(), 'completed', 1),
 ]);
 $assertThrows(
     static fn() => (new RuntimePrimaryStagingRequestFinalizer(
