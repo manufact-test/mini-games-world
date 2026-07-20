@@ -66,13 +66,53 @@ $assertSame('database', $enabled->routeFor('notifications'), 'Enabled module mus
 $assertSame('database', $enabled->routeFor('invites'), 'Boolean-like module flag must route to DB');
 $assertSame('json', $enabled->routeFor('realtime'), 'Disabled module must stay on JSON');
 $assertSame(['accounts', 'invites', 'notifications'], $enabled->enabledModules(), 'Enabled modules must be stable and ordered');
-$assertSame(false, $enabled->publicStatus()['production_allowed'], 'Production must remain forbidden');
+$assertSame(false, $enabled->publicStatus()['production_allowed'], 'Staging must not report production activation');
 
 $production = $enabledConfig;
 $production['environment'] = 'production';
 $assertThrows(
     static fn() => new RuntimeStorageRouter($production),
-    'forbidden outside staging/local'
+    'completed controlled cutover activation marker'
+);
+
+$productionActivated = $base;
+$productionActivated['environment'] = 'production';
+$productionActivated['feature_flags']['database_runtime'] = [
+    'enabled' => true,
+    'production_activated' => true,
+    'activation_plan_fingerprint' => str_repeat('a', 64),
+    'activation_source_fingerprint' => str_repeat('b', 64),
+    'activated_at_utc' => '2026-07-20T08:00:00+00:00',
+    'rollback_driver' => 'json',
+    'modules' => [
+        'accounts' => true,
+        'realtime' => true,
+        'invites' => true,
+        'notifications' => true,
+        'economy' => true,
+        'history' => true,
+        'shop' => true,
+        'payments' => true,
+        'weekly_bonus' => true,
+    ],
+];
+$productionRouter = new RuntimeStorageRouter($productionActivated);
+$assertSame(true, $productionRouter->enabled(), 'Controlled production activation must enable router');
+$assertSame(true, $productionRouter->publicStatus()['production_allowed'], 'Completed production cutover must be reported');
+$assertSame('database', $productionRouter->routeFor('weekly_bonus'), 'All approved production modules must use DB');
+
+$partialProduction = $productionActivated;
+$partialProduction['feature_flags']['database_runtime']['modules']['shop'] = false;
+$assertThrows(
+    static fn() => new RuntimeStorageRouter($partialProduction),
+    'requires every approved module'
+);
+
+$badActivation = $productionActivated;
+$badActivation['feature_flags']['database_runtime']['activation_plan_fingerprint'] = 'invalid';
+$assertThrows(
+    static fn() => new RuntimeStorageRouter($badActivation),
+    'completed controlled cutover activation marker'
 );
 
 $databaseDisabled = $enabledConfig;
