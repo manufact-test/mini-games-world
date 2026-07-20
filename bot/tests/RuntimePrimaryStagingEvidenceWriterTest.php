@@ -44,6 +44,10 @@ try {
     $assertTrue(($result['ok'] ?? false) === true, 'Private evidence writer must succeed');
     $assertTrue(is_file($path), 'Private evidence output must exist');
     $assertTrue(($result['permissions'] ?? '') === '0600', 'Private evidence writer must report 0600');
+    $assertTrue(
+        ($result['publish_mode'] ?? '') === 'atomic_no_clobber_link',
+        'Private evidence writer must report atomic no-clobber publication'
+    );
     $assertTrue((fileperms($path) & 0777) === 0600, 'Private evidence output must have 0600 permissions');
     $decoded = json_decode((string)file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
     $assertTrue($decoded === $manifest, 'Private evidence output must preserve the exact manifest');
@@ -84,6 +88,13 @@ try {
         'exceeds 512 kib'
     );
     $assertTrue(!file_exists($oversizedPath), 'Oversized evidence output must not be created');
+
+    $nonCanonicalPath = $private . '/../' . basename($private) . '/non-canonical.json';
+    $assertThrows(
+        static fn() => $writer->write($nonCanonicalPath, $manifest),
+        'must be canonical'
+    );
+    $assertTrue(!file_exists($private . '/non-canonical.json'), 'Non-canonical output must not be created');
 
     $temporaryFiles = glob($private . '/.*.tmp-*') ?: [];
     $assertTrue($temporaryFiles === [], 'Evidence writer must clean every temporary file');
