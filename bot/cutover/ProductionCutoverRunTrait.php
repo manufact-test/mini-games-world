@@ -108,6 +108,14 @@ trait ProductionCutoverRunTrait
                 throw new RuntimeException('Production preflight is not clean for the cutover window.');
             }
 
+            $preflightRuntime = is_array($preflight['runtime'] ?? null) ? $preflight['runtime'] : [];
+            if (($preflightRuntime['maintenance_enabled'] ?? false) === true
+                || ($preflightRuntime['financial_read_only'] ?? false) === true) {
+                throw new RuntimeException(
+                    'Production cutover requires maintenance and financial read-only modes to be disabled before the operation.'
+                );
+            }
+
             $planFingerprint = strtolower(trim((string)($preflight['cutover_plan_fingerprint'] ?? '')));
             $this->policy->assertApproved(self::BUILD, $planFingerprint, $this->timestamp());
 
