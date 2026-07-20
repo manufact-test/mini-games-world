@@ -1,0 +1,59 @@
+name: Production Cutover Safety
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'bot/cutover/ProductionCutoverConfig.php'
+      - 'bot/cutover/ProductionCutoverRunner.php'
+      - 'bot/cutover/ProductionPreflightRunner.php'
+      - 'bot/storage/RuntimeStorageRouter.php'
+      - 'bot/services/FeatureFlagService.php'
+      - 'bot/health.php'
+      - 'bot/tests/ProductionCutoverConfigTest.php'
+      - 'bot/tests/ProductionCutoverRunnerContractTest.php'
+      - 'bot/tests/RuntimeStorageRouterTest.php'
+      - 'ops/deploy/production-cutover.php'
+      - '.github/workflows/production-cutover-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-cutover-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused cutover checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Lint cutover sources
+        run: |
+          php -l bot/cutover/ProductionCutoverConfig.php
+          php -l bot/cutover/ProductionCutoverRunner.php
+          php -l bot/cutover/ProductionPreflightRunner.php
+          php -l bot/storage/RuntimeStorageRouter.php
+          php -l bot/services/FeatureFlagService.php
+          php -l bot/health.php
+          php -l ops/deploy/production-cutover.php
+
+      - name: Run focused tests
+        run: |
+          php bot/tests/ProductionCutoverConfigTest.php
+          php bot/tests/RuntimeStorageRouterTest.php
+          php bot/tests/ProductionCutoverRunnerContractTest.php
