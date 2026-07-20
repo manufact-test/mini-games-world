@@ -14,6 +14,7 @@ FILES=(
   bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php
   bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php
   bot/runtime/RuntimePrimaryStagingSelectorEvidence.php
+  bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php
   bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php
   bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php
   bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php
@@ -23,9 +24,12 @@ FILES=(
   bot/tests/RuntimePrimaryStagingEntrypointSelectorConfigTest.php
   bot/tests/RuntimePrimaryEntrypointStorageContextTest.php
   bot/tests/RuntimePrimaryStorageFactoryEntrypointContextTest.php
+  bot/tests/RuntimePrimaryStorageFactoryStickyFailureTest.php
   bot/tests/RuntimePrimaryStagingEntrypointStorageSelectorDisabledTest.php
+  bot/tests/RuntimePrimaryStagingEntrypointStorageSelectorEnabledTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceTest.php
   bot/tests/RuntimePrimaryStagingEvidenceV3VerifierTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceV2GateV3CompatibilityTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorTest.php
   bot/tests/RuntimePrimaryStagingEntrypointSelectorContractTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorCliContractTest.php
@@ -40,9 +44,12 @@ TESTS=(
   bot/tests/RuntimePrimaryStagingEntrypointSelectorConfigTest.php
   bot/tests/RuntimePrimaryEntrypointStorageContextTest.php
   bot/tests/RuntimePrimaryStorageFactoryEntrypointContextTest.php
+  bot/tests/RuntimePrimaryStorageFactoryStickyFailureTest.php
   bot/tests/RuntimePrimaryStagingEntrypointStorageSelectorDisabledTest.php
+  bot/tests/RuntimePrimaryStagingEntrypointStorageSelectorEnabledTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceTest.php
   bot/tests/RuntimePrimaryStagingEvidenceV3VerifierTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceV2GateV3CompatibilityTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorTest.php
   bot/tests/RuntimePrimaryStagingEntrypointSelectorContractTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorCliContractTest.php
