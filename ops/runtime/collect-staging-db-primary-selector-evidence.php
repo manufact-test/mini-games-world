@@ -1,0 +1,228 @@
+<?php
+declare(strict_types=1);
+
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
+$outputPath = '';
+$maxEvents = 20;
+foreach (array_slice($argv ?? [], 1) as $argument) {
+    if (str_starts_with($argument, '--output=')) {
+        if ($outputPath !== '') {
+            fwrite(STDERR, "--output may be specified only once.\n");
+            exit(2);
+        }
+        $outputPath = trim(substr($argument, strlen('--output=')));
+        continue;
+    }
+    if (str_starts_with($argument, '--max-events=')) {
+        $raw = trim(substr($argument, strlen('--max-events=')));
+        if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
+            fwrite(STDERR, "--max-events must be an integer.\n");
+            exit(2);
+        }
+        $maxEvents = (int)$raw;
+        continue;
+    }
+    fwrite(STDERR, "Unknown selector evidence collector argument.\n");
+    exit(2);
+}
+if ($outputPath === '') {
+    fwrite(STDERR, "Selector-aware staging evidence collection requires --output=/absolute/private/path.json.\n");
+    exit(2);
+}
+if ($maxEvents < 1 || $maxEvents > 100) {
+    fwrite(STDERR, "--max-events must be between 1 and 100.\n");
+    exit(2);
+}
+
+$projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceWriter.php';
+$writer = new RuntimePrimaryStagingEvidenceWriter($projectRoot);
+try {
+    $writer->validateOutputPath($outputPath);
+} catch (Throwable $error) {
+    fwrite(STDERR, "Invalid private output path.\n");
+    exit(2);
+}
+
+require $projectRoot . '/bot/core/bootstrap.php';
+require_once $projectRoot . '/bot/operations/StagingOperationDefinition.php';
+require_once $projectRoot . '/bot/operations/StagingPrimaryRehearsalOperation.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointEvidence.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryRepositoryCommitResolver.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceVerifier.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Verifier.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidence.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceGate.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryJsonEvidence.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingConcurrencyProbe.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceApproval.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryPrivateConfigGuard.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSource.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceCollector.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php';
+
+$environment = strtolower(trim((string)($config['environment'] ?? '')));
+if ($environment !== 'staging') {
+    fwrite(STDERR, "Selector-aware DB-primary evidence collection is staging-only.\n");
+    exit(2);
+}
+
+$lockHandle = null;
+$lockPath = '';
+$outputWritten = false;
+try {
+    $private = RuntimePrimaryPrivateConfigGuard::assertExternal(
+        (string)($configFile ?? ''),
+        $projectRoot
+    );
+    $privateDir = (string)$private['private_dir'];
+    $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+    if (!$databaseConfig->enabled()) {
+        throw new RuntimeException('Selector-aware evidence collection requires an enabled staging database.');
+    }
+    $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot);
+    RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->assertApproved(
+        $databaseConfig,
+        $currentCommit,
+        time()
+    );
+
+    $lockPath = $privateDir . '/runtime-primary-rehearsal.lock';
+    if (is_link($lockPath)) {
+        throw new RuntimeException('Staging evidence rehearsal lock must not be a symbolic link.');
+    }
+    $lockHandle = fopen($lockPath, 'c+');
+    if (!is_resource($lockHandle)) {
+        throw new RuntimeException('Staging evidence rehearsal lock is unavailable.');
+    }
+    @chmod($lockPath, 0600);
+    clearstatcache(true, $lockPath);
+    if (is_link($lockPath)) {
+        throw new RuntimeException('Staging evidence rehearsal lock became a symbolic link.');
+    }
+    if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
+        throw new RuntimeException('Another DB-primary rehearsal or evidence collection is already running.');
+    }
+
+    $database = PdoConnectionFactory::create($databaseConfig);
+    $leaseDatabase = PdoConnectionFactory::create($databaseConfig);
+    $jsonStorage = StorageFactory::createJson((string)($config['data_dir'] ?? ''));
+    if ($jsonStorage->driver() !== 'json') {
+        throw new RuntimeException('Selector evidence collection requires the JSON rollback driver.');
+    }
+
+    $rehearsal = new StagingPrimaryRehearsalOperation(
+        $projectRoot,
+        $config,
+        (string)($configFile ?? ''),
+        $jsonStorage,
+        $database,
+        $maxEvents
+    );
+    $concurrency = new RuntimePrimaryStagingConcurrencyProbe(
+        $database,
+        $leaseDatabase,
+        $privateDir . '/runtime-primary-cli-lock-probe.lock'
+    );
+    $source = new RuntimePrimaryStagingEvidenceSource(
+        $config,
+        $projectRoot,
+        $jsonStorage,
+        $database,
+        $rehearsal,
+        $concurrency
+    );
+    $collected = (new RuntimePrimaryStagingSelectorEvidenceCollector(
+        $projectRoot,
+        $source
+    ))->collect();
+    $manifest = is_array($collected['manifest'] ?? null) ? $collected['manifest'] : [];
+    if ($manifest === []) {
+        throw new RuntimeException('Selector-aware evidence collector returned an empty manifest.');
+    }
+
+    $written = $writer->write($outputPath, $manifest);
+    $outputWritten = true;
+    $stored = json_decode(
+        (string)file_get_contents($outputPath),
+        true,
+        512,
+        JSON_THROW_ON_ERROR
+    );
+    if (!is_array($stored)) {
+        throw new RuntimeException('Written selector-aware evidence is not a JSON object.');
+    }
+    $verification = (new RuntimePrimaryStagingEvidenceV3Gate($projectRoot))->verify($stored);
+    if (($verification['ok'] ?? false) !== true) {
+        throw new RuntimeException(
+            'Written selector-aware staging evidence failed verification: '
+            . implode('; ', array_map('strval', (array)($verification['blockers'] ?? [])))
+        );
+    }
+
+    fwrite(STDOUT, json_encode([
+        'ok' => true,
+        'report_type' => 'mvp-14.8.6k-staging-selector-evidence-collection',
+        'action' => 'selector_evidence_v3_collected',
+        'manifest_version' => RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION,
+        'repository_commit' => (string)($collected['repository_commit'] ?? ''),
+        'database_identity_fingerprint' => (string)($collected['database_identity_fingerprint'] ?? ''),
+        'state_revision' => (int)($collected['state_revision'] ?? 0),
+        'state_sha256' => (string)($collected['state_sha256'] ?? ''),
+        'projected_modules' => array_values((array)($collected['projected_modules'] ?? [])),
+        'manifest_fingerprint' => (string)($verification['evidence_fingerprint'] ?? ''),
+        'selector_evidence_fingerprint' => (string)($verification['selector_evidence_fingerprint'] ?? ''),
+        'file_sha256' => (string)($written['file_sha256'] ?? ''),
+        'bytes' => (int)($written['bytes'] ?? 0),
+        'permissions' => (string)($written['permissions'] ?? ''),
+        'publish_mode' => (string)($written['publish_mode'] ?? ''),
+        'private_config_external' => true,
+        'path_exposed' => false,
+        'application_entrypoints_changed' => false,
+        'cron_changed' => false,
+        'production_changed' => false,
+        'sensitive_identifiers_exposed' => false,
+        'generated_at_utc' => gmdate(DATE_ATOM),
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL);
+    exit(0);
+} catch (Throwable $error) {
+    if ($outputWritten && is_file($outputPath) && !is_link($outputPath)) {
+        @unlink($outputPath);
+    }
+    $message = preg_replace(
+        "~/(?:home|var|tmp|srv)/[^\\s'\"]+~",
+        '[private-path]',
+        trim($error->getMessage())
+    ) ?? trim($error->getMessage());
+    $message = function_exists('mb_substr')
+        ? mb_substr($message, 0, 500)
+        : substr($message, 0, 500);
+    fwrite(STDOUT, json_encode([
+        'ok' => false,
+        'report_type' => 'mvp-14.8.6k-staging-selector-evidence-collection',
+        'action' => 'selector_evidence_v3_blocked_or_failed',
+        'error_class' => get_class($error),
+        'error_message' => $message,
+        'path_exposed' => false,
+        'application_entrypoints_changed' => false,
+        'cron_changed' => false,
+        'production_changed' => false,
+        'sensitive_identifiers_exposed' => false,
+        'generated_at_utc' => gmdate(DATE_ATOM),
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+    exit(1);
+} finally {
+    if (is_resource($lockHandle)) {
+        flock($lockHandle, LOCK_UN);
+        fclose($lockHandle);
+    }
+}
