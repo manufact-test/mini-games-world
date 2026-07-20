@@ -194,5 +194,13 @@ $assertThrows(
     static fn() => $adapter->readOnly(static fn(array $data): array => $data),
     'fingerprint mismatch'
 );
+$assertThrows(
+    static fn() => $adapter->status(),
+    'fingerprint mismatch'
+);
+$assertThrows(
+    static fn() => $adapter->initializeFromSnapshot($afterRollback),
+    'fingerprint mismatch'
+);
 
 fwrite(STDOUT, "DatabasePrimaryStateStorageAdapterTest passed: {$assertions} assertions.\n");
