@@ -5,7 +5,10 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
 {
     public const DRIVER = 'database';
 
-    public function __construct(private DatabaseConnectionInterface $database) {}
+    public function __construct(
+        private DatabaseConnectionInterface $database,
+        private ?RuntimePrimaryProjectionOutboxWriter $projectionOutbox = null
+    ) {}
 
     public function driver(): string
     {
@@ -21,18 +24,29 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
 
             if ($existing !== null) {
                 $existingState = $this->decodeAndVerify($existing);
-                $existingFingerprint = hash('sha256', $this->canonicalJson($existingState));
+                $existingJson = $this->canonicalJson($existingState);
+                $existingFingerprint = hash('sha256', $existingJson);
                 if (!hash_equals($existingFingerprint, $fingerprint)) {
                     throw new RuntimeException(
                         'Runtime primary state is already initialized with a different snapshot.'
                     );
                 }
+                $revision = (int)($existing['revision'] ?? 0);
+                $projection = $this->ensureProjectionEvent(
+                    $database,
+                    $revision,
+                    $existingJson,
+                    $existingFingerprint
+                );
                 return [
                     'ok' => true,
                     'initialized' => false,
                     'idempotent' => true,
-                    'revision' => (int)($existing['revision'] ?? 0),
+                    'revision' => $revision,
                     'state_sha256' => $fingerprint,
+                    'projection_outbox_enabled' => $this->projectionOutbox !== null,
+                    'projection_event_created' => ($projection['created'] ?? false) === true,
+                    'projection_event_id' => (string)($projection['event_id'] ?? ''),
                 ];
             }
 
@@ -54,12 +68,16 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
                 throw new RuntimeException('Runtime primary state initialization did not insert exactly one row.');
             }
 
+            $projection = $this->ensureProjectionEvent($database, 1, $encoded, $fingerprint);
             return [
                 'ok' => true,
                 'initialized' => true,
                 'idempotent' => false,
                 'revision' => 1,
                 'state_sha256' => $fingerprint,
+                'projection_outbox_enabled' => $this->projectionOutbox !== null,
+                'projection_event_created' => ($projection['created'] ?? false) === true,
+                'projection_event_id' => (string)($projection['event_id'] ?? ''),
             ];
         });
     }
@@ -82,6 +100,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
                 throw new RuntimeException('Runtime primary state revision is invalid.');
             }
             $nextRevision = $revision + 1;
+            $afterFingerprint = hash('sha256', $after);
             $updated = $database->execute(
                 'UPDATE ' . RuntimePrimaryStateSchemaInstaller::TABLE . '
                  SET revision = :next_revision,
@@ -92,7 +111,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
                 [
                     'next_revision' => $nextRevision,
                     'state_json' => $after,
-                    'state_sha256' => hash('sha256', $after),
+                    'state_sha256' => $afterFingerprint,
                     'updated_at_utc' => gmdate(DATE_ATOM),
                     'expected_revision' => $revision,
                 ]
@@ -101,6 +120,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
                 throw new RuntimeException('Concurrent runtime primary state update was detected.');
             }
 
+            $this->ensureProjectionEvent($database, $nextRevision, $after, $afterFingerprint);
             return $result;
         });
     }
@@ -109,8 +129,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
     {
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use ($callback): mixed {
             $row = $this->requiredRow($database, false);
-            $data = $this->decodeAndVerify($row);
-            return $callback($data);
+            return $callback($this->decodeAndVerify($row));
         });
     }
 
@@ -125,7 +144,25 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
             'revision' => (int)($row['revision'] ?? 0),
             'state_sha256' => strtolower(trim((string)($row['state_sha256'] ?? ''))),
             'updated_at_utc' => (string)($row['updated_at_utc'] ?? ''),
+            'projection_outbox_enabled' => $this->projectionOutbox !== null,
         ];
+    }
+
+    private function ensureProjectionEvent(
+        DatabaseConnectionInterface $database,
+        int $revision,
+        string $stateJson,
+        string $stateSha256
+    ): array {
+        if ($this->projectionOutbox === null) {
+            return ['created' => false, 'event_id' => ''];
+        }
+        return $this->projectionOutbox->ensurePending(
+            $database,
+            $revision,
+            $stateJson,
+            $stateSha256
+        );
     }
 
     private function requiredRow(DatabaseConnectionInterface $database, bool $forUpdate): array
@@ -156,19 +193,16 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
     private function decodeAndVerify(array $row): array
     {
         $this->assertRowValid($row);
-        $raw = (string)$row['state_json'];
         try {
-            $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+            $decoded = json_decode((string)$row['state_json'], true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $error) {
             throw new RuntimeException('Runtime primary state JSON is invalid.', 0, $error);
         }
         if (!is_array($decoded)) {
             throw new RuntimeException('Runtime primary state must decode to an array.');
         }
-
-        $canonical = $this->canonicalJson($decoded);
+        $actual = hash('sha256', $this->canonicalJson($decoded));
         $expected = strtolower(trim((string)$row['state_sha256']));
-        $actual = hash('sha256', $canonical);
         if (!hash_equals($expected, $actual)) {
             throw new RuntimeException('Runtime primary state fingerprint mismatch.');
         }
@@ -183,8 +217,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
         if ((int)($row['revision'] ?? 0) < 1) {
             throw new RuntimeException('Runtime primary state revision is invalid.');
         }
-        $fingerprint = strtolower(trim((string)($row['state_sha256'] ?? '')));
-        if (preg_match('/^[a-f0-9]{64}$/', $fingerprint) !== 1) {
+        if (preg_match('/^[a-f0-9]{64}$/', strtolower(trim((string)($row['state_sha256'] ?? '')))) !== 1) {
             throw new RuntimeException('Runtime primary state fingerprint is invalid.');
         }
         if (!is_string($row['state_json'] ?? null) || trim((string)$row['state_json']) === '') {
