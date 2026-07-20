@@ -25,6 +25,7 @@ FILES=(
   bot/tests/RuntimeConfigLoaderTest.php
   bot/tests/ProductionCutoverConfigTest.php
   bot/tests/ProductionCutoverImportReportTest.php
+  bot/tests/ProductionCutoverManualRollbackStateTest.php
   bot/tests/RuntimeStorageRouterTest.php
   bot/tests/ProductionCutoverRunnerContractTest.php
   bot/tests/ProductionCutoverRunnerStateTest.php
@@ -39,6 +40,7 @@ TESTS=(
   bot/tests/RuntimeConfigLoaderTest.php
   bot/tests/ProductionCutoverConfigTest.php
   bot/tests/ProductionCutoverImportReportTest.php
+  bot/tests/ProductionCutoverManualRollbackStateTest.php
   bot/tests/RuntimeStorageRouterTest.php
   bot/tests/ProductionCutoverRunnerContractTest.php
   bot/tests/ProductionCutoverRunnerStateTest.php
