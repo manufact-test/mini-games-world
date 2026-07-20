@@ -26,6 +26,7 @@ on:
       - 'bot/tests/RuntimePrimaryStagingActivationEvidenceLoaderTest.php'
       - 'bot/tests/RuntimePrimaryStagingActivationGuardTest.php'
       - 'bot/tests/RuntimePrimaryStagingActivationCliContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingActivationGuardContractTest.php'
       - 'ops/checks/db-primary-staging-activation-local.sh'
       - 'ops/runtime/DB_PRIMARY_STAGING_ACTIVATION.md'
       - '.github/workflows/db-primary-staging-activation-safety.yml'
