@@ -34,6 +34,7 @@ trait ProductionCutoverRunTrait
 
         $stateName = strtolower(trim((string)($state['state'] ?? '')));
         if ($stateName === 'completed') return $this->completedNoop($state);
+        if ($stateName === 'awaiting_release') return $this->awaitingReleaseNoop($state);
         if ($stateName === 'rolled_back') return $this->rolledBackNoop($state);
 
         if ($stateName === 'rollback_failed' || in_array($stateName, self::ACTIVE_STATES, true)) {
