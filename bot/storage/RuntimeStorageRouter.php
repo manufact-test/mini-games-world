@@ -6,6 +6,7 @@ final class RuntimeStorageRouter
     public const DRIVER_JSON = 'json';
     public const DRIVER_DATABASE = 'database';
 
+    private const PRODUCTION_ACTIVATION_BUILD = 'v103-mvp14-production-cutover';
     private const MODULES = [
         'accounts',
         'realtime',
@@ -160,6 +161,7 @@ final class RuntimeStorageRouter
     private function productionActivationValid(array $settings): bool
     {
         if (!$this->boolValue($settings['production_activated'] ?? false)) return false;
+        if (trim((string)($settings['activation_build'] ?? '')) !== self::PRODUCTION_ACTIVATION_BUILD) return false;
 
         $planFingerprint = strtolower(trim((string)($settings['activation_plan_fingerprint'] ?? '')));
         $sourceFingerprint = strtolower(trim((string)($settings['activation_source_fingerprint'] ?? '')));
