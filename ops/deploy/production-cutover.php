@@ -8,6 +8,24 @@ if (PHP_SAPI !== 'cli') {
 
 @set_time_limit(240);
 
+$options = getopt('', ['run', 'status', 'rollback', 'rearm']);
+$modeCount = (int)isset($options['run'])
+    + (int)isset($options['status'])
+    + (int)isset($options['rollback'])
+    + (int)isset($options['rearm']);
+$requestedMode = isset($options['status'])
+    ? 'status'
+    : (isset($options['rollback'])
+        ? 'rollback'
+        : (isset($options['rearm']) ? 'rearm' : 'run'));
+
+// The cutover runner must be able to inspect or restore a malformed runtime.php.
+// Bootstrap therefore loads the private base config only; the runner merges the
+// runtime file explicitly after its recovery-state checks.
+if (!defined('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP')) {
+    define('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP', true);
+}
+
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
 require_once $projectRoot . '/bot/accounts/LegacyAccountImportService.php';
@@ -23,16 +41,6 @@ require_once $projectRoot . '/bot/cutover/ProductionCutoverRunner.php';
 require_once $projectRoot . '/ops/backup/BackupConfigLoader.php';
 require_once $projectRoot . '/ops/backup/BackupManager.php';
 
-$options = getopt('', ['run', 'status', 'rollback', 'rearm']);
-$modeCount = (int)isset($options['run'])
-    + (int)isset($options['status'])
-    + (int)isset($options['rollback'])
-    + (int)isset($options['rearm']);
-$requestedMode = isset($options['status'])
-    ? 'status'
-    : (isset($options['rollback'])
-        ? 'rollback'
-        : (isset($options['rearm']) ? 'rearm' : 'run'));
 $cutoverLockHandle = null;
 $migrationLockHandle = null;
 $exitCode = 0;
