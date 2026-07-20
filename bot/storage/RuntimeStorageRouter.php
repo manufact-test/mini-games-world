@@ -56,12 +56,18 @@ final class RuntimeStorageRouter
 
     public function publicStatus(): array
     {
+        $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
+        $productionActivated = $environment === 'production'
+            && $this->enabled()
+            && $this->productionActivationValid($this->settings());
+
         return [
             'enabled' => $this->enabled(),
             'default_driver' => self::DRIVER_JSON,
             'rollback_driver' => self::DRIVER_JSON,
             'enabled_modules' => $this->enabledModules(),
-            'production_allowed' => false,
+            'production_allowed' => $productionActivated,
+            'production_activated' => $productionActivated,
         ];
     }
 
@@ -84,14 +90,22 @@ final class RuntimeStorageRouter
         if (!$this->enabled()) return;
 
         $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
-        if (!in_array($environment, ['staging', 'local'], true)) {
-            throw new RuntimeException('Database runtime routing is forbidden outside staging/local during MVP-14.8.2.');
+        if (in_array($environment, ['staging', 'local'], true)) {
+            // Staging/local keep the existing incremental module-routing contract.
+        } elseif ($environment === 'production') {
+            $this->assertProductionActivation($settings);
+            $missingProductionModules = array_values(array_diff(self::MODULES, $enabledModules));
+            if ($missingProductionModules !== []) {
+                throw new RuntimeException('Production database runtime requires every approved module to be enabled.');
+            }
+        } else {
+            throw new RuntimeException('Database runtime routing is enabled in an unsupported environment.');
         }
 
         $globalDriver = strtolower(trim((string)($this->config['storage_driver'] ?? self::DRIVER_JSON)));
         if ($globalDriver === '') $globalDriver = self::DRIVER_JSON;
         if ($globalDriver !== self::DRIVER_JSON) {
-            throw new RuntimeException('Global storage_driver must remain json during staged module routing.');
+            throw new RuntimeException('Global storage_driver must remain json while JSON is the rollback source.');
         }
 
         $database = DatabaseConfig::fromApplicationConfig($this->config);
@@ -134,6 +148,29 @@ final class RuntimeStorageRouter
                 }
             }
         }
+    }
+
+    private function assertProductionActivation(array $settings): void
+    {
+        if (!$this->productionActivationValid($settings)) {
+            throw new RuntimeException('Production database runtime requires a completed controlled cutover activation marker.');
+        }
+    }
+
+    private function productionActivationValid(array $settings): bool
+    {
+        if (!$this->boolValue($settings['production_activated'] ?? false)) return false;
+
+        $planFingerprint = strtolower(trim((string)($settings['activation_plan_fingerprint'] ?? '')));
+        $sourceFingerprint = strtolower(trim((string)($settings['activation_source_fingerprint'] ?? '')));
+        if (preg_match('/^[a-f0-9]{64}$/', $planFingerprint) !== 1) return false;
+        if (preg_match('/^[a-f0-9]{64}$/', $sourceFingerprint) !== 1) return false;
+
+        $activatedAt = trim((string)($settings['activated_at_utc'] ?? ''));
+        if ($activatedAt === '' || strtotime($activatedAt) === false) return false;
+
+        $rollbackDriver = strtolower(trim((string)($settings['rollback_driver'] ?? self::DRIVER_JSON)));
+        return $rollbackDriver === self::DRIVER_JSON;
     }
 
     private function settings(): array
