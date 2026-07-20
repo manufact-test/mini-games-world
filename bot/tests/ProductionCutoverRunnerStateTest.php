@@ -176,10 +176,11 @@ try {
     ], JSON_THROW_ON_ERROR));
     file_put_contents($private . '/production-cutover.runtime.backup', '__MGW_RUNTIME_ABSENT__');
     $subject = $runner($data, $configFile, new ProductionCutoverConfig(false, false), false);
-    $assertThrows(
-        static fn() => $subject->rearm(),
-        'fully completed reviewed rollback'
-    );
+    $failedStatus = $subject->status();
+    $assertTrue(($failedStatus['ok'] ?? true) === false, 'rollback_failed status must be unhealthy');
+    $assertTrue(($failedStatus['state_contract_error'] ?? '') !== '', 'rollback_failed status must explain the contract failure');
+    $assertTrue(($failedStatus['operator_action_required'] ?? false) === true, 'rollback_failed status must require operator action');
+    $assertThrows(static fn() => $subject->rearm(), 'fully completed reviewed rollback');
     $assertTrue(is_file($private . '/production-cutover.json'), 'Failed rollback state must remain available for incident review');
     $assertTrue(is_file($private . '/production-cutover.runtime.backup'), 'Failed rollback backup must not be archived by rearm');
 } finally {
@@ -211,6 +212,9 @@ try {
     ], JSON_THROW_ON_ERROR));
 
     $subject = $runner($data, $configFile, new ProductionCutoverConfig(false, false));
+    $activeStatus = $subject->status();
+    $assertTrue(($activeStatus['ok'] ?? true) === false, 'Active state without exact backup must be unhealthy in status');
+    $assertTrue(($activeStatus['state_contract_error'] ?? '') !== '', 'Active state status must expose missing recovery evidence');
     $missingEvidence = $subject->run();
     $assertTrue(($missingEvidence['action'] ?? '') === 'recovery_blocked', 'Active state without exact recovery evidence must fail closed');
     $assertTrue(($missingEvidence['ok'] ?? true) === false, 'Missing recovery evidence must never report success');
