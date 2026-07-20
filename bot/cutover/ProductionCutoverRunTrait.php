@@ -25,7 +25,11 @@ trait ProductionCutoverRunTrait
                     ''
                 );
             }
-            return $this->blockedReport($error, null, 'state_read_failed');
+            return $this->recoveryBlockedReport(
+                $error,
+                'state_read_failed_without_recovery_artifacts',
+                'invalid'
+            );
         }
 
         $stateName = strtolower(trim((string)($state['state'] ?? '')));
@@ -33,13 +37,23 @@ trait ProductionCutoverRunTrait
         if ($stateName === 'rolled_back') return $this->rolledBackNoop($state);
 
         if ($stateName === 'rollback_failed' || in_array($stateName, self::ACTIVE_STATES, true)) {
+            $error = new RuntimeException('An interrupted or failed cutover state requires recovery.');
+            if (!$this->recoveryArtifactsPresent()) {
+                return $this->recoveryBlockedReport(
+                    $error,
+                    'active_state_without_recovery_artifacts',
+                    $stateName,
+                    (string)($state['started_at_utc'] ?? '')
+                );
+            }
             return $this->automaticRollbackReport(
-                new RuntimeException('An interrupted or failed cutover state requires recovery.'),
+                $error,
                 'interrupted_cutover_recovered',
                 'state_recovery',
                 null,
                 null,
-                ''
+                '',
+                (string)($state['started_at_utc'] ?? '')
             );
         }
         if ($stateName !== '') {
@@ -50,13 +64,15 @@ trait ProductionCutoverRunTrait
                     'state_recovery',
                     null,
                     null,
-                    ''
+                    '',
+                    (string)($state['started_at_utc'] ?? '')
                 );
             }
-            return $this->blockedReport(
+            return $this->recoveryBlockedReport(
                 new RuntimeException('Unknown production cutover state requires manual review.'),
-                null,
-                'state_review_required'
+                'state_review_required_without_recovery_artifacts',
+                $stateName,
+                (string)($state['started_at_utc'] ?? '')
             );
         }
         if ($this->recoveryArtifactsPresent()) {
