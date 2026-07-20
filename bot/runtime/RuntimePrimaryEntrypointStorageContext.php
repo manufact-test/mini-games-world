@@ -26,6 +26,21 @@ final class RuntimePrimaryEntrypointStorageContext
             || ($resolutionReport['drift_check_passed'] ?? false) !== true) {
             throw new RuntimeException('Entrypoint storage context is missing guarded resolution evidence.');
         }
+        if (($resolutionReport['evidence_manifest_version'] ?? '')
+            !== RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION) {
+            throw new RuntimeException('Entrypoint storage context requires selector-aware evidence v3.');
+        }
+        if (($resolutionReport['selector_contract_version'] ?? '')
+            !== RuntimePrimaryStagingSelectorEvidence::CONTRACT_VERSION) {
+            throw new RuntimeException('Entrypoint storage context requires the exact selector contract version.');
+        }
+        $selectorFingerprint = strtolower(trim((string)(
+            $resolutionReport['selector_evidence_fingerprint'] ?? ''
+        )));
+        if (preg_match('/^[a-f0-9]{64}$/', $selectorFingerprint) !== 1) {
+            throw new RuntimeException('Entrypoint storage context requires a valid selector evidence fingerprint.');
+        }
+
         if (self::$storage !== null) {
             if (self::$storage !== $storage || !hash_equals(self::$entrypoint, $entrypoint)) {
                 throw new RuntimeException('Entrypoint storage context is already installed for another storage or entrypoint.');
@@ -74,6 +89,11 @@ final class RuntimePrimaryEntrypointStorageContext
             'state_sha256' => strtolower(trim((string)(self::$resolutionReport['state_sha256'] ?? ''))),
             'database_identity_fingerprint' => strtolower(trim((string)(self::$resolutionReport['database_identity_fingerprint'] ?? ''))),
             'evidence_fingerprint' => strtolower(trim((string)(self::$resolutionReport['evidence_fingerprint'] ?? ''))),
+            'evidence_manifest_version' => (string)(self::$resolutionReport['evidence_manifest_version'] ?? ''),
+            'selector_contract_version' => (string)(self::$resolutionReport['selector_contract_version'] ?? ''),
+            'selector_evidence_fingerprint' => strtolower(trim((string)(
+                self::$resolutionReport['selector_evidence_fingerprint'] ?? ''
+            ))),
             'projection_outbox_enabled' => true,
             'application_entrypoint_routed' => true,
             'application_entrypoints_changed' => false,
