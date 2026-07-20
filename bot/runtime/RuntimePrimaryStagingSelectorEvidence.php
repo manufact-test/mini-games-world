@@ -26,6 +26,7 @@ final class RuntimePrimaryStagingSelectorEvidence
             'system_check_guard' => $projectRoot . '/bot/helpers/AdminSystemCheckGuard.php',
             'user_welcome_guard' => $projectRoot . '/bot/helpers/UserWelcomeGuard.php',
             'bootstrap' => $projectRoot . '/bot/core/bootstrap.php',
+            'bridge_guard' => $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php',
             'storage_factory' => $projectRoot . '/bot/storage/StorageFactory.php',
             'selector_bootstrap' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php',
             'selector' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php',
@@ -48,6 +49,8 @@ final class RuntimePrimaryStagingSelectorEvidence
         }
         ksort($sources, SORT_STRING);
 
+        $bootstrap = $sourceText['bootstrap'] ?? '';
+        $bridgeGuard = $sourceText['bridge_guard'] ?? '';
         $factory = $sourceText['storage_factory'] ?? '';
         $selector = $sourceText['selector'] ?? '';
         $selectorConfig = $sourceText['selector_config'] ?? '';
@@ -74,11 +77,37 @@ final class RuntimePrimaryStagingSelectorEvidence
             }
         }
 
+        $bridgeChecks = substr_count(
+            $bootstrap,
+            'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()'
+        );
         $checks = [
             'api_json_factory_present' => str_contains($sourceText['api'] ?? '', 'StorageFactory::createJson('),
             'webhook_json_factory_present' => str_contains($sourceText['webhook_handler'] ?? '', 'StorageFactory::createJson('),
             'request_direct_json_constructor_absent' => $directJsonConstructorAbsent,
             'default_json_fallback_present' => str_contains($factory, 'return new JsonStorageAdapter($dataDir);'),
+            'legacy_bridge_guard_contract_present' => str_contains(
+                $bridgeGuard,
+                "class_exists('RuntimePrimaryEntrypointStorageContext', false)"
+            ) && str_contains(
+                $bridgeGuard,
+                'RuntimePrimaryEntrypointStorageContext::installed()'
+            ),
+            'legacy_bridge_hooks_suppressed_for_db_context' => str_contains(
+                $bootstrap,
+                'RuntimePrimaryEntrypointBridgeGuard.php'
+            ) && $bridgeChecks >= 8,
+            'legacy_bridge_api_filters_preserve_db_response' => substr_count(
+                $bootstrap,
+                'if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return $data;'
+            ) >= 2,
+            'legacy_bridge_webhook_batch_suppressed' => str_contains(
+                $bootstrap,
+                'if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;'
+            ) && str_contains(
+                $bootstrap,
+                'foreach ($runtimeWebhookSuccessHooks as $hook) $hook();'
+            ),
             'storage_factory_lazy_selector_present' => str_contains(
                 $factory,
                 'installGuardedEntrypointContextIfEligible()'
