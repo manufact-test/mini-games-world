@@ -36,7 +36,7 @@ $approved = ProductionCutoverConfig::fromApplicationConfig([
         'enabled' => true,
         'expected_build' => $build,
         'approval_plan_fingerprint' => $fingerprint,
-        'approval_expires_at_utc' => '2026-07-20T09:00:00+00:00',
+        'approval_expires_at_utc' => '2026-07-20T08:20:00+00:00',
         'require_primary_backup' => true,
         'require_external_copy' => true,
     ],
@@ -46,6 +46,7 @@ $summary = $approved->safeSummary();
 $assertTrue($approved->enabled() === true, 'Approval enabled state must be available for safe rearm checks');
 $assertTrue($summary['enabled'] === true, 'Approval summary must report enabled');
 $assertTrue($summary['approval_plan_fingerprint_configured'] === true, 'Approval fingerprint must remain redacted');
+$assertTrue($summary['max_approval_ttl_seconds'] === 1800, 'Approval summary must expose the enforced maximum TTL');
 $assertTrue($approved->requirePrimaryBackup(), 'Primary backup must be required');
 $assertTrue($approved->requireExternalCopy(), 'External backup must be required');
 
@@ -58,13 +59,27 @@ $assertThrows(
     'not explicitly approved'
 );
 $assertThrows(
-    static fn() => $approved->assertApproved($build, $fingerprint, strtotime('2026-07-20T09:00:00+00:00')),
+    static fn() => $approved->assertApproved($build, $fingerprint, strtotime('2026-07-20T08:20:00+00:00')),
     'expired'
 );
 $assertThrows(
-    static fn() => $approved->assertApproved($build, $fingerprint, strtotime('2026-07-20T10:00:00+00:00')),
+    static fn() => $approved->assertApproved($build, $fingerprint, strtotime('2026-07-20T09:00:00+00:00')),
     'expired'
 );
+
+$tooLong = ProductionCutoverConfig::fromApplicationConfig([
+    'production_cutover' => [
+        'enabled' => true,
+        'expected_build' => $build,
+        'approval_plan_fingerprint' => $fingerprint,
+        'approval_expires_at_utc' => '2026-07-20T08:30:01+00:00',
+    ],
+]);
+$assertThrows(
+    static fn() => $tooLong->assertApproved($build, $fingerprint, $now),
+    'too far in the future'
+);
+
 $assertThrows(
     static fn() => ProductionCutoverConfig::fromApplicationConfig([
         'production_cutover' => ['approval_plan_fingerprint' => 'bad'],
