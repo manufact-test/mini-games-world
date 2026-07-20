@@ -25,6 +25,7 @@ $fingerprint = str_repeat('a', 64);
 $now = strtotime('2026-07-20T08:00:00+00:00');
 
 $disabled = ProductionCutoverConfig::fromApplicationConfig([]);
+$assertTrue($disabled->enabled() === false, 'Cutover approval must default to disabled');
 $assertThrows(
     static fn() => $disabled->assertApproved($build, $fingerprint, $now),
     'not enabled'
@@ -42,6 +43,7 @@ $approved = ProductionCutoverConfig::fromApplicationConfig([
 ]);
 $approved->assertApproved($build, $fingerprint, $now);
 $summary = $approved->safeSummary();
+$assertTrue($approved->enabled() === true, 'Approval enabled state must be available for safe rearm checks');
 $assertTrue($summary['enabled'] === true, 'Approval summary must report enabled');
 $assertTrue($summary['approval_plan_fingerprint_configured'] === true, 'Approval fingerprint must remain redacted');
 $assertTrue($approved->requirePrimaryBackup(), 'Primary backup must be required');
@@ -56,6 +58,10 @@ $assertThrows(
     'not explicitly approved'
 );
 $assertThrows(
+    static fn() => $approved->assertApproved($build, $fingerprint, strtotime('2026-07-20T09:00:00+00:00')),
+    'expired'
+);
+$assertThrows(
     static fn() => $approved->assertApproved($build, $fingerprint, strtotime('2026-07-20T10:00:00+00:00')),
     'expired'
 );
@@ -64,6 +70,12 @@ $assertThrows(
         'production_cutover' => ['approval_plan_fingerprint' => 'bad'],
     ]),
     'sha-256'
+);
+$assertThrows(
+    static fn() => ProductionCutoverConfig::fromApplicationConfig([
+        'production_cutover' => ['approval_expires_at_utc' => '2026-07-20 09:00:00'],
+    ]),
+    'explicit utc offset'
 );
 
 fwrite(STDOUT, "ProductionCutoverConfigTest passed: {$assertions} assertions.\n");
