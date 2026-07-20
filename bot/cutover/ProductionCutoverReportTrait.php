@@ -46,6 +46,8 @@ trait ProductionCutoverReportTrait
         ?string $startedAt = null
     ): array {
         $rollback = $this->rollbackInternal('automatic rollback after cutover failure: ' . $reason);
+        $rollbackSucceeded = ($rollback['ok'] ?? false) === true;
+        $databaseRuntimeDisabled = ($rollback['database_runtime_disabled'] ?? false) === true;
         return [
             'ok' => false,
             'report_type' => 'mvp-14.9-production-cutover',
@@ -61,9 +63,12 @@ trait ProductionCutoverReportTrait
             'source_fingerprint' => $frozenSourceFingerprint,
             'mutation_stage' => $mutationStage,
             'rollback' => $rollback,
-            'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
+            'rollback_succeeded' => $rollbackSucceeded,
+            'storage_driver' => $databaseRuntimeDisabled
+                ? RuntimeStorageRouter::DRIVER_JSON
+                : 'unknown',
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
-            'production_db_runtime_enabled' => false,
+            'production_db_runtime_enabled' => !$databaseRuntimeDisabled,
             'production_changed' => $mutationStage !== 'none' && $mutationStage !== 'runtime_backup_created',
             'manual_review_required' => true,
             'sensitive_identifiers_exposed' => false,
