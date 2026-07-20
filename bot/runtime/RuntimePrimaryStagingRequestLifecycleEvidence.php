@@ -60,10 +60,10 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
         $selectorConfig = $text['selector_config'] ?? '';
         $selectorBootstrap = $text['selector_bootstrap'] ?? '';
 
-        $hookRead = strpos($response, "$hooks = $GLOBALS['mgw_api_success_hooks'] ?? [];");
+        $hookRead = strpos($response, "\$hooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];");
         $hookRun = strpos($response, 'foreach ($hooks as $hook)');
-        $filterRead = strpos($response, "$filters = $GLOBALS['mgw_api_data_filters'] ?? [];");
-        $responseSend = strpos($response, "api_response(['ok' => true, 'data' => $data]);");
+        $filterRead = strpos($response, "\$filters = \$GLOBALS['mgw_api_data_filters'] ?? [];");
+        $responseSend = strpos($response, "api_response(['ok' => true, 'data' => \$data]);");
         $evidenceGate = strpos($coordinator, 'RuntimePrimaryStagingEvidenceV4Gate(');
         $dbOpen = strpos($coordinator, 'PdoConnectionFactory::create($databaseConfig)');
         $readinessRun = strpos($coordinator, 'RuntimePrimaryStagingRequestSessionReadiness(');
@@ -116,7 +116,7 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
                 'count($ticks) >= $this->session->maxWorkerTicks()'
             ) && str_contains(
                 $finalizer,
-                "($tick['action'] ?? '') !== 'projection_completed'"
+                "(\$tick['action'] ?? '') !== 'projection_completed'"
             ) && str_contains(
                 $finalizer,
                 'queueStatus($currentRevision)'
@@ -161,7 +161,7 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
                 'dynamic_session_readiness'
             ) && str_contains(
                 $context,
-                "if ($entrypoint !== 'api')"
+                "if (\$entrypoint !== 'api')"
             ),
             'selector_and_config_api_only' => str_contains(
                 $selector,
