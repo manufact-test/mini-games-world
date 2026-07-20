@@ -29,10 +29,14 @@ final class RuntimePrimaryStagingEvidenceCollector
         $this->assertJsonEvidenceStable($before, $afterFirst, $afterSecond);
         $firstModules = $this->projectedModules($first);
         $database = $this->source->databaseEvidence();
+        $databaseIdentity = strtolower(trim((string)($database['identity_fingerprint'] ?? '')));
+        if (preg_match('/^[a-f0-9]{64}$/', $databaseIdentity) !== 1) {
+            throw new RuntimeException('Staging evidence source database identity fingerprint is invalid.');
+        }
         $schemas = $this->schemaEvidence($first);
 
         $manifest = [
-            'manifest_version' => RuntimePrimaryStagingEvidenceVerifier::MANIFEST_VERSION,
+            'manifest_version' => RuntimePrimaryStagingEvidenceV2Verifier::MANIFEST_VERSION,
             'environment' => 'staging',
             'repository_commit' => $this->source->repositoryCommit(),
             'generated_at_utc' => gmdate(DATE_ATOM),
@@ -40,6 +44,7 @@ final class RuntimePrimaryStagingEvidenceCollector
             'database' => [
                 'driver' => (string)($database['driver'] ?? ''),
                 'server_version' => (string)($database['server_version'] ?? ''),
+                'identity_fingerprint' => $databaseIdentity,
                 'state_engine' => (string)($schemas['state_engine'] ?? ''),
                 'outbox_engine' => (string)($schemas['outbox_engine'] ?? ''),
             ],
@@ -65,10 +70,10 @@ final class RuntimePrimaryStagingEvidenceCollector
             'entrypoint_evidence' => $this->source->entrypointEvidence(),
         ];
 
-        $verification = (new RuntimePrimaryStagingEvidenceGate($this->projectRoot))->verify($manifest);
+        $verification = (new RuntimePrimaryStagingEvidenceV2Gate($this->projectRoot))->verify($manifest);
         if (($verification['ok'] ?? false) !== true) {
             throw new RuntimeException(
-                'Collected staging evidence did not pass verification: '
+                'Collected staging evidence v2 did not pass verification: '
                 . implode('; ', array_map('strval', (array)($verification['blockers'] ?? [])))
             );
         }
@@ -79,6 +84,7 @@ final class RuntimePrimaryStagingEvidenceCollector
             'verification' => $verification,
             'manifest_fingerprint' => (string)($verification['evidence_fingerprint'] ?? ''),
             'repository_commit' => (string)($manifest['repository_commit'] ?? ''),
+            'database_identity_fingerprint' => $databaseIdentity,
             'state_revision' => (int)($manifest['first_rehearsal']['target_revision'] ?? 0),
             'state_sha256' => (string)($manifest['first_rehearsal']['target_sha256'] ?? ''),
             'projected_modules' => self::MODULES,

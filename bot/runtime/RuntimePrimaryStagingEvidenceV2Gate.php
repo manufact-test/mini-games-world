@@ -1,31 +1,30 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimePrimaryRepositoryCommitResolver.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Verifier.php';
-require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Gate.php';
 
-final class RuntimePrimaryStagingEvidenceGate
+final class RuntimePrimaryStagingEvidenceV2Gate
 {
     public function __construct(private string $projectRoot)
     {
         $this->projectRoot = rtrim(str_replace('\\', '/', trim($this->projectRoot)), '/');
         if ($this->projectRoot === '' || !is_dir($this->projectRoot)) {
-            throw new InvalidArgumentException('Staging evidence gate project root is unavailable.');
+            throw new InvalidArgumentException('Staging evidence v2 gate project root is unavailable.');
         }
     }
 
     public function verify(array $manifest): array
     {
-        if (($manifest['manifest_version'] ?? '') === RuntimePrimaryStagingEvidenceV2Verifier::MANIFEST_VERSION) {
-            return (new RuntimePrimaryStagingEvidenceV2Gate($this->projectRoot))->verify($manifest);
-        }
-
         $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($this->projectRoot);
-        $report = (new RuntimePrimaryStagingEvidenceVerifier($this->projectRoot))->verify($manifest);
+        $report = (new RuntimePrimaryStagingEvidenceV2Verifier($this->projectRoot))->verify($manifest);
         $manifestCommit = strtolower(trim((string)($manifest['repository_commit'] ?? '')));
+        $matches = preg_match('/^[a-f0-9]{40}$/', $currentCommit) === 1
+            && preg_match('/^[a-f0-9]{40}$/', $manifestCommit) === 1
+            && hash_equals($currentCommit, $manifestCommit);
         $blockers = array_values((array)($report['blockers'] ?? []));
-        if (!hash_equals($currentCommit, $manifestCommit)) {
-            $blockers[] = 'Evidence repository commit does not match the current checkout.';
+        if (!$matches) {
+            $blockers[] = 'Evidence v2 repository commit does not match the current checkout.';
         }
         $blockers = array_values(array_unique(array_filter(array_map(
             static fn(mixed $value): string => trim((string)$value),
@@ -34,7 +33,7 @@ final class RuntimePrimaryStagingEvidenceGate
 
         $report['ok'] = $blockers === [];
         $report['current_repository_commit'] = $currentCommit;
-        $report['repository_commit_matches'] = hash_equals($currentCommit, $manifestCommit);
+        $report['repository_commit_matches'] = $matches;
         $report['blocker_count'] = count($blockers);
         $report['blockers'] = $blockers;
         return $report;

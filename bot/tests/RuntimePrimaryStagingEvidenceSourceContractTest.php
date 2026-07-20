@@ -30,6 +30,12 @@ $assertTrue(
     'Real evidence source must require MySQL/MariaDB'
 );
 $assertTrue(
+    str_contains($source, 'DatabaseConfig::fromApplicationConfig($this->config)')
+        && str_contains($source, '$this->databaseConfig->identityFingerprint()')
+        && str_contains($source, "'identity_fingerprint' =>"),
+    'Database evidence must bind the exact non-sensitive staging database identity'
+);
+$assertTrue(
     str_contains($source, 'RuntimePrimaryRepositoryCommitResolver::resolve($this->projectRoot)'),
     'Repository commit evidence must come from the shell-free resolver'
 );
