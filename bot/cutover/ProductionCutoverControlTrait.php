@@ -5,7 +5,7 @@ trait ProductionCutoverControlTrait
 {
     public function status(): array
     {
-        $this->assertEnvironmentAndBuild();
+        $this->assertControlEnvironmentAndBuild();
         $stateError = '';
         try {
             $state = $this->readState();
@@ -50,13 +50,13 @@ trait ProductionCutoverControlTrait
 
     public function rollback(string $reason = 'manual production rollback'): array
     {
-        $this->assertEnvironmentAndBuild();
+        $this->assertControlEnvironmentAndBuild();
         return $this->rollbackInternal($reason);
     }
 
     public function rearm(): array
     {
-        $this->assertEnvironmentAndBuild();
+        $this->assertControlEnvironmentAndBuild();
         if ($this->policy->enabled()) {
             throw new RuntimeException('Disable the private production cutover approval before rearming.');
         }
@@ -112,5 +112,16 @@ trait ProductionCutoverControlTrait
             'sensitive_identifiers_exposed' => false,
             'generated_at_utc' => $this->nowUtc(),
         ];
+    }
+
+    private function assertControlEnvironmentAndBuild(): void
+    {
+        $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
+        if ($environment !== 'production') {
+            throw new RuntimeException('Production cutover controls are enabled only in production.');
+        }
+        if (FeatureFlagService::BUILD !== self::BUILD) {
+            throw new RuntimeException('Unexpected application build for production cutover controls.');
+        }
     }
 }
