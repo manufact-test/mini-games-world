@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimePrimaryStagingEntrypointSelectorConfig.php';
+
 final class RuntimePrimaryStagingSelectorEvidence
 {
     public const CONTRACT_VERSION = 'v1-guarded-staging-entrypoint-selector';
@@ -17,6 +19,7 @@ final class RuntimePrimaryStagingSelectorEvidence
             'webhook_handler' => $projectRoot . '/bot/handlers/WebhookHandler.php',
             'bootstrap' => $projectRoot . '/bot/core/bootstrap.php',
             'storage_factory' => $projectRoot . '/bot/storage/StorageFactory.php',
+            'selector_bootstrap' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php',
             'selector' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php',
             'selector_config' => $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php',
             'storage_context' => $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointStorageContext.php',
@@ -37,57 +40,71 @@ final class RuntimePrimaryStagingSelectorEvidence
         }
         ksort($sources, SORT_STRING);
 
+        $factory = $sourceText['storage_factory'] ?? '';
+        $selector = $sourceText['selector'] ?? '';
+        $selectorConfig = $sourceText['selector_config'] ?? '';
+        $context = $sourceText['storage_context'] ?? '';
+        $selectorBootstrap = $sourceText['selector_bootstrap'] ?? '';
         $checks = [
             'api_json_factory_present' => str_contains($sourceText['api'] ?? '', 'StorageFactory::createJson('),
             'webhook_json_factory_present' => str_contains($sourceText['webhook_handler'] ?? '', 'StorageFactory::createJson('),
-            'bootstrap_selector_loader_present' => str_contains(
-                $sourceText['bootstrap'] ?? '',
+            'default_json_fallback_present' => str_contains($factory, 'return new JsonStorageAdapter($dataDir);'),
+            'storage_factory_lazy_selector_present' => str_contains(
+                $factory,
+                'installGuardedEntrypointContextIfEligible()'
+            ) && str_contains(
+                $factory,
                 'RuntimePrimaryStagingEntrypointBootstrap.php'
-            ),
-            'bootstrap_selector_install_present' => str_contains(
-                $sourceText['bootstrap'] ?? '',
+            ) && str_contains(
+                $factory,
                 'installIfEnabled()'
             ),
-            'bootstrap_entrypoints_bounded' => str_contains(
-                $sourceText['bootstrap'] ?? '',
-                "['api.php', 'webhook.php']"
-            ),
+            'storage_factory_entrypoints_bounded' => str_contains($factory, "'api.php' => 'api'")
+                && str_contains($factory, "'webhook.php' => 'webhook'")
+                && str_contains($factory, "default => ''"),
             'storage_factory_context_override_present' => str_contains(
-                $sourceText['storage_factory'] ?? '',
+                $factory,
                 'RuntimePrimaryEntrypointStorageContext::installed()'
             ) && str_contains(
-                $sourceText['storage_factory'] ?? '',
+                $factory,
                 'RuntimePrimaryEntrypointStorageContext::storage()'
             ),
+            'selector_bootstrap_v3_present' => str_contains(
+                $selectorBootstrap,
+                'RuntimePrimaryStagingEvidenceV3Verifier.php'
+            ) && str_contains(
+                $selectorBootstrap,
+                'RuntimePrimaryStagingEvidenceV3Gate.php'
+            ),
             'selector_staging_guard_present' => str_contains(
-                $sourceText['selector'] ?? '',
+                $selector,
                 "if (\$environment !== 'staging')"
             ),
             'selector_v3_requirement_present' => str_contains(
-                $sourceText['selector'] ?? '',
+                $selector,
                 'RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION'
             ),
             'selector_resolution_guard_present' => str_contains(
-                $sourceText['selector'] ?? '',
+                $selector,
                 'RuntimePrimaryStagingStorageResolver('
             ) && str_contains(
-                $sourceText['selector'] ?? '',
+                $selector,
                 'RuntimePrimaryEntrypointStorageContext::install('
             ),
             'selector_contract_version_present' => str_contains(
-                $sourceText['selector_config'] ?? '',
+                $selectorConfig,
                 RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION
             ),
             'selector_disabled_default_present' => str_contains(
-                $sourceText['selector_config'] ?? '',
+                $selectorConfig,
                 "\$settings['enabled'] ?? false"
             ),
             'context_database_only_present' => str_contains(
-                $sourceText['storage_context'] ?? '',
+                $context,
                 "if (\$storage->driver() !== 'database')"
             ),
             'context_immutable_present' => str_contains(
-                $sourceText['storage_context'] ?? '',
+                $context,
                 'already installed for another storage or entrypoint'
             ),
         ];
