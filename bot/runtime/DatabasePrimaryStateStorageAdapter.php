@@ -20,8 +20,8 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
             $fingerprint = hash('sha256', $encoded);
 
             if ($existing !== null) {
-                $this->assertRowValid($existing);
-                $existingFingerprint = strtolower(trim((string)($existing['state_sha256'] ?? '')));
+                $existingState = $this->decodeAndVerify($existing);
+                $existingFingerprint = hash('sha256', $this->canonicalJson($existingState));
                 if (!hash_equals($existingFingerprint, $fingerprint)) {
                     throw new RuntimeException(
                         'Runtime primary state is already initialized with a different snapshot.'
@@ -37,7 +37,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
             }
 
             $now = gmdate(DATE_ATOM);
-            $database->execute(
+            $inserted = $database->execute(
                 'INSERT INTO ' . RuntimePrimaryStateSchemaInstaller::TABLE . '
                     (singleton_id, revision, state_json, state_sha256, created_at_utc, updated_at_utc)
                  VALUES
@@ -50,6 +50,9 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
                     'updated_at_utc' => $now,
                 ]
             );
+            if ($inserted !== 1) {
+                throw new RuntimeException('Runtime primary state initialization did not insert exactly one row.');
+            }
 
             return [
                 'ok' => true,
@@ -114,7 +117,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
     public function status(): array
     {
         $row = $this->requiredRow($this->database, false);
-        $this->assertRowValid($row);
+        $this->decodeAndVerify($row);
         return [
             'ok' => true,
             'driver' => self::DRIVER,
@@ -188,7 +191,10 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
             throw new RuntimeException('Runtime primary state payload is empty.');
         }
         foreach (['created_at_utc', 'updated_at_utc'] as $field) {
-            if (strtotime((string)($row[$field] ?? '')) === false) {
+            $timestamp = trim((string)($row[$field] ?? ''));
+            if ($timestamp === ''
+                || preg_match('/(?:Z|[+-]\d{2}:\d{2})$/', $timestamp) !== 1
+                || strtotime($timestamp) === false) {
                 throw new RuntimeException('Runtime primary state timestamp is invalid: ' . $field . '.');
             }
         }
