@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/storage/RuntimeStorageRouter.php';
 
 final class FeatureFlagService
 {
-    public const BUILD = 'v102-mvp14-production-preflight';
+    public const BUILD = 'v103-mvp14-production-cutover';
 
     private const GAME_IDS = [
         'tictactoe',
@@ -152,8 +152,11 @@ final class FeatureFlagService
         }
 
         $databaseRuntime = new RuntimeStorageRouter($this->config);
+        $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
         foreach ($databaseRuntime->enabledModules() as $module) {
-            $alerts[] = 'Тестовый DB runtime включён для модуля: ' . $module . '.';
+            $alerts[] = $environment === 'production'
+                ? 'Production DB runtime включён для модуля: ' . $module . '.'
+                : 'Тестовый DB runtime включён для модуля: ' . $module . '.';
         }
 
         return $alerts;
