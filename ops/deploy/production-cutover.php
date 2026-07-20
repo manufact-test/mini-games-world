@@ -113,23 +113,28 @@ try {
         exit(0);
     }
 
-    $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
-    if (!$databaseConfig->enabled()) {
-        throw new RuntimeException('Production database is not enabled.');
-    }
-    $database = PdoConnectionFactory::create($databaseConfig);
-    $storage = StorageFactory::create($config);
+    $storage = null;
+    $database = null;
+    $backupManager = null;
+    if ($requestedMode === 'run') {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('Production database is not enabled.');
+        }
+        $database = PdoConnectionFactory::create($databaseConfig);
+        $storage = StorageFactory::create($config);
 
-    $backupSettings = BackupConfigLoader::load($projectRoot, 'production');
-    $backupManager = new BackupManager(
-        $projectRoot,
-        (string)($config['data_dir'] ?? ''),
-        (string)$backupSettings['backup_root'],
-        isset($backupSettings['external_dir']) ? (string)$backupSettings['external_dir'] : null,
-        (int)$backupSettings['retention_days'],
-        (int)$backupSettings['retention_count'],
-        (bool)$backupSettings['include_release_files']
-    );
+        $backupSettings = BackupConfigLoader::load($projectRoot, 'production');
+        $backupManager = new BackupManager(
+            $projectRoot,
+            (string)($config['data_dir'] ?? ''),
+            (string)$backupSettings['backup_root'],
+            isset($backupSettings['external_dir']) ? (string)$backupSettings['external_dir'] : null,
+            (int)$backupSettings['retention_days'],
+            (int)$backupSettings['retention_count'],
+            (bool)$backupSettings['include_release_files']
+        );
+    }
 
     $runner = new ProductionCutoverRunner(
         $projectRoot,
