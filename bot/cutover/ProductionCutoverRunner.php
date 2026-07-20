@@ -44,9 +44,9 @@ final class ProductionCutoverRunner
         string $projectRoot,
         private array $config,
         private string $configFile,
-        private StorageAdapterInterface $storage,
-        private DatabaseConnectionInterface $database,
-        private BackupManager $backupManager,
+        private ?StorageAdapterInterface $storage,
+        private ?DatabaseConnectionInterface $database,
+        private ?BackupManager $backupManager,
         private ProductionCutoverConfig $policy,
         private ?int $now = null
     ) {
