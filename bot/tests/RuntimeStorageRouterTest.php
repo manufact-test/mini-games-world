@@ -80,6 +80,7 @@ $productionActivated['environment'] = 'production';
 $productionActivated['feature_flags']['database_runtime'] = [
     'enabled' => true,
     'production_activated' => true,
+    'activation_build' => 'v103-mvp14-production-cutover',
     'activation_plan_fingerprint' => str_repeat('a', 64),
     'activation_source_fingerprint' => str_repeat('b', 64),
     'activated_at_utc' => '2026-07-20T08:00:00+00:00',
@@ -112,6 +113,13 @@ $badActivation = $productionActivated;
 $badActivation['feature_flags']['database_runtime']['activation_plan_fingerprint'] = 'invalid';
 $assertThrows(
     static fn() => new RuntimeStorageRouter($badActivation),
+    'completed controlled cutover activation marker'
+);
+
+$wrongActivationBuild = $productionActivated;
+$wrongActivationBuild['feature_flags']['database_runtime']['activation_build'] = 'v102-mvp14-production-preflight';
+$assertThrows(
+    static fn() => new RuntimeStorageRouter($wrongActivationBuild),
     'completed controlled cutover activation marker'
 );
 
