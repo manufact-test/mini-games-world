@@ -87,6 +87,13 @@ $assertTrue(
     'Pre-mutation gate failures must remain retryable without false rolled_back state'
 );
 $assertTrue(
+    str_contains($runner, "'action' => 'recovery_blocked'")
+        && str_contains($runner, "'production_change_status' => 'unknown'")
+        && str_contains($runner, "'production_changed' => null")
+        && str_contains($runner, 'active_state_without_recovery_artifacts'),
+    'Uncertain state without exact recovery evidence must fail closed without false claims'
+);
+$assertTrue(
     str_contains($runner, "'action' => 'rollback_noop'")
         && str_contains($runner, "'state_written' => false"),
     'Rollback before any mutation must be a state-free no-op'
@@ -99,14 +106,21 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($runner, "'rollback_succeeded' => \$rollbackSucceeded")
-        && str_contains($runner, "'storage_driver' => \$databaseRuntimeDisabled")
-        && str_contains($runner, "'production_db_runtime_enabled' => !\$databaseRuntimeDisabled"),
-    'Automatic rollback report must not claim JSON success after partial recovery failure'
+        && str_contains($runner, "\$rollbackAction === 'rollback_to_json'")
+        && str_contains($runner, '&& $statePersisted;')
+        && str_contains($runner, "'production_db_runtime_enabled' => \$databaseRuntimeDisabled ? false : null"),
+    'Automatic rollback success must require real restored and persisted terminal recovery'
 );
 $assertTrue(
     str_contains($runner, "'runtime_error' => \$runtimeError")
         && str_contains($runner, "'ok' => \$routerError === '' && \$runtimeError === '' && \$stateError === ''"),
     'Emergency status must return a structured failure when runtime config is malformed'
+);
+$assertTrue(
+    str_contains($runner, 'rolled_back_state_contract_recovered')
+        && str_contains($runner, 'completed_state_contract_recovered')
+        && str_contains($runner, 'rolled_back_state_runtime_validation_failed'),
+    'Inconsistent terminal states must repair from exact runtime backup or block recovery'
 );
 $assertTrue(
     str_contains($runner, 'public function rearm(): array')
