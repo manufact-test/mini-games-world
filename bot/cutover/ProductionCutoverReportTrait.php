@@ -36,6 +36,41 @@ trait ProductionCutoverReportTrait
         ];
     }
 
+    private function recoveryBlockedReport(
+        Throwable $error,
+        string $reason,
+        string $state = 'unknown',
+        ?string $startedAt = null
+    ): array {
+        return [
+            'ok' => false,
+            'report_type' => 'mvp-14.9-production-cutover',
+            'action' => 'recovery_blocked',
+            'reason' => $reason,
+            'state' => $state,
+            'environment' => 'production',
+            'build' => self::BUILD,
+            'error_class' => get_class($error),
+            'error_message' => $this->safeMessage($error->getMessage()),
+            'rollback' => [
+                'attempted' => false,
+                'ok' => false,
+                'reason' => 'exact recovery artifacts are unavailable',
+            ],
+            'storage_driver' => 'unknown',
+            'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
+            'production_db_runtime_enabled' => null,
+            'database_runtime_status' => 'unknown',
+            'production_changed' => null,
+            'production_change_status' => 'unknown',
+            'manual_review_required' => true,
+            'immediate_operator_action_required' => true,
+            'sensitive_identifiers_exposed' => false,
+            'started_at_utc' => $startedAt,
+            'failed_at_utc' => $this->nowUtc(),
+        ];
+    }
+
     private function automaticRollbackReport(
         Throwable $error,
         string $reason,
@@ -46,8 +81,18 @@ trait ProductionCutoverReportTrait
         ?string $startedAt = null
     ): array {
         $rollback = $this->rollbackInternal('automatic rollback after cutover failure: ' . $reason);
-        $rollbackSucceeded = ($rollback['ok'] ?? false) === true;
+        $rollbackAction = (string)($rollback['action'] ?? '');
+        $runtimeRestored = ($rollback['runtime_restored'] ?? false) === true;
+        $writeBlockRemoved = ($rollback['json_write_block_removed'] ?? false) === true;
         $databaseRuntimeDisabled = ($rollback['database_runtime_disabled'] ?? false) === true;
+        $statePersisted = ($rollback['state_written'] ?? false) === true;
+        $rollbackSucceeded = ($rollback['ok'] ?? false) === true
+            && $rollbackAction === 'rollback_to_json'
+            && $runtimeRestored
+            && $writeBlockRemoved
+            && $databaseRuntimeDisabled
+            && $statePersisted;
+
         return [
             'ok' => false,
             'report_type' => 'mvp-14.9-production-cutover',
@@ -68,9 +113,11 @@ trait ProductionCutoverReportTrait
                 ? RuntimeStorageRouter::DRIVER_JSON
                 : 'unknown',
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
-            'production_db_runtime_enabled' => !$databaseRuntimeDisabled,
+            'production_db_runtime_enabled' => $databaseRuntimeDisabled ? false : null,
+            'database_runtime_status' => $databaseRuntimeDisabled ? 'disabled' : 'unknown',
             'production_changed' => $mutationStage !== 'none' && $mutationStage !== 'runtime_backup_created',
             'manual_review_required' => true,
+            'immediate_operator_action_required' => !$rollbackSucceeded,
             'sensitive_identifiers_exposed' => false,
             'started_at_utc' => $startedAt,
             'failed_at_utc' => $this->nowUtc(),
