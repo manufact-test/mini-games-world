@@ -1,0 +1,60 @@
+name: DB Primary Staging Entrypoint Selector Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6j-staging-synthetic-suite
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryEntrypointStorageContext.php'
+      - 'bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php'
+      - 'bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php'
+      - 'bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php'
+      - 'bot/runtime/RuntimePrimaryStagingSelectorEvidence.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php'
+      - 'bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceGate.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'ops/runtime/collect-staging-db-primary-selector-evidence.php'
+      - 'bot/tests/support/RuntimePrimaryStagingEvidenceV3ManifestFixture.php'
+      - 'bot/tests/RuntimePrimaryStagingEntrypointSelectorConfigTest.php'
+      - 'bot/tests/RuntimePrimaryEntrypointStorageContextTest.php'
+      - 'bot/tests/RuntimePrimaryStorageFactoryEntrypointContextTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEntrypointStorageSelectorDisabledTest.php'
+      - 'bot/tests/RuntimePrimaryStagingSelectorEvidenceTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceV3VerifierTest.php'
+      - 'bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEntrypointSelectorContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorCliContractTest.php'
+      - 'ops/checks/db-primary-staging-entrypoint-selector-local.sh'
+      - 'ops/runtime/DB_PRIMARY_STAGING_ENTRYPOINT_SELECTOR.md'
+      - '.github/workflows/db-primary-staging-entrypoint-selector-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-entrypoint-selector-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging entrypoint selector checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-entrypoint-selector-local.sh
