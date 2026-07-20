@@ -2,12 +2,15 @@
 declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__, 2);
+$bootstrap = file_get_contents($projectRoot . '/bot/core/bootstrap.php');
+$bridgeGuard = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php');
 $factory = file_get_contents($projectRoot . '/bot/storage/StorageFactory.php');
 $selector = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php');
 $context = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryEntrypointStorageContext.php');
 $v3 = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php');
 $collector = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php');
-if (!is_string($factory) || !is_string($selector) || !is_string($context)
+if (!is_string($bootstrap) || !is_string($bridgeGuard) || !is_string($factory)
+    || !is_string($selector) || !is_string($context)
     || !is_string($v3) || !is_string($collector)) {
     throw new RuntimeException('Staging entrypoint selector sources are unavailable.');
 }
@@ -60,8 +63,22 @@ $assertTrue(
     str_contains($context, 'accepts only guarded DB-primary storage')
         && str_contains($context, 'requires selector-aware evidence v3')
         && str_contains($context, 'requires the exact selector contract version')
-        && str_contains($context, 'valid selector evidence fingerprint'),
-    'Request context must independently require DB storage, evidence v3 and exact selector contract'
+        && str_contains($context, 'requires a valid state revision')
+        && str_contains($context, "'state_sha256' => 'state fingerprint'")
+        && str_contains($context, "'database_identity_fingerprint' => 'database identity fingerprint'")
+        && str_contains($context, "'evidence_fingerprint' => 'evidence fingerprint'")
+        && str_contains($context, "'selector_evidence_fingerprint' => 'selector evidence fingerprint'"),
+    'Request context must independently validate DB storage, evidence v3, revision and all fingerprints'
+);
+$assertTrue(
+    str_contains($context, "'legacy_json_bridges_suppressed' => true")
+        && str_contains($bridgeGuard, 'legacyJsonBridgeAllowed()')
+        && str_contains($bridgeGuard, 'RuntimePrimaryEntrypointStorageContext::installed()')
+        && substr_count(
+            $bootstrap,
+            'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()'
+        ) >= 8,
+    'Guarded DB-primary requests must suppress all legacy JSON bridge hooks and filters'
 );
 $assertTrue(
     str_contains($v3, "public const MANIFEST_VERSION = 'v3-staging-db-primary-selector-evidence'")
