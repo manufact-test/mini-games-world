@@ -22,6 +22,7 @@ final class StorageFactory
 
     public static function createJson(string $dataDir): StorageAdapterInterface
     {
+        self::installGuardedEntrypointContextIfEligible();
         if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
             && RuntimePrimaryEntrypointStorageContext::installed()) {
             return RuntimePrimaryEntrypointStorageContext::storage();
@@ -52,6 +53,44 @@ final class StorageFactory
             PdoConnectionFactory::create($databaseConfig),
             $outboxEnabled ? new RuntimePrimaryProjectionOutboxWriter() : null
         );
+    }
+
+    private static function installGuardedEntrypointContextIfEligible(): void
+    {
+        static $attempted = [];
+
+        if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+            && RuntimePrimaryEntrypointStorageContext::installed()) {
+            return;
+        }
+        $script = basename(trim((string)(
+            $_SERVER['SCRIPT_FILENAME']
+            ?? $_SERVER['PHP_SELF']
+            ?? ''
+        )));
+        $entrypoint = match ($script) {
+            'api.php' => 'api',
+            'webhook.php' => 'webhook',
+            default => '',
+        };
+        if ($entrypoint === '' || isset($attempted[$entrypoint])) {
+            return;
+        }
+        $attempted[$entrypoint] = true;
+
+        $config = $GLOBALS['config'] ?? null;
+        $configFile = $GLOBALS['configFile'] ?? null;
+        if (!is_array($config) || !is_string($configFile) || trim($configFile) === '') {
+            throw new RuntimeException('Entrypoint storage selector requires the active application config context.');
+        }
+
+        require_once __DIR__ . '/../runtime/RuntimePrimaryStagingEntrypointBootstrap.php';
+        (new RuntimePrimaryStagingEntrypointStorageSelector(
+            dirname(__DIR__, 2),
+            $config,
+            $configFile,
+            $entrypoint
+        ))->installIfEnabled();
     }
 
     private static function strictBool(mixed $value, string $label): bool
