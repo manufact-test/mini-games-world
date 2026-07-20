@@ -29,6 +29,7 @@ FILES=(
   bot/tests/RuntimePrimaryStagingActivationEvidenceLoaderTest.php
   bot/tests/RuntimePrimaryStagingActivationGuardTest.php
   bot/tests/RuntimePrimaryStagingActivationCliContractTest.php
+  bot/tests/RuntimePrimaryStagingActivationGuardContractTest.php
 )
 
 for file in "${FILES[@]}"; do
@@ -46,6 +47,7 @@ TESTS=(
   bot/tests/RuntimePrimaryStagingActivationEvidenceLoaderTest.php
   bot/tests/RuntimePrimaryStagingActivationGuardTest.php
   bot/tests/RuntimePrimaryStagingActivationCliContractTest.php
+  bot/tests/RuntimePrimaryStagingActivationGuardContractTest.php
 )
 
 for test_file in "${TESTS[@]}"; do
