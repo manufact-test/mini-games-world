@@ -63,9 +63,11 @@ Rearm after an explicitly reviewed rollback:
 
 `--run` requires live JSON storage, a healthy production DB, current migrations, backup configuration and the managed-migrations lock.
 
-Emergency `--status`, `--rollback` and reviewed `--rearm` do **not** initialize the production DB or backup manager and do **not** acquire the managed-migrations lock. They still require the exact v103 build, production environment, private config/runtime directory and the exclusive cutover lock. This keeps JSON recovery available when the DB itself is unavailable.
+Emergency `--status`, `--rollback` and reviewed `--rearm` do **not** initialize the production DB or backup manager and do **not** acquire the managed-migrations lock. They still require the exact v103 build, production environment and private config/runtime directory.
 
-Hostinger scheduling uses one temporary five-minute Cron for the selected mode. Repeated ticks are locked and idempotent. Do not create the `--run` Cron until the exact build, preflight fingerprint and short-lived approval are confirmed.
+`--status` is read-only and does not acquire the exclusive cutover lock, so it can report an active or interrupted operation from atomically published state/runtime files. `--rollback` and `--rearm` do acquire the exclusive cutover lock. If another cutover process still holds that lock, these commands return a non-success `*_blocked` report and exit non-zero instead of falsely claiming a successful no-op. Stop or confirm the active process and retry the emergency command.
+
+Hostinger scheduling uses one temporary five-minute Cron for the selected mode. Repeated `--run` ticks are locked and idempotent. Do not create the `--run` Cron until the exact build, preflight fingerprint and short-lived approval are confirmed.
 
 ## Automatic sequence
 
