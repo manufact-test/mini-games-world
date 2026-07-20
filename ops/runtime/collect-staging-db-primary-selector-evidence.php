@@ -9,6 +9,7 @@ if (PHP_SAPI !== 'cli') {
 $outputPath = '';
 $maxEvents = 20;
 foreach (array_slice($argv ?? [], 1) as $argument) {
+    $argument = trim((string)$argument);
     if (str_starts_with($argument, '--output=')) {
         if ($outputPath !== '') {
             fwrite(STDERR, "--output may be specified only once.\n");
@@ -20,7 +21,7 @@ foreach (array_slice($argv ?? [], 1) as $argument) {
     if (str_starts_with($argument, '--max-events=')) {
         $raw = trim(substr($argument, strlen('--max-events=')));
         if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
-            fwrite(STDERR, "--max-events must be an integer.\n");
+            fwrite(STDERR, "--max-events must be an integer between 1 and 100.\n");
             exit(2);
         }
         $maxEvents = (int)$raw;
@@ -42,15 +43,22 @@ $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceWriter.php';
 $writer = new RuntimePrimaryStagingEvidenceWriter($projectRoot);
 try {
-    $writer->validateOutputPath($outputPath);
+    $validatedOutput = $writer->validateOutputPath($outputPath);
+    $outputPath = (string)$validatedOutput['output_path'];
 } catch (Throwable $error) {
     fwrite(STDERR, "Invalid private output path.\n");
     exit(2);
 }
 
 require $projectRoot . '/bot/core/bootstrap.php';
-require_once $projectRoot . '/bot/operations/StagingOperationDefinition.php';
-require_once $projectRoot . '/bot/operations/StagingPrimaryRehearsalOperation.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryPrivateConfigGuard.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxWriter.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionBootstrap.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorker.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryRehearsalBackendInterface.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackend.php';
+require_once $projectRoot . '/bot/runtime/StagingPrimaryRehearsalOperation.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointEvidence.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryRepositoryCommitResolver.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceVerifier.php';
@@ -63,12 +71,11 @@ require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.ph
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceGate.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryJsonEvidence.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingConcurrencyProbe.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceApproval.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryPrivateConfigGuard.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSource.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceCollector.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceApproval.php';
 
 $environment = strtolower(trim((string)($config['environment'] ?? '')));
 if ($environment !== 'staging') {
@@ -76,43 +83,59 @@ if ($environment !== 'staging') {
     exit(2);
 }
 
-$lockHandle = null;
-$lockPath = '';
-$outputWritten = false;
 try {
     $private = RuntimePrimaryPrivateConfigGuard::assertExternal(
         (string)($configFile ?? ''),
         $projectRoot
     );
     $privateDir = (string)$private['private_dir'];
-    $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
-    if (!$databaseConfig->enabled()) {
-        throw new RuntimeException('Selector-aware evidence collection requires an enabled staging database.');
-    }
+} catch (Throwable $error) {
+    fwrite(STDERR, trim($error->getMessage()) . PHP_EOL);
+    exit(2);
+}
+
+$databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+if (!$databaseConfig->enabled()) {
+    fwrite(STDERR, "Selector-aware evidence collection requires an enabled staging database.\n");
+    exit(2);
+}
+try {
     $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot);
     RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->assertApproved(
         $databaseConfig,
         $currentCommit,
         time()
     );
+} catch (Throwable $error) {
+    fwrite(STDERR, trim($error->getMessage()) . PHP_EOL);
+    exit(2);
+}
 
-    $lockPath = $privateDir . '/runtime-primary-rehearsal.lock';
-    if (is_link($lockPath)) {
-        throw new RuntimeException('Staging evidence rehearsal lock must not be a symbolic link.');
-    }
-    $lockHandle = fopen($lockPath, 'c+');
-    if (!is_resource($lockHandle)) {
-        throw new RuntimeException('Staging evidence rehearsal lock is unavailable.');
-    }
-    @chmod($lockPath, 0600);
-    clearstatcache(true, $lockPath);
-    if (is_link($lockPath)) {
-        throw new RuntimeException('Staging evidence rehearsal lock became a symbolic link.');
-    }
-    if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
-        throw new RuntimeException('Another DB-primary rehearsal or evidence collection is already running.');
-    }
+$lockPath = $privateDir . '/runtime-primary-rehearsal.lock';
+if (is_link($lockPath)) {
+    fwrite(STDERR, "Staging evidence rehearsal lock must not be a symbolic link.\n");
+    exit(2);
+}
+$lockHandle = fopen($lockPath, 'c+');
+if (!is_resource($lockHandle)) {
+    fwrite(STDERR, "Staging evidence rehearsal lock is unavailable.\n");
+    exit(2);
+}
+@chmod($lockPath, 0600);
+clearstatcache(true, $lockPath);
+if (is_link($lockPath)) {
+    fclose($lockHandle);
+    fwrite(STDERR, "Staging evidence rehearsal lock became a symbolic link.\n");
+    exit(2);
+}
+if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
+    fclose($lockHandle);
+    fwrite(STDERR, "Another DB-primary rehearsal or evidence collection is already running.\n");
+    exit(2);
+}
 
+$outputWritten = false;
+try {
     $database = PdoConnectionFactory::create($databaseConfig);
     $leaseDatabase = PdoConnectionFactory::create($databaseConfig);
     $jsonStorage = StorageFactory::createJson((string)($config['data_dir'] ?? ''));
@@ -120,18 +143,21 @@ try {
         throw new RuntimeException('Selector evidence collection requires the JSON rollback driver.');
     }
 
-    $rehearsal = new StagingPrimaryRehearsalOperation(
-        $projectRoot,
+    $backend = new RuntimePrimaryStagingRehearsalBackend(
         $config,
-        (string)($configFile ?? ''),
         $jsonStorage,
-        $database,
+        $database
+    );
+    $rehearsal = new StagingPrimaryRehearsalOperation(
+        $config,
+        $backend,
         $maxEvents
     );
     $concurrency = new RuntimePrimaryStagingConcurrencyProbe(
         $database,
         $leaseDatabase,
-        $privateDir . '/runtime-primary-cli-lock-probe.lock'
+        $privateDir . '/runtime-primary-cli-lock-probe.lock',
+        120
     );
     $source = new RuntimePrimaryStagingEvidenceSource(
         $config,
@@ -152,13 +178,12 @@ try {
 
     $written = $writer->write($outputPath, $manifest);
     $outputWritten = true;
-    $stored = json_decode(
-        (string)file_get_contents($outputPath),
-        true,
-        512,
-        JSON_THROW_ON_ERROR
-    );
-    if (!is_array($stored)) {
+    $storedRaw = file_get_contents($outputPath);
+    if (!is_string($storedRaw)) {
+        throw new RuntimeException('Written selector-aware evidence is unreadable.');
+    }
+    $stored = json_decode($storedRaw, true, 512, JSON_THROW_ON_ERROR);
+    if (!is_array($stored) || array_is_list($stored)) {
         throw new RuntimeException('Written selector-aware evidence is not a JSON object.');
     }
     $verification = (new RuntimePrimaryStagingEvidenceV3Gate($projectRoot))->verify($stored);
@@ -221,8 +246,6 @@ try {
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
     exit(1);
 } finally {
-    if (is_resource($lockHandle)) {
-        flock($lockHandle, LOCK_UN);
-        fclose($lockHandle);
-    }
+    flock($lockHandle, LOCK_UN);
+    fclose($lockHandle);
 }
