@@ -11,17 +11,22 @@ bash ops/checks/db-primary-staging-evidence-local.sh
 FILES=(
   bot/runtime/RuntimePrimaryJsonEvidence.php
   bot/runtime/RuntimePrimaryStagingConcurrencyProbe.php
+  bot/runtime/RuntimePrimaryStagingEvidenceApproval.php
   bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php
   bot/runtime/RuntimePrimaryStagingEvidenceSource.php
   bot/runtime/RuntimePrimaryStagingEvidenceCollector.php
   bot/runtime/RuntimePrimaryStagingEvidenceWriter.php
   ops/runtime/collect-staging-db-primary-evidence.php
+  ops/runtime/inspect-staging-db-primary-evidence-target.php
   bot/tests/RuntimePrimaryJsonEvidenceTest.php
   bot/tests/RuntimePrimaryStagingConcurrencyProbeTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceApprovalTest.php
   bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php
   bot/tests/RuntimePrimaryStagingEvidenceWriterTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceWriterNoClobberContractTest.php
   bot/tests/RuntimePrimaryStagingEvidenceSourceContractTest.php
   bot/tests/RuntimePrimaryStagingEvidenceCollectorCliContractTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceTargetInspectorContractTest.php
 )
 
 for file in "${FILES[@]}"; do
@@ -29,11 +34,20 @@ for file in "${FILES[@]}"; do
   printf 'lint ok: %s\n' "$file"
 done
 
-"$PHP_BIN" bot/tests/RuntimePrimaryJsonEvidenceTest.php
-"$PHP_BIN" bot/tests/RuntimePrimaryStagingConcurrencyProbeTest.php
-"$PHP_BIN" bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php
-"$PHP_BIN" bot/tests/RuntimePrimaryStagingEvidenceWriterTest.php
-"$PHP_BIN" bot/tests/RuntimePrimaryStagingEvidenceSourceContractTest.php
-"$PHP_BIN" bot/tests/RuntimePrimaryStagingEvidenceCollectorCliContractTest.php
+TESTS=(
+  bot/tests/RuntimePrimaryJsonEvidenceTest.php
+  bot/tests/RuntimePrimaryStagingConcurrencyProbeTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceApprovalTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceWriterTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceWriterNoClobberContractTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceSourceContractTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceCollectorCliContractTest.php
+  bot/tests/RuntimePrimaryStagingEvidenceTargetInspectorContractTest.php
+)
+
+for test_file in "${TESTS[@]}"; do
+  "$PHP_BIN" "$test_file"
+done
 
 printf 'DB-primary staging evidence collector focused verification passed.\n'
