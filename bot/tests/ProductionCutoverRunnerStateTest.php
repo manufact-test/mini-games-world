@@ -189,6 +189,28 @@ try {
 
 [$fixture, $private, $data, $configFile] = $makeFixture();
 try {
+    file_put_contents($private . '/runtime.php', "<?php\nreturn [\n    'maintenance_mode' => true,\n    'database_runtime' => ['enabled' => false],\n];\n");
+    file_put_contents($data . '/.cutover-write-block', "sealed\n");
+    file_put_contents($private . '/production-cutover.json', json_encode([
+        'state' => 'running',
+        'started_at_utc' => '2026-07-20T09:55:00+00:00',
+    ], JSON_THROW_ON_ERROR));
+
+    $subject = $runner($data, $configFile, new ProductionCutoverConfig(false, false));
+    $missingBackup = $subject->run();
+    $assertTrue(($missingBackup['action'] ?? '') === 'automatic_rollback', 'Write block must trigger an attempted recovery');
+    $assertTrue(($missingBackup['rollback_succeeded'] ?? true) === false, 'Missing exact runtime backup must prevent successful rollback');
+    $assertTrue(($missingBackup['rollback']['runtime_restored'] ?? true) === false, 'Missing exact runtime backup must remain explicit');
+    $assertTrue(($missingBackup['rollback']['json_write_block_removed'] ?? false) === true, 'Recovery must still remove the JSON write block when possible');
+    $assertTrue(($missingBackup['storage_driver'] ?? '') === 'unknown', 'Partial recovery must not claim an active JSON storage route');
+    $state = json_decode((string)file_get_contents($private . '/production-cutover.json'), true, 512, JSON_THROW_ON_ERROR);
+    $assertTrue(($state['state'] ?? '') === 'rollback_failed', 'Missing runtime backup must persist rollback_failed for review');
+} finally {
+    $removeFixture($fixture);
+}
+
+[$fixture, $private, $data, $configFile] = $makeFixture();
+try {
     file_put_contents($private . '/runtime.php', "<?php\nthrow new RuntimeException('broken runtime');\n");
     file_put_contents($private . '/production-cutover.runtime.backup', "<?php\nreturn ['database_runtime' => ['enabled' => false]];\n");
     file_put_contents($private . '/production-cutover.json', json_encode([
