@@ -84,6 +84,18 @@ $assertTrue(
     'Rollback before any mutation must be a state-free no-op'
 );
 $assertTrue(
+    str_contains($runner, '$stateWritten = false;')
+        && str_contains($runner, '$stateWritten = true;')
+        && str_contains($runner, "'state_written' => $stateWritten"),
+    'Rollback report must state whether the recovery state was actually persisted'
+);
+$assertTrue(
+    str_contains($runner, "'rollback_succeeded' => $rollbackSucceeded")
+        && str_contains($runner, "'storage_driver' => $databaseRuntimeDisabled")
+        && str_contains($runner, "'production_db_runtime_enabled' => !$databaseRuntimeDisabled"),
+    'Automatic rollback report must not claim JSON success after partial recovery failure'
+);
+$assertTrue(
     str_contains($runner, 'public function rearm(): array')
         && str_contains($runner, 'Disable the private production cutover approval before rearming')
         && str_contains($runner, "'fresh_approval_required' => true"),
