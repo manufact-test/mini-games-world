@@ -14,6 +14,7 @@ FILES=(
   bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php
   bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php
   bot/runtime/RuntimePrimaryStagingSelectorEvidence.php
+  bot/runtime/RuntimePrimaryStagingActivationGuard.php
   bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php
   bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php
   bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php
@@ -30,6 +31,7 @@ FILES=(
   bot/tests/RuntimePrimaryStagingSelectorEvidenceTest.php
   bot/tests/RuntimePrimaryStagingEvidenceV3VerifierTest.php
   bot/tests/RuntimePrimaryStagingEvidenceV2GateV3CompatibilityTest.php
+  bot/tests/RuntimePrimaryStagingActivationGuardEvidenceVersionContractTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorTest.php
   bot/tests/RuntimePrimaryStagingEntrypointSelectorContractTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorCliContractTest.php
@@ -50,6 +52,7 @@ TESTS=(
   bot/tests/RuntimePrimaryStagingSelectorEvidenceTest.php
   bot/tests/RuntimePrimaryStagingEvidenceV3VerifierTest.php
   bot/tests/RuntimePrimaryStagingEvidenceV2GateV3CompatibilityTest.php
+  bot/tests/RuntimePrimaryStagingActivationGuardEvidenceVersionContractTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorTest.php
   bot/tests/RuntimePrimaryStagingEntrypointSelectorContractTest.php
   bot/tests/RuntimePrimaryStagingSelectorEvidenceCollectorCliContractTest.php
