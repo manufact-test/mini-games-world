@@ -9,6 +9,7 @@ cd "$PROJECT_ROOT"
 FILES=(
   bot/core/RuntimeConfigLoader.php
   bot/cutover/ProductionCutoverConfig.php
+  bot/cutover/ProductionRuntimePrimaryContract.php
   bot/cutover/ProductionCutoverRunner.php
   bot/cutover/ProductionCutoverRunTrait.php
   bot/cutover/ProductionCutoverPerformTrait.php
@@ -25,6 +26,7 @@ FILES=(
   ops/deploy/production-cutover.php
   bot/tests/RuntimeConfigLoaderTest.php
   bot/tests/ProductionCutoverConfigTest.php
+  bot/tests/ProductionRuntimePrimaryContractTest.php
   bot/tests/ProductionCutoverImportReportTest.php
   bot/tests/ProductionCutoverManualRollbackStateTest.php
   bot/tests/ProductionCutoverReleaseStateTest.php
@@ -42,6 +44,7 @@ done
 TESTS=(
   bot/tests/RuntimeConfigLoaderTest.php
   bot/tests/ProductionCutoverConfigTest.php
+  bot/tests/ProductionRuntimePrimaryContractTest.php
   bot/tests/ProductionCutoverImportReportTest.php
   bot/tests/ProductionCutoverManualRollbackStateTest.php
   bot/tests/ProductionCutoverReleaseStateTest.php
