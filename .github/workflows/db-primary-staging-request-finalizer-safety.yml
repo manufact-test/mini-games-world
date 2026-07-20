@@ -1,0 +1,49 @@
+name: DB Primary Staging Request Finalizer Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6k-staging-entrypoint-selector
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryProjectionWorkerInterface.php'
+      - 'bot/runtime/RuntimePrimaryProjectionAuditorInterface.php'
+      - 'bot/runtime/RuntimePrimaryProjectionWorkerAdapter.php'
+      - 'bot/runtime/RuntimePrimaryProjectionAuditorAdapter.php'
+      - 'bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php'
+      - 'bot/runtime/RuntimePrimaryStagingRequestFinalizer.php'
+      - 'bot/runtime/RuntimePrimaryStagingRequestSessionReadiness.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestSessionReadinessTest.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestFinalizerContractTest.php'
+      - 'ops/checks/db-primary-staging-request-finalizer-local.sh'
+      - 'ops/runtime/DB_PRIMARY_STAGING_REQUEST_FINALIZER.md'
+      - '.github/workflows/db-primary-staging-request-finalizer-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-request-finalizer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging request finalizer checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-request-finalizer-local.sh
