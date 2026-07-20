@@ -50,9 +50,14 @@ final class ProductionCutoverConfig
             || !hash_equals($this->approvalPlanFingerprint, strtolower(trim($planFingerprint)))) {
             throw new RuntimeException('Production cutover plan fingerprint is not explicitly approved.');
         }
-        if ($this->approvalExpiresAt === null || $this->approvalExpiresAt < $now) {
+        if ($this->approvalExpiresAt === null || $this->approvalExpiresAt <= $now) {
             throw new RuntimeException('Production cutover approval is missing or expired.');
         }
+    }
+
+    public function enabled(): bool
+    {
+        return $this->enabled;
     }
 
     public function requirePrimaryBackup(): bool
@@ -84,7 +89,11 @@ final class ProductionCutoverConfig
         if ($value === null || $value === '') return null;
         if (is_int($value)) return $value > 0 ? $value : null;
 
-        $timestamp = strtotime(trim((string)$value));
+        $raw = trim((string)$value);
+        if ($raw === '' || preg_match('/(?:Z|[+-]\d{2}:\d{2})$/', $raw) !== 1) {
+            throw new RuntimeException('Production cutover approval expiry must include an explicit UTC offset.');
+        }
+        $timestamp = strtotime($raw);
         if ($timestamp === false || $timestamp <= 0) {
             throw new RuntimeException('Production cutover approval expiry must be a valid UTC date/time.');
         }
