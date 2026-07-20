@@ -51,8 +51,6 @@ final class RuntimePrimaryAllModuleProjector implements RuntimePrimaryProjection
     {
         $stateSha256 = $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);
         $projectReports = [];
-        $auditReports = [];
-        $moduleFingerprints = [];
 
         foreach (self::MODULES as $module) {
             $report = $this->projectors[$module]->project($snapshot, $stateRevision, $stateSha256);
@@ -65,6 +63,31 @@ final class RuntimePrimaryAllModuleProjector implements RuntimePrimaryProjection
             );
             $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);
         }
+
+        $audit = $this->auditOnly($snapshot, $stateRevision, $stateSha256);
+        return [
+            'ok' => true,
+            'parity_ok' => true,
+            'projection_contract_version' => self::CONTRACT_VERSION,
+            'state_revision' => $stateRevision,
+            'state_sha256' => $stateSha256,
+            'projected_modules' => self::MODULES,
+            'project_reports' => $projectReports,
+            'audit_reports' => $audit['audit_reports'],
+            'module_fingerprints' => $audit['module_fingerprints'],
+            'all_module_fingerprint' => $audit['all_module_fingerprint'],
+            'audit_completed' => true,
+            'read_only' => false,
+            'production_changed' => false,
+            'sensitive_identifiers_exposed' => false,
+        ];
+    }
+
+    public function auditOnly(array $snapshot, int $stateRevision, string $stateSha256): array
+    {
+        $stateSha256 = $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);
+        $auditReports = [];
+        $moduleFingerprints = [];
 
         foreach (self::MODULES as $module) {
             $report = $this->projectors[$module]->audit($snapshot, $stateRevision, $stateSha256);
@@ -90,11 +113,11 @@ final class RuntimePrimaryAllModuleProjector implements RuntimePrimaryProjection
             'state_revision' => $stateRevision,
             'state_sha256' => $stateSha256,
             'projected_modules' => self::MODULES,
-            'project_reports' => $projectReports,
             'audit_reports' => $auditReports,
             'module_fingerprints' => $moduleFingerprints,
             'all_module_fingerprint' => hash('sha256', $this->canonicalJson($moduleFingerprints)),
             'audit_completed' => true,
+            'read_only' => true,
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
