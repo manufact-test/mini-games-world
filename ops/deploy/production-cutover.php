@@ -23,8 +23,16 @@ require_once $projectRoot . '/bot/cutover/ProductionCutoverRunner.php';
 require_once $projectRoot . '/ops/backup/BackupConfigLoader.php';
 require_once $projectRoot . '/ops/backup/BackupManager.php';
 
-$options = getopt('', ['run', 'status', 'rollback']);
-$modeCount = (int)isset($options['run']) + (int)isset($options['status']) + (int)isset($options['rollback']);
+$options = getopt('', ['run', 'status', 'rollback', 'rearm']);
+$modeCount = (int)isset($options['run'])
+    + (int)isset($options['status'])
+    + (int)isset($options['rollback'])
+    + (int)isset($options['rearm']);
+$requestedMode = isset($options['status'])
+    ? 'status'
+    : (isset($options['rollback'])
+        ? 'rollback'
+        : (isset($options['rearm']) ? 'rearm' : 'run'));
 $cutoverLockHandle = null;
 $migrationLockHandle = null;
 $exitCode = 0;
@@ -46,10 +54,25 @@ $safeMessage = static function (string $message): string {
     $message = preg_replace('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', '[redacted-email]', $message) ?? $message;
     return mb_substr(trim($message), 0, 500);
 };
+$lockedNoop = static function (string $reason) use ($requestedMode): array {
+    return [
+        'ok' => true,
+        'report_type' => 'mvp-14.9-production-cutover',
+        'action' => $requestedMode . '_noop',
+        'requested_mode' => $requestedMode,
+        'reason' => $reason,
+        'idempotent' => true,
+        'environment' => 'production',
+        'build' => FeatureFlagService::BUILD,
+        'production_changed' => false,
+        'sensitive_identifiers_exposed' => false,
+        'generated_at_utc' => gmdate(DATE_ATOM),
+    ];
+};
 
 try {
     if ($modeCount !== 1) {
-        throw new InvalidArgumentException('Choose exactly one mode: --run, --status or --rollback.');
+        throw new InvalidArgumentException('Choose exactly one mode: --run, --status, --rollback or --rearm.');
     }
 
     $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
@@ -78,18 +101,7 @@ try {
     if ($cutoverLockHandle === false) throw new RuntimeException('Could not open the production cutover lock.');
     @chmod($cutoverLockFile, 0600);
     if (!flock($cutoverLockHandle, LOCK_EX | LOCK_NB)) {
-        $print([
-            'ok' => true,
-            'report_type' => 'mvp-14.9-production-cutover',
-            'action' => 'run_noop',
-            'reason' => 'cutover_already_running',
-            'idempotent' => true,
-            'environment' => 'production',
-            'build' => FeatureFlagService::BUILD,
-            'production_changed' => false,
-            'sensitive_identifiers_exposed' => false,
-            'generated_at_utc' => gmdate(DATE_ATOM),
-        ]);
+        $print($lockedNoop('cutover_already_running'));
         exit(0);
     }
 
@@ -97,18 +109,7 @@ try {
     if ($migrationLockHandle === false) throw new RuntimeException('Could not open the shared migration lock.');
     @chmod($migrationLockFile, 0600);
     if (!flock($migrationLockHandle, LOCK_EX | LOCK_NB)) {
-        $print([
-            'ok' => true,
-            'report_type' => 'mvp-14.9-production-cutover',
-            'action' => 'run_noop',
-            'reason' => 'managed_migrations_running',
-            'idempotent' => true,
-            'environment' => 'production',
-            'build' => FeatureFlagService::BUILD,
-            'production_changed' => false,
-            'sensitive_identifiers_exposed' => false,
-            'generated_at_utc' => gmdate(DATE_ATOM),
-        ]);
+        $print($lockedNoop('managed_migrations_running'));
         exit(0);
     }
 
@@ -140,13 +141,12 @@ try {
         ProductionCutoverConfig::fromApplicationConfig($config)
     );
 
-    if (isset($options['status'])) {
-        $result = $runner->status();
-    } elseif (isset($options['rollback'])) {
-        $result = $runner->rollback('manual production rollback requested by approved operator');
-    } else {
-        $result = $runner->run();
-    }
+    $result = match ($requestedMode) {
+        'status' => $runner->status(),
+        'rollback' => $runner->rollback('manual production rollback requested by approved operator'),
+        'rearm' => $runner->rearm(),
+        default => $runner->run(),
+    };
 
     $ok = ($result['ok'] ?? false) === true;
     $print($result);
@@ -156,6 +156,7 @@ try {
     $print([
         'ok' => false,
         'report_type' => 'mvp-14.9-production-cutover',
+        'requested_mode' => $requestedMode,
         'environment' => (string)($config['environment'] ?? 'unknown'),
         'build' => class_exists('FeatureFlagService') ? FeatureFlagService::BUILD : 'unknown',
         'error_class' => get_class($error),
