@@ -12,6 +12,7 @@ final class StorageFactory
 
         return match ($driver) {
             'json' => self::createJson((string)($config['data_dir'] ?? '')),
+            'database' => self::createDatabasePrimary($config),
             default => throw new RuntimeException('Unsupported storage driver: ' . $driver),
         };
     }
@@ -23,5 +24,16 @@ final class StorageFactory
     public static function createJson(string $dataDir): StorageAdapterInterface
     {
         return new JsonStorageAdapter($dataDir);
+    }
+
+    public static function createDatabasePrimary(array $config): DatabasePrimaryStateStorageAdapter
+    {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('DB-primary storage requires an enabled database configuration.');
+        }
+        return new DatabasePrimaryStateStorageAdapter(
+            PdoConnectionFactory::create($databaseConfig)
+        );
     }
 }
