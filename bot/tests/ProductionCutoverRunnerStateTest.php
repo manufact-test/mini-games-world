@@ -98,14 +98,19 @@ $removeFixture = static function (string $path) use (&$removeFixture): void {
     }
     @rmdir($path);
 };
-$runner = static function (string $data, string $configFile, ProductionCutoverConfig $policy) use ($projectRoot): ProductionCutoverRunner {
+$runner = static function (
+    string $data,
+    string $configFile,
+    ProductionCutoverConfig $policy,
+    bool $executionDependencies = true
+) use ($projectRoot): ProductionCutoverRunner {
     return new ProductionCutoverRunner(
         $projectRoot,
         ['environment' => 'production', 'data_dir' => $data, 'feature_flags' => []],
         $configFile,
-        new ProductionCutoverRunnerStateTestStorage(),
-        new ProductionCutoverRunnerStateTestDatabase(),
-        new BackupManager(),
+        $executionDependencies ? new ProductionCutoverRunnerStateTestStorage() : null,
+        $executionDependencies ? new ProductionCutoverRunnerStateTestDatabase() : null,
+        $executionDependencies ? new BackupManager() : null,
         $policy,
         strtotime('2026-07-20T10:00:00+00:00')
     );
@@ -119,14 +124,19 @@ try {
     $assertTrue(($blocked['production_changed'] ?? true) === false, 'Pre-mutation gate failure must report no production change');
     $assertTrue(!is_file($private . '/production-cutover.json'), 'Pre-mutation gate failure must not create terminal state');
 
-    $rollbackNoop = $subject->rollback();
+    $emergencyControl = $runner($data, $configFile, new ProductionCutoverConfig(false, false), false);
+    $statusWithoutDatabase = $emergencyControl->status();
+    $assertTrue(($statusWithoutDatabase['action'] ?? '') === 'status', 'Status must work without production DB dependencies');
+    $assertTrue(($statusWithoutDatabase['ok'] ?? false) === true, 'Status without production DB dependencies must remain healthy');
+
+    $rollbackNoop = $emergencyControl->rollback();
     $assertTrue(($rollbackNoop['action'] ?? '') === 'rollback_noop', 'Rollback before any operation must be a no-op');
     $assertTrue(($rollbackNoop['state_written'] ?? true) === false, 'Rollback no-op must not create rolled_back state');
     $assertTrue(!is_file($private . '/production-cutover.json'), 'Rollback no-op must leave state absent');
 
     file_put_contents($private . '/production-cutover.json', json_encode(['state' => 'rolled_back'], JSON_THROW_ON_ERROR));
     file_put_contents($private . '/production-cutover.runtime.backup', '__MGW_RUNTIME_ABSENT__');
-    $rearmed = $subject->rearm();
+    $rearmed = $emergencyControl->rearm();
     $assertTrue(($rearmed['action'] ?? '') === 'rearmed', 'Reviewed rollback must support explicit safe rearm');
     $assertTrue(!is_file($private . '/production-cutover.json'), 'Rearm must archive the terminal state');
     $assertTrue(!is_file($private . '/production-cutover.runtime.backup'), 'Rearm must archive the runtime backup');
