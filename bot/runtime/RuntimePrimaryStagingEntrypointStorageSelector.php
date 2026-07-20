@@ -20,7 +20,7 @@ final class RuntimePrimaryStagingEntrypointStorageSelector
         }
     }
 
-    public function select(): StorageAdapterInterface
+    public function installIfEnabled(): bool
     {
         $selector = RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig($this->config);
         $environment = strtolower(trim((string)($this->config['environment'] ?? '')));
@@ -29,10 +29,10 @@ final class RuntimePrimaryStagingEntrypointStorageSelector
             if ($selector->enabled()) {
                 throw new RuntimeException('DB-primary entrypoint selector cannot be enabled outside staging.');
             }
-            return new JsonStorageAdapter((string)($this->config['data_dir'] ?? ''));
+            return false;
         }
         if (!$selector->enabledFor($this->entrypoint)) {
-            return new JsonStorageAdapter((string)($this->config['data_dir'] ?? ''));
+            return false;
         }
 
         RuntimePrimaryPrivateConfigGuard::assertExternal(
@@ -57,12 +57,17 @@ final class RuntimePrimaryStagingEntrypointStorageSelector
             $database,
             $projector
         ))->resolve();
-        $storage = $resolution->storage();
+        $resolutionReport = $resolution->safeReport();
+        if (($resolutionReport['evidence_manifest_version'] ?? '')
+            !== RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION) {
+            throw new RuntimeException('Real staging entrypoint routing requires selector-aware evidence v3.');
+        }
+
         RuntimePrimaryEntrypointStorageContext::install(
-            $storage,
+            $resolution->storage(),
             $this->entrypoint,
-            $resolution->safeReport()
+            $resolutionReport
         );
-        return $storage;
+        return true;
     }
 }
