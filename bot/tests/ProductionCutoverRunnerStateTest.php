@@ -153,6 +153,7 @@ try {
 
     file_put_contents($private . '/production-cutover.json', json_encode([
         'state' => 'rolled_back',
+        'build' => 'v103-mvp14-production-cutover',
         'runtime_restored' => true,
         'json_write_block_removed' => true,
         'database_runtime_disabled' => true,
@@ -170,6 +171,7 @@ try {
 try {
     file_put_contents($private . '/production-cutover.json', json_encode([
         'state' => 'rollback_failed',
+        'build' => 'v103-mvp14-production-cutover',
         'runtime_restored' => false,
         'json_write_block_removed' => true,
         'database_runtime_disabled' => true,
@@ -208,6 +210,7 @@ try {
 try {
     file_put_contents($private . '/production-cutover.json', json_encode([
         'state' => 'running',
+        'build' => 'v103-mvp14-production-cutover',
         'started_at_utc' => '2026-07-20T09:55:00+00:00',
     ], JSON_THROW_ON_ERROR));
 
@@ -232,6 +235,7 @@ try {
     file_put_contents($data . '/.cutover-write-block', "sealed\n");
     file_put_contents($private . '/production-cutover.json', json_encode([
         'state' => 'running',
+        'build' => 'v103-mvp14-production-cutover',
         'started_at_utc' => '2026-07-20T09:55:00+00:00',
     ], JSON_THROW_ON_ERROR));
 
@@ -254,6 +258,7 @@ try {
     file_put_contents($private . '/production-cutover.runtime.backup', "<?php\nreturn ['database_runtime' => ['enabled' => false]];\n");
     file_put_contents($private . '/production-cutover.json', json_encode([
         'state' => 'rolled_back',
+        'build' => 'v103-mvp14-production-cutover',
         'started_at_utc' => '2026-07-20T09:55:00+00:00',
     ], JSON_THROW_ON_ERROR));
 
