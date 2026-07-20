@@ -17,6 +17,9 @@ final class RuntimePrimaryStagingEvidenceWriter
         if ($outputPath === '' || !str_starts_with($outputPath, '/')) {
             throw new InvalidArgumentException('Staging evidence output path must be absolute.');
         }
+        if (basename($outputPath) === '' || in_array(basename($outputPath), ['.', '..'], true)) {
+            throw new InvalidArgumentException('Staging evidence output file name is invalid.');
+        }
         if (is_link($outputPath)) {
             throw new RuntimeException('Staging evidence output must not be a symbolic link.');
         }
@@ -36,8 +39,13 @@ final class RuntimePrimaryStagingEvidenceWriter
             throw new RuntimeException('Staging evidence output directory is not writable.');
         }
 
+        $canonicalOutput = $parent . '/' . basename($outputPath);
+        if (!hash_equals($canonicalOutput, $outputPath)) {
+            throw new RuntimeException('Staging evidence output path must be canonical.');
+        }
+
         return [
-            'output_path' => $outputPath,
+            'output_path' => $canonicalOutput,
             'parent' => $parent,
             'path_exposed' => false,
         ];
@@ -59,6 +67,7 @@ final class RuntimePrimaryStagingEvidenceWriter
         $fingerprint = hash('sha256', $json);
         $temporary = $parent . '/.' . basename($outputPath) . '.tmp-' . bin2hex(random_bytes(12));
         $handle = null;
+        $published = false;
 
         try {
             $previousUmask = umask(0077);
@@ -99,26 +108,41 @@ final class RuntimePrimaryStagingEvidenceWriter
             fclose($handle);
             $handle = null;
 
+            clearstatcache(true, $outputPath);
             if (file_exists($outputPath) || is_link($outputPath)) {
                 throw new RuntimeException('Staging evidence output appeared during atomic write.');
             }
-            if (!rename($temporary, $outputPath)) {
-                throw new RuntimeException('Staging evidence atomic rename failed.');
+            if (!function_exists('link')) {
+                throw new RuntimeException('Atomic no-clobber evidence publication is unavailable.');
             }
+            if (!link($temporary, $outputPath)) {
+                throw new RuntimeException('Staging evidence atomic no-clobber publication failed.');
+            }
+            $published = true;
+
             if (!chmod($outputPath, 0600)) {
                 @unlink($outputPath);
+                $published = false;
                 throw new RuntimeException('Staging evidence output permissions could not be secured.');
             }
 
             $final = file_get_contents($outputPath);
             if (!is_string($final) || !hash_equals($fingerprint, hash('sha256', $final))) {
                 @unlink($outputPath);
+                $published = false;
                 throw new RuntimeException('Staging evidence output verification failed.');
             }
             $permissions = fileperms($outputPath);
             if (!is_int($permissions) || ($permissions & 0777) !== 0600) {
                 @unlink($outputPath);
+                $published = false;
                 throw new RuntimeException('Staging evidence output permissions are not 0600.');
+            }
+
+            if (!unlink($temporary)) {
+                @unlink($outputPath);
+                $published = false;
+                throw new RuntimeException('Staging evidence temporary publication link cleanup failed.');
             }
 
             return [
@@ -127,6 +151,7 @@ final class RuntimePrimaryStagingEvidenceWriter
                 'bytes' => strlen($final),
                 'file_sha256' => $fingerprint,
                 'permissions' => '0600',
+                'publish_mode' => 'atomic_no_clobber_link',
                 'path_exposed' => false,
                 'production_changed' => false,
                 'sensitive_identifiers_exposed' => false,
@@ -134,6 +159,9 @@ final class RuntimePrimaryStagingEvidenceWriter
         } finally {
             if (is_resource($handle)) fclose($handle);
             if (is_file($temporary)) @unlink($temporary);
+            if ($published && (!is_file($outputPath) || is_link($outputPath))) {
+                @unlink($outputPath);
+            }
         }
     }
 }
