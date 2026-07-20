@@ -91,11 +91,17 @@ if (is_link($rehearsalLockPath)) {
     exit(2);
 }
 $lockHandle = fopen($rehearsalLockPath, 'c+');
-if (!is_resource($lockHandle) || !flock($lockHandle, LOCK_EX | LOCK_NB)) {
+if (!is_resource($lockHandle)) {
+    fwrite(STDERR, "Rehearsal lock file is unavailable.\n");
+    exit(2);
+}
+if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
+    fclose($lockHandle);
     fwrite(STDERR, "Another DB-primary rehearsal or evidence collection is already running.\n");
     exit(2);
 }
 
+$outputWritten = false;
 try {
     $database = PdoConnectionFactory::create($databaseConfig);
     $secondDatabase = PdoConnectionFactory::create($databaseConfig);
@@ -129,6 +135,7 @@ try {
         throw new RuntimeException('Collected staging evidence manifest is empty.');
     }
     $written = $writer->write($outputPath, $manifest);
+    $outputWritten = true;
 
     $storedRaw = file_get_contents($outputPath);
     if (!is_string($storedRaw)) {
@@ -140,7 +147,6 @@ try {
     }
     $storedVerification = (new RuntimePrimaryStagingEvidenceGate($projectRoot))->verify($storedManifest);
     if (($storedVerification['ok'] ?? false) !== true) {
-        @unlink($outputPath);
         throw new RuntimeException(
             'Written staging evidence failed verification: '
             . implode('; ', array_map('strval', (array)($storedVerification['blockers'] ?? [])))
@@ -172,6 +178,7 @@ try {
     ) . PHP_EOL);
     exit(0);
 } catch (Throwable $error) {
+    if ($outputWritten && is_file($outputPath)) @unlink($outputPath);
     $message = preg_replace(
         "~/(?:home|var|tmp|srv)/[^\\s'\"]+~",
         '[private-path]',
