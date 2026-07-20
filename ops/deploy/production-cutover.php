@@ -87,14 +87,8 @@ try {
     }
 
     $cutoverLockFile = $privateDir . '/production-cutover.lock';
-    $migrationSettings = is_array($config['managed_migrations'] ?? null)
-        ? $config['managed_migrations']
-        : [];
-    $migrationLockFile = trim((string)($migrationSettings['lock_file'] ?? ($privateDir . '/managed-migrations.lock')));
-    foreach ([$cutoverLockFile, $migrationLockFile] as $lockFile) {
-        if ($lockFile === '' || $isInside($lockFile, $projectRoot)) {
-            throw new RuntimeException('Production cutover lock files must remain outside the deployed project.');
-        }
+    if ($isInside($cutoverLockFile, $projectRoot)) {
+        throw new RuntimeException('Production cutover lock file must remain outside the deployed project.');
     }
 
     $cutoverLockHandle = fopen($cutoverLockFile, 'c+');
@@ -105,18 +99,26 @@ try {
         exit(0);
     }
 
-    $migrationLockHandle = fopen($migrationLockFile, 'c+');
-    if ($migrationLockHandle === false) throw new RuntimeException('Could not open the shared migration lock.');
-    @chmod($migrationLockFile, 0600);
-    if (!flock($migrationLockHandle, LOCK_EX | LOCK_NB)) {
-        $print($lockedNoop('managed_migrations_running'));
-        exit(0);
-    }
-
     $storage = null;
     $database = null;
     $backupManager = null;
     if ($requestedMode === 'run') {
+        $migrationSettings = is_array($config['managed_migrations'] ?? null)
+            ? $config['managed_migrations']
+            : [];
+        $migrationLockFile = trim((string)($migrationSettings['lock_file'] ?? ($privateDir . '/managed-migrations.lock')));
+        if ($migrationLockFile === '' || $isInside($migrationLockFile, $projectRoot)) {
+            throw new RuntimeException('Managed migration lock file must remain outside the deployed project.');
+        }
+
+        $migrationLockHandle = fopen($migrationLockFile, 'c+');
+        if ($migrationLockHandle === false) throw new RuntimeException('Could not open the shared migration lock.');
+        @chmod($migrationLockFile, 0600);
+        if (!flock($migrationLockHandle, LOCK_EX | LOCK_NB)) {
+            $print($lockedNoop('managed_migrations_running'));
+            exit(0);
+        }
+
         $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
         if (!$databaseConfig->enabled()) {
             throw new RuntimeException('Production database is not enabled.');
