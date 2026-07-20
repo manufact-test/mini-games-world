@@ -1,0 +1,42 @@
+name: DB Primary State Safety
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryStateSchemaInstaller.php'
+      - 'bot/runtime/DatabasePrimaryStateStorageAdapter.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/tests/DatabasePrimaryStateStorageAdapterTest.php'
+      - 'ops/checks/db-primary-state-local.sh'
+      - '.github/workflows/db-primary-state-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-state-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused DB-primary state checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-state-local.sh
