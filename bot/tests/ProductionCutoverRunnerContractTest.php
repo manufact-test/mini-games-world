@@ -14,12 +14,14 @@ $runnerPaths = [
 ];
 $entrypointPath = $projectRoot . '/ops/deploy/production-cutover.php';
 $routerPath = $projectRoot . '/bot/storage/RuntimeStorageRouter.php';
+$runtimeLoaderPath = $projectRoot . '/bot/core/RuntimeConfigLoader.php';
 
 $runnerParts = array_map(static fn(string $path): string|false => file_get_contents($path), $runnerPaths);
 $runner = !in_array(false, $runnerParts, true) ? implode("\n", $runnerParts) : false;
 $entrypoint = file_get_contents($entrypointPath);
 $router = file_get_contents($routerPath);
-if (!is_string($runner) || !is_string($entrypoint) || !is_string($router)) {
+$runtimeLoader = file_get_contents($runtimeLoaderPath);
+if (!is_string($runner) || !is_string($entrypoint) || !is_string($router) || !is_string($runtimeLoader)) {
     throw new RuntimeException('Production cutover sources are unavailable.');
 }
 
@@ -43,6 +45,12 @@ $assertTrue(
     str_contains($runner, 'ProductionPreflightRunner(')
         && str_contains($runner, 'assertApproved(self::BUILD, $planFingerprint'),
     'Cutover must require a fresh preflight and exact short-lived approval'
+);
+$assertTrue(
+    str_contains($runner, '$runtime = $this->readRuntime();')
+        && str_contains($runner, '$preflightConfig = $this->configWithRuntime($runtime);')
+        && str_contains($runner, '$preflightConfig,'),
+    'Cutover preflight must explicitly merge the runtime after recovery-state checks'
 );
 $assertTrue(
     str_contains($runner, "'maintenance_mode'] = true")
@@ -121,6 +129,16 @@ $assertTrue(
     str_contains($entrypoint, "['run', 'status', 'rollback', 'rearm']")
         && str_contains($entrypoint, "if (\$environment !== 'production')"),
     'Entrypoint must expose controlled modes and remain production-only'
+);
+$skipRuntimeDefine = strpos($entrypoint, "define('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP', true)");
+$bootstrapRequire = strpos($entrypoint, "require \$projectRoot . '/bot/core/bootstrap.php';");
+$assertTrue(
+    $skipRuntimeDefine !== false
+        && $bootstrapRequire !== false
+        && $skipRuntimeDefine < $bootstrapRequire
+        && str_contains($runtimeLoader, "defined('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP')")
+        && str_contains($runtimeLoader, 'return $config;'),
+    'Cutover bootstrap must bypass runtime overrides before normal bootstrap can execute a broken runtime file'
 );
 $assertTrue(
     str_contains($entrypoint, 'production-cutover.lock')
