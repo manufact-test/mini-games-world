@@ -16,6 +16,11 @@ final class RuntimePrimaryStagingEvidenceV2Gate
 
     public function verify(array $manifest): array
     {
+        if (($manifest['manifest_version'] ?? '') === 'v3-staging-db-primary-selector-evidence') {
+            require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV3Gate.php';
+            return (new RuntimePrimaryStagingEvidenceV3Gate($this->projectRoot))->verify($manifest);
+        }
+
         $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($this->projectRoot);
         $report = (new RuntimePrimaryStagingEvidenceV2Verifier($this->projectRoot))->verify($manifest);
         $manifestCommit = strtolower(trim((string)($manifest['repository_commit'] ?? '')));
