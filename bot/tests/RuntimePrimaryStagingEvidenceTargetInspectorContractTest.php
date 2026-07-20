@@ -21,20 +21,28 @@ $assertTrue(
     'Target inspector must remain CLI-only before bootstrap'
 );
 $assertTrue(
-    str_contains($source, 'This read-only inspector accepts no arguments.'),
-    'Target inspector must reject every argument'
+    str_contains($source, 'count($argv ?? []) !== 1')
+        && str_contains($source, 'This read-only inspector accepts no arguments.'),
+    'Target inspector must reject every argument through an unambiguous count check'
+);
+$environmentGuard = strpos($source, "if (\$environment !== 'staging')");
+$privateGuard = strpos($source, 'RuntimePrimaryPrivateConfigGuard::assertExternal(');
+$databaseConfig = strpos($source, 'DatabaseConfig::fromApplicationConfig($config)');
+$assertTrue(
+    $environmentGuard !== false
+        && $privateGuard !== false
+        && $databaseConfig !== false
+        && $environmentGuard < $privateGuard
+        && $privateGuard < $databaseConfig,
+    'Target inspector must verify staging and external private config before DB target inspection'
 );
 $assertTrue(
-    str_contains($source, "if (\$environment !== 'staging')")
-        && str_contains($source, 'target inspection is staging-only'),
-    'Target inspector must reject non-staging environments'
-);
-$assertTrue(
-    str_contains($source, 'DatabaseConfig::fromApplicationConfig($config)')
-        && str_contains($source, '$databaseConfig->identityFingerprint()')
+    str_contains($source, '$databaseConfig->identityFingerprint()')
         && str_contains($source, 'RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot)')
-        && str_contains($source, 'RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->safeSummary()'),
-    'Target inspector must expose only commit, DB identity fingerprint and safe approval summary'
+        && str_contains($source, 'RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->safeSummary()')
+        && str_contains($source, "'private_config_external'")
+        && str_contains($source, "'private_config_fingerprint'"),
+    'Target inspector must expose only non-sensitive commit, DB identity, config fingerprint and safe approval evidence'
 );
 $assertTrue(
     !str_contains($source, 'PdoConnectionFactory')
@@ -47,8 +55,10 @@ $assertTrue(
     !str_contains($source, "'host' =>")
         && !str_contains($source, "'database' =>")
         && !str_contains($source, "'username' =>")
-        && !str_contains($source, "'password' =>"),
-    'Target inspector must not print DB connection identifiers or secrets'
+        && !str_contains($source, "'password' =>")
+        && !str_contains($source, "'private_dir' =>")
+        && !str_contains($source, "'config_file' =>"),
+    'Target inspector must not print DB connection identifiers, secrets or private paths'
 );
 $assertTrue(
     str_contains($source, "'database_connection_opened' => false")
