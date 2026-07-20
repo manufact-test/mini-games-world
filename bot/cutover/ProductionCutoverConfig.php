@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 final class ProductionCutoverConfig
 {
+    private const MAX_APPROVAL_TTL_SECONDS = 1800;
+
     private function __construct(
         private bool $enabled,
         private string $expectedBuild,
@@ -53,6 +55,9 @@ final class ProductionCutoverConfig
         if ($this->approvalExpiresAt === null || $this->approvalExpiresAt <= $now) {
             throw new RuntimeException('Production cutover approval is missing or expired.');
         }
+        if (($this->approvalExpiresAt - $now) > self::MAX_APPROVAL_TTL_SECONDS) {
+            throw new RuntimeException('Production cutover approval expiry is too far in the future.');
+        }
     }
 
     public function enabled(): bool
@@ -79,6 +84,7 @@ final class ProductionCutoverConfig
             'approval_expires_at_utc' => $this->approvalExpiresAt !== null
                 ? gmdate(DATE_ATOM, $this->approvalExpiresAt)
                 : null,
+            'max_approval_ttl_seconds' => self::MAX_APPROVAL_TTL_SECONDS,
             'require_primary_backup' => $this->requirePrimaryBackup,
             'require_external_copy' => $this->requireExternalCopy,
         ];
