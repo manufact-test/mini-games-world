@@ -1,0 +1,47 @@
+name: DB Primary All Module Projector Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6c-primary-projection-worker
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryProjectionProjectorInterface.php'
+      - 'bot/runtime/RuntimePrimaryModuleProjectorInterface.php'
+      - 'bot/runtime/RuntimePrimaryCallbackModuleProjector.php'
+      - 'bot/runtime/RuntimePrimaryAccountsModuleProjector.php'
+      - 'bot/runtime/RuntimePrimaryAllModuleProjector.php'
+      - 'bot/runtime/RuntimePrimaryRepositoryProjectorFactory.php'
+      - 'bot/runtime/RuntimePrimaryProjectionBootstrap.php'
+      - 'bot/tests/RuntimePrimaryAllModuleProjectorTest.php'
+      - 'bot/tests/RuntimePrimaryAccountsModuleProjectorTest.php'
+      - 'bot/tests/RuntimePrimaryRepositoryProjectorFactoryTest.php'
+      - 'ops/checks/db-primary-all-module-projector-local.sh'
+      - '.github/workflows/db-primary-all-module-projector-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-all-module-projector-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused all-module projector checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-all-module-projector-local.sh
