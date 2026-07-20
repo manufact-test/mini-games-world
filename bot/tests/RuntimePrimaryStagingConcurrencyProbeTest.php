@@ -12,6 +12,7 @@ interface DatabaseConnectionInterface
 final class RuntimePrimaryStagingConcurrencyProbeStore
 {
     public bool $tableInstalled = false;
+    public bool $failDelete = false;
     public array $rows = [];
 }
 final class RuntimePrimaryStagingConcurrencyProbeDatabase implements DatabaseConnectionInterface
@@ -52,6 +53,7 @@ final class RuntimePrimaryStagingConcurrencyProbeDatabase implements DatabaseCon
             return 1;
         }
         if (str_starts_with($normalized, 'delete from mgw_runtime_primary_lease_probe')) {
+            if ($this->store->failDelete) return 0;
             $id = (string)$parameters['probe_id'];
             if (!isset($this->store->rows[$id])) return 0;
             unset($this->store->rows[$id]);
@@ -119,12 +121,31 @@ try {
     $assertTrue($store->rows === [], 'Worker lease probe row must be removed in finally');
     $assertTrue(!file_exists($lockPath), 'CLI probe lock file must be removed in finally');
 
+    $cleanupStore = new RuntimePrimaryStagingConcurrencyProbeStore();
+    $cleanupStore->failDelete = true;
+    $cleanupFirst = new RuntimePrimaryStagingConcurrencyProbeDatabase($cleanupStore);
+    $cleanupSecond = new RuntimePrimaryStagingConcurrencyProbeDatabase($cleanupStore);
+    $cleanupLock = $directory . '/cleanup-failure.lock';
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingConcurrencyProbe(
+            $cleanupFirst,
+            $cleanupSecond,
+            $cleanupLock,
+            120
+        ))->run(),
+        'row cleanup failed'
+    );
+    $assertTrue(count($cleanupStore->rows) === 1, 'Cleanup failure fixture must preserve evidence of the failed removal');
+    $cleanupStore->rows = [];
+    @unlink($cleanupLock);
+
     $assertThrows(
         static fn() => new RuntimePrimaryStagingConcurrencyProbe($first, $second, $lockPath, 10),
         'between 30 and 900 seconds'
     );
 } finally {
     @unlink($lockPath);
+    @unlink($directory . '/cleanup-failure.lock');
     @rmdir($directory);
 }
 
