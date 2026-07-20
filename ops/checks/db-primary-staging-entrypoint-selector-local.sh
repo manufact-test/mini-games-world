@@ -9,19 +9,24 @@ cd "$PROJECT_ROOT"
 bash ops/checks/db-primary-staging-synthetic-suite-local.sh
 
 FILES=(
+  bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php
   bot/runtime/RuntimePrimaryEntrypointStorageContext.php
   bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php
   bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php
   bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php
   bot/runtime/RuntimePrimaryStagingSelectorEvidence.php
   bot/runtime/RuntimePrimaryStagingActivationGuard.php
+  bot/runtime/RuntimePrimaryStagingEvidenceCollector.php
   bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php
   bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php
   bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php
   bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php
+  bot/core/bootstrap.php
   bot/storage/StorageFactory.php
   ops/runtime/collect-staging-db-primary-selector-evidence.php
   bot/tests/support/RuntimePrimaryStagingEvidenceV3ManifestFixture.php
+  bot/tests/RuntimePrimaryEntrypointBridgeGuardTest.php
+  bot/tests/RuntimePrimaryEntrypointBridgeSuppressionContractTest.php
   bot/tests/RuntimePrimaryStagingEntrypointSelectorConfigTest.php
   bot/tests/RuntimePrimaryEntrypointStorageContextTest.php
   bot/tests/RuntimePrimaryStorageFactoryEntrypointContextTest.php
@@ -43,6 +48,8 @@ for file in "${FILES[@]}"; do
 done
 
 TESTS=(
+  bot/tests/RuntimePrimaryEntrypointBridgeGuardTest.php
+  bot/tests/RuntimePrimaryEntrypointBridgeSuppressionContractTest.php
   bot/tests/RuntimePrimaryStagingEntrypointSelectorConfigTest.php
   bot/tests/RuntimePrimaryEntrypointStorageContextTest.php
   bot/tests/RuntimePrimaryStorageFactoryEntrypointContextTest.php
