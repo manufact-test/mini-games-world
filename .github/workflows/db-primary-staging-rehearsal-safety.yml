@@ -11,6 +11,7 @@ on:
       - 'bot/runtime/StagingPrimaryRehearsalOperation.php'
       - 'ops/runtime/staging-db-primary-rehearsal.php'
       - 'bot/tests/StagingPrimaryRehearsalOperationTest.php'
+      - 'bot/tests/StagingPrimaryRehearsalFinalStatusTest.php'
       - 'bot/tests/StagingPrimaryRehearsalCliContractTest.php'
       - 'bot/tests/RuntimePrimaryStagingRehearsalBackendContractTest.php'
       - 'ops/checks/db-primary-staging-rehearsal-local.sh'
