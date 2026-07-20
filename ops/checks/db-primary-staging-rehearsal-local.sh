@@ -14,6 +14,7 @@ FILES=(
   bot/runtime/StagingPrimaryRehearsalOperation.php
   ops/runtime/staging-db-primary-rehearsal.php
   bot/tests/StagingPrimaryRehearsalOperationTest.php
+  bot/tests/StagingPrimaryRehearsalFinalStatusTest.php
   bot/tests/StagingPrimaryRehearsalCliContractTest.php
   bot/tests/RuntimePrimaryStagingRehearsalBackendContractTest.php
 )
@@ -24,6 +25,7 @@ for file in "${FILES[@]}"; do
 done
 
 "$PHP_BIN" bot/tests/StagingPrimaryRehearsalOperationTest.php
+"$PHP_BIN" bot/tests/StagingPrimaryRehearsalFinalStatusTest.php
 "$PHP_BIN" bot/tests/StagingPrimaryRehearsalCliContractTest.php
 "$PHP_BIN" bot/tests/RuntimePrimaryStagingRehearsalBackendContractTest.php
 
