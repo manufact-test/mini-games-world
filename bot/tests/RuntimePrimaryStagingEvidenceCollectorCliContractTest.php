@@ -38,10 +38,25 @@ $assertTrue(
     'Private output path must be validated before application bootstrap or DB work'
 );
 $environmentGuard = strpos($source, "if (\$environment !== 'staging')");
+$approval = strpos($source, 'RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->assertApproved(');
+$lockOpen = strpos($source, '$lockHandle = fopen($rehearsalLockPath');
 $databaseOpen = strpos($source, '$database = PdoConnectionFactory::create($databaseConfig);');
 $assertTrue(
-    $environmentGuard !== false && $databaseOpen !== false && $environmentGuard < $databaseOpen,
-    'Staging-only guard must precede database connections'
+    $environmentGuard !== false
+        && $approval !== false
+        && $lockOpen !== false
+        && $databaseOpen !== false
+        && $environmentGuard < $approval
+        && $approval < $lockOpen
+        && $approval < $databaseOpen,
+    'Staging DB identity and commit approval must precede lock and database connections'
+);
+$assertTrue(
+    str_contains($source, 'RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot)')
+        && str_contains($source, '$databaseConfig,')
+        && str_contains($source, '$currentCommit,')
+        && str_contains($source, 'time()'),
+    'Collector approval must bind the exact DB identity, checkout commit and short time window'
 );
 $assertTrue(
     substr_count($source, 'PdoConnectionFactory::create($databaseConfig)') === 2,
@@ -62,8 +77,9 @@ $assertTrue(
 $assertTrue(
     str_contains($source, '$writer->write($outputPath, $manifest)')
         && str_contains($source, 'new RuntimePrimaryStagingEvidenceGate($projectRoot)')
-        && str_contains($source, 'Written staging evidence failed verification'),
-    'Collector must atomically write and re-verify the stored manifest'
+        && str_contains($source, 'Written staging evidence failed verification')
+        && str_contains($source, 'if ($outputWritten && is_file($outputPath)) @unlink($outputPath);'),
+    'Collector must atomically write, re-verify and remove unverified output'
 );
 $assertTrue(
     !str_contains($source, 'crontab')
