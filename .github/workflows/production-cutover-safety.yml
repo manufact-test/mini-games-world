@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - 'bot/core/RuntimeConfigLoader.php'
       - 'bot/cutover/ProductionCutoverConfig.php'
       - 'bot/cutover/ProductionCutoverRunner.php'
       - 'bot/cutover/ProductionCutoverRunTrait.php'
@@ -18,6 +19,7 @@ on:
       - 'bot/storage/RuntimeStorageRouter.php'
       - 'bot/services/FeatureFlagService.php'
       - 'bot/health.php'
+      - 'bot/tests/RuntimeConfigLoaderTest.php'
       - 'bot/tests/ProductionCutoverConfigTest.php'
       - 'bot/tests/ProductionCutoverRunnerContractTest.php'
       - 'bot/tests/ProductionCutoverRunnerStateTest.php'
@@ -53,6 +55,7 @@ jobs:
 
       - name: Lint cutover sources
         run: |
+          php -l bot/core/RuntimeConfigLoader.php
           php -l bot/cutover/ProductionCutoverConfig.php
           php -l bot/cutover/ProductionCutoverRunner.php
           php -l bot/cutover/ProductionCutoverRunTrait.php
@@ -67,6 +70,7 @@ jobs:
           php -l bot/services/FeatureFlagService.php
           php -l bot/health.php
           php -l ops/deploy/production-cutover.php
+          php -l bot/tests/RuntimeConfigLoaderTest.php
           php -l bot/tests/ProductionCutoverConfigTest.php
           php -l bot/tests/ProductionCutoverRunnerContractTest.php
           php -l bot/tests/ProductionCutoverRunnerStateTest.php
@@ -74,6 +78,7 @@ jobs:
 
       - name: Run focused tests
         run: |
+          php bot/tests/RuntimeConfigLoaderTest.php
           php bot/tests/ProductionCutoverConfigTest.php
           php bot/tests/RuntimeStorageRouterTest.php
           php bot/tests/ProductionCutoverRunnerContractTest.php
