@@ -1,6 +1,6 @@
 # MVP-14.8.6k — guarded staging API/webhook DB-primary selector
 
-This sub-MVP makes the existing API and webhook request flow capable of using DB-primary storage only inside staging and only after the full evidence/approval/resolver chain succeeds.
+This sub-MVP makes the existing API and webhook request flow capable of resolving DB-primary storage only inside staging and only after the full evidence/approval/resolver chain succeeds.
 
 ## Default state
 
@@ -35,6 +35,20 @@ The context is immutable and accepts only:
 
 A selector error is sticky for the lifetime of the request. A later storage call cannot silently fall back to JSON after a failed DB selection attempt.
 
+## Legacy JSON bridge suppression
+
+The existing bootstrap registers JSON-to-DB success hooks and API normalization filters for realtime, economy, shop, payments and weekly bonus. Those hooks are correct for the JSON-first application, but they must not run after a request has been routed to DB-primary storage.
+
+`RuntimePrimaryEntrypointBridgeGuard` therefore checks the request-local context at hook execution time:
+
+- JSON requests keep all existing bridge hooks and filters;
+- DB-primary requests skip every legacy `synchronizeCurrentJson()` success hook;
+- payment and weekly API filters return the DB-primary response unchanged;
+- the webhook legacy hook batch becomes a no-op;
+- the projection outbox remains the only post-commit projection mechanism for a DB-primary request.
+
+The bootstrap and bridge guard are both included in evidence v3. Removing the guard or an individual hook/filter check invalidates the evidence.
+
 ## Evidence v3
 
 Real request routing requires:
@@ -48,7 +62,7 @@ V3 contains all v2 database, JSON, schema, parity and concurrency evidence plus 
 - API and webhook entrypoints;
 - `WebhookHandler`;
 - every current webhook guard that can participate before the handler;
-- application bootstrap;
+- application bootstrap and legacy bridge guard;
 - `StorageFactory`;
 - selector bootstrap, config, selector and request-local context.
 
@@ -74,29 +88,9 @@ The collector uses:
 - atomic no-clobber private output;
 - post-write v3 verification.
 
-## Private selector config
+## Private selector config contract
 
-Only after the real staging rehearsal and rollback-only synthetic suite pass may the external staging config enable an entrypoint:
-
-```php
-'staging_db_primary_entrypoint_selector' => [
-    'enabled' => true,
-    'contract_version' => 'v1-staging-db-primary-entrypoint-selector',
-    'allowed_entrypoints' => ['api'],
-],
-```
-
-API should be rehearsed first. Webhook is added only in a later explicit window:
-
-```php
-'allowed_entrypoints' => ['api', 'webhook'],
-```
-
-The activation approval must point to the exact v3 manifest fingerprint. The resolver latch and projection outbox must also remain explicitly enabled.
-
-## Immediate routing rollback
-
-Disable the selector in private staging config:
+The disabled contract is:
 
 ```php
 'staging_db_primary_entrypoint_selector' => [
@@ -106,9 +100,32 @@ Disable the selector in private staging config:
 ],
 ```
 
-The next request returns the ordinary JSON adapter. After a rehearsal window, the activation approval and resolver latch should also be disabled.
+The code can parse an explicit staging allowlist such as `['api']` or `['api', 'webhook']`, but **this PR must not be enabled for a live request series yet**.
 
-No automatic mid-request fallback is allowed after DB routing starts. A request failure is fail-closed; disable the selector before the next request.
+## Current operational limit
+
+A committed DB-primary mutation advances the compatibility-state revision and creates a pending outbox event. The evidence-bound readiness guard intentionally remains tied to the pre-request evidenced revision. Therefore, without the next finalizer/session layer:
+
+- one mutating request would invalidate readiness for the next request;
+- normalized module tables would remain behind until the projection worker completes;
+- enabling webhook for a stream of updates could cause later updates to fail closed;
+- disabling the selector would return to the unchanged JSON rollback source and would not preserve a staging-only DB mutation in JSON.
+
+For that reason, selector activation remains blocked operationally even though the guarded resolution code exists. No real API or webhook request should be routed through this PR alone.
+
+## Immediate routing rollback
+
+When a later layer authorizes a controlled window, the one-step next-request rollback remains disabling the selector:
+
+```php
+'staging_db_primary_entrypoint_selector' => [
+    'enabled' => false,
+    'contract_version' => 'v1-staging-db-primary-entrypoint-selector',
+    'allowed_entrypoints' => [],
+],
+```
+
+No automatic mid-request fallback is allowed after DB routing starts. A request failure is fail-closed.
 
 ## Safety boundary
 
@@ -116,9 +133,10 @@ No automatic mid-request fallback is allowed after DB routing starts. A request 
 - no staging DB request has been run by this PR;
 - no production config is changed;
 - selector use outside staging fails closed;
+- legacy JSON bridge hooks are suppressed only after guarded DB context installation;
 - no Cron is added or changed;
 - no deployment or production cutover is executed;
-- JSON remains available as the immediate next-request rollback source.
+- JSON remains the immediate next-request rollback source.
 
 ## Focused verification
 
@@ -136,9 +154,16 @@ The focused suite includes the prior evidence, activation, resolver and rollback
 - v3 compatibility through the existing activation guard;
 - complete request-contour source fingerprints;
 - direct JSON-constructor bypass rejection;
+- legacy bridge runtime suppression and bootstrap contract;
 - v3 collector runtime and CLI contracts;
 - JSON fallback and exact DB adapter reuse.
 
 ## Next prerequisite
 
-A real isolated staging window must collect fresh evidence v3, run API-only smoke requests, disable the selector, and audit JSON/DB/outbox parity. Webhook routing and production remain blocked until those results are reviewed.
+MVP-14.8.6l must add a staging request finalizer/session contract that:
+
+1. processes the exact committed outbox revision before a DB-primary request is considered complete;
+2. proves all nine normalized modules against the current DB-primary snapshot;
+3. supports a bounded sequence of requests without reusing stale baseline evidence;
+4. leaves a deterministic recovery state when post-commit projection fails;
+5. keeps production and webhook routing disabled until API-only staging evidence proves the complete request lifecycle.
