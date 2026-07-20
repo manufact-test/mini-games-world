@@ -79,9 +79,11 @@ trait ProductionCutoverRunTrait
         ];
 
         try {
+            $runtime = $this->readRuntime();
+            $preflightConfig = $this->configWithRuntime($runtime);
             $preflight = (new ProductionPreflightRunner(
                 $this->projectRoot,
-                $this->config,
+                $preflightConfig,
                 $this->configFile,
                 $this->timestamp()
             ))->run();
