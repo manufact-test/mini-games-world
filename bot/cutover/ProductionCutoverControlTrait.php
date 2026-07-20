@@ -35,8 +35,20 @@ trait ProductionCutoverControlTrait
             }
         }
 
+        $stateContractError = '';
+        if ($stateError === '' && $runtimeError === '' && $routerError === '') {
+            $stateContractError = $this->statusStateContractError(
+                $state,
+                $routerEnabled,
+                $enabledModules
+            );
+        }
+
         return [
-            'ok' => $routerError === '' && $runtimeError === '' && $stateError === '',
+            'ok' => $routerError === ''
+                && $runtimeError === ''
+                && $stateError === ''
+                && $stateContractError === '',
             'report_type' => 'mvp-14.9-production-cutover',
             'action' => 'status',
             'environment' => 'production',
@@ -44,6 +56,11 @@ trait ProductionCutoverControlTrait
             'state' => $stateError === '' ? (string)($state['state'] ?? 'not_started') : 'invalid',
             'state_error' => $stateError,
             'runtime_error' => $runtimeError,
+            'state_contract_error' => $stateContractError,
+            'operator_action_required' => $stateContractError !== ''
+                || $runtimeError !== ''
+                || $stateError !== ''
+                || $routerError !== '',
             'database_runtime_enabled' => $routerEnabled,
             'enabled_modules' => $enabledModules,
             'router_error' => $routerError,
@@ -132,6 +149,55 @@ trait ProductionCutoverControlTrait
             'sensitive_identifiers_exposed' => false,
             'generated_at_utc' => $this->nowUtc(),
         ];
+    }
+
+    private function statusStateContractError(
+        array $state,
+        bool $routerEnabled,
+        array $enabledModules
+    ): string {
+        $stateName = strtolower(trim((string)($state['state'] ?? '')));
+        $backupPresent = is_file($this->runtimeBackupFile)
+            && is_readable($this->runtimeBackupFile)
+            && (int)filesize($this->runtimeBackupFile) > 0;
+        $writeBlockActive = is_file($this->writeBlockFile);
+
+        if ($stateName === '') {
+            return ($backupPresent || $writeBlockActive)
+                ? 'Recovery artifacts exist without a production cutover state.'
+                : '';
+        }
+        if (in_array($stateName, self::ACTIVE_STATES, true)) {
+            return $backupPresent
+                ? ''
+                : 'Active production cutover state is missing the exact runtime backup.';
+        }
+        if ($stateName === 'rollback_failed') {
+            return 'Production cutover rollback is incomplete and requires immediate operator review.';
+        }
+        if ($stateName === 'rolled_back') {
+            if (!$backupPresent) return 'Rolled-back state is missing the preserved exact runtime backup.';
+            if ($routerEnabled) return 'Rolled-back state still has database runtime routing enabled.';
+            if ($writeBlockActive) return 'Rolled-back state still has the JSON write block active.';
+            foreach (['runtime_restored', 'json_write_block_removed', 'database_runtime_disabled'] as $evidence) {
+                if (($state[$evidence] ?? false) !== true) {
+                    return 'Rolled-back state is missing confirmed recovery evidence: ' . $evidence . '.';
+                }
+            }
+            return '';
+        }
+        if ($stateName === 'completed') {
+            if (!$backupPresent) return 'Completed cutover is missing the preserved rollback runtime backup.';
+            if (!$routerEnabled) return 'Completed cutover does not have database runtime routing enabled.';
+            if ($writeBlockActive) return 'Completed cutover still has the JSON write block active.';
+            $missing = array_values(array_diff(self::MODULES, $enabledModules));
+            if ($missing !== []) {
+                return 'Completed cutover is missing database runtime modules: ' . implode(', ', $missing) . '.';
+            }
+            return '';
+        }
+
+        return 'Unknown production cutover state requires immediate operator review.';
     }
 
     private function assertControlEnvironmentAndBuild(): void
