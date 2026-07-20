@@ -22,6 +22,10 @@ final class StorageFactory
 
     public static function createJson(string $dataDir): StorageAdapterInterface
     {
+        if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+            && RuntimePrimaryEntrypointStorageContext::installed()) {
+            return RuntimePrimaryEntrypointStorageContext::storage();
+        }
         return new JsonStorageAdapter($dataDir);
     }
 
