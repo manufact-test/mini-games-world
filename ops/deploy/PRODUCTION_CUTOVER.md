@@ -1,6 +1,6 @@
 # MVP-14.9 — controlled production JSON → DB cutover
 
-This release adds the controlled production cutover. It does not switch production merely by being deployed. JSON remains the global storage and exact rollback source.
+This release adds the controlled production cutover. Deploying the release does not switch production. JSON remains the global storage and exact rollback source until an explicitly approved operation completes.
 
 ## Hard gates
 
@@ -11,9 +11,12 @@ The cutover runner refuses execution unless all of the following are true:
 - production DB is connected and has zero pending migrations;
 - a fresh read-only production preflight is clean;
 - the private approval is enabled, bound to this build, bound to the exact current preflight plan fingerprint and not expired;
+- the approval expiry contains an explicit UTC offset;
 - JSON is still the active global/rollback driver;
-- production DB module routing is still disabled;
+- production DB module routing is disabled before the operation;
 - primary and external backup locations are configured.
+
+A gate failure before the private runtime backup is created returns `action: cutover_blocked`, writes no terminal cutover state and remains safely retryable after the blocker is resolved.
 
 ## Private approval
 
@@ -24,21 +27,21 @@ Add only to the private production `config.php`, never to GitHub:
     'enabled' => true,
     'expected_build' => 'v103-mvp14-production-cutover',
     'approval_plan_fingerprint' => '<exact fingerprint from the v103 preflight>',
-    'approval_expires_at_utc' => '<short-lived UTC timestamp>',
+    'approval_expires_at_utc' => '<short-lived timestamp with Z or explicit UTC offset>',
     'require_primary_backup' => true,
     'require_external_copy' => true,
 ],
 ```
 
-The approval must be disabled immediately after the cutover command completes.
+The approval must be disabled immediately after the cutover command completes or rolls back.
 
-## Command
+## Commands
+
+Run:
 
 ```bash
 /usr/bin/php /absolute/path/public_html/ops/deploy/production-cutover.php --run
 ```
-
-Hostinger scheduling uses one temporary five-minute Cron. Repeated ticks are locked and idempotent.
 
 Status:
 
@@ -52,6 +55,14 @@ Explicit rollback:
 /usr/bin/php /absolute/path/public_html/ops/deploy/production-cutover.php --rollback
 ```
 
+Rearm after an explicitly reviewed rollback:
+
+```bash
+/usr/bin/php /absolute/path/public_html/ops/deploy/production-cutover.php --rearm
+```
+
+Hostinger scheduling uses one temporary five-minute Cron for the selected mode. Repeated ticks are locked and idempotent. Do not create the `--run` Cron until the exact build, preflight fingerprint and short-lived approval are confirmed.
+
 ## Automatic sequence
 
 1. Repeat the production preflight and validate exact approval.
@@ -64,16 +75,39 @@ Explicit rollback:
 8. Import accounts, opening balances, account ownership, normalized realtime data and the legacy financial archive.
 9. Install/verify the shop, payment and weekly-bonus runtime schemas.
 10. Synchronize all nine runtime modules and run the full DB regression before publication.
-11. Publish the all-module DB routing marker while JSON remains the rollback driver.
+11. Publish the all-module DB routing marker bound to build v103 while JSON remains the rollback driver.
 12. Remove the write barrier, prove the JSON fingerprint did not change and repeat the full DB regression.
 13. Release maintenance/read-only mode and run the final regression.
 14. Keep the private runtime backup for the manual validation window.
 
-## Automatic rollback
+## Failure states
 
-Any exception or recovered interruption restores the exact prior private runtime, removes the JSON write barrier and verifies DB routing is disabled. Database rows are preserved for incident analysis; schema and ledger rows are never deleted automatically.
+### Blocked before mutation
 
-A completed cutover remains idempotent on later Cron ticks. A rolled-back cutover remains a safe no-op until an operator reviews the failure.
+A failed preflight, missing/expired approval, fingerprint mismatch or other gate failure before the runtime backup is created returns:
+
+- `action: cutover_blocked`;
+- `production_changed: false`;
+- `rollback.attempted: false`;
+- no `rolled_back` state file.
+
+Resolve the blocker, generate a fresh preflight/fingerprint and try again only after a new explicit approval.
+
+### Automatic rollback after mutation begins
+
+Any exception after recovery artifacts exist restores the exact prior private runtime, removes the JSON write barrier and verifies DB routing is disabled. Database rows are preserved for incident analysis; schema and ledger rows are never deleted automatically.
+
+A successful rollback records `state: rolled_back`. Later `--run` ticks remain a safe no-op until an operator reviews the incident.
+
+### Rearm after review
+
+Before `--rearm`:
+
+1. verify `--status` shows DB runtime disabled and no JSON write block;
+2. disable the private `production_cutover.enabled` approval;
+3. review the rollback report and preserve any external incident notes.
+
+`--rearm` archives the reviewed state and runtime backup outside the deployment. It does not change production routing. A fresh preflight and a new exact short-lived approval are mandatory before another `--run`.
 
 ## Required success result
 
