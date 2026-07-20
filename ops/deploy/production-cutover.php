@@ -8,8 +8,9 @@ if (PHP_SAPI !== 'cli') {
 
 @set_time_limit(240);
 
-$options = getopt('', ['run', 'status', 'rollback', 'rearm']);
+$options = getopt('', ['run', 'release', 'status', 'rollback', 'rearm']);
 $modeCount = (int)isset($options['run'])
+    + (int)isset($options['release'])
     + (int)isset($options['status'])
     + (int)isset($options['rollback'])
     + (int)isset($options['rearm']);
@@ -17,7 +18,9 @@ $requestedMode = isset($options['status'])
     ? 'status'
     : (isset($options['rollback'])
         ? 'rollback'
-        : (isset($options['rearm']) ? 'rearm' : 'run'));
+        : (isset($options['rearm'])
+            ? 'rearm'
+            : (isset($options['release']) ? 'release' : 'run')));
 
 // The cutover runner must be able to inspect or restore a malformed runtime.php.
 // Bootstrap therefore loads the private base config only; the runner merges the
@@ -83,7 +86,9 @@ $lockUnavailable = static function (string $reason) use ($requestedMode): array 
 
 try {
     if ($modeCount !== 1) {
-        throw new InvalidArgumentException('Choose exactly one mode: --run, --status, --rollback or --rearm.');
+        throw new InvalidArgumentException(
+            'Choose exactly one mode: --run, --release, --status, --rollback or --rearm.'
+        );
     }
 
     $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
@@ -116,7 +121,7 @@ try {
     $storage = null;
     $database = null;
     $backupManager = null;
-    if ($requestedMode === 'run') {
+    if (in_array($requestedMode, ['run', 'release'], true)) {
         $migrationSettings = is_array($config['managed_migrations'] ?? null)
             ? $config['managed_migrations']
             : [];
@@ -140,7 +145,9 @@ try {
         }
         $database = PdoConnectionFactory::create($databaseConfig);
         $storage = StorageFactory::create($config);
+    }
 
+    if ($requestedMode === 'run') {
         $backupSettings = BackupConfigLoader::load($projectRoot, 'production');
         $backupManager = new BackupManager(
             $projectRoot,
@@ -165,6 +172,7 @@ try {
 
     $result = match ($requestedMode) {
         'status' => $runner->status(),
+        'release' => $runner->release(),
         'rollback' => $runner->rollback('manual production rollback requested by approved operator'),
         'rearm' => $runner->rearm(),
         default => $runner->run(),
