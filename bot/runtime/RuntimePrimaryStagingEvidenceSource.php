@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 final class RuntimePrimaryStagingEvidenceSource implements RuntimePrimaryStagingEvidenceSourceInterface
 {
+    private DatabaseConfig $databaseConfig;
+
     public function __construct(
         private array $config,
         private string $projectRoot,
@@ -24,6 +26,14 @@ final class RuntimePrimaryStagingEvidenceSource implements RuntimePrimaryStaging
         }
         if ($this->database->driver() !== 'mysql') {
             throw new RuntimeException('Staging evidence source requires MySQL/MariaDB.');
+        }
+        $this->databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        if (!$this->databaseConfig->enabled()) {
+            throw new RuntimeException('Staging evidence source requires an enabled database configuration.');
+        }
+        $identity = strtolower(trim($this->databaseConfig->identityFingerprint()));
+        if (preg_match('/^[a-f0-9]{64}$/', $identity) !== 1) {
+            throw new RuntimeException('Staging evidence source database identity fingerprint is unavailable.');
         }
     }
 
@@ -50,6 +60,7 @@ final class RuntimePrimaryStagingEvidenceSource implements RuntimePrimaryStaging
         return [
             'driver' => $this->database->driver(),
             'server_version' => $version,
+            'identity_fingerprint' => strtolower($this->databaseConfig->identityFingerprint()),
         ];
     }
 
