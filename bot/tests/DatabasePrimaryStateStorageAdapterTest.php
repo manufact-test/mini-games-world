@@ -13,6 +13,8 @@ final class DatabasePrimaryStateTestConnection implements DatabaseConnectionInte
     private ?array $row = null;
     private bool $schemaInstalled = false;
 
+    public function __construct(private bool $invalidRevisionType = false) {}
+
     public function driver(): string
     {
         return 'sqlite';
@@ -63,13 +65,14 @@ final class DatabasePrimaryStateTestConnection implements DatabaseConnectionInte
         $normalized = strtolower(preg_replace('/\s+/', ' ', trim($sql)) ?? '');
         if (str_starts_with($normalized, 'pragma table_info(')) {
             if (!$this->schemaInstalled) return [];
-            return array_map(
-                static fn(string $name): array => ['name' => $name],
-                [
-                    'singleton_id', 'revision', 'state_json',
-                    'state_sha256', 'created_at_utc', 'updated_at_utc',
-                ]
-            );
+            return [
+                ['name' => 'singleton_id', 'type' => 'INTEGER', 'notnull' => 1, 'pk' => 1],
+                ['name' => 'revision', 'type' => $this->invalidRevisionType ? 'TEXT' : 'INTEGER', 'notnull' => 1, 'pk' => 0],
+                ['name' => 'state_json', 'type' => 'TEXT', 'notnull' => 1, 'pk' => 0],
+                ['name' => 'state_sha256', 'type' => 'TEXT', 'notnull' => 1, 'pk' => 0],
+                ['name' => 'created_at_utc', 'type' => 'TEXT', 'notnull' => 1, 'pk' => 0],
+                ['name' => 'updated_at_utc', 'type' => 'TEXT', 'notnull' => 1, 'pk' => 0],
+            ];
         }
         if (str_starts_with($normalized, 'select singleton_id, revision, state_json')) {
             return $this->row === null ? [] : [$this->row];
@@ -110,11 +113,20 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     throw new RuntimeException('Expected exception was not thrown.');
 };
 
+$invalidInstaller = new RuntimePrimaryStateSchemaInstaller(
+    new DatabasePrimaryStateTestConnection(true)
+);
+$assertThrows(
+    static fn() => $invalidInstaller->install(),
+    'column type is invalid: revision'
+);
+
 $database = new DatabasePrimaryStateTestConnection();
 $installer = new RuntimePrimaryStateSchemaInstaller($database);
 $installed = $installer->install();
 $assertTrue(($installed['ok'] ?? false) === true, 'Runtime primary state schema must install');
 $assertTrue(($installed['driver'] ?? '') === 'sqlite', 'Focused schema contract must use SQLite-compatible SQL');
+$assertTrue(($installed['engine'] ?? '') === 'sqlite', 'Focused schema contract must report SQLite engine');
 $assertTrue(
     preg_match('/^[a-f0-9]{64}$/', (string)($installed['schema_fingerprint'] ?? '')) === 1,
     'Schema installer must produce a stable fingerprint'
