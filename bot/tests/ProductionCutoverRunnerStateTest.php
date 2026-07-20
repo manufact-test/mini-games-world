@@ -160,9 +160,48 @@ try {
     $subject = $runner($data, $configFile, new ProductionCutoverConfig(false, false));
     $recovered = $subject->run();
     $assertTrue(($recovered['action'] ?? '') === 'automatic_rollback', 'Invalid state with recovery artifacts must trigger rollback');
-    $assertTrue(($recovered['rollback']['ok'] ?? false) === true, 'Invalid state recovery must restore JSON runtime cleanly');
+    $assertTrue(($recovered['rollback_succeeded'] ?? false) === true, 'Automatic rollback must require complete persisted recovery');
+    $assertTrue(($recovered['rollback']['state_written'] ?? false) === true, 'Automatic rollback must persist terminal state');
     $state = json_decode((string)file_get_contents($private . '/production-cutover.json'), true, 512, JSON_THROW_ON_ERROR);
     $assertTrue(($state['state'] ?? '') === 'rolled_back', 'Recovered invalid state must record reviewed rollback state');
+} finally {
+    $removeFixture($fixture);
+}
+
+[$fixture, $private, $data, $configFile] = $makeFixture();
+try {
+    file_put_contents($private . '/production-cutover.json', json_encode([
+        'state' => 'running',
+        'started_at_utc' => '2026-07-20T09:55:00+00:00',
+    ], JSON_THROW_ON_ERROR));
+
+    $subject = $runner($data, $configFile, new ProductionCutoverConfig(false, false));
+    $missingEvidence = $subject->run();
+    $assertTrue(($missingEvidence['action'] ?? '') === 'recovery_blocked', 'Active state without exact recovery evidence must fail closed');
+    $assertTrue(($missingEvidence['ok'] ?? true) === false, 'Missing recovery evidence must never report success');
+    $assertTrue(($missingEvidence['production_changed'] ?? 'not-null') === null, 'Unknown production mutation status must remain explicit');
+    $assertTrue(($missingEvidence['rollback']['attempted'] ?? true) === false, 'Recovery must not claim an attempted rollback without evidence');
+    $state = json_decode((string)file_get_contents($private . '/production-cutover.json'), true, 512, JSON_THROW_ON_ERROR);
+    $assertTrue(($state['state'] ?? '') === 'running', 'Blocked recovery must preserve the incident state for review');
+} finally {
+    $removeFixture($fixture);
+}
+
+[$fixture, $private, $data, $configFile] = $makeFixture();
+try {
+    file_put_contents($private . '/runtime.php', "<?php\nthrow new RuntimeException('broken runtime');\n");
+    file_put_contents($private . '/production-cutover.runtime.backup', "<?php\nreturn ['database_runtime' => ['enabled' => false]];\n");
+    file_put_contents($private . '/production-cutover.json', json_encode([
+        'state' => 'rolled_back',
+        'started_at_utc' => '2026-07-20T09:55:00+00:00',
+    ], JSON_THROW_ON_ERROR));
+
+    $subject = $runner($data, $configFile, new ProductionCutoverConfig(false, false));
+    $terminalRecovery = $subject->run();
+    $assertTrue(($terminalRecovery['action'] ?? '') === 'automatic_rollback', 'Malformed rolled-back runtime with backup must be repaired');
+    $assertTrue(($terminalRecovery['rollback_succeeded'] ?? false) === true, 'Terminal-state repair must complete and persist');
+    $runtime = require $private . '/runtime.php';
+    $assertTrue(is_array($runtime) && empty($runtime['database_runtime']['enabled']), 'Terminal-state repair must restore JSON runtime');
 } finally {
     $removeFixture($fixture);
 }
