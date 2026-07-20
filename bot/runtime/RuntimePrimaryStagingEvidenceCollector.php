@@ -150,6 +150,17 @@ final class RuntimePrimaryStagingEvidenceCollector
 
     private function rehearsalEvidence(array $report, array $modules): array
     {
+        foreach ([
+            'application_entrypoints_changed',
+            'cron_changed',
+            'production_changed',
+            'sensitive_identifiers_exposed',
+        ] as $field) {
+            if (!array_key_exists($field, $report) || $report[$field] !== false) {
+                throw new RuntimeException('Staging rehearsal violated or omitted its safety flag: ' . $field . '.');
+            }
+        }
+
         $snapshot = is_array($report['snapshot'] ?? null) ? $report['snapshot'] : [];
         $event = is_array($report['target_event'] ?? null) ? $report['target_event'] : [];
         return [
@@ -164,10 +175,10 @@ final class RuntimePrimaryStagingEvidenceCollector
             'parity_completed' => ($report['parity_completed'] ?? false) === true,
             'worker_tick_count' => max(0, (int)($report['worker_tick_count'] ?? 0)),
             'projected_modules' => $modules,
-            'application_entrypoints_changed' => ($report['application_entrypoints_changed'] ?? null) === true,
-            'cron_changed' => ($report['cron_changed'] ?? null) === true,
-            'production_changed' => ($report['production_changed'] ?? null) === true,
-            'sensitive_identifiers_exposed' => ($report['sensitive_identifiers_exposed'] ?? null) === true,
+            'application_entrypoints_changed' => false,
+            'cron_changed' => false,
+            'production_changed' => false,
+            'sensitive_identifiers_exposed' => false,
         ];
     }
 }
