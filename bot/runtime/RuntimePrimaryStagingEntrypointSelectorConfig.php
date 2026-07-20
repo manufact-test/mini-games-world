@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 final class RuntimePrimaryStagingEntrypointSelectorConfig
 {
-    public const CONTRACT_VERSION = 'v1-staging-db-primary-entrypoint-selector';
+    public const CONTRACT_VERSION = 'v2-api-only-staging-db-primary-entrypoint-selector';
 
     private function __construct(
         private bool $enabled,
@@ -32,8 +32,8 @@ final class RuntimePrimaryStagingEntrypointSelectorConfig
         $normalized = [];
         foreach ($allowed as $entrypoint) {
             $entrypoint = strtolower(trim((string)$entrypoint));
-            if (!in_array($entrypoint, ['api', 'webhook'], true)) {
-                throw new RuntimeException('Unsupported staging DB-primary entrypoint: ' . $entrypoint . '.');
+            if ($entrypoint !== 'api') {
+                throw new RuntimeException('The staging DB-primary entrypoint selector supports only API.');
             }
             if (isset($normalized[$entrypoint])) {
                 throw new RuntimeException('Duplicate staging DB-primary entrypoint: ' . $entrypoint . '.');
@@ -46,8 +46,8 @@ final class RuntimePrimaryStagingEntrypointSelectorConfig
             if ($contractVersion !== self::CONTRACT_VERSION) {
                 throw new RuntimeException('Staging DB-primary entrypoint selector contract version is invalid.');
             }
-            if ($allowedEntrypoints === []) {
-                throw new RuntimeException('Enabled staging DB-primary entrypoint selector requires at least one allowed entrypoint.');
+            if ($allowedEntrypoints !== ['api']) {
+                throw new RuntimeException('Enabled staging DB-primary entrypoint selector must allow exactly API.');
             }
         }
 
@@ -60,7 +60,8 @@ final class RuntimePrimaryStagingEntrypointSelectorConfig
         if (!in_array($entrypoint, ['api', 'webhook'], true)) {
             throw new InvalidArgumentException('Entrypoint selector supports only api or webhook.');
         }
-        return $this->enabled && in_array($entrypoint, $this->allowedEntrypoints, true);
+        if ($entrypoint === 'webhook') return false;
+        return $this->enabled && $this->allowedEntrypoints === ['api'];
     }
 
     public function enabled(): bool
@@ -74,6 +75,8 @@ final class RuntimePrimaryStagingEntrypointSelectorConfig
             'enabled' => $this->enabled,
             'contract_version' => $this->contractVersion,
             'allowed_entrypoints' => $this->allowedEntrypoints,
+            'api_only' => true,
+            'webhook_allowed' => false,
             'staging_only' => true,
             'production_allowed' => false,
         ];
