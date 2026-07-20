@@ -14,6 +14,8 @@ $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointEvidence.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryRepositoryCommitResolver.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceVerifier.php';
+require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Verifier.php';
+require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceGate.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceCollector.php';
@@ -25,11 +27,13 @@ final class RuntimePrimaryStagingEvidenceCollectorTestSource implements RuntimeP
     public array $captures;
     public array $rehearsals;
     public array $concurrency;
+    public string $databaseIdentityFingerprint;
 
     public function __construct(private string $projectRoot, private string $commit)
     {
         $sha = str_repeat('1', 64);
         $inventory = str_repeat('2', 64);
+        $this->databaseIdentityFingerprint = str_repeat('5', 64);
         $this->captures = array_fill(0, 3, [
             'sha256' => $sha,
             'inventory_fingerprint' => $inventory,
@@ -55,9 +59,7 @@ final class RuntimePrimaryStagingEvidenceCollectorTestSource implements RuntimeP
                     'schema_fingerprint' => str_repeat('4', 64),
                 ],
             ],
-            'target_event' => [
-                'status' => 'completed',
-            ],
+            'target_event' => ['status' => 'completed'],
             'target_event_completed' => true,
             'status_healthy' => true,
             'parity_completed' => true,
@@ -114,7 +116,11 @@ final class RuntimePrimaryStagingEvidenceCollectorTestSource implements RuntimeP
     }
     public function databaseEvidence(): array
     {
-        return ['driver' => 'mysql', 'server_version' => '10.11.13-MariaDB'];
+        return [
+            'driver' => 'mysql',
+            'server_version' => '10.11.13-MariaDB',
+            'identity_fingerprint' => $this->databaseIdentityFingerprint,
+        ];
     }
     public function captureJsonEvidence(): array
     {
@@ -156,7 +162,15 @@ try {
     $source = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
     $result = (new RuntimePrimaryStagingEvidenceCollector($projectRoot, $source))->collect();
     $assertTrue(($result['ok'] ?? false) === true, 'Valid automated evidence collection must pass');
-    $assertTrue(($result['verification']['ok'] ?? false) === true, 'Collected manifest must pass the strict gate');
+    $assertTrue(($result['verification']['ok'] ?? false) === true, 'Collected manifest must pass the strict v2 gate');
+    $assertTrue(
+        ($result['manifest']['manifest_version'] ?? '') === RuntimePrimaryStagingEvidenceV2Verifier::MANIFEST_VERSION,
+        'Collector must emit staging evidence v2'
+    );
+    $assertTrue(
+        hash_equals($source->databaseIdentityFingerprint, (string)($result['database_identity_fingerprint'] ?? '')),
+        'Collector must bind evidence to the exact database identity'
+    );
     $assertTrue(($result['manifest']['first_rehearsal']['worker_tick_count'] ?? 0) === 1, 'First rehearsal tick count must remain explicit');
     $assertTrue(($result['manifest']['repeated_rehearsal']['worker_tick_count'] ?? -1) === 0, 'Repeated rehearsal must remain idempotent');
     $assertTrue(count((array)($result['projected_modules'] ?? [])) === 9, 'Collector must preserve all nine modules');
@@ -166,6 +180,13 @@ try {
     $assertThrows(
         static fn() => (new RuntimePrimaryStagingEvidenceCollector($projectRoot, $changed))->collect(),
         'json rollback source or inventory changed'
+    );
+
+    $invalidIdentity = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
+    $invalidIdentity->databaseIdentityFingerprint = 'invalid';
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingEvidenceCollector($projectRoot, $invalidIdentity))->collect(),
+        'database identity fingerprint is invalid'
     );
 
     $missingModule = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
