@@ -38,6 +38,7 @@ final class RuntimePrimaryAccountsTestDatabase implements DatabaseConnectionInte
 
     public function execute(string $sql, array $params = []): int
     {
+        $this->assertExactParameters($sql, $params);
         $normalized = strtolower(preg_replace('/\s+/', ' ', trim($sql)) ?? '');
         if (str_starts_with($normalized, 'insert into mgw_users')) {
             $mgwId = (string)$params['mgw_id'];
@@ -63,9 +64,6 @@ final class RuntimePrimaryAccountsTestDatabase implements DatabaseConnectionInte
                 'avatar_external_ref', 'updated_at_utc', 'last_seen_at_utc',
             ] as $field) {
                 $this->users[$mgwId][$field] = $params[$field];
-            }
-            if (array_key_exists('created_at_utc', $params)) {
-                $this->users[$mgwId]['created_at_utc'] = $params['created_at_utc'];
             }
             return 1;
         }
@@ -115,6 +113,7 @@ final class RuntimePrimaryAccountsTestDatabase implements DatabaseConnectionInte
 
     public function fetchAll(string $sql, array $params = []): array
     {
+        $this->assertExactParameters($sql, $params);
         $normalized = strtolower(preg_replace('/\s+/', ' ', trim($sql)) ?? '');
         if (str_contains($normalized, 'from mgw_identities')) {
             $key = (string)($params['provider'] ?? '') . '|' . (string)($params['provider_subject'] ?? '');
@@ -163,6 +162,21 @@ final class RuntimePrimaryAccountsTestDatabase implements DatabaseConnectionInte
     }
 
     public function pdo(): PDO { throw new RuntimeException('unused'); }
+
+    private function assertExactParameters(string $sql, array $params): void
+    {
+        preg_match_all('/:([a-zA-Z_][a-zA-Z0-9_]*)/', $sql, $matches);
+        $expected = array_values(array_unique($matches[1] ?? []));
+        $actual = array_map('strval', array_keys($params));
+        sort($expected, SORT_STRING);
+        sort($actual, SORT_STRING);
+        if ($expected !== $actual) {
+            throw new RuntimeException(
+                'SQL parameter contract mismatch. Expected [' . implode(', ', $expected)
+                . '], got [' . implode(', ', $actual) . '].'
+            );
+        }
+    }
 }
 
 $projectRoot = dirname(__DIR__, 2);
@@ -233,9 +247,14 @@ $updatedSnapshot = $snapshot;
 $updatedSnapshot['users']['100']['first_name'] = 'Илья Новый';
 $updatedSnapshot['users']['100']['last_seen_at'] = '2026-07-20T11:00:00+00:00';
 $updatedSha = hash('sha256', $canonical($updatedSnapshot));
+$createdAtBeforeUpdate = array_values($database->users)[0]['created_at_utc'];
 $updated = $subject->project($updatedSnapshot, 2, $updatedSha);
 $assertTrue(($updated['summary']['updated_user_count'] ?? 0) === 1, 'Changed profile must update the MGW user');
 $assertTrue(array_values($database->users)[0]['display_name'] === 'Илья Новый', 'Updated display name must persist');
+$assertTrue(
+    array_values($database->users)[0]['created_at_utc'] === $createdAtBeforeUpdate,
+    'Profile update must preserve the original creation timestamp'
+);
 $assertTrue(($subject->audit($updatedSnapshot, 2, $updatedSha)['ok'] ?? false) === true, 'Updated profile audit must pass');
 
 $collisionDatabase = new RuntimePrimaryAccountsTestDatabase();
