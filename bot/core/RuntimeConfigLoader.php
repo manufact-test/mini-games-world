@@ -8,6 +8,14 @@ final class RuntimeConfigLoader
         $primaryConfigFile = trim($primaryConfigFile);
         if ($primaryConfigFile === '') return $config;
 
+        // The production cutover CLI must remain able to inspect and restore a
+        // malformed/interrupted runtime.php. In this narrowly scoped mode the
+        // runner loads and validates runtime state explicitly after bootstrap.
+        if (defined('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP')
+            && MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP === true) {
+            return $config;
+        }
+
         $runtimeFile = dirname($primaryConfigFile) . '/runtime.php';
         if (is_file($runtimeFile)) {
             $runtime = require $runtimeFile;
