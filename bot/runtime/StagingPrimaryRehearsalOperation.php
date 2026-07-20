@@ -70,7 +70,7 @@ final class StagingPrimaryRehearsalOperation
         }
 
         $ticks = [];
-        $completed = false;
+        $targetCompleted = false;
         for ($tick = 1; $tick <= $this->maxEvents; $tick++) {
             $event = $this->backend->eventStatus($targetRevision);
             if (($event['present'] ?? false) !== true) {
@@ -80,7 +80,7 @@ final class StagingPrimaryRehearsalOperation
                 throw new RuntimeException('DB-primary rehearsal target event fingerprint changed.');
             }
             if ((string)($event['status'] ?? '') === 'completed') {
-                $completed = true;
+                $targetCompleted = true;
                 break;
             }
 
@@ -101,8 +101,10 @@ final class StagingPrimaryRehearsalOperation
         if (!hash_equals($targetSha, strtolower(trim((string)($targetEvent['state_sha256'] ?? ''))))) {
             throw new RuntimeException('DB-primary rehearsal target event fingerprint changed after worker execution.');
         }
-        if ((string)($targetEvent['status'] ?? '') === 'completed') $completed = true;
+        if ((string)($targetEvent['status'] ?? '') === 'completed') $targetCompleted = true;
         $status = $this->backend->status();
+        $statusHealthy = !empty($status['ok']);
+        $completed = $targetCompleted && $statusHealthy;
 
         return $this->report(
             $completed ? 'rehearsal_completed' : 'rehearsal_incomplete',
@@ -113,14 +115,16 @@ final class StagingPrimaryRehearsalOperation
                 'worker_ticks' => $ticks,
                 'worker_tick_count' => count($ticks),
                 'max_events' => $this->maxEvents,
+                'target_event_completed' => $targetCompleted,
+                'status_healthy' => $statusHealthy,
                 'parity_completed' => $completed,
                 'status' => $status,
                 'read_only' => false,
                 'next_step' => $completed
                     ? 'Review the non-sensitive parity report. Do not connect application entrypoints yet.'
-                    : 'Resolve the worker blocker and rerun the staging rehearsal. Do not connect application entrypoints.',
+                    : 'Resolve the worker or final-status blocker and rerun the staging rehearsal. Do not connect application entrypoints.',
             ],
-            $completed && !empty($status['ok'])
+            $completed
         );
     }
 
