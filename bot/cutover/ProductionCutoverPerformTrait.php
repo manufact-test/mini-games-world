@@ -97,11 +97,11 @@ trait ProductionCutoverPerformTrait
             'json_write_block_active' => true,
         ]);
 
-        $this->removeWriteBlock();
         $publishedConfig = $this->configWithRuntime($this->readRuntime());
         $publishedRouter = new RuntimeStorageRouter($publishedConfig);
-        if (!$publishedRouter->enabled()) {
-            throw new RuntimeException('Published production database runtime did not activate.');
+        if (!$publishedRouter->enabled()
+            || array_values(array_diff(self::MODULES, $publishedRouter->enabledModules())) !== []) {
+            throw new RuntimeException('Published production database runtime did not activate completely.');
         }
 
         $publishedSnapshot = $this->snapshot();
@@ -110,52 +110,42 @@ trait ProductionCutoverPerformTrait
         }
         $regressionAfterPublish = $this->fullRegression($publishedConfig);
         if (empty($regressionAfterPublish['ok']) || !empty($regressionAfterPublish['blockers'])) {
-            throw new RuntimeException('Production DB regression failed after publishing the route.');
+            throw new RuntimeException('Production DB regression failed after publishing the protected route.');
         }
 
-        $finalRuntime = $this->releaseMaintenance($originalRuntime, $activatedRuntime);
-        $this->writeRuntime($finalRuntime);
-        $context['mutation_stage'] = 'maintenance_released';
-        $finalConfig = $this->configWithRuntime($finalRuntime);
-        $finalRouter = new RuntimeStorageRouter($finalConfig);
-        if (!$finalRouter->enabled()
-            || array_values(array_diff(self::MODULES, $finalRouter->enabledModules())) !== []) {
-            throw new RuntimeException('Final production database route is incomplete.');
-        }
-        $finalRegression = $this->fullRegression($finalConfig);
-        if (empty($finalRegression['ok']) || !empty($finalRegression['blockers'])) {
-            throw new RuntimeException('Final production DB regression failed after maintenance release.');
-        }
-
-        $finishedAt = $this->nowUtc();
+        $readyAt = $this->nowUtc();
+        $context['mutation_stage'] = 'awaiting_release';
         $this->writeState([
-            'state' => 'completed',
+            'state' => 'awaiting_release',
             'build' => self::BUILD,
             'started_at_utc' => $startedAt,
-            'completed_at_utc' => $finishedAt,
+            'release_ready_at_utc' => $readyAt,
             'plan_fingerprint' => $planFingerprint,
             'source_fingerprint' => $frozenSourceFingerprint,
             'backup_id' => (string)($backup['backup_id'] ?? ''),
             'backup_snapshot_sha256' => (string)($backup['snapshot_sha256'] ?? ''),
-            'runtime_backup_present' => is_file($this->runtimeBackupFile),
+            'runtime_backup_present' => true,
             'database_runtime_published' => true,
-            'json_write_block_active' => false,
+            'json_write_block_active' => true,
+            'maintenance_active' => true,
+            'financial_read_only_active' => true,
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
         ]);
 
         return [
             'ok' => true,
             'report_type' => 'mvp-14.9-production-cutover',
-            'action' => 'cutover_completed',
+            'action' => 'cutover_awaiting_release',
+            'state' => 'awaiting_release',
             'environment' => 'production',
             'build' => self::BUILD,
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
             'runtime_route' => RuntimeStorageRouter::DRIVER_DATABASE,
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
-            'enabled_modules' => $finalRouter->enabledModules(),
-            'maintenance_released' => true,
-            'financial_read_only_released' => true,
-            'json_write_block_removed' => !is_file($this->writeBlockFile),
+            'enabled_modules' => $publishedRouter->enabledModules(),
+            'maintenance_released' => false,
+            'financial_read_only_released' => false,
+            'json_write_block_removed' => false,
             'json_snapshot_unchanged' => true,
             'source_fingerprint' => $frozenSourceFingerprint,
             'cutover_plan_fingerprint' => $planFingerprint,
@@ -166,14 +156,15 @@ trait ProductionCutoverPerformTrait
             'synchronization' => $synchronization,
             'regression_before_publish' => $this->compactRegression($regressionBeforePublish),
             'regression_after_publish' => $this->compactRegression($regressionAfterPublish),
-            'final_regression' => $this->compactRegression($finalRegression),
             'automatic_rollback_available' => is_file($this->runtimeBackupFile),
+            'manual_smoke_required' => true,
+            'release_required' => true,
             'production_changed' => true,
-            'mutation_stage' => (string)$context['mutation_stage'],
+            'mutation_stage' => 'awaiting_release',
             'sensitive_identifiers_exposed' => false,
             'started_at_utc' => $startedAt,
-            'finished_at_utc' => $finishedAt,
-            'next_step' => 'Run the manual production smoke checklist. Roll back to JSON immediately if any check fails.',
+            'release_ready_at_utc' => $readyAt,
+            'next_step' => 'Run the read-only production smoke checklist. Use --release only after every check passes; otherwise use --rollback.',
         ];
     }
 
