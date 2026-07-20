@@ -101,7 +101,7 @@ final class RuntimePrimaryStagingActivationGuard
 
         $first = is_array($manifest['first_rehearsal'] ?? null) ? $manifest['first_rehearsal'] : [];
         $targetRevision = (int)($first['target_revision'] ?? 0);
-        $targetSha = strtolower(trim((string)($first['target_sha256'] ?? ''));
+        $targetSha = strtolower(trim((string)($first['target_sha256'] ?? '')));
         if ($targetRevision < 1 || preg_match('/^[a-f0-9]{64}$/', $targetSha) !== 1) {
             throw new RuntimeException('Staging activation evidence target revision or fingerprint is invalid.');
         }
