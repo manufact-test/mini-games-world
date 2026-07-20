@@ -30,6 +30,7 @@ require $projectRoot . '/bot/tests/support/RuntimePrimaryStagingEvidenceV2Manife
 final class RuntimePrimaryStagingActivationTestStorage implements StorageAdapterInterface
 {
     public int $transactionCalls = 0;
+    public int $readCalls = 0;
     public function __construct(public array $snapshot) {}
     public function driver(): string { return 'json'; }
     public function transaction(callable $callback): mixed
@@ -37,7 +38,11 @@ final class RuntimePrimaryStagingActivationTestStorage implements StorageAdapter
         $this->transactionCalls++;
         throw new RuntimeException('Activation guard must not open JSON write transactions.');
     }
-    public function readOnly(callable $callback): mixed { return $callback($this->snapshot); }
+    public function readOnly(callable $callback): mixed
+    {
+        $this->readCalls++;
+        return $callback($this->snapshot);
+    }
 }
 
 final class RuntimePrimaryStagingActivationTestDatabase implements DatabaseConnectionInterface
@@ -47,6 +52,8 @@ final class RuntimePrimaryStagingActivationTestDatabase implements DatabaseConne
     public array $eventRow;
     public array $queueRows;
     public bool $invalidOutboxType = false;
+    public ?int $driftStateRevisionAfterReads = null;
+    private int $stateReadCount = 0;
 
     public function __construct(array $snapshot, string $stateSha)
     {
@@ -90,7 +97,14 @@ final class RuntimePrimaryStagingActivationTestDatabase implements DatabaseConne
         if ($normalized === 'show columns from mgw_runtime_primary_projection_outbox') return $this->outboxColumns();
         if (str_starts_with($normalized, "show table status like 'mgw_runtime_primary_state'")) return [['Engine' => 'InnoDB']];
         if (str_starts_with($normalized, "show table status like 'mgw_runtime_primary_projection_outbox'")) return [['Engine' => 'InnoDB']];
-        if (str_starts_with($normalized, 'select singleton_id, revision, state_json, state_sha256')) return [$this->stateRow];
+        if (str_starts_with($normalized, 'select singleton_id, revision, state_json, state_sha256')) {
+            $this->stateReadCount++;
+            $row = $this->stateRow;
+            if ($this->driftStateRevisionAfterReads !== null && $this->stateReadCount > 1) {
+                $row['revision'] = $this->driftStateRevisionAfterReads;
+            }
+            return [$row];
+        }
         if (str_starts_with($normalized, 'select state_revision, state_sha256, projection_version, status,')) return [$this->eventRow];
         if (str_starts_with($normalized, 'select status, count(*) as event_count,')) return $this->queueRows;
         throw new RuntimeException('Unexpected activation test query: ' . $normalized);
@@ -261,6 +275,7 @@ try {
     chmod($configFile, 0600);
     $config = $databaseConfigArray + [
         'environment' => 'staging',
+        'runtime_primary_projection_outbox' => ['enabled' => true],
         'staging_db_primary_activation' => [
             'enabled' => true,
             'expected_database_identity_fingerprint' => $databaseIdentity,
@@ -286,6 +301,8 @@ try {
     $ready = $guard->assertReady();
     $assertTrue(($ready['activation_allowed'] ?? false) === true, 'Exact live staging state must pass activation readiness');
     $assertTrue(($ready['read_only_audit'] ?? false) === true, 'Activation readiness must use read-only audit');
+    $assertTrue(($ready['drift_check_passed'] ?? false) === true, 'Activation readiness must repeat drift checks after audit');
+    $assertTrue(($ready['projection_outbox_enabled'] ?? false) === true, 'Activation readiness must require the projection outbox');
     $assertTrue(($ready['projected_modules'] ?? []) === $modules, 'Activation readiness must verify all nine modules');
     $assertTrue(($ready['queue']['completed_event_count'] ?? 0) === 1, 'Activation readiness must prove a contiguous completed queue');
     $assertTrue($database->executeCalls === 0, 'Activation guard must not mutate staging DB');
@@ -294,6 +311,24 @@ try {
         $assertTrue($module->projectCalls === 0, 'Activation guard must never invoke module projection');
         $assertTrue($module->auditCalls === 1, 'Activation guard must audit each module once');
     }
+
+    $disabledOutbox = $config;
+    $disabledOutbox['runtime_primary_projection_outbox']['enabled'] = false;
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingActivationGuard(
+            $projectRoot,
+            $disabledOutbox,
+            $configFile,
+            $storage,
+            $database,
+            new RuntimePrimaryAllModuleProjector(array_map(
+                static fn(string $module): RuntimePrimaryStagingActivationTestModule => new RuntimePrimaryStagingActivationTestModule($module),
+                $modules
+            )),
+            strtotime('2026-07-20T18:00:00+00:00')
+        ))->assertReady(),
+        'outbox.enabled to be boolean true'
+    );
 
     $database->eventRow['status'] = 'failed';
     $assertThrows(static fn() => $guard->assertReady(), 'clean completed evidenced revision');
@@ -310,6 +345,22 @@ try {
     $storage->snapshot['system']['sequence'] = 2;
     $assertThrows(static fn() => $guard->assertReady(), 'json rollback source does not match');
     $storage->snapshot['system']['sequence'] = 1;
+
+    $driftDatabase = new RuntimePrimaryStagingActivationTestDatabase($snapshot, $stateSha);
+    $driftDatabase->driftStateRevisionAfterReads = 2;
+    $driftGuard = new RuntimePrimaryStagingActivationGuard(
+        $projectRoot,
+        $config,
+        $configFile,
+        $storage,
+        $driftDatabase,
+        new RuntimePrimaryAllModuleProjector(array_map(
+            static fn(string $module): RuntimePrimaryStagingActivationTestModule => new RuntimePrimaryStagingActivationTestModule($module),
+            $modules
+        )),
+        strtotime('2026-07-20T18:00:00+00:00')
+    );
+    $assertThrows(static fn() => $driftGuard->assertReady(), 'db-primary state does not match');
 
     $staleConfig = $config;
     $staleManifest = $manifest;
