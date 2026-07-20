@@ -11,7 +11,7 @@ final class RuntimePrimaryStagingEvidenceWriter
         }
     }
 
-    public function write(string $outputPath, array $manifest): array
+    public function validateOutputPath(string $outputPath): array
     {
         $outputPath = str_replace('\\', '/', trim($outputPath));
         if ($outputPath === '' || !str_starts_with($outputPath, '/')) {
@@ -35,6 +35,19 @@ final class RuntimePrimaryStagingEvidenceWriter
         if (!is_writable($parent)) {
             throw new RuntimeException('Staging evidence output directory is not writable.');
         }
+
+        return [
+            'output_path' => $outputPath,
+            'parent' => $parent,
+            'path_exposed' => false,
+        ];
+    }
+
+    public function write(string $outputPath, array $manifest): array
+    {
+        $validated = $this->validateOutputPath($outputPath);
+        $outputPath = (string)$validated['output_path'];
+        $parent = (string)$validated['parent'];
 
         $json = json_encode(
             $manifest,
