@@ -20,95 +20,179 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     throw new RuntimeException('Expected exception was not thrown.');
 };
 
-$now = 1_800_000_000;
-$disabled = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig([]);
-$assertTrue($disabled->enabled() === false, 'Request session must default to disabled');
-$assertTrue(($disabled->safeSummary()['webhook_allowed'] ?? true) === false, 'Disabled request session must still forbid webhook');
+$now = strtotime('2026-07-20T12:00:00+00:00');
+$config = [
+    'staging_db_primary_request_session' => [
+        'enabled' => true,
+        'contract_version' => RuntimePrimaryStagingRequestSessionConfig::CONTRACT_VERSION,
+        'allowed_entrypoints' => ['api'],
+        'baseline_revision' => 10,
+        'max_revision_delta' => 4,
+        'max_worker_ticks' => 6,
+        'lease_seconds' => 60,
+        'expires_at_utc' => '2026-07-20T12:20:00+00:00',
+    ],
+];
+$session = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($config);
+$session->assertEnabledForApi(10, 12, $now);
+$assertTrue($session->enabled(), 'Enabled request session must report enabled');
+$assertTrue($session->baselineRevision() === 10, 'Request session must preserve baseline');
+$assertTrue($session->maximumRevision() === 14, 'Request session must compute bounded maximum');
+$assertTrue($session->remainingRevisions(12) === 2, 'Request session must compute remaining revisions');
+$assertTrue($session->maxWorkerTicks() === 6, 'Request session must preserve worker bound');
+$assertTrue($session->leaseSeconds() === 60, 'Request session must preserve lease seconds');
+$assertTrue(($session->safeSummary(12)['api_only'] ?? false) === true, 'Request session must remain API-only');
+
+$zulu = $config;
+$zulu['staging_db_primary_request_session']['expires_at_utc'] = '2026-07-20T12:20:00Z';
+RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($zulu)
+    ->assertEnabledForApi(10, 12, $now);
+$assertions++;
+
 $assertThrows(
-    static fn() => $disabled->assertEnabledForApi(1, 1, $now),
-    'session is disabled'
+    static fn() => $session->assertEnabledForApi(9, 12, $now),
+    'baseline does not match evidence'
+);
+$assertThrows(
+    static fn() => $session->assertEnabledForApi(10, 15, $now),
+    'exceeds the bounded request session'
+);
+$assertThrows(
+    static fn() => $session->assertEnabledForApi(10, 9, $now),
+    'behind the request session baseline'
+);
+$assertThrows(
+    static fn() => $session->assertEnabledForApi(10, 12, 0),
+    'verification time is invalid'
 );
 
-$settings = [
-    'enabled' => true,
-    'contract_version' => RuntimePrimaryStagingRequestSessionConfig::CONTRACT_VERSION,
-    'allowed_entrypoints' => ['api'],
-    'baseline_revision' => 7,
-    'max_revision_delta' => 3,
-    'max_worker_ticks' => 4,
-    'lease_seconds' => 60,
-    'expires_at_utc' => gmdate(DATE_ATOM, $now + 900),
-];
-$session = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig([
-    'staging_db_primary_request_session' => $settings,
-]);
-$assertTrue($session->enabled() === true, 'Exact request session contract must enable');
-$assertTrue($session->baselineRevision() === 7, 'Request session must preserve baseline revision');
-$assertTrue($session->maximumRevision() === 10, 'Request session must calculate maximum revision');
-$assertTrue($session->remainingRevisions(8) === 2, 'Request session must calculate remaining revisions');
-$assertTrue($session->maxWorkerTicks() === 4, 'Request session must preserve worker tick bound');
-$assertTrue($session->leaseSeconds() === 60, 'Request session must preserve worker lease');
-$session->assertEnabledForApi(7, 7, $now);
-$assertTrue(true, 'Baseline revision must be accepted');
-$session->assertEnabledForApi(7, 10, $now);
-$assertTrue(true, 'Maximum bounded revision must be accepted');
+$expired = $config;
+$expired['staging_db_primary_request_session']['expires_at_utc'] = '2026-07-20T11:59:59+00:00';
+$expiredSession = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($expired);
+$assertThrows(
+    static fn() => $expiredSession->assertEnabledForApi(10, 10, $now),
+    'has expired'
+);
 
-$assertThrows(static fn() => $session->assertEnabledForApi(6, 7, $now), 'baseline does not match evidence');
-$assertThrows(static fn() => $session->assertEnabledForApi(7, 6, $now), 'behind the request session baseline');
-$assertThrows(static fn() => $session->assertEnabledForApi(7, 11, $now), 'exceeds the bounded request session');
-$assertThrows(static fn() => $session->assertEnabledForApi(7, 7, $now + 901), 'session has expired');
-$assertThrows(static fn() => $session->assertEnabledForApi(7, 7, $now - 1000), 'more than 30 minutes away');
+$tooLong = $config;
+$tooLong['staging_db_primary_request_session']['expires_at_utc'] = '2026-07-20T12:31:00+00:00';
+$tooLongSession = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($tooLong);
+$assertThrows(
+    static fn() => $tooLongSession->assertEnabledForApi(10, 10, $now),
+    'more than 30 minutes away'
+);
 
-$invalidCases = [
-    [
-        ['staging_db_primary_request_session' => 'enabled'],
-        'configuration array',
-    ],
-    [
-        ['staging_db_primary_request_session' => ['enabled' => 'tru']],
-        'strict boolean',
-    ],
-    [
-        ['staging_db_primary_request_session' => array_replace($settings, ['contract_version' => 'wrong'])],
-        'contract version is invalid',
-    ],
-    [
-        ['staging_db_primary_request_session' => array_replace($settings, ['allowed_entrypoints' => ['webhook']])],
-        'supports only api',
-    ],
-    [
-        ['staging_db_primary_request_session' => array_replace($settings, ['baseline_revision' => 0])],
-        'baseline revision must be positive',
-    ],
-    [
-        ['staging_db_primary_request_session' => array_replace($settings, [
-            'max_revision_delta' => 4,
-            'max_worker_ticks' => 3,
-        ])],
-        'must cover the revision delta',
-    ],
-    [
-        ['staging_db_primary_request_session' => array_replace($settings, ['lease_seconds' => 10])],
-        'lease must be between 30 and 300',
-    ],
-    [
-        ['staging_db_primary_request_session' => array_replace($settings, [
-            'allowed_entrypoints' => ['api', 'api'],
-        ])],
-        'contains duplicates',
-    ],
-    [
-        ['staging_db_primary_request_session' => array_replace($settings, [
-            'expires_at_utc' => '2030-01-01T00:00:00',
-        ])],
-        'explicit utc offset',
-    ],
-];
-foreach ($invalidCases as [$application, $message]) {
+$wrongEntrypoint = $config;
+$wrongEntrypoint['staging_db_primary_request_session']['allowed_entrypoints'] = ['api', 'webhook'];
+$assertThrows(
+    static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($wrongEntrypoint),
+    'supports only api'
+);
+foreach ([['API'], [' api'], ['api '], [1]] as $malformedEntrypoints) {
+    $changed = $config;
+    $changed['staging_db_primary_request_session']['allowed_entrypoints'] = $malformedEntrypoints;
     $assertThrows(
-        static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($application),
-        $message
+        static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($changed),
+        $malformedEntrypoints === [1] ? 'values must be strings' : 'supports only api'
     );
 }
+$duplicates = $config;
+$duplicates['staging_db_primary_request_session']['allowed_entrypoints'] = ['api', 'api'];
+$assertThrows(
+    static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($duplicates),
+    'contains duplicates'
+);
+
+$wrongContract = $config;
+$wrongContract['staging_db_primary_request_session']['contract_version'] = 'other';
+$assertThrows(
+    static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($wrongContract),
+    'contract version is invalid'
+);
+foreach ([
+    ' ' . RuntimePrimaryStagingRequestSessionConfig::CONTRACT_VERSION,
+    RuntimePrimaryStagingRequestSessionConfig::CONTRACT_VERSION . ' ',
+] as $malformedContract) {
+    $changed = $config;
+    $changed['staging_db_primary_request_session']['contract_version'] = $malformedContract;
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($changed),
+        'contract version is invalid'
+    );
+}
+
+foreach ([
+    'baseline_revision',
+    'max_revision_delta',
+    'max_worker_ticks',
+    'lease_seconds',
+] as $integerField) {
+    foreach (['10', 10.0, true, null] as $badValue) {
+        $changed = $config;
+        $changed['staging_db_primary_request_session'][$integerField] = $badValue;
+        $assertThrows(
+            static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($changed),
+            'must be an integer value'
+        );
+    }
+}
+
+$invalidWorkerBound = $config;
+$invalidWorkerBound['staging_db_primary_request_session']['max_worker_ticks'] = 2;
+$assertThrows(
+    static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($invalidWorkerBound),
+    'must cover the revision delta'
+);
+$invalidLease = $config;
+$invalidLease['staging_db_primary_request_session']['lease_seconds'] = 20;
+$assertThrows(
+    static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($invalidLease),
+    'lease must be between 30 and 300'
+);
+
+foreach ([
+    '2026-07-20 12:20:00',
+    ' 2026-07-20T12:20:00+00:00',
+    '2026-07-20T12:20:00+00:00 ',
+    '2026-02-30T12:20:00+00:00',
+    '2026-07-20T12:20+00:00',
+] as $malformedExpiry) {
+    $changed = $config;
+    $changed['staging_db_primary_request_session']['expires_at_utc'] = $malformedExpiry;
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($changed),
+        str_contains($malformedExpiry, '02-30') ? 'is invalid' : 'exact iso-8601 timestamp'
+    );
+}
+
+foreach (['true', 1, 0, null] as $ambiguousEnabled) {
+    $changed = $config;
+    $changed['staging_db_primary_request_session']['enabled'] = $ambiguousEnabled;
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($changed),
+        'strict boolean'
+    );
+}
+foreach (['contract_version', 'expires_at_utc'] as $stringField) {
+    $changed = $config;
+    $changed['staging_db_primary_request_session'][$stringField] = 123;
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($changed),
+        'must be a string value'
+    );
+}
+
+$malformedBlock = ['staging_db_primary_request_session' => 'enabled'];
+$assertThrows(
+    static fn() => RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($malformedBlock),
+    'configuration array'
+);
+
+$disabled = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig([]);
+$assertTrue(!$disabled->enabled(), 'Missing request session config must stay disabled');
+$assertThrows(
+    static fn() => $disabled->assertEnabledForApi(1, 1, $now),
+    'request session is disabled'
+);
 
 fwrite(STDOUT, "RuntimePrimaryStagingRequestSessionConfigTest passed: {$assertions} assertions.\n");
