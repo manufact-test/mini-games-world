@@ -60,6 +60,12 @@ $assertTrue(
     'Portable runner must protect artifact directory and files'
 );
 $assertTrue(
+    str_contains($runner, 'cp "$MANIFEST_FILE" "$MANIFEST_ARTIFACT_FILE"')
+        && str_contains($runner, 'copied focused suite manifest fingerprint does not match')
+        && str_contains($runner, 'focused-suite-manifest.json'),
+    'Portable runner must archive the exact verified suite manifest'
+);
+$assertTrue(
     str_contains($runner, 'git status --porcelain=v1 --untracked-files=no')
         && str_contains($runner, 'focused suite changed tracked files')
         && str_contains($runner, 'tracked_worktree_unchanged'),
@@ -136,8 +142,9 @@ $assertTrue(
     str_contains($workflow, 'persist-credentials: false')
         && str_contains($workflow, 'clean: true')
         && str_contains($workflow, 'bash ops/ci/run-portable-focused-suite.sh')
-        && str_contains($workflow, 'actions/upload-artifact@v4'),
-    'Workflow must use a clean non-credentialed checkout and portable runner'
+        && str_contains($workflow, 'actions/upload-artifact@v4')
+        && str_contains($workflow, 'focused-suite-manifest.json'),
+    'Workflow must upload log, summary and exact manifest from a clean checkout'
 );
 $assertTrue(
     !str_contains($workflow, 'secrets.')
