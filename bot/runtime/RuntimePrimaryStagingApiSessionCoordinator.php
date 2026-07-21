@@ -145,12 +145,6 @@ final class RuntimePrimaryStagingApiSessionCoordinator
             'production_changed' => false,
         ];
 
-        RuntimePrimaryEntrypointStorageContext::install(
-            $storage,
-            'api',
-            $resolutionReport
-        );
-
         $worker = new RuntimePrimaryProjectionWorkerAdapter(
             new RuntimePrimaryProjectionWorker(
                 $database,
@@ -175,8 +169,14 @@ final class RuntimePrimaryStagingApiSessionCoordinator
         }
         array_unshift($hooks, $hook);
         if (($hooks[0] ?? null) !== $hook) {
-            throw new RuntimeException('DB-primary API request finalizer was not registered first.');
+            throw new RuntimeException('DB-primary API request finalizer was not prepared first.');
         }
+
+        RuntimePrimaryEntrypointStorageContext::install(
+            $storage,
+            'api',
+            $resolutionReport
+        );
         $GLOBALS['mgw_api_success_hooks'] = $hooks;
         $GLOBALS['mgw_api_db_primary_finalization_hook'] = $hook;
 
