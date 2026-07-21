@@ -40,14 +40,22 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         $rawDataDir = str_replace('\\', '/', trim((string)(
             $this->baseConfig['data_dir'] ?? ''
         )));
-        if ($rawDataDir === '' || is_link($rawDataDir) || !is_dir($rawDataDir)) {
+        if ($rawDataDir !== '/') $rawDataDir = rtrim($rawDataDir, '/');
+        if ($rawDataDir === ''
+            || !str_starts_with($rawDataDir, '/')
+            || is_link($rawDataDir)
+            || !is_dir($rawDataDir)) {
             throw new RuntimeException('Read-only API smoke JSON rollback data directory is unavailable or unsafe.');
         }
         $canonicalDataDir = realpath($rawDataDir);
         if (!is_string($canonicalDataDir)) {
             throw new RuntimeException('Read-only API smoke JSON rollback data directory is unavailable or unsafe.');
         }
-        $canonicalDataDir = rtrim(str_replace('\\', '/', $canonicalDataDir), '/');
+        $canonicalDataDir = str_replace('\\', '/', $canonicalDataDir);
+        if ($canonicalDataDir !== '/') $canonicalDataDir = rtrim($canonicalDataDir, '/');
+        if (!hash_equals($canonicalDataDir, $rawDataDir)) {
+            throw new RuntimeException('Read-only API smoke JSON rollback data directory must be canonical and symlink-free.');
+        }
         if ($canonicalDataDir === $this->projectRoot
             || str_starts_with($canonicalDataDir, $this->projectRoot . '/')) {
             throw new RuntimeException('Read-only API smoke JSON rollback data directory must be outside the checkout.');
@@ -203,6 +211,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
                 'expires_at_utc' => $expiresAtUtc,
                 'json_default_verified' => true,
                 'rollback_data_dir_external' => true,
+                'rollback_data_dir_canonical' => true,
                 'persistent_config_changed' => false,
                 'selector_enabled_in_memory_only' => true,
                 'request_session_enabled_in_memory_only' => true,
