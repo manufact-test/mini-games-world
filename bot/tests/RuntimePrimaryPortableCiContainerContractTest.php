@@ -74,15 +74,18 @@ $assertTrue(
 $assertTrue(
     str_contains($wrapper, 'GIT_CONFIG_KEY_0=safe.directory')
         && str_contains($wrapper, 'GIT_CONFIG_VALUE_0=/workspace')
+        && str_contains($wrapper, 'GIT_OPTIONAL_LOCKS=0')
         && str_contains($wrapper, 'MGW_CI_OUTPUT_DIR=/artifacts')
         && str_contains($wrapper, 'MGW_CI_TIMEOUT_SECONDS="$TIMEOUT_SECONDS"'),
-    'Container runtime must bind Git safety and portable CI output/timeout configuration'
+    'Container runtime must bind read-only Git safety and portable CI output/timeout configuration'
 );
 $assertTrue(
     str_contains($wrapper, 'container artifacts must stay outside the repository checkout')
         && str_contains($wrapper, 'container artifacts must not be stored inside public_html')
-        && str_contains($wrapper, 'MGW_CI_CONTAINER_OUTPUT_DIR must not be a symbolic link'),
-    'Container wrapper must protect host artifact paths'
+        && str_contains($wrapper, 'MGW_CI_CONTAINER_OUTPUT_DIR must not be a symbolic link')
+        && str_contains($wrapper, 'container artifact directory must be empty before the run')
+        && str_contains($wrapper, 'find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1'),
+    'Container wrapper must protect a fresh exact host artifact bundle'
 );
 $assertTrue(
     !str_contains($wrapper, '--privileged')
