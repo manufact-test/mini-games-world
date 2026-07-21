@@ -30,6 +30,27 @@ $assertTrue(
     'Smoke operation must use only status, readOnly and fetchAll'
 );
 $assertTrue(
+    str_contains($smoke, 'RuntimePrimaryStagingEvidenceV4Verifier::MANIFEST_VERSION')
+        && str_contains($smoke, 'RuntimePrimaryStagingSelectorEvidence::CONTRACT_VERSION')
+        && str_contains($smoke, 'RuntimePrimaryStagingRequestSessionConfig::CONTRACT_VERSION')
+        && str_contains($smoke, "'request_session_evidence_fingerprint'")
+        && str_contains($smoke, "'database_identity_fingerprint'"),
+    'Smoke operation must require exact lifecycle v4, selector/session contracts and fingerprints'
+);
+$assertTrue(
+    str_contains($smoke, 'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed() !== false')
+        && substr_count($smoke, 'legacyJsonBridgeAllowed() !== false') === 2
+        && str_contains($smoke, 'lost legacy bridge suppression after finalization'),
+    'Smoke operation must verify legacy bridge suppression before and after finalization'
+);
+$assertTrue(
+    str_contains($smoke, "(int)\$context['state_revision'] !== (int)\$before['state_revision']")
+        && str_contains($smoke, 'context no longer matches current DB-primary state')
+        && str_contains($smoke, "'context_state_matched' => true")
+        && str_contains($smoke, "'lifecycle_v4_verified' => true"),
+    'Smoke operation must bind immutable request context to exact current state'
+);
+$assertTrue(
     str_contains($smoke, "(int)(\$finalization['worker_tick_count'] ?? -1) !== 0")
         && str_contains($smoke, "(int)(\$finalization['final_state_revision'] ?? 0)")
         && str_contains($smoke, "\$before !== \$after")
