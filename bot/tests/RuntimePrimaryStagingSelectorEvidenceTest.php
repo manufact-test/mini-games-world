@@ -25,8 +25,10 @@ $current = RuntimePrimaryStagingSelectorEvidence::inspect($projectRoot);
 $assertTrue(($current['ready'] ?? false) === true, 'Current guarded selector sources must satisfy evidence contract');
 $assertTrue(($current['blockers'] ?? ['unexpected']) === [], 'Current selector evidence must have no blockers');
 $assertTrue(($current['default_storage_driver'] ?? '') === 'json', 'Selector evidence must preserve JSON default');
+$assertTrue(($current['api_only'] ?? false) === true, 'Selector evidence must be API-only');
+$assertTrue(($current['webhook_allowed'] ?? true) === false, 'Selector evidence must forbid webhook');
 $assertTrue(($current['production_selector_allowed'] ?? true) === false, 'Selector evidence must forbid production routing');
-$assertTrue(count((array)($current['sources'] ?? [])) === 17, 'Selector evidence must fingerprint the complete seventeen-file request contour');
+$assertTrue(count((array)($current['sources'] ?? [])) === 19, 'Selector evidence must fingerprint the complete nineteen-file request contour');
 foreach ((array)$current['sources'] as $sha) {
     $assertTrue(preg_match('/^[a-f0-9]{64}$/', (string)$sha) === 1, 'Every selector source fingerprint must be SHA-256');
 }
@@ -53,6 +55,8 @@ $paths = [
     'bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php',
     'bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php',
     'bot/runtime/RuntimePrimaryEntrypointStorageContext.php',
+    'bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php',
+    'bot/runtime/RuntimePrimaryStagingApiRequestFinalizationHook.php',
 ];
 try {
     foreach ($paths as $relative) {
@@ -100,12 +104,12 @@ try {
         'Direct JSON bypass must remain explicit'
     );
 
-    unlink($fixture . '/bot/runtime/RuntimePrimaryEntrypointStorageContext.php');
-    $missing = RuntimePrimaryStagingSelectorEvidence::inspect($fixture);
-    $assertTrue(($missing['ready'] ?? true) === false, 'Missing context source must block selector evidence');
+    unlink($fixture . '/bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php');
+    $missingCoordinator = RuntimePrimaryStagingSelectorEvidence::inspect($fixture);
+    $assertTrue(($missingCoordinator['ready'] ?? true) === false, 'Missing API session coordinator must block selector evidence');
     $assertTrue(
-        in_array('Selector evidence source is unavailable: storage_context.', (array)($missing['blockers'] ?? []), true),
-        'Missing selector source must remain explicit'
+        in_array('Selector evidence source is unavailable: api_session_coordinator.', (array)($missingCoordinator['blockers'] ?? []), true),
+        'Missing coordinator source must remain explicit'
     );
 } finally {
     $remove($fixture);
