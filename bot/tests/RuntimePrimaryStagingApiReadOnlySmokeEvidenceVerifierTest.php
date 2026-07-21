@@ -127,6 +127,24 @@ try {
     $assertThrows(static fn() => $verify(strtoupper($commit)), 'full lowercase sha-1');
     $assertThrows(static fn() => $verify('', strtoupper($databaseIdentity)), 'must be sha-256');
     $assertThrows(static fn() => $verify('', '', strtoupper($evidenceFingerprint)), 'must be sha-256');
+    $assertThrows(static fn() => $verify($commit . ' '), 'full lowercase sha-1');
+    $assertThrows(static fn() => $verify('', $databaseIdentity . "\n"), 'must be sha-256');
+    $assertThrows(static fn() => $verify('', '', $evidenceFingerprint . "\t"), 'must be sha-256');
+
+    $changed = $base;
+    $changed['repository_commit'] = $commit . ' ';
+    $write($changed);
+    $assertThrows(static fn() => $verify(), 'repository commit format is invalid');
+
+    $changed = $base;
+    $changed['database_identity_fingerprint'] = $databaseIdentity . ' ';
+    $write($changed);
+    $assertThrows(static fn() => $verify(), 'sha-256 field is invalid');
+
+    $changed = $base;
+    $changed['evidence_fingerprint'] = $evidenceFingerprint . "\n";
+    $write($changed);
+    $assertThrows(static fn() => $verify(), 'sha-256 field is invalid');
 
     $changed = $base;
     $changed['outbox_event_count'] = 2;
@@ -160,6 +178,11 @@ try {
     $changed['generated_at_utc'] = gmdate(DATE_ATOM, $now + 31);
     $write($changed);
     $assertThrows(static fn() => $verify(), 'unexpectedly in the future');
+
+    $changed = $base;
+    $changed['generated_at_utc'] = gmdate(DATE_ATOM, $now - 5) . ' ';
+    $write($changed);
+    $assertThrows(static fn() => $verify(), 'exact UTC +00:00 format');
 
     $changed = $base;
     $changed['unexpected'] = true;
