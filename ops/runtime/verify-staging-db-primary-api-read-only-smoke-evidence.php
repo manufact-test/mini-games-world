@@ -6,70 +6,64 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-$reportFile = '';
-$expectedCommit = '';
-$expectedDatabaseIdentity = '';
-$expectedEvidenceFingerprint = '';
-$maximumAgeSeconds = 3600;
-$expectedHookCount = 5;
-$expectedFilterCount = 2;
+$values = [
+    'report' => '',
+    'commit' => '',
+    'database' => '',
+    'evidence' => '',
+    'age' => '3600',
+    'hooks' => '5',
+    'filters' => '2',
+];
+$seen = [];
+$prefixes = [
+    '--report=' => 'report',
+    '--expected-commit=' => 'commit',
+    '--expected-database-identity=' => 'database',
+    '--expected-evidence-fingerprint=' => 'evidence',
+    '--max-age-seconds=' => 'age',
+    '--expected-bootstrap-hooks=' => 'hooks',
+    '--expected-bootstrap-filters=' => 'filters',
+];
 
 foreach (array_slice($argv ?? [], 1) as $argument) {
-    $matched = false;
-    foreach ([
-        '--report=' => 'report',
-        '--expected-commit=' => 'commit',
-        '--expected-database-identity=' => 'database',
-        '--expected-evidence-fingerprint=' => 'evidence',
-        '--max-age-seconds=' => 'age',
-        '--expected-bootstrap-hooks=' => 'hooks',
-        '--expected-bootstrap-filters=' => 'filters',
-    ] as $prefix => $name) {
+    $matchedName = '';
+    $matchedPrefix = '';
+    foreach ($prefixes as $prefix => $name) {
         if (!str_starts_with($argument, $prefix)) continue;
-        $value = trim(substr($argument, strlen($prefix)));
-        if ($name === 'report') {
-            if ($reportFile !== '') {
-                fwrite(STDERR, "--report may be specified only once.\n");
-                exit(2);
-            }
-            $reportFile = str_replace('\\', '/', $value);
-        } elseif ($name === 'commit') {
-            if ($expectedCommit !== '') {
-                fwrite(STDERR, "--expected-commit may be specified only once.\n");
-                exit(2);
-            }
-            $expectedCommit = strtolower($value);
-        } elseif ($name === 'database') {
-            if ($expectedDatabaseIdentity !== '') {
-                fwrite(STDERR, "--expected-database-identity may be specified only once.\n");
-                exit(2);
-            }
-            $expectedDatabaseIdentity = strtolower($value);
-        } elseif ($name === 'evidence') {
-            if ($expectedEvidenceFingerprint !== '') {
-                fwrite(STDERR, "--expected-evidence-fingerprint may be specified only once.\n");
-                exit(2);
-            }
-            $expectedEvidenceFingerprint = strtolower($value);
-        } else {
-            if ($value === '' || preg_match('/^\d+$/', $value) !== 1) {
-                fwrite(STDERR, "Numeric verifier options must be non-negative integers.\n");
-                exit(2);
-            }
-            if ($name === 'age') $maximumAgeSeconds = (int)$value;
-            elseif ($name === 'hooks') $expectedHookCount = (int)$value;
-            elseif ($name === 'filters') $expectedFilterCount = (int)$value;
-        }
-        $matched = true;
+        $matchedName = $name;
+        $matchedPrefix = $prefix;
         break;
     }
-    if (!$matched) {
+    if ($matchedName === '') {
         fwrite(STDERR, "Unknown read-only smoke evidence verifier argument.\n");
+        exit(2);
+    }
+    if (isset($seen[$matchedName])) {
+        fwrite(STDERR, "Verifier option may be specified only once: {$matchedPrefix}\n");
+        exit(2);
+    }
+    $seen[$matchedName] = true;
+    $value = trim(substr($argument, strlen($matchedPrefix)));
+    if ($matchedName === 'report') {
+        $value = str_replace('\\', '/', $value);
+    }
+    $values[$matchedName] = $value;
+}
+
+foreach (['report', 'commit', 'database', 'evidence'] as $required) {
+    if (!isset($seen[$required]) || $values[$required] === '') {
+        fwrite(STDERR, "Missing required read-only smoke evidence verifier option: {$required}.\n");
         exit(2);
     }
 }
 
-if ($reportFile === '' || !str_starts_with($reportFile, '/')) {
+$reportFile = $values['report'];
+$expectedCommit = $values['commit'];
+$expectedDatabaseIdentity = $values['database'];
+$expectedEvidenceFingerprint = $values['evidence'];
+
+if (!str_starts_with($reportFile, '/')) {
     fwrite(STDERR, "Verifier requires --report=/absolute/private/report.json.\n");
     exit(2);
 }
@@ -85,6 +79,28 @@ foreach ([
         fwrite(STDERR, "Verifier requires {$label}=<64 lowercase hex>.\n");
         exit(2);
     }
+}
+foreach (['age', 'hooks', 'filters'] as $numeric) {
+    if ($values[$numeric] === '' || preg_match('/^\d+$/', $values[$numeric]) !== 1) {
+        fwrite(STDERR, "Numeric verifier options must be non-negative integers.\n");
+        exit(2);
+    }
+}
+
+$maximumAgeSeconds = (int)$values['age'];
+$expectedHookCount = (int)$values['hooks'];
+$expectedFilterCount = (int)$values['filters'];
+if ($maximumAgeSeconds < 60 || $maximumAgeSeconds > 86_400) {
+    fwrite(STDERR, "--max-age-seconds must be between 60 and 86400.\n");
+    exit(2);
+}
+if ($expectedHookCount < 1 || $expectedHookCount > 32) {
+    fwrite(STDERR, "--expected-bootstrap-hooks must be between 1 and 32.\n");
+    exit(2);
+}
+if ($expectedFilterCount < 0 || $expectedFilterCount > 32) {
+    fwrite(STDERR, "--expected-bootstrap-filters must be between 0 and 32.\n");
+    exit(2);
 }
 
 $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
