@@ -35,6 +35,9 @@ $private = $fixture . '/private';
 $other = $fixture . '/other';
 mkdir($private, 0700, true);
 mkdir($other, 0700, true);
+$private = (string)realpath($private);
+$other = (string)realpath($other);
+$canonicalProject = (string)realpath($projectRoot);
 try {
     $manifest = ['manifest_version' => 'v2-staging-db-primary-evidence', 'safe' => true];
     $path = $private . '/evidence.json';
@@ -42,7 +45,7 @@ try {
     file_put_contents($path, $raw);
     chmod($path, 0600);
 
-    $loader = new RuntimePrimaryStagingActivationEvidenceLoader($projectRoot, $private);
+    $loader = new RuntimePrimaryStagingActivationEvidenceLoader($canonicalProject, $private);
     $loaded = $loader->load($path);
     $assertTrue(($loaded['manifest'] ?? []) === $manifest, 'Evidence loader must preserve the manifest');
     $assertTrue(($loaded['permissions'] ?? '') === '0600', 'Evidence loader must require 0600 permissions');
@@ -50,9 +53,25 @@ try {
     $assertTrue(hash_equals(hash('sha256', $raw), (string)($loaded['file_sha256'] ?? '')), 'Evidence loader must fingerprint exact file bytes');
     $assertTrue(($loaded['path_exposed'] ?? true) === false, 'Evidence loader must not expose private paths');
 
+    foreach ([' ' . $path, $path . ' ', str_replace('/', '\\', $path), $path . '/'] as $malformed) {
+        $assertThrows(
+            static fn() => $loader->load($malformed),
+            str_contains($malformed, '\\') || !str_starts_with($malformed, '/')
+                ? 'exact absolute linux file path'
+                : (str_ends_with($malformed, '/') ? 'exact absolute linux file path' : 'unavailable or unreadable')
+        );
+    }
+
     chmod($path, 0644);
     $assertThrows(static fn() => $loader->load($path), 'permissions must be 0600');
     chmod($path, 0600);
+
+    chmod($private, 0770);
+    $assertThrows(
+        static fn() => new RuntimePrimaryStagingActivationEvidenceLoader($canonicalProject, $private),
+        'must not be group/world writable'
+    );
+    chmod($private, 0700);
 
     $outside = $other . '/evidence.json';
     file_put_contents($outside, $raw);
@@ -74,13 +93,44 @@ try {
     chmod($large, 0600);
     $assertThrows(static fn() => $loader->load($large), 'file size is invalid');
 
+    $assertThrows(
+        static fn() => new RuntimePrimaryStagingActivationEvidenceLoader($canonicalProject . '/', $private),
+        'exact canonical linux directory'
+    );
+    $assertThrows(
+        static fn() => new RuntimePrimaryStagingActivationEvidenceLoader($canonicalProject, $private . '/'),
+        'exact canonical linux directory'
+    );
+    $assertThrows(
+        static fn() => new RuntimePrimaryStagingActivationEvidenceLoader(
+            str_replace('/', '\\', $canonicalProject),
+            $private
+        ),
+        'exact canonical linux directory'
+    );
+
     if (function_exists('symlink')) {
         $link = $private . '/link.json';
         if (@symlink($path, $link)) {
             $assertThrows(static fn() => $loader->load($link), 'must not be a symbolic link');
         }
+        $parentLink = $fixture . '/private-link';
+        if (@symlink($private, $parentLink)) {
+            $assertThrows(
+                static fn() => $loader->load($parentLink . '/evidence.json'),
+                'exact canonical path'
+            );
+            $assertThrows(
+                static fn() => new RuntimePrimaryStagingActivationEvidenceLoader(
+                    $canonicalProject,
+                    $parentLink
+                ),
+                'unavailable or noncanonical'
+            );
+        }
     }
 } finally {
+    @chmod($private, 0700);
     $remove($fixture);
 }
 
