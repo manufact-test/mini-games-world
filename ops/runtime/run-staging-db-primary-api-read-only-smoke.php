@@ -154,6 +154,9 @@ try {
         'action' => (string)($report['action'] ?? ''),
         'state_revision' => (int)($report['state_revision'] ?? 0),
         'state_sha256' => (string)($report['state_sha256'] ?? ''),
+        'projection_contract_version' => (string)(
+            $report['projection_contract_version'] ?? ''
+        ),
         'outbox_event_count' => (int)($report['outbox_event_count'] ?? 0),
         'outbox_fingerprint' => (string)($report['outbox_fingerprint'] ?? ''),
         'top_level_count' => (int)($report['top_level_count'] ?? 0),
@@ -180,6 +183,9 @@ try {
         'lifecycle_v4_verified' => ($report['lifecycle_v4_verified'] ?? false) === true,
         'legacy_json_bridges_suppressed' => (
             $report['legacy_json_bridges_suppressed'] ?? false
+        ) === true,
+        'completed_events_lease_free' => (
+            $report['completed_events_lease_free'] ?? false
         ) === true,
         'state_unchanged' => ($report['state_unchanged'] ?? false) === true,
         'snapshot_unchanged' => ($report['snapshot_unchanged'] ?? false) === true,
