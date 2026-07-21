@@ -87,7 +87,7 @@ $assertTrue(
         && str_contains($overlay, '!hash_equals($canonicalDataDir, $rawDataDir)')
         && str_contains($overlay, 'must be canonical and symlink-free')
         && str_contains($overlay, 'must be outside the checkout')
-        && str_contains($overlay, "$overlay['storage_driver'] = 'json';")
+        && str_contains($overlay, "\$overlay['storage_driver'] = 'json';")
         && str_contains($overlay, "'json_default_verified' => true")
         && str_contains($overlay, "'rollback_data_dir_external' => true")
         && str_contains($overlay, "'rollback_data_dir_canonical' => true"),
@@ -102,10 +102,10 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($overlay, '$databaseIdentity = $databaseConfig->identityFingerprint();')
-        && str_contains($overlay, "$evidenceDatabaseIdentity = (string)(")
-        && str_contains($overlay, "$evidenceCommit = (string)(\$verification['repository_commit'] ?? '');")
-        && str_contains($overlay, "$evidenceFingerprint = (string)(")
-        && str_contains($overlay, "$baselineSha = (string)(\$baseline['state_sha256'] ?? '');")
+        && str_contains($overlay, "\$evidenceDatabaseIdentity = (string)(")
+        && str_contains($overlay, "\$evidenceCommit = (string)(\$verification['repository_commit'] ?? '');")
+        && str_contains($overlay, "\$evidenceFingerprint = (string)(")
+        && str_contains($overlay, "\$baselineSha = (string)(\$baseline['state_sha256'] ?? '');")
         && !str_contains($overlay, '$databaseIdentity = strtolower(')
         && !str_contains($overlay, '$evidenceDatabaseIdentity = strtolower(')
         && !str_contains($overlay, '$evidenceCommit = strtolower(')
