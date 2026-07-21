@@ -38,26 +38,26 @@ final class RuntimePrimaryPrivateConfigGuard
             throw new RuntimeException('Staging project root must use its exact canonical path.');
         }
 
-        clearstatcache(true, $canonicalConfig);
-        $configMode = fileperms($canonicalConfig);
-        if (!is_int($configMode) || ($configMode & 0777) !== 0600) {
-            throw new RuntimeException('Active staging config must have exact mode 0600.');
-        }
-
         $privateDir = realpath(dirname($canonicalConfig));
-        if (!is_string($privateDir) || !is_dir($privateDir) || is_link($privateDir)) {
+        if (!is_string($privateDir) || !is_dir($privateDir)) {
             throw new RuntimeException('Active staging private config directory is unavailable or unsafe.');
         }
         if ($privateDir === '' || $privateDir === '/') {
             throw new RuntimeException('Active staging private config directory is unsafe.');
         }
+        if ($privateDir === $canonicalProject || str_starts_with($privateDir, $canonicalProject . '/')) {
+            throw new RuntimeException('Staging evidence requires an external private config outside the deployed project.');
+        }
+
+        clearstatcache(true, $canonicalConfig);
+        $configMode = fileperms($canonicalConfig);
+        if (!is_int($configMode) || ($configMode & 0777) !== 0600) {
+            throw new RuntimeException('Active staging config must have exact mode 0600.');
+        }
         clearstatcache(true, $privateDir);
         $privateMode = fileperms($privateDir);
         if (!is_int($privateMode) || ($privateMode & 0022) !== 0) {
             throw new RuntimeException('Active staging private config directory must not be group/world writable.');
-        }
-        if ($privateDir === $canonicalProject || str_starts_with($privateDir, $canonicalProject . '/')) {
-            throw new RuntimeException('Staging evidence requires an external private config outside the deployed project.');
         }
 
         $fingerprint = hash_file('sha256', $canonicalConfig);
