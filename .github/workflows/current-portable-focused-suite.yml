@@ -1,5 +1,6 @@
 name: Current Portable Focused Suite
 
+# Temporary GitHub-hosted gate while the repository is public during MVP development.
 on:
   pull_request:
     branches:
