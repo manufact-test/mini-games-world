@@ -6,37 +6,51 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-$evidenceDirectory = '';
-$expectedCommit = '';
+$values = [
+    'directory' => '',
+    'commit' => '',
+];
+$seen = [];
+$prefixes = [
+    '--evidence-dir=' => 'directory',
+    '--expected-commit=' => 'commit',
+];
+
 foreach (array_slice($argv ?? [], 1) as $argument) {
-    if (str_starts_with($argument, '--evidence-dir=')) {
-        if ($evidenceDirectory !== '') {
-            fwrite(STDERR, "--evidence-dir may be specified only once.\n");
-            exit(2);
-        }
-        $evidenceDirectory = str_replace(
-            '\\',
-            '/',
-            trim(substr($argument, strlen('--evidence-dir=')))
-        );
-        continue;
+    $matchedName = '';
+    $matchedPrefix = '';
+    foreach ($prefixes as $prefix => $name) {
+        if (!str_starts_with($argument, $prefix)) continue;
+        $matchedName = $name;
+        $matchedPrefix = $prefix;
+        break;
     }
-    if (str_starts_with($argument, '--expected-commit=')) {
-        if ($expectedCommit !== '') {
-            fwrite(STDERR, "--expected-commit may be specified only once.\n");
-            exit(2);
-        }
-        $expectedCommit = strtolower(trim(substr(
-            $argument,
-            strlen('--expected-commit=')
-        )));
-        continue;
+    if ($matchedName === '') {
+        fwrite(STDERR, "Unknown portable CI evidence verification argument.\n");
+        exit(2);
     }
-    fwrite(STDERR, "Unknown portable CI evidence verification argument.\n");
-    exit(2);
+    if (isset($seen[$matchedName])) {
+        fwrite(STDERR, "Portable CI verifier option may be specified only once: {$matchedPrefix}\n");
+        exit(2);
+    }
+    $seen[$matchedName] = true;
+    $value = substr($argument, strlen($matchedPrefix));
+    if ($matchedName === 'directory') {
+        $value = str_replace('\\', '/', $value);
+    }
+    $values[$matchedName] = $value;
 }
 
-if ($evidenceDirectory === '' || !str_starts_with($evidenceDirectory, '/')) {
+foreach (['directory', 'commit'] as $required) {
+    if (!isset($seen[$required]) || $values[$required] === '') {
+        fwrite(STDERR, "Missing required portable CI evidence verifier option: {$required}.\n");
+        exit(2);
+    }
+}
+
+$evidenceDirectory = $values['directory'];
+$expectedCommit = $values['commit'];
+if (!str_starts_with($evidenceDirectory, '/')) {
     fwrite(STDERR, "Portable CI evidence verification requires --evidence-dir=/absolute/path.\n");
     exit(2);
 }
