@@ -1,19 +1,22 @@
 name: Current Portable Focused Suite
 
 on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6r-read-only-smoke-evidence-verifier-v2
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mgw-current-portable-focused-${{ github.ref }}
-  cancel-in-progress: false
+  group: mgw-current-portable-focused-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   focused:
-    name: Current DB-primary smoke and evidence stack
-    runs-on: [self-hosted, linux, x64, mgw-ci]
+    name: Current DB-primary smoke stack
+    runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
       MGW_CI_OUTPUT_DIR: ${{ runner.temp }}/mgw-current-ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -25,6 +28,18 @@ jobs:
         with:
           persist-credentials: false
           clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: json, pdo, pdo_sqlite, openssl, mbstring
+          coverage: none
+
+      - name: Confirm exact PHP runtime
+        run: |
+          php -r 'printf("PHP_VERSION=%s\nPHP_VERSION_ID=%d\n", PHP_VERSION, PHP_VERSION_ID); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
+          timeout --version | head -n 1
 
       - name: Run current portable focused suite
         run: bash ops/ci/run-current-portable-focused-suite.sh
@@ -47,5 +62,5 @@ jobs:
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite.log
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-summary.json
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-manifest.json
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
