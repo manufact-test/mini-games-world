@@ -32,6 +32,7 @@ jobs:
           clean: true
 
       - name: Bind exact checked-out commit
+        id: bind
         run: |
           commit="$(git rev-parse --verify HEAD)"
           if [[ ! "$commit" =~ ^[a-f0-9]{40}$ ]]; then
@@ -39,6 +40,7 @@ jobs:
             exit 1
           fi
           printf 'MGW_CI_EXPECTED_COMMIT=%s\n' "$commit" >> "$GITHUB_ENV"
+          printf 'commit=%s\n' "$commit" >> "$GITHUB_OUTPUT"
           printf 'CHECKED_OUT_COMMIT=%s\n' "$commit"
 
       - name: Confirm exact PHP 8.3 runtime
@@ -79,7 +81,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-current-focused-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: mgw-current-focused-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite.log
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-summary.json
