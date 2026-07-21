@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PHP_BIN="${PHP_BIN:-php}"
@@ -25,7 +26,7 @@ esac
 (( TIMEOUT_SECONDS >= 60 && TIMEOUT_SECONDS <= 7200 )) \
   || fail 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200.'
 
-for command_name in bash git "$PHP_BIN"; do
+for command_name in bash git date find cp tee cat chmod mkdir "$PHP_BIN"; do
   command -v "$command_name" >/dev/null 2>&1 \
     || fail "required command is unavailable: $command_name"
 done
@@ -36,7 +37,7 @@ cd "$PROJECT_ROOT"
 [[ -f "$MANIFEST_FILE" ]] || fail "focused suite manifest is unavailable: $MANIFEST_FILE"
 [[ ! -L "$MANIFEST_FILE" ]] || fail 'focused suite manifest must not be a symbolic link.'
 
-PHP_VERSION_ID="$($PHP_BIN -r 'echo PHP_VERSION_ID;')"
+PHP_VERSION_ID="$("$PHP_BIN" -r 'echo PHP_VERSION_ID;')"
 [[ "$PHP_VERSION_ID" =~ ^[0-9]+$ ]] || fail 'PHP_VERSION_ID is invalid.'
 (( PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 )) \
   || fail 'portable CI requires PHP 8.3.x.'
@@ -46,7 +47,7 @@ for extension_name in json pdo pdo_sqlite openssl mbstring; do
     || fail "required PHP extension is unavailable: $extension_name"
 done
 
-MANIFEST_META="$($PHP_BIN -r '
+MANIFEST_META="$("$PHP_BIN" -r '
 $path = $argv[1];
 $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($data)
@@ -61,8 +62,8 @@ MANIFEST_SCRIPT_COUNT="${MANIFEST_META##*:}"
 [[ "$MANIFEST_SHA256" =~ ^[a-f0-9]{64}$ ]] || fail 'focused suite manifest SHA-256 is invalid.'
 [[ "$MANIFEST_SCRIPT_COUNT" =~ ^[0-9]+$ ]] || fail 'focused suite manifest script count is invalid.'
 
-TRACKED_BEFORE="$(git status --porcelain=v1 --untracked-files=no)"
-[[ -z "$TRACKED_BEFORE" ]] || fail 'tracked checkout changes are present before the suite.'
+WORKTREE_BEFORE="$(git status --porcelain=v1 --untracked-files=all)"
+[[ -z "$WORKTREE_BEFORE" ]] || fail 'checkout changes are present before the suite.'
 
 COMMIT_SHA="$(git rev-parse --verify HEAD)"
 [[ "$COMMIT_SHA" =~ ^[a-f0-9]{40}$ ]] || fail 'checkout commit SHA is invalid.'
@@ -77,6 +78,8 @@ case "$CANONICAL_OUTPUT_DIR" in
     fail 'portable CI artifacts must not be stored inside public_html.'
     ;;
 esac
+[[ -z "$(find "$CANONICAL_OUTPUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]] \
+  || fail 'portable CI artifact directory must be empty before the run.'
 chmod 0700 "$CANONICAL_OUTPUT_DIR" 2>/dev/null || true
 LOG_FILE="$CANONICAL_OUTPUT_DIR/focused-suite.log"
 SUMMARY_FILE="$CANONICAL_OUTPUT_DIR/focused-suite-summary.json"
@@ -85,7 +88,7 @@ MANIFEST_ARTIFACT_FILE="$CANONICAL_OUTPUT_DIR/focused-suite-manifest.json"
   || fail 'portable CI artifact files must not be symbolic links.'
 : > "$LOG_FILE"
 cp "$MANIFEST_FILE" "$MANIFEST_ARTIFACT_FILE"
-COPIED_MANIFEST_SHA256="$($PHP_BIN -r 'echo hash_file("sha256", $argv[1]);' "$MANIFEST_ARTIFACT_FILE")"
+COPIED_MANIFEST_SHA256="$("$PHP_BIN" -r 'echo hash_file("sha256", $argv[1]);' "$MANIFEST_ARTIFACT_FILE")"
 [[ "$COPIED_MANIFEST_SHA256" = "$MANIFEST_SHA256" ]] \
   || fail 'copied focused suite manifest fingerprint does not match.'
 chmod 0600 "$LOG_FILE" "$MANIFEST_ARTIFACT_FILE" 2>/dev/null || true
@@ -105,21 +108,21 @@ else
 fi
 set -e
 
-TRACKED_AFTER="$(git status --porcelain=v1 --untracked-files=no)"
+WORKTREE_AFTER="$(git status --porcelain=v1 --untracked-files=all)"
 WORKTREE_UNCHANGED=true
-if [[ -n "$TRACKED_AFTER" ]]; then
+if [[ -n "$WORKTREE_AFTER" ]]; then
   WORKTREE_UNCHANGED=false
   if (( SUITE_EXIT_CODE == 0 )); then
     SUITE_EXIT_CODE=3
   fi
-  printf 'portable-ci blocker: focused suite changed tracked files.\n' | tee -a "$LOG_FILE" >&2
+  printf 'portable-ci blocker: focused suite changed the repository checkout.\n' | tee -a "$LOG_FILE" >&2
 fi
 
 FINISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 FINISH_EPOCH="$(date +%s)"
 DURATION_SECONDS=$(( FINISH_EPOCH - START_EPOCH ))
-LOG_SHA256="$($PHP_BIN -r 'echo hash_file("sha256", $argv[1]);' "$LOG_FILE")"
-PHP_VERSION="$($PHP_BIN -r 'echo PHP_VERSION;')"
+LOG_SHA256="$("$PHP_BIN" -r 'echo hash_file("sha256", $argv[1]);' "$LOG_FILE")"
+PHP_VERSION="$("$PHP_BIN" -r 'echo PHP_VERSION;')"
 
 export MGW_CI_SUMMARY_FILE="$SUMMARY_FILE"
 export MGW_CI_COMMIT_SHA="$COMMIT_SHA"
