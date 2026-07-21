@@ -66,11 +66,15 @@ $assertTrue(
 $assertTrue(
     str_contains($overlay, 'requires JSON as the persistent default storage driver')
         && str_contains($overlay, 'JSON rollback data directory is unavailable or unsafe')
+        && str_contains($overlay, '!str_starts_with($rawDataDir, \'/\')')
+        && str_contains($overlay, '!hash_equals($canonicalDataDir, $rawDataDir)')
+        && str_contains($overlay, 'must be canonical and symlink-free')
         && str_contains($overlay, 'must be outside the checkout')
         && str_contains($overlay, "\$overlay['storage_driver'] = 'json';")
         && str_contains($overlay, "'json_default_verified' => true")
-        && str_contains($overlay, "'rollback_data_dir_external' => true"),
-    'Overlay must require an external JSON rollback source before activation'
+        && str_contains($overlay, "'rollback_data_dir_external' => true")
+        && str_contains($overlay, "'rollback_data_dir_canonical' => true"),
+    'Overlay must require an absolute canonical symlink-free external JSON rollback source'
 );
 $assertTrue(
     str_contains($overlay, 'persistent selector latch to be disabled')
