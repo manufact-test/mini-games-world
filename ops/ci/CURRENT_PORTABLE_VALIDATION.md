@@ -66,7 +66,9 @@ The runner requires:
 - PHP 8.3.x;
 - PHP extensions `json`, `pdo`, `pdo_sqlite`, `openssl`, `mbstring`;
 - standard commands `date`, `find`, `cp`, `tee`, `cat`, `chmod`, `mkdir`, `grep`;
-- optional GNU coreutils `timeout`.
+- GNU coreutils `timeout`.
+
+The runner fails before execution if a compatible GNU `timeout` is unavailable. It never silently falls back to an unbounded test run.
 
 The checkout must be outside `public_html` and completely clean, including untracked files, before execution. It must remain clean afterward.
 
@@ -128,7 +130,7 @@ MGW_CI_TIMEOUT_SECONDS=3600 \
   bash ops/ci/run-current-portable-focused-suite.sh
 ```
 
-Accepted range is 60–7200 seconds. GNU `timeout` is used only when compatible.
+Accepted range is 60–7200 seconds. GNU `timeout` is mandatory and enforces the selected bound with TERM followed by a bounded KILL grace period.
 
 ## Manual self-hosted workflow
 
