@@ -146,16 +146,19 @@ $assertTrue(
 );
 
 $assertTrue(
-    preg_match('/^on:\s*\n\s+workflow_dispatch:\s*$/m', $workflow) === 1
-        && preg_match('/^\s*(push|pull_request|schedule):/m', $workflow) !== 1,
-    'Current portable workflow must remain manual-only'
+    preg_match('/^on:\s*\n\s+pull_request:/m', $workflow) === 1
+        && preg_match('/^\s+workflow_dispatch:\s*$/m', $workflow) === 1
+        && str_contains($workflow, '- agent/mvp-14-8-6s-current-portable-validation')
+        && preg_match('/^\s*(push|schedule):/m', $workflow) !== 1,
+    'Current portable workflow must run only for the exact PR base or explicit manual dispatch'
 );
 $assertTrue(
-    str_contains($workflow, 'runs-on: [self-hosted, linux, x64, mgw-ci]')
-        && !str_contains($workflow, 'ubuntu-latest')
-        && !str_contains($workflow, 'windows-latest')
-        && !str_contains($workflow, 'macos-latest'),
-    'Current portable workflow must require the dedicated self-hosted runner labels'
+    str_contains($workflow, 'runs-on: ubuntu-latest')
+        && str_contains($workflow, 'uses: shivammathur/setup-php@v2')
+        && str_contains($workflow, "php-version: '8.3'")
+        && str_contains($workflow, 'extensions: json, pdo, pdo_sqlite, openssl, mbstring')
+        && !str_contains($workflow, 'runs-on: [self-hosted'),
+    'Current portable workflow must use GitHub-hosted Linux with exact PHP 8.3'
 );
 $assertTrue(
     str_contains($workflow, 'persist-credentials: false')
@@ -164,7 +167,8 @@ $assertTrue(
         && str_contains($workflow, 'github.run_id')
         && str_contains($workflow, 'github.run_attempt')
         && str_contains($workflow, 'actions/upload-artifact@v4')
-        && str_contains($workflow, 'current-focused-suite-manifest.json'),
+        && str_contains($workflow, 'current-focused-suite-manifest.json')
+        && str_contains($workflow, 'if-no-files-found: error'),
     'Workflow must use attempt-isolated evidence from a clean credential-free checkout'
 );
 $assertTrue(
