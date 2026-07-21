@@ -24,11 +24,22 @@ jobs:
       MGW_CI_VERIFICATION_FILE: ${{ runner.temp }}/mgw-current-ci-verification-${{ github.run_id }}-${{ github.run_attempt }}.json
 
     steps:
-      - name: Checkout exact repository revision
+      - name: Checkout exact deployable revision
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           clean: true
+
+      - name: Bind exact checked-out commit
+        run: |
+          commit="$(git rev-parse --verify HEAD)"
+          if [[ ! "$commit" =~ ^[a-f0-9]{40}$ ]]; then
+            printf 'invalid checked-out commit\n' >&2
+            exit 1
+          fi
+          printf 'MGW_CI_EXPECTED_COMMIT=%s\n' "$commit" >> "$GITHUB_ENV"
+          printf 'CHECKED_OUT_COMMIT=%s\n' "$commit"
 
       - name: Confirm exact PHP 8.3 runtime
         run: |
@@ -44,7 +55,7 @@ jobs:
           umask 077
           php ops/ci/verify-current-portable-focused-suite-evidence.php \
             --evidence-dir="$MGW_CI_OUTPUT_DIR" \
-            --expected-commit="$GITHUB_SHA" \
+            --expected-commit="$MGW_CI_EXPECTED_COMMIT" \
             --max-age-seconds=3600 \
             > "$MGW_CI_VERIFICATION_FILE"
           chmod 0600 "$MGW_CI_VERIFICATION_FILE"
