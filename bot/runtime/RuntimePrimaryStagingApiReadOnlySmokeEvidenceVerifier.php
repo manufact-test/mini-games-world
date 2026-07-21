@@ -23,9 +23,9 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
         private int $expectedBootstrapFilterCount = 2
     ) {
         $this->reportFile = str_replace('\\', '/', trim($this->reportFile));
-        $this->expectedCommit = strtolower(trim($this->expectedCommit));
-        $this->expectedDatabaseIdentity = strtolower(trim($this->expectedDatabaseIdentity));
-        $this->expectedEvidenceFingerprint = strtolower(trim($this->expectedEvidenceFingerprint));
+        $this->expectedCommit = trim($this->expectedCommit);
+        $this->expectedDatabaseIdentity = trim($this->expectedDatabaseIdentity);
+        $this->expectedEvidenceFingerprint = trim($this->expectedEvidenceFingerprint);
         if (preg_match('/^[a-f0-9]{40}$/', $this->expectedCommit) !== 1) {
             throw new InvalidArgumentException('Read-only smoke expected commit must be a full lowercase SHA-1.');
         }
