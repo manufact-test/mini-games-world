@@ -23,8 +23,9 @@ $publicHtmlGuard = strpos($runner, 'CI checkout must not be inside public_html')
 $phpVersionGuard = strpos($runner, 'portable CI requires PHP 8.3.x');
 $extensionGuard = strpos($runner, 'for extension_name in json pdo pdo_sqlite openssl mbstring');
 $manifestGuard = strpos($runner, 'focused suite manifest is invalid');
-$worktreeGuard = strpos($runner, 'tracked checkout changes are present before the suite');
+$worktreeGuard = strpos($runner, 'checkout changes are present before the suite');
 $outputGuard = strpos($runner, 'portable CI artifacts must stay outside the repository checkout');
+$emptyOutputGuard = strpos($runner, 'portable CI artifact directory must be empty before the run');
 $assertTrue(
     $suiteRun !== false
         && $publicHtmlGuard !== false
@@ -33,12 +34,14 @@ $assertTrue(
         && $manifestGuard !== false
         && $worktreeGuard !== false
         && $outputGuard !== false
+        && $emptyOutputGuard !== false
         && $publicHtmlGuard < $suiteRun
         && $phpVersionGuard < $suiteRun
         && $extensionGuard < $suiteRun
         && $manifestGuard < $suiteRun
         && $worktreeGuard < $suiteRun
-        && $outputGuard < $suiteRun,
+        && $outputGuard < $suiteRun
+        && $emptyOutputGuard < $suiteRun,
     'Portable runner must complete every preflight before the focused suite'
 );
 $assertTrue(
@@ -52,12 +55,14 @@ $assertTrue(
     'Portable runner must use the exact bounded manifest-backed entrypoint'
 );
 $assertTrue(
-    str_contains($runner, '[[ ! -L "$OUTPUT_DIR" ]]')
+    str_contains($runner, 'umask 077')
+        && str_contains($runner, '[[ ! -L "$OUTPUT_DIR" ]]')
         && str_contains($runner, 'artifact files must not be symbolic links')
+        && str_contains($runner, 'find "$CANONICAL_OUTPUT_DIR" -mindepth 1 -maxdepth 1')
         && str_contains($runner, 'chmod 0700 "$CANONICAL_OUTPUT_DIR"')
         && str_contains($runner, 'chmod 0600 "$LOG_FILE"')
         && str_contains($runner, 'chmod 0600 "$SUMMARY_FILE"'),
-    'Portable runner must protect artifact directory and files'
+    'Portable runner must protect a fresh private artifact directory and files'
 );
 $assertTrue(
     str_contains($runner, 'cp "$MANIFEST_FILE" "$MANIFEST_ARTIFACT_FILE"')
@@ -66,10 +71,16 @@ $assertTrue(
     'Portable runner must archive the exact verified suite manifest'
 );
 $assertTrue(
-    str_contains($runner, 'git status --porcelain=v1 --untracked-files=no')
-        && str_contains($runner, 'focused suite changed tracked files')
+    substr_count($runner, 'git status --porcelain=v1 --untracked-files=all') === 2
+        && !str_contains($runner, '--untracked-files=no')
+        && str_contains($runner, 'focused suite changed the repository checkout')
         && str_contains($runner, 'tracked_worktree_unchanged'),
-    'Portable runner must prove tracked worktree immutability'
+    'Portable runner must detect tracked and untracked checkout changes before and after the suite'
+);
+$assertTrue(
+    str_contains($runner, 'for command_name in bash git date find cp tee cat chmod mkdir "$PHP_BIN"')
+        && str_contains($runner, 'required command is unavailable'),
+    'Portable runner must preflight every host command used by the evidence path'
 );
 $assertTrue(
     str_contains($runner, '"suite_manifest_sha256" => getenv("MGW_CI_MANIFEST_SHA256")')
