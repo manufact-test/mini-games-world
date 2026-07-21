@@ -1,10 +1,6 @@
 name: Current Portable Focused Suite
 
-# Temporary GitHub-hosted gate while the repository is public during MVP development.
 on:
-  push:
-    branches:
-      - agent/mvp-14-8-6t-current-portable-evidence-verifier
   pull_request:
     branches:
       - agent/mvp-14-8-6s-current-portable-validation
@@ -12,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: mgw-current-portable-focused-${{ github.workflow }}-${{ github.ref }}
@@ -87,18 +82,3 @@ jobs:
             ${{ env.MGW_CI_VERIFICATION_FILE }}
           if-no-files-found: error
           retention-days: 7
-
-      - name: Report hosted gate result to PR
-        if: always()
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GATE_STATUS: ${{ job.status }}
-        run: |
-          gh pr comment 91 --body "<!-- mgw-hosted-php83-gate -->
-          Hosted PHP 8.3 gate finished.
-
-          - status: \`$GATE_STATUS\`
-          - commit: \`$GITHUB_SHA\`
-          - run_id: \`$GITHUB_RUN_ID\`
-          - run_attempt: \`$GITHUB_RUN_ATTEMPT\`"
