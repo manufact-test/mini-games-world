@@ -124,6 +124,9 @@ try {
     $assertThrows(static fn() => $verify(str_repeat('1', 40)), 'different repository commit');
     $assertThrows(static fn() => $verify('', str_repeat('2', 64)), 'different database identity');
     $assertThrows(static fn() => $verify('', '', str_repeat('3', 64)), 'different lifecycle evidence');
+    $assertThrows(static fn() => $verify(strtoupper($commit)), 'full lowercase sha-1');
+    $assertThrows(static fn() => $verify('', strtoupper($databaseIdentity)), 'must be sha-256');
+    $assertThrows(static fn() => $verify('', '', strtoupper($evidenceFingerprint)), 'must be sha-256');
 
     $changed = $base;
     $changed['outbox_event_count'] = 2;
