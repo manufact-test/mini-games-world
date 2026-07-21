@@ -118,6 +118,31 @@ try {
     );
     copy($projectRoot . '/bot/helpers/response.php', $responsePath);
 
+    $coordinatorPath = $fixture . '/bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php';
+    $coordinator = (string)file_get_contents($coordinatorPath);
+    $withoutPreparation = str_replace('array_unshift($hooks, $hook);', '/* hook preparation removed */', $coordinator);
+    file_put_contents($coordinatorPath, $withoutPreparation);
+    $missingPreparation = RuntimePrimaryStagingRequestLifecycleEvidence::inspect($fixture, $baseline);
+    $assertTrue(($missingPreparation['ready'] ?? true) === false, 'Missing hook preparation before context must block lifecycle evidence');
+    $assertTrue(
+        in_array('Request lifecycle evidence check failed: coordinator_finalizer_prepared_before_context.', (array)($missingPreparation['blockers'] ?? []), true),
+        'Missing pre-context hook preparation must remain explicit'
+    );
+
+    $withoutPublication = str_replace(
+        "\$GLOBALS['mgw_api_success_hooks'] = \$hooks;",
+        '/* hook publication removed */',
+        $coordinator
+    );
+    file_put_contents($coordinatorPath, $withoutPublication);
+    $missingPublication = RuntimePrimaryStagingRequestLifecycleEvidence::inspect($fixture, $baseline);
+    $assertTrue(($missingPublication['ready'] ?? true) === false, 'Missing post-context hook publication must block lifecycle evidence');
+    $assertTrue(
+        in_array('Request lifecycle evidence check failed: coordinator_context_before_hook_publication.', (array)($missingPublication['blockers'] ?? []), true),
+        'Missing post-context hook publication must remain explicit'
+    );
+    copy($projectRoot . '/bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php', $coordinatorPath);
+
     unlink($fixture . '/bot/runtime/RuntimePrimaryStagingRequestFinalizer.php');
     $missingFinalizer = RuntimePrimaryStagingRequestLifecycleEvidence::inspect($fixture, $baseline);
     $assertTrue(($missingFinalizer['ready'] ?? true) === false, 'Missing request finalizer must block lifecycle evidence');
