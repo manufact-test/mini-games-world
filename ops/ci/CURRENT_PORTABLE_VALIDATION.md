@@ -1,8 +1,8 @@
 # MVP-14.8.6s — current portable PHP 8.3 validation
 
-This sub-MVP provides one current runner-neutral validation package built directly on the hardened read-only staging smoke and its exact evidence verifier.
+This sub-MVP provides one current validation package built directly on the hardened read-only staging smoke and its exact evidence verifier.
 
-It replaces older portable experiments that were based on earlier smoke commits. The goal is simple: when a PHP 8.3 or self-hosted runner becomes available, it must test the current code rather than a stale stacked branch.
+It replaces older portable experiments based on stale smoke commits. Its purpose is to prove the current code on exact PHP 8.3 before any staging deployment or database operation.
 
 ## Entry command
 
@@ -26,13 +26,13 @@ The current portable check runs these roots in order:
 3. ops/checks/db-primary-staging-api-read-only-smoke-evidence-verifier-local.sh
 ```
 
-The third root runs the current read-only smoke stack and then its report-verifier regressions. Through recursive calls the package covers fourteen unique scripts:
+Through recursive calls the package covers fourteen unique scripts:
 
 - transactional projection outbox;
 - leased projection worker;
 - all-module projector;
 - staging rehearsal;
-- evidence verifier and collector;
+- lifecycle evidence verifier and collector;
 - activation guard;
 - storage resolver;
 - rollback-only synthetic suite;
@@ -54,11 +54,11 @@ Contract:
 v2-current-db-primary-focused-suite
 ```
 
-The manifest fixes every script path, recursive link, success marker and safety flag. Its regression test requires exactly fourteen unique strict-Bash scripts.
+The manifest fixes every script path, recursive link, success marker and safety flag. Its regression requires exactly fourteen unique strict-Bash scripts.
 
-## Requirements
+## Runtime requirements
 
-The runner requires:
+The direct runner requires:
 
 - Linux;
 - Bash;
@@ -68,9 +68,9 @@ The runner requires:
 - standard commands `date`, `find`, `cp`, `tee`, `cat`, `chmod`, `mkdir`, `grep`;
 - GNU coreutils `timeout`.
 
-The runner fails before execution if a compatible GNU `timeout` is unavailable. It never silently falls back to an unbounded test run.
+The runner fails before execution if PHP is not 8.3.x or compatible GNU `timeout` is unavailable. It never falls back to an unbounded run.
 
-The checkout must be outside `public_html` and completely clean, including untracked files, before execution. It must remain clean afterward.
+The checkout must remain outside `public_html` and completely clean, including untracked files, before and after execution.
 
 ## Safe evidence bundle
 
@@ -80,17 +80,9 @@ Default location:
 ${RUNNER_TEMP:-${TMPDIR:-/tmp}}/mgw-current-ci-focused
 ```
 
-The directory must be:
+The directory must be absolute, canonical, external to the checkout, outside `public_html`, non-symlink and empty before the run.
 
-- absolute;
-- external to the checkout;
-- outside `public_html`;
-- non-symlink;
-- empty before the run.
-
-The runner uses `umask 077` and requires exact mode `0700` for the artifact directory plus exact mode `0600` for the log, manifest and summary. Permission changes are mandatory and read back for verification; a failure blocks the run.
-
-It creates exactly:
+The runner requires exact mode `0700` for the artifact directory and exact mode `0600` for every evidence file. It produces exactly:
 
 ```text
 current-focused-suite.log
@@ -98,9 +90,7 @@ current-focused-suite-summary.json
 current-focused-suite-manifest.json
 ```
 
-The final directory must still contain exactly these three real non-symlink files. Any hidden or visible extra entry blocks the bundle.
-
-The copied manifest SHA-256 must match the source manifest before tests start. A `tee` failure or truncated log capture changes an otherwise successful suite into a failed run. Log type and permissions are rechecked after execution.
+Any extra entry, failed permission change, unsafe file type, changed checkout, failed `tee` capture or manifest mismatch blocks success.
 
 The summary binds:
 
@@ -110,14 +100,14 @@ The summary binds:
 - log SHA-256;
 - timestamps and duration;
 - exit code;
-- full repository-checkout unchanged proof;
-- explicit false flags for database contact, private config, application entrypoint changes, Cron, deployment, production and sensitive exposure.
+- complete checkout-unchanged proof;
+- explicit false flags for database contact, private config, entrypoint changes, Cron, deployment, production and sensitive exposure.
 
-It does not include DB credentials, private paths, user data, application state or payment data.
+It contains no credentials, private paths, user data, application state or payment data.
 
 ## Timeout
 
-Default timeout:
+Default:
 
 ```text
 2700 seconds
@@ -130,9 +120,9 @@ MGW_CI_TIMEOUT_SECONDS=3600 \
   bash ops/ci/run-current-portable-focused-suite.sh
 ```
 
-Accepted range is 60–7200 seconds. GNU `timeout` is mandatory and enforces the selected bound with TERM followed by a bounded KILL grace period.
+Accepted range is 60–7200 seconds. GNU `timeout` sends TERM and then uses a bounded KILL grace period.
 
-## Manual self-hosted workflow
+## Temporary GitHub-hosted workflow
 
 Workflow:
 
@@ -140,27 +130,43 @@ Workflow:
 .github/workflows/current-portable-focused-suite.yml
 ```
 
-It is `workflow_dispatch` only and requires:
+During active MVP development the repository is temporarily public. The workflow therefore uses the official GitHub-hosted `ubuntu-24.04` image and validates its built-in PHP runtime before execution:
 
-```text
-self-hosted
-linux
-x64
-mgw-ci
-```
+- exact PHP 8.3.x;
+- `json`, `pdo`, `pdo_sqlite`, `openssl`, `mbstring`;
+- GNU coreutils `timeout`.
 
-It never uses GitHub-hosted runners. Evidence paths and artifact names include both `github.run_id` and `github.run_attempt`, so retries cannot reuse a previous bundle on a persistent runner.
+The workflow is limited to pull requests targeting the current portable-validation branch plus explicit manual dispatch. It has read-only repository permission, does not use repository secrets and performs no deploy, SSH, Hostinger, Cron or database operation.
 
-Workflow order in this producer PR:
+Evidence paths and artifact names include both `github.run_id` and `github.run_attempt`, preventing stale bundle reuse.
 
-1. clean checkout without persisted credentials;
-2. run the current portable suite;
-3. print the safe summary;
-4. upload the exact three-file attempt-specific bundle for seven days.
+Workflow order:
 
-The stacked evidence-verifier PR adds mandatory bundle verification before upload while keeping the verification JSON outside this exact three-file directory.
+1. clean credential-free checkout;
+2. exact PHP 8.3/runtime preflight;
+3. full current portable suite;
+4. exact evidence verification against `$GITHUB_SHA`;
+5. safe report output;
+6. attempt-isolated artifact upload for seven days.
 
-No workflow was dispatched while preparing this PR.
+The verifier report remains outside the exact three-file input bundle.
+
+## Current execution status
+
+The workflow and contracts are prepared for GitHub-hosted PHP 8.3. No successful run is claimed until GitHub creates an actual workflow run with executable steps, logs and an accepted evidence artifact for the exact head commit.
+
+At the current checkpoint no workflow run/status has appeared for the new head. This must be resolved before staging deployment. The likely remaining administrative check is whether GitHub Actions are enabled for the repository; no assumption of success is made without a real run.
+
+## Temporary public-repository obligation
+
+The public visibility is development-only. Issue #92 tracks the mandatory pre-release work:
+
+- purchase/activate the required private GitHub plan;
+- return the repository to private;
+- remove temporary public-only CI behavior;
+- verify private Actions;
+- scan public history, logs and artifacts for sensitive values and rotate anything exposed;
+- review collaborators, GitHub Apps, deploy keys and branch protection.
 
 ## Focused contract command
 
@@ -168,7 +174,7 @@ No workflow was dispatched while preparing this PR.
 bash ops/checks/db-primary-current-portable-validation-local.sh
 ```
 
-This command is the actual full suite and therefore requires PHP 8.3. It is not claimed as passed until it runs on a suitable external runner.
+This is the actual full focused suite and is not considered passed until it runs on PHP 8.3 with accepted evidence.
 
 ## Safety boundary
 
@@ -178,13 +184,12 @@ The package:
 - does not connect to staging or production MySQL;
 - does not execute API/webhook routes;
 - does not create Cron jobs;
-- does not deploy;
-- does not merge;
+- does not deploy or merge;
 - does not switch runtime storage;
 - does not modify production;
 - does not require repository secrets.
 
-A successful portable run proves the current code and static/runtime fake contracts. It does not replace fresh lifecycle evidence v4 or the real read-only staging smoke against `mgw_stage`.
+A successful portable run proves the current code and fake/local contracts only. It does not replace fresh lifecycle evidence v4 or the real read-only staging smoke against isolated `mgw_stage`.
 
 ## Next operational checkpoint
 
@@ -195,4 +200,4 @@ After a successful exact-commit PHP 8.3 run:
 3. collect fresh lifecycle evidence v4 against isolated `mgw_stage`;
 4. execute the CLI-only read-only smoke;
 5. verify its exact 43-field report;
-6. keep mutating smoke and production cutover blocked until all evidence is clean.
+6. keep mutating smoke and production cutover blocked until every gate is clean.
