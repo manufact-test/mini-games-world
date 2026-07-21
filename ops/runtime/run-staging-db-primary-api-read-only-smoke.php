@@ -66,6 +66,8 @@ $originalFinalizerReportExists = array_key_exists(
 $originalFinalizerReport = $GLOBALS['mgw_api_db_primary_finalization_report'] ?? null;
 $lockHandle = null;
 $lockPath = '';
+$exitCode = 1;
+$outputPayload = [];
 
 try {
     require $projectRoot . '/bot/core/bootstrap.php';
@@ -146,7 +148,7 @@ try {
         ? $overlayResult['report']
         : [];
 
-    fwrite(STDOUT, json_encode([
+    $outputPayload = [
         'ok' => true,
         'report_type' => 'mvp-14.8.6n-staging-api-read-only-smoke',
         'action' => (string)($report['action'] ?? ''),
@@ -186,8 +188,8 @@ try {
         'production_changed' => false,
         'sensitive_identifiers_exposed' => false,
         'generated_at_utc' => gmdate(DATE_ATOM),
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL);
-    exit(0);
+    ];
+    $exitCode = 0;
 } catch (Throwable $error) {
     $message = preg_replace(
         "~/(?:home|var|tmp|srv)/[^\\s'\"]+~",
@@ -197,7 +199,7 @@ try {
     $message = function_exists('mb_substr')
         ? mb_substr($message, 0, 500)
         : substr($message, 0, 500);
-    fwrite(STDOUT, json_encode([
+    $outputPayload = [
         'ok' => false,
         'report_type' => 'mvp-14.8.6n-staging-api-read-only-smoke',
         'action' => 'staging_api_read_only_smoke_blocked_or_failed',
@@ -211,8 +213,8 @@ try {
         'production_changed' => false,
         'sensitive_identifiers_exposed' => false,
         'generated_at_utc' => gmdate(DATE_ATOM),
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
-    exit(1);
+    ];
+    $exitCode = 1;
 } finally {
     if (is_resource($lockHandle)) {
         flock($lockHandle, LOCK_UN);
@@ -241,3 +243,15 @@ try {
         unset($GLOBALS['mgw_api_db_primary_finalization_report']);
     }
 }
+
+try {
+    $encoded = json_encode(
+        $outputPayload,
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+    );
+} catch (Throwable) {
+    $encoded = '{"ok":false,"action":"staging_api_read_only_smoke_output_failed"}';
+    $exitCode = 1;
+}
+fwrite(STDOUT, $encoded . PHP_EOL);
+exit($exitCode);
