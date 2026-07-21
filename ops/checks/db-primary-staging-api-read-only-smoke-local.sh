@@ -17,6 +17,7 @@ FILES=(
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeOutboxContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBootstrapContractTest.php
+  bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBridgeLazinessContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php
 )
 
@@ -31,6 +32,7 @@ TESTS=(
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeOutboxContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBootstrapContractTest.php
+  bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBridgeLazinessContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php
 )
 
