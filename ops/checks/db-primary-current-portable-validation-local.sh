@@ -23,6 +23,7 @@ done
 PHP_FILES=(
   bot/tests/RuntimePrimaryCurrentPortableSuiteManifestTest.php
   bot/tests/RuntimePrimaryCurrentPortableValidationContractTest.php
+  bot/tests/RuntimePrimaryHostedWorkflowExactCommitContractTest.php
 )
 
 for file in "${PHP_FILES[@]}"; do
