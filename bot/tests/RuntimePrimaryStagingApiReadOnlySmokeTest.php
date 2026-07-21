@@ -21,6 +21,10 @@ final class RuntimePrimaryStagingRequestSessionConfig
 {
     public const CONTRACT_VERSION = 'v1-api-only-bounded-request-session';
 }
+final class RuntimePrimaryAllModuleProjector
+{
+    public const CONTRACT_VERSION = 'v1-normalized-all-modules';
+}
 final class DatabasePrimaryStateStorageAdapter
 {
     public function __construct(
@@ -130,7 +134,7 @@ $canonicalSha = static function (array $value) use ($canonicalize): string {
 $eventRow = static function (int $revision, string $sha): array {
     return [
         'state_revision' => $revision,
-        'projection_version' => 'v1-normalized-all-modules',
+        'projection_version' => RuntimePrimaryAllModuleProjector::CONTRACT_VERSION,
         'state_sha256' => $sha,
         'status' => 'completed',
         'attempt_count' => 1,
@@ -191,6 +195,8 @@ $report = (new RuntimePrimaryStagingApiReadOnlySmoke(
     [static fn(array $data): array => $data]
 ))->run();
 $assertTrue(($report['ok'] ?? false) === true, 'Exact read-only smoke must pass');
+$assertTrue(($report['projection_contract_version'] ?? '') === RuntimePrimaryAllModuleProjector::CONTRACT_VERSION, 'Read-only smoke must expose exact projector version');
+$assertTrue(($report['completed_events_lease_free'] ?? false) === true, 'Read-only smoke must prove completed events are lease-free');
 $assertTrue(($report['worker_tick_count'] ?? -1) === 0, 'Read-only smoke must require zero worker ticks');
 $assertTrue(($report['context_state_matched'] ?? false) === true, 'Read-only smoke must bind context to current state');
 $assertTrue(($report['lifecycle_v4_verified'] ?? false) === true, 'Read-only smoke must verify lifecycle v4 context');
@@ -225,6 +231,34 @@ $assertThrows(
         $storage, $database, [$hookFor($sha)], []
     ))->run(),
     'exact guarded lifecycle v4 request context'
+);
+
+[$storage, $database, $sha] = $make();
+$database->rows[0]['projection_version'] = 'v0-old-projector';
+$assertThrows(
+    static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
+        $storage, $database, [$hookFor($sha)], []
+    ))->run(),
+    'outbox completion chain is invalid'
+);
+
+[$storage, $database, $sha] = $make();
+$database->rows[0]['lease_token'] = 'stale-lease';
+$database->rows[0]['lease_expires_at_utc'] = '2026-07-21T08:05:00+00:00';
+$assertThrows(
+    static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
+        $storage, $database, [$hookFor($sha)], []
+    ))->run(),
+    'outbox completion chain is invalid'
+);
+
+[$storage, $database, $sha] = $make();
+$database->rows[0]['last_error'] = 'old failure';
+$assertThrows(
+    static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
+        $storage, $database, [$hookFor($sha)], []
+    ))->run(),
+    'outbox completion chain is invalid'
 );
 
 [$storage, $database, $sha] = $make();
