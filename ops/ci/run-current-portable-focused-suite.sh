@@ -34,10 +34,12 @@ esac
 (( TIMEOUT_SECONDS >= 60 && TIMEOUT_SECONDS <= 7200 )) \
   || fail 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200.'
 
-for command_name in bash git date find cp tee cat chmod mkdir grep "$PHP_BIN"; do
+for command_name in bash git date find cp tee cat chmod mkdir grep timeout "$PHP_BIN"; do
   command -v "$command_name" >/dev/null 2>&1 \
     || fail "required command is unavailable: $command_name"
 done
+timeout --version 2>/dev/null | grep -q 'GNU coreutils' \
+  || fail 'GNU coreutils timeout is required for a bounded portable suite.'
 
 cd "$PROJECT_ROOT"
 [[ -f "$SUITE_SCRIPT" ]] || fail "focused suite is unavailable: $SUITE_SCRIPT"
@@ -115,15 +117,9 @@ STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date +%s)"
 
 set +e
-if command -v timeout >/dev/null 2>&1 \
-  && timeout --version 2>/dev/null | grep -q 'GNU coreutils'; then
-  timeout --signal=TERM --kill-after=15 "${TIMEOUT_SECONDS}s" \
-    bash "$SUITE_SCRIPT" 2>&1 | tee "$LOG_FILE"
-  PIPE_STATUS=("${PIPESTATUS[@]}")
-else
+timeout --signal=TERM --kill-after=15 "${TIMEOUT_SECONDS}s" \
   bash "$SUITE_SCRIPT" 2>&1 | tee "$LOG_FILE"
-  PIPE_STATUS=("${PIPESTATUS[@]}")
-fi
+PIPE_STATUS=("${PIPESTATUS[@]}")
 set -e
 SUITE_EXIT_CODE="${PIPE_STATUS[0]:-127}"
 TEE_EXIT_CODE="${PIPE_STATUS[1]:-127}"
