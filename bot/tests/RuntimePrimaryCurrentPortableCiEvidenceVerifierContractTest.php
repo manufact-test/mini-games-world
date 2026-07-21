@@ -162,13 +162,19 @@ $assertTrue(
     'Verifier CLI must not write, connect, route or touch infrastructure'
 );
 
+$checkoutPosition = strpos($workflow, 'Checkout exact deployable revision');
+$bindPosition = strpos($workflow, 'Bind exact checked-out commit');
 $runPosition = strpos($workflow, 'Run current portable focused suite');
 $verifyPosition = strpos($workflow, 'Verify exact current evidence bundle');
 $uploadPosition = strpos($workflow, 'Upload current focused-suite evidence');
 $assertTrue(
-    $runPosition !== false && $verifyPosition !== false && $uploadPosition !== false
-        && $runPosition < $verifyPosition && $verifyPosition < $uploadPosition,
-    'Workflow must verify the current bundle after execution and before upload'
+    $checkoutPosition !== false && $bindPosition !== false && $runPosition !== false
+        && $verifyPosition !== false && $uploadPosition !== false
+        && $checkoutPosition < $bindPosition
+        && $bindPosition < $runPosition
+        && $runPosition < $verifyPosition
+        && $verifyPosition < $uploadPosition,
+    'Workflow must bind the deployable checkout before execution and verify before upload'
 );
 $assertTrue(
     preg_match('/^on:\s*\n\s+pull_request:/m', $workflow) === 1
@@ -178,12 +184,16 @@ $assertTrue(
         && str_contains($workflow, 'runs-on: ubuntu-24.04')
         && !str_contains($workflow, 'setup-php')
         && str_contains($workflow, 'Confirm exact PHP 8.3 runtime')
+        && str_contains($workflow, 'ref: ${{ github.event.pull_request.head.sha || github.sha }}')
+        && str_contains($workflow, 'git rev-parse --verify HEAD')
+        && str_contains($workflow, 'MGW_CI_EXPECTED_COMMIT=%s')
         && str_contains($workflow, 'github.run_id')
         && str_contains($workflow, 'github.run_attempt')
         && str_contains($workflow, 'MGW_CI_VERIFICATION_FILE')
-        && str_contains($workflow, '--expected-commit="$GITHUB_SHA"')
+        && str_contains($workflow, '--expected-commit="$MGW_CI_EXPECTED_COMMIT"')
+        && !str_contains($workflow, '--expected-commit="$GITHUB_SHA"')
         && str_contains($workflow, '--max-age-seconds=3600'),
-    'Workflow must remain narrowly triggered, hosted on exact PHP 8.3, attempt-isolated and commit-bound'
+    'Workflow must remain narrow, PHP 8.3 hosted, attempt-isolated and bound to exact deployable head'
 );
 $assertTrue(
     str_contains($workflow, '> "$MGW_CI_VERIFICATION_FILE"')
