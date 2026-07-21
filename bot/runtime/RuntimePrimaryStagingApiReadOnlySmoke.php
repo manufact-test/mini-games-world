@@ -52,6 +52,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             throw new RuntimeException('Read-only API smoke snapshot does not match DB-primary status.');
         }
 
+        unset($GLOBALS['mgw_api_db_primary_finalization_report']);
         foreach ($this->successHooks as $hook) {
             $hook();
         }
@@ -73,6 +74,11 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             || ($finalization['completed'] ?? false) !== true
             || ($finalization['projection_event_status'] ?? '') !== 'completed'
             || (int)($finalization['worker_tick_count'] ?? -1) !== 0
+            || (int)($finalization['final_state_revision'] ?? 0) !== (int)$before['state_revision']
+            || !hash_equals(
+                (string)$before['state_sha256'],
+                strtolower(trim((string)($finalization['final_state_sha256'] ?? '')))
+            )
             || ($finalization['read_only_audit'] ?? false) !== true
             || ($finalization['legacy_json_bridges_suppressed'] ?? false) !== true
             || ($finalization['api_only'] ?? false) !== true
