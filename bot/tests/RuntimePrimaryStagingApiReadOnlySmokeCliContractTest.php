@@ -17,12 +17,12 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
 $cliGuard = strpos($source, "if (PHP_SAPI !== 'cli')");
 $evidenceParse = strpos($source, "str_starts_with(\$argument, '--evidence=')");
 $ttlParse = strpos($source, "str_starts_with(\$argument, '--ttl-seconds=')");
+$scriptOverride = strpos($source, "\$_SERVER['SCRIPT_FILENAME'] = \$projectRoot . '/bot/api.php';");
 $bootstrap = strpos($source, "require \$projectRoot . '/bot/core/bootstrap.php';");
 $environmentGuard = strpos($source, "if (strtolower(trim((string)(\$config['environment'] ?? ''))) !== 'staging')");
 $privateGuard = strpos($source, 'RuntimePrimaryPrivateConfigGuard::assertExternal(');
 $lockOpen = strpos($source, '$lockHandle = fopen($lockPath');
 $overlayBuild = strpos($source, 'RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay(');
-$scriptOverride = strpos($source, "\$_SERVER['SCRIPT_FILENAME'] = \$projectRoot . '/bot/api.php';");
 $factory = strpos($source, 'StorageFactory::createJson(');
 $inspector = strpos($source, '$inspectorDatabase = PdoConnectionFactory::create($databaseConfig);');
 $smoke = strpos($source, 'RuntimePrimaryStagingApiReadOnlySmoke(');
@@ -30,27 +30,38 @@ $assertTrue(
     $cliGuard !== false
         && $evidenceParse !== false
         && $ttlParse !== false
+        && $scriptOverride !== false
         && $bootstrap !== false
         && $environmentGuard !== false
         && $privateGuard !== false
         && $lockOpen !== false
         && $overlayBuild !== false
-        && $scriptOverride !== false
         && $factory !== false
         && $inspector !== false
         && $smoke !== false
         && $cliGuard < $evidenceParse
-        && $evidenceParse < $bootstrap
-        && $ttlParse < $bootstrap
+        && $evidenceParse < $scriptOverride
+        && $ttlParse < $scriptOverride
+        && $scriptOverride < $bootstrap
         && $bootstrap < $environmentGuard
         && $environmentGuard < $privateGuard
         && $privateGuard < $lockOpen
         && $lockOpen < $overlayBuild
-        && $overlayBuild < $scriptOverride
-        && $scriptOverride < $factory
+        && $overlayBuild < $factory
         && $factory < $inspector
         && $inspector < $smoke,
-    'Read-only API smoke CLI must validate, lock, overlay and resolve before smoke execution'
+    'Read-only API smoke CLI must select API bootstrap before loading application and resolve only after overlay'
+);
+$assertTrue(
+    str_contains($source, "\$bootstrapHooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];")
+        && str_contains($source, "\$bootstrapFilters = \$GLOBALS['mgw_api_data_filters'] ?? [];")
+        && str_contains($source, '\$bootstrapHookCount = count($bootstrapHooks);') === false
+        && str_contains($source, '$bootstrapHookCount = count($bootstrapHooks);')
+        && str_contains($source, '$bootstrapFilterCount = count($bootstrapFilters);')
+        && str_contains($source, 'count($hooks) !== $bootstrapHookCount + 1')
+        && str_contains($source, 'count($filters) !== $bootstrapFilterCount')
+        && str_contains($source, 'did not preserve the real API bootstrap hook contour'),
+    'Read-only API smoke must preserve actual API bootstrap hooks and filters while adding one finalizer'
 );
 $assertTrue(
     str_contains($source, "\$GLOBALS['config'] = \$overlay;")
@@ -61,14 +72,11 @@ $assertTrue(
     'Read-only API smoke must use in-memory latches only'
 );
 $assertTrue(
-    str_contains($source, "unset(\n        \$GLOBALS['mgw_api_success_hooks']")
-        && str_contains($source, "\$hooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];")
-        && str_contains($source, "\$filters = \$GLOBALS['mgw_api_data_filters'] ?? [];")
-        && str_contains($source, 'DatabasePrimaryStateStorageAdapter'),
-    'Read-only API smoke must exercise fresh lazy selector hooks and DB-primary storage'
-);
-$assertTrue(
-    str_contains($source, "'projection_contract_version'")
+    str_contains($source, "'bootstrap_legacy_hook_count'")
+        && str_contains($source, "'bootstrap_legacy_filter_count'")
+        && str_contains($source, "'api_bootstrap_hooks_preserved' => true")
+        && str_contains($source, "'api_bootstrap_filters_preserved' => true")
+        && str_contains($source, "'projection_contract_version'")
         && str_contains($source, "'completed_events_lease_free'")
         && str_contains($source, "'json_default_verified'")
         && str_contains($source, "'rollback_data_dir_external'")
@@ -81,7 +89,7 @@ $assertTrue(
         && str_contains($source, "'snapshot_unchanged'")
         && str_contains($source, "'outbox_unchanged'")
         && str_contains($source, "'data_filters_unchanged'"),
-    'Read-only API smoke output must prove canonical rollback path, current projector, lease-free events and no mutation'
+    'Read-only API smoke output must prove real API bootstrap preservation, rollback safety and no mutation'
 );
 $assertTrue(
     !str_contains($source, "require \$projectRoot . '/bot/api.php'")
