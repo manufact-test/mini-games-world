@@ -65,6 +65,25 @@ This exercises the real lazy path:
 
 The CLI does not include or execute `bot/api.php`.
 
+## Exact request-context contract
+
+Before reading the staging DB, the smoke independently verifies that the installed request context contains:
+
+- lifecycle evidence v4;
+- the exact selector evidence contract;
+- the exact bounded request-session contract;
+- valid evidence, selector, session and database identity fingerprints;
+- a positive state revision and valid state SHA;
+- the exact DB-primary storage instance passed to the smoke;
+- `dynamic_session_readiness = true`;
+- `request_finalizer_registered = true`;
+- `webhook_allowed = false`;
+- `production_changed = false`.
+
+It also calls `RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()` before and after finalization. The result must remain `false` for the whole smoke.
+
+After the first DB capture, the immutable context revision/SHA must equal the exact current DB-primary status revision/SHA. A stale or substituted context blocks the smoke before success hooks.
+
 ## Read-only smoke contract
 
 The smoke operation captures before-state evidence using only:
@@ -78,9 +97,11 @@ It never calls storage transactions or database execute methods.
 Before success hooks:
 
 - current state revision/SHA must be valid;
+- request context revision/SHA must match current state exactly;
 - outbox must contain a contiguous completed chain from revision 1 through current revision;
 - current outbox SHA must match current state SHA;
-- read-only snapshot SHA must match status SHA.
+- read-only snapshot SHA must match status SHA;
+- legacy JSON bridges must be suppressed.
 
 Then it:
 
@@ -88,11 +109,12 @@ Then it:
 2. invokes the prepared API success hooks;
 3. requires finalizer completion with `worker_tick_count = 0`;
 4. requires finalizer revision/SHA to equal the exact before-state;
-5. applies API data filters to a sentinel payload and requires byte-structure equivalence;
-6. captures state/outbox again;
-7. requires exact before/after equality.
+5. verifies legacy JSON bridges are still suppressed;
+6. applies API data filters to a sentinel payload and requires byte-structure equivalence;
+7. captures state/outbox again;
+8. requires exact before/after equality.
 
-Any worker tick, state change, outbox timestamp/status change, missing event, filter mutation or stale report blocks the smoke.
+Any old evidence version, invalid fingerprint, stale context, enabled legacy bridge, worker tick, state change, outbox timestamp/status change, missing event, filter mutation or stale report blocks the smoke.
 
 ## CLI
 
@@ -114,12 +136,15 @@ The CLI:
 - opens the coordinator DB connection plus a separate read-only inspector connection;
 - exercises the lazy selector/finalizer path;
 - emits only safe fingerprints/counts and unchanged flags;
-- restores process globals before normal unwinding; process exit also releases locks/connections.
+- restores process globals before JSON output and process exit.
 
 Successful output requires:
 
 - `staging_api_read_only_smoke_passed`;
 - `worker_tick_count: 0`;
+- `context_state_matched: true`;
+- `lifecycle_v4_verified: true`;
+- `legacy_json_bridges_suppressed: true`;
 - `state_unchanged: true`;
 - `snapshot_unchanged: true`;
 - `outbox_unchanged: true`;
@@ -139,6 +164,9 @@ bash ops/checks/db-primary-staging-api-read-only-smoke-local.sh
 The focused suite runs the complete API lifecycle integration suite and adds:
 
 - exact no-op smoke success;
+- old evidence version rejection;
+- stale context revision/SHA rejection;
+- enabled legacy bridge rejection;
 - stale finalization report rejection;
 - non-zero worker tick rejection;
 - data-filter mutation rejection;
@@ -148,7 +176,7 @@ The focused suite runs the complete API lifecycle integration suite and adds:
 - v3/different DB/different commit evidence rejection;
 - TTL bounds;
 - no transaction/execute/file-write static contract;
-- CLI ordering, no-route and no-secret contract.
+- CLI ordering, cleanup, no-route and no-secret contract.
 
 ## Next prerequisite
 
