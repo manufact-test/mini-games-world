@@ -67,7 +67,11 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
         $hookRun = strpos($response, 'foreach ($hooks as $hook)');
         $filterRead = strpos($response, "\$filters = \$GLOBALS['mgw_api_data_filters'] ?? [];");
         $responseSend = strpos($response, "api_response(['ok' => true, 'data' => \$data]);");
+        $selectorLatch = strpos($coordinator, 'RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig(');
+        $privateGuard = strpos($coordinator, 'RuntimePrimaryPrivateConfigGuard::assertExternal(');
         $evidenceGate = strpos($coordinator, 'RuntimePrimaryStagingEvidenceV4Gate(');
+        $sessionConfig = strpos($coordinator, 'RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig(');
+        $sessionPreflight = strpos($coordinator, '$session->assertEnabledForApi(');
         $dbOpen = strpos($coordinator, 'PdoConnectionFactory::create($databaseConfig)');
         $readinessRun = strpos($coordinator, 'RuntimePrimaryStagingRequestSessionReadiness(');
         $contextInstall = strpos($coordinator, 'RuntimePrimaryEntrypointStorageContext::install(');
@@ -85,9 +89,18 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
                 && $hookRead < $hookRun
                 && $hookRun < $filterRead
                 && $filterRead < $responseSend,
+            'coordinator_selector_latch_before_private' => $selectorLatch !== false
+                && $privateGuard !== false
+                && $selectorLatch < $privateGuard
+                && str_contains($coordinator, 'requires the exact API selector latch'),
             'coordinator_v4_before_database' => $evidenceGate !== false
                 && $dbOpen !== false
                 && $evidenceGate < $dbOpen,
+            'coordinator_session_latch_before_database' => $sessionConfig !== false
+                && $sessionPreflight !== false
+                && $dbOpen !== false
+                && $sessionConfig < $sessionPreflight
+                && $sessionPreflight < $dbOpen,
             'coordinator_readiness_before_context' => $readinessRun !== false
                 && $contextInstall !== false
                 && $readinessRun < $contextInstall,
