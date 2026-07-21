@@ -13,9 +13,9 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         private string $evidenceFile,
         private int $ttlSeconds = 300
     ) {
-        $this->projectRoot = rtrim(str_replace('\\', '/', trim($this->projectRoot)), '/');
-        $this->configFile = str_replace('\\', '/', trim($this->configFile));
-        $this->evidenceFile = str_replace('\\', '/', trim($this->evidenceFile));
+        $this->projectRoot = rtrim(str_replace('\\', '/', $this->projectRoot), '/');
+        $this->configFile = str_replace('\\', '/', $this->configFile);
+        $this->evidenceFile = str_replace('\\', '/', $this->evidenceFile);
         if ($this->projectRoot === '' || !is_dir($this->projectRoot)) {
             throw new InvalidArgumentException('Read-only API smoke project root is unavailable.');
         }
@@ -37,9 +37,9 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         if ($storageDriver !== 'json') {
             throw new RuntimeException('Read-only API smoke requires JSON as the persistent default storage driver.');
         }
-        $rawDataDir = str_replace('\\', '/', trim((string)(
+        $rawDataDir = str_replace('\\', '/', (string)(
             $this->baseConfig['data_dir'] ?? ''
-        )));
+        ));
         if ($rawDataDir !== '/') $rawDataDir = rtrim($rawDataDir, '/');
         if ($rawDataDir === ''
             || !str_starts_with($rawDataDir, '/')
@@ -108,27 +108,27 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         if (!$databaseConfig->enabled()) {
             throw new RuntimeException('Read-only API smoke requires an enabled staging database.');
         }
-        $databaseIdentity = strtolower(trim($databaseConfig->identityFingerprint()));
-        $evidenceDatabaseIdentity = strtolower(trim((string)(
+        $databaseIdentity = $databaseConfig->identityFingerprint();
+        $evidenceDatabaseIdentity = (string)(
             $verification['database_identity_fingerprint'] ?? ''
-        )));
+        );
         if (preg_match('/^[a-f0-9]{64}$/', $databaseIdentity) !== 1
+            || preg_match('/^[a-f0-9]{64}$/', $evidenceDatabaseIdentity) !== 1
             || !hash_equals($databaseIdentity, $evidenceDatabaseIdentity)) {
             throw new RuntimeException('Read-only API smoke evidence belongs to a different database identity.');
         }
 
         $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($this->projectRoot);
-        $evidenceCommit = strtolower(trim((string)(
-            $verification['repository_commit'] ?? ''
-        )));
+        $evidenceCommit = (string)($verification['repository_commit'] ?? '');
         if (preg_match('/^[a-f0-9]{40}$/', $currentCommit) !== 1
+            || preg_match('/^[a-f0-9]{40}$/', $evidenceCommit) !== 1
             || !hash_equals($currentCommit, $evidenceCommit)) {
             throw new RuntimeException('Read-only API smoke evidence belongs to a different checkout.');
         }
 
-        $evidenceFingerprint = strtolower(trim((string)(
+        $evidenceFingerprint = (string)(
             $verification['evidence_fingerprint'] ?? ''
-        )));
+        );
         if (preg_match('/^[a-f0-9]{64}$/', $evidenceFingerprint) !== 1) {
             throw new RuntimeException('Read-only API smoke evidence fingerprint is invalid.');
         }
@@ -136,7 +136,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
             $manifest['request_session_evidence']['baseline'] ?? null
         ) ? $manifest['request_session_evidence']['baseline'] : [];
         $baselineRevision = (int)($baseline['state_revision'] ?? 0);
-        $baselineSha = strtolower(trim((string)($baseline['state_sha256'] ?? '')));
+        $baselineSha = (string)($baseline['state_sha256'] ?? '');
         if ($baselineRevision < 1
             || preg_match('/^[a-f0-9]{64}$/', $baselineSha) !== 1) {
             throw new RuntimeException('Read-only API smoke lifecycle baseline is invalid.');
