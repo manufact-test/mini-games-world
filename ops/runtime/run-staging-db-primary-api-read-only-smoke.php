@@ -178,6 +178,9 @@ try {
         'rollback_data_dir_external' => (
             $overlayReport['rollback_data_dir_external'] ?? false
         ) === true,
+        'rollback_data_dir_canonical' => (
+            $overlayReport['rollback_data_dir_canonical'] ?? false
+        ) === true,
         'worker_tick_count' => (int)($report['worker_tick_count'] ?? -1),
         'context_state_matched' => ($report['context_state_matched'] ?? false) === true,
         'lifecycle_v4_verified' => ($report['lifecycle_v4_verified'] ?? false) === true,
