@@ -44,7 +44,7 @@ foreach (array_slice($argv ?? [], 1) as $argument) {
         exit(2);
     }
     $seen[$matchedName] = true;
-    $value = trim(substr($argument, strlen($matchedPrefix)));
+    $value = substr($argument, strlen($matchedPrefix));
     if ($matchedName === 'report') {
         $value = str_replace('\\', '/', $value);
     }
