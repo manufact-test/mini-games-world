@@ -21,8 +21,21 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             || ($context['legacy_json_bridges_suppressed'] ?? false) !== true
             || ($context['webhook_allowed'] ?? true) !== false
             || ($context['production_changed'] ?? true) !== false
-            || RuntimePrimaryEntrypointStorageContext::storage() !== $this->storage) {
-            throw new RuntimeException('Read-only API smoke requires the exact guarded request context.');
+            || ($context['evidence_manifest_version'] ?? '')
+                !== RuntimePrimaryStagingEvidenceV4Verifier::MANIFEST_VERSION
+            || ($context['selector_contract_version'] ?? '')
+                !== RuntimePrimaryStagingSelectorEvidence::CONTRACT_VERSION
+            || ($context['request_session_contract_version'] ?? '')
+                !== RuntimePrimaryStagingRequestSessionConfig::CONTRACT_VERSION
+            || !$this->validSha((string)($context['evidence_fingerprint'] ?? ''))
+            || !$this->validSha((string)($context['selector_evidence_fingerprint'] ?? ''))
+            || !$this->validSha((string)($context['request_session_evidence_fingerprint'] ?? ''))
+            || !$this->validSha((string)($context['database_identity_fingerprint'] ?? ''))
+            || !$this->validSha((string)($context['state_sha256'] ?? ''))
+            || (int)($context['state_revision'] ?? 0) < 1
+            || RuntimePrimaryEntrypointStorageContext::storage() !== $this->storage
+            || RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed() !== false) {
+            throw new RuntimeException('Read-only API smoke requires the exact guarded lifecycle v4 request context.');
         }
         if ($this->successHooks === []
             || !($this->successHooks[0] ?? null) instanceof RuntimePrimaryStagingApiRequestFinalizationHook) {
@@ -40,6 +53,13 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
         }
 
         $before = $this->capture();
+        if ((int)$context['state_revision'] !== (int)$before['state_revision']
+            || !hash_equals(
+                strtolower(trim((string)$context['state_sha256'])),
+                (string)$before['state_sha256']
+            )) {
+            throw new RuntimeException('Read-only API smoke context no longer matches current DB-primary state.');
+        }
         $probe = $this->storage->readOnly(function (array $state): array {
             return [
                 'state_sha256' => $this->canonicalSha($state),
@@ -86,6 +106,9 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             || ($finalization['production_changed'] ?? true) !== false) {
             throw new RuntimeException('Read-only API smoke finalization contract is incomplete or not read-only.');
         }
+        if (RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed() !== false) {
+            throw new RuntimeException('Read-only API smoke lost legacy bridge suppression after finalization.');
+        }
 
         $after = $this->capture();
         if ($before !== $after) {
@@ -108,6 +131,9 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
                 )
             ),
             'worker_tick_count' => 0,
+            'context_state_matched' => true,
+            'lifecycle_v4_verified' => true,
+            'legacy_json_bridges_suppressed' => true,
             'state_unchanged' => true,
             'snapshot_unchanged' => true,
             'outbox_unchanged' => true,
@@ -132,7 +158,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
         if (($status['ok'] ?? false) !== true
             || ($status['driver'] ?? '') !== 'database'
             || $revision < 1
-            || preg_match('/^[a-f0-9]{64}$/', $stateSha) !== 1
+            || !$this->validSha($stateSha)
             || ($status['projection_outbox_enabled'] ?? false) !== true) {
             throw new RuntimeException('Read-only API smoke DB-primary status is invalid.');
         }
@@ -159,7 +185,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             $rowSha = strtolower(trim((string)($row['state_sha256'] ?? '')));
             if ($rowRevision !== $expectedRevision
                 || ($row['status'] ?? '') !== 'completed'
-                || preg_match('/^[a-f0-9]{64}$/', $rowSha) !== 1
+                || !$this->validSha($rowSha)
                 || (int)($row['attempt_count'] ?? -1) < 0
                 || trim((string)($row['projection_version'] ?? '')) === '') {
                 throw new RuntimeException('Read-only API smoke outbox completion chain is invalid.');
@@ -188,6 +214,11 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             'outbox_event_count' => count($normalized),
             'outbox_fingerprint' => hash('sha256', $this->canonicalJson($normalized)),
         ];
+    }
+
+    private function validSha(string $value): bool
+    {
+        return preg_match('/^[a-f0-9]{64}$/', strtolower(trim($value))) === 1;
     }
 
     private function canonicalSha(array $state): string
