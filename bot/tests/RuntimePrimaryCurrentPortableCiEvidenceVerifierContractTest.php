@@ -90,8 +90,8 @@ $assertTrue(
     'Verifier must require exact complete-line markers once and in execution order'
 );
 $assertTrue(
-    str_contains($verifier, "preg_match('/^[a-f0-9]{40}$/', $commit)")
-        && str_contains($verifier, "preg_match('/^[a-f0-9]{64}$/', $manifestSha)")
+    str_contains($verifier, "preg_match('/^[a-f0-9]{40}$/', \$commit)")
+        && str_contains($verifier, "preg_match('/^[a-f0-9]{64}$/', \$manifestSha)")
         && str_contains($verifier, 'hash_equals($this->expectedCommit, $commit)')
         && str_contains($verifier, "preg_match('/^8\\.3\\.\\d+")
         && !str_contains($verifier, 'strtolower(trim($commit))'),
@@ -106,9 +106,9 @@ $assertTrue(
     'Verifier must enforce exact timeline and bounded freshness'
 );
 $assertTrue(
-    str_contains($verifier, "($summary['exit_code'] ?? null) !== 0")
-        && str_contains($verifier, "($summary['repository_checkout_unchanged'] ?? null) !== true")
-        && str_contains($verifier, "!is_int($summary['suite_manifest_script_count'] ?? null)")
+    str_contains($verifier, "(\$summary['exit_code'] ?? null) !== 0")
+        && str_contains($verifier, "(\$summary['repository_checkout_unchanged'] ?? null) !== true")
+        && str_contains($verifier, "!is_int(\$summary['suite_manifest_script_count'] ?? null)")
         && str_contains($verifier, 'summary safety flag must be false'),
     'Verifier must reject stringified, failed, mutated or unsafe summary evidence'
 );
@@ -130,10 +130,10 @@ foreach ([
     $assertTrue(str_contains($cli, $option), 'Verifier CLI option is missing: ' . $option);
 }
 $duplicateGuard = strpos($cli, 'if (isset($seen[$matchedName]))');
-$requiredGuard = strpos($cli, "foreach (['evidence_dir', 'commit'] as $required)");
-$commitGuard = strpos($cli, "preg_match('/^[a-f0-9]{40}$/', $values['commit'])");
+$requiredGuard = strpos($cli, "foreach (['evidence_dir', 'commit'] as \$required)");
+$commitGuard = strpos($cli, "preg_match('/^[a-f0-9]{40}$/', \$values['commit'])");
 $ageGuard = strpos($cli, '$maximumAgeSeconds < 60 || $maximumAgeSeconds > 604_800');
-$classLoad = strpos($cli, "require_once $projectRoot");
+$classLoad = strpos($cli, 'require_once $projectRoot');
 $assertTrue(
     $duplicateGuard !== false && $requiredGuard !== false
         && $commitGuard !== false && $ageGuard !== false && $classLoad !== false
