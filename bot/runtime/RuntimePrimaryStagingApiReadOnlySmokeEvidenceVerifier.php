@@ -22,10 +22,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
         private int $expectedBootstrapHookCount = 5,
         private int $expectedBootstrapFilterCount = 2
     ) {
-        $this->reportFile = str_replace('\\', '/', trim($this->reportFile));
-        $this->expectedCommit = trim($this->expectedCommit);
-        $this->expectedDatabaseIdentity = trim($this->expectedDatabaseIdentity);
-        $this->expectedEvidenceFingerprint = trim($this->expectedEvidenceFingerprint);
+        $this->reportFile = str_replace('\\', '/', $this->reportFile);
         if (preg_match('/^[a-f0-9]{40}$/', $this->expectedCommit) !== 1) {
             throw new InvalidArgumentException('Read-only smoke expected commit must be a full lowercase SHA-1.');
         }
@@ -100,22 +97,12 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             throw new RuntimeException('Read-only smoke report identity or version contract is invalid.');
         }
 
-        $commit = trim((string)($report['repository_commit'] ?? ''));
-        $databaseIdentity = trim((string)($report['database_identity_fingerprint'] ?? ''));
-        $evidenceFingerprint = trim((string)($report['evidence_fingerprint'] ?? ''));
+        $commit = (string)($report['repository_commit'] ?? '');
+        $databaseIdentity = (string)($report['database_identity_fingerprint'] ?? '');
+        $evidenceFingerprint = (string)($report['evidence_fingerprint'] ?? '');
         if (preg_match('/^[a-f0-9]{40}$/', $commit) !== 1) {
             throw new RuntimeException('Read-only smoke report repository commit format is invalid.');
         }
-        if (!hash_equals($this->expectedCommit, $commit)) {
-            throw new RuntimeException('Read-only smoke report belongs to a different repository commit.');
-        }
-        if (!hash_equals($this->expectedDatabaseIdentity, $databaseIdentity)) {
-            throw new RuntimeException('Read-only smoke report belongs to a different database identity.');
-        }
-        if (!hash_equals($this->expectedEvidenceFingerprint, $evidenceFingerprint)) {
-            throw new RuntimeException('Read-only smoke report belongs to different lifecycle evidence.');
-        }
-
         foreach ([
             'state_sha256',
             'outbox_fingerprint',
@@ -126,6 +113,15 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             if (!$this->validSha((string)($report[$field] ?? ''))) {
                 throw new RuntimeException('Read-only smoke report SHA-256 field is invalid: ' . $field . '.');
             }
+        }
+        if (!hash_equals($this->expectedCommit, $commit)) {
+            throw new RuntimeException('Read-only smoke report belongs to a different repository commit.');
+        }
+        if (!hash_equals($this->expectedDatabaseIdentity, $databaseIdentity)) {
+            throw new RuntimeException('Read-only smoke report belongs to a different database identity.');
+        }
+        if (!hash_equals($this->expectedEvidenceFingerprint, $evidenceFingerprint)) {
+            throw new RuntimeException('Read-only smoke report belongs to different lifecycle evidence.');
         }
 
         $revision = $this->positiveInteger($report['state_revision'] ?? null, 'state revision');
@@ -244,7 +240,6 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
 
     private function parseGeneratedAt(string $value): int
     {
-        $value = trim($value);
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $value) !== 1) {
             throw new RuntimeException('Read-only smoke report timestamp must use exact UTC +00:00 format.');
         }
@@ -261,7 +256,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
 
     private function validSha(string $value): bool
     {
-        return preg_match('/^[a-f0-9]{64}$/', trim($value)) === 1;
+        return preg_match('/^[a-f0-9]{64}$/', $value) === 1;
     }
 
     private function assertExactKeys(array $report, array $expected): void
