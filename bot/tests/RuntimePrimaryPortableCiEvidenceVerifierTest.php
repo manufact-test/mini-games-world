@@ -87,12 +87,18 @@ $writeBundle = static function (
         if ($name === '.' || $name === '..') continue;
         @unlink($temp . '/' . $name);
     }
+    $summaryPath = $temp . '/focused-suite-summary.json';
+    $manifestPath = $temp . '/focused-suite-manifest.json';
+    $logPath = $temp . '/focused-suite.log';
     file_put_contents(
-        $temp . '/focused-suite-summary.json',
+        $summaryPath,
         json_encode($summary, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n"
     );
-    file_put_contents($temp . '/focused-suite-manifest.json', $manifestContent);
-    file_put_contents($temp . '/focused-suite.log', $logContent);
+    file_put_contents($manifestPath, $manifestContent);
+    file_put_contents($logPath, $logContent);
+    clearstatcache(true, $summaryPath);
+    clearstatcache(true, $manifestPath);
+    clearstatcache(true, $logPath);
 };
 
 try {
@@ -113,7 +119,9 @@ try {
         'different repository commit'
     );
 
-    file_put_contents($temp . '/focused-suite.log', $logRaw . "tampered\n");
+    $logPath = $temp . '/focused-suite.log';
+    file_put_contents($logPath, $logRaw . "tampered\n");
+    clearstatcache(true, $logPath);
     $assertThrows(
         static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
         'log sha-256 does not match'
@@ -161,6 +169,7 @@ try {
 
     $writeBundle($baseSummary, $manifestRaw, $logRaw);
     file_put_contents($temp . '/unexpected.txt', 'unexpected');
+    clearstatcache(true, $temp . '/unexpected.txt');
     $assertThrows(
         static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
         'exactly three evidence files'
