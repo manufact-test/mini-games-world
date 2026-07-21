@@ -120,6 +120,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             'action' => 'staging_api_read_only_smoke_passed',
             'state_revision' => (int)$after['state_revision'],
             'state_sha256' => (string)$after['state_sha256'],
+            'projection_contract_version' => RuntimePrimaryAllModuleProjector::CONTRACT_VERSION,
             'outbox_event_count' => (int)$after['outbox_event_count'],
             'outbox_fingerprint' => (string)$after['outbox_fingerprint'],
             'top_level_count' => (int)($probe['top_level_count'] ?? 0),
@@ -134,6 +135,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             'context_state_matched' => true,
             'lifecycle_v4_verified' => true,
             'legacy_json_bridges_suppressed' => true,
+            'completed_events_lease_free' => true,
             'state_unchanged' => true,
             'snapshot_unchanged' => true,
             'outbox_unchanged' => true,
@@ -183,11 +185,18 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             $expectedRevision = $index + 1;
             $rowRevision = (int)($row['state_revision'] ?? 0);
             $rowSha = strtolower(trim((string)($row['state_sha256'] ?? '')));
+            $projectionVersion = trim((string)($row['projection_version'] ?? ''));
+            $leaseToken = trim((string)($row['lease_token'] ?? ''));
+            $leaseExpiresAt = trim((string)($row['lease_expires_at_utc'] ?? ''));
+            $lastError = trim((string)($row['last_error'] ?? ''));
             if ($rowRevision !== $expectedRevision
                 || ($row['status'] ?? '') !== 'completed'
                 || !$this->validSha($rowSha)
                 || (int)($row['attempt_count'] ?? -1) < 0
-                || trim((string)($row['projection_version'] ?? '')) === '') {
+                || $projectionVersion !== RuntimePrimaryAllModuleProjector::CONTRACT_VERSION
+                || $leaseToken !== ''
+                || $leaseExpiresAt !== ''
+                || $lastError !== '') {
                 throw new RuntimeException('Read-only API smoke outbox completion chain is invalid.');
             }
             if ($rowRevision === $revision && !hash_equals($stateSha, $rowSha)) {
@@ -195,13 +204,13 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             }
             $normalized[] = [
                 'state_revision' => $rowRevision,
-                'projection_version' => (string)$row['projection_version'],
+                'projection_version' => $projectionVersion,
                 'state_sha256' => $rowSha,
                 'status' => (string)$row['status'],
                 'attempt_count' => (int)$row['attempt_count'],
-                'lease_token' => (string)($row['lease_token'] ?? ''),
-                'lease_expires_at_utc' => (string)($row['lease_expires_at_utc'] ?? ''),
-                'last_error' => (string)($row['last_error'] ?? ''),
+                'lease_token' => $leaseToken,
+                'lease_expires_at_utc' => $leaseExpiresAt,
+                'last_error' => $lastError,
                 'available_at_utc' => (string)($row['available_at_utc'] ?? ''),
                 'created_at_utc' => (string)($row['created_at_utc'] ?? ''),
                 'updated_at_utc' => (string)($row['updated_at_utc'] ?? ''),
