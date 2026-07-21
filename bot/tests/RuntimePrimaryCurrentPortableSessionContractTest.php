@@ -23,7 +23,7 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
 
 $runnerCall = strpos($wrapper, 'bash "$RUNNER_SCRIPT"');
 $verifierCall = strpos($wrapper, '"$PHP_BIN" "$VERIFIER_SCRIPT"');
-$sessionCreate = strpos($wrapper, 'mkdir "$SESSION_ROOT"');
+$sessionCreate = strpos($wrapper, 'mkdir "$REQUESTED_SESSION_ROOT"');
 $assertTrue(
     $runnerCall !== false && $verifierCall !== false && $sessionCreate !== false
         && $sessionCreate < $runnerCall
@@ -47,8 +47,9 @@ $assertTrue(
         && $phpGuard < $sessionCreate
         && str_contains($wrapper, 'GNU coreutils timeout is required for a bounded portable session.')
         && str_contains($wrapper, 'PHP_VERSION_ID >= 80300')
-        && str_contains($wrapper, 'PHP_VERSION_ID < 80400'),
-    'Portable session must fail before filesystem changes without GNU timeout or PHP 8.3'
+        && str_contains($wrapper, 'PHP_VERSION_ID < 80400')
+        && str_contains($wrapper, 'timeout grep "$PHP_BIN"'),
+    'Portable session must fail before filesystem changes without GNU timeout, grep or PHP 8.3'
 );
 
 $cleanGuard = strpos($wrapper, 'git status --porcelain=v1 --untracked-files=all');
@@ -67,9 +68,20 @@ $assertTrue(
         && str_contains($wrapper, 'CI session root must not already exist.')
         && str_contains($wrapper, 'CI session root must stay outside the repository checkout.')
         && str_contains($wrapper, 'CI session root must stay outside public_html.')
-        && str_contains($wrapper, 'chmod 0700 "$SESSION_ROOT"')
-        && !str_contains($wrapper, 'mkdir -p "$SESSION_ROOT"'),
+        && str_contains($wrapper, 'REQUESTED_SESSION_ROOT="$SESSION_ROOT"')
+        && str_contains($wrapper, 'chmod 0700 "$REQUESTED_SESSION_ROOT"')
+        && !str_contains($wrapper, 'mkdir -p "$REQUESTED_SESSION_ROOT"'),
     'Portable session root must be fresh, external, private and non-symlink'
+);
+
+$assertTrue(
+    str_contains($wrapper, 'SESSION_ROOT="$(cd "$REQUESTED_SESSION_ROOT" && pwd -P)"')
+        && str_contains($wrapper, '[[ "$SESSION_ROOT" == "$REQUESTED_SESSION_ROOT" ]]')
+        && str_contains($wrapper, 'must use its canonical path without symlink parents')
+        && str_contains($wrapper, 'canonical CI session root must stay outside the repository checkout')
+        && str_contains($wrapper, 'canonical CI session root must stay outside public_html')
+        && str_contains($wrapper, 'CI session root must have exact mode 0700.'),
+    'Portable session must reject symlink-parent path escapes and verify exact root permissions'
 );
 
 $assertTrue(
@@ -90,11 +102,11 @@ $assertTrue(
 
 $assertTrue(
     str_contains($wrapper, 'chmod 0600 "$VERIFICATION_FILE"')
-        && str_contains($wrapper, 'VERIFICATION_MODE=')
+        && str_contains($wrapper, '[[ -f "$VERIFICATION_FILE" && ! -L "$VERIFICATION_FILE" ]]')
         && str_contains($wrapper, 'verification report must have exact mode 0600.')
         && str_contains($wrapper, '"${#SESSION_ENTRIES[@]}" -eq 2')
-        && str_contains($wrapper, 'CI session root exact entries are incomplete.'),
-    'Portable session must secure verification output and allow only two exact session entries'
+        && str_contains($wrapper, 'CI session root exact entries are incomplete or unsafe.'),
+    'Portable session must secure verification output and allow only two exact safe entries'
 );
 
 $assertTrue(
