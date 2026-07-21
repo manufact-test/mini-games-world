@@ -13,11 +13,35 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         private string $evidenceFile,
         private int $ttlSeconds = 300
     ) {
-        $this->projectRoot = rtrim(str_replace('\\', '/', $this->projectRoot), '/');
-        $this->configFile = str_replace('\\', '/', $this->configFile);
-        $this->evidenceFile = str_replace('\\', '/', $this->evidenceFile);
-        if ($this->projectRoot === '' || !is_dir($this->projectRoot)) {
-            throw new InvalidArgumentException('Read-only API smoke project root is unavailable.');
+        if ($this->projectRoot === ''
+            || str_contains($this->projectRoot, '\\')
+            || !str_starts_with($this->projectRoot, '/')
+            || ($this->projectRoot !== '/' && str_ends_with($this->projectRoot, '/'))
+            || is_link($this->projectRoot)) {
+            throw new InvalidArgumentException(
+                'Read-only API smoke project root must be an exact canonical Linux directory.'
+            );
+        }
+        $canonicalProject = realpath($this->projectRoot);
+        if (!is_string($canonicalProject)
+            || !is_dir($canonicalProject)
+            || !hash_equals($this->projectRoot, $canonicalProject)) {
+            throw new InvalidArgumentException(
+                'Read-only API smoke project root is unavailable or noncanonical.'
+            );
+        }
+        foreach ([
+            'config' => $this->configFile,
+            'evidence' => $this->evidenceFile,
+        ] as $label => $path) {
+            if ($path === ''
+                || str_contains($path, '\\')
+                || !str_starts_with($path, '/')
+                || str_ends_with($path, '/')) {
+                throw new InvalidArgumentException(
+                    'Read-only API smoke ' . $label . ' path must be an exact absolute Linux file path.'
+                );
+            }
         }
         if ($this->ttlSeconds < self::MIN_TTL_SECONDS
             || $this->ttlSeconds > self::MAX_TTL_SECONDS) {
@@ -27,22 +51,21 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
 
     public function build(int $now): array
     {
-        if (strtolower(trim((string)($this->baseConfig['environment'] ?? ''))) !== 'staging') {
+        if ($now < 1) {
+            throw new InvalidArgumentException('Read-only API smoke verification time is invalid.');
+        }
+        if (($this->baseConfig['environment'] ?? null) !== 'staging') {
             throw new RuntimeException('Read-only API smoke config overlay is staging-only.');
         }
-        $storageDriver = strtolower(trim((string)(
-            $this->baseConfig['storage_driver'] ?? 'json'
-        )));
-        if ($storageDriver === '') $storageDriver = 'json';
-        if ($storageDriver !== 'json') {
+        if (($this->baseConfig['storage_driver'] ?? 'json') !== 'json') {
             throw new RuntimeException('Read-only API smoke requires JSON as the persistent default storage driver.');
         }
-        $rawDataDir = str_replace('\\', '/', (string)(
-            $this->baseConfig['data_dir'] ?? ''
-        ));
-        if ($rawDataDir !== '/') $rawDataDir = rtrim($rawDataDir, '/');
-        if ($rawDataDir === ''
+        $rawDataDir = $this->baseConfig['data_dir'] ?? null;
+        if (!is_string($rawDataDir)
+            || $rawDataDir === ''
+            || str_contains($rawDataDir, '\\')
             || !str_starts_with($rawDataDir, '/')
+            || ($rawDataDir !== '/' && str_ends_with($rawDataDir, '/'))
             || is_link($rawDataDir)
             || !is_dir($rawDataDir)) {
             throw new RuntimeException('Read-only API smoke JSON rollback data directory is unavailable or unsafe.');
@@ -51,8 +74,6 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         if (!is_string($canonicalDataDir)) {
             throw new RuntimeException('Read-only API smoke JSON rollback data directory is unavailable or unsafe.');
         }
-        $canonicalDataDir = str_replace('\\', '/', $canonicalDataDir);
-        if ($canonicalDataDir !== '/') $canonicalDataDir = rtrim($canonicalDataDir, '/');
         if (!hash_equals($canonicalDataDir, $rawDataDir)) {
             throw new RuntimeException('Read-only API smoke JSON rollback data directory must be canonical and symlink-free.');
         }
@@ -109,35 +130,36 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
             throw new RuntimeException('Read-only API smoke requires an enabled staging database.');
         }
         $databaseIdentity = $databaseConfig->identityFingerprint();
-        $evidenceDatabaseIdentity = (string)(
-            $verification['database_identity_fingerprint'] ?? ''
-        );
-        if (preg_match('/^[a-f0-9]{64}$/', $databaseIdentity) !== 1
+        $evidenceDatabaseIdentity = $verification['database_identity_fingerprint'] ?? null;
+        if (!is_string($evidenceDatabaseIdentity)
+            || preg_match('/^[a-f0-9]{64}$/', $databaseIdentity) !== 1
             || preg_match('/^[a-f0-9]{64}$/', $evidenceDatabaseIdentity) !== 1
             || !hash_equals($databaseIdentity, $evidenceDatabaseIdentity)) {
             throw new RuntimeException('Read-only API smoke evidence belongs to a different database identity.');
         }
 
         $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($this->projectRoot);
-        $evidenceCommit = (string)($verification['repository_commit'] ?? '');
-        if (preg_match('/^[a-f0-9]{40}$/', $currentCommit) !== 1
+        $evidenceCommit = $verification['repository_commit'] ?? null;
+        if (!is_string($evidenceCommit)
+            || preg_match('/^[a-f0-9]{40}$/', $currentCommit) !== 1
             || preg_match('/^[a-f0-9]{40}$/', $evidenceCommit) !== 1
             || !hash_equals($currentCommit, $evidenceCommit)) {
             throw new RuntimeException('Read-only API smoke evidence belongs to a different checkout.');
         }
 
-        $evidenceFingerprint = (string)(
-            $verification['evidence_fingerprint'] ?? ''
-        );
-        if (preg_match('/^[a-f0-9]{64}$/', $evidenceFingerprint) !== 1) {
+        $evidenceFingerprint = $verification['evidence_fingerprint'] ?? null;
+        if (!is_string($evidenceFingerprint)
+            || preg_match('/^[a-f0-9]{64}$/', $evidenceFingerprint) !== 1) {
             throw new RuntimeException('Read-only API smoke evidence fingerprint is invalid.');
         }
         $baseline = is_array(
             $manifest['request_session_evidence']['baseline'] ?? null
         ) ? $manifest['request_session_evidence']['baseline'] : [];
-        $baselineRevision = (int)($baseline['state_revision'] ?? 0);
-        $baselineSha = (string)($baseline['state_sha256'] ?? '');
-        if ($baselineRevision < 1
+        $baselineRevision = $baseline['state_revision'] ?? null;
+        $baselineSha = $baseline['state_sha256'] ?? null;
+        if (!is_int($baselineRevision)
+            || $baselineRevision < 1
+            || !is_string($baselineSha)
             || preg_match('/^[a-f0-9]{64}$/', $baselineSha) !== 1) {
             throw new RuntimeException('Read-only API smoke lifecycle baseline is invalid.');
         }
@@ -146,8 +168,10 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         if (!is_string($canonicalEvidence)) {
             throw new RuntimeException('Read-only API smoke evidence canonical path is unavailable.');
         }
-        $canonicalEvidence = str_replace('\\', '/', $canonicalEvidence);
-        if (!hash_equals($privateDir, rtrim(dirname($canonicalEvidence), '/'))) {
+        if (!hash_equals($this->evidenceFile, $canonicalEvidence)) {
+            throw new RuntimeException('Read-only API smoke evidence must use its exact canonical path.');
+        }
+        if (!hash_equals($privateDir, dirname($canonicalEvidence))) {
             throw new RuntimeException('Read-only API smoke evidence escaped the verified private directory.');
         }
 
