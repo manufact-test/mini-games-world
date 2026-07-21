@@ -1,0 +1,60 @@
+name: DB Primary Staging API Session Integration Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6l-staging-request-finalizer-session
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryEntrypointStorageContext.php'
+      - 'bot/runtime/RuntimePrimaryStagingApiRequestFinalizationHook.php'
+      - 'bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php'
+      - 'bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php'
+      - 'bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php'
+      - 'bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php'
+      - 'bot/runtime/RuntimePrimaryStagingSelectorEvidence.php'
+      - 'bot/runtime/RuntimePrimaryStagingRequestLifecycleEvidence.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV4Verifier.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV4Gate.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceGate.php'
+      - 'bot/runtime/RuntimePrimaryStagingLifecycleEvidenceCollector.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'ops/runtime/collect-staging-db-primary-lifecycle-evidence.php'
+      - 'bot/tests/support/RuntimePrimaryStagingEvidenceV4ManifestFixture.php'
+      - 'bot/tests/RuntimePrimaryStagingApiRequestFinalizationHookTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiSessionCoordinatorTest.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestLifecycleEvidenceTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceV4VerifierTest.php'
+      - 'bot/tests/RuntimePrimaryStagingLifecycleEvidenceCollectorTest.php'
+      - 'bot/tests/RuntimePrimaryStagingLifecycleEvidenceCollectorCliContractTest.php'
+      - 'ops/checks/db-primary-staging-api-session-integration-local.sh'
+      - 'ops/runtime/DB_PRIMARY_STAGING_API_SESSION_INTEGRATION.md'
+      - '.github/workflows/db-primary-staging-api-session-integration-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-api-session-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging API session integration checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-api-session-integration-local.sh
