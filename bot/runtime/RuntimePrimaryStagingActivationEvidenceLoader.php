@@ -9,21 +9,65 @@ final class RuntimePrimaryStagingActivationEvidenceLoader
         private string $projectRoot,
         private string $privateDir
     ) {
-        $this->projectRoot = rtrim(str_replace('\\', '/', trim($this->projectRoot)), '/');
-        $this->privateDir = rtrim(str_replace('\\', '/', trim($this->privateDir)), '/');
-        if ($this->projectRoot === '' || !is_dir($this->projectRoot)) {
-            throw new InvalidArgumentException('Staging activation evidence project root is unavailable.');
+        if ($this->projectRoot === ''
+            || str_contains($this->projectRoot, '\\')
+            || !str_starts_with($this->projectRoot, '/')
+            || ($this->projectRoot !== '/' && str_ends_with($this->projectRoot, '/'))
+            || is_link($this->projectRoot)) {
+            throw new InvalidArgumentException(
+                'Staging activation evidence project root must be an exact canonical Linux directory.'
+            );
         }
-        if ($this->privateDir === '' || !is_dir($this->privateDir)) {
-            throw new InvalidArgumentException('Staging activation evidence private directory is unavailable.');
+        if ($this->privateDir === ''
+            || str_contains($this->privateDir, '\\')
+            || !str_starts_with($this->privateDir, '/')
+            || ($this->privateDir !== '/' && str_ends_with($this->privateDir, '/'))
+            || is_link($this->privateDir)) {
+            throw new InvalidArgumentException(
+                'Staging activation evidence private directory must be an exact canonical Linux directory.'
+            );
+        }
+
+        $canonicalProject = realpath($this->projectRoot);
+        $canonicalPrivate = realpath($this->privateDir);
+        if (!is_string($canonicalProject)
+            || !is_dir($canonicalProject)
+            || !hash_equals($this->projectRoot, $canonicalProject)) {
+            throw new InvalidArgumentException(
+                'Staging activation evidence project root is unavailable or noncanonical.'
+            );
+        }
+        if (!is_string($canonicalPrivate)
+            || !is_dir($canonicalPrivate)
+            || !hash_equals($this->privateDir, $canonicalPrivate)) {
+            throw new InvalidArgumentException(
+                'Staging activation evidence private directory is unavailable or noncanonical.'
+            );
+        }
+        if ($this->privateDir === $this->projectRoot
+            || str_starts_with($this->privateDir, $this->projectRoot . '/')) {
+            throw new InvalidArgumentException(
+                'Staging activation evidence private directory must remain outside the project.'
+            );
+        }
+        clearstatcache(true, $this->privateDir);
+        $privateMode = fileperms($this->privateDir);
+        if (!is_int($privateMode) || ($privateMode & 0022) !== 0) {
+            throw new InvalidArgumentException(
+                'Staging activation evidence private directory must not be group/world writable.'
+            );
         }
     }
 
     public function load(string $path): array
     {
-        $path = str_replace('\\', '/', trim($path));
-        if ($path === '' || !str_starts_with($path, '/')) {
-            throw new RuntimeException('Staging activation evidence path must be absolute.');
+        if ($path === ''
+            || str_contains($path, '\\')
+            || !str_starts_with($path, '/')
+            || str_ends_with($path, '/')) {
+            throw new RuntimeException(
+                'Staging activation evidence path must be an exact absolute Linux file path.'
+            );
         }
         if (is_link($path)) {
             throw new RuntimeException('Staging activation evidence file must not be a symbolic link.');
@@ -32,8 +76,10 @@ final class RuntimePrimaryStagingActivationEvidenceLoader
         if (!is_string($canonical) || !is_file($canonical) || !is_readable($canonical)) {
             throw new RuntimeException('Staging activation evidence file is unavailable or unreadable.');
         }
-        $canonical = str_replace('\\', '/', $canonical);
-        $parent = rtrim(str_replace('\\', '/', dirname($canonical)), '/');
+        if (!hash_equals($path, $canonical)) {
+            throw new RuntimeException('Staging activation evidence file must use its exact canonical path.');
+        }
+        $parent = dirname($canonical);
         if (!hash_equals($this->privateDir, $parent)) {
             throw new RuntimeException('Staging activation evidence file must remain in the verified private directory.');
         }
@@ -41,6 +87,7 @@ final class RuntimePrimaryStagingActivationEvidenceLoader
             throw new RuntimeException('Staging activation evidence file must remain outside the deployed project.');
         }
 
+        clearstatcache(true, $canonical);
         $size = filesize($canonical);
         if (!is_int($size) || $size < 2 || $size > self::MAX_BYTES) {
             throw new RuntimeException('Staging activation evidence file size is invalid.');
