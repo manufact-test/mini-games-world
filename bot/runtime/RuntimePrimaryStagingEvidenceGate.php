@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimePrimaryRepositoryCommitResolver.php';
+require_once __DIR__ . '/RuntimePrimaryStagingEvidenceVerifier.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Verifier.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Gate.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV3Verifier.php';
