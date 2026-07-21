@@ -15,13 +15,21 @@ fail() {
   exit 2
 }
 
+file_mode() {
+  "$PHP_BIN" -r '
+$mode = fileperms($argv[1]);
+if (!is_int($mode)) exit(2);
+printf("%03o", $mode & 0777);
+' "$1"
+}
+
 case "$PROJECT_ROOT" in
   */public_html|*/public_html/*)
     fail 'repository checkout must not be inside public_html.'
     ;;
 esac
 
-for command_name in bash git date mkdir chmod cat timeout "$PHP_BIN"; do
+for command_name in bash git date mkdir chmod cat timeout grep "$PHP_BIN"; do
   command -v "$command_name" >/dev/null 2>&1 \
     || fail "required command is unavailable: $command_name"
 done
@@ -68,9 +76,23 @@ case "$SESSION_ROOT" in
     ;;
 esac
 
-mkdir "$SESSION_ROOT" || fail 'CI session root could not be created.'
-chmod 0700 "$SESSION_ROOT" || fail 'CI session root permissions could not be secured.'
-SESSION_ROOT="$(cd "$SESSION_ROOT" && pwd -P)"
+REQUESTED_SESSION_ROOT="$SESSION_ROOT"
+mkdir "$REQUESTED_SESSION_ROOT" || fail 'CI session root could not be created.'
+chmod 0700 "$REQUESTED_SESSION_ROOT" || fail 'CI session root permissions could not be secured.'
+SESSION_ROOT="$(cd "$REQUESTED_SESSION_ROOT" && pwd -P)"
+[[ "$SESSION_ROOT" == "$REQUESTED_SESSION_ROOT" ]] \
+  || fail 'CI session root must use its canonical path without symlink parents.'
+case "$SESSION_ROOT" in
+  "$PROJECT_ROOT"|"$PROJECT_ROOT"/*)
+    fail 'canonical CI session root must stay outside the repository checkout.'
+    ;;
+  */public_html|*/public_html/*)
+    fail 'canonical CI session root must stay outside public_html.'
+    ;;
+esac
+[[ "$(file_mode "$SESSION_ROOT")" == '700' ]] \
+  || fail 'CI session root must have exact mode 0700.'
+
 EVIDENCE_DIR="$SESSION_ROOT/evidence"
 VERIFICATION_FILE="$SESSION_ROOT/current-focused-suite-verification.json"
 
@@ -90,13 +112,9 @@ bash "$RUNNER_SCRIPT"
   > "$VERIFICATION_FILE"
 chmod 0600 "$VERIFICATION_FILE" \
   || fail 'verification report permissions could not be secured.'
-
-VERIFICATION_MODE="$("$PHP_BIN" -r '
-$mode = fileperms($argv[1]);
-if (!is_int($mode)) exit(2);
-printf("%03o", $mode & 0777);
-' "$VERIFICATION_FILE")" || fail 'verification report permissions could not be read.'
-[[ "$VERIFICATION_MODE" == '600' ]] \
+[[ -f "$VERIFICATION_FILE" && ! -L "$VERIFICATION_FILE" ]] \
+  || fail 'verification report became unavailable or unsafe.'
+[[ "$(file_mode "$VERIFICATION_FILE")" == '600' ]] \
   || fail 'verification report must have exact mode 0600.'
 
 shopt -s nullglob dotglob
@@ -104,8 +122,9 @@ SESSION_ENTRIES=("$SESSION_ROOT"/*)
 shopt -u nullglob dotglob
 [[ "${#SESSION_ENTRIES[@]}" -eq 2 ]] \
   || fail 'CI session root must contain only evidence and its verification report.'
-[[ -d "$EVIDENCE_DIR" && -f "$VERIFICATION_FILE" ]] \
-  || fail 'CI session root exact entries are incomplete.'
+[[ -d "$EVIDENCE_DIR" && ! -L "$EVIDENCE_DIR"
+    && -f "$VERIFICATION_FILE" && ! -L "$VERIFICATION_FILE" ]] \
+  || fail 'CI session root exact entries are incomplete or unsafe.'
 
 printf '\nCurrent portable verification report:\n'
 cat "$VERIFICATION_FILE"
