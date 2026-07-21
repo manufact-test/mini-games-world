@@ -24,6 +24,7 @@ require $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestSessionConfig.p
 require $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestLifecycleEvidence.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV4Verifier.php';
 require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV4Gate.php';
+require $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceGate.php';
 require $projectRoot . '/bot/tests/support/RuntimePrimaryStagingEvidenceManifestFixture.php';
 require $projectRoot . '/bot/tests/support/RuntimePrimaryStagingEvidenceV2ManifestFixture.php';
 require $projectRoot . '/bot/tests/support/RuntimePrimaryStagingEvidenceV3ManifestFixture.php';
@@ -75,6 +76,19 @@ try {
     $gate = (new RuntimePrimaryStagingEvidenceV4Gate($projectRoot))->verify($manifest);
     $assertTrue(($gate['ok'] ?? false) === true, 'V4 checkout gate must accept exact commit');
     $assertTrue(($gate['repository_commit_matches'] ?? false) === true, 'V4 gate must prove checkout binding');
+
+    $generic = (new RuntimePrimaryStagingEvidenceGate($projectRoot))->verify($manifest);
+    $assertTrue(($generic['ok'] ?? false) === true, 'Generic evidence gate must route lifecycle v4');
+    $assertTrue(
+        ($generic['report_type'] ?? '') === 'mvp-14.8.6m-staging-evidence-v4-verification',
+        'Generic evidence gate must preserve the v4 verification report'
+    );
+    $assertTrue(
+        preg_match('/^[a-f0-9]{64}$/', (string)(
+            $generic['request_session_evidence_fingerprint'] ?? ''
+        )) === 1,
+        'Generic evidence gate must expose lifecycle fingerprint'
+    );
 
     $v3 = $manifest;
     $v3['manifest_version'] = RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION;
