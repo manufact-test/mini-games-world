@@ -46,5 +46,6 @@ jobs:
           path: |
             ${{ runner.temp }}/mgw-ci-focused/focused-suite.log
             ${{ runner.temp }}/mgw-ci-focused/focused-suite-summary.json
+            ${{ runner.temp }}/mgw-ci-focused/focused-suite-manifest.json
           if-no-files-found: warn
           retention-days: 7
