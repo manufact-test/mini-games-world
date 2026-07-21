@@ -8,13 +8,22 @@ cd "$PROJECT_ROOT"
 
 bash ops/checks/db-primary-current-portable-validation-local.sh
 
-bash -n ops/checks/db-primary-current-portable-ci-evidence-verifier-local.sh
+BASH_FILES=(
+  ops/checks/db-primary-current-portable-ci-evidence-verifier-local.sh
+  ops/ci/run-and-verify-current-portable-focused-suite.sh
+)
+
+for file in "${BASH_FILES[@]}"; do
+  bash -n "$file"
+  printf 'shell lint ok: %s\n' "$file"
+done
 
 FILES=(
   bot/runtime/RuntimePrimaryCurrentPortableCiEvidenceVerifier.php
   ops/ci/verify-current-portable-focused-suite-evidence.php
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierTest.php
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierContractTest.php
+  bot/tests/RuntimePrimaryCurrentPortableSessionContractTest.php
 )
 
 for file in "${FILES[@]}"; do
@@ -25,6 +34,7 @@ done
 TESTS=(
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierTest.php
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierContractTest.php
+  bot/tests/RuntimePrimaryCurrentPortableSessionContractTest.php
 )
 
 for test_file in "${TESTS[@]}"; do
