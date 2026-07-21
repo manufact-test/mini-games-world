@@ -22,17 +22,42 @@ final class RuntimePrimaryEntrypointStorageContext
     }
 }
 
+final class RuntimePrimaryStagingApiSessionCoordinatorTestSelector
+{
+    public function __construct(private bool $enabled) {}
+    public function enabledFor(string $entrypoint): bool
+    {
+        return $this->enabled && $entrypoint === 'api';
+    }
+}
+final class RuntimePrimaryStagingEntrypointSelectorConfig
+{
+    public static function fromApplicationConfig(array $config): RuntimePrimaryStagingApiSessionCoordinatorTestSelector
+    {
+        return new RuntimePrimaryStagingApiSessionCoordinatorTestSelector(
+            (bool)($config['selector_enabled'] ?? false)
+        );
+    }
+}
+
 final class RuntimePrimaryPrivateConfigGuard
 {
+    public static int $calls = 0;
     public static function assertExternal(string $configFile, string $projectRoot): array
     {
+        self::$calls++;
         return ['private_dir' => dirname($configFile)];
     }
 }
 
 final class DatabaseConfig
 {
-    public static function fromApplicationConfig(array $config): self { return new self(); }
+    public static int $calls = 0;
+    public static function fromApplicationConfig(array $config): self
+    {
+        self::$calls++;
+        return new self();
+    }
     public function enabled(): bool { return true; }
     public function identityFingerprint(): string { return str_repeat('b', 64); }
 }
@@ -117,14 +142,16 @@ final class RuntimePrimaryStagingRequestSessionConfig
 
 final class RuntimePrimaryStagingSelectorEvidence
 {
-    public const CONTRACT_VERSION = 'v2-api-only-staging-lifecycle-selector';
+    public const CONTRACT_VERSION = 'v2-api-session-staging-entrypoint-selector';
 }
 
 final class RuntimePrimaryStagingApiSessionCoordinatorTestDatabase {}
 final class PdoConnectionFactory
 {
+    public static int $calls = 0;
     public static function create(DatabaseConfig $config): RuntimePrimaryStagingApiSessionCoordinatorTestDatabase
     {
+        self::$calls++;
         return new RuntimePrimaryStagingApiSessionCoordinatorTestDatabase();
     }
 }
@@ -228,9 +255,28 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     throw new RuntimeException('Expected exception was not thrown.');
 };
 
+$disabledConfig = [
+    'environment' => 'staging',
+    'data_dir' => '/private/json',
+    'selector_enabled' => false,
+];
+$disabled = new RuntimePrimaryStagingApiSessionCoordinator(
+    $projectRoot,
+    $disabledConfig,
+    '/private/config.php'
+);
+$assertThrows(
+    static fn() => $disabled->install(),
+    'requires the exact api selector latch'
+);
+$assertTrue(RuntimePrimaryPrivateConfigGuard::$calls === 0, 'Missing selector latch must block before private config');
+$assertTrue(DatabaseConfig::$calls === 0, 'Missing selector latch must block before DB config');
+$assertTrue(PdoConnectionFactory::$calls === 0, 'Missing selector latch must block before MySQL');
+
 $config = [
     'environment' => 'staging',
     'data_dir' => '/private/json',
+    'selector_enabled' => true,
 ];
 $coordinator = new RuntimePrimaryStagingApiSessionCoordinator(
     $projectRoot,
@@ -248,7 +294,7 @@ $assertThrows(
 );
 $assertTrue(
     RuntimePrimaryStagingApiRequestFinalizationHook::$constructCalls === 1,
-    'Coordinator must fully prepare the finalizer hook before validating publication'
+    'Coordinator must fully prepare finalizer hook before validating publication'
 );
 $assertTrue(
     RuntimePrimaryEntrypointStorageContext::$installCalls === 0,
@@ -256,7 +302,7 @@ $assertTrue(
 );
 $assertTrue(
     !isset($GLOBALS['mgw_api_db_primary_finalization_hook']),
-    'Invalid hook registry must not publish the finalization hook'
+    'Invalid hook registry must not publish finalization hook'
 );
 
 RuntimePrimaryEntrypointStorageContext::reset();
@@ -277,15 +323,15 @@ $assertTrue(
 );
 $assertTrue(
     $published instanceof RuntimePrimaryStagingApiRequestFinalizationHook,
-    'Valid coordinator path must publish the prepared finalization hook'
+    'Valid coordinator path must publish prepared finalization hook'
 );
 $assertTrue(
     ($GLOBALS['mgw_api_success_hooks'][0] ?? null) === $published,
-    'DB-primary finalizer must be the first API success hook'
+    'DB-primary finalizer must be first API success hook'
 );
 $assertTrue(
     ($GLOBALS['mgw_api_success_hooks'][1] ?? null) === $existingHook,
-    'Existing API success hooks must retain their order after the finalizer'
+    'Existing API success hooks must retain order after finalizer'
 );
 
 fwrite(STDOUT, "RuntimePrimaryStagingApiSessionCoordinatorTest passed: {$assertions} assertions.\n");
