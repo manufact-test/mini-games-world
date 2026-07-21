@@ -18,6 +18,7 @@ jobs:
     env:
       MGW_CI_OUTPUT_DIR: ${{ runner.temp }}/mgw-current-ci-${{ github.run_id }}-${{ github.run_attempt }}
       MGW_CI_TIMEOUT_SECONDS: '2700'
+      MGW_CI_VERIFICATION_FILE: ${{ runner.temp }}/mgw-current-ci-verification-${{ github.run_id }}-${{ github.run_attempt }}.json
 
     steps:
       - name: Checkout exact repository revision
@@ -29,13 +30,28 @@ jobs:
       - name: Run current portable focused suite
         run: bash ops/ci/run-current-portable-focused-suite.sh
 
-      - name: Show safe summary
+      - name: Verify exact current evidence bundle
+        run: |
+          umask 077
+          php ops/ci/verify-current-portable-focused-suite-evidence.php \
+            --evidence-dir="$MGW_CI_OUTPUT_DIR" \
+            --expected-commit="$GITHUB_SHA" \
+            --max-age-seconds=3600 \
+            > "$MGW_CI_VERIFICATION_FILE"
+          cat "$MGW_CI_VERIFICATION_FILE"
+
+      - name: Show safe reports
         if: always()
         run: |
           if [ -f "$MGW_CI_OUTPUT_DIR/current-focused-suite-summary.json" ]; then
             cat "$MGW_CI_OUTPUT_DIR/current-focused-suite-summary.json"
           else
             printf '{"ok":false,"action":"current_portable_ci_summary_missing"}\n'
+          fi
+          if [ -f "$MGW_CI_VERIFICATION_FILE" ]; then
+            cat "$MGW_CI_VERIFICATION_FILE"
+          else
+            printf '{"ok":false,"action":"current_portable_ci_verification_missing"}\n'
           fi
 
       - name: Upload current focused-suite evidence
@@ -47,5 +63,6 @@ jobs:
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite.log
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-summary.json
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-manifest.json
+            ${{ env.MGW_CI_VERIFICATION_FILE }}
           if-no-files-found: warn
           retention-days: 7
