@@ -60,11 +60,6 @@ final class StorageFactory
         static $attempted = [];
         static $failures = [];
 
-        if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
-            && RuntimePrimaryEntrypointStorageContext::installed()) {
-            return;
-        }
-
         $script = basename(trim((string)(
             $_SERVER['SCRIPT_FILENAME']
             ?? $_SERVER['PHP_SELF']
@@ -84,6 +79,10 @@ final class StorageFactory
                 0,
                 $failures[$entrypoint]
             );
+        }
+        if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+            && RuntimePrimaryEntrypointStorageContext::installed()) {
+            return;
         }
         if (isset($attempted[$entrypoint])) {
             return;
