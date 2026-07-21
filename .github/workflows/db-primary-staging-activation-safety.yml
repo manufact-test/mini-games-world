@@ -1,0 +1,59 @@
+name: DB Primary Staging Activation Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6g-staging-evidence-collector
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryAllModuleProjector.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV2Verifier.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceSource.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceCollector.php'
+      - 'bot/runtime/RuntimePrimaryStagingSchemaInspector.php'
+      - 'bot/runtime/RuntimePrimaryStagingActivationConfig.php'
+      - 'bot/runtime/RuntimePrimaryStagingActivationEvidenceLoader.php'
+      - 'bot/runtime/RuntimePrimaryStagingActivationGuard.php'
+      - 'ops/runtime/inspect-staging-db-primary-activation.php'
+      - 'bot/tests/support/RuntimePrimaryStagingEvidenceV2ManifestFixture.php'
+      - 'bot/tests/RuntimePrimaryAllModuleProjectorTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceV2VerifierTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceSourceContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingSchemaInspectorTest.php'
+      - 'bot/tests/RuntimePrimaryStagingActivationConfigTest.php'
+      - 'bot/tests/RuntimePrimaryStagingActivationEvidenceLoaderTest.php'
+      - 'bot/tests/RuntimePrimaryStagingActivationGuardTest.php'
+      - 'bot/tests/RuntimePrimaryStagingActivationCliContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingActivationGuardContractTest.php'
+      - 'ops/checks/db-primary-staging-activation-local.sh'
+      - 'ops/runtime/DB_PRIMARY_STAGING_ACTIVATION.md'
+      - '.github/workflows/db-primary-staging-activation-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-activation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging activation checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-activation-local.sh

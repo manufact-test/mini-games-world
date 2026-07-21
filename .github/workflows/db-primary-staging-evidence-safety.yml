@@ -1,0 +1,48 @@
+name: DB Primary Staging Evidence Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6e-staging-primary-rehearsal
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryEntrypointEvidence.php'
+      - 'bot/runtime/RuntimePrimaryRepositoryCommitResolver.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceVerifier.php'
+      - 'bot/runtime/RuntimePrimaryStagingEvidenceGate.php'
+      - 'ops/runtime/verify-staging-db-primary-evidence.php'
+      - 'bot/tests/support/RuntimePrimaryStagingEvidenceManifestFixture.php'
+      - 'bot/tests/RuntimePrimaryEntrypointEvidenceTest.php'
+      - 'bot/tests/RuntimePrimaryRepositoryCommitResolverTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceVerifierTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceGateTest.php'
+      - 'bot/tests/RuntimePrimaryStagingEvidenceCliContractTest.php'
+      - 'ops/checks/db-primary-staging-evidence-local.sh'
+      - '.github/workflows/db-primary-staging-evidence-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging evidence checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-evidence-local.sh

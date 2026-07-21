@@ -1,0 +1,46 @@
+name: DB Primary Staging Storage Resolver Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6h-staging-activation-guard
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryStagingStorageResolverConfig.php'
+      - 'bot/runtime/RuntimePrimaryStagingStorageResolution.php'
+      - 'bot/runtime/RuntimePrimaryStagingStorageResolver.php'
+      - 'ops/runtime/inspect-staging-db-primary-storage-resolution.php'
+      - 'bot/tests/RuntimePrimaryStagingStorageResolverConfigTest.php'
+      - 'bot/tests/RuntimePrimaryStagingStorageResolutionTest.php'
+      - 'bot/tests/RuntimePrimaryStagingStorageResolverContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingStorageResolutionCliContractTest.php'
+      - 'ops/checks/db-primary-staging-storage-resolver-local.sh'
+      - 'ops/runtime/DB_PRIMARY_STAGING_STORAGE_RESOLVER.md'
+      - '.github/workflows/db-primary-staging-storage-resolver-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-storage-resolver-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging storage resolver checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-storage-resolver-local.sh

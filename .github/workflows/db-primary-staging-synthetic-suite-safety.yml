@@ -1,0 +1,44 @@
+name: DB Primary Staging Synthetic Suite Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6i-staging-storage-resolver
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimarySyntheticRollback.php'
+      - 'bot/runtime/RuntimePrimaryStagingSyntheticSuite.php'
+      - 'ops/runtime/run-staging-db-primary-synthetic-suite.php'
+      - 'bot/tests/RuntimePrimaryStagingSyntheticSuiteTest.php'
+      - 'bot/tests/RuntimePrimaryStagingSyntheticSuiteContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingSyntheticSuiteCliContractTest.php'
+      - 'ops/checks/db-primary-staging-synthetic-suite-local.sh'
+      - 'ops/runtime/DB_PRIMARY_STAGING_SYNTHETIC_SUITE.md'
+      - '.github/workflows/db-primary-staging-synthetic-suite-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-synthetic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging synthetic suite checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-synthetic-suite-local.sh
