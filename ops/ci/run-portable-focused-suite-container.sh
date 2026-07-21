@@ -50,9 +50,8 @@ chmod 0700 "$OUTPUT_DIR" 2>/dev/null || true
 if [[ "$REBUILD_IMAGE" == '1' ]] \
   || ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
   docker build \
-    --file "$DOCKERFILE" \
     --tag "$IMAGE_NAME" \
-    "$PROJECT_ROOT"
+    - < "$DOCKERFILE"
 fi
 
 HOST_UID="$(id -u)"
