@@ -38,7 +38,8 @@ $assertTrue(
         && str_contains($runner, 'SUITE_SCRIPT="ops/checks/db-primary-current-portable-validation-local.sh"')
         && str_contains($runner, 'MANIFEST_FILE="ops/ci/current-portable-suite-manifest.json"')
         && str_contains($runner, 'v2-current-db-primary-focused-suite')
-        && str_contains($runner, "(\$data[\"expected_unique_script_count\"] ?? null) !== 14"),
+        && str_contains($runner, '(\$data["expected_unique_script_count"] ?? null) !== 14') === false
+        && str_contains($runner, '($data["expected_unique_script_count"] ?? null) !== 14'),
     'Current portable runner must use the exact strict suite and manifest contract'
 );
 $assertTrue(
@@ -51,12 +52,35 @@ $assertTrue(
 $assertTrue(
     str_contains($runner, 'find "$CANONICAL_OUTPUT_DIR" -mindepth 1 -maxdepth 1')
         && str_contains($runner, 'chmod 0700 "$CANONICAL_OUTPUT_DIR"')
-        && str_contains($runner, 'chmod 0600 "$LOG_FILE"')
+        && str_contains($runner, 'chmod 0600 "$LOG_FILE" "$MANIFEST_ARTIFACT_FILE"')
         && str_contains($runner, 'chmod 0600 "$SUMMARY_FILE"')
         && str_contains($runner, 'current-focused-suite.log')
         && str_contains($runner, 'current-focused-suite-summary.json')
         && str_contains($runner, 'current-focused-suite-manifest.json'),
     'Current portable runner must create one fresh private exact evidence bundle'
+);
+$assertTrue(
+    str_contains($runner, 'file_mode()')
+        && str_contains($runner, 'artifact directory must have exact mode 0700')
+        && str_contains($runner, 'log and manifest must have exact mode 0600')
+        && str_contains($runner, 'summary must have exact mode 0600')
+        && !str_contains($runner, 'chmod 0700 "$CANONICAL_OUTPUT_DIR" 2>/dev/null || true')
+        && !str_contains($runner, 'chmod 0600 "$SUMMARY_FILE" 2>/dev/null || true'),
+    'Current portable runner must require and verify exact private permissions'
+);
+$assertTrue(
+    substr_count($runner, 'PIPE_STATUS=("${PIPESTATUS[@]}")') === 2
+        && str_contains($runner, 'TEE_EXIT_CODE="${PIPE_STATUS[1]:-127}"')
+        && str_contains($runner, 'focused-suite log capture failed')
+        && str_contains($runner, 'SUITE_EXIT_CODE=4'),
+    'Current portable runner must fail a successful suite when tee log capture fails'
+);
+$assertTrue(
+    str_contains($runner, 'shopt -s nullglob dotglob')
+        && str_contains($runner, 'BUNDLE_ENTRIES=("$CANONICAL_OUTPUT_DIR"/*)')
+        && str_contains($runner, '"${#BUNDLE_ENTRIES[@]}" -eq 3')
+        && str_contains($runner, 'exact evidence bundle is incomplete or unsafe'),
+    'Current portable runner must finish with exactly the three expected real evidence files'
 );
 $assertTrue(
     str_contains($runner, 'timeout --version')
