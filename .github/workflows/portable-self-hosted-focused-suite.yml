@@ -18,6 +18,7 @@ jobs:
     env:
       MGW_CI_OUTPUT_DIR: ${{ runner.temp }}/mgw-ci-focused
       MGW_CI_TIMEOUT_SECONDS: '2400'
+      MGW_CI_VERIFICATION_FILE: ${{ runner.temp }}/mgw-ci-focused-verification.json
 
     steps:
       - name: Checkout exact repository revision
@@ -29,13 +30,25 @@ jobs:
       - name: Run portable focused suite
         run: bash ops/ci/run-portable-focused-suite.sh
 
-      - name: Show safe summary
+      - name: Verify exact evidence bundle
+        run: |
+          php ops/ci/verify-portable-focused-suite-evidence.php \
+            --evidence-dir="$MGW_CI_OUTPUT_DIR" \
+            --expected-commit="$GITHUB_SHA" \
+            | tee "$MGW_CI_VERIFICATION_FILE"
+
+      - name: Show safe reports
         if: always()
         run: |
           if [ -f "$MGW_CI_OUTPUT_DIR/focused-suite-summary.json" ]; then
             cat "$MGW_CI_OUTPUT_DIR/focused-suite-summary.json"
           else
             printf '{"ok":false,"action":"portable_ci_summary_missing"}\n'
+          fi
+          if [ -f "$MGW_CI_VERIFICATION_FILE" ]; then
+            cat "$MGW_CI_VERIFICATION_FILE"
+          else
+            printf '{"ok":false,"action":"portable_ci_verification_missing"}\n'
           fi
 
       - name: Upload focused-suite evidence
@@ -47,5 +60,6 @@ jobs:
             ${{ runner.temp }}/mgw-ci-focused/focused-suite.log
             ${{ runner.temp }}/mgw-ci-focused/focused-suite-summary.json
             ${{ runner.temp }}/mgw-ci-focused/focused-suite-manifest.json
+            ${{ runner.temp }}/mgw-ci-focused-verification.json
           if-no-files-found: warn
           retention-days: 7
