@@ -6,6 +6,8 @@ PHP_BIN="${PHP_BIN:-php}"
 
 cd "$PROJECT_ROOT"
 
+bash ops/checks/db-primary-projection-outbox-local.sh
+bash ops/checks/db-primary-projection-worker-local.sh
 bash ops/checks/db-primary-staging-api-read-only-smoke-local.sh
 
 SHELL_FILES=(
@@ -19,6 +21,7 @@ for file in "${SHELL_FILES[@]}"; do
 done
 
 PHP_FILES=(
+  bot/tests/RuntimePrimaryPortableFocusedSuiteManifestTest.php
   bot/tests/RuntimePrimaryPortableSelfHostedCiContractTest.php
 )
 
