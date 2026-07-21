@@ -64,6 +64,15 @@ $assertTrue(
     'Smoke operation must reject stale reports, wrong hook order and filter mutation'
 );
 $assertTrue(
+    str_contains($overlay, 'requires JSON as the persistent default storage driver')
+        && str_contains($overlay, 'JSON rollback data directory is unavailable or unsafe')
+        && str_contains($overlay, 'must be outside the checkout')
+        && str_contains($overlay, "\$overlay['storage_driver'] = 'json';")
+        && str_contains($overlay, "'json_default_verified' => true")
+        && str_contains($overlay, "'rollback_data_dir_external' => true"),
+    'Overlay must require an external JSON rollback source before activation'
+);
+$assertTrue(
     str_contains($overlay, 'persistent selector latch to be disabled')
         && str_contains($overlay, 'persistent request-session latch to be disabled')
         && str_contains($overlay, 'persistent activation approval to be disabled')
@@ -89,8 +98,10 @@ $assertTrue(
     str_contains($cli, "\$_SERVER['SCRIPT_FILENAME'] = \$projectRoot . '/bot/api.php';")
         && str_contains($cli, 'StorageFactory::createJson(')
         && str_contains($cli, 'RuntimePrimaryStagingApiReadOnlySmoke(')
+        && str_contains($cli, "'json_default_verified'")
+        && str_contains($cli, "'rollback_data_dir_external'")
         && !str_contains($cli, "require \$projectRoot . '/bot/api.php'"),
-    'CLI must exercise lazy API routing without executing the HTTP route'
+    'CLI must exercise lazy API routing and expose rollback-source proof without executing HTTP route'
 );
 $assertTrue(
     !str_contains($smoke, 'WebhookHandler')
