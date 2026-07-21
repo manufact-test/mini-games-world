@@ -8,17 +8,29 @@ if (PHP_SAPI !== 'cli') {
 
 $outputPath = '';
 $maxEvents = 20;
+$seenOutput = false;
+$seenMaxEvents = false;
 foreach (array_slice($argv ?? [], 1) as $argument) {
     if (str_starts_with($argument, '--output=')) {
-        if ($outputPath !== '') {
+        if ($seenOutput) {
             fwrite(STDERR, "--output may be specified only once.\n");
             exit(2);
         }
-        $outputPath = trim(substr($argument, strlen('--output=')));
+        $seenOutput = true;
+        $outputPath = substr($argument, strlen('--output='));
+        if (str_contains($outputPath, '\\')) {
+            fwrite(STDERR, "--output must not contain backslashes.\n");
+            exit(2);
+        }
         continue;
     }
     if (str_starts_with($argument, '--max-events=')) {
-        $raw = trim(substr($argument, strlen('--max-events=')));
+        if ($seenMaxEvents) {
+            fwrite(STDERR, "--max-events may be specified only once.\n");
+            exit(2);
+        }
+        $seenMaxEvents = true;
+        $raw = substr($argument, strlen('--max-events='));
         if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
             fwrite(STDERR, "--max-events must be an integer.\n");
             exit(2);
@@ -29,7 +41,7 @@ foreach (array_slice($argv ?? [], 1) as $argument) {
     fwrite(STDERR, "Unknown lifecycle evidence collector argument.\n");
     exit(2);
 }
-if ($outputPath === '') {
+if (!$seenOutput || $outputPath === '') {
     fwrite(STDERR, "Lifecycle evidence collection requires --output=/absolute/private/path.json.\n");
     exit(2);
 }
@@ -38,12 +50,20 @@ if ($maxEvents < 1 || $maxEvents > 100) {
     exit(2);
 }
 
+set_error_handler(static function (int $severity): never {
+    if (!(error_reporting() & $severity)) {
+        throw new ErrorException('Suppressed lifecycle evidence collector warning.', 0, $severity);
+    }
+    throw new RuntimeException('Lifecycle evidence filesystem operation failed.');
+});
+
 $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceWriter.php';
 $writer = new RuntimePrimaryStagingEvidenceWriter($projectRoot);
 try {
     $writer->validateOutputPath($outputPath);
 } catch (Throwable) {
+    restore_error_handler();
     fwrite(STDERR, "Invalid private output path.\n");
     exit(2);
 }
@@ -87,6 +107,7 @@ require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingLifecycleEvidence
 
 $environment = strtolower(trim((string)($config['environment'] ?? '')));
 if ($environment !== 'staging') {
+    restore_error_handler();
     fwrite(STDERR, "DB-primary lifecycle evidence collection is staging-only.\n");
     exit(2);
 }
@@ -118,10 +139,15 @@ try {
     if (!is_resource($lockHandle)) {
         throw new RuntimeException('Staging evidence rehearsal lock is unavailable.');
     }
-    @chmod($lockPath, 0600);
+    if (!chmod($lockPath, 0600)) {
+        throw new RuntimeException('Staging evidence rehearsal lock permissions could not be secured.');
+    }
     clearstatcache(true, $lockPath);
-    if (is_link($lockPath)) {
-        throw new RuntimeException('Staging evidence rehearsal lock became a symbolic link.');
+    $lockMode = fileperms($lockPath);
+    if (is_link($lockPath)
+        || !is_int($lockMode)
+        || ($lockMode & 0777) !== 0600) {
+        throw new RuntimeException('Staging evidence rehearsal lock must have exact mode 0600.');
     }
     if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
         throw new RuntimeException('Another DB-primary rehearsal or evidence collection is already running.');
@@ -168,13 +194,17 @@ try {
 
     $written = $writer->write($outputPath, $manifest);
     $outputWritten = true;
+    $storedRaw = file_get_contents($outputPath);
+    if (!is_string($storedRaw)) {
+        throw new RuntimeException('Written lifecycle evidence could not be read.');
+    }
     $stored = json_decode(
-        (string)file_get_contents($outputPath),
+        $storedRaw,
         true,
         512,
         JSON_THROW_ON_ERROR
     );
-    if (!is_array($stored)) {
+    if (!is_array($stored) || array_is_list($stored)) {
         throw new RuntimeException('Written lifecycle evidence is not a JSON object.');
     }
     $verification = (new RuntimePrimaryStagingEvidenceV4Gate(
@@ -234,7 +264,7 @@ try {
         @unlink($outputPath);
     }
     $message = preg_replace(
-        "~/(?:home|var|tmp|srv)/[^\\s'\"]+~",
+        "~/(?:home|var|tmp|srv|opt)/[^\\s'\"]+~",
         '[private-path]',
         trim($error->getMessage())
     ) ?? trim($error->getMessage());
@@ -262,4 +292,5 @@ try {
         flock($lockHandle, LOCK_UN);
         fclose($lockHandle);
     }
+    restore_error_handler();
 }
