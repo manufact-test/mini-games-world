@@ -172,6 +172,11 @@ try {
         ),
         'ttl_seconds' => (int)($overlayReport['ttl_seconds'] ?? 0),
         'worker_tick_count' => (int)($report['worker_tick_count'] ?? -1),
+        'context_state_matched' => ($report['context_state_matched'] ?? false) === true,
+        'lifecycle_v4_verified' => ($report['lifecycle_v4_verified'] ?? false) === true,
+        'legacy_json_bridges_suppressed' => (
+            $report['legacy_json_bridges_suppressed'] ?? false
+        ) === true,
         'state_unchanged' => ($report['state_unchanged'] ?? false) === true,
         'snapshot_unchanged' => ($report['snapshot_unchanged'] ?? false) === true,
         'outbox_unchanged' => ($report['outbox_unchanged'] ?? false) === true,
