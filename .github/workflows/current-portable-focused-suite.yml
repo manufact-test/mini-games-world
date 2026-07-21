@@ -3,7 +3,7 @@ name: Current Portable Focused Suite
 on:
   pull_request:
     branches:
-      - agent/mvp-14-8-6r-read-only-smoke-evidence-verifier-v2
+      - agent/mvp-14-8-6s-current-portable-validation
   workflow_dispatch:
 
 permissions:
