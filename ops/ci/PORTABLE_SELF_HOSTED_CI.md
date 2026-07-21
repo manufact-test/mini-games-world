@@ -161,7 +161,7 @@ This sub-MVP does not:
 - unblock mutating smoke;
 - touch Hostinger.
 
-Runner installation and secret provisioning belong to a separate infrastructure action when the target platform is selected.
+It does not install or register a self-hosted runner. Runner installation and secret provisioning belong to a separate infrastructure action when the target platform is selected.
 
 ## Current safety status
 
