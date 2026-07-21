@@ -152,6 +152,8 @@ $remove = static function (string $path) use (&$remove): void {
 
 $temp = sys_get_temp_dir() . '/mgw-read-only-overlay-' . bin2hex(random_bytes(6));
 mkdir($temp, 0700, true);
+$rollbackDir = $temp . '/rollback-json';
+mkdir($rollbackDir, 0700, true);
 $configFile = $temp . '/config.php';
 $evidenceFile = $temp . '/evidence-v4.json';
 file_put_contents($configFile, "<?php return [];\n");
@@ -165,8 +167,9 @@ RuntimePrimaryStagingEvidenceV4Gate::$commit = $commit;
 RuntimePrimaryRepositoryCommitResolver::$commit = $commit;
 $base = [
     'environment' => 'staging',
+    'storage_driver' => 'json',
     'database' => ['enabled' => true],
-    'data_dir' => '/private/json',
+    'data_dir' => $rollbackDir,
 ];
 $original = $base;
 $now = 1_800_000_000;
@@ -181,15 +184,58 @@ try {
     ))->build($now);
     $overlay = (array)($result['config'] ?? []);
     $report = (array)($result['report'] ?? []);
-    $assertTrue($base === $original, 'Overlay builder must not mutate the source config');
+    $assertTrue($base === $original, 'Overlay builder must not mutate source config');
+    $assertTrue(($overlay['storage_driver'] ?? '') === 'json', 'Overlay must preserve JSON default');
+    $assertTrue(($overlay['data_dir'] ?? '') === realpath($rollbackDir), 'Overlay must canonicalize rollback directory');
     $assertTrue(($overlay['staging_db_primary_activation']['enabled'] ?? false) === true, 'Overlay must enable activation in memory');
     $assertTrue(($overlay['staging_db_primary_entrypoint_selector']['allowed_entrypoints'] ?? []) === ['api'], 'Overlay selector must be API-only');
     $assertTrue(($overlay['staging_db_primary_request_session']['baseline_revision'] ?? 0) === 3, 'Overlay must use exact lifecycle baseline');
     $assertTrue(($overlay['staging_db_primary_request_session']['max_revision_delta'] ?? 0) === 1, 'Read-only smoke must use one-revision bound');
     $assertTrue(($overlay['staging_db_primary_request_session']['max_worker_ticks'] ?? 0) === 1, 'Read-only smoke must use one worker-tick ceiling');
+    $assertTrue(($report['json_default_verified'] ?? false) === true, 'Overlay report must prove JSON default');
+    $assertTrue(($report['rollback_data_dir_external'] ?? false) === true, 'Overlay report must prove external rollback directory');
     $assertTrue(($report['persistent_config_changed'] ?? true) === false, 'Overlay report must preserve persistent config');
     $assertTrue(($report['ttl_seconds'] ?? 0) === 300, 'Overlay report must preserve TTL');
     $assertTrue(($report['webhook_allowed'] ?? true) === false, 'Overlay must forbid webhook');
+
+    $databaseDefault = $base;
+    $databaseDefault['storage_driver'] = 'database';
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay(
+            $projectRoot, $databaseDefault, $configFile, $evidenceFile, 300
+        ))->build($now),
+        'requires json as the persistent default storage driver'
+    );
+
+    $missingRollback = $base;
+    $missingRollback['data_dir'] = $temp . '/missing-json';
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay(
+            $projectRoot, $missingRollback, $configFile, $evidenceFile, 300
+        ))->build($now),
+        'rollback data directory is unavailable or unsafe'
+    );
+
+    $insideCheckout = $base;
+    $insideCheckout['data_dir'] = $projectRoot . '/bot/tests';
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay(
+            $projectRoot, $insideCheckout, $configFile, $evidenceFile, 300
+        ))->build($now),
+        'must be outside the checkout'
+    );
+
+    $rollbackLink = $temp . '/rollback-link';
+    if (@symlink($rollbackDir, $rollbackLink) && is_link($rollbackLink)) {
+        $symlinkRollback = $base;
+        $symlinkRollback['data_dir'] = $rollbackLink;
+        $assertThrows(
+            static fn() => (new RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay(
+                $projectRoot, $symlinkRollback, $configFile, $evidenceFile, 300
+            ))->build($now),
+            'rollback data directory is unavailable or unsafe'
+        );
+    }
 
     $persistentSelector = $base;
     $persistentSelector['staging_db_primary_entrypoint_selector'] = ['enabled' => true];
