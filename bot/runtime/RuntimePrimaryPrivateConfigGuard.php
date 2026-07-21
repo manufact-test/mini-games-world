@@ -5,16 +5,22 @@ final class RuntimePrimaryPrivateConfigGuard
 {
     public static function assertExternal(string $configFile, string $projectRoot): array
     {
-        $configFile = str_replace('\\', '/', trim($configFile));
-        $projectRoot = str_replace('\\', '/', trim($projectRoot));
-        if ($configFile === '' || !str_starts_with($configFile, '/')) {
-            throw new RuntimeException('Active staging config path must be absolute.');
+        if ($configFile === ''
+            || str_contains($configFile, '\\')
+            || !str_starts_with($configFile, '/')) {
+            throw new RuntimeException('Active staging config path must be an exact absolute Linux path.');
         }
-        if ($projectRoot === '' || !str_starts_with($projectRoot, '/')) {
-            throw new RuntimeException('Staging project root path must be absolute.');
+        if ($projectRoot === ''
+            || str_contains($projectRoot, '\\')
+            || !str_starts_with($projectRoot, '/')) {
+            throw new RuntimeException('Staging project root must be an exact absolute Linux path.');
         }
-        if (is_link($configFile)) {
-            throw new RuntimeException('Active staging config must not be a symbolic link.');
+        if (($configFile !== '/' && str_ends_with($configFile, '/'))
+            || ($projectRoot !== '/' && str_ends_with($projectRoot, '/'))) {
+            throw new RuntimeException('Staging config and project paths must not contain trailing separators.');
+        }
+        if (is_link($configFile) || is_link($projectRoot)) {
+            throw new RuntimeException('Staging config and project root must not be symbolic links.');
         }
 
         $canonicalConfig = realpath($configFile);
@@ -25,16 +31,30 @@ final class RuntimePrimaryPrivateConfigGuard
         if (!is_string($canonicalProject) || !is_dir($canonicalProject)) {
             throw new RuntimeException('Staging project root is unavailable.');
         }
-
-        $canonicalConfig = str_replace('\\', '/', $canonicalConfig);
-        $canonicalProject = rtrim(str_replace('\\', '/', $canonicalProject), '/');
-        $privateDir = realpath(dirname($canonicalConfig));
-        if (!is_string($privateDir) || !is_dir($privateDir)) {
-            throw new RuntimeException('Active staging private config directory is unavailable.');
+        if (!hash_equals($configFile, $canonicalConfig)) {
+            throw new RuntimeException('Active staging config must use its exact canonical path.');
         }
-        $privateDir = rtrim(str_replace('\\', '/', $privateDir), '/');
+        if (!hash_equals($projectRoot, $canonicalProject)) {
+            throw new RuntimeException('Staging project root must use its exact canonical path.');
+        }
+
+        clearstatcache(true, $canonicalConfig);
+        $configMode = fileperms($canonicalConfig);
+        if (!is_int($configMode) || ($configMode & 0777) !== 0600) {
+            throw new RuntimeException('Active staging config must have exact mode 0600.');
+        }
+
+        $privateDir = realpath(dirname($canonicalConfig));
+        if (!is_string($privateDir) || !is_dir($privateDir) || is_link($privateDir)) {
+            throw new RuntimeException('Active staging private config directory is unavailable or unsafe.');
+        }
         if ($privateDir === '' || $privateDir === '/') {
             throw new RuntimeException('Active staging private config directory is unsafe.');
+        }
+        clearstatcache(true, $privateDir);
+        $privateMode = fileperms($privateDir);
+        if (!is_int($privateMode) || ($privateMode & 0022) !== 0) {
+            throw new RuntimeException('Active staging private config directory must not be group/world writable.');
         }
         if ($privateDir === $canonicalProject || str_starts_with($privateDir, $canonicalProject . '/')) {
             throw new RuntimeException('Staging evidence requires an external private config outside the deployed project.');
@@ -49,6 +69,8 @@ final class RuntimePrimaryPrivateConfigGuard
             'private_dir' => $privateDir,
             'config_fingerprint' => $fingerprint,
             'config_external' => true,
+            'config_mode' => '0600',
+            'private_dir_not_group_world_writable' => true,
             'path_exposed' => false,
         ];
     }
