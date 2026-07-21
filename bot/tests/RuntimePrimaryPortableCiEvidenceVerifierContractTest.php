@@ -43,7 +43,7 @@ $assertTrue(
     'Verifier must reject public_html, symlinks and non-canonical paths'
 );
 $assertTrue(
-    str_contains($verifier, "preg_match('/^[a-f0-9]{40}$/', $commit)")
+    str_contains($verifier, "preg_match('/^[a-f0-9]{40}$/', \$commit)")
         && str_contains($verifier, 'evidence belongs to a different repository commit')
         && str_contains($verifier, "preg_match('/^8\\.3\\.\\d+")
         && str_contains($verifier, 'was not produced by PHP 8.3.x'),
@@ -100,11 +100,15 @@ $assertTrue(
         && !str_contains($verifier, 'http_response_code('),
     'Verifier class must remain offline and read-only'
 );
+$evidenceArg = strpos($cli, "str_starts_with(\$argument, '--evidence-dir=')");
+$commitArg = strpos($cli, "str_starts_with(\$argument, '--expected-commit=')");
+$loadVerifier = strpos($cli, "require_once \$projectRoot");
 $assertTrue(
-    strpos($cli, "str_starts_with($argument, '--evidence-dir=')")
-        < strpos($cli, "require_once $projectRoot")
-        && strpos($cli, "str_starts_with($argument, '--expected-commit=')")
-        < strpos($cli, "require_once $projectRoot")
+    $evidenceArg !== false
+        && $commitArg !== false
+        && $loadVerifier !== false
+        && $evidenceArg < $loadVerifier
+        && $commitArg < $loadVerifier
         && str_contains($cli, 'RuntimePrimaryPortableCiEvidenceVerifier(')
         && !str_contains($cli, 'file_put_contents('),
     'CLI must validate arguments before loading the offline verifier and must not write files'
