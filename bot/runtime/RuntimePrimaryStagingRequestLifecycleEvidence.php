@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimePrimaryStagingEntrypointSelectorConfig.php';
+require_once __DIR__ . '/RuntimePrimaryStagingRequestSessionConfig.php';
+
 final class RuntimePrimaryStagingRequestLifecycleEvidence
 {
     public const CONTRACT_VERSION = 'v1-api-only-staging-request-lifecycle';
@@ -69,6 +72,7 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
         $readinessRun = strpos($coordinator, 'RuntimePrimaryStagingRequestSessionReadiness(');
         $contextInstall = strpos($coordinator, 'RuntimePrimaryEntrypointStorageContext::install(');
         $hookPrepend = strpos($coordinator, 'array_unshift($hooks, $hook)');
+        $hookPublish = strpos($coordinator, "\$GLOBALS['mgw_api_success_hooks'] = \$hooks;");
 
         $checks = [
             'api_success_inside_error_boundary' => str_contains($api, 'api_ok($result);')
@@ -87,15 +91,18 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
             'coordinator_readiness_before_context' => $readinessRun !== false
                 && $contextInstall !== false
                 && $readinessRun < $contextInstall,
-            'coordinator_context_before_finalizer_registration' => $contextInstall !== false
-                && $hookPrepend !== false
-                && $contextInstall < $hookPrepend,
-            'coordinator_finalizer_registered_first' => str_contains(
+            'coordinator_finalizer_prepared_before_context' => $hookPrepend !== false
+                && $contextInstall !== false
+                && $hookPrepend < $contextInstall,
+            'coordinator_context_before_hook_publication' => $contextInstall !== false
+                && $hookPublish !== false
+                && $contextInstall < $hookPublish,
+            'coordinator_finalizer_prepared_first' => str_contains(
                 $coordinator,
                 'array_unshift($hooks, $hook)'
             ) && str_contains(
                 $coordinator,
-                'DB-primary API request finalizer was not registered first'
+                'DB-primary API request finalizer was not prepared first'
             ),
             'coordinator_api_only_output' => str_contains($coordinator, "'entrypoint' => 'api'")
                 && str_contains($coordinator, "'webhook_allowed' => false")
