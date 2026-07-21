@@ -16,7 +16,7 @@ Nothing changes while the private selector/session latches are absent or disable
 
 ## API-only boundary
 
-The selector contract is now:
+The selector contract is:
 
 ```text
 v2-api-only-staging-db-primary-entrypoint-selector
@@ -38,7 +38,7 @@ Real API request routing requires:
 v4-staging-db-primary-api-lifecycle-evidence
 ```
 
-V4 contains the complete DB/JSON/schema/parity/concurrency and selector evidence from v3, plus an exact API request lifecycle contour:
+V4 contains the complete DB/JSON/schema/parity/concurrency and selector evidence from v3, plus the exact API request lifecycle contour:
 
 - `bot/api.php` and success-response helper ordering;
 - inert selector bootstrap;
@@ -84,17 +84,21 @@ The command does not enable request routing.
 
 For an enabled API request the coordinator must complete this order:
 
-1. verify external private config;
-2. verify exact DB identity, commit, approval and evidence v4;
-3. create one staging DB connection;
-4. run dynamic request-session readiness against current DB state and fixed JSON rollback baseline;
-5. create DB-primary storage with mandatory transactional outbox;
-6. fully build worker, finalizer and once-only hook;
-7. validate and prepare a local hook registry with finalizer first;
-8. install the immutable request-local DB storage context;
-9. publish the prepared hook registry.
+1. verify `environment=staging`;
+2. require the exact API-only selector latch;
+3. verify external private config;
+4. verify exact DB identity, commit, approval and evidence v4;
+5. parse the request-session config and verify enabled/baseline/expiry before opening MySQL;
+6. create one staging DB connection;
+7. run dynamic request-session readiness against current DB state and fixed JSON rollback baseline;
+8. re-check the bounded session against the current revision;
+9. create DB-primary storage with mandatory transactional outbox;
+10. fully build worker, finalizer and once-only hook;
+11. validate and prepare a local hook registry with finalizer first;
+12. install the immutable request-local DB storage context;
+13. publish the prepared hook registry.
 
-An invalid hook registry fails before request-local DB context installation. A selector failure is sticky for the rest of that request and cannot fall through to JSON silently.
+An invalid selector/session latch blocks before MySQL. An invalid hook registry fails before request-local DB context installation. A selector failure is sticky for the rest of that request and cannot fall through to JSON silently.
 
 ## Success response contract
 
@@ -127,7 +131,8 @@ This PR does not modify private config. A future controlled staging window requi
 'staging_db_primary_request_session' => [
     'enabled' => true,
     'contract_version' => 'v1-api-only-bounded-request-session',
-    'baseline_state_revision' => 1,
+    'allowed_entrypoints' => ['api'],
+    'baseline_revision' => 1,
     'max_revision_delta' => 4,
     'max_worker_ticks' => 4,
     'lease_seconds' => 60,
@@ -150,6 +155,7 @@ Disable both latches before the next request:
 
 'staging_db_primary_request_session' => [
     'enabled' => false,
+    'allowed_entrypoints' => [],
 ],
 ```
 
@@ -178,6 +184,7 @@ The suite runs every previous selector/finalizer regression and additionally cov
 - API-only selector and lifecycle v4 context;
 - exact v4 source/baseline/commit binding;
 - generic evidence-gate v4 dispatch;
+- selector and session latches before MySQL;
 - finalization hook once-only behavior;
 - atomic coordinator order: hook prepared → context installed → hook registry published;
 - no partial context on invalid hook registry;
