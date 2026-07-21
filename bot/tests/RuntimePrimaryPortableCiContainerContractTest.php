@@ -41,11 +41,17 @@ $assertTrue(
         && str_contains($wrapper, 'tracked checkout changes are present'),
     'Container wrapper must use strict Bash and require a clean checkout'
 );
+$buildStart = strpos($wrapper, 'docker build \\');
+$stdinContext = strpos($wrapper, '- < "$DOCKERFILE"');
+$hostIdentity = strpos($wrapper, 'HOST_UID="$(id -u)"');
 $assertTrue(
-    str_contains($wrapper, 'docker build \\')
-        && str_contains($wrapper, '- < "$DOCKERFILE"')
-        && !str_contains($wrapper, '"$PROJECT_ROOT"\nfi')
-        && !str_contains($wrapper, '--file "$DOCKERFILE"'),
+    $buildStart !== false
+        && $stdinContext !== false
+        && $hostIdentity !== false
+        && $buildStart < $stdinContext
+        && $stdinContext < $hostIdentity
+        && !str_contains($wrapper, '--file "$DOCKERFILE"')
+        && !str_contains($wrapper, 'docker buildx'),
     'Container image build must use Dockerfile stdin and zero repository context'
 );
 $assertTrue(
