@@ -57,64 +57,58 @@ set_error_handler(static function (int $severity): never {
     throw new RuntimeException('Lifecycle evidence filesystem operation failed.');
 });
 
-$projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceWriter.php';
-$writer = new RuntimePrimaryStagingEvidenceWriter($projectRoot);
-try {
-    $writer->validateOutputPath($outputPath);
-} catch (Throwable) {
-    restore_error_handler();
-    fwrite(STDERR, "Invalid private output path.\n");
-    exit(2);
-}
-
-require $projectRoot . '/bot/core/bootstrap.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackendInterface.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackend.php';
-require_once $projectRoot . '/bot/runtime/StagingPrimaryRehearsalOperation.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointEvidence.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryRepositoryCommitResolver.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceVerifier.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Verifier.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidence.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorkerInterface.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionAuditorInterface.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionBootstrap.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorkerAdapter.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionAuditorAdapter.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestFinalizer.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestSessionReadiness.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiRequestFinalizationHook.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestLifecycleEvidence.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV4Verifier.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV4Gate.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceGate.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryJsonEvidence.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingConcurrencyProbe.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceApproval.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryPrivateConfigGuard.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSource.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceCollector.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php';
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingLifecycleEvidenceCollector.php';
-
-$environment = strtolower(trim((string)($config['environment'] ?? '')));
-if ($environment !== 'staging') {
-    restore_error_handler();
-    fwrite(STDERR, "DB-primary lifecycle evidence collection is staging-only.\n");
-    exit(2);
-}
-
 $lockHandle = null;
 $outputWritten = false;
+$exitCode = 1;
+$response = [];
 try {
+    $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceWriter.php';
+    $writer = new RuntimePrimaryStagingEvidenceWriter($projectRoot);
+    $writer->validateOutputPath($outputPath);
+
+    require $projectRoot . '/bot/core/bootstrap.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackendInterface.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackend.php';
+    require_once $projectRoot . '/bot/runtime/StagingPrimaryRehearsalOperation.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointEvidence.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryRepositoryCommitResolver.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceVerifier.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Verifier.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV2Gate.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointSelectorConfig.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidence.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorkerInterface.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionAuditorInterface.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionBootstrap.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorkerAdapter.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionAuditorAdapter.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestFinalizer.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestSessionReadiness.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiRequestFinalizationHook.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestLifecycleEvidence.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV4Verifier.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV4Gate.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceGate.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryJsonEvidence.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingConcurrencyProbe.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceApproval.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryPrivateConfigGuard.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSourceInterface.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceSource.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceCollector.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingLifecycleEvidenceCollector.php';
+
+    $environment = strtolower(trim((string)($config['environment'] ?? '')));
+    if ($environment !== 'staging') {
+        throw new RuntimeException('DB-primary lifecycle evidence collection is staging-only.');
+    }
+
     $private = RuntimePrimaryPrivateConfigGuard::assertExternal(
         (string)($configFile ?? ''),
         $projectRoot
@@ -217,7 +211,7 @@ try {
         );
     }
 
-    fwrite(STDOUT, json_encode([
+    $response = [
         'ok' => true,
         'report_type' => 'mvp-14.8.6m-staging-lifecycle-evidence-collection',
         'action' => 'api_lifecycle_evidence_v4_collected',
@@ -257,21 +251,31 @@ try {
         'production_changed' => false,
         'sensitive_identifiers_exposed' => false,
         'generated_at_utc' => gmdate(DATE_ATOM),
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL);
-    exit(0);
+    ];
+    $exitCode = 0;
 } catch (Throwable $error) {
+    $cleanupFailed = false;
     if ($outputWritten && is_file($outputPath) && !is_link($outputPath)) {
-        @unlink($outputPath);
+        try {
+            if (!unlink($outputPath)) {
+                $cleanupFailed = true;
+            }
+        } catch (Throwable) {
+            $cleanupFailed = true;
+        }
     }
     $message = preg_replace(
         "~/(?:home|var|tmp|srv|opt)/[^\\s'\"]+~",
         '[private-path]',
         trim($error->getMessage())
     ) ?? trim($error->getMessage());
+    if ($cleanupFailed) {
+        $message = 'Lifecycle evidence failed and unverified output cleanup also failed.';
+    }
     $message = function_exists('mb_substr')
         ? mb_substr($message, 0, 500)
         : substr($message, 0, 500);
-    fwrite(STDOUT, json_encode([
+    $response = [
         'ok' => false,
         'report_type' => 'mvp-14.8.6m-staging-lifecycle-evidence-collection',
         'action' => 'api_lifecycle_evidence_v4_blocked_or_failed',
@@ -285,12 +289,21 @@ try {
         'production_changed' => false,
         'sensitive_identifiers_exposed' => false,
         'generated_at_utc' => gmdate(DATE_ATOM),
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
-    exit(1);
+    ];
 } finally {
     if (is_resource($lockHandle)) {
-        flock($lockHandle, LOCK_UN);
-        fclose($lockHandle);
+        try {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+        } catch (Throwable) {
+            // Process exit is the final lock-release fallback; never expose the private lock path.
+        }
     }
     restore_error_handler();
 }
+
+fwrite(STDOUT, json_encode(
+    $response,
+    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+) . PHP_EOL);
+exit($exitCode);
