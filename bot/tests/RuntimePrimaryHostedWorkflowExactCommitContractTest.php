@@ -34,16 +34,30 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($workflow, 'ref: ${{ github.event.pull_request.head.sha || github.sha }}')
+        && str_contains($workflow, 'id: bind')
         && str_contains($workflow, 'git rev-parse --verify HEAD')
         && str_contains($workflow, '[[ ! "$commit" =~ ^[a-f0-9]{40}$ ]]')
         && str_contains($workflow, "MGW_CI_EXPECTED_COMMIT=%s\\n")
-        && str_contains($workflow, '>> "$GITHUB_ENV"'),
-    'Hosted workflow must bind the real checked-out deployable commit'
+        && str_contains($workflow, '>> "$GITHUB_ENV"')
+        && str_contains($workflow, "commit=%s\\n")
+        && str_contains($workflow, '>> "$GITHUB_OUTPUT"'),
+    'Hosted workflow must bind the real checked-out deployable commit as env and step output'
 );
 $assertTrue(
     str_contains($workflow, '--expected-commit="$MGW_CI_EXPECTED_COMMIT"')
         && !str_contains($workflow, '--expected-commit="$GITHUB_SHA"'),
     'Evidence verifier must use the checked-out commit rather than the pull-request merge SHA'
+);
+$assertTrue(
+    str_contains(
+        $workflow,
+        'name: mgw-current-focused-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}'
+    )
+        && !str_contains(
+            $workflow,
+            'name: mgw-current-focused-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}'
+        ),
+    'Hosted artifact name must identify the exact deployable commit rather than the merge SHA'
 );
 $assertTrue(
     str_contains($workflow, 'runs-on: ubuntu-24.04')
