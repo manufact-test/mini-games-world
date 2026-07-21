@@ -1,0 +1,48 @@
+name: DB Primary Staging API Read-Only Smoke Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6m-api-session-integration
+      - main
+    paths:
+      - 'bot/runtime/RuntimePrimaryStagingApiReadOnlySmoke.php'
+      - 'bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay.php'
+      - 'ops/runtime/run-staging-db-primary-api-read-only-smoke.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlayTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeOutboxContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBootstrapContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBridgeLazinessContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php'
+      - 'ops/checks/db-primary-staging-api-read-only-smoke-local.sh'
+      - 'ops/runtime/DB_PRIMARY_STAGING_API_READ_ONLY_SMOKE.md'
+      - '.github/workflows/db-primary-staging-api-read-only-smoke-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-db-primary-staging-api-read-only-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Focused staging API read-only smoke checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run focused verification
+        run: bash ops/checks/db-primary-staging-api-read-only-smoke-local.sh
