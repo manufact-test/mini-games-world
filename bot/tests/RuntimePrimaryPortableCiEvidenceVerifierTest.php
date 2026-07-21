@@ -83,6 +83,7 @@ $writeBundle = static function (
     string $manifestContent,
     string $logContent
 ) use ($temp): void {
+    chmod($temp, 0700);
     foreach (scandir($temp) ?: [] as $name) {
         if ($name === '.' || $name === '..') continue;
         @unlink($temp . '/' . $name);
@@ -96,14 +97,23 @@ $writeBundle = static function (
     );
     file_put_contents($manifestPath, $manifestContent);
     file_put_contents($logPath, $logContent);
+    chmod($summaryPath, 0600);
+    chmod($manifestPath, 0600);
+    chmod($logPath, 0600);
     clearstatcache(true, $summaryPath);
     clearstatcache(true, $manifestPath);
     clearstatcache(true, $logPath);
 };
+$verify = static function (string $expectedCommit = '') use ($temp, $commit): array {
+    return (new RuntimePrimaryPortableCiEvidenceVerifier(
+        $temp,
+        $expectedCommit !== '' ? $expectedCommit : $commit
+    ))->verify();
+};
 
 try {
     $writeBundle($baseSummary, $manifestRaw, $logRaw);
-    $report = (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify();
+    $report = $verify();
     $assertTrue(($report['ok'] ?? false) === true, 'Exact portable CI evidence must pass');
     $assertTrue(($report['repository_commit'] ?? '') === $commit, 'Verified report must preserve commit');
     $assertTrue(($report['suite_manifest_script_count'] ?? 0) === 13, 'Verified report must preserve script count');
@@ -111,70 +121,115 @@ try {
     $assertTrue(($report['duration_seconds'] ?? -1) === 5, 'Verified report must preserve duration');
     $assertTrue(($report['production_changed'] ?? true) === false, 'Verified report must preserve production safety');
 
-    $assertThrows(
-        static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier(
-            $temp,
-            str_repeat('b', 40)
-        ))->verify(),
-        'different repository commit'
-    );
+    $assertThrows(static fn() => $verify(str_repeat('b', 40)), 'different repository commit');
+    $assertThrows(static fn() => $verify(strtoupper($commit)), 'full lowercase sha-1');
+    $assertThrows(static fn() => $verify($commit . "\n"), 'full lowercase sha-1');
+
+    $changed = $baseSummary;
+    $changed['repository_commit'] = strtoupper($commit);
+    $writeBundle($changed, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'repository commit is invalid');
+
+    $changed = $baseSummary;
+    $changed['repository_commit'] = $commit . ' ';
+    $writeBundle($changed, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'repository commit is invalid');
+
+    $changed = $baseSummary;
+    $changed['suite_manifest_sha256'] = strtoupper((string)$baseSummary['suite_manifest_sha256']);
+    $writeBundle($changed, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'manifest sha-256 does not match');
+
+    $changed = $baseSummary;
+    $changed['php_version'] = ' 8.3.25';
+    $writeBundle($changed, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'not produced by php 8.3.x');
+
+    $changed = $baseSummary;
+    $changed['exit_code'] = '0';
+    $writeBundle($changed, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'successful immutable run');
+
+    $changed = $baseSummary;
+    $changed['suite_manifest_script_count'] = '13';
+    $writeBundle($changed, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'script count does not match');
+
+    $changed = $baseSummary;
+    $changed['duration_seconds'] = '5';
+    $writeBundle($changed, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'duration does not match');
 
     $logPath = $temp . '/focused-suite.log';
+    $writeBundle($baseSummary, $manifestRaw, $logRaw);
     file_put_contents($logPath, $logRaw . "tampered\n");
     clearstatcache(true, $logPath);
-    $assertThrows(
-        static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
-        'log sha-256 does not match'
-    );
+    $assertThrows(static fn() => $verify(), 'log sha-256 does not match');
 
     $duplicateLog = $logRaw . $orderedMarkers[0] . "\n";
     $duplicateSummary = $baseSummary;
     $duplicateSummary['log_sha256'] = hash('sha256', $duplicateLog);
     $writeBundle($duplicateSummary, $manifestRaw, $duplicateLog);
-    $assertThrows(
-        static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
-        'duplicate success marker'
+    $assertThrows(static fn() => $verify(), 'duplicate success marker');
+
+    $embeddedLog = str_replace(
+        $orderedMarkers[0],
+        'prefix ' . $orderedMarkers[0],
+        $logRaw
     );
+    $embeddedSummary = $baseSummary;
+    $embeddedSummary['log_sha256'] = hash('sha256', $embeddedLog);
+    $writeBundle($embeddedSummary, $manifestRaw, $embeddedLog);
+    $assertThrows(static fn() => $verify(), 'order is incomplete or invalid');
 
     $unsafeSummary = $baseSummary;
     $unsafeSummary['production_changed'] = true;
     $writeBundle($unsafeSummary, $manifestRaw, $logRaw);
-    $assertThrows(
-        static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
-        'safety flag must be false'
-    );
+    $assertThrows(static fn() => $verify(), 'safety flag must be false');
 
     $timeSummary = $baseSummary;
     $timeSummary['duration_seconds'] = 4;
     $writeBundle($timeSummary, $manifestRaw, $logRaw);
-    $assertThrows(
-        static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
-        'duration does not match'
-    );
+    $assertThrows(static fn() => $verify(), 'duration does not match');
+
+    $timeSummary = $baseSummary;
+    $timeSummary['started_at_utc'] = '2026-02-30T16:00:00Z';
+    $writeBundle($timeSummary, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'timestamps are invalid');
+
+    $timeSummary = $baseSummary;
+    $timeSummary['started_at_utc'] = '2026-07-21T16:00:00Z ';
+    $writeBundle($timeSummary, $manifestRaw, $logRaw);
+    $assertThrows(static fn() => $verify(), 'exact utc z format');
 
     $tamperedManifest = $manifest;
-    $tamperedManifest['expected_unique_script_count'] = 12;
+    $tamperedManifest['recursive_chain'][3]['script'] = 'ops/checks/fake-local.sh';
+    $tamperedManifest['recursive_chain'][2]['next_script'] = 'ops/checks/fake-local.sh';
     $tamperedManifestRaw = json_encode(
         $tamperedManifest,
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
     ) . "\n";
     $manifestSummary = $baseSummary;
     $manifestSummary['suite_manifest_sha256'] = hash('sha256', $tamperedManifestRaw);
-    $manifestSummary['suite_manifest_script_count'] = 12;
     $writeBundle($manifestSummary, $tamperedManifestRaw, $logRaw);
-    $assertThrows(
-        static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
-        'manifest identity is invalid'
-    );
+    $assertThrows(static fn() => $verify(), 'exact script graph is invalid');
 
     $writeBundle($baseSummary, $manifestRaw, $logRaw);
     file_put_contents($temp . '/unexpected.txt', 'unexpected');
     clearstatcache(true, $temp . '/unexpected.txt');
-    $assertThrows(
-        static fn() => (new RuntimePrimaryPortableCiEvidenceVerifier($temp, $commit))->verify(),
-        'exactly three evidence files'
-    );
+    $assertThrows(static fn() => $verify(), 'exactly three evidence files');
+
+    $writeBundle($baseSummary, $manifestRaw, $logRaw);
+    chmod($temp . '/focused-suite.log', 0666);
+    clearstatcache(true, $temp . '/focused-suite.log');
+    $assertThrows(static fn() => $verify(), 'must not be world-writable');
+
+    $writeBundle($baseSummary, $manifestRaw, $logRaw);
+    chmod($temp, 0777);
+    clearstatcache(true, $temp);
+    $assertThrows(static fn() => $verify(), 'directory must not be world-writable');
 } finally {
+    @chmod($temp, 0700);
     $remove($temp);
 }
 
