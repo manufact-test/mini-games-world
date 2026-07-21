@@ -6,7 +6,9 @@ $runner = file_get_contents($projectRoot . '/ops/ci/run-portable-focused-suite.s
 $check = file_get_contents($projectRoot . '/ops/checks/db-primary-portable-self-hosted-ci-local.sh');
 $workflow = file_get_contents($projectRoot . '/.github/workflows/portable-self-hosted-focused-suite.yml');
 $docs = file_get_contents($projectRoot . '/ops/ci/PORTABLE_SELF_HOSTED_CI.md');
-if (!is_string($runner) || !is_string($check) || !is_string($workflow) || !is_string($docs)) {
+$manifest = file_get_contents($projectRoot . '/ops/ci/portable-focused-suite-manifest.json');
+if (!is_string($runner) || !is_string($check) || !is_string($workflow)
+    || !is_string($docs) || !is_string($manifest)) {
     throw new RuntimeException('Portable self-hosted CI sources are unavailable.');
 }
 
@@ -20,6 +22,7 @@ $suiteRun = strpos($runner, 'bash "$SUITE_SCRIPT"');
 $publicHtmlGuard = strpos($runner, 'CI checkout must not be inside public_html');
 $phpVersionGuard = strpos($runner, 'portable CI requires PHP 8.3.x');
 $extensionGuard = strpos($runner, 'for extension_name in json pdo pdo_sqlite openssl mbstring');
+$manifestGuard = strpos($runner, 'focused suite manifest is invalid');
 $worktreeGuard = strpos($runner, 'tracked checkout changes are present before the suite');
 $outputGuard = strpos($runner, 'portable CI artifacts must stay outside the repository checkout');
 $assertTrue(
@@ -27,20 +30,26 @@ $assertTrue(
         && $publicHtmlGuard !== false
         && $phpVersionGuard !== false
         && $extensionGuard !== false
+        && $manifestGuard !== false
         && $worktreeGuard !== false
         && $outputGuard !== false
         && $publicHtmlGuard < $suiteRun
         && $phpVersionGuard < $suiteRun
         && $extensionGuard < $suiteRun
+        && $manifestGuard < $suiteRun
         && $worktreeGuard < $suiteRun
         && $outputGuard < $suiteRun,
     'Portable runner must complete every preflight before the focused suite'
 );
 $assertTrue(
     str_contains($runner, 'SUITE_SCRIPT="ops/checks/db-primary-portable-self-hosted-ci-local.sh"')
+        && str_contains($runner, 'MANIFEST_FILE="ops/ci/portable-focused-suite-manifest.json"')
+        && str_contains($runner, 'v1-portable-db-primary-focused-suite')
+        && str_contains($runner, 'timeout --version')
+        && str_contains($runner, 'GNU coreutils')
         && str_contains($runner, 'timeout --signal=TERM --kill-after=15')
         && str_contains($runner, 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200'),
-    'Portable runner must use the exact bounded focused-suite entrypoint'
+    'Portable runner must use the exact bounded manifest-backed entrypoint'
 );
 $assertTrue(
     str_contains($runner, '[[ ! -L "$OUTPUT_DIR" ]]')
@@ -55,6 +64,11 @@ $assertTrue(
         && str_contains($runner, 'focused suite changed tracked files')
         && str_contains($runner, 'tracked_worktree_unchanged'),
     'Portable runner must prove tracked worktree immutability'
+);
+$assertTrue(
+    str_contains($runner, '"suite_manifest_sha256" => getenv("MGW_CI_MANIFEST_SHA256")')
+        && str_contains($runner, '"suite_manifest_script_count" => (int)getenv("MGW_CI_MANIFEST_SCRIPT_COUNT")'),
+    'Portable summary must bind exact suite manifest SHA and script count'
 );
 foreach ([
     '"live_database_contacted" => false',
@@ -83,11 +97,22 @@ $assertTrue(
     'Portable runner must not contain live infrastructure or secret commands'
 );
 
-$oldSuite = strpos($check, 'bash ops/checks/db-primary-staging-api-read-only-smoke-local.sh');
-$newTest = strpos($check, 'RuntimePrimaryPortableSelfHostedCiContractTest.php');
+$outbox = strpos($check, 'bash ops/checks/db-primary-projection-outbox-local.sh');
+$worker = strpos($check, 'bash ops/checks/db-primary-projection-worker-local.sh');
+$apiStack = strpos($check, 'bash ops/checks/db-primary-staging-api-read-only-smoke-local.sh');
+$manifestTest = strpos($check, 'RuntimePrimaryPortableFocusedSuiteManifestTest.php');
+$contractTest = strpos($check, 'RuntimePrimaryPortableSelfHostedCiContractTest.php');
 $assertTrue(
-    $oldSuite !== false && $newTest !== false && $oldSuite < $newTest,
-    'Portable focused check must run the complete inherited stack before its new contract test'
+    $outbox !== false
+        && $worker !== false
+        && $apiStack !== false
+        && $manifestTest !== false
+        && $contractTest !== false
+        && $outbox < $worker
+        && $worker < $apiStack
+        && $apiStack < $manifestTest
+        && $manifestTest < $contractTest,
+    'Portable focused check must run outbox, worker, API stack and manifest contracts in order'
 );
 $assertTrue(
     str_contains($check, 'bash -n "$file"')
@@ -122,6 +147,14 @@ $assertTrue(
     'Workflow must not use secrets or infrastructure actions'
 );
 
+$assertTrue(
+    str_contains($manifest, '"expected_unique_script_count": 13')
+        && str_contains($manifest, 'db-primary-projection-outbox-local.sh')
+        && str_contains($manifest, 'db-primary-projection-worker-local.sh')
+        && str_contains($manifest, 'db-primary-staging-api-read-only-smoke-local.sh')
+        && str_contains($manifest, 'db-primary-all-module-projector-local.sh'),
+    'Portable manifest must cover foundational and recursive DB-primary roots'
+);
 $assertTrue(
     str_contains($docs, 'does not depend on GitHub-hosted minutes')
         && str_contains($docs, 'does not connect to staging or production MySQL')
