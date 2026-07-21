@@ -34,10 +34,12 @@ esac
 (( TIMEOUT_SECONDS >= 60 && TIMEOUT_SECONDS <= 7200 )) \
   || fail 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200.'
 
-for command_name in bash git date find cp tee cat chmod mkdir grep "$PHP_BIN"; do
+for command_name in bash git date find cp tee cat chmod mkdir grep timeout "$PHP_BIN"; do
   command -v "$command_name" >/dev/null 2>&1 \
     || fail "required command is unavailable: $command_name"
 done
+timeout --version 2>/dev/null | grep -q 'GNU coreutils' \
+  || fail 'GNU coreutils timeout is required for a bounded portable suite.'
 
 cd "$PROJECT_ROOT"
 [[ -f "$SUITE_SCRIPT" ]] || fail "focused suite is unavailable: $SUITE_SCRIPT"
@@ -45,7 +47,7 @@ cd "$PROJECT_ROOT"
 [[ -f "$MANIFEST_FILE" ]] || fail "focused suite manifest is unavailable: $MANIFEST_FILE"
 [[ ! -L "$MANIFEST_FILE" ]] || fail 'focused suite manifest must not be a symbolic link.'
 
-PHP_VERSION_ID="$("$PHP_BIN" -r 'echo PHP_VERSION_ID;')"
+PHP_VERSION_ID="$($PHP_BIN -r 'echo PHP_VERSION_ID;')"
 [[ "$PHP_VERSION_ID" =~ ^[0-9]+$ ]] || fail 'PHP_VERSION_ID is invalid.'
 (( PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 )) \
   || fail 'current portable CI requires PHP 8.3.x.'
@@ -55,7 +57,7 @@ for extension_name in json pdo pdo_sqlite openssl mbstring; do
     || fail "required PHP extension is unavailable: $extension_name"
 done
 
-MANIFEST_META="$("$PHP_BIN" -r '
+MANIFEST_META="$($PHP_BIN -r '
 $path = $argv[1];
 $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($data)
@@ -101,7 +103,7 @@ MANIFEST_ARTIFACT_FILE="$CANONICAL_OUTPUT_DIR/current-focused-suite-manifest.jso
   || fail 'portable CI artifact files must not be symbolic links.'
 : > "$LOG_FILE"
 cp "$MANIFEST_FILE" "$MANIFEST_ARTIFACT_FILE"
-COPIED_MANIFEST_SHA256="$("$PHP_BIN" -r 'echo hash_file("sha256", $argv[1]);' "$MANIFEST_ARTIFACT_FILE")"
+COPIED_MANIFEST_SHA256="$($PHP_BIN -r 'echo hash_file("sha256", $argv[1]);' "$MANIFEST_ARTIFACT_FILE")"
 [[ "$COPIED_MANIFEST_SHA256" == "$MANIFEST_SHA256" ]] \
   || fail 'copied focused suite manifest fingerprint does not match.'
 chmod 0600 "$LOG_FILE" "$MANIFEST_ARTIFACT_FILE" \
@@ -115,15 +117,9 @@ STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date +%s)"
 
 set +e
-if command -v timeout >/dev/null 2>&1 \
-  && timeout --version 2>/dev/null | grep -q 'GNU coreutils'; then
-  timeout --signal=TERM --kill-after=15 "${TIMEOUT_SECONDS}s" \
-    bash "$SUITE_SCRIPT" 2>&1 | tee "$LOG_FILE"
-  PIPE_STATUS=("${PIPESTATUS[@]}")
-else
+timeout --signal=TERM --kill-after=15 "${TIMEOUT_SECONDS}s" \
   bash "$SUITE_SCRIPT" 2>&1 | tee "$LOG_FILE"
-  PIPE_STATUS=("${PIPESTATUS[@]}")
-fi
+PIPE_STATUS=("${PIPESTATUS[@]}")
 set -e
 SUITE_EXIT_CODE="${PIPE_STATUS[0]:-127}"
 TEE_EXIT_CODE="${PIPE_STATUS[1]:-127}"
@@ -153,8 +149,8 @@ fi
 FINISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 FINISH_EPOCH="$(date +%s)"
 DURATION_SECONDS=$(( FINISH_EPOCH - START_EPOCH ))
-LOG_SHA256="$("$PHP_BIN" -r 'echo hash_file("sha256", $argv[1]);' "$LOG_FILE")"
-PHP_VERSION="$("$PHP_BIN" -r 'echo PHP_VERSION;')"
+LOG_SHA256="$($PHP_BIN -r 'echo hash_file("sha256", $argv[1]);' "$LOG_FILE")"
+PHP_VERSION="$($PHP_BIN -r 'echo PHP_VERSION;')"
 
 export MGW_CI_SUMMARY_FILE="$SUMMARY_FILE"
 export MGW_CI_COMMIT_SHA="$COMMIT_SHA"
