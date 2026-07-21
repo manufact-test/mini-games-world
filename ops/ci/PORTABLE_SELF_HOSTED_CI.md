@@ -74,6 +74,7 @@ The checkout must provide:
 - Linux;
 - Bash;
 - Git;
+- `date`, `find`, `cp`, `tee`, `cat`, `chmod` and `mkdir`;
 - PHP 8.3.x;
 - PHP extensions: `json`, `pdo`, `pdo_sqlite`, `openssl`, `mbstring`;
 - optional GNU `timeout` for hard process timeout.
@@ -92,7 +93,7 @@ Use an isolated CI workspace such as:
 
 or the equivalent workspace of another private CI system.
 
-The runner also requires a clean tracked worktree before execution and checks that no tracked file changed during the suite.
+The runner requires the complete repository checkout to be clean before execution, including untracked files. It checks again after the suite and fails evidence generation if a tracked or untracked file appeared or changed.
 
 ## No infrastructure side effects
 
@@ -118,9 +119,17 @@ Default artifact location:
 ${RUNNER_TEMP:-${TMPDIR:-/tmp}}/mgw-ci-focused
 ```
 
-The artifact directory must be absolute, outside the checkout, outside `public_html` and not a symlink.
+The artifact directory must be:
 
-It contains:
+- absolute;
+- outside the checkout;
+- outside `public_html`;
+- not a symbolic link;
+- empty before the run.
+
+The runner uses `umask 077`, protects the directory with mode `0700` when possible and protects the evidence files with mode `0600` when possible.
+
+It creates exactly:
 
 ```text
 focused-suite.log
@@ -147,7 +156,7 @@ The JSON summary contains only:
 - start/finish/duration;
 - process exit code;
 - log SHA-256;
-- tracked-worktree unchanged flag;
+- worktree unchanged flag;
 - explicit false flags for DB contact, private config, deployment, Cron and production changes.
 
 It does not contain DB host, DB name, usernames, passwords, private config paths or runner registration tokens.
@@ -184,12 +193,16 @@ mgw-ci
 
 It never uses `ubuntu-latest`. It does not run automatically on push or pull request. No action is queued until someone manually dispatches it after a matching runner exists.
 
+For each workflow attempt, the evidence path and artifact name include both `github.run_id` and `github.run_attempt`. This prevents a persistent self-hosted runner or a retried workflow from reusing a previous bundle.
+
 The workflow:
 
 1. checks out the exact revision without persisted credentials;
 2. runs the portable entrypoint;
 3. prints the safe JSON summary;
 4. uploads the safe log, summary and exact manifest for seven days.
+
+The next stacked verifier PR additionally verifies that exact three-file bundle before upload.
 
 ## Other private CI systems
 
@@ -213,7 +226,7 @@ This sub-MVP does not:
 - unblock mutating smoke;
 - touch Hostinger.
 
-It does not install or register a self-hosted runner. Runner installation and secret provisioning belong to a separate infrastructure action when the target platform is selected.
+Runner installation and secret provisioning belong to a separate infrastructure action when the target platform is selected.
 
 ## Current safety status
 
