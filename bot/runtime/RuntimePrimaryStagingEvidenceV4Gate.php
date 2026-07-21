@@ -2,46 +2,31 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/RuntimePrimaryRepositoryCommitResolver.php';
-require_once __DIR__ . '/RuntimePrimaryStagingEvidenceVerifier.php';
-require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Verifier.php';
-require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Gate.php';
-require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV3Verifier.php';
-require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV3Gate.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV4Verifier.php';
-require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV4Gate.php';
 
-final class RuntimePrimaryStagingEvidenceGate
+final class RuntimePrimaryStagingEvidenceV4Gate
 {
     public function __construct(private string $projectRoot)
     {
         $this->projectRoot = rtrim(str_replace('\\', '/', trim($this->projectRoot)), '/');
         if ($this->projectRoot === '' || !is_dir($this->projectRoot)) {
-            throw new InvalidArgumentException('Staging evidence gate project root is unavailable.');
+            throw new InvalidArgumentException('Staging evidence v4 gate project root is unavailable.');
         }
     }
 
     public function verify(array $manifest): array
     {
-        $version = (string)($manifest['manifest_version'] ?? '');
-        if ($version === RuntimePrimaryStagingEvidenceV4Verifier::MANIFEST_VERSION) {
-            return (new RuntimePrimaryStagingEvidenceV4Gate($this->projectRoot))->verify($manifest);
-        }
-        if ($version === RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION) {
-            return (new RuntimePrimaryStagingEvidenceV3Gate($this->projectRoot))->verify($manifest);
-        }
-        if ($version === RuntimePrimaryStagingEvidenceV2Verifier::MANIFEST_VERSION) {
-            return (new RuntimePrimaryStagingEvidenceV2Gate($this->projectRoot))->verify($manifest);
-        }
-
         $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($this->projectRoot);
-        $report = (new RuntimePrimaryStagingEvidenceVerifier($this->projectRoot))->verify($manifest);
+        $report = (new RuntimePrimaryStagingEvidenceV4Verifier(
+            $this->projectRoot
+        ))->verify($manifest);
         $manifestCommit = strtolower(trim((string)($manifest['repository_commit'] ?? '')));
         $matches = preg_match('/^[a-f0-9]{40}$/', $currentCommit) === 1
             && preg_match('/^[a-f0-9]{40}$/', $manifestCommit) === 1
             && hash_equals($currentCommit, $manifestCommit);
         $blockers = array_values((array)($report['blockers'] ?? []));
         if (!$matches) {
-            $blockers[] = 'Evidence repository commit does not match the current checkout.';
+            $blockers[] = 'Evidence v4 repository commit does not match the current checkout.';
         }
         $blockers = array_values(array_unique(array_filter(array_map(
             static fn(mixed $value): string => trim((string)$value),

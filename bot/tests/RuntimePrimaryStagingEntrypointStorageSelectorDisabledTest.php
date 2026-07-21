@@ -27,30 +27,23 @@ $production = new RuntimePrimaryStagingEntrypointStorageSelector(
     '/missing/private/config.php',
     'api'
 );
-$assertTrue($production->installIfEnabled() === false, 'Production with disabled selector must preserve JSON without private or DB access');
+$assertTrue($production->installIfEnabled() === false, 'Disabled production selector must preserve JSON');
 
-$staging = new RuntimePrimaryStagingEntrypointStorageSelector(
+$stagingApi = new RuntimePrimaryStagingEntrypointStorageSelector(
+    $projectRoot,
+    ['environment' => 'staging'],
+    '/missing/private/config.php',
+    'api'
+);
+$assertTrue($stagingApi->installIfEnabled() === false, 'Disabled staging API selector must preserve JSON');
+
+$stagingWebhook = new RuntimePrimaryStagingEntrypointStorageSelector(
     $projectRoot,
     ['environment' => 'staging'],
     '/missing/private/config.php',
     'webhook'
 );
-$assertTrue($staging->installIfEnabled() === false, 'Staging with disabled selector must preserve JSON without private or DB access');
-
-$notAllowed = new RuntimePrimaryStagingEntrypointStorageSelector(
-    $projectRoot,
-    [
-        'environment' => 'staging',
-        'staging_db_primary_entrypoint_selector' => [
-            'enabled' => true,
-            'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
-            'allowed_entrypoints' => ['webhook'],
-        ],
-    ],
-    '/missing/private/config.php',
-    'api'
-);
-$assertTrue($notAllowed->installIfEnabled() === false, 'Unlisted staging entrypoint must preserve JSON before private or DB access');
+$assertTrue($stagingWebhook->installIfEnabled() === false, 'Disabled staging webhook path must preserve JSON');
 
 $productionEnabled = new RuntimePrimaryStagingEntrypointStorageSelector(
     $projectRoot,
@@ -68,6 +61,24 @@ $productionEnabled = new RuntimePrimaryStagingEntrypointStorageSelector(
 $assertThrows(
     static fn() => $productionEnabled->installIfEnabled(),
     'cannot be enabled outside staging'
+);
+
+$webhookEnabled = new RuntimePrimaryStagingEntrypointStorageSelector(
+    $projectRoot,
+    [
+        'environment' => 'staging',
+        'staging_db_primary_entrypoint_selector' => [
+            'enabled' => true,
+            'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
+            'allowed_entrypoints' => ['api'],
+        ],
+    ],
+    '/missing/private/config.php',
+    'webhook'
+);
+$assertThrows(
+    static fn() => $webhookEnabled->installIfEnabled(),
+    'webhook routing is not allowed'
 );
 
 $assertThrows(

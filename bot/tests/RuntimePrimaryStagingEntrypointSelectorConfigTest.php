@@ -23,8 +23,11 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
 $disabled = RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([]);
 $assertTrue($disabled->enabled() === false, 'Selector must default to disabled');
 $assertTrue($disabled->enabledFor('api') === false, 'Disabled selector must not enable API');
-$assertTrue($disabled->enabledFor('webhook') === false, 'Disabled selector must not enable webhook');
-$assertTrue(($disabled->safeSummary()['production_allowed'] ?? true) === false, 'Selector must never allow production');
+$assertTrue($disabled->enabledFor('webhook') === false, 'Disabled selector must never enable webhook');
+$summary = $disabled->safeSummary();
+$assertTrue(($summary['api_only'] ?? false) === true, 'Selector summary must remain API-only');
+$assertTrue(($summary['webhook_allowed'] ?? true) === false, 'Selector summary must forbid webhook');
+$assertTrue(($summary['production_allowed'] ?? true) === false, 'Selector must never allow production');
 
 $api = RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
     'staging_db_primary_entrypoint_selector' => [
@@ -33,18 +36,9 @@ $api = RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
         'allowed_entrypoints' => ['api'],
     ],
 ]);
-$assertTrue($api->enabled() === true, 'Exact selector contract must enable the latch');
-$assertTrue($api->enabledFor('api') === true, 'API allowlist must enable API');
-$assertTrue($api->enabledFor('webhook') === false, 'API allowlist must not enable webhook');
-
-$both = RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
-    'staging_db_primary_entrypoint_selector' => [
-        'enabled' => 'enabled',
-        'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
-        'allowed_entrypoints' => ['api', 'webhook'],
-    ],
-]);
-$assertTrue($both->enabledFor('api') && $both->enabledFor('webhook'), 'Explicit allowlist must support both entrypoints');
+$assertTrue($api->enabled() === true, 'Exact API-only selector contract must enable the latch');
+$assertTrue($api->enabledFor('api') === true, 'Exact API allowlist must enable API');
+$assertTrue($api->enabledFor('webhook') === false, 'Enabled selector must still reject webhook');
 
 $assertThrows(
     static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
@@ -80,7 +74,7 @@ $assertThrows(
             'allowed_entrypoints' => [],
         ],
     ]),
-    'at least one allowed entrypoint'
+    'must allow exactly api'
 );
 $assertThrows(
     static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
@@ -97,10 +91,10 @@ $assertThrows(
         'staging_db_primary_entrypoint_selector' => [
             'enabled' => true,
             'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
-            'allowed_entrypoints' => ['admin'],
+            'allowed_entrypoints' => ['webhook'],
         ],
     ]),
-    'unsupported staging db-primary entrypoint'
+    'supports only api'
 );
 $assertThrows(static fn() => $api->enabledFor('admin'), 'supports only api or webhook');
 

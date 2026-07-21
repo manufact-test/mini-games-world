@@ -3,16 +3,18 @@ declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__, 2);
 $bootstrap = file_get_contents($projectRoot . '/bot/core/bootstrap.php');
+$selectorBootstrap = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php');
 $bridgeGuard = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php');
 $factory = file_get_contents($projectRoot . '/bot/storage/StorageFactory.php');
 $selector = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointStorageSelector.php');
 $context = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryEntrypointStorageContext.php');
-$v3 = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Verifier.php');
-$collector = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php');
-if (!is_string($bootstrap) || !is_string($bridgeGuard) || !is_string($factory)
-    || !is_string($selector) || !is_string($context)
-    || !is_string($v3) || !is_string($collector)) {
-    throw new RuntimeException('Staging entrypoint selector sources are unavailable.');
+$coordinator = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingApiSessionCoordinator.php');
+$hook = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingApiRequestFinalizationHook.php');
+$v4 = file_get_contents($projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV4Verifier.php');
+if (!is_string($bootstrap) || !is_string($selectorBootstrap) || !is_string($bridgeGuard)
+    || !is_string($factory) || !is_string($selector) || !is_string($context)
+    || !is_string($coordinator) || !is_string($hook) || !is_string($v4)) {
+    throw new RuntimeException('Staging API lifecycle selector sources are unavailable.');
 }
 
 $assertions = 0;
@@ -26,81 +28,79 @@ $assertTrue(
         && str_contains($factory, "'api.php' => 'api'")
         && str_contains($factory, "'webhook.php' => 'webhook'")
         && str_contains($factory, "default => ''"),
-    'StorageFactory must attempt the selector only for API or webhook requests'
+    'StorageFactory must bound lazy selection to API or webhook script names'
 );
 $assertTrue(
-    str_contains($factory, 'RuntimePrimaryStagingEntrypointBootstrap.php')
-        && str_contains($factory, 'RuntimePrimaryStagingEntrypointStorageSelector(')
-        && str_contains($factory, '->installIfEnabled()'),
-    'StorageFactory must load and invoke the guarded selector lazily'
-);
-$assertTrue(
-    str_contains($factory, 'RuntimePrimaryEntrypointStorageContext::installed()')
-        && str_contains($factory, 'RuntimePrimaryEntrypointStorageContext::storage()')
-        && str_contains($factory, 'return new JsonStorageAdapter($dataDir);'),
-    'StorageFactory must reuse the request-local DB context or preserve JSON fallback'
+    strpos($factory, 'if (isset($failures[$entrypoint]))')
+        < strpos($factory, 'RuntimePrimaryEntrypointStorageContext::installed()'),
+    'Sticky selector failures must be checked before request context reuse'
 );
 $assertTrue(
     str_contains($selector, "if (\$environment !== 'staging')")
-        && str_contains($selector, 'cannot be enabled outside staging')
-        && str_contains($selector, 'enabledFor($this->entrypoint)'),
-    'Selector must remain staging-only and explicitly allowlisted'
+        && str_contains($selector, "if (\$this->entrypoint === 'webhook')")
+        && str_contains($selector, 'DB-primary webhook routing is not allowed')
+        && str_contains($selector, 'RuntimePrimaryStagingApiSessionCoordinator('),
+    'Selector must remain staging-only, API-only and delegate to coordinator'
 );
 $assertTrue(
-    str_contains($selector, 'RuntimePrimaryStagingEvidenceV3Gate(')
-        && str_contains($selector, 'Real staging entrypoint routing requires selector-aware evidence v3.')
-        && str_contains($selector, 'expectedEvidenceFingerprint()'),
-    'Selector must independently verify exact evidence v3 and approval fingerprint'
+    str_contains($selectorBootstrap, 'RuntimePrimaryStagingEvidenceV4Verifier.php')
+        && str_contains($selectorBootstrap, 'RuntimePrimaryStagingRequestSessionReadiness.php')
+        && str_contains($selectorBootstrap, 'RuntimePrimaryStagingRequestFinalizer.php')
+        && str_contains($selectorBootstrap, 'RuntimePrimaryStagingApiSessionCoordinator.php'),
+    'Inert selector bootstrap must load the complete lifecycle contour'
 );
 $assertTrue(
-    str_contains($selector, 'RuntimePrimaryStagingStorageResolver(')
-        && str_contains($selector, 'RuntimePrimaryEntrypointStorageContext::install(')
-        && str_contains($selector, "'selector_evidence_fingerprint'")
-        && str_contains($selector, "'selector_contract_version'"),
-    'Selector must pass guarded resolution and selector evidence into the request context'
+    str_contains($coordinator, 'RuntimePrimaryStagingEvidenceV4Gate(')
+        && strpos($coordinator, 'RuntimePrimaryStagingEvidenceV4Gate(')
+            < strpos($coordinator, 'PdoConnectionFactory::create($databaseConfig)')
+        && str_contains($coordinator, 'RuntimePrimaryStagingRequestSessionReadiness('),
+    'Coordinator must verify lifecycle v4 and dynamic readiness before DB routing'
+);
+$hookPrepared = strpos($coordinator, 'array_unshift($hooks, $hook)');
+$contextInstalled = strpos($coordinator, 'RuntimePrimaryEntrypointStorageContext::install(');
+$hooksPublished = strpos($coordinator, "\$GLOBALS['mgw_api_success_hooks'] = \$hooks;");
+$assertTrue(
+    $hookPrepared !== false
+        && $contextInstalled !== false
+        && $hooksPublished !== false
+        && $hookPrepared < $contextInstalled
+        && $contextInstalled < $hooksPublished,
+    'Coordinator must prepare finalizer, install context and then publish hooks'
 );
 $assertTrue(
-    str_contains($context, 'accepts only guarded DB-primary storage')
-        && str_contains($context, 'requires selector-aware evidence v3')
-        && str_contains($context, 'requires the exact selector contract version')
-        && str_contains($context, 'requires a valid state revision')
-        && str_contains($context, "'state_sha256' => 'state fingerprint'")
-        && str_contains($context, "'database_identity_fingerprint' => 'database identity fingerprint'")
-        && str_contains($context, "'evidence_fingerprint' => 'evidence fingerprint'")
-        && str_contains($context, "'selector_evidence_fingerprint' => 'selector evidence fingerprint'"),
-    'Request context must independently validate DB storage, evidence v3, revision and all fingerprints'
+    str_contains($context, 'requires lifecycle evidence v4')
+        && str_contains($context, 'request_finalizer_registered')
+        && str_contains($context, 'dynamic_session_readiness')
+        && str_contains($context, "if (\$entrypoint !== 'api')")
+        && str_contains($context, "'request_session_evidence_fingerprint'"),
+    'Request context must independently require API-only lifecycle v4'
+);
+$assertTrue(
+    str_contains($hook, 'was invoked more than once')
+        && str_contains($hook, 'lost its guarded storage context')
+        && str_contains($hook, "'projection_event_status' => 'completed'")
+        && str_contains($hook, "'webhook_allowed' => false"),
+    'Finalization hook must be once-only and fail closed on incomplete completion'
 );
 $assertTrue(
     str_contains($context, "'legacy_json_bridges_suppressed' => true")
         && str_contains($bridgeGuard, 'legacyJsonBridgeAllowed()')
-        && str_contains($bridgeGuard, 'RuntimePrimaryEntrypointStorageContext::installed()')
-        && substr_count(
-            $bootstrap,
-            'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()'
-        ) >= 8,
-    'Guarded DB-primary requests must suppress all legacy JSON bridge hooks and filters'
+        && substr_count($bootstrap, 'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()') >= 8,
+    'DB-primary API requests must suppress every legacy JSON bridge'
 );
 $assertTrue(
-    str_contains($v3, "public const MANIFEST_VERSION = 'v3-staging-db-primary-selector-evidence'")
-        && str_contains($v3, 'RuntimePrimaryStagingSelectorEvidence::inspect(')
-        && str_contains($v3, 'does not match the current repository sources'),
-    'Evidence v3 must recompute selector source evidence from the current checkout'
+    str_contains($v4, "public const MANIFEST_VERSION = 'v4-staging-db-primary-api-lifecycle-evidence'")
+        && str_contains($v4, 'RuntimePrimaryStagingRequestLifecycleEvidence::inspect(')
+        && str_contains($v4, 'does not match the current repository sources'),
+    'Evidence v4 must recompute lifecycle evidence from current checkout'
 );
 $assertTrue(
-    str_contains($collector, 'RuntimePrimaryStagingEvidenceCollector(')
-        && str_contains($collector, 'RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION')
-        && str_contains($collector, "\$manifest['selector_evidence'] = \$selectorEvidence")
-        && str_contains($collector, 'RuntimePrimaryStagingEvidenceV3Gate('),
-    'Selector collector must extend verified v2 evidence and pass the v3 gate'
-);
-$assertTrue(
-    !str_contains($selector, 'bot/api.php')
-        && !str_contains($selector, 'WebhookHandler.php')
-        && !str_contains($selector, 'crontab')
+    !str_contains($selector, 'crontab')
         && !str_contains($selector, 'production-cutover.php')
-        && !str_contains($context, 'crontab')
-        && !str_contains($context, 'production-cutover.php'),
-    'Selector implementation must not rewrite entrypoints, Cron or production cutover'
+        && !str_contains($coordinator, 'crontab')
+        && !str_contains($coordinator, 'production-cutover.php')
+        && !str_contains($hook, 'WebhookHandler'),
+    'API lifecycle integration must not touch Cron, webhook handler or production cutover'
 );
 
 fwrite(STDOUT, "RuntimePrimaryStagingEntrypointSelectorContractTest passed: {$assertions} assertions.\n");
