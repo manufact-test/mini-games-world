@@ -6,37 +6,52 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-$evidenceFile = '';
-$ttlSeconds = 300;
+$values = [
+    'evidence' => '',
+    'ttl' => '300',
+];
+$seen = [];
+$prefixes = [
+    '--evidence=' => 'evidence',
+    '--ttl-seconds=' => 'ttl',
+];
 foreach (array_slice($argv ?? [], 1) as $argument) {
-    if (str_starts_with($argument, '--evidence=')) {
-        if ($evidenceFile !== '') {
-            fwrite(STDERR, "--evidence may be specified only once.\n");
-            exit(2);
-        }
-        $evidenceFile = str_replace(
-            '\\',
-            '/',
-            trim(substr($argument, strlen('--evidence=')))
-        );
-        continue;
+    $matchedName = '';
+    $matchedPrefix = '';
+    foreach ($prefixes as $prefix => $name) {
+        if (!str_starts_with($argument, $prefix)) continue;
+        $matchedName = $name;
+        $matchedPrefix = $prefix;
+        break;
     }
-    if (str_starts_with($argument, '--ttl-seconds=')) {
-        $raw = trim(substr($argument, strlen('--ttl-seconds=')));
-        if ($raw === '' || preg_match('/^\d+$/', $raw) !== 1) {
-            fwrite(STDERR, "--ttl-seconds must be an integer.\n");
-            exit(2);
-        }
-        $ttlSeconds = (int)$raw;
-        continue;
+    if ($matchedName === '') {
+        fwrite(STDERR, "Unknown read-only API smoke argument.\n");
+        exit(2);
     }
-    fwrite(STDERR, "Unknown read-only API smoke argument.\n");
-    exit(2);
+    if (isset($seen[$matchedName])) {
+        fwrite(STDERR, "Read-only API smoke option may be specified only once: {$matchedPrefix}\n");
+        exit(2);
+    }
+    $seen[$matchedName] = true;
+    $value = substr($argument, strlen($matchedPrefix));
+    if ($matchedName === 'evidence') {
+        $value = str_replace('\\', '/', $value);
+    }
+    $values[$matchedName] = $value;
 }
-if ($evidenceFile === '' || !str_starts_with($evidenceFile, '/')) {
+
+if (!isset($seen['evidence'])
+    || $values['evidence'] === ''
+    || !str_starts_with($values['evidence'], '/')) {
     fwrite(STDERR, "Read-only API smoke requires --evidence=/absolute/private/evidence-v4.json.\n");
     exit(2);
 }
+if ($values['ttl'] === '' || preg_match('/^\d+$/', $values['ttl']) !== 1) {
+    fwrite(STDERR, "--ttl-seconds must be an integer.\n");
+    exit(2);
+}
+$evidenceFile = $values['evidence'];
+$ttlSeconds = (int)$values['ttl'];
 if (is_link($evidenceFile)) {
     fwrite(STDERR, "Read-only API smoke evidence must not be a symbolic link.\n");
     exit(2);
@@ -46,6 +61,7 @@ if ($ttlSeconds < 60 || $ttlSeconds > 600) {
     exit(2);
 }
 
+umask(0077);
 $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
 $originalScriptFilename = $_SERVER['SCRIPT_FILENAME'] ?? null;
 $originalPhpSelf = $_SERVER['PHP_SELF'] ?? null;
@@ -108,10 +124,15 @@ try {
     if (!is_resource($lockHandle)) {
         throw new RuntimeException('Read-only API smoke lock is unavailable.');
     }
-    @chmod($lockPath, 0600);
+    if (!chmod($lockPath, 0600)) {
+        throw new RuntimeException('Read-only API smoke lock permissions could not be secured.');
+    }
     clearstatcache(true, $lockPath);
-    if (is_link($lockPath)) {
-        throw new RuntimeException('Read-only API smoke lock became a symbolic link.');
+    $lockMode = fileperms($lockPath);
+    if (is_link($lockPath)
+        || !is_int($lockMode)
+        || ($lockMode & 0o077) !== 0) {
+        throw new RuntimeException('Read-only API smoke lock is not a private regular lock file.');
     }
     if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
         throw new RuntimeException('Another rehearsal, evidence collector or API smoke is already running.');
@@ -163,57 +184,84 @@ try {
         ? $overlayResult['report']
         : [];
 
+    $requiredReportTrue = [
+        'context_state_matched',
+        'lifecycle_v4_verified',
+        'legacy_json_bridges_suppressed',
+        'completed_events_lease_free',
+        'state_unchanged',
+        'snapshot_unchanged',
+        'outbox_unchanged',
+        'data_filters_unchanged',
+        'request_finalizer_completed',
+    ];
+    foreach ($requiredReportTrue as $field) {
+        if (($report[$field] ?? null) !== true) {
+            throw new RuntimeException('Read-only API smoke report proof is invalid: ' . $field . '.');
+        }
+    }
+    if (($report['ok'] ?? null) !== true
+        || ($report['action'] ?? '') !== 'staging_api_read_only_smoke_passed'
+        || !is_int($report['state_revision'] ?? null)
+        || $report['state_revision'] < 1
+        || preg_match('/^[a-f0-9]{64}$/', (string)($report['state_sha256'] ?? '')) !== 1
+        || ($report['projection_contract_version'] ?? '')
+            !== RuntimePrimaryAllModuleProjector::CONTRACT_VERSION
+        || !is_int($report['outbox_event_count'] ?? null)
+        || $report['outbox_event_count'] !== $report['state_revision']
+        || preg_match('/^[a-f0-9]{64}$/', (string)($report['outbox_fingerprint'] ?? '')) !== 1
+        || !is_int($report['top_level_count'] ?? null)
+        || $report['top_level_count'] < 1
+        || preg_match('/^[a-f0-9]{64}$/', (string)($report['top_level_keys_fingerprint'] ?? '')) !== 1
+        || ($report['worker_tick_count'] ?? null) !== 0) {
+        throw new RuntimeException('Read-only API smoke result schema is invalid.');
+    }
+    if (($overlayReport['ok'] ?? null) !== true
+        || ($overlayReport['evidence_manifest_version'] ?? '')
+            !== RuntimePrimaryStagingEvidenceV4Verifier::MANIFEST_VERSION
+        || preg_match('/^[a-f0-9]{64}$/', (string)($overlayReport['evidence_fingerprint'] ?? '')) !== 1
+        || preg_match('/^[a-f0-9]{64}$/', (string)($overlayReport['database_identity_fingerprint'] ?? '')) !== 1
+        || preg_match('/^[a-f0-9]{40}$/', (string)($overlayReport['repository_commit'] ?? '')) !== 1
+        || ($overlayReport['ttl_seconds'] ?? null) !== $ttlSeconds
+        || ($overlayReport['json_default_verified'] ?? null) !== true
+        || ($overlayReport['rollback_data_dir_external'] ?? null) !== true
+        || ($overlayReport['rollback_data_dir_canonical'] ?? null) !== true) {
+        throw new RuntimeException('Read-only API smoke overlay report schema is invalid.');
+    }
+
     $outputPayload = [
         'ok' => true,
         'report_type' => 'mvp-14.8.6n-staging-api-read-only-smoke',
-        'action' => (string)($report['action'] ?? ''),
-        'state_revision' => (int)($report['state_revision'] ?? 0),
-        'state_sha256' => (string)($report['state_sha256'] ?? ''),
-        'projection_contract_version' => (string)(
-            $report['projection_contract_version'] ?? ''
-        ),
-        'outbox_event_count' => (int)($report['outbox_event_count'] ?? 0),
-        'outbox_fingerprint' => (string)($report['outbox_fingerprint'] ?? ''),
-        'top_level_count' => (int)($report['top_level_count'] ?? 0),
-        'top_level_keys_fingerprint' => (string)(
-            $report['top_level_keys_fingerprint'] ?? ''
-        ),
-        'evidence_manifest_version' => (string)(
-            $overlayReport['evidence_manifest_version'] ?? ''
-        ),
-        'evidence_fingerprint' => (string)(
-            $overlayReport['evidence_fingerprint'] ?? ''
-        ),
-        'repository_commit' => (string)($overlayReport['repository_commit'] ?? ''),
-        'database_identity_fingerprint' => (string)(
-            $overlayReport['database_identity_fingerprint'] ?? ''
-        ),
-        'ttl_seconds' => (int)($overlayReport['ttl_seconds'] ?? 0),
-        'json_default_verified' => ($overlayReport['json_default_verified'] ?? false) === true,
-        'rollback_data_dir_external' => (
-            $overlayReport['rollback_data_dir_external'] ?? false
-        ) === true,
-        'rollback_data_dir_canonical' => (
-            $overlayReport['rollback_data_dir_canonical'] ?? false
-        ) === true,
+        'action' => $report['action'],
+        'state_revision' => $report['state_revision'],
+        'state_sha256' => $report['state_sha256'],
+        'projection_contract_version' => $report['projection_contract_version'],
+        'outbox_event_count' => $report['outbox_event_count'],
+        'outbox_fingerprint' => $report['outbox_fingerprint'],
+        'top_level_count' => $report['top_level_count'],
+        'top_level_keys_fingerprint' => $report['top_level_keys_fingerprint'],
+        'evidence_manifest_version' => $overlayReport['evidence_manifest_version'],
+        'evidence_fingerprint' => $overlayReport['evidence_fingerprint'],
+        'repository_commit' => $overlayReport['repository_commit'],
+        'database_identity_fingerprint' => $overlayReport['database_identity_fingerprint'],
+        'ttl_seconds' => $overlayReport['ttl_seconds'],
+        'json_default_verified' => true,
+        'rollback_data_dir_external' => true,
+        'rollback_data_dir_canonical' => true,
         'bootstrap_legacy_hook_count' => $bootstrapHookCount,
         'bootstrap_legacy_filter_count' => $bootstrapFilterCount,
         'api_bootstrap_hooks_preserved' => true,
         'api_bootstrap_filters_preserved' => true,
-        'worker_tick_count' => (int)($report['worker_tick_count'] ?? -1),
-        'context_state_matched' => ($report['context_state_matched'] ?? false) === true,
-        'lifecycle_v4_verified' => ($report['lifecycle_v4_verified'] ?? false) === true,
-        'legacy_json_bridges_suppressed' => (
-            $report['legacy_json_bridges_suppressed'] ?? false
-        ) === true,
-        'completed_events_lease_free' => (
-            $report['completed_events_lease_free'] ?? false
-        ) === true,
-        'state_unchanged' => ($report['state_unchanged'] ?? false) === true,
-        'snapshot_unchanged' => ($report['snapshot_unchanged'] ?? false) === true,
-        'outbox_unchanged' => ($report['outbox_unchanged'] ?? false) === true,
-        'data_filters_unchanged' => ($report['data_filters_unchanged'] ?? false) === true,
-        'request_finalizer_completed' => ($report['request_finalizer_completed'] ?? false) === true,
+        'worker_tick_count' => 0,
+        'context_state_matched' => true,
+        'lifecycle_v4_verified' => true,
+        'legacy_json_bridges_suppressed' => true,
+        'completed_events_lease_free' => true,
+        'state_unchanged' => true,
+        'snapshot_unchanged' => true,
+        'outbox_unchanged' => true,
+        'data_filters_unchanged' => true,
+        'request_finalizer_completed' => true,
         'persistent_config_changed' => false,
         'selector_enabled_in_memory_only' => true,
         'request_session_enabled_in_memory_only' => true,
@@ -229,7 +277,7 @@ try {
     $exitCode = 0;
 } catch (Throwable $error) {
     $message = preg_replace(
-        "~/(?:home|var|tmp|srv)/[^\\s'\"]+~",
+        "~/(?:home|var|tmp|srv|opt)/[^\\s'\"]+~",
         '[private-path]',
         trim($error->getMessage())
     ) ?? trim($error->getMessage());
