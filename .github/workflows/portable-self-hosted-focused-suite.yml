@@ -16,7 +16,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, mgw-ci]
     timeout-minutes: 45
     env:
-      MGW_CI_OUTPUT_DIR: ${{ runner.temp }}/mgw-ci-focused
+      MGW_CI_OUTPUT_DIR: ${{ runner.temp }}/mgw-ci-focused-${{ github.run_id }}-${{ github.run_attempt }}
       MGW_CI_TIMEOUT_SECONDS: '2400'
 
     steps:
@@ -42,10 +42,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-focused-${{ github.sha }}
+          name: mgw-focused-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/mgw-ci-focused/focused-suite.log
-            ${{ runner.temp }}/mgw-ci-focused/focused-suite-summary.json
-            ${{ runner.temp }}/mgw-ci-focused/focused-suite-manifest.json
+            ${{ env.MGW_CI_OUTPUT_DIR }}/focused-suite.log
+            ${{ env.MGW_CI_OUTPUT_DIR }}/focused-suite-summary.json
+            ${{ env.MGW_CI_OUTPUT_DIR }}/focused-suite-manifest.json
           if-no-files-found: warn
           retention-days: 7
