@@ -19,6 +19,7 @@ $prefixMap = strpos($source, "'--evidence=' => 'evidence'");
 $duplicateGuard = strpos($source, 'if (isset($seen[$matchedName]))');
 $requiredEvidence = strpos($source, "if (!isset(\$seen['evidence'])");
 $numericTtl = strpos($source, "preg_match('/^\\d+$/', \$values['ttl'])");
+$errorHandler = strpos($source, 'set_error_handler(static function');
 $scriptOverride = strpos($source, "\$_SERVER['SCRIPT_FILENAME'] = \$projectRoot . '/bot/api.php';");
 $bootstrap = strpos($source, "require \$projectRoot . '/bot/core/bootstrap.php';");
 $environmentGuard = strpos($source, "if (strtolower(trim((string)(\$config['environment'] ?? ''))) !== 'staging')");
@@ -34,6 +35,7 @@ $assertTrue(
         && $duplicateGuard !== false
         && $requiredEvidence !== false
         && $numericTtl !== false
+        && $errorHandler !== false
         && $scriptOverride !== false
         && $bootstrap !== false
         && $environmentGuard !== false
@@ -47,7 +49,8 @@ $assertTrue(
         && $prefixMap < $duplicateGuard
         && $duplicateGuard < $requiredEvidence
         && $requiredEvidence < $numericTtl
-        && $numericTtl < $scriptOverride
+        && $numericTtl < $errorHandler
+        && $errorHandler < $scriptOverride
         && $scriptOverride < $bootstrap
         && $bootstrap < $environmentGuard
         && $environmentGuard < $privateGuard
@@ -56,7 +59,7 @@ $assertTrue(
         && $overlayBuild < $factory
         && $factory < $inspector
         && $inspector < $smoke,
-    'Read-only API smoke CLI must validate exact arguments before API bootstrap and resolve only after overlay'
+    'Read-only API smoke CLI must validate exact arguments and install warning safety before API bootstrap'
 );
 $assertTrue(
     str_contains($source, "'--ttl-seconds=' => 'ttl'")
@@ -64,17 +67,26 @@ $assertTrue(
         && str_contains($source, '$value = substr($argument, strlen($matchedPrefix));')
         && !str_contains($source, 'trim(substr($argument')
         && !str_contains($source, 'strtolower(substr($argument')
+        && !str_contains($source, "str_replace('\\\\', '/', \$value)")
+        && str_contains($source, 'evidence path must not contain backslashes')
         && str_contains($source, '--ttl-seconds must be between 60 and 600'),
-    'Read-only API smoke CLI must reject duplicate and normalized option values'
+    'Read-only API smoke CLI must reject duplicate and normalized option values byte-exactly'
+);
+$assertTrue(
+    str_contains($source, 'Read-only API smoke filesystem operation failed.')
+        && str_contains($source, 'Suppressed read-only API smoke warning.')
+        && str_contains($source, 'restore_error_handler();')
+        && strpos($source, 'restore_error_handler();') > $smoke,
+    'Read-only API smoke must convert filesystem warnings to path-free failures and restore its handler'
 );
 $assertTrue(
     str_contains($source, 'umask(0077);')
         && str_contains($source, 'if (!chmod($lockPath, 0600))')
         && str_contains($source, '$lockMode = fileperms($lockPath);')
-        && str_contains($source, '($lockMode & 0o077) !== 0')
-        && str_contains($source, 'lock is not a private regular lock file')
+        && str_contains($source, '($lockMode & 0777) !== 0600')
+        && str_contains($source, 'lock must have exact mode 0600')
         && strpos($source, 'fileperms($lockPath)') < strpos($source, 'flock($lockHandle, LOCK_EX | LOCK_NB)'),
-    'Read-only API smoke lock must be private before acquisition'
+    'Read-only API smoke lock must have exact private mode before acquisition'
 );
 $assertTrue(
     str_contains($source, "\$bootstrapHooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];")
