@@ -23,6 +23,7 @@ FILES=(
   ops/ci/verify-current-portable-focused-suite-evidence.php
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierTest.php
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierContractTest.php
+  bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierCliSafetyContractTest.php
   bot/tests/RuntimePrimaryCurrentPortableSessionContractTest.php
 )
 
@@ -34,6 +35,7 @@ done
 TESTS=(
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierTest.php
   bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierContractTest.php
+  bot/tests/RuntimePrimaryCurrentPortableCiEvidenceVerifierCliSafetyContractTest.php
   bot/tests/RuntimePrimaryCurrentPortableSessionContractTest.php
 )
 
