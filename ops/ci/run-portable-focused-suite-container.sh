@@ -19,7 +19,10 @@ case "$PROJECT_ROOT" in
     ;;
 esac
 
-command -v docker >/dev/null 2>&1 || fail 'Docker CLI is unavailable.'
+for command_name in docker find git id; do
+  command -v "$command_name" >/dev/null 2>&1 \
+    || fail "required host command is unavailable: $command_name"
+done
 docker info >/dev/null 2>&1 || fail 'Docker daemon is unavailable.'
 [[ -f "$PROJECT_ROOT/$DOCKERFILE" ]] || fail 'Portable CI Dockerfile is unavailable.'
 [[ ! -L "$PROJECT_ROOT/$DOCKERFILE" ]] || fail 'Portable CI Dockerfile must not be a symbolic link.'
@@ -45,6 +48,8 @@ case "$OUTPUT_DIR" in
     fail 'container artifacts must not be stored inside public_html.'
     ;;
 esac
+[[ -z "$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]] \
+  || fail 'container artifact directory must be empty before the run.'
 chmod 0700 "$OUTPUT_DIR" 2>/dev/null || true
 
 if [[ "$REBUILD_IMAGE" == '1' ]] \
@@ -73,6 +78,7 @@ exec docker run \
   --env GIT_CONFIG_COUNT=1 \
   --env GIT_CONFIG_KEY_0=safe.directory \
   --env GIT_CONFIG_VALUE_0=/workspace \
+  --env GIT_OPTIONAL_LOCKS=0 \
   --env MGW_CI_OUTPUT_DIR=/artifacts \
   --env MGW_CI_TIMEOUT_SECONDS="$TIMEOUT_SECONDS" \
   --mount type=bind,src="$PROJECT_ROOT",dst=/workspace,readonly \
