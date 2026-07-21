@@ -147,8 +147,10 @@ $assertTrue(
     str_contains($cli, '$value = substr($argument, strlen($matchedPrefix));')
         && !str_contains($cli, 'trim(substr($argument')
         && !str_contains($cli, 'strtolower($value)')
+        && !str_contains($cli, "str_replace('\\\\', '/', \$value)")
+        && str_contains($cli, 'Evidence directory must not contain backslashes.')
         && str_contains($cli, '~/(?:home|var|tmp|srv|opt)/'),
-    'Verifier CLI must preserve exact argument bytes and sanitize private paths'
+    'Verifier CLI must preserve exact argument bytes and reject path normalization'
 );
 $assertTrue(
     !str_contains($cli, 'file_put_contents(')
@@ -169,14 +171,19 @@ $assertTrue(
     'Workflow must verify the current bundle after execution and before upload'
 );
 $assertTrue(
-    preg_match('/^on:\s*\n\s+workflow_dispatch:\s*$/m', $workflow) === 1
-        && str_contains($workflow, 'runs-on: [self-hosted, linux, x64, mgw-ci]')
+    preg_match('/^on:\s*\n\s+pull_request:/m', $workflow) === 1
+        && preg_match('/^\s+workflow_dispatch:\s*$/m', $workflow) === 1
+        && str_contains($workflow, '- agent/mvp-14-8-6s-current-portable-validation')
+        && preg_match('/^\s*(push|schedule):/m', $workflow) !== 1
+        && str_contains($workflow, 'runs-on: ubuntu-24.04')
+        && !str_contains($workflow, 'setup-php')
+        && str_contains($workflow, 'Confirm exact PHP 8.3 runtime')
         && str_contains($workflow, 'github.run_id')
         && str_contains($workflow, 'github.run_attempt')
         && str_contains($workflow, 'MGW_CI_VERIFICATION_FILE')
         && str_contains($workflow, '--expected-commit="$GITHUB_SHA"')
         && str_contains($workflow, '--max-age-seconds=3600'),
-    'Workflow must remain manual, self-hosted, attempt-isolated and commit-bound'
+    'Workflow must remain narrowly triggered, hosted on exact PHP 8.3, attempt-isolated and commit-bound'
 );
 $assertTrue(
     str_contains($workflow, '> "$MGW_CI_VERIFICATION_FILE"')
