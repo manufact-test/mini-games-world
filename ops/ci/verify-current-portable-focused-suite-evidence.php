@@ -70,17 +70,22 @@ if ($maximumAgeSeconds < 60 || $maximumAgeSeconds > 604_800) {
 $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryCurrentPortableCiEvidenceVerifier.php';
 
+set_error_handler(static function (int $severity): never {
+    if (!(error_reporting() & $severity)) {
+        throw new ErrorException('Suppressed current portable CI verifier warning.', 0, $severity);
+    }
+    throw new RuntimeException('Current portable CI evidence filesystem operation failed.');
+});
+
+$exitCode = 1;
+$output = [];
 try {
-    $report = (new RuntimePrimaryCurrentPortableCiEvidenceVerifier(
+    $output = (new RuntimePrimaryCurrentPortableCiEvidenceVerifier(
         $values['evidence_dir'],
         $values['commit'],
         $maximumAgeSeconds
     ))->verify();
-    fwrite(STDOUT, json_encode(
-        $report,
-        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
-    ) . PHP_EOL);
-    exit(0);
+    $exitCode = 0;
 } catch (Throwable $error) {
     $message = preg_replace(
         "~/(?:home|var|tmp|srv|opt)/[^\\s'\"]+~",
@@ -90,7 +95,7 @@ try {
     $message = function_exists('mb_substr')
         ? mb_substr($message, 0, 500)
         : substr($message, 0, 500);
-    fwrite(STDOUT, json_encode([
+    $output = [
         'ok' => false,
         'action' => 'current_portable_ci_evidence_verification_failed',
         'error_class' => get_class($error),
@@ -103,6 +108,13 @@ try {
         'production_changed' => false,
         'sensitive_identifiers_exposed' => false,
         'verified_at_utc' => gmdate(DATE_ATOM),
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
-    exit(1);
+    ];
+} finally {
+    restore_error_handler();
 }
+
+fwrite(STDOUT, json_encode(
+    $output,
+    JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+) . PHP_EOL);
+exit($exitCode);
