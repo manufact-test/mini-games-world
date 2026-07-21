@@ -171,6 +171,10 @@ try {
             $overlayReport['database_identity_fingerprint'] ?? ''
         ),
         'ttl_seconds' => (int)($overlayReport['ttl_seconds'] ?? 0),
+        'json_default_verified' => ($overlayReport['json_default_verified'] ?? false) === true,
+        'rollback_data_dir_external' => (
+            $overlayReport['rollback_data_dir_external'] ?? false
+        ) === true,
         'worker_tick_count' => (int)($report['worker_tick_count'] ?? -1),
         'context_state_matched' => ($report['context_state_matched'] ?? false) === true,
         'lifecycle_v4_verified' => ($report['lifecycle_v4_verified'] ?? false) === true,
