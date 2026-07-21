@@ -2,6 +2,8 @@
 
 This sub-MVP verifies the exact evidence bundle produced by `run-current-portable-focused-suite.sh`. It is offline, read-only and bound to the current fourteen-script DB-primary smoke stack.
 
+During MVP development the repository is temporarily public, so this exact branch also uses a GitHub-hosted Ubuntu runner with PHP 8.3. The repository must be returned to private access after development and the required private GitHub plan must be paid before release.
+
 ## One-command manual run
 
 The preferred pre-merge command on a clean PHP 8.3 Linux checkout is:
@@ -127,17 +129,19 @@ The one-command session wrapper additionally requires:
 
 ## Workflow integration
 
-The manual self-hosted workflow:
+The temporary GitHub-hosted PHP 8.3 workflow:
 
 1. checks out the exact revision without persistent credentials;
-2. runs the current portable PHP 8.3 suite;
-3. verifies the exact bundle against `$GITHUB_SHA`;
-4. writes the verification JSON outside the three-file input directory;
-5. uploads the original bundle plus the verification report.
+2. installs PHP 8.3 with the exact required extensions;
+3. confirms the exact PHP runtime and GNU timeout;
+4. runs the current portable suite;
+5. verifies the exact bundle against `$GITHUB_SHA`;
+6. writes the verification JSON outside the three-file input directory;
+7. uploads the original bundle plus the verification report.
 
-Paths and artifact names include both `run_id` and `run_attempt`, preventing stale bundle reuse on persistent runners.
+Paths and artifact names include both `run_id` and `run_attempt`, preventing stale bundle reuse.
 
-The direct one-command wrapper is the pre-merge fallback when the workflow cannot yet be dispatched or GitHub-hosted minutes are unavailable.
+The direct one-command wrapper remains the fallback when GitHub Actions is unavailable.
 
 ## Focused verification
 
