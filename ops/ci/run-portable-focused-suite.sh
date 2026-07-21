@@ -80,10 +80,15 @@ esac
 chmod 0700 "$CANONICAL_OUTPUT_DIR" 2>/dev/null || true
 LOG_FILE="$CANONICAL_OUTPUT_DIR/focused-suite.log"
 SUMMARY_FILE="$CANONICAL_OUTPUT_DIR/focused-suite-summary.json"
-[[ ! -L "$LOG_FILE" && ! -L "$SUMMARY_FILE" ]] \
+MANIFEST_ARTIFACT_FILE="$CANONICAL_OUTPUT_DIR/focused-suite-manifest.json"
+[[ ! -L "$LOG_FILE" && ! -L "$SUMMARY_FILE" && ! -L "$MANIFEST_ARTIFACT_FILE" ]] \
   || fail 'portable CI artifact files must not be symbolic links.'
 : > "$LOG_FILE"
-chmod 0600 "$LOG_FILE" 2>/dev/null || true
+cp "$MANIFEST_FILE" "$MANIFEST_ARTIFACT_FILE"
+COPIED_MANIFEST_SHA256="$($PHP_BIN -r 'echo hash_file("sha256", $argv[1]);' "$MANIFEST_ARTIFACT_FILE")"
+[[ "$COPIED_MANIFEST_SHA256" = "$MANIFEST_SHA256" ]] \
+  || fail 'copied focused suite manifest fingerprint does not match.'
+chmod 0600 "$LOG_FILE" "$MANIFEST_ARTIFACT_FILE" 2>/dev/null || true
 
 STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date +%s)"
