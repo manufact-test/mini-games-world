@@ -71,7 +71,8 @@ STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date +%s)"
 
 set +e
-if command -v timeout >/dev/null 2>&1; then
+if command -v timeout >/dev/null 2>&1 \
+  && timeout --version 2>/dev/null | grep -q 'GNU coreutils'; then
   timeout --signal=TERM --kill-after=15 "${TIMEOUT_SECONDS}s" \
     bash "$SUITE_SCRIPT" 2>&1 | tee "$LOG_FILE"
   SUITE_EXIT_CODE=${PIPESTATUS[0]}
