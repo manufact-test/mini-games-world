@@ -66,7 +66,9 @@ The runner requires:
 - PHP 8.3.x;
 - PHP extensions `json`, `pdo`, `pdo_sqlite`, `openssl`, `mbstring`;
 - standard commands `date`, `find`, `cp`, `tee`, `cat`, `chmod`, `mkdir`, `grep`;
-- optional GNU coreutils `timeout`.
+- GNU coreutils `timeout`.
+
+The runner fails before execution if a compatible GNU `timeout` is unavailable. It never silently falls back to an unbounded test run.
 
 The checkout must be outside `public_html` and completely clean, including untracked files, before execution. It must remain clean afterward.
 
@@ -86,7 +88,7 @@ The directory must be:
 - non-symlink;
 - empty before the run.
 
-The runner uses `umask 077`, mode `0700` for the directory when possible and mode `0600` for evidence files when possible.
+The runner uses `umask 077` and requires exact mode `0700` for the artifact directory plus exact mode `0600` for the log, manifest and summary. Permission changes are mandatory and read back for verification; a failure blocks the run.
 
 It creates exactly:
 
@@ -96,7 +98,9 @@ current-focused-suite-summary.json
 current-focused-suite-manifest.json
 ```
 
-The copied manifest SHA-256 must match the source manifest before tests start.
+The final directory must still contain exactly these three real non-symlink files. Any hidden or visible extra entry blocks the bundle.
+
+The copied manifest SHA-256 must match the source manifest before tests start. A `tee` failure or truncated log capture changes an otherwise successful suite into a failed run. Log type and permissions are rechecked after execution.
 
 The summary binds:
 
@@ -126,7 +130,7 @@ MGW_CI_TIMEOUT_SECONDS=3600 \
   bash ops/ci/run-current-portable-focused-suite.sh
 ```
 
-Accepted range is 60–7200 seconds. GNU `timeout` is used only when compatible.
+Accepted range is 60–7200 seconds. GNU `timeout` is mandatory and enforces the selected bound with TERM followed by a bounded KILL grace period.
 
 ## Manual self-hosted workflow
 
@@ -147,12 +151,14 @@ mgw-ci
 
 It never uses GitHub-hosted runners. Evidence paths and artifact names include both `github.run_id` and `github.run_attempt`, so retries cannot reuse a previous bundle on a persistent runner.
 
-Workflow order:
+Workflow order in this producer PR:
 
 1. clean checkout without persisted credentials;
 2. run the current portable suite;
 3. print the safe summary;
 4. upload the exact three-file attempt-specific bundle for seven days.
+
+The stacked evidence-verifier PR adds mandatory bundle verification before upload while keeping the verification JSON outside this exact three-file directory.
 
 No workflow was dispatched while preparing this PR.
 
