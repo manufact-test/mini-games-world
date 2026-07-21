@@ -14,6 +14,14 @@ fail() {
   exit 2
 }
 
+file_mode() {
+  "$PHP_BIN" -r '
+$mode = fileperms($argv[1]);
+if (!is_int($mode)) exit(2);
+printf("%03o", $mode & 0777);
+' "$1"
+}
+
 case "$PROJECT_ROOT" in
   */public_html|*/public_html/*)
     fail 'CI checkout must not be inside public_html.'
@@ -81,7 +89,11 @@ case "$CANONICAL_OUTPUT_DIR" in
 esac
 [[ -z "$(find "$CANONICAL_OUTPUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]] \
   || fail 'portable CI artifact directory must be empty before the run.'
-chmod 0700 "$CANONICAL_OUTPUT_DIR" 2>/dev/null || true
+chmod 0700 "$CANONICAL_OUTPUT_DIR" \
+  || fail 'portable CI artifact directory permissions could not be secured.'
+[[ "$(file_mode "$CANONICAL_OUTPUT_DIR")" == '700' ]] \
+  || fail 'portable CI artifact directory must have exact mode 0700.'
+
 LOG_FILE="$CANONICAL_OUTPUT_DIR/current-focused-suite.log"
 SUMMARY_FILE="$CANONICAL_OUTPUT_DIR/current-focused-suite-summary.json"
 MANIFEST_ARTIFACT_FILE="$CANONICAL_OUTPUT_DIR/current-focused-suite-manifest.json"
@@ -92,7 +104,12 @@ cp "$MANIFEST_FILE" "$MANIFEST_ARTIFACT_FILE"
 COPIED_MANIFEST_SHA256="$("$PHP_BIN" -r 'echo hash_file("sha256", $argv[1]);' "$MANIFEST_ARTIFACT_FILE")"
 [[ "$COPIED_MANIFEST_SHA256" == "$MANIFEST_SHA256" ]] \
   || fail 'copied focused suite manifest fingerprint does not match.'
-chmod 0600 "$LOG_FILE" "$MANIFEST_ARTIFACT_FILE" 2>/dev/null || true
+chmod 0600 "$LOG_FILE" "$MANIFEST_ARTIFACT_FILE" \
+  || fail 'portable CI log or manifest permissions could not be secured.'
+for private_file in "$LOG_FILE" "$MANIFEST_ARTIFACT_FILE"; do
+  [[ "$(file_mode "$private_file")" == '600' ]] \
+    || fail 'portable CI log and manifest must have exact mode 0600.'
+done
 
 STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_EPOCH="$(date +%s)"
@@ -102,12 +119,20 @@ if command -v timeout >/dev/null 2>&1 \
   && timeout --version 2>/dev/null | grep -q 'GNU coreutils'; then
   timeout --signal=TERM --kill-after=15 "${TIMEOUT_SECONDS}s" \
     bash "$SUITE_SCRIPT" 2>&1 | tee "$LOG_FILE"
-  SUITE_EXIT_CODE=${PIPESTATUS[0]}
+  PIPE_STATUS=("${PIPESTATUS[@]}")
 else
   bash "$SUITE_SCRIPT" 2>&1 | tee "$LOG_FILE"
-  SUITE_EXIT_CODE=${PIPESTATUS[0]}
+  PIPE_STATUS=("${PIPESTATUS[@]}")
 fi
 set -e
+SUITE_EXIT_CODE="${PIPE_STATUS[0]:-127}"
+TEE_EXIT_CODE="${PIPE_STATUS[1]:-127}"
+if (( TEE_EXIT_CODE != 0 )); then
+  printf 'current-portable-ci blocker: focused-suite log capture failed.\n' >&2
+  if (( SUITE_EXIT_CODE == 0 )); then
+    SUITE_EXIT_CODE=4
+  fi
+fi
 
 CHECKOUT_AFTER="$(git status --porcelain=v1 --untracked-files=all)"
 CHECKOUT_UNCHANGED=true
@@ -119,6 +144,11 @@ if [[ -n "$CHECKOUT_AFTER" ]]; then
   printf 'current-portable-ci blocker: focused suite changed the repository checkout.\n' \
     | tee -a "$LOG_FILE" >&2
 fi
+
+[[ -f "$LOG_FILE" && ! -L "$LOG_FILE" ]] \
+  || fail 'portable CI log became unavailable or unsafe.'
+[[ "$(file_mode "$LOG_FILE")" == '600' ]] \
+  || fail 'portable CI log lost exact mode 0600.'
 
 FINISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 FINISH_EPOCH="$(date +%s)"
@@ -167,7 +197,22 @@ file_put_contents(
     LOCK_EX
 );
 ' || fail 'could not write portable CI summary.'
-chmod 0600 "$SUMMARY_FILE" 2>/dev/null || true
+chmod 0600 "$SUMMARY_FILE" \
+  || fail 'portable CI summary permissions could not be secured.'
+[[ -f "$SUMMARY_FILE" && ! -L "$SUMMARY_FILE" ]] \
+  || fail 'portable CI summary became unavailable or unsafe.'
+[[ "$(file_mode "$SUMMARY_FILE")" == '600' ]] \
+  || fail 'portable CI summary must have exact mode 0600.'
+
+shopt -s nullglob dotglob
+BUNDLE_ENTRIES=("$CANONICAL_OUTPUT_DIR"/*)
+shopt -u nullglob dotglob
+[[ "${#BUNDLE_ENTRIES[@]}" -eq 3 ]] \
+  || fail 'portable CI artifact directory must contain exactly three evidence files.'
+for required_file in "$LOG_FILE" "$SUMMARY_FILE" "$MANIFEST_ARTIFACT_FILE"; do
+  [[ -f "$required_file" && ! -L "$required_file" ]] \
+    || fail 'portable CI exact evidence bundle is incomplete or unsafe.'
+done
 
 printf '\nCurrent portable focused-suite summary:\n'
 cat "$SUMMARY_FILE"
