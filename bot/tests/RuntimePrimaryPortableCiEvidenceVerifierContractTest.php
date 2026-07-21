@@ -32,22 +32,28 @@ $assertTrue(
     str_contains($verifier, 'MAX_SUMMARY_BYTES = 65_536')
         && str_contains($verifier, 'MAX_MANIFEST_BYTES = 262_144')
         && str_contains($verifier, 'MAX_LOG_BYTES = 20_971_520')
-        && str_contains($verifier, 'could not be read exactly'),
-    'Verifier must enforce bounded exact file reads'
+        && str_contains($verifier, 'clearstatcache(true, $path)')
+        && str_contains($verifier, 'could not be read exactly')
+        && str_contains($verifier, 'must not be world-writable'),
+    'Verifier must enforce bounded exact private file reads'
 );
 $assertTrue(
     str_contains($verifier, 'must use its canonical path')
         && str_contains($verifier, 'must not be verified inside public_html')
         && str_contains($verifier, 'is_link($path)')
-        && str_contains($verifier, 'is_link($this->evidenceDirectory)'),
-    'Verifier must reject public_html, symlinks and non-canonical paths'
+        && str_contains($verifier, 'is_link($this->evidenceDirectory)')
+        && str_contains($verifier, 'evidence directory must not be world-writable'),
+    'Verifier must reject public_html, symlinks, non-canonical and world-writable paths'
 );
 $assertTrue(
     str_contains($verifier, "preg_match('/^[a-f0-9]{40}$/', \$commit)")
         && str_contains($verifier, 'evidence belongs to a different repository commit')
         && str_contains($verifier, "preg_match('/^8\\.3\\.\\d+")
-        && str_contains($verifier, 'was not produced by PHP 8.3.x'),
-    'Verifier must bind exact commit and PHP 8.3 runtime'
+        && str_contains($verifier, 'was not produced by PHP 8.3.x')
+        && !str_contains($verifier, 'strtolower(')
+        && !str_contains($verifier, 'trim((string)($summary')
+        && !str_contains($verifier, '$this->expectedCommit ='),
+    'Verifier must bind exact byte-preserved commit, hashes and PHP runtime'
 );
 $assertTrue(
     substr_count($verifier, "hash('sha256',") >= 2
@@ -58,23 +64,33 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($verifier, 'EXPECTED_SCRIPT_COUNT = 13')
-        && str_contains($verifier, 'count($roots) !== 3')
-        && str_contains($verifier, 'count($chain) !== 11')
-        && str_contains($verifier, 'unique script coverage is incomplete'),
-    'Verifier must require the complete 13-script manifest topology'
+        && str_contains($verifier, 'private const EXPECTED_ROOTS = [')
+        && str_contains($verifier, 'private const EXPECTED_CHAIN = [')
+        && str_contains($verifier, "'ordered_roots'] ?? null) !== self::EXPECTED_ROOTS")
+        && str_contains($verifier, "'recursive_chain'] ?? null) !== self::EXPECTED_CHAIN")
+        && str_contains($verifier, 'identity or exact script graph is invalid'),
+    'Verifier must require the exact 13-script manifest graph, not only counts and links'
 );
 $assertTrue(
     str_contains($verifier, 'array_reverse($chainMarkers)')
+        && str_contains($verifier, 'array_keys($lines, $marker, true)')
         && str_contains($verifier, 'success-marker order is incomplete or invalid')
         && str_contains($verifier, 'duplicate success marker')
         && str_contains($verifier, 'DB-primary portable self-hosted CI focused verification passed.'),
-    'Verifier must prove every success marker in exact execution order'
+    'Verifier must prove every success marker as one exact line in execution order'
 );
 $assertTrue(
     str_contains($verifier, 'timestamps must use exact UTC Z format')
+        && str_contains($verifier, "->format('Y-m-d\\TH:i:s\\Z')")
         && str_contains($verifier, 'duration does not match its timestamps')
+        && str_contains($verifier, '!is_int($duration)')
         && str_contains($verifier, '$duration > 7200'),
-    'Verifier must bind exact bounded execution timeline'
+    'Verifier must bind exact valid timestamps and strictly typed bounded duration'
+);
+$assertTrue(
+    str_contains($verifier, "(\$summary['exit_code'] ?? null) !== 0")
+        && str_contains($verifier, "!is_int(\$summary['suite_manifest_script_count'] ?? null)"),
+    'Verifier must reject stringified numeric summary fields'
 );
 foreach ([
     'live_database_contacted',
@@ -100,18 +116,26 @@ $assertTrue(
         && !str_contains($verifier, 'http_response_code('),
     'Verifier class must remain offline and read-only'
 );
-$evidenceArg = strpos($cli, "str_starts_with(\$argument, '--evidence-dir=')");
-$commitArg = strpos($cli, "str_starts_with(\$argument, '--expected-commit=')");
+$duplicateGuard = strpos($cli, 'if (isset($seen[$matchedName]))');
+$requiredGuard = strpos($cli, "foreach (['directory', 'commit'] as \$required)");
+$commitFormat = strpos($cli, "preg_match('/^[a-f0-9]{40}$/', \$expectedCommit)");
 $loadVerifier = strpos($cli, "require_once \$projectRoot");
 $assertTrue(
-    $evidenceArg !== false
-        && $commitArg !== false
+    $duplicateGuard !== false
+        && $requiredGuard !== false
+        && $commitFormat !== false
         && $loadVerifier !== false
-        && $evidenceArg < $loadVerifier
-        && $commitArg < $loadVerifier
+        && $duplicateGuard < $loadVerifier
+        && $requiredGuard < $loadVerifier
+        && $commitFormat < $loadVerifier
+        && str_contains($cli, "'--evidence-dir=' => 'directory'")
+        && str_contains($cli, "'--expected-commit=' => 'commit'")
+        && str_contains($cli, '$value = substr($argument, strlen($matchedPrefix));')
+        && !str_contains($cli, 'trim(substr(')
+        && !str_contains($cli, 'strtolower(')
         && str_contains($cli, 'RuntimePrimaryPortableCiEvidenceVerifier(')
         && !str_contains($cli, 'file_put_contents('),
-    'CLI must validate arguments before loading the offline verifier and must not write files'
+    'CLI must reject duplicates/missing/malformed exact arguments before loading offline verifier code'
 );
 $verifyStep = strpos($workflow, 'name: Verify exact evidence bundle');
 $uploadStep = strpos($workflow, 'name: Upload focused-suite evidence');
@@ -120,8 +144,11 @@ $assertTrue(
         && $uploadStep !== false
         && $verifyStep < $uploadStep
         && str_contains($workflow, '--expected-commit="$GITHUB_SHA"')
-        && str_contains($workflow, 'mgw-ci-focused-verification.json'),
-    'Workflow must verify the exact commit-bound bundle before artifact upload'
+        && str_contains($workflow, 'github.run_id')
+        && str_contains($workflow, 'github.run_attempt')
+        && str_contains($workflow, 'mgw-ci-focused-verification-')
+        && str_contains($workflow, '${{ env.MGW_CI_OUTPUT_DIR }}'),
+    'Workflow must use attempt-isolated paths and verify the exact commit-bound bundle before upload'
 );
 $assertTrue(
     !str_contains($workflow, 'secrets.')
