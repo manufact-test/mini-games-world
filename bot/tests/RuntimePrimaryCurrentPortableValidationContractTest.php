@@ -153,12 +153,13 @@ $assertTrue(
     'Current portable workflow must run only for the exact PR base or explicit manual dispatch'
 );
 $assertTrue(
-    str_contains($workflow, 'runs-on: ubuntu-latest')
-        && str_contains($workflow, 'uses: shivammathur/setup-php@v2')
-        && str_contains($workflow, "php-version: '8.3'")
-        && str_contains($workflow, 'extensions: json, pdo, pdo_sqlite, openssl, mbstring')
+    str_contains($workflow, 'runs-on: ubuntu-24.04')
+        && !str_contains($workflow, 'setup-php')
+        && str_contains($workflow, 'Confirm exact PHP 8.3 runtime')
+        && str_contains($workflow, 'PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400')
+        && str_contains($workflow, '["json", "pdo", "pdo_sqlite", "openssl", "mbstring"]')
         && !str_contains($workflow, 'runs-on: [self-hosted'),
-    'Current portable workflow must use GitHub-hosted Linux with exact PHP 8.3'
+    'Current portable workflow must use the official Ubuntu 24.04 PHP 8.3 image and verify its runtime'
 );
 $assertTrue(
     str_contains($workflow, 'persist-credentials: false')
