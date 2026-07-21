@@ -8,6 +8,8 @@ This stacked sub-MVP adds a CLI-only smoke controller for the API lifecycle intr
 - staging only;
 - requires a private verified lifecycle evidence v4 file;
 - persistent selector, request-session and activation latches must all be disabled;
+- persistent storage must remain JSON-default;
+- the JSON rollback directory must exist outside the checkout and must not be a symlink;
 - temporary latches exist only in the CLI process memory;
 - the persistent private config file is not edited;
 - `bot/api.php` is not required or executed;
@@ -20,6 +22,13 @@ This stacked sub-MVP adds a CLI-only smoke controller for the API lifecycle intr
 ## In-memory overlay
 
 `RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay` starts from the already loaded private staging config and rejects it when any persistent activation latch is enabled.
+
+Before evidence or DB activation, it verifies:
+
+- `storage_driver` is absent/empty or exactly `json`;
+- `data_dir` is a real existing directory;
+- `data_dir` is not a symbolic link;
+- the canonical JSON rollback directory is outside the repository checkout.
 
 It then verifies:
 
@@ -84,6 +93,21 @@ It also calls `RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()` b
 
 After the first DB capture, the immutable context revision/SHA must equal the exact current DB-primary status revision/SHA. A stale or substituted context blocks the smoke before success hooks.
 
+## Completed outbox contract
+
+Every outbox row from revision 1 through current state must be completed and must satisfy the current worker contract:
+
+- contiguous revision number;
+- valid state SHA;
+- exact `RuntimePrimaryAllModuleProjector::CONTRACT_VERSION`;
+- `attempt_count >= 1`;
+- empty `lease_token`;
+- empty `lease_expires_at_utc`;
+- empty `last_error`;
+- current event SHA equals current state SHA.
+
+This matches the real worker lifecycle: claim increments `attempt_count`, and successful completion clears lease and error fields. Old projector events, impossible zero-attempt completion, stale leases and retained failure text all block the smoke.
+
 ## Read-only smoke contract
 
 The smoke operation captures before-state evidence using only:
@@ -98,8 +122,7 @@ Before success hooks:
 
 - current state revision/SHA must be valid;
 - request context revision/SHA must match current state exactly;
-- outbox must contain a contiguous completed chain from revision 1 through current revision;
-- current outbox SHA must match current state SHA;
+- outbox must satisfy the completed outbox contract above;
 - read-only snapshot SHA must match status SHA;
 - legacy JSON bridges must be suppressed.
 
@@ -114,7 +137,7 @@ Then it:
 7. captures state/outbox again;
 8. requires exact before/after equality.
 
-Any old evidence version, invalid fingerprint, stale context, enabled legacy bridge, worker tick, state change, outbox timestamp/status change, missing event, filter mutation or stale report blocks the smoke.
+Any old evidence version, invalid fingerprint, unsafe rollback source, stale context, enabled legacy bridge, wrong projector version, zero-attempt completed event, retained lease/error, worker tick, state change, outbox timestamp/status change, missing event, filter mutation or stale report blocks the smoke.
 
 ## CLI
 
@@ -141,6 +164,10 @@ The CLI:
 Successful output requires:
 
 - `staging_api_read_only_smoke_passed`;
+- `projection_contract_version: v1-normalized-all-modules`;
+- `completed_events_lease_free: true`;
+- `json_default_verified: true`;
+- `rollback_data_dir_external: true`;
 - `worker_tick_count: 0`;
 - `context_state_matched: true`;
 - `lifecycle_v4_verified: true`;
@@ -167,6 +194,10 @@ The focused suite runs the complete API lifecycle integration suite and adds:
 - old evidence version rejection;
 - stale context revision/SHA rejection;
 - enabled legacy bridge rejection;
+- unsafe JSON rollback source rejection;
+- old projector version rejection;
+- zero-attempt completed event rejection;
+- retained lease/error rejection;
 - stale finalization report rejection;
 - non-zero worker tick rejection;
 - data-filter mutation rejection;
