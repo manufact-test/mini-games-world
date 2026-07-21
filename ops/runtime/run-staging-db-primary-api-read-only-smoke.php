@@ -184,7 +184,7 @@ try {
         ? $overlayResult['report']
         : [];
 
-    $requiredReportTrue = [
+    foreach ([
         'context_state_matched',
         'lifecycle_v4_verified',
         'legacy_json_bridges_suppressed',
@@ -194,10 +194,21 @@ try {
         'outbox_unchanged',
         'data_filters_unchanged',
         'request_finalizer_completed',
-    ];
-    foreach ($requiredReportTrue as $field) {
+    ] as $field) {
         if (($report[$field] ?? null) !== true) {
             throw new RuntimeException('Read-only API smoke report proof is invalid: ' . $field . '.');
+        }
+    }
+    foreach ([
+        'private_config_changed',
+        'http_route_added',
+        'webhook_allowed',
+        'cron_changed',
+        'production_changed',
+        'sensitive_identifiers_exposed',
+    ] as $field) {
+        if (($report[$field] ?? null) !== false) {
+            throw new RuntimeException('Read-only API smoke report safety flag is invalid: ' . $field . '.');
         }
     }
     if (($report['ok'] ?? null) !== true
@@ -212,20 +223,47 @@ try {
         || preg_match('/^[a-f0-9]{64}$/', (string)($report['outbox_fingerprint'] ?? '')) !== 1
         || !is_int($report['top_level_count'] ?? null)
         || $report['top_level_count'] < 1
+        || $report['top_level_count'] > 256
         || preg_match('/^[a-f0-9]{64}$/', (string)($report['top_level_keys_fingerprint'] ?? '')) !== 1
         || ($report['worker_tick_count'] ?? null) !== 0) {
         throw new RuntimeException('Read-only API smoke result schema is invalid.');
     }
+
+    foreach ([
+        'json_default_verified',
+        'rollback_data_dir_external',
+        'rollback_data_dir_canonical',
+        'selector_enabled_in_memory_only',
+        'request_session_enabled_in_memory_only',
+        'activation_enabled_in_memory_only',
+        'api_only',
+    ] as $field) {
+        if (($overlayReport[$field] ?? null) !== true) {
+            throw new RuntimeException('Read-only API smoke overlay proof is invalid: ' . $field . '.');
+        }
+    }
+    foreach ([
+        'persistent_config_changed',
+        'webhook_allowed',
+        'cron_changed',
+        'production_changed',
+        'sensitive_identifiers_exposed',
+    ] as $field) {
+        if (($overlayReport[$field] ?? null) !== false) {
+            throw new RuntimeException('Read-only API smoke overlay safety flag is invalid: ' . $field . '.');
+        }
+    }
     if (($overlayReport['ok'] ?? null) !== true
+        || ($overlayReport['action'] ?? '') !== 'read_only_api_smoke_overlay_built'
         || ($overlayReport['evidence_manifest_version'] ?? '')
             !== RuntimePrimaryStagingEvidenceV4Verifier::MANIFEST_VERSION
         || preg_match('/^[a-f0-9]{64}$/', (string)($overlayReport['evidence_fingerprint'] ?? '')) !== 1
         || preg_match('/^[a-f0-9]{64}$/', (string)($overlayReport['database_identity_fingerprint'] ?? '')) !== 1
         || preg_match('/^[a-f0-9]{40}$/', (string)($overlayReport['repository_commit'] ?? '')) !== 1
-        || ($overlayReport['ttl_seconds'] ?? null) !== $ttlSeconds
-        || ($overlayReport['json_default_verified'] ?? null) !== true
-        || ($overlayReport['rollback_data_dir_external'] ?? null) !== true
-        || ($overlayReport['rollback_data_dir_canonical'] ?? null) !== true) {
+        || !is_int($overlayReport['baseline_state_revision'] ?? null)
+        || $overlayReport['baseline_state_revision'] < 1
+        || preg_match('/^[a-f0-9]{64}$/', (string)($overlayReport['baseline_state_sha256'] ?? '')) !== 1
+        || ($overlayReport['ttl_seconds'] ?? null) !== $ttlSeconds) {
         throw new RuntimeException('Read-only API smoke overlay report schema is invalid.');
     }
 
@@ -245,33 +283,33 @@ try {
         'repository_commit' => $overlayReport['repository_commit'],
         'database_identity_fingerprint' => $overlayReport['database_identity_fingerprint'],
         'ttl_seconds' => $overlayReport['ttl_seconds'],
-        'json_default_verified' => true,
-        'rollback_data_dir_external' => true,
-        'rollback_data_dir_canonical' => true,
+        'json_default_verified' => $overlayReport['json_default_verified'],
+        'rollback_data_dir_external' => $overlayReport['rollback_data_dir_external'],
+        'rollback_data_dir_canonical' => $overlayReport['rollback_data_dir_canonical'],
         'bootstrap_legacy_hook_count' => $bootstrapHookCount,
         'bootstrap_legacy_filter_count' => $bootstrapFilterCount,
         'api_bootstrap_hooks_preserved' => true,
         'api_bootstrap_filters_preserved' => true,
-        'worker_tick_count' => 0,
-        'context_state_matched' => true,
-        'lifecycle_v4_verified' => true,
-        'legacy_json_bridges_suppressed' => true,
-        'completed_events_lease_free' => true,
-        'state_unchanged' => true,
-        'snapshot_unchanged' => true,
-        'outbox_unchanged' => true,
-        'data_filters_unchanged' => true,
-        'request_finalizer_completed' => true,
-        'persistent_config_changed' => false,
-        'selector_enabled_in_memory_only' => true,
-        'request_session_enabled_in_memory_only' => true,
-        'activation_enabled_in_memory_only' => true,
-        'http_route_added' => false,
-        'api_only' => true,
-        'webhook_allowed' => false,
-        'cron_changed' => false,
-        'production_changed' => false,
-        'sensitive_identifiers_exposed' => false,
+        'worker_tick_count' => $report['worker_tick_count'],
+        'context_state_matched' => $report['context_state_matched'],
+        'lifecycle_v4_verified' => $report['lifecycle_v4_verified'],
+        'legacy_json_bridges_suppressed' => $report['legacy_json_bridges_suppressed'],
+        'completed_events_lease_free' => $report['completed_events_lease_free'],
+        'state_unchanged' => $report['state_unchanged'],
+        'snapshot_unchanged' => $report['snapshot_unchanged'],
+        'outbox_unchanged' => $report['outbox_unchanged'],
+        'data_filters_unchanged' => $report['data_filters_unchanged'],
+        'request_finalizer_completed' => $report['request_finalizer_completed'],
+        'persistent_config_changed' => $overlayReport['persistent_config_changed'],
+        'selector_enabled_in_memory_only' => $overlayReport['selector_enabled_in_memory_only'],
+        'request_session_enabled_in_memory_only' => $overlayReport['request_session_enabled_in_memory_only'],
+        'activation_enabled_in_memory_only' => $overlayReport['activation_enabled_in_memory_only'],
+        'http_route_added' => $report['http_route_added'],
+        'api_only' => $overlayReport['api_only'],
+        'webhook_allowed' => $report['webhook_allowed'],
+        'cron_changed' => $report['cron_changed'],
+        'production_changed' => $report['production_changed'],
+        'sensitive_identifiers_exposed' => $report['sensitive_identifiers_exposed'],
         'generated_at_utc' => gmdate(DATE_ATOM),
     ];
     $exitCode = 0;
