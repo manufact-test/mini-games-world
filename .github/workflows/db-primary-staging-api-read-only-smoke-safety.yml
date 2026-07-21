@@ -13,6 +13,7 @@ on:
       - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlayTest.php'
       - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeContractTest.php'
       - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeOutboxContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBootstrapContractTest.php'
       - 'bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php'
       - 'ops/checks/db-primary-staging-api-read-only-smoke-local.sh'
       - 'ops/runtime/DB_PRIMARY_STAGING_API_READ_ONLY_SMOKE.md'
