@@ -36,8 +36,9 @@ foreach (array_slice($argv ?? [], 1) as $argument) {
     }
     $seen[$matchedName] = true;
     $value = substr($argument, strlen($matchedPrefix));
-    if ($matchedName === 'evidence_dir') {
-        $value = str_replace('\\', '/', $value);
+    if ($matchedName === 'evidence_dir' && str_contains($value, '\\')) {
+        fwrite(STDERR, "Evidence directory must not contain backslashes.\n");
+        exit(2);
     }
     $values[$matchedName] = $value;
 }
