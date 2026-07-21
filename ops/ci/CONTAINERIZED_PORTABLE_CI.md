@@ -75,6 +75,8 @@ MGW_CI_CONTAINER_OUTPUT_DIR=/absolute/private/path/mgw-ci-artifacts \
   bash ops/ci/run-portable-focused-suite-container.sh
 ```
 
+The artifact directory must be empty before the run. The wrapper never deletes or overwrites an older evidence bundle.
+
 Optional bounded suite timeout:
 
 ```bash
@@ -90,10 +92,12 @@ Before build or run, the wrapper requires:
 
 - Docker CLI;
 - reachable Docker daemon;
+- `find`, Git and `id` host commands;
 - clean tracked Git worktree;
 - checkout outside `public_html`;
 - real non-symlink Dockerfile;
 - absolute non-symlink artifact directory outside the checkout and outside `public_html`;
+- empty artifact directory;
 - valid host UID/GID.
 
 ## Runtime sandbox
@@ -117,6 +121,7 @@ Additional boundaries:
 - temporary storage is a 256 MiB `noexec,nosuid,nodev` tmpfs;
 - process runs as the current host UID/GID;
 - Git safe-directory is supplied through process environment, not a persistent config file;
+- `GIT_OPTIONAL_LOCKS=0` prevents index refresh writes inside the read-only checkout;
 - Docker socket is not mounted;
 - host network is not used;
 - privileged mode is forbidden;
@@ -144,6 +149,8 @@ focused-suite.log
 focused-suite-summary.json
 focused-suite-manifest.json
 ```
+
+Because the directory starts empty and the suite writes only these files, the bundle remains compatible with the exact three-file offline verifier.
 
 The bundle can then be verified offline:
 
