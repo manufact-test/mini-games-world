@@ -15,16 +15,85 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
     private const MAX_MANIFEST_BYTES = 262_144;
     private const MAX_LOG_BYTES = 20_971_520;
 
+    private const EXPECTED_ROOTS = [
+        [
+            'script' => 'ops/checks/db-primary-projection-outbox-local.sh',
+            'success_marker' => 'DB-primary projection outbox focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-projection-worker-local.sh',
+            'success_marker' => 'DB-primary projection worker focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-api-read-only-smoke-local.sh',
+            'success_marker' => 'DB-primary staging API read-only smoke focused verification passed.',
+        ],
+    ];
+
+    private const EXPECTED_CHAIN = [
+        [
+            'script' => 'ops/checks/db-primary-staging-api-read-only-smoke-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-api-session-integration-local.sh',
+            'success_marker' => 'DB-primary staging API read-only smoke focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-api-session-integration-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-request-finalizer-local.sh',
+            'success_marker' => 'DB-primary staging API session integration focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-request-finalizer-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-entrypoint-selector-local.sh',
+            'success_marker' => 'DB-primary staging request finalizer focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-entrypoint-selector-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-synthetic-suite-local.sh',
+            'success_marker' => 'DB-primary staging entrypoint selector focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-synthetic-suite-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-storage-resolver-local.sh',
+            'success_marker' => 'DB-primary staging synthetic suite focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-storage-resolver-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-activation-local.sh',
+            'success_marker' => 'DB-primary staging storage resolver focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-activation-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-evidence-collector-local.sh',
+            'success_marker' => 'DB-primary staging activation focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-evidence-collector-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-evidence-local.sh',
+            'success_marker' => 'DB-primary staging evidence collector focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-evidence-local.sh',
+            'next_script' => 'ops/checks/db-primary-staging-rehearsal-local.sh',
+            'success_marker' => 'DB-primary staging evidence focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-staging-rehearsal-local.sh',
+            'next_script' => 'ops/checks/db-primary-all-module-projector-local.sh',
+            'success_marker' => 'DB-primary staging rehearsal focused verification passed.',
+        ],
+        [
+            'script' => 'ops/checks/db-primary-all-module-projector-local.sh',
+            'next_script' => null,
+            'success_marker' => 'DB-primary all-module projector focused verification passed.',
+        ],
+    ];
+
     public function __construct(
         private string $evidenceDirectory,
-        private ?string $expectedCommit = null
+        private string $expectedCommit
     ) {
-        $this->evidenceDirectory = str_replace('\\', '/', trim($this->evidenceDirectory));
-        $this->expectedCommit = $this->expectedCommit === null
-            ? null
-            : strtolower(trim($this->expectedCommit));
-        if ($this->expectedCommit !== null
-            && preg_match('/^[a-f0-9]{40}$/', $this->expectedCommit) !== 1) {
+        $this->evidenceDirectory = str_replace('\\', '/', $this->evidenceDirectory);
+        if (preg_match('/^[a-f0-9]{40}$/', $this->expectedCommit) !== 1) {
             throw new InvalidArgumentException('Portable CI expected commit must be a full lowercase SHA-1.');
         }
     }
@@ -77,7 +146,7 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
         if (($summary['ok'] ?? null) !== true
             || ($summary['report_type'] ?? '') !== self::REPORT_TYPE
             || ($summary['suite'] ?? '') !== self::SUITE
-            || (int)($summary['exit_code'] ?? -1) !== 0
+            || ($summary['exit_code'] ?? null) !== 0
             || ($summary['tracked_worktree_unchanged'] ?? null) !== true) {
             throw new RuntimeException('Portable CI summary does not represent a successful immutable run.');
         }
@@ -95,20 +164,20 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
             }
         }
 
-        $commit = strtolower(trim((string)($summary['repository_commit'] ?? '')));
+        $commit = (string)($summary['repository_commit'] ?? '');
         if (preg_match('/^[a-f0-9]{40}$/', $commit) !== 1) {
             throw new RuntimeException('Portable CI summary repository commit is invalid.');
         }
-        if ($this->expectedCommit !== null && !hash_equals($this->expectedCommit, $commit)) {
+        if (!hash_equals($this->expectedCommit, $commit)) {
             throw new RuntimeException('Portable CI evidence belongs to a different repository commit.');
         }
-        $phpVersion = trim((string)($summary['php_version'] ?? ''));
+        $phpVersion = (string)($summary['php_version'] ?? '');
         if (preg_match('/^8\.3\.\d+(?:[-+][0-9A-Za-z.-]+)?$/', $phpVersion) !== 1) {
             throw new RuntimeException('Portable CI evidence was not produced by PHP 8.3.x.');
         }
 
-        $manifestSha = strtolower(trim((string)($summary['suite_manifest_sha256'] ?? '')));
-        $logSha = strtolower(trim((string)($summary['log_sha256'] ?? '')));
+        $manifestSha = (string)($summary['suite_manifest_sha256'] ?? '');
+        $logSha = (string)($summary['log_sha256'] ?? '');
         if (preg_match('/^[a-f0-9]{64}$/', $manifestSha) !== 1
             || !hash_equals($manifestSha, hash('sha256', $manifestRaw))) {
             throw new RuntimeException('Portable CI manifest SHA-256 does not match the evidence file.');
@@ -119,8 +188,8 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
         }
 
         $manifestReport = $this->verifyManifest($manifest);
-        if ((int)($summary['suite_manifest_script_count'] ?? 0)
-            !== (int)$manifestReport['unique_script_count']) {
+        if (!is_int($summary['suite_manifest_script_count'] ?? null)
+            || $summary['suite_manifest_script_count'] !== $manifestReport['unique_script_count']) {
             throw new RuntimeException('Portable CI summary script count does not match the manifest.');
         }
         $timeline = $this->verifyTimeline($summary);
@@ -133,10 +202,10 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
             'repository_commit' => $commit,
             'php_version' => $phpVersion,
             'suite_manifest_sha256' => $manifestSha,
-            'suite_manifest_script_count' => (int)$manifestReport['unique_script_count'],
+            'suite_manifest_script_count' => $manifestReport['unique_script_count'],
             'log_sha256' => $logSha,
-            'success_marker_count' => (int)$markerReport['success_marker_count'],
-            'duration_seconds' => (int)$timeline['duration_seconds'],
+            'success_marker_count' => $markerReport['success_marker_count'],
+            'duration_seconds' => $timeline['duration_seconds'],
             'tracked_worktree_unchanged' => true,
             'live_database_contacted' => false,
             'private_config_required' => false,
@@ -168,6 +237,11 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
         if (preg_match('~(?:^|/)public_html(?:/|$)~', $real) === 1) {
             throw new RuntimeException('Portable CI evidence must not be verified inside public_html.');
         }
+        clearstatcache(true, $real);
+        $mode = fileperms($real);
+        if (!is_int($mode) || ($mode & 0o002) !== 0) {
+            throw new RuntimeException('Portable CI evidence directory must not be world-writable.');
+        }
         return rtrim($real, '/');
     }
 
@@ -196,9 +270,14 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
 
     private function readBoundedFile(string $path, int $maximumBytes, string $label): string
     {
+        clearstatcache(true, $path);
         $size = filesize($path);
+        $mode = fileperms($path);
         if (!is_int($size) || $size < 1 || $size > $maximumBytes) {
             throw new RuntimeException('Portable CI evidence ' . $label . ' size is invalid.');
+        }
+        if (!is_int($mode) || ($mode & 0o002) !== 0) {
+            throw new RuntimeException('Portable CI evidence ' . $label . ' must not be world-writable.');
         }
         $content = file_get_contents($path);
         if (!is_string($content) || strlen($content) !== $size) {
@@ -232,50 +311,12 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
         ], 'Portable CI manifest');
         if (($manifest['contract_version'] ?? '') !== self::MANIFEST_CONTRACT
             || ($manifest['entrypoint'] ?? '') !== 'ops/checks/db-primary-portable-self-hosted-ci-local.sh'
-            || (int)($manifest['expected_unique_script_count'] ?? 0) !== self::EXPECTED_SCRIPT_COUNT) {
-            throw new RuntimeException('Portable CI manifest identity is invalid.');
+            || ($manifest['expected_unique_script_count'] ?? null) !== self::EXPECTED_SCRIPT_COUNT
+            || ($manifest['ordered_roots'] ?? null) !== self::EXPECTED_ROOTS
+            || ($manifest['recursive_chain'] ?? null) !== self::EXPECTED_CHAIN) {
+            throw new RuntimeException('Portable CI manifest identity or exact script graph is invalid.');
         }
 
-        $roots = $manifest['ordered_roots'] ?? null;
-        $chain = $manifest['recursive_chain'] ?? null;
-        if (!is_array($roots) || !array_is_list($roots) || count($roots) !== 3
-            || !is_array($chain) || !array_is_list($chain) || count($chain) !== 11) {
-            throw new RuntimeException('Portable CI manifest roots or recursive chain are invalid.');
-        }
-        $expectedRoots = [
-            'ops/checks/db-primary-projection-outbox-local.sh',
-            'ops/checks/db-primary-projection-worker-local.sh',
-            'ops/checks/db-primary-staging-api-read-only-smoke-local.sh',
-        ];
-        $scripts = [];
-        $rootMarkers = [];
-        foreach ($roots as $index => $root) {
-            $this->assertNode($root, 'root');
-            $script = (string)$root['script'];
-            if ($script !== $expectedRoots[$index]) {
-                throw new RuntimeException('Portable CI manifest root order is invalid.');
-            }
-            $scripts[$script] = true;
-            $rootMarkers[] = (string)$root['success_marker'];
-        }
-        $chainMarkers = [];
-        foreach ($chain as $index => $node) {
-            $this->assertNode($node, 'chain');
-            $script = (string)$node['script'];
-            $scripts[$script] = true;
-            $chainMarkers[] = (string)$node['success_marker'];
-            $next = $node['next_script'];
-            if ($index === count($chain) - 1) {
-                if ($next !== null) {
-                    throw new RuntimeException('Portable CI manifest final chain node must terminate.');
-                }
-            } elseif (!is_string($next) || ($chain[$index + 1]['script'] ?? null) !== $next) {
-                throw new RuntimeException('Portable CI manifest recursive chain link is invalid.');
-            }
-        }
-        if (count($scripts) !== self::EXPECTED_SCRIPT_COUNT) {
-            throw new RuntimeException('Portable CI manifest unique script coverage is incomplete.');
-        }
         $safety = $manifest['safety'] ?? null;
         if (!is_array($safety) || array_is_list($safety)) {
             throw new RuntimeException('Portable CI manifest safety object is invalid.');
@@ -295,14 +336,29 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
             }
         }
 
+        $scripts = [];
+        foreach (self::EXPECTED_ROOTS as $node) {
+            $scripts[$node['script']] = true;
+        }
+        foreach (self::EXPECTED_CHAIN as $node) {
+            $scripts[$node['script']] = true;
+        }
+        if (count($scripts) !== self::EXPECTED_SCRIPT_COUNT) {
+            throw new LogicException('Portable CI expected manifest script constants are inconsistent.');
+        }
+
+        $chainMarkers = array_map(
+            static fn(array $node): string => $node['success_marker'],
+            self::EXPECTED_CHAIN
+        );
         $orderedMarkers = [
-            $rootMarkers[0],
-            $rootMarkers[1],
+            self::EXPECTED_ROOTS[0]['success_marker'],
+            self::EXPECTED_ROOTS[1]['success_marker'],
             ...array_reverse($chainMarkers),
             'DB-primary portable self-hosted CI focused verification passed.',
         ];
         if (count(array_unique($orderedMarkers)) !== count($orderedMarkers)) {
-            throw new RuntimeException('Portable CI manifest success markers must be unique after root de-duplication.');
+            throw new LogicException('Portable CI expected success-marker constants are inconsistent.');
         }
         return [
             'unique_script_count' => count($scripts),
@@ -310,45 +366,33 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
         ];
     }
 
-    private function assertNode(mixed $node, string $type): void
-    {
-        if (!is_array($node) || array_is_list($node)) {
-            throw new RuntimeException('Portable CI manifest ' . $type . ' node must be an object.');
-        }
-        $expected = $type === 'root'
-            ? ['script', 'success_marker']
-            : ['script', 'next_script', 'success_marker'];
-        $this->assertExactKeys($node, $expected, 'Portable CI manifest ' . $type . ' node');
-        $script = trim((string)($node['script'] ?? ''));
-        $marker = trim((string)($node['success_marker'] ?? ''));
-        if ($script === ''
-            || !str_starts_with($script, 'ops/checks/')
-            || !str_ends_with($script, '.sh')
-            || str_contains($script, '..')
-            || str_contains($script, '\\')
-            || $marker === ''
-            || strlen($marker) > 200
-            || str_contains($marker, "\n")) {
-            throw new RuntimeException('Portable CI manifest ' . $type . ' node values are invalid.');
-        }
-    }
-
     private function verifyTimeline(array $summary): array
     {
-        $startedRaw = trim((string)($summary['started_at_utc'] ?? ''));
-        $finishedRaw = trim((string)($summary['finished_at_utc'] ?? ''));
+        $startedRaw = (string)($summary['started_at_utc'] ?? '');
+        $finishedRaw = (string)($summary['finished_at_utc'] ?? '');
         if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $startedRaw) !== 1
             || preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $finishedRaw) !== 1) {
             throw new RuntimeException('Portable CI evidence timestamps must use exact UTC Z format.');
         }
-        $started = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $startedRaw, new DateTimeZone('UTC'));
-        $finished = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $finishedRaw, new DateTimeZone('UTC'));
-        if (!$started instanceof DateTimeImmutable || !$finished instanceof DateTimeImmutable) {
+        $started = DateTimeImmutable::createFromFormat(
+            '!Y-m-d\TH:i:s\Z',
+            $startedRaw,
+            new DateTimeZone('UTC')
+        );
+        $finished = DateTimeImmutable::createFromFormat(
+            '!Y-m-d\TH:i:s\Z',
+            $finishedRaw,
+            new DateTimeZone('UTC')
+        );
+        if (!$started instanceof DateTimeImmutable
+            || !$finished instanceof DateTimeImmutable
+            || $started->format('Y-m-d\TH:i:s\Z') !== $startedRaw
+            || $finished->format('Y-m-d\TH:i:s\Z') !== $finishedRaw) {
             throw new RuntimeException('Portable CI evidence timestamps are invalid.');
         }
-        $duration = (int)($summary['duration_seconds'] ?? -1);
+        $duration = $summary['duration_seconds'] ?? null;
         $actual = $finished->getTimestamp() - $started->getTimestamp();
-        if ($duration < 0 || $duration > 7200 || $actual !== $duration) {
+        if (!is_int($duration) || $duration < 0 || $duration > 7200 || $actual !== $duration) {
             throw new RuntimeException('Portable CI evidence duration does not match its timestamps.');
         }
         return ['duration_seconds' => $duration];
@@ -356,14 +400,23 @@ final class RuntimePrimaryPortableCiEvidenceVerifier
 
     private function verifyLogMarkers(string $log, array $markers): array
     {
+        $lines = preg_split('/\R/', rtrim($log, "\r\n"));
+        if (!is_array($lines)) {
+            throw new RuntimeException('Portable CI log lines could not be parsed.');
+        }
         $previous = -1;
         foreach ($markers as $marker) {
-            $position = strpos($log, $marker);
-            if ($position === false || $position <= $previous) {
-                throw new RuntimeException('Portable CI log success-marker order is incomplete or invalid.');
+            $positions = array_keys($lines, $marker, true);
+            if (count($positions) !== 1) {
+                throw new RuntimeException(
+                    count($positions) > 1
+                        ? 'Portable CI log contains a duplicate success marker.'
+                        : 'Portable CI log success-marker order is incomplete or invalid.'
+                );
             }
-            if (strpos($log, $marker, $position + 1) !== false) {
-                throw new RuntimeException('Portable CI log contains a duplicate success marker.');
+            $position = $positions[0];
+            if ($position <= $previous) {
+                throw new RuntimeException('Portable CI log success-marker order is incomplete or invalid.');
             }
             $previous = $position;
         }
