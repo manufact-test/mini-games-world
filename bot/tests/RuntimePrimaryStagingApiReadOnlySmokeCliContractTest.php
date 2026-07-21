@@ -77,8 +77,8 @@ $assertTrue(
     'Read-only API smoke lock must be private before acquisition'
 );
 $assertTrue(
-    str_contains($source, "$bootstrapHooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];")
-        && str_contains($source, "$bootstrapFilters = \$GLOBALS['mgw_api_data_filters'] ?? [];")
+    str_contains($source, "\$bootstrapHooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];")
+        && str_contains($source, "\$bootstrapFilters = \$GLOBALS['mgw_api_data_filters'] ?? [];")
         && str_contains($source, '$bootstrapHookCount = count($bootstrapHooks);')
         && str_contains($source, '$bootstrapFilterCount = count($bootstrapFilters);')
         && str_contains($source, 'count($hooks) !== $bootstrapHookCount + 1')
@@ -87,8 +87,8 @@ $assertTrue(
     'Read-only API smoke must preserve actual API bootstrap hooks and filters while adding one finalizer'
 );
 $assertTrue(
-    str_contains($source, "$GLOBALS['config'] = \$overlay;")
-        && str_contains($source, "$GLOBALS['configFile'] = (string)\$configFile;")
+    str_contains($source, "\$GLOBALS['config'] = \$overlay;")
+        && str_contains($source, "\$GLOBALS['configFile'] = (string)\$configFile;")
         && str_contains($source, "'selector_enabled_in_memory_only' => true")
         && str_contains($source, "'request_session_enabled_in_memory_only' => true")
         && str_contains($source, "'activation_enabled_in_memory_only' => true"),
