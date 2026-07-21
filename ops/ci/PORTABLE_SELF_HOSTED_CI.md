@@ -16,13 +16,56 @@ It invokes:
 ops/checks/db-primary-portable-self-hosted-ci-local.sh
 ```
 
-That check first runs the complete inherited stack through:
+The portable check runs three explicit roots in this order:
 
 ```text
-ops/checks/db-primary-staging-api-read-only-smoke-local.sh
+1. ops/checks/db-primary-projection-outbox-local.sh
+2. ops/checks/db-primary-projection-worker-local.sh
+3. ops/checks/db-primary-staging-api-read-only-smoke-local.sh
 ```
 
-The inherited scripts recursively include every previous DB-primary adapter, outbox, worker, projector, evidence, selector, request-finalizer, API lifecycle and read-only smoke regression.
+The third root recursively runs the complete projector, rehearsal, evidence, activation, resolver, synthetic, selector, request-finalizer, API lifecycle and read-only smoke chain.
+
+The outbox and worker roots are explicit because the inherited API chain does not call those two foundational scripts itself.
+
+## Exact suite manifest
+
+The exact expected script graph is stored in:
+
+```text
+ops/ci/portable-focused-suite-manifest.json
+```
+
+Contract:
+
+```text
+v1-portable-db-primary-focused-suite
+```
+
+The manifest records:
+
+- the portable check entrypoint;
+- three ordered root scripts;
+- eleven recursive chain nodes;
+- thirteen unique scripts total;
+- each script's exact success marker;
+- explicit no-side-effect safety flags.
+
+`RuntimePrimaryPortableFocusedSuiteManifestTest.php` verifies:
+
+- exact manifest fields;
+- safe repository-relative script paths;
+- every script exists and is not a symlink;
+- every script uses strict Bash;
+- root call order is outbox → worker → API stack;
+- every recursive script calls the declared next script before its own success marker;
+- all thirteen unique scripts are covered;
+- every safety flag is false.
+
+The portable runner validates the manifest before executing the suite and binds every summary to:
+
+- manifest SHA-256;
+- manifest script count.
 
 ## Runner prerequisites
 
@@ -35,7 +78,7 @@ The checkout must provide:
 - PHP extensions: `json`, `pdo`, `pdo_sqlite`, `openssl`, `mbstring`;
 - optional GNU `timeout` for hard process timeout.
 
-The runner validates these requirements before starting the suite.
+The runner validates these requirements before starting the suite. A non-GNU `timeout` binary is ignored instead of causing a false failure.
 
 ## Checkout boundary
 
@@ -75,12 +118,17 @@ Default artifact location:
 ${RUNNER_TEMP:-${TMPDIR:-/tmp}}/mgw-ci-focused
 ```
 
+The artifact directory must be absolute, outside the checkout, outside `public_html` and not a symlink.
+
 It contains:
 
 ```text
 focused-suite.log
 focused-suite-summary.json
+focused-suite-manifest.json
 ```
+
+The copied manifest SHA-256 must match the source manifest SHA-256 before the suite starts.
 
 A different private temporary directory may be supplied:
 
@@ -92,6 +140,8 @@ MGW_CI_OUTPUT_DIR=/private/runner-temp/mgw-ci \
 The JSON summary contains only:
 
 - success/failure;
+- exact suite manifest SHA-256;
+- suite manifest script count;
 - checkout commit SHA;
 - PHP version;
 - start/finish/duration;
@@ -112,6 +162,8 @@ MGW_CI_TIMEOUT_SECONDS=3600 \
 ```
 
 Accepted range: 60–7200 seconds.
+
+Hard timeout is used only when GNU coreutils `timeout` is available. Other environments still run the same suite without an incompatible timeout wrapper.
 
 ## GitHub self-hosted workflow
 
@@ -137,7 +189,7 @@ The workflow:
 1. checks out the exact revision without persisted credentials;
 2. runs the portable entrypoint;
 3. prints the safe JSON summary;
-4. uploads the safe log and summary for seven days.
+4. uploads the safe log, summary and exact manifest for seven days.
 
 ## Other private CI systems
 
