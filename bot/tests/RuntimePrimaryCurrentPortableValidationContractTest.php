@@ -20,6 +20,7 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
 $suiteRun = strpos($runner, 'bash "$SUITE_SCRIPT"');
 foreach ([
     'CI checkout must not be inside public_html.',
+    'GNU coreutils timeout is required for a bounded portable suite.',
     'current portable CI requires PHP 8.3.x.',
     'for extension_name in json pdo pdo_sqlite openssl mbstring',
     'focused suite manifest is invalid.',
@@ -69,7 +70,7 @@ $assertTrue(
     'Current portable runner must require and verify exact private permissions'
 );
 $assertTrue(
-    substr_count($runner, 'PIPE_STATUS=("${PIPESTATUS[@]}")') === 2
+    substr_count($runner, 'PIPE_STATUS=("${PIPESTATUS[@]}")') === 1
         && str_contains($runner, 'TEE_EXIT_CODE="${PIPE_STATUS[1]:-127}"')
         && str_contains($runner, 'focused-suite log capture failed')
         && str_contains($runner, 'SUITE_EXIT_CODE=4'),
@@ -83,11 +84,13 @@ $assertTrue(
     'Current portable runner must finish with exactly the three expected real evidence files'
 );
 $assertTrue(
-    str_contains($runner, 'timeout --version')
-        && str_contains($runner, 'GNU coreutils')
+    str_contains($runner, 'for command_name in bash git date find cp tee cat chmod mkdir grep timeout "$PHP_BIN"')
+        && str_contains($runner, "timeout --version 2>/dev/null | grep -q 'GNU coreutils'")
+        && str_contains($runner, 'GNU coreutils timeout is required for a bounded portable suite.')
         && str_contains($runner, 'timeout --signal=TERM --kill-after=15')
-        && str_contains($runner, 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200'),
-    'Current portable runner must use a bounded compatible timeout contract'
+        && str_contains($runner, 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200')
+        && !str_contains($runner, "else\n  bash \"$SUITE_SCRIPT\""),
+    'Current portable runner must fail closed without a compatible bounded timeout'
 );
 $assertTrue(
     str_contains($runner, '"report_type" => "mvp-14.8.6s-current-portable-validation"')
