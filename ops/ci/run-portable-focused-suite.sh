@@ -18,6 +18,8 @@ case "$PROJECT_ROOT" in
     ;;
 esac
 
+[[ "$OUTPUT_DIR" = /* ]] || fail 'MGW_CI_OUTPUT_DIR must be an absolute path.'
+[[ ! -L "$OUTPUT_DIR" ]] || fail 'MGW_CI_OUTPUT_DIR must not be a symbolic link.'
 [[ "$TIMEOUT_SECONDS" =~ ^[0-9]+$ ]] || fail 'MGW_CI_TIMEOUT_SECONDS must be an integer.'
 (( TIMEOUT_SECONDS >= 60 && TIMEOUT_SECONDS <= 7200 )) \
   || fail 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200.'
@@ -48,9 +50,20 @@ COMMIT_SHA="$(git rev-parse --verify HEAD)"
 [[ "$COMMIT_SHA" =~ ^[a-f0-9]{40}$ ]] || fail 'checkout commit SHA is invalid.'
 
 mkdir -p "$OUTPUT_DIR"
-chmod 0700 "$OUTPUT_DIR" 2>/dev/null || true
-LOG_FILE="$OUTPUT_DIR/focused-suite.log"
-SUMMARY_FILE="$OUTPUT_DIR/focused-suite-summary.json"
+CANONICAL_OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd -P)"
+case "$CANONICAL_OUTPUT_DIR" in
+  "$PROJECT_ROOT"|"$PROJECT_ROOT"/*)
+    fail 'portable CI artifacts must stay outside the repository checkout.'
+    ;;
+  */public_html|*/public_html/*)
+    fail 'portable CI artifacts must not be stored inside public_html.'
+    ;;
+esac
+chmod 0700 "$CANONICAL_OUTPUT_DIR" 2>/dev/null || true
+LOG_FILE="$CANONICAL_OUTPUT_DIR/focused-suite.log"
+SUMMARY_FILE="$CANONICAL_OUTPUT_DIR/focused-suite-summary.json"
+[[ ! -L "$LOG_FILE" && ! -L "$SUMMARY_FILE" ]] \
+  || fail 'portable CI artifact files must not be symbolic links.'
 : > "$LOG_FILE"
 chmod 0600 "$LOG_FILE" 2>/dev/null || true
 
@@ -125,6 +138,6 @@ chmod 0600 "$SUMMARY_FILE" 2>/dev/null || true
 
 printf '\nPortable focused-suite summary:\n'
 cat "$SUMMARY_FILE"
-printf 'Artifacts directory: %s\n' "$OUTPUT_DIR"
+printf 'Portable CI artifacts prepared.\n'
 
 exit "$SUITE_EXIT_CODE"
