@@ -89,21 +89,34 @@ $assertTrue(
 $assertTrue(
     str_contains($source, "\$GLOBALS['config'] = \$overlay;")
         && str_contains($source, "\$GLOBALS['configFile'] = (string)\$configFile;")
-        && str_contains($source, "'selector_enabled_in_memory_only' => true")
-        && str_contains($source, "'request_session_enabled_in_memory_only' => true")
-        && str_contains($source, "'activation_enabled_in_memory_only' => true"),
+        && str_contains($source, "'selector_enabled_in_memory_only'")
+        && str_contains($source, "'request_session_enabled_in_memory_only'")
+        && str_contains($source, "'activation_enabled_in_memory_only'"),
     'Read-only API smoke must use in-memory latches only'
 );
 $assertTrue(
-    str_contains($source, '$requiredReportTrue = [')
+    str_contains($source, 'Read-only API smoke report proof is invalid: ')
+        && str_contains($source, 'Read-only API smoke report safety flag is invalid: ')
+        && str_contains($source, "'private_config_changed',")
+        && str_contains($source, "'http_route_added',")
+        && str_contains($source, "'production_changed',")
         && str_contains($source, "(\$report['ok'] ?? null) !== true")
         && str_contains($source, "!is_int(\$report['state_revision'] ?? null)")
         && str_contains($source, "!is_int(\$report['outbox_event_count'] ?? null)")
         && str_contains($source, "(\$report['worker_tick_count'] ?? null) !== 0")
+        && str_contains($source, 'result schema is invalid'),
+    'Read-only API smoke CLI must validate every smoke proof and safety flag before publishing evidence'
+);
+$assertTrue(
+    str_contains($source, 'Read-only API smoke overlay proof is invalid: ')
+        && str_contains($source, 'Read-only API smoke overlay safety flag is invalid: ')
+        && str_contains($source, "'persistent_config_changed',")
+        && str_contains($source, "'selector_enabled_in_memory_only',")
+        && str_contains($source, "(\$overlayReport['action'] ?? '') !== 'read_only_api_smoke_overlay_built'")
+        && str_contains($source, "!is_int(\$overlayReport['baseline_state_revision'] ?? null)")
         && str_contains($source, "(\$overlayReport['ttl_seconds'] ?? null) !== \$ttlSeconds")
-        && str_contains($source, 'result schema is invalid')
         && str_contains($source, 'overlay report schema is invalid'),
-    'Read-only API smoke CLI must reject malformed internal reports before publishing evidence'
+    'Read-only API smoke CLI must validate overlay identity, types, proofs and safety flags'
 );
 $assertTrue(
     str_contains($source, "'bootstrap_legacy_hook_count'")
@@ -126,6 +139,13 @@ $assertTrue(
     'Read-only API smoke output must prove real API bootstrap preservation, rollback safety and no mutation'
 );
 $assertTrue(
+    str_contains($source, "'production_changed' => \$report['production_changed']")
+        && str_contains($source, "'persistent_config_changed' => \$overlayReport['persistent_config_changed']")
+        && str_contains($source, "'selector_enabled_in_memory_only' => \$overlayReport['selector_enabled_in_memory_only']")
+        && str_contains($source, "'state_unchanged' => \$report['state_unchanged']"),
+    'Published evidence must copy already-validated proofs instead of inventing safe constants'
+);
+$assertTrue(
     !str_contains($source, "require \$projectRoot . '/bot/api.php'")
         && !str_contains($source, "include \$projectRoot . '/bot/api.php'")
         && !str_contains($source, 'file_put_contents(')
@@ -141,15 +161,6 @@ $assertTrue(
         && !str_contains($source, "'evidence_file' =>")
         && !str_contains($source, "'private_dir' =>"),
     'Read-only API smoke output must not expose DB identifiers, secrets or private paths'
-);
-$assertTrue(
-    str_contains($source, "'persistent_config_changed' => false")
-        && str_contains($source, "'http_route_added' => false")
-        && str_contains($source, "'api_only' => true")
-        && str_contains($source, "'webhook_allowed' => false")
-        && str_contains($source, "'cron_changed' => false")
-        && str_contains($source, "'production_changed' => false"),
-    'Read-only API smoke must preserve explicit safety flags'
 );
 $assertTrue(
     str_contains($source, '~/(?:home|var|tmp|srv|opt)/')
