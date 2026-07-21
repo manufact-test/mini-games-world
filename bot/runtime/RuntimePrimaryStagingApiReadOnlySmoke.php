@@ -55,7 +55,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
         $before = $this->capture();
         if ((int)$context['state_revision'] !== (int)$before['state_revision']
             || !hash_equals(
-                strtolower(trim((string)$context['state_sha256'])),
+                (string)$context['state_sha256'],
                 (string)$before['state_sha256']
             )) {
             throw new RuntimeException('Read-only API smoke context no longer matches current DB-primary state.');
@@ -95,9 +95,10 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             || ($finalization['projection_event_status'] ?? '') !== 'completed'
             || (int)($finalization['worker_tick_count'] ?? -1) !== 0
             || (int)($finalization['final_state_revision'] ?? 0) !== (int)$before['state_revision']
+            || !$this->validSha((string)($finalization['final_state_sha256'] ?? ''))
             || !hash_equals(
                 (string)$before['state_sha256'],
-                strtolower(trim((string)($finalization['final_state_sha256'] ?? '')))
+                (string)$finalization['final_state_sha256']
             )
             || ($finalization['read_only_audit'] ?? false) !== true
             || ($finalization['legacy_json_bridges_suppressed'] ?? false) !== true
@@ -156,7 +157,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
     {
         $status = $this->storage->status();
         $revision = (int)($status['revision'] ?? 0);
-        $stateSha = strtolower(trim((string)($status['state_sha256'] ?? '')));
+        $stateSha = (string)($status['state_sha256'] ?? '');
         if (($status['ok'] ?? false) !== true
             || ($status['driver'] ?? '') !== 'database'
             || $revision < 1
@@ -184,11 +185,11 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             }
             $expectedRevision = $index + 1;
             $rowRevision = (int)($row['state_revision'] ?? 0);
-            $rowSha = strtolower(trim((string)($row['state_sha256'] ?? '')));
-            $projectionVersion = trim((string)($row['projection_version'] ?? ''));
-            $leaseToken = trim((string)($row['lease_token'] ?? ''));
-            $leaseExpiresAt = trim((string)($row['lease_expires_at_utc'] ?? ''));
-            $lastError = trim((string)($row['last_error'] ?? ''));
+            $rowSha = (string)($row['state_sha256'] ?? '');
+            $projectionVersion = (string)($row['projection_version'] ?? '');
+            $leaseToken = (string)($row['lease_token'] ?? '');
+            $leaseExpiresAt = (string)($row['lease_expires_at_utc'] ?? '');
+            $lastError = (string)($row['last_error'] ?? '');
             if ($rowRevision !== $expectedRevision
                 || ($row['status'] ?? '') !== 'completed'
                 || !$this->validSha($rowSha)
@@ -227,7 +228,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
 
     private function validSha(string $value): bool
     {
-        return preg_match('/^[a-f0-9]{64}$/', strtolower(trim($value))) === 1;
+        return preg_match('/^[a-f0-9]{64}$/', $value) === 1;
     }
 
     private function canonicalSha(array $state): string
