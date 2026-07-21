@@ -15,8 +15,10 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
 };
 
 $cliGuard = strpos($source, "if (PHP_SAPI !== 'cli')");
-$evidenceParse = strpos($source, "str_starts_with(\$argument, '--evidence=')");
-$ttlParse = strpos($source, "str_starts_with(\$argument, '--ttl-seconds=')");
+$prefixMap = strpos($source, "'--evidence=' => 'evidence'");
+$duplicateGuard = strpos($source, 'if (isset($seen[$matchedName]))');
+$requiredEvidence = strpos($source, "if (!isset(\$seen['evidence'])");
+$numericTtl = strpos($source, "preg_match('/^\\d+$/', \$values['ttl'])");
 $scriptOverride = strpos($source, "\$_SERVER['SCRIPT_FILENAME'] = \$projectRoot . '/bot/api.php';");
 $bootstrap = strpos($source, "require \$projectRoot . '/bot/core/bootstrap.php';");
 $environmentGuard = strpos($source, "if (strtolower(trim((string)(\$config['environment'] ?? ''))) !== 'staging')");
@@ -28,8 +30,10 @@ $inspector = strpos($source, '$inspectorDatabase = PdoConnectionFactory::create(
 $smoke = strpos($source, 'RuntimePrimaryStagingApiReadOnlySmoke(');
 $assertTrue(
     $cliGuard !== false
-        && $evidenceParse !== false
-        && $ttlParse !== false
+        && $prefixMap !== false
+        && $duplicateGuard !== false
+        && $requiredEvidence !== false
+        && $numericTtl !== false
         && $scriptOverride !== false
         && $bootstrap !== false
         && $environmentGuard !== false
@@ -39,9 +43,11 @@ $assertTrue(
         && $factory !== false
         && $inspector !== false
         && $smoke !== false
-        && $cliGuard < $evidenceParse
-        && $evidenceParse < $scriptOverride
-        && $ttlParse < $scriptOverride
+        && $cliGuard < $prefixMap
+        && $prefixMap < $duplicateGuard
+        && $duplicateGuard < $requiredEvidence
+        && $requiredEvidence < $numericTtl
+        && $numericTtl < $scriptOverride
         && $scriptOverride < $bootstrap
         && $bootstrap < $environmentGuard
         && $environmentGuard < $privateGuard
@@ -50,12 +56,29 @@ $assertTrue(
         && $overlayBuild < $factory
         && $factory < $inspector
         && $inspector < $smoke,
-    'Read-only API smoke CLI must select API bootstrap before loading application and resolve only after overlay'
+    'Read-only API smoke CLI must validate exact arguments before API bootstrap and resolve only after overlay'
 );
 $assertTrue(
-    str_contains($source, "\$bootstrapHooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];")
-        && str_contains($source, "\$bootstrapFilters = \$GLOBALS['mgw_api_data_filters'] ?? [];")
-        && str_contains($source, '\$bootstrapHookCount = count($bootstrapHooks);') === false
+    str_contains($source, "'--ttl-seconds=' => 'ttl'")
+        && str_contains($source, 'Read-only API smoke option may be specified only once')
+        && str_contains($source, '$value = substr($argument, strlen($matchedPrefix));')
+        && !str_contains($source, 'trim(substr($argument')
+        && !str_contains($source, 'strtolower(substr($argument')
+        && str_contains($source, '--ttl-seconds must be between 60 and 600'),
+    'Read-only API smoke CLI must reject duplicate and normalized option values'
+);
+$assertTrue(
+    str_contains($source, 'umask(0077);')
+        && str_contains($source, 'if (!chmod($lockPath, 0600))')
+        && str_contains($source, '$lockMode = fileperms($lockPath);')
+        && str_contains($source, '($lockMode & 0o077) !== 0')
+        && str_contains($source, 'lock is not a private regular lock file')
+        && strpos($source, 'fileperms($lockPath)') < strpos($source, 'flock($lockHandle, LOCK_EX | LOCK_NB)'),
+    'Read-only API smoke lock must be private before acquisition'
+);
+$assertTrue(
+    str_contains($source, "$bootstrapHooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];")
+        && str_contains($source, "$bootstrapFilters = \$GLOBALS['mgw_api_data_filters'] ?? [];")
         && str_contains($source, '$bootstrapHookCount = count($bootstrapHooks);')
         && str_contains($source, '$bootstrapFilterCount = count($bootstrapFilters);')
         && str_contains($source, 'count($hooks) !== $bootstrapHookCount + 1')
@@ -64,12 +87,23 @@ $assertTrue(
     'Read-only API smoke must preserve actual API bootstrap hooks and filters while adding one finalizer'
 );
 $assertTrue(
-    str_contains($source, "\$GLOBALS['config'] = \$overlay;")
-        && str_contains($source, "\$GLOBALS['configFile'] = (string)\$configFile;")
+    str_contains($source, "$GLOBALS['config'] = \$overlay;")
+        && str_contains($source, "$GLOBALS['configFile'] = (string)\$configFile;")
         && str_contains($source, "'selector_enabled_in_memory_only' => true")
         && str_contains($source, "'request_session_enabled_in_memory_only' => true")
         && str_contains($source, "'activation_enabled_in_memory_only' => true"),
     'Read-only API smoke must use in-memory latches only'
+);
+$assertTrue(
+    str_contains($source, '$requiredReportTrue = [')
+        && str_contains($source, "(\$report['ok'] ?? null) !== true")
+        && str_contains($source, "!is_int(\$report['state_revision'] ?? null)")
+        && str_contains($source, "!is_int(\$report['outbox_event_count'] ?? null)")
+        && str_contains($source, "(\$report['worker_tick_count'] ?? null) !== 0")
+        && str_contains($source, "(\$overlayReport['ttl_seconds'] ?? null) !== \$ttlSeconds")
+        && str_contains($source, 'result schema is invalid')
+        && str_contains($source, 'overlay report schema is invalid'),
+    'Read-only API smoke CLI must reject malformed internal reports before publishing evidence'
 );
 $assertTrue(
     str_contains($source, "'bootstrap_legacy_hook_count'")
@@ -93,11 +127,11 @@ $assertTrue(
 );
 $assertTrue(
     !str_contains($source, "require \$projectRoot . '/bot/api.php'")
-        && !str_contains($source, 'include $projectRoot . \'/bot/api.php\'')
+        && !str_contains($source, "include \$projectRoot . '/bot/api.php'")
         && !str_contains($source, 'file_put_contents(')
         && !str_contains($source, 'rename(')
         && !str_contains($source, 'copy('),
-    'Read-only API smoke must not execute an HTTP route or write config files'
+    'Read-only API smoke must not execute an HTTP route or write config/report files'
 );
 $assertTrue(
     !str_contains($source, "'host' =>")
@@ -118,10 +152,11 @@ $assertTrue(
     'Read-only API smoke must preserve explicit safety flags'
 );
 $assertTrue(
-    !str_contains($source, 'crontab')
+    str_contains($source, '~/(?:home|var|tmp|srv|opt)/')
+        && !str_contains($source, 'crontab')
         && !str_contains($source, 'production-cutover.php')
         && !str_contains($source, 'WebhookHandler'),
-    'Read-only API smoke must not touch Cron, production cutover or webhook handler'
+    'Read-only API smoke must sanitize private paths and avoid Cron, cutover and webhook code'
 );
 
 fwrite(STDOUT, "RuntimePrimaryStagingApiReadOnlySmokeCliContractTest passed: {$assertions} assertions.\n");
