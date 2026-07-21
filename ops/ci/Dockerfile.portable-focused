@@ -1,0 +1,32 @@
+ARG PHP_IMAGE=php:8.3-cli-bookworm
+FROM ${PHP_IMAGE}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash \
+        ca-certificates \
+        coreutils \
+        git \
+        libonig-dev \
+        libsqlite3-dev \
+    && docker-php-ext-install -j"$(nproc)" mbstring pdo_sqlite \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd \
+    --uid 10001 \
+    --user-group \
+    --create-home \
+    --shell /usr/sbin/nologin \
+    mgwci
+
+WORKDIR /workspace
+
+ENV HOME=/tmp \
+    MGW_CI_OUTPUT_DIR=/artifacts \
+    MGW_CI_TIMEOUT_SECONDS=2400
+
+USER 10001:10001
+
+ENTRYPOINT ["bash", "ops/ci/run-portable-focused-suite.sh"]
