@@ -68,7 +68,9 @@ $assertTrue(
     'Read-only API smoke must exercise fresh lazy selector hooks and DB-primary storage'
 );
 $assertTrue(
-    str_contains($source, "'json_default_verified'")
+    str_contains($source, "'projection_contract_version'")
+        && str_contains($source, "'completed_events_lease_free'")
+        && str_contains($source, "'json_default_verified'")
         && str_contains($source, "'rollback_data_dir_external'")
         && str_contains($source, "'worker_tick_count'")
         && str_contains($source, "'context_state_matched'")
@@ -78,7 +80,7 @@ $assertTrue(
         && str_contains($source, "'snapshot_unchanged'")
         && str_contains($source, "'outbox_unchanged'")
         && str_contains($source, "'data_filters_unchanged'"),
-    'Read-only API smoke output must prove JSON rollback safety, exact lifecycle context and no mutation'
+    'Read-only API smoke output must prove current projector, lease-free events, rollback safety and no mutation'
 );
 $assertTrue(
     !str_contains($source, "require \$projectRoot . '/bot/api.php'")
