@@ -70,18 +70,22 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($verifier, "preg_match('/^[a-f0-9]{40}$/', \$commit)")
-        && str_contains($verifier, "preg_match('/^[a-f0-9]{64}$/', trim(\$value))")
+        && str_contains($verifier, "preg_match('/^[a-f0-9]{64}$/', \$value)")
         && str_contains($verifier, 'different repository commit')
         && str_contains($verifier, 'different database identity')
-        && str_contains($verifier, 'different lifecycle evidence'),
-    'Verifier must require exact lowercase commit and expected fingerprints'
+        && str_contains($verifier, 'different lifecycle evidence')
+        && !str_contains($verifier, '$this->expectedCommit = trim(')
+        && !str_contains($verifier, '$commit = trim(')
+        && !str_contains($verifier, '$value = trim($value)'),
+    'Verifier must require exact lowercase identities without whitespace normalization'
 );
 $assertTrue(
     str_contains($verifier, 'MAX_FUTURE_SKEW_SECONDS = 30')
         && str_contains($verifier, 'maximum age must be between 60 and 86400 seconds')
         && str_contains($verifier, 'too old for operational acceptance')
-        && str_contains($verifier, 'exact UTC +00:00 format'),
-    'Verifier must enforce bounded report freshness and exact UTC format'
+        && str_contains($verifier, 'exact UTC +00:00 format')
+        && !str_contains($verifier, '$value = trim($value);'),
+    'Verifier must enforce bounded freshness and exact unnormalized UTC format'
 );
 $assertTrue(
     !str_contains($verifier, 'StorageFactory')
@@ -135,9 +139,11 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($verifierCli, 'Verifier option may be specified only once')
+        && str_contains($verifierCli, '$value = substr($argument, strlen($matchedPrefix));')
+        && !str_contains($verifierCli, '$value = trim(substr(')
         && !str_contains($verifierCli, 'strtolower($value)')
         && !str_contains($verifierCli, 'strtolower(trim(substr('),
-    'Verifier CLI must preserve exact argument case and reject every duplicate option'
+    'Verifier CLI must preserve exact argument bytes and reject every duplicate option'
 );
 $assertTrue(
     str_contains($verifierCli, 'RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier(')
