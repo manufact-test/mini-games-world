@@ -5,6 +5,8 @@ require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Verifier.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Gate.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV3Verifier.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV3Gate.php';
+require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV4Verifier.php';
+require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV4Gate.php';
 
 final class RuntimePrimaryStagingEvidenceGate
 {
@@ -19,6 +21,9 @@ final class RuntimePrimaryStagingEvidenceGate
     public function verify(array $manifest): array
     {
         $version = (string)($manifest['manifest_version'] ?? '');
+        if ($version === RuntimePrimaryStagingEvidenceV4Verifier::MANIFEST_VERSION) {
+            return (new RuntimePrimaryStagingEvidenceV4Gate($this->projectRoot))->verify($manifest);
+        }
         if ($version === RuntimePrimaryStagingEvidenceV3Verifier::MANIFEST_VERSION) {
             return (new RuntimePrimaryStagingEvidenceV3Gate($this->projectRoot))->verify($manifest);
         }
