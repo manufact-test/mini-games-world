@@ -1,0 +1,85 @@
+{
+  "contract_version": "v1-portable-db-primary-focused-suite",
+  "entrypoint": "ops/checks/db-primary-portable-self-hosted-ci-local.sh",
+  "expected_unique_script_count": 13,
+  "ordered_roots": [
+    {
+      "script": "ops/checks/db-primary-projection-outbox-local.sh",
+      "success_marker": "DB-primary projection outbox focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-projection-worker-local.sh",
+      "success_marker": "DB-primary projection worker focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-api-read-only-smoke-local.sh",
+      "success_marker": "DB-primary staging API read-only smoke focused verification passed."
+    }
+  ],
+  "recursive_chain": [
+    {
+      "script": "ops/checks/db-primary-staging-api-read-only-smoke-local.sh",
+      "next_script": "ops/checks/db-primary-staging-api-session-integration-local.sh",
+      "success_marker": "DB-primary staging API read-only smoke focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-api-session-integration-local.sh",
+      "next_script": "ops/checks/db-primary-staging-request-finalizer-local.sh",
+      "success_marker": "DB-primary staging API session integration focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-request-finalizer-local.sh",
+      "next_script": "ops/checks/db-primary-staging-entrypoint-selector-local.sh",
+      "success_marker": "DB-primary staging request finalizer focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-entrypoint-selector-local.sh",
+      "next_script": "ops/checks/db-primary-staging-synthetic-suite-local.sh",
+      "success_marker": "DB-primary staging entrypoint selector focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-synthetic-suite-local.sh",
+      "next_script": "ops/checks/db-primary-staging-storage-resolver-local.sh",
+      "success_marker": "DB-primary staging synthetic suite focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-storage-resolver-local.sh",
+      "next_script": "ops/checks/db-primary-staging-activation-local.sh",
+      "success_marker": "DB-primary staging storage resolver focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-activation-local.sh",
+      "next_script": "ops/checks/db-primary-staging-evidence-collector-local.sh",
+      "success_marker": "DB-primary staging activation focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-evidence-collector-local.sh",
+      "next_script": "ops/checks/db-primary-staging-evidence-local.sh",
+      "success_marker": "DB-primary staging evidence collector focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-evidence-local.sh",
+      "next_script": "ops/checks/db-primary-staging-rehearsal-local.sh",
+      "success_marker": "DB-primary staging evidence focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-staging-rehearsal-local.sh",
+      "next_script": "ops/checks/db-primary-all-module-projector-local.sh",
+      "success_marker": "DB-primary staging rehearsal focused verification passed."
+    },
+    {
+      "script": "ops/checks/db-primary-all-module-projector-local.sh",
+      "next_script": null,
+      "success_marker": "DB-primary all-module projector focused verification passed."
+    }
+  ],
+  "safety": {
+    "live_database_contacted": false,
+    "private_config_required": false,
+    "application_entrypoints_changed": false,
+    "cron_changed": false,
+    "deployment_performed": false,
+    "production_changed": false,
+    "sensitive_identifiers_exposed": false
+  }
+}
