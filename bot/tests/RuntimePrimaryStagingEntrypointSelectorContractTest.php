@@ -56,11 +56,15 @@ $assertTrue(
         && str_contains($coordinator, 'RuntimePrimaryStagingRequestSessionReadiness('),
     'Coordinator must verify lifecycle v4 and dynamic readiness before DB routing'
 );
+$hookPrepared = strpos($coordinator, 'array_unshift($hooks, $hook)');
+$contextInstalled = strpos($coordinator, 'RuntimePrimaryEntrypointStorageContext::install(');
+$hooksPublished = strpos($coordinator, "\$GLOBALS['mgw_api_success_hooks'] = \$hooks;");
 $assertTrue(
-    strpos($coordinator, 'array_unshift($hooks, $hook)')
-        < strpos($coordinator, 'RuntimePrimaryEntrypointStorageContext::install(')
-        && strpos($coordinator, 'RuntimePrimaryEntrypointStorageContext::install(')
-            < strpos($coordinator, "$GLOBALS['mgw_api_success_hooks'] = $hooks;"),
+    $hookPrepared !== false
+        && $contextInstalled !== false
+        && $hooksPublished !== false
+        && $hookPrepared < $contextInstalled
+        && $contextInstalled < $hooksPublished,
     'Coordinator must prepare finalizer, install context and then publish hooks'
 );
 $assertTrue(
