@@ -70,10 +70,27 @@ $exitCode = 1;
 $outputPayload = [];
 
 try {
+    $_SERVER['SCRIPT_FILENAME'] = $projectRoot . '/bot/api.php';
+    $_SERVER['PHP_SELF'] = '/bot/api.php';
+    unset(
+        $GLOBALS['mgw_api_success_hooks'],
+        $GLOBALS['mgw_api_data_filters'],
+        $GLOBALS['mgw_api_db_primary_finalization_hook'],
+        $GLOBALS['mgw_api_db_primary_finalization_report']
+    );
+
     require $projectRoot . '/bot/core/bootstrap.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiReadOnlySmoke.php';
+
+    $bootstrapHooks = $GLOBALS['mgw_api_success_hooks'] ?? [];
+    $bootstrapFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
+    if (!is_array($bootstrapHooks) || !is_array($bootstrapFilters)) {
+        throw new RuntimeException('Read-only API smoke bootstrap hook or filter registry is invalid.');
+    }
+    $bootstrapHookCount = count($bootstrapHooks);
+    $bootstrapFilterCount = count($bootstrapFilters);
 
     if (strtolower(trim((string)($config['environment'] ?? ''))) !== 'staging') {
         throw new RuntimeException('Read-only API smoke is staging-only.');
@@ -116,11 +133,7 @@ try {
 
     $GLOBALS['config'] = $overlay;
     $GLOBALS['configFile'] = (string)$configFile;
-    $_SERVER['SCRIPT_FILENAME'] = $projectRoot . '/bot/api.php';
-    $_SERVER['PHP_SELF'] = '/bot/api.php';
     unset(
-        $GLOBALS['mgw_api_success_hooks'],
-        $GLOBALS['mgw_api_data_filters'],
         $GLOBALS['mgw_api_db_primary_finalization_hook'],
         $GLOBALS['mgw_api_db_primary_finalization_report']
     );
@@ -132,8 +145,10 @@ try {
     }
     $hooks = $GLOBALS['mgw_api_success_hooks'] ?? [];
     $filters = $GLOBALS['mgw_api_data_filters'] ?? [];
-    if (!is_array($hooks) || !is_array($filters)) {
-        throw new RuntimeException('Read-only API smoke hook or filter registry is invalid.');
+    if (!is_array($hooks) || !is_array($filters)
+        || count($hooks) !== $bootstrapHookCount + 1
+        || count($filters) !== $bootstrapFilterCount) {
+        throw new RuntimeException('Read-only API smoke did not preserve the real API bootstrap hook contour.');
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($overlay);
@@ -181,6 +196,10 @@ try {
         'rollback_data_dir_canonical' => (
             $overlayReport['rollback_data_dir_canonical'] ?? false
         ) === true,
+        'bootstrap_legacy_hook_count' => $bootstrapHookCount,
+        'bootstrap_legacy_filter_count' => $bootstrapFilterCount,
+        'api_bootstrap_hooks_preserved' => true,
+        'api_bootstrap_filters_preserved' => true,
         'worker_tick_count' => (int)($report['worker_tick_count'] ?? -1),
         'context_state_matched' => ($report['context_state_matched'] ?? false) === true,
         'lifecycle_v4_verified' => ($report['lifecycle_v4_verified'] ?? false) === true,
