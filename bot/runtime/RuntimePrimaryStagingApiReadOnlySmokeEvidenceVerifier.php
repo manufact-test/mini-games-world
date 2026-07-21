@@ -75,49 +75,21 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             throw new RuntimeException('Read-only smoke report must be a JSON object.');
         }
         $this->assertExactKeys($report, [
-            'ok',
-            'report_type',
-            'action',
-            'state_revision',
-            'state_sha256',
-            'projection_contract_version',
-            'outbox_event_count',
-            'outbox_fingerprint',
-            'top_level_count',
-            'top_level_keys_fingerprint',
-            'evidence_manifest_version',
-            'evidence_fingerprint',
-            'repository_commit',
-            'database_identity_fingerprint',
-            'ttl_seconds',
-            'json_default_verified',
-            'rollback_data_dir_external',
-            'rollback_data_dir_canonical',
-            'bootstrap_legacy_hook_count',
-            'bootstrap_legacy_filter_count',
-            'api_bootstrap_hooks_preserved',
-            'api_bootstrap_filters_preserved',
-            'worker_tick_count',
-            'context_state_matched',
-            'lifecycle_v4_verified',
-            'legacy_json_bridges_suppressed',
-            'completed_events_lease_free',
-            'state_unchanged',
-            'snapshot_unchanged',
-            'outbox_unchanged',
-            'data_filters_unchanged',
-            'request_finalizer_completed',
-            'persistent_config_changed',
-            'selector_enabled_in_memory_only',
-            'request_session_enabled_in_memory_only',
-            'activation_enabled_in_memory_only',
-            'http_route_added',
-            'api_only',
-            'webhook_allowed',
-            'cron_changed',
-            'production_changed',
-            'sensitive_identifiers_exposed',
-            'generated_at_utc',
+            'ok', 'report_type', 'action', 'state_revision', 'state_sha256',
+            'projection_contract_version', 'outbox_event_count', 'outbox_fingerprint',
+            'top_level_count', 'top_level_keys_fingerprint', 'evidence_manifest_version',
+            'evidence_fingerprint', 'repository_commit', 'database_identity_fingerprint',
+            'ttl_seconds', 'json_default_verified', 'rollback_data_dir_external',
+            'rollback_data_dir_canonical', 'bootstrap_legacy_hook_count',
+            'bootstrap_legacy_filter_count', 'api_bootstrap_hooks_preserved',
+            'api_bootstrap_filters_preserved', 'worker_tick_count', 'context_state_matched',
+            'lifecycle_v4_verified', 'legacy_json_bridges_suppressed',
+            'completed_events_lease_free', 'state_unchanged', 'snapshot_unchanged',
+            'outbox_unchanged', 'data_filters_unchanged', 'request_finalizer_completed',
+            'persistent_config_changed', 'selector_enabled_in_memory_only',
+            'request_session_enabled_in_memory_only', 'activation_enabled_in_memory_only',
+            'http_route_added', 'api_only', 'webhook_allowed', 'cron_changed',
+            'production_changed', 'sensitive_identifiers_exposed', 'generated_at_utc',
         ]);
 
         if (($report['ok'] ?? null) !== true
@@ -128,13 +100,12 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             throw new RuntimeException('Read-only smoke report identity or version contract is invalid.');
         }
 
-        $commit = strtolower(trim((string)($report['repository_commit'] ?? '')));
-        $databaseIdentity = strtolower(trim((string)(
-            $report['database_identity_fingerprint'] ?? ''
-        )));
-        $evidenceFingerprint = strtolower(trim((string)(
-            $report['evidence_fingerprint'] ?? ''
-        )));
+        $commit = trim((string)($report['repository_commit'] ?? ''));
+        $databaseIdentity = trim((string)($report['database_identity_fingerprint'] ?? ''));
+        $evidenceFingerprint = trim((string)($report['evidence_fingerprint'] ?? ''));
+        if (preg_match('/^[a-f0-9]{40}$/', $commit) !== 1) {
+            throw new RuntimeException('Read-only smoke report repository commit format is invalid.');
+        }
         if (!hash_equals($this->expectedCommit, $commit)) {
             throw new RuntimeException('Read-only smoke report belongs to a different repository commit.');
         }
@@ -158,17 +129,11 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
         }
 
         $revision = $this->positiveInteger($report['state_revision'] ?? null, 'state revision');
-        $outboxCount = $this->positiveInteger(
-            $report['outbox_event_count'] ?? null,
-            'outbox event count'
-        );
+        $outboxCount = $this->positiveInteger($report['outbox_event_count'] ?? null, 'outbox event count');
         if ($revision !== $outboxCount) {
             throw new RuntimeException('Read-only smoke report outbox count does not match state revision.');
         }
-        $topLevelCount = $this->positiveInteger(
-            $report['top_level_count'] ?? null,
-            'top-level state count'
-        );
+        $topLevelCount = $this->positiveInteger($report['top_level_count'] ?? null, 'top-level state count');
         if ($topLevelCount > 256) {
             throw new RuntimeException('Read-only smoke report top-level state count is outside safe bounds.');
         }
@@ -185,36 +150,22 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
         }
 
         foreach ([
-            'json_default_verified',
-            'rollback_data_dir_external',
-            'rollback_data_dir_canonical',
-            'api_bootstrap_hooks_preserved',
-            'api_bootstrap_filters_preserved',
-            'context_state_matched',
-            'lifecycle_v4_verified',
-            'legacy_json_bridges_suppressed',
-            'completed_events_lease_free',
-            'state_unchanged',
-            'snapshot_unchanged',
-            'outbox_unchanged',
-            'data_filters_unchanged',
-            'request_finalizer_completed',
-            'selector_enabled_in_memory_only',
-            'request_session_enabled_in_memory_only',
-            'activation_enabled_in_memory_only',
-            'api_only',
+            'json_default_verified', 'rollback_data_dir_external',
+            'rollback_data_dir_canonical', 'api_bootstrap_hooks_preserved',
+            'api_bootstrap_filters_preserved', 'context_state_matched',
+            'lifecycle_v4_verified', 'legacy_json_bridges_suppressed',
+            'completed_events_lease_free', 'state_unchanged', 'snapshot_unchanged',
+            'outbox_unchanged', 'data_filters_unchanged', 'request_finalizer_completed',
+            'selector_enabled_in_memory_only', 'request_session_enabled_in_memory_only',
+            'activation_enabled_in_memory_only', 'api_only',
         ] as $field) {
             if (($report[$field] ?? null) !== true) {
                 throw new RuntimeException('Read-only smoke report required proof is not true: ' . $field . '.');
             }
         }
         foreach ([
-            'persistent_config_changed',
-            'http_route_added',
-            'webhook_allowed',
-            'cron_changed',
-            'production_changed',
-            'sensitive_identifiers_exposed',
+            'persistent_config_changed', 'http_route_added', 'webhook_allowed',
+            'cron_changed', 'production_changed', 'sensitive_identifiers_exposed',
         ] as $field) {
             if (($report[$field] ?? null) !== false) {
                 throw new RuntimeException('Read-only smoke report safety flag must be false: ' . $field . '.');
@@ -239,9 +190,9 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             'database_identity_fingerprint' => $databaseIdentity,
             'evidence_fingerprint' => $evidenceFingerprint,
             'state_revision' => $revision,
-            'state_sha256' => strtolower((string)$report['state_sha256']),
+            'state_sha256' => (string)$report['state_sha256'],
             'outbox_event_count' => $outboxCount,
-            'outbox_fingerprint' => strtolower((string)$report['outbox_fingerprint']),
+            'outbox_fingerprint' => (string)$report['outbox_fingerprint'],
             'projection_contract_version' => self::PROJECTION_VERSION,
             'evidence_manifest_version' => self::EVIDENCE_VERSION,
             'worker_tick_count' => 0,
@@ -310,7 +261,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
 
     private function validSha(string $value): bool
     {
-        return preg_match('/^[a-f0-9]{64}$/', strtolower(trim($value))) === 1;
+        return preg_match('/^[a-f0-9]{64}$/', trim($value)) === 1;
     }
 
     private function assertExactKeys(array $report, array $expected): void
