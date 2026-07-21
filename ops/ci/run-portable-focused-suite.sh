@@ -4,6 +4,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PHP_BIN="${PHP_BIN:-php}"
 SUITE_SCRIPT="ops/checks/db-primary-portable-self-hosted-ci-local.sh"
+MANIFEST_FILE="ops/ci/portable-focused-suite-manifest.json"
 OUTPUT_DIR="${MGW_CI_OUTPUT_DIR:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/mgw-ci-focused}"
 TIMEOUT_SECONDS="${MGW_CI_TIMEOUT_SECONDS:-2400}"
 
@@ -32,6 +33,8 @@ done
 cd "$PROJECT_ROOT"
 [[ -f "$SUITE_SCRIPT" ]] || fail "focused suite is unavailable: $SUITE_SCRIPT"
 [[ ! -L "$SUITE_SCRIPT" ]] || fail 'focused suite must not be a symbolic link.'
+[[ -f "$MANIFEST_FILE" ]] || fail "focused suite manifest is unavailable: $MANIFEST_FILE"
+[[ ! -L "$MANIFEST_FILE" ]] || fail 'focused suite manifest must not be a symbolic link.'
 
 PHP_VERSION_ID="$($PHP_BIN -r 'echo PHP_VERSION_ID;')"
 [[ "$PHP_VERSION_ID" =~ ^[0-9]+$ ]] || fail 'PHP_VERSION_ID is invalid.'
@@ -42,6 +45,21 @@ for extension_name in json pdo pdo_sqlite openssl mbstring; do
   "$PHP_BIN" -r 'exit(extension_loaded($argv[1]) ? 0 : 1);' "$extension_name" \
     || fail "required PHP extension is unavailable: $extension_name"
 done
+
+MANIFEST_META="$($PHP_BIN -r '
+$path = $argv[1];
+$data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+if (!is_array($data)
+    || ($data["contract_version"] ?? "") !== "v1-portable-db-primary-focused-suite"
+    || (int)($data["expected_unique_script_count"] ?? 0) < 1) {
+    exit(2);
+}
+echo hash_file("sha256", $path), ":", (int)$data["expected_unique_script_count"];
+' "$MANIFEST_FILE")" || fail 'focused suite manifest is invalid.'
+MANIFEST_SHA256="${MANIFEST_META%%:*}"
+MANIFEST_SCRIPT_COUNT="${MANIFEST_META##*:}"
+[[ "$MANIFEST_SHA256" =~ ^[a-f0-9]{64}$ ]] || fail 'focused suite manifest SHA-256 is invalid.'
+[[ "$MANIFEST_SCRIPT_COUNT" =~ ^[0-9]+$ ]] || fail 'focused suite manifest script count is invalid.'
 
 TRACKED_BEFORE="$(git status --porcelain=v1 --untracked-files=no)"
 [[ -z "$TRACKED_BEFORE" ]] || fail 'tracked checkout changes are present before the suite.'
@@ -107,12 +125,16 @@ export MGW_CI_DURATION_SECONDS="$DURATION_SECONDS"
 export MGW_CI_EXIT_CODE="$SUITE_EXIT_CODE"
 export MGW_CI_LOG_SHA256="$LOG_SHA256"
 export MGW_CI_WORKTREE_UNCHANGED="$WORKTREE_UNCHANGED"
+export MGW_CI_MANIFEST_SHA256="$MANIFEST_SHA256"
+export MGW_CI_MANIFEST_SCRIPT_COUNT="$MANIFEST_SCRIPT_COUNT"
 
 "$PHP_BIN" -r '
 $summary = [
     "ok" => (int)getenv("MGW_CI_EXIT_CODE") === 0,
     "report_type" => "mvp-14.8.6o-portable-self-hosted-focused-suite",
     "suite" => "db-primary-portable-self-hosted-ci-local",
+    "suite_manifest_sha256" => getenv("MGW_CI_MANIFEST_SHA256"),
+    "suite_manifest_script_count" => (int)getenv("MGW_CI_MANIFEST_SCRIPT_COUNT"),
     "repository_commit" => getenv("MGW_CI_COMMIT_SHA"),
     "php_version" => getenv("MGW_CI_PHP_VERSION"),
     "started_at_utc" => getenv("MGW_CI_STARTED_AT"),
