@@ -89,6 +89,12 @@ final class RuntimePrimaryStagingApiSessionCoordinator
             $this->config
         );
         $baseline = $this->baselineFromManifest($manifest);
+        $session->assertEnabledForApi(
+            (int)$baseline['state_revision'],
+            (int)$baseline['state_revision'],
+            time()
+        );
+
         $database = PdoConnectionFactory::create($databaseConfig);
         $jsonStorage = new JsonStorageAdapter((string)($this->config['data_dir'] ?? ''));
         $projector = (new RuntimePrimaryRepositoryProjectorFactory(
