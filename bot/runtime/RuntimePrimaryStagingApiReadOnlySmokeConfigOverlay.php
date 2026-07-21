@@ -30,6 +30,28 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         if (strtolower(trim((string)($this->baseConfig['environment'] ?? ''))) !== 'staging') {
             throw new RuntimeException('Read-only API smoke config overlay is staging-only.');
         }
+        $storageDriver = strtolower(trim((string)(
+            $this->baseConfig['storage_driver'] ?? 'json'
+        )));
+        if ($storageDriver === '') $storageDriver = 'json';
+        if ($storageDriver !== 'json') {
+            throw new RuntimeException('Read-only API smoke requires JSON as the persistent default storage driver.');
+        }
+        $rawDataDir = str_replace('\\', '/', trim((string)(
+            $this->baseConfig['data_dir'] ?? ''
+        )));
+        if ($rawDataDir === '' || is_link($rawDataDir) || !is_dir($rawDataDir)) {
+            throw new RuntimeException('Read-only API smoke JSON rollback data directory is unavailable or unsafe.');
+        }
+        $canonicalDataDir = realpath($rawDataDir);
+        if (!is_string($canonicalDataDir)) {
+            throw new RuntimeException('Read-only API smoke JSON rollback data directory is unavailable or unsafe.');
+        }
+        $canonicalDataDir = rtrim(str_replace('\\', '/', $canonicalDataDir), '/');
+        if ($canonicalDataDir === $this->projectRoot
+            || str_starts_with($canonicalDataDir, $this->projectRoot . '/')) {
+            throw new RuntimeException('Read-only API smoke JSON rollback data directory must be outside the checkout.');
+        }
         if (RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig(
             $this->baseConfig
         )->enabled()) {
@@ -123,6 +145,8 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
 
         $expiresAtUtc = gmdate(DATE_ATOM, $now + $this->ttlSeconds);
         $overlay = $this->baseConfig;
+        $overlay['storage_driver'] = 'json';
+        $overlay['data_dir'] = $canonicalDataDir;
         $overlay['staging_db_primary_activation'] = [
             'enabled' => true,
             'expected_database_identity_fingerprint' => $databaseIdentity,
@@ -177,6 +201,8 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
                 'baseline_state_sha256' => $baselineSha,
                 'ttl_seconds' => $this->ttlSeconds,
                 'expires_at_utc' => $expiresAtUtc,
+                'json_default_verified' => true,
+                'rollback_data_dir_external' => true,
                 'persistent_config_changed' => false,
                 'selector_enabled_in_memory_only' => true,
                 'request_session_enabled_in_memory_only' => true,
