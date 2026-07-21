@@ -1,0 +1,51 @@
+name: Current Portable Focused Suite
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-current-portable-focused-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  focused:
+    name: Current DB-primary smoke and evidence stack
+    runs-on: [self-hosted, linux, x64, mgw-ci]
+    timeout-minutes: 50
+    env:
+      MGW_CI_OUTPUT_DIR: ${{ runner.temp }}/mgw-current-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      MGW_CI_TIMEOUT_SECONDS: '2700'
+
+    steps:
+      - name: Checkout exact repository revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          clean: true
+
+      - name: Run current portable focused suite
+        run: bash ops/ci/run-current-portable-focused-suite.sh
+
+      - name: Show safe summary
+        if: always()
+        run: |
+          if [ -f "$MGW_CI_OUTPUT_DIR/current-focused-suite-summary.json" ]; then
+            cat "$MGW_CI_OUTPUT_DIR/current-focused-suite-summary.json"
+          else
+            printf '{"ok":false,"action":"current_portable_ci_summary_missing"}\n'
+          fi
+
+      - name: Upload current focused-suite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-current-focused-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite.log
+            ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-summary.json
+            ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-manifest.json
+          if-no-files-found: warn
+          retention-days: 7
