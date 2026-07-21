@@ -192,7 +192,7 @@ final class RuntimePrimaryStagingApiReadOnlySmoke
             if ($rowRevision !== $expectedRevision
                 || ($row['status'] ?? '') !== 'completed'
                 || !$this->validSha($rowSha)
-                || (int)($row['attempt_count'] ?? -1) < 0
+                || (int)($row['attempt_count'] ?? 0) < 1
                 || $projectionVersion !== RuntimePrimaryAllModuleProjector::CONTRACT_VERSION
                 || $leaseToken !== ''
                 || $leaseExpiresAt !== ''
