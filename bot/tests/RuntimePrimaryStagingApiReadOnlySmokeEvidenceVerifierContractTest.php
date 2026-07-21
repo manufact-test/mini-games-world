@@ -93,30 +93,55 @@ $assertTrue(
     'Verifier class must remain offline and read-only'
 );
 
-$reportArg = strpos($verifierCli, "'--report=' => 'report'");
-$commitArg = strpos($verifierCli, "'--expected-commit=' => 'commit'");
-$databaseArg = strpos($verifierCli, "'--expected-database-identity=' => 'database'");
-$evidenceArg = strpos($verifierCli, "'--expected-evidence-fingerprint=' => 'evidence'");
+foreach ([
+    "'--report=' => 'report'",
+    "'--expected-commit=' => 'commit'",
+    "'--expected-database-identity=' => 'database'",
+    "'--expected-evidence-fingerprint=' => 'evidence'",
+    "'--max-age-seconds=' => 'age'",
+    "'--expected-bootstrap-hooks=' => 'hooks'",
+    "'--expected-bootstrap-filters=' => 'filters'",
+] as $optionContract) {
+    $assertTrue(
+        str_contains($verifierCli, $optionContract),
+        'Verifier CLI option contract is missing: ' . $optionContract
+    );
+}
+$duplicateGuard = strpos($verifierCli, 'if (isset($seen[$matchedName]))');
+$requiredGuard = strpos($verifierCli, "foreach (['report', 'commit', 'database', 'evidence'] as \$required)");
+$commitFormat = strpos($verifierCli, "preg_match('/^[a-f0-9]{40}$/', \$expectedCommit)");
+$databaseFormat = strpos($verifierCli, "'--expected-database-identity' => \$expectedDatabaseIdentity");
+$ageBound = strpos($verifierCli, '$maximumAgeSeconds < 60 || $maximumAgeSeconds > 86_400');
+$hookBound = strpos($verifierCli, '$expectedHookCount < 1 || $expectedHookCount > 32');
+$filterBound = strpos($verifierCli, '$expectedFilterCount < 0 || $expectedFilterCount > 32');
 $loadVerifier = strpos($verifierCli, "require_once \$projectRoot");
 $assertTrue(
-    $reportArg !== false && $commitArg !== false
-        && $databaseArg !== false && $evidenceArg !== false
+    $duplicateGuard !== false
+        && $requiredGuard !== false
+        && $commitFormat !== false
+        && $databaseFormat !== false
+        && $ageBound !== false
+        && $hookBound !== false
+        && $filterBound !== false
         && $loadVerifier !== false
-        && $reportArg < $loadVerifier
-        && $commitArg < $loadVerifier
-        && $databaseArg < $loadVerifier
-        && $evidenceArg < $loadVerifier,
-    'Verifier CLI must validate every acceptance identity before loading verifier code'
+        && $duplicateGuard < $loadVerifier
+        && $requiredGuard < $loadVerifier
+        && $commitFormat < $loadVerifier
+        && $databaseFormat < $loadVerifier
+        && $ageBound < $loadVerifier
+        && $hookBound < $loadVerifier
+        && $filterBound < $loadVerifier,
+    'Verifier CLI must reject duplicate, missing, malformed and out-of-range options before loading verifier code'
 );
 $assertTrue(
-    str_contains($verifierCli, "'--max-age-seconds=' => 'age'")
-        && str_contains($verifierCli, "'--expected-bootstrap-hooks=' => 'hooks'")
-        && str_contains($verifierCli, "'--expected-bootstrap-filters=' => 'filters'")
-        && str_contains($verifierCli, 'RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier('),
-    'Verifier CLI must expose bounded freshness and exact bootstrap contour inputs'
+    str_contains($verifierCli, 'Verifier option may be specified only once')
+        && !str_contains($verifierCli, 'strtolower($value)')
+        && !str_contains($verifierCli, 'strtolower(trim(substr('),
+    'Verifier CLI must preserve exact argument case and reject every duplicate option'
 );
 $assertTrue(
-    !str_contains($verifierCli, 'file_put_contents(')
+    str_contains($verifierCli, 'RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier(')
+        && !str_contains($verifierCli, 'file_put_contents(')
         && !str_contains($verifierCli, 'StorageFactory')
         && !str_contains($verifierCli, 'PdoConnectionFactory')
         && !str_contains($verifierCli, 'WebhookHandler')
