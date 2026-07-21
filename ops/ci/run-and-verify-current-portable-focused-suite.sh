@@ -21,10 +21,17 @@ case "$PROJECT_ROOT" in
     ;;
 esac
 
-for command_name in bash git date mkdir chmod find "$PHP_BIN"; do
+for command_name in bash git date mkdir chmod cat timeout "$PHP_BIN"; do
   command -v "$command_name" >/dev/null 2>&1 \
     || fail "required command is unavailable: $command_name"
 done
+timeout --version 2>/dev/null | grep -q 'GNU coreutils' \
+  || fail 'GNU coreutils timeout is required for a bounded portable session.'
+
+PHP_VERSION_ID="$("$PHP_BIN" -r 'echo PHP_VERSION_ID;')"
+[[ "$PHP_VERSION_ID" =~ ^[0-9]+$ ]] || fail 'PHP_VERSION_ID is invalid.'
+(( PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 )) \
+  || fail 'current portable session requires PHP 8.3.x.'
 
 [[ "$MAX_AGE_SECONDS" =~ ^[0-9]+$ ]] \
   || fail 'MGW_CI_VERIFY_MAX_AGE_SECONDS must be an integer.'
@@ -92,10 +99,13 @@ printf("%03o", $mode & 0777);
 [[ "$VERIFICATION_MODE" == '600' ]] \
   || fail 'verification report must have exact mode 0600.'
 
-SESSION_ENTRIES="$(find "$SESSION_ROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | LC_ALL=C sort)"
-EXPECTED_ENTRIES=$'current-focused-suite-verification.json\nevidence'
-[[ "$SESSION_ENTRIES" == "$EXPECTED_ENTRIES" ]] \
+shopt -s nullglob dotglob
+SESSION_ENTRIES=("$SESSION_ROOT"/*)
+shopt -u nullglob dotglob
+[[ "${#SESSION_ENTRIES[@]}" -eq 2 ]] \
   || fail 'CI session root must contain only evidence and its verification report.'
+[[ -d "$EVIDENCE_DIR" && -f "$VERIFICATION_FILE" ]] \
+  || fail 'CI session root exact entries are incomplete.'
 
 printf '\nCurrent portable verification report:\n'
 cat "$VERIFICATION_FILE"
