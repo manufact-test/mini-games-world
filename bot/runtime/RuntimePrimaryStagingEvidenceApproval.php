@@ -24,9 +24,9 @@ final class RuntimePrimaryStagingEvidenceApproval
 
         return new self(
             self::strictBool($settings['enabled'] ?? false, 'staging_db_primary_evidence.enabled'),
-            strtolower(trim((string)($settings['expected_database_identity_fingerprint'] ?? ''))),
-            strtolower(trim((string)($settings['expected_repository_commit'] ?? ''))),
-            trim((string)($settings['approval_expires_at_utc'] ?? ''))
+            (string)($settings['expected_database_identity_fingerprint'] ?? ''),
+            (string)($settings['expected_repository_commit'] ?? ''),
+            (string)($settings['approval_expires_at_utc'] ?? '')
         );
     }
 
@@ -41,8 +41,11 @@ final class RuntimePrimaryStagingEvidenceApproval
         if (!$databaseConfig->enabled()) {
             throw new RuntimeException('Staging DB-primary evidence approval requires an enabled database.');
         }
+        if ($now < 1) {
+            throw new RuntimeException('Staging DB-primary evidence approval verification time is invalid.');
+        }
 
-        $actualDatabaseFingerprint = strtolower(trim($databaseConfig->identityFingerprint()));
+        $actualDatabaseFingerprint = $databaseConfig->identityFingerprint();
         if (preg_match('/^[a-f0-9]{64}$/', $actualDatabaseFingerprint) !== 1) {
             throw new RuntimeException('Staging database identity fingerprint is unavailable.');
         }
@@ -53,7 +56,6 @@ final class RuntimePrimaryStagingEvidenceApproval
             throw new RuntimeException('Configured database does not match the explicitly approved staging database identity.');
         }
 
-        $repositoryCommit = strtolower(trim($repositoryCommit));
         if (preg_match('/^[a-f0-9]{40}$/', $repositoryCommit) !== 1) {
             throw new RuntimeException('Current staging repository commit is invalid.');
         }
@@ -64,15 +66,12 @@ final class RuntimePrimaryStagingEvidenceApproval
             throw new RuntimeException('Current checkout does not match the explicitly approved staging repository commit.');
         }
 
-        if ($this->expiresAtUtc === ''
-            || preg_match('/(?:Z|[+-]\d{2}:\d{2})$/', $this->expiresAtUtc) !== 1) {
-            throw new RuntimeException('Staging evidence approval expiry must include an explicit UTC offset.');
-        }
-        $expiresAt = strtotime($this->expiresAtUtc);
-        if ($expiresAt === false || $expiresAt <= $now) {
+        $expiresAt = self::parseExactExpiry($this->expiresAtUtc);
+        $expiresTimestamp = $expiresAt->getTimestamp();
+        if ($expiresTimestamp <= $now) {
             throw new RuntimeException('Staging DB-primary evidence approval is expired.');
         }
-        if ($expiresAt - $now > self::MAX_APPROVAL_SECONDS) {
+        if ($expiresTimestamp - $now > self::MAX_APPROVAL_SECONDS) {
             throw new RuntimeException('Staging DB-primary evidence approval may be valid for at most two hours.');
         }
     }
@@ -94,22 +93,36 @@ final class RuntimePrimaryStagingEvidenceApproval
         ];
     }
 
+    private static function parseExactExpiry(string $value): DateTimeImmutable
+    {
+        if (preg_match(
+            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/',
+            $value
+        ) !== 1) {
+            throw new RuntimeException(
+                'Staging evidence approval expiry must use exact ISO-8601 seconds with an explicit UTC offset.'
+            );
+        }
+
+        $isZulu = str_ends_with($value, 'Z');
+        $format = $isZulu ? '!Y-m-d\TH:i:s\Z' : '!Y-m-d\TH:i:sP';
+        $timezone = $isZulu ? new DateTimeZone('UTC') : null;
+        $parsed = DateTimeImmutable::createFromFormat($format, $value, $timezone);
+        $errors = DateTimeImmutable::getLastErrors();
+        if (!$parsed instanceof DateTimeImmutable
+            || (is_array($errors)
+                && (($errors['warning_count'] ?? 0) !== 0 || ($errors['error_count'] ?? 0) !== 0))
+            || $parsed->format($isZulu ? 'Y-m-d\TH:i:s\Z' : 'Y-m-d\TH:i:sP') !== $value) {
+            throw new RuntimeException('Staging evidence approval expiry is invalid.');
+        }
+        return $parsed;
+    }
+
     private static function strictBool(mixed $value, string $label): bool
     {
-        if (is_bool($value)) return $value;
-        if (is_int($value)) {
-            if ($value === 0) return false;
-            if ($value === 1) return true;
+        if (!is_bool($value)) {
             throw new RuntimeException($label . ' must be a strict boolean value.');
         }
-        if (is_string($value)) {
-            return match (strtolower(trim($value))) {
-                '1', 'true', 'yes', 'on', 'enabled' => true,
-                '0', 'false', 'no', 'off', 'disabled' => false,
-                default => throw new RuntimeException($label . ' must be a strict boolean value.'),
-            };
-        }
-        if ($value === null) return false;
-        throw new RuntimeException($label . ' must be a strict boolean value.');
+        return $value;
     }
 }
