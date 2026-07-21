@@ -34,8 +34,9 @@ foreach (array_slice($argv ?? [], 1) as $argument) {
     }
     $seen[$matchedName] = true;
     $value = substr($argument, strlen($matchedPrefix));
-    if ($matchedName === 'evidence') {
-        $value = str_replace('\\', '/', $value);
+    if ($matchedName === 'evidence' && str_contains($value, '\\')) {
+        fwrite(STDERR, "Read-only API smoke evidence path must not contain backslashes.\n");
+        exit(2);
     }
     $values[$matchedName] = $value;
 }
@@ -52,16 +53,19 @@ if ($values['ttl'] === '' || preg_match('/^\d+$/', $values['ttl']) !== 1) {
 }
 $evidenceFile = $values['evidence'];
 $ttlSeconds = (int)$values['ttl'];
-if (is_link($evidenceFile)) {
-    fwrite(STDERR, "Read-only API smoke evidence must not be a symbolic link.\n");
-    exit(2);
-}
 if ($ttlSeconds < 60 || $ttlSeconds > 600) {
     fwrite(STDERR, "--ttl-seconds must be between 60 and 600.\n");
     exit(2);
 }
 
 umask(0077);
+set_error_handler(static function (int $severity): never {
+    if (!(error_reporting() & $severity)) {
+        throw new ErrorException('Suppressed read-only API smoke warning.', 0, $severity);
+    }
+    throw new RuntimeException('Read-only API smoke filesystem operation failed.');
+});
+
 $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
 $originalScriptFilename = $_SERVER['SCRIPT_FILENAME'] ?? null;
 $originalPhpSelf = $_SERVER['PHP_SELF'] ?? null;
@@ -81,11 +85,14 @@ $originalFinalizerReportExists = array_key_exists(
 );
 $originalFinalizerReport = $GLOBALS['mgw_api_db_primary_finalization_report'] ?? null;
 $lockHandle = null;
-$lockPath = '';
 $exitCode = 1;
 $outputPayload = [];
 
 try {
+    if (is_link($evidenceFile)) {
+        throw new RuntimeException('Read-only API smoke evidence must not be a symbolic link.');
+    }
+
     $_SERVER['SCRIPT_FILENAME'] = $projectRoot . '/bot/api.php';
     $_SERVER['PHP_SELF'] = '/bot/api.php';
     unset(
@@ -131,8 +138,8 @@ try {
     $lockMode = fileperms($lockPath);
     if (is_link($lockPath)
         || !is_int($lockMode)
-        || ($lockMode & 0o077) !== 0) {
-        throw new RuntimeException('Read-only API smoke lock is not a private regular lock file.');
+        || ($lockMode & 0777) !== 0600) {
+        throw new RuntimeException('Read-only API smoke lock must have exact mode 0600.');
     }
     if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
         throw new RuntimeException('Another rehearsal, evidence collector or API smoke is already running.');
@@ -340,8 +347,12 @@ try {
     $exitCode = 1;
 } finally {
     if (is_resource($lockHandle)) {
-        flock($lockHandle, LOCK_UN);
-        fclose($lockHandle);
+        try {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+        } catch (Throwable) {
+            // Process exit is the final release fallback; never expose the private lock path.
+        }
     }
     if ($originalScriptFilename === null) unset($_SERVER['SCRIPT_FILENAME']);
     else $_SERVER['SCRIPT_FILENAME'] = $originalScriptFilename;
@@ -365,6 +376,7 @@ try {
     } else {
         unset($GLOBALS['mgw_api_db_primary_finalization_report']);
     }
+    restore_error_handler();
 }
 
 try {
