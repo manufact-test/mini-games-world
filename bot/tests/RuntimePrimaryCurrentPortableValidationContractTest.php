@@ -146,11 +146,13 @@ $assertTrue(
 );
 
 $assertTrue(
-    preg_match('/^on:\s*\n\s+pull_request:/m', $workflow) === 1
+    preg_match('/^on:\s*\n\s+push:/m', $workflow) === 1
+        && preg_match('/^\s+pull_request:/m', $workflow) === 1
         && preg_match('/^\s+workflow_dispatch:\s*$/m', $workflow) === 1
+        && str_contains($workflow, '- agent/mvp-14-8-6t-current-portable-evidence-verifier')
         && str_contains($workflow, '- agent/mvp-14-8-6s-current-portable-validation')
-        && preg_match('/^\s*(push|schedule):/m', $workflow) !== 1,
-    'Current portable workflow must run only for the exact PR base or explicit manual dispatch'
+        && preg_match('/^\s+schedule:/m', $workflow) !== 1,
+    'Current portable workflow must run only for its exact branch, exact PR base or manual dispatch'
 );
 $assertTrue(
     str_contains($workflow, 'runs-on: ubuntu-latest')
