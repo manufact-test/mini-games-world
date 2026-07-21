@@ -9,6 +9,18 @@ final class RuntimePrimaryProjectionOutboxSchemaInstaller
 {
     public const TABLE = 'mgw_runtime_primary_projection_outbox';
 }
+final class RuntimePrimaryStagingEvidenceV4Verifier
+{
+    public const MANIFEST_VERSION = 'v4-staging-db-primary-api-lifecycle-evidence';
+}
+final class RuntimePrimaryStagingSelectorEvidence
+{
+    public const CONTRACT_VERSION = 'v2-api-only-staging-db-primary-entrypoint-selector';
+}
+final class RuntimePrimaryStagingRequestSessionConfig
+{
+    public const CONTRACT_VERSION = 'v1-api-only-bounded-request-session';
+}
 final class DatabasePrimaryStateStorageAdapter
 {
     public function __construct(
@@ -43,10 +55,12 @@ final class RuntimePrimaryStagingApiReadOnlySmokeTestDatabase implements Databas
 final class RuntimePrimaryEntrypointStorageContext
 {
     public static ?DatabasePrimaryStateStorageAdapter $storage = null;
+    public static array $reportOverride = [];
     public static function safeReport(): array
     {
-        return [
-            'installed' => self::$storage !== null,
+        $storage = self::$storage;
+        $default = [
+            'installed' => $storage !== null,
             'entrypoint' => 'api',
             'storage_driver' => 'database',
             'request_finalizer_registered' => true,
@@ -54,13 +68,28 @@ final class RuntimePrimaryEntrypointStorageContext
             'legacy_json_bridges_suppressed' => true,
             'webhook_allowed' => false,
             'production_changed' => false,
+            'evidence_manifest_version' => RuntimePrimaryStagingEvidenceV4Verifier::MANIFEST_VERSION,
+            'selector_contract_version' => RuntimePrimaryStagingSelectorEvidence::CONTRACT_VERSION,
+            'request_session_contract_version' => RuntimePrimaryStagingRequestSessionConfig::CONTRACT_VERSION,
+            'evidence_fingerprint' => str_repeat('a', 64),
+            'selector_evidence_fingerprint' => str_repeat('b', 64),
+            'request_session_evidence_fingerprint' => str_repeat('c', 64),
+            'database_identity_fingerprint' => str_repeat('d', 64),
+            'state_revision' => $storage?->revision ?? 0,
+            'state_sha256' => $storage?->stateSha ?? '',
         ];
+        return array_replace($default, self::$reportOverride);
     }
     public static function storage(): DatabasePrimaryStateStorageAdapter
     {
         if (self::$storage === null) throw new RuntimeException('missing storage');
         return self::$storage;
     }
+}
+final class RuntimePrimaryEntrypointBridgeGuard
+{
+    public static bool $allowed = false;
+    public static function legacyJsonBridgeAllowed(): bool { return self::$allowed; }
 }
 final class RuntimePrimaryStagingApiRequestFinalizationHook
 {
@@ -140,29 +169,63 @@ $make = static function () use ($canonicalSha, $eventRow): array {
         $eventRow(1, $sha),
     ]);
     RuntimePrimaryEntrypointStorageContext::$storage = $storage;
+    RuntimePrimaryEntrypointStorageContext::$reportOverride = [];
+    RuntimePrimaryEntrypointBridgeGuard::$allowed = false;
     unset($GLOBALS['mgw_api_db_primary_finalization_report']);
     return [$storage, $database, $sha];
+};
+$hookFor = static function (string $sha, int $ticks = 0) use ($finalReport): RuntimePrimaryStagingApiRequestFinalizationHook {
+    return new RuntimePrimaryStagingApiRequestFinalizationHook(
+        static function () use ($finalReport, $sha, $ticks): void {
+            $GLOBALS['mgw_api_db_primary_finalization_report'] = $finalReport(1, $sha, $ticks);
+        }
+    );
 };
 
 [$storage, $database, $sha] = $make();
 $GLOBALS['mgw_api_db_primary_finalization_report'] = ['completed' => true, 'stale' => true];
-$hook = new RuntimePrimaryStagingApiRequestFinalizationHook(
-    static function () use ($finalReport, $sha): void {
-        $GLOBALS['mgw_api_db_primary_finalization_report'] = $finalReport(1, $sha, 0);
-    }
-);
 $report = (new RuntimePrimaryStagingApiReadOnlySmoke(
     $storage,
     $database,
-    [$hook],
+    [$hookFor($sha)],
     [static fn(array $data): array => $data]
 ))->run();
 $assertTrue(($report['ok'] ?? false) === true, 'Exact read-only smoke must pass');
 $assertTrue(($report['worker_tick_count'] ?? -1) === 0, 'Read-only smoke must require zero worker ticks');
+$assertTrue(($report['context_state_matched'] ?? false) === true, 'Read-only smoke must bind context to current state');
+$assertTrue(($report['lifecycle_v4_verified'] ?? false) === true, 'Read-only smoke must verify lifecycle v4 context');
+$assertTrue(($report['legacy_json_bridges_suppressed'] ?? false) === true, 'Read-only smoke must verify bridge suppression');
 $assertTrue(($report['state_unchanged'] ?? false) === true, 'Read-only smoke must preserve state');
 $assertTrue(($report['outbox_unchanged'] ?? false) === true, 'Read-only smoke must preserve outbox');
 $assertTrue(($report['data_filters_unchanged'] ?? false) === true, 'Read-only smoke must preserve filtered payload');
 $assertTrue(preg_match('/^[a-f0-9]{64}$/', (string)($report['outbox_fingerprint'] ?? '')) === 1, 'Read-only smoke must expose safe outbox fingerprint');
+
+[$storage, $database, $sha] = $make();
+RuntimePrimaryEntrypointStorageContext::$reportOverride['evidence_manifest_version'] = 'v3-staging-db-primary-selector-evidence';
+$assertThrows(
+    static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
+        $storage, $database, [$hookFor($sha)], []
+    ))->run(),
+    'exact guarded lifecycle v4 request context'
+);
+
+[$storage, $database, $sha] = $make();
+RuntimePrimaryEntrypointStorageContext::$reportOverride['state_revision'] = 2;
+$assertThrows(
+    static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
+        $storage, $database, [$hookFor($sha)], []
+    ))->run(),
+    'context no longer matches current db-primary state'
+);
+
+[$storage, $database, $sha] = $make();
+RuntimePrimaryEntrypointBridgeGuard::$allowed = true;
+$assertThrows(
+    static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
+        $storage, $database, [$hookFor($sha)], []
+    ))->run(),
+    'exact guarded lifecycle v4 request context'
+);
 
 [$storage, $database, $sha] = $make();
 $noReportHook = new RuntimePrimaryStagingApiRequestFinalizationHook(static function (): void {});
@@ -175,24 +238,15 @@ $assertThrows(
 );
 
 [$storage, $database, $sha] = $make();
-$tickHook = new RuntimePrimaryStagingApiRequestFinalizationHook(
-    static function () use ($finalReport, $sha): void {
-        $GLOBALS['mgw_api_db_primary_finalization_report'] = $finalReport(1, $sha, 1);
-    }
-);
 $assertThrows(
     static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
-        $storage, $database, [$tickHook], []
+        $storage, $database, [$hookFor($sha, 1)], []
     ))->run(),
     'not read-only'
 );
 
 [$storage, $database, $sha] = $make();
-$identityHook = new RuntimePrimaryStagingApiRequestFinalizationHook(
-    static function () use ($finalReport, $sha): void {
-        $GLOBALS['mgw_api_db_primary_finalization_report'] = $finalReport(1, $sha, 0);
-    }
-);
+$identityHook = $hookFor($sha);
 $assertThrows(
     static fn() => (new RuntimePrimaryStagingApiReadOnlySmoke(
         $storage,
@@ -217,7 +271,7 @@ $assertThrows(
 
 [$storage, $database, $sha] = $make();
 $mutatingHook = new RuntimePrimaryStagingApiRequestFinalizationHook(
-    static function () use ($storage, $database, $finalReport, $sha): void {
+    static function () use ($database, $finalReport, $sha): void {
         $GLOBALS['mgw_api_db_primary_finalization_report'] = $finalReport(1, $sha, 0);
         $database->rows[0]['updated_at_utc'] = '2026-07-21T08:01:00+00:00';
     }
