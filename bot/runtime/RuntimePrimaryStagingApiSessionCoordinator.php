@@ -20,6 +20,12 @@ final class RuntimePrimaryStagingApiSessionCoordinator
         if (strtolower(trim((string)($this->config['environment'] ?? ''))) !== 'staging') {
             throw new RuntimeException('DB-primary API request session is staging-only.');
         }
+        $selector = RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig(
+            $this->config
+        );
+        if (!$selector->enabledFor('api')) {
+            throw new RuntimeException('DB-primary API request session requires the exact API selector latch.');
+        }
         if (RuntimePrimaryEntrypointStorageContext::installed()) {
             throw new RuntimeException('DB-primary request storage context is already installed.');
         }
