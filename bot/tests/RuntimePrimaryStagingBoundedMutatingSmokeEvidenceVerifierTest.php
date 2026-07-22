@@ -161,6 +161,11 @@ try {
     $write($shaWithNewline);
     $assertThrows($verify, 'sha field is invalid: challenge_sha256');
 
+    $databaseIdentityWithNewline = $valid();
+    $databaseIdentityWithNewline['database_identity_fingerprint'] .= "\n";
+    $write($databaseIdentityWithNewline);
+    $assertThrows($verify, 'sha field is invalid: database_identity_fingerprint');
+
     $old = $valid();
     $old['generated_at_utc'] = gmdate(DATE_ATOM, $now - 700);
     $write($old);
