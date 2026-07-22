@@ -57,11 +57,11 @@ foreach (['receipt', 'approval', 'consumed_approval', 'output'] as $pathField) {
         exit(2);
     }
 }
-if (preg_match('/^[a-f0-9]{64}$/', $values['challenge']) !== 1) {
+if (preg_match('/\A[a-f0-9]{64}\z/', $values['challenge']) !== 1) {
     fwrite(STDERR, "Bounded mutating smoke execution challenge must be exact lowercase hexadecimal.\n");
     exit(2);
 }
-if (preg_match('/^[a-f0-9]{40}$/', $values['expected_commit']) !== 1) {
+if (preg_match('/\A[a-f0-9]{40}\z/', $values['expected_commit']) !== 1) {
     fwrite(STDERR, "Bounded mutating smoke execution requires exact lowercase commit.\n");
     exit(2);
 }
@@ -123,7 +123,7 @@ try {
         throw new RuntimeException('Bounded mutating smoke requires enabled staging database config.');
     }
     $databaseIdentity = $databaseConfig->identityFingerprint();
-    if (preg_match('/^[a-f0-9]{64}$/', $databaseIdentity) !== 1) {
+    if (preg_match('/\A[a-f0-9]{64}\z/', $databaseIdentity) !== 1) {
         throw new RuntimeException('Bounded mutating smoke staging database identity is invalid.');
     }
 
