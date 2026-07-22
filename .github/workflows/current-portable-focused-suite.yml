@@ -32,7 +32,6 @@ jobs:
         run: |
           printf 'MGW_CI_OUTPUT_DIR=%s\n' "$RUNNER_TEMP/mgw-current-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
           printf 'MGW_CI_VERIFICATION_FILE=%s\n' "$RUNNER_TEMP/mgw-current-ci-verification-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json" >> "$GITHUB_ENV"
-          printf 'MGW_MUTATING_CORE_LOG=%s\n' "$RUNNER_TEMP/mgw-mutating-core-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log" >> "$GITHUB_ENV"
 
       - name: Bind exact checked-out commit
         id: bind
@@ -64,23 +63,7 @@ jobs:
         run: php bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
 
       - name: Verify rollback-only bounded mutating smoke
-        id: mutating_core
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php 2>&1 | tee "$MGW_MUTATING_CORE_LOG"
-
-      - name: Upload bounded mutating core diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mgw-mutating-core-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ env.MGW_MUTATING_CORE_LOG }}
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Enforce bounded mutating core result
-        run: test "${{ steps.mutating_core.outcome }}" = 'success'
+        run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
 
       - name: Run current portable focused suite
         run: bash ops/ci/run-current-portable-focused-suite.sh
