@@ -63,23 +63,25 @@ $assertTrue(
     'Verifier must bind revision, outbox, worker, bootstrap, top-level and session invariants'
 );
 $assertTrue(
-    str_contains($verifier, 'must use its canonical path')
+    str_contains($verifier, 'path must be an exact absolute Linux file path')
+        && str_contains($verifier, 'must use its canonical path')
         && str_contains($verifier, 'must not be accepted from public_html')
-        && str_contains($verifier, 'report must not be world-writable')
-        && str_contains($verifier, 'report directory must not be world-writable')
-        && str_contains($verifier, 'MAX_REPORT_BYTES = 131_072'),
-    'Verifier must protect report path, directory, permissions and bounded size'
+        && str_contains($verifier, 'must have exact mode 0600')
+        && str_contains($verifier, 'directory must not be group/world writable')
+        && str_contains($verifier, 'MAX_REPORT_BYTES = 131_072')
+        && !str_contains($verifier, '$this->reportFile = str_replace('),
+    'Verifier must protect exact report path, private permissions and bounded size without repair'
 );
 $assertTrue(
-    str_contains($verifier, "preg_match('/^[a-f0-9]{40}$/', \$commit)")
-        && str_contains($verifier, "preg_match('/^[a-f0-9]{64}$/', \$value)")
+    substr_count($verifier, "preg_match('/\\A[a-f0-9]{40}\\z/'") >= 2
+        && str_contains($verifier, "preg_match('/\\A[a-f0-9]{64}\\z/', \$value)")
         && str_contains($verifier, 'different repository commit')
         && str_contains($verifier, 'different database identity')
         && str_contains($verifier, 'different lifecycle evidence')
         && !str_contains($verifier, '$this->expectedCommit = trim(')
         && !str_contains($verifier, '$commit = trim(')
         && !str_contains($verifier, '$value = trim($value)'),
-    'Verifier must require exact lowercase identities without whitespace normalization'
+    'Verifier must require byte-exact lowercase identities with absolute regex anchors'
 );
 $assertTrue(
     str_contains($verifier, 'MAX_FUTURE_SKEW_SECONDS = 30')
@@ -87,6 +89,7 @@ $assertTrue(
         && str_contains($verifier, 'too old for operational acceptance')
         && str_contains($verifier, 'exact UTC +00:00 format')
         && str_contains($verifier, 'timestamp is invalid')
+        && str_contains($verifier, "preg_match('/\\A\\d{4}-\\d{2}-\\d{2}T")
         && !str_contains($verifier, '$value = trim($value);'),
     'Verifier must enforce bounded freshness and exact valid UTC format'
 );
@@ -122,8 +125,10 @@ foreach ([
 }
 $duplicateGuard = strpos($verifierCli, 'if (isset($seen[$matchedName]))');
 $requiredGuard = strpos($verifierCli, "foreach (['report', 'commit', 'database', 'evidence'] as \$required)");
-$commitFormat = strpos($verifierCli, "preg_match('/^[a-f0-9]{40}$/', \$expectedCommit)");
+$reportFormat = strpos($verifierCli, 'trim($reportFile) !== $reportFile');
+$commitFormat = strpos($verifierCli, "preg_match('/\\A[a-f0-9]{40}\\z/', \$expectedCommit)");
 $databaseFormat = strpos($verifierCli, "'--expected-database-identity' => \$expectedDatabaseIdentity");
+$numericFormat = strpos($verifierCli, "preg_match('/\\A\\d+\\z/', \$values[\$numeric])");
 $ageBound = strpos($verifierCli, '$maximumAgeSeconds < 60 || $maximumAgeSeconds > 86_400');
 $hookBound = strpos($verifierCli, '$expectedHookCount < 1 || $expectedHookCount > 32');
 $filterBound = strpos($verifierCli, '$expectedFilterCount < 0 || $expectedFilterCount > 32');
@@ -131,16 +136,20 @@ $loadVerifier = strpos($verifierCli, "require_once \$projectRoot");
 $assertTrue(
     $duplicateGuard !== false
         && $requiredGuard !== false
+        && $reportFormat !== false
         && $commitFormat !== false
         && $databaseFormat !== false
+        && $numericFormat !== false
         && $ageBound !== false
         && $hookBound !== false
         && $filterBound !== false
         && $loadVerifier !== false
         && $duplicateGuard < $loadVerifier
         && $requiredGuard < $loadVerifier
+        && $reportFormat < $loadVerifier
         && $commitFormat < $loadVerifier
         && $databaseFormat < $loadVerifier
+        && $numericFormat < $loadVerifier
         && $ageBound < $loadVerifier
         && $hookBound < $loadVerifier
         && $filterBound < $loadVerifier,
@@ -148,11 +157,14 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($verifierCli, 'Verifier option may be specified only once')
-        && str_contains($verifierCli, '$value = substr($argument, strlen($matchedPrefix));')
+        && str_contains($verifierCli, '$values[$matchedName] = substr($argument, strlen($matchedPrefix));')
+        && str_contains($verifierCli, "str_contains(\$reportFile, '\\\\')")
+        && str_contains($verifierCli, 'trim($reportFile) !== $reportFile')
+        && !str_contains($verifierCli, '$value = str_replace(')
         && !str_contains($verifierCli, '$value = trim(substr(')
         && !str_contains($verifierCli, 'strtolower($value)')
         && !str_contains($verifierCli, 'strtolower(trim(substr('),
-    'Verifier CLI must preserve exact argument bytes and reject every duplicate option'
+    'Verifier CLI must preserve exact argument bytes and reject path repair or duplicate options'
 );
 $assertTrue(
     str_contains($verifierCli, 'RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier(')
