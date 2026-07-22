@@ -80,7 +80,11 @@ try {
     require $projectRoot . '/bot/core/bootstrap.php';
 
     $failureStage = 'runtime_contract_loading';
-    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackendInterface.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxWriter.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionBootstrap.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorker.php';
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryRehearsalBackendInterface.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackend.php';
     require_once $projectRoot . '/bot/runtime/StagingPrimaryRehearsalOperation.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryEntrypointEvidence.php';
@@ -94,7 +98,6 @@ try {
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorkerInterface.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionAuditorInterface.php';
-    require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionBootstrap.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorkerAdapter.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionAuditorAdapter.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php';
@@ -175,25 +178,28 @@ try {
 
     $failureStage = 'evidence_source_setup';
     $backend = new RuntimePrimaryStagingRehearsalBackend(
-        $projectRoot,
         $config,
-        (string)($configFile ?? ''),
-        $database,
-        $jsonStorage
+        $jsonStorage,
+        $database
     );
-    $rehearsal = new StagingPrimaryRehearsalOperation($backend);
+    $rehearsal = new StagingPrimaryRehearsalOperation(
+        $config,
+        $backend,
+        $maxEvents
+    );
     $concurrency = new RuntimePrimaryStagingConcurrencyProbe(
         $database,
         $leaseDatabase,
-        $privateDir . '/runtime-primary-cli-lock-probe.lock'
+        $privateDir . '/runtime-primary-cli-lock-probe.lock',
+        120
     );
     $source = new RuntimePrimaryStagingEvidenceSource(
+        $config,
         $projectRoot,
         $jsonStorage,
         $database,
         $rehearsal,
-        $concurrency,
-        $maxEvents
+        $concurrency
     );
 
     $failureStage = 'evidence_collection';
