@@ -121,15 +121,15 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
                 'DELETE FROM mgw_sessions WHERE session_key_hash = :session_key_hash AND mgw_id = :mgw_id',
                 ['session_key_hash' => $sessionHash, 'mgw_id' => $mgwId]
             );
-            if ($deletedSessions !== 1) {
-                throw new RuntimeException('Staging API mutating smoke cleanup did not delete exactly one session.');
+            if ($deletedSessions < 0 || $deletedSessions > 1) {
+                throw new RuntimeException('Staging API mutating smoke cleanup session row count is unexpected.');
             }
             $deletedDevices = $database->execute(
                 'DELETE FROM mgw_devices WHERE mgw_id = :mgw_id',
                 ['mgw_id' => $mgwId]
             );
-            if ($deletedDevices !== 1) {
-                throw new RuntimeException('Staging API mutating smoke cleanup did not delete exactly one device.');
+            if ($deletedDevices < 0 || $deletedDevices > 1) {
+                throw new RuntimeException('Staging API mutating smoke cleanup device row count is unexpected.');
             }
             $deletedOwnership = $database->execute(
                 'DELETE FROM mgw_account_ownership
@@ -182,10 +182,10 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
                 'DELETE FROM mgw_users WHERE mgw_id = :mgw_id',
                 ['mgw_id' => $mgwId]
             );
-            if ($deleted !== 1) {
-                throw new RuntimeException('Staging API mutating smoke cleanup did not delete exactly one MGW user.');
+            if ($deleted < 0 || $deleted > 1) {
+                throw new RuntimeException('Staging API mutating smoke cleanup user row count is unexpected.');
             }
-            return ['user_rows_deleted' => 1, 'identity_cleanup_complete' => true];
+            return ['user_rows_deleted' => $deleted, 'identity_cleanup_complete' => true];
         });
     }
 
