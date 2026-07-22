@@ -51,6 +51,20 @@ jobs:
           php -r 'foreach (["json", "pdo", "pdo_sqlite", "openssl", "mbstring"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "missing PHP extension: {$extension}\n"); exit(1); } }'
           timeout --version | head -n 1
 
+      - name: Lint bounded mutating smoke core
+        run: |
+          php -l bot/runtime/RuntimePrimaryStagingMutatingSmokeApproval.php
+          php -l bot/runtime/RuntimePrimaryStagingMutatingSmokeRollbackSignal.php
+          php -l bot/runtime/RuntimePrimaryStagingBoundedMutatingSmoke.php
+          php -l bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
+          php -l bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
+
+      - name: Verify bounded mutating smoke approval
+        run: php bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
+
+      - name: Verify rollback-only bounded mutating smoke
+        run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
+
       - name: Run current portable focused suite
         run: bash ops/ci/run-current-portable-focused-suite.sh
 
