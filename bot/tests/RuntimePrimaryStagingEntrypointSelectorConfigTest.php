@@ -46,26 +46,46 @@ $assertThrows(
     ]),
     'configuration array'
 );
-$assertThrows(
-    static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
-        'staging_db_primary_entrypoint_selector' => [
-            'enabled' => 'tru',
-            'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
-            'allowed_entrypoints' => ['api'],
-        ],
-    ]),
-    'strict boolean'
-);
-$assertThrows(
-    static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
-        'staging_db_primary_entrypoint_selector' => [
-            'enabled' => true,
-            'contract_version' => 'wrong',
-            'allowed_entrypoints' => ['api'],
-        ],
-    ]),
-    'contract version is invalid'
-);
+foreach (['true', 1, 0, null] as $malformedEnabled) {
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
+            'staging_db_primary_entrypoint_selector' => [
+                'enabled' => $malformedEnabled,
+                'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
+                'allowed_entrypoints' => ['api'],
+            ],
+        ]),
+        'strict boolean'
+    );
+}
+foreach ([
+    'wrong',
+    ' ' . RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
+    RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION . ' ',
+] as $malformedContract) {
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
+            'staging_db_primary_entrypoint_selector' => [
+                'enabled' => true,
+                'contract_version' => $malformedContract,
+                'allowed_entrypoints' => ['api'],
+            ],
+        ]),
+        'contract version is invalid'
+    );
+}
+foreach ([123, null] as $malformedContractType) {
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
+            'staging_db_primary_entrypoint_selector' => [
+                'enabled' => true,
+                'contract_version' => $malformedContractType,
+                'allowed_entrypoints' => ['api'],
+            ],
+        ]),
+        'must be a string value'
+    );
+}
 $assertThrows(
     static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
         'staging_db_primary_entrypoint_selector' => [
@@ -86,16 +106,41 @@ $assertThrows(
     ]),
     'duplicate staging db-primary entrypoint'
 );
+foreach ([['webhook'], ['API'], [' api'], ['api ']] as $malformedEntrypoints) {
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
+            'staging_db_primary_entrypoint_selector' => [
+                'enabled' => true,
+                'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
+                'allowed_entrypoints' => $malformedEntrypoints,
+            ],
+        ]),
+        'supports only api'
+    );
+}
+foreach ([[1], [null]] as $malformedEntrypoints) {
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
+            'staging_db_primary_entrypoint_selector' => [
+                'enabled' => true,
+                'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
+                'allowed_entrypoints' => $malformedEntrypoints,
+            ],
+        ]),
+        'values must be strings'
+    );
+}
 $assertThrows(
     static fn() => RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig([
         'staging_db_primary_entrypoint_selector' => [
             'enabled' => true,
             'contract_version' => RuntimePrimaryStagingEntrypointSelectorConfig::CONTRACT_VERSION,
-            'allowed_entrypoints' => ['webhook'],
+            'allowed_entrypoints' => null,
         ],
     ]),
-    'supports only api'
+    'must be a list'
 );
 $assertThrows(static fn() => $api->enabledFor('admin'), 'supports only api or webhook');
+$assertThrows(static fn() => $api->enabledFor(' API '), 'supports only api or webhook');
 
 fwrite(STDOUT, "RuntimePrimaryStagingEntrypointSelectorConfigTest passed: {$assertions} assertions.\n");
