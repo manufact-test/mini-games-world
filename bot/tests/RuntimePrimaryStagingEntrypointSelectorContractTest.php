@@ -94,8 +94,9 @@ $assertTrue(
 $assertTrue(
     str_contains($hook, 'was invoked more than once')
         && str_contains($hook, 'lost its guarded storage context')
-        && str_contains($hook, "'projection_event_status' => 'completed'")
-        && str_contains($hook, "'webhook_allowed' => false"),
+        && str_contains($hook, "(\$report['projection_event_status'] ?? '') !== 'completed'")
+        && str_contains($hook, "(\$report['webhook_allowed'] ?? true) !== false")
+        && str_contains($hook, "(\$report['production_changed'] ?? true) !== false"),
     'Finalization hook must be once-only and fail closed on incomplete completion'
 );
 $assertTrue(
