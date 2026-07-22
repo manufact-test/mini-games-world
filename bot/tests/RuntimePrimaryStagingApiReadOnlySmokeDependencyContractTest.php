@@ -35,15 +35,15 @@ $assertTrue(
 
 $bootstrapRequire = strpos(
     $runner,
-    "require_once \$projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php';"
+    'require_once $projectRoot . \'/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php\';'
 );
 $overlayRequire = strpos(
     $runner,
-    "require_once \$projectRoot . '/bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay.php';"
+    'require_once $projectRoot . \'/bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay.php\';'
 );
 $smokeRequire = strpos(
     $runner,
-    "require_once \$projectRoot . '/bot/runtime/RuntimePrimaryStagingApiReadOnlySmoke.php';"
+    'require_once $projectRoot . \'/bot/runtime/RuntimePrimaryStagingApiReadOnlySmoke.php\';'
 );
 $assertTrue(
     $bootstrapRequire !== false
