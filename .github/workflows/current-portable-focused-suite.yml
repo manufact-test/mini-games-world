@@ -3,12 +3,10 @@ name: Current Portable Focused Suite
 on:
   pull_request:
     branches:
-      - agent/mvp-14-8-6s-current-portable-validation
-  workflow_dispatch:
+      - agent/mvp-14-8-6v-ci-base-2
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: mgw-current-portable-focused-${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +24,7 @@ jobs:
       - name: Checkout exact candidate revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           clean: true
 
@@ -53,6 +51,52 @@ jobs:
           php -r 'foreach (["json", "pdo", "pdo_sqlite", "openssl", "mbstring"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "missing PHP extension: {$extension}\n"); exit(1); } }'
           timeout --version | head -n 1
 
+      - name: Lint full bounded mutating smoke stack
+        run: |
+          files=(
+            bot/runtime/RuntimePrimaryStagingMutatingSmokeApproval.php
+            bot/runtime/RuntimePrimaryStagingMutatingSmokeRollbackSignal.php
+            bot/runtime/RuntimePrimaryStagingBoundedMutatingSmoke.php
+            bot/runtime/RuntimePrimaryStagingMutatingSmokeRollbackGuard.php
+            bot/runtime/RuntimePrimaryStagingReadOnlyCheckpointReceipt.php
+            bot/runtime/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifier.php
+            ops/runtime/prepare-staging-bounded-mutating-smoke.php
+            ops/runtime/run-staging-bounded-mutating-smoke.php
+            ops/runtime/verify-staging-bounded-mutating-smoke-evidence.php
+            ops/runtime/write-staging-read-only-checkpoint-receipt.php
+            bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeExactIdentityTest.php
+            bot/tests/RuntimePrimaryStagingMutatingSmokeRollbackGuardTest.php
+            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifierTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeCliContractTest.php
+            bot/tests/RuntimePrimaryStagingMutatingSmokePrepareCliContractTest.php
+            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptCliContractTest.php
+            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptShellContractTest.php
+          )
+          for file in "${files[@]}"; do
+            php -l "$file"
+          done
+
+      - name: Verify full bounded mutating smoke stack
+        run: |
+          tests=(
+            bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeExactIdentityTest.php
+            bot/tests/RuntimePrimaryStagingMutatingSmokeRollbackGuardTest.php
+            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifierTest.php
+            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeCliContractTest.php
+            bot/tests/RuntimePrimaryStagingMutatingSmokePrepareCliContractTest.php
+            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptCliContractTest.php
+            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptShellContractTest.php
+          )
+          for test_file in "${tests[@]}"; do
+            php "$test_file"
+          done
+
       - name: Run current portable focused suite
         run: bash ops/ci/run-current-portable-focused-suite.sh
 
@@ -67,22 +111,7 @@ jobs:
           chmod 0600 "$MGW_CI_VERIFICATION_FILE"
           cat "$MGW_CI_VERIFICATION_FILE"
 
-      - name: Show safe reports
-        if: always()
-        run: |
-          if [ -f "$MGW_CI_OUTPUT_DIR/current-focused-suite-summary.json" ]; then
-            cat "$MGW_CI_OUTPUT_DIR/current-focused-suite-summary.json"
-          else
-            printf '{"ok":false,"action":"current_portable_ci_summary_missing"}\n'
-          fi
-          if [ -f "$MGW_CI_VERIFICATION_FILE" ]; then
-            cat "$MGW_CI_VERIFICATION_FILE"
-          else
-            printf '{"ok":false,"action":"current_portable_ci_verification_missing"}\n'
-          fi
-
       - name: Upload current focused-suite evidence
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mgw-current-focused-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -93,36 +122,3 @@ jobs:
             ${{ env.MGW_CI_VERIFICATION_FILE }}
           if-no-files-found: error
           retention-days: 7
-
-      - name: Report safe run result to PR 91
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          MGW_JOB_STATUS: ${{ job.status }}
-          MGW_BOUND_COMMIT: ${{ steps.bind.outputs.commit }}
-        run: |
-          python3 - <<'PY' > "$RUNNER_TEMP/mgw-pr-comment.json"
-          import json
-          import os
-
-          commit = os.environ.get('MGW_BOUND_COMMIT') or os.environ.get('GITHUB_SHA', '')
-          body = "\n".join([
-              "<!-- mgw-current-portable-ci-report -->",
-              "## Current portable PHP 8.3 CI report",
-              "",
-              f"- run_id: `{os.environ.get('GITHUB_RUN_ID', '')}`",
-              f"- run_attempt: `{os.environ.get('GITHUB_RUN_ATTEMPT', '')}`",
-              f"- event: `{os.environ.get('GITHUB_EVENT_NAME', '')}`",
-              f"- exact_commit: `{commit}`",
-              f"- job_status: `{os.environ.get('MGW_JOB_STATUS', '')}`",
-              "- staging_or_production_action: `false`",
-          ])
-          print(json.dumps({"body": body}))
-          PY
-          curl --fail-with-body --silent --show-error \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/91/comments" \
-            --data-binary "@$RUNNER_TEMP/mgw-pr-comment.json"
