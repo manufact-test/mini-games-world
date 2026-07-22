@@ -83,7 +83,7 @@ $assertTrue(
 $assertTrue(
     str_contains($overlay, 'requires JSON as the persistent default storage driver')
         && str_contains($overlay, 'JSON rollback data directory is unavailable or unsafe')
-        && str_contains($overlay, '!str_starts_with($rawDataDir, '/')')
+        && str_contains($overlay, "!str_starts_with(\$rawDataDir, '/')")
         && str_contains($overlay, '!hash_equals($canonicalDataDir, $rawDataDir)')
         && str_contains($overlay, 'must be canonical and symlink-free')
         && str_contains($overlay, 'must be outside the checkout')
@@ -102,22 +102,29 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($overlay, '$databaseIdentity = $databaseConfig->identityFingerprint();')
-        && str_contains($overlay, "\$evidenceDatabaseIdentity = (string)(")
-        && str_contains($overlay, "\$evidenceCommit = (string)(\$verification['repository_commit'] ?? '');")
-        && str_contains($overlay, "\$evidenceFingerprint = (string)(")
-        && str_contains($overlay, "\$baselineSha = (string)(\$baseline['state_sha256'] ?? '');")
+        && str_contains($overlay, "\$evidenceDatabaseIdentity = \$verification['database_identity_fingerprint'] ?? null;")
+        && str_contains($overlay, '!is_string($evidenceDatabaseIdentity)')
+        && str_contains($overlay, "\$evidenceCommit = \$verification['repository_commit'] ?? null;")
+        && str_contains($overlay, '!is_string($evidenceCommit)')
+        && str_contains($overlay, "\$evidenceFingerprint = \$verification['evidence_fingerprint'] ?? null;")
+        && str_contains($overlay, '!is_string($evidenceFingerprint)')
+        && str_contains($overlay, "\$baselineSha = \$baseline['state_sha256'] ?? null;")
+        && str_contains($overlay, '!is_string($baselineSha)')
         && !str_contains($overlay, '$databaseIdentity = strtolower(')
         && !str_contains($overlay, '$evidenceDatabaseIdentity = strtolower(')
         && !str_contains($overlay, '$evidenceCommit = strtolower(')
         && !str_contains($overlay, '$evidenceFingerprint = strtolower(')
         && !str_contains($overlay, '$baselineSha = strtolower('),
-    'Overlay must reject normalized database, commit, evidence and baseline identities'
+    'Overlay must require exact typed database, commit, evidence and baseline identities'
 );
 $assertTrue(
-    !str_contains($overlay, 'trim($this->configFile)')
-        && !str_contains($overlay, 'trim($this->evidenceFile)')
-        && !str_contains($overlay, "trim((string)(\$this->baseConfig['data_dir']"),
-    'Overlay must preserve exact private and rollback paths instead of repairing malformed values'
+    str_contains($overlay, 'trim($this->projectRoot) !== $this->projectRoot')
+        && str_contains($overlay, 'trim($path) !== $path')
+        && str_contains($overlay, 'trim($rawDataDir) !== $rawDataDir')
+        && !str_contains($overlay, '$this->configFile = trim(')
+        && !str_contains($overlay, '$this->evidenceFile = trim(')
+        && !str_contains($overlay, '$rawDataDir = trim('),
+    'Overlay must reject whitespace aliases instead of repairing private and rollback paths'
 );
 $assertTrue(
     str_contains($overlay, "'max_revision_delta' => 1")
