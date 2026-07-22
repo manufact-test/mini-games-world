@@ -89,7 +89,7 @@ $assertTrue(
         && str_contains($runner, 'GNU coreutils timeout is required for a bounded portable suite.')
         && str_contains($runner, 'timeout --signal=TERM --kill-after=15')
         && str_contains($runner, 'MGW_CI_TIMEOUT_SECONDS must be between 60 and 7200')
-        && !str_contains($runner, "else\n  bash \"$SUITE_SCRIPT\""),
+        && !str_contains($runner, 'else' . "\n" . '  bash "$SUITE_SCRIPT"'),
     'Current portable runner must fail closed without a compatible bounded timeout'
 );
 $assertTrue(
@@ -164,6 +164,8 @@ $assertTrue(
 $assertTrue(
     str_contains($workflow, 'persist-credentials: false')
         && str_contains($workflow, 'clean: true')
+        && str_contains($workflow, 'Initialize private evidence paths')
+        && str_contains($workflow, '$RUNNER_TEMP/mgw-current-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}')
         && str_contains($workflow, 'bash ops/ci/run-current-portable-focused-suite.sh')
         && str_contains($workflow, 'github.run_id')
         && str_contains($workflow, 'github.run_attempt')
