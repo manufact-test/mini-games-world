@@ -3,11 +3,16 @@ declare(strict_types=1);
 
 final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
 {
-    public function __construct(private DatabaseConnectionInterface $database)
-    {
+    private ?Closure $workerFactory;
+
+    public function __construct(
+        private DatabaseConnectionInterface $database,
+        ?Closure $workerFactory = null
+    ) {
         if ($this->database->driver() !== 'mysql') {
             throw new RuntimeException('Staging API mutating smoke identity cleanup requires MySQL/MariaDB.');
         }
+        $this->workerFactory = $workerFactory;
     }
 
     public function assertFresh(string $provider, string $subject, string $legacyUserId, string $sessionId): array
@@ -80,9 +85,11 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
         if (!MgwIdGenerator::isValid($mgwId)) {
             throw new RuntimeException('Staging API mutating smoke cleanup MGW ID is invalid.');
         }
+
+        $earlierProjectionProof = $this->completeEarlierProjectionEventsBeforeMappingDeletion();
         $sessionHash = hash('sha256', 'session|' . $sessionId);
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+        $deleted = $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $provider,
             $subject,
             $legacyUserId,
@@ -159,6 +166,8 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
                 'user_row_deferred' => true,
             ];
         });
+
+        return $deleted + $earlierProjectionProof;
     }
 
     public function removeOrphanUserAfterCleanupProjection(string $mgwId): array
@@ -223,6 +232,95 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
             'user_rows_remaining' => 0,
             'sensitive_identifiers_exposed' => false,
         ];
+    }
+
+    private function completeEarlierProjectionEventsBeforeMappingDeletion(): array
+    {
+        $currentRevision = (int)$this->database->fetchValue(
+            'SELECT revision FROM ' . RuntimePrimaryStateSchemaInstaller::TABLE . ' WHERE singleton_id = 1'
+        );
+        if ($currentRevision < 1) {
+            throw new RuntimeException('Staging API mutating smoke cleanup current revision is invalid.');
+        }
+
+        $worker = null;
+        $completed = [];
+        for ($attempt = 0; $attempt < 4; $attempt++) {
+            $rows = $this->database->fetchAll(
+                'SELECT state_revision, status FROM ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . "
+                 WHERE status <> 'completed' AND state_revision < :current_revision
+                 ORDER BY state_revision ASC LIMIT 1",
+                ['current_revision' => $currentRevision]
+            );
+            if ($rows === []) {
+                return [
+                    'earlier_projection_events_completed' => count($completed),
+                    'mapping_deleted_after_earlier_projection' => true,
+                ];
+            }
+            if (count($rows) !== 1 || !is_array($rows[0])) {
+                throw new RuntimeException('Staging API mutating smoke earlier projection ordering is ambiguous.');
+            }
+            $revision = (int)($rows[0]['state_revision'] ?? 0);
+            $status = strtolower(trim((string)($rows[0]['status'] ?? '')));
+            if ($revision < 1 || $revision >= $currentRevision
+                || !in_array($status, ['pending', 'processing', 'failed'], true)) {
+                throw new RuntimeException('Staging API mutating smoke earlier projection identity is invalid.');
+            }
+
+            if (in_array($status, ['processing', 'failed'], true)) {
+                $reset = $this->database->execute(
+                    'UPDATE ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . "
+                     SET status = 'pending', lease_token = '', lease_expires_at_utc = '',
+                         available_at_utc = :available_at_utc, last_error = '', updated_at_utc = :updated_at_utc
+                     WHERE state_revision = :state_revision AND status = :expected_status",
+                    [
+                        'available_at_utc' => gmdate(DATE_ATOM),
+                        'updated_at_utc' => gmdate(DATE_ATOM),
+                        'state_revision' => $revision,
+                        'expected_status' => $status,
+                    ]
+                );
+                if ($reset !== 1) {
+                    throw new RuntimeException('Staging API mutating smoke earlier projection recovery lost its exact event.');
+                }
+            }
+
+            if (!$worker instanceof RuntimePrimaryProjectionWorkerInterface) {
+                $worker = $this->makeRecoveryWorker();
+            }
+            $tick = $worker->runOnce();
+            if (($tick['ok'] ?? false) !== true
+                || ($tick['action'] ?? '') !== 'projection_completed'
+                || ($tick['claimed'] ?? false) !== true
+                || (int)($tick['state_revision'] ?? 0) !== $revision
+                || ($tick['parity_ok'] ?? false) !== true) {
+                throw new RuntimeException('Staging API mutating smoke earlier projection could not be completed safely.');
+            }
+            $completed[] = $revision;
+        }
+
+        throw new RuntimeException('Staging API mutating smoke earlier projection recovery exceeded its bound.');
+    }
+
+    private function makeRecoveryWorker(): RuntimePrimaryProjectionWorkerInterface
+    {
+        if ($this->workerFactory instanceof Closure) {
+            $worker = ($this->workerFactory)($this->database);
+            if (!$worker instanceof RuntimePrimaryProjectionWorkerInterface) {
+                throw new RuntimeException('Staging API mutating smoke recovery worker factory returned an invalid worker.');
+            }
+            return $worker;
+        }
+
+        $config = $GLOBALS['config'] ?? null;
+        if (!is_array($config)) {
+            throw new RuntimeException('Staging API mutating smoke recovery config is unavailable.');
+        }
+        $projector = (new RuntimePrimaryRepositoryProjectorFactory($config, $this->database))->create();
+        return new RuntimePrimaryProjectionWorkerAdapter(
+            new RuntimePrimaryProjectionWorker($this->database, $projector, 60)
+        );
     }
 
     private function assertIdentity(string $provider, string $subject, string $legacyUserId, string $sessionId): void
