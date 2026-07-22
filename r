@@ -3,6 +3,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 RUNNER="$PROJECT_ROOT/ops/runtime/run-staging-read-only-checkpoint.sh"
+CONTRACT_DIAGNOSTIC="$PROJECT_ROOT/ops/runtime/check-staging-runtime-contract-loading.sh"
 
 if bash "$RUNNER"; then
   exit 0
@@ -53,6 +54,24 @@ if [[ -n "$LATEST_REPORT" && -f "$LATEST_REPORT" && ! -L "$LATEST_REPORT" ]]; th
       exit(0);
   }
   ' "$LATEST_REPORT" 2>/dev/null || true
+
+  if [[ -f "$CONTRACT_DIAGNOSTIC" && ! -L "$CONTRACT_DIAGNOSTIC" ]]; then
+    if php -r '
+    try {
+        $raw = file_get_contents($argv[1]);
+        $data = is_string($raw) ? json_decode($raw, true, 512, JSON_THROW_ON_ERROR) : null;
+        exit(is_array($data)
+            && ($data["action"] ?? "") === "api_lifecycle_evidence_v4_blocked_or_failed"
+            && ($data["failure_stage"] ?? "") === "runtime_contract_loading"
+            ? 0
+            : 1);
+    } catch (Throwable) {
+        exit(1);
+    }
+    ' "$LATEST_REPORT" >/dev/null 2>&1; then
+      bash "$CONTRACT_DIAGNOSTIC" || true
+    fi
+  fi
 fi
 
 exit 1
