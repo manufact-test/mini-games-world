@@ -16,6 +16,27 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
     if (!$condition) throw new RuntimeException($message);
 };
 
+$requiredBootstrapFiles = [
+    'RuntimePrimaryEntrypointEvidence.php',
+    'RuntimePrimaryProjectionBootstrap.php',
+    'RuntimePrimaryProjectionOutboxSchemaInstaller.php',
+    'RuntimePrimaryProjectionOutboxWriter.php',
+    'RuntimePrimaryProjectionWorker.php',
+    'RuntimePrimaryProjectionWorkerInterface.php',
+    'RuntimePrimaryProjectionAuditorInterface.php',
+    'RuntimePrimaryProjectionWorkerAdapter.php',
+    'RuntimePrimaryProjectionAuditorAdapter.php',
+    'RuntimePrimaryStagingRequestFinalizer.php',
+    'RuntimePrimaryStagingApiSessionCoordinator.php',
+    'RuntimePrimaryStagingEntrypointStorageSelector.php',
+];
+foreach ($requiredBootstrapFiles as $file) {
+    $assertTrue(
+        substr_count($bootstrap, $file) === 1,
+        'API smoke bootstrap must load the critical dependency exactly once: ' . $file
+    );
+}
+
 $entrypointEvidence = strpos(
     $bootstrap,
     "require_once __DIR__ . '/RuntimePrimaryEntrypointEvidence.php';"
@@ -24,11 +45,49 @@ $evidenceVerifier = strpos(
     $bootstrap,
     "require_once __DIR__ . '/RuntimePrimaryStagingEvidenceVerifier.php';"
 );
+$projectionBootstrap = strpos(
+    $bootstrap,
+    "require_once __DIR__ . '/RuntimePrimaryProjectionBootstrap.php';"
+);
+$outboxSchema = strpos(
+    $bootstrap,
+    "require_once __DIR__ . '/RuntimePrimaryProjectionOutboxSchemaInstaller.php';"
+);
+$outboxWriter = strpos(
+    $bootstrap,
+    "require_once __DIR__ . '/RuntimePrimaryProjectionOutboxWriter.php';"
+);
+$projectionWorker = strpos(
+    $bootstrap,
+    "require_once __DIR__ . '/RuntimePrimaryProjectionWorker.php';"
+);
+$workerAdapter = strpos(
+    $bootstrap,
+    "require_once __DIR__ . '/RuntimePrimaryProjectionWorkerAdapter.php';"
+);
+$coordinator = strpos(
+    $bootstrap,
+    "require_once __DIR__ . '/RuntimePrimaryStagingApiSessionCoordinator.php';"
+);
 $assertTrue(
     $entrypointEvidence !== false
         && $evidenceVerifier !== false
         && $entrypointEvidence < $evidenceVerifier,
     'API smoke bootstrap must load entrypoint evidence before the staging evidence verifier'
+);
+$assertTrue(
+    $projectionBootstrap !== false
+        && $outboxSchema !== false
+        && $outboxWriter !== false
+        && $projectionWorker !== false
+        && $workerAdapter !== false
+        && $coordinator !== false
+        && $projectionBootstrap < $outboxSchema
+        && $outboxSchema < $outboxWriter
+        && $outboxWriter < $projectionWorker
+        && $projectionWorker < $workerAdapter
+        && $workerAdapter < $coordinator,
+    'API smoke bootstrap must load the complete projection execution graph before the coordinator'
 );
 
 $bootstrapRequire = strpos(
@@ -52,20 +111,27 @@ $assertTrue(
     'CLI smoke must load the complete staging bootstrap before overlay and smoke execution'
 );
 
-$assertTrue(
-    substr_count($bootstrap, 'RuntimePrimaryEntrypointEvidence.php') === 1,
-    'API smoke bootstrap must load the entrypoint evidence dependency exactly once'
-);
-
 require_once $bootstrapPath;
-$assertTrue(
-    class_exists('RuntimePrimaryEntrypointEvidence', false),
-    'Executing the API smoke bootstrap must make RuntimePrimaryEntrypointEvidence available'
-);
-$assertTrue(
-    class_exists('RuntimePrimaryStagingEvidenceVerifier', false),
-    'Executing the API smoke bootstrap must make RuntimePrimaryStagingEvidenceVerifier available'
-);
+$requiredClasses = [
+    'RuntimePrimaryEntrypointEvidence',
+    'RuntimePrimaryStagingEvidenceVerifier',
+    'RuntimePrimaryProjectionOutboxSchemaInstaller',
+    'RuntimePrimaryProjectionOutboxWriter',
+    'RuntimePrimaryProjectionWorker',
+    'RuntimePrimaryProjectionWorkerAdapter',
+    'RuntimePrimaryProjectionAuditorAdapter',
+    'RuntimePrimaryRepositoryProjectorFactory',
+    'RuntimePrimaryAllModuleProjector',
+    'RuntimePrimaryStagingRequestFinalizer',
+    'RuntimePrimaryStagingApiSessionCoordinator',
+    'RuntimePrimaryStagingEntrypointStorageSelector',
+];
+foreach ($requiredClasses as $class) {
+    $assertTrue(
+        class_exists($class, false),
+        'Executing the API smoke bootstrap must make the critical class available: ' . $class
+    );
+}
 
 fwrite(
     STDOUT,
