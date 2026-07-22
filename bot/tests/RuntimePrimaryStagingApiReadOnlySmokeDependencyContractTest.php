@@ -2,12 +2,10 @@
 declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__, 2);
-$bootstrap = file_get_contents(
-    $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php'
-);
-$runner = file_get_contents(
-    $projectRoot . '/ops/runtime/run-staging-db-primary-api-read-only-smoke.php'
-);
+$bootstrapPath = $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php';
+$runnerPath = $projectRoot . '/ops/runtime/run-staging-db-primary-api-read-only-smoke.php';
+$bootstrap = file_get_contents($bootstrapPath);
+$runner = file_get_contents($runnerPath);
 if (!is_string($bootstrap) || !is_string($runner)) {
     throw new RuntimeException('Read-only smoke dependency sources are unavailable.');
 }
@@ -57,6 +55,16 @@ $assertTrue(
 $assertTrue(
     substr_count($bootstrap, 'RuntimePrimaryEntrypointEvidence.php') === 1,
     'API smoke bootstrap must load the entrypoint evidence dependency exactly once'
+);
+
+require_once $bootstrapPath;
+$assertTrue(
+    class_exists('RuntimePrimaryEntrypointEvidence', false),
+    'Executing the API smoke bootstrap must make RuntimePrimaryEntrypointEvidence available'
+);
+$assertTrue(
+    class_exists('RuntimePrimaryStagingEvidenceVerifier', false),
+    'Executing the API smoke bootstrap must make RuntimePrimaryStagingEvidenceVerifier available'
 );
 
 fwrite(
