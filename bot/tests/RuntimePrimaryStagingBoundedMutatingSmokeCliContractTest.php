@@ -7,6 +7,11 @@ $source = file_get_contents($path);
 if (!is_string($source)) {
     throw new RuntimeException('Bounded mutating smoke execution CLI source is unavailable.');
 }
+$bootstrapPath = $projectRoot . '/bot/runtime/RuntimePrimaryStagingEntrypointBootstrap.php';
+$bootstrapSource = file_get_contents($bootstrapPath);
+if (!is_string($bootstrapSource)) {
+    throw new RuntimeException('Staging entrypoint bootstrap source is unavailable.');
+}
 
 $assertions = 0;
 $assertTrue = static function (bool $condition, string $message) use (&$assertions): void {
@@ -41,6 +46,25 @@ foreach ([
         'Execution CLI option must remain exact: ' . $option
     );
 }
+
+$entrypointBootstrapRequire = strpos(
+    $source,
+    "RuntimePrimaryStagingEntrypointBootstrap.php"
+);
+$evidenceApprovalUse = strpos(
+    $source,
+    'RuntimePrimaryStagingEvidenceApproval::fromConfig($config)'
+);
+$assertTrue(
+    $entrypointBootstrapRequire !== false
+        && $evidenceApprovalUse !== false
+        && $entrypointBootstrapRequire < $evidenceApprovalUse
+        && str_contains(
+            $bootstrapSource,
+            "require_once __DIR__ . '/RuntimePrimaryStagingEvidenceApproval.php';"
+        ),
+    'Execution dependency bootstrap must load staging evidence approval before runtime checks.'
+);
 
 $receiptVerify = strpos(
     $source,
