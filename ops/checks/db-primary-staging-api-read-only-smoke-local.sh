@@ -22,6 +22,7 @@ FILES=(
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBridgeLazinessContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php
   bot/tests/RuntimePrimaryStagingOneCommandReadOnlyCheckpointContractTest.php
+  bot/tests/RuntimePrimaryStagingOneCommandBlockerDetailContractTest.php
 )
 
 for file in "${FILES[@]}"; do
@@ -49,6 +50,7 @@ TESTS=(
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBridgeLazinessContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php
   bot/tests/RuntimePrimaryStagingOneCommandReadOnlyCheckpointContractTest.php
+  bot/tests/RuntimePrimaryStagingOneCommandBlockerDetailContractTest.php
 )
 
 for test_file in "${TESTS[@]}"; do
