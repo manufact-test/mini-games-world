@@ -25,10 +25,9 @@ final class RuntimePrimaryStagingRequestSessionConfig
         $settings = is_array($config['staging_db_primary_request_session'] ?? null)
             ? $config['staging_db_primary_request_session']
             : [];
-        $enabled = self::strictBool(
-            $settings['enabled'] ?? false,
-            'staging_db_primary_request_session.enabled'
-        );
+        $enabled = array_key_exists('enabled', $settings)
+            ? self::strictBool($settings['enabled'], 'staging_db_primary_request_session.enabled')
+            : false;
         $contractVersion = self::strictString(
             $settings['contract_version'] ?? '',
             'staging_db_primary_request_session.contract_version'
