@@ -7,7 +7,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
-$currentContract = 'application_bootstrap';
+$currentContract = 'contract_map';
 $response = [];
 $exitCode = 1;
 
@@ -19,8 +19,6 @@ set_error_handler(static function (int $severity) use (&$currentContract): never
 });
 
 try {
-    require $projectRoot . '/bot/core/bootstrap.php';
-
     $contracts = [
         'projection_outbox_schema_installer' => '/bot/runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php',
         'projection_outbox_writer' => '/bot/runtime/RuntimePrimaryProjectionOutboxWriter.php',
@@ -76,6 +74,8 @@ try {
         'ok' => true,
         'action' => 'staging_runtime_contract_loading_verified',
         'contract_count' => count($contracts),
+        'config_loaded' => false,
+        'application_bootstrapped' => false,
         'path_exposed' => false,
         'database_contacted' => false,
         'application_entrypoints_changed' => false,
@@ -98,6 +98,8 @@ try {
         'failure_contract' => $currentContract,
         'error_class' => get_class($error),
         'error_message' => $message,
+        'config_loaded' => false,
+        'application_bootstrapped' => false,
         'path_exposed' => false,
         'database_contacted' => false,
         'application_entrypoints_changed' => false,
