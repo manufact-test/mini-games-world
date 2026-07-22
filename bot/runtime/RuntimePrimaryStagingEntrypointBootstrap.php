@@ -5,6 +5,7 @@ require_once __DIR__ . '/RuntimePrimaryStagingEntrypointSelectorConfig.php';
 require_once __DIR__ . '/RuntimePrimaryPrivateConfigGuard.php';
 require_once __DIR__ . '/RuntimePrimaryRepositoryCommitResolver.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceApproval.php';
+require_once __DIR__ . '/RuntimePrimaryStagingMutatingSmokeApproval.php';
 require_once __DIR__ . '/RuntimePrimaryEntrypointEvidence.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceVerifier.php';
 require_once __DIR__ . '/RuntimePrimaryStagingEvidenceV2Verifier.php';
