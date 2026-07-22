@@ -89,6 +89,22 @@ foreach ([
     );
 }
 $assertTrue(
+    str_contains($source, 'RuntimePrimaryProjectionOutboxSchemaInstaller.php')
+        && str_contains($source, 'RuntimePrimaryProjectionOutboxWriter.php')
+        && str_contains($source, 'RuntimePrimaryProjectionBootstrap.php')
+        && str_contains($source, 'RuntimePrimaryProjectionWorker.php')
+        && str_contains($source, 'RuntimePrimaryRehearsalBackendInterface.php')
+        && !str_contains($source, 'RuntimePrimaryStagingRehearsalBackendInterface.php'),
+    'Lifecycle CLI must load the real rehearsal and projection runtime contracts'
+);
+$assertTrue(
+    str_contains($source, "new RuntimePrimaryStagingRehearsalBackend(\n        \$config,\n        \$jsonStorage,\n        \$database\n    )")
+        && str_contains($source, "new StagingPrimaryRehearsalOperation(\n        \$config,\n        \$backend,\n        \$maxEvents\n    )")
+        && str_contains($source, "\$privateDir . '/runtime-primary-cli-lock-probe.lock',\n        120")
+        && str_contains($source, "new RuntimePrimaryStagingEvidenceSource(\n        \$config,\n        \$projectRoot,\n        \$jsonStorage,\n        \$database,\n        \$rehearsal,\n        \$concurrency\n    )"),
+    'Lifecycle CLI must wire current constructor contracts without legacy argument order'
+);
+$assertTrue(
     substr_count($source, 'PdoConnectionFactory::create($databaseConfig)') === 2
         && str_contains($source, 'RuntimePrimaryStagingConcurrencyProbe('),
     'Lifecycle CLI must use two independent DB connections for lease evidence'
