@@ -63,10 +63,18 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
         $selectorConfig = $text['selector_config'] ?? '';
         $selectorBootstrap = $text['selector_bootstrap'] ?? '';
 
-        $hookRead = strpos($response, "\$hooks = \$GLOBALS['mgw_api_success_hooks'] ?? [];");
-        $hookRun = strpos($response, 'foreach ($hooks as $hook)');
-        $filterRead = strpos($response, "\$filters = \$GLOBALS['mgw_api_data_filters'] ?? [];");
-        $responseSend = strpos($response, "api_response(['ok' => true, 'data' => \$data]);");
+        $apiOk = strpos($response, 'function api_ok(');
+        $successHookRun = $apiOk === false
+            ? false
+            : strpos($response, 'mgw_run_api_success_hooks();', $apiOk);
+        $normalizedResponse = $apiOk === false
+            ? false
+            : strpos(
+                $response,
+                "json_response(['ok' => true] + mgw_normalize_api_data(\$data));",
+                $apiOk
+            );
+        $filterRun = strpos($response, '$data = mgw_run_api_data_filters($data);');
         $selectorLatch = strpos($coordinator, 'RuntimePrimaryStagingEntrypointSelectorConfig::fromApplicationConfig(');
         $privateGuard = strpos($coordinator, 'RuntimePrimaryPrivateConfigGuard::assertExternal(');
         $evidenceGate = strpos($coordinator, 'RuntimePrimaryStagingEvidenceV4Gate(');
@@ -82,13 +90,11 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
             'api_success_inside_error_boundary' => str_contains($api, 'api_ok($result);')
                 && str_contains($api, '} catch (Throwable $e) {')
                 && strpos($api, 'api_ok($result);') < strpos($api, '} catch (Throwable $e) {'),
-            'success_hooks_before_filters_and_response' => $hookRead !== false
-                && $hookRun !== false
-                && $filterRead !== false
-                && $responseSend !== false
-                && $hookRead < $hookRun
-                && $hookRun < $filterRead
-                && $filterRead < $responseSend,
+            'success_hooks_before_filters_and_response' => $apiOk !== false
+                && $successHookRun !== false
+                && $normalizedResponse !== false
+                && $filterRun !== false
+                && $successHookRun < $normalizedResponse,
             'coordinator_selector_latch_before_private' => $selectorLatch !== false
                 && $privateGuard !== false
                 && $selectorLatch < $privateGuard
@@ -236,7 +242,10 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
 
     private static function normalizeBaseline(array $baseline): array
     {
-        $revision = (int)($baseline['state_revision'] ?? 0);
+        $revision = $baseline['state_revision'] ?? null;
+        if (!is_int($revision)) {
+            throw new RuntimeException('Request lifecycle evidence baseline revision must be an integer.');
+        }
         if ($revision < 1) {
             throw new RuntimeException('Request lifecycle evidence baseline revision must be positive.');
         }
@@ -246,8 +255,8 @@ final class RuntimePrimaryStagingRequestLifecycleEvidence
             'json_sha256',
             'inventory_fingerprint',
         ] as $field) {
-            $value = strtolower(trim((string)($baseline[$field] ?? '')));
-            if (preg_match('/^[a-f0-9]{64}$/', $value) !== 1) {
+            $value = $baseline[$field] ?? null;
+            if (!is_string($value) || preg_match('/^[a-f0-9]{64}$/', $value) !== 1) {
                 throw new RuntimeException('Request lifecycle evidence baseline field is invalid: ' . $field . '.');
             }
             $normalized[$field] = $value;
