@@ -61,9 +61,17 @@ $assertTrue(
     'Smoke CLI must preserve bootstrap registries and add exactly one finalizer'
 );
 $assertTrue(
-    str_contains($bridgeGuard, 'RuntimePrimaryEntrypointStorageContext::installed()')
-        && str_contains($bridgeGuard, 'return !RuntimePrimaryEntrypointStorageContext::installed();'),
-    'Legacy bridge guard must turn registered bootstrap bridges into no-ops after DB context installation'
+    str_contains(
+        $bridgeGuard,
+        "!class_exists('RuntimePrimaryEntrypointStorageContext', false)"
+    ) && str_contains(
+        $bridgeGuard,
+        '!RuntimePrimaryEntrypointStorageContext::installed()'
+    ) && str_contains(
+        $bridgeGuard,
+        "return !class_exists('RuntimePrimaryEntrypointStorageContext', false)"
+    ),
+    'Legacy bridge guard must allow unloaded context and disable bridges after DB context installation'
 );
 $assertTrue(
     !str_contains($cli, "require \$projectRoot . '/bot/api.php'")
