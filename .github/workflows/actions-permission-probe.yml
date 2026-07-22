@@ -50,19 +50,19 @@ jobs:
             --data-binary "@$RUNNER_TEMP/probe-comment.json"
 
   full_php83_gate:
-    name: Full PHP 8.3 gate for exact PR 91 commit
+    name: Full PHP 8.3 gate for exact PR 91 head
     needs: probe
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     env:
-      MGW_TARGET_COMMIT: 206bfe34cb567a3ac978da78864c1a580f24a137
+      MGW_TARGET_BRANCH: agent/mvp-14-8-6t-current-portable-evidence-verifier
       MGW_CI_TIMEOUT_SECONDS: '2700'
 
     steps:
-      - name: Checkout exact PR 91 commit
+      - name: Checkout current PR 91 head
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.MGW_TARGET_COMMIT }}
+          ref: ${{ env.MGW_TARGET_BRANCH }}
           persist-credentials: false
           clean: true
 
@@ -75,8 +75,8 @@ jobs:
         id: bind
         run: |
           commit="$(git rev-parse --verify HEAD)"
-          if [ "$commit" != "$MGW_TARGET_COMMIT" ]; then
-            printf 'checked-out commit mismatch\n' >&2
+          if [[ ! "$commit" =~ ^[a-f0-9]{40}$ ]]; then
+            printf 'invalid checked-out commit\n' >&2
             exit 1
           fi
           printf 'MGW_CI_EXPECTED_COMMIT=%s\n' "$commit" >> "$GITHUB_ENV"
@@ -97,7 +97,7 @@ jobs:
           umask 077
           php ops/ci/verify-current-portable-focused-suite-evidence.php \
             --evidence-dir="$MGW_CI_OUTPUT_DIR" \
-            --expected-commit="$MGW_TARGET_COMMIT" \
+            --expected-commit="$MGW_CI_EXPECTED_COMMIT" \
             --max-age-seconds=3600 \
             > "$MGW_CI_VERIFICATION_FILE"
           chmod 0600 "$MGW_CI_VERIFICATION_FILE"
@@ -107,7 +107,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-current-focused-${{ env.MGW_TARGET_COMMIT }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: mgw-current-focused-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite.log
             ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite-summary.json
@@ -121,6 +121,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           MGW_JOB_STATUS: ${{ job.status }}
+          MGW_BOUND_COMMIT: ${{ steps.bind.outputs.commit }}
         run: |
           python3 - <<'PY' > "$RUNNER_TEMP/mgw-full-gate-comment.json"
           import json
@@ -132,7 +133,7 @@ jobs:
               "",
               f"- run_id: `{os.environ.get('GITHUB_RUN_ID', '')}`",
               f"- run_attempt: `{os.environ.get('GITHUB_RUN_ATTEMPT', '')}`",
-              f"- exact_commit: `{os.environ.get('MGW_TARGET_COMMIT', '')}`",
+              f"- exact_commit: `{os.environ.get('MGW_BOUND_COMMIT', '')}`",
               f"- job_status: `{os.environ.get('MGW_JOB_STATUS', '')}`",
               "- staging_or_production_action: `false`",
           ])
