@@ -20,7 +20,7 @@ jobs:
           printf 'RUN_ID=%s\n' "$GITHUB_RUN_ID"
           printf 'COMMIT=%s\n' "$GITHUB_SHA"
 
-      - name: Report safe result to issue 93
+      - name: Report safe result to issue 94
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,7 +46,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/93/comments" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/94/comments" \
             --data-binary "@$RUNNER_TEMP/probe-comment.json"
 
   full_php83_gate:
@@ -116,7 +116,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Report safe full-gate result to PR 91
+      - name: Report safe full-gate result to issue 94
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -143,5 +143,5 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/91/comments" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/94/comments" \
             --data-binary "@$RUNNER_TEMP/mgw-full-gate-comment.json"
