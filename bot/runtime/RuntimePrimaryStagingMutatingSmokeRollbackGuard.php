@@ -148,7 +148,7 @@ final class RuntimePrimaryStagingMutatingSmokeRollbackGuard
 
     private function validSha(string $value): bool
     {
-        return preg_match('/^[a-f0-9]{64}$/', $value) === 1;
+        return preg_match('/\A[a-f0-9]{64}\z/', $value) === 1;
     }
 
     private function canonicalJson(array $value): string
