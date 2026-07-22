@@ -15,7 +15,8 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
     if (!$condition) throw new RuntimeException($message);
 };
 
-$checkout = strpos($workflow, 'Checkout exact deployable revision');
+$checkout = strpos($workflow, 'Checkout exact candidate revision');
+$paths = strpos($workflow, 'Initialize private evidence paths');
 $bind = strpos($workflow, 'Bind exact checked-out commit');
 $runtime = strpos($workflow, 'Confirm exact PHP 8.3 runtime');
 $suite = strpos($workflow, 'Run current portable focused suite');
@@ -23,25 +24,33 @@ $verify = strpos($workflow, 'Verify exact current evidence bundle');
 $upload = strpos($workflow, 'Upload current focused-suite evidence');
 
 $assertTrue(
-    $checkout !== false && $bind !== false && $runtime !== false
+    $checkout !== false && $paths !== false && $bind !== false && $runtime !== false
         && $suite !== false && $verify !== false && $upload !== false
-        && $checkout < $bind
+        && $checkout < $paths
+        && $paths < $bind
         && $bind < $runtime
         && $runtime < $suite
         && $suite < $verify
         && $verify < $upload,
-    'Hosted workflow stages must preserve exact checkout, bind, runtime, suite, verify and upload order'
+    'Hosted workflow stages must preserve exact checkout, private paths, bind, runtime, suite, verify and upload order'
 );
 $assertTrue(
     str_contains($workflow, 'ref: ${{ github.event.pull_request.head.sha || github.sha }}')
         && str_contains($workflow, 'id: bind')
         && str_contains($workflow, 'git rev-parse --verify HEAD')
         && str_contains($workflow, '[[ ! "$commit" =~ ^[a-f0-9]{40}$ ]]')
-        && str_contains($workflow, "MGW_CI_EXPECTED_COMMIT=%s\\n")
+        && str_contains($workflow, "MGW_CI_EXPECTED_COMMIT=%s\n")
         && str_contains($workflow, '>> "$GITHUB_ENV"')
-        && str_contains($workflow, "commit=%s\\n")
+        && str_contains($workflow, "commit=%s\n")
         && str_contains($workflow, '>> "$GITHUB_OUTPUT"'),
-    'Hosted workflow must bind the real checked-out deployable commit as env and step output'
+    'Hosted workflow must bind the real checked-out candidate commit as env and step output'
+);
+$assertTrue(
+    str_contains($workflow, '$RUNNER_TEMP/mgw-current-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}')
+        && str_contains($workflow, '$RUNNER_TEMP/mgw-current-ci-verification-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json')
+        && !str_contains($workflow, 'MGW_CI_OUTPUT_DIR: ${{ runner.temp }}')
+        && !str_contains($workflow, 'MGW_CI_VERIFICATION_FILE: ${{ runner.temp }}'),
+    'Hosted workflow must derive attempt-isolated private paths only after a runner is assigned'
 );
 $assertTrue(
     str_contains($workflow, '--expected-commit="$MGW_CI_EXPECTED_COMMIT"')
@@ -57,7 +66,13 @@ $assertTrue(
             $workflow,
             'name: mgw-current-focused-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}'
         ),
-    'Hosted artifact name must identify the exact deployable commit rather than the merge SHA'
+    'Hosted artifact name must identify the exact candidate commit rather than the merge SHA'
+);
+$assertTrue(
+    preg_match('/^on:\s*\n\s+pull_request:/m', $workflow) === 1
+        && preg_match('/^\s+workflow_dispatch:\s*$/m', $workflow) === 1
+        && preg_match('/^\s*(push|schedule):/m', $workflow) !== 1,
+    'Hosted workflow must remain limited to the guarded PR event or explicit manual dispatch'
 );
 $assertTrue(
     str_contains($workflow, 'runs-on: ubuntu-24.04')
@@ -73,7 +88,11 @@ $assertTrue(
         && str_contains($workflow, 'contents: read')
         && !str_contains($workflow, 'secrets.')
         && !str_contains($workflow, 'ssh ')
-        && !str_contains($workflow, 'deploy'),
+        && !str_contains($workflow, 'scp ')
+        && !str_contains($workflow, 'rsync ')
+        && !str_contains($workflow, 'production-cutover.php')
+        && !str_contains($workflow, 'crontab')
+        && !str_contains($workflow, 'HOSTINGER'),
     'Hosted workflow must remain credential-free and infrastructure-neutral'
 );
 $assertTrue(
