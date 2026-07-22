@@ -68,7 +68,7 @@ $assertTrue(
     'One-command runner must require a clean exact checkout and discover only PHP 8.3'
 );
 $assertTrue(
-    str_contains($runner, 'trap cleanup_overlay EXIT HUP INT TERM')
+    str_contains($runner, 'trap cleanup_temporary_files EXIT HUP INT TERM')
         && str_contains($runner, "require __DIR__ . '/config.php'")
         && str_contains($runner, "'staging_db_primary_evidence'")
         && str_contains($runner, "'enabled' => true")
@@ -76,6 +76,16 @@ $assertTrue(
         && !str_contains($runner, '> "$BASE_CONFIG"')
         && !str_contains($runner, 'mv "$OVERLAY_FILE" "$BASE_CONFIG"'),
     'Evidence approval must exist only in a private temporary overlay and never replace persistent config'
+);
+$assertTrue(
+    str_contains($runner, 'PREFLIGHT_VALUES_FILE="$PRIVATE_DIR/staging-read-only-preflight-values-$RUN_ID.txt"')
+        && str_contains($runner, 'COLLECTOR_VALUES_FILE="$PRIVATE_DIR/staging-lifecycle-collector-values-$RUN_ID.txt"')
+        && str_contains($runner, 'mapfile -t PREFLIGHT_VALUES < "$PREFLIGHT_VALUES_FILE"')
+        && str_contains($runner, 'mapfile -t COLLECTOR_VALUES < "$COLLECTOR_VALUES_FILE"')
+        && str_contains($runner, 'chmod 0600 "$PREFLIGHT_VALUES_FILE"')
+        && str_contains($runner, 'chmod 0600 "$COLLECTOR_VALUES_FILE"')
+        && !str_contains($runner, '< <('),
+    'Hostinger runner must parse through private regular files without dev-fd process substitution'
 );
 $assertTrue(
     str_contains($runner, '--max-events=20')
