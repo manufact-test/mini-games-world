@@ -34,7 +34,7 @@ final class RuntimePrimaryStagingReadOnlyCheckpointReceipt
         }
 
         $commit = self::strictString($verifiedReport['repository_commit'] ?? null, 'repository commit');
-        if (preg_match('/^[a-f0-9]{40}$/', $commit) !== 1) {
+        if (preg_match('/\A[a-f0-9]{40}\z/', $commit) !== 1) {
             throw new RuntimeException('Verified read-only report commit is invalid.');
         }
         $databaseIdentity = self::strictSha(
@@ -149,7 +149,7 @@ final class RuntimePrimaryStagingReadOnlyCheckpointReceipt
             }
         }
         $commit = self::strictString($receipt['repository_commit'] ?? null, 'repository commit');
-        if (preg_match('/^[a-f0-9]{40}$/', $commit) !== 1) {
+        if (preg_match('/\A[a-f0-9]{40}\z/', $commit) !== 1) {
             throw new RuntimeException('Read-only checkpoint receipt repository commit is invalid.');
         }
         foreach ([
@@ -225,7 +225,7 @@ final class RuntimePrimaryStagingReadOnlyCheckpointReceipt
 
     private static function strictSha(mixed $value, string $label): string
     {
-        if (!is_string($value) || preg_match('/^[a-f0-9]{64}$/', $value) !== 1) {
+        if (!is_string($value) || preg_match('/\A[a-f0-9]{64}\z/', $value) !== 1) {
             throw new RuntimeException('Read-only checkpoint receipt ' . $label . ' must be SHA-256.');
         }
         return $value;
@@ -233,7 +233,7 @@ final class RuntimePrimaryStagingReadOnlyCheckpointReceipt
 
     private static function parseExactUtc(string $value): int
     {
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $value) !== 1) {
+        if (preg_match('/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00\z/', $value) !== 1) {
             throw new RuntimeException('Read-only checkpoint receipt timestamp must use exact UTC +00:00.');
         }
         $date = DateTimeImmutable::createFromFormat(
