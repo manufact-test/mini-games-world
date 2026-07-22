@@ -37,6 +37,9 @@ for shell_file in \
   printf 'shell lint ok: %s\n' "$shell_file"
 done
 
+"$PHP_BIN" ops/runtime/check-staging-runtime-contract-loading.php >/dev/null
+printf 'runtime contract loading ok: %s\n' 'ops/runtime/check-staging-runtime-contract-loading.php'
+
 TESTS=(
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlayTest.php
