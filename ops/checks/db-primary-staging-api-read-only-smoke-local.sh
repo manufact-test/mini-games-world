@@ -13,6 +13,7 @@ FILES=(
   bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay.php
   ops/runtime/run-staging-db-primary-api-read-only-smoke.php
   ops/runtime/check-staging-read-only-prerequisites.php
+  ops/runtime/check-staging-runtime-contract-loading.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlayTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeContractTest.php
@@ -30,6 +31,7 @@ done
 
 for shell_file in \
   r \
+  ops/runtime/check-staging-runtime-contract-loading.sh \
   ops/runtime/run-staging-read-only-checkpoint.sh; do
   bash -n "$shell_file"
   printf 'shell lint ok: %s\n' "$shell_file"
