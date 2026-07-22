@@ -39,9 +39,9 @@ $assertTrue(
         && str_contains($workflow, 'id: bind')
         && str_contains($workflow, 'git rev-parse --verify HEAD')
         && str_contains($workflow, '[[ ! "$commit" =~ ^[a-f0-9]{40}$ ]]')
-        && str_contains($workflow, "MGW_CI_EXPECTED_COMMIT=%s\n")
+        && str_contains($workflow, 'MGW_CI_EXPECTED_COMMIT=%s\n')
         && str_contains($workflow, '>> "$GITHUB_ENV"')
-        && str_contains($workflow, "commit=%s\n")
+        && str_contains($workflow, 'commit=%s\n')
         && str_contains($workflow, '>> "$GITHUB_OUTPUT"'),
     'Hosted workflow must bind the real checked-out candidate commit as env and step output'
 );
