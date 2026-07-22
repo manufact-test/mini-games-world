@@ -114,6 +114,16 @@ $assertTrue(
         && !str_contains($launcher, 'wget '),
     'Short launcher must delegate locally without downloading code'
 );
+$assertTrue(
+    str_contains($launcher, "'staging_read_only_prerequisites_blocked_or_failed'")
+        && str_contains($launcher, '(\$data["path_exposed"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["production_changed"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["sensitive_identifiers_exposed"] ?? null) !== false')
+        && str_contains($launcher, 'strlen($message) > 500')
+        && str_contains($launcher, 'echo "DETAIL="')
+        && !str_contains($launcher, 'cat "$LATEST_REPORT"'),
+    'Short launcher may print only the bounded sanitized blocker detail from a safe prerequisite report'
+);
 
 fwrite(
     STDOUT,
