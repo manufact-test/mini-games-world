@@ -38,17 +38,21 @@ jobs:
           php -l ops/runtime/execute-staging-api-mutating-smoke-request.php
           php -l ops/runtime/run-staging-api-mutating-smoke.php
           php -l ops/runtime/verify-staging-api-mutating-smoke-evidence.php
+          php -l ops/runtime/recover-staging-api-mutating-smoke-economy-incident.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifierTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
+          php -l bot/tests/RuntimePrimaryStagingApiEconomyIncidentRecoveryContractTest.php
           php -l bot/tests/RuntimePrimaryStagingMutatingApprovalDependencyTest.php
           php -l bot/tests/RuntimePrimaryStagingMutatingCheckpointShellContractTest.php
           bash -n ops/runtime/run-staging-bounded-mutating-checkpoint.sh
           bash -n ops/runtime/run-staging-api-mutating-checkpoint.sh
+          bash -n ops/runtime/run-staging-api-incident-recovery.sh
           bash -n m
           bash -n a
+          bash -n c
 
       - name: Test guarded private API input
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
@@ -65,8 +69,11 @@ jobs:
       - name: Test API child host isolation
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
 
-      - name: Test exact and partial identity cleanup
+      - name: Test exact, partial and economy identity cleanup
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
+
+      - name: Test exact economy incident recovery contract
+        run: php bot/tests/RuntimePrimaryStagingApiEconomyIncidentRecoveryContractTest.php
 
       - name: Test one-command staging smoke contracts
         run: php bot/tests/RuntimePrimaryStagingMutatingCheckpointShellContractTest.php
