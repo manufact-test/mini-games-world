@@ -77,28 +77,37 @@ fi
 
 RUN_ID="$(date -u '+%Y%m%dT%H%M%SZ')-$$-${RANDOM}"
 PREFLIGHT_FILE="$PRIVATE_DIR/staging-read-only-preflight-$RUN_ID.json"
+PREFLIGHT_VALUES_FILE="$PRIVATE_DIR/staging-read-only-preflight-values-$RUN_ID.txt"
 OVERLAY_FILE="$PRIVATE_DIR/staging-read-only-evidence-overlay-$RUN_ID.php"
 COLLECTOR_STATUS_FILE="$PRIVATE_DIR/staging-lifecycle-collector-$RUN_ID.json"
+COLLECTOR_VALUES_FILE="$PRIVATE_DIR/staging-lifecycle-collector-values-$RUN_ID.txt"
 EVIDENCE_FILE="$PRIVATE_DIR/staging-lifecycle-evidence-v4-$RUN_ID.json"
 REPORT_FILE="$PRIVATE_DIR/staging-api-read-only-smoke-$RUN_ID.json"
 VERIFICATION_FILE="$PRIVATE_DIR/staging-api-read-only-smoke-verification-$RUN_ID.json"
 
 for path in \
   "$PREFLIGHT_FILE" \
+  "$PREFLIGHT_VALUES_FILE" \
   "$OVERLAY_FILE" \
   "$COLLECTOR_STATUS_FILE" \
+  "$COLLECTOR_VALUES_FILE" \
   "$EVIDENCE_FILE" \
   "$REPORT_FILE" \
   "$VERIFICATION_FILE"; do
   [[ ! -e "$path" && ! -L "$path" ]] || fail 'fresh private output path already exists'
 done
 
-cleanup_overlay() {
-  if [[ -n "${OVERLAY_FILE:-}" && -f "$OVERLAY_FILE" && ! -L "$OVERLAY_FILE" ]]; then
-    rm -f -- "$OVERLAY_FILE" || true
-  fi
+cleanup_temporary_files() {
+  for temporary_path in \
+    "${OVERLAY_FILE:-}" \
+    "${PREFLIGHT_VALUES_FILE:-}" \
+    "${COLLECTOR_VALUES_FILE:-}"; do
+    if [[ -n "$temporary_path" && -f "$temporary_path" && ! -L "$temporary_path" ]]; then
+      rm -f -- "$temporary_path" || true
+    fi
+  done
 }
-trap cleanup_overlay EXIT HUP INT TERM
+trap cleanup_temporary_files EXIT HUP INT TERM
 
 unset MGW_CONFIG_FILE MGW_DATABASE_CONFIG_FILE MGW_REHEARSAL_COMMIT_SHA
 "$PHP_BIN" "$PROJECT_ROOT/ops/runtime/check-staging-read-only-prerequisites.php" \
@@ -106,7 +115,7 @@ unset MGW_CONFIG_FILE MGW_DATABASE_CONFIG_FILE MGW_REHEARSAL_COMMIT_SHA
   > "$PREFLIGHT_FILE" || fail 'strict staging prerequisite check failed'
 chmod 0600 "$PREFLIGHT_FILE"
 
-mapfile -t PREFLIGHT_VALUES < <("$PHP_BIN" -r '
+"$PHP_BIN" -r '
 $d=json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($d) || ($d["ok"] ?? null) !== true || ($d["action"] ?? "") !== "staging_read_only_prerequisites_verified") exit(1);
 foreach (["repository_commit", "database_identity_fingerprint"] as $k) {
@@ -114,7 +123,11 @@ foreach (["repository_commit", "database_identity_fingerprint"] as $k) {
     if (!is_string($v)) exit(1);
     echo $v, "\n";
 }
-' "$PREFLIGHT_FILE") || fail 'staging prerequisite report could not be parsed'
+' "$PREFLIGHT_FILE" > "$PREFLIGHT_VALUES_FILE" || fail 'staging prerequisite report could not be parsed'
+chmod 0600 "$PREFLIGHT_VALUES_FILE"
+mapfile -t PREFLIGHT_VALUES < "$PREFLIGHT_VALUES_FILE" || fail 'staging prerequisite report values could not be loaded'
+rm -f -- "$PREFLIGHT_VALUES_FILE"
+PREFLIGHT_VALUES_FILE=''
 if [[ "${#PREFLIGHT_VALUES[@]}" -ne 2 ]]; then
   fail 'staging prerequisite report is incomplete'
 fi
@@ -153,7 +166,7 @@ MGW_REHEARSAL_COMMIT_SHA="$CURRENT_COMMIT" \
   > "$COLLECTOR_STATUS_FILE" || fail 'fresh lifecycle evidence v4 collection failed'
 chmod 0600 "$COLLECTOR_STATUS_FILE"
 
-mapfile -t COLLECTOR_VALUES < <("$PHP_BIN" -r '
+"$PHP_BIN" -r '
 $d=json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($d) || ($d["ok"] ?? null) !== true || ($d["action"] ?? "") !== "api_lifecycle_evidence_v4_collected") exit(1);
 foreach (["repository_commit", "database_identity_fingerprint", "manifest_fingerprint"] as $k) {
@@ -161,7 +174,11 @@ foreach (["repository_commit", "database_identity_fingerprint", "manifest_finger
     if (!is_string($v)) exit(1);
     echo $v, "\n";
 }
-' "$COLLECTOR_STATUS_FILE") || fail 'lifecycle evidence result could not be parsed'
+' "$COLLECTOR_STATUS_FILE" > "$COLLECTOR_VALUES_FILE" || fail 'lifecycle evidence result could not be parsed'
+chmod 0600 "$COLLECTOR_VALUES_FILE"
+mapfile -t COLLECTOR_VALUES < "$COLLECTOR_VALUES_FILE" || fail 'lifecycle evidence values could not be loaded'
+rm -f -- "$COLLECTOR_VALUES_FILE"
+COLLECTOR_VALUES_FILE=''
 if [[ "${#COLLECTOR_VALUES[@]}" -ne 3 ]]; then
   fail 'lifecycle evidence result is incomplete'
 fi
