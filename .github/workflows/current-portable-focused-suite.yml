@@ -79,23 +79,35 @@ jobs:
             php -l "$file"
           done
 
-      - name: Verify full bounded mutating smoke stack
-        run: |
-          tests=(
-            bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
-            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
-            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeExactIdentityTest.php
-            bot/tests/RuntimePrimaryStagingMutatingSmokeRollbackGuardTest.php
-            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptTest.php
-            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifierTest.php
-            bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeCliContractTest.php
-            bot/tests/RuntimePrimaryStagingMutatingSmokePrepareCliContractTest.php
-            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptCliContractTest.php
-            bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptShellContractTest.php
-          )
-          for test_file in "${tests[@]}"; do
-            php "$test_file"
-          done
+      - name: Test mutating smoke approval
+        run: php bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
+
+      - name: Test bounded rollback core
+        run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
+
+      - name: Test exact core identities
+        run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeExactIdentityTest.php
+
+      - name: Test independent rollback guard
+        run: php bot/tests/RuntimePrimaryStagingMutatingSmokeRollbackGuardTest.php
+
+      - name: Test read-only checkpoint receipt
+        run: php bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptTest.php
+
+      - name: Test mutating evidence verifier
+        run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifierTest.php
+
+      - name: Test mutating execution CLI contract
+        run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeCliContractTest.php
+
+      - name: Test mutating prepare CLI contract
+        run: php bot/tests/RuntimePrimaryStagingMutatingSmokePrepareCliContractTest.php
+
+      - name: Test receipt CLI contract
+        run: php bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptCliContractTest.php
+
+      - name: Test receipt shell contract
+        run: php bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptShellContractTest.php
 
       - name: Run current portable focused suite
         run: bash ops/ci/run-current-portable-focused-suite.sh
