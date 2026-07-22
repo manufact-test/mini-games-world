@@ -30,10 +30,26 @@ $assertTrue(
         && str_contains($factory, "default => ''"),
     'StorageFactory must bound lazy selection to API or webhook script names'
 );
+$selectorMethodStart = strpos(
+    $factory,
+    'private static function installGuardedEntrypointContextIfEligible()'
+);
+$stickyFailureGuard = $selectorMethodStart === false
+    ? false
+    : strpos($factory, 'if (isset($failures[$entrypoint]))', $selectorMethodStart);
+$contextReuseGuard = $selectorMethodStart === false
+    ? false
+    : strpos(
+        $factory,
+        'RuntimePrimaryEntrypointStorageContext::installed()',
+        $selectorMethodStart
+    );
 $assertTrue(
-    strpos($factory, 'if (isset($failures[$entrypoint]))')
-        < strpos($factory, 'RuntimePrimaryEntrypointStorageContext::installed()'),
-    'Sticky selector failures must be checked before request context reuse'
+    $selectorMethodStart !== false
+        && $stickyFailureGuard !== false
+        && $contextReuseGuard !== false
+        && $stickyFailureGuard < $contextReuseGuard,
+    'Sticky selector failures must be checked before request context reuse inside the guarded selector method'
 );
 $assertTrue(
     str_contains($selector, "if (\$environment !== 'staging')")
