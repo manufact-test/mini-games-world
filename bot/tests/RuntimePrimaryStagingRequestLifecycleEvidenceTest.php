@@ -39,7 +39,11 @@ $baseline = [
     'inventory_fingerprint' => str_repeat('c', 64),
 ];
 $current = RuntimePrimaryStagingRequestLifecycleEvidence::inspect($projectRoot, $baseline);
-$assertTrue(($current['ready'] ?? false) === true, 'Current API request lifecycle must satisfy evidence contract');
+$assertTrue(
+    ($current['ready'] ?? false) === true,
+    'Current API request lifecycle must satisfy evidence contract: '
+        . implode('; ', array_map('strval', (array)($current['blockers'] ?? [])))
+);
 $assertTrue(($current['blockers'] ?? ['unexpected']) === [], 'Current lifecycle evidence must have no blockers');
 $assertTrue(($current['contract_version'] ?? '') === RuntimePrimaryStagingRequestLifecycleEvidence::CONTRACT_VERSION, 'Lifecycle evidence must expose exact contract');
 $assertTrue(($current['baseline'] ?? []) === $baseline, 'Lifecycle evidence must preserve normalized baseline');
