@@ -267,6 +267,7 @@ final class RuntimePrimaryAccountsModuleProjector implements RuntimePrimaryModul
         $seenAccountRefs = [];
 
         foreach ($source as $legacyUserId => $item) {
+            $legacyUserId = (string)$legacyUserId;
             $ownership = $this->database->fetchAll(
                 'SELECT account_ref, mgw_id, legacy_user_id, ownership_status
                  FROM mgw_account_ownership WHERE legacy_user_id = :legacy_user_id',
@@ -325,7 +326,7 @@ final class RuntimePrimaryAccountsModuleProjector implements RuntimePrimaryModul
             );
         }
 
-        $sourceIds = array_keys($source);
+        $sourceIds = array_map('strval', array_keys($source));
         sort($sourceIds, SORT_STRING);
         $databaseIds = [];
         foreach ($this->database->fetchAll(
