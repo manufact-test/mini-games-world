@@ -53,11 +53,11 @@ foreach (['receipt', 'output'] as $pathField) {
         exit(2);
     }
 }
-if (preg_match('/^[a-f0-9]{40}$/', $values['expected_commit']) !== 1) {
+if (preg_match('/\A[a-f0-9]{40}\z/', $values['expected_commit']) !== 1) {
     fwrite(STDERR, "Bounded mutating smoke prepare requires exact lowercase commit.\n");
     exit(2);
 }
-if ($values['ttl'] === '' || preg_match('/^\d+$/', $values['ttl']) !== 1) {
+if ($values['ttl'] === '' || preg_match('/\A\d+\z/', $values['ttl']) !== 1) {
     fwrite(STDERR, "Bounded mutating smoke prepare TTL must be an integer.\n");
     exit(2);
 }
@@ -115,7 +115,7 @@ try {
         throw new RuntimeException('Bounded mutating smoke prepare requires enabled staging database config.');
     }
     $databaseIdentity = $databaseConfig->identityFingerprint();
-    if (preg_match('/^[a-f0-9]{64}$/', $databaseIdentity) !== 1) {
+    if (preg_match('/\A[a-f0-9]{64}\z/', $databaseIdentity) !== 1) {
         throw new RuntimeException('Bounded mutating smoke staging database identity is invalid.');
     }
     $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot);
