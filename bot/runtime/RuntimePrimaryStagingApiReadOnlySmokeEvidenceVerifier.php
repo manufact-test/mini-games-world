@@ -22,8 +22,16 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
         private int $expectedBootstrapHookCount = 5,
         private int $expectedBootstrapFilterCount = 2
     ) {
-        $this->reportFile = str_replace('\\', '/', $this->reportFile);
-        if (preg_match('/^[a-f0-9]{40}$/', $this->expectedCommit) !== 1) {
+        if ($this->reportFile === ''
+            || trim($this->reportFile) !== $this->reportFile
+            || str_contains($this->reportFile, '\\')
+            || !str_starts_with($this->reportFile, '/')
+            || str_ends_with($this->reportFile, '/')) {
+            throw new InvalidArgumentException(
+                'Read-only smoke report path must be an exact absolute Linux file path.'
+            );
+        }
+        if (preg_match('/\A[a-f0-9]{40}\z/', $this->expectedCommit) !== 1) {
             throw new InvalidArgumentException('Read-only smoke expected commit must be a full lowercase SHA-1.');
         }
         foreach ([
@@ -56,8 +64,8 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             throw new RuntimeException('Read-only smoke report size is invalid.');
         }
         $mode = fileperms($path);
-        if (!is_int($mode) || ($mode & 0o002) !== 0) {
-            throw new RuntimeException('Read-only smoke report must not be world-writable.');
+        if (!is_int($mode) || ($mode & 0777) !== 0600) {
+            throw new RuntimeException('Read-only smoke report must have exact mode 0600.');
         }
         $raw = file_get_contents($path);
         if (!is_string($raw) || strlen($raw) !== $size) {
@@ -90,18 +98,22 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
         ]);
 
         if (($report['ok'] ?? null) !== true
-            || ($report['report_type'] ?? '') !== self::REPORT_TYPE
-            || ($report['action'] ?? '') !== self::ACTION
-            || ($report['projection_contract_version'] ?? '') !== self::PROJECTION_VERSION
-            || ($report['evidence_manifest_version'] ?? '') !== self::EVIDENCE_VERSION) {
+            || ($report['report_type'] ?? null) !== self::REPORT_TYPE
+            || ($report['action'] ?? null) !== self::ACTION
+            || ($report['projection_contract_version'] ?? null) !== self::PROJECTION_VERSION
+            || ($report['evidence_manifest_version'] ?? null) !== self::EVIDENCE_VERSION) {
             throw new RuntimeException('Read-only smoke report identity or version contract is invalid.');
         }
 
-        $commit = (string)($report['repository_commit'] ?? '');
-        $databaseIdentity = (string)($report['database_identity_fingerprint'] ?? '');
-        $evidenceFingerprint = (string)($report['evidence_fingerprint'] ?? '');
-        if (preg_match('/^[a-f0-9]{40}$/', $commit) !== 1) {
+        $commit = $report['repository_commit'] ?? null;
+        $databaseIdentity = $report['database_identity_fingerprint'] ?? null;
+        $evidenceFingerprint = $report['evidence_fingerprint'] ?? null;
+        if (!is_string($commit)
+            || preg_match('/\A[a-f0-9]{40}\z/', $commit) !== 1) {
             throw new RuntimeException('Read-only smoke report repository commit format is invalid.');
+        }
+        if (!is_string($databaseIdentity) || !is_string($evidenceFingerprint)) {
+            throw new RuntimeException('Read-only smoke report identity fingerprint type is invalid.');
         }
         foreach ([
             'state_sha256',
@@ -110,7 +122,8 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             'evidence_fingerprint',
             'database_identity_fingerprint',
         ] as $field) {
-            if (!$this->validSha((string)($report[$field] ?? ''))) {
+            $value = $report[$field] ?? null;
+            if (!is_string($value) || !$this->validSha($value)) {
                 throw new RuntimeException('Read-only smoke report SHA-256 field is invalid: ' . $field . '.');
             }
         }
@@ -168,7 +181,11 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             }
         }
 
-        $generatedAt = $this->parseGeneratedAt((string)($report['generated_at_utc'] ?? ''));
+        $generatedAtValue = $report['generated_at_utc'] ?? null;
+        if (!is_string($generatedAtValue)) {
+            throw new RuntimeException('Read-only smoke report timestamp type is invalid.');
+        }
+        $generatedAt = $this->parseGeneratedAt($generatedAtValue);
         $age = $now - $generatedAt;
         if ($age < -self::MAX_FUTURE_SKEW_SECONDS) {
             throw new RuntimeException('Read-only smoke report timestamp is unexpectedly in the future.');
@@ -186,9 +203,9 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             'database_identity_fingerprint' => $databaseIdentity,
             'evidence_fingerprint' => $evidenceFingerprint,
             'state_revision' => $revision,
-            'state_sha256' => (string)$report['state_sha256'],
+            'state_sha256' => $report['state_sha256'],
             'outbox_event_count' => $outboxCount,
-            'outbox_fingerprint' => (string)$report['outbox_fingerprint'],
+            'outbox_fingerprint' => $report['outbox_fingerprint'],
             'projection_contract_version' => self::PROJECTION_VERSION,
             'evidence_manifest_version' => self::EVIDENCE_VERSION,
             'worker_tick_count' => 0,
@@ -210,28 +227,24 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
 
     private function canonicalReportPath(): string
     {
-        if ($this->reportFile === ''
-            || !str_starts_with($this->reportFile, '/')
-            || is_link($this->reportFile)
-            || !is_file($this->reportFile)) {
+        if (is_link($this->reportFile) || !is_file($this->reportFile)) {
             throw new RuntimeException('Read-only smoke report must be an absolute real file.');
         }
         $real = realpath($this->reportFile);
         if (!is_string($real)) {
             throw new RuntimeException('Read-only smoke report canonical path is unavailable.');
         }
-        $real = str_replace('\\', '/', $real);
         if (!hash_equals($this->reportFile, $real)) {
             throw new RuntimeException('Read-only smoke report must use its canonical path.');
         }
-        if (preg_match('~(?:^|/)public_html(?:/|$)~', $real) === 1) {
+        if (preg_match('~(?:\A|/)public_html(?:/|\z)~', $real) === 1) {
             throw new RuntimeException('Read-only smoke report must not be accepted from public_html.');
         }
         $directory = dirname($real);
         clearstatcache(true, $directory);
         $directoryMode = fileperms($directory);
-        if (!is_int($directoryMode) || ($directoryMode & 0o002) !== 0) {
-            throw new RuntimeException('Read-only smoke report directory must not be world-writable.');
+        if (!is_int($directoryMode) || ($directoryMode & 0022) !== 0) {
+            throw new RuntimeException('Read-only smoke report directory must not be group/world writable.');
         }
         return $real;
     }
@@ -246,7 +259,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
 
     private function parseGeneratedAt(string $value): int
     {
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $value) !== 1) {
+        if (preg_match('/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00\z/', $value) !== 1) {
             throw new RuntimeException('Read-only smoke report timestamp must use exact UTC +00:00 format.');
         }
         $date = DateTimeImmutable::createFromFormat(
@@ -254,7 +267,11 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
             $value,
             new DateTimeZone('UTC')
         );
-        if (!$date instanceof DateTimeImmutable || $date->format(DATE_ATOM) !== $value) {
+        $errors = DateTimeImmutable::getLastErrors();
+        if (!$date instanceof DateTimeImmutable
+            || (is_array($errors)
+                && (($errors['warning_count'] ?? 0) !== 0 || ($errors['error_count'] ?? 0) !== 0))
+            || $date->format(DATE_ATOM) !== $value) {
             throw new RuntimeException('Read-only smoke report timestamp is invalid.');
         }
         return $date->getTimestamp();
@@ -262,7 +279,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier
 
     private function validSha(string $value): bool
     {
-        return preg_match('/^[a-f0-9]{64}$/', $value) === 1;
+        return preg_match('/\A[a-f0-9]{64}\z/', $value) === 1;
     }
 
     private function assertExactKeys(array $report, array $expected): void
