@@ -147,7 +147,7 @@ $assertTrue(($verified['ok'] ?? false) === true, 'Unchanged baseline must verify
 $assertTrue(($verified['committed_state_write_count'] ?? -1) === 0, 'Verified baseline must prove zero committed writes');
 
 $store->state['system']['sequence'] = 2;
-$assertThrows(static fn() => $guard->assertRestored($baseline), 'restoration failed: state_sha256');
+$assertThrows(static fn() => $guard->assertRestored($baseline), 'current event fingerprint mismatch');
 $store->state = $state;
 $store->outbox[0]['attempt_count'] = 2;
 $assertThrows(static fn() => $guard->assertRestored($baseline), 'restoration failed: outbox_fingerprint');
