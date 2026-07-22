@@ -22,7 +22,11 @@ try {
     require $projectRoot . '/bot/core/bootstrap.php';
 
     $contracts = [
-        'staging_rehearsal_backend_interface' => '/bot/runtime/RuntimePrimaryStagingRehearsalBackendInterface.php',
+        'projection_outbox_schema_installer' => '/bot/runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php',
+        'projection_outbox_writer' => '/bot/runtime/RuntimePrimaryProjectionOutboxWriter.php',
+        'projection_bootstrap' => '/bot/runtime/RuntimePrimaryProjectionBootstrap.php',
+        'projection_worker' => '/bot/runtime/RuntimePrimaryProjectionWorker.php',
+        'rehearsal_backend_interface' => '/bot/runtime/RuntimePrimaryRehearsalBackendInterface.php',
         'staging_rehearsal_backend' => '/bot/runtime/RuntimePrimaryStagingRehearsalBackend.php',
         'staging_rehearsal_operation' => '/bot/runtime/StagingPrimaryRehearsalOperation.php',
         'entrypoint_evidence' => '/bot/runtime/RuntimePrimaryEntrypointEvidence.php',
@@ -36,7 +40,6 @@ try {
         'staging_evidence_v3_gate' => '/bot/runtime/RuntimePrimaryStagingEvidenceV3Gate.php',
         'projection_worker_interface' => '/bot/runtime/RuntimePrimaryProjectionWorkerInterface.php',
         'projection_auditor_interface' => '/bot/runtime/RuntimePrimaryProjectionAuditorInterface.php',
-        'projection_bootstrap' => '/bot/runtime/RuntimePrimaryProjectionBootstrap.php',
         'projection_worker_adapter' => '/bot/runtime/RuntimePrimaryProjectionWorkerAdapter.php',
         'projection_auditor_adapter' => '/bot/runtime/RuntimePrimaryProjectionAuditorAdapter.php',
         'staging_request_session_config' => '/bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php',
