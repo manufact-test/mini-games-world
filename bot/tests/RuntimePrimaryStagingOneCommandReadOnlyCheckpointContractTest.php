@@ -39,12 +39,7 @@ $assertTrue(
         && str_contains($preflight, 'JSON rollback data directory must remain outside the deployed project.'),
     'Prerequisite check must prove staging, external private config, DB identity and external JSON rollback'
 );
-foreach ([
-    'staging_db_primary_evidence',
-    'staging_db_primary_activation',
-    'staging_db_primary_entrypoint_selector',
-    'staging_db_primary_request_session',
-] as $latch) {
+foreach (['staging_db_primary_evidence','staging_db_primary_activation','staging_db_primary_entrypoint_selector','staging_db_primary_request_session'] as $latch) {
     $assertTrue(
         str_contains($preflight, "'{$latch}'")
             && str_contains($preflight, 'must remain persistently disabled before the read-only checkpoint.'),
@@ -138,15 +133,15 @@ $assertTrue(
         && str_contains($launcher, 'staging-lifecycle-collector-*.json')
         && str_contains($launcher, 'staging_read_only_prerequisites_blocked_or_failed')
         && str_contains($launcher, 'api_lifecycle_evidence_v4_blocked_or_failed')
-        && str_contains($launcher, '(\$data["failure_stage"] ?? "") === "runtime_contract_loading"')
-        && str_contains($launcher, '(\$data["path_exposed"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["production_changed"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["sensitive_identifiers_exposed"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["session_enabled_by_evidence"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["finalizer_registered_by_evidence"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["application_entrypoints_changed"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["cron_changed"] ?? null) !== false')
-        && str_contains($launcher, 'strlen(\$message) > 500')
+        && str_contains($launcher, '($data["failure_stage"] ?? "") === "runtime_contract_loading"')
+        && str_contains($launcher, '($data["path_exposed"] ?? null) !== false')
+        && str_contains($launcher, '($data["production_changed"] ?? null) !== false')
+        && str_contains($launcher, '($data["sensitive_identifiers_exposed"] ?? null) !== false')
+        && str_contains($launcher, '($data["session_enabled_by_evidence"] ?? null) !== false')
+        && str_contains($launcher, '($data["finalizer_registered_by_evidence"] ?? null) !== false')
+        && str_contains($launcher, '($data["application_entrypoints_changed"] ?? null) !== false')
+        && str_contains($launcher, '($data["cron_changed"] ?? null) !== false')
+        && str_contains($launcher, 'strlen($message) > 500')
         && str_contains($launcher, 'echo "DETAIL="')
         && !str_contains($launcher, 'cat "$LATEST_REPORT"'),
     'Short launcher may print only bounded sanitized blocker detail and invoke exact loading diagnostics'
@@ -176,7 +171,7 @@ $assertTrue(
     str_contains($contractDiagnosticShell, 'PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400')
         && str_contains($contractDiagnosticShell, 'MGW_CONFIG_FILE="$BASE_CONFIG"')
         && str_contains($contractDiagnosticShell, 'chmod 0600 "$REPORT_FILE"')
-        && str_contains($contractDiagnosticShell, '(\$data["database_contacted"] ?? null) !== false')
+        && str_contains($contractDiagnosticShell, '($data["database_contacted"] ?? null) !== false')
         && str_contains($contractDiagnosticShell, 'RUNTIME_CONTRACT_LOADING=BLOCKED')
         && str_contains($contractDiagnosticShell, 'CONTRACT=')
         && str_contains($contractDiagnosticShell, 'DETAIL=')
