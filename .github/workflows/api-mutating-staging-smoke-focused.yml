@@ -43,6 +43,7 @@ jobs:
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
+          php -l bot/tests/RuntimePrimaryStagingMutatingApprovalDependencyTest.php
           php -l bot/tests/RuntimePrimaryStagingMutatingCheckpointShellContractTest.php
           bash -n ops/runtime/run-staging-bounded-mutating-checkpoint.sh
           bash -n ops/runtime/run-staging-api-mutating-checkpoint.sh
@@ -54,6 +55,9 @@ jobs:
 
       - name: Test API mutating evidence verifier
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifierTest.php
+
+      - name: Test mutating approval dependency loading
+        run: php bot/tests/RuntimePrimaryStagingMutatingApprovalDependencyTest.php
 
       - name: Test API mutating CLI contracts
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
