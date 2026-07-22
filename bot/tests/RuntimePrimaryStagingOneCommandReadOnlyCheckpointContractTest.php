@@ -24,7 +24,7 @@ $assertTrue(
     'Prerequisite check must be CLI-only, exact PHP 8.3 and exact-commit bound'
 );
 $assertTrue(
-    str_contains($preflight, "($config['environment'] ?? null) !== 'staging'")
+    str_contains($preflight, '(\$config[\'environment\'] ?? null) !== \'staging\'')
         && str_contains($preflight, 'RuntimePrimaryPrivateConfigGuard::assertExternal')
         && str_contains($preflight, 'DatabaseConfig::fromApplicationConfig($config)')
         && str_contains($preflight, "preg_match('/\\A[a-f0-9]{64}\\z/'")
@@ -47,7 +47,7 @@ $assertTrue(
     str_contains($preflight, "'webhook_allowed' => false")
         && str_contains($preflight, "'production_changed' => false")
         && str_contains($preflight, "'sensitive_identifiers_exposed' => false")
-        && str_contains($preflight, "[private-path]"),
+        && str_contains($preflight, '[private-path]'),
     'Prerequisite output must remain path-safe and explicitly non-production'
 );
 
@@ -63,12 +63,12 @@ $assertTrue(
     str_starts_with($runner, "#!/usr/bin/env bash\nset -eEuo pipefail\numask 077\n")
         && str_contains($runner, 'git -C "$PROJECT_ROOT" rev-parse --verify HEAD')
         && str_contains($runner, 'git -C "$PROJECT_ROOT" status --porcelain=v1 --untracked-files=all')
-        && str_contains($runner, "PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400")
+        && str_contains($runner, 'PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400')
         && str_contains($runner, 'PHP 8.3 CLI binary was not found'),
     'One-command runner must require a clean exact checkout and discover only PHP 8.3'
 );
 $assertTrue(
-    str_contains($runner, "trap cleanup_overlay EXIT HUP INT TERM")
+    str_contains($runner, 'trap cleanup_overlay EXIT HUP INT TERM')
         && str_contains($runner, "require __DIR__ . '/config.php'")
         && str_contains($runner, "'staging_db_primary_evidence'")
         && str_contains($runner, "'enabled' => true")
@@ -86,13 +86,13 @@ $assertTrue(
     'One-command runner must bind collector, smoke and verifier to bounded exact identities'
 );
 $assertTrue(
-    str_contains($runner, "MGW_STAGING_READ_ONLY_CHECKPOINT=PASSED")
-        && str_contains($runner, "PERSISTENT_CONFIG_CHANGED=false")
-        && str_contains($runner, "WORKER_TICKS=0")
-        && str_contains($runner, "WEBHOOK_ALLOWED=false")
-        && str_contains($runner, "CRON_CHANGED=false")
-        && str_contains($runner, "PRODUCTION_CHANGED=false")
-        && str_contains($runner, "MUTATING_SMOKE_AUTHORIZED=false"),
+    str_contains($runner, 'MGW_STAGING_READ_ONLY_CHECKPOINT=PASSED')
+        && str_contains($runner, 'PERSISTENT_CONFIG_CHANGED=false')
+        && str_contains($runner, 'WORKER_TICKS=0')
+        && str_contains($runner, 'WEBHOOK_ALLOWED=false')
+        && str_contains($runner, 'CRON_CHANGED=false')
+        && str_contains($runner, 'PRODUCTION_CHANGED=false')
+        && str_contains($runner, 'MUTATING_SMOKE_AUTHORIZED=false'),
     'One-command runner must publish the exact safe stop-state after verification'
 );
 $assertTrue(
