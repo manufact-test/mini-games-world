@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - agent/mvp-14-8-6v-ci-base-2
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,7 +25,7 @@ jobs:
       - name: Checkout exact candidate revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           clean: true
           show-progress: false
@@ -133,7 +134,7 @@ jobs:
           chmod 0600 "$MGW_CI_VERIFICATION_FILE"
           cat "$MGW_CI_VERIFICATION_FILE"
 
-      - name: Upload focused-suite evidence
+      - name: Upload current focused-suite evidence
         if: success()
         uses: actions/upload-artifact@v4
         with:
