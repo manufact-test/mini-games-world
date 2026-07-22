@@ -82,12 +82,14 @@ final class RuntimePrimaryStagingActivationConfig
         }
 
         if ($privateDir === ''
+            || trim($privateDir) !== $privateDir
             || str_contains($privateDir, '\\')
             || !str_starts_with($privateDir, '/')
             || ($privateDir !== '/' && str_ends_with($privateDir, '/'))) {
             throw new RuntimeException('Staging activation private directory must be an exact absolute Linux path.');
         }
         if ($this->evidenceFile === ''
+            || trim($this->evidenceFile) !== $this->evidenceFile
             || str_contains($this->evidenceFile, '\\')
             || !str_starts_with($this->evidenceFile, '/')
             || str_ends_with($this->evidenceFile, '/')) {
