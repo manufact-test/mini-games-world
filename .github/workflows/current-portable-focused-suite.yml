@@ -32,6 +32,7 @@ jobs:
         run: |
           printf 'MGW_CI_OUTPUT_DIR=%s\n' "$RUNNER_TEMP/mgw-current-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
           printf 'MGW_CI_VERIFICATION_FILE=%s\n' "$RUNNER_TEMP/mgw-current-ci-verification-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json" >> "$GITHUB_ENV"
+          printf 'MGW_RUNTIME_LOADING_REPORT=%s\n' "$RUNNER_TEMP/mgw-runtime-loading-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json" >> "$GITHUB_ENV"
 
       - name: Bind exact checked-out commit
         id: bind
@@ -51,8 +52,30 @@ jobs:
           php -r 'foreach (["json", "pdo", "pdo_sqlite", "openssl", "mbstring"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "missing PHP extension: {$extension}\n"); exit(1); } }'
           timeout --version | head -n 1
 
-      - name: Execute exact runtime require graph
-        run: php ops/runtime/check-staging-runtime-contract-loading.php
+      - name: Capture exact runtime require graph
+        id: runtime_loading
+        continue-on-error: true
+        run: |
+          umask 077
+          php ops/runtime/check-staging-runtime-contract-loading.php > "$MGW_RUNTIME_LOADING_REPORT"
+          status=$?
+          chmod 0600 "$MGW_RUNTIME_LOADING_REPORT"
+          printf 'exit_code=%s\n' "$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Upload safe runtime loading diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-runtime-loading-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.MGW_RUNTIME_LOADING_REPORT }}
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Enforce exact runtime require graph
+        run: |
+          test "${{ steps.runtime_loading.outputs.exit_code }}" = '0'
+          php -r '$d=json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR); exit(is_array($d) && ($d["ok"] ?? null) === true && ($d["action"] ?? "") === "staging_runtime_contract_loading_verified" ? 0 : 1);' "$MGW_RUNTIME_LOADING_REPORT"
 
       - name: Verify lifecycle collector wiring contract
         run: php bot/tests/RuntimePrimaryStagingLifecycleEvidenceCollectorCliContractTest.php
