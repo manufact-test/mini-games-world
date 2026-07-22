@@ -50,11 +50,18 @@ if ($maxEvents < 1 || $maxEvents > 100) {
     exit(2);
 }
 
-set_error_handler(static function (int $severity): never {
+$failureStage = 'initialization';
+set_error_handler(static function (int $severity) use (&$failureStage): never {
     if (!(error_reporting() & $severity)) {
-        throw new ErrorException('Suppressed lifecycle evidence collector warning.', 0, $severity);
+        throw new ErrorException(
+            'Suppressed lifecycle evidence collector warning at stage ' . $failureStage . '.',
+            0,
+            $severity
+        );
     }
-    throw new RuntimeException('Lifecycle evidence filesystem operation failed.');
+    throw new RuntimeException(
+        'Lifecycle evidence filesystem operation failed at stage ' . $failureStage . '.'
+    );
 });
 
 $lockHandle = null;
@@ -63,11 +70,16 @@ $exitCode = 1;
 $response = [];
 try {
     $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
+
+    $failureStage = 'output_path_validation';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceWriter.php';
     $writer = new RuntimePrimaryStagingEvidenceWriter($projectRoot);
     $writer->validateOutputPath($outputPath);
 
+    $failureStage = 'application_bootstrap';
     require $projectRoot . '/bot/core/bootstrap.php';
+
+    $failureStage = 'runtime_contract_loading';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackendInterface.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingRehearsalBackend.php';
     require_once $projectRoot . '/bot/runtime/StagingPrimaryRehearsalOperation.php';
@@ -104,6 +116,7 @@ try {
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingSelectorEvidenceCollector.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingLifecycleEvidenceCollector.php';
 
+    $failureStage = 'staging_configuration_validation';
     $environment = strtolower(trim((string)($config['environment'] ?? '')));
     if ($environment !== 'staging') {
         throw new RuntimeException('DB-primary lifecycle evidence collection is staging-only.');
@@ -118,6 +131,8 @@ try {
     if (!$databaseConfig->enabled()) {
         throw new RuntimeException('Lifecycle evidence collection requires an enabled staging database.');
     }
+
+    $failureStage = 'approval_validation';
     $currentCommit = RuntimePrimaryRepositoryCommitResolver::resolve($projectRoot);
     RuntimePrimaryStagingEvidenceApproval::fromConfig($config)->assertApproved(
         $databaseConfig,
@@ -125,6 +140,7 @@ try {
         time()
     );
 
+    $failureStage = 'lock_prepare';
     $lockPath = $privateDir . '/runtime-primary-rehearsal.lock';
     if (is_link($lockPath)) {
         throw new RuntimeException('Staging evidence rehearsal lock must not be a symbolic link.');
@@ -147,13 +163,17 @@ try {
         throw new RuntimeException('Another DB-primary rehearsal or evidence collection is already running.');
     }
 
+    $failureStage = 'database_connect';
     $database = PdoConnectionFactory::create($databaseConfig);
     $leaseDatabase = PdoConnectionFactory::create($databaseConfig);
+
+    $failureStage = 'rollback_storage_create';
     $jsonStorage = StorageFactory::createJson((string)($config['data_dir'] ?? ''));
     if ($jsonStorage->driver() !== 'json') {
         throw new RuntimeException('Lifecycle evidence collection requires the JSON rollback driver.');
     }
 
+    $failureStage = 'evidence_source_setup';
     $backend = new RuntimePrimaryStagingRehearsalBackend(
         $projectRoot,
         $config,
@@ -175,6 +195,8 @@ try {
         $concurrency,
         $maxEvents
     );
+
+    $failureStage = 'evidence_collection';
     $collected = (new RuntimePrimaryStagingLifecycleEvidenceCollector(
         $projectRoot,
         $source
@@ -186,8 +208,11 @@ try {
         throw new RuntimeException('Lifecycle evidence collector returned an empty manifest.');
     }
 
+    $failureStage = 'evidence_write';
     $written = $writer->write($outputPath, $manifest);
     $outputWritten = true;
+
+    $failureStage = 'evidence_readback';
     $storedRaw = file_get_contents($outputPath);
     if (!is_string($storedRaw)) {
         throw new RuntimeException('Written lifecycle evidence could not be read.');
@@ -201,6 +226,8 @@ try {
     if (!is_array($stored) || array_is_list($stored)) {
         throw new RuntimeException('Written lifecycle evidence is not a JSON object.');
     }
+
+    $failureStage = 'evidence_verification';
     $verification = (new RuntimePrimaryStagingEvidenceV4Gate(
         $projectRoot
     ))->verify($stored);
@@ -211,6 +238,7 @@ try {
         );
     }
 
+    $failureStage = 'completed';
     $response = [
         'ok' => true,
         'report_type' => 'mvp-14.8.6m-staging-lifecycle-evidence-collection',
@@ -279,6 +307,7 @@ try {
         'ok' => false,
         'report_type' => 'mvp-14.8.6m-staging-lifecycle-evidence-collection',
         'action' => 'api_lifecycle_evidence_v4_blocked_or_failed',
+        'failure_stage' => $failureStage,
         'error_class' => get_class($error),
         'error_message' => $message,
         'path_exposed' => false,
