@@ -91,6 +91,16 @@ final class ProjectionWorkerTestConnection implements DatabaseConnectionInterfac
         throw new RuntimeException('Unexpected worker test SQL fetch: ' . $sql);
     }
 
+    public function fetchValue(string $sql, array $params = []): mixed
+    {
+        $rows = $this->fetchAll($sql, $params);
+        if ($rows === []) return null;
+        $firstRow = $rows[0] ?? null;
+        if (!is_array($firstRow) || $firstRow === []) return null;
+        $value = reset($firstRow);
+        return $value === false ? null : $value;
+    }
+
     public function transaction(callable $callback): mixed
     {
         $before = $this->events;
