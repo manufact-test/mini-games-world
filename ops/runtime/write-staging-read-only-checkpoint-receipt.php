@@ -59,17 +59,17 @@ foreach (['report', 'output'] as $pathField) {
         exit(2);
     }
 }
-if (preg_match('/^[a-f0-9]{40}$/', $values['expected_commit']) !== 1) {
+if (preg_match('/\A[a-f0-9]{40}\z/', $values['expected_commit']) !== 1) {
     fwrite(STDERR, "Read-only checkpoint receipt expected commit must be lowercase SHA-1.\n");
     exit(2);
 }
 foreach (['expected_database_identity', 'expected_evidence_fingerprint'] as $shaField) {
-    if (preg_match('/^[a-f0-9]{64}$/', $values[$shaField]) !== 1) {
+    if (preg_match('/\A[a-f0-9]{64}\z/', $values[$shaField]) !== 1) {
         fwrite(STDERR, "Read-only checkpoint receipt expected fingerprint is invalid: {$shaField}.\n");
         exit(2);
     }
 }
-if ($values['max_age'] === '' || preg_match('/^\d+$/', $values['max_age']) !== 1) {
+if ($values['max_age'] === '' || preg_match('/\A\d+\z/', $values['max_age']) !== 1) {
     fwrite(STDERR, "Read-only checkpoint receipt maximum age must be an integer.\n");
     exit(2);
 }
