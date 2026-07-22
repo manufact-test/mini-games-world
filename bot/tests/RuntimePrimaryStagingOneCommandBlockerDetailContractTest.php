@@ -3,8 +3,9 @@ declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__, 2);
 $launcher = file_get_contents($projectRoot . '/r');
-if (!is_string($launcher)) {
-    throw new RuntimeException('One-command launcher is unavailable.');
+$runner = file_get_contents($projectRoot . '/ops/runtime/run-staging-read-only-checkpoint.sh');
+if (!is_string($launcher) || !is_string($runner)) {
+    throw new RuntimeException('One-command blocker detail sources are unavailable.');
 }
 
 $assertions = 0;
@@ -66,6 +67,16 @@ $assertTrue(
         && !str_contains($launcher, 'print_r(')
         && !str_contains($launcher, 'var_dump('),
     'Launcher may print only one bounded sanitized error_message field'
+);
+
+$assertTrue(
+    str_contains($runner, 'smoke_exit=0')
+        && str_contains($runner, 'chmod 0600 "$REPORT_FILE"')
+        && str_contains($runner, '[[ "$smoke_exit" -eq 0 ]]')
+        && str_contains($runner, 'verification_exit=0')
+        && str_contains($runner, 'chmod 0600 "$VERIFICATION_FILE"')
+        && str_contains($runner, '[[ "$verification_exit" -eq 0 ]]'),
+    'Runner must secure smoke and verification reports before propagating their failures'
 );
 
 fwrite(
