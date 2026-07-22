@@ -110,6 +110,19 @@ $verify = static function (
         $filters
     ))->verify($now);
 };
+$verifyPath = static function (string $reportPath) use (
+    $commit,
+    $databaseIdentity,
+    $evidenceFingerprint,
+    $now
+): array {
+    return (new RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier(
+        $reportPath,
+        $commit,
+        $databaseIdentity,
+        $evidenceFingerprint
+    ))->verify($now);
+};
 
 try {
     $write($base);
@@ -119,7 +132,10 @@ try {
     $assertTrue(($result['outbox_event_count'] ?? 0) === 3, 'Verified report must preserve outbox count');
     $assertTrue(($result['worker_tick_count'] ?? -1) === 0, 'Verified report must prove zero worker ticks');
     $assertTrue(($result['report_age_seconds'] ?? -1) === 5, 'Verified report must expose exact age');
-    $assertTrue(preg_match('/^[a-f0-9]{64}$/', (string)($result['report_sha256'] ?? '')) === 1, 'Verified report must expose report SHA');
+    $assertTrue(
+        preg_match('/\A[a-f0-9]{64}\z/', (string)($result['report_sha256'] ?? '')) === 1,
+        'Verified report must expose report SHA'
+    );
 
     $assertThrows(static fn() => $verify(str_repeat('1', 40)), 'different repository commit');
     $assertThrows(static fn() => $verify('', str_repeat('2', 64)), 'different database identity');
@@ -128,11 +144,29 @@ try {
     $assertThrows(static fn() => $verify('', strtoupper($databaseIdentity)), 'must be sha-256');
     $assertThrows(static fn() => $verify('', '', strtoupper($evidenceFingerprint)), 'must be sha-256');
     $assertThrows(static fn() => $verify($commit . ' '), 'full lowercase sha-1');
+    $assertThrows(static fn() => $verify($commit . "\n"), 'full lowercase sha-1');
     $assertThrows(static fn() => $verify('', $databaseIdentity . "\n"), 'must be sha-256');
     $assertThrows(static fn() => $verify('', '', $evidenceFingerprint . "\t"), 'must be sha-256');
 
+    foreach ([
+        ' ' . $path,
+        $path . ' ',
+        str_replace('/', '\\', $path),
+        $path . '/',
+    ] as $malformedPath) {
+        $assertThrows(
+            static fn() => $verifyPath($malformedPath),
+            'path must be an exact absolute linux file path'
+        );
+    }
+
     $changed = $base;
     $changed['repository_commit'] = $commit . ' ';
+    $write($changed);
+    $assertThrows(static fn() => $verify(), 'repository commit format is invalid');
+
+    $changed = $base;
+    $changed['repository_commit'] = $commit . "\n";
     $write($changed);
     $assertThrows(static fn() => $verify(), 'repository commit format is invalid');
 
@@ -219,13 +253,20 @@ try {
     $write($changed);
     $assertThrows(static fn() => $verify(), 'sha-256 field is invalid');
 
-    $write($base, 0666);
-    $assertThrows(static fn() => $verify(), 'must not be world-writable');
+    $write($base, 0640);
+    $assertThrows(static fn() => $verify(), 'exact mode 0600');
 
-    chmod($temp, 0777);
+    $write($base, 0604);
+    $assertThrows(static fn() => $verify(), 'exact mode 0600');
+
     $write($base);
+    chmod($temp, 0720);
     clearstatcache(true, $temp);
-    $assertThrows(static fn() => $verify(), 'directory must not be world-writable');
+    $assertThrows(static fn() => $verify(), 'directory must not be group/world writable');
+
+    chmod($temp, 0702);
+    clearstatcache(true, $temp);
+    $assertThrows(static fn() => $verify(), 'directory must not be group/world writable');
 } finally {
     @chmod($temp, 0700);
     $remove($temp);
