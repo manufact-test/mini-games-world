@@ -43,6 +43,11 @@ jobs:
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
+          php -l bot/tests/RuntimePrimaryStagingMutatingCheckpointShellContractTest.php
+          bash -n ops/runtime/run-staging-bounded-mutating-checkpoint.sh
+          bash -n ops/runtime/run-staging-api-mutating-checkpoint.sh
+          bash -n m
+          bash -n a
 
       - name: Test guarded private API input
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
@@ -58,6 +63,9 @@ jobs:
 
       - name: Test exact and partial identity cleanup
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
+
+      - name: Test one-command staging smoke contracts
+        run: php bot/tests/RuntimePrimaryStagingMutatingCheckpointShellContractTest.php
 
       - name: Re-run prior rollback-only contracts
         run: |
