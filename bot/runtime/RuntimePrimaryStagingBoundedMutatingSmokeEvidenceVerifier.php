@@ -217,8 +217,11 @@ final class RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifier
         if (preg_match('~(?:\A|/)public_html(?:/|\z)~', $real) === 1) {
             throw new RuntimeException('Bounded mutating smoke report must remain outside public_html.');
         }
+        $parent = dirname($real);
+        clearstatcache(true, $real);
+        clearstatcache(true, $parent);
         $mode = fileperms($real);
-        $parentMode = fileperms(dirname($real));
+        $parentMode = fileperms($parent);
         if (!is_int($mode) || ($mode & 0777) !== 0600
             || !is_int($parentMode) || ($parentMode & 0022) !== 0) {
             throw new RuntimeException('Bounded mutating smoke report permissions are unsafe.');
