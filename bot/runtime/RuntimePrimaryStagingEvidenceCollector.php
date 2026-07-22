@@ -8,6 +8,8 @@ final class RuntimePrimaryStagingEvidenceCollector
         'history', 'shop', 'payments', 'weekly_bonus',
     ];
 
+    private const PROJECTION_CONTRACT_VERSION = 'v1-normalized-all-modules';
+
     public function __construct(
         private string $projectRoot,
         private RuntimePrimaryStagingEvidenceSourceInterface $source
@@ -27,7 +29,8 @@ final class RuntimePrimaryStagingEvidenceCollector
         $afterSecond = $this->source->captureJsonEvidence();
 
         $this->assertJsonEvidenceStable($before, $afterFirst, $afterSecond);
-        $firstModules = $this->projectedModules($first);
+        $firstProjection = $this->projectionEvidence($first);
+        $secondProjection = $this->projectionEvidence($second);
         $database = $this->source->databaseEvidence();
         $databaseIdentity = strtolower(trim((string)($database['identity_fingerprint'] ?? '')));
         if (preg_match('/^[a-f0-9]{64}$/', $databaseIdentity) !== 1) {
@@ -64,8 +67,8 @@ final class RuntimePrimaryStagingEvidenceCollector
                 'after_second_sha256' => (string)($afterSecond['sha256'] ?? ''),
                 'inventory_fingerprint' => (string)($before['inventory_fingerprint'] ?? ''),
             ],
-            'first_rehearsal' => $this->rehearsalEvidence($first, $firstModules),
-            'repeated_rehearsal' => $this->rehearsalEvidence($second, $firstModules),
+            'first_rehearsal' => $this->rehearsalEvidence($first, $firstProjection),
+            'repeated_rehearsal' => $this->rehearsalEvidence($second, $secondProjection),
             'concurrency' => $this->source->concurrencyEvidence(),
             'entrypoint_evidence' => $this->source->entrypointEvidence(),
         ];
@@ -87,7 +90,7 @@ final class RuntimePrimaryStagingEvidenceCollector
             'database_identity_fingerprint' => $databaseIdentity,
             'state_revision' => (int)($manifest['first_rehearsal']['target_revision'] ?? 0),
             'state_sha256' => (string)($manifest['first_rehearsal']['target_sha256'] ?? ''),
-            'projected_modules' => self::MODULES,
+            'projected_modules' => array_values((array)$firstProjection['projected_modules']),
             'application_entrypoints_changed' => false,
             'cron_changed' => false,
             'production_changed' => false,
@@ -134,27 +137,81 @@ final class RuntimePrimaryStagingEvidenceCollector
         ];
     }
 
-    private function projectedModules(array $report): array
+    private function projectionEvidence(array $report): array
     {
-        $modules = [];
-        foreach ((array)($report['worker_ticks'] ?? []) as $tick) {
-            if (!is_array($tick) || ($tick['action'] ?? '') !== 'projection_completed') continue;
-            foreach ((array)($tick['projected_modules'] ?? []) as $module) {
-                $module = strtolower(trim((string)$module));
-                if ($module !== '') $modules[$module] = true;
+        $snapshot = is_array($report['snapshot'] ?? null) ? $report['snapshot'] : [];
+        $event = is_array($report['target_event'] ?? null) ? $report['target_event'] : [];
+        $targetRevision = (int)($snapshot['state_revision'] ?? 0);
+        $targetSha = strtolower(trim((string)($snapshot['state_sha256'] ?? '')));
+        $eventRevision = (int)($event['state_revision'] ?? 0);
+        $eventSha = strtolower(trim((string)($event['state_sha256'] ?? '')));
+        $projectionVersion = (string)($event['projection_version'] ?? '');
+        $eventAttempted = (int)($event['attempt_count'] ?? 0) >= 1;
+        $eventLeaseFree = (string)($event['lease_expires_at_utc'] ?? '') === '';
+        $eventErrorFree = (string)($event['last_error'] ?? '') === '';
+
+        if ($targetRevision < 1
+            || preg_match('/^[a-f0-9]{64}$/', $targetSha) !== 1
+            || $eventRevision !== $targetRevision
+            || !hash_equals($targetSha, $eventSha)
+            || (string)($event['status'] ?? '') !== 'completed'
+            || $projectionVersion !== self::PROJECTION_CONTRACT_VERSION
+            || !$eventAttempted
+            || !$eventLeaseFree
+            || !$eventErrorFree) {
+            throw new RuntimeException(
+                'Staging rehearsal target event did not prove the current completed all-module projection contract.'
+            );
+        }
+
+        $workerTicks = (array)($report['worker_ticks'] ?? []);
+        $workerTickCount = (int)($report['worker_tick_count'] ?? -1);
+        if ($workerTickCount !== count($workerTicks)) {
+            throw new RuntimeException('Staging rehearsal worker tick count does not match its tick reports.');
+        }
+
+        $targetTickProved = false;
+        foreach ($workerTicks as $tick) {
+            if (!is_array($tick)
+                || ($tick['action'] ?? '') !== 'projection_completed'
+                || ($tick['parity_ok'] ?? false) !== true
+                || (int)($tick['state_revision'] ?? 0) !== $targetRevision
+                || !hash_equals($targetSha, strtolower(trim((string)($tick['state_sha256'] ?? ''))))) {
+                continue;
             }
+            $modules = array_values(array_unique(array_map(
+                static fn(mixed $module): string => strtolower(trim((string)$module)),
+                (array)($tick['projected_modules'] ?? [])
+            )));
+            sort($modules, SORT_STRING);
+            $required = self::MODULES;
+            sort($required, SORT_STRING);
+            if ($modules !== $required) {
+                throw new RuntimeException('First staging rehearsal did not prove all nine projected modules.');
+            }
+            $targetTickProved = true;
         }
-        $modules = array_keys($modules);
-        sort($modules, SORT_STRING);
-        $required = self::MODULES;
-        sort($required, SORT_STRING);
-        if ($modules !== $required) {
-            throw new RuntimeException('First staging rehearsal did not prove all nine projected modules.');
+
+        $snapshotAction = (string)($snapshot['action'] ?? '');
+        if ($targetTickProved && $workerTickCount >= 1) {
+            $proof = 'worker_completed_current_run';
+        } elseif ($workerTickCount === 0 && $snapshotAction === 'snapshot_unchanged') {
+            $proof = 'completed_current_contract_reused';
+        } else {
+            throw new RuntimeException('Staging rehearsal did not provide an idempotent all-module projection proof.');
         }
-        return self::MODULES;
+
+        return [
+            'projected_modules' => self::MODULES,
+            'projection_proof' => $proof,
+            'projection_contract_version' => $projectionVersion,
+            'target_event_attempted' => $eventAttempted,
+            'target_event_lease_free' => $eventLeaseFree,
+            'target_event_error_free' => $eventErrorFree,
+        ];
     }
 
-    private function rehearsalEvidence(array $report, array $modules): array
+    private function rehearsalEvidence(array $report, array $projection): array
     {
         foreach ([
             'application_entrypoints_changed',
@@ -180,7 +237,12 @@ final class RuntimePrimaryStagingEvidenceCollector
             'status_healthy' => ($report['status_healthy'] ?? false) === true,
             'parity_completed' => ($report['parity_completed'] ?? false) === true,
             'worker_tick_count' => max(0, (int)($report['worker_tick_count'] ?? 0)),
-            'projected_modules' => $modules,
+            'projected_modules' => array_values((array)($projection['projected_modules'] ?? [])),
+            'projection_proof' => (string)($projection['projection_proof'] ?? ''),
+            'projection_contract_version' => (string)($projection['projection_contract_version'] ?? ''),
+            'target_event_attempted' => ($projection['target_event_attempted'] ?? false) === true,
+            'target_event_lease_free' => ($projection['target_event_lease_free'] ?? false) === true,
+            'target_event_error_free' => ($projection['target_event_error_free'] ?? false) === true,
             'application_entrypoints_changed' => false,
             'cron_changed' => false,
             'production_changed' => false,
