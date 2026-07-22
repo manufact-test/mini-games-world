@@ -12,7 +12,8 @@ PRIVATE_DIR="$(cd -- "$PROJECT_ROOT/.." && pwd -P)/_private_mgw"
 LATEST_REPORT=''
 if [[ -d "$PRIVATE_DIR" && ! -L "$PRIVATE_DIR" ]]; then
   LATEST_REPORT="$(
-    find "$PRIVATE_DIR" -maxdepth 1 -type f -name 'staging-read-only-preflight-*.json' \
+    find "$PRIVATE_DIR" -maxdepth 1 -type f \
+      \( -name 'staging-read-only-preflight-*.json' -o -name 'staging-lifecycle-collector-*.json' \) \
       -printf '%T@ %p\n' 2>/dev/null \
       | sort -nr \
       | head -n 1 \
@@ -27,12 +28,24 @@ if [[ -n "$LATEST_REPORT" && -f "$LATEST_REPORT" && ! -L "$LATEST_REPORT" ]]; th
       $data = is_string($raw) ? json_decode($raw, true, 512, JSON_THROW_ON_ERROR) : null;
       if (!is_array($data)
           || ($data["ok"] ?? null) !== false
-          || ($data["action"] ?? "") !== "staging_read_only_prerequisites_blocked_or_failed"
           || ($data["path_exposed"] ?? null) !== false
           || ($data["production_changed"] ?? null) !== false
           || ($data["sensitive_identifiers_exposed"] ?? null) !== false) {
           exit(0);
       }
+
+      $action = $data["action"] ?? null;
+      if ($action === "api_lifecycle_evidence_v4_blocked_or_failed") {
+          if (($data["session_enabled_by_evidence"] ?? null) !== false
+              || ($data["finalizer_registered_by_evidence"] ?? null) !== false
+              || ($data["application_entrypoints_changed"] ?? null) !== false
+              || ($data["cron_changed"] ?? null) !== false) {
+              exit(0);
+          }
+      } elseif ($action !== "staging_read_only_prerequisites_blocked_or_failed") {
+          exit(0);
+      }
+
       $message = $data["error_message"] ?? null;
       if (!is_string($message) || $message === "" || strlen($message) > 500) exit(0);
       echo "DETAIL=", $message, PHP_EOL;
