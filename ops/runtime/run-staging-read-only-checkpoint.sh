@@ -66,6 +66,8 @@ COLLECTOR_VALUES_FILE="$PRIVATE_DIR/staging-lifecycle-collector-values-$RUN_ID.t
 EVIDENCE_FILE="$PRIVATE_DIR/staging-lifecycle-evidence-v4-$RUN_ID.json"
 REPORT_FILE="$PRIVATE_DIR/staging-api-read-only-smoke-$RUN_ID.json"
 VERIFICATION_FILE="$PRIVATE_DIR/staging-api-read-only-smoke-verification-$RUN_ID.json"
+RECEIPT_FILE="$PRIVATE_DIR/staging-read-only-checkpoint-receipt-$RUN_ID.json"
+RECEIPT_STATUS_FILE="$PRIVATE_DIR/staging-read-only-checkpoint-receipt-status-$RUN_ID.json"
 
 for path in \
   "$PREFLIGHT_FILE" \
@@ -75,7 +77,9 @@ for path in \
   "$COLLECTOR_VALUES_FILE" \
   "$EVIDENCE_FILE" \
   "$REPORT_FILE" \
-  "$VERIFICATION_FILE"; do
+  "$VERIFICATION_FILE" \
+  "$RECEIPT_FILE" \
+  "$RECEIPT_STATUS_FILE"; do
   [[ ! -e "$path" && ! -L "$path" ]] || fail 'fresh private output path already exists'
 done
 
@@ -207,7 +211,37 @@ $d=json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($d) || ($d["ok"] ?? null) !== true || ($d["action"] ?? "") !== "staging_api_read_only_smoke_evidence_verified") exit(1);
 ' "$VERIFICATION_FILE" || fail 'read-only smoke verification result is invalid'
 
-rm -f -- "$PREFLIGHT_FILE" "$COLLECTOR_STATUS_FILE"
+receipt_exit=0
+"$PHP_BIN" "$PROJECT_ROOT/ops/runtime/write-staging-read-only-checkpoint-receipt.php" \
+  --report="$REPORT_FILE" \
+  --output="$RECEIPT_FILE" \
+  --expected-commit="$CURRENT_COMMIT" \
+  --expected-database-identity="$DATABASE_IDENTITY" \
+  --expected-evidence-fingerprint="$EVIDENCE_FINGERPRINT" \
+  --max-age-seconds=900 \
+  > "$RECEIPT_STATUS_FILE" || receipt_exit=$?
+if [[ -f "$RECEIPT_STATUS_FILE" && ! -L "$RECEIPT_STATUS_FILE" ]]; then
+  chmod 0600 "$RECEIPT_STATUS_FILE" || fail 'read-only receipt status permissions could not be secured'
+fi
+[[ "$receipt_exit" -eq 0 ]] || fail 'strict read-only checkpoint receipt creation failed'
+
+"$PHP_BIN" -r '
+$d=json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
+if (!is_array($d)
+    || ($d["ok"] ?? null) !== true
+    || ($d["action"] ?? "") !== "staging_read_only_checkpoint_receipt_written"
+    || ($d["repository_commit"] ?? "") !== $argv[2]
+    || ($d["database_identity_fingerprint"] ?? "") !== $argv[3]
+    || ($d["evidence_fingerprint"] ?? "") !== $argv[4]
+    || ($d["mutating_smoke_authorized"] ?? null) !== false
+    || ($d["persistent_config_changed"] ?? null) !== false
+    || ($d["webhook_allowed"] ?? null) !== false
+    || ($d["cron_changed"] ?? null) !== false
+    || ($d["production_changed"] ?? null) !== false) exit(1);
+' "$RECEIPT_STATUS_FILE" "$CURRENT_COMMIT" "$DATABASE_IDENTITY" "$EVIDENCE_FINGERPRINT" \
+  || fail 'read-only checkpoint receipt result is invalid'
+
+rm -f -- "$PREFLIGHT_FILE" "$COLLECTOR_STATUS_FILE" "$RECEIPT_STATUS_FILE"
 
 printf 'MGW_STAGING_READ_ONLY_CHECKPOINT=PASSED\n'
 printf 'PHP_VERSION=%s\n' "$PHP_VERSION_SAFE"
@@ -215,6 +249,7 @@ printf 'REPOSITORY_COMMIT=%s\n' "$CURRENT_COMMIT"
 printf 'LIFECYCLE_EVIDENCE_V4=VERIFIED\n'
 printf 'CLI_READ_ONLY_SMOKE=PASSED\n'
 printf 'REPORT_43_FIELDS=VERIFIED\n'
+printf 'READ_ONLY_RECEIPT=VERIFIED\n'
 printf 'PERSISTENT_CONFIG_CHANGED=false\n'
 printf 'WORKER_TICKS=0\n'
 printf 'WEBHOOK_ALLOWED=false\n'
