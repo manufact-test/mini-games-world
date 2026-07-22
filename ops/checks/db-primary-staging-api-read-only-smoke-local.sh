@@ -12,6 +12,7 @@ FILES=(
   bot/runtime/RuntimePrimaryStagingApiReadOnlySmoke.php
   bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay.php
   ops/runtime/run-staging-db-primary-api-read-only-smoke.php
+  ops/runtime/check-staging-read-only-prerequisites.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeConfigOverlayTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeContractTest.php
@@ -19,11 +20,19 @@ FILES=(
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBootstrapContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBridgeLazinessContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php
+  bot/tests/RuntimePrimaryStagingOneCommandReadOnlyCheckpointContractTest.php
 )
 
 for file in "${FILES[@]}"; do
   "$PHP_BIN" -l "$file" >/dev/null
   printf 'lint ok: %s\n' "$file"
+done
+
+for shell_file in \
+  r \
+  ops/runtime/run-staging-read-only-checkpoint.sh; do
+  bash -n "$shell_file"
+  printf 'shell lint ok: %s\n' "$shell_file"
 done
 
 TESTS=(
@@ -34,6 +43,7 @@ TESTS=(
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBootstrapContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeBridgeLazinessContractTest.php
   bot/tests/RuntimePrimaryStagingApiReadOnlySmokeCliContractTest.php
+  bot/tests/RuntimePrimaryStagingOneCommandReadOnlyCheckpointContractTest.php
 )
 
 for test_file in "${TESTS[@]}"; do
