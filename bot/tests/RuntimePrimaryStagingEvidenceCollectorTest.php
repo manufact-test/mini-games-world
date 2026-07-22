@@ -44,6 +44,16 @@ final class RuntimePrimaryStagingEvidenceCollectorTestSource implements RuntimeP
             'accounts', 'realtime', 'economy', 'notifications', 'invites',
             'history', 'shop', 'payments', 'weekly_bonus',
         ];
+        $event = [
+            'present' => true,
+            'state_revision' => 1,
+            'state_sha256' => $sha,
+            'projection_version' => 'v1-normalized-all-modules',
+            'status' => 'completed',
+            'attempt_count' => 1,
+            'lease_expires_at_utc' => '',
+            'last_error' => '',
+        ];
         $base = [
             'ok' => true,
             'action' => 'rehearsal_completed',
@@ -59,7 +69,7 @@ final class RuntimePrimaryStagingEvidenceCollectorTestSource implements RuntimeP
                     'schema_fingerprint' => str_repeat('4', 64),
                 ],
             ],
-            'target_event' => ['status' => 'completed'],
+            'target_event' => $event,
             'target_event_completed' => true,
             'status_healthy' => true,
             'parity_completed' => true,
@@ -79,7 +89,10 @@ final class RuntimePrimaryStagingEvidenceCollectorTestSource implements RuntimeP
                 'worker_ticks' => [[
                     'ok' => true,
                     'action' => 'projection_completed',
+                    'state_revision' => 1,
+                    'state_sha256' => $sha,
                     'projected_modules' => $modules,
+                    'parity_ok' => true,
                 ]],
             ],
             $base + [
@@ -172,8 +185,27 @@ try {
         'Collector must bind evidence to the exact database identity'
     );
     $assertTrue(($result['manifest']['first_rehearsal']['worker_tick_count'] ?? 0) === 1, 'First rehearsal tick count must remain explicit');
+    $assertTrue(
+        ($result['manifest']['first_rehearsal']['projection_proof'] ?? '') === 'worker_completed_current_run',
+        'Fresh rehearsal must record the current-run worker proof'
+    );
     $assertTrue(($result['manifest']['repeated_rehearsal']['worker_tick_count'] ?? -1) === 0, 'Repeated rehearsal must remain idempotent');
+    $assertTrue(
+        ($result['manifest']['repeated_rehearsal']['projection_proof'] ?? '') === 'completed_current_contract_reused',
+        'Repeated rehearsal must prove the completed current contract without another worker write'
+    );
     $assertTrue(count((array)($result['projected_modules'] ?? [])) === 9, 'Collector must preserve all nine modules');
+
+    $reused = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
+    $reused->rehearsals[0]['snapshot']['action'] = 'snapshot_unchanged';
+    $reused->rehearsals[0]['worker_tick_count'] = 0;
+    $reused->rehearsals[0]['worker_ticks'] = [];
+    $reusedResult = (new RuntimePrimaryStagingEvidenceCollector($projectRoot, $reused))->collect();
+    $assertTrue(
+        ($reusedResult['verification']['ok'] ?? false) === true
+            && ($reusedResult['manifest']['first_rehearsal']['projection_proof'] ?? '') === 'completed_current_contract_reused',
+        'Collector retry must accept the already completed current all-module projection'
+    );
 
     $changed = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
     $changed->captures[2]['sha256'] = str_repeat('9', 64);
@@ -196,6 +228,20 @@ try {
         'did not prove all nine projected modules'
     );
 
+    $staleContract = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
+    $staleContract->rehearsals[0]['target_event']['projection_version'] = 'v0-stale';
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingEvidenceCollector($projectRoot, $staleContract))->collect(),
+        'current completed all-module projection contract'
+    );
+
+    $activeLease = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
+    $activeLease->rehearsals[0]['target_event']['lease_expires_at_utc'] = '2026-07-22T17:00:00+00:00';
+    $assertThrows(
+        static fn() => (new RuntimePrimaryStagingEvidenceCollector($projectRoot, $activeLease))->collect(),
+        'current completed all-module projection contract'
+    );
+
     $missingSafety = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
     unset($missingSafety->rehearsals[0]['cron_changed']);
     $assertThrows(
@@ -205,6 +251,7 @@ try {
 
     $repeatWrite = new RuntimePrimaryStagingEvidenceCollectorTestSource($projectRoot, $commit);
     $repeatWrite->rehearsals[1]['worker_tick_count'] = 1;
+    $repeatWrite->rehearsals[1]['worker_ticks'] = [$repeatWrite->rehearsals[0]['worker_ticks'][0]];
     $assertThrows(
         static fn() => (new RuntimePrimaryStagingEvidenceCollector($projectRoot, $repeatWrite))->collect(),
         'zero worker ticks'
