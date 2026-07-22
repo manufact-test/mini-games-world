@@ -62,8 +62,9 @@ if ($values['ttl'] === '' || preg_match('/^\d+$/', $values['ttl']) !== 1) {
     exit(2);
 }
 $ttl = (int)$values['ttl'];
-if ($ttl < 60 || $ttl > RuntimePrimaryStagingMutatingSmokeApproval::MAX_APPROVAL_SECONDS) {
-    // Class is loaded below; keep parser fail-closed without normalizing input.
+if ($ttl < 60 || $ttl > 600) {
+    fwrite(STDERR, "Bounded mutating smoke prepare TTL must be between 60 and 600 seconds.\n");
+    exit(2);
 }
 if (PHP_VERSION_ID < 80300 || PHP_VERSION_ID >= 80400) {
     fwrite(STDERR, "Bounded mutating smoke prepare requires PHP 8.3.x.\n");
@@ -99,8 +100,8 @@ try {
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingMutatingSmokeApproval.php';
     require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingEvidenceWriter.php';
 
-    if ($ttl < 60 || $ttl > RuntimePrimaryStagingMutatingSmokeApproval::MAX_APPROVAL_SECONDS) {
-        throw new RuntimeException('Bounded mutating smoke prepare TTL must be between 60 and 600 seconds.');
+    if ($ttl > RuntimePrimaryStagingMutatingSmokeApproval::MAX_APPROVAL_SECONDS) {
+        throw new RuntimeException('Bounded mutating smoke prepare TTL exceeds runtime approval contract.');
     }
     if (($config['environment'] ?? null) !== 'staging') {
         throw new RuntimeException('Bounded mutating smoke prepare is staging-only.');
