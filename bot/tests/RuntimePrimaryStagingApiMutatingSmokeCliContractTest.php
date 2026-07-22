@@ -68,19 +68,32 @@ $assertTrue(
     'Runner must commit API state, restore baseline, remove mappings, project cleanup, remove orphan user, then audit.'
 );
 
+$earlierProjectionCall = strpos(
+    $cleanup,
+    '$earlierProjectionProof = $this->completeEarlierProjectionEventsBeforeMappingDeletion();'
+);
 $deleteSession = strpos($cleanup, 'DELETE FROM mgw_sessions');
 $deleteDevice = strpos($cleanup, 'DELETE FROM mgw_devices');
 $deleteOwnership = strpos($cleanup, 'DELETE FROM mgw_account_ownership');
 $deleteIdentity = strpos($cleanup, 'DELETE FROM mgw_identities');
 $deleteUser = strpos($cleanup, 'DELETE FROM mgw_users');
 $assertTrue(
-    $deleteSession !== false && $deleteDevice !== false && $deleteOwnership !== false
+    $earlierProjectionCall !== false
+        && $deleteSession !== false && $deleteDevice !== false && $deleteOwnership !== false
         && $deleteIdentity !== false && $deleteUser !== false
+        && $earlierProjectionCall < $deleteSession
         && $deleteSession < $deleteDevice
         && $deleteDevice < $deleteOwnership
         && $deleteOwnership < $deleteIdentity
         && $deleteIdentity < $deleteUser,
-    'Synthetic account cleanup must use exact dependency-safe deletion order.'
+    'Earlier projections must complete before dependency-safe synthetic account deletion.'
+);
+$assertTrue(
+    str_contains($cleanup, "status <> 'completed' AND state_revision < :current_revision")
+        && str_contains($cleanup, "'action' => 'projection_completed'")
+        && str_contains($cleanup, "'mapping_deleted_after_earlier_projection' => true")
+        && str_contains($cleanup, 'RuntimePrimaryProjectionWorkerAdapter('),
+    'Recovery cleanup must complete only earlier revisions and leave the current cleanup event for the runner.'
 );
 $assertTrue(
     str_contains($cleanup, "'user_row_deferred' => true")
