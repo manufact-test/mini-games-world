@@ -46,7 +46,7 @@ $assertTrue(
 );
 $assertTrue(($current['blockers'] ?? ['unexpected']) === [], 'Current lifecycle evidence must have no blockers');
 $assertTrue(($current['contract_version'] ?? '') === RuntimePrimaryStagingRequestLifecycleEvidence::CONTRACT_VERSION, 'Lifecycle evidence must expose exact contract');
-$assertTrue(($current['baseline'] ?? []) === $baseline, 'Lifecycle evidence must preserve normalized baseline');
+$assertTrue(($current['baseline'] ?? []) === $baseline, 'Lifecycle evidence must preserve exact baseline');
 $assertTrue(($current['api_only'] ?? false) === true, 'Lifecycle evidence must be API-only');
 $assertTrue(($current['webhook_allowed'] ?? true) === false, 'Lifecycle evidence must forbid webhook');
 $assertTrue(($current['session_enabled_by_evidence'] ?? true) === false, 'Evidence alone must not enable session');
@@ -63,6 +63,15 @@ $assertThrows(
     ),
     'baseline revision must be positive'
 );
+foreach (['3', null, 3.0] as $malformedRevision) {
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingRequestLifecycleEvidence::inspect(
+            $projectRoot,
+            array_replace($baseline, ['state_revision' => $malformedRevision])
+        ),
+        'baseline revision must be an integer'
+    );
+}
 $assertThrows(
     static fn() => RuntimePrimaryStagingRequestLifecycleEvidence::inspect(
         $projectRoot,
@@ -70,6 +79,20 @@ $assertThrows(
     ),
     'baseline field is invalid'
 );
+foreach ([
+    strtoupper(str_repeat('b', 64)),
+    ' ' . str_repeat('b', 64),
+    str_repeat('b', 64) . ' ',
+    null,
+] as $malformedSha) {
+    $assertThrows(
+        static fn() => RuntimePrimaryStagingRequestLifecycleEvidence::inspect(
+            $projectRoot,
+            array_replace($baseline, ['json_sha256' => $malformedSha])
+        ),
+        'baseline field is invalid'
+    );
+}
 
 $fixture = sys_get_temp_dir() . '/mgw-lifecycle-evidence-' . bin2hex(random_bytes(6));
 $paths = [
@@ -109,7 +132,7 @@ try {
     $responsePath = $fixture . '/bot/helpers/response.php';
     $response = (string)file_get_contents($responsePath);
     $response = str_replace(
-        "    foreach (\$hooks as \$hook) {\n        if (is_callable(\$hook)) \$hook();\n    }\n",
+        "    mgw_run_api_success_hooks();\n",
         '',
         $response
     );
