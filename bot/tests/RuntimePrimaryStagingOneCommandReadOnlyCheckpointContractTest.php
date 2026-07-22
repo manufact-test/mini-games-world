@@ -125,14 +125,21 @@ $assertTrue(
     'Short launcher must delegate locally without downloading code'
 );
 $assertTrue(
-    str_contains($launcher, 'staging_read_only_prerequisites_blocked_or_failed')
+    str_contains($launcher, 'staging-read-only-preflight-*.json')
+        && str_contains($launcher, 'staging-lifecycle-collector-*.json')
+        && str_contains($launcher, 'staging_read_only_prerequisites_blocked_or_failed')
+        && str_contains($launcher, 'api_lifecycle_evidence_v4_blocked_or_failed')
         && str_contains($launcher, '($data["path_exposed"] ?? null) !== false')
         && str_contains($launcher, '($data["production_changed"] ?? null) !== false')
         && str_contains($launcher, '($data["sensitive_identifiers_exposed"] ?? null) !== false')
+        && str_contains($launcher, '($data["session_enabled_by_evidence"] ?? null) !== false')
+        && str_contains($launcher, '($data["finalizer_registered_by_evidence"] ?? null) !== false')
+        && str_contains($launcher, '($data["application_entrypoints_changed"] ?? null) !== false')
+        && str_contains($launcher, '($data["cron_changed"] ?? null) !== false')
         && str_contains($launcher, 'strlen($message) > 500')
         && str_contains($launcher, 'echo "DETAIL="')
         && !str_contains($launcher, 'cat "$LATEST_REPORT"'),
-    'Short launcher may print only the bounded sanitized blocker detail from a safe prerequisite report'
+    'Short launcher may print only bounded sanitized blocker detail from safe prerequisite or collector reports'
 );
 
 fwrite(
