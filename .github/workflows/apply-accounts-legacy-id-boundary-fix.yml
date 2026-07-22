@@ -1,0 +1,101 @@
+name: Apply Accounts Legacy ID Boundary Fix
+
+on:
+  push:
+    branches:
+      - agent/actions-permission-probe-20260722
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      MGW_TARGET_BRANCH: agent/mvp-14-8-6t-current-portable-evidence-verifier
+      MGW_EXPECTED_HEAD: f32f09e5321f4d60e497b826eefd942d46f60263
+
+    steps:
+      - name: Checkout exact target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MGW_TARGET_BRANCH }}
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Verify and patch exact source
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$MGW_EXPECTED_HEAD" ]; then
+            printf 'target head changed: expected %s got %s\n' "$MGW_EXPECTED_HEAD" "$actual" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('bot/runtime/RuntimePrimaryAccountsModuleProjector.php')
+          source = path.read_text()
+          replacements = [
+              (
+                  "        foreach ($source as $legacyUserId => $item) {\n            $ownership = $this->database->fetchAll(\n",
+                  "        foreach ($source as $legacyUserId => $item) {\n            $legacyUserId = (string)$legacyUserId;\n            $ownership = $this->database->fetchAll(\n",
+              ),
+              (
+                  "        $sourceIds = array_keys($source);\n        sort($sourceIds, SORT_STRING);\n",
+                  "        $sourceIds = array_map('strval', array_keys($source));\n        sort($sourceIds, SORT_STRING);\n",
+              ),
+          ]
+          for old, new in replacements:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'exact patch preimage count must be one, got {count}')
+              source = source.replace(old, new, 1)
+          path.write_text(source)
+          PY
+          git diff --check
+          git diff -- bot/runtime/RuntimePrimaryAccountsModuleProjector.php
+
+      - name: Commit exact patch
+        id: commit
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot/runtime/RuntimePrimaryAccountsModuleProjector.php
+          git commit -m 'Fix numeric legacy ID boundary in accounts audit'
+          git push origin "HEAD:$MGW_TARGET_BRANCH"
+          commit="$(git rev-parse HEAD)"
+          printf 'commit=%s\n' "$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Report safe patch result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PATCH_COMMIT: ${{ steps.commit.outputs.commit }}
+          PATCH_STATUS: ${{ job.status }}
+        run: |
+          python3 - <<'PY' > "$RUNNER_TEMP/accounts-patch-comment.json"
+          import json
+          import os
+          body = "\n".join([
+              '<!-- mgw-accounts-legacy-id-boundary-patch -->',
+              '## Accounts legacy ID boundary patch',
+              '',
+              f"- run_id: `{os.environ.get('GITHUB_RUN_ID', '')}`",
+              f"- expected_parent: `{os.environ.get('MGW_EXPECTED_HEAD', '')}`",
+              f"- resulting_commit: `{os.environ.get('PATCH_COMMIT', '')}`",
+              f"- status: `{os.environ.get('PATCH_STATUS', '')}`",
+              '- production_or_hostinger_action: `false`',
+          ])
+          print(json.dumps({'body': body}))
+          PY
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/93/comments" \
+            --data-binary "@$RUNNER_TEMP/accounts-patch-comment.json"
