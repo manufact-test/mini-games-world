@@ -148,7 +148,7 @@ $assertTrue(
 $assertTrue(
     preg_match('/^on:\s*\n\s+pull_request:/m', $workflow) === 1
         && preg_match('/^\s+workflow_dispatch:\s*$/m', $workflow) === 1
-        && str_contains($workflow, '- agent/mvp-14-8-6s-current-portable-validation')
+        && str_contains($workflow, '- agent/mvp-14-8-6v-ci-base-2')
         && preg_match('/^\s*(push|schedule):/m', $workflow) !== 1,
     'Current portable workflow must run only for the exact PR base or explicit manual dispatch'
 );
