@@ -163,7 +163,11 @@ $assertTrue(($report['ok'] ?? true) === false && $containsBlocker($report, 'leas
 $tamperedEntrypoint = $manifest;
 $tamperedEntrypoint['entrypoint_evidence']['entrypoints']['api']['source_sha256'] = str_repeat('9', 64);
 $report = $verifier->verify($tamperedEntrypoint);
-$assertTrue(($report['ok'] ?? true) === false && $containsBlocker($report, 'does not match current repository'), 'Tampered entrypoint evidence must fail');
+$assertTrue(($report['ok'] ?? true) === false, 'Tampered entrypoint evidence must be rejected');
+$assertTrue(
+    $containsBlocker($report, 'does not match the current repository sources'),
+    'Tampered entrypoint evidence must expose the repository-source mismatch blocker'
+);
 
 $sensitive = $manifest;
 $sensitive['source_snapshot']['state_json'] = '{"users":[]}';

@@ -30,10 +30,26 @@ $assertTrue(
         && str_contains($factory, "default => ''"),
     'StorageFactory must bound lazy selection to API or webhook script names'
 );
+$selectorMethodStart = strpos(
+    $factory,
+    'private static function installGuardedEntrypointContextIfEligible()'
+);
+$stickyFailureGuard = $selectorMethodStart === false
+    ? false
+    : strpos($factory, 'if (isset($failures[$entrypoint]))', $selectorMethodStart);
+$contextReuseGuard = $selectorMethodStart === false
+    ? false
+    : strpos(
+        $factory,
+        'RuntimePrimaryEntrypointStorageContext::installed()',
+        $selectorMethodStart
+    );
 $assertTrue(
-    strpos($factory, 'if (isset($failures[$entrypoint]))')
-        < strpos($factory, 'RuntimePrimaryEntrypointStorageContext::installed()'),
-    'Sticky selector failures must be checked before request context reuse'
+    $selectorMethodStart !== false
+        && $stickyFailureGuard !== false
+        && $contextReuseGuard !== false
+        && $stickyFailureGuard < $contextReuseGuard,
+    'Sticky selector failures must be checked before request context reuse inside the guarded selector method'
 );
 $assertTrue(
     str_contains($selector, "if (\$environment !== 'staging')")
@@ -78,8 +94,9 @@ $assertTrue(
 $assertTrue(
     str_contains($hook, 'was invoked more than once')
         && str_contains($hook, 'lost its guarded storage context')
-        && str_contains($hook, "'projection_event_status' => 'completed'")
-        && str_contains($hook, "'webhook_allowed' => false"),
+        && str_contains($hook, "(\$report['projection_event_status'] ?? '') !== 'completed'")
+        && str_contains($hook, "(\$report['webhook_allowed'] ?? true) !== false")
+        && str_contains($hook, "(\$report['production_changed'] ?? true) !== false"),
     'Finalization hook must be once-only and fail closed on incomplete completion'
 );
 $assertTrue(

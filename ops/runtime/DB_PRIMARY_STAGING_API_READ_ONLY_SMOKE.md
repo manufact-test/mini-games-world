@@ -1,6 +1,6 @@
 # MVP-14.8.6n — guarded read-only staging API lifecycle smoke
 
-This stacked sub-MVP adds a CLI-only smoke controller for the API lifecycle introduced by MVP-14.8.6m. It exercises the lazy storage selector, API coordinator, immutable request context, success-hook ordering and request finalizer without executing an HTTP route and without committing a new DB-primary revision or outbox event.
+This stacked sub-MVP adds a CLI-only smoke controller for the API lifecycle introduced by MVP-14.8.6m. It exercises the real API bootstrap hook contour, lazy storage selector, API coordinator, immutable request context, success-hook ordering and request finalizer without executing the HTTP endpoint and without committing a new DB-primary revision or outbox event.
 
 ## Safety boundary
 
@@ -8,6 +8,8 @@ This stacked sub-MVP adds a CLI-only smoke controller for the API lifecycle intr
 - staging only;
 - requires a private verified lifecycle evidence v4 file;
 - persistent selector, request-session and activation latches must all be disabled;
+- persistent storage must remain JSON-default;
+- the JSON rollback directory must be absolute, canonical, outside the checkout and symlink-free;
 - temporary latches exist only in the CLI process memory;
 - the persistent private config file is not edited;
 - `bot/api.php` is not required or executed;
@@ -20,6 +22,14 @@ This stacked sub-MVP adds a CLI-only smoke controller for the API lifecycle intr
 ## In-memory overlay
 
 `RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay` starts from the already loaded private staging config and rejects it when any persistent activation latch is enabled.
+
+Before evidence or DB activation, it verifies:
+
+- `storage_driver` is absent/empty or exactly `json`;
+- `data_dir` is an absolute existing directory;
+- `data_dir` is not a symbolic link;
+- normalized `data_dir` exactly equals `realpath(data_dir)`;
+- the canonical JSON rollback directory is outside the repository checkout.
 
 It then verifies:
 
@@ -46,9 +56,11 @@ The request session is bounded to:
 
 The source config array and private config file remain unchanged.
 
-## Lazy API lifecycle path
+## Real API bootstrap contour
 
-The CLI keeps its own file as the executed script during application bootstrap. After the in-memory overlay is ready it temporarily sets the script basename to `api.php` and calls:
+Before loading `bot/core/bootstrap.php`, the CLI temporarily sets the script basename to `api.php`. `RuntimeRequestGuard` explicitly skips HTTP enforcement under `PHP_SAPI=cli`, so this does not execute or emulate an HTTP request.
+
+The real bootstrap then registers the same API legacy success hooks and data filters used by the endpoint. The CLI records their counts. After the in-memory overlay is ready, it calls:
 
 ```php
 StorageFactory::createJson(...)
@@ -61,9 +73,46 @@ This exercises the real lazy path:
 3. coordinator validates evidence v4 and bounded session;
 4. dynamic readiness audits the current staging DB state;
 5. request-local DB-primary storage context is installed;
-6. finalizer is registered as the first success hook.
+6. finalizer is prepended as the first success hook;
+7. all previously registered API hooks and filters remain in their original order.
 
-The CLI does not include or execute `bot/api.php`.
+The CLI requires exactly one additional hook—the finalizer—and no change in filter count. During smoke execution the registered legacy closures run, but `RuntimePrimaryEntrypointBridgeGuard` must make them no-ops because DB-primary context is installed.
+
+The CLI never includes or executes `bot/api.php`.
+
+## Exact request-context contract
+
+Before reading the staging DB, the smoke independently verifies that the installed request context contains:
+
+- lifecycle evidence v4;
+- the exact selector evidence contract;
+- the exact bounded request-session contract;
+- valid evidence, selector, session and database identity fingerprints;
+- a positive state revision and valid state SHA;
+- the exact DB-primary storage instance passed to the smoke;
+- `dynamic_session_readiness = true`;
+- `request_finalizer_registered = true`;
+- `webhook_allowed = false`;
+- `production_changed = false`.
+
+It calls `RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()` before and after finalization. The result must remain `false` for the whole smoke.
+
+After the first DB capture, the immutable context revision/SHA must equal the exact current DB-primary status revision/SHA. A stale or substituted context blocks the smoke before success hooks.
+
+## Completed outbox contract
+
+Every outbox row from revision 1 through current state must be completed and must satisfy the current worker contract:
+
+- contiguous revision number;
+- valid state SHA;
+- exact `RuntimePrimaryAllModuleProjector::CONTRACT_VERSION`;
+- `attempt_count >= 1`;
+- empty `lease_token`;
+- empty `lease_expires_at_utc`;
+- empty `last_error`;
+- current event SHA equals current state SHA.
+
+This matches the real worker lifecycle: claim increments `attempt_count`, and successful completion clears lease and error fields. Old projector events, impossible zero-attempt completion, stale leases and retained failure text all block the smoke.
 
 ## Read-only smoke contract
 
@@ -78,21 +127,23 @@ It never calls storage transactions or database execute methods.
 Before success hooks:
 
 - current state revision/SHA must be valid;
-- outbox must contain a contiguous completed chain from revision 1 through current revision;
-- current outbox SHA must match current state SHA;
-- read-only snapshot SHA must match status SHA.
+- request context revision/SHA must match current state exactly;
+- outbox must satisfy the completed outbox contract above;
+- read-only snapshot SHA must match status SHA;
+- legacy JSON bridges must be suppressed.
 
 Then it:
 
 1. removes any stale finalization report;
-2. invokes the prepared API success hooks;
+2. invokes the finalizer first and then the real bootstrap API success hooks;
 3. requires finalizer completion with `worker_tick_count = 0`;
 4. requires finalizer revision/SHA to equal the exact before-state;
-5. applies API data filters to a sentinel payload and requires byte-structure equivalence;
-6. captures state/outbox again;
-7. requires exact before/after equality.
+5. verifies legacy JSON bridges are still suppressed;
+6. applies the real bootstrap API data filters to a sentinel payload and requires exact structural equality;
+7. captures state/outbox again;
+8. requires exact before/after equality.
 
-Any worker tick, state change, outbox timestamp/status change, missing event, filter mutation or stale report blocks the smoke.
+Any old evidence version, invalid fingerprint, unsafe rollback source, stale context, enabled legacy bridge, changed bootstrap hook contour, wrong projector version, zero-attempt completed event, retained lease/error, worker tick, state change, outbox timestamp/status change, missing event, filter mutation or stale report blocks the smoke.
 
 ## CLI
 
@@ -107,19 +158,33 @@ php ops/runtime/run-staging-db-primary-api-read-only-smoke.php \
 The CLI:
 
 - validates arguments before bootstrap;
+- selects the API basename before real bootstrap;
+- relies on the explicit CLI bypass in `RuntimeRequestGuard`;
 - requires staging environment;
 - verifies external private config;
 - holds the existing private rehearsal lock;
 - builds only an in-memory overlay;
+- preserves the real bootstrap hook/filter registries;
 - opens the coordinator DB connection plus a separate read-only inspector connection;
 - exercises the lazy selector/finalizer path;
 - emits only safe fingerprints/counts and unchanged flags;
-- restores process globals before normal unwinding; process exit also releases locks/connections.
+- restores process globals before JSON output and process exit.
 
 Successful output requires:
 
 - `staging_api_read_only_smoke_passed`;
+- `projection_contract_version: v1-normalized-all-modules`;
+- `completed_events_lease_free: true`;
+- `json_default_verified: true`;
+- `rollback_data_dir_external: true`;
+- `rollback_data_dir_canonical: true`;
+- `api_bootstrap_hooks_preserved: true`;
+- `api_bootstrap_filters_preserved: true`;
+- safe counts for registered bootstrap hooks and filters;
 - `worker_tick_count: 0`;
+- `context_state_matched: true`;
+- `lifecycle_v4_verified: true`;
+- `legacy_json_bridges_suppressed: true`;
 - `state_unchanged: true`;
 - `snapshot_unchanged: true`;
 - `outbox_unchanged: true`;
@@ -139,6 +204,13 @@ bash ops/checks/db-primary-staging-api-read-only-smoke-local.sh
 The focused suite runs the complete API lifecycle integration suite and adds:
 
 - exact no-op smoke success;
+- old evidence version rejection;
+- stale context revision/SHA rejection;
+- enabled legacy bridge rejection;
+- unsafe/noncanonical JSON rollback source rejection;
+- old projector version rejection;
+- zero-attempt completed event rejection;
+- retained lease/error rejection;
 - stale finalization report rejection;
 - non-zero worker tick rejection;
 - data-filter mutation rejection;
@@ -147,8 +219,10 @@ The focused suite runs the complete API lifecycle integration suite and adds:
 - persistent-latch rejection;
 - v3/different DB/different commit evidence rejection;
 - TTL bounds;
+- worker claim/completion ↔ smoke outbox contract;
+- real API bootstrap/request-guard/bridge-guard contour;
 - no transaction/execute/file-write static contract;
-- CLI ordering, no-route and no-secret contract.
+- CLI ordering, cleanup, no-route and no-secret contract.
 
 ## Next prerequisite
 

@@ -119,6 +119,16 @@ final class ProjectionOutboxTestConnection implements DatabaseConnectionInterfac
         throw new RuntimeException('Unexpected SQL fetch: ' . $sql);
     }
 
+    public function fetchValue(string $sql, array $params = []): mixed
+    {
+        $rows = $this->fetchAll($sql, $params);
+        if ($rows === []) return null;
+        $firstRow = $rows[0] ?? null;
+        if (!is_array($firstRow) || $firstRow === []) return null;
+        $value = reset($firstRow);
+        return $value === false ? null : $value;
+    }
+
     public function transaction(callable $callback): mixed
     {
         $state = $this->state;

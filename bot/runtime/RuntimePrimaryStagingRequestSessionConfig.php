@@ -25,20 +25,29 @@ final class RuntimePrimaryStagingRequestSessionConfig
         $settings = is_array($config['staging_db_primary_request_session'] ?? null)
             ? $config['staging_db_primary_request_session']
             : [];
-        $enabled = self::strictBool(
-            $settings['enabled'] ?? false,
-            'staging_db_primary_request_session.enabled'
-        );
-        $contractVersion = trim((string)($settings['contract_version'] ?? ''));
-        $allowedEntrypoints = $settings['allowed_entrypoints'] ?? [];
+        $enabled = array_key_exists('enabled', $settings)
+            ? self::strictBool($settings['enabled'], 'staging_db_primary_request_session.enabled')
+            : false;
+        $contractVersion = array_key_exists('contract_version', $settings)
+            ? self::strictString(
+                $settings['contract_version'],
+                'staging_db_primary_request_session.contract_version'
+            )
+            : '';
+        $allowedEntrypoints = array_key_exists('allowed_entrypoints', $settings)
+            ? $settings['allowed_entrypoints']
+            : [];
         if (!is_array($allowedEntrypoints) || !array_is_list($allowedEntrypoints)) {
             throw new RuntimeException('staging_db_primary_request_session.allowed_entrypoints must be a list.');
         }
-        $allowedEntrypoints = array_values(array_map(
-            static fn(mixed $value): string => strtolower(trim((string)$value)),
-            $allowedEntrypoints
-        ));
-        if (count($allowedEntrypoints) !== count(array_unique($allowedEntrypoints))) {
+        foreach ($allowedEntrypoints as $entrypoint) {
+            if (!is_string($entrypoint)) {
+                throw new RuntimeException(
+                    'staging_db_primary_request_session.allowed_entrypoints values must be strings.'
+                );
+            }
+        }
+        if (count($allowedEntrypoints) !== count(array_unique($allowedEntrypoints, SORT_STRING))) {
             throw new RuntimeException('staging_db_primary_request_session.allowed_entrypoints contains duplicates.');
         }
         foreach ($allowedEntrypoints as $entrypoint) {
@@ -47,11 +56,36 @@ final class RuntimePrimaryStagingRequestSessionConfig
             }
         }
 
-        $baselineRevision = (int)($settings['baseline_revision'] ?? 0);
-        $maxRevisionDelta = (int)($settings['max_revision_delta'] ?? 0);
-        $maxWorkerTicks = (int)($settings['max_worker_ticks'] ?? 0);
-        $leaseSeconds = (int)($settings['lease_seconds'] ?? 0);
-        $expiresAtUtc = trim((string)($settings['expires_at_utc'] ?? ''));
+        $baselineRevision = array_key_exists('baseline_revision', $settings)
+            ? self::strictInt(
+                $settings['baseline_revision'],
+                'staging_db_primary_request_session.baseline_revision'
+            )
+            : 0;
+        $maxRevisionDelta = array_key_exists('max_revision_delta', $settings)
+            ? self::strictInt(
+                $settings['max_revision_delta'],
+                'staging_db_primary_request_session.max_revision_delta'
+            )
+            : 0;
+        $maxWorkerTicks = array_key_exists('max_worker_ticks', $settings)
+            ? self::strictInt(
+                $settings['max_worker_ticks'],
+                'staging_db_primary_request_session.max_worker_ticks'
+            )
+            : 0;
+        $leaseSeconds = array_key_exists('lease_seconds', $settings)
+            ? self::strictInt(
+                $settings['lease_seconds'],
+                'staging_db_primary_request_session.lease_seconds'
+            )
+            : 0;
+        $expiresAtUtc = array_key_exists('expires_at_utc', $settings)
+            ? self::strictString(
+                $settings['expires_at_utc'],
+                'staging_db_primary_request_session.expires_at_utc'
+            )
+            : '';
 
         if ($enabled) {
             if ($contractVersion !== self::CONTRACT_VERSION) {
@@ -72,7 +106,10 @@ final class RuntimePrimaryStagingRequestSessionConfig
             if ($leaseSeconds < 30 || $leaseSeconds > 300) {
                 throw new RuntimeException('Staging DB-primary request session lease must be between 30 and 300 seconds.');
             }
-            self::assertTimestamp($expiresAtUtc, 'staging_db_primary_request_session.expires_at_utc');
+            self::parseExactTimestamp(
+                $expiresAtUtc,
+                'staging_db_primary_request_session.expires_at_utc'
+            );
         }
 
         return new self(
@@ -94,6 +131,9 @@ final class RuntimePrimaryStagingRequestSessionConfig
         if (!$this->enabled) {
             throw new RuntimeException('Staging DB-primary request session is disabled.');
         }
+        if ($now < 1) {
+            throw new RuntimeException('Staging DB-primary request session verification time is invalid.');
+        }
         if ($this->contractVersion !== self::CONTRACT_VERSION) {
             throw new RuntimeException('Staging DB-primary request session contract version is invalid.');
         }
@@ -108,8 +148,11 @@ final class RuntimePrimaryStagingRequestSessionConfig
             throw new RuntimeException('Current DB-primary revision exceeds the bounded request session.');
         }
 
-        $expiresAt = strtotime($this->expiresAtUtc);
-        if ($expiresAt === false || $expiresAt <= $now) {
+        $expiresAt = self::parseExactTimestamp(
+            $this->expiresAtUtc,
+            'staging_db_primary_request_session.expires_at_utc'
+        )->getTimestamp();
+        if ($expiresAt <= $now) {
             throw new RuntimeException('Staging DB-primary request session has expired.');
         }
         if ($expiresAt - $now > self::MAX_SESSION_SECONDS) {
@@ -175,27 +218,51 @@ final class RuntimePrimaryStagingRequestSessionConfig
 
     private static function strictBool(mixed $value, string $label): bool
     {
-        if (is_bool($value)) return $value;
-        if (is_int($value)) {
-            if ($value === 0) return false;
-            if ($value === 1) return true;
+        if (!is_bool($value)) {
+            throw new RuntimeException($label . ' must be a strict boolean value.');
         }
-        if (is_string($value)) {
-            return match (strtolower(trim($value))) {
-                '1', 'true', 'yes', 'on', 'enabled' => true,
-                '0', 'false', 'no', 'off', 'disabled' => false,
-                default => throw new RuntimeException($label . ' must be a strict boolean value.'),
-            };
-        }
-        throw new RuntimeException($label . ' must be a strict boolean value.');
+        return $value;
     }
 
-    private static function assertTimestamp(string $value, string $label): void
+    private static function strictString(mixed $value, string $label): string
     {
-        if ($value === ''
-            || preg_match('/(?:Z|[+-]\d{2}:\d{2})$/', $value) !== 1
-            || strtotime($value) === false) {
-            throw new RuntimeException($label . ' must be an ISO-8601 timestamp with an explicit UTC offset.');
+        if (!is_string($value)) {
+            throw new RuntimeException($label . ' must be a string value.');
         }
+        return $value;
+    }
+
+    private static function strictInt(mixed $value, string $label): int
+    {
+        if (!is_int($value)) {
+            throw new RuntimeException($label . ' must be an integer value.');
+        }
+        return $value;
+    }
+
+    private static function parseExactTimestamp(string $value, string $label): DateTimeImmutable
+    {
+        if (preg_match(
+            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/',
+            $value
+        ) !== 1) {
+            throw new RuntimeException(
+                $label . ' must be an exact ISO-8601 timestamp with an explicit UTC offset.'
+            );
+        }
+        $isZulu = str_ends_with($value, 'Z');
+        $parsed = DateTimeImmutable::createFromFormat(
+            $isZulu ? '!Y-m-d\TH:i:s\Z' : '!Y-m-d\TH:i:sP',
+            $value,
+            $isZulu ? new DateTimeZone('UTC') : null
+        );
+        $errors = DateTimeImmutable::getLastErrors();
+        if (!$parsed instanceof DateTimeImmutable
+            || (is_array($errors)
+                && (($errors['warning_count'] ?? 0) !== 0 || ($errors['error_count'] ?? 0) !== 0))
+            || $parsed->format($isZulu ? 'Y-m-d\TH:i:s\Z' : 'Y-m-d\TH:i:sP') !== $value) {
+            throw new RuntimeException($label . ' is invalid.');
+        }
+        return $parsed;
     }
 }

@@ -80,6 +80,16 @@ final class DatabasePrimaryStateTestConnection implements DatabaseConnectionInte
         throw new RuntimeException('Unexpected test SQL fetch: ' . $normalized);
     }
 
+    public function fetchValue(string $sql, array $params = []): mixed
+    {
+        $rows = $this->fetchAll($sql, $params);
+        if ($rows === []) return null;
+        $firstRow = $rows[0] ?? null;
+        if (!is_array($firstRow) || $firstRow === []) return null;
+        $value = reset($firstRow);
+        return $value === false ? null : $value;
+    }
+
     public function transaction(callable $callback): mixed
     {
         $before = $this->row;
@@ -111,6 +121,14 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
         throw new RuntimeException('Unexpected exception: ' . $error->getMessage());
     }
     throw new RuntimeException('Expected exception was not thrown.');
+};
+$canonicalize = static function (mixed $value) use (&$canonicalize): mixed {
+    if (!is_array($value)) return $value;
+    if (!array_is_list($value)) ksort($value, SORT_STRING);
+    foreach ($value as $key => $item) {
+        $value[$key] = $canonicalize($item);
+    }
+    return $value;
 };
 
 $invalidInstaller = new RuntimePrimaryStateSchemaInstaller(
@@ -162,7 +180,10 @@ $assertThrows(
 );
 
 $read = $adapter->readOnly(static fn(array $data): array => $data);
-$assertTrue($read === $source, 'Read-only DB-primary snapshot must preserve exact source structure');
+$assertTrue(
+    $canonicalize($read) === $canonicalize($source),
+    'Read-only DB-primary snapshot must preserve exact keys, values and types after canonical JSON ordering'
+);
 
 $result = $adapter->transaction(static function (array &$data): string {
     $data['users']['100']['balance'] += 25;

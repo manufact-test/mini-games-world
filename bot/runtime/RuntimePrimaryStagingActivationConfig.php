@@ -23,14 +23,32 @@ final class RuntimePrimaryStagingActivationConfig
         $settings = is_array($config['staging_db_primary_activation'] ?? null)
             ? $config['staging_db_primary_activation']
             : [];
+        $enabled = array_key_exists('enabled', $settings)
+            ? self::strictBool($settings['enabled'], 'staging_db_primary_activation.enabled')
+            : false;
 
         return new self(
-            self::strictBool($settings['enabled'] ?? false, 'staging_db_primary_activation.enabled'),
-            strtolower(trim((string)($settings['expected_database_identity_fingerprint'] ?? ''))),
-            strtolower(trim((string)($settings['expected_repository_commit'] ?? ''))),
-            str_replace('\\', '/', trim((string)($settings['evidence_file'] ?? ''))),
-            strtolower(trim((string)($settings['expected_evidence_fingerprint'] ?? ''))),
-            trim((string)($settings['approval_expires_at_utc'] ?? ''))
+            $enabled,
+            self::strictString(
+                $settings['expected_database_identity_fingerprint'] ?? '',
+                'staging_db_primary_activation.expected_database_identity_fingerprint'
+            ),
+            self::strictString(
+                $settings['expected_repository_commit'] ?? '',
+                'staging_db_primary_activation.expected_repository_commit'
+            ),
+            self::strictString(
+                $settings['evidence_file'] ?? '',
+                'staging_db_primary_activation.evidence_file'
+            ),
+            self::strictString(
+                $settings['expected_evidence_fingerprint'] ?? '',
+                'staging_db_primary_activation.expected_evidence_fingerprint'
+            ),
+            self::strictString(
+                $settings['approval_expires_at_utc'] ?? '',
+                'staging_db_primary_activation.approval_expires_at_utc'
+            )
         );
     }
 
@@ -46,43 +64,48 @@ final class RuntimePrimaryStagingActivationConfig
         if (!$databaseConfig->enabled()) {
             throw new RuntimeException('Staging DB-primary activation requires an enabled database.');
         }
+        if ($now < 1) {
+            throw new RuntimeException('Staging DB-primary activation verification time is invalid.');
+        }
 
-        $actualDatabaseFingerprint = strtolower(trim($databaseConfig->identityFingerprint()));
+        $actualDatabaseFingerprint = $databaseConfig->identityFingerprint();
         $this->assertSha($actualDatabaseFingerprint, 'Current staging database identity fingerprint');
         $this->assertSha($this->expectedDatabaseIdentityFingerprint, 'Approved staging database identity fingerprint');
         if (!hash_equals($this->expectedDatabaseIdentityFingerprint, $actualDatabaseFingerprint)) {
             throw new RuntimeException('Configured database does not match the staging activation approval.');
         }
 
-        $repositoryCommit = strtolower(trim($repositoryCommit));
         $this->assertCommit($repositoryCommit, 'Current staging repository commit');
         $this->assertCommit($this->expectedRepositoryCommit, 'Approved staging repository commit');
         if (!hash_equals($this->expectedRepositoryCommit, $repositoryCommit)) {
             throw new RuntimeException('Current checkout does not match the staging activation approval.');
         }
 
-        $privateDir = rtrim(str_replace('\\', '/', trim($privateDir)), '/');
-        if ($privateDir === '' || !str_starts_with($privateDir, '/')) {
-            throw new RuntimeException('Staging activation private directory is invalid.');
+        if ($privateDir === ''
+            || trim($privateDir) !== $privateDir
+            || str_contains($privateDir, '\\')
+            || !str_starts_with($privateDir, '/')
+            || ($privateDir !== '/' && str_ends_with($privateDir, '/'))) {
+            throw new RuntimeException('Staging activation private directory must be an exact absolute Linux path.');
         }
-        if ($this->evidenceFile === '' || !str_starts_with($this->evidenceFile, '/')) {
-            throw new RuntimeException('Staging activation evidence file path must be absolute.');
+        if ($this->evidenceFile === ''
+            || trim($this->evidenceFile) !== $this->evidenceFile
+            || str_contains($this->evidenceFile, '\\')
+            || !str_starts_with($this->evidenceFile, '/')
+            || str_ends_with($this->evidenceFile, '/')) {
+            throw new RuntimeException('Staging activation evidence file must be an exact absolute Linux file path.');
         }
-        $configuredParent = rtrim(str_replace('\\', '/', dirname($this->evidenceFile)), '/');
-        if (!hash_equals($privateDir, $configuredParent)) {
+        if (!hash_equals($privateDir, dirname($this->evidenceFile))) {
             throw new RuntimeException('Staging activation evidence file must be located in the verified private directory.');
         }
         $this->assertSha($this->expectedEvidenceFingerprint, 'Approved staging evidence fingerprint');
 
-        if ($this->expiresAtUtc === ''
-            || preg_match('/(?:Z|[+-]\d{2}:\d{2})$/', $this->expiresAtUtc) !== 1) {
-            throw new RuntimeException('Staging activation approval expiry must include an explicit UTC offset.');
-        }
-        $expiresAt = strtotime($this->expiresAtUtc);
-        if ($expiresAt === false || $expiresAt <= $now) {
+        $expiresAt = self::parseExactExpiry($this->expiresAtUtc);
+        $expiresTimestamp = $expiresAt->getTimestamp();
+        if ($expiresTimestamp <= $now) {
             throw new RuntimeException('Staging DB-primary activation approval is expired.');
         }
-        if ($expiresAt - $now > self::MAX_APPROVAL_SECONDS) {
+        if ($expiresTimestamp - $now > self::MAX_APPROVAL_SECONDS) {
             throw new RuntimeException('Staging DB-primary activation approval may be valid for at most 30 minutes.');
         }
     }
@@ -129,22 +152,45 @@ final class RuntimePrimaryStagingActivationConfig
         }
     }
 
+    private static function parseExactExpiry(string $value): DateTimeImmutable
+    {
+        if (preg_match(
+            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/',
+            $value
+        ) !== 1) {
+            throw new RuntimeException(
+                'Staging activation approval expiry must use exact ISO-8601 seconds with an explicit UTC offset.'
+            );
+        }
+        $isZulu = str_ends_with($value, 'Z');
+        $parsed = DateTimeImmutable::createFromFormat(
+            $isZulu ? '!Y-m-d\TH:i:s\Z' : '!Y-m-d\TH:i:sP',
+            $value,
+            $isZulu ? new DateTimeZone('UTC') : null
+        );
+        $errors = DateTimeImmutable::getLastErrors();
+        if (!$parsed instanceof DateTimeImmutable
+            || (is_array($errors)
+                && (($errors['warning_count'] ?? 0) !== 0 || ($errors['error_count'] ?? 0) !== 0))
+            || $parsed->format($isZulu ? 'Y-m-d\TH:i:s\Z' : 'Y-m-d\TH:i:sP') !== $value) {
+            throw new RuntimeException('Staging activation approval expiry is invalid.');
+        }
+        return $parsed;
+    }
+
     private static function strictBool(mixed $value, string $label): bool
     {
-        if (is_bool($value)) return $value;
-        if (is_int($value)) {
-            if ($value === 0) return false;
-            if ($value === 1) return true;
+        if (!is_bool($value)) {
             throw new RuntimeException($label . ' must be a strict boolean value.');
         }
-        if (is_string($value)) {
-            return match (strtolower(trim($value))) {
-                '1', 'true', 'yes', 'on', 'enabled' => true,
-                '0', 'false', 'no', 'off', 'disabled' => false,
-                default => throw new RuntimeException($label . ' must be a strict boolean value.'),
-            };
+        return $value;
+    }
+
+    private static function strictString(mixed $value, string $label): string
+    {
+        if (!is_string($value)) {
+            throw new RuntimeException($label . ' must be a string value.');
         }
-        if ($value === null) return false;
-        throw new RuntimeException($label . ' must be a strict boolean value.');
+        return $value;
     }
 }

@@ -163,7 +163,34 @@ final class RuntimePrimaryStagingSelectorEvidence
             ),
             'selector_disabled_default_present' => str_contains(
                 $selectorConfig,
-                "\$settings['enabled'] ?? false"
+                "array_key_exists('enabled', \$settings)"
+            ) && str_contains(
+                $selectorConfig,
+                "? self::strictBool(\$settings['enabled']"
+            ) && str_contains(
+                $selectorConfig,
+                ': false;'
+            ),
+            'selector_config_exact_types_present' => str_contains(
+                $selectorConfig,
+                'private static function strictBool('
+            ) && str_contains(
+                $selectorConfig,
+                'private static function strictString('
+            ) && str_contains(
+                $selectorConfig,
+                'allowed_entrypoints values must be strings'
+            ),
+            'selector_config_no_normalization_present' => !str_contains(
+                $selectorConfig,
+                'strtolower('
+            ) && !str_contains(
+                $selectorConfig,
+                'trim('
+            ),
+            'selector_enabled_for_exact_present' => str_contains(
+                $selectorConfig,
+                "if (!in_array(\$entrypoint, ['api', 'webhook'], true))"
             ),
             'context_database_only_present' => str_contains(
                 $context,

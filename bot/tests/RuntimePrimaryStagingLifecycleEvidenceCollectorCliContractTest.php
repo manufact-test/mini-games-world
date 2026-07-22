@@ -16,6 +16,7 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
 
 $cliGuard = strpos($source, "if (PHP_SAPI !== 'cli')");
 $outputParse = strpos($source, "str_starts_with(\$argument, '--output=')");
+$errorHandler = strpos($source, 'set_error_handler(static function');
 $writerValidate = strpos($source, '$writer->validateOutputPath($outputPath)');
 $bootstrap = strpos($source, "require \$projectRoot . '/bot/core/bootstrap.php';");
 $environmentGuard = strpos($source, "if (\$environment !== 'staging')");
@@ -26,6 +27,7 @@ $databaseOpen = strpos($source, 'PdoConnectionFactory::create($databaseConfig)')
 $assertTrue(
     $cliGuard !== false
         && $outputParse !== false
+        && $errorHandler !== false
         && $writerValidate !== false
         && $bootstrap !== false
         && $environmentGuard !== false
@@ -34,19 +36,45 @@ $assertTrue(
         && $lockOpen !== false
         && $databaseOpen !== false
         && $cliGuard < $outputParse
-        && $outputParse < $writerValidate
+        && $outputParse < $errorHandler
+        && $errorHandler < $writerValidate
         && $writerValidate < $bootstrap
         && $bootstrap < $environmentGuard
         && $environmentGuard < $privateGuard
         && $privateGuard < $approval
         && $approval < $lockOpen
         && $lockOpen < $databaseOpen,
-    'Lifecycle CLI must validate output, staging, private approval and lock before DB access'
+    'Lifecycle CLI must validate exact inputs and install path-safe failures before bootstrap and DB access'
+);
+$assertTrue(
+    str_contains($source, '$seenOutput = false;')
+        && str_contains($source, '$seenMaxEvents = false;')
+        && str_contains($source, 'if ($seenOutput)')
+        && str_contains($source, 'if ($seenMaxEvents)')
+        && str_contains($source, '$outputPath = substr($argument, strlen(\'--output=\'));')
+        && str_contains($source, '$raw = substr($argument, strlen(\'--max-events=\'));')
+        && !str_contains($source, 'trim(substr($argument')
+        && str_contains($source, '--output must not contain backslashes.'),
+    'Lifecycle CLI must reject duplicate and normalized option values byte-exactly'
+);
+$assertTrue(
+    str_contains($source, 'Lifecycle evidence filesystem operation failed.')
+        && str_contains($source, 'Suppressed lifecycle evidence collector warning.')
+        && str_contains($source, 'restore_error_handler();')
+        && strpos($source, 'restore_error_handler();') > $databaseOpen,
+    'Lifecycle CLI must shield filesystem warnings and restore the handler after guarded work'
 );
 $assertTrue(
     substr_count($source, 'PdoConnectionFactory::create($databaseConfig)') === 2
         && str_contains($source, 'RuntimePrimaryStagingConcurrencyProbe('),
     'Lifecycle CLI must use two independent DB connections for lease evidence'
+);
+$assertTrue(
+    str_contains($source, 'if (!chmod($lockPath, 0600))')
+        && str_contains($source, '($lockMode & 0777) !== 0600')
+        && str_contains($source, 'lock must have exact mode 0600')
+        && !str_contains($source, '@chmod($lockPath'),
+    'Lifecycle rehearsal lock must require and verify exact private permissions'
 );
 $assertTrue(
     str_contains($source, 'RuntimePrimaryStagingLifecycleEvidenceCollector(')
@@ -62,9 +90,17 @@ $assertTrue(
     'Lifecycle CLI must use atomic private no-clobber writer'
 );
 $assertTrue(
-    str_contains($source, "if (\$outputWritten && is_file(\$outputPath) && !is_link(\$outputPath))")
-        && str_contains($source, '@unlink($outputPath)'),
-    'Lifecycle CLI must remove output that fails post-write verification'
+    str_contains($source, 'if ($outputWritten && is_file($outputPath) && !is_link($outputPath))')
+        && str_contains($source, 'if (!unlink($outputPath))')
+        && !str_contains($source, '@unlink($outputPath)')
+        && str_contains($source, 'unverified output cleanup also failed'),
+    'Lifecycle CLI must explicitly fail closed when unverified output cleanup fails'
+);
+$assertTrue(
+    str_contains($source, "~/(?:home|var|tmp|srv|opt)/")
+        && str_contains($source, "'[private-path]'")
+        && str_contains($source, "'path_exposed' => false"),
+    'Lifecycle CLI must redact common private absolute path roots including opt'
 );
 $assertTrue(
     str_contains($source, "'session_enabled_by_evidence' => false")
