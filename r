@@ -14,7 +14,10 @@ LATEST_REPORT=''
 if [[ -d "$PRIVATE_DIR" && ! -L "$PRIVATE_DIR" ]]; then
   LATEST_REPORT="$(
     find "$PRIVATE_DIR" -maxdepth 1 -type f \
-      \( -name 'staging-read-only-preflight-*.json' -o -name 'staging-lifecycle-collector-*.json' \) \
+      \( -name 'staging-read-only-preflight-*.json' \
+         -o -name 'staging-lifecycle-collector-*.json' \
+         -o -name 'staging-api-read-only-smoke-*.json' \
+         -o -name 'staging-api-read-only-smoke-verification-*.json' \) \
       -printf '%T@ %p\n' 2>/dev/null \
       | sort -nr \
       | head -n 1 \
@@ -29,21 +32,39 @@ if [[ -n "$LATEST_REPORT" && -f "$LATEST_REPORT" && ! -L "$LATEST_REPORT" ]]; th
       $data = is_string($raw) ? json_decode($raw, true, 512, JSON_THROW_ON_ERROR) : null;
       if (!is_array($data)
           || ($data["ok"] ?? null) !== false
-          || ($data["path_exposed"] ?? null) !== false
           || ($data["production_changed"] ?? null) !== false
           || ($data["sensitive_identifiers_exposed"] ?? null) !== false) {
           exit(0);
       }
 
       $action = $data["action"] ?? null;
-      if ($action === "api_lifecycle_evidence_v4_blocked_or_failed") {
-          if (($data["session_enabled_by_evidence"] ?? null) !== false
+      if ($action === "staging_read_only_prerequisites_blocked_or_failed") {
+          if (($data["path_exposed"] ?? null) !== false) exit(0);
+      } elseif ($action === "api_lifecycle_evidence_v4_blocked_or_failed") {
+          if (($data["path_exposed"] ?? null) !== false
+              || ($data["session_enabled_by_evidence"] ?? null) !== false
               || ($data["finalizer_registered_by_evidence"] ?? null) !== false
               || ($data["application_entrypoints_changed"] ?? null) !== false
               || ($data["cron_changed"] ?? null) !== false) {
               exit(0);
           }
-      } elseif ($action !== "staging_read_only_prerequisites_blocked_or_failed") {
+      } elseif ($action === "staging_api_read_only_smoke_blocked_or_failed") {
+          if (($data["persistent_config_changed"] ?? null) !== false
+              || ($data["http_route_added"] ?? null) !== false
+              || ($data["api_only"] ?? null) !== true
+              || ($data["webhook_allowed"] ?? null) !== false
+              || ($data["cron_changed"] ?? null) !== false) {
+              exit(0);
+          }
+      } elseif ($action === "staging_api_read_only_smoke_evidence_verification_failed") {
+          if (($data["live_database_contacted"] ?? null) !== false
+              || ($data["private_config_required"] ?? null) !== false
+              || ($data["application_entrypoints_changed"] ?? null) !== false
+              || ($data["cron_changed"] ?? null) !== false
+              || ($data["deployment_performed"] ?? null) !== false) {
+              exit(0);
+          }
+      } else {
           exit(0);
       }
 
