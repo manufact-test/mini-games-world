@@ -7,27 +7,23 @@ PRIVATE_DIR="$(cd -- "$PROJECT_ROOT/.." && pwd -P)/_private_mgw"
 BASE_CONFIG="$PRIVATE_DIR/config.php"
 
 fail() {
-  printf 'MGW_STAGING_READ_ONLY_CHECKPOINT=BLOCKED\n' >&2
-  printf 'REASON=%s\n' "$1" >&2
-  printf 'PRODUCTION_CHANGED=false\n' >&2
-  printf 'CRON_CHANGED=false\n' >&2
-  printf 'WEBHOOK_ALLOWED=false\n' >&2
+  local reason="$1"
+  printf 'MGW_STAGING_READ_ONLY_CHECKPOINT=BLOCKED\n'
+  printf 'REASON=%s\n' "$reason"
+  printf 'PRODUCTION_CHANGED=false\n'
+  printf 'CRON_CHANGED=false\n'
+  printf 'WEBHOOK_ALLOWED=false\n'
   exit 1
 }
 
-for command_name in bash git date chmod rm cat stat; do
-  command -v "$command_name" >/dev/null 2>&1 || fail "required command is unavailable: $command_name"
-done
+[[ -d "$PROJECT_ROOT/.git" && ! -L "$PROJECT_ROOT/.git" ]] || fail 'deployed checkout metadata is unavailable'
+[[ -d "$PRIVATE_DIR" && ! -L "$PRIVATE_DIR" ]] || fail 'private staging directory is unavailable'
+[[ -f "$BASE_CONFIG" && ! -L "$BASE_CONFIG" ]] || fail 'external staging config is unavailable'
 
-if [[ -L "$PROJECT_ROOT" || ! -d "$PROJECT_ROOT" ]]; then
-  fail 'project root is unavailable or symbolic'
-fi
-if [[ ! -d "$PRIVATE_DIR" || -L "$PRIVATE_DIR" ]]; then
-  fail 'external private staging directory is unavailable or symbolic'
-fi
-if [[ ! -f "$BASE_CONFIG" || -L "$BASE_CONFIG" ]]; then
-  fail 'external private staging config is unavailable or symbolic'
-fi
+CURRENT_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse --verify HEAD 2>/dev/null || true)"
+[[ "$CURRENT_COMMIT" =~ ^[a-f0-9]{40}$ ]] || fail 'deployed repository commit is invalid'
+[[ -z "$(git -C "$PROJECT_ROOT" status --porcelain=v1 --untracked-files=all 2>/dev/null)" ]] \
+  || fail 'deployed checkout is not clean'
 
 PHP_BIN=''
 declare -a PHP_CANDIDATES=(
@@ -58,22 +54,8 @@ for candidate in "${PHP_CANDIDATES[@]}"; do
     break
   fi
 done
-if [[ -z "$PHP_BIN" ]]; then
-  fail 'PHP 8.3 CLI binary was not found; website PHP and SSH PHP are separate on this hosting plan'
-fi
-
-PHP_VERSION_SAFE="$($PHP_BIN -r 'echo PHP_VERSION;' 2>/dev/null)"
-if [[ ! "$PHP_VERSION_SAFE" =~ ^8\.3\.[0-9]+ ]]; then
-  fail 'detected CLI runtime is not exact PHP 8.3.x'
-fi
-
-CURRENT_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse --verify HEAD 2>/dev/null || true)"
-if [[ ! "$CURRENT_COMMIT" =~ ^[a-f0-9]{40}$ ]]; then
-  fail 'deployed repository commit is unavailable'
-fi
-if [[ -n "$(git -C "$PROJECT_ROOT" status --porcelain=v1 --untracked-files=all 2>/dev/null)" ]]; then
-  fail 'deployed repository checkout is not clean'
-fi
+[[ -n "$PHP_BIN" ]] || fail 'PHP 8.3 CLI binary was not found'
+PHP_VERSION_SAFE="$($PHP_BIN -r 'echo PHP_VERSION;')"
 
 RUN_ID="$(date -u '+%Y%m%dT%H%M%SZ')-$$-${RANDOM}"
 PREFLIGHT_FILE="$PRIVATE_DIR/staging-read-only-preflight-$RUN_ID.json"
@@ -194,6 +176,7 @@ fi
 rm -f -- "$OVERLAY_FILE"
 OVERLAY_FILE=''
 
+smoke_exit=0
 (
   unset MGW_CONFIG_FILE MGW_DATABASE_CONFIG_FILE
   MGW_REHEARSAL_COMMIT_SHA="$CURRENT_COMMIT" \
@@ -201,16 +184,23 @@ OVERLAY_FILE=''
     --evidence="$EVIDENCE_FILE" \
     --ttl-seconds=300 \
     > "$REPORT_FILE"
-) || fail 'CLI-only staging API read-only smoke failed'
-chmod 0600 "$REPORT_FILE"
+) || smoke_exit=$?
+if [[ -f "$REPORT_FILE" && ! -L "$REPORT_FILE" ]]; then
+  chmod 0600 "$REPORT_FILE" || fail 'read-only smoke report permissions could not be secured'
+fi
+[[ "$smoke_exit" -eq 0 ]] || fail 'CLI-only staging API read-only smoke failed'
 
+verification_exit=0
 "$PHP_BIN" "$PROJECT_ROOT/ops/runtime/verify-staging-db-primary-api-read-only-smoke-evidence.php" \
   --report="$REPORT_FILE" \
   --expected-commit="$CURRENT_COMMIT" \
   --expected-database-identity="$DATABASE_IDENTITY" \
   --expected-evidence-fingerprint="$EVIDENCE_FINGERPRINT" \
-  > "$VERIFICATION_FILE" || fail '43-field read-only smoke report verification failed'
-chmod 0600 "$VERIFICATION_FILE"
+  > "$VERIFICATION_FILE" || verification_exit=$?
+if [[ -f "$VERIFICATION_FILE" && ! -L "$VERIFICATION_FILE" ]]; then
+  chmod 0600 "$VERIFICATION_FILE" || fail 'read-only smoke verification permissions could not be secured'
+fi
+[[ "$verification_exit" -eq 0 ]] || fail '43-field read-only smoke report verification failed'
 
 "$PHP_BIN" -r '
 $d=json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);
