@@ -37,7 +37,10 @@ declare -a PHP_CANDIDATES=(
   lsphp83
   /usr/bin/php8.3
   /usr/local/bin/php8.3
+  /usr/local/lsws/lsphp83/bin/php
+  /usr/local/lsws/lsphp83/bin/lsphp
   /opt/alt/php83/usr/bin/php
+  /opt/cpanel/ea-php83/root/usr/bin/php
   /opt/php83/bin/php
   /opt/hostinger/php83/bin/php
 )
