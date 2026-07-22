@@ -31,6 +31,7 @@ require_once __DIR__ . '/RuntimePrimaryProjectionWorkerInterface.php';
 require_once __DIR__ . '/RuntimePrimaryProjectionAuditorInterface.php';
 require_once __DIR__ . '/RuntimePrimaryProjectionWorkerAdapter.php';
 require_once __DIR__ . '/RuntimePrimaryProjectionAuditorAdapter.php';
+require_once __DIR__ . '/RuntimePrimaryStagingMutatingSmokeRollbackGuard.php';
 require_once __DIR__ . '/RuntimePrimaryStagingRequestSessionConfig.php';
 require_once __DIR__ . '/RuntimePrimaryStagingRequestFinalizer.php';
 require_once __DIR__ . '/RuntimePrimaryStagingRequestSessionReadiness.php';
