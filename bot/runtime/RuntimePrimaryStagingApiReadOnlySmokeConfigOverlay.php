@@ -14,6 +14,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         private int $ttlSeconds = 300
     ) {
         if ($this->projectRoot === ''
+            || trim($this->projectRoot) !== $this->projectRoot
             || str_contains($this->projectRoot, '\\')
             || !str_starts_with($this->projectRoot, '/')
             || ($this->projectRoot !== '/' && str_ends_with($this->projectRoot, '/'))
@@ -35,6 +36,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
             'evidence' => $this->evidenceFile,
         ] as $label => $path) {
             if ($path === ''
+                || trim($path) !== $path
                 || str_contains($path, '\\')
                 || !str_starts_with($path, '/')
                 || str_ends_with($path, '/')) {
@@ -63,6 +65,7 @@ final class RuntimePrimaryStagingApiReadOnlySmokeConfigOverlay
         $rawDataDir = $this->baseConfig['data_dir'] ?? null;
         if (!is_string($rawDataDir)
             || $rawDataDir === ''
+            || trim($rawDataDir) !== $rawDataDir
             || str_contains($rawDataDir, '\\')
             || !str_starts_with($rawDataDir, '/')
             || ($rawDataDir !== '/' && str_ends_with($rawDataDir, '/'))
