@@ -44,11 +44,7 @@ foreach (array_slice($argv ?? [], 1) as $argument) {
         exit(2);
     }
     $seen[$matchedName] = true;
-    $value = substr($argument, strlen($matchedPrefix));
-    if ($matchedName === 'report') {
-        $value = str_replace('\\', '/', $value);
-    }
-    $values[$matchedName] = $value;
+    $values[$matchedName] = substr($argument, strlen($matchedPrefix));
 }
 
 foreach (['report', 'commit', 'database', 'evidence'] as $required) {
@@ -63,11 +59,15 @@ $expectedCommit = $values['commit'];
 $expectedDatabaseIdentity = $values['database'];
 $expectedEvidenceFingerprint = $values['evidence'];
 
-if (!str_starts_with($reportFile, '/')) {
-    fwrite(STDERR, "Verifier requires --report=/absolute/private/report.json.\n");
+if ($reportFile === ''
+    || trim($reportFile) !== $reportFile
+    || str_contains($reportFile, '\\')
+    || !str_starts_with($reportFile, '/')
+    || str_ends_with($reportFile, '/')) {
+    fwrite(STDERR, "Verifier requires --report=/absolute/private/report.json with exact Linux path bytes.\n");
     exit(2);
 }
-if (preg_match('/^[a-f0-9]{40}$/', $expectedCommit) !== 1) {
+if (preg_match('/\A[a-f0-9]{40}\z/', $expectedCommit) !== 1) {
     fwrite(STDERR, "Verifier requires --expected-commit=<40 lowercase hex>.\n");
     exit(2);
 }
@@ -75,13 +75,13 @@ foreach ([
     '--expected-database-identity' => $expectedDatabaseIdentity,
     '--expected-evidence-fingerprint' => $expectedEvidenceFingerprint,
 ] as $label => $value) {
-    if (preg_match('/^[a-f0-9]{64}$/', $value) !== 1) {
+    if (preg_match('/\A[a-f0-9]{64}\z/', $value) !== 1) {
         fwrite(STDERR, "Verifier requires {$label}=<64 lowercase hex>.\n");
         exit(2);
     }
 }
 foreach (['age', 'hooks', 'filters'] as $numeric) {
-    if ($values[$numeric] === '' || preg_match('/^\d+$/', $values[$numeric]) !== 1) {
+    if ($values[$numeric] === '' || preg_match('/\A\d+\z/', $values[$numeric]) !== 1) {
         fwrite(STDERR, "Numeric verifier options must be non-negative integers.\n");
         exit(2);
     }
