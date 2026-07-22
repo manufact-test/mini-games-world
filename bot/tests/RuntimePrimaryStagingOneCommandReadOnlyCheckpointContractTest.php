@@ -24,7 +24,7 @@ $assertTrue(
     'Prerequisite check must be CLI-only, exact PHP 8.3 and exact-commit bound'
 );
 $assertTrue(
-    str_contains($preflight, '(\$config[\'environment\'] ?? null) !== \'staging\'')
+    str_contains($preflight, "(\$config['environment'] ?? null) !== 'staging'")
         && str_contains($preflight, 'RuntimePrimaryPrivateConfigGuard::assertExternal')
         && str_contains($preflight, 'DatabaseConfig::fromApplicationConfig($config)')
         && str_contains($preflight, "preg_match('/\\A[a-f0-9]{64}\\z/'")
