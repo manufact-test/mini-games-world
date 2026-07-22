@@ -10,6 +10,8 @@ final class RuntimePrimaryStagingEvidenceVerifier
         'history', 'shop', 'payments', 'weekly_bonus',
     ];
 
+    private const PROJECTION_CONTRACT_VERSION = 'v1-normalized-all-modules';
+
     private const FORBIDDEN_KEYS = [
         'state_json', 'snapshot', 'snapshot_payload', 'users', 'user',
         'telegram_id', 'provider_subject', 'mgw_id', 'account_ref',
@@ -184,6 +186,8 @@ final class RuntimePrimaryStagingEvidenceVerifier
             'ok', 'action', 'snapshot_action', 'target_revision', 'target_sha256',
             'target_event_status', 'target_event_completed', 'status_healthy',
             'parity_completed', 'worker_tick_count', 'projected_modules',
+            'projection_proof', 'projection_contract_version',
+            'target_event_attempted', 'target_event_lease_free', 'target_event_error_free',
             'application_entrypoints_changed', 'cron_changed', 'production_changed',
             'sensitive_identifiers_exposed',
         ], $label, $blockers);
@@ -202,19 +206,31 @@ final class RuntimePrimaryStagingEvidenceVerifier
         if (!$this->validSha($report['target_sha256'] ?? null)) {
             $blockers[] = $label . ' target fingerprint must be SHA-256.';
         }
+        if ((string)($report['projection_contract_version'] ?? '') !== self::PROJECTION_CONTRACT_VERSION) {
+            $blockers[] = $label . ' projection contract version is not the current all-module contract.';
+        }
+        foreach (['target_event_attempted', 'target_event_lease_free', 'target_event_error_free'] as $field) {
+            if (($report[$field] ?? null) !== true) {
+                $blockers[] = $label . ' completed target event proof is invalid: ' . $field . '.';
+            }
+        }
+
         $snapshotAction = (string)($report['snapshot_action'] ?? '');
-        if ($first && !in_array($snapshotAction, ['snapshot_initialized', 'snapshot_revision_created'], true)) {
-            $blockers[] = 'First rehearsal must initialize or create a fresh snapshot revision.';
-        }
-        if (!$first && $snapshotAction !== 'snapshot_unchanged') {
-            $blockers[] = 'Repeated rehearsal must prove the snapshot revision is unchanged.';
-        }
+        $projectionProof = (string)($report['projection_proof'] ?? '');
         $tickCount = (int)($report['worker_tick_count'] ?? -1);
-        if ($first && ($tickCount < 1 || $tickCount > 100)) {
-            $blockers[] = 'First rehearsal must process at least one and at most 100 worker events.';
+        $freshProof = in_array($snapshotAction, ['snapshot_initialized', 'snapshot_revision_created'], true)
+            && $projectionProof === 'worker_completed_current_run'
+            && $tickCount >= 1
+            && $tickCount <= 100;
+        $reusedProof = $snapshotAction === 'snapshot_unchanged'
+            && $projectionProof === 'completed_current_contract_reused'
+            && $tickCount === 0;
+
+        if ($first && !$freshProof && !$reusedProof) {
+            $blockers[] = 'First rehearsal must prove either a fresh worker projection or an idempotently reused completed current contract.';
         }
-        if (!$first && $tickCount !== 0) {
-            $blockers[] = 'Repeated rehearsal must require zero worker ticks.';
+        if (!$first && !$reusedProof) {
+            $blockers[] = 'Repeated rehearsal must require zero worker ticks and reuse the completed current projection contract.';
         }
 
         $modules = array_values(array_unique(array_map(
