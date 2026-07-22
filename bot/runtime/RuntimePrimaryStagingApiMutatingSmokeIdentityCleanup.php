@@ -19,10 +19,36 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
     {
         $this->assertIdentity($provider, $subject, $legacyUserId, $sessionId);
         $sessionHash = hash('sha256', 'session|' . $sessionId);
+        $accountRef = 'legacy:' . $legacyUserId;
         $checks = [
-            'identity' => ['SELECT COUNT(*) FROM mgw_identities WHERE provider = :provider AND provider_subject = :subject', ['provider' => $provider, 'subject' => $subject]],
-            'ownership' => ['SELECT COUNT(*) FROM mgw_account_ownership WHERE legacy_user_id = :legacy_user_id OR account_ref = :account_ref', ['legacy_user_id' => $legacyUserId, 'account_ref' => 'legacy:' . $legacyUserId]],
-            'session' => ['SELECT COUNT(*) FROM mgw_sessions WHERE session_key_hash = :session_key_hash', ['session_key_hash' => $sessionHash]],
+            'identity' => [
+                'SELECT COUNT(*) FROM mgw_identities WHERE provider = :provider AND provider_subject = :subject',
+                ['provider' => $provider, 'subject' => $subject],
+            ],
+            'ownership' => [
+                'SELECT COUNT(*) FROM mgw_account_ownership WHERE legacy_user_id = :legacy_user_id OR account_ref = :account_ref',
+                ['legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef],
+            ],
+            'session' => [
+                'SELECT COUNT(*) FROM mgw_sessions WHERE session_key_hash = :session_key_hash',
+                ['session_key_hash' => $sessionHash],
+            ],
+            'balance' => [
+                'SELECT COUNT(*) FROM mgw_balances WHERE legacy_user_id = :legacy_user_id OR account_ref = :account_ref',
+                ['legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef],
+            ],
+            'ledger' => [
+                'SELECT COUNT(*) FROM mgw_ledger_entries WHERE legacy_user_id = :legacy_user_id OR account_ref = :account_ref',
+                ['legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef],
+            ],
+            'idempotency' => [
+                'SELECT COUNT(*) FROM mgw_idempotency_keys WHERE owner_ref = :account_ref',
+                ['account_ref' => $accountRef],
+            ],
+            'reservation' => [
+                'SELECT COUNT(*) FROM mgw_reservations WHERE legacy_user_id = :legacy_user_id OR account_ref = :account_ref',
+                ['legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef],
+            ],
         ];
         foreach ($checks as $label => [$sql, $parameters]) {
             if ((int)$this->database->fetchValue($sql, $parameters) !== 0) {
@@ -124,6 +150,8 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
                 throw new RuntimeException('Staging API mutating smoke cleanup ownership no longer matches approval.');
             }
 
+            $economyDeleted = $this->deleteEconomyArtifacts($database, $legacyUserId, $mgwId);
+
             $deletedSessions = $database->execute(
                 'DELETE FROM mgw_sessions WHERE session_key_hash = :session_key_hash AND mgw_id = :mgw_id',
                 ['session_key_hash' => $sessionHash, 'mgw_id' => $mgwId]
@@ -158,7 +186,7 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
                 throw new RuntimeException('Staging API mutating smoke cleanup identity row count is unexpected.');
             }
 
-            return [
+            return $economyDeleted + [
                 'session_rows_deleted' => $deletedSessions,
                 'device_rows_deleted' => $deletedDevices,
                 'ownership_rows_deleted' => $deletedOwnership,
@@ -170,6 +198,40 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
         return $deleted + $earlierProjectionProof;
     }
 
+    public function recoverOrphanEconomyArtifacts(string $legacyUserId, string $mgwId): array
+    {
+        $this->assertSyntheticLegacyUserId($legacyUserId);
+        if (!MgwIdGenerator::isValid($mgwId)) {
+            throw new RuntimeException('Staging API mutating smoke recovery MGW ID is invalid.');
+        }
+
+        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+            $legacyUserId,
+            $mgwId
+        ): array {
+            $userCount = (int)$database->fetchValue(
+                'SELECT COUNT(*) FROM mgw_users WHERE mgw_id = :mgw_id',
+                ['mgw_id' => $mgwId]
+            );
+            if ($userCount !== 1) {
+                throw new RuntimeException('Staging API mutating smoke recovery orphan user is missing or ambiguous.');
+            }
+            foreach ([
+                'mgw_identities', 'mgw_account_ownership', 'mgw_devices', 'mgw_sessions',
+            ] as $table) {
+                $count = (int)$database->fetchValue(
+                    'SELECT COUNT(*) FROM ' . $table . ' WHERE mgw_id = :mgw_id',
+                    ['mgw_id' => $mgwId]
+                );
+                if ($count !== 0) {
+                    throw new RuntimeException('Staging API mutating smoke recovery mappings are not fully absent.');
+                }
+            }
+            return $this->deleteEconomyArtifacts($database, $legacyUserId, $mgwId)
+                + ['recovery_orphan_verified' => true];
+        });
+    }
+
     public function removeOrphanUserAfterCleanupProjection(string $mgwId): array
     {
         if (!MgwIdGenerator::isValid($mgwId)) {
@@ -178,6 +240,7 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use ($mgwId): array {
             foreach ([
                 'mgw_sessions', 'mgw_devices', 'mgw_identities', 'mgw_account_ownership',
+                'mgw_balances', 'mgw_ledger_entries', 'mgw_reservations',
             ] as $table) {
                 $count = (int)$database->fetchValue(
                     'SELECT COUNT(*) FROM ' . $table . ' WHERE mgw_id = :mgw_id',
@@ -210,12 +273,17 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
             throw new RuntimeException('Staging API mutating smoke absence MGW ID is invalid.');
         }
         $sessionHash = hash('sha256', 'session|' . $sessionId);
+        $accountRef = 'legacy:' . $legacyUserId;
         $checks = [
             ['SELECT COUNT(*) FROM mgw_users WHERE mgw_id = :mgw_id', ['mgw_id' => $mgwId]],
             ['SELECT COUNT(*) FROM mgw_identities WHERE mgw_id = :mgw_id OR (provider = :provider AND provider_subject = :subject)', ['mgw_id' => $mgwId, 'provider' => $provider, 'subject' => $subject]],
-            ['SELECT COUNT(*) FROM mgw_account_ownership WHERE mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id OR account_ref = :account_ref', ['mgw_id' => $mgwId, 'legacy_user_id' => $legacyUserId, 'account_ref' => 'legacy:' . $legacyUserId]],
+            ['SELECT COUNT(*) FROM mgw_account_ownership WHERE mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id OR account_ref = :account_ref', ['mgw_id' => $mgwId, 'legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef]],
             ['SELECT COUNT(*) FROM mgw_devices WHERE mgw_id = :mgw_id', ['mgw_id' => $mgwId]],
             ['SELECT COUNT(*) FROM mgw_sessions WHERE mgw_id = :mgw_id OR session_key_hash = :session_key_hash', ['mgw_id' => $mgwId, 'session_key_hash' => $sessionHash]],
+            ['SELECT COUNT(*) FROM mgw_balances WHERE mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id OR account_ref = :account_ref', ['mgw_id' => $mgwId, 'legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef]],
+            ['SELECT COUNT(*) FROM mgw_ledger_entries WHERE mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id OR account_ref = :account_ref', ['mgw_id' => $mgwId, 'legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef]],
+            ['SELECT COUNT(*) FROM mgw_idempotency_keys WHERE owner_ref = :account_ref', ['account_ref' => $accountRef]],
+            ['SELECT COUNT(*) FROM mgw_reservations WHERE mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id OR account_ref = :account_ref', ['mgw_id' => $mgwId, 'legacy_user_id' => $legacyUserId, 'account_ref' => $accountRef]],
         ];
         foreach ($checks as [$sql, $parameters]) {
             if ((int)$this->database->fetchValue($sql, $parameters) !== 0) {
@@ -229,8 +297,160 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
             'ownership_rows_remaining' => 0,
             'device_rows_remaining' => 0,
             'session_rows_remaining' => 0,
+            'balance_rows_remaining' => 0,
+            'ledger_rows_remaining' => 0,
+            'idempotency_rows_remaining' => 0,
+            'reservation_rows_remaining' => 0,
             'user_rows_remaining' => 0,
             'sensitive_identifiers_exposed' => false,
+        ];
+    }
+
+    private function deleteEconomyArtifacts(
+        DatabaseConnectionInterface $database,
+        string $legacyUserId,
+        string $mgwId
+    ): array {
+        $this->assertSyntheticLegacyUserId($legacyUserId);
+        $accountRef = 'legacy:' . $legacyUserId;
+
+        $reservations = $database->fetchAll(
+            'SELECT reservation_id FROM mgw_reservations
+             WHERE account_ref = :account_ref OR mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id
+             FOR UPDATE',
+            [
+                'account_ref' => $accountRef,
+                'mgw_id' => $mgwId,
+                'legacy_user_id' => $legacyUserId,
+            ]
+        );
+        if ($reservations !== []) {
+            throw new RuntimeException('Staging API mutating smoke economy cleanup found an unexpected reservation.');
+        }
+
+        $balances = $database->fetchAll(
+            'SELECT account_ref, mgw_id, legacy_user_id, asset_code, reserved_amount
+             FROM mgw_balances
+             WHERE account_ref = :account_ref OR mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id
+             ORDER BY asset_code ASC FOR UPDATE',
+            [
+                'account_ref' => $accountRef,
+                'mgw_id' => $mgwId,
+                'legacy_user_id' => $legacyUserId,
+            ]
+        );
+        if (count($balances) !== 2) {
+            throw new RuntimeException('Staging API mutating smoke economy cleanup requires exactly two balances.');
+        }
+        $balanceAssets = [];
+        foreach ($balances as $balance) {
+            $asset = (string)($balance['asset_code'] ?? '');
+            if (!in_array($asset, ['gold_coin', 'match_coin'], true)
+                || isset($balanceAssets[$asset])
+                || !hash_equals($accountRef, (string)($balance['account_ref'] ?? ''))
+                || !hash_equals($mgwId, (string)($balance['mgw_id'] ?? ''))
+                || !hash_equals($legacyUserId, (string)($balance['legacy_user_id'] ?? ''))
+                || (int)($balance['reserved_amount'] ?? -1) !== 0) {
+                throw new RuntimeException('Staging API mutating smoke economy balance identity is invalid.');
+            }
+            $balanceAssets[$asset] = true;
+        }
+        if (array_keys($balanceAssets) !== ['gold_coin', 'match_coin']) {
+            throw new RuntimeException('Staging API mutating smoke economy assets are incomplete.');
+        }
+
+        $ledgerRows = $database->fetchAll(
+            'SELECT idempotency_key, account_ref, mgw_id, legacy_user_id, asset_code,
+                    category, source_type, reservation_id
+             FROM mgw_ledger_entries
+             WHERE account_ref = :account_ref OR mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id
+             ORDER BY ledger_sequence ASC FOR UPDATE',
+            [
+                'account_ref' => $accountRef,
+                'mgw_id' => $mgwId,
+                'legacy_user_id' => $legacyUserId,
+            ]
+        );
+        if (count($ledgerRows) > 2) {
+            throw new RuntimeException('Staging API mutating smoke economy cleanup ledger bound was exceeded.');
+        }
+        $ledgerKeys = [];
+        $ledgerAssets = [];
+        foreach ($ledgerRows as $row) {
+            $key = (string)($row['idempotency_key'] ?? '');
+            $asset = (string)($row['asset_code'] ?? '');
+            $reservationId = trim((string)($row['reservation_id'] ?? ''));
+            if (preg_match('/\Aruntime_opening:v1:[a-f0-9]{48}\z/', $key) !== 1
+                || !in_array($asset, ['gold_coin', 'match_coin'], true)
+                || isset($ledgerAssets[$asset])
+                || !hash_equals($accountRef, (string)($row['account_ref'] ?? ''))
+                || !hash_equals($mgwId, (string)($row['mgw_id'] ?? ''))
+                || !hash_equals($legacyUserId, (string)($row['legacy_user_id'] ?? ''))
+                || (string)($row['category'] ?? '') !== 'legacy_runtime_opening'
+                || (string)($row['source_type'] ?? '') !== 'legacy_json_runtime'
+                || $reservationId !== '') {
+                throw new RuntimeException('Staging API mutating smoke economy ledger identity is invalid.');
+            }
+            $ledgerKeys[$key] = true;
+            $ledgerAssets[$asset] = true;
+        }
+
+        $idempotencyRows = $database->fetchAll(
+            'SELECT operation_key, operation_type, owner_ref, status
+             FROM mgw_idempotency_keys WHERE owner_ref = :account_ref
+             ORDER BY operation_key ASC FOR UPDATE',
+            ['account_ref' => $accountRef]
+        );
+        if (count($idempotencyRows) !== count($ledgerRows)) {
+            throw new RuntimeException('Staging API mutating smoke economy idempotency count is invalid.');
+        }
+        foreach ($idempotencyRows as $row) {
+            $key = (string)($row['operation_key'] ?? '');
+            if (!isset($ledgerKeys[$key])
+                || (string)($row['operation_type'] ?? '') !== 'available_delta'
+                || !hash_equals($accountRef, (string)($row['owner_ref'] ?? ''))
+                || (string)($row['status'] ?? '') !== 'completed') {
+                throw new RuntimeException('Staging API mutating smoke economy idempotency identity is invalid.');
+            }
+        }
+
+        $deletedLedger = $database->execute(
+            'DELETE FROM mgw_ledger_entries
+             WHERE account_ref = :account_ref AND mgw_id = :mgw_id AND legacy_user_id = :legacy_user_id',
+            [
+                'account_ref' => $accountRef,
+                'mgw_id' => $mgwId,
+                'legacy_user_id' => $legacyUserId,
+            ]
+        );
+        if ($deletedLedger !== count($ledgerRows)) {
+            throw new RuntimeException('Staging API mutating smoke economy ledger deletion count is invalid.');
+        }
+        $deletedIdempotency = $database->execute(
+            'DELETE FROM mgw_idempotency_keys WHERE owner_ref = :account_ref',
+            ['account_ref' => $accountRef]
+        );
+        if ($deletedIdempotency !== count($idempotencyRows)) {
+            throw new RuntimeException('Staging API mutating smoke economy idempotency deletion count is invalid.');
+        }
+        $deletedBalances = $database->execute(
+            'DELETE FROM mgw_balances
+             WHERE account_ref = :account_ref AND mgw_id = :mgw_id AND legacy_user_id = :legacy_user_id',
+            [
+                'account_ref' => $accountRef,
+                'mgw_id' => $mgwId,
+                'legacy_user_id' => $legacyUserId,
+            ]
+        );
+        if ($deletedBalances !== 2) {
+            throw new RuntimeException('Staging API mutating smoke economy balance deletion count is invalid.');
+        }
+
+        return [
+            'economy_balance_rows_deleted' => $deletedBalances,
+            'economy_ledger_rows_deleted' => $deletedLedger,
+            'economy_idempotency_rows_deleted' => $deletedIdempotency,
+            'economy_reservation_rows_verified_zero' => true,
         ];
     }
 
@@ -333,10 +553,16 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
 
     private function assertProviderSubject(string $provider, string $subject, string $legacyUserId): void
     {
-        if ($provider !== 'telegram'
-            || preg_match('/\A9\d{17}\z/', $subject) !== 1
-            || !hash_equals($subject, $legacyUserId)) {
+        if ($provider !== 'telegram' || !hash_equals($subject, $legacyUserId)) {
             throw new RuntimeException('Staging API mutating smoke synthetic identity is invalid.');
+        }
+        $this->assertSyntheticLegacyUserId($legacyUserId);
+    }
+
+    private function assertSyntheticLegacyUserId(string $legacyUserId): void
+    {
+        if (preg_match('/\A9\d{17}\z/', $legacyUserId) !== 1) {
+            throw new RuntimeException('Staging API mutating smoke synthetic legacy user is invalid.');
         }
     }
 }
