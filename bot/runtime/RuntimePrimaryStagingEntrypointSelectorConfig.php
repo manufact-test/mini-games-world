@@ -20,27 +20,35 @@ final class RuntimePrimaryStagingEntrypointSelectorConfig
         $settings = is_array($config['staging_db_primary_entrypoint_selector'] ?? null)
             ? $config['staging_db_primary_entrypoint_selector']
             : [];
-        $enabled = self::strictBool(
-            $settings['enabled'] ?? false,
-            'staging_db_primary_entrypoint_selector.enabled'
-        );
-        $contractVersion = trim((string)($settings['contract_version'] ?? ''));
-        $allowed = $settings['allowed_entrypoints'] ?? [];
+        $enabled = array_key_exists('enabled', $settings)
+            ? self::strictBool($settings['enabled'], 'staging_db_primary_entrypoint_selector.enabled')
+            : false;
+        $contractVersion = array_key_exists('contract_version', $settings)
+            ? self::strictString(
+                $settings['contract_version'],
+                'staging_db_primary_entrypoint_selector.contract_version'
+            )
+            : '';
+        $allowed = array_key_exists('allowed_entrypoints', $settings)
+            ? $settings['allowed_entrypoints']
+            : [];
         if (!is_array($allowed) || !array_is_list($allowed)) {
             throw new RuntimeException('staging_db_primary_entrypoint_selector.allowed_entrypoints must be a list.');
         }
-        $normalized = [];
         foreach ($allowed as $entrypoint) {
-            $entrypoint = strtolower(trim((string)$entrypoint));
+            if (!is_string($entrypoint)) {
+                throw new RuntimeException(
+                    'staging_db_primary_entrypoint_selector.allowed_entrypoints values must be strings.'
+                );
+            }
             if ($entrypoint !== 'api') {
                 throw new RuntimeException('The staging DB-primary entrypoint selector supports only API.');
             }
-            if (isset($normalized[$entrypoint])) {
-                throw new RuntimeException('Duplicate staging DB-primary entrypoint: ' . $entrypoint . '.');
-            }
-            $normalized[$entrypoint] = true;
         }
-        $allowedEntrypoints = array_keys($normalized);
+        if (count($allowed) !== count(array_unique($allowed, SORT_STRING))) {
+            throw new RuntimeException('Duplicate staging DB-primary entrypoint: api.');
+        }
+        $allowedEntrypoints = array_values($allowed);
 
         if ($enabled) {
             if ($contractVersion !== self::CONTRACT_VERSION) {
@@ -56,7 +64,6 @@ final class RuntimePrimaryStagingEntrypointSelectorConfig
 
     public function enabledFor(string $entrypoint): bool
     {
-        $entrypoint = strtolower(trim($entrypoint));
         if (!in_array($entrypoint, ['api', 'webhook'], true)) {
             throw new InvalidArgumentException('Entrypoint selector supports only api or webhook.');
         }
@@ -84,20 +91,17 @@ final class RuntimePrimaryStagingEntrypointSelectorConfig
 
     private static function strictBool(mixed $value, string $label): bool
     {
-        if (is_bool($value)) return $value;
-        if (is_int($value)) {
-            if ($value === 0) return false;
-            if ($value === 1) return true;
+        if (!is_bool($value)) {
             throw new RuntimeException($label . ' must be a strict boolean value.');
         }
-        if (is_string($value)) {
-            return match (strtolower(trim($value))) {
-                '1', 'true', 'yes', 'on', 'enabled' => true,
-                '0', 'false', 'no', 'off', 'disabled' => false,
-                default => throw new RuntimeException($label . ' must be a strict boolean value.'),
-            };
+        return $value;
+    }
+
+    private static function strictString(mixed $value, string $label): string
+    {
+        if (!is_string($value)) {
+            throw new RuntimeException($label . ' must be a string value.');
         }
-        if ($value === null) return false;
-        throw new RuntimeException($label . ' must be a strict boolean value.');
+        return $value;
     }
 }
