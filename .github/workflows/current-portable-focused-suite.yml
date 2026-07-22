@@ -27,11 +27,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           clean: true
+          show-progress: false
 
       - name: Initialize private evidence paths
         run: |
           printf 'MGW_CI_OUTPUT_DIR=%s\n' "$RUNNER_TEMP/mgw-current-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
           printf 'MGW_CI_VERIFICATION_FILE=%s\n' "$RUNNER_TEMP/mgw-current-ci-verification-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json" >> "$GITHUB_ENV"
+          printf 'MGW_CI_DIAGNOSTIC_DIR=%s\n' "$RUNNER_TEMP/mgw-current-ci-diagnostics-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/mgw-current-ci-diagnostics-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          chmod 0700 "$RUNNER_TEMP/mgw-current-ci-diagnostics-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
       - name: Bind exact checked-out commit
         id: bind
@@ -95,7 +99,13 @@ jobs:
         run: php bot/tests/RuntimePrimaryStagingReadOnlyCheckpointReceiptTest.php
 
       - name: Test mutating evidence verifier
-        run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifierTest.php
+        run: |
+          set +e
+          php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifierTest.php > "$MGW_CI_DIAGNOSTIC_DIR/mutating-evidence-verifier.log" 2>&1
+          status=$?
+          set -e
+          cat "$MGW_CI_DIAGNOSTIC_DIR/mutating-evidence-verifier.log"
+          exit "$status"
 
       - name: Test mutating execution CLI contract
         run: php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeCliContractTest.php
@@ -123,7 +133,8 @@ jobs:
           chmod 0600 "$MGW_CI_VERIFICATION_FILE"
           cat "$MGW_CI_VERIFICATION_FILE"
 
-      - name: Upload current focused-suite evidence
+      - name: Upload focused-suite evidence
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: mgw-current-focused-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -134,3 +145,12 @@ jobs:
             ${{ env.MGW_CI_VERIFICATION_FILE }}
           if-no-files-found: error
           retention-days: 7
+
+      - name: Upload mutating smoke diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mutating-diagnostics-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.MGW_CI_DIAGNOSTIC_DIR }}
+          if-no-files-found: warn
+          retention-days: 1
