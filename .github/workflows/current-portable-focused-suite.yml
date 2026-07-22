@@ -23,7 +23,7 @@ jobs:
       MGW_CI_TIMEOUT_SECONDS: '2700'
 
     steps:
-      - name: Checkout exact deployable revision
+      - name: Checkout exact candidate revision
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
