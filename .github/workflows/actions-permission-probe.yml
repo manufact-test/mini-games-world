@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     env:
-      MGW_TARGET_COMMIT: 9a06ac956c9e081ef385b11793ed5dd0566e200d
+      MGW_TARGET_COMMIT: 2b8b5612b6f6edcb53ac8ef6bfec0a8f51a18900
       MGW_CI_TIMEOUT_SECONDS: '2700'
 
     steps:
