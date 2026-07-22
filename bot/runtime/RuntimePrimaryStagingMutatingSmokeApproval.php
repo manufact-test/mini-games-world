@@ -148,7 +148,7 @@ final class RuntimePrimaryStagingMutatingSmokeApproval
             throw new RuntimeException('DB-primary baseline fingerprint does not match the mutating smoke approval.');
         }
 
-        if (preg_match('/^[a-f0-9]{64}$/', $challenge) !== 1) {
+        if (preg_match('/\A[a-f0-9]{64}\z/', $challenge) !== 1) {
             throw new RuntimeException('Staging mutating smoke challenge must be exact lowercase hexadecimal.');
         }
         $this->assertSha($this->challengeSha256, 'Approved staging mutating smoke challenge fingerprint');
@@ -181,7 +181,7 @@ final class RuntimePrimaryStagingMutatingSmokeApproval
                 $this->expectedDatabaseIdentityFingerprint
             ),
             'repository_commit_configured' => preg_match(
-                '/^[a-f0-9]{40}$/',
+                '/\A[a-f0-9]{40}\z/',
                 $this->expectedRepositoryCommit
             ) === 1,
             'read_only_report_fingerprint_configured' => $this->validSha(
@@ -211,12 +211,12 @@ final class RuntimePrimaryStagingMutatingSmokeApproval
 
     private function validSha(string $value): bool
     {
-        return preg_match('/^[a-f0-9]{64}$/', $value) === 1;
+        return preg_match('/\A[a-f0-9]{64}\z/', $value) === 1;
     }
 
     private function assertCommit(string $value, string $label): void
     {
-        if (preg_match('/^[a-f0-9]{40}$/', $value) !== 1) {
+        if (preg_match('/\A[a-f0-9]{40}\z/', $value) !== 1) {
             throw new RuntimeException($label . ' is invalid.');
         }
     }
@@ -224,7 +224,7 @@ final class RuntimePrimaryStagingMutatingSmokeApproval
     private static function parseExactExpiry(string $value): DateTimeImmutable
     {
         if (preg_match(
-            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/',
+            '/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})\z/',
             $value
         ) !== 1) {
             throw new RuntimeException(
