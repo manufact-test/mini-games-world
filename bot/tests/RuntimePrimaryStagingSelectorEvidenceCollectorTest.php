@@ -32,6 +32,7 @@ final class RuntimePrimaryStagingSelectorEvidenceCollectorTestSource implements 
 
     public function __construct(private string $projectRoot, private string $commit)
     {
+        $sha = str_repeat('1', 64);
         $modules = [
             'accounts', 'realtime', 'economy', 'notifications', 'invites',
             'history', 'shop', 'payments', 'weekly_bonus',
@@ -51,7 +52,16 @@ final class RuntimePrimaryStagingSelectorEvidenceCollectorTestSource implements 
                     'schema_fingerprint' => str_repeat('4', 64),
                 ],
             ],
-            'target_event' => ['status' => 'completed'],
+            'target_event' => [
+                'present' => true,
+                'state_revision' => 1,
+                'state_sha256' => $sha,
+                'projection_version' => 'v1-normalized-all-modules',
+                'status' => 'completed',
+                'attempt_count' => 1,
+                'lease_expires_at_utc' => '',
+                'last_error' => '',
+            ],
             'target_event_completed' => true,
             'status_healthy' => true,
             'parity_completed' => true,
@@ -65,19 +75,22 @@ final class RuntimePrimaryStagingSelectorEvidenceCollectorTestSource implements 
                 'snapshot' => [
                     'action' => 'snapshot_initialized',
                     'state_revision' => 1,
-                    'state_sha256' => str_repeat('1', 64),
+                    'state_sha256' => $sha,
                 ],
                 'worker_tick_count' => 1,
                 'worker_ticks' => [[
                     'action' => 'projection_completed',
+                    'state_revision' => 1,
+                    'state_sha256' => $sha,
                     'projected_modules' => $modules,
+                    'parity_ok' => true,
                 ]],
             ],
             $common + [
                 'snapshot' => [
                     'action' => 'snapshot_unchanged',
                     'state_revision' => 1,
-                    'state_sha256' => str_repeat('1', 64),
+                    'state_sha256' => $sha,
                 ],
                 'worker_tick_count' => 0,
                 'worker_ticks' => [],
