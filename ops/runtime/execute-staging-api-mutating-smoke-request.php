@@ -27,7 +27,7 @@ final class RuntimePrimaryStagingApiMutatingSmokeInputStream
 
     public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool
     {
-        if ($path !== 'php://input' || $mode !== 'rb') {
+        if ($path !== 'php://input' || !str_starts_with($mode, 'r')) {
             throw new RuntimeException('Staging API mutating smoke stream supports only php://input read access.');
         }
         $config = $GLOBALS['config'] ?? null;
@@ -110,7 +110,7 @@ $_SERVER['SCRIPT_FILENAME'] = $projectRoot . '/bot/api.php';
 $_SERVER['PHP_SELF'] = '/bot/api.php';
 $_SERVER['SCRIPT_NAME'] = '/bot/api.php';
 $_SERVER['REQUEST_METHOD'] = 'POST';
-$_SERVER['HTTP_HOST'] = 'localhost';
+unset($_SERVER['HTTP_HOST'], $_SERVER['SERVER_NAME']);
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
 require $projectRoot . '/bot/api.php';
