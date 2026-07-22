@@ -116,9 +116,9 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($launcher, "'staging_read_only_prerequisites_blocked_or_failed'")
-        && str_contains($launcher, '(\$data["path_exposed"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["production_changed"] ?? null) !== false')
-        && str_contains($launcher, '(\$data["sensitive_identifiers_exposed"] ?? null) !== false')
+        && str_contains($launcher, '($data["path_exposed"] ?? null) !== false')
+        && str_contains($launcher, '($data["production_changed"] ?? null) !== false')
+        && str_contains($launcher, '($data["sensitive_identifiers_exposed"] ?? null) !== false')
         && str_contains($launcher, 'strlen($message) > 500')
         && str_contains($launcher, 'echo "DETAIL="')
         && !str_contains($launcher, 'cat "$LATEST_REPORT"'),
