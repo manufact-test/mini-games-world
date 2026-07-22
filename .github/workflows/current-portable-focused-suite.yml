@@ -51,6 +51,12 @@ jobs:
           php -r 'foreach (["json", "pdo", "pdo_sqlite", "openssl", "mbstring"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "missing PHP extension: {$extension}\n"); exit(1); } }'
           timeout --version | head -n 1
 
+      - name: Execute runtime loading and wiring gate
+        run: |
+          php ops/runtime/check-staging-runtime-contract-loading.php
+          php bot/tests/RuntimePrimaryStagingLifecycleEvidenceCollectorCliContractTest.php
+          php bot/tests/RuntimePrimaryStagingOneCommandReadOnlyCheckpointContractTest.php
+
       - name: Run current portable focused suite
         run: bash ops/ci/run-current-portable-focused-suite.sh
 
