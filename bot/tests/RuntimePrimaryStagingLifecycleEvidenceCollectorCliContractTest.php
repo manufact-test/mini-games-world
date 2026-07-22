@@ -58,12 +58,36 @@ $assertTrue(
     'Lifecycle CLI must reject duplicate and normalized option values byte-exactly'
 );
 $assertTrue(
-    str_contains($source, 'Lifecycle evidence filesystem operation failed.')
-        && str_contains($source, 'Suppressed lifecycle evidence collector warning.')
+    str_contains($source, '$failureStage = \'initialization\';')
+        && str_contains($source, 'use (&$failureStage)')
+        && str_contains($source, 'Lifecycle evidence filesystem operation failed at stage ')
+        && str_contains($source, 'Suppressed lifecycle evidence collector warning at stage ')
+        && str_contains($source, "'failure_stage' => \$failureStage")
         && str_contains($source, 'restore_error_handler();')
         && strpos($source, 'restore_error_handler();') > $databaseOpen,
-    'Lifecycle CLI must shield filesystem warnings and restore the handler after guarded work'
+    'Lifecycle CLI must shield filesystem warnings, expose only a safe stage enum and restore the handler'
 );
+foreach ([
+    'output_path_validation',
+    'application_bootstrap',
+    'runtime_contract_loading',
+    'staging_configuration_validation',
+    'approval_validation',
+    'lock_prepare',
+    'database_connect',
+    'rollback_storage_create',
+    'evidence_source_setup',
+    'evidence_collection',
+    'evidence_write',
+    'evidence_readback',
+    'evidence_verification',
+    'completed',
+] as $stage) {
+    $assertTrue(
+        str_contains($source, "\$failureStage = '{$stage}';"),
+        'Lifecycle CLI must set the bounded safe stage: ' . $stage
+    );
+}
 $assertTrue(
     substr_count($source, 'PdoConnectionFactory::create($databaseConfig)') === 2
         && str_contains($source, 'RuntimePrimaryStagingConcurrencyProbe('),
