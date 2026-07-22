@@ -69,7 +69,21 @@ jobs:
         run: php bot/tests/RuntimePrimaryStagingEvidenceV2VerifierTest.php
 
       - name: Run current portable focused suite
+        id: suite
+        continue-on-error: true
         run: bash ops/ci/run-current-portable-focused-suite.sh
+
+      - name: Upload focused suite diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-current-suite-log-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite.log
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Enforce focused suite result
+        run: test "${{ steps.suite.outcome }}" = 'success'
 
       - name: Verify exact current evidence bundle
         run: |
