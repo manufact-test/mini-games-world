@@ -4,6 +4,9 @@ declare(strict_types=1);
 $projectRoot = dirname(__DIR__, 2);
 require_once $projectRoot . '/bot/database/DatabaseConnectionInterface.php';
 require_once $projectRoot . '/bot/accounts/MgwIdGenerator.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryStateSchemaInstaller.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
+require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionWorkerInterface.php';
 require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup.php';
 
 final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInterface
@@ -13,6 +16,9 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
     public array $ownership = [];
     public array $devices = [];
     public array $sessions = [];
+    public array $outbox = [];
+    public array $log = [];
+    public int $currentRevision = 12;
 
     public function driver(): string
     {
@@ -21,10 +27,27 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
 
     public function execute(string $sql, array $parameters = []): int
     {
-        $sql = preg_replace('/\s+/', ' ', trim($sql)) ?? trim($sql);
+        $sql = $this->normalize($sql);
         $mgwId = (string)($parameters['mgw_id'] ?? '');
 
+        if (str_starts_with($sql, 'UPDATE ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE)) {
+            $revision = (int)($parameters['state_revision'] ?? 0);
+            $expected = (string)($parameters['expected_status'] ?? '');
+            foreach ($this->outbox as &$row) {
+                if ((int)($row['state_revision'] ?? 0) !== $revision
+                    || (string)($row['status'] ?? '') !== $expected) {
+                    continue;
+                }
+                $row['status'] = 'pending';
+                $this->log[] = 'reset:' . $revision;
+                unset($row);
+                return 1;
+            }
+            unset($row);
+            return 0;
+        }
         if (str_starts_with($sql, 'DELETE FROM mgw_sessions')) {
+            $this->log[] = 'delete:sessions';
             $hash = (string)($parameters['session_key_hash'] ?? '');
             return $this->deleteWhere($this->sessions, static fn(array $row): bool =>
                 (string)($row['mgw_id'] ?? '') === $mgwId
@@ -32,11 +55,13 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
             );
         }
         if (str_starts_with($sql, 'DELETE FROM mgw_devices')) {
+            $this->log[] = 'delete:devices';
             return $this->deleteWhere($this->devices, static fn(array $row): bool =>
                 (string)($row['mgw_id'] ?? '') === $mgwId
             );
         }
         if (str_starts_with($sql, 'DELETE FROM mgw_account_ownership')) {
+            $this->log[] = 'delete:ownership';
             $legacy = (string)($parameters['legacy_user_id'] ?? '');
             $ref = (string)($parameters['account_ref'] ?? '');
             return $this->deleteWhere($this->ownership, static fn(array $row): bool =>
@@ -46,11 +71,13 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
             );
         }
         if (str_starts_with($sql, 'DELETE FROM mgw_identities')) {
+            $this->log[] = 'delete:identities';
             return $this->deleteWhere($this->identities, static fn(array $row): bool =>
                 (string)($row['mgw_id'] ?? '') === $mgwId
             );
         }
         if (str_starts_with($sql, 'DELETE FROM mgw_users')) {
+            $this->log[] = 'delete:users';
             return $this->deleteWhere($this->users, static fn(array $row): bool =>
                 (string)($row['mgw_id'] ?? '') === $mgwId
             );
@@ -61,7 +88,18 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
 
     public function fetchAll(string $sql, array $parameters = []): array
     {
-        $sql = preg_replace('/\s+/', ' ', trim($sql)) ?? trim($sql);
+        $sql = $this->normalize($sql);
+        if (str_contains($sql, 'FROM ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE)) {
+            $current = (int)($parameters['current_revision'] ?? 0);
+            $rows = array_values(array_filter($this->outbox, static fn(array $row): bool =>
+                (string)($row['status'] ?? '') !== 'completed'
+                && (int)($row['state_revision'] ?? 0) < $current
+            ));
+            usort($rows, static fn(array $a, array $b): int =>
+                (int)$a['state_revision'] <=> (int)$b['state_revision']
+            );
+            return $rows === [] ? [] : [$rows[0]];
+        }
         if (str_contains($sql, 'FROM mgw_identities')
             && str_contains($sql, 'provider = :provider')
             && str_contains($sql, 'provider_subject = :subject')) {
@@ -88,7 +126,10 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
 
     public function fetchValue(string $sql, array $parameters = []): mixed
     {
-        $sql = preg_replace('/\s+/', ' ', trim($sql)) ?? trim($sql);
+        $sql = $this->normalize($sql);
+        if (str_contains($sql, 'FROM ' . RuntimePrimaryStateSchemaInstaller::TABLE)) {
+            return $this->currentRevision;
+        }
         if (str_contains($sql, 'FROM mgw_identities')) {
             $mgwId = (string)($parameters['mgw_id'] ?? '');
             $provider = (string)($parameters['provider'] ?? '');
@@ -136,13 +177,32 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
 
     public function transaction(callable $callback): mixed
     {
-        $snapshot = [$this->users, $this->identities, $this->ownership, $this->devices, $this->sessions];
+        $snapshot = [
+            $this->users, $this->identities, $this->ownership, $this->devices,
+            $this->sessions, $this->outbox, $this->log,
+        ];
         try {
             return $callback($this);
         } catch (Throwable $error) {
-            [$this->users, $this->identities, $this->ownership, $this->devices, $this->sessions] = $snapshot;
+            [
+                $this->users, $this->identities, $this->ownership, $this->devices,
+                $this->sessions, $this->outbox, $this->log,
+            ] = $snapshot;
             throw $error;
         }
+    }
+
+    public function completeOutboxRevision(int $revision): void
+    {
+        foreach ($this->outbox as &$row) {
+            if ((int)($row['state_revision'] ?? 0) !== $revision) continue;
+            $row['status'] = 'completed';
+            $this->log[] = 'project:' . $revision;
+            unset($row);
+            return;
+        }
+        unset($row);
+        throw new RuntimeException('Fake projection revision was not found.');
     }
 
     private function deleteWhere(array &$rows, callable $predicate): int
@@ -150,6 +210,39 @@ final class ApiMutatingSmokeCleanupFakeDatabase implements DatabaseConnectionInt
         $before = count($rows);
         $rows = array_values(array_filter($rows, static fn(array $row): bool => !$predicate($row)));
         return $before - count($rows);
+    }
+
+    private function normalize(string $sql): string
+    {
+        return preg_replace('/\s+/', ' ', trim($sql)) ?? trim($sql);
+    }
+}
+
+final class ApiMutatingSmokeCleanupFakeWorker implements RuntimePrimaryProjectionWorkerInterface
+{
+    public function __construct(private ApiMutatingSmokeCleanupFakeDatabase $database) {}
+
+    public function runOnce(): array
+    {
+        $rows = array_values(array_filter($this->database->outbox, fn(array $row): bool =>
+            (string)($row['status'] ?? '') !== 'completed'
+            && (int)($row['state_revision'] ?? 0) < $this->database->currentRevision
+        ));
+        usort($rows, static fn(array $a, array $b): int =>
+            (int)$a['state_revision'] <=> (int)$b['state_revision']
+        );
+        if ($rows === []) {
+            return ['ok' => true, 'action' => 'projection_noop', 'claimed' => false];
+        }
+        $revision = (int)$rows[0]['state_revision'];
+        $this->database->completeOutboxRevision($revision);
+        return [
+            'ok' => true,
+            'action' => 'projection_completed',
+            'claimed' => true,
+            'state_revision' => $revision,
+            'parity_ok' => true,
+        ];
     }
 }
 
@@ -167,30 +260,59 @@ $subject = '912345678901234567';
 $sessionId = str_repeat('a', 64);
 $sessionHash = hash('sha256', 'session|' . $sessionId);
 $mgwId = 'MGW-0123456789ABCDEF';
+$seedFull = static function (ApiMutatingSmokeCleanupFakeDatabase $database) use (
+    $mgwId,
+    $subject,
+    $sessionHash
+): void {
+    $database->users = [['mgw_id' => $mgwId]];
+    $database->identities = [
+        ['mgw_id' => $mgwId, 'provider' => 'telegram', 'provider_subject' => $subject],
+        ['mgw_id' => $mgwId, 'provider' => 'legacy_import', 'provider_subject' => $subject],
+    ];
+    $database->ownership = [[
+        'mgw_id' => $mgwId,
+        'legacy_user_id' => $subject,
+        'account_ref' => 'legacy:' . $subject,
+    ]];
+    $database->devices = [['mgw_id' => $mgwId]];
+    $database->sessions = [['mgw_id' => $mgwId, 'session_key_hash' => $sessionHash]];
+};
+$cleanupAll = static function (
+    ApiMutatingSmokeCleanupFakeDatabase $database,
+    RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup $cleanup
+) use ($assertSame, $provider, $subject, $sessionId, $mgwId): array {
+    $assertSame($mgwId, $cleanup->resolveCreatedMgwId($provider, $subject, $subject), 'Cleanup MGW ID resolution failed.');
+    $removed = $cleanup->removeMappingsBeforeCleanupProjection(
+        $provider,
+        $subject,
+        $subject,
+        $sessionId,
+        $mgwId
+    );
+    $userRemoved = $cleanup->removeOrphanUserAfterCleanupProjection($mgwId);
+    $assertSame(true, $cleanup->assertAbsent(
+        $provider,
+        $subject,
+        $subject,
+        $sessionId,
+        $mgwId
+    )['ok'] ?? false, 'Cleanup absence proof failed.');
+    return [$removed, $userRemoved];
+};
 
 $full = new ApiMutatingSmokeCleanupFakeDatabase();
-$full->users = [['mgw_id' => $mgwId]];
-$full->identities = [
-    ['mgw_id' => $mgwId, 'provider' => 'telegram', 'provider_subject' => $subject],
-    ['mgw_id' => $mgwId, 'provider' => 'legacy_import', 'provider_subject' => $subject],
-];
-$full->ownership = [[
-    'mgw_id' => $mgwId,
-    'legacy_user_id' => $subject,
-    'account_ref' => 'legacy:' . $subject,
-]];
-$full->devices = [['mgw_id' => $mgwId]];
-$full->sessions = [['mgw_id' => $mgwId, 'session_key_hash' => $sessionHash]];
-$cleanup = new RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup($full);
-$assertSame($mgwId, $cleanup->resolveCreatedMgwId($provider, $subject, $subject), 'Full cleanup MGW ID resolution failed.');
-$removed = $cleanup->removeMappingsBeforeCleanupProjection($provider, $subject, $subject, $sessionId, $mgwId);
+$seedFull($full);
+[$removed, $userRemoved] = $cleanupAll(
+    $full,
+    new RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup($full)
+);
+$assertSame(0, $removed['earlier_projection_events_completed'] ?? null, 'Normal cleanup should not process earlier projections.');
 $assertSame(1, $removed['session_rows_deleted'] ?? null, 'Full cleanup session count mismatch.');
 $assertSame(1, $removed['device_rows_deleted'] ?? null, 'Full cleanup device count mismatch.');
 $assertSame(1, $removed['ownership_rows_deleted'] ?? null, 'Full cleanup ownership count mismatch.');
 $assertSame(2, $removed['identity_rows_deleted'] ?? null, 'Full cleanup identity count mismatch.');
-$userRemoved = $cleanup->removeOrphanUserAfterCleanupProjection($mgwId);
 $assertSame(1, $userRemoved['user_rows_deleted'] ?? null, 'Full cleanup user count mismatch.');
-$assertSame(true, $cleanup->assertAbsent($provider, $subject, $subject, $sessionId, $mgwId)['ok'] ?? false, 'Full cleanup absence proof failed.');
 
 $partial = new ApiMutatingSmokeCleanupFakeDatabase();
 $partial->users = [['mgw_id' => $mgwId]];
@@ -199,21 +321,33 @@ $partial->identities = [[
     'provider' => 'telegram',
     'provider_subject' => $subject,
 ]];
-$partialCleanup = new RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup($partial);
-$assertSame($mgwId, $partialCleanup->resolveCreatedMgwId($provider, $subject, $subject), 'Partial cleanup MGW ID resolution failed.');
-$partialRemoved = $partialCleanup->removeMappingsBeforeCleanupProjection(
-    $provider,
-    $subject,
-    $subject,
-    $sessionId,
-    $mgwId
+[$partialRemoved, $partialUserRemoved] = $cleanupAll(
+    $partial,
+    new RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup($partial)
 );
 $assertSame(0, $partialRemoved['session_rows_deleted'] ?? null, 'Partial cleanup session count mismatch.');
 $assertSame(0, $partialRemoved['device_rows_deleted'] ?? null, 'Partial cleanup device count mismatch.');
 $assertSame(0, $partialRemoved['ownership_rows_deleted'] ?? null, 'Partial cleanup ownership count mismatch.');
 $assertSame(1, $partialRemoved['identity_rows_deleted'] ?? null, 'Partial cleanup identity count mismatch.');
-$partialUserRemoved = $partialCleanup->removeOrphanUserAfterCleanupProjection($mgwId);
 $assertSame(1, $partialUserRemoved['user_rows_deleted'] ?? null, 'Partial cleanup user count mismatch.');
-$assertSame(true, $partialCleanup->assertAbsent($provider, $subject, $subject, $sessionId, $mgwId)['ok'] ?? false, 'Partial cleanup absence proof failed.');
+
+$ordered = new ApiMutatingSmokeCleanupFakeDatabase();
+$seedFull($ordered);
+$ordered->outbox = [
+    ['state_revision' => 11, 'status' => 'pending'],
+    ['state_revision' => 12, 'status' => 'pending'],
+];
+$orderedCleanup = new RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup(
+    $ordered,
+    static fn(DatabaseConnectionInterface $database): RuntimePrimaryProjectionWorkerInterface =>
+        new ApiMutatingSmokeCleanupFakeWorker($database)
+);
+[$orderedRemoved] = $cleanupAll($ordered, $orderedCleanup);
+$assertSame(1, $orderedRemoved['earlier_projection_events_completed'] ?? null, 'Earlier projection completion count mismatch.');
+$assertSame('completed', $ordered->outbox[0]['status'] ?? null, 'Earlier API projection was not completed.');
+$assertSame('pending', $ordered->outbox[1]['status'] ?? null, 'Current cleanup projection must remain pending.');
+$projectIndex = array_search('project:11', $ordered->log, true);
+$deleteIndex = array_search('delete:sessions', $ordered->log, true);
+$assertSame(true, is_int($projectIndex) && is_int($deleteIndex) && $projectIndex < $deleteIndex, 'Mappings were deleted before the earlier projection completed.');
 
 fwrite(STDOUT, "RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest passed: {$assertions} assertions.\n");
