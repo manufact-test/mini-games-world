@@ -42,6 +42,7 @@ jobs:
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifierTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
+          php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
 
       - name: Test guarded private API input
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
@@ -54,6 +55,9 @@ jobs:
 
       - name: Test API child host isolation
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
+
+      - name: Test exact and partial identity cleanup
+        run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
 
       - name: Re-run prior rollback-only contracts
         run: |
