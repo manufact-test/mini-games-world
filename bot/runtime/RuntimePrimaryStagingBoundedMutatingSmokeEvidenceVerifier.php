@@ -26,7 +26,7 @@ final class RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifier
             || str_ends_with($this->reportFile, '/')) {
             throw new InvalidArgumentException('Bounded mutating smoke report path must be exact absolute Linux.');
         }
-        if (preg_match('/^[a-f0-9]{40}$/', $this->expectedCommit) !== 1) {
+        if (preg_match('/\A[a-f0-9]{40}\z/', $this->expectedCommit) !== 1) {
             throw new InvalidArgumentException('Bounded mutating smoke expected commit is invalid.');
         }
         foreach ([
@@ -93,7 +93,7 @@ final class RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifier
             throw new RuntimeException('Bounded mutating smoke report identity is invalid.');
         }
         $commit = $report['repository_commit'] ?? null;
-        if (!is_string($commit) || preg_match('/^[a-f0-9]{40}$/', $commit) !== 1
+        if (!is_string($commit) || preg_match('/\A[a-f0-9]{40}\z/', $commit) !== 1
             || !hash_equals($this->expectedCommit, $commit)) {
             throw new RuntimeException('Bounded mutating smoke report commit does not match.');
         }
@@ -246,12 +246,12 @@ final class RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifier
 
     private function validSha(string $value): bool
     {
-        return preg_match('/^[a-f0-9]{64}$/', $value) === 1;
+        return preg_match('/\A[a-f0-9]{64}\z/', $value) === 1;
     }
 
     private function parseExactUtc(string $value): int
     {
-        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $value) !== 1) {
+        if (preg_match('/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00\z/', $value) !== 1) {
             throw new RuntimeException('Bounded mutating smoke timestamp must use exact UTC +00:00.');
         }
         $date = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:sP', $value, new DateTimeZone('UTC'));
