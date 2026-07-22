@@ -35,25 +35,36 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
 
     public function resolveCreatedMgwId(string $provider, string $subject, string $legacyUserId): string
     {
+        $this->assertProviderSubject($provider, $subject, $legacyUserId);
         $rows = $this->database->fetchAll(
-            'SELECT i.mgw_id
-             FROM mgw_identities i
-             INNER JOIN mgw_account_ownership o ON o.mgw_id = i.mgw_id
-             WHERE i.provider = :provider AND i.provider_subject = :subject
-               AND o.legacy_user_id = :legacy_user_id AND o.account_ref = :account_ref',
-            [
-                'provider' => $provider,
-                'subject' => $subject,
-                'legacy_user_id' => $legacyUserId,
-                'account_ref' => 'legacy:' . $legacyUserId,
-            ]
+            'SELECT mgw_id FROM mgw_identities
+             WHERE provider = :provider AND provider_subject = :subject',
+            ['provider' => $provider, 'subject' => $subject]
         );
         if (count($rows) !== 1) {
-            throw new RuntimeException('Staging API mutating smoke synthetic account mapping is missing or ambiguous.');
+            throw new RuntimeException('Staging API mutating smoke synthetic identity is missing or ambiguous.');
         }
         $mgwId = (string)($rows[0]['mgw_id'] ?? '');
         if (!MgwIdGenerator::isValid($mgwId)) {
             throw new RuntimeException('Staging API mutating smoke synthetic MGW ID is invalid.');
+        }
+        $ownership = $this->database->fetchAll(
+            'SELECT mgw_id, legacy_user_id, account_ref FROM mgw_account_ownership
+             WHERE mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id OR account_ref = :account_ref',
+            [
+                'mgw_id' => $mgwId,
+                'legacy_user_id' => $legacyUserId,
+                'account_ref' => 'legacy:' . $legacyUserId,
+            ]
+        );
+        if (count($ownership) > 1) {
+            throw new RuntimeException('Staging API mutating smoke synthetic ownership is ambiguous.');
+        }
+        if ($ownership !== []
+            && (!hash_equals($mgwId, (string)($ownership[0]['mgw_id'] ?? ''))
+                || !hash_equals($legacyUserId, (string)($ownership[0]['legacy_user_id'] ?? ''))
+                || !hash_equals('legacy:' . $legacyUserId, (string)($ownership[0]['account_ref'] ?? '')))) {
+            throw new RuntimeException('Staging API mutating smoke synthetic ownership conflicts with identity.');
         }
         return $mgwId;
     }
@@ -78,23 +89,32 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
             $sessionHash,
             $mgwId
         ): array {
-            $mappingRows = $database->fetchAll(
-                'SELECT i.mgw_id AS identity_mgw_id, o.mgw_id AS ownership_mgw_id
-                 FROM mgw_identities i
-                 INNER JOIN mgw_account_ownership o ON o.mgw_id = i.mgw_id
-                 WHERE i.provider = :provider AND i.provider_subject = :subject
-                   AND o.legacy_user_id = :legacy_user_id AND o.account_ref = :account_ref FOR UPDATE',
+            $identityRows = $database->fetchAll(
+                'SELECT mgw_id FROM mgw_identities
+                 WHERE provider = :provider AND provider_subject = :subject FOR UPDATE',
+                ['provider' => $provider, 'subject' => $subject]
+            );
+            if (count($identityRows) !== 1
+                || !hash_equals($mgwId, (string)($identityRows[0]['mgw_id'] ?? ''))) {
+                throw new RuntimeException('Staging API mutating smoke cleanup identity no longer matches approval.');
+            }
+            $ownershipRows = $database->fetchAll(
+                'SELECT mgw_id, legacy_user_id, account_ref FROM mgw_account_ownership
+                 WHERE mgw_id = :mgw_id OR legacy_user_id = :legacy_user_id OR account_ref = :account_ref FOR UPDATE',
                 [
-                    'provider' => $provider,
-                    'subject' => $subject,
+                    'mgw_id' => $mgwId,
                     'legacy_user_id' => $legacyUserId,
                     'account_ref' => 'legacy:' . $legacyUserId,
                 ]
             );
-            if (count($mappingRows) !== 1
-                || !hash_equals($mgwId, (string)($mappingRows[0]['identity_mgw_id'] ?? ''))
-                || !hash_equals($mgwId, (string)($mappingRows[0]['ownership_mgw_id'] ?? ''))) {
-                throw new RuntimeException('Staging API mutating smoke cleanup mapping no longer matches approval.');
+            if (count($ownershipRows) > 1) {
+                throw new RuntimeException('Staging API mutating smoke cleanup ownership is ambiguous.');
+            }
+            if ($ownershipRows !== []
+                && (!hash_equals($mgwId, (string)($ownershipRows[0]['mgw_id'] ?? ''))
+                    || !hash_equals($legacyUserId, (string)($ownershipRows[0]['legacy_user_id'] ?? ''))
+                    || !hash_equals('legacy:' . $legacyUserId, (string)($ownershipRows[0]['account_ref'] ?? '')))) {
+                throw new RuntimeException('Staging API mutating smoke cleanup ownership no longer matches approval.');
             }
 
             $deletedSessions = $database->execute(
@@ -120,8 +140,8 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
                     'account_ref' => 'legacy:' . $legacyUserId,
                 ]
             );
-            if ($deletedOwnership !== 1) {
-                throw new RuntimeException('Staging API mutating smoke cleanup did not delete exactly one ownership row.');
+            if ($deletedOwnership < 0 || $deletedOwnership > 1) {
+                throw new RuntimeException('Staging API mutating smoke cleanup ownership row count is unexpected.');
             }
             $deletedIdentities = $database->execute(
                 'DELETE FROM mgw_identities WHERE mgw_id = :mgw_id',
@@ -207,10 +227,17 @@ final class RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup
 
     private function assertIdentity(string $provider, string $subject, string $legacyUserId, string $sessionId): void
     {
+        $this->assertProviderSubject($provider, $subject, $legacyUserId);
+        if (preg_match('/\A[a-zA-Z0-9_-]{32,120}\z/', $sessionId) !== 1) {
+            throw new RuntimeException('Staging API mutating smoke synthetic session is invalid.');
+        }
+    }
+
+    private function assertProviderSubject(string $provider, string $subject, string $legacyUserId): void
+    {
         if ($provider !== 'telegram'
             || preg_match('/\A9\d{17}\z/', $subject) !== 1
-            || !hash_equals($subject, $legacyUserId)
-            || preg_match('/\A[a-zA-Z0-9_-]{32,120}\z/', $sessionId) !== 1) {
+            || !hash_equals($subject, $legacyUserId)) {
             throw new RuntimeException('Staging API mutating smoke synthetic identity is invalid.');
         }
     }
