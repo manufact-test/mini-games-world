@@ -7,11 +7,13 @@ $runner = file_get_contents($projectRoot . '/ops/runtime/run-staging-read-only-c
 $launcher = file_get_contents($projectRoot . '/r');
 $contractDiagnostic = file_get_contents($projectRoot . '/ops/runtime/check-staging-runtime-contract-loading.php');
 $contractDiagnosticShell = file_get_contents($projectRoot . '/ops/runtime/check-staging-runtime-contract-loading.sh');
+$smokeCheck = file_get_contents($projectRoot . '/ops/checks/db-primary-staging-api-read-only-smoke-local.sh');
 if (!is_string($preflight)
     || !is_string($runner)
     || !is_string($launcher)
     || !is_string($contractDiagnostic)
-    || !is_string($contractDiagnosticShell)) {
+    || !is_string($contractDiagnosticShell)
+    || !is_string($smokeCheck)) {
     throw new RuntimeException('One-command staging read-only checkpoint sources are unavailable.');
 }
 
@@ -136,35 +138,45 @@ $assertTrue(
         && str_contains($launcher, 'staging-lifecycle-collector-*.json')
         && str_contains($launcher, 'staging_read_only_prerequisites_blocked_or_failed')
         && str_contains($launcher, 'api_lifecycle_evidence_v4_blocked_or_failed')
-        && str_contains($launcher, '($data["failure_stage"] ?? "") === "runtime_contract_loading"')
-        && str_contains($launcher, '($data["path_exposed"] ?? null) !== false')
-        && str_contains($launcher, '($data["production_changed"] ?? null) !== false')
-        && str_contains($launcher, '($data["sensitive_identifiers_exposed"] ?? null) !== false')
-        && str_contains($launcher, '($data["session_enabled_by_evidence"] ?? null) !== false')
-        && str_contains($launcher, '($data["finalizer_registered_by_evidence"] ?? null) !== false')
-        && str_contains($launcher, '($data["application_entrypoints_changed"] ?? null) !== false')
-        && str_contains($launcher, '($data["cron_changed"] ?? null) !== false')
-        && str_contains($launcher, 'strlen($message) > 500')
+        && str_contains($launcher, '(\$data["failure_stage"] ?? "") === "runtime_contract_loading"')
+        && str_contains($launcher, '(\$data["path_exposed"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["production_changed"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["sensitive_identifiers_exposed"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["session_enabled_by_evidence"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["finalizer_registered_by_evidence"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["application_entrypoints_changed"] ?? null) !== false')
+        && str_contains($launcher, '(\$data["cron_changed"] ?? null) !== false')
+        && str_contains($launcher, 'strlen(\$message) > 500')
         && str_contains($launcher, 'echo "DETAIL="')
         && !str_contains($launcher, 'cat "$LATEST_REPORT"'),
     'Short launcher may print only bounded sanitized blocker detail and invoke exact loading diagnostics'
 );
 $assertTrue(
     str_contains($contractDiagnostic, "if (PHP_SAPI !== 'cli')")
-        && str_contains($contractDiagnostic, "'staging_rehearsal_backend_interface'")
+        && str_contains($contractDiagnostic, "'rehearsal_backend_interface'")
+        && str_contains($contractDiagnostic, 'RuntimePrimaryRehearsalBackendInterface.php')
+        && !str_contains($contractDiagnostic, 'RuntimePrimaryStagingRehearsalBackendInterface.php')
+        && str_contains($contractDiagnostic, 'RuntimePrimaryProjectionOutboxSchemaInstaller.php')
+        && str_contains($contractDiagnostic, 'RuntimePrimaryProjectionOutboxWriter.php')
+        && str_contains($contractDiagnostic, 'RuntimePrimaryProjectionWorker.php')
         && str_contains($contractDiagnostic, "'staging_lifecycle_evidence_collector'")
         && str_contains($contractDiagnostic, 'foreach ($contracts as $label => $relativePath)')
         && str_contains($contractDiagnostic, '!is_file($path) || is_link($path) || !is_readable($path)')
         && str_contains($contractDiagnostic, "'database_contacted' => false")
         && str_contains($contractDiagnostic, "'production_changed' => false")
         && !str_contains($contractDiagnostic, 'PdoConnectionFactory::create'),
-    'Runtime contract diagnostic must label every local require without database contact'
+    'Runtime contract diagnostic must load the real dependency graph without database contact'
+);
+$assertTrue(
+    str_contains($smokeCheck, '"$PHP_BIN" ops/runtime/check-staging-runtime-contract-loading.php >/dev/null')
+        && str_contains($smokeCheck, 'runtime contract loading ok:'),
+    'PHP 8.3 focused suite must execute the runtime loading diagnostic rather than only linting it'
 );
 $assertTrue(
     str_contains($contractDiagnosticShell, 'PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400')
         && str_contains($contractDiagnosticShell, 'MGW_CONFIG_FILE="$BASE_CONFIG"')
         && str_contains($contractDiagnosticShell, 'chmod 0600 "$REPORT_FILE"')
-        && str_contains($contractDiagnosticShell, '($data["database_contacted"] ?? null) !== false')
+        && str_contains($contractDiagnosticShell, '(\$data["database_contacted"] ?? null) !== false')
         && str_contains($contractDiagnosticShell, 'RUNTIME_CONTRACT_LOADING=BLOCKED')
         && str_contains($contractDiagnosticShell, 'CONTRACT=')
         && str_contains($contractDiagnosticShell, 'DETAIL=')
