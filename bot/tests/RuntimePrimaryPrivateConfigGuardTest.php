@@ -37,6 +37,9 @@ $prefixSibling = $fixture . '/project-private';
 mkdir($project, 0700, true);
 mkdir($external, 0700, true);
 mkdir($prefixSibling, 0700, true);
+$project = (string)realpath($project);
+$external = (string)realpath($external);
+$prefixSibling = (string)realpath($prefixSibling);
 
 try {
     $externalConfig = $external . '/config.php';
@@ -44,7 +47,12 @@ try {
     chmod($externalConfig, 0600);
     $guarded = RuntimePrimaryPrivateConfigGuard::assertExternal($externalConfig, $project);
     $assertTrue(($guarded['config_external'] ?? false) === true, 'External private config must pass');
-    $assertTrue(($guarded['private_dir'] ?? '') === realpath($external), 'Guard must return the canonical private directory');
+    $assertTrue(($guarded['private_dir'] ?? '') === $external, 'Guard must return the canonical private directory');
+    $assertTrue(($guarded['config_mode'] ?? '') === '0600', 'Guard must prove exact config mode');
+    $assertTrue(
+        ($guarded['private_dir_not_group_world_writable'] ?? false) === true,
+        'Guard must prove private directory write safety'
+    );
     $assertTrue(
         preg_match('/^[a-f0-9]{64}$/', (string)($guarded['config_fingerprint'] ?? '')) === 1,
         'Guard must return a non-sensitive config fingerprint'
@@ -53,6 +61,7 @@ try {
 
     $insideConfig = $project . '/config.php';
     file_put_contents($insideConfig, "<?php\nreturn [];\n");
+    chmod($insideConfig, 0600);
     $assertThrows(
         static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal($insideConfig, $project),
         'outside the deployed project'
@@ -60,12 +69,41 @@ try {
 
     $prefixConfig = $prefixSibling . '/config.php';
     file_put_contents($prefixConfig, "<?php\nreturn [];\n");
+    chmod($prefixConfig, 0600);
     $prefixGuarded = RuntimePrimaryPrivateConfigGuard::assertExternal($prefixConfig, $project);
     $assertTrue(($prefixGuarded['config_external'] ?? false) === true, 'Prefix-sibling directory must not be mistaken for a project child');
 
+    chmod($externalConfig, 0644);
     $assertThrows(
-        static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal('relative/config.php', $project),
-        'must be absolute'
+        static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal($externalConfig, $project),
+        'exact mode 0600'
+    );
+    chmod($externalConfig, 0600);
+
+    chmod($external, 0770);
+    $assertThrows(
+        static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal($externalConfig, $project),
+        'must not be group/world writable'
+    );
+    chmod($external, 0700);
+
+    foreach ([
+        'relative/config.php',
+        ' ' . $externalConfig,
+        $externalConfig . ' ',
+        str_replace('/', '\\', $externalConfig),
+        $externalConfig . '/',
+    ] as $malformedPath) {
+        $assertThrows(
+            static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal($malformedPath, $project),
+            str_contains($malformedPath, '\\') || !str_starts_with($malformedPath, '/')
+                ? 'exact absolute linux path'
+                : (str_ends_with($malformedPath, '/') ? 'trailing separators' : 'unavailable or unreadable')
+        );
+    }
+    $assertThrows(
+        static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal($externalConfig, $project . '/'),
+        'trailing separators'
     );
     $assertThrows(
         static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal($fixture . '/missing.php', $project),
@@ -77,11 +115,22 @@ try {
         if (@symlink($externalConfig, $symlink)) {
             $assertThrows(
                 static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal($symlink, $project),
-                'must not be a symbolic link'
+                'must not be symbolic links'
+            );
+        }
+        $parentLink = $fixture . '/private-link';
+        if (@symlink($external, $parentLink)) {
+            $assertThrows(
+                static fn() => RuntimePrimaryPrivateConfigGuard::assertExternal(
+                    $parentLink . '/config.php',
+                    $project
+                ),
+                'exact canonical path'
             );
         }
     }
 } finally {
+    @chmod($external, 0700);
     $remove($fixture);
 }
 
