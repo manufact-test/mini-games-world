@@ -32,7 +32,9 @@ $assertTrue(
 $assertTrue(
     str_contains($finalizer, 'RuntimePrimaryProjectionWorkerInterface')
         && str_contains($finalizer, 'count($ticks) >= $this->session->maxWorkerTicks()')
-        && str_contains($finalizer, "'action' => 'projection_completed'")
+        && str_contains($finalizer, "(\$tick['action'] ?? '') !== 'projection_completed'")
+        && str_contains($finalizer, "(\$tick['claimed'] ?? false) !== true")
+        && str_contains($finalizer, '$tickRevision < 1 || $tickRevision > $currentRevision')
         && str_contains($finalizer, 'completed an unexpected revision'),
     'Finalizer must process only bounded exact completed worker revisions'
 );
