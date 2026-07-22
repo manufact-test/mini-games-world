@@ -125,7 +125,7 @@ try {
                     $canonicalProject,
                     $parentLink
                 ),
-                'unavailable or noncanonical'
+                'exact canonical linux directory'
             );
         }
     }
