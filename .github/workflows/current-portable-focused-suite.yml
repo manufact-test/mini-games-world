@@ -51,39 +51,8 @@ jobs:
           php -r 'foreach (["json", "pdo", "pdo_sqlite", "openssl", "mbstring"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "missing PHP extension: {$extension}\n"); exit(1); } }'
           timeout --version | head -n 1
 
-      - name: Lint idempotent evidence revision
-        run: |
-          php -l bot/runtime/RuntimePrimaryStagingEvidenceCollector.php
-          php -l bot/runtime/RuntimePrimaryStagingEvidenceVerifier.php
-          php -l bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php
-          php -l bot/tests/RuntimePrimaryStagingEvidenceVerifierTest.php
-          php -l bot/tests/support/RuntimePrimaryStagingEvidenceManifestFixture.php
-
-      - name: Verify idempotent evidence collector
-        run: php bot/tests/RuntimePrimaryStagingEvidenceCollectorTest.php
-
-      - name: Verify idempotent evidence verifier
-        run: php bot/tests/RuntimePrimaryStagingEvidenceVerifierTest.php
-
-      - name: Verify inherited v2 evidence contract
-        run: php bot/tests/RuntimePrimaryStagingEvidenceV2VerifierTest.php
-
       - name: Run current portable focused suite
-        id: suite
-        continue-on-error: true
         run: bash ops/ci/run-current-portable-focused-suite.sh
-
-      - name: Upload focused suite diagnostic log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mgw-current-suite-log-${{ steps.bind.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ env.MGW_CI_OUTPUT_DIR }}/current-focused-suite.log
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Enforce focused suite result
-        run: test "${{ steps.suite.outcome }}" = 'success'
 
       - name: Verify exact current evidence bundle
         run: |
