@@ -23,9 +23,12 @@ final class RuntimePrimaryStagingActivationConfig
         $settings = is_array($config['staging_db_primary_activation'] ?? null)
             ? $config['staging_db_primary_activation']
             : [];
+        $enabled = array_key_exists('enabled', $settings)
+            ? self::strictBool($settings['enabled'], 'staging_db_primary_activation.enabled')
+            : false;
 
         return new self(
-            self::strictBool($settings['enabled'] ?? false, 'staging_db_primary_activation.enabled'),
+            $enabled,
             self::strictString(
                 $settings['expected_database_identity_fingerprint'] ?? '',
                 'staging_db_primary_activation.expected_database_identity_fingerprint'
