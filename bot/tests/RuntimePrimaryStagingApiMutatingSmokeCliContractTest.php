@@ -90,7 +90,7 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($cleanup, "status <> 'completed' AND state_revision < :current_revision")
-        && str_contains($cleanup, '(\$tick[\'action\'] ?? \'\') !== \'projection_completed\'')
+        && str_contains($cleanup, '($tick[\'action\'] ?? \'\') !== \'projection_completed\'')
         && str_contains($cleanup, "'mapping_deleted_after_earlier_projection' => true")
         && str_contains($cleanup, 'RuntimePrimaryProjectionWorkerAdapter('),
     'Recovery cleanup must complete only earlier revisions and leave the current cleanup event for the runner.'
