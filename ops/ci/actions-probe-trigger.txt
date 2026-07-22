@@ -1,3 +1,0 @@
-target_branch=agent/mvp-14-8-6t-current-portable-evidence-verifier
-target_commit=b3a4ad3a827f2516f13eca6bc4457a02e88fbd3d
-triggered_at_utc=2026-07-22T10:54:00Z
