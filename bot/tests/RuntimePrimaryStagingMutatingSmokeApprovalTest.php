@@ -308,6 +308,133 @@ $assertThrows(
     'exact lowercase hexadecimal'
 );
 
+$assertThrows(
+    static fn() => $approval->assertApproved(
+        $config,
+        $commit . "\n",
+        $reportSha,
+        $baselineRevision,
+        $baselineSha,
+        $challenge,
+        $now
+    ),
+    'current staging repository commit is invalid'
+);
+$assertThrows(
+    static fn() => $approval->assertApproved(
+        $config,
+        $commit,
+        $reportSha . "\n",
+        $baselineRevision,
+        $baselineSha,
+        $challenge,
+        $now
+    ),
+    'current read-only smoke report fingerprint is invalid'
+);
+$assertThrows(
+    static fn() => $approval->assertApproved(
+        $config,
+        $commit,
+        $reportSha,
+        $baselineRevision,
+        $baselineSha . "\n",
+        $challenge,
+        $now
+    ),
+    'current db-primary baseline fingerprint is invalid'
+);
+$assertThrows(
+    static fn() => $approval->assertApproved(
+        $config,
+        $commit,
+        $reportSha,
+        $baselineRevision,
+        $baselineSha,
+        $challenge . "\n",
+        $now
+    ),
+    'exact lowercase hexadecimal'
+);
+
+$approvalIdWithNewline = $validPayload();
+$approvalIdWithNewline['approval_id'] .= "\n";
+$assertThrows(
+    static function () use (
+        $approvalIdWithNewline,
+        $config,
+        $commit,
+        $reportSha,
+        $baselineRevision,
+        $baselineSha,
+        $challenge,
+        $now
+    ): void {
+        RuntimePrimaryStagingMutatingSmokeApproval::fromArray($approvalIdWithNewline)->assertApproved(
+            $config,
+            $commit,
+            $reportSha,
+            $baselineRevision,
+            $baselineSha,
+            $challenge,
+            $now
+        );
+    },
+    'approval id is invalid'
+);
+
+$approvalCommitWithNewline = $validPayload();
+$approvalCommitWithNewline['expected_repository_commit'] .= "\n";
+$assertThrows(
+    static function () use (
+        $approvalCommitWithNewline,
+        $config,
+        $commit,
+        $reportSha,
+        $baselineRevision,
+        $baselineSha,
+        $challenge,
+        $now
+    ): void {
+        RuntimePrimaryStagingMutatingSmokeApproval::fromArray($approvalCommitWithNewline)->assertApproved(
+            $config,
+            $commit,
+            $reportSha,
+            $baselineRevision,
+            $baselineSha,
+            $challenge,
+            $now
+        );
+    },
+    'approved staging repository commit is invalid'
+);
+
+$expiryWithNewline = $validPayload();
+$expiryWithNewline['expires_at_utc'] .= "\n";
+$assertThrows(
+    static function () use (
+        $expiryWithNewline,
+        $config,
+        $commit,
+        $reportSha,
+        $baselineRevision,
+        $baselineSha,
+        $challenge,
+        $now
+    ): void {
+        RuntimePrimaryStagingMutatingSmokeApproval::fromArray($expiryWithNewline)->assertApproved(
+            $config,
+            $commit,
+            $reportSha,
+            $baselineRevision,
+            $baselineSha,
+            $challenge,
+            $now
+        );
+    },
+    'expiry must use exact iso-8601'
+);
+
 fwrite(
     STDOUT,
     "RuntimePrimaryStagingMutatingSmokeApprovalTest passed: {$assertions} assertions.\n"
