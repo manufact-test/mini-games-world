@@ -5,7 +5,13 @@ $projectRoot = dirname(__DIR__, 2);
 $preflight = file_get_contents($projectRoot . '/ops/runtime/check-staging-read-only-prerequisites.php');
 $runner = file_get_contents($projectRoot . '/ops/runtime/run-staging-read-only-checkpoint.sh');
 $launcher = file_get_contents($projectRoot . '/r');
-if (!is_string($preflight) || !is_string($runner) || !is_string($launcher)) {
+$contractDiagnostic = file_get_contents($projectRoot . '/ops/runtime/check-staging-runtime-contract-loading.php');
+$contractDiagnosticShell = file_get_contents($projectRoot . '/ops/runtime/check-staging-runtime-contract-loading.sh');
+if (!is_string($preflight)
+    || !is_string($runner)
+    || !is_string($launcher)
+    || !is_string($contractDiagnostic)
+    || !is_string($contractDiagnosticShell)) {
     throw new RuntimeException('One-command staging read-only checkpoint sources are unavailable.');
 }
 
@@ -120,15 +126,17 @@ $assertTrue(
 $assertTrue(
     str_contains($launcher, 'set -euo pipefail')
         && str_contains($launcher, '/ops/runtime/run-staging-read-only-checkpoint.sh')
+        && str_contains($launcher, '/ops/runtime/check-staging-runtime-contract-loading.sh')
         && !str_contains($launcher, 'curl ')
         && !str_contains($launcher, 'wget '),
-    'Short launcher must delegate locally without downloading code'
+    'Short launcher must delegate only to local checkpoint and diagnostic scripts'
 );
 $assertTrue(
     str_contains($launcher, 'staging-read-only-preflight-*.json')
         && str_contains($launcher, 'staging-lifecycle-collector-*.json')
         && str_contains($launcher, 'staging_read_only_prerequisites_blocked_or_failed')
         && str_contains($launcher, 'api_lifecycle_evidence_v4_blocked_or_failed')
+        && str_contains($launcher, '($data["failure_stage"] ?? "") === "runtime_contract_loading"')
         && str_contains($launcher, '($data["path_exposed"] ?? null) !== false')
         && str_contains($launcher, '($data["production_changed"] ?? null) !== false')
         && str_contains($launcher, '($data["sensitive_identifiers_exposed"] ?? null) !== false')
@@ -139,7 +147,30 @@ $assertTrue(
         && str_contains($launcher, 'strlen($message) > 500')
         && str_contains($launcher, 'echo "DETAIL="')
         && !str_contains($launcher, 'cat "$LATEST_REPORT"'),
-    'Short launcher may print only bounded sanitized blocker detail from safe prerequisite or collector reports'
+    'Short launcher may print only bounded sanitized blocker detail and invoke exact loading diagnostics'
+);
+$assertTrue(
+    str_contains($contractDiagnostic, "if (PHP_SAPI !== 'cli')")
+        && str_contains($contractDiagnostic, "'staging_rehearsal_backend_interface'")
+        && str_contains($contractDiagnostic, "'staging_lifecycle_evidence_collector'")
+        && str_contains($contractDiagnostic, 'foreach ($contracts as $label => $relativePath)')
+        && str_contains($contractDiagnostic, '!is_file($path) || is_link($path) || !is_readable($path)')
+        && str_contains($contractDiagnostic, "'database_contacted' => false")
+        && str_contains($contractDiagnostic, "'production_changed' => false")
+        && !str_contains($contractDiagnostic, 'PdoConnectionFactory::create'),
+    'Runtime contract diagnostic must label every local require without database contact'
+);
+$assertTrue(
+    str_contains($contractDiagnosticShell, 'PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400')
+        && str_contains($contractDiagnosticShell, 'MGW_CONFIG_FILE="$BASE_CONFIG"')
+        && str_contains($contractDiagnosticShell, 'chmod 0600 "$REPORT_FILE"')
+        && str_contains($contractDiagnosticShell, '($data["database_contacted"] ?? null) !== false')
+        && str_contains($contractDiagnosticShell, 'RUNTIME_CONTRACT_LOADING=BLOCKED')
+        && str_contains($contractDiagnosticShell, 'CONTRACT=')
+        && str_contains($contractDiagnosticShell, 'DETAIL=')
+        && !str_contains($contractDiagnosticShell, 'mysql ')
+        && !str_contains($contractDiagnosticShell, 'curl '),
+    'Hostinger diagnostic wrapper must use exact PHP 8.3 and expose only sanitized contract labels'
 );
 
 fwrite(
