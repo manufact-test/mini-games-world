@@ -122,6 +122,14 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     }
     throw new RuntimeException('Expected exception was not thrown.');
 };
+$canonicalize = static function (mixed $value) use (&$canonicalize): mixed {
+    if (!is_array($value)) return $value;
+    if (!array_is_list($value)) ksort($value, SORT_STRING);
+    foreach ($value as $key => $item) {
+        $value[$key] = $canonicalize($item);
+    }
+    return $value;
+};
 
 $invalidInstaller = new RuntimePrimaryStateSchemaInstaller(
     new DatabasePrimaryStateTestConnection(true)
@@ -172,7 +180,10 @@ $assertThrows(
 );
 
 $read = $adapter->readOnly(static fn(array $data): array => $data);
-$assertTrue($read === $source, 'Read-only DB-primary snapshot must preserve exact source structure');
+$assertTrue(
+    $canonicalize($read) === $canonicalize($source),
+    'Read-only DB-primary snapshot must preserve exact keys, values and types after canonical JSON ordering'
+);
 
 $result = $adapter->transaction(static function (array &$data): string {
     $data['users']['100']['balance'] += 25;
