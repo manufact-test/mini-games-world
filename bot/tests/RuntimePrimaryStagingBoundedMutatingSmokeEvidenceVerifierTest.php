@@ -151,6 +151,16 @@ try {
     $write($wrongApproval);
     $assertThrows($verify, 'identity mismatch: approval_id');
 
+    $commitWithNewline = $valid();
+    $commitWithNewline['repository_commit'] .= "\n";
+    $write($commitWithNewline);
+    $assertThrows($verify, 'commit does not match');
+
+    $shaWithNewline = $valid();
+    $shaWithNewline['challenge_sha256'] .= "\n";
+    $write($shaWithNewline);
+    $assertThrows($verify, 'sha field is invalid: challenge_sha256');
+
     $old = $valid();
     $old['generated_at_utc'] = gmdate(DATE_ATOM, $now - 700);
     $write($old);
