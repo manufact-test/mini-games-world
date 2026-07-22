@@ -1,0 +1,61 @@
+name: API Mutating Staging Smoke Focused
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-8-6v-ci-base-2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api-mutating-smoke-contracts:
+    name: Real API mutating smoke safety contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+
+      - name: Set up exact PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Confirm exact PHP runtime
+        run: |
+          php -r 'if (PHP_VERSION_ID < 80300 || PHP_VERSION_ID >= 80400) { fwrite(STDERR, "Expected PHP 8.3.x\n"); exit(1); } echo PHP_VERSION, PHP_EOL;'
+
+      - name: Lint API mutating smoke stack
+        run: |
+          set -euo pipefail
+          php -l bot/runtime/RuntimePrimaryStagingApiMutatingSmokeInput.php
+          php -l bot/runtime/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanup.php
+          php -l bot/runtime/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifier.php
+          php -l ops/runtime/execute-staging-api-mutating-smoke-request.php
+          php -l ops/runtime/run-staging-api-mutating-smoke.php
+          php -l ops/runtime/verify-staging-api-mutating-smoke-evidence.php
+          php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
+          php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifierTest.php
+          php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
+
+      - name: Test guarded private API input
+        run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
+
+      - name: Test API mutating evidence verifier
+        run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifierTest.php
+
+      - name: Test API mutating CLI contracts
+        run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
+
+      - name: Re-run prior rollback-only contracts
+        run: |
+          set -euo pipefail
+          php bot/tests/RuntimePrimaryStagingMutatingSmokeApprovalTest.php
+          php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeTest.php
+          php bot/tests/RuntimePrimaryStagingMutatingSmokeRollbackGuardTest.php
+          php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeEvidenceVerifierTest.php
+          php bot/tests/RuntimePrimaryStagingBoundedMutatingSmokeCliContractTest.php
