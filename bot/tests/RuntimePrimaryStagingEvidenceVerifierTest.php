@@ -31,6 +31,12 @@ $modules = [
     'history', 'shop', 'payments', 'weekly_bonus',
 ];
 $snapshotSha = str_repeat('1', 64);
+$projectionProof = [
+    'projection_contract_version' => 'v1-normalized-all-modules',
+    'target_event_attempted' => true,
+    'target_event_lease_free' => true,
+    'target_event_error_free' => true,
+];
 $manifest = [
     'manifest_version' => RuntimePrimaryStagingEvidenceVerifier::MANIFEST_VERSION,
     'environment' => 'staging',
@@ -63,7 +69,7 @@ $manifest = [
         'after_second_sha256' => $snapshotSha,
         'inventory_fingerprint' => str_repeat('4', 64),
     ],
-    'first_rehearsal' => [
+    'first_rehearsal' => $projectionProof + [
         'ok' => true,
         'action' => 'rehearsal_completed',
         'snapshot_action' => 'snapshot_initialized',
@@ -75,12 +81,13 @@ $manifest = [
         'parity_completed' => true,
         'worker_tick_count' => 1,
         'projected_modules' => $modules,
+        'projection_proof' => 'worker_completed_current_run',
         'application_entrypoints_changed' => false,
         'cron_changed' => false,
         'production_changed' => false,
         'sensitive_identifiers_exposed' => false,
     ],
-    'repeated_rehearsal' => [
+    'repeated_rehearsal' => $projectionProof + [
         'ok' => true,
         'action' => 'rehearsal_completed',
         'snapshot_action' => 'snapshot_unchanged',
@@ -92,6 +99,7 @@ $manifest = [
         'parity_completed' => true,
         'worker_tick_count' => 0,
         'projected_modules' => $modules,
+        'projection_proof' => 'completed_current_contract_reused',
         'application_entrypoints_changed' => false,
         'cron_changed' => false,
         'production_changed' => false,
@@ -124,6 +132,16 @@ $assertTrue(
     'Complete staging evidence must have a deterministic fingerprint'
 );
 
+$reusedFirst = $manifest;
+$reusedFirst['first_rehearsal']['snapshot_action'] = 'snapshot_unchanged';
+$reusedFirst['first_rehearsal']['worker_tick_count'] = 0;
+$reusedFirst['first_rehearsal']['projection_proof'] = 'completed_current_contract_reused';
+$report = $verifier->verify($reusedFirst);
+$assertTrue(
+    ($report['ok'] ?? false) === true,
+    'A retry must accept an already completed current all-module projection without another worker write'
+);
+
 $production = $manifest;
 $production['environment'] = 'production';
 $report = $verifier->verify($production);
@@ -145,8 +163,25 @@ array_pop($missingModule['first_rehearsal']['projected_modules']);
 $report = $verifier->verify($missingModule);
 $assertTrue(($report['ok'] ?? true) === false && $containsBlocker($report, 'missing required projected modules'), 'Missing module must fail');
 
+$wrongContract = $reusedFirst;
+$wrongContract['first_rehearsal']['projection_contract_version'] = 'v0-stale';
+$report = $verifier->verify($wrongContract);
+$assertTrue(
+    ($report['ok'] ?? true) === false && $containsBlocker($report, 'current all-module contract'),
+    'A reused projection from another contract version must fail'
+);
+
+$activeLease = $reusedFirst;
+$activeLease['first_rehearsal']['target_event_lease_free'] = false;
+$report = $verifier->verify($activeLease);
+$assertTrue(
+    ($report['ok'] ?? true) === false && $containsBlocker($report, 'target_event_lease_free'),
+    'A reused projection with an active lease must fail'
+);
+
 $repeatWrite = $manifest;
 $repeatWrite['repeated_rehearsal']['worker_tick_count'] = 1;
+$repeatWrite['repeated_rehearsal']['projection_proof'] = 'worker_completed_current_run';
 $report = $verifier->verify($repeatWrite);
 $assertTrue(($report['ok'] ?? true) === false && $containsBlocker($report, 'zero worker ticks'), 'Repeated worker write must fail');
 
