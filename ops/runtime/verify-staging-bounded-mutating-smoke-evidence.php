@@ -60,7 +60,7 @@ if (!str_starts_with($values['report'], '/')
     fwrite(STDERR, "Bounded mutating smoke verifier report path must be exact absolute Linux.\n");
     exit(2);
 }
-if (preg_match('/^[a-f0-9]{40}$/', $values['expected_commit']) !== 1) {
+if (preg_match('/\A[a-f0-9]{40}\z/', $values['expected_commit']) !== 1) {
     fwrite(STDERR, "Bounded mutating smoke verifier expected commit is invalid.\n");
     exit(2);
 }
@@ -68,12 +68,12 @@ foreach ([
     'expected_database_identity', 'expected_read_only_report',
     'expected_receipt', 'expected_approval',
 ] as $field) {
-    if (preg_match('/^[a-f0-9]{64}$/', $values[$field]) !== 1) {
+    if (preg_match('/\A[a-f0-9]{64}\z/', $values[$field]) !== 1) {
         fwrite(STDERR, "Bounded mutating smoke verifier expected SHA is invalid: {$field}.\n");
         exit(2);
     }
 }
-if ($values['max_age'] === '' || preg_match('/^\d+$/', $values['max_age']) !== 1) {
+if ($values['max_age'] === '' || preg_match('/\A\d+\z/', $values['max_age']) !== 1) {
     fwrite(STDERR, "Bounded mutating smoke verifier maximum age must be an integer.\n");
     exit(2);
 }
