@@ -28,11 +28,15 @@ final class RuntimePrimaryStagingRequestSessionConfig
         $enabled = array_key_exists('enabled', $settings)
             ? self::strictBool($settings['enabled'], 'staging_db_primary_request_session.enabled')
             : false;
-        $contractVersion = self::strictString(
-            $settings['contract_version'] ?? '',
-            'staging_db_primary_request_session.contract_version'
-        );
-        $allowedEntrypoints = $settings['allowed_entrypoints'] ?? [];
+        $contractVersion = array_key_exists('contract_version', $settings)
+            ? self::strictString(
+                $settings['contract_version'],
+                'staging_db_primary_request_session.contract_version'
+            )
+            : '';
+        $allowedEntrypoints = array_key_exists('allowed_entrypoints', $settings)
+            ? $settings['allowed_entrypoints']
+            : [];
         if (!is_array($allowedEntrypoints) || !array_is_list($allowedEntrypoints)) {
             throw new RuntimeException('staging_db_primary_request_session.allowed_entrypoints must be a list.');
         }
@@ -52,26 +56,36 @@ final class RuntimePrimaryStagingRequestSessionConfig
             }
         }
 
-        $baselineRevision = self::strictInt(
-            $settings['baseline_revision'] ?? 0,
-            'staging_db_primary_request_session.baseline_revision'
-        );
-        $maxRevisionDelta = self::strictInt(
-            $settings['max_revision_delta'] ?? 0,
-            'staging_db_primary_request_session.max_revision_delta'
-        );
-        $maxWorkerTicks = self::strictInt(
-            $settings['max_worker_ticks'] ?? 0,
-            'staging_db_primary_request_session.max_worker_ticks'
-        );
-        $leaseSeconds = self::strictInt(
-            $settings['lease_seconds'] ?? 0,
-            'staging_db_primary_request_session.lease_seconds'
-        );
-        $expiresAtUtc = self::strictString(
-            $settings['expires_at_utc'] ?? '',
-            'staging_db_primary_request_session.expires_at_utc'
-        );
+        $baselineRevision = array_key_exists('baseline_revision', $settings)
+            ? self::strictInt(
+                $settings['baseline_revision'],
+                'staging_db_primary_request_session.baseline_revision'
+            )
+            : 0;
+        $maxRevisionDelta = array_key_exists('max_revision_delta', $settings)
+            ? self::strictInt(
+                $settings['max_revision_delta'],
+                'staging_db_primary_request_session.max_revision_delta'
+            )
+            : 0;
+        $maxWorkerTicks = array_key_exists('max_worker_ticks', $settings)
+            ? self::strictInt(
+                $settings['max_worker_ticks'],
+                'staging_db_primary_request_session.max_worker_ticks'
+            )
+            : 0;
+        $leaseSeconds = array_key_exists('lease_seconds', $settings)
+            ? self::strictInt(
+                $settings['lease_seconds'],
+                'staging_db_primary_request_session.lease_seconds'
+            )
+            : 0;
+        $expiresAtUtc = array_key_exists('expires_at_utc', $settings)
+            ? self::strictString(
+                $settings['expires_at_utc'],
+                'staging_db_primary_request_session.expires_at_utc'
+            )
+            : '';
 
         if ($enabled) {
             if ($contractVersion !== self::CONTRACT_VERSION) {
