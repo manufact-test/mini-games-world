@@ -41,6 +41,7 @@ jobs:
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifierTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
+          php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
 
       - name: Test guarded private API input
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
@@ -50,6 +51,9 @@ jobs:
 
       - name: Test API mutating CLI contracts
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
+
+      - name: Test API child host isolation
+        run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
 
       - name: Re-run prior rollback-only contracts
         run: |
