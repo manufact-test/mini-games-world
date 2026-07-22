@@ -39,7 +39,7 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($recovery, 'RuntimePrimaryStagingReadOnlyCheckpointReceipt::verifyFile(')
-        && str_contains($recovery, '$projectRoot,\n        3600')
+        && str_contains($recovery, "\$projectRoot,\n        3600")
         && str_contains($recovery, 'MGW_API_INCIDENT_COMMIT, (string)$receipt[\'repository_commit\']')
         && str_contains($recovery, '(string)$receipt[\'database_identity_fingerprint\']'),
     'Recovery must require the exact fresh incident receipt and database identity.'
