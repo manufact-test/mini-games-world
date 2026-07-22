@@ -21,9 +21,12 @@ final class RuntimePrimaryStagingEvidenceApproval
         $settings = is_array($config['staging_db_primary_evidence'] ?? null)
             ? $config['staging_db_primary_evidence']
             : [];
+        $enabled = array_key_exists('enabled', $settings)
+            ? self::strictBool($settings['enabled'], 'staging_db_primary_evidence.enabled')
+            : false;
 
         return new self(
-            self::strictBool($settings['enabled'] ?? false, 'staging_db_primary_evidence.enabled'),
+            $enabled,
             (string)($settings['expected_database_identity_fingerprint'] ?? ''),
             (string)($settings['expected_repository_commit'] ?? ''),
             (string)($settings['approval_expires_at_utc'] ?? '')
