@@ -112,9 +112,13 @@ try {
             if ($count !== 1) throw new RuntimeException('delete_count');
             $reset = $tx->execute(
                 'UPDATE ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . " SET status='pending',lease_token='',"
-                . "lease_expires_at_utc='',available_at_utc=:n,last_error='',updated_at_utc=:n "
-                . "WHERE state_revision=3 AND status='failed' AND attempt_count=2 AND last_error=:e",
-                ['n' => $now, 'e' => ATTEMPT_TWO_ERROR]
+                . "lease_expires_at_utc='',available_at_utc=:available_at,last_error='',updated_at_utc=:updated_at "
+                . "WHERE state_revision=3 AND status='failed' AND attempt_count=2 AND last_error=:error_message",
+                [
+                    'available_at' => $now,
+                    'updated_at' => $now,
+                    'error_message' => ATTEMPT_TWO_ERROR,
+                ]
             );
             if ($reset !== 1) throw new RuntimeException('reset_count');
             return $count;
