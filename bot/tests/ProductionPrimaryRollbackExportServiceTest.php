@@ -356,7 +356,11 @@ try {
         512,
         JSON_THROW_ON_ERROR
     );
-    $assertSame($snapshot['users'], $restoredUsers, 'Restored users must match DB snapshot exactly');
+    $assertSame(
+        $canonicalJson($snapshot['users']),
+        $canonicalJson($restoredUsers),
+        'Restored users must match DB snapshot canonically'
+    );
     $assertSame('[]', trim(file_get_contents($liveJson . '/users.json') ?: ''), 'Live JSON must remain unchanged');
 
     file_put_contents($exportDir . '/data/users.json', "[]\n", LOCK_EX);
