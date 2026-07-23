@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionAuditorInterface.php';
 require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
 require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionOutboxWriter.php';
 
