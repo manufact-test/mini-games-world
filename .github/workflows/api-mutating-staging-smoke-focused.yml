@@ -53,6 +53,8 @@ jobs:
           bash -n ops/runtime/run-staging-api-mutating-checkpoint.sh
           bash -n ops/runtime/run-staging-api-incident-recovery.sh
           bash -n ops/runtime/run-staging-api-detached-economy-incident-recovery.sh
+          ! grep -Fq '< <(' ops/runtime/run-staging-api-detached-economy-incident-recovery.sh
+          ! grep -Fq '/dev/fd' ops/runtime/run-staging-api-detached-economy-incident-recovery.sh
           bash -n m
           bash -n a
           bash -n c
