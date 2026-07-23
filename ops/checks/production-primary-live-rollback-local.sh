@@ -21,6 +21,7 @@ files=(
   bot/tests/ProductionPrimaryRuntimeOverlayWriterTest.php
   bot/tests/ProductionPrimaryLiveRollbackStateStoreTest.php
   bot/tests/ProductionPrimaryLiveRollbackContractTest.php
+  bot/tests/ProductionPrimaryLiveRollbackServiceTest.php
 )
 
 for file in "${files[@]}"; do
@@ -32,6 +33,7 @@ for test in \
   bot/tests/ProductionPrimaryRuntimeOverlayWriterTest.php \
   bot/tests/ProductionPrimaryLiveRollbackStateStoreTest.php \
   bot/tests/ProductionPrimaryLiveRollbackContractTest.php \
+  bot/tests/ProductionPrimaryLiveRollbackServiceTest.php \
   bot/tests/ProductionPrimaryRollbackExportServiceTest.php \
   bot/tests/ProductionPrimaryRollbackExportMySqlIntegrationTest.php; do
   "$PHP_BIN" \
