@@ -45,6 +45,7 @@ jobs:
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeExecutorContractTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
           php -l bot/tests/RuntimePrimaryStagingApiEconomyIncidentRecoveryContractTest.php
+          php -l bot/tests/RuntimePrimaryStagingApiArchivedReceiptRefreshContractTest.php
           php -l bot/tests/RuntimePrimaryStagingMutatingApprovalDependencyTest.php
           php -l bot/tests/RuntimePrimaryStagingMutatingCheckpointShellContractTest.php
           bash -n ops/runtime/run-staging-bounded-mutating-checkpoint.sh
@@ -74,6 +75,9 @@ jobs:
 
       - name: Test exact economy incident recovery contract
         run: php bot/tests/RuntimePrimaryStagingApiEconomyIncidentRecoveryContractTest.php
+
+      - name: Test archived incident receipt refresh contract
+        run: php bot/tests/RuntimePrimaryStagingApiArchivedReceiptRefreshContractTest.php
 
       - name: Test one-command staging smoke contracts
         run: php bot/tests/RuntimePrimaryStagingMutatingCheckpointShellContractTest.php
