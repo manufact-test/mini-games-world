@@ -262,7 +262,9 @@ final class ProductionCutoverReleaseSmokeService
             $expectedRevision = $index + 1;
             $rowRevision = (int)($row['state_revision'] ?? 0);
             $rowSha = strtolower(trim((string)($row['state_sha256'] ?? '')));
+            $projectionVersion = (string)($row['projection_version'] ?? '');
             if ($rowRevision !== $expectedRevision
+                || $projectionVersion !== RuntimePrimaryProjectionOutboxWriter::PROJECTION_VERSION
                 || ($row['status'] ?? '') !== 'completed'
                 || !$this->validSha($rowSha)
                 || (int)($row['attempt_count'] ?? 0) < 1
@@ -276,7 +278,7 @@ final class ProductionCutoverReleaseSmokeService
             }
             $normalized[] = [
                 'state_revision' => $rowRevision,
-                'projection_version' => (string)($row['projection_version'] ?? ''),
+                'projection_version' => $projectionVersion,
                 'state_sha256' => $rowSha,
                 'status' => (string)($row['status'] ?? ''),
                 'attempt_count' => (int)($row['attempt_count'] ?? 0),
@@ -317,6 +319,9 @@ final class ProductionCutoverReleaseSmokeService
 
     private function writeReceipt(array $receipt): void
     {
+        if (is_link($this->receiptFile)) {
+            throw new RuntimeException('Release smoke receipt path must not be a symlink.');
+        }
         $temporary = $this->receiptFile . '.tmp-' . bin2hex(random_bytes(6));
         $payload = json_encode(
             $receipt,
