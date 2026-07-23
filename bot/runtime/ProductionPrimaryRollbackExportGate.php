@@ -21,11 +21,12 @@ final class ProductionPrimaryRollbackExportGate
     ): array {
         $checks = [];
         $blockers = [];
-
-        $flags = $config['feature_flags'] ?? [];
-        if (!is_array($flags)) $flags = [];
-        $runtime = $flags['database_runtime'] ?? [];
-        if (!is_array($runtime)) $runtime = [];
+        $flags = is_array($config['feature_flags'] ?? null)
+            ? $config['feature_flags']
+            : [];
+        $runtime = is_array($flags['database_runtime'] ?? null)
+            ? $flags['database_runtime']
+            : [];
 
         $plan = $this->exactSha($runtime['activation_plan_fingerprint'] ?? null);
         $source = $this->exactSha($runtime['activation_source_fingerprint'] ?? null);
@@ -60,7 +61,7 @@ final class ProductionPrimaryRollbackExportGate
         $checks['cutover_rollback_driver_json'] = ($cutoverState['rollback_driver'] ?? null) === 'json';
 
         $requestId = is_string($authorization['request_id'] ?? null)
-            ? strtolower(trim((string)$authorization['request_id']))
+            ? trim((string)$authorization['request_id'])
             : '';
         $expectedRevision = filter_var(
             $authorization['expected_state_revision'] ?? null,
@@ -79,7 +80,8 @@ final class ProductionPrimaryRollbackExportGate
         $checks['authorization_environment_exact'] = ($authorization['environment'] ?? null) === 'production';
         $checks['authorization_build_exact'] = ($authorization['build'] ?? null) === self::ACTIVATION_BUILD;
         $checks['authorization_request_id_valid'] = preg_match('/\A[a-f0-9]{32}\z/', $requestId) === 1;
-        $checks['authorization_expected_revision_valid'] = is_int($expectedRevision) && $expectedRevision >= 1;
+        $checks['authorization_expected_revision_valid'] = is_int($expectedRevision)
+            && $expectedRevision >= 1;
         $checks['authorization_expected_sha_valid'] = $expectedSha !== '';
         $checks['authorization_database_identity_matches'] = $databaseIdentityFingerprint !== ''
             && $this->exactSha($authorization['database_identity_fingerprint'] ?? null) !== ''
