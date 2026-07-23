@@ -106,28 +106,33 @@ $assertTrue(
     str_contains($sources['loader'], "'production-live-rollback-authorization.json'")
         && str_contains($sources['loader'], "basename(\$databaseFile) !== 'database.php'")
         && str_contains($sources['loader'], "basename(\$runtimeFile) !== 'runtime.php'")
-        && str_contains($sources['loader'], "'.cutover-write-block'"),
+        && str_contains($sources['loader'], "'/ .cutover-write-block'") === false
+        && str_contains($sources['loader'], "/.cutover-write-block"),
     'Live rollback loader must require exact private inputs and an initially released JSON seal'
 );
 $assertTrue(
     str_contains($sources['writer'], "\$databaseRuntime['enabled'] = false")
         && str_contains($sources['writer'], "\$databaseRuntime['production_activated'] = false")
         && str_contains($sources['writer'], "array_fill_keys(self::MODULES, false)")
-        && str_contains($sources['writer'], 'rename($temporary, $this->runtimeFile)'),
-    'Runtime overlay writer must atomically disable all DB-primary routing'
+        && str_contains($sources['writer'], 'rename($temporary, $this->runtimeFile)')
+        && str_contains($sources['writer'], 'atomicRawWrite('),
+    'Runtime overlay writer must atomically disable DB routing and restore exact backup bytes'
 );
 $assertTrue(
     str_contains($sources['state'], "'rolled_back_json_sealed'")
         && str_contains($sources['state'], "'rolled_back'")
         && str_contains($sources['state'], "'database_runtime_published'] = false")
-        && str_contains($sources['state'], 'production-live-rollback.cutover.before-'),
-    'Cutover state must record sealed and completed rollback states with a retained backup'
+        && str_contains($sources['state'], 'production-live-rollback.cutover.before-')
+        && str_contains($sources['state'], 'atomicRawJsonWrite('),
+    'Cutover state must record rollback states and restore exact backup bytes'
 );
 $assertTrue(
     str_contains($sources['bootstrap'], "['json_route_sealed', 'sealed_resume_required']")
         && str_contains($sources['bootstrap'], 'flock($resumeLock, LOCK_EX)')
-        && str_contains($sources['bootstrap'], "\$loaded['live_data_dir'] . '/app.lock'"),
-    'Sealed rollback resume must reacquire the live JSON app lock'
+        && str_contains($sources['bootstrap'], "\$loaded['live_data_dir'] . '/app.lock'")
+        && str_contains($sources['bootstrap'], 'LOCK_EX | LOCK_NB')
+        && str_contains($sources['bootstrap'], 'executeLocked('),
+    'Live rollback bootstrap must serialize execution and lock sealed resume'
 );
 $assertTrue(
     str_contains($sources['cli'], "PHP_SAPI !== 'cli'")
