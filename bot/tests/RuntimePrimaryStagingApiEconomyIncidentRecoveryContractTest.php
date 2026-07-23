@@ -103,6 +103,14 @@ $assertTrue(
     'Detached recovery must not create a new state revision, call HTTP, touch Cron, webhook or production.'
 );
 $assertTrue(
+    str_contains($recovery, "'sensitive_identifiers_exposed' => false")
+        && str_contains($recovery, "'/\\b9\\d{17}\\b/'")
+        && str_contains($recovery, "'/\\bMGW-[0-9A-Z]{16}\\b/'")
+        && !str_contains($recovery, "'legacy_user_id' => \$legacyUserId")
+        && !str_contains($recovery, "'mgw_id' => \$detachedMgwId"),
+    'Detached recovery output and evidence must not expose synthetic identifiers.'
+);
+$assertTrue(
     str_contains($shell, 'INCIDENT_COMMIT="' . $incidentCommit . '"')
         && !str_contains($shell, '< <(')
         && !str_contains($shell, '/dev/fd')
