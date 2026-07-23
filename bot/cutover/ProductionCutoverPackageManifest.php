@@ -33,6 +33,8 @@ final class ProductionCutoverPackageManifest
         'bot/cutover/ProductionCutoverPackageManifest.php',
         'bot/cutover/ProductionCutoverPackageGuardTrait.php',
         'bot/cutover/ProductionCutoverExactPreflight.php',
+        'bot/cutover/ProductionCutoverPrimaryStateSeeder.php',
+        'bot/cutover/ProductionCutoverReleaseSmokeService.php',
         'bot/cutover/ProductionCutoverReleaseReceiptVerifier.php',
         'bot/cutover/ProductionRuntimePrimaryContract.php',
         'bot/cutover/ProductionCutoverRunner.php',
@@ -46,6 +48,7 @@ final class ProductionCutoverPackageManifest
         'bot/cutover/ProductionCutoverReportTrait.php',
         'bot/cutover/ProductionCutoverNoopTrait.php',
         'ops/deploy/production-cutover.php',
+        'ops/deploy/production-cutover-smoke.php',
         'ops/runtime/run-production-primary-rollback-export.php',
         'ops/runtime/run-production-primary-live-rollback.php',
     ];
