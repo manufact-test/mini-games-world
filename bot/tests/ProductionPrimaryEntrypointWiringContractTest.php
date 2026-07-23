@@ -55,17 +55,22 @@ $assertTrue(
 
 $assertTrue(
     str_contains($sources['api'], 'StorageFactory::createJson(')
+        && str_contains($sources['webhook'], 'StorageFactory::createJson(')
         && str_contains($sources['webhook_handler'], 'StorageFactory::createJson(')
         && !str_contains($sources['api'], 'new JsonStorageAdapter(')
+        && !str_contains($sources['webhook'], 'new JsonStorageAdapter(')
         && !str_contains($sources['webhook_handler'], 'new JsonStorageAdapter('),
-    'Real API and webhook handler must pass all legacy storage construction through StorageFactory'
+    'Real API and webhook paths must pass legacy storage construction through StorageFactory'
 );
 $assertTrue(
     str_contains($sources['webhook'], '$mgw_webhook_success_hook')
+        && str_contains($sources['webhook'], '$productionDbPrimaryRequested')
+        && str_contains($sources['webhook'], 'http_response_code($productionDbPrimaryRequested ? 503 : 200)')
+        && str_contains($sources['webhook'], "echo \$productionDbPrimaryRequested ? 'temporary failure' : 'ok';")
         && str_contains($sources['bridge_guard'], "'ProductionPrimaryEntrypointStorageContext'")
         && str_contains($sources['bridge_guard'], 'ProductionPrimaryEntrypointStorageContext::installed()')
         && str_contains($sources['bridge_guard'], 'return !$productionInstalled && !$stagingInstalled;'),
-    'Legacy success bridges must be suppressed for both production and staging DB-primary contexts'
+    'Webhook must install context early, retry active DB failures and suppress legacy bridges'
 );
 
 $bootstrap = $sources['bootstrap'];
@@ -86,8 +91,10 @@ $assertTrue(
         && str_contains($bootstrap, 'enablement and activation markers are inconsistent')
         && str_contains($bootstrap, "'api', 'webhook'")
         && str_contains($bootstrap, "(int)\$database->fetchValue('SELECT 1') !== 1")
-        && str_contains($bootstrap, 'ProductionPrimaryAtomicStorageAdapter('),
-    'Production bootstrap must remain opt-in, exact, dual-entrypoint and readiness-probed'
+        && str_contains($bootstrap, 'ProductionPrimaryAtomicStorageAdapter(')
+        && str_contains($bootstrap, "require_once __DIR__ . '/RuntimePrimaryProjectionWorkerInterface.php';")
+        && str_contains($bootstrap, "require_once __DIR__ . '/RuntimePrimaryProjectionAuditorInterface.php';"),
+    'Production bootstrap must remain opt-in, dependency-complete, dual-entrypoint and readiness-probed'
 );
 
 $atomic = $sources['atomic'];
@@ -151,7 +158,7 @@ foreach (['bootstrap', 'context', 'atomic', 'projector_factory'] as $name) {
 $assertTrue(
     !str_contains($bootstrap, 'curl')
         && !str_contains($atomic, 'JsonStorageAdapter')
-        && !str_contains($context, 'JsonStorageAdapter'),
+        && !str_contains($sources['context'], 'JsonStorageAdapter'),
     'Production entrypoint wiring must not call HTTP or instantiate a hidden JSON fallback'
 );
 
