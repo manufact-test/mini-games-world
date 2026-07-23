@@ -70,7 +70,8 @@ $assertTrue(
     str_contains($recovery, "'SELECT COUNT(*) FROM mgw_users WHERE mgw_id <=> :mgw_id'")
         && str_contains($recovery, 'provider = :provider AND provider_subject = :subject')
         && str_contains($recovery, 'detached_identity_rows_verified_zero')
-        && !str_contains($recovery, 'removeOrphanUserAfterCleanupProjection'),
+        && !str_contains($recovery, 'removeOrphanUserAfterCleanupProjection')
+        && !str_contains($recovery, 'DELETE FROM mgw_users'),
     'Detached recovery must prove the user and all mappings are already absent without deleting a user.'
 );
 $assertTrue(
@@ -93,6 +94,12 @@ $assertTrue(
         && $eventReset < $workerTick
         && $workerTick < $independentAudit,
     'Detached recovery ordering must clean economy, retry revision 3, then independently audit.'
+);
+$assertTrue(
+    str_contains($recovery, "(int)(\$tick['attempt_count'] ?? 0) !== 2")
+        && str_contains($recovery, "(int)(\$finalEvent[0]['attempt_count'] ?? 0) !== 2")
+        && str_contains($recovery, "(string)(\$finalEvent[0]['status'] ?? '') !== 'completed'"),
+    'Detached recovery must finish the existing failed event on exactly its second attempt.'
 );
 $assertTrue(
     !str_contains($recovery, '$storage->transaction(')
