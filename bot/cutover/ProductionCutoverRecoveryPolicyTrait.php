@@ -9,6 +9,7 @@ trait ProductionCutoverRecoveryPolicyTrait
         'queue_drained',
         'json_sealed',
         'database_imported',
+        'primary_state_seeded',
     ];
 
     public function rollback(string $reason = 'manual production rollback'): array
