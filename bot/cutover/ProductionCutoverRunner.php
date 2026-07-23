@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/ProductionCutoverPackageManifest.php';
 require_once __DIR__ . '/ProductionRuntimePrimaryContract.php';
 require_once __DIR__ . '/ProductionCutoverRunTrait.php';
 require_once __DIR__ . '/ProductionCutoverPerformTrait.php';
@@ -11,21 +12,28 @@ require_once __DIR__ . '/ProductionCutoverDataTrait.php';
 require_once __DIR__ . '/ProductionCutoverRuntimeTrait.php';
 require_once __DIR__ . '/ProductionCutoverReportTrait.php';
 require_once __DIR__ . '/ProductionCutoverRecoveryPolicyTrait.php';
+require_once __DIR__ . '/ProductionCutoverPackageGuardTrait.php';
 
 final class ProductionCutoverRunner
 {
     use ProductionCutoverRunTrait;
     use ProductionCutoverPerformTrait;
     use ProductionCutoverReleaseTrait;
-    use ProductionCutoverControlTrait, ProductionCutoverRecoveryPolicyTrait {
-        ProductionCutoverRecoveryPolicyTrait::rollback insteadof ProductionCutoverControlTrait;
-    }
     use ProductionCutoverNoopTrait;
     use ProductionCutoverDataTrait;
-    use ProductionCutoverRuntimeTrait;
-    use ProductionCutoverReportTrait, ProductionCutoverRecoveryPolicyTrait {
+    use ProductionCutoverControlTrait,
+        ProductionCutoverRuntimeTrait,
+        ProductionCutoverReportTrait,
+        ProductionCutoverRecoveryPolicyTrait,
+        ProductionCutoverPackageGuardTrait {
+        ProductionCutoverRecoveryPolicyTrait::rollback
+            insteadof ProductionCutoverControlTrait;
         ProductionCutoverRecoveryPolicyTrait::automaticRollbackReport
             insteadof ProductionCutoverReportTrait;
+        ProductionCutoverPackageGuardTrait::assertEnvironmentAndBuild
+            insteadof ProductionCutoverRuntimeTrait;
+        ProductionCutoverPackageGuardTrait::assertControlEnvironmentAndBuild
+            insteadof ProductionCutoverControlTrait;
     }
 
     public const BUILD = 'v103-mvp14-production-cutover';
