@@ -8,6 +8,12 @@ if (!class_exists('ProductionCutoverRunner', false)) {
         public const PACKAGE_VERSION = 'v1-mvp14-10e-cutover-recovery-package';
     }
 }
+if (!class_exists('ProductionCutoverReleaseSmokeService', false)) {
+    final class ProductionCutoverReleaseSmokeService
+    {
+        public const CONTRACT_VERSION = 'v1-production-cutover-release-smoke';
+    }
+}
 
 $projectRoot = dirname(__DIR__, 2);
 require_once $projectRoot . '/bot/cutover/ProductionCutoverReleaseReceiptVerifier.php';
@@ -48,9 +54,13 @@ $source = str_repeat('b', 64);
 $package = str_repeat('c', 64);
 $runtimeContract = str_repeat('d', 64);
 $databaseIdentity = str_repeat('e', 64);
+$stateSha = str_repeat('1', 64);
+$outbox = str_repeat('2', 64);
+$allModules = str_repeat('3', 64);
 $commit = str_repeat('f', 40);
 $receipt = [
     'contract_version' => ProductionCutoverReleaseReceiptVerifier::CONTRACT_VERSION,
+    'smoke_contract_version' => ProductionCutoverReleaseSmokeService::CONTRACT_VERSION,
     'ready' => true,
     'environment' => 'production',
     'build' => ProductionCutoverRunner::BUILD,
@@ -62,6 +72,7 @@ $receipt = [
     'source_fingerprint' => $source,
     'database_identity_fingerprint' => $databaseIdentity,
     'cutover_state' => 'awaiting_release',
+    'health_probe' => 'internal_cli_equivalent',
     'health_http_status' => 200,
     'health_ok' => true,
     'database_connected' => true,
@@ -74,6 +85,10 @@ $receipt = [
     'maintenance_enabled' => true,
     'financial_read_only' => true,
     'json_write_block_active' => true,
+    'state_revision' => 1,
+    'state_sha256' => $stateSha,
+    'outbox_fingerprint' => $outbox,
+    'all_module_fingerprint' => $allModules,
     'database_write_executed' => false,
     'persistent_config_changed' => false,
     'webhook_changed' => false,
