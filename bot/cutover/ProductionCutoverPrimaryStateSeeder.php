@@ -86,6 +86,7 @@ final class ProductionCutoverPrimaryStateSeeder
         }
         $this->assertCompletedEvent($event, $snapshotSha);
         $queue = $this->queueStatus();
+        $outboxFingerprint = hash('sha256', self::canonicalJson([$event]));
 
         $projector = $this->projector();
         $audit = (new RuntimePrimaryProjectionAuditorAdapter($projector))->auditOnly(
@@ -94,6 +95,10 @@ final class ProductionCutoverPrimaryStateSeeder
             $snapshotSha
         );
         $this->assertAudit($audit, $snapshotSha);
+        $projectedModules = array_values(array_map(
+            'strval',
+            (array)($audit['projected_modules'] ?? [])
+        ));
 
         $finalStatus = $adapter->status();
         if ((int)($finalStatus['revision'] ?? 0) !== 1
@@ -112,7 +117,8 @@ final class ProductionCutoverPrimaryStateSeeder
             'projection_version' => RuntimePrimaryProjectionOutboxWriter::PROJECTION_VERSION,
             'worker_tick_count' => $workerTicks,
             'queue' => $queue,
-            'projected_modules' => self::MODULES,
+            'outbox_fingerprint' => $outboxFingerprint,
+            'projected_modules' => $projectedModules,
             'all_module_fingerprint' => (string)($audit['all_module_fingerprint'] ?? ''),
             'state_schema_fingerprint' => (string)($stateSchema['schema_fingerprint'] ?? ''),
             'outbox_schema_fingerprint' => (string)($outboxSchema['schema_fingerprint'] ?? ''),
@@ -158,8 +164,8 @@ final class ProductionCutoverPrimaryStateSeeder
         }
         return [
             'state_revision' => (int)($rows[0]['state_revision'] ?? 0),
-            'state_sha256' => strtolower(trim((string)($rows[0]['state_sha256'] ?? ''))),
             'projection_version' => (string)($rows[0]['projection_version'] ?? ''),
+            'state_sha256' => strtolower(trim((string)($rows[0]['state_sha256'] ?? ''))),
             'status' => strtolower(trim((string)($rows[0]['status'] ?? ''))),
             'attempt_count' => max(0, (int)($rows[0]['attempt_count'] ?? 0)),
             'lease_token' => trim((string)($rows[0]['lease_token'] ?? '')),
@@ -218,12 +224,20 @@ final class ProductionCutoverPrimaryStateSeeder
 
     private function assertAudit(array $audit, string $sha): void
     {
+        $modules = array_values(array_unique(array_map(
+            static fn(mixed $value): string => strtolower(trim((string)$value)),
+            (array)($audit['projected_modules'] ?? [])
+        )));
+        sort($modules, SORT_STRING);
+        $expected = self::MODULES;
+        sort($expected, SORT_STRING);
+
         if (($audit['ok'] ?? false) !== true
             || ($audit['parity_ok'] ?? false) !== true
             || ($audit['read_only'] ?? false) !== true
             || (int)($audit['state_revision'] ?? 0) !== 1
             || !hash_equals($sha, (string)($audit['state_sha256'] ?? ''))
-            || ($audit['projected_modules'] ?? []) !== self::MODULES
+            || $modules !== $expected
             || preg_match(
                 '/\A[a-f0-9]{64}\z/',
                 (string)($audit['all_module_fingerprint'] ?? '')
