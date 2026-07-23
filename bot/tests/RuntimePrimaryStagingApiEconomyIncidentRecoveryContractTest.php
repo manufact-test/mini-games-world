@@ -133,12 +133,12 @@ $reportBlock = $extractBlock(
 );
 $successResponseBlock = $extractBlock(
     $recovery,
-    "$response = [\n        'ok' => true",
+    "\$response = [\n        'ok' => true",
     "];\n    \$exitCode = 0;"
 );
 $failureResponseBlock = $extractBlock(
     $recovery,
-    "$response = [\n        'ok' => false",
+    "\$response = [\n        'ok' => false",
     "];\n} finally"
 );
 $safeMessageBlock = $extractBlock(
