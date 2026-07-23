@@ -153,6 +153,8 @@ final class ProductionPreflightRunner
             [$controlState, $controlActive] = $this->controlState($controlFile);
 
             $flags = new FeatureFlagService($this->config);
+            $databaseSummary = $databaseConfig->safeSummary();
+            $databaseSummary['identity_fingerprint'] = $databaseConfig->identityFingerprint();
             $runtime = [
                 'environment' => $environment,
                 'build' => FeatureFlagService::BUILD,
@@ -168,7 +170,7 @@ final class ProductionPreflightRunner
                 'migration_plan_fingerprint' => ManagedMigrationController::fingerprint(
                     is_array($migrationStatus['pending'] ?? null) ? $migrationStatus['pending'] : []
                 ),
-                'database' => $databaseConfig->safeSummary(),
+                'database' => $databaseSummary,
                 'database_runtime_requested' => $this->boolValue($databaseRuntime['enabled'] ?? false),
                 'database_runtime_requested_modules' => $requestedModules,
                 'maintenance_enabled' => $flags->maintenanceEnabled(),
