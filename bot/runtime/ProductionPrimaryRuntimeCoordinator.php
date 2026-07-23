@@ -5,8 +5,9 @@ require_once __DIR__ . '/ProductionPrimaryRuntimeActivationContract.php';
 
 final class ProductionPrimaryRuntimeCoordinator
 {
-    public const CONTRACT_VERSION = 'v1-db-primary-all-modules-foundation';
+    public const CONTRACT_VERSION = 'v2-db-primary-atomic-entrypoint-wiring';
     public const EXECUTION_ENABLED = false;
+    public const ENTRYPOINT_WIRING_ENABLED = true;
 
     private ProductionPrimaryRuntimeActivationContract $activation;
 
@@ -28,9 +29,12 @@ final class ProductionPrimaryRuntimeCoordinator
         return $activation + [
             'coordinator_contract_version' => self::CONTRACT_VERSION,
             'execution_enabled' => self::EXECUTION_ENABLED,
+            'entrypoint_wiring_enabled' => self::ENTRYPOINT_WIRING_ENABLED,
             'entrypoint_wiring_required' => true,
             'api_entrypoint_wired' => false,
             'webhook_entrypoint_wired' => false,
+            'atomic_state_and_projections_required' => true,
+            'rollback_requires_fresh_db_export' => true,
             'database_contacted' => false,
             'application_entrypoints_changed' => false,
             'production_changed' => false,
@@ -66,10 +70,13 @@ final class ProductionPrimaryRuntimeCoordinator
             'rollback_driver' => 'json',
             'enabled_modules' => (array)($activation['enabled_modules'] ?? []),
             'projection_outbox_required' => true,
-            'request_finalizer_required' => true,
+            'post_commit_request_finalizer_required' => false,
+            'atomic_state_and_projections_required' => true,
             'legacy_json_bridges_must_be_suppressed' => true,
-            'execution_enabled' => false,
-            'entrypoint_wiring_required' => true,
+            'direct_execution_enabled' => self::EXECUTION_ENABLED,
+            'entrypoint_wiring_enabled' => self::ENTRYPOINT_WIRING_ENABLED,
+            'entrypoint_wiring_requires_completed_state' => true,
+            'rollback_requires_fresh_db_export' => true,
             'database_contacted' => false,
             'application_entrypoints_changed' => false,
             'production_changed' => false,
@@ -80,14 +87,14 @@ final class ProductionPrimaryRuntimeCoordinator
     public function executeApiRequest(array $payload): array
     {
         throw new RuntimeException(
-            'Production API execution is intentionally disabled in the coordinator foundation.'
+            'Direct production API execution is forbidden; use the guarded atomic storage context.'
         );
     }
 
     public function executeWebhookMutation(array $update): void
     {
         throw new RuntimeException(
-            'Production webhook execution is intentionally disabled in the coordinator foundation.'
+            'Direct production webhook execution is forbidden; use the guarded atomic storage context.'
         );
     }
 }
