@@ -14,6 +14,11 @@ try {
         exit('ok');
     }
 
+    // Install the guarded request storage before any guard or handler. This
+    // prevents a storage-free webhook path from reaching a legacy JSON bridge
+    // after an exact production DB-primary activation.
+    $requestStorage = StorageFactory::createJson((string)($config['data_dir'] ?? ''));
+
     $telegram = new TelegramService($config);
     $runtimeGuard = new RuntimeAdminGuard($telegram, $config);
     $guard = new AdminPaymentRejectGuard($telegram, $config);
@@ -37,6 +42,14 @@ try {
     echo 'ok';
 } catch (Throwable $e) {
     error_log('[MiniGamesWorld webhook] ' . $e->getMessage());
-    http_response_code(200);
-    echo 'ok';
+
+    $runtimeSettings = is_array($config['feature_flags']['database_runtime'] ?? null)
+        ? $config['feature_flags']['database_runtime']
+        : [];
+    $productionDbPrimaryRequested = ($config['environment'] ?? null) === 'production'
+        && ($runtimeSettings['enabled'] ?? null) === true
+        && ($runtimeSettings['production_activated'] ?? null) === true;
+
+    http_response_code($productionDbPrimaryRequested ? 503 : 200);
+    echo $productionDbPrimaryRequested ? 'temporary failure' : 'ok';
 }
