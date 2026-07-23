@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../core/RuntimeConfigLoader.php';
+require_once __DIR__ . '/../core/DatabaseConfigLoader.php';
 
 final class ProductionPrimaryRollbackExportInputLoader
 {
@@ -71,8 +72,28 @@ final class ProductionPrimaryRollbackExportInputLoader
             );
         }
 
+        $databaseOverride = trim((string)(getenv('MGW_DATABASE_CONFIG_FILE') ?: ''));
+        $databaseFile = $databaseOverride !== ''
+            ? $databaseOverride
+            : $privateDir . '/database.php';
+        if (file_exists($databaseFile) || is_link($databaseFile)) {
+            $databaseFile = $this->privateFile(
+                $databaseFile,
+                'Production database config is unavailable.'
+            );
+            if (dirname($databaseFile) !== $privateDir
+                || basename($databaseFile) !== 'database.php') {
+                throw new RuntimeException(
+                    'Production database config must be the exact private database.php file.'
+                );
+            }
+        } elseif ($databaseOverride !== '') {
+            throw new RuntimeException('Production database config override is unavailable.');
+        }
+
         $baseConfig = $this->requireArray($configFile, 'Production private config');
         $config = RuntimeConfigLoader::merge($baseConfig, $configFile);
+        $config = DatabaseConfigLoader::merge($config, $configFile);
         if (!is_array($config)) {
             throw new RuntimeException('Production runtime config is invalid.');
         }
@@ -96,6 +117,10 @@ final class ProductionPrimaryRollbackExportInputLoader
             'config_fingerprint' => $this->fileSha($configFile),
             'cutover_fingerprint' => $this->fileSha($cutoverFile),
             'authorization_fingerprint' => $this->fileSha($authorizationFile),
+            'database_config_loaded' => ($config['database_config_loaded'] ?? false) === true,
+            'database_config_fingerprint' => is_file($privateDir . '/database.php')
+                ? $this->fileSha($privateDir . '/database.php')
+                : '',
             'paths_exposed' => false,
             'persistent_config_changed' => false,
             'production_changed' => false,
