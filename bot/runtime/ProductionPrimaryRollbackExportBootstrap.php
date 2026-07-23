@@ -33,6 +33,8 @@ require_once __DIR__ . '/../ledger/LedgerIntegrityVerifier.php';
 require_once __DIR__ . '/../ledger/LegacyEconomyShadowSyncService.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomySnapshotStorage.php';
 require_once __DIR__ . '/../ledger/RuntimeEconomyRepository.php';
+require_once __DIR__ . '/../services/UserService.php';
+require_once __DIR__ . '/../services/HistoryService.php';
 require_once __DIR__ . '/../history/RuntimeHistoryRepository.php';
 require_once __DIR__ . '/../shop/RuntimeShopSchemaInstaller.php';
 require_once __DIR__ . '/../shop/RuntimeShopRepository.php';
