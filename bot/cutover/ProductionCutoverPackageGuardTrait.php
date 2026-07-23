@@ -20,7 +20,7 @@ trait ProductionCutoverPackageGuardTrait
                 'Global JSON rollback storage must remain active during production cutover.'
             );
         }
-        $manifest = $this->packageManifest();
+        $manifest = $this->assertPackageIntegrity();
         $this->policy->assertPackage($manifest);
         $migrationStatus = (new MigrationRunner(
             $this->database,
@@ -34,7 +34,19 @@ trait ProductionCutoverPackageGuardTrait
     private function assertControlEnvironmentAndBuild(): void
     {
         $this->assertPackageEnvironment();
-        $this->policy->assertPackage($this->packageManifest());
+        $this->assertPackageIntegrity();
+    }
+
+    private function assertPackageIntegrity(): array
+    {
+        $manifest = $this->packageManifest();
+        if (($manifest['ready'] ?? false) !== true) {
+            throw new RuntimeException(
+                'Production cutover package integrity is blocked: '
+                . implode('; ', array_map('strval', (array)($manifest['blockers'] ?? [])))
+            );
+        }
+        return $manifest;
     }
 
     private function assertPackageEnvironment(): void
