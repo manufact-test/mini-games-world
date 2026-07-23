@@ -20,6 +20,22 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
     $assertions++;
     if (!$condition) throw new RuntimeException($message);
 };
+$extractBlock = static function (
+    string $source,
+    string $startMarker,
+    string $endMarker,
+    int $offset = 0
+): string {
+    $start = strpos($source, $startMarker, $offset);
+    if ($start === false) {
+        throw new RuntimeException('Detached recovery contract block start marker is missing.');
+    }
+    $end = strpos($source, $endMarker, $start + strlen($startMarker));
+    if ($end === false || $end <= $start) {
+        throw new RuntimeException('Detached recovery contract block end marker is missing.');
+    }
+    return substr($source, $start, $end - $start + strlen($endMarker));
+};
 
 $incidentCommit = 'ad2a409d8f979a4b79b568efd6b81c5947659aaa';
 $incidentError = 'Legacy economy delta is not ready: Database contains a balance outside the frozen economy source.';
@@ -109,13 +125,39 @@ $assertTrue(
         && str_contains($recovery, "'production_changed' => false"),
     'Detached recovery must not create a new state revision, call HTTP, touch Cron, webhook or production.'
 );
+
+$reportBlock = $extractBlock(
+    $recovery,
+    '$report = [',
+    "];\n    \$written ="
+);
+$successResponseBlock = $extractBlock(
+    $recovery,
+    "$response = [\n        'ok' => true",
+    "];\n    \$exitCode = 0;"
+);
+$failureResponseBlock = $extractBlock(
+    $recovery,
+    "$response = [\n        'ok' => false",
+    "];\n} finally"
+);
+$safeMessageBlock = $extractBlock(
+    $recovery,
+    'function safeDetachedRecoveryMessage(string $message): string',
+    "\n}"
+);
+$publicPayloadBlocks = $reportBlock . "\n" . $successResponseBlock . "\n" . $failureResponseBlock;
+
 $assertTrue(
-    str_contains($recovery, "'sensitive_identifiers_exposed' => false")
-        && str_contains($recovery, "'/\\b9\\d{17}\\b/'")
-        && str_contains($recovery, "'/\\bMGW-[0-9A-Z]{16}\\b/'")
-        && !str_contains($recovery, "'legacy_user_id' => \$legacyUserId")
-        && !str_contains($recovery, "'mgw_id' => \$detachedMgwId"),
-    'Detached recovery output and evidence must not expose synthetic identifiers.'
+    substr_count($publicPayloadBlocks, "'sensitive_identifiers_exposed' => false") === 3
+        && !str_contains($publicPayloadBlocks, "'legacy_user_id' =>")
+        && !str_contains($publicPayloadBlocks, "'mgw_id' =>")
+        && !str_contains($publicPayloadBlocks, "'account_ref' =>")
+        && str_contains($safeMessageBlock, "'/\\b9\\d{17}\\b/'")
+        && str_contains($safeMessageBlock, "'/\\bMGW-[0-9A-Z]{16}\\b/'")
+        && str_contains($safeMessageBlock, "'[synthetic-user]'")
+        && str_contains($safeMessageBlock, "'[synthetic-mgw-id]'"),
+    'Detached recovery report, responses and error sanitizer must not expose synthetic identifiers.'
 );
 $assertTrue(
     str_contains($shell, 'INCIDENT_COMMIT="' . $incidentCommit . '"')
