@@ -1,0 +1,52 @@
+name: Production Cutover Package Safety
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/mvp-14-release-integration
+    paths:
+      - 'bot/core/RuntimeConfigLoader.php'
+      - 'bot/cutover/ProductionCutover*.php'
+      - 'bot/cutover/ProductionRuntimePrimaryContract.php'
+      - 'bot/tests/ProductionCutover*Test.php'
+      - 'bot/tests/RuntimeConfigLoaderCutoverControlTest.php'
+      - 'ops/deploy/production-cutover.php'
+      - 'ops/deploy/production-cutover-smoke.php'
+      - 'ops/deploy/PRODUCTION_CUTOVER_PACKAGE.md'
+      - 'ops/checks/production-cutover-package-local.sh'
+      - '.github/workflows/production-cutover-package-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-production-cutover-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Verify exact production cutover and recovery package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Verify exact PHP runtime
+        run: php -r 'printf("PHP_VERSION=%s\n", PHP_VERSION); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
+
+      - name: Run focused cutover package checks
+        run: bash ops/checks/production-cutover-package-local.sh
