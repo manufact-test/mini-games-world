@@ -3,6 +3,7 @@ name: Production Primary Coordinator Foundation Safety
 on:
   pull_request:
     branches:
+      - main
       - agent/mvp-14-release-integration
     paths:
       - 'bot/runtime/ProductionPrimaryRuntimeActivationContract.php'
