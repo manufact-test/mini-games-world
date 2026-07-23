@@ -100,11 +100,8 @@ final class ProductionPrimaryRuntimeOverlayWriter
         if (!is_string($raw) || $raw === '') {
             throw new RuntimeException('Production runtime rollback backup could not be read.');
         }
-        $value = $this->requireArray($backup, 'Production runtime rollback backup');
-        $this->atomicWrite($value);
-        if (!hash_equals($expectedBackupFingerprint, $this->fingerprint())) {
-            throw new RuntimeException('Production runtime rollback backup restoration failed.');
-        }
+        $this->requireArray($backup, 'Production runtime rollback backup');
+        $this->atomicRawWrite($raw, $expectedBackupFingerprint);
         return [
             'ok' => true,
             'runtime_restored' => true,
@@ -243,6 +240,32 @@ final class ProductionPrimaryRuntimeOverlayWriter
                 throw new RuntimeException('Production runtime rollback overlay permissions failed.');
             }
             return $this->fingerprint();
+        } catch (Throwable $error) {
+            if (is_file($temporary) || is_link($temporary)) @unlink($temporary);
+            throw $error;
+        }
+    }
+
+    private function atomicRawWrite(string $raw, string $expectedFingerprint): void
+    {
+        $temporary = $this->privateDir . '/.runtime-live-restore-' . bin2hex(random_bytes(8)) . '.tmp';
+        if (file_exists($temporary) || is_link($temporary)) {
+            throw new RuntimeException('Production runtime exact-restore temporary file already exists.');
+        }
+        try {
+            $this->writeNewPrivateFile($temporary, $raw);
+            $this->requireArray($temporary, 'Production runtime exact-restore temporary overlay');
+            if (!hash_equals($expectedFingerprint, $this->fileSha($temporary))) {
+                throw new RuntimeException('Production runtime exact-restore temporary fingerprint mismatch.');
+            }
+            if (!rename($temporary, $this->runtimeFile)) {
+                throw new RuntimeException('Production runtime exact backup could not be published atomically.');
+            }
+            clearstatcache(true, $this->runtimeFile);
+            if (!chmod($this->runtimeFile, 0600)
+                || !hash_equals($expectedFingerprint, $this->fingerprint())) {
+                throw new RuntimeException('Production runtime exact backup restoration failed.');
+            }
         } catch (Throwable $error) {
             if (is_file($temporary) || is_link($temporary)) @unlink($temporary);
             throw $error;
