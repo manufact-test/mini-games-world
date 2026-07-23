@@ -5,6 +5,7 @@ final class RuntimeStorageRouter
 {
     public const DRIVER_JSON = 'json';
     public const DRIVER_DATABASE = 'database';
+    public const PRODUCTION_ACTIVATION_BUILD = 'v103-mvp14-production-cutover';
 
     private const MODULES = [
         'accounts',
@@ -61,7 +62,8 @@ final class RuntimeStorageRouter
             'default_driver' => self::DRIVER_JSON,
             'rollback_driver' => self::DRIVER_JSON,
             'enabled_modules' => $this->enabledModules(),
-            'production_allowed' => false,
+            'production_allowed' => $this->productionAllowed(),
+            'rollback_requires_fresh_db_export' => $this->productionAllowed(),
         ];
     }
 
@@ -84,14 +86,19 @@ final class RuntimeStorageRouter
         if (!$this->enabled()) return;
 
         $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
-        if (!in_array($environment, ['staging', 'local'], true)) {
-            throw new RuntimeException('Database runtime routing is forbidden outside staging/local during MVP-14.8.2.');
+        if (!in_array($environment, ['staging', 'local', 'production'], true)) {
+            throw new RuntimeException('Database runtime routing environment is unsupported.');
+        }
+        if ($environment === 'production' && !$this->productionAllowed()) {
+            throw new RuntimeException(
+                'Production database runtime routing requires the exact protected activation contract.'
+            );
         }
 
         $globalDriver = strtolower(trim((string)($this->config['storage_driver'] ?? self::DRIVER_JSON)));
         if ($globalDriver === '') $globalDriver = self::DRIVER_JSON;
         if ($globalDriver !== self::DRIVER_JSON) {
-            throw new RuntimeException('Global storage_driver must remain json during staged module routing.');
+            throw new RuntimeException('Global storage_driver must remain json during runtime routing.');
         }
 
         $database = DatabaseConfig::fromApplicationConfig($this->config);
@@ -134,6 +141,35 @@ final class RuntimeStorageRouter
                 }
             }
         }
+    }
+
+    private function productionAllowed(): bool
+    {
+        if ((string)($this->config['environment'] ?? '') !== 'production') return false;
+        $settings = $this->settings();
+        if (($settings['enabled'] ?? null) !== true
+            || ($settings['production_activated'] ?? null) !== true
+            || ($settings['activation_build'] ?? null) !== self::PRODUCTION_ACTIVATION_BUILD
+            || ($settings['rollback_driver'] ?? null) !== self::DRIVER_JSON) {
+            return false;
+        }
+        foreach (['activation_plan_fingerprint', 'activation_source_fingerprint'] as $field) {
+            $value = $settings[$field] ?? null;
+            if (!is_string($value) || preg_match('/\A[a-f0-9]{64}\z/', $value) !== 1) {
+                return false;
+            }
+        }
+        $modules = $settings['modules'] ?? null;
+        if (!is_array($modules) || array_is_list($modules)) return false;
+        $keys = array_keys($modules);
+        sort($keys, SORT_STRING);
+        $expected = self::MODULES;
+        sort($expected, SORT_STRING);
+        if ($keys !== $expected) return false;
+        foreach (self::MODULES as $module) {
+            if (($modules[$module] ?? null) !== true) return false;
+        }
+        return true;
     }
 
     private function settings(): array
