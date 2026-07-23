@@ -16,6 +16,8 @@ $root = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
 $lock = null;
 $response = [];
 $exit = 1;
+$databaseWriteExecuted = false;
+$workerExecuted = false;
 
 try {
     require $root . '/bot/core/bootstrap.php';
@@ -91,7 +93,8 @@ try {
         ]);
         $exit = 0;
     } else {
-        $deleted = $db->transaction(function (DatabaseConnectionInterface $tx) use ($legacyId, $accountRef): int {
+        $now = gmdate(DATE_ATOM);
+        $deleted = $db->transaction(function (DatabaseConnectionInterface $tx) use ($legacyId, $accountRef, $now): int {
             $rows = $tx->fetchAll(
                 'SELECT state_json,state_sha256,status_json,status_sha256 FROM mgw_runtime_weekly_bonus_state '
                 . 'WHERE account_ref=:a AND legacy_user_id=:u FOR UPDATE',
@@ -107,23 +110,23 @@ try {
                 ['a' => $accountRef, 'u' => $legacyId]
             );
             if ($count !== 1) throw new RuntimeException('delete_count');
+            $reset = $tx->execute(
+                'UPDATE ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . " SET status='pending',lease_token='',"
+                . "lease_expires_at_utc='',available_at_utc=:n,last_error='',updated_at_utc=:n "
+                . "WHERE state_revision=3 AND status='failed' AND attempt_count=2 AND last_error=:e",
+                ['n' => $now, 'e' => ATTEMPT_TWO_ERROR]
+            );
+            if ($reset !== 1) throw new RuntimeException('reset_count');
             return $count;
         });
-
-        $now = gmdate(DATE_ATOM);
-        $reset = $db->execute(
-            'UPDATE ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . " SET status='pending',lease_token='',"
-            . "lease_expires_at_utc='',available_at_utc=:n,last_error='',updated_at_utc=:n "
-            . "WHERE state_revision=3 AND status='failed' AND attempt_count=2 AND last_error=:e",
-            ['n' => $now, 'e' => ATTEMPT_TWO_ERROR]
-        );
-        if ($reset !== 1) throw new RuntimeException('reset_count');
+        $databaseWriteExecuted = true;
 
         $worker = new RuntimePrimaryProjectionWorkerAdapter(new RuntimePrimaryProjectionWorker(
             $db,
             (new RuntimePrimaryRepositoryProjectorFactory($config, $db))->create(),
             60
         ));
+        $workerExecuted = true;
         $tick = $worker->runOnce();
         if (($tick['ok'] ?? false) !== true
             || ($tick['action'] ?? '') !== 'projection_completed'
@@ -196,8 +199,8 @@ try {
         'action' => 'weekly_bonus_orphan_attempt_three_blocked_or_failed',
         'error_class' => get_class($e),
         'error_message' => sanitize($e->getMessage()),
-        'database_write_executed' => $mode === '--apply',
-        'worker_executed' => false,
+        'database_write_executed' => $databaseWriteExecuted,
+        'worker_executed' => $workerExecuted,
     ]);
 } finally {
     if (is_resource($lock)) { @flock($lock, LOCK_UN); @fclose($lock); }
@@ -228,30 +231,60 @@ function exactIncidentReceipt(string $privateDir, string $root): array
 
 function exactWeeklyOrphan(DatabaseConnectionInterface $db, array $snapshot): array
 {
+    $allUsers = [];
     $sourceUsers = [];
     $sourceAccounts = [];
     foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $key => $user) {
-        if (!is_array($user) || !empty($user['is_dev_user'])) continue;
+        if (!is_array($user)) continue;
         $id = trim((string)($user['id'] ?? $key));
-        $rows = $db->fetchAll("SELECT account_ref FROM mgw_account_ownership WHERE legacy_user_id=:u AND ownership_status='active'", ['u' => $id]);
-        if ($id === '' || count($rows) !== 1) throw new RuntimeException('source_identity');
+        if ($id === '' || isset($allUsers[$id])) throw new RuntimeException('snapshot_identity');
+        $allUsers[$id] = true;
+        if (!empty($user['is_dev_user'])) continue;
+        $rows = $db->fetchAll(
+            "SELECT account_ref FROM mgw_account_ownership WHERE legacy_user_id=:u AND ownership_status='active'",
+            ['u' => $id]
+        );
+        if (count($rows) !== 1) throw new RuntimeException('source_identity');
         $account = trim((string)$rows[0]['account_ref']);
-        if ($account === '' || isset($sourceUsers[$id]) || isset($sourceAccounts[$account])) throw new RuntimeException('source_duplicate');
+        if ($account === '' || isset($sourceUsers[$id]) || isset($sourceAccounts[$account])) {
+            throw new RuntimeException('source_duplicate');
+        }
         $sourceUsers[$id] = true;
         $sourceAccounts[$account] = true;
     }
     if (count($sourceUsers) !== 1) throw new RuntimeException('source_count');
-    $rows = $db->fetchAll('SELECT account_ref,legacy_user_id,state_json,state_sha256,status_json,status_sha256 FROM mgw_runtime_weekly_bonus_state ORDER BY account_ref');
+
+    $rows = $db->fetchAll(
+        'SELECT account_ref,legacy_user_id,state_json,state_sha256,status_json,status_sha256 '
+        . 'FROM mgw_runtime_weekly_bonus_state ORDER BY account_ref'
+    );
     if (count($rows) !== 2) throw new RuntimeException('weekly_count');
-    $extra = array_values(array_filter($rows, static fn(array $row): bool => !isset($sourceAccounts[(string)($row['account_ref'] ?? '')])));
+    $extra = array_values(array_filter(
+        $rows,
+        static fn(array $row): bool => !isset($sourceAccounts[(string)($row['account_ref'] ?? '')])
+    ));
     if (count($extra) !== 1) throw new RuntimeException('weekly_extra_count');
+
     $row = $extra[0];
     $id = trim((string)$row['legacy_user_id']);
     $account = trim((string)$row['account_ref']);
-    if (preg_match('/\A9\d{17}\z/', $id) !== 1 || !hash_equals('legacy:' . $id, $account)
-        || isset($sourceUsers[$id]) || !validPayload((string)$row['state_json'], (string)$row['state_sha256'])
+    if (preg_match('/\A9\d{17}\z/', $id) !== 1
+        || !hash_equals('legacy:' . $id, $account)
+        || isset($allUsers[$id])
+        || !validPayload((string)$row['state_json'], (string)$row['state_sha256'])
         || !validPayload((string)$row['status_json'], (string)$row['status_sha256'])
-        || relatedCount($db, $id, $account) !== 0) throw new RuntimeException('weekly_orphan_identity');
+        || relatedCount($db, $id, $account) !== 0) {
+        throw new RuntimeException('weekly_orphan_identity');
+    }
+    foreach ([
+        "SELECT COUNT(*) FROM mgw_balances WHERE legacy_user_id REGEXP '^9[0-9]{17}$' AND account_ref=CONCAT('legacy:',legacy_user_id)",
+        "SELECT COUNT(*) FROM mgw_ledger_entries WHERE legacy_user_id REGEXP '^9[0-9]{17}$' AND account_ref=CONCAT('legacy:',legacy_user_id)",
+        "SELECT COUNT(*) FROM mgw_reservations WHERE legacy_user_id REGEXP '^9[0-9]{17}$' AND account_ref=CONCAT('legacy:',legacy_user_id)",
+        "SELECT COUNT(*) FROM mgw_account_ownership WHERE legacy_user_id REGEXP '^9[0-9]{17}$' OR account_ref REGEXP '^legacy:9[0-9]{17}$'",
+        "SELECT COUNT(*) FROM mgw_identities WHERE provider_subject REGEXP '^9[0-9]{17}$'",
+    ] as $sql) {
+        if ((int)$db->fetchValue($sql) !== 0) throw new RuntimeException('synthetic_cleanup');
+    }
     return [$id, $account];
 }
 
