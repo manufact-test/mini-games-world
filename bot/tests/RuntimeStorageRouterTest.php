@@ -66,13 +66,44 @@ $assertSame('database', $enabled->routeFor('notifications'), 'Enabled module mus
 $assertSame('database', $enabled->routeFor('invites'), 'Boolean-like module flag must route to DB');
 $assertSame('json', $enabled->routeFor('realtime'), 'Disabled module must stay on JSON');
 $assertSame(['accounts', 'invites', 'notifications'], $enabled->enabledModules(), 'Enabled modules must be stable and ordered');
-$assertSame(false, $enabled->publicStatus()['production_allowed'], 'Production must remain forbidden');
+$assertSame(false, $enabled->publicStatus()['production_allowed'], 'Staging routing must not claim production authorization');
 
 $production = $enabledConfig;
 $production['environment'] = 'production';
 $assertThrows(
     static fn() => new RuntimeStorageRouter($production),
-    'forbidden outside staging/local'
+    'exact protected activation contract'
+);
+
+$productionModules = array_fill_keys([
+    'accounts', 'realtime', 'invites', 'notifications', 'economy',
+    'history', 'shop', 'payments', 'weekly_bonus',
+], true);
+$protectedProduction = $base;
+$protectedProduction['environment'] = 'production';
+$protectedProduction['database']['host'] = 'production-db.example';
+$protectedProduction['database']['name'] = 'mgw_production';
+$protectedProduction['database']['user'] = 'mgw_production';
+$protectedProduction['database']['password'] = 'production-password';
+$protectedProduction['feature_flags']['database_runtime'] = [
+    'enabled' => true,
+    'production_activated' => true,
+    'activation_build' => RuntimeStorageRouter::PRODUCTION_ACTIVATION_BUILD,
+    'activation_plan_fingerprint' => str_repeat('a', 64),
+    'activation_source_fingerprint' => str_repeat('b', 64),
+    'rollback_driver' => 'json',
+    'modules' => $productionModules,
+];
+$productionRouter = new RuntimeStorageRouter($protectedProduction);
+$assertSame(true, $productionRouter->publicStatus()['production_allowed'], 'Exact protected production routing must be recognized');
+$assertSame($productionModules ? array_keys($productionModules) : [], $productionRouter->enabledModules(), 'Protected production must route all nine modules');
+$assertSame(true, $productionRouter->publicStatus()['rollback_requires_fresh_db_export'], 'Production router must expose fresh rollback export requirement');
+
+$badProductionModule = $protectedProduction;
+$badProductionModule['feature_flags']['database_runtime']['modules']['payments'] = 'true';
+$assertThrows(
+    static fn() => new RuntimeStorageRouter($badProductionModule),
+    'exact protected activation contract'
 );
 
 $databaseDisabled = $enabledConfig;
