@@ -1,0 +1,47 @@
+name: Production Primary Coordinator Foundation Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-14-release-integration
+    paths:
+      - 'bot/runtime/ProductionPrimaryRuntimeActivationContract.php'
+      - 'bot/runtime/ProductionPrimaryRuntimeCoordinator.php'
+      - 'bot/tests/ProductionPrimaryRuntimeCoordinatorFoundationTest.php'
+      - 'ops/checks/production-primary-coordinator-foundation-local.sh'
+      - 'ops/runtime/PRODUCTION_PRIMARY_COORDINATOR_FOUNDATION.md'
+      - '.github/workflows/production-primary-coordinator-foundation-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-production-primary-coordinator-foundation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Verify inactive production coordinator foundation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Verify exact PHP runtime
+        run: php -r 'printf("PHP_VERSION=%s\n", PHP_VERSION); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
+
+      - name: Run focused coordinator foundation checks
+        run: bash ops/checks/production-primary-coordinator-foundation-local.sh
