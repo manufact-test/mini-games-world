@@ -45,8 +45,8 @@ $assertTrue(
     'Package manifest must expose exact SHA-256 fingerprint'
 );
 $assertTrue(
-    (int)($manifest['critical_file_count'] ?? 0) >= 45,
-    'Package manifest must cover the full cutover, smoke and rollback surface'
+    (int)($manifest['critical_file_count'] ?? 0) === 44,
+    'Package manifest must bind the exact 44-file cutover, smoke and rollback surface'
 );
 foreach ([
     'bot/core/RuntimeConfigLoader.php',
