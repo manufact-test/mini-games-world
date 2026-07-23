@@ -67,10 +67,17 @@ $assertTrue(
         && str_contains($sources['webhook'], '$productionDbPrimaryRequested')
         && str_contains($sources['webhook'], 'http_response_code($productionDbPrimaryRequested ? 503 : 200)')
         && str_contains($sources['webhook'], "echo \$productionDbPrimaryRequested ? 'temporary failure' : 'ok';")
-        && str_contains($sources['bridge_guard'], "'ProductionPrimaryEntrypointStorageContext'")
-        && str_contains($sources['bridge_guard'], 'ProductionPrimaryEntrypointStorageContext::installed()')
-        && str_contains($sources['bridge_guard'], 'return !$productionInstalled && !$stagingInstalled;'),
-    'Webhook must install context early, retry active DB failures and suppress legacy bridges'
+        && str_contains(
+            $sources['bridge_guard'],
+            "return !class_exists('RuntimePrimaryEntrypointStorageContext', false)"
+        )
+        && str_contains($sources['bridge_guard'], '!RuntimePrimaryEntrypointStorageContext::installed()')
+        && str_contains(
+            $sources['bridge_guard'],
+            "!class_exists('ProductionPrimaryEntrypointStorageContext', false)"
+        )
+        && str_contains($sources['bridge_guard'], '!ProductionPrimaryEntrypointStorageContext::installed()'),
+    'Webhook must install context early, retry active DB failures and suppress both legacy bridge paths'
 );
 
 $bootstrap = $sources['bootstrap'];
