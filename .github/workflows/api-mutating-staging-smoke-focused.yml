@@ -39,6 +39,7 @@ jobs:
           php -l ops/runtime/run-staging-api-mutating-smoke.php
           php -l ops/runtime/verify-staging-api-mutating-smoke-evidence.php
           php -l ops/runtime/recover-staging-api-mutating-smoke-economy-incident.php
+          php -l ops/runtime/recover-staging-api-mutating-smoke-detached-economy-incident.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeInputTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeEvidenceVerifierTest.php
           php -l bot/tests/RuntimePrimaryStagingApiMutatingSmokeCliContractTest.php
@@ -51,6 +52,9 @@ jobs:
           bash -n ops/runtime/run-staging-bounded-mutating-checkpoint.sh
           bash -n ops/runtime/run-staging-api-mutating-checkpoint.sh
           bash -n ops/runtime/run-staging-api-incident-recovery.sh
+          bash -n ops/runtime/run-staging-api-detached-economy-incident-recovery.sh
+          ! grep -Fq '< <(' ops/runtime/run-staging-api-detached-economy-incident-recovery.sh
+          ! grep -Fq '/dev/fd' ops/runtime/run-staging-api-detached-economy-incident-recovery.sh
           bash -n m
           bash -n a
           bash -n c
@@ -73,7 +77,7 @@ jobs:
       - name: Test exact, partial and economy identity cleanup
         run: php bot/tests/RuntimePrimaryStagingApiMutatingSmokeIdentityCleanupTest.php
 
-      - name: Test exact economy incident recovery contract
+      - name: Test exact detached economy incident recovery contract
         run: php bot/tests/RuntimePrimaryStagingApiEconomyIncidentRecoveryContractTest.php
 
       - name: Test archived incident receipt refresh contract

@@ -2,4 +2,4 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "$0")" && pwd -P)"
-exec bash "$PROJECT_ROOT/ops/runtime/run-staging-api-incident-recovery.sh"
+exec bash "$PROJECT_ROOT/ops/runtime/run-staging-api-detached-economy-incident-recovery.sh"
