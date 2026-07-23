@@ -4,9 +4,10 @@ declare(strict_types=1);
 $projectRoot = dirname(__DIR__, 2);
 $rollback = file_get_contents($projectRoot . '/ops/runtime/run-staging-bounded-mutating-checkpoint.sh');
 $api = file_get_contents($projectRoot . '/ops/runtime/run-staging-api-mutating-checkpoint.sh');
+$apiStable = file_get_contents($projectRoot . '/ops/runtime/run-staging-api-mutating-checkpoint-weekly-stable.sh');
 $rollbackShortcut = file_get_contents($projectRoot . '/m');
 $apiShortcut = file_get_contents($projectRoot . '/a');
-foreach (compact('rollback', 'api', 'rollbackShortcut', 'apiShortcut') as $label => $source) {
+foreach (compact('rollback', 'api', 'apiStable', 'rollbackShortcut', 'apiShortcut') as $label => $source) {
     if (!is_string($source)) {
         throw new RuntimeException('Staging mutating checkpoint shell source is unavailable: ' . $label . '.');
     }
@@ -98,8 +99,15 @@ foreach ([
 
 $assertTrue(
     str_contains($rollbackShortcut, 'exec bash "$PROJECT_ROOT/ops/runtime/run-staging-bounded-mutating-checkpoint.sh"')
-        && str_contains($apiShortcut, 'exec bash "$PROJECT_ROOT/ops/runtime/run-staging-api-mutating-checkpoint.sh"'),
-    'Root shortcuts must only exec their exact checkpoint runners.'
+        && str_contains($apiShortcut, 'exec bash "$PROJECT_ROOT/ops/runtime/run-staging-api-mutating-checkpoint-weekly-stable.sh"'),
+    'Root shortcuts must only exec their exact accepted checkpoint runners.'
+);
+$assertTrue(
+    str_contains($apiStable, 'SOURCE_PHP="$PROJECT_ROOT/ops/runtime/run-staging-api-mutating-smoke.php"')
+        && str_contains($apiStable, 'SOURCE_SH="$PROJECT_ROOT/ops/runtime/run-staging-api-mutating-checkpoint.sh"')
+        && str_contains($apiStable, 'exec bash "$PATCHED_SH"')
+        && str_contains($apiStable, 'MGW_STAGING_API_WEEKLY_STABLE_PATCH=PASSED'),
+    'Weekly-stable API shortcut must patch and execute the exact accepted base checkpoint privately.'
 );
 
 fwrite(STDOUT, "RuntimePrimaryStagingMutatingCheckpointShellContractTest passed: {$assertions} assertions.\n");
