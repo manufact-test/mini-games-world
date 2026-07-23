@@ -37,7 +37,6 @@ $cutoverSealed = strpos($service, '$this->stateStore->writeCutoverSealed($gateRe
 $releaseSeal = strpos($service, 'if (!unlink($seal))');
 $runtimeReleased = strpos($service, '$this->runtimeWriter->writeReleased($gateReport);');
 $cutoverCompleted = strpos($service, '$this->stateStore->writeCutoverCompleted($gateReport);');
-$recoveryCompleted = strpos($service, "'completed',\n            \$gateReport");
 $assertTrue(
     $transaction !== false && $lockedState !== false && $retainLive !== false
         && $installJson !== false && $runtimeSealed !== false && $routeCheck !== false
@@ -99,8 +98,9 @@ $assertTrue(
     str_contains($sources['gate'], "public const CONFIRMATION = 'ROLL BACK PRODUCTION TO VERIFIED JSON'")
         && str_contains($sources['gate'], "'authorization_expiry_valid'")
         && str_contains($sources['gate'], "'authorization_runtime_config_matches'")
-        && str_contains($sources['gate'], "'authorization_export_directory_fingerprint_matches'"),
-    'Live rollback gate must require exact confirmation, TTL and immutable fingerprints'
+        && str_contains($sources['gate'], "'export_directory_fingerprint' => 'export_directory_fingerprint'")
+        && str_contains($sources['gate'], "\$checks['authorization_' . \$artifactField . '_matches']"),
+    'Live rollback gate must require exact confirmation, TTL and immutable artifact fingerprints'
 );
 $assertTrue(
     str_contains($sources['loader'], "'production-live-rollback-authorization.json'")
@@ -122,6 +122,12 @@ $assertTrue(
         && str_contains($sources['state'], "'database_runtime_published'] = false")
         && str_contains($sources['state'], 'production-live-rollback.cutover.before-'),
     'Cutover state must record sealed and completed rollback states with a retained backup'
+);
+$assertTrue(
+    str_contains($sources['bootstrap'], "['json_route_sealed', 'sealed_resume_required']")
+        && str_contains($sources['bootstrap'], 'flock($resumeLock, LOCK_EX)')
+        && str_contains($sources['bootstrap'], "\$loaded['live_data_dir'] . '/app.lock'"),
+    'Sealed rollback resume must reacquire the live JSON app lock'
 );
 $assertTrue(
     str_contains($sources['cli'], "PHP_SAPI !== 'cli'")
