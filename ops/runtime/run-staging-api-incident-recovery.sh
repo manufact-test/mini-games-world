@@ -6,13 +6,17 @@ PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 PRIVATE_DIR="$(cd -- "$PROJECT_ROOT/.." && pwd -P)/_private_mgw"
 INCIDENT_COMMIT="ad2a409d8f979a4b79b568efd6b81c5947659aaa"
 REFRESHED_RECEIPT=''
+CANDIDATE_LIST=''
 
-cleanup_refreshed_receipt() {
+cleanup_temporary_files() {
   if [[ -n "${REFRESHED_RECEIPT:-}" && -f "$REFRESHED_RECEIPT" && ! -L "$REFRESHED_RECEIPT" ]]; then
     rm -f -- "$REFRESHED_RECEIPT" || true
   fi
+  if [[ -n "${CANDIDATE_LIST:-}" && -f "$CANDIDATE_LIST" && ! -L "$CANDIDATE_LIST" ]]; then
+    rm -f -- "$CANDIDATE_LIST" || true
+  fi
 }
-trap cleanup_refreshed_receipt EXIT HUP INT TERM
+trap cleanup_temporary_files EXIT HUP INT TERM
 
 fail() {
   local reason="$1"
@@ -61,6 +65,25 @@ done
 [[ -n "$PHP_BIN" ]] || fail 'PHP 8.3 CLI binary was not found'
 PHP_VERSION_SAFE="$($PHP_BIN -r 'echo PHP_VERSION;')"
 
+LIST_ID="$(date -u '+%Y%m%dT%H%M%SZ')-$$-${RANDOM}"
+CANDIDATE_LIST="$PRIVATE_DIR/staging-api-incident-receipt-candidates-$LIST_ID.txt"
+[[ ! -e "$CANDIDATE_LIST" && ! -L "$CANDIDATE_LIST" ]] \
+  || fail 'fresh private receipt candidate list path already exists'
+if ! (set -o noclobber; : > "$CANDIDATE_LIST") 2>/dev/null; then
+  fail 'private receipt candidate list could not be created safely'
+fi
+chmod 0600 "$CANDIDATE_LIST" \
+  || fail 'private receipt candidate list permissions could not be secured'
+if ! find "$PRIVATE_DIR" -maxdepth 1 -type f \
+    -name 'staging-read-only-checkpoint-receipt-*.json' \
+    ! -name 'staging-read-only-checkpoint-receipt-incident-refresh-*.json' \
+    -printf '%T@ %p\n' 2>/dev/null \
+  | sort -nr \
+  | cut -d' ' -f2- \
+  > "$CANDIDATE_LIST"; then
+  fail 'private receipt candidate list could not be generated'
+fi
+
 RECEIPT=''
 while IFS= read -r candidate; do
   [[ -n "$candidate" && -f "$candidate" && ! -L "$candidate" ]] || continue
@@ -84,14 +107,10 @@ while IFS= read -r candidate; do
     RECEIPT="$candidate"
     break
   fi
-done < <(
-  find "$PRIVATE_DIR" -maxdepth 1 -type f \
-    -name 'staging-read-only-checkpoint-receipt-*.json' \
-    ! -name 'staging-read-only-checkpoint-receipt-incident-refresh-*.json' \
-    -printf '%T@ %p\n' 2>/dev/null \
-  | sort -nr \
-  | cut -d' ' -f2-
-)
+done < "$CANDIDATE_LIST"
+rm -f -- "$CANDIDATE_LIST" \
+  || fail 'private receipt candidate list could not be removed'
+CANDIDATE_LIST=''
 [[ -n "$RECEIPT" ]] || fail 'exact incident read-only receipt was not found'
 
 RUN_ID="$(date -u '+%Y%m%dT%H%M%SZ')-$$-${RANDOM}"
