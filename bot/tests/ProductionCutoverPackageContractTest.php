@@ -8,12 +8,16 @@ $paths = [
     'manifest' => 'bot/cutover/ProductionCutoverPackageManifest.php',
     'preflight' => 'bot/cutover/ProductionCutoverExactPreflight.php',
     'run' => 'bot/cutover/ProductionCutoverRunTrait.php',
+    'perform' => 'bot/cutover/ProductionCutoverPerformTrait.php',
     'release' => 'bot/cutover/ProductionCutoverReleaseTrait.php',
     'recovery' => 'bot/cutover/ProductionCutoverRecoveryPolicyTrait.php',
     'receipt' => 'bot/cutover/ProductionCutoverReleaseReceiptVerifier.php',
+    'smoke' => 'bot/cutover/ProductionCutoverReleaseSmokeService.php',
+    'seeder' => 'bot/cutover/ProductionCutoverPrimaryStateSeeder.php',
     'guard' => 'bot/cutover/ProductionCutoverPackageGuardTrait.php',
     'loader' => 'bot/core/RuntimeConfigLoader.php',
     'cli' => 'ops/deploy/production-cutover.php',
+    'smoke_cli' => 'ops/deploy/production-cutover-smoke.php',
 ];
 $sources = [];
 foreach ($paths as $name => $relative) {
@@ -41,16 +45,19 @@ $assertTrue(
     'Package manifest must expose exact SHA-256 fingerprint'
 );
 $assertTrue(
-    (int)($manifest['critical_file_count'] ?? 0) >= 40,
-    'Package manifest must cover the full cutover and rollback surface'
+    (int)($manifest['critical_file_count'] ?? 0) >= 45,
+    'Package manifest must cover the full cutover, smoke and rollback surface'
 );
 foreach ([
     'bot/core/RuntimeConfigLoader.php',
     'bot/runtime/ProductionPrimaryAtomicStorageAdapter.php',
     'bot/runtime/ProductionPrimaryRollbackExportService.php',
     'bot/runtime/ProductionPrimaryLiveRollbackService.php',
+    'bot/cutover/ProductionCutoverPrimaryStateSeeder.php',
+    'bot/cutover/ProductionCutoverReleaseSmokeService.php',
     'bot/cutover/ProductionCutoverReleaseReceiptVerifier.php',
     'ops/deploy/production-cutover.php',
+    'ops/deploy/production-cutover-smoke.php',
 ] as $critical) {
     $assertTrue(
         preg_match(
@@ -73,6 +80,21 @@ $assertTrue(
         && !str_contains($sources['run'], 'new ProductionPreflightRunner(')
         && str_contains($sources['run'], '$this->policy->assertApproved('),
     'Cutover run must use exact preflight and separate run approval'
+);
+
+$perform = $sources['perform'];
+$seedPosition = strpos($perform, 'ProductionCutoverPrimaryStateSeeder(');
+$routePosition = strpos($perform, '$this->writeRuntime($activatedRuntime);');
+$assertTrue(
+    $seedPosition !== false && $routePosition !== false && $seedPosition < $routePosition,
+    'Exact DB-primary state/outbox seed must complete before route publication'
+);
+$assertTrue(
+    str_contains($perform, "(int)(\$primaryState['state_revision'] ?? 0) !== 1")
+        && str_contains($perform, "'outbox_fingerprint' => \$outboxFingerprint")
+        && str_contains($perform, "'all_module_fingerprint' => \$allModuleFingerprint")
+        && !str_contains($perform, '$this->synchronizeRuntime($activatedConfig, $snapshot)'),
+    'Cutover route must be bound to revision 1, full outbox and all-module evidence'
 );
 
 $release = $sources['release'];
@@ -109,6 +131,7 @@ $assertTrue(
 
 $assertTrue(
     str_contains($sources['recovery'], 'PRE_ROUTE_ABORT_STAGES')
+        && str_contains($sources['recovery'], "'primary_state_seeded'")
         && str_contains($sources['recovery'], 'DB-primary may have accepted writes; stale JSON rollback is forbidden.')
         && str_contains($sources['recovery'], "'legacy_json_restore_allowed' => false")
         && str_contains($sources['recovery'], "'rollback_export_required' => true"),
@@ -120,6 +143,20 @@ $assertTrue(
         && str_contains($sources['receipt'], "'read_only_api_smoke_passed'")
         && str_contains($sources['receipt'], 'MAX_AGE_SECONDS = 900'),
     'Release receipt must prove protected exact smoke within 15 minutes'
+);
+$assertTrue(
+    str_contains($sources['smoke'], "'health_probe' => 'internal_cli_equivalent'")
+        && str_contains($sources['smoke'], 'RuntimePrimaryProjectionOutboxWriter::PROJECTION_VERSION')
+        && str_contains($sources['smoke'], 'Release smoke changed DB-primary state or projection outbox.')
+        && str_contains($sources['smoke'], "'database_write_executed' => false"),
+    'Smoke service must prove DB/outbox immutability and exact projection version'
+);
+$assertTrue(
+    str_contains($sources['seeder'], '$adapter->initializeFromSnapshot($snapshot)')
+        && str_contains($sources['seeder'], "'state_revision' => 1")
+        && str_contains($sources['seeder'], "'projection_event_status' => 'completed'")
+        && str_contains($sources['seeder'], "'outbox_fingerprint' => \$outboxFingerprint"),
+    'Seeder must create exact revision 1 with completed projection evidence'
 );
 $assertTrue(
     str_contains($sources['guard'], 'assertPackageIntegrity()')
@@ -156,16 +193,24 @@ $assertTrue(
     'Control CLI must expose the complete versioned command package'
 );
 $assertTrue(
-    !str_contains($cli, 'shell_exec(')
-        && !str_contains($cli, 'exec(')
-        && !str_contains($cli, 'system(')
-        && !str_contains($cli, 'passthru(')
-        && !str_contains($cli, 'crontab')
-        && !str_contains($cli, 'setWebhook'),
-    'Control CLI must not execute shell, Cron or webhook changes'
+    str_contains($sources['smoke_cli'], 'ProductionCutoverReleaseSmokeService(')
+        && str_contains($sources['smoke_cli'], 'LOCK_EX | LOCK_NB')
+        && str_contains($sources['smoke_cli'], "'database_write_executed' => false"),
+    'Smoke CLI must be locked, read-only and use the exact smoke service'
 );
+foreach ([$cli, $sources['smoke_cli']] as $commandSource) {
+    $assertTrue(
+        !str_contains($commandSource, 'shell_exec(')
+            && !str_contains($commandSource, 'exec(')
+            && !str_contains($commandSource, 'system(')
+            && !str_contains($commandSource, 'passthru(')
+            && !str_contains($commandSource, 'crontab')
+            && !str_contains($commandSource, 'setWebhook'),
+        'Cutover command package must not execute shell, Cron or webhook changes'
+    );
+}
 
-foreach (['preflight', 'run', 'release', 'recovery', 'receipt', 'guard'] as $name) {
+foreach (['preflight', 'run', 'perform', 'release', 'recovery', 'receipt', 'smoke', 'seeder', 'guard'] as $name) {
     foreach (['curl', 'setWebhook', 'crontab'] as $forbidden) {
         $assertTrue(
             !str_contains($sources[$name], $forbidden),
