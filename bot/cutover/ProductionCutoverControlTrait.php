@@ -1,0 +1,326 @@
+<?php
+declare(strict_types=1);
+
+trait ProductionCutoverControlTrait
+{
+    public function status(): array
+    {
+        $this->assertControlEnvironmentAndBuild();
+        $stateError = '';
+        try {
+            $state = $this->readState();
+        } catch (Throwable $error) {
+            $state = [];
+            $stateError = $this->safeMessage($error->getMessage());
+        }
+
+        $runtime = [];
+        $runtimeError = '';
+        try {
+            $runtime = $this->readRuntime();
+        } catch (Throwable $error) {
+            $runtimeError = $this->safeMessage($error->getMessage());
+        }
+
+        $routerEnabled = false;
+        $enabledModules = [];
+        $routerError = '';
+        if ($runtimeError === '') {
+            try {
+                $router = new RuntimeStorageRouter($this->configWithRuntime($runtime));
+                $routerEnabled = $router->enabled();
+                $enabledModules = $router->enabledModules();
+            } catch (Throwable $error) {
+                $routerError = $this->safeMessage($error->getMessage());
+            }
+        }
+
+        $stateContractError = '';
+        if ($stateError === '' && $runtimeError === '' && $routerError === '') {
+            $stateContractError = $this->statusStateContractError(
+                $state,
+                $routerEnabled,
+                $enabledModules,
+                $runtime
+            );
+        }
+        $stateName = $stateError === ''
+            ? strtolower(trim((string)($state['state'] ?? 'not_started')))
+            : 'invalid';
+        $releaseRequired = $stateName === 'awaiting_release';
+
+        return [
+            'ok' => $routerError === ''
+                && $runtimeError === ''
+                && $stateError === ''
+                && $stateContractError === '',
+            'report_type' => 'mvp-14.9-production-cutover',
+            'action' => 'status',
+            'environment' => 'production',
+            'build' => self::BUILD,
+            'state' => $stateName,
+            'state_error' => $stateError,
+            'runtime_error' => $runtimeError,
+            'state_contract_error' => $stateContractError,
+            'operator_action_required' => $releaseRequired
+                || $stateContractError !== ''
+                || $runtimeError !== ''
+                || $stateError !== ''
+                || $routerError !== '',
+            'release_required' => $releaseRequired,
+            'database_runtime_enabled' => $routerEnabled,
+            'enabled_modules' => $enabledModules,
+            'router_error' => $routerError,
+            'runtime_backup_present' => is_file($this->runtimeBackupFile),
+            'json_write_block_active' => is_file($this->writeBlockFile),
+            'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
+            'state_summary' => $this->compactState($state),
+            'approval' => $this->policy->safeSummary(),
+            'sensitive_identifiers_exposed' => false,
+            'generated_at_utc' => $this->nowUtc(),
+        ];
+    }
+
+    public function rollback(string $reason = 'manual production rollback'): array
+    {
+        $this->assertControlEnvironmentAndBuild();
+
+        try {
+            $state = $this->readState();
+        } catch (Throwable $error) {
+            if (!$this->recoveryArtifactsPresent()) {
+                return $this->recoveryBlockedReport(
+                    $error,
+                    'manual_rollback_invalid_state_without_recovery_artifacts',
+                    'invalid'
+                );
+            }
+            return $this->rollbackInternal($reason);
+        }
+
+        $stateName = strtolower(trim((string)($state['state'] ?? '')));
+        if ($stateName !== '' && !$this->recoveryArtifactsPresent()) {
+            return $this->recoveryBlockedReport(
+                new RuntimeException('Manual rollback requires exact recovery artifacts for the recorded cutover state.'),
+                'manual_rollback_state_without_recovery_artifacts',
+                $stateName,
+                (string)($state['started_at_utc'] ?? '')
+            );
+        }
+
+        return $this->rollbackInternal($reason);
+    }
+
+    public function rearm(): array
+    {
+        $this->assertControlEnvironmentAndBuild();
+        if ($this->policy->enabled()) {
+            throw new RuntimeException('Disable the private production cutover approval before rearming.');
+        }
+
+        $state = $this->readState();
+        $stateName = strtolower(trim((string)($state['state'] ?? '')));
+        if ($stateName !== 'rolled_back') {
+            throw new RuntimeException('Production cutover can be rearmed only after a fully completed reviewed rollback.');
+        }
+        if (trim((string)($state['build'] ?? '')) !== self::BUILD) {
+            throw new RuntimeException('Production cutover rearm state is bound to an unexpected build.');
+        }
+        foreach ([
+            'runtime_restored' => 'runtime restore',
+            'json_write_block_removed' => 'JSON write-block removal',
+            'database_runtime_disabled' => 'database runtime disablement',
+        ] as $evidence => $label) {
+            if (($state[$evidence] ?? false) !== true) {
+                throw new RuntimeException('Production cutover rearm requires confirmed ' . $label . '.');
+            }
+        }
+        if (!is_file($this->runtimeBackupFile)
+            || !is_readable($this->runtimeBackupFile)
+            || (int)filesize($this->runtimeBackupFile) <= 0) {
+            throw new RuntimeException('Production cutover rearm requires the preserved exact runtime backup.');
+        }
+        if (is_file($this->writeBlockFile)) {
+            throw new RuntimeException('Production cutover cannot be rearmed while the JSON write block is active.');
+        }
+
+        $runtime = $this->readRuntime();
+        $router = new RuntimeStorageRouter($this->configWithRuntime($runtime));
+        if ($router->enabled()) {
+            throw new RuntimeException('Production cutover cannot be rearmed while DB runtime routing is enabled.');
+        }
+
+        $suffix = gmdate('Ymd\\THis\\Z', $this->timestamp()) . '-' . bin2hex(random_bytes(4));
+        $archivedState = $this->privateDir . '/production-cutover.incident-' . $suffix . '.json';
+        if (!rename($this->stateFile, $archivedState)) {
+            throw new RuntimeException('Could not archive the reviewed production cutover state.');
+        }
+        @chmod($archivedState, 0600);
+
+        $archivedRuntimeBackup = $this->privateDir . '/production-cutover.runtime.backup.' . $suffix;
+        if (!rename($this->runtimeBackupFile, $archivedRuntimeBackup)) {
+            if (!rename($archivedState, $this->stateFile)) {
+                throw new RuntimeException('Could not archive the runtime backup and could not restore the state file.');
+            }
+            throw new RuntimeException('Could not archive the reviewed production runtime backup.');
+        }
+        @chmod($archivedRuntimeBackup, 0600);
+
+        return [
+            'ok' => true,
+            'report_type' => 'mvp-14.9-production-cutover',
+            'action' => 'rearmed',
+            'environment' => 'production',
+            'build' => self::BUILD,
+            'previous_state' => $stateName,
+            'database_runtime_enabled' => false,
+            'json_write_block_active' => false,
+            'state_archived' => true,
+            'runtime_backup_archived' => true,
+            'fresh_preflight_required' => true,
+            'fresh_approval_required' => true,
+            'production_changed' => false,
+            'sensitive_identifiers_exposed' => false,
+            'generated_at_utc' => $this->nowUtc(),
+        ];
+    }
+
+    private function statusStateContractError(
+        array $state,
+        bool $routerEnabled,
+        array $enabledModules,
+        array $runtime
+    ): string {
+        $stateName = strtolower(trim((string)($state['state'] ?? '')));
+        $backupPresent = is_file($this->runtimeBackupFile)
+            && is_readable($this->runtimeBackupFile)
+            && (int)filesize($this->runtimeBackupFile) > 0;
+        $writeBlockActive = is_file($this->writeBlockFile);
+
+        if ($stateName === '') {
+            return ($backupPresent || $writeBlockActive)
+                ? 'Recovery artifacts exist without a production cutover state.'
+                : '';
+        }
+
+        if (trim((string)($state['build'] ?? '')) !== self::BUILD) {
+            return 'Production cutover state is bound to an unexpected build.';
+        }
+
+        if (in_array($stateName, self::ACTIVE_STATES, true)) {
+            if (!$backupPresent) return 'Active production cutover state is missing the exact runtime backup.';
+            foreach (['plan_fingerprint', 'source_fingerprint'] as $fingerprint) {
+                if (preg_match('/^[a-f0-9]{64}$/', strtolower(trim((string)($state[$fingerprint] ?? '')))) !== 1) {
+                    return 'Active production cutover state has an invalid ' . $fingerprint . '.';
+                }
+            }
+            return '';
+        }
+        if ($stateName === 'awaiting_release') {
+            if (!$backupPresent) return 'Awaiting-release state is missing the preserved exact runtime backup.';
+            if (!$routerEnabled) return 'Awaiting-release state does not have database runtime routing enabled.';
+            if (!$writeBlockActive) return 'Awaiting-release state must keep the JSON write block active.';
+            if (($state['runtime_backup_present'] ?? false) !== true
+                || ($state['database_runtime_published'] ?? false) !== true
+                || ($state['json_write_block_active'] ?? false) !== true
+                || ($state['maintenance_active'] ?? false) !== true
+                || ($state['financial_read_only_active'] ?? false) !== true) {
+                return 'Awaiting-release state is missing required protection evidence.';
+            }
+            if (trim((string)($state['release_ready_at_utc'] ?? '')) === '') {
+                return 'Awaiting-release state is missing its readiness timestamp.';
+            }
+            $flags = new FeatureFlagService($this->configWithRuntime($runtime));
+            if (!$flags->maintenanceEnabled() || !$flags->financialReadOnly()) {
+                return 'Awaiting-release runtime must remain in maintenance and financial read-only mode.';
+            }
+            foreach (['matchmaking', 'invitations', 'payments', 'shop'] as $feature) {
+                if ($flags->featureEnabled($feature)) {
+                    return 'Awaiting-release runtime still allows the protected feature: ' . $feature . '.';
+                }
+            }
+            $activationError = $this->activationContractError($state, $runtime, $enabledModules);
+            return $activationError;
+        }
+        if ($stateName === 'rollback_failed') {
+            return 'Production cutover rollback is incomplete and requires immediate operator review.';
+        }
+        if ($stateName === 'rolled_back') {
+            if (!$backupPresent) return 'Rolled-back state is missing the preserved exact runtime backup.';
+            if ($routerEnabled) return 'Rolled-back state still has database runtime routing enabled.';
+            if ($writeBlockActive) return 'Rolled-back state still has the JSON write block active.';
+            foreach (['runtime_restored', 'json_write_block_removed', 'database_runtime_disabled'] as $evidence) {
+                if (($state[$evidence] ?? false) !== true) {
+                    return 'Rolled-back state is missing confirmed recovery evidence: ' . $evidence . '.';
+                }
+            }
+            return '';
+        }
+        if ($stateName === 'completed') {
+            if (!$backupPresent) return 'Completed cutover is missing the preserved rollback runtime backup.';
+            if (!$routerEnabled) return 'Completed cutover does not have database runtime routing enabled.';
+            if ($writeBlockActive) return 'Completed cutover still has the JSON write block active.';
+            if (($state['runtime_backup_present'] ?? false) !== true
+                || ($state['database_runtime_published'] ?? false) !== true
+                || ($state['json_write_block_active'] ?? true) !== false) {
+                return 'Completed cutover state is missing required publication evidence.';
+            }
+            if (trim((string)($state['completed_at_utc'] ?? '')) === '') {
+                return 'Completed cutover state is missing its completion timestamp.';
+            }
+            return $this->activationContractError($state, $runtime, $enabledModules);
+        }
+
+        return 'Unknown production cutover state requires immediate operator review.';
+    }
+
+    private function activationContractError(array $state, array $runtime, array $enabledModules): string
+    {
+        $missing = array_values(array_diff(self::MODULES, $enabledModules));
+        if ($missing !== []) {
+            return 'Production cutover is missing database runtime modules: ' . implode(', ', $missing) . '.';
+        }
+
+        $planFingerprint = strtolower(trim((string)($state['plan_fingerprint'] ?? '')));
+        $sourceFingerprint = strtolower(trim((string)($state['source_fingerprint'] ?? '')));
+        if (preg_match('/^[a-f0-9]{64}$/', $planFingerprint) !== 1
+            || preg_match('/^[a-f0-9]{64}$/', $sourceFingerprint) !== 1) {
+            return 'Production cutover state contains invalid activation fingerprints.';
+        }
+
+        $databaseRuntime = is_array($runtime['database_runtime'] ?? null)
+            ? $runtime['database_runtime']
+            : [];
+        if (($databaseRuntime['production_activated'] ?? false) !== true
+            || trim((string)($databaseRuntime['activation_build'] ?? '')) !== self::BUILD) {
+            return 'Production cutover runtime is missing the exact production activation marker.';
+        }
+        if (!hash_equals(
+            $planFingerprint,
+            strtolower(trim((string)($databaseRuntime['activation_plan_fingerprint'] ?? '')))
+        )) {
+            return 'Production cutover plan fingerprint does not match the active runtime.';
+        }
+        if (!hash_equals(
+            $sourceFingerprint,
+            strtolower(trim((string)($databaseRuntime['activation_source_fingerprint'] ?? '')))
+        )) {
+            return 'Production cutover source fingerprint does not match the active runtime.';
+        }
+        if (strtolower(trim((string)($databaseRuntime['rollback_driver'] ?? ''))) !== RuntimeStorageRouter::DRIVER_JSON) {
+            return 'Production cutover runtime does not preserve JSON as the rollback driver.';
+        }
+        return '';
+    }
+
+    private function assertControlEnvironmentAndBuild(): void
+    {
+        $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
+        if ($environment !== 'production') {
+            throw new RuntimeException('Production cutover controls are enabled only in production.');
+        }
+        if (FeatureFlagService::BUILD !== self::BUILD) {
+            throw new RuntimeException('Unexpected application build for production cutover controls.');
+        }
+    }
+}
