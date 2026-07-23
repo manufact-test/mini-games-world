@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - agent/mvp-14-8-6v-ci-base-2
+      - agent/mvp-14-9b-detached-ci-base
   workflow_dispatch:
 
 permissions:
