@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/ProductionCutoverConfig.php';
 require_once __DIR__ . '/ProductionCutoverPackageManifest.php';
 require_once __DIR__ . '/ProductionCutoverExactPreflight.php';
+require_once __DIR__ . '/ProductionCutoverPrimaryStateSeeder.php';
+require_once __DIR__ . '/ProductionCutoverReleaseSmokeService.php';
 require_once __DIR__ . '/ProductionCutoverReleaseReceiptVerifier.php';
 require_once __DIR__ . '/ProductionRuntimePrimaryContract.php';
 require_once __DIR__ . '/ProductionCutoverRunTrait.php';
