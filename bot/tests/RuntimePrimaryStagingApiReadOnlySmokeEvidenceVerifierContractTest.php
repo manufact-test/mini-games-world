@@ -73,8 +73,8 @@ $assertTrue(
     'Verifier must protect exact report path, private permissions and bounded size without repair'
 );
 $assertTrue(
-    substr_count($verifier, "preg_match('/\\A[a-f0-9]{40}\\z/'") >= 2
-        && str_contains($verifier, "preg_match('/\\A[a-f0-9]{64}\\z/', \$value)")
+    substr_count($verifier, "preg_match('/\A[a-f0-9]{40}\z/'") >= 2
+        && str_contains($verifier, "preg_match('/\A[a-f0-9]{64}\z/', \$value)")
         && str_contains($verifier, 'different repository commit')
         && str_contains($verifier, 'different database identity')
         && str_contains($verifier, 'different lifecycle evidence')
@@ -89,7 +89,7 @@ $assertTrue(
         && str_contains($verifier, 'too old for operational acceptance')
         && str_contains($verifier, 'exact UTC +00:00 format')
         && str_contains($verifier, 'timestamp is invalid')
-        && str_contains($verifier, "preg_match('/\\A\\d{4}-\\d{2}-\\d{2}T")
+        && str_contains($verifier, "preg_match('/\A\d{4}-\d{2}-\d{2}T")
         && !str_contains($verifier, '$value = trim($value);'),
     'Verifier must enforce bounded freshness and exact valid UTC format'
 );
@@ -126,9 +126,9 @@ foreach ([
 $duplicateGuard = strpos($verifierCli, 'if (isset($seen[$matchedName]))');
 $requiredGuard = strpos($verifierCli, "foreach (['report', 'commit', 'database', 'evidence'] as \$required)");
 $reportFormat = strpos($verifierCli, 'trim($reportFile) !== $reportFile');
-$commitFormat = strpos($verifierCli, "preg_match('/\\A[a-f0-9]{40}\\z/', \$expectedCommit)");
+$commitFormat = strpos($verifierCli, "preg_match('/\A[a-f0-9]{40}\z/', \$expectedCommit)");
 $databaseFormat = strpos($verifierCli, "'--expected-database-identity' => \$expectedDatabaseIdentity");
-$numericFormat = strpos($verifierCli, "preg_match('/\\A\\d+\\z/', \$values[\$numeric])");
+$numericFormat = strpos($verifierCli, "preg_match('/\A\d+\z/', \$values[\$numeric])");
 $ageBound = strpos($verifierCli, '$maximumAgeSeconds < 60 || $maximumAgeSeconds > 86_400');
 $hookBound = strpos($verifierCli, '$expectedHookCount < 1 || $expectedHookCount > 32');
 $filterBound = strpos($verifierCli, '$expectedFilterCount < 0 || $expectedFilterCount > 32');
@@ -157,7 +157,9 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($verifierCli, 'Verifier option may be specified only once')
-        && str_contains($verifierCli, '$values[$matchedName] = substr($argument, strlen($matchedPrefix));')
+        && str_contains($verifierCli, '$value = substr($argument, strlen($matchedPrefix));')
+        && str_contains($verifierCli, '$values[$matchedName] = $value;')
+        && str_contains($verifierCli, "str_contains(\$value, '\\\\')")
         && str_contains($verifierCli, "str_contains(\$reportFile, '\\\\')")
         && str_contains($verifierCli, 'trim($reportFile) !== $reportFile')
         && !str_contains($verifierCli, '$value = str_replace(')
