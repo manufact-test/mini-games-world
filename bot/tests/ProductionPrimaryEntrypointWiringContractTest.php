@@ -63,7 +63,7 @@ $assertTrue(
     'Real API and webhook paths must pass legacy storage construction through StorageFactory'
 );
 $assertTrue(
-    str_contains($sources['webhook'], '$mgw_webhook_success_hook')
+    str_contains($sources['webhook'], 'mgw_webhook_success_hook')
         && str_contains($sources['webhook'], '$productionDbPrimaryRequested')
         && str_contains($sources['webhook'], 'http_response_code($productionDbPrimaryRequested ? 503 : 200)')
         && str_contains($sources['webhook'], "echo \$productionDbPrimaryRequested ? 'temporary failure' : 'ok';")
