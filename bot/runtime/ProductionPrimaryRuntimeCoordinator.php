@@ -73,6 +73,7 @@ final class ProductionPrimaryRuntimeCoordinator
             'post_commit_request_finalizer_required' => false,
             'atomic_state_and_projections_required' => true,
             'legacy_json_bridges_must_be_suppressed' => true,
+            'execution_enabled' => self::EXECUTION_ENABLED,
             'direct_execution_enabled' => self::EXECUTION_ENABLED,
             'entrypoint_wiring_enabled' => self::ENTRYPOINT_WIRING_ENABLED,
             'entrypoint_wiring_requires_completed_state' => true,
