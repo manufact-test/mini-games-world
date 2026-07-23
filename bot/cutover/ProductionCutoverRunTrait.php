@@ -18,7 +18,7 @@ trait ProductionCutoverRunTrait
             if ($this->recoveryArtifactsPresent()) {
                 return $this->automaticRollbackReport(
                     $error,
-                    'invalid_state_recovered',
+                    'invalid_state_recovery_required',
                     'state_read_failed',
                     null,
                     null,
@@ -49,7 +49,7 @@ trait ProductionCutoverRunTrait
             }
             return $this->automaticRollbackReport(
                 $error,
-                'interrupted_cutover_recovered',
+                'interrupted_cutover_recovery_required',
                 'state_recovery',
                 null,
                 null,
@@ -58,20 +58,9 @@ trait ProductionCutoverRunTrait
             );
         }
         if ($stateName !== '') {
-            if ($this->recoveryArtifactsPresent()) {
-                return $this->automaticRollbackReport(
-                    new RuntimeException('Unknown cutover state recovered using the rollback artifacts.'),
-                    'unknown_state_recovered',
-                    'state_recovery',
-                    null,
-                    null,
-                    '',
-                    (string)($state['started_at_utc'] ?? '')
-                );
-            }
             return $this->recoveryBlockedReport(
                 new RuntimeException('Unknown production cutover state requires manual review.'),
-                'state_review_required_without_recovery_artifacts',
+                'unknown_state_review_required',
                 $stateName,
                 (string)($state['started_at_utc'] ?? '')
             );
@@ -79,7 +68,7 @@ trait ProductionCutoverRunTrait
         if ($this->recoveryArtifactsPresent()) {
             return $this->automaticRollbackReport(
                 new RuntimeException('Cutover recovery artifacts exist without a state record.'),
-                'orphaned_artifacts_recovered',
+                'orphaned_artifacts_recovery_required',
                 'state_recovery',
                 null,
                 null,
@@ -96,40 +85,45 @@ trait ProductionCutoverRunTrait
         ];
 
         try {
-            $primaryContract = ProductionRuntimePrimaryContract::inspect($this->projectRoot);
-            if (($primaryContract['ready'] ?? false) !== true) {
-                throw new RuntimeException(
-                    'Production DB-primary entrypoints are not ready: '
-                    . implode('; ', array_map(
-                        'strval',
-                        (array)($primaryContract['blockers'] ?? [])
-                    ))
-                );
-            }
-
             $runtime = $this->readRuntime();
             $preflightConfig = $this->configWithRuntime($runtime);
-            $preflight = (new ProductionPreflightRunner(
+            $preflight = (new ProductionCutoverExactPreflight(
                 $this->projectRoot,
                 $preflightConfig,
                 $this->configFile,
+                $this->policy,
                 $this->timestamp()
             ))->run();
             if (($preflight['technical_ready_for_window'] ?? false) !== true
-                || !empty($preflight['blockers'])) {
-                throw new RuntimeException('Production preflight is not clean for the cutover window.');
-            }
-
-            $preflightRuntime = is_array($preflight['runtime'] ?? null) ? $preflight['runtime'] : [];
-            if (($preflightRuntime['maintenance_enabled'] ?? false) === true
-                || ($preflightRuntime['financial_read_only'] ?? false) === true) {
+                || !empty($preflight['blockers'])
+                || ($preflight['production_switch_allowed'] ?? true) !== false) {
                 throw new RuntimeException(
-                    'Production cutover requires maintenance and financial read-only modes to be disabled before the operation.'
+                    'Exact production preflight is not clean for the cutover window.'
                 );
             }
 
-            $planFingerprint = strtolower(trim((string)($preflight['cutover_plan_fingerprint'] ?? '')));
-            $this->policy->assertApproved(self::BUILD, $planFingerprint, $this->timestamp());
+            $preflightRuntime = is_array($preflight['runtime'] ?? null)
+                ? $preflight['runtime']
+                : [];
+            if (($preflightRuntime['maintenance_enabled'] ?? false) === true
+                || ($preflightRuntime['financial_read_only'] ?? false) === true) {
+                throw new RuntimeException(
+                    'Production cutover requires maintenance and financial read-only modes '
+                    . 'to be disabled before the operation.'
+                );
+            }
+
+            $planFingerprint = strtolower(trim((string)(
+                $preflight['cutover_plan_fingerprint'] ?? ''
+            )));
+            if (preg_match('/\A[a-f0-9]{64}\z/', $planFingerprint) !== 1) {
+                throw new RuntimeException('Exact production cutover plan fingerprint is invalid.');
+            }
+            $this->policy->assertApproved(
+                self::BUILD,
+                $planFingerprint,
+                $this->timestamp()
+            );
 
             return $this->performApprovedCutover(
                 $preflight,
@@ -140,11 +134,16 @@ trait ProductionCutoverRunTrait
         } catch (Throwable $error) {
             $mutationStage = (string)($context['mutation_stage'] ?? 'none');
             if (!$this->recoveryArtifactsPresent() && $mutationStage === 'none') {
-                return $this->blockedReport($error, $preflight, 'pre_mutation_gate', $startedAt);
+                return $this->blockedReport(
+                    $error,
+                    $preflight,
+                    'pre_mutation_gate',
+                    $startedAt
+                );
             }
             return $this->automaticRollbackReport(
                 $error,
-                'automatic_rollback_after_failure',
+                'recovery_after_cutover_failure',
                 $mutationStage,
                 $preflight,
                 is_array($context['backup'] ?? null) ? $context['backup'] : null,
