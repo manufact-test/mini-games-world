@@ -9,6 +9,8 @@ trait ProductionCutoverPerformTrait
         string $startedAt,
         array &$context
     ): array {
+        $manifest = $this->packageManifest();
+        $this->policy->assertPackage($manifest);
         $originalRuntime = $this->readRuntime();
         $this->assertOriginalRuntimeSafe($originalRuntime);
         $this->createRuntimeBackup();
@@ -16,6 +18,9 @@ trait ProductionCutoverPerformTrait
         $this->writeState([
             'state' => 'running',
             'build' => self::BUILD,
+            'package_version' => self::PACKAGE_VERSION,
+            'release_commit' => (string)($manifest['release_commit'] ?? ''),
+            'package_fingerprint' => (string)($manifest['package_fingerprint'] ?? ''),
             'started_at_utc' => $startedAt,
             'plan_fingerprint' => $planFingerprint,
             'source_fingerprint' => (string)($preflight['source_inventory']['source_fingerprint'] ?? ''),
@@ -38,8 +43,11 @@ trait ProductionCutoverPerformTrait
         $snapshot = $this->snapshot();
         $frozenSourceFingerprint = $this->snapshotFingerprint($snapshot);
         $context['frozen_source_fingerprint'] = $frozenSourceFingerprint;
-        $expectedSourceFingerprint = strtolower(trim((string)($preflight['source_inventory']['source_fingerprint'] ?? '')));
-        if ($expectedSourceFingerprint === '' || !hash_equals($expectedSourceFingerprint, $frozenSourceFingerprint)) {
+        $expectedSourceFingerprint = strtolower(trim((string)(
+            $preflight['source_inventory']['source_fingerprint'] ?? ''
+        )));
+        if ($expectedSourceFingerprint === ''
+            || !hash_equals($expectedSourceFingerprint, $frozenSourceFingerprint)) {
             throw new RuntimeException('Production JSON source changed after the approved preflight.');
         }
 
@@ -49,6 +57,9 @@ trait ProductionCutoverPerformTrait
         $this->writeState([
             'state' => 'switching',
             'build' => self::BUILD,
+            'package_version' => self::PACKAGE_VERSION,
+            'release_commit' => (string)($manifest['release_commit'] ?? ''),
+            'package_fingerprint' => (string)($manifest['package_fingerprint'] ?? ''),
             'started_at_utc' => $startedAt,
             'plan_fingerprint' => $planFingerprint,
             'source_fingerprint' => $frozenSourceFingerprint,
@@ -69,14 +80,32 @@ trait ProductionCutoverPerformTrait
         );
         $activatedConfig = $this->configWithRuntime($activatedRuntime);
         $router = new RuntimeStorageRouter($activatedConfig);
-        if (!$router->enabled() || array_values(array_diff(self::MODULES, $router->enabledModules())) !== []) {
+        if (!$router->enabled()
+            || array_values(array_diff(self::MODULES, $router->enabledModules())) !== []) {
             throw new RuntimeException('Production database runtime activation contract is incomplete.');
         }
-
-        $synchronization = $this->synchronizeRuntime($activatedConfig, $snapshot);
-        if (empty($synchronization['ok'])) {
-            throw new RuntimeException('Production database runtime synchronization failed.');
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($activatedConfig);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('Production database identity is unavailable during cutover.');
         }
+        $databaseIdentity = $databaseConfig->identityFingerprint();
+
+        $primaryState = (new ProductionCutoverPrimaryStateSeeder(
+            $activatedConfig,
+            $this->database
+        ))->seed($snapshot);
+        $context['mutation_stage'] = 'primary_state_seeded';
+        if (($primaryState['ok'] ?? false) !== true
+            || (int)($primaryState['state_revision'] ?? 0) !== 1
+            || !hash_equals(
+                $frozenSourceFingerprint,
+                (string)($primaryState['state_sha256'] ?? '')
+            )
+            || ($primaryState['projection_event_status'] ?? '') !== 'completed'
+            || ($primaryState['projected_modules'] ?? []) !== self::MODULES) {
+            throw new RuntimeException('Production DB-primary state/outbox seed is incomplete.');
+        }
+
         $regressionBeforePublish = $this->fullRegression($activatedConfig);
         if (empty($regressionBeforePublish['ok']) || !empty($regressionBeforePublish['blockers'])) {
             throw new RuntimeException('Production DB regression failed before publishing the route.');
@@ -87,9 +116,25 @@ trait ProductionCutoverPerformTrait
         $this->writeState([
             'state' => 'validating',
             'build' => self::BUILD,
+            'package_version' => self::PACKAGE_VERSION,
+            'release_commit' => (string)($manifest['release_commit'] ?? ''),
+            'package_fingerprint' => (string)($manifest['package_fingerprint'] ?? ''),
             'started_at_utc' => $startedAt,
             'plan_fingerprint' => $planFingerprint,
             'source_fingerprint' => $frozenSourceFingerprint,
+            'database_identity_fingerprint' => $databaseIdentity,
+            'state_revision' => (int)$primaryState['state_revision'],
+            'state_sha256' => (string)$primaryState['state_sha256'],
+            'outbox_fingerprint' => hash(
+                'sha256',
+                json_encode(
+                    $primaryState['queue'] ?? [],
+                    JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+                )
+            ),
+            'all_module_fingerprint' => (string)(
+                $primaryState['all_module_fingerprint'] ?? ''
+            ),
             'backup_id' => (string)($backup['backup_id'] ?? ''),
             'backup_snapshot_sha256' => (string)($backup['snapshot_sha256'] ?? ''),
             'runtime_backup_present' => true,
@@ -105,7 +150,10 @@ trait ProductionCutoverPerformTrait
         }
 
         $publishedSnapshot = $this->snapshot();
-        if (!hash_equals($frozenSourceFingerprint, $this->snapshotFingerprint($publishedSnapshot))) {
+        if (!hash_equals(
+            $frozenSourceFingerprint,
+            $this->snapshotFingerprint($publishedSnapshot)
+        )) {
             throw new RuntimeException('JSON rollback snapshot changed during the sealed cutover.');
         }
         $regressionAfterPublish = $this->fullRegression($publishedConfig);
@@ -118,10 +166,26 @@ trait ProductionCutoverPerformTrait
         $this->writeState([
             'state' => 'awaiting_release',
             'build' => self::BUILD,
+            'package_version' => self::PACKAGE_VERSION,
+            'release_commit' => (string)($manifest['release_commit'] ?? ''),
+            'package_fingerprint' => (string)($manifest['package_fingerprint'] ?? ''),
             'started_at_utc' => $startedAt,
             'release_ready_at_utc' => $readyAt,
             'plan_fingerprint' => $planFingerprint,
             'source_fingerprint' => $frozenSourceFingerprint,
+            'database_identity_fingerprint' => $databaseIdentity,
+            'state_revision' => (int)$primaryState['state_revision'],
+            'state_sha256' => (string)$primaryState['state_sha256'],
+            'outbox_fingerprint' => hash(
+                'sha256',
+                json_encode(
+                    $primaryState['queue'] ?? [],
+                    JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+                )
+            ),
+            'all_module_fingerprint' => (string)(
+                $primaryState['all_module_fingerprint'] ?? ''
+            ),
             'backup_id' => (string)($backup['backup_id'] ?? ''),
             'backup_snapshot_sha256' => (string)($backup['snapshot_sha256'] ?? ''),
             'runtime_backup_present' => true,
@@ -130,15 +194,19 @@ trait ProductionCutoverPerformTrait
             'maintenance_active' => true,
             'financial_read_only_active' => true,
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
+            'verified_live_rollback_required_after_release' => true,
         ]);
 
         return [
             'ok' => true,
-            'report_type' => 'mvp-14.9-production-cutover',
+            'report_type' => 'mvp-14.10e-production-cutover-package',
             'action' => 'cutover_awaiting_release',
             'state' => 'awaiting_release',
             'environment' => 'production',
             'build' => self::BUILD,
+            'package_version' => self::PACKAGE_VERSION,
+            'release_commit' => (string)($manifest['release_commit'] ?? ''),
+            'package_fingerprint' => (string)($manifest['package_fingerprint'] ?? ''),
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
             'runtime_route' => RuntimeStorageRouter::DRIVER_DATABASE,
             'rollback_driver' => RuntimeStorageRouter::DRIVER_JSON,
@@ -153,18 +221,21 @@ trait ProductionCutoverPerformTrait
             'drain' => $drain,
             'queue_cleanup' => $queueCleanup,
             'import' => $import,
-            'synchronization' => $synchronization,
+            'primary_state' => $primaryState,
             'regression_before_publish' => $this->compactRegression($regressionBeforePublish),
             'regression_after_publish' => $this->compactRegression($regressionAfterPublish),
-            'automatic_rollback_available' => is_file($this->runtimeBackupFile),
             'manual_smoke_required' => true,
             'release_required' => true,
+            'separate_release_approval_required' => true,
+            'verified_live_rollback_required_after_release' => true,
             'production_changed' => true,
             'mutation_stage' => 'awaiting_release',
+            'webhook_changed' => false,
+            'cron_changed' => false,
             'sensitive_identifiers_exposed' => false,
             'started_at_utc' => $startedAt,
             'release_ready_at_utc' => $readyAt,
-            'next_step' => 'Run the read-only production smoke checklist. Use --release only after every check passes; otherwise use --rollback.',
+            'next_step' => 'Run ops/deploy/production-cutover-smoke.php, bind its receipt fingerprint to a separate release approval, then use --release.',
         ];
     }
 
