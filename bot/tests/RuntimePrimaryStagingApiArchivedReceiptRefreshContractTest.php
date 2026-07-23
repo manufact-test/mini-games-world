@@ -26,6 +26,21 @@ $assertTrue(
     'Recovery launcher must select the immutable incident receipt and isolate the temporary refreshed copy.'
 );
 $assertTrue(
+    !str_contains($shell, '< <(')
+        && !str_contains($shell, '/dev/fd')
+        && str_contains($shell, 'CANDIDATE_LIST="$PRIVATE_DIR/staging-api-incident-receipt-candidates-$LIST_ID.txt"')
+        && str_contains($shell, 'done < "$CANDIDATE_LIST"')
+        && str_contains($shell, 'chmod 0600 "$CANDIDATE_LIST"'),
+    'Recovery receipt selection must not depend on process substitution or /dev/fd.'
+);
+$assertTrue(
+    str_contains($shell, 'cleanup_temporary_files()')
+        && str_contains($shell, 'trap cleanup_temporary_files EXIT HUP INT TERM')
+        && str_contains($shell, 'rm -f -- "$CANDIDATE_LIST"')
+        && str_contains($shell, 'rm -f -- "$REFRESHED_RECEIPT"'),
+    'All temporary recovery files must be removed on every exit path.'
+);
+$assertTrue(
     str_contains($shell, 'RuntimePrimaryStagingReadOnlyCheckpointReceipt::verifyFile(')
         && str_contains($shell, '$generatedAt->getTimestamp()')
         && str_contains($shell, '$verified["repository_commit"] ?? ""')
@@ -43,9 +58,8 @@ $assertTrue(
 $assertTrue(
     str_contains($shell, '$handle = fopen($target, "x");')
         && str_contains($shell, 'chmod($target, 0600)')
-        && str_contains($shell, 'verifyFile($target, $projectRoot, 300)')
-        && str_contains($shell, 'trap cleanup_refreshed_receipt EXIT HUP INT TERM'),
-    'Refreshed receipt must be no-clobber, mode 0600, freshly reverified and always removed.'
+        && str_contains($shell, 'verifyFile($target, $projectRoot, 300)'),
+    'Refreshed receipt must be no-clobber, mode 0600 and freshly reverified.'
 );
 $assertTrue(
     !str_contains($shell, 'file_put_contents($source')
