@@ -31,6 +31,30 @@ final class ProductionPrimaryLiveRollbackBootstrap
             }
         }
 
+        $bootstrapLockPath = $loaded['private_dir'] . '/production-live-rollback.bootstrap.lock';
+        if (is_link($bootstrapLockPath)) {
+            throw new RuntimeException('Production live rollback bootstrap lock is unsafe.');
+        }
+        $bootstrapLock = fopen($bootstrapLockPath, 'c+');
+        if ($bootstrapLock === false || !chmod($bootstrapLockPath, 0600)) {
+            if (is_resource($bootstrapLock)) fclose($bootstrapLock);
+            throw new RuntimeException('Production live rollback bootstrap lock is unavailable.');
+        }
+        if (!flock($bootstrapLock, LOCK_EX | LOCK_NB)) {
+            fclose($bootstrapLock);
+            throw new RuntimeException('Another production live rollback bootstrap is already running.');
+        }
+
+        try {
+            return $this->executeLocked($loaded, $now);
+        } finally {
+            flock($bootstrapLock, LOCK_UN);
+            fclose($bootstrapLock);
+        }
+    }
+
+    private function executeLocked(array $loaded, int $now): array
+    {
         $gate = (new ProductionPrimaryLiveRollbackGate())->inspect(
             $loaded['config'],
             $loaded['cutover'],
@@ -95,15 +119,25 @@ final class ProductionPrimaryLiveRollbackBootstrap
             $loaded['private_dir'],
             $loaded['cutover_file']
         );
+
+        // The input loader ran before this process acquired the bootstrap lock.
+        // Revalidate every mutable private identity while serialized, immediately
+        // before creating the state machine.
         if (!hash_equals(
             $loaded['runtime_config_fingerprint'],
             $runtimeWriter->fingerprint()
         ) || !hash_equals(
             $loaded['cutover_state_fingerprint'],
             $stateStore->cutoverFingerprint()
+        ) || !hash_equals(
+            $loaded['live_data_directory_fingerprint'],
+            hash('sha256', $loaded['live_data_dir'])
+        ) || !hash_equals(
+            $loaded['export_directory_fingerprint'],
+            hash('sha256', $loaded['export_dir'])
         )) {
             throw new RuntimeException(
-                'Production live rollback inputs changed during bootstrap.'
+                'Production live rollback inputs changed before serialized execution.'
             );
         }
 
@@ -156,6 +190,7 @@ final class ProductionPrimaryLiveRollbackBootstrap
             'gate_passed' => true,
             'database_identity_verified' => true,
             'cutover_fingerprint_verified' => true,
+            'bootstrap_serialized' => true,
             'webhook_changed' => false,
             'cron_changed' => false,
             'sensitive_identifiers_exposed' => false,
