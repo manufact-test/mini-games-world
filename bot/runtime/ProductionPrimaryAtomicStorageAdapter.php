@@ -34,11 +34,21 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
 
     public function transaction(callable $callback): mixed
     {
-        return $this->database->transaction(function () use ($callback): mixed {
-            $baseline = $this->captureAndAudit('baseline');
-            $result = $this->stateStorage->transaction($callback);
-            $afterWrite = $this->stateStorage->status();
+        return $this->database->transaction(function (
+            DatabaseConnectionInterface $database
+        ) use ($callback): mixed {
+            $baseline = [];
+            $result = $this->stateStorage->transaction(
+                function (array &$data) use ($callback, &$baseline): mixed {
+                    $baseline = $this->captureLockedBaseline($data);
+                    return $callback($data);
+                }
+            );
+            if ($baseline === []) {
+                throw new RuntimeException('Production atomic baseline was not captured under lock.');
+            }
 
+            $afterWrite = $this->stateStorage->status();
             $beforeRevision = (int)$baseline['state_revision'];
             $beforeSha = (string)$baseline['state_sha256'];
             $afterRevision = (int)($afterWrite['revision'] ?? 0);
@@ -58,6 +68,7 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                     'state_sha256' => $beforeSha,
                     'worker_tick_count' => 0,
                     'projected_modules' => self::MODULES,
+                    'baseline_locked' => true,
                     'atomic_commit_pending' => true,
                     'json_rollback_source_changed' => false,
                     'production_changed' => false,
@@ -103,6 +114,7 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 'worker_attempt_count' => max(1, (int)($tick['attempt_count'] ?? 0)),
                 'projected_modules' => self::MODULES,
                 'all_module_fingerprint' => (string)$final['all_module_fingerprint'],
+                'baseline_locked' => true,
                 'atomic_commit_pending' => true,
                 'json_rollback_source_changed' => false,
                 'rollback_requires_fresh_db_export' => true,
@@ -134,18 +146,28 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
         return $this->lastTransactionReport;
     }
 
+    private function captureLockedBaseline(array $snapshot): array
+    {
+        $status = $this->stateStorage->status();
+        return $this->auditSnapshot($snapshot, $status, 'baseline');
+    }
+
     private function captureAndAudit(string $stage): array
     {
         $status = $this->stateStorage->status();
+        $snapshot = $this->stateStorage->readOnly(static fn(array $data): array => $data);
+        if (!is_array($snapshot)) {
+            throw new RuntimeException('Production atomic ' . $stage . ' snapshot is unavailable.');
+        }
+        return $this->auditSnapshot($snapshot, $status, $stage);
+    }
+
+    private function auditSnapshot(array $snapshot, array $status, string $stage): array
+    {
         $revision = (int)($status['revision'] ?? 0);
         $stateSha = strtolower(trim((string)($status['state_sha256'] ?? '')));
         if ($revision < 1 || preg_match('/\A[a-f0-9]{64}\z/', $stateSha) !== 1) {
             throw new RuntimeException('Production atomic ' . $stage . ' state identity is invalid.');
-        }
-
-        $snapshot = $this->stateStorage->readOnly(static fn(array $data): array => $data);
-        if (!is_array($snapshot)) {
-            throw new RuntimeException('Production atomic ' . $stage . ' snapshot is unavailable.');
         }
         if (!hash_equals($stateSha, hash('sha256', $this->canonicalJson($snapshot)))) {
             throw new RuntimeException('Production atomic ' . $stage . ' snapshot fingerprint mismatch.');
