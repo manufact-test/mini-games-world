@@ -21,6 +21,47 @@ $assertSame = static function (mixed $expected, mixed $actual, string $message) 
         throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
     }
 };
+$containsDirectJsonDatabaseConstruction = static function (string $source): bool {
+    $tokens = token_get_all($source);
+    $tokenCount = count($tokens);
+
+    for ($index = 0; $index < $tokenCount; $index++) {
+        $token = $tokens[$index];
+        if (!is_array($token) || $token[0] !== T_NEW) continue;
+
+        $name = '';
+        for ($cursor = $index + 1; $cursor < $tokenCount; $cursor++) {
+            $part = $tokens[$cursor];
+            if (is_array($part) && in_array($part[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+            if (is_array($part) && in_array($part[0], [
+                T_STRING,
+                T_NAME_QUALIFIED,
+                T_NAME_FULLY_QUALIFIED,
+                T_NAME_RELATIVE,
+                T_NS_SEPARATOR,
+            ], true)) {
+                $name .= $part[1];
+                continue;
+            }
+            if ($part === '\\') {
+                $name .= '\\';
+                continue;
+            }
+            break;
+        }
+
+        $name = ltrim($name, '\\');
+        $separator = strrpos($name, '\\');
+        if ($separator !== false) {
+            $name = substr($name, $separator + 1);
+        }
+        if ($name === 'JsonDatabase') return true;
+    }
+
+    return false;
+};
 
 $root = sys_get_temp_dir() . '/mgw-storage-adapter-test-' . bin2hex(random_bytes(5));
 $dataDir = $root . '/data';
@@ -80,6 +121,15 @@ try {
     }
     $assertTrue($unsupportedBlocked, 'Unsupported storage driver must fail closed');
 
+    $assertTrue(
+        !$containsDirectJsonDatabaseConstruction("<?php \$needle = 'new JsonDatabase(';"),
+        'Static adapter scan must ignore JsonDatabase text inside string literals'
+    );
+    $assertTrue(
+        $containsDirectJsonDatabaseConstruction('<?php $database = new JsonDatabase($path);'),
+        'Static adapter scan must detect real direct JsonDatabase construction'
+    );
+
     $directInstantiations = [];
     $iterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($projectRoot . '/bot', FilesystemIterator::SKIP_DOTS),
@@ -96,7 +146,7 @@ try {
             continue;
         }
         $source = file_get_contents($path) ?: '';
-        if (preg_match('/new\s+JsonDatabase\s*\(/', $source) === 1) {
+        if ($containsDirectJsonDatabaseConstruction($source)) {
             $directInstantiations[] = $relative;
         }
     }
