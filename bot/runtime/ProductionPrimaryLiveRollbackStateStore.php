@@ -164,11 +164,12 @@ final class ProductionPrimaryLiveRollbackStateStore
         if ($expectedFingerprint === '' || !hash_equals($expectedFingerprint, $this->fileSha($backup))) {
             throw new RuntimeException('Production cutover rollback backup fingerprint is invalid.');
         }
-        $value = $this->readJsonObject($backup, 'Production cutover rollback backup');
-        $this->atomicJsonWrite($this->cutoverFile, $value);
-        if (!hash_equals($expectedFingerprint, $this->cutoverFingerprint())) {
-            throw new RuntimeException('Production cutover rollback backup restoration failed.');
+        $raw = file_get_contents($backup);
+        if (!is_string($raw) || $raw === '') {
+            throw new RuntimeException('Production cutover rollback backup could not be read.');
         }
+        $this->readJsonObject($backup, 'Production cutover rollback backup');
+        $this->atomicRawJsonWrite($this->cutoverFile, $raw, $expectedFingerprint);
         return ['ok' => true, 'cutover_restored' => true];
     }
 
@@ -228,6 +229,35 @@ final class ProductionPrimaryLiveRollbackStateStore
             }
             if (!chmod($path, 0600)) {
                 throw new RuntimeException('Production live rollback state permissions failed.');
+            }
+        } catch (Throwable $error) {
+            if (is_file($temporary) || is_link($temporary)) @unlink($temporary);
+            throw $error;
+        }
+    }
+
+    private function atomicRawJsonWrite(
+        string $path,
+        string $raw,
+        string $expectedFingerprint
+    ): void {
+        if (dirname($path) !== $this->privateDir) {
+            throw new RuntimeException('Production live rollback exact-restore target is outside the private directory.');
+        }
+        $temporary = $this->privateDir . '/.live-rollback-restore-' . bin2hex(random_bytes(8)) . '.tmp';
+        try {
+            $this->writeNewPrivateFile($temporary, $raw);
+            $this->readJsonObject($temporary, 'Production live rollback exact-restore temporary state');
+            if (!hash_equals($expectedFingerprint, $this->fileSha($temporary))) {
+                throw new RuntimeException('Production cutover exact-restore temporary fingerprint mismatch.');
+            }
+            if (!rename($temporary, $path)) {
+                throw new RuntimeException('Production cutover exact backup could not be published atomically.');
+            }
+            clearstatcache(true, $path);
+            if (!chmod($path, 0600)
+                || !hash_equals($expectedFingerprint, $this->fileSha($path))) {
+                throw new RuntimeException('Production cutover exact backup restoration failed.');
             }
         } catch (Throwable $error) {
             if (is_file($temporary) || is_link($temporary)) @unlink($temporary);
