@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/mvp-14-account-import-update-parameter-fix
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
