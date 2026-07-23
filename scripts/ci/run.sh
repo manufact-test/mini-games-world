@@ -31,6 +31,14 @@ fi
 
 echo "PHP smoke tests passed: ${test_count} files"
 
+echo "== Shell syntax =="
+shell_count=0
+while IFS= read -r -d '' file; do
+  bash -n "$file"
+  shell_count=$((shell_count + 1))
+done < <(git ls-files -z '*.sh')
+echo "Shell syntax passed: ${shell_count} files"
+
 echo "== JSON validation =="
 node scripts/ci/check-json.mjs
 
