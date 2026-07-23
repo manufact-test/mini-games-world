@@ -26,6 +26,8 @@ final class ProductionCutoverReleaseReceiptVerifier
 
         $checks = [
             'contract_version' => ($receipt['contract_version'] ?? null) === self::CONTRACT_VERSION,
+            'smoke_contract_version' => ($receipt['smoke_contract_version'] ?? null)
+                === ProductionCutoverReleaseSmokeService::CONTRACT_VERSION,
             'ready_exact' => ($receipt['ready'] ?? null) === true,
             'environment_exact' => ($receipt['environment'] ?? null) === 'production',
             'build_exact' => ($receipt['build'] ?? null) === ProductionCutoverRunner::BUILD,
@@ -45,6 +47,7 @@ final class ProductionCutoverReleaseReceiptVerifier
                 && ($receipt['database_identity_fingerprint'] ?? null)
                     === $databaseIdentityFingerprint,
             'cutover_state_exact' => ($receipt['cutover_state'] ?? null) === 'awaiting_release',
+            'health_probe_exact' => ($receipt['health_probe'] ?? null) === 'internal_cli_equivalent',
             'health_http_200' => ($receipt['health_http_status'] ?? null) === 200,
             'health_ok_exact' => ($receipt['health_ok'] ?? null) === true,
             'database_connected_exact' => ($receipt['database_connected'] ?? null) === true,
@@ -57,6 +60,15 @@ final class ProductionCutoverReleaseReceiptVerifier
             'maintenance_still_enabled' => ($receipt['maintenance_enabled'] ?? null) === true,
             'financial_read_only_still_enabled' => ($receipt['financial_read_only'] ?? null) === true,
             'json_write_block_still_active' => ($receipt['json_write_block_active'] ?? null) === true,
+            'state_revision_valid' => is_int($receipt['state_revision'] ?? null)
+                && (int)$receipt['state_revision'] >= 1,
+            'state_sha_valid' => $this->exactSha($receipt['state_sha256'] ?? null) !== '',
+            'outbox_fingerprint_valid' => $this->exactSha(
+                $receipt['outbox_fingerprint'] ?? null
+            ) !== '',
+            'all_module_fingerprint_valid' => $this->exactSha(
+                $receipt['all_module_fingerprint'] ?? null
+            ) !== '',
             'database_write_executed_false' => ($receipt['database_write_executed'] ?? null) === false,
             'persistent_config_changed_false' => ($receipt['persistent_config_changed'] ?? null) === false,
             'webhook_changed_false' => ($receipt['webhook_changed'] ?? null) === false,
@@ -103,6 +115,7 @@ final class ProductionCutoverReleaseReceiptVerifier
     private function privateFile(string $path): string
     {
         if ($path === '' || str_contains($path, '\\') || !str_starts_with($path, '/')
+            || basename($path) !== 'production-cutover-release-receipt.json'
             || is_link($path) || !is_file($path)) {
             throw new RuntimeException('Production release receipt is unavailable.');
         }
@@ -110,10 +123,25 @@ final class ProductionCutoverReleaseReceiptVerifier
         if (!is_string($canonical) || !hash_equals($path, $canonical)) {
             throw new RuntimeException('Production release receipt path is not canonical.');
         }
+        if (preg_match('~(?:\A|/)public_html(?:/|\z)~', $canonical) === 1) {
+            throw new RuntimeException('Production release receipt must remain outside public_html.');
+        }
         clearstatcache(true, $canonical);
         $mode = fileperms($canonical);
         if (!is_int($mode) || ($mode & 0777) !== 0600) {
             throw new RuntimeException('Production release receipt must have exact mode 0600.');
+        }
+        $directory = dirname($canonical);
+        $canonicalDirectory = realpath($directory);
+        if (!is_string($canonicalDirectory) || !hash_equals($directory, $canonicalDirectory)) {
+            throw new RuntimeException('Production release receipt directory is not canonical.');
+        }
+        clearstatcache(true, $canonicalDirectory);
+        $directoryMode = fileperms($canonicalDirectory);
+        if (!is_int($directoryMode) || ($directoryMode & 0022) !== 0) {
+            throw new RuntimeException(
+                'Production release receipt directory must not be group/world writable.'
+            );
         }
         return $canonical;
     }
