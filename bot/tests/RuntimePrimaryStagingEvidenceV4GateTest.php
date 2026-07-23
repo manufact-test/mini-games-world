@@ -44,18 +44,18 @@ $assertTrue(
 $assertTrue(
     str_contains($source, 'Evidence v4 repository commit does not match the current checkout.')
         && str_contains($source, '$blockers = array_values(array_unique(array_filter(array_map(')
-        && str_contains($source, "$report['ok'] = $blockers === [];"),
+        && str_contains($source, '$report[\'ok\'] = $blockers === [];'),
     'V4 gate must merge checkout blockers without allowing false success'
 );
 
 foreach ([
-    "current_repository_commit' => $currentCommit",
-    "repository_commit_matches' => $matches",
-    "blocker_count' => count($blockers)",
-    "blockers' => $blockers",
+    '$report[\'current_repository_commit\'] = $currentCommit;',
+    '$report[\'repository_commit_matches\'] = $matches;',
+    '$report[\'blocker_count\'] = count($blockers);',
+    '$report[\'blockers\'] = $blockers;',
 ] as $proof) {
     $assertTrue(
-        str_contains($source, "$report['{$proof}"),
+        str_contains($source, $proof),
         'V4 gate report proof is missing: ' . $proof
     );
 }
