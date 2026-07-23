@@ -411,8 +411,8 @@ final class LegacyAccountImportService
         $database->execute(
             'UPDATE mgw_users SET status = :status, display_name = :display_name,
                 username = :username, avatar_provider = :avatar_provider,
-                avatar_external_ref = :avatar_external_ref, updated_at_utc = :updated_at_utc,
-                last_seen_at_utc = :last_seen_at_utc
+                avatar_external_ref = :avatar_external_ref, created_at_utc = :created_at_utc,
+                updated_at_utc = :updated_at_utc, last_seen_at_utc = :last_seen_at_utc
              WHERE mgw_id = :mgw_id',
             $this->userParameters($mgwId, $item)
         );
