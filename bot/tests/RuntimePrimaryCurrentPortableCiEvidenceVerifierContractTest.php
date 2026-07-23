@@ -162,7 +162,7 @@ $assertTrue(
     'Verifier CLI must not write, connect, route or touch infrastructure'
 );
 
-$checkoutPosition = strpos($workflow, 'Checkout exact deployable revision');
+$checkoutPosition = strpos($workflow, 'uses: actions/checkout@v4');
 $bindPosition = strpos($workflow, 'Bind exact checked-out commit');
 $runPosition = strpos($workflow, 'Run current portable focused suite');
 $verifyPosition = strpos($workflow, 'Verify exact current evidence bundle');
@@ -179,7 +179,7 @@ $assertTrue(
 $assertTrue(
     preg_match('/^on:\s*\n\s+pull_request:/m', $workflow) === 1
         && preg_match('/^\s+workflow_dispatch:\s*$/m', $workflow) === 1
-        && str_contains($workflow, '- agent/mvp-14-8-6s-current-portable-validation')
+        && str_contains($workflow, '- agent/mvp-14-8-6v-ci-base-2')
         && preg_match('/^\s*(push|schedule):/m', $workflow) !== 1
         && str_contains($workflow, 'runs-on: ubuntu-24.04')
         && !str_contains($workflow, 'setup-php')
