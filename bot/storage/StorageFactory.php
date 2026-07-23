@@ -23,6 +23,10 @@ final class StorageFactory
     public static function createJson(string $dataDir): StorageAdapterInterface
     {
         self::installGuardedEntrypointContextIfEligible();
+        if (class_exists('ProductionPrimaryEntrypointStorageContext', false)
+            && ProductionPrimaryEntrypointStorageContext::installed()) {
+            return ProductionPrimaryEntrypointStorageContext::storage();
+        }
         if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
             && RuntimePrimaryEntrypointStorageContext::installed()) {
             return RuntimePrimaryEntrypointStorageContext::storage();
@@ -70,23 +74,22 @@ final class StorageFactory
             'webhook.php' => 'webhook',
             default => '',
         };
-        if ($entrypoint === '') {
-            return;
-        }
+        if ($entrypoint === '') return;
+
         if (isset($failures[$entrypoint])) {
             throw new RuntimeException(
-                'Guarded staging entrypoint storage selection previously failed in this request.',
+                'Guarded entrypoint storage selection previously failed in this request.',
                 0,
                 $failures[$entrypoint]
             );
         }
-        if (class_exists('RuntimePrimaryEntrypointStorageContext', false)
-            && RuntimePrimaryEntrypointStorageContext::installed()) {
+        if ((class_exists('ProductionPrimaryEntrypointStorageContext', false)
+                && ProductionPrimaryEntrypointStorageContext::installed())
+            || (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+                && RuntimePrimaryEntrypointStorageContext::installed())) {
             return;
         }
-        if (isset($attempted[$entrypoint])) {
-            return;
-        }
+        if (isset($attempted[$entrypoint])) return;
         $attempted[$entrypoint] = true;
 
         $config = $GLOBALS['config'] ?? null;
@@ -100,6 +103,17 @@ final class StorageFactory
         }
 
         try {
+            if (($config['environment'] ?? null) === 'production') {
+                require_once __DIR__ . '/../runtime/ProductionPrimaryEntrypointBootstrap.php';
+                ProductionPrimaryEntrypointBootstrap::installIfEnabled(
+                    dirname(__DIR__, 2),
+                    $config,
+                    $configFile,
+                    $entrypoint
+                );
+                return;
+            }
+
             require_once __DIR__ . '/../runtime/RuntimePrimaryStagingEntrypointBootstrap.php';
             (new RuntimePrimaryStagingEntrypointStorageSelector(
                 dirname(__DIR__, 2),
