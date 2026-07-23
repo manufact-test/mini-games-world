@@ -16,6 +16,7 @@ files=(
   bot/runtime/ProductionPrimaryRollbackExportBootstrap.php
   ops/runtime/run-production-primary-rollback-export.php
   bot/tests/ProductionPrimaryRollbackExportGateTest.php
+  bot/tests/ProductionPrimaryRollbackExportRequestIdCaseTest.php
   bot/tests/ProductionPrimaryRollbackExportServiceTest.php
   bot/tests/ProductionPrimaryRollbackExportInputLoaderTest.php
   bot/tests/ProductionPrimaryRollbackExportCliContractTest.php
@@ -28,6 +29,7 @@ done
 
 for test in \
   bot/tests/ProductionPrimaryRollbackExportGateTest.php \
+  bot/tests/ProductionPrimaryRollbackExportRequestIdCaseTest.php \
   bot/tests/ProductionPrimaryRollbackExportServiceTest.php \
   bot/tests/ProductionPrimaryRollbackExportInputLoaderTest.php \
   bot/tests/ProductionPrimaryRollbackExportCliContractTest.php \
