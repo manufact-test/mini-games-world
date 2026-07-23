@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../storage/contracts/StorageTransactionInterface.php';
+require_once __DIR__ . '/../storage/contracts/StorageAdapterInterface.php';
 require_once __DIR__ . '/../database/DatabaseConnectionInterface.php';
 require_once __DIR__ . '/../database/DatabaseConfig.php';
 require_once __DIR__ . '/../database/PdoDatabaseConnection.php';
