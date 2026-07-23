@@ -44,7 +44,12 @@ foreach (array_slice($argv ?? [], 1) as $argument) {
         exit(2);
     }
     $seen[$matchedName] = true;
-    $values[$matchedName] = substr($argument, strlen($matchedPrefix));
+    $value = substr($argument, strlen($matchedPrefix));
+    if ($matchedName === 'report' && str_contains($value, '\\')) {
+        fwrite(STDERR, "Evidence report path must not contain backslashes.\n");
+        exit(2);
+    }
+    $values[$matchedName] = $value;
 }
 
 foreach (['report', 'commit', 'database', 'evidence'] as $required) {
@@ -103,12 +108,55 @@ if ($expectedFilterCount < 0 || $expectedFilterCount > 32) {
     exit(2);
 }
 
-$projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
-require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier.php';
-
+$errorHandlerInstalled = false;
 try {
+    set_error_handler(static function (
+        int $severity,
+        string $message,
+        string $file,
+        int $line
+    ): never {
+        if ((error_reporting() & $severity) === 0) {
+            throw new RuntimeException('Suppressed read-only smoke evidence verifier warning.');
+        }
+        throw new RuntimeException('Read-only smoke evidence filesystem operation failed.');
+    });
+    $errorHandlerInstalled = true;
+
+    $reportPath = $reportFile;
+    if (is_link($reportPath) || !is_file($reportPath)) {
+        throw new RuntimeException('Read-only API smoke report must be an absolute real file.');
+    }
+    $canonicalReport = realpath($reportPath);
+    if (!is_string($canonicalReport) || !hash_equals($reportPath, $canonicalReport)) {
+        throw new RuntimeException('Read-only API smoke report must use its exact canonical path.');
+    }
+    if (preg_match('~(?:\A|/)public_html(?:/|\z)~', $canonicalReport) === 1) {
+        throw new RuntimeException('Read-only API smoke report must not be accepted from public_html.');
+    }
+
+    clearstatcache(true, $canonicalReport);
+    $reportMode = fileperms($canonicalReport);
+    if (!is_int($reportMode) || ($reportMode & 0777) !== 0600) {
+        throw new RuntimeException('Read-only API smoke report must have exact mode 0600.');
+    }
+
+    $reportDirectory = dirname($canonicalReport);
+    $canonicalDirectory = realpath($reportDirectory);
+    if (!is_string($canonicalDirectory) || !hash_equals($reportDirectory, $canonicalDirectory)) {
+        throw new RuntimeException('Read-only API smoke report directory must use its exact canonical path.');
+    }
+    clearstatcache(true, $canonicalDirectory);
+    $parentMode = fileperms($canonicalDirectory);
+    if (!is_int($parentMode) || ($parentMode & 0022) !== 0) {
+        throw new RuntimeException('Read-only API smoke report directory must not be group/world writable.');
+    }
+
+    $projectRoot = rtrim(str_replace('\\', '/', dirname(__DIR__, 2)), '/');
+    require_once $projectRoot . '/bot/runtime/RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier.php';
+
     $report = (new RuntimePrimaryStagingApiReadOnlySmokeEvidenceVerifier(
-        $reportFile,
+        $canonicalReport,
         $expectedCommit,
         $expectedDatabaseIdentity,
         $expectedEvidenceFingerprint,
@@ -116,12 +164,20 @@ try {
         $expectedHookCount,
         $expectedFilterCount
     ))->verify();
+
+    restore_error_handler();
+    $errorHandlerInstalled = false;
+
     fwrite(STDOUT, json_encode(
         $report,
         JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
     ) . PHP_EOL);
     exit(0);
 } catch (Throwable $error) {
+    if ($errorHandlerInstalled) {
+        restore_error_handler();
+        $errorHandlerInstalled = false;
+    }
     $message = preg_replace(
         "~/(?:home|var|tmp|srv|opt)/[^\\s'\"]+~",
         '[private-path]',
