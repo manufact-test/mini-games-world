@@ -5,6 +5,14 @@ umask 077
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 PRIVATE_DIR="$(cd -- "$PROJECT_ROOT/.." && pwd -P)/_private_mgw"
 INCIDENT_COMMIT="ad2a409d8f979a4b79b568efd6b81c5947659aaa"
+REFRESHED_RECEIPT=''
+
+cleanup_refreshed_receipt() {
+  if [[ -n "${REFRESHED_RECEIPT:-}" && -f "$REFRESHED_RECEIPT" && ! -L "$REFRESHED_RECEIPT" ]]; then
+    rm -f -- "$REFRESHED_RECEIPT" || true
+  fi
+}
+trap cleanup_refreshed_receipt EXIT HUP INT TERM
 
 fail() {
   local reason="$1"
@@ -79,6 +87,7 @@ while IFS= read -r candidate; do
 done < <(
   find "$PRIVATE_DIR" -maxdepth 1 -type f \
     -name 'staging-read-only-checkpoint-receipt-*.json' \
+    ! -name 'staging-read-only-checkpoint-receipt-incident-refresh-*.json' \
     -printf '%T@ %p\n' 2>/dev/null \
   | sort -nr \
   | cut -d' ' -f2-
@@ -86,6 +95,93 @@ done < <(
 [[ -n "$RECEIPT" ]] || fail 'exact incident read-only receipt was not found'
 
 RUN_ID="$(date -u '+%Y%m%dT%H%M%SZ')-$$-${RANDOM}"
+ARCHIVED_RECEIPT="$RECEIPT"
+REFRESHED_RECEIPT="$PRIVATE_DIR/staging-read-only-checkpoint-receipt-incident-refresh-$RUN_ID.json"
+[[ ! -e "$REFRESHED_RECEIPT" && ! -L "$REFRESHED_RECEIPT" ]] \
+  || fail 'fresh temporary incident receipt path already exists'
+
+if ! "$PHP_BIN" -r '
+$projectRoot = realpath($argv[1]);
+$source = realpath($argv[2]);
+$target = $argv[3];
+$incidentCommit = $argv[4];
+if (!is_string($projectRoot) || !is_dir($projectRoot)
+    || !is_string($source) || !is_file($source) || is_link($source)
+    || !str_starts_with($target, dirname($source) . "/")
+    || file_exists($target) || is_link($target)) {
+    exit(1);
+}
+require $projectRoot . "/bot/runtime/RuntimePrimaryStagingReadOnlyCheckpointReceipt.php";
+$raw = file_get_contents($source);
+if (!is_string($raw)) exit(1);
+try {
+    $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+} catch (Throwable) {
+    exit(1);
+}
+$generatedRaw = is_array($decoded) ? ($decoded["generated_at_utc"] ?? null) : null;
+if (!is_string($generatedRaw)
+    || preg_match("/\\A\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+00:00\\z/", $generatedRaw) !== 1) {
+    exit(1);
+}
+$generatedAt = DateTimeImmutable::createFromFormat(
+    "!Y-m-d\\TH:i:sP",
+    $generatedRaw,
+    new DateTimeZone("UTC")
+);
+$errors = DateTimeImmutable::getLastErrors();
+if (!$generatedAt instanceof DateTimeImmutable
+    || (is_array($errors)
+        && (($errors["warning_count"] ?? 0) !== 0 || ($errors["error_count"] ?? 0) !== 0))
+    || $generatedAt->format(DATE_ATOM) !== $generatedRaw) {
+    exit(1);
+}
+$verified = RuntimePrimaryStagingReadOnlyCheckpointReceipt::verifyFile(
+    $source,
+    $projectRoot,
+    60,
+    $generatedAt->getTimestamp()
+);
+if (($verified["repository_commit"] ?? "") !== $incidentCommit
+    || ($verified["state_revision"] ?? null) !== 1
+    || ($verified["mutating_smoke_authorized"] ?? null) !== false
+    || ($verified["persistent_config_changed"] ?? null) !== false
+    || ($verified["webhook_allowed"] ?? null) !== false
+    || ($verified["cron_changed"] ?? null) !== false
+    || ($verified["production_changed"] ?? null) !== false) {
+    exit(1);
+}
+unset(
+    $verified["receipt_file"],
+    $verified["receipt_sha256"],
+    $verified["receipt_age_seconds"]
+);
+$verified["generated_at_utc"] = gmdate(DATE_ATOM);
+ksort($verified, SORT_STRING);
+$json = json_encode(
+    $verified,
+    JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+) . PHP_EOL;
+$handle = fopen($target, "x");
+if (!is_resource($handle)) exit(1);
+$written = fwrite($handle, $json);
+$flushed = fflush($handle);
+$closed = fclose($handle);
+if ($written !== strlen($json) || !$flushed || !$closed || !chmod($target, 0600)) {
+    @unlink($target);
+    exit(1);
+}
+$refreshed = RuntimePrimaryStagingReadOnlyCheckpointReceipt::verifyFile($target, $projectRoot, 300);
+if (($refreshed["repository_commit"] ?? "") !== $incidentCommit
+    || ($refreshed["state_revision"] ?? null) !== 1
+    || ($refreshed["mutating_smoke_authorized"] ?? null) !== false) {
+    @unlink($target);
+    exit(1);
+}
+' "$PROJECT_ROOT" "$ARCHIVED_RECEIPT" "$REFRESHED_RECEIPT" "$INCIDENT_COMMIT"; then
+  fail 'archived incident receipt could not be safely revalidated and refreshed'
+fi
+
 REPORT="$PRIVATE_DIR/staging-api-economy-incident-recovery-$RUN_ID.json"
 RUN_STATUS="$PRIVATE_DIR/staging-api-economy-incident-recovery-status-$RUN_ID.json"
 for path in "$REPORT" "$RUN_STATUS"; do
@@ -95,7 +191,7 @@ done
 
 if ! "$PHP_BIN" \
     "$PROJECT_ROOT/ops/runtime/recover-staging-api-mutating-smoke-economy-incident.php" \
-    --receipt="$RECEIPT" \
+    --receipt="$REFRESHED_RECEIPT" \
     --output="$REPORT" \
     --expected-commit="$CURRENT_COMMIT" \
     > "$RUN_STATUS"; then
@@ -130,6 +226,7 @@ echo "PHP_VERSION=", $argv[4], PHP_EOL;
 echo "REPOSITORY_COMMIT=", $d["repository_commit"], PHP_EOL;
 echo "INCIDENT_REPOSITORY_COMMIT=", $d["incident_repository_commit"], PHP_EOL;
 echo "STATE_REVISION=3", PHP_EOL;
+echo "ARCHIVED_RECEIPT_REVALIDATED=true", PHP_EOL;
 echo "FAILED_EVENT_RECOVERED=true", PHP_EOL;
 echo "ECONOMY_ORPHAN_ROWS_REMOVED=true", PHP_EOL;
 echo "ALL_MODULE_PARITY=VERIFIED", PHP_EOL;
