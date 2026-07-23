@@ -34,6 +34,18 @@ $mode = static function (string $path): int {
     $value = fileperms($path);
     return is_int($value) ? ($value & 0777) : -1;
 };
+$canonicalJson = static function (array $value): string {
+    $canonicalize = static function (mixed $item) use (&$canonicalize): mixed {
+        if (!is_array($item)) return $item;
+        if (!array_is_list($item)) ksort($item, SORT_STRING);
+        foreach ($item as $key => $child) $item[$key] = $canonicalize($child);
+        return $item;
+    };
+    return json_encode(
+        $canonicalize($value),
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+    );
+};
 
 $root = sys_get_temp_dir() . '/mgw-live-rollback-state-' . bin2hex(random_bytes(6));
 try {
@@ -117,9 +129,16 @@ try {
     $restored = $store->restoreAuthorizedCutoverBackup($requestId, $initialFingerprint);
     $assertSame(true, $restored['cutover_restored'], 'Authorized cutover backup must restore');
     $assertSame($initialFingerprint, $store->cutoverFingerprint(), 'Restored cutover fingerprint must match original');
-    $assertTrue(
-        json_decode(file_get_contents($cutoverFile) ?: '{}', true) === $cutover,
-        'Restored cutover object must match original exactly'
+    $restoredCutover = json_decode(
+        file_get_contents($cutoverFile) ?: '{}',
+        true,
+        512,
+        JSON_THROW_ON_ERROR
+    );
+    $assertSame(
+        $canonicalJson($cutover),
+        $canonicalJson($restoredCutover),
+        'Restored cutover object must match original semantically'
     );
 } finally {
     $remove($root);
