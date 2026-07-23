@@ -87,14 +87,16 @@ final class ProductionPrimaryRuntimeCoordinator
     public function executeApiRequest(array $payload): array
     {
         throw new RuntimeException(
-            'Direct production API execution is forbidden; use the guarded atomic storage context.'
+            'Direct production API execution is forbidden and intentionally disabled; '
+            . 'use the guarded atomic storage context.'
         );
     }
 
     public function executeWebhookMutation(array $update): void
     {
         throw new RuntimeException(
-            'Direct production webhook execution is forbidden; use the guarded atomic storage context.'
+            'Direct production webhook execution is forbidden and intentionally disabled; '
+            . 'use the guarded atomic storage context.'
         );
     }
 }
