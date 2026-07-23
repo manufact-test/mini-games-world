@@ -43,7 +43,7 @@ $assertTrue(is_string($source), 'ProductionPreflightRunner.php must be readable.
 $assertTrue(
     str_contains(
         $source,
-        "$databaseSummary['identity_fingerprint'] = $databaseConfig->identityFingerprint();"
+        '$databaseSummary[\'identity_fingerprint\'] = $databaseConfig->identityFingerprint();'
     ),
     'Production preflight must attach the safe database identity fingerprint.'
 );
