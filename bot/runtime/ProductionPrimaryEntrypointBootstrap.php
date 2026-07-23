@@ -1,13 +1,32 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../storage/contracts/StorageTransactionInterface.php';
+require_once __DIR__ . '/../storage/contracts/StorageAdapterInterface.php';
+require_once __DIR__ . '/../database/DatabaseConnectionInterface.php';
+require_once __DIR__ . '/../database/DatabaseConfig.php';
+require_once __DIR__ . '/../database/PdoDatabaseConnection.php';
+require_once __DIR__ . '/../database/PdoConnectionFactory.php';
+require_once __DIR__ . '/RuntimePrimaryStateSchemaInstaller.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionOutboxWriter.php';
+require_once __DIR__ . '/DatabasePrimaryStateStorageAdapter.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionWorkerInterface.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionAuditorInterface.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionProjectorInterface.php';
+require_once __DIR__ . '/RuntimePrimaryModuleProjectorInterface.php';
+require_once __DIR__ . '/RuntimePrimaryCallbackModuleProjector.php';
+require_once __DIR__ . '/RuntimePrimaryAccountsModuleProjector.php';
+require_once __DIR__ . '/RuntimePrimaryAllModuleProjector.php';
+require_once __DIR__ . '/RuntimePrimaryRepositoryProjectorFactory.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionWorker.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionWorkerAdapter.php';
+require_once __DIR__ . '/RuntimePrimaryProjectionAuditorAdapter.php';
 require_once __DIR__ . '/ProductionPrimaryRuntimeActivationContract.php';
 require_once __DIR__ . '/ProductionPrimaryRuntimeCoordinator.php';
 require_once __DIR__ . '/ProductionPrimaryAtomicStorageAdapter.php';
 require_once __DIR__ . '/ProductionPrimaryEntrypointStorageContext.php';
 require_once __DIR__ . '/ProductionPrimaryProjectorFactory.php';
-require_once __DIR__ . '/RuntimePrimaryProjectionWorkerAdapter.php';
-require_once __DIR__ . '/RuntimePrimaryProjectionAuditorAdapter.php';
 
 final class ProductionPrimaryEntrypointBootstrap
 {
