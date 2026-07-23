@@ -7,6 +7,8 @@ final class ProductionCutoverPackageManifest
     public const BUILD = 'v103-mvp14-production-cutover';
 
     private const CRITICAL_FILES = [
+        'bot/core/bootstrap.php',
+        'bot/core/RuntimeConfigLoader.php',
         'bot/api.php',
         'bot/webhook.php',
         'bot/handlers/WebhookHandler.php',
