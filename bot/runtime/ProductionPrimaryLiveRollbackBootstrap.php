@@ -117,12 +117,39 @@ final class ProductionPrimaryLiveRollbackBootstrap
             $stateStore,
             $loaded['private_dir']
         );
-        $result = $service->execute(
-            $loaded['export_dir'],
-            $loaded['live_data_dir'],
-            $loaded['config'],
-            $gate
-        );
+
+        $resumeLock = null;
+        $recoveryState = (string)($stateStore->recovery()['state'] ?? '');
+        if (in_array($recoveryState, ['json_route_sealed', 'sealed_resume_required'], true)) {
+            $lockPath = $loaded['live_data_dir'] . '/app.lock';
+            if (is_link($lockPath) || !is_file($lockPath)) {
+                throw new RuntimeException('Production sealed rollback resume app lock is unavailable.');
+            }
+            clearstatcache(true, $lockPath);
+            $mode = fileperms($lockPath);
+            if (!is_int($mode) || ($mode & 0777) !== 0600) {
+                throw new RuntimeException('Production sealed rollback resume app lock must have mode 0600.');
+            }
+            $resumeLock = fopen($lockPath, 'c+');
+            if ($resumeLock === false || !flock($resumeLock, LOCK_EX)) {
+                if (is_resource($resumeLock)) fclose($resumeLock);
+                throw new RuntimeException('Production sealed rollback resume app lock could not be acquired.');
+            }
+        }
+
+        try {
+            $result = $service->execute(
+                $loaded['export_dir'],
+                $loaded['live_data_dir'],
+                $loaded['config'],
+                $gate
+            );
+        } finally {
+            if (is_resource($resumeLock)) {
+                flock($resumeLock, LOCK_UN);
+                fclose($resumeLock);
+            }
+        }
 
         return $result + [
             'gate_contract_version' => ProductionPrimaryLiveRollbackGate::CONTRACT_VERSION,
