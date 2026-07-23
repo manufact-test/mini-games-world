@@ -95,6 +95,19 @@ trait ProductionCutoverPerformTrait
             $this->database
         ))->seed($snapshot);
         $context['mutation_stage'] = 'primary_state_seeded';
+        $projectedModules = array_values(array_unique(array_map(
+            static fn(mixed $value): string => strtolower(trim((string)$value)),
+            (array)($primaryState['projected_modules'] ?? [])
+        )));
+        sort($projectedModules, SORT_STRING);
+        $expectedModules = self::MODULES;
+        sort($expectedModules, SORT_STRING);
+        $outboxFingerprint = strtolower(trim((string)(
+            $primaryState['outbox_fingerprint'] ?? ''
+        )));
+        $allModuleFingerprint = strtolower(trim((string)(
+            $primaryState['all_module_fingerprint'] ?? ''
+        )));
         if (($primaryState['ok'] ?? false) !== true
             || (int)($primaryState['state_revision'] ?? 0) !== 1
             || !hash_equals(
@@ -102,7 +115,9 @@ trait ProductionCutoverPerformTrait
                 (string)($primaryState['state_sha256'] ?? '')
             )
             || ($primaryState['projection_event_status'] ?? '') !== 'completed'
-            || ($primaryState['projected_modules'] ?? []) !== self::MODULES) {
+            || $projectedModules !== $expectedModules
+            || preg_match('/\A[a-f0-9]{64}\z/', $outboxFingerprint) !== 1
+            || preg_match('/\A[a-f0-9]{64}\z/', $allModuleFingerprint) !== 1) {
             throw new RuntimeException('Production DB-primary state/outbox seed is incomplete.');
         }
 
@@ -125,16 +140,8 @@ trait ProductionCutoverPerformTrait
             'database_identity_fingerprint' => $databaseIdentity,
             'state_revision' => (int)$primaryState['state_revision'],
             'state_sha256' => (string)$primaryState['state_sha256'],
-            'outbox_fingerprint' => hash(
-                'sha256',
-                json_encode(
-                    $primaryState['queue'] ?? [],
-                    JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
-                )
-            ),
-            'all_module_fingerprint' => (string)(
-                $primaryState['all_module_fingerprint'] ?? ''
-            ),
+            'outbox_fingerprint' => $outboxFingerprint,
+            'all_module_fingerprint' => $allModuleFingerprint,
             'backup_id' => (string)($backup['backup_id'] ?? ''),
             'backup_snapshot_sha256' => (string)($backup['snapshot_sha256'] ?? ''),
             'runtime_backup_present' => true,
@@ -176,16 +183,8 @@ trait ProductionCutoverPerformTrait
             'database_identity_fingerprint' => $databaseIdentity,
             'state_revision' => (int)$primaryState['state_revision'],
             'state_sha256' => (string)$primaryState['state_sha256'],
-            'outbox_fingerprint' => hash(
-                'sha256',
-                json_encode(
-                    $primaryState['queue'] ?? [],
-                    JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
-                )
-            ),
-            'all_module_fingerprint' => (string)(
-                $primaryState['all_module_fingerprint'] ?? ''
-            ),
+            'outbox_fingerprint' => $outboxFingerprint,
+            'all_module_fingerprint' => $allModuleFingerprint,
             'backup_id' => (string)($backup['backup_id'] ?? ''),
             'backup_snapshot_sha256' => (string)($backup['snapshot_sha256'] ?? ''),
             'runtime_backup_present' => true,
