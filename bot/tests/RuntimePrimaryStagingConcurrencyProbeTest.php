@@ -95,6 +95,12 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     }
     throw new RuntimeException('Expected exception was not thrown.');
 };
+$removeFileIfPresent = static function (string $path): void {
+    if (!file_exists($path) && !is_link($path)) return;
+    if (!unlink($path)) {
+        throw new RuntimeException('Concurrency probe test file cleanup failed.');
+    }
+};
 
 $directory = sys_get_temp_dir() . '/mgw-concurrency-probe-' . bin2hex(random_bytes(6));
 mkdir($directory, 0700, true);
@@ -137,16 +143,18 @@ try {
     );
     $assertTrue(count($cleanupStore->rows) === 1, 'Cleanup failure fixture must preserve evidence of the failed removal');
     $cleanupStore->rows = [];
-    @unlink($cleanupLock);
+    $removeFileIfPresent($cleanupLock);
 
     $assertThrows(
         static fn() => new RuntimePrimaryStagingConcurrencyProbe($first, $second, $lockPath, 10),
         'between 30 and 900 seconds'
     );
 } finally {
-    @unlink($lockPath);
-    @unlink($directory . '/cleanup-failure.lock');
-    @rmdir($directory);
+    $removeFileIfPresent($lockPath);
+    $removeFileIfPresent($directory . '/cleanup-failure.lock');
+    if (is_dir($directory) && !rmdir($directory)) {
+        throw new RuntimeException('Concurrency probe test directory cleanup failed.');
+    }
 }
 
 fwrite(STDOUT, "RuntimePrimaryStagingConcurrencyProbeTest passed: {$assertions} assertions.\n");
