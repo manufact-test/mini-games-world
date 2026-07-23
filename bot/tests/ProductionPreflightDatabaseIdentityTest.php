@@ -48,7 +48,7 @@ $assertTrue(
     'Production preflight must attach the safe database identity fingerprint.'
 );
 $assertTrue(
-    str_contains($source, "'database' => $databaseSummary"),
+    str_contains($source, '\'database\' => $databaseSummary'),
     'Production preflight runtime report must publish the augmented database summary.'
 );
 
