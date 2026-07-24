@@ -188,7 +188,8 @@ foreach ($targets as $label => $target) {
         $opening = new LegacyOpeningBalanceImportService(
             $database,
             new LedgerWriteService($database),
-            $verifier
+            $verifier,
+            true
         );
         $assertSame('completed', $opening->run()['status'], "{$label} opening import must complete");
         $assertSame(2, (int)$database->fetchValue(
