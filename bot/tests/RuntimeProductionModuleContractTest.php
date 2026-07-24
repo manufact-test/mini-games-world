@@ -56,6 +56,16 @@ $modules = array_fill_keys([
 $productionConfig = [
     'environment' => 'production',
     'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
+    'database' => [
+        'enabled' => true,
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'port' => 3306,
+        'name' => 'test',
+        'user' => 'test',
+        'password' => 'test-password',
+        'charset' => 'utf8mb4',
+    ],
     'feature_flags' => [
         'database_runtime' => [
             'enabled' => true,
