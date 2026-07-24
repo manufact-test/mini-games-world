@@ -12,12 +12,12 @@ trait ProductionCutoverDataTrait
         }
 
         $ledgerVerifier = new LedgerIntegrityVerifier($this->database);
-        $accountImport = (new LegacyAccountImportService($this->storage, $this->database))->run();
         $openingBalances = (new LegacyOpeningBalanceImportService(
             $this->database,
             new LedgerWriteService($this->database),
             $ledgerVerifier
         ))->run();
+        $accountImport = (new LegacyAccountImportService($this->storage, $this->database))->run();
         $ownership = (new LegacyAccountOwnershipLinkService(
             $this->storage,
             $this->database,
