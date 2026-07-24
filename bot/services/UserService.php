@@ -19,6 +19,7 @@ final class UserService
                 'is_dev_user' => $isDevUser,
                 'first_name' => clean_string($tgUser['first_name'] ?? 'Игрок', 80),
                 'username' => clean_string($tgUser['username'] ?? ($tgUser['first_name'] ?? 'Игрок'), 80),
+                'photo_url' => clean_string($tgUser['photo_url'] ?? '', 2048),
                 // Real Telegram users receive their single +50 grant through
                 // WeeklyMatchEconomyService so it has its own history and notice.
                 // Browser dev users keep the configured test balance because the
@@ -51,6 +52,10 @@ final class UserService
         } else {
             $db['users'][$id]['first_name'] = clean_string($tgUser['first_name'] ?? $db['users'][$id]['first_name'] ?? 'Игрок', 80);
             $db['users'][$id]['username'] = clean_string($tgUser['username'] ?? $db['users'][$id]['username'] ?? $db['users'][$id]['first_name'], 80);
+            $photoUrl = clean_string($tgUser['photo_url'] ?? '', 2048);
+            if ($photoUrl !== '') {
+                $db['users'][$id]['photo_url'] = $photoUrl;
+            }
             if ($this->activityWriteIsDue($db['users'][$id]['last_seen_at'] ?? null)) {
                 $db['users'][$id]['last_seen_at'] = $now;
             }
@@ -70,6 +75,7 @@ final class UserService
             'id' => $user['id'],
             'first_name' => $user['first_name'] ?? 'Игрок',
             'username' => $user['username'] ?? ($user['first_name'] ?? 'Игрок'),
+            'photo_url' => clean_string($user['photo_url'] ?? '', 2048),
             'balance_match' => (int)($user['balance_match'] ?? 0),
             'balance_gold' => (int)($user['balance_gold'] ?? 0),
             'gold_deposited_total' => (int)($user['gold_deposited_total'] ?? 0),
