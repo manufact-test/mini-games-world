@@ -14,8 +14,21 @@ export function roomName(room){ return room === 'gold' ? 'Gold-комната' :
 export function renderUser(user){
   const name = username(user);
   const letter = initials(name);
-  ['topName','profileName','searchMeName'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = name; });
-  ['topAvatar','profileAvatar','searchMeAvatar'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = letter; });
+  const photoUrl = String(user?.photo_url || '').trim();
+  ['topName','profileName','searchMeName'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = name;
+  });
+  ['topAvatar','profileAvatar','searchMeAvatar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = photoUrl ? '' : letter;
+    el.style.backgroundImage = photoUrl ? `url("${photoUrl.replace(/["\\]/g, '\\$&')}")` : '';
+    el.style.backgroundSize = photoUrl ? 'cover' : '';
+    el.style.backgroundPosition = photoUrl ? 'center' : '';
+    el.style.backgroundRepeat = photoUrl ? 'no-repeat' : '';
+    el.classList.toggle('has-photo', Boolean(photoUrl));
+  });
   const date = document.getElementById('profileDate');
   if (date) date.textContent = user?.registered_at ? `В игре с ${formatDate(user.registered_at)}` : 'Дата регистрации появится после входа';
 }
