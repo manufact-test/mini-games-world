@@ -14,7 +14,8 @@ final class LegacyOpeningBalanceImportService
     public function __construct(
         private DatabaseConnectionInterface $database,
         private LedgerWriteService $ledger,
-        private LedgerIntegrityVerifier $verifier
+        private LedgerIntegrityVerifier $verifier,
+        private bool $forceLegacyAccountRefs = false
     ) {}
 
     public function preview(): array
@@ -277,10 +278,9 @@ final class LegacyOpeningBalanceImportService
             }
 
             $mgwId = $identityMap[$legacyUserId] ?? null;
-            // Opening balances must always remain on the stable legacy account reference.
-            // Existing provider identities may supply MGW-ID metadata, but ownership linking
-            // is the guarded stage that binds legacy:<id> to that MGW-ID.
-            $accountRef = 'legacy:' . $legacyUserId;
+            $accountRef = $this->forceLegacyAccountRefs || $mgwId === null
+                ? 'legacy:' . $legacyUserId
+                : 'mgw:' . $mgwId;
             $occurredAt = $this->stableTimestamp(
                 $payload['registered_at'] ?? null,
                 $row['source_updated_at_utc'] ?? null,
