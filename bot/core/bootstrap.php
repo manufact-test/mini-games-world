@@ -47,6 +47,13 @@ if (empty($config['data_dir'])) {
 
 $config = ConfigValidator::validate($config, $_SERVER);
 
+// Keep the validated global storage contract explicit for control CLIs. The
+// application has always treated a missing or empty driver as JSON; publishing
+// that normalized value prevents cutover guards from disagreeing with the
+// StorageFactory default while preserving JSON as the rollback source.
+$globalStorageDriver = strtolower(trim((string)($config['storage_driver'] ?? 'json')));
+$config['storage_driver'] = $globalStorageDriver !== '' ? $globalStorageDriver : 'json';
+
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/validators.php';
 require_once __DIR__ . '/../storage/contracts/StorageTransactionInterface.php';
