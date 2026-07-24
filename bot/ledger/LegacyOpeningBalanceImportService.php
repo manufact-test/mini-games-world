@@ -277,10 +277,13 @@ final class LegacyOpeningBalanceImportService
                 throw new RuntimeException('Economy shadow legacy user ID mismatch for ' . $legacyUserId . '.');
             }
 
-            $mgwId = $identityMap[$legacyUserId] ?? null;
-            $accountRef = $this->forceLegacyAccountRefs || $mgwId === null
+            $mappedMgwId = $identityMap[$legacyUserId] ?? null;
+            $accountRef = $this->forceLegacyAccountRefs || $mappedMgwId === null
                 ? 'legacy:' . $legacyUserId
-                : 'mgw:' . $mgwId;
+                : 'mgw:' . $mappedMgwId;
+            $mgwId = $this->forceLegacyAccountRefs
+                ? $this->historicalLegacyAccountMgwId($accountRef, $legacyUserId, $mappedMgwId)
+                : $mappedMgwId;
             $occurredAt = $this->stableTimestamp(
                 $payload['registered_at'] ?? null,
                 $row['source_updated_at_utc'] ?? null,
@@ -332,6 +335,51 @@ final class LegacyOpeningBalanceImportService
             $map[$subject] = $mgwId;
         }
         return $map;
+    }
+
+    private function historicalLegacyAccountMgwId(
+        string $accountRef,
+        string $legacyUserId,
+        ?string $mappedMgwId
+    ): ?string {
+        $rows = $this->database->fetchAll(
+            'SELECT mgw_id FROM mgw_balances WHERE account_ref = :balance_account_ref
+             UNION ALL
+             SELECT mgw_id FROM mgw_ledger_entries WHERE account_ref = :ledger_account_ref',
+            [
+                'balance_account_ref' => $accountRef,
+                'ledger_account_ref' => $accountRef,
+            ]
+        );
+
+        if ($rows === []) {
+            return $mappedMgwId;
+        }
+
+        $historicalMgwIds = [];
+        foreach ($rows as $row) {
+            $historicalMgwId = $this->nullable((string)($row['mgw_id'] ?? ''));
+            if ($historicalMgwId !== null) {
+                $historicalMgwIds[$historicalMgwId] = true;
+            }
+        }
+
+        if (count($historicalMgwIds) > 1) {
+            throw new RuntimeException(
+                'Legacy opening account contains multiple MGW IDs for ' . $legacyUserId . '.'
+            );
+        }
+
+        $historicalMgwId = array_key_first($historicalMgwIds);
+        if ($historicalMgwId !== null
+            && $mappedMgwId !== null
+            && !hash_equals($historicalMgwId, $mappedMgwId)) {
+            throw new RuntimeException(
+                'Legacy opening account MGW ID differs from the linked identity for ' . $legacyUserId . '.'
+            );
+        }
+
+        return $historicalMgwId;
     }
 
     private function ensureZeroBalance(array $item): bool
