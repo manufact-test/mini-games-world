@@ -392,10 +392,19 @@ final class RuntimeShopRepository
                 throw new RuntimeException('Shop DB runtime requires accounts, economy, history and shop routing.');
             }
         }
+
         $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
-        if (!in_array($environment, ['staging', 'local'], true)) {
-            throw new RuntimeException('Shop DB runtime is forbidden outside staging/local.');
+        if (in_array($environment, ['staging', 'local'], true)) return;
+
+        $routerStatus = $this->router->publicStatus();
+        if ($environment === 'production'
+            && ($routerStatus['production_allowed'] ?? false) === true) {
+            return;
         }
+
+        throw new RuntimeException(
+            'Shop DB runtime requires staging/local or the exact protected production activation contract.'
+        );
     }
 
     private function connect(): DatabaseConnectionInterface
