@@ -15,7 +15,8 @@ trait ProductionCutoverDataTrait
         $openingBalances = (new LegacyOpeningBalanceImportService(
             $this->database,
             new LedgerWriteService($this->database),
-            $ledgerVerifier
+            $ledgerVerifier,
+            true
         ))->run();
         $accountImport = (new LegacyAccountImportService($this->storage, $this->database))->run();
         $ownership = (new LegacyAccountOwnershipLinkService(

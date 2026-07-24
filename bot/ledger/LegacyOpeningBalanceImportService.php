@@ -14,7 +14,8 @@ final class LegacyOpeningBalanceImportService
     public function __construct(
         private DatabaseConnectionInterface $database,
         private LedgerWriteService $ledger,
-        private LedgerIntegrityVerifier $verifier
+        private LedgerIntegrityVerifier $verifier,
+        private bool $forceLegacyAccountRefs = false
     ) {}
 
     public function preview(): array
@@ -277,7 +278,9 @@ final class LegacyOpeningBalanceImportService
             }
 
             $mgwId = $identityMap[$legacyUserId] ?? null;
-            $accountRef = $mgwId === null ? 'legacy:' . $legacyUserId : 'mgw:' . $mgwId;
+            $accountRef = $this->forceLegacyAccountRefs || $mgwId === null
+                ? 'legacy:' . $legacyUserId
+                : 'mgw:' . $mgwId;
             $occurredAt = $this->stableTimestamp(
                 $payload['registered_at'] ?? null,
                 $row['source_updated_at_utc'] ?? null,
