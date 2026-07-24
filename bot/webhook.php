@@ -6,6 +6,7 @@ require_once __DIR__ . '/helpers/AdminPaymentRejectGuard.php';
 require_once __DIR__ . '/helpers/AdminGoldTopupNotificationGuard.php';
 require_once __DIR__ . '/helpers/AdminSystemCheckGuard.php';
 require_once __DIR__ . '/helpers/UserWelcomeGuard.php';
+require_once __DIR__ . '/helpers/InviteStartGuard.php';
 
 try {
     $update = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -24,11 +25,13 @@ try {
     $guard = new AdminPaymentRejectGuard($telegram, $config);
     $goldTopupGuard = new AdminGoldTopupNotificationGuard($telegram, $config);
     $auditGuard = new AdminSystemCheckGuard($telegram, $config);
+    $inviteStartGuard = new InviteStartGuard($telegram, $config);
     $welcomeGuard = new UserWelcomeGuard($telegram, $config);
     if (!$runtimeGuard->handle($update)
         && !$guard->handle($update)
         && !$goldTopupGuard->handle($update)
         && !$auditGuard->handle($update)
+        && !$inviteStartGuard->handle($update)
         && !$welcomeGuard->handle($update)) {
         $handler = new WebhookHandler($telegram, $config);
         $handler->handle($update);
