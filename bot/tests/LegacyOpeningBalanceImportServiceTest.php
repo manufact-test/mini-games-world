@@ -114,7 +114,7 @@ $writeShadow('1002', 40, 0);
 
 $ledger = new LedgerWriteService($database);
 $verifier = new LedgerIntegrityVerifier($database);
-$service = new LegacyOpeningBalanceImportService($database, $ledger, $verifier);
+$service = new LegacyOpeningBalanceImportService($database, $ledger, $verifier, true);
 
 $preview = $service->preview();
 $assertSame(true, $preview['ready'], 'Fresh opening import must be ready');
