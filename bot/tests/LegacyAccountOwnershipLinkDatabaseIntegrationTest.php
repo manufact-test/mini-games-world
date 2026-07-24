@@ -123,6 +123,44 @@ foreach ($targets as $label => $target) {
         $assertSame(7, $runner->migrate(false)['executed_count'], "{$label} must build all schemas");
 
         $legacyId = $target['legacy_id'];
+        $preexistingMgwId = MgwIdGenerator::generate();
+        $now = '2026-07-18 07:59:00.000000';
+        $database->execute(
+            'INSERT INTO mgw_users (
+                mgw_id, status, display_name, username,
+                created_at_utc, updated_at_utc, last_seen_at_utc
+             ) VALUES (
+                :mgw_id, :status, :display_name, :username,
+                :created_at_utc, :updated_at_utc, :last_seen_at_utc
+             )',
+            [
+                'mgw_id' => $preexistingMgwId,
+                'status' => 'active',
+                'display_name' => $label . ' Existing Owner',
+                'username' => strtolower($label) . '_existing',
+                'created_at_utc' => $now,
+                'updated_at_utc' => $now,
+                'last_seen_at_utc' => $now,
+            ]
+        );
+        $database->execute(
+            'INSERT INTO mgw_identities (
+                mgw_id, provider, provider_subject, provider_username,
+                linked_at_utc, last_authenticated_at_utc
+             ) VALUES (
+                :mgw_id, :provider, :provider_subject, :provider_username,
+                :linked_at_utc, :last_authenticated_at_utc
+             )',
+            [
+                'mgw_id' => $preexistingMgwId,
+                'provider' => 'telegram',
+                'provider_subject' => $legacyId,
+                'provider_username' => strtolower($label) . '_existing',
+                'linked_at_utc' => $now,
+                'last_authenticated_at_utc' => $now,
+            ]
+        );
+
         $data = [
             'users' => [
                 $legacyId => [
@@ -153,6 +191,16 @@ foreach ($targets as $label => $target) {
             $verifier
         );
         $assertSame('completed', $opening->run()['status'], "{$label} opening import must complete");
+        $assertSame(2, (int)$database->fetchValue(
+            'SELECT COUNT(*) FROM mgw_balances WHERE account_ref = :account_ref',
+            ['account_ref' => 'legacy:' . $legacyId]
+        ), "{$label} preexisting identity balances must remain on the legacy account");
+        $assertSame($preexistingMgwId, (string)$database->fetchValue(
+            'SELECT mgw_id FROM mgw_balances
+             WHERE account_ref = :account_ref AND asset_code = :asset_code',
+            ['account_ref' => 'legacy:' . $legacyId, 'asset_code' => 'match_coin']
+        ), "{$label} opening balance must retain the existing MGW-ID as metadata");
+
         $assertSame('completed', (new LegacyAccountImportService($storage, $database))->run()['status'], "{$label} account import must complete");
 
         $mgwId = (string)$database->fetchValue(
@@ -160,6 +208,7 @@ foreach ($targets as $label => $target) {
             ['provider' => 'legacy_import', 'subject' => $legacyId]
         );
         $assertTrue(MgwIdGenerator::isValid($mgwId), "{$label} staged MGW ID must be valid");
+        $assertSame($preexistingMgwId, $mgwId, "{$label} account import must reuse the preexisting provider MGW-ID");
         $balanceSnapshot = $canonicalRows($database->fetchAll(
             'SELECT account_ref, mgw_id, legacy_user_id, asset_code, available_amount,
                     reserved_amount, version, created_at_utc, updated_at_utc
@@ -177,11 +226,13 @@ foreach ($targets as $label => $target) {
         $preview = $service->preview();
         $assertSame(true, $preview['ready'], "{$label} ownership preview must be ready");
         $assertSame(1, $preview['planned_ownership_create_count'], "{$label} must plan one ownership row");
-        $assertSame(1, $preview['planned_provider_identity_create_count'], "{$label} must plan one provider identity");
+        $assertSame(0, $preview['planned_provider_identity_create_count'], "{$label} must reuse the existing provider identity");
+        $assertSame(1, $preview['reused_provider_identity_count'], "{$label} preview must report one reused provider identity");
 
         $first = $service->run();
         $assertSame(1, $first['created_ownership_count'], "{$label} must create one ownership row");
-        $assertSame(1, $first['created_provider_identity_count'], "{$label} must create one provider identity");
+        $assertSame(0, $first['created_provider_identity_count'], "{$label} must not duplicate the provider identity");
+        $assertSame(1, $first['reused_provider_identity_count'], "{$label} must reuse one provider identity");
         $assertSame(true, $first['verification']['ok'], "{$label} ownership verification must pass");
         $assertSame($mgwId, (string)$database->fetchValue(
             'SELECT mgw_id FROM mgw_account_ownership WHERE account_ref = :account_ref',
