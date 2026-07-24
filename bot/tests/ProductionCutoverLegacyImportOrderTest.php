@@ -36,6 +36,13 @@ $assertTrue(
     $accountPosition < $ownershipPosition,
     'Account identities must exist before legacy ownership is linked.'
 );
+
+$openingBlock = substr($source, $openingPosition, $accountPosition - $openingPosition);
+$assertTrue(
+    is_string($openingBlock) && str_contains($openingBlock, "\n            true\n"),
+    'Production cutover must explicitly force stable legacy account references for opening balances.'
+);
+
 $assertTrue(
     substr_count($source, $openingNeedle) === 1
         && substr_count($source, $accountNeedle) === 1
