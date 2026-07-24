@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+require $root . '/database/DatabaseConfig.php';
 require $root . '/storage/RuntimeStorageRouter.php';
 require $root . '/history/RuntimeHistoryRepository.php';
 require $root . '/shop/RuntimeShopRepository.php';
