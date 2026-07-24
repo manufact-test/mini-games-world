@@ -92,7 +92,7 @@ $config = [
 $router = new RuntimeStorageRouter($config);
 $status = $router->publicStatus();
 $assertSame(true, $status['production_allowed'], 'Exact production activation must pass the router contract');
-$assertSame($modules !== [], $router->enabledModules() !== [], 'All protected production modules must be enabled');
+$assertSame(array_keys($modules), $router->enabledModules(), 'All protected production modules must be enabled exactly');
 
 $repository = new RuntimeHistoryRepository(
     $config,
