@@ -277,7 +277,10 @@ final class LegacyOpeningBalanceImportService
             }
 
             $mgwId = $identityMap[$legacyUserId] ?? null;
-            $accountRef = $mgwId === null ? 'legacy:' . $legacyUserId : 'mgw:' . $mgwId;
+            // Opening balances must always remain on the stable legacy account reference.
+            // Existing provider identities may supply MGW-ID metadata, but ownership linking
+            // is the guarded stage that binds legacy:<id> to that MGW-ID.
+            $accountRef = 'legacy:' . $legacyUserId;
             $occurredAt = $this->stableTimestamp(
                 $payload['registered_at'] ?? null,
                 $row['source_updated_at_utc'] ?? null,
