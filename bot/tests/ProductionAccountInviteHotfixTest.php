@@ -92,7 +92,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     }
 };
 
-$mgwId = 'mgw_0000000000000001';
+$mgwId = 'MGW-0000000000000001';
 $database = new ProductionAccountHotfixTestDatabase();
 $database->users[$mgwId] = [
     'mgw_id' => $mgwId,
@@ -154,7 +154,7 @@ $assert(($audit['parity'] ?? false) === true, 'Stable identity and ownership par
 $assert(($audit['summary']['profile_fields_owned_by_auth'] ?? false) === true, 'Audit must explicitly report auth-owned profile fields.');
 $assert(($audit['blockers'] ?? null) === [], 'Stable production account audit must contain no blockers.');
 
-$pendingMgwId = 'mgw_0000000000000002';
+$pendingMgwId = 'MGW-0000000000000002';
 $database->users[$pendingMgwId] = ['mgw_id' => $pendingMgwId, 'status' => 'active'];
 $database->ownerships['legacy:200'] = [
     'account_ref' => 'legacy:200',
