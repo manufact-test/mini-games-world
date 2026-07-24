@@ -31,11 +31,11 @@ $bootstrapValidation = strpos(
 );
 $bootstrapNormalization = strpos(
     $sources['bootstrap'],
-    "$globalStorageDriver = strtolower(trim((string)(\$config['storage_driver'] ?? 'json')));"
+    "\$globalStorageDriver = strtolower(trim((string)(\$config['storage_driver'] ?? 'json')));"
 );
 $bootstrapPublication = strpos(
     $sources['bootstrap'],
-    "$config['storage_driver'] = $globalStorageDriver !== '' ? $globalStorageDriver : 'json';"
+    "\$config['storage_driver'] = \$globalStorageDriver !== '' ? \$globalStorageDriver : 'json';"
 );
 
 $assertTrue(
@@ -48,7 +48,7 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($sources['validator'], "\$config['storage_driver'] ?? 'json'")
-        && str_contains($sources['validator'], "Only the JSON storage driver is available before the database cutover."),
+        && str_contains($sources['validator'], 'Only the JSON storage driver is available before the database cutover.'),
     'Config validation must treat a missing storage driver as JSON and reject non-JSON values'
 );
 $assertTrue(
