@@ -68,6 +68,7 @@ final class ProductionRuntimeAccountsModuleProjector implements RuntimePrimaryMo
         $seenAccountRefs = [];
 
         foreach ($source as $legacyUserId => $item) {
+            $legacyUserId = trim((string)$legacyUserId);
             $ownership = $this->database->fetchAll(
                 'SELECT account_ref, mgw_id, legacy_user_id, ownership_status
                  FROM mgw_account_ownership
@@ -169,6 +170,7 @@ final class ProductionRuntimeAccountsModuleProjector implements RuntimePrimaryMo
     private function alignAuthProvisionedCreatedTimestamps(array $snapshot): void
     {
         foreach ($this->sourceUsers($snapshot) as $legacyUserId => $item) {
+            $legacyUserId = trim((string)$legacyUserId);
             $ownership = $this->database->fetchAll(
                 'SELECT account_ref, mgw_id, legacy_user_id, ownership_status
                  FROM mgw_account_ownership
@@ -280,12 +282,12 @@ final class ProductionRuntimeAccountsModuleProjector implements RuntimePrimaryMo
     private function expectedRow(array $item, string $mgwId): array
     {
         return [
-            'legacy_user_id' => $item['legacy_user_id'],
-            'account_ref' => $item['account_ref'],
+            'legacy_user_id' => (string)$item['legacy_user_id'],
+            'account_ref' => (string)$item['account_ref'],
             'mgw_id' => $mgwId,
             'ownership_status' => 'active',
-            'provider' => $item['provider'],
-            'provider_subject' => $item['provider_subject'],
+            'provider' => (string)$item['provider'],
+            'provider_subject' => (string)$item['provider_subject'],
             'status' => 'active',
         ];
     }
@@ -293,7 +295,7 @@ final class ProductionRuntimeAccountsModuleProjector implements RuntimePrimaryMo
     private function emptyActualRow(array $item): array
     {
         return [
-            'legacy_user_id' => $item['legacy_user_id'],
+            'legacy_user_id' => (string)$item['legacy_user_id'],
             'account_ref' => '',
             'mgw_id' => '',
             'ownership_status' => '',
@@ -303,8 +305,9 @@ final class ProductionRuntimeAccountsModuleProjector implements RuntimePrimaryMo
         ];
     }
 
-    private function identityRows(string $provider, string $subject): array
+    private function identityRows(string $provider, string|int $subject): array
     {
+        $subject = trim((string)$subject);
         return $this->database->fetchAll(
             'SELECT mgw_id, provider, provider_subject
              FROM mgw_identities
