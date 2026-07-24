@@ -138,8 +138,12 @@ $assertSame(3, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entri
 $assertSame(3, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_idempotency_keys WHERE operation_type = 'available_delta'"), 'Every non-zero opening entry must be idempotent');
 $assertSame(70, (int)$database->fetchValue(
     'SELECT available_amount FROM mgw_balances WHERE account_ref = :account_ref AND asset_code = :asset_code',
-    ['account_ref' => 'mgw:' . $mgwId, 'asset_code' => 'match_coin']
-), 'Mapped user Match balance must import under MGW-ID');
+    ['account_ref' => 'legacy:1001', 'asset_code' => 'match_coin']
+), 'Mapped user Match balance must remain under the stable legacy account reference');
+$assertSame($mgwId, (string)$database->fetchValue(
+    'SELECT mgw_id FROM mgw_balances WHERE account_ref = :account_ref AND asset_code = :asset_code',
+    ['account_ref' => 'legacy:1001', 'asset_code' => 'match_coin']
+), 'Existing MGW identity must remain attached as balance metadata');
 $assertSame(0, (int)$database->fetchValue(
     'SELECT available_amount FROM mgw_balances WHERE account_ref = :account_ref AND asset_code = :asset_code',
     ['account_ref' => 'legacy:1002', 'asset_code' => 'gold_coin']
@@ -165,7 +169,7 @@ $assertTrue(in_array('Opening import metadata belongs to a different source fing
 $assertThrows(static fn() => $service->run(), 'not ready', 'Changed source must not mutate imported balances');
 $assertSame(70, (int)$database->fetchValue(
     'SELECT available_amount FROM mgw_balances WHERE account_ref = :account_ref AND asset_code = :asset_code',
-    ['account_ref' => 'mgw:' . $mgwId, 'asset_code' => 'match_coin']
+    ['account_ref' => 'legacy:1001', 'asset_code' => 'match_coin']
 ), 'Blocked changed source must leave the imported balance unchanged');
 
 $writeShadow('1001', 70, 25);
