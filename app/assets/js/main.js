@@ -1,8 +1,8 @@
-window.__MGW_BUILD__ = 'v86-mvp13-runtime-controls';
+window.__MGW_BUILD__ = 'v87-mvp14-production-account-invite-hotfix';
 import { initRequestGuard } from './api/request-guard.js?v=80';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
-import { api } from './api/client.js?v=47';
+import { api } from './api/client.js?v=87';
 import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { hidePreloader } from './components/preloader.js?v=42';
@@ -10,8 +10,9 @@ import { initSheet } from './components/sheet.js?v=68';
 import { toast } from './components/toast.js?v=41';
 import { initAccountShortcuts } from './components/account-shortcuts.js?v=48';
 import { initUserCopy } from './components/user-copy.js?v=62';
+import { showHomeActivity, showBootFailure, dispatchAppReady } from './components/boot-state.js?v=87';
 import { initTypography } from './utils/typography.js?v=39';
-import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
+import { renderUser, renderBalances, clearTimer } from './ui.js?v=87';
 import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=74';
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
@@ -82,8 +83,10 @@ async function boot(){
     renderUser(state.user);
     renderBalances(state.user);
     renderStats(state.stats);
+    showHomeActivity();
     renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
+    dispatchAppReady();
 
     if (isSessionLocked(state.session)) {
       toast(sessionMessage(state.session));
@@ -97,7 +100,8 @@ async function boot(){
 
     startStatsPolling();
   } catch (error) {
-    toast(error.message);
+    showBootFailure();
+    toast(error.message || 'Не удалось загрузить данные. Откройте приложение снова.');
   } finally {
     hidePreloader();
   }
