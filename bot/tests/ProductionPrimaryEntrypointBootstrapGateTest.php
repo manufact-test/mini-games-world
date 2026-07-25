@@ -84,7 +84,7 @@ $assertThrows(
         __FILE__,
         'cron'
     ),
-    'only API and webhook'
+    'does not support this application entrypoint'
 );
 
 $root = sys_get_temp_dir() . '/mgw-production-bootstrap-gate-' . bin2hex(random_bytes(6));
