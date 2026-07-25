@@ -66,13 +66,6 @@ final class StorageFactory
         static $attempted = [];
         static $failures = [];
 
-        if ((class_exists('ProductionPrimaryEntrypointStorageContext', false)
-                && ProductionPrimaryEntrypointStorageContext::installed())
-            || (class_exists('RuntimePrimaryEntrypointStorageContext', false)
-                && RuntimePrimaryEntrypointStorageContext::installed())) {
-            return;
-        }
-
         $projectRoot = dirname(__DIR__, 2);
         $productionEntrypoint = ProductionPrimaryApplicationEntrypoints::resolve(
             $projectRoot,
@@ -88,24 +81,10 @@ final class StorageFactory
             'webhook.php' => 'webhook',
             default => '',
         };
-
-        if ($productionEntrypoint === '' && $stagingEntrypoint === '') return;
-
-        $config = $GLOBALS['config'] ?? null;
-        $configFile = $GLOBALS['configFile'] ?? null;
-        if (!is_array($config) || !is_string($configFile) || trim($configFile) === '') {
-            $error = new RuntimeException(
-                'Entrypoint storage selector requires the active application config context.'
-            );
-            $failureKey = $productionEntrypoint !== '' ? $productionEntrypoint : $stagingEntrypoint;
-            $failures[$failureKey] = $error;
-            throw $error;
-        }
-
-        $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
-        $entrypoint = $environment === 'production'
+        $entrypoint = $productionEntrypoint !== ''
             ? $productionEntrypoint
             : $stagingEntrypoint;
+
         if ($entrypoint === '') return;
 
         if (isset($failures[$entrypoint])) {
@@ -115,6 +94,29 @@ final class StorageFactory
                 $failures[$entrypoint]
             );
         }
+        if ((class_exists('ProductionPrimaryEntrypointStorageContext', false)
+                && ProductionPrimaryEntrypointStorageContext::installed())
+            || (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+                && RuntimePrimaryEntrypointStorageContext::installed())) {
+            return;
+        }
+
+        $config = $GLOBALS['config'] ?? null;
+        $configFile = $GLOBALS['configFile'] ?? null;
+        if (!is_array($config) || !is_string($configFile) || trim($configFile) === '') {
+            $error = new RuntimeException(
+                'Entrypoint storage selector requires the active application config context.'
+            );
+            $failures[$entrypoint] = $error;
+            throw $error;
+        }
+
+        $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
+        $entrypoint = $environment === 'production'
+            ? $productionEntrypoint
+            : $stagingEntrypoint;
+        if ($entrypoint === '') return;
+
         if (isset($attempted[$entrypoint])) return;
         $attempted[$entrypoint] = true;
 
