@@ -66,6 +66,13 @@ final class StorageFactory
         static $attempted = [];
         static $failures = [];
 
+        if ((class_exists('ProductionPrimaryEntrypointStorageContext', false)
+                && ProductionPrimaryEntrypointStorageContext::installed())
+            || (class_exists('RuntimePrimaryEntrypointStorageContext', false)
+                && RuntimePrimaryEntrypointStorageContext::installed())) {
+            return;
+        }
+
         $projectRoot = dirname(__DIR__, 2);
         $productionEntrypoint = ProductionPrimaryApplicationEntrypoints::resolve(
             $projectRoot,
@@ -90,7 +97,8 @@ final class StorageFactory
             $error = new RuntimeException(
                 'Entrypoint storage selector requires the active application config context.'
             );
-            $failures['missing_context'] = $error;
+            $failureKey = $productionEntrypoint !== '' ? $productionEntrypoint : $stagingEntrypoint;
+            $failures[$failureKey] = $error;
             throw $error;
         }
 
@@ -106,12 +114,6 @@ final class StorageFactory
                 0,
                 $failures[$entrypoint]
             );
-        }
-        if ((class_exists('ProductionPrimaryEntrypointStorageContext', false)
-                && ProductionPrimaryEntrypointStorageContext::installed())
-            || (class_exists('RuntimePrimaryEntrypointStorageContext', false)
-                && RuntimePrimaryEntrypointStorageContext::installed())) {
-            return;
         }
         if (isset($attempted[$entrypoint])) return;
         $attempted[$entrypoint] = true;
