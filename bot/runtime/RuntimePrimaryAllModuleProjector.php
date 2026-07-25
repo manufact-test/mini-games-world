@@ -47,6 +47,19 @@ final class RuntimePrimaryAllModuleProjector implements RuntimePrimaryProjection
         }
     }
 
+    public function replaceProjector(RuntimePrimaryModuleProjectorInterface $projector): self
+    {
+        $module = strtolower(trim($projector->module()));
+        if (!in_array($module, self::MODULES, true) || !isset($this->projectors[$module])) {
+            throw new InvalidArgumentException(
+                'All-module projector cannot replace an unsupported module: ' . $module . '.'
+            );
+        }
+
+        $this->projectors[$module] = $projector;
+        return $this;
+    }
+
     public function project(array $snapshot, int $stateRevision, string $stateSha256): array
     {
         $stateSha256 = $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);

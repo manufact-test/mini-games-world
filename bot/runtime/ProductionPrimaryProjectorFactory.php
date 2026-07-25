@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/ProductionRuntimeAccountsModuleProjector.php';
+
 final class ProductionPrimaryProjectorFactory
 {
     private const MODULES = [
@@ -57,9 +59,13 @@ final class ProductionPrimaryProjectorFactory
             'modules' => array_fill_keys(self::MODULES, true),
         ];
 
-        return (new RuntimePrimaryRepositoryProjectorFactory(
+        $projector = (new RuntimePrimaryRepositoryProjectorFactory(
             $projectionConfig,
             $this->database
         ))->create();
+
+        return $projector->replaceProjector(
+            new ProductionRuntimeAccountsModuleProjector($this->database)
+        );
     }
 }

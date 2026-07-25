@@ -167,11 +167,32 @@ function mgw_run_api_success_hooks(): void {
     foreach ($hooks as $hook) $hook();
 }
 
+function mgw_public_api_error(string $message): string {
+    $message = trim($message);
+    if ($message === '') {
+        return 'Не удалось выполнить действие. Попробуйте ещё раз.';
+    }
+
+    $technical = preg_match(
+        '/(?:Runtime module|projection|parity|DB-primary|database fingerprint|state fingerprint|Production atomic|SQLSTATE|PDO|stack trace|internal contract)/i',
+        $message
+    ) === 1;
+
+    if (!$technical) {
+        return $message;
+    }
+
+    $incident = substr(hash('sha256', $message . '|' . microtime(true)), 0, 10);
+    error_log('[MiniGamesWorld API ' . $incident . '] ' . $message);
+
+    return 'Не удалось загрузить данные. Закройте и снова откройте приложение.';
+}
+
 function api_ok(array $data = []): void {
     mgw_run_api_success_hooks();
     json_response(['ok' => true] + mgw_normalize_api_data($data));
 }
 
 function api_error(string $message, int $status = 400): void {
-    json_response(['ok' => false, 'error' => $message], $status);
+    json_response(['ok' => false, 'error' => mgw_public_api_error($message)], $status);
 }

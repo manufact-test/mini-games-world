@@ -4,5 +4,6 @@
   "app/assets/js/api/client.js": ["34", "38", "46", "47"],
   "app/assets/js/components/toast.js": ["27", "41"],
   "app/assets/js/components/sheet.js": ["27", "68"],
-  "app/assets/js/games/four-in-a-row/entry.js": ["52", "74"]
+  "app/assets/js/games/four-in-a-row/entry.js": ["52", "74"],
+  "app/assets/js/ui.js": ["27", "87"]
 }
