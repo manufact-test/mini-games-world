@@ -30,7 +30,7 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     throw new RuntimeException('Expected exception was not thrown.');
 };
 
-$_SERVER['SCRIPT_FILENAME'] = '/private/api.php';
+$_SERVER['SCRIPT_FILENAME'] = $projectRoot . '/bot/api.php';
 unset($GLOBALS['config'], $GLOBALS['configFile']);
 $assertThrows(
     static fn() => StorageFactory::createJson('/private/json'),
