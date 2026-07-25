@@ -44,7 +44,7 @@ $assertTrue(
 $assertTrue(
     $containsAll($cli, [
         "unset(\$report['private_preimage']);",
-        "'sensitive_identifiers_exposed' => false",
+        "\$report['sensitive_identifiers_exposed'] = false;",
         "fopen(\$path, 'x')",
         "chmod(\$path, 0600)",
         "str_starts_with(\$parent . '/', \$privateReal . '/')",
