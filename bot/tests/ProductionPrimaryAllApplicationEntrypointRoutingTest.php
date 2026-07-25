@@ -114,7 +114,7 @@ $assertContains(
     'StorageFactory must resolve exact production application paths centrally'
 );
 $assertContains(
-    "$environment === 'production'",
+    '$environment === \'production\'',
     $storageFactory,
     'Expanded application entrypoints must remain production-only'
 );
