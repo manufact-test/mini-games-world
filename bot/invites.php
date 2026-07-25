@@ -155,7 +155,9 @@ try {
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $invites = new GameInviteService($config, $catalog, $games);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
-    $runtimeInvites = $runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE
+    $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
+    $runtimeInvites = $legacyBridgeAllowed
+        && $runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE
         ? new RuntimeInviteRepository($config, $runtimeStorageRouter)
         : null;
 
