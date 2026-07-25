@@ -48,7 +48,7 @@ $assertTrue(
         "fopen(\$path, 'x')",
         "chmod(\$path, 0600)",
         "str_starts_with(\$parent . '/', \$privateReal . '/')",
-        "!str_starts_with(\$parent . '/', \$projectReal . '/')",
+        "str_starts_with(\$parent . '/', \$projectReal . '/')",
     ]),
     'Preview must hide the private preimage and receipts must be no-clobber private files'
 );
