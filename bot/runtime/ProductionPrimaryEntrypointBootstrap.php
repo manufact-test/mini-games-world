@@ -25,6 +25,7 @@ require_once __DIR__ . '/RuntimePrimaryProjectionAuditorAdapter.php';
 require_once __DIR__ . '/ProductionPrimaryRuntimeActivationContract.php';
 require_once __DIR__ . '/ProductionPrimaryRuntimeCoordinator.php';
 require_once __DIR__ . '/ProductionPrimaryAtomicStorageAdapter.php';
+require_once __DIR__ . '/ProductionPrimaryApplicationEntrypoints.php';
 require_once __DIR__ . '/ProductionPrimaryEntrypointStorageContext.php';
 require_once __DIR__ . '/ProductionPrimaryProjectorFactory.php';
 
@@ -38,9 +39,9 @@ final class ProductionPrimaryEntrypointBootstrap
         string $configFile,
         string $entrypoint
     ): array {
-        if (!in_array($entrypoint, ['api', 'webhook'], true)) {
+        if (!ProductionPrimaryApplicationEntrypoints::supports($entrypoint)) {
             throw new InvalidArgumentException(
-                'Production DB-primary bootstrap supports only API and webhook.'
+                'Production DB-primary bootstrap does not support this application entrypoint.'
             );
         }
         if (($config['environment'] ?? null) !== 'production') {
