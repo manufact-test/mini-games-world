@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionAuditorInterface.php';
 require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionOutboxSchemaInstaller.php';
 require_once __DIR__ . '/../runtime/RuntimePrimaryProjectionOutboxWriter.php';
+require_once __DIR__ . '/../runtime/ProductionPrimaryApplicationEntrypoints.php';
 
 final class StorageFactory
 {
@@ -65,16 +66,35 @@ final class StorageFactory
         static $attempted = [];
         static $failures = [];
 
-        $script = basename(trim((string)(
-            $_SERVER['SCRIPT_FILENAME']
-            ?? $_SERVER['PHP_SELF']
-            ?? ''
-        )));
-        $entrypoint = match ($script) {
-            'api.php' => 'api',
-            'webhook.php' => 'webhook',
-            default => '',
-        };
+        $config = $GLOBALS['config'] ?? null;
+        $configFile = $GLOBALS['configFile'] ?? null;
+        if (!is_array($config) || !is_string($configFile) || trim($configFile) === '') {
+            $error = new RuntimeException(
+                'Entrypoint storage selector requires the active application config context.'
+            );
+            $failures['missing_context'] = $error;
+            throw $error;
+        }
+
+        $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
+        if ($environment === 'production') {
+            $entrypoint = ProductionPrimaryApplicationEntrypoints::resolve(
+                dirname(__DIR__, 2),
+                $_SERVER
+            );
+        } else {
+            $script = basename(trim((string)(
+                $_SERVER['SCRIPT_FILENAME']
+                ?? $_SERVER['PHP_SELF']
+                ?? ''
+            )));
+            $entrypoint = match ($script) {
+                'api.php' => 'api',
+                'webhook.php' => 'webhook',
+                default => '',
+            };
+        }
+
         if ($entrypoint === '') return;
 
         if (isset($failures[$entrypoint])) {
@@ -93,18 +113,8 @@ final class StorageFactory
         if (isset($attempted[$entrypoint])) return;
         $attempted[$entrypoint] = true;
 
-        $config = $GLOBALS['config'] ?? null;
-        $configFile = $GLOBALS['configFile'] ?? null;
-        if (!is_array($config) || !is_string($configFile) || trim($configFile) === '') {
-            $error = new RuntimeException(
-                'Entrypoint storage selector requires the active application config context.'
-            );
-            $failures[$entrypoint] = $error;
-            throw $error;
-        }
-
         try {
-            if (($config['environment'] ?? null) === 'production') {
+            if ($environment === 'production') {
                 require_once __DIR__ . '/../runtime/ProductionPrimaryEntrypointBootstrap.php';
                 ProductionPrimaryEntrypointBootstrap::installIfEnabled(
                     dirname(__DIR__, 2),
