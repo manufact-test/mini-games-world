@@ -66,6 +66,24 @@ final class StorageFactory
         static $attempted = [];
         static $failures = [];
 
+        $projectRoot = dirname(__DIR__, 2);
+        $productionEntrypoint = ProductionPrimaryApplicationEntrypoints::resolve(
+            $projectRoot,
+            $_SERVER
+        );
+        $script = basename(trim((string)(
+            $_SERVER['SCRIPT_FILENAME']
+            ?? $_SERVER['PHP_SELF']
+            ?? ''
+        )));
+        $stagingEntrypoint = match ($script) {
+            'api.php' => 'api',
+            'webhook.php' => 'webhook',
+            default => '',
+        };
+
+        if ($productionEntrypoint === '' && $stagingEntrypoint === '') return;
+
         $config = $GLOBALS['config'] ?? null;
         $configFile = $GLOBALS['configFile'] ?? null;
         if (!is_array($config) || !is_string($configFile) || trim($configFile) === '') {
@@ -77,24 +95,9 @@ final class StorageFactory
         }
 
         $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
-        if ($environment === 'production') {
-            $entrypoint = ProductionPrimaryApplicationEntrypoints::resolve(
-                dirname(__DIR__, 2),
-                $_SERVER
-            );
-        } else {
-            $script = basename(trim((string)(
-                $_SERVER['SCRIPT_FILENAME']
-                ?? $_SERVER['PHP_SELF']
-                ?? ''
-            )));
-            $entrypoint = match ($script) {
-                'api.php' => 'api',
-                'webhook.php' => 'webhook',
-                default => '',
-            };
-        }
-
+        $entrypoint = $environment === 'production'
+            ? $productionEntrypoint
+            : $stagingEntrypoint;
         if ($entrypoint === '') return;
 
         if (isset($failures[$entrypoint])) {
@@ -117,7 +120,7 @@ final class StorageFactory
             if ($environment === 'production') {
                 require_once __DIR__ . '/../runtime/ProductionPrimaryEntrypointBootstrap.php';
                 ProductionPrimaryEntrypointBootstrap::installIfEnabled(
-                    dirname(__DIR__, 2),
+                    $projectRoot,
                     $config,
                     $configFile,
                     $entrypoint
@@ -127,7 +130,7 @@ final class StorageFactory
 
             require_once __DIR__ . '/../runtime/RuntimePrimaryStagingEntrypointBootstrap.php';
             (new RuntimePrimaryStagingEntrypointStorageSelector(
-                dirname(__DIR__, 2),
+                $projectRoot,
                 $config,
                 $configFile,
                 $entrypoint
