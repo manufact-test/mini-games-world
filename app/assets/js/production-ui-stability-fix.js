@@ -36,7 +36,7 @@ async function resilientReadFetch(input, init = {}){
 
   try {
     const response = await nativeFetch(input, init);
-    if (response.ok) rememberReadResponse(meta, response);
+    if (response.ok) await rememberReadResponse(meta, response);
 
     if (!response.ok && canUseReadFallback(meta, response.status)) {
       const fallback = readFallback(meta);
@@ -74,43 +74,64 @@ function readRequestMeta(input, init){
   return null;
 }
 
-function rememberReadResponse(meta, response){
+async function rememberReadResponse(meta, response){
   if (!meta) return;
 
-  response.clone().json().then(data => {
-    if (!data || typeof data !== 'object' || data.ok === false) return;
+  const data = await response.clone().json().catch(() => null);
+  if (!data || typeof data !== 'object' || data.ok === false) return;
 
-    if (meta.kind === 'bootstrap') {
-      bootstrapSnapshot = data;
-      return;
-    }
+  if (meta.kind === 'bootstrap') {
+    bootstrapSnapshot = data;
+    const userId = activeUserId() || telegramUserId();
+    if (userId) storeReadCache(userId, 'bootstrap', data);
+    return;
+  }
 
-    const userId = activeUserId();
-    if (!userId) return;
-    try {
-      localStorage.setItem(cacheKey(userId, meta.kind), JSON.stringify({ stored_at:Date.now(), data }));
-    } catch (error) {
-      // A private or full WebView storage must not break the live response.
-    }
-  }).catch(() => null);
+  const userId = activeUserId();
+  if (userId) storeReadCache(userId, meta.kind, data);
+}
+
+function storeReadCache(userId, kind, data){
+  try {
+    localStorage.setItem(cacheKey(userId, kind), JSON.stringify({ stored_at:Date.now(), data }));
+  } catch (error) {
+    // A private or full WebView storage must not break the live response.
+  }
 }
 
 function canUseReadFallback(meta, status){
-  if (!meta || meta.kind === 'bootstrap' || !bootstrapSnapshot?.user) return false;
-  return Number(status || 0) === 429 || Number(status || 0) >= 500;
+  if (!meta) return false;
+  const transient = Number(status || 0) === 429 || Number(status || 0) >= 500;
+  if (!transient) return false;
+  if (meta.kind === 'bootstrap') return Boolean(readCachedBootstrap());
+  return Boolean(bootstrapSnapshot?.user);
 }
 
 function readFallback(meta){
-  if (!meta || meta.kind === 'bootstrap' || !bootstrapSnapshot?.user) return null;
+  if (!meta) return null;
+
+  if (meta.kind === 'bootstrap') {
+    const cached = readCachedBootstrap();
+    if (!cached) return null;
+
+    const safe = clone(cached);
+    safe.active_game = null;
+    safe.session = {
+      ...(safe.session || {}),
+      locked:true,
+      message:'Связь с сервером временно нестабильна. Профиль доступен для просмотра, игровые действия пока заблокированы.',
+    };
+    safe.degraded_read = true;
+    bootstrapSnapshot = safe;
+    return safe;
+  }
+
+  if (!bootstrapSnapshot?.user) return null;
 
   const userId = activeUserId();
   if (userId) {
-    try {
-      const cached = JSON.parse(localStorage.getItem(cacheKey(userId, meta.kind)) || 'null');
-      if (cached?.data && typeof cached.data === 'object') return cached.data;
-    } catch (error) {
-      // Ignore malformed or unavailable stale cache.
-    }
+    const cached = readCached(userId, meta.kind);
+    if (cached) return cached;
   }
 
   if (meta.kind === 'profile') {
@@ -143,6 +164,27 @@ function readFallback(meta){
   if (meta.kind === 'opponents') return { ok:true, items:[], degraded_read:true };
   if (meta.kind === 'shop_orders') return { ok:true, orders:[], degraded_read:true };
   return null;
+}
+
+function readCachedBootstrap(){
+  const userId = telegramUserId();
+  if (!userId) return null;
+  const cached = readCached(userId, 'bootstrap');
+  const cachedUserId = String(cached?.user?.id || cached?.user?.telegram_id || '').trim();
+  return cachedUserId === userId ? cached : null;
+}
+
+function readCached(userId, kind){
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey(userId, kind)) || 'null');
+    return cached?.data && typeof cached.data === 'object' ? cached.data : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function telegramUserId(){
+  return String(window.Telegram?.WebApp?.initDataUnsafe?.user?.id || '').trim();
 }
 
 function activeUserId(){
@@ -307,4 +349,9 @@ function jsonResponse(data){
     status:200,
     headers:{ 'Content-Type':'application/json; charset=utf-8' },
   });
+}
+
+function clone(value){
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
 }
