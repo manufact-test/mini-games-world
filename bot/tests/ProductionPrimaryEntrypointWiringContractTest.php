@@ -128,25 +128,28 @@ $assertTrue(
 $outer = strpos($sources['atomic'], 'return $this->database->transaction(function (');
 $state = strpos($sources['atomic'], '$this->stateStorage->transaction(');
 $worker = strpos($sources['atomic'], '$this->worker->runOnce();');
-$finalAudit = strpos($sources['atomic'], "captureAndAudit('final')");
+$finalIdentity = strpos($sources['atomic'], '$this->captureFinalIdentity();');
 $assertTrue(
     $outer !== false
         && $state !== false
         && $worker !== false
-        && $finalAudit !== false
+        && $finalIdentity !== false
         && $outer < $state
         && $state < $worker
-        && $worker < $finalAudit,
-    'State, outbox projection and final audit must share one outer transaction'
+        && $worker < $finalIdentity,
+    'State, outbox projection and final identity verification must share one outer transaction'
 );
 $assertTrue(
     $containsAll($sources['atomic'], [
         'captureLockedBaseline($data)',
         "'baseline_locked' => true",
         "'worker_tick_count' => 1",
+        "'worker_parity_proof_reused' => true",
+        "'final_full_module_audit_executed' => false",
         "'rollback_requires_fresh_db_export' => true",
-    ]),
-    'Atomic adapter must prove lock, exact worker tick and rollback export requirement'
+    ])
+        && !str_contains($sources['atomic'], "captureAndAudit('final')"),
+    'Atomic adapter must prove lock, exact worker parity reuse and rollback export requirement without duplicate audit'
 );
 $assertTrue(
     $containsAll($sources['context'], [
