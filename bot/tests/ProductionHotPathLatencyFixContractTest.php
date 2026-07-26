@@ -22,6 +22,8 @@ $profile = $read('app/assets/js/screens/profile-screen.js');
 $requestGuard = $read('app/assets/js/api/request-guard.js');
 $coordinator = $read('app/assets/js/interaction-latency-coordinator.js');
 $residual = $read('app/assets/js/residual-ui-game-race-fix.js');
+$readiness = $read('app/assets/js/first-interaction-readiness.js');
+$invitesEndpoint = $read('bot/invites.php');
 $mainCss = $read('app/assets/css/main.css');
 $main = $read('app/assets/js/main.js');
 $index = $read('app/index.html');
@@ -76,6 +78,14 @@ $assertTrue(
 );
 
 $assertTrue(
+    str_contains($profile, 'hasProfileStats(state.profileStats)')
+        && str_contains($profile, 'Number(stats.games_played)')
+        && !str_contains($profile, 'stats.games_played ?? 0')
+        && !str_contains($profile, 'stats.wins ?? 0'),
+    'Profile must never paint fake zero statistics before the real snapshot is ready.'
+);
+
+$assertTrue(
     str_contains($profile, "../ui.js?v=89")
         && !str_contains($profile, "../ui.js?v=27"),
     'Profile must use the current avatar renderer instead of stale Telegram WebView cache.'
@@ -112,12 +122,48 @@ $assertTrue(
 );
 
 $assertTrue(
+    str_contains($readiness, 'export async function warmFirstInteractionData()')
+        && str_contains($readiness, 'warmProfileSnapshot()')
+        && str_contains($readiness, 'api.history()')
+        && str_contains($readiness, 'api.notifications(false)')
+        && str_contains($readiness, 'warmShopOrders()')
+        && str_contains($readiness, 'refreshOpponentsNetwork(true)')
+        && str_contains($readiness, 'Promise.allSettled(tasks)'),
+    'The common preloader must warm every first-click data source before the app becomes interactive.'
+);
+
+$assertTrue(
+    str_contains($readiness, "target.matches('[data-invite-friend]')")
+        && str_contains($readiness, "target.matches('[data-invite-size], [data-invite-bet]')")
+        && str_contains($readiness, "target.matches('[data-create-link-invite]')")
+        && str_contains($readiness, 'prepareMessage:false')
+        && str_contains($readiness, 'openTelegramShare(shareUrl, shareText)')
+        && str_contains($readiness, 'openTelegramLink'),
+    'Link drafts must be prepared before the tap and opened through the ready share URL.'
+);
+
+$assertTrue(
+    str_contains($readiness, 'opponentsCache?.data')
+        && str_contains($readiness, 'return jsonResponse(opponentsCache.data)')
+        && str_contains($readiness, "url.pathname.endsWith('/bot/invite-opponents.php')"),
+    'The player picker must receive a same-frame cached opponent response.'
+);
+
+$assertTrue(
+    str_contains($invitesEndpoint, "array_key_exists('prepareMessage', \$payload)")
+        && str_contains($invitesEndpoint, "\$result['invite']['prepared_message_id'] = \$prepareMessage")
+        && str_contains($invitesEndpoint, '? mgw_prepare_invite_message(')
+        && str_contains($invitesEndpoint, ": '';"),
+    'Fast draft creation must skip the external Telegram prepared-message call when requested.'
+);
+
+$assertTrue(
     str_contains($residual, 'gameStateInFlightByKey')
         && str_contains($residual, 'gameActionPromiseByKey')
         && str_contains($residual, 'latestGameResultByKey')
         && str_contains($residual, 'generation !== generationFor(key)')
         && str_contains($residual, 'gameStateInFlightByKey.get(key)'),
-    'Game-state requests must be serialized per exact game/search key and reject stale responses.'
+    'Game-state requests must stay serialized per exact game/search key.'
 );
 
 $assertTrue(
@@ -126,32 +172,27 @@ $assertTrue(
         && str_contains($residual, "board[cell] === '-'")
         && str_contains($residual, 'renderAuthoritativeTicTacToe')
         && str_contains($residual, "button.textContent = symbol === 'X' ? '✕' : '○'"),
-    'Tic-tac-toe must have one early click owner and authoritative reconciliation.'
+    'Tic-tac-toe must keep one early click owner and authoritative reconciliation.'
 );
 
+$readinessInit = strpos($main, 'initFirstInteractionReadinessEarly();');
+$residualInit = strpos($main, 'initResidualUiGameRaceFixEarly();');
+$warmPosition = strpos($main, 'const firstInteraction = await warmFirstInteractionData();');
+$guardPosition = strpos($main, 'if (!firstInteractionReady)');
+$appReadyPosition = strpos($main, 'dispatchAppReady();');
 $assertTrue(
-    str_contains($residual, 'createLinkInviteImmediately')
-        && str_contains($residual, 'finishInviteImmediately')
-        && str_contains($residual, "inviteRequest('confirm_shared'")
-        && str_contains($residual, "inviteRequest('discard_draft'")
-        && !str_contains($residual, 'Подготавливаем приглашение')
-        && !str_contains($residual, 'Ждём результата отправки'),
-    'Link sharing and cancellation must not render the old waiting placeholders.'
-);
-
-$earlyPosition = strpos($main, 'initResidualUiGameRaceFixEarly();');
-$coordinatorPosition = strpos($main, 'initInteractionLatencyCoordinator();');
-$afterPosition = strpos($main, 'initResidualUiGameRaceFixAfter();');
-$assertTrue(
-    str_contains($main, "v91-mvp14-residual-ui-game-race-hotfix")
-        && str_contains($main, "residual-ui-game-race-fix.js?v=91")
-        && str_contains($main, "interaction-latency-coordinator.js?v=90")
-        && $earlyPosition !== false
-        && $coordinatorPosition !== false
-        && $afterPosition !== false
-        && $earlyPosition < $coordinatorPosition
-        && $coordinatorPosition < $afterPosition,
-    'The isolated v91 layer must register before legacy click handlers and replace game polling after v90 setup.'
+    str_contains($main, "v92-mvp14-first-interaction-readiness-hotfix")
+        && str_contains($main, "first-interaction-readiness.js?v=92")
+        && str_contains($main, "profile-screen.js?v=92")
+        && $readinessInit !== false
+        && $residualInit !== false
+        && $readinessInit < $residualInit
+        && $warmPosition !== false
+        && $guardPosition !== false
+        && $appReadyPosition !== false
+        && $warmPosition < $guardPosition
+        && $guardPosition < $appReadyPosition,
+    'V92 must install first and require readiness before app-ready is dispatched.'
 );
 
 $assertTrue(
@@ -162,10 +203,10 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($index, 'data-build="v91-mvp14-residual-ui-game-race-hotfix"')
-        && str_contains($index, 'main.css?v=91')
-        && str_contains($index, 'main.js?v=91'),
-    'Telegram WebView entrypoint must bust the v90 module and stylesheet cache.'
+    str_contains($index, 'data-build="v92-mvp14-first-interaction-readiness-hotfix"')
+        && str_contains($index, 'main.css?v=92')
+        && str_contains($index, 'main.js?v=92'),
+    'Telegram WebView entrypoint must bust every v91 module and stylesheet cache.'
 );
 
 fwrite(STDOUT, 'ProductionHotPathLatencyFixContractTest: ' . $assertions . " assertions passed\n");
