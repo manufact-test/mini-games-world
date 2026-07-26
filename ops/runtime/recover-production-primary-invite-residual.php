@@ -77,10 +77,11 @@ $lockHandle = null;
 $exitCode = 1;
 
 try {
-    if (!defined('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP')) {
-        define('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP', true);
-    }
+    // Recovery validates the runtime that is serving production requests, so the
+    // normal bootstrap must merge the private runtime.php overlay. The cutover
+    // control bypass is intentionally not enabled here.
     require $projectRoot . '/bot/core/bootstrap.php';
+    require_once $projectRoot . '/bot/runtime/ProductionPrimaryEntrypointBootstrap.php';
     require_once $projectRoot . '/bot/runtime/ProductionPrimaryInviteResidualRecoveryService.php';
 
     if (($config['environment'] ?? null) !== 'production') {

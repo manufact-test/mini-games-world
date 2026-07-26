@@ -37,6 +37,17 @@ $assertTrue(
     'Recovery CLI must remain CLI-only, PHP-bound, commit-bound, activation-bound and locked'
 );
 $assertTrue(
+    !str_contains($cli, 'MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP')
+        && $containsAll($cli, [
+            "require \$projectRoot . '/bot/core/bootstrap.php';",
+            "require_once \$projectRoot . '/bot/runtime/ProductionPrimaryEntrypointBootstrap.php';",
+            'normal bootstrap must merge the private runtime.php overlay',
+        ])
+        && strpos($cli, "require \$projectRoot . '/bot/core/bootstrap.php';")
+            < strpos($cli, 'new ProductionPrimaryRuntimeActivationContract('),
+    'Recovery CLI must load the active private runtime overlay and production runtime dependencies before activation validation'
+);
+$assertTrue(
     strpos($cli, 'writePrivateRecoveryReceipt($receiptPath, $preimageReceipt);')
         < strpos($cli, '$service->run($options[\'expected_plan_fingerprint\'])'),
     'Private preimage receipt must be durable before recovery mutation'
