@@ -174,6 +174,11 @@ final class ProductionAtomicLatencyTestDatabase implements DatabaseConnectionInt
 
 final class ProductionAtomicLatencyTestWorker implements RuntimePrimaryProjectionWorkerInterface
 {
+    private const MODULES = [
+        'accounts', 'realtime', 'economy', 'notifications', 'invites',
+        'history', 'shop', 'payments', 'weekly_bonus',
+    ];
+
     public int $calls = 0;
 
     public function __construct(
@@ -202,6 +207,13 @@ final class ProductionAtomicLatencyTestWorker implements RuntimePrimaryProjectio
             'state_revision' => $revision,
             'state_sha256' => (string)$event['state_sha256'],
             'attempt_count' => (int)$event['attempt_count'],
+            'projected_modules' => self::MODULES,
+            'mutated_modules' => ['accounts'],
+            'unchanged_modules' => array_values(array_diff(self::MODULES, ['accounts'])),
+            'all_module_fingerprint' => hash(
+                'sha256',
+                'worker-parity|' . $revision . '|' . (string)$event['state_sha256']
+            ),
             'parity_ok' => true,
         ];
     }
@@ -274,11 +286,17 @@ $assertTrue($result === 'committed', 'Atomic transaction must preserve callback 
 $assertTrue((int)$database->state['revision'] === 2, 'Atomic success must commit one state revision');
 $assertTrue(($database->events[2]['status'] ?? '') === 'completed', 'Projection must complete before commit');
 $assertTrue($worker->calls === 1, 'Changed state must run one worker tick');
-$assertTrue($auditor->calls === 1, 'Changed state must run only the final full-module audit');
+$assertTrue($auditor->calls === 0, 'Changed state must not repeat the full-module audit after worker parity');
 $report = $storage->lastTransactionReport();
 $assertTrue(($report['baseline_locked'] ?? false) === true, 'Baseline must remain locked');
 $assertTrue(($report['baseline_projection_chain_verified'] ?? false) === true, 'Baseline queue chain must be verified');
 $assertTrue(($report['baseline_full_module_audit_executed'] ?? true) === false, 'Baseline must not run a full-module audit');
+$assertTrue(($report['final_full_module_audit_executed'] ?? true) === false, 'Final path must not repeat a full-module audit');
+$assertTrue(($report['worker_parity_proof_reused'] ?? false) === true, 'Changed path must reuse worker parity proof');
+$assertTrue(
+    preg_match('/\A[a-f0-9]{64}\z/', (string)($report['all_module_fingerprint'] ?? '')) === 1,
+    'Changed path must expose the worker all-module fingerprint'
+);
 
 $database = new ProductionAtomicLatencyTestDatabase();
 $worker = new ProductionAtomicLatencyTestWorker($database);
