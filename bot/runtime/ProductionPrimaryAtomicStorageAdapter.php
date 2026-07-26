@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInterface
 {
     public const DRIVER = 'database';
-    public const CONTRACT_VERSION = 'v1-production-atomic-state-and-projections';
+    public const CONTRACT_VERSION = 'v2-production-atomic-worker-parity-reuse';
 
     private const MODULES = [
         'accounts', 'realtime', 'economy', 'notifications', 'invites',
@@ -82,6 +82,8 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                     'baseline_locked' => true,
                     'baseline_projection_chain_verified' => true,
                     'baseline_full_module_audit_executed' => false,
+                    'final_full_module_audit_executed' => false,
+                    'worker_parity_proof_reused' => false,
                     'housekeeping_only_change_discarded' => $housekeepingOnlyChangeDiscarded,
                     'atomic_commit_pending' => true,
                     'json_rollback_source_changed' => false,
@@ -103,17 +105,40 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 || ($tick['action'] ?? '') !== 'projection_completed'
                 || ($tick['claimed'] ?? false) !== true
                 || (int)($tick['state_revision'] ?? 0) !== $afterRevision
+                || !hash_equals($afterSha, strtolower(trim((string)($tick['state_sha256'] ?? ''))))
                 || ($tick['parity_ok'] ?? false) !== true) {
                 throw new RuntimeException(
                     'Production atomic projection did not complete the exact state revision.'
                 );
             }
 
-            $final = $this->captureAndAudit('final');
+            $workerFingerprint = strtolower(trim((string)(
+                $tick['all_module_fingerprint'] ?? ''
+            )));
+            if (preg_match('/\A[a-f0-9]{64}\z/', $workerFingerprint) !== 1) {
+                throw new RuntimeException(
+                    'Production atomic worker parity fingerprint is invalid.'
+                );
+            }
+
+            $workerModules = array_values(array_unique(array_map(
+                static fn(mixed $value): string => strtolower(trim((string)$value)),
+                (array)($tick['projected_modules'] ?? [])
+            )));
+            sort($workerModules, SORT_STRING);
+            $expectedModules = self::MODULES;
+            sort($expectedModules, SORT_STRING);
+            if ($workerModules !== $expectedModules) {
+                throw new RuntimeException(
+                    'Production atomic worker parity proof is missing required modules.'
+                );
+            }
+
+            $final = $this->captureFinalIdentity();
             if ((int)$final['state_revision'] !== $afterRevision
                 || !hash_equals($afterSha, (string)$final['state_sha256'])) {
                 throw new RuntimeException(
-                    'Production atomic state changed during projection or audit.'
+                    'Production atomic state changed during projection completion.'
                 );
             }
 
@@ -127,10 +152,20 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 'worker_tick_count' => 1,
                 'worker_attempt_count' => max(1, (int)($tick['attempt_count'] ?? 0)),
                 'projected_modules' => self::MODULES,
-                'all_module_fingerprint' => (string)$final['all_module_fingerprint'],
+                'mutated_modules' => array_values(array_map(
+                    'strval',
+                    (array)($tick['mutated_modules'] ?? [])
+                )),
+                'unchanged_modules' => array_values(array_map(
+                    'strval',
+                    (array)($tick['unchanged_modules'] ?? [])
+                )),
+                'all_module_fingerprint' => $workerFingerprint,
                 'baseline_locked' => true,
                 'baseline_projection_chain_verified' => true,
                 'baseline_full_module_audit_executed' => false,
+                'final_full_module_audit_executed' => false,
+                'worker_parity_proof_reused' => true,
                 'housekeeping_only_change_discarded' => false,
                 'atomic_commit_pending' => true,
                 'json_rollback_source_changed' => false,
@@ -169,25 +204,18 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
         return $this->captureIdentity($snapshot, $status, 'baseline');
     }
 
-    private function captureAndAudit(string $stage): array
+    private function captureFinalIdentity(): array
     {
         $status = $this->stateStorage->status();
-        $snapshot = $this->stateStorage->readOnly(static fn(array $data): array => $data);
+        $snapshot = $this->stateStorage->readOnly(
+            static fn(array $data): array => $data
+        );
         if (!is_array($snapshot)) {
-            throw new RuntimeException('Production atomic ' . $stage . ' snapshot is unavailable.');
+            throw new RuntimeException(
+                'Production atomic final snapshot is unavailable.'
+            );
         }
-
-        $identity = $this->captureIdentity($snapshot, $status, $stage);
-        $revision = (int)$identity['state_revision'];
-        $stateSha = (string)$identity['state_sha256'];
-        $audit = $this->auditor->auditOnly($snapshot, $revision, $stateSha);
-        $this->assertAudit($audit, $revision, $stateSha, $stage);
-
-        return $identity + [
-            'all_module_fingerprint' => strtolower(trim((string)(
-                $audit['all_module_fingerprint'] ?? ''
-            ))),
-        ];
+        return $this->captureIdentity($snapshot, $status, 'final');
     }
 
     private function captureIdentity(array $snapshot, array $status, string $stage): array
@@ -307,46 +335,6 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             'processing_event_count' => 0,
             'failed_event_count' => 0,
         ];
-    }
-
-    private function assertAudit(
-        array $audit,
-        int $revision,
-        string $stateSha,
-        string $stage
-    ): void {
-        if (($audit['ok'] ?? false) !== true
-            || ($audit['parity_ok'] ?? false) !== true
-            || ($audit['read_only'] ?? false) !== true
-            || (int)($audit['state_revision'] ?? 0) !== $revision
-            || !hash_equals(
-                $stateSha,
-                strtolower(trim((string)($audit['state_sha256'] ?? '')))
-            )) {
-            throw new RuntimeException(
-                'Production atomic ' . $stage . ' all-module audit failed.'
-            );
-        }
-
-        $modules = array_values(array_unique(array_map(
-            static fn(mixed $value): string => strtolower(trim((string)$value)),
-            (array)($audit['projected_modules'] ?? [])
-        )));
-        sort($modules, SORT_STRING);
-        $expected = self::MODULES;
-        sort($expected, SORT_STRING);
-        if ($modules !== $expected) {
-            throw new RuntimeException(
-                'Production atomic ' . $stage . ' audit is missing required modules.'
-            );
-        }
-
-        $fingerprint = strtolower(trim((string)($audit['all_module_fingerprint'] ?? '')));
-        if (preg_match('/\A[a-f0-9]{64}\z/', $fingerprint) !== 1) {
-            throw new RuntimeException(
-                'Production atomic ' . $stage . ' audit fingerprint is invalid.'
-            );
-        }
     }
 
     private function canonicalJson(array $value): string
