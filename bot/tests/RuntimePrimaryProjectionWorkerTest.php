@@ -135,6 +135,13 @@ final class ProjectionWorkerTestProjector implements RuntimePrimaryProjectionPro
             'state_revision' => $stateRevision,
             'state_sha256' => $stateSha256,
             'projected_modules' => $modules,
+            'mutated_modules' => ['realtime'],
+            'unchanged_modules' => array_values(array_diff($modules, ['realtime'])),
+            'all_module_fingerprint' => hash(
+                'sha256',
+                'projector|' . $stateRevision . '|' . $stateSha256 . '|' . implode(',', $modules)
+            ),
+            'audit_completed' => true,
         ];
     }
 }
@@ -186,6 +193,11 @@ $assert(($first['state_revision'] ?? 0) === 1, 'Worker must process revision one
 $assert(($db->event(1)['status'] ?? '') === 'completed', 'Revision one must persist completed');
 $assert(($db->event(2)['status'] ?? '') === 'pending', 'Revision two must remain pending');
 $assert(count($projector->calls) === 1, 'Projector must run once');
+$assert(
+    preg_match('/\A[a-f0-9]{64}\z/', (string)($first['all_module_fingerprint'] ?? '')) === 1,
+    'Completed worker result must expose the all-module fingerprint'
+);
+$assert(($first['mutated_modules'] ?? []) === ['realtime'], 'Worker must expose mutated modules');
 
 $second = $worker->runOnce();
 $assert(($second['state_revision'] ?? 0) === 2, 'Second tick must process revision two');
