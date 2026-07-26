@@ -56,6 +56,47 @@ $assertTrue(
     'Cleanup-only empty system section must not remain in the state.'
 );
 
+$beforeSearch = [
+    'users' => ['1' => ['id' => '1', 'status' => 'searching']],
+    'queue' => [[
+        'id' => 'queue_1',
+        'user_id' => '1',
+        'room' => 'match',
+        'bet' => 10,
+        'board_size' => 3,
+        'updated_at' => '2026-07-26T10:00:00+00:00',
+    ]],
+    'system' => ['game_cleanup_at' => '2026-07-26T10:00:00+00:00'],
+];
+$afterSearchHeartbeat = $beforeSearch;
+$afterSearchHeartbeat['queue'][0]['updated_at'] = '2026-07-26T10:00:01+00:00';
+$afterSearchHeartbeat['system']['game_cleanup_at'] = '2026-07-26T10:00:01+00:00';
+$discarded = $method->invokeArgs(
+    $subject,
+    [&$afterSearchHeartbeat, $beforeSearch]
+);
+$assertTrue(
+    $discarded === true,
+    'Search queue heartbeat plus cleanup timestamp must not create a state revision.'
+);
+$assertTrue(
+    $afterSearchHeartbeat === $beforeSearch,
+    'Search polling housekeeping fields must be restored exactly.'
+);
+
+$realQueueChange = $beforeSearch;
+$realQueueChange['queue'][0]['updated_at'] = '2026-07-26T10:00:01+00:00';
+$realQueueChange['queue'][0]['board_size'] = 5;
+$discarded = $method->invokeArgs($subject, [&$realQueueChange, $beforeSearch]);
+$assertTrue(
+    $discarded === false,
+    'A real queue condition change must never be hidden as a heartbeat.'
+);
+$assertTrue(
+    $realQueueChange['queue'][0]['board_size'] === 5,
+    'Real queue data must remain intact.'
+);
+
 $realChange = $before;
 $realChange['users']['1']['balance_match'] = 40;
 $realChange['system']['game_cleanup_at'] = '2026-07-26T10:00:02+00:00';
