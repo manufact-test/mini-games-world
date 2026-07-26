@@ -147,6 +147,8 @@ try {
 
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
+    $prepareMessage = !array_key_exists('prepareMessage', $payload)
+        || !empty($payload['prepareMessage']);
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $users = new UserService($config);
@@ -283,13 +285,15 @@ try {
         $shareText = mgw_invite_share_text($result['invite'], $shareUrl);
         $result['invite']['share_url'] = $shareUrl;
         $result['invite']['share_text'] = $shareText;
-        $result['invite']['prepared_message_id'] = mgw_prepare_invite_message(
-            $config,
-            (string)($tgUser['id'] ?? ''),
-            $result['invite'],
-            $shareUrl,
-            $shareText
-        );
+        $result['invite']['prepared_message_id'] = $prepareMessage
+            ? mgw_prepare_invite_message(
+                $config,
+                (string)($tgUser['id'] ?? ''),
+                $result['invite'],
+                $shareUrl,
+                $shareText
+            )
+            : '';
     }
 
     if (in_array($action, ['create_direct', 'rematch'], true)
