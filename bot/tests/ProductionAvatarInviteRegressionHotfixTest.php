@@ -4,6 +4,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 
 require $root . '/database/DatabaseConnectionInterface.php';
+require $root . '/database/DatabaseConfig.php';
 require $root . '/storage/RuntimeStorageRouter.php';
 require $root . '/realtime/RealtimeDatabaseStore.php';
 require $root . '/invites/RuntimeInviteRepository.php';
