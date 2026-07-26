@@ -2,10 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/ProductionPrimaryRuntimeActivationContract.php';
+require_once __DIR__ . '/ProductionPrimaryApplicationEntrypoints.php';
 
 final class ProductionPrimaryRuntimeCoordinator
 {
-    public const CONTRACT_VERSION = 'v2-db-primary-atomic-entrypoint-wiring';
+    public const CONTRACT_VERSION = 'v3-db-primary-all-application-entrypoint-wiring';
     public const EXECUTION_ENABLED = false;
     public const ENTRYPOINT_WIRING_ENABLED = true;
 
@@ -31,6 +32,7 @@ final class ProductionPrimaryRuntimeCoordinator
             'execution_enabled' => self::EXECUTION_ENABLED,
             'entrypoint_wiring_enabled' => self::ENTRYPOINT_WIRING_ENABLED,
             'entrypoint_wiring_required' => true,
+            'supported_application_entrypoints' => ProductionPrimaryApplicationEntrypoints::identifiers(),
             'api_entrypoint_wired' => false,
             'webhook_entrypoint_wired' => false,
             'atomic_state_and_projections_required' => true,
@@ -44,9 +46,9 @@ final class ProductionPrimaryRuntimeCoordinator
 
     public function prepareEntrypointPlan(string $entrypoint): array
     {
-        if (!in_array($entrypoint, ['api', 'webhook'], true)) {
+        if (!ProductionPrimaryApplicationEntrypoints::supports($entrypoint)) {
             throw new InvalidArgumentException(
-                'Production DB-primary coordinator supports only API and webhook entrypoints.'
+                'Production DB-primary coordinator does not support this application entrypoint.'
             );
         }
 

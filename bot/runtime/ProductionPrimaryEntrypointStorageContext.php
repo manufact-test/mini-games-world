@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/ProductionPrimaryApplicationEntrypoints.php';
+
 final class ProductionPrimaryEntrypointStorageContext
 {
     private static ?ProductionPrimaryAtomicStorageAdapter $storage = null;
@@ -12,9 +14,9 @@ final class ProductionPrimaryEntrypointStorageContext
         string $entrypoint,
         array $activationReport
     ): void {
-        if (!in_array($entrypoint, ['api', 'webhook'], true)) {
+        if (!ProductionPrimaryApplicationEntrypoints::supports($entrypoint)) {
             throw new InvalidArgumentException(
-                'Production DB-primary entrypoint context supports only API and webhook.'
+                'Production DB-primary entrypoint context does not support this application entrypoint.'
             );
         }
         if ($storage->driver() !== 'database') {

@@ -5,6 +5,7 @@ $projectRoot = dirname(__DIR__, 2);
 $paths = [
     'factory' => 'bot/storage/StorageFactory.php',
     'guard' => 'bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php',
+    'registry' => 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php',
     'coordinator' => 'bot/runtime/ProductionPrimaryRuntimeCoordinator.php',
     'bootstrap' => 'bot/runtime/ProductionPrimaryEntrypointBootstrap.php',
     'context' => 'bot/runtime/ProductionPrimaryEntrypointStorageContext.php',
@@ -38,13 +39,28 @@ $containsAll = static function (string $source, array $needles): bool {
 
 $assertTrue(
     $containsAll($sources['factory'], [
+        'ProductionPrimaryApplicationEntrypoints::resolve(',
         "'api.php' => 'api'",
         "'webhook.php' => 'webhook'",
         'ProductionPrimaryEntrypointBootstrap::installIfEnabled(',
         'ProductionPrimaryEntrypointStorageContext::installed()',
         'RuntimePrimaryEntrypointStorageContext::installed()',
     ]),
-    'StorageFactory must support both guarded production and staging request contexts'
+    'StorageFactory must support exact production routing and guarded staging request contexts'
+);
+$assertTrue(
+    $containsAll($sources['registry'], [
+        "'bot/api.php' => 'api'",
+        "'bot/webhook.php' => 'webhook'",
+        "'bot/invites.php' => 'invites'",
+        "'bot/notifications.php' => 'notifications'",
+        "'bot/invite-opponents.php' => 'invite_opponents'",
+        "'bot/shop-history.php' => 'shop_history'",
+        "'bot/cron/weekly-match.php' => 'weekly_match_cron'",
+        'realpath($projectRoot)',
+        "return self::PATH_TO_ID[\$relative] ?? '';",
+    ]),
+    'Production registry must use exact repository paths for all application entrypoints'
 );
 $assertTrue(
     $containsAll($sources['api'], ['StorageFactory::createJson('])
@@ -100,7 +116,7 @@ $assertTrue(
 $assertTrue(
     $containsAll($sources['bootstrap'], [
         'enablement and activation markers are inconsistent',
-        "'api', 'webhook'",
+        'ProductionPrimaryApplicationEntrypoints::supports($entrypoint)',
         "fetchValue('SELECT 1')",
         'ProductionPrimaryAtomicStorageAdapter(',
         'RuntimePrimaryProjectionWorkerInterface.php',
@@ -134,18 +150,19 @@ $assertTrue(
 );
 $assertTrue(
     $containsAll($sources['context'], [
-        "['api', 'webhook']",
+        'ProductionPrimaryApplicationEntrypoints::supports($entrypoint)',
         "['state'] ?? '') !== 'completed'",
         'ProductionPrimaryAtomicStorageAdapter',
         "'atomic_projection' => true",
     ]),
-    'Request context must accept only completed atomic API/webhook storage'
+    'Request context must accept only completed atomic application-entrypoint storage'
 );
 $assertTrue(
     $containsAll($sources['coordinator'], [
         'public const EXECUTION_ENABLED = false',
         'public const ENTRYPOINT_WIRING_ENABLED = true',
         "'atomic_state_and_projections_required' => true",
+        'ProductionPrimaryApplicationEntrypoints::supports($entrypoint)',
         'Direct production API execution is forbidden',
         'Direct production webhook execution is forbidden',
     ]),

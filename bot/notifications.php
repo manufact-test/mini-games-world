@@ -106,8 +106,10 @@ try {
     $router = $runtimeStorageRouter instanceof RuntimeStorageRouter
         ? $runtimeStorageRouter
         : new RuntimeStorageRouter($config);
+    $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
 
-    if ($router->routeFor('notifications') === RuntimeStorageRouter::DRIVER_DATABASE) {
+    if ($legacyBridgeAllowed
+        && $router->routeFor('notifications') === RuntimeStorageRouter::DRIVER_DATABASE) {
         $snapshot = $markRead
             ? $db->transaction(function (array &$data) use ($notifications, $userId): array {
                 $notifications->markAllRead($data, $userId);

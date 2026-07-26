@@ -21,7 +21,8 @@ try {
     $result = $db->transaction(fn(array &$data): array => $service->runDue($data));
 
     $runtimeSync = null;
-    if (isset($runtimeWeeklyBonusBridge)
+    if (RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()
+        && isset($runtimeWeeklyBonusBridge)
         && $runtimeWeeklyBonusBridge instanceof WeeklyBonusRuntimeBridge
         && $runtimeWeeklyBonusBridge->enabled()) {
         $sync = $runtimeWeeklyBonusBridge->synchronizeCurrentJson();

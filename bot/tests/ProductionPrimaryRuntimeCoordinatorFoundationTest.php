@@ -176,8 +176,13 @@ try {
     $assertTrue(($coordinatorReport['ready'] ?? false) === true, 'Coordinator must inherit the valid activation contract');
     $assertTrue(($coordinatorReport['execution_enabled'] ?? true) === false, 'Foundation execution must remain disabled');
     $assertTrue(($coordinatorReport['entrypoint_wiring_required'] ?? false) === true, 'Foundation must require a later wiring stage');
+    $assertTrue(
+        ($coordinatorReport['supported_application_entrypoints'] ?? [])
+            === ProductionPrimaryApplicationEntrypoints::identifiers(),
+        'Coordinator must publish the exact registered application entrypoints'
+    );
 
-    foreach (['api', 'webhook'] as $entrypoint) {
+    foreach (ProductionPrimaryApplicationEntrypoints::identifiers() as $entrypoint) {
         $planReport = $coordinator->prepareEntrypointPlan($entrypoint);
         $assertTrue(($planReport['ok'] ?? false) === true, 'Valid entrypoint plan must pass: ' . $entrypoint);
         $assertTrue(($planReport['entrypoint'] ?? '') === $entrypoint, 'Entrypoint plan identity must match');
@@ -187,7 +192,7 @@ try {
 
     $assertThrows(
         static fn() => $coordinator->prepareEntrypointPlan('cron'),
-        'only API and webhook'
+        'does not support this application entrypoint'
     );
     $assertThrows(
         static fn() => $coordinator->executeApiRequest(['action' => 'bootstrap']),
