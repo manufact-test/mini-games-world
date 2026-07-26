@@ -95,7 +95,15 @@ async function boot(){
     syncWeeklyMatchButton(result.weekly_match || null);
 
     /* Keep the common preloader visible until every first-click screen has data. */
-    window.__MGW_FIRST_INTERACTION_READY__ = await warmFirstInteractionData();
+    const firstInteraction = await warmFirstInteractionData();
+    const firstInteractionReady = firstInteraction.profileReady
+      && firstInteraction.historyReady
+      && firstInteraction.notificationsReady
+      && firstInteraction.opponentsReady;
+    if (!firstInteractionReady) {
+      throw new Error('Не удалось подготовить данные интерфейса. Откройте приложение снова.');
+    }
+    window.__MGW_FIRST_INTERACTION_READY__ = firstInteraction;
     dispatchAppReady();
 
     if (isSessionLocked(state.session)) {
