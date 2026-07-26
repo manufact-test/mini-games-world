@@ -100,11 +100,15 @@ function searchContextFor(buttonId){
 
 function installPlayerPickerTransitionGuard(){
   const sheet = document.getElementById('sheet');
-  if (!sheet) return;
+  const overlay = document.getElementById('sheetOverlay');
+  if (!sheet || !overlay) return;
 
   let timeout = null;
+  let hold = null;
   const finish = () => {
     document.body.classList.remove('mgw-player-picker-transition');
+    hold?.remove();
+    hold = null;
     window.clearTimeout(timeout);
     timeout = null;
   };
@@ -115,12 +119,25 @@ function installPlayerPickerTransitionGuard(){
     const button = origin.closest('[data-open-player-picker]');
     if (!(button instanceof HTMLButtonElement) || button.disabled) return;
 
+    finish();
     document.body.classList.add('mgw-player-picker-transition');
     button.setAttribute('aria-busy', 'true');
     const previousText = button.textContent;
     button.textContent = 'Открываем игроков…';
 
-    window.clearTimeout(timeout);
+    hold = document.createElement('div');
+    hold.className = 'sheet mgw-player-picker-hold';
+    hold.setAttribute('aria-hidden', 'true');
+    hold.setAttribute('inert', '');
+    hold.innerHTML = sheet.innerHTML;
+    hold.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+    hold.querySelectorAll('button,input,textarea,select,a').forEach(node => {
+      node.setAttribute('tabindex', '-1');
+      node.setAttribute('aria-hidden', 'true');
+      if ('disabled' in node) node.disabled = true;
+    });
+    overlay.append(hold);
+
     timeout = window.setTimeout(() => {
       finish();
       if (document.body.contains(button)) {
