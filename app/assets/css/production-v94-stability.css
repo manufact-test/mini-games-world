@@ -1,0 +1,24 @@
+/* v94: render the Tic Tac Toe ring as CSS geometry instead of a font glyph. */
+#gameBoard[data-game-type="tictactoe"] .cell.o{
+  font-size:0 !important;
+}
+
+#gameBoard[data-game-type="tictactoe"] .cell.o::before{
+  content:"";
+  display:block;
+  width:48%;
+  aspect-ratio:1;
+  border:clamp(4px,1.25vw,6px) solid currentColor;
+  border-radius:50%;
+  box-sizing:border-box;
+}
+
+#gameBoard[data-game-type="tictactoe"].size-5 .cell.o::before{
+  width:50%;
+  border-width:clamp(3px,.9vw,5px);
+}
+
+#gameBoard[data-game-type="tictactoe"].size-9 .cell.o::before{
+  width:52%;
+  border-width:clamp(2px,.55vw,3px);
+}
