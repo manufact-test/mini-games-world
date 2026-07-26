@@ -21,22 +21,23 @@ $avatar = $read('app/assets/js/production-standard-avatar.js');
 $share = $read('app/assets/js/production-prepared-share-fix.js');
 $game = $read('app/assets/js/production-tictactoe-turn-fix.js');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=93');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=94');
 $mainPosition = strpos($index, 'main.js?v=92');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
-        && str_contains($index, 'data-hotfix-build="v93-mvp14-share-game-avatar-regression-fix"'),
-    'The v93 regression layer must load before the v92 application entrypoint.'
+        && str_contains($index, 'data-hotfix-build="v94-mvp14-ui-stability-fix"'),
+    'The current regression layer must load before the v92 application entrypoint.'
 );
 
 $assert(
-    str_contains($entry, 'initStandardAvatarPolicy();')
+    str_contains($entry, 'initProductionUiStabilityFix();')
+        && str_contains($entry, 'initStandardAvatarPolicy();')
         && str_contains($entry, 'initPreparedShareFix();')
         && str_contains($entry, 'initTicTacToeTurnFixEarly();')
         && str_contains($entry, 'scheduleTicTacToeTurnFixAfter();'),
-    'The v93 entrypoint must install all three isolated regression repairs.'
+    'The current entrypoint must install stability, avatar, share and turn ownership repairs.'
 );
 
 $assert(
@@ -59,14 +60,16 @@ $assert(
 );
 
 $assert(
-    str_contains($game, 'const viewer = viewerByGame.get(key);')
+    str_contains($game, 'let viewer = viewerByGame.get(key) || null;')
+        && str_contains($game, "viewerId = String(game.turn || '')")
+        && str_contains($game, '!button.disabled')
         && str_contains($game, "String(game.turn || '') === viewerId")
         && str_contains($game, "symbol === 'X' || symbol === 'O'")
         && str_contains($game, 'busyGames.has(key) || actionPromiseByGame.has(key)')
         && str_contains($game, 'actionPromiseByGame.set(key, actionPromise)')
         && str_contains($game, 'generation !== gameGeneration(key)')
         && !str_contains($game, 'state.user?.id || state.user?.telegram_id'),
-    'Tic-tac-toe must use the authoritative viewer, one action lock and stale-poll rejection.'
+    'Tic-tac-toe must honor the first enabled tap while retaining authoritative turn ownership.'
 );
 
 $assert(

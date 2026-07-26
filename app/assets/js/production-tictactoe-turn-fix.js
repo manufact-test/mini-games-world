@@ -91,8 +91,23 @@ async function submitTicTacToeCell(button){
   const key = gameKey(game.id);
   if (busyGames.has(key) || actionPromiseByGame.has(key)) return;
 
-  const viewer = viewerByGame.get(key);
-  const viewerId = String(viewer?.id || '');
+  let viewer = viewerByGame.get(key) || null;
+  let viewerId = String(viewer?.id || '');
+
+  /*
+   * A newly opened game can be tapped before the first poll stores result.me.
+   * The renderer already enables cells only for the current viewer. Therefore an
+   * enabled, unlocked cell may safely use the authoritative server turn id for
+   * this first frame instead of swallowing the user's first tap.
+   */
+  if (!viewerId && !button.disabled && !button.classList.contains('locked')) {
+    viewerId = String(game.turn || '');
+    if (viewerId) {
+      viewer = { id:viewerId };
+      viewerByGame.set(key, viewer);
+    }
+  }
+
   if (!viewerId) return;
 
   const cell = Number(button.dataset.gameCell);
@@ -100,6 +115,9 @@ async function submitTicTacToeCell(button){
   const symbol = symbolForViewer(game, viewerId);
   const allowed = String(game.status || '') === 'active'
     && String(game.turn || '') === viewerId
+    && !button.disabled
+    && !button.classList.contains('locked')
+    && button.textContent.trim() === ''
     && Number.isInteger(cell)
     && cell >= 0
     && cell < board.length
