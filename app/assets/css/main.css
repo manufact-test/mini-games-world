@@ -61,3 +61,7 @@
 }
 .history-tab-panel{display:none}
 .history-tab-panel.active{display:block}
+
+/* v89: sheets must react immediately while retaining a short visual transition. */
+.overlay{transition-duration:.08s}
+.sheet{transition-duration:.1s}
