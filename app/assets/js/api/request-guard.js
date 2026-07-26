@@ -6,10 +6,10 @@ const responseCache = new Map();
 const DEFAULT_RATE_LIMIT_BACKOFF_MS = 5000;
 const MAX_RATE_LIMIT_BACKOFF_MS = 60000;
 const RATE_LIMIT_JITTER_MS = 3000;
-const GAME_STATE_MIN_GAP_MS = 2400;
-const SEARCH_STATE_MIN_GAP_MS = 3500;
+const GAME_STATE_MIN_GAP_MS = 700;
+const SEARCH_STATE_MIN_GAP_MS = 1200;
 const STATS_MIN_GAP_MS = 30000;
-const NOTIFICATIONS_MIN_GAP_MS = 1800;
+const NOTIFICATIONS_MIN_GAP_MS = 900;
 
 let installed = false;
 let rateLimitedUntil = 0;
@@ -116,7 +116,7 @@ function requestMeta(input, init){
         cacheWhenHidden:true,
         throttleKey:hasGameId ? 'game_state' : 'search_state',
         minGapMs,
-        jitterMs:Math.round(minGapMs * 0.2),
+        jitterMs:hasGameId ? 60 : 100,
         safeRetry:true,
         waitForVisible:false,
       };
@@ -158,12 +158,12 @@ function requestMeta(input, init){
     return {
       kind:'notifications',
       markRead,
-      singleFlightKey:markRead ? '' : 'notifications:unread',
+      singleFlightKey:markRead ? 'notifications:mark-read' : 'notifications:unread',
       cacheKey:'',
       cacheWhenHidden:false,
       throttleKey:markRead ? '' : 'notifications',
       minGapMs:markRead ? 0 : NOTIFICATIONS_MIN_GAP_MS,
-      jitterMs:markRead ? 0 : 300,
+      jitterMs:markRead ? 0 : 80,
       safeRetry:!markRead,
       waitForVisible:!markRead,
     };
