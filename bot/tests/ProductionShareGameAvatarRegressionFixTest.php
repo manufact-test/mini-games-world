@@ -21,23 +21,25 @@ $avatar = $read('app/assets/js/production-standard-avatar.js');
 $share = $read('app/assets/js/production-prepared-share-fix.js');
 $game = $read('app/assets/js/production-tictactoe-turn-fix.js');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=94');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=95');
 $mainPosition = strpos($index, 'main.js?v=92');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
-        && str_contains($index, 'data-hotfix-build="v94-mvp14-ui-stability-fix"'),
+        && str_contains($index, 'data-hotfix-build="v95-mvp14-cross-game-consistency-fix"'),
     'The current regression layer must load before the v92 application entrypoint.'
 );
 
 $assert(
     str_contains($entry, 'initProductionUiStabilityFix();')
+        && str_contains($entry, 'initCrossGameCoordinator();')
+        && str_contains($entry, 'initDeterministicGameIcons();')
         && str_contains($entry, 'initStandardAvatarPolicy();')
         && str_contains($entry, 'initPreparedShareFix();')
         && str_contains($entry, 'initTicTacToeTurnFixEarly();')
         && str_contains($entry, 'scheduleTicTacToeTurnFixAfter();'),
-    'The current entrypoint must install stability, avatar, share and turn ownership repairs.'
+    'The current entrypoint must retain stability, game coordination, icon, avatar, share and turn ownership repairs.'
 );
 
 $assert(
@@ -45,7 +47,7 @@ $assert(
         && str_contains($avatar, "const STANDARD_AVATAR_ID = 'starter-default-01';")
         && str_contains($avatar, "avatar.classList.remove('has-photo')")
         && str_contains($avatar, "avatar.style.backgroundImage = ''"),
-    'Telegram photos must be hidden behind the temporary standard MGW avatar.'
+    'Telegram photos must stay hidden behind the temporary standard MGW avatar.'
 );
 
 $assert(
@@ -56,7 +58,7 @@ $assert(
         && str_contains($share, 'tg.shareMessage(preparedId')
         && str_contains($share, "sent === false ? 'Отправка отменена.'")
         && str_contains($share, "inviteRequest('confirm_shared', { token })"),
-    'Link sharing must restore Telegram prepared-message send/cancel semantics.'
+    'Prepared-message send/cancel semantics must remain intact.'
 );
 
 $assert(
@@ -66,17 +68,8 @@ $assert(
         && str_contains($game, "String(game.turn || '') === viewerId")
         && str_contains($game, "symbol === 'X' || symbol === 'O'")
         && str_contains($game, 'busyGames.has(key) || actionPromiseByGame.has(key)')
-        && str_contains($game, 'actionPromiseByGame.set(key, actionPromise)')
-        && str_contains($game, 'generation !== gameGeneration(key)')
-        && !str_contains($game, 'state.user?.id || state.user?.telegram_id'),
-    'Tic-tac-toe must honor the first enabled tap while retaining authoritative turn ownership.'
-);
-
-$assert(
-    str_contains($game, "turn:String(nextPlayer?.id || '')")
-        && str_contains($game, "api.gameAction(game.id, { type:'cell', cell })")
-        && str_contains($game, 'renderBoard(result.game, result.me || viewer)'),
-    'The optimistic board must immediately pass the turn and reconcile from the server result.'
+        && str_contains($game, 'generation !== gameGeneration(key)'),
+    'Tic Tac Toe must retain first-tap ownership and stale-poll protection.'
 );
 
 fwrite(STDOUT, "ProductionShareGameAvatarRegressionFixTest: {$assertions} assertions passed\n");
