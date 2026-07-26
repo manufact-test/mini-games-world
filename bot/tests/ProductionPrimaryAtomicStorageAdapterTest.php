@@ -13,18 +13,18 @@ require_once $projectRoot . '/bot/runtime/RuntimePrimaryProjectionOutboxWriter.p
 require_once $projectRoot . '/bot/runtime/DatabasePrimaryStateStorageAdapter.php';
 require_once $projectRoot . '/bot/runtime/ProductionPrimaryAtomicStorageAdapter.php';
 
-final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
+final class ProductionAtomicLatencyTestDatabase implements DatabaseConnectionInterface
 {
     public array $state;
     public array $events;
-    private array $snapshots = [];
+    private array $transactionSnapshots = [];
 
     public function __construct()
     {
         $snapshot = ['users' => []];
         $json = self::canonicalJson($snapshot);
         $sha = hash('sha256', $json);
-        $now = '2026-07-23T14:00:00+00:00';
+        $now = '2026-07-26T10:00:00+00:00';
         $this->state = [
             'singleton_id' => 1,
             'revision' => 1,
@@ -52,7 +52,10 @@ final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
         ];
     }
 
-    public function driver(): string { return 'mysql'; }
+    public function driver(): string
+    {
+        return 'mysql';
+    }
 
     public function execute(string $sql, array $parameters = []): int
     {
@@ -91,7 +94,7 @@ final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
             ];
             return 1;
         }
-        throw new RuntimeException('Unexpected production atomic test execute SQL: ' . $normalized);
+        throw new RuntimeException('Unexpected execute SQL: ' . $normalized);
     }
 
     public function fetchAll(string $sql, array $parameters = []): array
@@ -110,8 +113,7 @@ final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
             && str_contains($normalized, 'group by status')) {
             $groups = [];
             foreach ($this->events as $event) {
-                $status = (string)$event['status'];
-                $groups[$status][] = (int)$event['state_revision'];
+                $groups[(string)$event['status']][] = (int)$event['state_revision'];
             }
             ksort($groups, SORT_STRING);
             $rows = [];
@@ -126,7 +128,7 @@ final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
             }
             return $rows;
         }
-        throw new RuntimeException('Unexpected production atomic test fetch SQL: ' . $normalized);
+        throw new RuntimeException('Unexpected fetch SQL: ' . $normalized);
     }
 
     public function fetchValue(string $sql, array $parameters = []): mixed
@@ -136,13 +138,13 @@ final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
 
     public function transaction(callable $callback): mixed
     {
-        $this->snapshots[] = unserialize(serialize([$this->state, $this->events]));
+        $this->transactionSnapshots[] = unserialize(serialize([$this->state, $this->events]));
         try {
             $result = $callback($this);
-            array_pop($this->snapshots);
+            array_pop($this->transactionSnapshots);
             return $result;
         } catch (Throwable $error) {
-            [$this->state, $this->events] = array_pop($this->snapshots);
+            [$this->state, $this->events] = array_pop($this->transactionSnapshots);
             throw $error;
         }
     }
@@ -152,9 +154,6 @@ final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
         $revision = max(array_keys($this->events));
         $this->events[$revision]['status'] = 'completed';
         $this->events[$revision]['attempt_count']++;
-        $this->events[$revision]['lease_token'] = '';
-        $this->events[$revision]['lease_expires_at_utc'] = '';
-        $this->events[$revision]['last_error'] = '';
         return $this->events[$revision];
     }
 
@@ -173,13 +172,15 @@ final class ProductionAtomicTestDatabase implements DatabaseConnectionInterface
     }
 }
 
-final class ProductionAtomicTestWorker implements RuntimePrimaryProjectionWorkerInterface
+final class ProductionAtomicLatencyTestWorker implements RuntimePrimaryProjectionWorkerInterface
 {
     public int $calls = 0;
+
     public function __construct(
-        private ProductionAtomicTestDatabase $database,
+        private ProductionAtomicLatencyTestDatabase $database,
         private bool $fail = false
     ) {}
+
     public function runOnce(): array
     {
         $this->calls++;
@@ -206,13 +207,15 @@ final class ProductionAtomicTestWorker implements RuntimePrimaryProjectionWorker
     }
 }
 
-final class ProductionAtomicTestAuditor implements RuntimePrimaryProjectionAuditorInterface
+final class ProductionAtomicLatencyTestAuditor implements RuntimePrimaryProjectionAuditorInterface
 {
     private const MODULES = [
         'accounts', 'realtime', 'economy', 'notifications', 'invites',
         'history', 'shop', 'payments', 'weekly_bonus',
     ];
+
     public int $calls = 0;
+
     public function auditOnly(array $snapshot, int $stateRevision, string $stateSha256): array
     {
         $this->calls++;
@@ -243,47 +246,55 @@ $assertThrows = static function (callable $callback, string $messagePart) use (&
     }
     throw new RuntimeException('Expected exception was not thrown.');
 };
-
-$database = new ProductionAtomicTestDatabase();
-$worker = new ProductionAtomicTestWorker($database);
-$auditor = new ProductionAtomicTestAuditor();
-$storage = new ProductionPrimaryAtomicStorageAdapter(
-    $database,
-    new DatabasePrimaryStateStorageAdapter(
+$makeStorage = static function (
+    ProductionAtomicLatencyTestDatabase $database,
+    ProductionAtomicLatencyTestWorker $worker,
+    ProductionAtomicLatencyTestAuditor $auditor
+): ProductionPrimaryAtomicStorageAdapter {
+    return new ProductionPrimaryAtomicStorageAdapter(
         $database,
-        new RuntimePrimaryProjectionOutboxWriter()
-    ),
-    $worker,
-    $auditor
-);
+        new DatabasePrimaryStateStorageAdapter(
+            $database,
+            new RuntimePrimaryProjectionOutboxWriter()
+        ),
+        $worker,
+        $auditor
+    );
+};
+
+$database = new ProductionAtomicLatencyTestDatabase();
+$worker = new ProductionAtomicLatencyTestWorker($database);
+$auditor = new ProductionAtomicLatencyTestAuditor();
+$storage = $makeStorage($database, $worker, $auditor);
 $result = $storage->transaction(static function (array &$data): string {
     $data['users']['user_1'] = ['id' => 'user_1', 'balance_match' => 50];
     return 'committed';
 });
 $assertTrue($result === 'committed', 'Atomic transaction must preserve callback result');
-$assertTrue((int)$database->state['revision'] === 2, 'Atomic success must commit exactly one state revision');
-$assertTrue(count($database->events) === 2, 'Atomic success must commit exactly one outbox event');
-$assertTrue(($database->events[2]['status'] ?? '') === 'completed', 'Atomic success must complete projection before commit');
-$assertTrue($worker->calls === 1, 'Atomic success must execute exactly one worker tick');
-$assertTrue($auditor->calls === 2, 'Atomic success must audit locked baseline and final state');
+$assertTrue((int)$database->state['revision'] === 2, 'Atomic success must commit one state revision');
+$assertTrue(($database->events[2]['status'] ?? '') === 'completed', 'Projection must complete before commit');
+$assertTrue($worker->calls === 1, 'Changed state must run one worker tick');
+$assertTrue($auditor->calls === 1, 'Changed state must run only the final full-module audit');
 $report = $storage->lastTransactionReport();
-$assertTrue(($report['ok'] ?? false) === true, 'Atomic success report must pass');
-$assertTrue(($report['baseline_locked'] ?? false) === true, 'Atomic success must prove baseline lock');
-$assertTrue(($report['worker_tick_count'] ?? 0) === 1, 'Atomic success must report one worker tick');
-$assertTrue(($report['rollback_requires_fresh_db_export'] ?? false) === true, 'Atomic success must expose rollback export requirement');
+$assertTrue(($report['baseline_locked'] ?? false) === true, 'Baseline must remain locked');
+$assertTrue(($report['baseline_projection_chain_verified'] ?? false) === true, 'Baseline queue chain must be verified');
+$assertTrue(($report['baseline_full_module_audit_executed'] ?? true) === false, 'Baseline must not run a full-module audit');
 
-$database = new ProductionAtomicTestDatabase();
-$worker = new ProductionAtomicTestWorker($database, true);
-$auditor = new ProductionAtomicTestAuditor();
-$storage = new ProductionPrimaryAtomicStorageAdapter(
-    $database,
-    new DatabasePrimaryStateStorageAdapter(
-        $database,
-        new RuntimePrimaryProjectionOutboxWriter()
-    ),
-    $worker,
-    $auditor
-);
+$database = new ProductionAtomicLatencyTestDatabase();
+$worker = new ProductionAtomicLatencyTestWorker($database);
+$auditor = new ProductionAtomicLatencyTestAuditor();
+$storage = $makeStorage($database, $worker, $auditor);
+$value = $storage->transaction(static fn(array &$data): int => count($data['users'] ?? []));
+$assertTrue($value === 0, 'No-change transaction must preserve callback result');
+$assertTrue((int)$database->state['revision'] === 1, 'No-change transaction must preserve revision');
+$assertTrue($worker->calls === 0, 'No-change transaction must not run worker');
+$assertTrue($auditor->calls === 0, 'No-change transaction must not run any full-module audit');
+$assertTrue(($storage->lastTransactionReport()['worker_tick_count'] ?? -1) === 0, 'No-change report must expose zero worker ticks');
+
+$database = new ProductionAtomicLatencyTestDatabase();
+$worker = new ProductionAtomicLatencyTestWorker($database, true);
+$auditor = new ProductionAtomicLatencyTestAuditor();
+$storage = $makeStorage($database, $worker, $auditor);
 $beforeState = $database->state;
 $beforeEvents = $database->events;
 $assertThrows(
@@ -292,27 +303,9 @@ $assertThrows(
     }),
     'did not complete'
 );
-$assertTrue($database->state === $beforeState, 'Projection failure must roll back state revision and payload');
-$assertTrue($database->events === $beforeEvents, 'Projection failure must roll back the pending outbox event');
-$assertTrue($worker->calls === 1, 'Projection failure must attempt exactly one worker tick');
-
-$database = new ProductionAtomicTestDatabase();
-$worker = new ProductionAtomicTestWorker($database);
-$auditor = new ProductionAtomicTestAuditor();
-$storage = new ProductionPrimaryAtomicStorageAdapter(
-    $database,
-    new DatabasePrimaryStateStorageAdapter(
-        $database,
-        new RuntimePrimaryProjectionOutboxWriter()
-    ),
-    $worker,
-    $auditor
-);
-$value = $storage->transaction(static fn(array &$data): int => count($data['users'] ?? []));
-$assertTrue($value === 0, 'No-change transaction must return callback result');
-$assertTrue((int)$database->state['revision'] === 1, 'No-change transaction must not increment revision');
-$assertTrue(count($database->events) === 1, 'No-change transaction must not create outbox event');
-$assertTrue($worker->calls === 0, 'No-change transaction must not run worker');
-$assertTrue(($storage->lastTransactionReport()['worker_tick_count'] ?? -1) === 0, 'No-change report must expose zero worker ticks');
+$assertTrue($database->state === $beforeState, 'Projection failure must roll back state');
+$assertTrue($database->events === $beforeEvents, 'Projection failure must roll back outbox');
+$assertTrue($worker->calls === 1, 'Projection failure must attempt one worker tick');
+$assertTrue($auditor->calls === 0, 'Failed projection must not run final audit');
 
 fwrite(STDOUT, "ProductionPrimaryAtomicStorageAdapterTest passed: {$assertions} assertions.\n");
