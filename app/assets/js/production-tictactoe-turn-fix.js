@@ -3,7 +3,7 @@ import { api } from './api/client.js?v=47';
 import { toast } from './components/toast.js?v=41';
 import { haptic } from './telegram/telegram-app.js?v=27';
 import { renderBalances } from './ui.js?v=89';
-import { renderTicTacToeSurface } from './games/tictactoe/renderer.js?v=53';
+import { renderTicTacToeSurface } from './games/tictactoe/renderer.js?v=52';
 
 const originalGameState = api.gameState;
 
