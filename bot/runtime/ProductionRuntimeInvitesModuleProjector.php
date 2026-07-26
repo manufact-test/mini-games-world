@@ -2,12 +2,14 @@
 declare(strict_types=1);
 
 /**
- * Production DB-primary state is the exact invite lifecycle authority. The
- * staging repository intentionally only upserts source rows, so a terminal or
- * expired invite removed from the compatibility state can otherwise remain as
- * a DB-only row and block every later invite mutation. This projector prunes
- * only rows absent from the locked source snapshot and refuses to remove any
- * invite that is still referenced by a normalized match.
+ * Production DB-primary state is the active invite lifecycle authority. The
+ * staging repository intentionally only upserts source rows, so an expired or
+ * replaced invite removed from the compatibility state can otherwise remain as
+ * a DB-only row and block every later invite mutation.
+ *
+ * Unreferenced DB-only rows are pruned inside the existing atomic transaction.
+ * Rows still referenced by normalized matches are retained as historical data
+ * and hidden only from active invite parity comparisons.
  */
 final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryModuleProjectorInterface
 {
@@ -51,8 +53,8 @@ final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryMod
     public function project(array $snapshot, int $stateRevision, string $stateSha256): array
     {
         $stateSha256 = $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);
-        $prune = $this->pruneDatabaseOnlyRows($snapshot);
-        $repository = $this->repository();
+        $reconciliation = $this->reconcileDatabaseOnlyRows($snapshot, true);
+        $repository = $this->repository($reconciliation['historical_invite_ids']);
         $project = $repository->synchronize($snapshot);
         $audit = $repository->auditParity($snapshot);
 
@@ -63,8 +65,11 @@ final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryMod
             false,
             [
                 'project' => $project,
-                'pruned_invite_rows' => $prune['invite_rows'],
-                'pruned_invite_event_rows' => $prune['invite_event_rows'],
+                'pruned_invite_rows' => $reconciliation['invite_rows'],
+                'pruned_invite_event_rows' => $reconciliation['invite_event_rows'],
+                'preserved_historical_invite_rows' => count(
+                    $reconciliation['historical_invite_ids']
+                ),
             ]
         );
     }
@@ -72,25 +77,43 @@ final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryMod
     public function audit(array $snapshot, int $stateRevision, string $stateSha256): array
     {
         $stateSha256 = $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);
+        $reconciliation = $this->reconcileDatabaseOnlyRows($snapshot, false);
 
         return $this->report(
-            $this->repository()->auditParity($snapshot),
+            $this->repository(
+                $reconciliation['historical_invite_ids']
+            )->auditParity($snapshot),
             $stateRevision,
             $stateSha256,
-            true
+            true,
+            [
+                'preserved_historical_invite_rows' => count(
+                    $reconciliation['historical_invite_ids']
+                ),
+            ]
         );
     }
 
-    private function repository(): RuntimeInviteRepository
+    /**
+     * @param list<string> $historicalInviteIds
+     */
+    private function repository(array $historicalInviteIds): RuntimeInviteRepository
     {
+        $database = $historicalInviteIds === []
+            ? $this->database
+            : new ProductionInviteProjectionDatabaseView(
+                $this->database,
+                $historicalInviteIds
+            );
+
         return new RuntimeInviteRepository(
             $this->projectionConfig,
             $this->router,
-            $this->database
+            $database
         );
     }
 
-    private function pruneDatabaseOnlyRows(array $snapshot): array
+    private function reconcileDatabaseOnlyRows(array $snapshot, bool $deleteUnreferenced): array
     {
         $sourceIds = [];
         foreach ((array)($snapshot['invites'] ?? []) as $invite) {
@@ -106,11 +129,16 @@ final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryMod
 
         $deletedInvites = 0;
         $deletedEvents = 0;
+        $historicalInviteIds = [];
+
         foreach ($this->database->fetchAll(
             'SELECT invite_id FROM mgw_invites ORDER BY invite_id'
         ) as $row) {
             $inviteId = trim((string)($row['invite_id'] ?? ''));
-            if ($inviteId === '' || isset($sourceIds[$inviteId])) {
+            if ($inviteId === '') {
+                throw new RuntimeException('Production invite database contains an invalid ID.');
+            }
+            if (isset($sourceIds[$inviteId])) {
                 continue;
             }
 
@@ -118,10 +146,13 @@ final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryMod
                 'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id',
                 ['invite_id' => $inviteId]
             );
-            if ($relatedMatches !== 0) {
-                throw new RuntimeException(
-                    'Production DB-only invite is still referenced by a normalized match.'
-                );
+            if ($relatedMatches > 0) {
+                $historicalInviteIds[] = $inviteId;
+                continue;
+            }
+
+            if (!$deleteUnreferenced) {
+                continue;
             }
 
             $deletedEvents += $this->database->execute(
@@ -140,9 +171,12 @@ final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryMod
             $deletedInvites++;
         }
 
+        sort($historicalInviteIds, SORT_STRING);
+
         return [
             'invite_rows' => $deletedInvites,
             'invite_event_rows' => $deletedEvents,
+            'historical_invite_ids' => $historicalInviteIds,
         ];
     }
 
@@ -210,5 +244,72 @@ final class ProductionRuntimeInvitesModuleProjector implements RuntimePrimaryMod
         if (!array_is_list($value)) ksort($value, SORT_STRING);
         foreach ($value as $key => $item) $value[$key] = $this->canonicalize($item);
         return $value;
+    }
+}
+
+/**
+ * Read/write view used only by the production invite projector. It delegates
+ * every operation to the real connection, except that match-referenced DB-only
+ * invite rows are omitted from active lifecycle parity enumeration.
+ */
+final class ProductionInviteProjectionDatabaseView implements DatabaseConnectionInterface
+{
+    /** @var array<string, true> */
+    private array $historicalIds = [];
+
+    /**
+     * @param list<string> $historicalInviteIds
+     */
+    public function __construct(
+        private DatabaseConnectionInterface $database,
+        array $historicalInviteIds
+    ) {
+        foreach ($historicalInviteIds as $inviteId) {
+            $inviteId = trim((string)$inviteId);
+            if ($inviteId === '' || isset($this->historicalIds[$inviteId])) {
+                throw new InvalidArgumentException(
+                    'Historical invite IDs must be unique and non-empty.'
+                );
+            }
+            $this->historicalIds[$inviteId] = true;
+        }
+    }
+
+    public function driver(): string
+    {
+        return $this->database->driver();
+    }
+
+    public function execute(string $sql, array $parameters = []): int
+    {
+        return $this->database->execute($sql, $parameters);
+    }
+
+    public function fetchAll(string $sql, array $parameters = []): array
+    {
+        $rows = $this->database->fetchAll($sql, $parameters);
+        if ($parameters !== []
+            || !str_contains($sql, 'FROM mgw_invites ORDER BY invite_id')) {
+            return $rows;
+        }
+
+        return array_values(array_filter(
+            $rows,
+            fn(array $row): bool => !isset(
+                $this->historicalIds[trim((string)($row['invite_id'] ?? ''))]
+            )
+        ));
+    }
+
+    public function fetchValue(string $sql, array $parameters = []): mixed
+    {
+        return $this->database->fetchValue($sql, $parameters);
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        return $this->database->transaction(
+            fn(DatabaseConnectionInterface $database): mixed => $callback($this)
+        );
     }
 }
