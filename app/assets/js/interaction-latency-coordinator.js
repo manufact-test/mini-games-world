@@ -54,7 +54,7 @@ function installResponseCache(){
 
     if (meta?.kind === 'history' && fresh(historyCache, HISTORY_CACHE_TTL_MS)) {
       refreshCacheInBackground(input, init, 'history');
-      return responseFromCache(historyCache);
+      return historyResponseFromCache(historyCache);
     }
 
     if (meta?.kind === 'notifications' && meta.markRead
@@ -73,7 +73,9 @@ function installResponseCache(){
 
 function installImmediateNavigation(){
   document.addEventListener('click', event => {
-    const target = event.target.closest('button, [role="button"]');
+    const origin = event.target;
+    if (!(origin instanceof Element)) return;
+    const target = origin.closest('button, [role="button"]');
     if (!target) return;
 
     if (target.id === 'startSearchBtn') {
@@ -93,20 +95,24 @@ function installImmediateNavigation(){
     }
 
     if (target.matches('[data-create-link-invite]')) {
-      openSheet(`
-        <div class="sheet-head">
-          <div><h2>Подготавливаем приглашение</h2><p>Создаём защищённую ссылку для Telegram.</p></div>
-          <button class="close" data-close-sheet type="button">×</button>
-        </div>
-        <div class="notifications-loading"><div>✈️</div><strong>Подготавливаем отправку…</strong></div>
-      `);
+      queueMicrotask(() => {
+        openSheet(`
+          <div class="sheet-head">
+            <div><h2>Подготавливаем приглашение</h2><p>Создаём защищённую ссылку для Telegram.</p></div>
+            <button class="close" data-close-sheet type="button">×</button>
+          </div>
+          <div class="notifications-loading"><div>✈️</div><strong>Подготавливаем отправку…</strong></div>
+        `);
+      });
     }
   }, true);
 }
 
 function installOptimisticTicTacToe(){
   document.addEventListener('click', event => {
-    const button = event.target.closest('[data-game-cell]');
+    const origin = event.target;
+    if (!(origin instanceof Element)) return;
+    const button = origin.closest('[data-game-cell]');
     if (!button || gameActionBusy) return;
 
     const game = state.activeGame;
@@ -228,8 +234,10 @@ function fresh(cache, ttl){
   return Boolean(cache?.data) && Date.now() - Number(cache.storedAt || 0) <= ttl;
 }
 
-function responseFromCache(cache){
-  return jsonResponse(structuredCloneSafe(cache.data));
+function historyResponseFromCache(cache){
+  const cached = structuredCloneSafe(cache.data);
+  if (cached && typeof cached === 'object') delete cached.user;
+  return jsonResponse(cached);
 }
 
 function structuredCloneSafe(value){
