@@ -5,7 +5,6 @@ import { toast } from '../components/toast.js?v=41';
 import { renderUser, renderBalances } from '../ui.js?v=89';
 
 let profileLoading = false;
-let cachedOrders = null;
 
 export function initProfileScreen(){
   document.addEventListener('mgw:open-profile', openProfile);
@@ -25,14 +24,16 @@ export async function openProfile(){
     ]);
 
     state.user = mergeUserState(state.user, result.user);
-    state.profileStats = result.stats || state.profileStats || {};
+    state.profileStats = result.stats || state.profileStats || null;
     state.session = result.session || state.session;
-    cachedOrders = Array.isArray(ordersResult?.orders) ? ordersResult.orders : cachedOrders;
+    state.profileOrders = Array.isArray(ordersResult?.orders)
+      ? ordersResult.orders
+      : (Array.isArray(state.profileOrders) ? state.profileOrders : []);
 
     renderUser(state.user);
     renderBalances(state.user);
-    renderProfileStats(state.profileStats);
-    renderProfileOverview(state.user || {}, cachedOrders);
+    if (hasProfileStats(state.profileStats)) renderProfileStats(state.profileStats);
+    renderProfileOverview(state.user || {}, state.profileOrders);
   } catch (error) {
     toast(error.message || 'Не удалось обновить профиль.');
   } finally {
@@ -46,8 +47,11 @@ function showProfileImmediately(){
     renderUser(state.user);
     renderBalances(state.user);
   }
-  renderProfileStats(state.profileStats || {});
-  renderProfileOverview(state.user || {}, cachedOrders);
+  if (hasProfileStats(state.profileStats)) renderProfileStats(state.profileStats);
+  renderProfileOverview(
+    state.user || {},
+    Array.isArray(state.profileOrders) ? state.profileOrders : []
+  );
   showScreen('profile');
 }
 
@@ -70,18 +74,25 @@ function setProfileBusy(busy){
   screen.setAttribute('aria-busy', busy ? 'true' : 'false');
 }
 
-function renderProfileStats(stats = {}){
+function hasProfileStats(stats){
+  if (!stats || typeof stats !== 'object') return false;
+  return ['games_played', 'wins', 'losses', 'draws']
+    .every(key => Number.isFinite(Number(stats[key])));
+}
+
+function renderProfileStats(stats){
+  if (!hasProfileStats(stats)) return;
   const el = document.getElementById('profileStats');
   if (!el) return;
   el.innerHTML = `
-    <div class="stat"><div class="num">${stats.games_played ?? 0}</div><div class="label">игр сыграно</div></div>
-    <div class="stat"><div class="num">${stats.wins ?? 0}</div><div class="label">побед</div></div>
-    <div class="stat"><div class="num">${stats.losses ?? 0}</div><div class="label">поражений</div></div>
-    <div class="stat"><div class="num">${stats.draws ?? 0}</div><div class="label">ничьих</div></div>
+    <div class="stat"><div class="num">${Number(stats.games_played)}</div><div class="label">игр сыграно</div></div>
+    <div class="stat"><div class="num">${Number(stats.wins)}</div><div class="label">побед</div></div>
+    <div class="stat"><div class="num">${Number(stats.losses)}</div><div class="label">поражений</div></div>
+    <div class="stat"><div class="num">${Number(stats.draws)}</div><div class="label">ничьих</div></div>
   `;
 }
 
-function renderProfileOverview(user = {}, orders = null){
+function renderProfileOverview(user = {}, orders = []){
   const el = ensureProfileOverview();
   if (!el) return;
 

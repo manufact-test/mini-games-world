@@ -1,4 +1,5 @@
-window.__MGW_BUILD__ = 'v91-mvp14-residual-ui-game-race-hotfix';
+window.__MGW_BUILD__ = 'v92-mvp14-first-interaction-readiness-hotfix';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
@@ -23,7 +24,7 @@ import { initNotificationsScreen } from './screens/notifications-screen.js?v=85'
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
-import { initProfileScreen } from './screens/profile-screen.js?v=89';
+import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=85';
@@ -42,6 +43,7 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
+initFirstInteractionReadinessEarly();
 initRequestGuard();
 initResidualUiGameRaceFixEarly();
 initInteractionLatencyCoordinator();
@@ -91,6 +93,17 @@ async function boot(){
     showHomeActivity();
     renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
+
+    /* Keep the common preloader visible until every first-click screen has data. */
+    const firstInteraction = await warmFirstInteractionData();
+    const firstInteractionReady = firstInteraction.profileReady
+      && firstInteraction.historyReady
+      && firstInteraction.notificationsReady
+      && firstInteraction.opponentsReady;
+    if (!firstInteractionReady) {
+      throw new Error('Не удалось подготовить данные интерфейса. Откройте приложение снова.');
+    }
+    window.__MGW_FIRST_INTERACTION_READY__ = firstInteraction;
     dispatchAppReady();
 
     if (isSessionLocked(state.session)) {
