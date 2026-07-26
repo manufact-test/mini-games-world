@@ -202,19 +202,20 @@ final class ProductionPrimaryInviteResidualRecoveryService
         foreach ($databaseNotifications as $row) {
             $id = trim((string)($row['notification_id'] ?? ''));
             $event = trim((string)($row['event_key'] ?? ''));
-            if ($id === '' || $event === '' || isset($dbNotificationIds[$id])) {
+            $legacyUserId = trim((string)($row['legacy_user_id'] ?? ''));
+            if ($id === '' || $event === '' || $legacyUserId === '' || isset($dbNotificationIds[$id])) {
                 $blockers[] = 'Normalized notification rows contain invalid or duplicate identity.';
                 continue;
             }
             $dbNotificationIds[$id] = true;
-            $eventScope = trim((string)($row['recipient_ref'] ?? '')) . '|' . $event;
+            $eventScope = $legacyUserId . '|' . $event;
             if (isset($dbNotificationEvents[$eventScope])) {
                 $blockers[] = 'Normalized notifications contain duplicate recipient event identity.';
             }
             $dbNotificationEvents[$eventScope] = true;
 
             $idPresent = isset($stateNotificationIds[$id]);
-            $eventPresent = isset($stateNotificationEvents[$event]);
+            $eventPresent = isset($stateNotificationEvents[$eventScope]);
             if ($idPresent xor $eventPresent) {
                 $blockers[] = 'Normalized notification identity partially conflicts with DB-primary state.';
             } elseif (!$idPresent && !$eventPresent) {
@@ -443,13 +444,15 @@ final class ProductionPrimaryInviteResidualRecoveryService
                 continue;
             }
             $id = trim((string)($row['id'] ?? ''));
+            $userId = trim((string)($row['user_id'] ?? ''));
             $event = trim((string)($row['event_key'] ?? ''));
-            if ($id === '' || $event === '' || isset($ids[$id]) || isset($events[$event])) {
+            $eventScope = $userId . '|' . $event;
+            if ($id === '' || $userId === '' || $event === '' || isset($ids[$id]) || isset($events[$eventScope])) {
                 $blockers[] = 'DB-primary notifications contain invalid or duplicate identity.';
                 continue;
             }
             $ids[$id] = true;
-            $events[$event] = true;
+            $events[$eventScope] = true;
         }
         return [$ids, $events];
     }
