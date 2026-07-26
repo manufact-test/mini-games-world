@@ -52,7 +52,7 @@ final class InviteRegressionFakeDatabase implements DatabaseConnectionInterface
             return array_values($this->invites);
         }
         if (str_contains($sql, 'SELECT * FROM mgw_invites')) {
-            return [];
+            return array_values($this->invites);
         }
         throw new RuntimeException('Unexpected fetchAll SQL in invite regression fake: ' . $sql);
     }
@@ -91,16 +91,6 @@ $assertContains = static function (string $needle, string $haystack, string $mes
     if (!str_contains($haystack, $needle)) {
         throw new RuntimeException($message . ': missing ' . $needle);
     }
-};
-$assertThrows = static function (callable $callback, string $needle, string $message) use (&$assertions): void {
-    $assertions++;
-    try {
-        $callback();
-    } catch (Throwable $error) {
-        if (str_contains($error->getMessage(), $needle)) return;
-        throw new RuntimeException($message . ': unexpected error ' . $error->getMessage());
-    }
-    throw new RuntimeException($message . ': no exception was thrown');
 };
 
 $config = [
@@ -143,14 +133,17 @@ $assertSame(2, $report['summary']['pruned_invite_event_rows'], 'Related invite e
 $assertSame(0, $database->inviteCount(), 'DB-only invite must be absent after projection');
 $assertSame(true, $projector->audit($snapshot, 63, $stateSha)['ok'], 'Read-only invite audit must pass after pruning');
 
-$blockedDatabase = new InviteRegressionFakeDatabase(['referenced-invite'], 1, 0);
-$blockedProjector = new ProductionRuntimeInvitesModuleProjector($config, $blockedDatabase);
-$assertThrows(
-    static fn() => $blockedProjector->project($snapshot, 63, $stateSha),
-    'still referenced by a normalized match',
-    'Invite pruning must fail closed for match-referenced rows'
-);
-$assertSame(1, $blockedDatabase->inviteCount(), 'Referenced invite must remain untouched');
+$historicalDatabase = new InviteRegressionFakeDatabase(['referenced-invite'], 1, 0);
+$historicalProjector = new ProductionRuntimeInvitesModuleProjector($config, $historicalDatabase);
+$historicalReport = $historicalProjector->project($snapshot, 63, $stateSha);
+$historicalAudit = $historicalProjector->audit($snapshot, 63, $stateSha);
+
+$assertSame(true, $historicalReport['ok'], 'Match-referenced historical invite must not block active projection');
+$assertSame(1, $historicalReport['summary']['preserved_historical_invite_rows'], 'One historical invite must be preserved');
+$assertSame(0, $historicalReport['summary']['pruned_invite_rows'], 'Historical invite must not be deleted');
+$assertSame(1, $historicalDatabase->inviteCount(), 'Historical invite must remain in normalized storage');
+$assertSame(true, $historicalAudit['ok'], 'Historical invite must not block read-only active parity');
+$assertSame(1, $historicalAudit['summary']['preserved_historical_invite_rows'], 'Audit must report preserved historical invite');
 
 $ui = file_get_contents($root . '/../app/assets/js/ui.js') ?: '';
 $profile = file_get_contents($root . '/../app/assets/js/screens/profile-screen.js') ?: '';
@@ -158,6 +151,7 @@ $main = file_get_contents($root . '/../app/assets/js/main.js') ?: '';
 $index = file_get_contents($root . '/../app/index.html') ?: '';
 $css = file_get_contents($root . '/../app/assets/css/main.css') ?: '';
 $factory = file_get_contents($root . '/runtime/ProductionPrimaryProjectorFactory.php') ?: '';
+$inviteProjector = file_get_contents($root . '/runtime/ProductionRuntimeInvitesModuleProjector.php') ?: '';
 
 $assertContains('currentTelegramPhotoUrl(ownerId)', $ui, 'Avatar renderer must use current Telegram photo');
 $assertContains('explicitPhotoUrl || telegramPhotoUrl || existingPhotoUrl', $ui, 'Avatar renderer must preserve a known photo');
@@ -171,5 +165,7 @@ $assertContains('main.js?v=89', $index, 'Entrypoint must cache-bust hotfix JavaS
 $assertContains('.overlay{transition-duration:.08s}', $css, 'Sheet overlay must react faster');
 $assertContains('.sheet{transition-duration:.1s}', $css, 'Sheet panel must react faster');
 $assertContains('ProductionRuntimeInvitesModuleProjector', $factory, 'Production factory must install exact invite lifecycle projector');
+$assertContains('ProductionInviteProjectionDatabaseView', $inviteProjector, 'Invite projector must isolate historical rows from active parity');
+$assertContains('preserved_historical_invite_rows', $inviteProjector, 'Invite projector must report historical rows');
 
 fwrite(STDOUT, "ProductionAvatarInviteRegressionHotfixTest: {$assertions} assertions passed\n");
