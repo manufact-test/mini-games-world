@@ -156,7 +156,10 @@ $source = file_get_contents(
 
 $assertTrue(
     is_string($source)
-        && str_contains($source, "$eventScope = $legacyUserId . '|' . $event;")
+        && str_contains(
+            $source,
+            "\$eventScope = \$legacyUserId . '|' . \$event;"
+        )
         && str_contains(
             $source,
             '$eventPresent = isset($stateNotificationEvents[$eventScope]);'
