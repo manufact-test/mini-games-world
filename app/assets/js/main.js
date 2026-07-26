@@ -1,6 +1,6 @@
-window.__MGW_BUILD__ = 'v90-mvp14-complete-interaction-latency-fix';
+window.__MGW_BUILD__ = 'v91-mvp14-residual-ui-game-race-hotfix';
 import { initRequestGuard } from './api/request-guard.js?v=88';
-import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
+import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=91';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
