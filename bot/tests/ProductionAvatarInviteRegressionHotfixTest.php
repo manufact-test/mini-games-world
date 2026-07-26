@@ -157,11 +157,11 @@ $assertContains('currentTelegramPhotoUrl(ownerId)', $ui, 'Avatar renderer must u
 $assertContains('explicitPhotoUrl || telegramPhotoUrl || existingPhotoUrl', $ui, 'Avatar renderer must preserve a known photo');
 $assertContains('mergeUserState(state.user, result.user)', $profile, 'Profile refresh must merge partial user payloads');
 $assertContains("../ui.js?v=89", $profile, 'Profile must import the hotfix avatar renderer');
-$assertContains("v90-mvp14-complete-interaction-latency-fix", $main, 'Main module must publish the newer build without losing avatar fix');
+$assertContains("v91-mvp14-residual-ui-game-race-hotfix", $main, 'Main module must publish the newer build without losing avatar fix');
 $assertContains("./ui.js?v=89", $main, 'Main module must preserve avatar renderer cache busting');
 $assertContains("./screens/profile-screen.js?v=89", $main, 'Main module must preserve profile screen cache busting');
-$assertContains('main.css?v=90', $index, 'Entrypoint must publish current CSS');
-$assertContains('main.js?v=90', $index, 'Entrypoint must publish current JavaScript');
+$assertContains('main.css?v=91', $index, 'Entrypoint must publish current CSS');
+$assertContains('main.js?v=91', $index, 'Entrypoint must publish current JavaScript');
 $assertContains('transition:none !important', $css, 'Current sheet fix must be at least as immediate as the prior transition');
 $assertContains('animation:none !important', $css, 'Sheet must not show an intermediate animation frame');
 $assertContains('ProductionRuntimeInvitesModuleProjector', $factory, 'Production factory must install exact invite lifecycle projector');

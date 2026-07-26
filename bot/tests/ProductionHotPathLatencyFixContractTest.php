@@ -6,16 +6,12 @@ $assertions = 0;
 
 $assertTrue = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
-    if (!$condition) {
-        throw new RuntimeException($message);
-    }
+    if (!$condition) throw new RuntimeException($message);
 };
 
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
-    if (!is_string($content)) {
-        throw new RuntimeException('Cannot read contract source: ' . $path);
-    }
+    if (!is_string($content)) throw new RuntimeException('Cannot read contract source: ' . $path);
     return $content;
 };
 
@@ -25,6 +21,7 @@ $projector = $read('bot/runtime/RuntimePrimaryAllModuleProjector.php');
 $profile = $read('app/assets/js/screens/profile-screen.js');
 $requestGuard = $read('app/assets/js/api/request-guard.js');
 $coordinator = $read('app/assets/js/interaction-latency-coordinator.js');
+$residual = $read('app/assets/js/residual-ui-game-race-fix.js');
 $mainCss = $read('app/assets/css/main.css');
 $main = $read('app/assets/js/main.js');
 $index = $read('app/index.html');
@@ -32,10 +29,7 @@ $index = $read('app/index.html');
 $assertTrue(
     str_contains($atomic, 'baseline_full_module_audit_executed')
         && str_contains($atomic, "'baseline_full_module_audit_executed' => false")
-        && !preg_match(
-            '/private function captureLockedBaseline\([^}]+auditor->auditOnly/s',
-            $atomic
-        ),
+        && !preg_match('/private function captureLockedBaseline\([^}]+auditor->auditOnly/s', $atomic),
     'Locked baseline must verify identity and queue without a full all-module audit.'
 );
 
@@ -101,25 +95,63 @@ $assertTrue(
         && str_contains($coordinator, 'APP_CONFIG.gameIntervalMs = 450;')
         && str_contains($coordinator, "target.id === 'startSearchBtn'")
         && str_contains($coordinator, "target.id === 'cancelSearch'")
-        && str_contains($coordinator, 'showScreen(\'search\')')
-        && str_contains($coordinator, 'showScreen(\'home\')'),
-    'Search start and cancellation must react in the same frame as the tap.'
+        && str_contains($coordinator, "showScreen('search')")
+        && str_contains($coordinator, "showScreen('home')"),
+    'The proven v90 coordinator must retain immediate search navigation.'
 );
 
 $assertTrue(
-    str_contains($coordinator, 'prefetchHistory()')
-        && str_contains($coordinator, 'historyCache')
-        && str_contains($coordinator, 'notificationsCache')
-        && str_contains($coordinator, 'refreshCacheInBackground'),
-    'History and notifications must use prefetched stale-while-revalidate data.'
+    str_contains($residual, "target.id === 'balanceHistoryBtn'")
+        && str_contains($residual, "target.id === 'matchHistoryBtn'")
+        && str_contains($residual, "target.id === 'notificationsOpen'")
+        && str_contains($residual, 'renderBalanceHistorySheet')
+        && str_contains($residual, 'renderNotificationsSheet')
+        && !str_contains($residual, 'Загружаем историю')
+        && !str_contains($residual, 'Загружаем…'),
+    'Cached history and notifications must render directly without a loading frame.'
 );
 
 $assertTrue(
-    str_contains($coordinator, 'submitOptimisticTicTacToe')
-        && str_contains($coordinator, "button.textContent = symbol === 'X' ? '✕' : '○'")
-        && str_contains($coordinator, 'state.timers.game = clearTimer(state.timers.game)')
-        && str_contains($coordinator, 'startGamePolling(game.id)'),
-    'Tic-tac-toe must render the local move immediately and reconcile with the server.'
+    str_contains($residual, 'gameStateInFlightByKey')
+        && str_contains($residual, 'gameActionPromiseByKey')
+        && str_contains($residual, 'latestGameResultByKey')
+        && str_contains($residual, 'generation !== generationFor(key)')
+        && str_contains($residual, 'gameStateInFlightByKey.get(key)'),
+    'Game-state requests must be serialized per exact game/search key and reject stale responses.'
+);
+
+$assertTrue(
+    str_contains($residual, 'handleTicTacToeCell')
+        && str_contains($residual, 'event.stopImmediatePropagation();')
+        && str_contains($residual, "board[cell] === '-'")
+        && str_contains($residual, 'renderAuthoritativeTicTacToe')
+        && str_contains($residual, "button.textContent = symbol === 'X' ? '✕' : '○'"),
+    'Tic-tac-toe must have one early click owner and authoritative reconciliation.'
+);
+
+$assertTrue(
+    str_contains($residual, 'createLinkInviteImmediately')
+        && str_contains($residual, 'finishInviteImmediately')
+        && str_contains($residual, "inviteRequest('confirm_shared'")
+        && str_contains($residual, "inviteRequest('discard_draft'")
+        && !str_contains($residual, 'Подготавливаем приглашение')
+        && !str_contains($residual, 'Ждём результата отправки'),
+    'Link sharing and cancellation must not render the old waiting placeholders.'
+);
+
+$earlyPosition = strpos($main, 'initResidualUiGameRaceFixEarly();');
+$coordinatorPosition = strpos($main, 'initInteractionLatencyCoordinator();');
+$afterPosition = strpos($main, 'initResidualUiGameRaceFixAfter();');
+$assertTrue(
+    str_contains($main, "v91-mvp14-residual-ui-game-race-hotfix")
+        && str_contains($main, "residual-ui-game-race-fix.js?v=91")
+        && str_contains($main, "interaction-latency-coordinator.js?v=90")
+        && $earlyPosition !== false
+        && $coordinatorPosition !== false
+        && $afterPosition !== false
+        && $earlyPosition < $coordinatorPosition
+        && $coordinatorPosition < $afterPosition,
+    'The isolated v91 layer must register before legacy click handlers and replace game polling after v90 setup.'
 );
 
 $assertTrue(
@@ -130,24 +162,10 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($main, "v90-mvp14-complete-interaction-latency-fix")
-        && str_contains($main, "interaction-latency-coordinator.js?v=90")
-        && str_contains($main, 'initInteractionLatencyCoordinator();')
-        && str_contains($main, "profile-screen.js?v=89")
-        && str_contains($main, "ui.js?v=89"),
-    'Main module graph must publish and initialize the complete latency coordinator.'
+    str_contains($index, 'data-build="v91-mvp14-residual-ui-game-race-hotfix"')
+        && str_contains($index, 'main.css?v=91')
+        && str_contains($index, 'main.js?v=91'),
+    'Telegram WebView entrypoint must bust the v90 module and stylesheet cache.'
 );
 
-$assertTrue(
-    str_contains($index, 'data-build="v90-mvp14-complete-interaction-latency-fix"')
-        && str_contains($index, 'main.css?v=90')
-        && str_contains($index, 'main.js?v=90'),
-    'Telegram WebView entrypoint must bust the previous module and stylesheet cache.'
-);
-
-fwrite(
-    STDOUT,
-    'ProductionHotPathLatencyFixContractTest: '
-    . $assertions
-    . " assertions passed\n"
-);
+fwrite(STDOUT, 'ProductionHotPathLatencyFixContractTest: ' . $assertions . " assertions passed\n");
