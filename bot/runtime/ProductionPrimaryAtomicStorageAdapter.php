@@ -236,48 +236,109 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
         ];
     }
 
+    /**
+     * Polling may advance only the global cleanup timestamp and/or queue
+     * heartbeat timestamps. Those fields are advisory and must not create a
+     * DB-primary revision or nine-module projection when no gameplay, queue
+     * membership, account, session or economy state changed.
+     */
     private function discardCleanupTimestampOnlyChange(array &$after, array $before): bool
     {
-        $beforeHasTimestamp = isset($before['system'])
-            && is_array($before['system'])
-            && array_key_exists('game_cleanup_at', $before['system']);
-        $afterHasTimestamp = isset($after['system'])
-            && is_array($after['system'])
-            && array_key_exists('game_cleanup_at', $after['system']);
-        $beforeTimestamp = $beforeHasTimestamp
-            ? $before['system']['game_cleanup_at']
-            : null;
-        $afterTimestamp = $afterHasTimestamp
-            ? $after['system']['game_cleanup_at']
-            : null;
-
-        if ($beforeHasTimestamp === $afterHasTimestamp
-            && $beforeTimestamp === $afterTimestamp) {
-            return false;
-        }
-
         $beforeComparable = $before;
         $afterComparable = $after;
+        $volatileChanged = false;
+
+        $beforeCleanup = $this->cleanupTimestamp($beforeComparable);
+        $afterCleanup = $this->cleanupTimestamp($afterComparable);
+        if ($beforeCleanup !== $afterCleanup) {
+            $volatileChanged = true;
+        }
         $this->removeCleanupTimestamp($beforeComparable);
         $this->removeCleanupTimestamp($afterComparable);
 
-        if (!hash_equals(
+        $beforeQueue = is_array($beforeComparable['queue'] ?? null)
+            ? array_values($beforeComparable['queue'])
+            : [];
+        $afterQueue = is_array($afterComparable['queue'] ?? null)
+            ? array_values($afterComparable['queue'])
+            : [];
+
+        foreach ($beforeQueue as $index => &$item) {
+            if (!is_array($item)) continue;
+            $afterItem = $afterQueue[$index] ?? null;
+            if (is_array($afterItem)
+                && ($item['updated_at'] ?? null) !== ($afterItem['updated_at'] ?? null)) {
+                $volatileChanged = true;
+            }
+            unset($item['updated_at']);
+        }
+        unset($item);
+        foreach ($afterQueue as &$item) {
+            if (is_array($item)) unset($item['updated_at']);
+        }
+        unset($item);
+
+        if ($beforeQueue !== [] || array_key_exists('queue', $beforeComparable)) {
+            $beforeComparable['queue'] = $beforeQueue;
+        }
+        if ($afterQueue !== [] || array_key_exists('queue', $afterComparable)) {
+            $afterComparable['queue'] = $afterQueue;
+        }
+
+        if (!$volatileChanged || !hash_equals(
             $this->canonicalJson($beforeComparable),
             $this->canonicalJson($afterComparable)
         )) {
             return false;
         }
 
-        if ($beforeHasTimestamp) {
+        $this->restoreCleanupTimestamp($after, $before);
+        $this->restoreQueueHeartbeats($after, $before);
+        return true;
+    }
+
+    private function cleanupTimestamp(array $snapshot): mixed
+    {
+        return isset($snapshot['system'])
+            && is_array($snapshot['system'])
+            && array_key_exists('game_cleanup_at', $snapshot['system'])
+                ? $snapshot['system']['game_cleanup_at']
+                : null;
+    }
+
+    private function restoreCleanupTimestamp(array &$after, array $before): void
+    {
+        $hasBefore = isset($before['system'])
+            && is_array($before['system'])
+            && array_key_exists('game_cleanup_at', $before['system']);
+        if ($hasBefore) {
             if (!isset($after['system']) || !is_array($after['system'])) {
                 $after['system'] = [];
             }
-            $after['system']['game_cleanup_at'] = $beforeTimestamp;
-        } else {
-            $this->removeCleanupTimestamp($after);
+            $after['system']['game_cleanup_at'] = $before['system']['game_cleanup_at'];
+            return;
         }
+        $this->removeCleanupTimestamp($after);
+    }
 
-        return true;
+    private function restoreQueueHeartbeats(array &$after, array $before): void
+    {
+        if (!isset($after['queue']) || !is_array($after['queue'])) return;
+        $beforeQueue = is_array($before['queue'] ?? null)
+            ? array_values($before['queue'])
+            : [];
+        $after['queue'] = array_values($after['queue']);
+
+        foreach ($after['queue'] as $index => &$item) {
+            if (!is_array($item)) continue;
+            $beforeItem = $beforeQueue[$index] ?? null;
+            if (is_array($beforeItem) && array_key_exists('updated_at', $beforeItem)) {
+                $item['updated_at'] = $beforeItem['updated_at'];
+            } else {
+                unset($item['updated_at']);
+            }
+        }
+        unset($item);
     }
 
     private function removeCleanupTimestamp(array &$snapshot): void
