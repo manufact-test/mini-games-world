@@ -322,8 +322,11 @@ final class ProductionPrimaryInviteResidualRecoveryService
 
             $matchCount = (int)$database->fetchValue(
                 'SELECT COUNT(*) FROM mgw_matches
-                 WHERE invite_id = :invite_id OR source_match_id = :invite_id',
-                ['invite_id' => $inviteId]
+                 WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
+                [
+                    'invite_id' => $inviteId,
+                    'source_match_id' => $inviteId,
+                ]
             );
             if ($matchCount !== 0) $blockers[] = 'DB-only invite is referenced by a match.';
 
