@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
-import { renderUser, renderBalances } from '../ui.js?v=88';
+import { renderUser, renderBalances } from '../ui.js?v=89';
 
 let profileLoading = false;
 let cachedOrders = null;
@@ -24,7 +24,7 @@ export async function openProfile(){
       api.shopOrders().catch(() => null),
     ]);
 
-    state.user = result.user || state.user;
+    state.user = mergeUserState(state.user, result.user);
     state.profileStats = result.stats || state.profileStats || {};
     state.session = result.session || state.session;
     cachedOrders = Array.isArray(ordersResult?.orders) ? ordersResult.orders : cachedOrders;
@@ -49,6 +49,18 @@ function showProfileImmediately(){
   renderProfileStats(state.profileStats || {});
   renderProfileOverview(state.user || {}, cachedOrders);
   showScreen('profile');
+}
+
+function mergeUserState(currentUser, incomingUser){
+  const current = currentUser && typeof currentUser === 'object' ? currentUser : {};
+  const incoming = incomingUser && typeof incomingUser === 'object' ? incomingUser : {};
+  const merged = { ...current, ...incoming };
+
+  const incomingPhoto = String(incoming.photo_url || '').trim();
+  const currentPhoto = String(current.photo_url || '').trim();
+  if (!incomingPhoto && currentPhoto) merged.photo_url = currentPhoto;
+
+  return merged;
 }
 
 function setProfileBusy(busy){

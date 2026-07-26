@@ -64,7 +64,7 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($profile, "../ui.js?v=88")
+    str_contains($profile, "../ui.js?v=89")
         && !str_contains($profile, "../ui.js?v=27"),
     'Profile must use the current avatar renderer instead of stale Telegram WebView cache.'
 );
@@ -79,17 +79,17 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($main, "v88-mvp14-production-hot-path-latency-fix")
+    str_contains($main, "v89-mvp14-avatar-invite-regression-hotfix")
         && str_contains($main, "request-guard.js?v=88")
-        && str_contains($main, "profile-screen.js?v=88")
-        && str_contains($main, "ui.js?v=88"),
-    'Main module graph must publish one coherent latency-hotfix version.'
+        && str_contains($main, "profile-screen.js?v=89")
+        && str_contains($main, "ui.js?v=89"),
+    'Main module graph must preserve latency fixes while publishing the newer hotfix version.'
 );
 
 $assertTrue(
-    str_contains($index, 'data-build="v88-mvp14-production-hot-path-latency-fix"')
-        && str_contains($index, 'main.js?v=88'),
-    'Telegram WebView entrypoint must bust the old module cache.'
+    str_contains($index, 'data-build="v89-mvp14-avatar-invite-regression-hotfix"')
+        && str_contains($index, 'main.js?v=89'),
+    'Telegram WebView entrypoint must bust the previous module cache.'
 );
 
 fwrite(

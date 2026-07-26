@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/ProductionRuntimeAccountsModuleProjector.php';
+require_once __DIR__ . '/ProductionRuntimeInvitesModuleProjector.php';
 
 final class ProductionPrimaryProjectorFactory
 {
@@ -64,8 +65,15 @@ final class ProductionPrimaryProjectorFactory
             $this->database
         ))->create();
 
-        return $projector->replaceProjector(
-            new ProductionRuntimeAccountsModuleProjector($this->database)
-        );
+        return $projector
+            ->replaceProjector(
+                new ProductionRuntimeAccountsModuleProjector($this->database)
+            )
+            ->replaceProjector(
+                new ProductionRuntimeInvitesModuleProjector(
+                    $this->config,
+                    $this->database
+                )
+            );
     }
 }
