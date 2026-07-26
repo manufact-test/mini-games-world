@@ -62,6 +62,9 @@
 .history-tab-panel{display:none}
 .history-tab-panel.active{display:block}
 
-/* v89: sheets must react immediately while retaining a short visual transition. */
-.overlay{transition-duration:.08s}
-.sheet{transition-duration:.1s}
+/* v90: navigation and sheets react in the same frame as the tap. */
+.overlay,
+.sheet{
+  transition:none !important;
+  animation:none !important;
+}
