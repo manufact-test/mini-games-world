@@ -1,32 +1,61 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
-import { toast } from '../components/toast.js?v=27';
-import { renderUser, renderBalances } from '../ui.js?v=27';
+import { toast } from '../components/toast.js?v=41';
+import { renderUser, renderBalances } from '../ui.js?v=88';
+
+let profileLoading = false;
+let cachedOrders = null;
 
 export function initProfileScreen(){
   document.addEventListener('mgw:open-profile', openProfile);
 }
 
 export async function openProfile(){
+  showProfileImmediately();
+  if (profileLoading) return;
+
+  profileLoading = true;
+  setProfileBusy(true);
+
   try {
     const [result, ordersResult] = await Promise.all([
       api.profile(),
       api.shopOrders().catch(() => null),
     ]);
-    state.user = result.user;
+
+    state.user = result.user || state.user;
+    state.profileStats = result.stats || state.profileStats || {};
     state.session = result.session || state.session;
+    cachedOrders = Array.isArray(ordersResult?.orders) ? ordersResult.orders : cachedOrders;
+
     renderUser(state.user);
     renderBalances(state.user);
-    renderProfileStats(result.stats);
-    renderProfileOverview(
-      state.user || {},
-      Array.isArray(ordersResult?.orders) ? ordersResult.orders : null,
-    );
-    showScreen('profile');
+    renderProfileStats(state.profileStats);
+    renderProfileOverview(state.user || {}, cachedOrders);
   } catch (error) {
-    toast(error.message);
+    toast(error.message || 'Не удалось обновить профиль.');
+  } finally {
+    profileLoading = false;
+    setProfileBusy(false);
   }
+}
+
+function showProfileImmediately(){
+  if (state.user) {
+    renderUser(state.user);
+    renderBalances(state.user);
+  }
+  renderProfileStats(state.profileStats || {});
+  renderProfileOverview(state.user || {}, cachedOrders);
+  showScreen('profile');
+}
+
+function setProfileBusy(busy){
+  const screen = document.getElementById('screen-profile');
+  if (!screen) return;
+  screen.classList.toggle('is-loading', Boolean(busy));
+  screen.setAttribute('aria-busy', busy ? 'true' : 'false');
 }
 
 function renderProfileStats(stats = {}){

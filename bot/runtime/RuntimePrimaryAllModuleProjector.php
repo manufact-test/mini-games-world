@@ -64,20 +64,73 @@ final class RuntimePrimaryAllModuleProjector implements RuntimePrimaryProjection
     {
         $stateSha256 = $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);
         $projectReports = [];
+        $auditReports = [];
+        $moduleFingerprints = [];
+        $mutatedModules = [];
+        $unchangedModules = [];
 
         foreach (self::MODULES as $module) {
-            $report = $this->projectors[$module]->project($snapshot, $stateRevision, $stateSha256);
-            $projectReports[$module] = $this->assertModuleReport(
-                $report,
+            $candidate = $this->projectors[$module]->audit(
+                $snapshot,
+                $stateRevision,
+                $stateSha256
+            );
+
+            if ($this->auditCandidateIsCurrent(
+                $candidate,
                 $module,
                 $stateRevision,
-                $stateSha256,
-                false
-            );
+                $stateSha256
+            )) {
+                $auditReport = $this->assertModuleReport(
+                    $candidate,
+                    $module,
+                    $stateRevision,
+                    $stateSha256,
+                    true
+                );
+                $projectReports[$module] = $auditReport + [
+                    'action' => 'projection_skipped_in_parity',
+                ];
+                $unchangedModules[] = $module;
+            } else {
+                $projectReport = $this->assertModuleReport(
+                    $this->projectors[$module]->project(
+                        $snapshot,
+                        $stateRevision,
+                        $stateSha256
+                    ),
+                    $module,
+                    $stateRevision,
+                    $stateSha256,
+                    false
+                );
+                $projectReports[$module] = $projectReport + [
+                    'action' => 'projection_applied',
+                ];
+                $auditReport = $this->assertModuleReport(
+                    $this->projectors[$module]->audit(
+                        $snapshot,
+                        $stateRevision,
+                        $stateSha256
+                    ),
+                    $module,
+                    $stateRevision,
+                    $stateSha256,
+                    true
+                );
+                $mutatedModules[] = $module;
+            }
+
+            $auditReports[$module] = $auditReport;
+            $moduleFingerprints[$module] = [
+                'source_fingerprint' => $auditReport['source_fingerprint'],
+                'database_fingerprint' => $auditReport['database_fingerprint'],
+                'report_fingerprint' => $auditReport['report_fingerprint'],
+            ];
             $this->assertSnapshot($snapshot, $stateRevision, $stateSha256);
         }
 
-        $audit = $this->auditOnly($snapshot, $stateRevision, $stateSha256);
         return [
             'ok' => true,
             'parity_ok' => true,
@@ -85,10 +138,12 @@ final class RuntimePrimaryAllModuleProjector implements RuntimePrimaryProjection
             'state_revision' => $stateRevision,
             'state_sha256' => $stateSha256,
             'projected_modules' => self::MODULES,
+            'mutated_modules' => $mutatedModules,
+            'unchanged_modules' => $unchangedModules,
             'project_reports' => $projectReports,
-            'audit_reports' => $audit['audit_reports'],
-            'module_fingerprints' => $audit['module_fingerprints'],
-            'all_module_fingerprint' => $audit['all_module_fingerprint'],
+            'audit_reports' => $auditReports,
+            'module_fingerprints' => $moduleFingerprints,
+            'all_module_fingerprint' => hash('sha256', $this->canonicalJson($moduleFingerprints)),
             'audit_completed' => true,
             'read_only' => false,
             'production_changed' => false,
@@ -134,6 +189,50 @@ final class RuntimePrimaryAllModuleProjector implements RuntimePrimaryProjection
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
+    }
+
+    private function auditCandidateIsCurrent(
+        array $report,
+        string $module,
+        int $stateRevision,
+        string $stateSha256
+    ): bool {
+        if (strtolower(trim((string)($report['module'] ?? ''))) !== $module) {
+            throw new RuntimeException('Runtime module audit returned the wrong module: ' . $module . '.');
+        }
+        if ((int)($report['state_revision'] ?? 0) !== $stateRevision) {
+            throw new RuntimeException('Runtime module audit returned the wrong revision: ' . $module . '.');
+        }
+        if (!hash_equals(
+            $stateSha256,
+            strtolower(trim((string)($report['state_sha256'] ?? '')))
+        )) {
+            throw new RuntimeException('Runtime module audit returned the wrong state fingerprint: ' . $module . '.');
+        }
+        if (($report['read_only'] ?? false) !== true) {
+            throw new RuntimeException('Runtime module audit is not read-only: ' . $module . '.');
+        }
+
+        $sourceFingerprint = strtolower(trim((string)($report['source_fingerprint'] ?? '')));
+        $databaseFingerprint = strtolower(trim((string)($report['database_fingerprint'] ?? '')));
+        foreach ([
+            'source_fingerprint' => $sourceFingerprint,
+            'database_fingerprint' => $databaseFingerprint,
+        ] as $label => $fingerprint) {
+            if (preg_match('/^[a-f0-9]{64}$/', $fingerprint) !== 1) {
+                throw new RuntimeException('Runtime module report has an invalid ' . $label . ': ' . $module . '.');
+            }
+        }
+
+        $blockers = array_values(array_filter(
+            array_map('strval', (array)($report['blockers'] ?? [])),
+            static fn(string $value): bool => trim($value) !== ''
+        ));
+
+        return ($report['ok'] ?? false) === true
+            && ($report['parity'] ?? false) === true
+            && hash_equals($sourceFingerprint, $databaseFingerprint)
+            && $blockers === [];
     }
 
     private function assertSnapshot(array $snapshot, int $stateRevision, string $stateSha256): string

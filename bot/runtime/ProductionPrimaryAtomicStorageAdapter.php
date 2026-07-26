@@ -38,10 +38,21 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             DatabaseConnectionInterface $database
         ) use ($callback): mixed {
             $baseline = [];
+            $housekeepingOnlyChangeDiscarded = false;
             $result = $this->stateStorage->transaction(
-                function (array &$data) use ($callback, &$baseline): mixed {
+                function (array &$data) use (
+                    $callback,
+                    &$baseline,
+                    &$housekeepingOnlyChangeDiscarded
+                ): mixed {
+                    $beforeCallback = $data;
                     $baseline = $this->captureLockedBaseline($data);
-                    return $callback($data);
+                    $result = $callback($data);
+                    $housekeepingOnlyChangeDiscarded = $this->discardCleanupTimestampOnlyChange(
+                        $data,
+                        $beforeCallback
+                    );
+                    return $result;
                 }
             );
             if ($baseline === []) {
@@ -69,6 +80,9 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                     'worker_tick_count' => 0,
                     'projected_modules' => self::MODULES,
                     'baseline_locked' => true,
+                    'baseline_projection_chain_verified' => true,
+                    'baseline_full_module_audit_executed' => false,
+                    'housekeeping_only_change_discarded' => $housekeepingOnlyChangeDiscarded,
                     'atomic_commit_pending' => true,
                     'json_rollback_source_changed' => false,
                     'production_changed' => false,
@@ -115,6 +129,9 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 'projected_modules' => self::MODULES,
                 'all_module_fingerprint' => (string)$final['all_module_fingerprint'],
                 'baseline_locked' => true,
+                'baseline_projection_chain_verified' => true,
+                'baseline_full_module_audit_executed' => false,
+                'housekeeping_only_change_discarded' => false,
                 'atomic_commit_pending' => true,
                 'json_rollback_source_changed' => false,
                 'rollback_requires_fresh_db_export' => true,
@@ -149,7 +166,7 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
     private function captureLockedBaseline(array $snapshot): array
     {
         $status = $this->stateStorage->status();
-        return $this->auditSnapshot($snapshot, $status, 'baseline');
+        return $this->captureIdentity($snapshot, $status, 'baseline');
     }
 
     private function captureAndAudit(string $stage): array
@@ -159,10 +176,21 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
         if (!is_array($snapshot)) {
             throw new RuntimeException('Production atomic ' . $stage . ' snapshot is unavailable.');
         }
-        return $this->auditSnapshot($snapshot, $status, $stage);
+
+        $identity = $this->captureIdentity($snapshot, $status, $stage);
+        $revision = (int)$identity['state_revision'];
+        $stateSha = (string)$identity['state_sha256'];
+        $audit = $this->auditor->auditOnly($snapshot, $revision, $stateSha);
+        $this->assertAudit($audit, $revision, $stateSha, $stage);
+
+        return $identity + [
+            'all_module_fingerprint' => strtolower(trim((string)(
+                $audit['all_module_fingerprint'] ?? ''
+            ))),
+        ];
     }
 
-    private function auditSnapshot(array $snapshot, array $status, string $stage): array
+    private function captureIdentity(array $snapshot, array $status, string $stage): array
     {
         $revision = (int)($status['revision'] ?? 0);
         $stateSha = strtolower(trim((string)($status['state_sha256'] ?? '')));
@@ -173,18 +201,66 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             throw new RuntimeException('Production atomic ' . $stage . ' snapshot fingerprint mismatch.');
         }
 
-        $queue = $this->queueStatus($revision);
-        $audit = $this->auditor->auditOnly($snapshot, $revision, $stateSha);
-        $this->assertAudit($audit, $revision, $stateSha, $stage);
-
         return [
             'state_revision' => $revision,
             'state_sha256' => $stateSha,
-            'queue' => $queue,
-            'all_module_fingerprint' => strtolower(trim((string)(
-                $audit['all_module_fingerprint'] ?? ''
-            ))),
+            'queue' => $this->queueStatus($revision),
         ];
+    }
+
+    private function discardCleanupTimestampOnlyChange(array &$after, array $before): bool
+    {
+        $beforeHasTimestamp = isset($before['system'])
+            && is_array($before['system'])
+            && array_key_exists('game_cleanup_at', $before['system']);
+        $afterHasTimestamp = isset($after['system'])
+            && is_array($after['system'])
+            && array_key_exists('game_cleanup_at', $after['system']);
+        $beforeTimestamp = $beforeHasTimestamp
+            ? $before['system']['game_cleanup_at']
+            : null;
+        $afterTimestamp = $afterHasTimestamp
+            ? $after['system']['game_cleanup_at']
+            : null;
+
+        if ($beforeHasTimestamp === $afterHasTimestamp
+            && $beforeTimestamp === $afterTimestamp) {
+            return false;
+        }
+
+        $beforeComparable = $before;
+        $afterComparable = $after;
+        $this->removeCleanupTimestamp($beforeComparable);
+        $this->removeCleanupTimestamp($afterComparable);
+
+        if (!hash_equals(
+            $this->canonicalJson($beforeComparable),
+            $this->canonicalJson($afterComparable)
+        )) {
+            return false;
+        }
+
+        if ($beforeHasTimestamp) {
+            if (!isset($after['system']) || !is_array($after['system'])) {
+                $after['system'] = [];
+            }
+            $after['system']['game_cleanup_at'] = $beforeTimestamp;
+        } else {
+            $this->removeCleanupTimestamp($after);
+        }
+
+        return true;
+    }
+
+    private function removeCleanupTimestamp(array &$snapshot): void
+    {
+        if (!isset($snapshot['system']) || !is_array($snapshot['system'])) {
+            return;
+        }
+        unset($snapshot['system']['game_cleanup_at']);
+        if ($snapshot['system'] === []) {
+            unset($snapshot['system']);
+        }
     }
 
     private function queueStatus(int $revision): array
