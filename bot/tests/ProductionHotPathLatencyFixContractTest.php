@@ -101,25 +101,45 @@ $assertTrue(
         && str_contains($coordinator, 'APP_CONFIG.gameIntervalMs = 450;')
         && str_contains($coordinator, "target.id === 'startSearchBtn'")
         && str_contains($coordinator, "target.id === 'cancelSearch'")
-        && str_contains($coordinator, 'showScreen(\'search\')')
-        && str_contains($coordinator, 'showScreen(\'home\')'),
+        && str_contains($coordinator, "showScreen('search')")
+        && str_contains($coordinator, "showScreen('home')"),
     'Search start and cancellation must react in the same frame as the tap.'
 );
 
 $assertTrue(
-    str_contains($coordinator, 'prefetchHistory()')
-        && str_contains($coordinator, 'historyCache')
-        && str_contains($coordinator, 'notificationsCache')
-        && str_contains($coordinator, 'refreshCacheInBackground'),
-    'History and notifications must use prefetched stale-while-revalidate data.'
+    str_contains($coordinator, 'historyCache?.data')
+        && str_contains($coordinator, 'notificationsCache?.data')
+        && str_contains($coordinator, 'refreshCacheInBackground')
+        && !str_contains($coordinator, 'fresh(historyCache')
+        && !str_contains($coordinator, 'fresh(notificationsCache'),
+    'History and notifications must always open from the last snapshot and refresh in background.'
+);
+
+$assertTrue(
+    str_contains($coordinator, 'installSerializedGameState')
+        && str_contains($coordinator, 'gameStateInFlight')
+        && str_contains($coordinator, 'startedGeneration !== gameGeneration')
+        && str_contains($coordinator, 'latestGameStateResult || result'),
+    'Game-state polling must be serialized and stale responses must not repaint the board.'
 );
 
 $assertTrue(
     str_contains($coordinator, 'submitOptimisticTicTacToe')
-        && str_contains($coordinator, "button.textContent = symbol === 'X' ? '✕' : '○'")
-        && str_contains($coordinator, 'state.timers.game = clearTimer(state.timers.game)')
-        && str_contains($coordinator, 'startGamePolling(game.id)'),
-    'Tic-tac-toe must render the local move immediately and reconcile with the server.'
+        && str_contains($coordinator, "event.stopImmediatePropagation();")
+        && str_contains($coordinator, "board[cell] === '-'")
+        && str_contains($coordinator, 'renderAuthoritativeTicTacToe')
+        && str_contains($coordinator, "button.textContent = symbol === 'X' ? '✕' : '○'"),
+    'Tic-tac-toe must have one guarded click owner and reconcile without stale polling rollback.'
+);
+
+$assertTrue(
+    str_contains($coordinator, 'createLinkInviteImmediately')
+        && str_contains($coordinator, 'finishInviteImmediately')
+        && str_contains($coordinator, "invitePost('confirm_shared'")
+        && str_contains($coordinator, "invitePost('discard_draft'")
+        && !str_contains($coordinator, 'Подготавливаем приглашение')
+        && !str_contains($coordinator, 'Ждём результата отправки'),
+    'Link sharing and cancellation must not replace the current sheet with waiting placeholders.'
 );
 
 $assertTrue(
@@ -130,19 +150,19 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($main, "v90-mvp14-complete-interaction-latency-fix")
-        && str_contains($main, "interaction-latency-coordinator.js?v=90")
+    str_contains($main, "v91-mvp14-residual-ui-game-race-hotfix")
+        && str_contains($main, "interaction-latency-coordinator.js?v=91")
         && str_contains($main, 'initInteractionLatencyCoordinator();')
         && str_contains($main, "profile-screen.js?v=89")
         && str_contains($main, "ui.js?v=89"),
-    'Main module graph must publish and initialize the complete latency coordinator.'
+    'Main module graph must publish and initialize the v91 residual hotfix.'
 );
 
 $assertTrue(
-    str_contains($index, 'data-build="v90-mvp14-complete-interaction-latency-fix"')
-        && str_contains($index, 'main.css?v=90')
-        && str_contains($index, 'main.js?v=90'),
-    'Telegram WebView entrypoint must bust the previous module and stylesheet cache.'
+    str_contains($index, 'data-build="v91-mvp14-residual-ui-game-race-hotfix"')
+        && str_contains($index, 'main.css?v=91')
+        && str_contains($index, 'main.js?v=91'),
+    'Telegram WebView entrypoint must bust the v90 module and stylesheet cache.'
 );
 
 fwrite(
