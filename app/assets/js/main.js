@@ -1,4 +1,5 @@
-window.__MGW_BUILD__ = 'v91-mvp14-residual-ui-game-race-hotfix';
+window.__MGW_BUILD__ = 'v92-mvp14-first-interaction-readiness-hotfix';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
@@ -42,6 +43,7 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
+initFirstInteractionReadinessEarly();
 initRequestGuard();
 initResidualUiGameRaceFixEarly();
 initInteractionLatencyCoordinator();
@@ -91,6 +93,9 @@ async function boot(){
     showHomeActivity();
     renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
+
+    /* Keep the common preloader visible until every first-click screen has data. */
+    window.__MGW_FIRST_INTERACTION_READY__ = await warmFirstInteractionData();
     dispatchAppReady();
 
     if (isSessionLocked(state.session)) {
