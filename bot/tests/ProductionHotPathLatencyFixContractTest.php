@@ -20,9 +20,12 @@ $read = static function (string $path) use ($root): string {
 };
 
 $atomic = $read('bot/runtime/ProductionPrimaryAtomicStorageAdapter.php');
+$worker = $read('bot/runtime/RuntimePrimaryProjectionWorker.php');
 $projector = $read('bot/runtime/RuntimePrimaryAllModuleProjector.php');
 $profile = $read('app/assets/js/screens/profile-screen.js');
 $requestGuard = $read('app/assets/js/api/request-guard.js');
+$coordinator = $read('app/assets/js/interaction-latency-coordinator.js');
+$mainCss = $read('app/assets/css/main.css');
 $main = $read('app/assets/js/main.js');
 $index = $read('app/index.html');
 
@@ -34,6 +37,21 @@ $assertTrue(
             $atomic
         ),
     'Locked baseline must verify identity and queue without a full all-module audit.'
+);
+
+$assertTrue(
+    str_contains($atomic, "'final_full_module_audit_executed' => false")
+        && str_contains($atomic, "'worker_parity_proof_reused' => true")
+        && str_contains($atomic, '$tick[\'all_module_fingerprint\']')
+        && !str_contains($atomic, 'captureAndAudit('),
+    'Changed writes must reuse the worker parity proof instead of repeating all nine audits.'
+);
+
+$assertTrue(
+    str_contains($worker, "'all_module_fingerprint' => \$allModuleFingerprint")
+        && str_contains($worker, "'mutated_modules'")
+        && str_contains($worker, "'unchanged_modules'"),
+    'Projection worker must expose the exact completed parity proof to the atomic adapter.'
 );
 
 $assertTrue(
@@ -79,17 +97,52 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($main, "v89-mvp14-avatar-invite-regression-hotfix")
-        && str_contains($main, "request-guard.js?v=88")
-        && str_contains($main, "profile-screen.js?v=89")
-        && str_contains($main, "ui.js?v=89"),
-    'Main module graph must preserve latency fixes while publishing the newer hotfix version.'
+    str_contains($coordinator, 'APP_CONFIG.searchIntervalMs = 800;')
+        && str_contains($coordinator, 'APP_CONFIG.gameIntervalMs = 450;')
+        && str_contains($coordinator, "target.id === 'startSearchBtn'")
+        && str_contains($coordinator, "target.id === 'cancelSearch'")
+        && str_contains($coordinator, 'showScreen(\'search\')')
+        && str_contains($coordinator, 'showScreen(\'home\')'),
+    'Search start and cancellation must react in the same frame as the tap.'
 );
 
 $assertTrue(
-    str_contains($index, 'data-build="v89-mvp14-avatar-invite-regression-hotfix"')
-        && str_contains($index, 'main.js?v=89'),
-    'Telegram WebView entrypoint must bust the previous module cache.'
+    str_contains($coordinator, 'prefetchHistory()')
+        && str_contains($coordinator, 'historyCache')
+        && str_contains($coordinator, 'notificationsCache')
+        && str_contains($coordinator, 'refreshCacheInBackground'),
+    'History and notifications must use prefetched stale-while-revalidate data.'
+);
+
+$assertTrue(
+    str_contains($coordinator, 'submitOptimisticTicTacToe')
+        && str_contains($coordinator, "button.textContent = symbol === 'X' ? '✕' : '○'")
+        && str_contains($coordinator, 'state.timers.game = clearTimer(state.timers.game)')
+        && str_contains($coordinator, 'startGamePolling(game.id)'),
+    'Tic-tac-toe must render the local move immediately and reconcile with the server.'
+);
+
+$assertTrue(
+    str_contains($mainCss, 'transition:none !important')
+        && str_contains($mainCss, 'animation:none !important')
+        && !str_contains($mainCss, '.overlay{transition-duration:.08s}'),
+    'Sheet opening and closing must not expose intermediate animation frames.'
+);
+
+$assertTrue(
+    str_contains($main, "v90-mvp14-complete-interaction-latency-fix")
+        && str_contains($main, "interaction-latency-coordinator.js?v=90")
+        && str_contains($main, 'initInteractionLatencyCoordinator();')
+        && str_contains($main, "profile-screen.js?v=89")
+        && str_contains($main, "ui.js?v=89"),
+    'Main module graph must publish and initialize the complete latency coordinator.'
+);
+
+$assertTrue(
+    str_contains($index, 'data-build="v90-mvp14-complete-interaction-latency-fix"')
+        && str_contains($index, 'main.css?v=90')
+        && str_contains($index, 'main.js?v=90'),
+    'Telegram WebView entrypoint must bust the previous module and stylesheet cache.'
 );
 
 fwrite(

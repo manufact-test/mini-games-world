@@ -1,5 +1,6 @@
-window.__MGW_BUILD__ = 'v89-mvp14-avatar-invite-regression-hotfix';
+window.__MGW_BUILD__ = 'v90-mvp14-complete-interaction-latency-fix';
 import { initRequestGuard } from './api/request-guard.js?v=88';
+import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
@@ -41,6 +42,7 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 let statsRefreshing = false;
 
 initRequestGuard();
+initInteractionLatencyCoordinator();
 initTelegramApp();
 initRuntimeStatus();
 initTypography();

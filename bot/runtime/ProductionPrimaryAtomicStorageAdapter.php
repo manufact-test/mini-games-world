@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInterface
 {
     public const DRIVER = 'database';
-    public const CONTRACT_VERSION = 'v1-production-atomic-state-and-projections';
+    public const CONTRACT_VERSION = 'v2-production-atomic-worker-parity-reuse';
 
     private const MODULES = [
         'accounts', 'realtime', 'economy', 'notifications', 'invites',
@@ -82,6 +82,8 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                     'baseline_locked' => true,
                     'baseline_projection_chain_verified' => true,
                     'baseline_full_module_audit_executed' => false,
+                    'final_full_module_audit_executed' => false,
+                    'worker_parity_proof_reused' => false,
                     'housekeeping_only_change_discarded' => $housekeepingOnlyChangeDiscarded,
                     'atomic_commit_pending' => true,
                     'json_rollback_source_changed' => false,
@@ -103,17 +105,40 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 || ($tick['action'] ?? '') !== 'projection_completed'
                 || ($tick['claimed'] ?? false) !== true
                 || (int)($tick['state_revision'] ?? 0) !== $afterRevision
+                || !hash_equals($afterSha, strtolower(trim((string)($tick['state_sha256'] ?? ''))))
                 || ($tick['parity_ok'] ?? false) !== true) {
                 throw new RuntimeException(
                     'Production atomic projection did not complete the exact state revision.'
                 );
             }
 
-            $final = $this->captureAndAudit('final');
+            $workerFingerprint = strtolower(trim((string)(
+                $tick['all_module_fingerprint'] ?? ''
+            )));
+            if (preg_match('/\A[a-f0-9]{64}\z/', $workerFingerprint) !== 1) {
+                throw new RuntimeException(
+                    'Production atomic worker parity fingerprint is invalid.'
+                );
+            }
+
+            $workerModules = array_values(array_unique(array_map(
+                static fn(mixed $value): string => strtolower(trim((string)$value)),
+                (array)($tick['projected_modules'] ?? [])
+            )));
+            sort($workerModules, SORT_STRING);
+            $expectedModules = self::MODULES;
+            sort($expectedModules, SORT_STRING);
+            if ($workerModules !== $expectedModules) {
+                throw new RuntimeException(
+                    'Production atomic worker parity proof is missing required modules.'
+                );
+            }
+
+            $final = $this->captureFinalIdentity();
             if ((int)$final['state_revision'] !== $afterRevision
                 || !hash_equals($afterSha, (string)$final['state_sha256'])) {
                 throw new RuntimeException(
-                    'Production atomic state changed during projection or audit.'
+                    'Production atomic state changed during projection completion.'
                 );
             }
 
@@ -127,10 +152,20 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 'worker_tick_count' => 1,
                 'worker_attempt_count' => max(1, (int)($tick['attempt_count'] ?? 0)),
                 'projected_modules' => self::MODULES,
-                'all_module_fingerprint' => (string)$final['all_module_fingerprint'],
+                'mutated_modules' => array_values(array_map(
+                    'strval',
+                    (array)($tick['mutated_modules'] ?? [])
+                )),
+                'unchanged_modules' => array_values(array_map(
+                    'strval',
+                    (array)($tick['unchanged_modules'] ?? [])
+                )),
+                'all_module_fingerprint' => $workerFingerprint,
                 'baseline_locked' => true,
                 'baseline_projection_chain_verified' => true,
                 'baseline_full_module_audit_executed' => false,
+                'final_full_module_audit_executed' => false,
+                'worker_parity_proof_reused' => true,
                 'housekeeping_only_change_discarded' => false,
                 'atomic_commit_pending' => true,
                 'json_rollback_source_changed' => false,
@@ -169,25 +204,18 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
         return $this->captureIdentity($snapshot, $status, 'baseline');
     }
 
-    private function captureAndAudit(string $stage): array
+    private function captureFinalIdentity(): array
     {
         $status = $this->stateStorage->status();
-        $snapshot = $this->stateStorage->readOnly(static fn(array $data): array => $data);
+        $snapshot = $this->stateStorage->readOnly(
+            static fn(array $data): array => $data
+        );
         if (!is_array($snapshot)) {
-            throw new RuntimeException('Production atomic ' . $stage . ' snapshot is unavailable.');
+            throw new RuntimeException(
+                'Production atomic final snapshot is unavailable.'
+            );
         }
-
-        $identity = $this->captureIdentity($snapshot, $status, $stage);
-        $revision = (int)$identity['state_revision'];
-        $stateSha = (string)$identity['state_sha256'];
-        $audit = $this->auditor->auditOnly($snapshot, $revision, $stateSha);
-        $this->assertAudit($audit, $revision, $stateSha, $stage);
-
-        return $identity + [
-            'all_module_fingerprint' => strtolower(trim((string)(
-                $audit['all_module_fingerprint'] ?? ''
-            ))),
-        ];
+        return $this->captureIdentity($snapshot, $status, 'final');
     }
 
     private function captureIdentity(array $snapshot, array $status, string $stage): array
@@ -208,48 +236,109 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
         ];
     }
 
+    /**
+     * Polling may advance only the global cleanup timestamp and/or queue
+     * heartbeat timestamps. Those fields are advisory and must not create a
+     * DB-primary revision or nine-module projection when no gameplay, queue
+     * membership, account, session or economy state changed.
+     */
     private function discardCleanupTimestampOnlyChange(array &$after, array $before): bool
     {
-        $beforeHasTimestamp = isset($before['system'])
-            && is_array($before['system'])
-            && array_key_exists('game_cleanup_at', $before['system']);
-        $afterHasTimestamp = isset($after['system'])
-            && is_array($after['system'])
-            && array_key_exists('game_cleanup_at', $after['system']);
-        $beforeTimestamp = $beforeHasTimestamp
-            ? $before['system']['game_cleanup_at']
-            : null;
-        $afterTimestamp = $afterHasTimestamp
-            ? $after['system']['game_cleanup_at']
-            : null;
-
-        if ($beforeHasTimestamp === $afterHasTimestamp
-            && $beforeTimestamp === $afterTimestamp) {
-            return false;
-        }
-
         $beforeComparable = $before;
         $afterComparable = $after;
+        $volatileChanged = false;
+
+        $beforeCleanup = $this->cleanupTimestamp($beforeComparable);
+        $afterCleanup = $this->cleanupTimestamp($afterComparable);
+        if ($beforeCleanup !== $afterCleanup) {
+            $volatileChanged = true;
+        }
         $this->removeCleanupTimestamp($beforeComparable);
         $this->removeCleanupTimestamp($afterComparable);
 
-        if (!hash_equals(
+        $beforeQueue = is_array($beforeComparable['queue'] ?? null)
+            ? array_values($beforeComparable['queue'])
+            : [];
+        $afterQueue = is_array($afterComparable['queue'] ?? null)
+            ? array_values($afterComparable['queue'])
+            : [];
+
+        foreach ($beforeQueue as $index => &$item) {
+            if (!is_array($item)) continue;
+            $afterItem = $afterQueue[$index] ?? null;
+            if (is_array($afterItem)
+                && ($item['updated_at'] ?? null) !== ($afterItem['updated_at'] ?? null)) {
+                $volatileChanged = true;
+            }
+            unset($item['updated_at']);
+        }
+        unset($item);
+        foreach ($afterQueue as &$item) {
+            if (is_array($item)) unset($item['updated_at']);
+        }
+        unset($item);
+
+        if ($beforeQueue !== [] || array_key_exists('queue', $beforeComparable)) {
+            $beforeComparable['queue'] = $beforeQueue;
+        }
+        if ($afterQueue !== [] || array_key_exists('queue', $afterComparable)) {
+            $afterComparable['queue'] = $afterQueue;
+        }
+
+        if (!$volatileChanged || !hash_equals(
             $this->canonicalJson($beforeComparable),
             $this->canonicalJson($afterComparable)
         )) {
             return false;
         }
 
-        if ($beforeHasTimestamp) {
+        $this->restoreCleanupTimestamp($after, $before);
+        $this->restoreQueueHeartbeats($after, $before);
+        return true;
+    }
+
+    private function cleanupTimestamp(array $snapshot): mixed
+    {
+        return isset($snapshot['system'])
+            && is_array($snapshot['system'])
+            && array_key_exists('game_cleanup_at', $snapshot['system'])
+                ? $snapshot['system']['game_cleanup_at']
+                : null;
+    }
+
+    private function restoreCleanupTimestamp(array &$after, array $before): void
+    {
+        $hasBefore = isset($before['system'])
+            && is_array($before['system'])
+            && array_key_exists('game_cleanup_at', $before['system']);
+        if ($hasBefore) {
             if (!isset($after['system']) || !is_array($after['system'])) {
                 $after['system'] = [];
             }
-            $after['system']['game_cleanup_at'] = $beforeTimestamp;
-        } else {
-            $this->removeCleanupTimestamp($after);
+            $after['system']['game_cleanup_at'] = $before['system']['game_cleanup_at'];
+            return;
         }
+        $this->removeCleanupTimestamp($after);
+    }
 
-        return true;
+    private function restoreQueueHeartbeats(array &$after, array $before): void
+    {
+        if (!isset($after['queue']) || !is_array($after['queue'])) return;
+        $beforeQueue = is_array($before['queue'] ?? null)
+            ? array_values($before['queue'])
+            : [];
+        $after['queue'] = array_values($after['queue']);
+
+        foreach ($after['queue'] as $index => &$item) {
+            if (!is_array($item)) continue;
+            $beforeItem = $beforeQueue[$index] ?? null;
+            if (is_array($beforeItem) && array_key_exists('updated_at', $beforeItem)) {
+                $item['updated_at'] = $beforeItem['updated_at'];
+            } else {
+                unset($item['updated_at']);
+            }
+        }
+        unset($item);
     }
 
     private function removeCleanupTimestamp(array &$snapshot): void
@@ -307,46 +396,6 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             'processing_event_count' => 0,
             'failed_event_count' => 0,
         ];
-    }
-
-    private function assertAudit(
-        array $audit,
-        int $revision,
-        string $stateSha,
-        string $stage
-    ): void {
-        if (($audit['ok'] ?? false) !== true
-            || ($audit['parity_ok'] ?? false) !== true
-            || ($audit['read_only'] ?? false) !== true
-            || (int)($audit['state_revision'] ?? 0) !== $revision
-            || !hash_equals(
-                $stateSha,
-                strtolower(trim((string)($audit['state_sha256'] ?? '')))
-            )) {
-            throw new RuntimeException(
-                'Production atomic ' . $stage . ' all-module audit failed.'
-            );
-        }
-
-        $modules = array_values(array_unique(array_map(
-            static fn(mixed $value): string => strtolower(trim((string)$value)),
-            (array)($audit['projected_modules'] ?? [])
-        )));
-        sort($modules, SORT_STRING);
-        $expected = self::MODULES;
-        sort($expected, SORT_STRING);
-        if ($modules !== $expected) {
-            throw new RuntimeException(
-                'Production atomic ' . $stage . ' audit is missing required modules.'
-            );
-        }
-
-        $fingerprint = strtolower(trim((string)($audit['all_module_fingerprint'] ?? '')));
-        if (preg_match('/\A[a-f0-9]{64}\z/', $fingerprint) !== 1) {
-            throw new RuntimeException(
-                'Production atomic ' . $stage . ' audit fingerprint is invalid.'
-            );
-        }
     }
 
     private function canonicalJson(array $value): string

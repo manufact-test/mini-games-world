@@ -44,6 +44,14 @@ final class RuntimePrimaryProjectionWorker
             );
             $result = $this->projector->project($snapshot, $revision, $fingerprint);
             $this->assertProjectionResult($result, $revision, $fingerprint);
+            $allModuleFingerprint = strtolower(trim((string)(
+                $result['all_module_fingerprint'] ?? ''
+            )));
+            if (preg_match('/\A[a-f0-9]{64}\z/', $allModuleFingerprint) !== 1) {
+                throw new RuntimeException(
+                    'Projection result all-module fingerprint is invalid.'
+                );
+            }
             $this->complete($revision, $leaseToken);
 
             return [
@@ -54,7 +62,17 @@ final class RuntimePrimaryProjectionWorker
                 'state_sha256' => $fingerprint,
                 'attempt_count' => (int)$claimed['attempt_count'],
                 'projected_modules' => self::MODULES,
+                'mutated_modules' => array_values(array_map(
+                    'strval',
+                    (array)($result['mutated_modules'] ?? [])
+                )),
+                'unchanged_modules' => array_values(array_map(
+                    'strval',
+                    (array)($result['unchanged_modules'] ?? [])
+                )),
+                'all_module_fingerprint' => $allModuleFingerprint,
                 'parity_ok' => true,
+                'audit_completed' => ($result['audit_completed'] ?? false) === true,
                 'completed_at_utc' => $this->nowUtc(),
             ];
         } catch (Throwable $error) {
