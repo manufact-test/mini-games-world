@@ -22,7 +22,6 @@ $models = (string)file_get_contents($files['models']);
 $models = str_replace("'./production-cross-game-optimistic.js?v=96'", "'./cross.mjs'", $models);
 $models = str_replace("'./production-v97-models.js?v=97'", "'./v97.mjs'", $models);
 $models = str_replace("'./production-v99-models.js?v=99'", "'./v99.mjs'", $models);
-$models = str_replace("'./production-v102-battleship-models.js?v=102'", "'./v102-battleship.mjs'", $models);
 file_put_contents($tempDir . '/models.mjs', $models);
 file_put_contents($tempDir . '/cross.mjs', (string)file_get_contents($files['cross']));
 file_put_contents($tempDir . '/v97.mjs', (string)file_get_contents($files['v97']));
@@ -31,6 +30,7 @@ file_put_contents($tempDir . '/v102-battleship.mjs', (string)file_get_contents($
 
 file_put_contents($tempDir . '/test.mjs', <<<'JS'
 import { buildV100OptimisticGame, invalidateInFlightPoll, pendingSurfaceDescriptor } from './models.mjs';
+import { buildV102BattleshipSetupOptimistic } from './v102-battleship.mjs';
 
 let assertions = 0;
 function assert(condition, message){
@@ -81,9 +81,12 @@ const setup = buildV100OptimisticGame(legacySetupInput, { type:'place_ship', siz
 assert(setup?.my_board?.[22] === 'ship' && setup?.my_board?.[23] === 'ship', 'Battleship setup must place one complete ship immediately.');
 assert(setup?.remaining_to_place?.[0]?.count === 3, 'Without a v102 build, the retained v100 Battleship summary behavior must stay unchanged.');
 
-globalThis.window = { __MGW_REGRESSION_BUILD__:'v102-mvp14-targeted-regression-repair' };
+globalThis.window = {
+  __MGW_REGRESSION_BUILD__:'v102-mvp14-targeted-regression-repair',
+  __MGW_V102_BUILD_BATTLESHIP_SETUP__:buildV102BattleshipSetupOptimistic,
+};
 const v102Setup = buildV100OptimisticGame(legacySetupInput, { type:'place_ship', size:2, cell:22, orientation:'h' }, 'me', 'battleship');
-assert(v102Setup?.remaining_to_place?.find(item => item.size === 2)?.count === 2, 'The v102 build must activate immediate Battleship fleet summaries.');
+assert(v102Setup?.remaining_to_place?.find(item => item.size === 2)?.count === 2, 'The v102 bridge must activate immediate Battleship fleet summaries.');
 delete globalThis.window;
 
 const battle = buildV100OptimisticGame({ ...common, phase:'battle', enemy_board:Array(100).fill('unknown') }, { type:'fire', cell:55 }, 'me', 'battleship');
