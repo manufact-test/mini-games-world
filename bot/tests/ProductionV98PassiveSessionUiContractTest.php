@@ -84,8 +84,8 @@ $assert(
 $assert(
     str_contains($phpEntry, 'production-regression-fix-entry-v98.js?v=98')
         && str_contains($phpEntry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v100.php?v=100'),
-    'The retained v98 fallback must remain no-store while Telegram advances to the v100 entrypoint.'
+        && str_contains($welcome, '/app/v101.php?v=101'),
+    'The retained v98 fallback must remain no-store while Telegram advances to the v101 entrypoint.'
 );
 
 fwrite(STDOUT, "ProductionV98PassiveSessionUiContractTest: {$assertions} assertions passed\n");

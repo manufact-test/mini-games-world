@@ -107,15 +107,15 @@ $assert(
     str_contains($picker, "hold.className = 'sheet mgw-player-picker-hold'")
         && str_contains($picker, "sheet.querySelector('.invite-player-list')")
         && str_contains($picker, "sheet.querySelector('.invite-empty-state')"),
-    'The current setup sheet must cover the opponent loader until the final picker exists.'
+    'The current setup sheet must cover the opponent loader until the final player list exists.'
 );
 
 $assert(
     str_contains($phpEntry, 'production-clean-entry-v99.js?v=99')
         && str_contains($phpEntry, 'main-v99.js?v=99')
         && str_contains($phpEntry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v100.php?v=100'),
-    'The retained v99 fallback must remain valid while Telegram advances to the v100 entrypoint.'
+        && str_contains($welcome, '/app/v101.php?v=101'),
+    'The retained v99 fallback must remain valid while Telegram advances to the v101 entrypoint.'
 );
 
 fwrite(STDOUT, "ProductionV99CleanRuntimeContractTest: {$assertions} assertions passed\n");
