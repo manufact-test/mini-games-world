@@ -39,7 +39,7 @@ final class GameActionService
         return match ($engine) {
             'tictactoe' => $this->applyTicTacToeAction($db, $user, $gameId, $actionType, $action),
             'four_in_a_row' => $this->applyFourInARowAction($db, $user, $gameId, $actionType, $action),
-            'battleship' => $this->runtime->applyBattleshipAction($db, $user, $gameId, $action),
+            'battleship' => $this->applyBattleshipAction($db, $user, $gameId, $action),
             'checkers' => $this->runtime->applyCheckersAction($db, $user, $gameId, $action),
             'reversi' => $this->runtime->applyReversiAction($db, $user, $gameId, $action),
             'chess' => $this->runtime->applyChessAction($db, $user, $gameId, $action),
@@ -47,6 +47,75 @@ final class GameActionService
             'domino' => $this->runtime->applyDominoAction($db, $user, $gameId, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
+    }
+
+    private function applyBattleshipAction(
+        array &$db,
+        array &$user,
+        string $gameId,
+        array $action
+    ): array {
+        if ((string)($action['type'] ?? '') !== 'randomize_fleet' || !array_key_exists('ships', $action)) {
+            return $this->runtime->applyBattleshipAction($db, $user, $gameId, $action);
+        }
+
+        $ships = $action['ships'];
+        if (!is_array($ships) || count($ships) !== 10) {
+            throw new RuntimeException('Не удалось проверить случайную расстановку флота.');
+        }
+
+        $this->runtime->applyBattleshipAction($db, $user, $gameId, ['type' => 'clear_fleet']);
+        $result = $db['games'][$gameId];
+
+        foreach ($ships as $ship) {
+            if (!is_array($ship)) throw new RuntimeException('Некорректный корабль в случайной расстановке.');
+            [$size, $startCell, $orientation] = $this->normalizeBattleshipShip($ship);
+            $result = $this->runtime->applyBattleshipAction($db, $user, $gameId, [
+                'type' => 'place_ship',
+                'size' => $size,
+                'cell' => $startCell,
+                'orientation' => $orientation,
+            ]);
+        }
+
+        return $result;
+    }
+
+    private function normalizeBattleshipShip(array $ship): array
+    {
+        $size = (int)($ship['size'] ?? 0);
+        $cells = array_values(array_unique(array_map('intval', is_array($ship['cells'] ?? null) ? $ship['cells'] : [])));
+        sort($cells);
+        if (!in_array($size, [1, 2, 3, 4], true) || count($cells) !== $size) {
+            throw new RuntimeException('Некорректный размер корабля в случайной расстановке.');
+        }
+        if ($cells === [] || $cells[0] < 0 || $cells[count($cells) - 1] >= 100) {
+            throw new RuntimeException('Корабль выходит за границы поля.');
+        }
+
+        if ($size === 1) return [$size, $cells[0], 'h'];
+
+        $sameRow = true;
+        $firstRow = intdiv($cells[0], 10);
+        foreach ($cells as $index => $cell) {
+            if (intdiv($cell, 10) !== $firstRow || $cell !== $cells[0] + $index) {
+                $sameRow = false;
+                break;
+            }
+        }
+        if ($sameRow) return [$size, $cells[0], 'h'];
+
+        $sameColumn = true;
+        $column = $cells[0] % 10;
+        foreach ($cells as $index => $cell) {
+            if ($cell % 10 !== $column || $cell !== $cells[0] + ($index * 10)) {
+                $sameColumn = false;
+                break;
+            }
+        }
+        if ($sameColumn) return [$size, $cells[0], 'v'];
+
+        throw new RuntimeException('Корабль должен идти по прямой без пропусков.');
     }
 
     private function applyTicTacToeAction(
