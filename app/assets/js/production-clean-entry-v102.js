@@ -9,6 +9,7 @@ import { initV101InviteSyncDedupe } from './production-v101-invite-sync-dedupe.j
 import { initV101CacheSafety } from './production-v101-cache-safety.js?v=101';
 import { initV101FastInviteWatch } from './production-v101-fast-invite-watch.js?v=101';
 import { initV101ResultSpeed } from './production-v101-result-speed.js?v=101';
+import { initV102BattleshipBridge } from './production-v102-battleship-bridge.js?v=102';
 import { initV102HistoryController } from './production-v102-history-controller.js?v=102';
 import { initV102ShareController } from './production-v102-share-controller.js?v=102';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
@@ -26,6 +27,7 @@ initV101PollTuning();
 initV101SpeedRuntime();
 initV101InviteSyncDedupe();
 initV101CacheSafety();
+initV102BattleshipBridge();
 initV102HistoryController();
 initV102ShareController();
 initV101FastInviteWatch();
