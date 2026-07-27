@@ -15,7 +15,8 @@ export function buildV100OptimisticGame(game, action, viewerId, gameType){
     return buildBattleshipSetupOptimistic(game, action);
   }
 
-  const optimistic = buildOptimisticGame(game, action, id, type);
+  const modelGame = normalizeSideSymbols(game, type);
+  const optimistic = buildOptimisticGame(modelGame, action, id, type);
   if (!optimistic) return null;
 
   if (type === 'battleship' && String(action?.type || '') === 'fire') {
@@ -73,6 +74,22 @@ export function invalidateInFlightPoll(runtime, gameId){
   item.generation = Number(item.generation || 0) + 1;
   item.interactionGeneration = Number(item.interactionGeneration || 0) + 1;
   return true;
+}
+
+function normalizeSideSymbols(game, type){
+  if (!['reversi','go'].includes(type) || !Array.isArray(game?.players)) return game;
+
+  return {
+    ...game,
+    players:game.players.map(player => {
+      const side = String(player?.side || '');
+      const existing = String(player?.symbol || '');
+      const symbol = side === 'black'
+        ? 'B'
+        : (side === 'white' ? 'W' : (['B','W'].includes(existing) ? existing : ''));
+      return { ...player, symbol };
+    }),
+  };
 }
 
 function normalizePendingAction(action){
