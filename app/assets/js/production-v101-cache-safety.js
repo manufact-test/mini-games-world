@@ -15,7 +15,6 @@ export function initV101CacheSafety(){
 
     const id = String(button.id || '');
     const inviteAction = String(button.closest('[data-invite-action]')?.dataset.inviteAction || '');
-    if (button.closest('[data-open-player-picker]')) abortBackgroundReads();
     if (id.startsWith('start') && id.endsWith('SearchBtn')) invalidateSafely(GAME_BALANCE_CACHE);
     if (['accept','start'].includes(inviteAction)) invalidateSafely(GAME_BALANCE_CACHE);
     if (button.closest('[data-create-rematch]')) invalidateSafely(['notifications','invite_opponents']);
