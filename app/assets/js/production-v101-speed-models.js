@@ -11,8 +11,10 @@ export function mergeNotificationSnapshot(snapshot, item, unreadCount){
   const base = snapshot && typeof snapshot === 'object' ? clone(snapshot) : { ok:true, items:[], unread_count:0 };
   const items = Array.isArray(base.items) ? base.items : [];
   const id = String(item?.id || '');
+  const previous = id ? items.find(entry => String(entry?.id || '') === id) : null;
+  const incoming = id ? enrichNotification({ ...(previous || {}), ...clone(item) }) : null;
   const next = id
-    ? [clone(item), ...items.filter(entry => String(entry?.id || '') !== id)]
+    ? [incoming, ...items.filter(entry => String(entry?.id || '') !== id)]
     : items;
   base.items = next.slice(0, 30);
   if (Number.isFinite(Number(unreadCount))) base.unread_count = Math.max(0, Math.trunc(Number(unreadCount)));
@@ -55,6 +57,15 @@ export function stableHash(value){
     hash = Math.imul(hash, 16777619);
   }
   return (hash >>> 0).toString(36);
+}
+
+function enrichNotification(item){
+  const next = item && typeof item === 'object' ? { ...item } : {};
+  if (Array.isArray(next.actions) && next.actions.length) return next;
+  const type = String(next.type || '');
+  if (['invite_received','invite_rematch_received'].includes(type)) next.actions = ['accept','decline'];
+  else if (type === 'invite_accepted') next.actions = ['start','cancel'];
+  return next;
 }
 
 function clone(value){
