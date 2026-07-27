@@ -64,12 +64,21 @@ final class GameActionService
             throw new RuntimeException('Не удалось проверить случайную расстановку флота.');
         }
 
-        $this->runtime->applyBattleshipAction($db, $user, $gameId, ['type' => 'clear_fleet']);
-        $result = $db['games'][$gameId];
-
+        $normalized = [];
+        $counts = [1 => 0, 2 => 0, 3 => 0, 4 => 0];
         foreach ($ships as $ship) {
             if (!is_array($ship)) throw new RuntimeException('Некорректный корабль в случайной расстановке.');
             [$size, $startCell, $orientation] = $this->normalizeBattleshipShip($ship);
+            $counts[$size]++;
+            $normalized[] = [$size, $startCell, $orientation];
+        }
+        if ($counts !== [1 => 4, 2 => 3, 3 => 2, 4 => 1]) {
+            throw new RuntimeException('Случайная расстановка содержит неправильный состав флота.');
+        }
+
+        $this->runtime->applyBattleshipAction($db, $user, $gameId, ['type' => 'clear_fleet']);
+        $result = $db['games'][$gameId];
+        foreach ($normalized as [$size, $startCell, $orientation]) {
             $result = $this->runtime->applyBattleshipAction($db, $user, $gameId, [
                 'type' => 'place_ship',
                 'size' => $size,
