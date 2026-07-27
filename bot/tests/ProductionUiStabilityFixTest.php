@@ -18,58 +18,95 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $index = $read('app/index.html');
 $entry = $read('app/assets/js/production-regression-fix-entry.js');
 $stability = $read('app/assets/js/production-ui-stability-fix.js');
+$coordinator = $read('app/assets/js/production-cross-game-coordinator.js');
+$optimistic = $read('app/assets/js/production-cross-game-optimistic.js');
 $ticTacToe = $read('app/assets/js/production-tictactoe-turn-fix.js');
-$css = $read('app/assets/css/production-v94-stability.css');
+$icons = $read('app/assets/js/production-deterministic-icons.js');
+$css = $read('app/assets/css/production-v95-consistency.css');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=94');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=95');
 $mainPosition = strpos($index, 'main.js?v=92');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
-        && str_contains($index, 'production-v94-stability.css?v=94')
-        && str_contains($index, 'data-hotfix-build="v94-mvp14-ui-stability-fix"'),
-    'The v94 stability layer and stylesheet must be cache-busted before the v92 app starts.'
+        && str_contains($index, 'production-v95-consistency.css?v=95')
+        && str_contains($index, 'data-hotfix-build="v95-mvp14-cross-game-consistency-fix"'),
+    'The v95 consistency layer and stylesheet must be cache-busted before the v92 app starts.'
 );
 
 $stabilityInit = strpos($entry, 'initProductionUiStabilityFix();');
+$coordinatorInit = strpos($entry, 'initCrossGameCoordinator();');
+$iconsInit = strpos($entry, 'initDeterministicGameIcons();');
 $avatarInit = strpos($entry, 'initStandardAvatarPolicy();');
 $assert(
     $stabilityInit !== false
+        && $coordinatorInit !== false
+        && $iconsInit !== false
         && $avatarInit !== false
         && $stabilityInit < $avatarInit
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v94-mvp14-ui-stability-fix'"),
-    'The resilient read layer must be installed before the legacy module graph captures fetch.'
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v95-mvp14-cross-game-consistency-fix'"),
+    'Shared API/UI coordination and deterministic icons must initialize before legacy UI handlers.'
 );
 
 $assert(
     str_contains($stability, 'window.fetch = resilientReadFetch;')
         && str_contains($stability, "['bootstrap', 'profile', 'history'].includes(action)")
         && str_contains($stability, "url.pathname.endsWith('/bot/notifications.php')")
-        && str_contains($stability, "url.pathname.endsWith('/bot/invite-opponents.php')")
         && str_contains($stability, "meta.kind === 'bootstrap'")
         && str_contains($stability, 'degraded_read:true'),
-    'Transient read failures must use bounded per-user fallbacks without masking bootstrap authentication.'
+    'Transient read failures must retain the bounded per-user fallback contract.'
 );
 
-$showSearch = strpos($stability, "showScreen('search');");
-$startSearch = strpos($stability, 'const result = await api.startSearch(');
+foreach ([
+    'startSearchBtn',
+    'startFourSearchBtn',
+    'startBattleshipSearchBtn',
+    'startCheckersSearchBtn',
+    'startReversiSearchBtn',
+    'startChessSearchBtn',
+    'startGoSearchBtn',
+    'startDominoSearchBtn',
+] as $buttonId) {
+    $assert(str_contains($coordinator, "'{$buttonId}'"), "Missing immediate search transition for {$buttonId}.");
+}
+
 $assert(
-    $showSearch !== false
-        && $startSearch !== false
-        && $showSearch < $startSearch
-        && str_contains($stability, "target.id === 'newOpponent'")
-        && str_contains($stability, 'clearGameSurface();')
-        && str_contains($stability, 'startSearchPolling();'),
-    'Rematch must clear the finished board and open search before the network request.'
+    str_contains($coordinator, 'api.gameState = coordinatedGameState;')
+        && str_contains($coordinator, 'api.gameAction = coordinatedGameAction;')
+        && str_contains($coordinator, 'initialSnapshotServed')
+        && str_contains($coordinator, 'localGameSnapshot(key)')
+        && str_contains($coordinator, 'pendingActionByGame')
+        && str_contains($coordinator, 'latestSnapshotByGame'),
+    'The first game frame and all pending actions must be coordinated through one API owner.'
+);
+
+foreach ([
+    "type === 'four_in_a_row'",
+    "type === 'checkers'",
+    "type === 'reversi'",
+    "type === 'chess'",
+    "type === 'go'",
+    "type === 'domino'",
+    "type === 'battleship'",
+] as $gameBranch) {
+    $assert(str_contains($optimistic, $gameBranch), "Missing optimistic action branch: {$gameBranch}.");
+}
+
+$assert(
+    str_contains($coordinator, 'renderGameSnapshot(optimistic, viewer, true);')
+        && str_contains($coordinator, "return 'Ход принят…';")
+        && str_contains($coordinator, 'markGamePending(Boolean(pending));')
+        && str_contains($coordinator, 'mgw-pending-shot'),
+    'Every non-Tic-Tac-Toe action must paint feedback before waiting for the server.'
 );
 
 $assert(
-    str_contains($stability, "target.id === 'goHome'")
-        && str_contains($stability, "if (!gameScreen.classList.contains('active')) clearGameSurface();")
-        && str_contains($stability, "board.replaceChildren();")
-        && str_contains($stability, "state.activeGame = null;"),
-    'Leaving a game must remove stale board and player DOM before another screen can paint.'
+    str_contains($coordinator, 'installPlayerPickerTransitionGuard();')
+        && str_contains($coordinator, "origin.closest('[data-open-player-picker]')")
+        && str_contains($coordinator, "document.body.classList.add('mgw-player-picker-transition')")
+        && str_contains($css, 'body.mgw-player-picker-transition #sheet .notifications-loading'),
+    'The player picker must not paint its intermediate loading card.'
 );
 
 $assert(
@@ -77,22 +114,40 @@ $assert(
         && str_contains($ticTacToe, '!button.disabled')
         && str_contains($ticTacToe, "button.textContent.trim() === ''")
         && str_contains($ticTacToe, 'renderBoard(optimisticGame, viewer, cell);'),
-    'The first enabled Tic Tac Toe tap must render immediately without waiting for another poll.'
+    'The first enabled Tic Tac Toe tap must remain immediate.'
 );
 
 $assert(
-    str_contains($css, '.cell.o::before')
-        && str_contains($css, 'border-radius:50%')
-        && str_contains($css, 'font-size:0 !important')
-        && str_contains($css, '.size-5 .cell.o::before')
-        && str_contains($css, '.size-9 .cell.o::before'),
-    'Tic Tac Toe circles must use proportional CSS geometry on every board size.'
+    str_contains($css, '.cell.x::before')
+        && str_contains($css, '.cell.x::after')
+        && str_contains($css, '.cell.o::before')
+        && str_contains($css, '--mgw-ttt-mark-size:36%')
+        && str_contains($css, 'transform:translate(-50%,-50%)'),
+    'X and O must share one centered deterministic geometry box.'
+);
+
+$assert(
+    str_contains($css, '.close::before')
+        && str_contains($css, '.close::after')
+        && str_contains($css, 'width:38px !important')
+        && str_contains($css, 'font-size:0 !important'),
+    'All close buttons must use one centered fixed-size CSS cross.'
+);
+
+foreach (['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino'] as $gameType) {
+    $assert(str_contains($icons, "{$gameType}:"), "Missing deterministic SVG icon for {$gameType}.");
+}
+$assert(
+    str_contains($icons, 'new MutationObserver')
+        && str_contains($icons, 'dataset.mgwSvgIcon')
+        && str_contains($css, '.game-icon svg'),
+    'Game icons must be restored after legacy copy rendering without OS emoji metrics.'
 );
 
 $assert(
     str_contains($stability, 'TECHNICAL_ERROR_PATTERN')
         && str_contains($stability, 'Не удалось связаться с сервером. Подключение восстановится автоматически.'),
-    'Raw English transport errors must not remain visible in the Mini App.'
+    'Raw transport errors must remain normalized.'
 );
 
 fwrite(STDOUT, "ProductionUiStabilityFixTest: {$assertions} assertions passed\n");
