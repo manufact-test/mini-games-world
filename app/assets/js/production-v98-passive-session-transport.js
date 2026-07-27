@@ -29,7 +29,8 @@ async function v98Fetch(input, init = {}){
 
   let changed = false;
   if (meta.kind === 'api' && PASSIVE_API_ACTIONS.has(meta.action)) {
-    if (data?.session?.locked) {
+    const wasLocked = Boolean(data?.session?.locked);
+    if (wasLocked) {
       rememberPassiveLock(data.session);
       data.session = passiveSession(data.session);
       data.game = null;
@@ -40,8 +41,8 @@ async function v98Fetch(input, init = {}){
       clearPassiveLock();
     }
 
-    if (meta.action === 'bootstrap' && data?.active_game?.id && !data?.session?.locked) {
-      publishPendingGame(data.active_game, data.me || null);
+    if (meta.action === 'bootstrap' && data?.active_game?.id && !wasLocked) {
+      publishPendingGame(data.active_game, data.me || null, true);
       data.active_game = null;
       changed = true;
     }
@@ -50,7 +51,9 @@ async function v98Fetch(input, init = {}){
   if (meta.kind === 'invites' && INVITE_GAME_ACTIONS.has(meta.action)) {
     const game = data?.game?.id ? data.game : (data?.active_game?.id ? data.active_game : null);
     if (game && String(game.status || '') === 'active') {
-      publishPendingGame(game, data.me || null);
+      if (!window.__MGW_V98_PASSIVE_SESSION_LOCK__?.locked) {
+        publishPendingGame(game, data.me || null, false);
+      }
       data.game = null;
       data.active_game = null;
       changed = true;
@@ -105,9 +108,10 @@ function passiveSession(session){
   };
 }
 
-function publishPendingGame(game, me){
+function publishPendingGame(game, me, deferUntilAppReady){
   const detail = { game, me };
   window.__MGW_V98_PENDING_GAME__ = detail;
+  if (deferUntilAppReady) return;
   queueMicrotask(() => document.dispatchEvent(new CustomEvent('mgw:v98-game-found', { detail })));
 }
 
