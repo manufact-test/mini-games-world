@@ -82,8 +82,11 @@ $assert(
         && str_contains($transport, 'data.session = passiveSession(data.session);')
         && str_contains($transport, 'inviteExpectationActive()')
         && str_contains($transport, "sessionStorage.setItem(INVITE_EXPECTATION_KEY")
+        && str_contains($transport, 'clearInviteExpectation();')
+        && str_contains($transport, 'window.setTimeout(() => {')
+        && !str_contains($transport, 'queueMicrotask(')
         && !str_contains($transport, 'toast('),
-    'Passive secondary-device reads must stay silent and invite sync may enter only after local intent.'
+    'Passive reads must stay silent, stale invite intent must be cleared on lock and game entry must run after the legacy invite handler completes.'
 );
 
 $assert(
