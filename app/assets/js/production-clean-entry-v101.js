@@ -4,6 +4,7 @@ import { initV99ExplicitLockGuard } from './production-v99-explicit-lock-guard.j
 import { initV99InvitePickerHold } from './production-v99-invite-picker-hold.js?v=99';
 import { initV100SearchEventBridge } from './production-v100-search-event-bridge.js?v=100';
 import { initV101SpeedRuntime } from './production-v101-speed-runtime.js?v=101';
+import { initV101CacheSafety } from './production-v101-cache-safety.js?v=101';
 import { initV101ShareController } from './production-v101-share-controller.js?v=101';
 import { initV101FastInviteWatch } from './production-v101-fast-invite-watch.js?v=101';
 import { initV101ResultSpeed } from './production-v101-result-speed.js?v=101';
@@ -19,6 +20,7 @@ initV99ExplicitLockGuard();
 
 /* Performance-only owners. They do not validate moves or alter game rules. */
 initV101SpeedRuntime();
+initV101CacheSafety();
 initV101ShareController();
 initV101FastInviteWatch();
 initV101ResultSpeed();
