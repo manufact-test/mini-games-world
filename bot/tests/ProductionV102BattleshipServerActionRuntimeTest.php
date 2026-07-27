@@ -61,7 +61,7 @@ $ships = [
 
 $result = $service->apply($db, $user, 'g1', ['type'=>'randomize_fleet', 'ships'=>$ships]);
 $assert(count($runtime->actions) === 11, 'Exact random fleet must become one clear plus ten existing place_ship validations.');
-$assert(($runtime->actions[0]['type'] ?? '') === 'clear_fleet', 'Server validation must clear the previous setup first inside the same transaction.');
+$assert(($runtime->actions[0]['type'] ?? '') === 'clear_fleet', 'Server validation must clear the previous setup first after full validation.');
 $assert(count($result['placed'] ?? []) === 10, 'All ten ships must be passed through the existing Battleship placement path.');
 $assert(($result['placed'][0]['cell'] ?? -1) === 0 && ($result['placed'][0]['orientation'] ?? '') === 'h', 'Horizontal ship normalization must preserve the exact layout.');
 $assert(($result['placed'][2]['cell'] ?? -1) === 40 && ($result['placed'][2]['orientation'] ?? '') === 'v', 'Vertical ship normalization must preserve the exact layout.');
@@ -70,6 +70,7 @@ $runtime->actions = [];
 $service->apply($db, $user, 'g1', ['type'=>'randomize_fleet']);
 $assert(count($runtime->actions) === 1 && ($runtime->actions[0]['type'] ?? '') === 'randomize_fleet', 'Legacy randomize without a client fleet must remain unchanged.');
 
+$runtime->actions = [];
 $failed = false;
 try {
     $invalid = $ships;
@@ -79,5 +80,30 @@ try {
     $failed = str_contains($e->getMessage(), 'прямой');
 }
 $assert($failed, 'A bent or discontinuous client ship must be rejected before placement.');
+$assert($runtime->actions === [], 'Invalid geometry must not clear or partially mutate the current setup.');
+
+$runtime->actions = [];
+$failedScalar = false;
+try {
+    $invalid = $ships;
+    $invalid[0]['cells'][1] = '1x';
+    $service->apply($db, $user, 'g1', ['type'=>'randomize_fleet', 'ships'=>$invalid]);
+} catch (RuntimeException $e) {
+    $failedScalar = str_contains($e->getMessage(), 'клетка');
+}
+$assert($failedScalar, 'Malformed scalar cells must be rejected instead of being coerced with intval.');
+$assert($runtime->actions === [], 'Malformed scalar input must not mutate the setup.');
+
+$runtime->actions = [];
+$failedComposition = false;
+try {
+    $invalid = $ships;
+    $invalid[9] = ['size'=>2,'cells'=>[95,96]];
+    $service->apply($db, $user, 'g1', ['type'=>'randomize_fleet', 'ships'=>$invalid]);
+} catch (RuntimeException $e) {
+    $failedComposition = str_contains($e->getMessage(), 'состав');
+}
+$assert($failedComposition, 'The server must reject a fleet with the wrong 1/2/3/4 composition.');
+$assert($runtime->actions === [], 'Wrong fleet composition must be rejected before clear_fleet.');
 
 fwrite(STDOUT, "ProductionV102BattleshipServerActionRuntimeTest: {$assertions} assertions passed\n");
