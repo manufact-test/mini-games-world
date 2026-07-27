@@ -20,6 +20,7 @@ $game = $read('app/assets/js/screens/game-screen-v102.js');
 $safe = $read('app/assets/js/screens/game-screen-v102-safe.js');
 $router = $read('app/assets/js/games/game-router-v102.js');
 $gateway = $read('app/assets/js/production-v100-optimistic-models.js');
+$bridge = $read('app/assets/js/production-v102-battleship-bridge.js');
 $history = $read('app/assets/js/production-v102-history-controller.js');
 $share = $read('app/assets/js/production-v102-share-controller.js');
 $models = $read('app/assets/js/production-v102-battleship-models.js');
@@ -28,13 +29,14 @@ $php = $read('app/v102.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 
 $assert(
-    str_contains($entry, 'initV102HistoryController();')
+    str_contains($entry, 'initV102BattleshipBridge();')
+        && str_contains($entry, 'initV102HistoryController();')
         && str_contains($entry, 'initV102ShareController();')
         && !str_contains($entry, 'initV101ShareController();')
         && str_contains($entry, 'initV101PollTuning();')
         && str_contains($entry, 'initV101SpeedRuntime();')
         && str_contains($entry, 'initV99ExplicitLockGuard();'),
-    'v102 must replace only history/share targets while retaining accepted speed and session owners.'
+    'v102 must add only the Battleship bridge and reported target owners while retaining accepted speed and session owners.'
 );
 
 $assert(
@@ -83,10 +85,12 @@ $assert(
 );
 
 $assert(
-    str_contains($gateway, "String(window.__MGW_REGRESSION_BUILD__ || '') === 'v102-mvp14-targeted-regression-repair'")
-        && str_contains($gateway, '? buildV102BattleshipSetupOptimistic(game, action)')
-        && str_contains($gateway, ': buildBattleshipSetupOptimistic(game, action);'),
-    'The shared optimistic gateway must preserve v100/v101 behavior and activate the new fleet model only for v102.'
+    !str_contains($gateway, 'production-v102-battleship-models.js')
+        && str_contains($gateway, "String(window.__MGW_REGRESSION_BUILD__ || '') !== 'v102-mvp14-targeted-regression-repair'")
+        && str_contains($gateway, 'window.__MGW_V102_BUILD_BATTLESHIP_SETUP__')
+        && str_contains($bridge, "from './production-v102-battleship-models.js?v=102'")
+        && str_contains($bridge, 'window.__MGW_V102_BUILD_BATTLESHIP_SETUP__ = buildV102BattleshipSetupOptimistic;'),
+    'Retained v100/v101 dependency graphs must not import v102; only the v102 entry may register the new fleet builder.'
 );
 
 $assert(
