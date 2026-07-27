@@ -3,6 +3,7 @@ import { initV99SessionTransport } from './production-v99-session-transport.js?v
 import { initV99ExplicitLockGuard } from './production-v99-explicit-lock-guard.js?v=99';
 import { initV99InvitePickerHold } from './production-v99-invite-picker-hold.js?v=99';
 import { initV100SearchEventBridge } from './production-v100-search-event-bridge.js?v=100';
+import { initV101PollTuning } from './production-v101-poll-tuning.js?v=101';
 import { initV101SpeedRuntime } from './production-v101-speed-runtime.js?v=101';
 import { initV101InviteSyncDedupe } from './production-v101-invite-sync-dedupe.js?v=101';
 import { initV101CacheSafety } from './production-v101-cache-safety.js?v=101';
@@ -20,6 +21,7 @@ initV99SessionTransport();
 initV99ExplicitLockGuard();
 
 /* Performance-only owners. They do not validate moves or alter game rules. */
+initV101PollTuning();
 initV101SpeedRuntime();
 initV101InviteSyncDedupe();
 initV101CacheSafety();
