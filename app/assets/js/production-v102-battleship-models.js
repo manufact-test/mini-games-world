@@ -96,6 +96,19 @@ function shipCells(start, size, orientation){
   return cells;
 }
 
+function validShipGeometry(cells){
+  if (cells.length <= 1) return true;
+  const horizontal = cells.every((cell, index) => (
+    Math.floor(cell / 10) === Math.floor(cells[0] / 10)
+    && cell === cells[0] + index
+  ));
+  if (horizontal) return true;
+  return cells.every((cell, index) => (
+    cell % 10 === cells[0] % 10
+    && cell === cells[0] + (index * 10)
+  ));
+}
+
 function canPlaceCells(cells, fleet){
   const occupied = new Set(fleet.flatMap(ship => ship.cells));
   for (const cell of cells) {
@@ -146,7 +159,10 @@ function sanitizeFleet(value){
   for (const raw of Array.isArray(value) ? value : []) {
     const size = Number(raw?.size);
     const cells = [...new Set((raw?.cells || []).map(Number))].sort((a,b) => a-b);
-    if (!FLEET_COUNTS[size] || cells.length !== size || cells.some(cell => !Number.isInteger(cell) || cell < 0 || cell >= 100)) continue;
+    if (!FLEET_COUNTS[size]
+      || cells.length !== size
+      || cells.some(cell => !Number.isInteger(cell) || cell < 0 || cell >= 100)
+      || !validShipGeometry(cells)) continue;
     result.push({
       id:String(raw?.id || `client-${size}-${cells.join('-')}`),
       size,
