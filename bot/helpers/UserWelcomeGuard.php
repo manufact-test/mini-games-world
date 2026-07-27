@@ -23,8 +23,8 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v99.php?v=99';
-        if ($baseWebAppUrl === '/app/v99.php?v=99') return false;
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v100.php?v=100';
+        if ($baseWebAppUrl === '/app/v100.php?v=100') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
@@ -88,8 +88,6 @@ final class UserWelcomeGuard
                 $userId = (string)($user['id'] ?? '');
                 if ($userId === '') return;
                 $data['users'][$userId] = $user;
-                /* The bot command knows the recipient. Create the in-app bell event
-                 * even when the Mini App is already open in another Telegram window. */
                 $invites->bindFromLink($data, $data['users'][$userId], $token, false, false);
             });
         } catch (Throwable $e) {
