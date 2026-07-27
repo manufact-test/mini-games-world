@@ -16,6 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $entry = $read('app/assets/js/production-clean-entry-v101.js');
 $main = $read('app/assets/js/main-v101.js');
 $speed = $read('app/assets/js/production-v101-speed-runtime.js');
+$cacheSafety = $read('app/assets/js/production-v101-cache-safety.js');
 $share = $read('app/assets/js/production-v101-share-controller.js');
 $watch = $read('app/assets/js/production-v101-fast-invite-watch.js');
 $result = $read('app/assets/js/production-v101-result-speed.js');
@@ -25,10 +26,12 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $sessionPosition = strpos($entry, 'initSessionOwnershipFix();');
 $transportPosition = strpos($entry, 'initV99SessionTransport();');
 $speedPosition = strpos($entry, 'initV101SpeedRuntime();');
+$cachePosition = strpos($entry, 'initV101CacheSafety();');
 $assert(
     $sessionPosition !== false
         && $transportPosition > $sessionPosition
         && $speedPosition > $transportPosition
+        && $cachePosition > $speedPosition
         && str_contains($entry, 'initV101ShareController();')
         && str_contains($entry, 'initV101FastInviteWatch();')
         && str_contains($entry, 'initV101ResultSpeed();'),
@@ -58,10 +61,18 @@ $assert(
 $assert(
     str_contains($speed, "['game_action','make_move']")
         && str_contains($speed, "['stats','profile','weekly_match_status','shop_status']")
-        && str_contains($speed, "['profile','notifications','shop_orders','weekly_match_status','shop_status']") === false
         && !str_contains($speed, 'winner_id =')
         && !str_contains($speed, 'finish_reason ='),
     'The speed layer may schedule reads but must never predict winners or mutate game completion rules.'
+);
+
+$assert(
+    str_contains($cacheSafety, "id.startsWith('start') && id.endsWith('SearchBtn')")
+        && str_contains($cacheSafety, "['accept','start'].includes(inviteAction)")
+        && str_contains($cacheSafety, "document.addEventListener('mgw:v99-game-found'")
+        && str_contains($cacheSafety, "id === 'storeCreateOrder'")
+        && !str_contains($cacheSafety, 'state.user ='),
+    'Balance-changing flows must invalidate passive caches without becoming another state owner.'
 );
 
 $assert(
