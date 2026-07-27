@@ -83,10 +83,25 @@ final class GameActionService
 
     private function normalizeBattleshipShip(array $ship): array
     {
-        $size = (int)($ship['size'] ?? 0);
-        $cells = array_values(array_unique(array_map('intval', is_array($ship['cells'] ?? null) ? $ship['cells'] : [])));
+        $size = filter_var($ship['size'] ?? null, FILTER_VALIDATE_INT);
+        $rawCells = $ship['cells'] ?? null;
+        if ($size === false || !is_array($rawCells) || !in_array((int)$size, [1, 2, 3, 4], true)) {
+            throw new RuntimeException('Некорректный размер корабля в случайной расстановке.');
+        }
+
+        $cells = [];
+        foreach ($rawCells as $rawCell) {
+            $cell = filter_var($rawCell, FILTER_VALIDATE_INT);
+            if ($cell === false) {
+                throw new RuntimeException('Некорректная клетка корабля в случайной расстановке.');
+            }
+            $cells[] = (int)$cell;
+        }
+        $cells = array_values(array_unique($cells));
         sort($cells);
-        if (!in_array($size, [1, 2, 3, 4], true) || count($cells) !== $size) {
+        $size = (int)$size;
+
+        if (count($cells) !== $size) {
             throw new RuntimeException('Некорректный размер корабля в случайной расстановке.');
         }
         if ($cells === [] || $cells[0] < 0 || $cells[count($cells) - 1] >= 100) {
