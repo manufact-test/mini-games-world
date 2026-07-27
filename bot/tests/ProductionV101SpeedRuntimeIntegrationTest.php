@@ -99,7 +99,13 @@ window.fetch = async (input, init = {}) => {
     return new Response(JSON.stringify({
       ok:true,
       unread_count:body.markRead ? 0 : 1,
-      items:[{ id:'n1', type:'invite_rematch_received', title:'Вам предлагают реванш', read:Boolean(body.markRead) }],
+      items:[{
+        id:'n1',
+        type:'invite_rematch_received',
+        title:'Вам предлагают реванш',
+        actions:['accept','decline'],
+        read:Boolean(body.markRead),
+      }],
     }), { status:200, headers:{'Content-Type':'application/json'} });
   }
 
