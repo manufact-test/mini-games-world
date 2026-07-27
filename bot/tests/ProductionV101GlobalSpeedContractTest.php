@@ -15,6 +15,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $entry = $read('app/assets/js/production-clean-entry-v101.js');
 $main = $read('app/assets/js/main-v101.js');
+$poll = $read('app/assets/js/production-v101-poll-tuning.js');
 $speed = $read('app/assets/js/production-v101-speed-runtime.js');
 $dedupe = $read('app/assets/js/production-v101-invite-sync-dedupe.js');
 $cacheSafety = $read('app/assets/js/production-v101-cache-safety.js');
@@ -26,13 +27,15 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 
 $sessionPosition = strpos($entry, 'initSessionOwnershipFix();');
 $transportPosition = strpos($entry, 'initV99SessionTransport();');
+$pollPosition = strpos($entry, 'initV101PollTuning();');
 $speedPosition = strpos($entry, 'initV101SpeedRuntime();');
 $dedupePosition = strpos($entry, 'initV101InviteSyncDedupe();');
 $cachePosition = strpos($entry, 'initV101CacheSafety();');
 $assert(
     $sessionPosition !== false
         && $transportPosition > $sessionPosition
-        && $speedPosition > $transportPosition
+        && $pollPosition > $transportPosition
+        && $speedPosition > $pollPosition
         && $dedupePosition > $speedPosition
         && $cachePosition > $dedupePosition
         && str_contains($entry, 'initV101ShareController();')
@@ -48,6 +51,16 @@ $assert(
         && !str_contains($main, 'game-screen-v99.js')
         && !str_contains($main, 'production-cross-game-coordinator'),
     'The speed release must preserve the reviewed v100 search/game owner without restoring historical owners.'
+);
+
+$assert(
+    str_contains($poll, 'APP_CONFIG.searchIntervalMs = Math.min')
+        && str_contains($poll, ', 900);')
+        && str_contains($poll, 'APP_CONFIG.gameIntervalMs = Math.min')
+        && str_contains($poll, ', 800);')
+        && !str_contains($poll, 'statsIntervalMs')
+        && !str_contains($poll, 'gameAction'),
+    'Shared polling cadence may be shortened without changing game actions, rules or background stats cadence.'
 );
 
 $assert(
@@ -85,20 +98,25 @@ $assert(
         && str_contains($cacheSafety, "document.addEventListener('mgw:v99-game-found'")
         && str_contains($cacheSafety, "id === 'storeCreateOrder'")
         && str_contains($cacheSafety, "controller.abort('cache-invalidated-by-state-change')")
+        && !str_contains($cacheSafety, "[data-open-player-picker]")
         && !str_contains($cacheSafety, 'state.user ='),
-    'Balance-changing flows must abort stale refreshes and invalidate passive caches without becoming another state owner.'
+    'Balance-changing flows must abort stale refreshes without cancelling the direct player picker prefetch.'
 );
 
 $assert(
     str_contains($share, "origin.closest('[data-invite-friend]')")
-        && str_contains($share, 'warmContext(defaultContext')
+        && str_contains($share, "origin.closest('[data-open-player-picker]')")
+        && str_contains($share, 'cancelWarmPreparation();')
+        && str_contains($share, 'controller:new AbortController()')
+        && str_contains($share, 'signal:entry.controller.signal')
+        && str_contains($share, 'mgwPrefetch:Boolean(options.prefetch)')
         && str_contains($share, 'obtainDraft(context, key)')
         && str_contains($share, 'telegram.shareMessage(preparedId')
         && !str_contains($share, 'Готовим ссылку')
         && !str_contains($share, 'Ждём результата отправки')
         && !str_contains($share, 'notifications-loading')
         && !str_contains($share, '✈️'),
-    'Telegram prepared messages must warm before the share click without restoring the old blocking sheet.'
+    'Share preparation must stay background-only, reusable and independently cancellable before the direct player picker.'
 );
 
 $assert(
