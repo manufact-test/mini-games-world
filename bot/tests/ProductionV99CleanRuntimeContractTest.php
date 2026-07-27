@@ -61,7 +61,7 @@ $assert(
         && $inviteInit < $searchInit
         && str_contains($lockGuard, 'currentV99PassiveLock()')
         && str_contains($lockGuard, 'event.stopImmediatePropagation();')
-        && str_contains($lockGuard, "inviteAction === 'start'"),
+        && str_contains($lockGuard, "['accept','start'].includes(inviteAction)"),
     'The early lock guard must block explicit secondary-device launches while invitations retain priority over ordinary search.'
 );
 
