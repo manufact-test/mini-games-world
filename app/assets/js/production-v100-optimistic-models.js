@@ -1,7 +1,6 @@
 import { buildOptimisticGame } from './production-cross-game-optimistic.js?v=96';
 import { buildTicTacToeOptimistic } from './production-v97-models.js?v=97';
 import { buildBattleshipSetupOptimistic } from './production-v99-models.js?v=99';
-import { buildV102BattleshipSetupOptimistic } from './production-v102-battleship-models.js?v=102';
 
 export function buildV100OptimisticGame(game, action, viewerId, gameType){
   const type = String(gameType || '');
@@ -13,8 +12,9 @@ export function buildV100OptimisticGame(game, action, viewerId, gameType){
   }
 
   if (type === 'battleship' && String(game?.phase || '') === 'setup') {
-    return isV102Runtime()
-      ? buildV102BattleshipSetupOptimistic(game, action)
+    const v102Builder = v102BattleshipBuilder();
+    return v102Builder
+      ? v102Builder(game, action)
       : buildBattleshipSetupOptimistic(game, action);
   }
 
@@ -79,9 +79,11 @@ export function invalidateInFlightPoll(runtime, gameId){
   return true;
 }
 
-function isV102Runtime(){
-  return typeof window !== 'undefined'
-    && String(window.__MGW_REGRESSION_BUILD__ || '') === 'v102-mvp14-targeted-regression-repair';
+function v102BattleshipBuilder(){
+  if (typeof window === 'undefined') return null;
+  if (String(window.__MGW_REGRESSION_BUILD__ || '') !== 'v102-mvp14-targeted-regression-repair') return null;
+  const builder = window.__MGW_V102_BUILD_BATTLESHIP_SETUP__;
+  return typeof builder === 'function' ? builder : null;
 }
 
 function normalizeSideSymbols(game, type){
