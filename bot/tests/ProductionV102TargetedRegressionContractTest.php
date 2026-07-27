@@ -19,6 +19,7 @@ $search = $read('app/assets/js/screens/search-screen-v102.js');
 $game = $read('app/assets/js/screens/game-screen-v102.js');
 $safe = $read('app/assets/js/screens/game-screen-v102-safe.js');
 $router = $read('app/assets/js/games/game-router-v102.js');
+$gateway = $read('app/assets/js/production-v100-optimistic-models.js');
 $history = $read('app/assets/js/production-v102-history-controller.js');
 $share = $read('app/assets/js/production-v102-share-controller.js');
 $models = $read('app/assets/js/production-v102-battleship-models.js');
@@ -82,6 +83,13 @@ $assert(
 );
 
 $assert(
+    str_contains($gateway, "String(window.__MGW_REGRESSION_BUILD__ || '') === 'v102-mvp14-targeted-regression-repair'")
+        && str_contains($gateway, '? buildV102BattleshipSetupOptimistic(game, action)')
+        && str_contains($gateway, ': buildBattleshipSetupOptimistic(game, action);'),
+    'The shared optimistic gateway must preserve v100/v101 behavior and activate the new fleet model only for v102.'
+);
+
+$assert(
     str_contains($history, "origin.closest('#balanceHistoryBtn')")
         && str_contains($history, "origin.closest('#matchHistoryBtn')")
         && str_contains($history, 'event.stopImmediatePropagation();')
@@ -107,6 +115,7 @@ $assert(
         && str_contains($models, 'game.fleet_placed =')
         && str_contains($models, "type === 'randomize_fleet'")
         && str_contains($models, 'createV102RandomFleet()')
+        && str_contains($models, 'validShipGeometry(cells)')
         && str_contains($actions, "'battleship' => \$this->applyBattleshipAction")
         && str_contains($actions, "['type' => 'clear_fleet']")
         && str_contains($actions, "'type' => 'place_ship'"),
