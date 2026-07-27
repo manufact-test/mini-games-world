@@ -144,8 +144,8 @@ $assert(
     str_contains($phpEntry, 'production-clean-entry-v101.js?v=101')
         && str_contains($phpEntry, 'main-v101.js?v=101')
         && str_contains($phpEntry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v101.php?v=101'),
-    'New Telegram launches must use the no-store v101 speed entrypoint.'
+        && str_contains($welcome, '/app/v102.php?v=102'),
+    'The retained no-store v101 speed entrypoint must remain valid while Telegram advances to v102.'
 );
 
 fwrite(STDOUT, "ProductionV101GlobalSpeedContractTest: {$assertions} assertions passed\n");
