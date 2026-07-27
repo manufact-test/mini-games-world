@@ -2,15 +2,14 @@ import { getInitData } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
-const FAST_INTERVAL_MS = 350;
-const FAST_WINDOW_MS = 7000;
+const BURST_DELAYS_MS = [280, 680, 1100];
 
 const runtime = window.__MGW_V101_FAST_INVITES__ ||= {
   initialized:false,
   baseline:false,
   seen:new Set(),
-  timer:null,
-  deadline:0,
+  timers:[],
+  generation:0,
   busy:false,
 };
 
@@ -23,22 +22,24 @@ export function initV101FastInviteWatch(){
     const id = String(event.detail?.item?.id || '');
     if (id) runtime.seen.add(id);
   });
-  document.addEventListener('mgw:game-dismissed', () => startFastWindow());
+  document.addEventListener('mgw:game-dismissed', startFastBurst);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') stopFastWindow();
+    if (document.visibilityState !== 'visible') stopFastBurst();
   });
 }
 
-function startFastWindow(){
-  runtime.deadline = Date.now() + FAST_WINDOW_MS;
-  window.clearTimeout(runtime.timer);
-  void tick(true);
+function startFastBurst(){
+  stopFastBurst();
+  const generation = ++runtime.generation;
+  runtime.timers = BURST_DELAYS_MS.map(delay => window.setTimeout(() => {
+    void tick(generation, true);
+  }, delay));
 }
 
-function stopFastWindow(){
-  window.clearTimeout(runtime.timer);
-  runtime.timer = null;
-  runtime.deadline = 0;
+function stopFastBurst(){
+  runtime.generation++;
+  runtime.timers.forEach(timer => window.clearTimeout(timer));
+  runtime.timers = [];
 }
 
 async function primeBaseline(){
@@ -47,14 +48,15 @@ async function primeBaseline(){
   runtime.baseline = true;
 }
 
-async function tick(announce){
-  if (runtime.busy || document.visibilityState !== 'visible') return scheduleNext();
-  if (Date.now() > runtime.deadline) return stopFastWindow();
+async function tick(generation, announce){
+  if (generation !== runtime.generation || runtime.busy || document.visibilityState !== 'visible') return;
 
   runtime.busy = true;
   let found = false;
   try {
     const result = await syncRequest();
+    if (generation !== runtime.generation) return;
+
     const events = Array.isArray(result?.invite_events) ? result.invite_events : [];
     const unreadCount = Number(result?.unread_count || 0);
     document.dispatchEvent(new CustomEvent('mgw:notification-count', { detail:{ unreadCount } }));
@@ -82,14 +84,7 @@ async function tick(announce){
     runtime.busy = false;
   }
 
-  if (found) stopFastWindow();
-  else scheduleNext();
-}
-
-function scheduleNext(){
-  if (!runtime.deadline || Date.now() > runtime.deadline) return stopFastWindow();
-  window.clearTimeout(runtime.timer);
-  runtime.timer = window.setTimeout(() => tick(true), FAST_INTERVAL_MS);
+  if (found) stopFastBurst();
 }
 
 function rememberEvents(items){
