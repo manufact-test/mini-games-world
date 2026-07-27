@@ -27,6 +27,7 @@ export function currentV99PassiveLock(){
 }
 
 export function rememberV99PassiveLock(session){
+  clearInviteExpectation();
   const lock = {
     locked:true,
     message:String(session?.message || 'У вас уже идёт активная игра на другом устройстве.'),
@@ -121,7 +122,9 @@ function clearInviteExpectation(){
 
 function publishGame(game, me){
   const detail = { game, me };
-  queueMicrotask(() => document.dispatchEvent(new CustomEvent('mgw:v99-game-found', { detail })));
+  window.setTimeout(() => {
+    document.dispatchEvent(new CustomEvent('mgw:v99-game-found', { detail }));
+  }, 0);
 }
 
 function passiveSession(session){
