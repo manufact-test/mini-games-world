@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v92-mvp14-first-interaction-readiness-hotfix';
+window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
 import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
@@ -94,15 +94,15 @@ async function boot(){
     renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
 
-    /* Keep the common preloader visible until every first-click screen has data. */
-    const firstInteraction = await warmFirstInteractionData();
-    const firstInteractionReady = firstInteraction.profileReady
-      && firstInteraction.historyReady
-      && firstInteraction.notificationsReady
-      && firstInteraction.opponentsReady;
-    if (!firstInteractionReady) {
-      throw new Error('Не удалось подготовить данные интерфейса. Откройте приложение снова.');
-    }
+    /* Profile, history, notifications and opponents improve the first click, but
+     * none of them may invalidate an otherwise authenticated application boot. */
+    const firstInteraction = await warmFirstInteractionData().catch(() => ({
+      profileReady:false,
+      historyReady:false,
+      notificationsReady:false,
+      ordersReady:false,
+      opponentsReady:false,
+    }));
     window.__MGW_FIRST_INTERACTION_READY__ = firstInteraction;
     dispatchAppReady();
 
@@ -119,7 +119,7 @@ async function boot(){
     startStatsPolling();
   } catch (error) {
     showBootFailure();
-    toast(error.message || 'Не удалось загрузить данные. Откройте приложение снова.');
+    toast(error.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
   } finally {
     hidePreloader();
   }
