@@ -3,6 +3,7 @@ import { initV99SessionTransport } from './production-v99-session-transport.js?v
 import { initV99ExplicitLockGuard } from './production-v99-explicit-lock-guard.js?v=99';
 import { initV99InvitePickerHold } from './production-v99-invite-picker-hold.js?v=99';
 import { initV100ShareController } from './production-v100-share-controller.js?v=100';
+import { initV100SearchEventBridge } from './production-v100-search-event-bridge.js?v=100';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
@@ -14,6 +15,9 @@ initV99ExplicitLockGuard();
 
 /* The v100 controller is the only owner of Telegram link sharing. */
 initV100ShareController();
+
+/* Retained result buttons dispatch the historical event name; bridge it once. */
+initV100SearchEventBridge();
 
 /* Visual-only helpers do not own search, game actions or polling. */
 initV99InvitePickerHold();
