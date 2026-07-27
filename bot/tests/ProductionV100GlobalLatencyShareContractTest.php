@@ -15,6 +15,8 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $entry = $read('app/assets/js/production-clean-entry-v100.js');
 $main = $read('app/assets/js/main-v100.js');
+$search = $read('app/assets/js/screens/search-screen-v100.js');
+$searchBridge = $read('app/assets/js/production-v100-search-event-bridge.js');
 $game = $read('app/assets/js/screens/game-screen-v100.js');
 $safeGame = $read('app/assets/js/screens/game-screen-v100-safe.js');
 $models = $read('app/assets/js/production-v100-optimistic-models.js');
@@ -24,17 +26,34 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 
 $assert(
     str_contains($entry, 'initV100ShareController();')
+        && str_contains($entry, 'initV100SearchEventBridge();')
         && str_contains($entry, "v100-mvp14-global-latency-share")
         && !str_contains($entry, 'initProductionV97RuntimeOwner')
         && !str_contains($entry, 'initV98UiOwner'),
-    'V100 entry must install one share owner without restoring historical runtime owners.'
+    'V100 entry must install one share owner and one event bridge without restoring historical runtime owners.'
 );
 
 $assert(
-    str_contains($main, "./screens/game-screen-v100-safe.js?v=100")
+    str_contains($main, "./screens/search-screen-v100.js?v=100")
+        && str_contains($main, "./screens/game-screen-v100-safe.js?v=100")
         && str_contains($main, "window.__MGW_BUILD__ = 'v100-mvp14-global-latency-share'")
+        && !str_contains($main, "./screens/search-screen-v99.js")
         && !str_contains($main, "./screens/game-screen-v99.js"),
-    'V100 must launch the duplicate-entry-safe game runtime instead of the v99 screen.'
+    'V100 must route ordinary matchmaking and invitation entry into the same safe game runtime.'
+);
+
+$assert(
+    str_contains($search, "from './game-screen-v100-safe.js?v=100'")
+        && str_contains($search, "window.__MGW_V100_SEARCH_RUNTIME__")
+        && str_contains($search, "document.addEventListener('mgw:v100-search-request'")
+        && !str_contains($search, "from './game-screen-v99.js"),
+    'Matchmaking results must never bypass v100 through the retained v99 game screen.'
+);
+
+$assert(
+    str_contains($searchBridge, "document.addEventListener('mgw:v99-search-request'")
+        && str_contains($searchBridge, "new CustomEvent('mgw:v100-search-request'"),
+    'Retained result-sheet actions must reach the v100 search owner exactly once.'
 );
 
 $assert(
