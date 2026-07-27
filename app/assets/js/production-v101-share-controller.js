@@ -34,6 +34,12 @@ export function initV101ShareController(){
   document.addEventListener('pointerdown', event => {
     const origin = event.target;
     if (!(origin instanceof Element)) return;
+
+    if (origin.closest('[data-open-player-picker]')) {
+      cancelWarmPreparation();
+      return;
+    }
+
     const trigger = origin.closest('[data-invite-friend]');
     if (!trigger) return;
     runtime.lastGameType = String(trigger.dataset.inviteFriend || state.selectedGame || 'tictactoe');
@@ -118,11 +124,15 @@ function warmContext(context){
     context:normalized,
     status:'loading',
     draft:null,
+    controller:new AbortController(),
     promise:null,
   };
   runtime.warm = entry;
 
-  entry.promise = inviteRequest('create_link_draft', normalized, { prefetch:true })
+  entry.promise = inviteRequest('create_link_draft', normalized, {
+    prefetch:true,
+    signal:entry.controller.signal,
+  })
     .then(result => {
       const draft = result?.invite || null;
       if (!draft?.token) throw new Error('Не удалось подготовить приглашение.');
@@ -138,8 +148,16 @@ function warmContext(context){
     });
 
   if (previous?.status === 'ready' && previous.draft?.token) discardDraft(previous.draft);
-  else if (previous?.status === 'loading') previous.promise?.then(discardDraft).catch(() => null);
+  else if (previous?.status === 'loading') previous.controller?.abort('superseded-share-context');
   return entry.promise;
+}
+
+function cancelWarmPreparation(){
+  const warm = runtime.warm;
+  runtime.warm = null;
+  if (!warm) return;
+  if (warm.status === 'loading') warm.controller?.abort('direct-player-picker');
+  else if (warm.status === 'ready' && warm.draft?.token) discardDraft(warm.draft);
 }
 
 async function obtainDraft(context, key){
@@ -249,6 +267,7 @@ async function inviteRequest(action, payload = {}, options = {}){
       action,
       ...payload,
     }),
+    signal:options.signal,
     mgwPrefetch:Boolean(options.prefetch),
   });
   const data = await response.json().catch(() => null);
