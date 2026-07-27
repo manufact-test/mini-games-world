@@ -37,7 +37,7 @@ export function initV101ShareController(){
     const trigger = origin.closest('[data-invite-friend]');
     if (!trigger) return;
     runtime.lastGameType = String(trigger.dataset.inviteFriend || state.selectedGame || 'tictactoe');
-    warmContext(defaultContext(runtime.lastGameType));
+    void warmContextSafely(defaultContext(runtime.lastGameType));
   }, true);
 
   document.addEventListener('click', event => {
@@ -47,12 +47,12 @@ export function initV101ShareController(){
     const inviteTrigger = origin.closest('[data-invite-friend]');
     if (inviteTrigger) {
       runtime.lastGameType = String(inviteTrigger.dataset.inviteFriend || state.selectedGame || 'tictactoe');
-      window.setTimeout(() => warmContext(readInviteContext()), 0);
+      window.setTimeout(() => void warmContextSafely(readInviteContext()), 0);
       return;
     }
 
     if (origin.closest('[data-invite-size], [data-invite-bet]')) {
-      window.setTimeout(() => warmContext(readInviteContext()), 0);
+      window.setTimeout(() => void warmContextSafely(readInviteContext()), 0);
       return;
     }
 
@@ -98,8 +98,12 @@ async function startShare(button){
     if (runtime.active?.id === attempt.id) runtime.active = null;
     resetButton(attempt);
     toast(error?.message || 'Не удалось подготовить приглашение.');
-    warmContext(context);
+    void warmContextSafely(context);
   }
+}
+
+function warmContextSafely(context){
+  return warmContext(context).catch(() => null);
 }
 
 function warmContext(context){
@@ -118,7 +122,7 @@ function warmContext(context){
   };
   runtime.warm = entry;
 
-  entry.promise = inviteRequest('create_link_draft', normalized)
+  entry.promise = inviteRequest('create_link_draft', normalized, { prefetch:true })
     .then(result => {
       const draft = result?.invite || null;
       if (!draft?.token) throw new Error('Не удалось подготовить приглашение.');
@@ -235,7 +239,7 @@ function defaultSize(gameType){
   return Number(DEFAULT_SIZES[String(gameType || '')] || 3);
 }
 
-async function inviteRequest(action, payload = {}){
+async function inviteRequest(action, payload = {}, options = {}){
   const response = await fetch(INVITES_URL, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
@@ -245,6 +249,7 @@ async function inviteRequest(action, payload = {}){
       action,
       ...payload,
     }),
+    mgwPrefetch:Boolean(options.prefetch),
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) throw new Error(data?.error || `Ошибка приглашения: ${response.status}`);
