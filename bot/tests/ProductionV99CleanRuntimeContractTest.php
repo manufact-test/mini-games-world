@@ -18,6 +18,7 @@ $main = $read('app/assets/js/main-v99.js');
 $search = $read('app/assets/js/screens/search-screen-v99.js');
 $game = $read('app/assets/js/screens/game-screen-v99.js');
 $transport = $read('app/assets/js/production-v99-session-transport.js');
+$lockGuard = $read('app/assets/js/production-v99-explicit-lock-guard.js');
 $picker = $read('app/assets/js/production-v99-invite-picker-hold.js');
 $phpEntry = $read('app/v99.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
@@ -37,9 +38,10 @@ foreach ($forbiddenOwners as $owner) {
 $assert(
     str_contains($entry, 'initSessionOwnershipFix();')
         && str_contains($entry, 'initV99SessionTransport();')
+        && str_contains($entry, 'initV99ExplicitLockGuard();')
         && str_contains($entry, 'initV99InvitePickerHold();')
         && str_contains($entry, "v99-mvp14-clean-runtime"),
-    'V99 entry must contain only identity/passive transport and visual-only helpers.'
+    'V99 entry must install identity, passive transport, one explicit lock guard and visual-only helpers.'
 );
 
 $assert(
@@ -49,6 +51,18 @@ $assert(
         && !str_contains($main, 'first-interaction-readiness')
         && !str_contains($main, 'request-guard'),
     'V99 main must load the clean search/game screens without old timing wrappers.'
+);
+
+$inviteInit = strpos($main, 'initGameInvites();');
+$searchInit = strpos($main, 'initSearchScreen();');
+$assert(
+    $inviteInit !== false
+        && $searchInit !== false
+        && $inviteInit < $searchInit
+        && str_contains($lockGuard, 'currentV99PassiveLock()')
+        && str_contains($lockGuard, 'event.stopImmediatePropagation();')
+        && str_contains($lockGuard, "inviteAction === 'start'"),
+    'The early lock guard must block explicit secondary-device launches while invitations retain priority over ordinary search.'
 );
 
 $assert(
