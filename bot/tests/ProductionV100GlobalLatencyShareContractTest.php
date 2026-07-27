@@ -16,6 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $entry = $read('app/assets/js/production-clean-entry-v100.js');
 $main = $read('app/assets/js/main-v100.js');
 $game = $read('app/assets/js/screens/game-screen-v100.js');
+$safeGame = $read('app/assets/js/screens/game-screen-v100-safe.js');
 $models = $read('app/assets/js/production-v100-optimistic-models.js');
 $share = $read('app/assets/js/production-v100-share-controller.js');
 $phpEntry = $read('app/v100.php');
@@ -30,10 +31,17 @@ $assert(
 );
 
 $assert(
-    str_contains($main, "./screens/game-screen-v100.js?v=100")
+    str_contains($main, "./screens/game-screen-v100-safe.js?v=100")
         && str_contains($main, "window.__MGW_BUILD__ = 'v100-mvp14-global-latency-share'")
         && !str_contains($main, "./screens/game-screen-v99.js"),
-    'V100 must launch the interaction-safe game runtime instead of the v99 screen.'
+    'V100 must launch the duplicate-entry-safe game runtime instead of the v99 screen.'
+);
+
+$assert(
+    str_contains($safeGame, "from './game-screen-v100.js?v=100'")
+        && str_contains($safeGame, 'if (item?.running || Number(item?.queue?.length || 0) > 0) return;')
+        && str_contains($safeGame, 'enterBaseGame(game, me);'),
+    'Repeated invite/search game-entry signals must not reset a pending local action queue.'
 );
 
 $assert(
@@ -59,6 +67,7 @@ $resetPosition = strpos($share, 'resetButton(attempt);');
 $openPosition = strpos($share, 'openPreparedMessage(tg, preparedId, attempt);');
 $assert(
     str_contains($share, "origin.closest('[data-create-link-invite]')")
+        && str_contains($share, "origin.closest('[data-invite-friend]')")
         && str_contains($share, 'event.stopImmediatePropagation();')
         && $resetPosition !== false
         && $openPosition !== false
@@ -74,8 +83,9 @@ $assert(
     str_contains($share, 'tg.shareMessage(preparedId, result => finish(Boolean(result)))')
         && str_contains($share, "if (sent === false)")
         && str_contains($share, "inviteRequest('discard_draft'")
-        && str_contains($share, 'renderOwnerWaiting(attempt.draft);'),
-    'Share callback must reconcile send/cancel asynchronously without blocking the visible sheet.'
+        && str_contains($share, 'renderOwnerWaiting(attempt.draft);')
+        && str_contains($share, 'const gameType = String(lastGameType'),
+    'Share callback must reconcile send/cancel asynchronously and preserve the exact invited game type.'
 );
 
 $assert(
