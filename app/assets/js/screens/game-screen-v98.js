@@ -123,8 +123,8 @@ function renderGame(game, me, forceSurface){
 
   const fingerprint = gameSurfaceFingerprint(game, me.id);
   const renderedFingerprint = String(
-    surface.dataset.mgwV98Fingerprint
-    || surface.dataset.mgwV97Fingerprint
+    surface.dataset.mgwV97Fingerprint
+    || surface.dataset.mgwV98Fingerprint
     || ''
   );
   const surfaceMissing = surface.childElementCount === 0;
