@@ -69,8 +69,22 @@ assert(go?.board?.[10] === 'B', 'Go must place a stone immediately.');
 const domino = buildV100OptimisticGame({ ...common, viewer_hand:[{ id:'6-5', a:6, b:5 }], chain:[], open_left:6, open_right:6, move_count:0 }, { type:'play', tile:'6-5', side:'left' }, 'me', 'domino');
 assert(domino?.viewer_hand?.length === 0 && domino?.chain?.length === 1, 'Domino must place a tile immediately.');
 
-const setup = buildV100OptimisticGame({ ...common, phase:'setup', my_board:Array(100).fill('water'), my_fleet:[] }, { type:'place_ship', size:2, cell:22, orientation:'h' }, 'me', 'battleship');
+const legacySetupInput = {
+  ...common,
+  phase:'setup',
+  my_board:Array(100).fill('water'),
+  my_fleet:[],
+  fleet_placed:[{size:2, placed:0, required:3}],
+  remaining_to_place:[{size:2, count:3}],
+};
+const setup = buildV100OptimisticGame(legacySetupInput, { type:'place_ship', size:2, cell:22, orientation:'h' }, 'me', 'battleship');
 assert(setup?.my_board?.[22] === 'ship' && setup?.my_board?.[23] === 'ship', 'Battleship setup must place one complete ship immediately.');
+assert(setup?.remaining_to_place?.[0]?.count === 3, 'Without a v102 build, the retained v100 Battleship summary behavior must stay unchanged.');
+
+globalThis.window = { __MGW_REGRESSION_BUILD__:'v102-mvp14-targeted-regression-repair' };
+const v102Setup = buildV100OptimisticGame(legacySetupInput, { type:'place_ship', size:2, cell:22, orientation:'h' }, 'me', 'battleship');
+assert(v102Setup?.remaining_to_place?.find(item => item.size === 2)?.count === 2, 'The v102 build must activate immediate Battleship fleet summaries.');
+delete globalThis.window;
 
 const battle = buildV100OptimisticGame({ ...common, phase:'battle', enemy_board:Array(100).fill('unknown') }, { type:'fire', cell:55 }, 'me', 'battleship');
 assert(battle?.pending_fire_cell === 55, 'Battleship battle must expose an immediate pending shot.');
