@@ -32,7 +32,7 @@ $assert(
         && $mainPosition !== false
         && $entryPosition < $mainPosition
         && str_contains($index, 'data-hotfix-build="v96-mvp14-root-cause-stabilization"'),
-    'The cache-busted v96 entry must load before the v96 main graph.'
+    'The retained v96 fallback entry must remain internally consistent.'
 );
 
 $sessionInit = strpos($entry, 'initSessionOwnershipFix();');
@@ -68,7 +68,7 @@ $assert(
         && str_contains($coordinator, 'while (runtime.queue.length)')
         && str_contains($coordinator, 'onAction:nextAction => submitRenderedAction(game.id, nextAction)')
         && !str_contains($coordinator, 'onAction:() => null'),
-    'All non-Tic-Tac-Toe actions must use the authoritative viewer and a live serialized action queue.'
+    'The retained v96 fallback must keep its reviewed action queue contract.'
 );
 
 $assert(
@@ -95,9 +95,9 @@ $assert(
 );
 
 $assert(
-    str_contains($welcome, "'/app/?v=96'")
+    str_contains($welcome, "'/app/v97.php?v=97'")
         && !str_contains($welcome, "'/app/?v=85'"),
-    'New bot start buttons must open the cache-busted v96 Mini App.'
+    'New bot start buttons must advance to the cache-busted v97 Mini App.'
 );
 
 fwrite(STDOUT, "ProductionV96RootCauseStabilizationTest: {$assertions} assertions passed\n");
