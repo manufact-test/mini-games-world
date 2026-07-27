@@ -46,10 +46,11 @@ initUserCopy();
 initGameCardCopy();
 initNotificationsScreen();
 
-/* V99 owns search and game state before setup/invitation listeners are registered. */
+/* The early passive-lock guard is already installed by the production entry.
+ * Invitations retain priority over starting a different matchmaking flow. */
 initGameScreen();
-initSearchScreen();
 initGameInvites();
+initSearchScreen();
 initDominoChainLayout();
 
 initTicTacToeEntry();
