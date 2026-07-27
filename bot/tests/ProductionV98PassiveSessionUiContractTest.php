@@ -41,9 +41,11 @@ $assert(
         && str_contains($transport, 'data.session = passiveSession(data.session);')
         && str_contains($transport, 'data.game = null;')
         && str_contains($transport, 'data.active_game = null;')
+        && str_contains($transport, 'publishPendingGame(data.active_game, data.me || null, true);')
+        && str_contains($transport, 'if (!window.__MGW_V98_PASSIVE_SESSION_LOCK__?.locked)')
         && !str_contains($transport, "PASSIVE_API_ACTIONS = new Set(['start_search'")
         && !str_contains($transport, "PASSIVE_API_ACTIONS = new Set(['game_action'"),
-    'Only passive reads may hide a secondary-device lock; mutations must remain server-authoritative.'
+    'Only passive reads may hide a secondary-device lock; bootstrap must wait for readiness and invite sync must not reopen a locked match.'
 );
 
 $assert(
@@ -65,11 +67,11 @@ $assert(
 
 $assert(
     str_contains($game, 'gameSurfaceFingerprint(game, me.id)')
-        && str_contains($game, 'surface.dataset.mgwV98Fingerprint')
+        && strpos($game, 'surface.dataset.mgwV97Fingerprint') < strpos($game, 'surface.dataset.mgwV98Fingerprint')
         && str_contains($game, 'if (forceSurface || surfaceMissing || fingerprint !== renderedFingerprint)')
         && str_contains($game, 'renderGameSurface({')
         && str_contains($game, 'startLegacyGamePolling(id);'),
-    'Active polling must update chrome without replacing an unchanged board and retain the reviewed result-sheet path.'
+    'Active polling must prefer the latest optimistic fingerprint, avoid replacing an unchanged board and retain the reviewed result-sheet path.'
 );
 
 $startPosition = strpos($ui, 'startGamePolling(id);');
