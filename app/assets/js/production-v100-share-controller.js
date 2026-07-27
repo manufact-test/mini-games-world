@@ -10,6 +10,7 @@ const CALLBACK_TIMEOUT_MS = 90000;
 let initialized = false;
 let attemptSequence = 0;
 let activeAttempt = null;
+let lastGameType = 'tictactoe';
 
 export function initV100ShareController(){
   if (initialized) return;
@@ -18,6 +19,12 @@ export function initV100ShareController(){
   document.addEventListener('click', event => {
     const origin = event.target;
     if (!(origin instanceof Element)) return;
+
+    const inviteTrigger = origin.closest('[data-invite-friend]');
+    if (inviteTrigger) {
+      lastGameType = String(inviteTrigger.dataset.inviteFriend || state.selectedGame || 'tictactoe');
+    }
+
     const button = origin.closest('[data-create-link-invite]');
     if (!(button instanceof HTMLButtonElement)) return;
 
@@ -118,7 +125,7 @@ function readInviteContext(){
   const activeSize = document.querySelector('[data-invite-size].active');
   const activeBet = document.querySelector('[data-invite-bet].active');
   const room = String(state.room || '') === 'gold' ? 'gold' : 'match';
-  const gameType = String(state.selectedGame || 'tictactoe');
+  const gameType = String(lastGameType || state.selectedGame || 'tictactoe');
   const boardSize = Number(activeSize?.dataset.inviteSize || state.selectedBoardSize || 3);
   const fallbackBet = room === 'gold'
     ? Number(state.selectedBet || APP_CONFIG.goldBets?.[0] || 10)
