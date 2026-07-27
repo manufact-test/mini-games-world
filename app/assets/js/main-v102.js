@@ -19,7 +19,7 @@ import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen.js?v=85';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
-import { initSearchScreen } from './screens/search-screen-v100.js?v=100';
+import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
@@ -46,7 +46,7 @@ initUserCopy();
 initGameCardCopy();
 initNotificationsScreen();
 
-/* Keep ordinary matchmaking unchanged; only the targeted v102 game owner is new. */
+/* Keep search behavior unchanged while routing its result into the v102 game owner. */
 initGameScreen();
 initGameInvites();
 initSearchScreen();
