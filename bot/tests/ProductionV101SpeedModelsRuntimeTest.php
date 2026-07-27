@@ -33,12 +33,20 @@ assert(cacheDisposition(700, 500, 1000) === 'stale', 'Stale cache must render wh
 assert(cacheDisposition(1500, 500, 1000) === 'miss', 'Expired cache must wait for current data.');
 
 const merged = mergeNotificationSnapshot(
-  { items:[{id:'old', title:'Old'}, {id:'same', title:'Before'}], unread_count:1 },
+  { items:[{id:'old', title:'Old'}, {id:'same', title:'Before', actions:['accept','decline']}], unread_count:1 },
   { id:'same', title:'After' },
   2,
 );
 assert(merged.items.length === 2 && merged.items[0].title === 'After', 'A live invite event must replace the cached duplicate at the front.');
+assert(merged.items[0].actions.join(',') === 'accept,decline', 'A later raw duplicate must not erase already prepared invite actions.');
 assert(merged.unread_count === 2, 'Live unread count must update the cached notification sheet.');
+
+const rematch = mergeNotificationSnapshot(null, {
+  id:'rematch',
+  type:'invite_rematch_received',
+  title:'Вам предлагают реванш',
+}, 1);
+assert(rematch.items[0].actions.join(',') === 'accept,decline', 'A fast rematch event must be actionable before the full notification read.');
 
 const read = optimisticReadNotifications(merged);
 assert(read.unread_count === 0 && read.items.every(item => item.read === true), 'Opening cached notifications must mark the local sheet read immediately.');
