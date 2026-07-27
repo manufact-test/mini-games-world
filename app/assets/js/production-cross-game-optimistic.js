@@ -27,30 +27,7 @@ export function buildOptimisticGame(game, action, viewerId, type){
   }
 
   if (type === 'checkers') {
-    const from = Number(action?.from);
-    const to = Number(action?.to);
-    const legal = (optimistic.legal_moves || []).find(move => Number(move?.from) === from && Number(move?.to) === to);
-    const board = Array.isArray(optimistic.board) ? [...optimistic.board] : null;
-    if (!legal || !board || !Number.isInteger(from) || !Number.isInteger(to)) return null;
-    let piece = String(board[from] || '');
-    if (!piece) return null;
-    board[from] = '';
-    const captured = legal.capture ? Number(legal.captured ?? -1) : -1;
-    if (captured >= 0 && captured < board.length) board[captured] = '';
-    if (piece === 'w' && Math.floor(to / 8) === 0) piece = 'W';
-    if (piece === 'b' && Math.floor(to / 8) === 7) piece = 'B';
-    board[to] = piece;
-    optimistic.board = board;
-    optimistic.last_move = { from, to, capture:captured >= 0, captured:captured >= 0 ? captured : null, player_id:viewerId };
-    optimistic.last_captured_cells = captured >= 0 ? [captured] : [];
-    optimistic.last_promotion = piece === 'W' || piece === 'B' ? to : null;
-    optimistic.pending_captures = [];
-    optimistic.capture_required = false;
-    optimistic.forced_piece = null;
-    optimistic.legal_moves = [];
-    optimistic.turn = nextPlayerId;
-    optimistic.time_left = Number(optimistic.move_timeout_sec || 60);
-    return optimistic;
+    return buildOptimisticCheckers(optimistic, action, viewerId, nextPlayerId);
   }
 
   if (type === 'reversi') {
@@ -224,6 +201,145 @@ export function buildOptimisticGame(game, action, viewerId, type){
   }
 
   return null;
+}
+
+function buildOptimisticCheckers(optimistic, action, viewerId, nextPlayerId){
+  const from = Number(action?.from);
+  const to = Number(action?.to);
+  const legal = (optimistic.legal_moves || []).find(move => Number(move?.from) === from && Number(move?.to) === to);
+  const board = Array.isArray(optimistic.board) ? [...optimistic.board] : null;
+  if (!legal || !board || !Number.isInteger(from) || !Number.isInteger(to)) return null;
+
+  let piece = String(board[from] || '');
+  if (!piece) return null;
+  const side = piece.toLowerCase() === 'w' ? 'white' : 'black';
+  const pending = [...new Set((optimistic.pending_captures || []).map(Number).filter(Number.isInteger))];
+  const captured = legal.capture ? Number(legal.captured ?? -1) : -1;
+
+  board[from] = '';
+  if (piece === 'w' && Math.floor(to / 8) === 0) piece = 'W';
+  if (piece === 'b' && Math.floor(to / 8) === 7) piece = 'B';
+  board[to] = piece;
+
+  if (captured >= 0 && !pending.includes(captured)) pending.push(captured);
+
+  optimistic.board = board;
+  optimistic.last_move = {
+    from,
+    to,
+    capture:captured >= 0,
+    captured:captured >= 0 ? captured : null,
+    player_id:viewerId,
+    promoted:piece === 'W' || piece === 'B',
+  };
+  optimistic.last_promotion = piece === 'W' || piece === 'B' ? to : null;
+  optimistic.time_left = Number(optimistic.move_timeout_sec || 60);
+
+  if (captured >= 0) {
+    const continuations = checkersCaptureMoves(board, to, side, pending);
+    if (continuations.length) {
+      optimistic.turn = viewerId;
+      optimistic.forced_piece = to;
+      optimistic.capture_required = true;
+      optimistic.pending_captures = pending;
+      optimistic.last_captured_cells = [];
+      optimistic.legal_moves = continuations;
+      optimistic.last_move.chain_continues = true;
+      updateCheckersCounts(optimistic, board);
+      return optimistic;
+    }
+  }
+
+  pending.forEach(cell => {
+    if (cell >= 0 && cell < board.length) board[cell] = '';
+  });
+  optimistic.board = board;
+  optimistic.turn = nextPlayerId;
+  optimistic.forced_piece = null;
+  optimistic.capture_required = false;
+  optimistic.pending_captures = [];
+  optimistic.last_captured_cells = pending;
+  optimistic.legal_moves = [];
+  optimistic.last_move.chain_continues = false;
+  updateCheckersCounts(optimistic, board);
+  return optimistic;
+}
+
+function checkersCaptureMoves(board, cell, side, pendingCaptures){
+  const piece = String(board[cell] || '');
+  if (!belongsToCheckersSide(piece, side)) return [];
+
+  const row = Math.floor(cell / 8);
+  const col = cell % 8;
+  const moves = [];
+
+  if (piece === 'W' || piece === 'B') {
+    for (const [dr, dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+      let r = row + dr;
+      let c = col + dc;
+      let enemyCell = null;
+      while (insideCheckers(r, c)) {
+        const index = r * 8 + c;
+        const occupant = String(board[index] || '');
+        if (occupant === '') {
+          if (enemyCell !== null) {
+            moves.push({ from:cell, to:index, capture:true, captured:enemyCell, promotes:false });
+          }
+          r += dr;
+          c += dc;
+          continue;
+        }
+        if (enemyCell !== null) break;
+        if (belongsToCheckersSide(occupant, side)) break;
+        if (pendingCaptures.includes(index)) break;
+        enemyCell = index;
+        r += dr;
+        c += dc;
+      }
+    }
+    return moves;
+  }
+
+  for (const [dr, dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+    const enemyRow = row + dr;
+    const enemyCol = col + dc;
+    const landRow = row + dr * 2;
+    const landCol = col + dc * 2;
+    if (!insideCheckers(enemyRow, enemyCol) || !insideCheckers(landRow, landCol)) continue;
+
+    const enemyCell = enemyRow * 8 + enemyCol;
+    const landingCell = landRow * 8 + landCol;
+    const enemyPiece = String(board[enemyCell] || '');
+    if (!enemyPiece || belongsToCheckersSide(enemyPiece, side)) continue;
+    if (pendingCaptures.includes(enemyCell)) continue;
+    if (String(board[landingCell] || '') !== '') continue;
+
+    moves.push({
+      from:cell,
+      to:landingCell,
+      capture:true,
+      captured:enemyCell,
+      promotes:(side === 'white' && landRow === 0) || (side === 'black' && landRow === 7),
+    });
+  }
+
+  return moves;
+}
+
+function updateCheckersCounts(game, board){
+  game.white_pieces = board.filter(piece => String(piece).toLowerCase() === 'w').length;
+  game.black_pieces = board.filter(piece => String(piece).toLowerCase() === 'b').length;
+  game.white_kings = board.filter(piece => piece === 'W').length;
+  game.black_kings = board.filter(piece => piece === 'B').length;
+}
+
+function belongsToCheckersSide(piece, side){
+  if (!piece) return false;
+  return side === 'white' ? piece.toLowerCase() === 'w' : piece.toLowerCase() === 'b';
+}
+
+function insideCheckers(row, col){
+  return row >= 0 && row < 8 && col >= 0 && col < 8;
 }
 
 function reversiFlips(board, size, cell, symbol, enemy){

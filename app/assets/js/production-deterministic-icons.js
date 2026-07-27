@@ -83,7 +83,12 @@ function renderAllGameIcons(){
       const gameType = String(card.dataset.gameCard || '');
       const icon = card.querySelector('[data-game-icon]');
       const markup = ICONS[gameType];
-      if (!icon || !markup || icon.dataset.mgwSvgIcon === gameType) return;
+      if (!icon || !markup) return;
+
+      /* Legacy game-card rendering may clear innerHTML but leave the data marker.
+       * Trust the actual SVG node, not the stale marker. */
+      if (icon.dataset.mgwSvgIcon === gameType && icon.querySelector('svg')) return;
+
       icon.className = `game-icon game-icon-${gameType}`;
       icon.innerHTML = markup;
       icon.dataset.mgwSvgIcon = gameType;

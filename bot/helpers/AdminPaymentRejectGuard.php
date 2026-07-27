@@ -65,10 +65,11 @@ final class AdminPaymentRejectGuard
         }
 
         /*
-         * Builds before v71 used Telegram ForceReply for payment rejection. Telegram
-         * Desktop may keep that old reply draft for days even though the server no
-         * longer creates it. When the admin sends any message from that stale draft,
-         * remove only the legacy bot prompt and clear its obsolete pending state.
+         * Builds before v71 used several Telegram ForceReply prompt variants for
+         * payment rejection. Mobile clients can keep any of those reply drafts for
+         * days. When the admin finally sends or cancels that draft, delete only the
+         * obsolete bot prompt and clear the abandoned input mode. The payment itself
+         * is never changed by this cleanup.
          */
         if ($this->clearLegacyForceReply($message, $fromId)) {
             return false;
@@ -108,16 +109,20 @@ final class AdminPaymentRejectGuard
 
     private function clearLegacyForceReply(array $message, string $adminId): bool
     {
-        $reply = $message['reply_to_message'] ?? null;
+        $reply = $message['reply_to_message'] ?? $message['external_reply'] ?? null;
         if (!is_array($reply)) {
             return false;
         }
 
         $replyText = trim((string)($reply['text'] ?? ''));
         $isLegacyPrompt = str_contains($replyText, 'Отклонение пополнения')
-            && (str_contains($replyText, 'Ответьте прямо на это сообщение')
-                || str_contains($replyText, 'Telegram откроет отдельное поле ответа'));
+            || str_contains($replyText, 'Отклонение заявки');
         if (!$isLegacyPrompt) {
+            return false;
+        }
+
+        $replyAuthor = $reply['from'] ?? null;
+        if (is_array($replyAuthor) && array_key_exists('is_bot', $replyAuthor) && empty($replyAuthor['is_bot'])) {
             return false;
         }
 

@@ -21,25 +21,27 @@ $avatar = $read('app/assets/js/production-standard-avatar.js');
 $share = $read('app/assets/js/production-prepared-share-fix.js');
 $game = $read('app/assets/js/production-tictactoe-turn-fix.js');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=95');
-$mainPosition = strpos($index, 'main.js?v=92');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
+$mainPosition = strpos($index, 'main.js?v=96');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
-        && str_contains($index, 'data-hotfix-build="v95-mvp14-cross-game-consistency-fix"'),
-    'The current regression layer must load before the v92 application entrypoint.'
+        && str_contains($index, 'data-hotfix-build="v96-mvp14-root-cause-stabilization"'),
+    'The current v96 regression layer must load before the application entrypoint.'
 );
 
 $assert(
-    str_contains($entry, 'initProductionUiStabilityFix();')
+    str_contains($entry, 'initSessionOwnershipFix();')
+        && str_contains($entry, 'initProductionUiStabilityFix();')
         && str_contains($entry, 'initCrossGameCoordinator();')
+        && str_contains($entry, 'scheduleCrossGameCoordinatorAfterMain();')
         && str_contains($entry, 'initDeterministicGameIcons();')
         && str_contains($entry, 'initStandardAvatarPolicy();')
         && str_contains($entry, 'initPreparedShareFix();')
         && str_contains($entry, 'initTicTacToeTurnFixEarly();')
         && str_contains($entry, 'scheduleTicTacToeTurnFixAfter();'),
-    'The current entrypoint must retain stability, game coordination, icon, avatar, share and turn ownership repairs.'
+    'The current entrypoint must retain session, stability, game, icon, avatar, share and turn ownership repairs.'
 );
 
 $assert(

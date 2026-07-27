@@ -24,29 +24,32 @@ $ticTacToe = $read('app/assets/js/production-tictactoe-turn-fix.js');
 $icons = $read('app/assets/js/production-deterministic-icons.js');
 $css = $read('app/assets/css/production-v95-consistency.css');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=95');
-$mainPosition = strpos($index, 'main.js?v=92');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
+$mainPosition = strpos($index, 'main.js?v=96');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
         && str_contains($index, 'production-v95-consistency.css?v=95')
-        && str_contains($index, 'data-hotfix-build="v95-mvp14-cross-game-consistency-fix"'),
-    'The v95 consistency layer and stylesheet must be cache-busted before the v92 app starts.'
+        && str_contains($index, 'data-hotfix-build="v96-mvp14-root-cause-stabilization"'),
+    'The v96 stabilization layer and current consistency stylesheet must load before the app starts.'
 );
 
+$sessionInit = strpos($entry, 'initSessionOwnershipFix();');
 $stabilityInit = strpos($entry, 'initProductionUiStabilityFix();');
 $coordinatorInit = strpos($entry, 'initCrossGameCoordinator();');
 $iconsInit = strpos($entry, 'initDeterministicGameIcons();');
 $avatarInit = strpos($entry, 'initStandardAvatarPolicy();');
 $assert(
-    $stabilityInit !== false
+    $sessionInit !== false
+        && $stabilityInit !== false
         && $coordinatorInit !== false
         && $iconsInit !== false
         && $avatarInit !== false
+        && $sessionInit < $stabilityInit
         && $stabilityInit < $avatarInit
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v95-mvp14-cross-game-consistency-fix'"),
-    'Shared API/UI coordination and deterministic icons must initialize before legacy UI handlers.'
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v96-mvp14-root-cause-stabilization'"),
+    'Session ownership, API/UI coordination and deterministic icons must initialize before legacy UI handlers.'
 );
 
 $assert(
@@ -72,13 +75,14 @@ foreach ([
 }
 
 $assert(
-    str_contains($coordinator, 'api.gameState = coordinatedGameState;')
+    str_contains($coordinator, 'api.startSearch = coordinatedStartSearch;')
+        && str_contains($coordinator, 'api.gameState = coordinatedGameState;')
         && str_contains($coordinator, 'api.gameAction = coordinatedGameAction;')
-        && str_contains($coordinator, 'initialSnapshotServed')
-        && str_contains($coordinator, 'localGameSnapshot(key)')
-        && str_contains($coordinator, 'pendingActionByGame')
-        && str_contains($coordinator, 'latestSnapshotByGame'),
-    'The first game frame and all pending actions must be coordinated through one API owner.'
+        && str_contains($coordinator, 'scheduleCrossGameCoordinatorAfterMain')
+        && str_contains($coordinator, 'runtimeByGame')
+        && str_contains($coordinator, 'runtime.queue.push(item);')
+        && str_contains($coordinator, 'normalizeViewer(result?.me)'),
+    'The first frame and pending actions must use one authoritative viewer-aware API owner.'
 );
 
 foreach ([
@@ -96,9 +100,10 @@ foreach ([
 $assert(
     str_contains($coordinator, 'renderGameSnapshot(optimistic, viewer, true);')
         && str_contains($coordinator, "return 'Ход принят…';")
-        && str_contains($coordinator, 'markGamePending(Boolean(pending));')
+        && str_contains($coordinator, 'canContinueImmediately(type, game, me)')
+        && str_contains($coordinator, 'onAction:nextAction => submitRenderedAction(game.id, nextAction)')
         && str_contains($coordinator, 'mgw-pending-shot'),
-    'Every non-Tic-Tac-Toe action must paint feedback before waiting for the server.'
+    'Every non-Tic-Tac-Toe action must paint feedback while retaining chained interaction callbacks.'
 );
 
 $assert(
@@ -139,9 +144,9 @@ foreach (['tictactoe','four_in_a_row','battleship','checkers','reversi','chess',
 }
 $assert(
     str_contains($icons, 'new MutationObserver')
-        && str_contains($icons, 'dataset.mgwSvgIcon')
+        && str_contains($icons, "icon.querySelector('svg')")
         && str_contains($css, '.game-icon svg'),
-    'Game icons must be restored after legacy copy rendering without OS emoji metrics.'
+    'Game icons must be restored whenever legacy copy rendering erases the actual SVG.'
 );
 
 $assert(

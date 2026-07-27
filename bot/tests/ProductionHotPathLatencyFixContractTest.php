@@ -86,8 +86,8 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($profile, "../ui.js?v=89")
-        && !str_contains($profile, "../ui.js?v=27"),
+    str_contains($profile, '../ui.js?v=89')
+        && !str_contains($profile, '../ui.js?v=27'),
     'Profile must use the current avatar renderer instead of stale Telegram WebView cache.'
 );
 
@@ -129,7 +129,7 @@ $assertTrue(
         && str_contains($readiness, 'warmShopOrders()')
         && str_contains($readiness, 'refreshOpponentsNetwork(true)')
         && str_contains($readiness, 'Promise.allSettled(tasks)'),
-    'The common preloader must warm every first-click data source before the app becomes interactive.'
+    'The common preloader must keep warming every first-click data source.'
 );
 
 $assertTrue(
@@ -163,7 +163,7 @@ $assertTrue(
         && str_contains($residual, 'latestGameResultByKey')
         && str_contains($residual, 'generation !== generationFor(key)')
         && str_contains($residual, 'gameStateInFlightByKey.get(key)'),
-    'Game-state requests must stay serialized per exact game/search key.'
+    'Legacy game-state requests must remain serialized until the v96 owner reclaims the shared API.'
 );
 
 $assertTrue(
@@ -177,22 +177,20 @@ $assertTrue(
 
 $readinessInit = strpos($main, 'initFirstInteractionReadinessEarly();');
 $residualInit = strpos($main, 'initResidualUiGameRaceFixEarly();');
-$warmPosition = strpos($main, 'const firstInteraction = await warmFirstInteractionData();');
-$guardPosition = strpos($main, 'if (!firstInteractionReady)');
+$warmPosition = strpos($main, 'const firstInteraction = await warmFirstInteractionData().catch');
 $appReadyPosition = strpos($main, 'dispatchAppReady();');
 $assertTrue(
-    str_contains($main, "v92-mvp14-first-interaction-readiness-hotfix")
-        && str_contains($main, "first-interaction-readiness.js?v=92")
-        && str_contains($main, "profile-screen.js?v=92")
+    str_contains($main, 'v96-mvp14-root-cause-stabilization')
+        && str_contains($main, 'first-interaction-readiness.js?v=92')
+        && str_contains($main, 'profile-screen.js?v=92')
         && $readinessInit !== false
         && $residualInit !== false
         && $readinessInit < $residualInit
         && $warmPosition !== false
-        && $guardPosition !== false
         && $appReadyPosition !== false
-        && $warmPosition < $guardPosition
-        && $guardPosition < $appReadyPosition,
-    'V92 must install first and require readiness before app-ready is dispatched.'
+        && $warmPosition < $appReadyPosition
+        && !str_contains($main, 'if (!firstInteractionReady)'),
+    'V96 must keep warm-first behavior without letting an optional warm failure invalidate bootstrap.'
 );
 
 $assertTrue(
@@ -203,10 +201,11 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($index, 'data-build="v92-mvp14-first-interaction-readiness-hotfix"')
+    str_contains($index, 'data-hotfix-build="v96-mvp14-root-cause-stabilization"')
         && str_contains($index, 'main.css?v=92')
-        && str_contains($index, 'main.js?v=92'),
-    'Telegram WebView entrypoint must bust every v91 module and stylesheet cache.'
+        && str_contains($index, 'production-regression-fix-entry.js?v=96')
+        && str_contains($index, 'main.js?v=96'),
+    'Telegram WebView entrypoint must publish the cache-busted v96 stabilization graph.'
 );
 
 fwrite(STDOUT, 'ProductionHotPathLatencyFixContractTest: ' . $assertions . " assertions passed\n");
