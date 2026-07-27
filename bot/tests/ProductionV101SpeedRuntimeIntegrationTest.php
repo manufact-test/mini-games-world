@@ -20,15 +20,23 @@ file_put_contents($tempDir . '/telegram/telegram-app.mjs', "export const getInit
 file_put_contents($tempDir . '/session.mjs', "export const getSessionId = () => 'session-1';\n");
 
 $test = <<<'JS'
-class FakeCustomEvent extends Event {
-  constructor(type, options = {}) { super(type); this.detail = options.detail; }
+class FakeCustomEvent {
+  constructor(type, options = {}) { this.type = type; this.detail = options.detail; this.target = null; }
 }
 class FakeElement {
   constructor(match = '') { this.match = match; }
   closest(selector) { return this.match === selector ? this : null; }
 }
-class FakeDocument extends EventTarget {
-  constructor(){ super(); this.visibilityState = 'visible'; }
+class FakeDocument {
+  constructor(){ this.visibilityState = 'visible'; this.listeners = new Map(); }
+  addEventListener(type, callback){
+    if (!this.listeners.has(type)) this.listeners.set(type, []);
+    this.listeners.get(type).push(callback);
+  }
+  dispatchEvent(event){
+    for (const callback of this.listeners.get(event.type) || []) callback(event);
+    return true;
+  }
   querySelector(){ return null; }
 }
 
@@ -136,11 +144,7 @@ assert(notificationCalls >= 2, 'The optimistic notification read must still conf
 
 const pollPromise = request('/bot/api.php', { action:'game_state', gameId:'g1' }).catch(error => error);
 await new Promise(resolve => setTimeout(resolve, 5));
-document.dispatchEvent(new Event('pointerdown', { bubbles:true }));
-// EventTarget does not assign target; invoke a second compatible event with a board target.
-const boardEvent = new Event('pointerdown');
-Object.defineProperty(boardEvent, 'target', { value:new FakeElement('#gameBoard button') });
-document.dispatchEvent(boardEvent);
+document.dispatchEvent({ type:'pointerdown', target:new FakeElement('#gameBoard button') });
 const pollError = await pollPromise;
 assert(gameStateAborted === true && pollError?.name === 'AbortError', 'A user board press must abort an older game-state request silently.');
 
