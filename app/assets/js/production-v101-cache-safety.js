@@ -15,12 +15,23 @@ export function initV101CacheSafety(){
 
     const id = String(button.id || '');
     const inviteAction = String(button.closest('[data-invite-action]')?.dataset.inviteAction || '');
-    if (id.startsWith('start') && id.endsWith('SearchBtn')) invalidateV101Cache(GAME_BALANCE_CACHE);
-    if (['accept','start'].includes(inviteAction)) invalidateV101Cache(GAME_BALANCE_CACHE);
-    if (button.closest('[data-create-rematch]')) invalidateV101Cache(['notifications','invite_opponents']);
-    if (id === 'storeCreateOrder') invalidateV101Cache(['shop_status','shop_orders','profile','notifications']);
+    if (id.startsWith('start') && id.endsWith('SearchBtn')) invalidateSafely(GAME_BALANCE_CACHE);
+    if (['accept','start'].includes(inviteAction)) invalidateSafely(GAME_BALANCE_CACHE);
+    if (button.closest('[data-create-rematch]')) invalidateSafely(['notifications','invite_opponents']);
+    if (id === 'storeCreateOrder') invalidateSafely(['shop_status','shop_orders','profile','notifications']);
   }, true);
 
-  document.addEventListener('mgw:v99-game-found', () => invalidateV101Cache(GAME_BALANCE_CACHE));
-  document.addEventListener('mgw:game-finished', () => invalidateV101Cache(GAME_BALANCE_CACHE));
+  document.addEventListener('mgw:v99-game-found', () => invalidateSafely(GAME_BALANCE_CACHE));
+  document.addEventListener('mgw:game-finished', () => invalidateSafely(GAME_BALANCE_CACHE));
+}
+
+function invalidateSafely(ids){
+  const background = window.__MGW_V101_SPEED__?.backgroundControllers;
+  if (background && typeof background[Symbol.iterator] === 'function') {
+    for (const controller of [...background]) {
+      try { controller.abort('cache-invalidated-by-state-change'); } catch (error) {}
+    }
+    background.clear?.();
+  }
+  invalidateV101Cache(ids);
 }
