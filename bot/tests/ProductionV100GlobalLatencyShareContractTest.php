@@ -76,10 +76,11 @@ $assert(
 $assert(
     str_contains($models, "type === 'tictactoe'")
         && str_contains($models, "type === 'battleship'")
-        && str_contains($models, 'buildOptimisticGame(game, action, id, type)')
+        && str_contains($models, 'normalizeSideSymbols(game, type)')
+        && str_contains($models, 'buildOptimisticGame(modelGame, action, id, type)')
         && str_contains($models, 'optimistic.pending_fire_cell = cell;')
         && str_contains($models, 'invalidateInFlightPoll'),
-    'The v100 model gateway must cover all shared optimistic models and expose Battleship pending shots.'
+    'The v100 model gateway must normalize side-based games, cover shared optimistic models and expose Battleship pending shots.'
 );
 
 $resetPosition = strpos($share, 'resetButton(attempt);');
