@@ -156,13 +156,13 @@ $inviteProjector = file_get_contents($root . '/runtime/ProductionRuntimeInvitesM
 $assertContains('currentTelegramPhotoUrl(ownerId)', $ui, 'Avatar renderer must use current Telegram photo');
 $assertContains('explicitPhotoUrl || telegramPhotoUrl || existingPhotoUrl', $ui, 'Avatar renderer must preserve a known photo');
 $assertContains('mergeUserState(state.user, result.user)', $profile, 'Profile refresh must merge partial user payloads');
-$assertContains("../ui.js?v=89", $profile, 'Profile must import the hotfix avatar renderer');
+$assertContains('../ui.js?v=89', $profile, 'Profile must import the hotfix avatar renderer');
 $assertContains('hasProfileStats(state.profileStats)', $profile, 'Profile must keep the warmed real statistics visible');
-$assertContains("v92-mvp14-first-interaction-readiness-hotfix", $main, 'Main module must publish v92 without losing avatar fix');
-$assertContains("./ui.js?v=89", $main, 'Main module must preserve avatar renderer cache busting');
-$assertContains("./screens/profile-screen.js?v=92", $main, 'Main module must load the first-open-safe profile screen');
+$assertContains('v96-mvp14-root-cause-stabilization', $main, 'Main module must publish v96 without losing prior avatar fixes');
+$assertContains('./ui.js?v=89', $main, 'Main module must preserve avatar renderer cache busting');
+$assertContains('./screens/profile-screen.js?v=92', $main, 'Main module must load the first-open-safe profile screen');
 $assertContains('main.css?v=92', $index, 'Entrypoint must publish current CSS');
-$assertContains('main.js?v=92', $index, 'Entrypoint must publish current JavaScript');
+$assertContains('main.js?v=96', $index, 'Entrypoint must publish current JavaScript');
 $assertContains('transition:none !important', $css, 'Current sheet fix must be at least as immediate as the prior transition');
 $assertContains('animation:none !important', $css, 'Sheet must not show an intermediate animation frame');
 $assertContains('ProductionRuntimeInvitesModuleProjector', $factory, 'Production factory must install exact invite lifecycle projector');
