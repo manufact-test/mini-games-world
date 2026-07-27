@@ -28,7 +28,7 @@ $assert(
 $assert(
     str_contains($notifications, '$items = mgw_visible_notifications($data, $notifications, $userId, 30);')
         && str_contains($notifications, '$notifications->markAllRead($data, $userId);')
-        && str_contains($notifications, "return ['items' => $items, 'unread_count' => 0];"),
+        && str_contains($notifications, 'return [\'items\' => $items, \'unread_count\' => 0];'),
     'The server mark-read response must return the visible items before clearing their unread flags.'
 );
 
