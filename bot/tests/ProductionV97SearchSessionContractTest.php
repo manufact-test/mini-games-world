@@ -27,12 +27,12 @@ $assert(
     'A late start_search response must clean the server queue without reopening Search.'
 );
 $assert(
-    str_contains($session, "if ($status === 'playing')")
+    str_contains($session, 'if ($status === \'playing\')')
         && str_contains($session, 'У вас уже идёт активная игра на другом устройстве.'),
     'Server session authority must keep its explicit active-game lock.'
 );
 $assert(
-    str_contains($api, "'active_game' => $active ?")
+    str_contains($api, '\'active_game\' => $active ?')
         && str_contains($runtime, 'active_game:null')
         && str_contains($runtime, 'game:null'),
     'The v97 client gate must remove bootstrap game data from a locked secondary session.'
