@@ -30,7 +30,7 @@ export function initV99ExplicitLockGuard(){
 
     const inviteAction = String(button.closest('[data-invite-action]')?.dataset.inviteAction || '');
     const explicitStart = START_IDS.has(String(button.id || ''))
-      || inviteAction === 'start'
+      || ['accept','start'].includes(inviteAction)
       || Boolean(button.closest('[data-create-rematch]'));
     if (!explicitStart) return;
 
