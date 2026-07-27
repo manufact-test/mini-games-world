@@ -16,6 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $entry = $read('app/assets/js/production-clean-entry-v101.js');
 $main = $read('app/assets/js/main-v101.js');
 $speed = $read('app/assets/js/production-v101-speed-runtime.js');
+$dedupe = $read('app/assets/js/production-v101-invite-sync-dedupe.js');
 $cacheSafety = $read('app/assets/js/production-v101-cache-safety.js');
 $share = $read('app/assets/js/production-v101-share-controller.js');
 $watch = $read('app/assets/js/production-v101-fast-invite-watch.js');
@@ -26,16 +27,18 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $sessionPosition = strpos($entry, 'initSessionOwnershipFix();');
 $transportPosition = strpos($entry, 'initV99SessionTransport();');
 $speedPosition = strpos($entry, 'initV101SpeedRuntime();');
+$dedupePosition = strpos($entry, 'initV101InviteSyncDedupe();');
 $cachePosition = strpos($entry, 'initV101CacheSafety();');
 $assert(
     $sessionPosition !== false
         && $transportPosition > $sessionPosition
         && $speedPosition > $transportPosition
-        && $cachePosition > $speedPosition
+        && $dedupePosition > $speedPosition
+        && $cachePosition > $dedupePosition
         && str_contains($entry, 'initV101ShareController();')
         && str_contains($entry, 'initV101FastInviteWatch();')
         && str_contains($entry, 'initV101ResultSpeed();'),
-    'Identity and session protection must remain outside the v101 performance layer.'
+    'Identity and session protection must remain outside the ordered v101 performance layer.'
 );
 
 $assert(
@@ -64,6 +67,16 @@ $assert(
         && !str_contains($speed, 'winner_id =')
         && !str_contains($speed, 'finish_reason ='),
     'The speed layer may schedule reads but must never predict winners or mutate game completion rules.'
+);
+
+$assert(
+    str_contains($dedupe, "url.pathname.endsWith('/bot/invites.php')")
+        && str_contains($dedupe, "String(body?.action || '') !== 'sync'")
+        && str_contains($dedupe, 'runtime.inFlight.get(meta.key)')
+        && str_contains($dedupe, 'responseFromSnapshot(await existing)')
+        && !str_contains($dedupe, "action === 'accept'")
+        && !str_contains($dedupe, "action === 'start'"),
+    'Only identical concurrent invite sync reads may be deduplicated; mutations must remain independent.'
 );
 
 $assert(
