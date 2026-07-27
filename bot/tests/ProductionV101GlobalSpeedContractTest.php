@@ -71,8 +71,9 @@ $assert(
         && str_contains($cacheSafety, "['accept','start'].includes(inviteAction)")
         && str_contains($cacheSafety, "document.addEventListener('mgw:v99-game-found'")
         && str_contains($cacheSafety, "id === 'storeCreateOrder'")
+        && str_contains($cacheSafety, "controller.abort('cache-invalidated-by-state-change')")
         && !str_contains($cacheSafety, 'state.user ='),
-    'Balance-changing flows must invalidate passive caches without becoming another state owner.'
+    'Balance-changing flows must abort stale refreshes and invalidate passive caches without becoming another state owner.'
 );
 
 $assert(
@@ -88,13 +89,14 @@ $assert(
 );
 
 $assert(
-    str_contains($watch, 'const FAST_INTERVAL_MS = 350;')
-        && str_contains($watch, "document.addEventListener('mgw:game-dismissed'")
+    str_contains($watch, 'const BURST_DELAYS_MS = [280, 680, 1100];')
+        && str_contains($watch, "document.addEventListener('mgw:game-dismissed', startFastBurst)")
         && str_contains($watch, "action:'sync'")
         && str_contains($watch, "new CustomEvent('mgw:notification-sync'")
+        && !str_contains($watch, 'setInterval(')
         && !str_contains($watch, "showScreen('game')")
         && !str_contains($watch, 'enterGame('),
-    'The narrow rematch watch may accelerate notification delivery but must never enter a game.'
+    'Rematch acceleration must use a bounded low-load burst and must never enter a game.'
 );
 
 $assert(
