@@ -31,7 +31,10 @@ function noTouch(fleet){
       const row = Math.floor(cell / 10);
       const col = cell % 10;
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-        const other = occupied.get((row + dr) * 10 + col + dc);
+        const nextRow = row + dr;
+        const nextCol = col + dc;
+        if (nextRow < 0 || nextRow >= 10 || nextCol < 0 || nextCol >= 10) continue;
+        const other = occupied.get(nextRow * 10 + nextCol);
         if (other !== undefined && other !== index) return false;
       }
     }
