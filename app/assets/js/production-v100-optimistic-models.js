@@ -1,6 +1,6 @@
 import { buildOptimisticGame } from './production-cross-game-optimistic.js?v=96';
 import { buildTicTacToeOptimistic } from './production-v97-models.js?v=97';
-import { buildBattleshipSetupOptimistic } from './production-v99-models.js?v=99';
+import { buildV102BattleshipSetupOptimistic } from './production-v102-battleship-models.js?v=102';
 
 export function buildV100OptimisticGame(game, action, viewerId, gameType){
   const type = String(gameType || '');
@@ -12,7 +12,7 @@ export function buildV100OptimisticGame(game, action, viewerId, gameType){
   }
 
   if (type === 'battleship' && String(game?.phase || '') === 'setup') {
-    return buildBattleshipSetupOptimistic(game, action);
+    return buildV102BattleshipSetupOptimistic(game, action);
   }
 
   const modelGame = normalizeSideSymbols(game, type);
