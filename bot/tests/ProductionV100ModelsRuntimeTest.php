@@ -7,6 +7,7 @@ $files = [
     'cross' => $root . '/app/assets/js/production-cross-game-optimistic.js',
     'v97' => $root . '/app/assets/js/production-v97-models.js',
     'v99' => $root . '/app/assets/js/production-v99-models.js',
+    'v102_battleship' => $root . '/app/assets/js/production-v102-battleship-models.js',
 ];
 foreach ($files as $name => $path) {
     if (!is_file($path)) throw new RuntimeException("Cannot read v100 dependency: {$name}");
@@ -21,10 +22,12 @@ $models = (string)file_get_contents($files['models']);
 $models = str_replace("'./production-cross-game-optimistic.js?v=96'", "'./cross.mjs'", $models);
 $models = str_replace("'./production-v97-models.js?v=97'", "'./v97.mjs'", $models);
 $models = str_replace("'./production-v99-models.js?v=99'", "'./v99.mjs'", $models);
+$models = str_replace("'./production-v102-battleship-models.js?v=102'", "'./v102-battleship.mjs'", $models);
 file_put_contents($tempDir . '/models.mjs', $models);
 file_put_contents($tempDir . '/cross.mjs', (string)file_get_contents($files['cross']));
 file_put_contents($tempDir . '/v97.mjs', (string)file_get_contents($files['v97']));
 file_put_contents($tempDir . '/v99.mjs', (string)file_get_contents($files['v99']));
+file_put_contents($tempDir . '/v102-battleship.mjs', (string)file_get_contents($files['v102_battleship']));
 
 file_put_contents($tempDir . '/test.mjs', <<<'JS'
 import { buildV100OptimisticGame, invalidateInFlightPoll, pendingSurfaceDescriptor } from './models.mjs';
