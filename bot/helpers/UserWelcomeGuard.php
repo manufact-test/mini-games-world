@@ -23,8 +23,8 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v97.php?v=97';
-        if ($baseWebAppUrl === '/app/v97.php?v=97') return false;
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v98.php?v=98';
+        if ($baseWebAppUrl === '/app/v98.php?v=98') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {

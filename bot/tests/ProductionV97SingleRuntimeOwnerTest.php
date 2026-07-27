@@ -35,7 +35,7 @@ $assert(
         && str_contains($runtime, '++searchEpoch;')
         && str_contains($runtime, "toast('Поиск отменён.')")
         && str_contains($runtime, 'rawLeaveSearch().then'),
-    'Search cancellation must invalidate the pending start before leaving the server queue.'
+    'The retained v97 cancellation path must still invalidate the pending start before leaving the server queue.'
 );
 
 $assert(
@@ -80,7 +80,7 @@ $assert(
         && str_contains($runtime, 'active_game:null')
         && str_contains($runtime, 'enforceSessionLock')
         && str_contains($runtime, "showScreen('home')"),
-    'A locked secondary session must stay on Home and never render the active match.'
+    'The retained v97 fallback must still prevent a locked secondary session from rendering a match.'
 );
 
 $assert(
@@ -93,13 +93,13 @@ $assert(
     str_contains($phpEntry, 'production-regression-fix-entry-v97.js?v=97')
         && str_contains($phpEntry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
         && str_contains($phpEntry, 'v97-mvp14-single-runtime-owner'),
-    'V97 must have a no-cache entrypoint that bypasses the deployed v96 module graph.'
+    'V97 must retain a no-cache fallback entrypoint.'
 );
 
 $assert(
-    str_contains($welcome, '/app/v97.php?v=97')
+    str_contains($welcome, '/app/v98.php?v=98')
         && !str_contains($welcome, "/app/?v=96"),
-    'Telegram launch buttons must point to the v97 entrypoint.'
+    'Telegram launch buttons must advance from the retained v97 fallback to the current v98 entrypoint.'
 );
 
 fwrite(STDOUT, "ProductionV97SingleRuntimeOwnerTest: {$assertions} assertions passed\n");
