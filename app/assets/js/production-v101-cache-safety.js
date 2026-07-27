@@ -15,6 +15,7 @@ export function initV101CacheSafety(){
 
     const id = String(button.id || '');
     const inviteAction = String(button.closest('[data-invite-action]')?.dataset.inviteAction || '');
+    if (button.closest('[data-open-player-picker]')) abortBackgroundReads();
     if (id.startsWith('start') && id.endsWith('SearchBtn')) invalidateSafely(GAME_BALANCE_CACHE);
     if (['accept','start'].includes(inviteAction)) invalidateSafely(GAME_BALANCE_CACHE);
     if (button.closest('[data-create-rematch]')) invalidateSafely(['notifications','invite_opponents']);
@@ -26,12 +27,15 @@ export function initV101CacheSafety(){
 }
 
 function invalidateSafely(ids){
-  const background = window.__MGW_V101_SPEED__?.backgroundControllers;
-  if (background && typeof background[Symbol.iterator] === 'function') {
-    for (const controller of [...background]) {
-      try { controller.abort('cache-invalidated-by-state-change'); } catch (error) {}
-    }
-    background.clear?.();
-  }
+  abortBackgroundReads();
   invalidateV101Cache(ids);
+}
+
+function abortBackgroundReads(){
+  const background = window.__MGW_V101_SPEED__?.backgroundControllers;
+  if (!background || typeof background[Symbol.iterator] !== 'function') return;
+  for (const controller of [...background]) {
+    try { controller.abort('cache-invalidated-by-state-change'); } catch (error) {}
+  }
+  background.clear?.();
 }
