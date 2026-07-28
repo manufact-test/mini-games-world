@@ -34,6 +34,7 @@ $expected = [
     'bot/invite-opponents.php' => 'invite_opponents',
     'bot/game-clock.php' => 'game_clock',
     'bot/game-live-v108.php' => 'game_live_v108',
+    'bot/search-speed.php' => 'search_speed',
     'bot/shop-history.php' => 'shop_history',
     'bot/cron/weekly-match.php' => 'weekly_match_cron',
 ];
@@ -107,8 +108,9 @@ $invites = file_get_contents($root . '/invites.php');
 $notifications = file_get_contents($root . '/notifications.php');
 $gameClock = file_get_contents($root . '/game-clock.php');
 $gameLive = file_get_contents($root . '/game-live-v108.php');
+$searchSpeed = file_get_contents($root . '/search-speed.php');
 $weekly = file_get_contents($root . '/cron/weekly-match.php');
-foreach ([$storageFactory, $bootstrap, $coordinator, $context, $invites, $notifications, $gameClock, $gameLive, $weekly] as $source) {
+foreach ([$storageFactory, $bootstrap, $coordinator, $context, $invites, $notifications, $gameClock, $gameLive, $searchSpeed, $weekly] as $source) {
     $assertTrue(is_string($source) && $source !== '', 'Routing contract source file must be readable');
 }
 
@@ -166,6 +168,11 @@ $assertContains(
     'StorageFactory::createJson(',
     $gameLive,
     'Live game endpoint must use the same guarded production storage selector'
+);
+$assertContains(
+    'StorageFactory::createJson(',
+    $searchSpeed,
+    'Search speed endpoint must use the same guarded production storage selector'
 );
 $assertContains(
     'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()',

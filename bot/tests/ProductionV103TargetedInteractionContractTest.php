@@ -97,8 +97,8 @@ $assert(
         && str_contains($stats, '$onlineAccounts[$accountId] = true;')
         && str_contains($stats, 'str_starts_with($accountId, \'bot_\')')
         && str_contains($stats, '\'online_players\' => count($onlineAccounts)')
-        && str_contains($presence, 'private const ONLINE_WINDOW_SEC = 10;'),
-    'Unique-account online counting must remain while v104 replaces the stale legacy window with isolated presence.'
+        && str_contains($presence, 'private const ONLINE_WINDOW_SEC = 75;'),
+    'Unique-account online counting must remain while Telegram backgrounding uses a bounded isolated presence window.'
 );
 
 $assert(

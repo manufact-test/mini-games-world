@@ -11,6 +11,7 @@ final class ProductionPrimaryApplicationEntrypoints
         'bot/invite-opponents.php' => 'invite_opponents',
         'bot/game-clock.php' => 'game_clock',
         'bot/game-live-v108.php' => 'game_live_v108',
+        'bot/search-speed.php' => 'search_speed',
         'bot/shop-history.php' => 'shop_history',
         'bot/cron/weekly-match.php' => 'weekly_match_cron',
     ];

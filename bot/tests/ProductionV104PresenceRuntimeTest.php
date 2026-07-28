@@ -41,8 +41,8 @@ try {
     $account200 = $tempDir . '/account-' . hash('sha256', '200');
     $sessionFiles = glob($account200 . '/session-*.presence') ?: [];
     if ($sessionFiles === []) throw new RuntimeException('Presence test session file was not created.');
-    file_put_contents($sessionFiles[0], (string)(time() - 20), LOCK_EX);
-    $assert($stats->build($db)['online_players'] === 0, 'A stale session must fall out without waiting for legacy last_seen.');
+    file_put_contents($sessionFiles[0], (string)(time() - 90), LOCK_EX);
+    $assert($stats->build($db)['online_players'] === 0, 'A session older than the bounded Telegram background window must fall out.');
 
     $assert(serialize($db) === $originalDb, 'Presence tracking must not add or change fields in application JSON data.');
 } finally {
