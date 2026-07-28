@@ -10,6 +10,7 @@ const RETRY_DELAYS_MS = [0, 160, 420, 850];
 const runtime = window.__MGW_V109_NOTIFICATIONS__ ||= {
   initialized:false,
   opening:false,
+  refreshing:false,
   items:new Map(),
   pointer:null,
   suppressClickUntil:0,
@@ -29,6 +30,10 @@ export function initV109Notifications(){
     mergeItems(event.detail?.data?.items || []);
   });
 
+  document.addEventListener('mgw:notifications-refresh', () => {
+    void refreshSilently(isNotificationsSheetOpen());
+  });
+
   window.addEventListener('click', ownNotificationOpen, true);
   window.addEventListener('pointerdown', ownToastPointerDown, true);
   window.addEventListener('pointermove', ownToastPointerMove, { capture:true, passive:false });
@@ -39,7 +44,6 @@ export function initV109Notifications(){
 function ownNotificationOpen(event){
   const origin = event.target;
   if (!(origin instanceof Element)) return;
-
   const toast = origin.closest('#notificationToast');
   const bell = origin.closest('#notificationsOpen');
   if (!toast && !bell) return;
@@ -67,8 +71,7 @@ function ownToastPointerDown(event){
     dx:0,
     dy:0,
   };
-  toast.style.transform = '';
-  toast.style.opacity = '';
+  resetToastStyles(toast);
   toast.style.touchAction = 'none';
   try { toast.setPointerCapture?.(event.pointerId); } catch (error) {}
 }
@@ -81,13 +84,10 @@ function ownToastPointerMove(event){
   pointer.dx = event.clientX - pointer.startX;
   pointer.dy = event.clientY - pointer.startY;
 
-  // Never translate the toast. A deliberate horizontal or upward gesture only
-  // reserves the pointer so the page does not scroll underneath it.
   const horizontal = Math.abs(pointer.dx) > 8 && Math.abs(pointer.dx) > Math.abs(pointer.dy) * 1.15;
   const upward = pointer.dy < -8 && Math.abs(pointer.dy) > Math.abs(pointer.dx) * 1.15;
   if (horizontal || upward) event.preventDefault();
-  pointer.toast.style.transform = '';
-  pointer.toast.style.opacity = '';
+  resetToastStyles(pointer.toast);
 }
 
 function ownToastPointerUp(event){
@@ -99,8 +99,7 @@ function ownToastPointerUp(event){
   runtime.pointer = null;
   try { toast.releasePointerCapture?.(event.pointerId); } catch (error) {}
   toast.style.touchAction = '';
-  toast.style.transform = '';
-  toast.style.opacity = '';
+  resetToastStyles(toast);
 
   const horizontalSwipe = Math.abs(dx) >= 64 && Math.abs(dx) > Math.abs(dy) * 1.15;
   const upwardSwipe = dy <= -64 && Math.abs(dy) > Math.abs(dx) * 1.15;
@@ -118,8 +117,7 @@ function ownToastPointerCancel(event){
   runtime.pointer = null;
   try { pointer.toast.releasePointerCapture?.(event.pointerId); } catch (error) {}
   pointer.toast.style.touchAction = '';
-  pointer.toast.style.transform = '';
-  pointer.toast.style.opacity = '';
+  resetToastStyles(pointer.toast);
 }
 
 async function openAuthoritativeNotifications(){
@@ -127,57 +125,83 @@ async function openAuthoritativeNotifications(){
   runtime.opening = true;
   haptic('light');
 
-  const cached = peekV101CachedJson('notifications', 60000);
+  const cached = peekV101CachedJson('notifications', 15000);
   mergeItems(cached?.items || []);
   const immediate = currentItems();
   renderNotifications(immediate, immediate.length === 0);
 
   try {
-    let resolved = false;
+    let rendered = false;
     for (let index = 0; index < RETRY_DELAYS_MS.length; index++) {
       const delay = RETRY_DELAYS_MS[index];
-      if (delay > 0) await wait(delay - RETRY_DELAYS_MS[index - 1]);
+      if (index > 0) await wait(delay - RETRY_DELAYS_MS[index - 1]);
 
-      const [notificationsResult, inviteResult] = await Promise.all([
-        rawPost(NOTIFICATIONS_URL, { markRead:false }).catch(() => null),
-        rawPost(INVITES_URL, { action:'sync', token:'' }).catch(() => null),
-      ]);
-
-      mergeItems(inviteResult?.invite_events || []);
-      mergeItems(notificationsResult?.items || []);
+      const snapshot = await readAuthoritativeSnapshot();
+      reconcileSnapshot(snapshot);
       const items = currentItems();
-      const unread = Math.max(
-        Number(notificationsResult?.unread_count || 0),
-        Number(inviteResult?.unread_count || 0),
-        visibleUnreadBadge(),
-      );
+      const unread = Math.max(snapshot.unread, visibleUnreadBadge());
 
       if (items.length > 0) {
         renderNotifications(items, false);
-        resolved = true;
+        rendered = true;
         break;
       }
-
       if (index === RETRY_DELAYS_MS.length - 1 || unread <= 0) {
         renderNotifications([], false);
-        resolved = true;
+        rendered = true;
         break;
       }
     }
 
-    if (!resolved) renderNotifications(currentItems(), false);
-    document.dispatchEvent(new CustomEvent('mgw:notification-count', {detail:{unreadCount:0}}));
+    if (!rendered) renderNotifications(currentItems(), false);
+    document.dispatchEvent(new CustomEvent('mgw:notification-count', { detail:{ unreadCount:0 } }));
 
-    // Mark-read is intentionally detached from the visible opening. It cannot
-    // replace the just-rendered authoritative list with an old optimistic cache.
-    void rawPost(NOTIFICATIONS_URL, { markRead:true })
-      .then(result => mergeItems(result?.items || []))
-      .catch(() => null);
+    // Marking read never blocks or replaces the visible list.
+    void rawPost(NOTIFICATIONS_URL, { markRead:true }).catch(() => null);
   } catch (error) {
     if (!currentItems().length) renderError();
   } finally {
     runtime.opening = false;
   }
+}
+
+async function refreshSilently(render){
+  if (runtime.refreshing) return;
+  runtime.refreshing = true;
+  try {
+    const snapshot = await readAuthoritativeSnapshot();
+    reconcileSnapshot(snapshot);
+    if (render && isNotificationsSheetOpen()) renderNotifications(currentItems(), false);
+    document.dispatchEvent(new CustomEvent('mgw:notification-count', {
+      detail:{ unreadCount:snapshot.unread },
+    }));
+  } catch (error) {
+    // Existing data stays visible.
+  } finally {
+    runtime.refreshing = false;
+  }
+}
+
+async function readAuthoritativeSnapshot(){
+  const [notifications, invites] = await Promise.all([
+    rawPost(NOTIFICATIONS_URL, { markRead:false }).catch(() => null),
+    rawPost(INVITES_URL, { action:'sync', token:'' }).catch(() => null),
+  ]);
+
+  if (!notifications && !invites) throw new Error('Notification refresh failed');
+  return {
+    notificationItems:Array.isArray(notifications?.items) ? notifications.items : null,
+    inviteItems:Array.isArray(invites?.invite_events) ? invites.invite_events : [],
+    unread:Math.max(
+      Number(notifications?.unread_count || 0),
+      Number(invites?.unread_count || 0),
+    ),
+  };
+}
+
+function reconcileSnapshot(snapshot){
+  if (Array.isArray(snapshot.notificationItems)) replaceItems(snapshot.notificationItems);
+  mergeItems(snapshot.inviteItems);
 }
 
 async function rawPost(url, payload){
@@ -199,6 +223,11 @@ async function rawPost(url, payload){
   return data;
 }
 
+function replaceItems(items){
+  runtime.items = new Map();
+  mergeItems(items);
+}
+
 function mergeItems(items){
   for (const item of Array.isArray(items) ? items : []) upsert(item);
 }
@@ -216,13 +245,8 @@ function enrichInviteActions(item){
   const type = String(item?.type || '');
   const token = String(item?.invite_token || '');
   if (!token) return item;
-
-  if (type === 'invite_received' || type === 'invite_rematch_received') {
-    return { ...item, actions:['accept','decline'] };
-  }
-  if (type === 'invite_accepted') {
-    return { ...item, actions:['start','cancel'] };
-  }
+  if (type === 'invite_received' || type === 'invite_rematch_received') return { ...item, actions:['accept','decline'] };
+  if (type === 'invite_accepted') return { ...item, actions:['start','cancel'] };
   return item;
 }
 
@@ -233,9 +257,11 @@ function currentItems(){
 }
 
 function trimItems(){
-  const items = currentItems();
-  if (items.length <= 30) return;
-  runtime.items = new Map(items.slice(0, 30).map(item => [String(item.id), item]));
+  if (runtime.items.size <= 80) return;
+  const newest = [...runtime.items.values()]
+    .sort((a, b) => timestamp(b?.created_at) - timestamp(a?.created_at))
+    .slice(0, 60);
+  runtime.items = new Map(newest.map(item => [String(item.id), item]));
 }
 
 function timestamp(value){
@@ -265,9 +291,7 @@ function renderNotifications(items, loading){
 }
 
 function renderNotification(item){
-  const tone = ['success','danger','info','warning'].includes(String(item?.tone || ''))
-    ? String(item.tone)
-    : 'info';
+  const tone = ['success','danger','info','warning'].includes(String(item?.tone || '')) ? String(item.tone) : 'info';
   const message = notificationMessage(item);
   const actions = renderActions(item);
   return `
@@ -314,7 +338,7 @@ function notificationIcon(tone, type = ''){
 function notificationMessage(item){
   let message = String(item?.message || '').trim();
   if (!message) return '';
-  const technicalFragments = [
+  const fragments = [
     /\s*Баланс уже обновлён\.?/giu,
     /\s*Баланс не изменён\.?/giu,
     /\s*Баланс:\s*-?[\d\s]+\s*→\s*-?[\d\s]+\.?/giu,
@@ -324,14 +348,19 @@ function notificationMessage(item){
     /\s*Возвращено\s*\+\s*[\d\s]+\s*Gold\.?/giu,
     /\s*Откройте Mini App[^.]*\.?/giu,
   ];
-  for (const pattern of technicalFragments) message = message.replace(pattern, ' ');
+  for (const pattern of fragments) message = message.replace(pattern, ' ');
   return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/\.{2,}/g, '.').trim();
 }
 
 function formatDate(value){
   const date = new Date(String(value || ''));
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }).format(date);
+  return new Intl.DateTimeFormat('ru-RU', {
+    day:'2-digit',
+    month:'2-digit',
+    hour:'2-digit',
+    minute:'2-digit',
+  }).format(date);
 }
 
 function renderError(){
@@ -353,6 +382,10 @@ function dismissToast(){
   if (!toast) return;
   toast.classList.remove('show', 'dragging');
   toast.style.touchAction = '';
+  resetToastStyles(toast);
+}
+
+function resetToastStyles(toast){
   toast.style.transform = '';
   toast.style.opacity = '';
 }
