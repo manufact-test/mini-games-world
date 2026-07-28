@@ -33,7 +33,7 @@ final class InviteSignalService
         if (!is_string($json)) return;
 
         $path = $this->signalPath($recipientId, $token);
-        $temporary = $path . '.' . bin2hex(random_bytes(5)) . '.tmp';
+        $temporary = $path . '.' . str_replace('.', '', uniqid('', true)) . '.tmp';
         if (@file_put_contents($temporary, $json, LOCK_EX) === false) return;
         @chmod($temporary, 0600);
         if (!@rename($temporary, $path)) @unlink($temporary);
