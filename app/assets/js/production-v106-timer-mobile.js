@@ -44,8 +44,7 @@ function shouldArmFirstBotClock(game){
   const size = Number(game.board_size || 3);
   const board = String(game.board || '');
   if (!game.id || board !== '-'.repeat(Math.max(1, size * size))) return false;
-  const status = runtime.clockRequests.get(String(game.id));
-  return status !== 'pending' && status !== 'done';
+  return runtime.clockRequests.get(String(game.id)) === undefined;
 }
 
 async function armFirstBotClock(game){
