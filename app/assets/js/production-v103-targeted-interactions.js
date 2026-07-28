@@ -5,7 +5,10 @@ import { closeSheet } from './components/sheet.js?v=68';
 import { showScreen } from './router.js?v=27';
 import { clearTimer, renderBalances } from './ui.js?v=89';
 import { haptic } from './telegram/telegram-app.js?v=27';
-import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
+import {
+  currentV99PassiveLock,
+  clearV99PassiveLock,
+} from './production-v99-session-transport.js?v=99';
 import { enterGame, clearGameView } from './screens/game-screen-v102-safe.js?v=102';
 
 const PLAY_IDS = new Set([
@@ -142,6 +145,7 @@ async function leaveGameImmediately(game){
   if (runtime.leavePending) return;
   runtime.leavePending = true;
   updatePlayButtons();
+  abortBackgroundReads();
   haptic('medium');
 
   const snapshot = clone(game);
@@ -158,6 +162,7 @@ async function leaveGameImmediately(game){
       renderBalances(state.user);
     }
     if (result?.session) state.session = result.session;
+    if (!result?.session?.locked) clearV99PassiveLock();
     runtime.leavePending = false;
     updatePlayButtons();
     document.dispatchEvent(new CustomEvent('mgw:game-finished', {
@@ -170,6 +175,15 @@ async function leaveGameImmediately(game){
     enterGame(snapshot, null);
     toast(error?.message || 'Не удалось завершить матч. Игра восстановлена.');
   }
+}
+
+function abortBackgroundReads(){
+  const controllers = window.__MGW_V101_SPEED__?.backgroundControllers;
+  if (!controllers || typeof controllers[Symbol.iterator] !== 'function') return;
+  for (const controller of [...controllers]) {
+    try { controller.abort('v103-leave-game'); } catch (error) {}
+  }
+  controllers.clear?.();
 }
 
 function clone(value){
