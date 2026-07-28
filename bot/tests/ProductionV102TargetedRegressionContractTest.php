@@ -130,8 +130,8 @@ $assert(
     str_contains($php, 'production-clean-entry-v102.js?v=102')
         && str_contains($php, 'main-v102.js?v=102')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v102.php?v=102'),
-    'Only new no-store Telegram launches may activate v102.'
+        && str_contains($welcome, '/app/v104.php?v=104'),
+    'The retained no-store v102 entrypoint must remain valid while Telegram advances to v104.'
 );
 
 fwrite(STDOUT, "ProductionV102TargetedRegressionContractTest: {$assertions} assertions passed\n");
