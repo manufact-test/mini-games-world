@@ -63,17 +63,22 @@ $assert(
 $assert(
     str_contains($presencePhp, "['status', 'ping', 'leave']")
         && str_contains($presencePhp, '$db->readOnly')
-        && str_contains($presencePhp, '$presence->touch')
-        && str_contains($presencePhp, '$presence->leave'),
-    'Presence status must stay read-only while ping and leave update only the current device session.'
+        && str_contains($presencePhp, '$presence->touch($accountId, $sessionId)')
+        && str_contains($presencePhp, '$presence->leave($accountId, $sessionId)')
+        && !str_contains($presencePhp, '$db->transaction')
+        && !str_contains($presencePhp, '$data[\'users\']'),
+    'Presence ping and leave must stay outside application JSON while status reads existing statistics only.'
 );
 
 $assert(
-    str_contains($presenceService, 'presence_sessions')
-        && str_contains($presenceService, 'unset($user[\'presence_sessions\'][$sessionId])')
+    str_contains($presenceService, "sys_get_temp_dir()")
+        && str_contains($presenceService, "session-' . hash('sha256', $sessionId) . '.presence")
+        && str_contains($presenceService, '@unlink($this->sessionPath($accountId, $sessionId))')
         && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 10;')
-        && str_contains($stats, '$this->presence->isOnline'),
-    'Online counting must be session-aware and remove the final closed device immediately.'
+        && !str_contains($presenceService, 'presence_sessions')
+        && !str_contains($presenceService, "['last_seen_at']")
+        && str_contains($stats, '$this->presence->onlineAccountIds()'),
+    'Online counting must use isolated short-lived files and never add fields to users JSON.'
 );
 
 $assert(
