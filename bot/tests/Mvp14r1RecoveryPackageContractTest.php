@@ -113,7 +113,7 @@ foreach ([
 }
 
 foreach ([
-    'ROLL BACK PRODUCTION TO VERIFIED JSON',
+    'ProductionPrimaryLiveRollbackGate::CONFIRMATION',
     'ProductionPrimaryRollbackExportVerifier',
     'ProductionPrimaryLiveRollbackInputLoader',
     'ProductionPrimaryLiveRollbackBootstrap',
@@ -126,6 +126,7 @@ foreach ([
 }
 
 foreach ([
+    'ROLL BACK PRODUCTION TO VERIFIED JSON',
     "maintenance_mode'] ?? null) === true",
     "financial_read_only'] ?? null) === true",
     'artifact_verified',
