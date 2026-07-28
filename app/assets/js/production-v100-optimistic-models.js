@@ -12,7 +12,10 @@ export function buildV100OptimisticGame(game, action, viewerId, gameType){
   }
 
   if (type === 'battleship' && String(game?.phase || '') === 'setup') {
-    return buildBattleshipSetupOptimistic(game, action);
+    const v102Builder = v102BattleshipBuilder();
+    return v102Builder
+      ? v102Builder(game, action)
+      : buildBattleshipSetupOptimistic(game, action);
   }
 
   const modelGame = normalizeSideSymbols(game, type);
@@ -74,6 +77,13 @@ export function invalidateInFlightPoll(runtime, gameId){
   item.generation = Number(item.generation || 0) + 1;
   item.interactionGeneration = Number(item.interactionGeneration || 0) + 1;
   return true;
+}
+
+function v102BattleshipBuilder(){
+  if (typeof window === 'undefined') return null;
+  if (String(window.__MGW_REGRESSION_BUILD__ || '') !== 'v102-mvp14-targeted-regression-repair') return null;
+  const builder = window.__MGW_V102_BUILD_BATTLESHIP_SETUP__;
+  return typeof builder === 'function' ? builder : null;
 }
 
 function normalizeSideSymbols(game, type){

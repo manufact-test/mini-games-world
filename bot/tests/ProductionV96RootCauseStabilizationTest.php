@@ -95,7 +95,7 @@ $assert(
 );
 
 $assert(
-    str_contains($welcome, "'/app/v101.php?v=101'")
+    str_contains($welcome, "'/app/v102.php?v=102'")
         && !str_contains($welcome, "'/app/?v=85'"),
     'New bot start buttons must advance beyond the retained v96 fallback to the current cache-busted Mini App.'
 );

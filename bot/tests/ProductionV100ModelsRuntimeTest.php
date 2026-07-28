@@ -7,6 +7,7 @@ $files = [
     'cross' => $root . '/app/assets/js/production-cross-game-optimistic.js',
     'v97' => $root . '/app/assets/js/production-v97-models.js',
     'v99' => $root . '/app/assets/js/production-v99-models.js',
+    'v102_battleship' => $root . '/app/assets/js/production-v102-battleship-models.js',
 ];
 foreach ($files as $name => $path) {
     if (!is_file($path)) throw new RuntimeException("Cannot read v100 dependency: {$name}");
@@ -25,9 +26,11 @@ file_put_contents($tempDir . '/models.mjs', $models);
 file_put_contents($tempDir . '/cross.mjs', (string)file_get_contents($files['cross']));
 file_put_contents($tempDir . '/v97.mjs', (string)file_get_contents($files['v97']));
 file_put_contents($tempDir . '/v99.mjs', (string)file_get_contents($files['v99']));
+file_put_contents($tempDir . '/v102-battleship.mjs', (string)file_get_contents($files['v102_battleship']));
 
 file_put_contents($tempDir . '/test.mjs', <<<'JS'
 import { buildV100OptimisticGame, invalidateInFlightPoll, pendingSurfaceDescriptor } from './models.mjs';
+import { buildV102BattleshipSetupOptimistic } from './v102-battleship.mjs';
 
 let assertions = 0;
 function assert(condition, message){
@@ -66,8 +69,25 @@ assert(go?.board?.[10] === 'B', 'Go must place a stone immediately.');
 const domino = buildV100OptimisticGame({ ...common, viewer_hand:[{ id:'6-5', a:6, b:5 }], chain:[], open_left:6, open_right:6, move_count:0 }, { type:'play', tile:'6-5', side:'left' }, 'me', 'domino');
 assert(domino?.viewer_hand?.length === 0 && domino?.chain?.length === 1, 'Domino must place a tile immediately.');
 
-const setup = buildV100OptimisticGame({ ...common, phase:'setup', my_board:Array(100).fill('water'), my_fleet:[] }, { type:'place_ship', size:2, cell:22, orientation:'h' }, 'me', 'battleship');
+const legacySetupInput = {
+  ...common,
+  phase:'setup',
+  my_board:Array(100).fill('water'),
+  my_fleet:[],
+  fleet_placed:[{size:2, placed:0, required:3}],
+  remaining_to_place:[{size:2, count:3}],
+};
+const setup = buildV100OptimisticGame(legacySetupInput, { type:'place_ship', size:2, cell:22, orientation:'h' }, 'me', 'battleship');
 assert(setup?.my_board?.[22] === 'ship' && setup?.my_board?.[23] === 'ship', 'Battleship setup must place one complete ship immediately.');
+assert(setup?.remaining_to_place?.[0]?.count === 3, 'Without a v102 build, the retained v100 Battleship summary behavior must stay unchanged.');
+
+globalThis.window = {
+  __MGW_REGRESSION_BUILD__:'v102-mvp14-targeted-regression-repair',
+  __MGW_V102_BUILD_BATTLESHIP_SETUP__:buildV102BattleshipSetupOptimistic,
+};
+const v102Setup = buildV100OptimisticGame(legacySetupInput, { type:'place_ship', size:2, cell:22, orientation:'h' }, 'me', 'battleship');
+assert(v102Setup?.remaining_to_place?.find(item => item.size === 2)?.count === 2, 'The v102 bridge must activate immediate Battleship fleet summaries.');
+delete globalThis.window;
 
 const battle = buildV100OptimisticGame({ ...common, phase:'battle', enemy_board:Array(100).fill('unknown') }, { type:'fire', cell:55 }, 'me', 'battleship');
 assert(battle?.pending_fire_cell === 55, 'Battleship battle must expose an immediate pending shot.');
