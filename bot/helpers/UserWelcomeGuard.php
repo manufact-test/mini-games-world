@@ -23,12 +23,13 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        // Retained no-store rollback entrypoints:
+        // Emergency production rollback target: v105.
+        // Retained explicit no-store entrypoints remain available for investigation:
         // '/app/v96.php?v=96', '/app/v97.php?v=97', '/app/v98.php?v=98', '/app/v99.php?v=99',
         // '/app/v100.php?v=100', '/app/v101.php?v=101', '/app/v102.php?v=102', '/app/v103.php?v=103',
-        // '/app/v104.php?v=104', '/app/v105.php?v=105', '/app/v106.php?v=106', '/app/v107.php?v=107'.
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v108.php?v=108';
-        if ($baseWebAppUrl === '/app/v108.php?v=108') return false;
+        // '/app/v104.php?v=104', '/app/v106.php?v=106', '/app/v107.php?v=107', '/app/v108.php?v=108'.
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v105.php?v=105';
+        if ($baseWebAppUrl === '/app/v105.php?v=105') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
