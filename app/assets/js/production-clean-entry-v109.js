@@ -20,6 +20,7 @@ import { initV109InviteSpeed } from './production-v109-invite-speed.js?v=109';
 import { initV109ShareSpeed } from './production-v109-share-speed.js?v=109';
 import { initV109Notifications } from './production-v109-notifications.js?v=109';
 import { initV109Presence } from './production-v109-presence.js?v=109';
+import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
@@ -32,6 +33,7 @@ initV109Notifications();
 initV109ShareSpeed();
 initV109InviteSpeed();
 initV109Presence();
+initV109SearchSpeed();
 
 initSessionOwnershipFix();
 initV99SessionTransport();
