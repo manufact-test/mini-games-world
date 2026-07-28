@@ -19,7 +19,10 @@ for argument in "$@"; do
     exit 2
   fi
   SEEN[$key]=1
-  if [[ -z "$value" || "$value" == *$'\0'* ]]; then
+  # Bash command-line arguments cannot contain NUL bytes. Testing against
+  # $'\0' is invalid because Bash represents that value as an empty string,
+  # which would make every non-empty argument match and fail validation.
+  if [[ -z "$value" ]]; then
     printf 'Checkpoint verification option value is empty or invalid.\n' >&2
     exit 2
   fi

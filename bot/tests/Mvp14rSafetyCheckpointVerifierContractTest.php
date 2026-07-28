@@ -25,6 +25,12 @@ $assertTrue(
         && str_contains($source, 'VERIFY_READ_ONLY_MVP14R_SAFETY_CHECKPOINT'),
     'Verifier must require an exact checkpoint path, identity and confirmation'
 );
+$invalidNulExpression = '[[ "$value" == *$\'\\0\'* ]]';
+$assertTrue(
+    str_contains($source, 'if [[ -z "$value" ]]')
+        && !str_contains($source, $invalidNulExpression),
+    'Verifier argument validation must accept non-empty Bash strings without the invalid NUL expression'
+);
 $assertTrue(
     str_contains($source, 'sha256sum -c checksums.sha256')
         && str_contains($source, 'gzip -t "$CHECKPOINT_DIR/database.sql.gz"'),
@@ -53,6 +59,23 @@ $assertTrue(
         && !str_contains($source, 'mysql <')
         && !str_contains($source, 'mariadb <'),
     'Verifier must remain read-only and must not import into a live database'
+);
+
+$missingCheckpoint = sys_get_temp_dir() . '/MGW_SAFETY_CHECKPOINT_VERIFIER_CONTRACT_TEST_123456';
+$command = 'bash ' . escapeshellarg($path)
+    . ' --checkpoint-dir=' . escapeshellarg($missingCheckpoint)
+    . ' --expected-id=' . escapeshellarg('MGW_SAFETY_CHECKPOINT_VERIFIER_CONTRACT_TEST_123456')
+    . ' --confirm=' . escapeshellarg('VERIFY_READ_ONLY_MVP14R_SAFETY_CHECKPOINT')
+    . ' 2>&1';
+$output = [];
+$exitCode = 0;
+exec($command, $output, $exitCode);
+$combinedOutput = implode("\n", $output);
+$assertTrue(
+    $exitCode === 1
+        && str_contains($combinedOutput, 'Checkpoint directory is unavailable or is a symlink')
+        && !str_contains($combinedOutput, 'Checkpoint verification option value is empty or invalid'),
+    'Real verifier parser must accept every non-empty option and fail only at the intentionally missing checkpoint directory'
 );
 
 fwrite(STDOUT, "Mvp14rSafetyCheckpointVerifierContractTest passed: {$assertions} assertions.\n");
