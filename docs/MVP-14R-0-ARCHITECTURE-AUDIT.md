@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress. This document is read-only analysis. It does not authorize or perform any production change.
+In progress. The code and architecture audit is complete enough to prepare the production checkpoint. No production change has been authorized or performed.
 
 ## Exact current code point
 
@@ -54,6 +54,8 @@ The production entrypoint registry currently includes:
 
 The rebuild therefore cannot be treated as one isolated API rewrite. Each entrypoint needs a direct repository contract and an explicit cutover state.
 
+The exact current-entrypoint-to-relational-owner map is recorded in `docs/MVP-14R-0-BASELINE-AND-OWNERSHIP-MAP.md`.
+
 ## Finding D — the client still initializes many historical runtime layers
 
 The v109 production entry imports and initializes modules from v93, v96, v99, v100, v101, v102, v103, v104, v105 and v109.
@@ -62,22 +64,22 @@ Even when a newer module tries to intercept an action first, retained historical
 
 **Disposition:** the rebuild requires one explicit client owner per action group. Existing layers are frozen as rollback code; they are not the base for another v110 overlay.
 
-## JSON baseline candidates
+## Exact JSON behavior baseline
 
-Two historical checkpoints have different roles:
+The exact clean JSON behavior baseline is now identified:
 
-1. `4295f42c84d28b02eae25fb9aa069ed186bde5ac` — confirmed JSON-first production before the large DB-primary release package was integrated. This is the clean pre-package code candidate.
-2. `56dd3340ac86a6a25d672273c5054b376e5c2afe` — later confirmed production state after failed cutover attempts had rolled back: actual storage JSON, DB runtime disabled, no JSON write block, checkout clean. Its app markup reported build `v86-mvp13-runtime-controls`. This is the stronger operational recovery candidate because it is closer to the real cutover and was explicitly verified as JSON-active.
+- production checkout identity: `4295f42c84d28b02eae25fb9aa069ed186bde5ac`;
+- latest functional commit: `c1f51e1188af12a18bd72a94cc289429f7d4960a`;
+- comparison between those commits: two commits and zero changed files;
+- storage factory: JSON-only, with `createJson()` returning `JsonStorageAdapter` directly;
+- Telegram launch URL: `/app/?v=85`;
+- client assets: `main.css?v=85`, `main.js?v=86`;
+- app markup build: `v86-mvp13-runtime-controls`;
+- accepted client feature line: `v85-mvp12-invite-rebuild`.
 
-Neither commit is accepted automatically as the final behavior baseline. MVP-14R.0 still has to prove:
+Historical roadmaps independently record `4295f42...` as the exact JSON-first production checkout with cutover not executed. Later JSON rollback checkpoint `56dd3340...` proves operational recovery but already includes part of the cutover package, so it is not the clean behavior source.
 
-- which exact checkpoint the product owner remembers as the fully working JSON bot;
-- whether commits between the two candidates changed user-visible behavior;
-- which Telegram menu URL and frontend entrypoint were active;
-- which current DB data must be exported into the recovery JSON;
-- whether the chosen code candidate passes a restored-copy regression before production use.
-
-No rollback will target a guessed baseline.
+**Important boundary:** historical JSON data will not be restored over current users. The current DB-primary state must first be exported into a fresh verified JSON artifact. Historical code is the behavior baseline; current database state remains the data source.
 
 ## Finding E — the existing DB→JSON exporter is usable but not the whole checkpoint
 
@@ -85,26 +87,55 @@ The repository already contains a guarded production DB→JSON export. It verifi
 
 The exporter requires maintenance mode, financial read-only mode and a short-lived private authorization. Therefore it belongs to the controlled recovery stage, not to an unapproved background operation.
 
-The exact-current rollback checkpoint additionally needs an independent SQL dump and archives of deployed code, private runtime state and the existing JSON source. A new read-only script has been added for those artifacts and is under CI review.
+The exact-current rollback checkpoint additionally needs:
+
+- an independent single-transaction SQL dump;
+- deployed `public_html` archive;
+- private runtime/config archive;
+- existing `mgw_data` archive;
+- SHA-256 manifest;
+- isolated file/JSON restore verification.
+
+The checkpoint creator and isolated verifier are now present on the audit branch. The creator rejects any output path nested inside an archived source tree, preventing recursive or self-changing archives.
+
+## MVP-14R.0 production checkpoint boundary
+
+Checkpoint identity:
+
+`MGW_SAFETY_CHECKPOINT_2026-07-28_V109_PRE_RELATIONAL_REBUILD`
+
+The checkpoint operation is read-only with respect to the application runtime and database. It creates a new sibling directory outside `public_html`, `_private_mgw` and `mgw_data`.
+
+It does not:
+
+- change the active storage route;
+- write SQL;
+- replace JSON;
+- change runtime flags;
+- change webhook or Cron;
+- deploy historical code;
+- start MVP-14R.1.
 
 ## Remaining work in MVP-14R.0
 
-1. prove the exact accepted JSON code/runtime baseline;
-2. inventory all storage creation call sites and protected entrypoints;
-3. map each whole-state callback to its future domain repository;
-4. inventory client action owners and polling owners;
-5. finish CI review of the read-only SQL/file checkpoint creator;
-6. prepare the separate authorized DB→JSON export and isolated restore flow;
-7. produce SHA-256 manifests and a complete restore report;
-8. stop for product-owner approval before any Hostinger snapshot command.
+1. obtain exact product-owner approval to merge the audit/scripts PR;
+2. deploy that code-only commit so the reviewed checkpoint scripts exist on Hostinger;
+3. run the one reviewed checkpoint command;
+4. run the isolated verifier command;
+5. record the returned checkpoint directory, commit, clean/dirty state and verification result;
+6. separately prepare the guarded current DB→JSON export required by MVP-14R.1;
+7. stop before maintenance mode or any runtime switch and obtain fresh approval.
 
 ## Acceptance criteria
 
 MVP-14R.0 is complete only when:
 
-- code checkpoint exists;
-- full production data/file checkpoint is restored successfully in isolation;
-- exact JSON baseline is identified by commit and runtime configuration;
+- immutable code checkpoint exists;
+- SQL, deployment, private and existing JSON artifacts exist under the exact checkpoint ID;
+- all SHA-256 checks pass;
+- deployment/private/JSON archives restore successfully into an isolated temporary directory;
+- every restored JSON file decodes successfully;
+- exact JSON code/runtime baseline is recorded;
 - every current hot-path entrypoint has a target relational repository owner;
-- no production change has occurred;
-- the next operation is one reviewed and copyable snapshot/recovery command.
+- no production runtime or database mutation has occurred;
+- the next operation is the separately guarded current DB→JSON export for MVP-14R.1.
