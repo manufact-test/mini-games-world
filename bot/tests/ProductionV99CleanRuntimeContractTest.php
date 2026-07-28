@@ -114,8 +114,8 @@ $assert(
     str_contains($phpEntry, 'production-clean-entry-v99.js?v=99')
         && str_contains($phpEntry, 'main-v99.js?v=99')
         && str_contains($phpEntry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v102.php?v=102'),
-    'The retained v99 fallback must remain valid while Telegram advances to the v102 entrypoint.'
+        && str_contains($welcome, '/app/v104.php?v=104'),
+    'The retained v99 fallback must remain valid while Telegram advances to the v104 entrypoint.'
 );
 
 fwrite(STDOUT, "ProductionV99CleanRuntimeContractTest: {$assertions} assertions passed\n");

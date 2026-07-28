@@ -1,25 +1,39 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/PresenceService.php';
+
 final class StatsService
 {
-    private const ONLINE_WINDOW_SEC = 75;
+    private PresenceService $presence;
+
+    public function __construct(?PresenceService $presence = null)
+    {
+        $this->presence = $presence ?? new PresenceService();
+    }
 
     public function build(array $db): array
     {
-        $now = time();
         $onlineAccounts = [];
-
-        foreach ($db['users'] ?? [] as $storageKey => $user) {
-            if (!is_array($user)) continue;
-
-            $last = strtotime((string)($user['last_seen_at'] ?? '1970-01-01')) ?: 0;
-            if ($now - $last > self::ONLINE_WINDOW_SEC) continue;
-
-            $accountId = trim((string)($user['telegram_id'] ?? $user['id'] ?? $storageKey));
-            if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
-
-            $onlineAccounts[$accountId] = true;
+        if ($this->presence->isEnabled()) {
+            foreach ($this->presence->onlineAccountIds() as $accountId) {
+                $accountId = trim((string)$accountId);
+                if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
+                $onlineAccounts[$accountId] = true;
+            }
+        } else {
+            // Before the first v104 heartbeat, keep a short compatibility window
+            // for an already-open retained client. Presence files become the only
+            // source as soon as v104 is active.
+            $now = time();
+            foreach ($db['users'] ?? [] as $storageKey => $user) {
+                if (!is_array($user)) continue;
+                $last = strtotime((string)($user['last_seen_at'] ?? '')) ?: 0;
+                if ($last <= 0 || $now - $last > $this->presence->onlineWindowSec()) continue;
+                $accountId = trim((string)($user['telegram_id'] ?? $user['id'] ?? $storageKey));
+                if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
+                $onlineAccounts[$accountId] = true;
+            }
         }
 
         $activeGames = 0;
