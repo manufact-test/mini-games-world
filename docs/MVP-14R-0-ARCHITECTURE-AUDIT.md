@@ -62,30 +62,41 @@ Even when a newer module tries to intercept an action first, retained historical
 
 **Disposition:** the rebuild requires one explicit client owner per action group. Existing layers are frozen as rollback code; they are not the base for another v110 overlay.
 
-## JSON baseline candidate
+## JSON baseline candidates
 
-Historical production evidence identifies commit `4295f42c84d28b02eae25fb9aa069ed186bde5ac` as a JSON-first production point before the DB-primary cutover package was active.
+Two historical checkpoints have different roles:
 
-This is currently only a **candidate code baseline**. MVP-14R.0 still has to prove:
+1. `4295f42c84d28b02eae25fb9aa069ed186bde5ac` — confirmed JSON-first production before the large DB-primary release package was integrated. This is the clean pre-package code candidate.
+2. `56dd3340ac86a6a25d672273c5054b376e5c2afe` — later confirmed production state after failed cutover attempts had rolled back: actual storage JSON, DB runtime disabled, no JSON write block, checkout clean. Its app markup reported build `v86-mvp13-runtime-controls`. This is the stronger operational recovery candidate because it is closer to the real cutover and was explicitly verified as JSON-active.
 
-- which exact later commit was the last user-accepted JSON runtime;
-- whether later code-only commits changed product behavior while JSON remained active;
-- which production data snapshot corresponds to the accepted behavior;
-- which UI build and Telegram menu URL were actually used.
+Neither commit is accepted automatically as the final behavior baseline. MVP-14R.0 still has to prove:
+
+- which exact checkpoint the product owner remembers as the fully working JSON bot;
+- whether commits between the two candidates changed user-visible behavior;
+- which Telegram menu URL and frontend entrypoint were active;
+- which current DB data must be exported into the recovery JSON;
+- whether the chosen code candidate passes a restored-copy regression before production use.
 
 No rollback will target a guessed baseline.
 
+## Finding E — the existing DB→JSON exporter is usable but not the whole checkpoint
+
+The repository already contains a guarded production DB→JSON export. It verifies the current compatibility-state revision, the complete outbox chain and parity of all nine projected modules, and writes a checksummed BackupManager-compatible JSON artifact without SQL writes.
+
+The exporter requires maintenance mode, financial read-only mode and a short-lived private authorization. Therefore it belongs to the controlled recovery stage, not to an unapproved background operation.
+
+The exact-current rollback checkpoint additionally needs an independent SQL dump and archives of deployed code, private runtime state and the existing JSON source. A new read-only script has been added for those artifacts and is under CI review.
+
 ## Remaining work in MVP-14R.0
 
-1. identify the exact accepted JSON code/runtime baseline;
+1. prove the exact accepted JSON code/runtime baseline;
 2. inventory all storage creation call sites and protected entrypoints;
 3. map each whole-state callback to its future domain repository;
 4. inventory client action owners and polling owners;
-5. produce a production snapshot script using existing guarded export/rollback components where safe;
-6. add independent SQL dump and deployment/private/JSON archives;
-7. produce SHA-256 manifest and isolated restore verifier;
-8. run CI on this documentation/audit branch;
-9. stop for product-owner approval before any Hostinger snapshot command.
+5. finish CI review of the read-only SQL/file checkpoint creator;
+6. prepare the separate authorized DB→JSON export and isolated restore flow;
+7. produce SHA-256 manifests and a complete restore report;
+8. stop for product-owner approval before any Hostinger snapshot command.
 
 ## Acceptance criteria
 
