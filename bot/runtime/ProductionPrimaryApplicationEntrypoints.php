@@ -9,6 +9,7 @@ final class ProductionPrimaryApplicationEntrypoints
         'bot/invites.php' => 'invites',
         'bot/notifications.php' => 'notifications',
         'bot/invite-opponents.php' => 'invite_opponents',
+        'bot/game-clock.php' => 'game_clock',
         'bot/shop-history.php' => 'shop_history',
         'bot/cron/weekly-match.php' => 'weekly_match_cron',
     ];
