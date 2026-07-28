@@ -32,6 +32,7 @@ $expected = [
     'bot/invites.php' => 'invites',
     'bot/notifications.php' => 'notifications',
     'bot/invite-opponents.php' => 'invite_opponents',
+    'bot/game-clock.php' => 'game_clock',
     'bot/shop-history.php' => 'shop_history',
     'bot/cron/weekly-match.php' => 'weekly_match_cron',
 ];
@@ -103,8 +104,9 @@ $coordinator = file_get_contents($root . '/runtime/ProductionPrimaryRuntimeCoord
 $context = file_get_contents($root . '/runtime/ProductionPrimaryEntrypointStorageContext.php');
 $invites = file_get_contents($root . '/invites.php');
 $notifications = file_get_contents($root . '/notifications.php');
+$gameClock = file_get_contents($root . '/game-clock.php');
 $weekly = file_get_contents($root . '/cron/weekly-match.php');
-foreach ([$storageFactory, $bootstrap, $coordinator, $context, $invites, $notifications, $weekly] as $source) {
+foreach ([$storageFactory, $bootstrap, $coordinator, $context, $invites, $notifications, $gameClock, $weekly] as $source) {
     $assertTrue(is_string($source) && $source !== '', 'Routing contract source file must be readable');
 }
 
@@ -152,6 +154,11 @@ $assertContains(
     '$legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();',
     $notifications,
     'Notification endpoint must suppress legacy synchronize-and-list writes under atomic production storage'
+);
+$assertContains(
+    'StorageFactory::createJson(',
+    $gameClock,
+    'Bot clock endpoint must use the same guarded production storage selector'
 );
 $assertContains(
     'RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()',
