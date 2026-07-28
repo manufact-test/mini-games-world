@@ -7,17 +7,18 @@ Checkpoint name:
 ## Code snapshot
 
 - repository: `manufact-test/mini-games-world`
-- exact commit: `f7e956000c027de640f196e8900b20a2140d0ca0`
+- exact pre-rebuild production code: `f7e956000c027de640f196e8900b20a2140d0ca0`
 - immutable checkpoint branch: `checkpoint/2026-07-28-v109-before-json-rollback-mysql-rebuild`
-- production build reported by product owner: `v109`
-- PR #172: merged
+- PR #173 merge commit: `cdff4534c06679cb03de9863c29e36d937e18a76`
+- Hostinger production deployment: confirmed `Completed` and `Current` on 2026-07-28
+- production build reported by product owner before rebuild: `v109`
 - manual speed/UI regression: failed
 
-This branch is the exact code rollback point before MVP-14R begins.
+The immutable branch remains the exact code rollback point before MVP-14R begins. The merged checkpoint tooling commit is now deployed to production without changing runtime routing.
 
 ## Production-data snapshot status
 
-The code snapshot is complete. The full production rollback checkpoint is **not complete yet**.
+The code snapshot and code-only deploy are complete. The full production rollback checkpoint is **not complete yet**.
 
 Before any runtime switch, the following must be created outside `public_html`, checksummed and restored in isolation:
 
@@ -35,4 +36,4 @@ No production mutation, rollback or JSON switch is authorized by this document.
 
 Build v109 was deployed but the product owner reported that direct invites, repeated Telegram sharing, bot fallback timing, online presence, notification opening and toast gestures still fail the intended behavior.
 
-Production remains unchanged while MVP-14R.0 prepares the complete snapshot and architecture audit.
+Production runtime remains unchanged while MVP-14R.0 creates and verifies the complete snapshot.
