@@ -23,9 +23,9 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        // Retained no-store rollback entrypoints: '/app/v104.php?v=104', '/app/v105.php?v=105' and '/app/v106.php?v=106'.
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v107.php?v=107';
-        if ($baseWebAppUrl === '/app/v107.php?v=107') return false;
+        // Retained no-store rollback entrypoints: v104, v105, v106 and v107.
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v108.php?v=108';
+        if ($baseWebAppUrl === '/app/v108.php?v=108') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
