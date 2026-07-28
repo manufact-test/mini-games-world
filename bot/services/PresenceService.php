@@ -4,72 +4,82 @@ declare(strict_types=1);
 final class PresenceService
 {
     private const ONLINE_WINDOW_SEC = 10;
-    private const MAX_SESSIONS_PER_ACCOUNT = 8;
+    private const MARKER_FILE = '.enabled';
 
-    public function touch(array &$user, string $sessionId): void
+    private string $directory;
+
+    public function __construct(?string $directory = null)
     {
-        $sessionId = trim($sessionId);
-        if ($sessionId === '') return;
-
-        $this->ensureShape($user);
-        $this->prune($user);
-
-        $now = now_iso();
-        $user['presence_sessions'][$sessionId] = [
-            'last_seen_at' => $now,
-        ];
-        $user['last_seen_at'] = $now;
-
-        if (count($user['presence_sessions']) > self::MAX_SESSIONS_PER_ACCOUNT) {
-            uasort($user['presence_sessions'], static function (array $left, array $right): int {
-                $leftAt = strtotime((string)($left['last_seen_at'] ?? '')) ?: 0;
-                $rightAt = strtotime((string)($right['last_seen_at'] ?? '')) ?: 0;
-                return $rightAt <=> $leftAt;
-            });
-            $user['presence_sessions'] = array_slice(
-                $user['presence_sessions'],
-                0,
-                self::MAX_SESSIONS_PER_ACCOUNT,
-                true
-            );
-        }
+        $scope = substr(hash('sha256', dirname(__DIR__, 2)), 0, 16);
+        $this->directory = rtrim(
+            $directory ?: (sys_get_temp_dir() . '/mini-games-world-presence-' . $scope),
+            DIRECTORY_SEPARATOR
+        );
     }
 
-    public function leave(array &$user, string $sessionId): void
+    public function touch(string $accountId, string $sessionId): void
     {
+        $accountId = trim($accountId);
         $sessionId = trim($sessionId);
-        $this->ensureShape($user);
-        if ($sessionId !== '') unset($user['presence_sessions'][$sessionId]);
-        $this->prune($user);
+        if ($accountId === '' || $sessionId === '' || str_starts_with($accountId, 'bot_')) return;
 
-        if ($user['presence_sessions'] === []) {
-            $user['last_seen_at'] = gmdate('c', time() - self::ONLINE_WINDOW_SEC - 1);
-            return;
+        $this->ensureDirectory();
+        @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
+
+        $accountDirectory = $this->accountDirectory($accountId);
+        if (!is_dir($accountDirectory) && !@mkdir($accountDirectory, 0700, true) && !is_dir($accountDirectory)) {
+            throw new RuntimeException('Не удалось обновить присутствие игрока.');
         }
 
-        $latest = 0;
-        foreach ($user['presence_sessions'] as $session) {
-            if (!is_array($session)) continue;
-            $latest = max($latest, strtotime((string)($session['last_seen_at'] ?? '')) ?: 0);
+        $path = $this->sessionPath($accountId, $sessionId);
+        $temporary = $path . '.tmp.' . bin2hex(random_bytes(4));
+        if (@file_put_contents($temporary, (string)time(), LOCK_EX) === false) {
+            @unlink($temporary);
+            throw new RuntimeException('Не удалось обновить присутствие игрока.');
         }
-        if ($latest > 0) $user['last_seen_at'] = gmdate('c', $latest);
+        @chmod($temporary, 0600);
+        if (!@rename($temporary, $path)) {
+            @unlink($temporary);
+            throw new RuntimeException('Не удалось обновить присутствие игрока.');
+        }
+
+        $this->pruneAccountDirectory($accountDirectory);
     }
 
-    public function isOnline(array $user, ?int $now = null): bool
+    public function leave(string $accountId, string $sessionId): void
     {
-        $now ??= time();
-        $sessions = $user['presence_sessions'] ?? null;
-        if (is_array($sessions)) {
-            foreach ($sessions as $session) {
-                if (!is_array($session)) continue;
-                $last = strtotime((string)($session['last_seen_at'] ?? '')) ?: 0;
-                if ($last > 0 && $now - $last <= self::ONLINE_WINDOW_SEC) return true;
-            }
-            return false;
-        }
+        $accountId = trim($accountId);
+        $sessionId = trim($sessionId);
+        if ($accountId === '' || $sessionId === '') return;
 
-        $legacyLast = strtotime((string)($user['last_seen_at'] ?? '')) ?: 0;
-        return $legacyLast > 0 && $now - $legacyLast <= self::ONLINE_WINDOW_SEC;
+        $this->ensureDirectory();
+        @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
+        @unlink($this->sessionPath($accountId, $sessionId));
+        $this->pruneAccountDirectory($this->accountDirectory($accountId));
+    }
+
+    /** @return list<string> */
+    public function onlineAccountIds(): array
+    {
+        if (!is_dir($this->directory)) return [];
+
+        $online = [];
+        foreach (glob($this->directory . DIRECTORY_SEPARATOR . 'account-*') ?: [] as $accountDirectory) {
+            if (!is_dir($accountDirectory)) continue;
+            $this->pruneAccountDirectory($accountDirectory);
+            if (!$this->directoryHasLiveSession($accountDirectory)) continue;
+
+            $idFile = $accountDirectory . DIRECTORY_SEPARATOR . '.account';
+            $accountId = trim((string)@file_get_contents($idFile));
+            if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
+            $online[$accountId] = true;
+        }
+        return array_keys($online);
+    }
+
+    public function isEnabled(): bool
+    {
+        return is_file($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
     }
 
     public function onlineWindowSec(): int
@@ -77,23 +87,53 @@ final class PresenceService
         return self::ONLINE_WINDOW_SEC;
     }
 
-    private function ensureShape(array &$user): void
+    private function ensureDirectory(): void
     {
-        if (!isset($user['presence_sessions']) || !is_array($user['presence_sessions'])) {
-            $user['presence_sessions'] = [];
+        if (!is_dir($this->directory) && !@mkdir($this->directory, 0700, true) && !is_dir($this->directory)) {
+            throw new RuntimeException('Не удалось подготовить присутствие игроков.');
         }
     }
 
-    private function prune(array &$user): void
+    private function accountDirectory(string $accountId): string
     {
-        $cutoff = time() - self::ONLINE_WINDOW_SEC;
-        foreach ($user['presence_sessions'] as $sessionId => $session) {
-            if (!is_array($session)) {
-                unset($user['presence_sessions'][$sessionId]);
-                continue;
-            }
-            $last = strtotime((string)($session['last_seen_at'] ?? '')) ?: 0;
-            if ($last <= 0 || $last < $cutoff) unset($user['presence_sessions'][$sessionId]);
+        $directory = $this->directory . DIRECTORY_SEPARATOR . 'account-' . hash('sha256', $accountId);
+        if (!is_dir($directory) && is_dir($this->directory)) {
+            @mkdir($directory, 0700, true);
         }
+        if (is_dir($directory)) {
+            $idFile = $directory . DIRECTORY_SEPARATOR . '.account';
+            if (!is_file($idFile)) {
+                @file_put_contents($idFile, $accountId, LOCK_EX);
+                @chmod($idFile, 0600);
+            }
+        }
+        return $directory;
+    }
+
+    private function sessionPath(string $accountId, string $sessionId): string
+    {
+        return $this->accountDirectory($accountId)
+            . DIRECTORY_SEPARATOR
+            . 'session-' . hash('sha256', $sessionId) . '.presence';
+    }
+
+    private function pruneAccountDirectory(string $accountDirectory): void
+    {
+        if (!is_dir($accountDirectory)) return;
+        $cutoff = time() - self::ONLINE_WINDOW_SEC;
+        foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
+            $timestamp = (int)trim((string)@file_get_contents($path));
+            if ($timestamp <= 0 || $timestamp < $cutoff) @unlink($path);
+        }
+
+        if (!$this->directoryHasLiveSession($accountDirectory)) {
+            @unlink($accountDirectory . DIRECTORY_SEPARATOR . '.account');
+            @rmdir($accountDirectory);
+        }
+    }
+
+    private function directoryHasLiveSession(string $accountDirectory): bool
+    {
+        return (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: []) !== [];
     }
 }
