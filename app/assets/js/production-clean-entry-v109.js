@@ -11,7 +11,6 @@ import { initV101FastInviteWatch } from './production-v101-fast-invite-watch.js?
 import { initV102BattleshipBridge } from './production-v102-battleship-bridge.js?v=102';
 import { initV102HistoryController } from './production-v102-history-controller.js?v=102';
 import { initV103TargetedInteractions } from './production-v103-targeted-interactions.js?v=103';
-import { initV104Presence } from './production-v104-presence.js?v=104';
 import { initV104GamePollTuning } from './production-v104-game-poll-tuning.js?v=104';
 import { initV104InviteGameControls } from './production-v104-invite-game-controls.js?v=104';
 import { initV104ResultInstant } from './production-v104-result-instant.js?v=104';
@@ -20,17 +19,19 @@ import { initV105InviteLatency } from './production-v105-invite-latency.js?v=105
 import { initV109InviteSpeed } from './production-v109-invite-speed.js?v=109';
 import { initV109ShareSpeed } from './production-v109-share-speed.js?v=109';
 import { initV109Notifications } from './production-v109-notifications.js?v=109';
+import { initV109Presence } from './production-v109-presence.js?v=109';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
 window.__MGW_REGRESSION_BUILD__ = 'v109-mvp14-speed-ui-only';
 
-// These three window-capture owners are the only v109 client changes. They run
+// These window-capture/speed owners are the only v109 client changes. They run
 // before retained document/element handlers and do not initialize any game,
 // timer, move, result or rematch owner.
 initV109Notifications();
 initV109ShareSpeed();
 initV109InviteSpeed();
+initV109Presence();
 
 initSessionOwnershipFix();
 initV99SessionTransport();
@@ -44,7 +45,6 @@ initV101CacheSafety();
 initV102BattleshipBridge();
 initV102HistoryController();
 initV103TargetedInteractions();
-initV104Presence();
 
 // Retain the v105 lightweight incoming-invite signal watch. Its document click
 // owner is bypassed only for actions already owned by the earlier v109 window
