@@ -23,7 +23,7 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        // Retained no-store fallback entrypoint for rollback/manual diagnostics: /app/v105.php?v=105
+        // Retained no-store rollback entrypoints: '/app/v104.php?v=104' and '/app/v105.php?v=105'.
         $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v106.php?v=106';
         if ($baseWebAppUrl === '/app/v106.php?v=106') return false;
 
