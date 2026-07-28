@@ -76,6 +76,24 @@ if [[ -L "$OUTPUT_ROOT" ]]; then
   exit 1
 fi
 
+PROJECT_ROOT="$(realpath "$PROJECT_ROOT")"
+PRIVATE_ROOT="$(realpath "$PRIVATE_ROOT")"
+JSON_ROOT="$(realpath "$JSON_ROOT")"
+OUTPUT_ROOT="$(realpath "$OUTPUT_ROOT")"
+
+paths_overlap() {
+  local left="${1%/}"
+  local right="${2%/}"
+  [[ "$left" == "$right" || "$left" == "$right"/* || "$right" == "$left"/* ]]
+}
+
+for source_root in "$PROJECT_ROOT" "$PRIVATE_ROOT" "$JSON_ROOT"; do
+  if paths_overlap "$source_root" "$OUTPUT_ROOT"; then
+    printf 'Checkpoint output root must be outside every archived source tree.\n' >&2
+    exit 1
+  fi
+done
+
 FINAL_DIR="$OUTPUT_ROOT/$CHECKPOINT_ID"
 if [[ -e "$FINAL_DIR" ]]; then
   printf 'Checkpoint destination already exists. Refusing to overwrite it.\n' >&2
@@ -208,6 +226,7 @@ fi
   printf 'project_root=%s\n' "$PROJECT_ROOT"
   printf 'private_root=%s\n' "$PRIVATE_ROOT"
   printf 'json_root=%s\n' "$JSON_ROOT"
+  printf 'output_root=%s\n' "$OUTPUT_ROOT"
   printf 'git_commit=%s\n' "$GIT_COMMIT"
   printf 'git_status=%s\n' "$GIT_STATUS"
   printf 'database_dump_mode=single_transaction\n'
