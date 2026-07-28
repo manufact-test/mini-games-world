@@ -1,9 +1,16 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/PresenceService.php';
+
 final class StatsService
 {
-    private const ONLINE_WINDOW_SEC = 75;
+    private PresenceService $presence;
+
+    public function __construct(?PresenceService $presence = null)
+    {
+        $this->presence = $presence ?? new PresenceService();
+    }
 
     public function build(array $db): array
     {
@@ -11,10 +18,7 @@ final class StatsService
         $onlineAccounts = [];
 
         foreach ($db['users'] ?? [] as $storageKey => $user) {
-            if (!is_array($user)) continue;
-
-            $last = strtotime((string)($user['last_seen_at'] ?? '1970-01-01')) ?: 0;
-            if ($now - $last > self::ONLINE_WINDOW_SEC) continue;
+            if (!is_array($user) || !$this->presence->isOnline($user, $now)) continue;
 
             $accountId = trim((string)($user['telegram_id'] ?? $user['id'] ?? $storageKey));
             if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
