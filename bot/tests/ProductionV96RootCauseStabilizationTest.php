@@ -95,9 +95,9 @@ $assert(
 );
 
 $assert(
-    str_contains($welcome, "'/app/v103.php?v=103'")
+    str_contains($welcome, "'/app/v104.php?v=104'")
         && !str_contains($welcome, "'/app/?v=85'"),
-    'New bot start buttons must advance beyond the retained v96 fallback to the current v103 cache-busted Mini App.'
+    'New bot start buttons must advance beyond the retained v96 fallback to the current v104 cache-busted Mini App.'
 );
 
 fwrite(STDOUT, "ProductionV96RootCauseStabilizationTest: {$assertions} assertions passed\n");
