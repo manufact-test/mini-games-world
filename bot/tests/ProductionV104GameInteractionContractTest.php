@@ -74,11 +74,11 @@ $assert(
     str_contains($presenceService, "sys_get_temp_dir()")
         && str_contains($presenceService, "session-' . hash('sha256', \$sessionId) . '.presence")
         && str_contains($presenceService, '@unlink($this->sessionPath($accountId, $sessionId))')
-        && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 10;')
+        && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 75;')
         && !str_contains($presenceService, 'presence_sessions')
         && !str_contains($presenceService, "['last_seen_at']")
         && str_contains($stats, '$this->presence->onlineAccountIds()'),
-    'Online counting must use isolated short-lived files and never add fields to users JSON.'
+    'Online counting must use isolated bounded files and never add fields to users JSON.'
 );
 
 $assert(
