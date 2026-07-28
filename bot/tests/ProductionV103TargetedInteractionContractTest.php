@@ -17,6 +17,7 @@ $entry = $read('app/assets/js/production-clean-entry-v103.js');
 $main = $read('app/assets/js/main-v103.js');
 $guard = $read('app/assets/js/production-v103-targeted-interactions.js');
 $stats = $read('bot/services/StatsService.php');
+$presence = $read('bot/services/PresenceService.php');
 $php = $read('app/v103.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 
@@ -50,7 +51,7 @@ $assert(
         && str_contains($guard, "PLAY_IDS.has(String(button.id || ''))")
         && !str_contains($guard, '[data-invite-friend]')
         && !str_contains($guard, '[data-invite-action]'),
-    'The second-device guard must stop only main Play buttons before setup, without changing invitation flows.'
+    'The retained v103 guard must stop only main Play buttons; v104 owns invitation entry blocking.'
 );
 
 $assert(
@@ -92,20 +93,20 @@ $assert(
 );
 
 $assert(
-    str_contains($stats, 'private const ONLINE_WINDOW_SEC = 75;')
-        && str_contains($stats, '$user[\'telegram_id\'] ?? $user[\'id\'] ?? $storageKey')
+    str_contains($stats, '$this->presence->onlineAccountIds()')
         && str_contains($stats, '$onlineAccounts[$accountId] = true;')
         && str_contains($stats, 'str_starts_with($accountId, \'bot_\')')
-        && str_contains($stats, '\'online_players\' => count($onlineAccounts)'),
-    'Online players must be unique recent Telegram accounts, not sessions, devices, stale records or bots.'
+        && str_contains($stats, '\'online_players\' => count($onlineAccounts)')
+        && str_contains($presence, 'private const ONLINE_WINDOW_SEC = 10;'),
+    'Unique-account online counting must remain while v104 replaces the stale legacy window with isolated presence.'
 );
 
 $assert(
     str_contains($php, 'production-clean-entry-v103.js?v=103')
         && str_contains($php, 'main-v103.js?v=103')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v103.php?v=103'),
-    'Only new no-store Telegram launches may activate v103.'
+        && str_contains($welcome, '/app/v104.php?v=104'),
+    'The retained no-store v103 entrypoint must remain valid while Telegram advances to v104.'
 );
 
 fwrite(STDOUT, "ProductionV103TargetedInteractionContractTest: {$assertions} assertions passed\n");
