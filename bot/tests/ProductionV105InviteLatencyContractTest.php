@@ -58,8 +58,9 @@ $assert(
         && $directAwaitPosition !== false
         && $optimisticPosition < $directAwaitPosition
         && str_contains($invite, 'Приглашение отправлено')
-        && str_contains($invite, 'WATCH_INTERVAL_MS = 500'),
-    'Direct player invitations must transition immediately and use a fast recipient signal watch.'
+        && str_contains($invite, 'WATCH_INTERVAL_MS = 500')
+        && str_contains($invite, 'window.__MGW_V104_INVITE_CONTROLS__?.pickerContext'),
+    'Direct player invitations must transition immediately, use a fast recipient signal and preserve the exact retained picker context.'
 );
 
 $closePosition = strpos($invite, 'closeSheet();');
