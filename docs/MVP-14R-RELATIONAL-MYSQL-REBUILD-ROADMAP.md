@@ -26,21 +26,24 @@ The new runtime must not use the singleton whole-state row or full-state project
 
 ### MVP-14R.0 — Safety checkpoint and architecture audit
 
-**Status:** in progress.
+**Status:** code/audit complete; production checkpoint execution pending explicit approval.
 
 - freeze exact current code checkpoint;
 - preserve the complete historical roadmap;
 - identify the last accepted JSON behavior baseline;
 - inventory entrypoints, storage selection, singleton locks, bridges, projections and client owners;
-- prepare one-command production snapshot and isolated-restore runbook;
-- do not change production.
+- prepare one-command production snapshot and isolated-restore verifier;
+- do not change production runtime.
 
-**Done when:** code and data rollback checkpoint are verified and the audit identifies the exact components to retire or retain.
+**Exact JSON behavior baseline:** production checkout `4295f42c84d28b02eae25fb9aa069ed186bde5ac`, latest functional code `c1f51e1188af12a18bd72a94cc289429f7d4960a`, with zero changed files between them; JSON-only storage and the accepted v85/v86 client graph.
+
+**Done when:** the production SQL/deployment/private/JSON checkpoint is created and its file/JSON restore verification passes.
 
 ### MVP-14R.1 — Full production snapshot and temporary JSON recovery
 
-- produce SQL dump, DB→JSON export, deployment/private/JSON archives and SHA-256 manifest;
-- verify the artifacts through isolated restore;
+- create the guarded current DB→JSON export under maintenance/read-only mode;
+- verify the export and restore it into an isolated directory;
+- preserve the SQL and full-file checkpoint from MVP-14R.0;
 - switch production to the verified JSON recovery runtime only after separate approval;
 - preserve the original MySQL database untouched.
 
@@ -136,7 +139,8 @@ The new runtime must not use the singleton whole-state row or full-state project
 - current main/code deployed: `f7e956000c027de640f196e8900b20a2140d0ca0` / v109;
 - immutable code checkpoint: `checkpoint/2026-07-28-v109-before-json-rollback-mysql-rebuild`;
 - working branch: `agent/mvp14r0-baseline-audit`;
-- production manual regression: failed;
-- production data snapshot: pending;
-- production changes during MVP-14R.0: prohibited;
-- next action: complete the exact audit and prepare the snapshot command.
+- exact JSON behavior baseline: `4295f42c84d28b02eae25fb9aa069ed186bde5ac` / v85-v86;
+- production manual v109 regression: failed;
+- production data/file checkpoint: pending execution;
+- production runtime changes during MVP-14R.0: prohibited;
+- next gate: green exact-head CI, merge authorization, code-only deploy, then the read-only checkpoint plus isolated verification commands.
