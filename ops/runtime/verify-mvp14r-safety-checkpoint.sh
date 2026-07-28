@@ -158,7 +158,18 @@ if [[ "$JSON_FILES" -lt 1 ]]; then
   exit 1
 fi
 
-if ! gzip -cd "$CHECKPOINT_DIR/database.sql.gz" | grep -Eq '^(--|/\*!|CREATE |INSERT |USE |DROP |SET )'; then
+# gzip integrity has already been checked above. Disable pipefail only for this
+# early-exit content probe so grep -q cannot turn gzip's expected SIGPIPE into
+# a false verifier failure after a valid SQL marker has been found.
+SQL_DUMP_LOOKS_VALID=false
+if (
+  set +o pipefail
+  gzip -cd "$CHECKPOINT_DIR/database.sql.gz" \
+    | grep -Eq '^[[:space:]]*(--|/\*!|CREATE |INSERT |USE |DROP |SET |LOCK |UNLOCK |ALTER )'
+); then
+  SQL_DUMP_LOOKS_VALID=true
+fi
+if [[ "$SQL_DUMP_LOOKS_VALID" != "true" ]]; then
   printf 'Database dump does not look like a SQL dump.\n' >&2
   exit 1
 fi
