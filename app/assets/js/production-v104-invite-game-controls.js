@@ -70,6 +70,14 @@ function handleClick(event){
     return;
   }
 
+  const share = origin.closest('[data-create-link-invite]');
+  if (share && currentV99PassiveLock()?.locked) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    showLockMessage();
+    return;
+  }
+
   const picker = origin.closest('[data-open-player-picker]');
   if (picker) {
     if (currentV99PassiveLock()?.locked) {
@@ -99,7 +107,7 @@ function handleClick(event){
 
 function updateInviteButtons(){
   const locked = Boolean(currentV99PassiveLock()?.locked);
-  document.querySelectorAll('[data-invite-friend]').forEach(button => {
+  document.querySelectorAll('[data-invite-friend], [data-open-player-picker], [data-create-link-invite]').forEach(button => {
     if (!(button instanceof HTMLButtonElement)) return;
     button.setAttribute('aria-disabled', locked ? 'true' : 'false');
     button.classList.toggle('mgw-session-locked', locked);
@@ -126,9 +134,9 @@ async function createDirectInvite(inviteeId, context){
       renderBalances(state.user);
     }
     if (result?.session) state.session = result.session;
-    const invite = result?.invite || null;
-    if (!invite?.token) throw new Error('Не удалось создать приглашение.');
-    renderOwnerWaiting(invite);
+    const inviteResult = result?.invite || null;
+    if (!inviteResult?.token) throw new Error('Не удалось создать приглашение.');
+    renderOwnerWaiting(inviteResult);
     if (Number.isFinite(Number(result?.unread_count))) {
       document.dispatchEvent(new CustomEvent('mgw:notification-count', {
         detail:{ unreadCount:Number(result.unread_count) },
@@ -151,15 +159,15 @@ function renderSendingSheet(context){
   `);
 }
 
-function renderOwnerWaiting(invite){
-  const token = String(invite?.token || '');
+function renderOwnerWaiting(inviteResult){
+  const token = String(inviteResult?.token || '');
   openSheet(`
     <span data-invite-sheet data-invite-token="${escapeHtml(token)}" data-invite-state="pending:owner" hidden></span>
     <div class="sheet-head">
       <div><h2>Приглашение отправлено</h2><p>Игрок сразу увидит его в приложении.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    ${inviteSummary(invite)}
+    ${inviteSummary(inviteResult)}
     <div class="small-note invite-status-note">Ждём ответа игрока. Коины пока не списываются.</div>
     <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(token)}" type="button">Отменить приглашение</button>
   `);
@@ -220,15 +228,15 @@ function abortCompetingReads(reason){
   }
 }
 
-function inviteSummary(invite){
-  const gameType = String(invite?.game_type || 'tictactoe');
-  const size = Number(invite?.board_size || DEFAULT_SIZE[gameType] || 3);
+function inviteSummary(inviteResult){
+  const gameType = String(inviteResult?.game_type || 'tictactoe');
+  const size = Number(inviteResult?.board_size || DEFAULT_SIZE[gameType] || 3);
   return `
     <div class="topup-success">
-      <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || gameTitle(gameType))}</strong></div>
-      <div><span>Комната</span><strong>${escapeHtml(invite?.room_label || roomLabel(invite?.room))}</strong></div>
+      <div><span>Игра</span><strong>${escapeHtml(inviteResult?.game_title || gameTitle(gameType))}</strong></div>
+      <div><span>Комната</span><strong>${escapeHtml(inviteResult?.room_label || roomLabel(inviteResult?.room))}</strong></div>
       <div><span>Вариант</span><strong>${escapeHtml(gameType === 'domino' ? 'Классика 0–6' : `${size}×${size}`)}</strong></div>
-      <div><span>Ставка</span><strong>${Number(invite?.bet || 0)} коинов</strong></div>
+      <div><span>Ставка</span><strong>${Number(inviteResult?.bet || 0)} коинов</strong></div>
     </div>
   `;
 }
