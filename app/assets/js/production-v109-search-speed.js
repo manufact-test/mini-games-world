@@ -3,6 +3,8 @@ import { getSessionId } from './session.js?v=27';
 
 const SEARCH_SPEED_URL = `${window.location.origin}/bot/search-speed.php`;
 const SPEED_CHECK_MS = 2200;
+const RETRY_CHECK_MS = 900;
+const MAX_CHECKS = 3;
 const START_IDS = new Set([
   'startSearchBtn',
   'startFourSearchBtn',
@@ -45,10 +47,15 @@ export function initV109SearchSpeed(){
 function scheduleCheckpoint(){
   stopCheckpoint();
   const generation = ++runtime.generation;
+  scheduleAttempt(generation, 0, SPEED_CHECK_MS);
+}
+
+function scheduleAttempt(generation, attempt, delay){
+  window.clearTimeout(runtime.timer);
   runtime.timer = window.setTimeout(() => {
     runtime.timer = null;
-    void accelerateIfStillSearching(generation);
-  }, SPEED_CHECK_MS);
+    void accelerateIfStillSearching(generation, attempt);
+  }, delay);
 }
 
 function stopCheckpoint(){
@@ -57,20 +64,30 @@ function stopCheckpoint(){
   runtime.timer = null;
 }
 
-async function accelerateIfStillSearching(generation){
-  if (generation !== runtime.generation) return;
-  const activeScreen = document.querySelector('.screen.active');
-  const searchRuntime = window.__MGW_V100_SEARCH_RUNTIME__;
-  if (String(activeScreen?.dataset.screen || '') !== 'search' || !searchRuntime?.active) return;
+async function accelerateIfStillSearching(generation, attempt){
+  if (generation !== runtime.generation || !stillSearching()) return;
 
+  let accelerated = false;
   try {
-    await fetch(SEARCH_SPEED_URL, {
+    const response = await fetch(SEARCH_SPEED_URL, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId() }),
       priority:'high',
     });
+    const data = await response.json().catch(() => null);
+    accelerated = Boolean(response.ok && data?.ok !== false && data?.accelerated);
   } catch (error) {
     // Existing matchmaking polling remains the fallback.
   }
+
+  if (generation !== runtime.generation || accelerated || !stillSearching()) return;
+  if (attempt + 1 >= MAX_CHECKS) return;
+  scheduleAttempt(generation, attempt + 1, RETRY_CHECK_MS);
+}
+
+function stillSearching(){
+  const activeScreen = document.querySelector('.screen.active');
+  const searchRuntime = window.__MGW_V100_SEARCH_RUNTIME__;
+  return String(activeScreen?.dataset.screen || '') === 'search' && Boolean(searchRuntime?.active);
 }
