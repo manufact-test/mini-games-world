@@ -73,7 +73,8 @@ $assert(
 $assert(
     str_contains($watch, '$db->readOnly')
         && !str_contains($watch, '$db->transaction')
-        && !str_contains($watch, '$data[')
+        && !str_contains($watch, 'ensureUser(')
+        && !str_contains($watch, '=&')
         && str_contains($watch, "(string)(\$invite['status'] ?? '') !== 'pending'"),
     'Fast invite watch must remain read-only and return only a currently pending incoming invite.'
 );
