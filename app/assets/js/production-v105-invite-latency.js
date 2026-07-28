@@ -228,6 +228,15 @@ function renderInviteError(message){
 }
 
 function readInviteContext(){
+  const retained = window.__MGW_V104_INVITE_CONTROLS__?.pickerContext;
+  if (retained && typeof retained === 'object') {
+    const gameType = String(retained.gameType || 'tictactoe');
+    const room = String(retained.room || '') === 'gold' ? 'gold' : 'match';
+    const boardSize = Number(retained.boardSize || DEFAULT_SIZE[gameType] || 3);
+    const bet = Number(retained.bet || (room === 'gold' ? APP_CONFIG.goldBets?.[0] : APP_CONFIG.matchBet) || 10);
+    return { gameType, room, boardSize, bet };
+  }
+
   const gameType = String(state.selectedGame || 'tictactoe');
   const room = String(state.room || '') === 'gold' ? 'gold' : 'match';
   const boardSize = Number(document.querySelector('[data-invite-size].active')?.dataset.inviteSize || DEFAULT_SIZE[gameType] || 3);
@@ -243,10 +252,18 @@ function contextSummary(context){
     <div class="topup-success">
       <div><span>Игра</span><strong>${escapeHtml(gameTitle(context.gameType))}</strong></div>
       <div><span>Комната</span><strong>${escapeHtml(roomLabel(context.room))}</strong></div>
-      <div><span>Вариант</span><strong>${Number(context.boardSize || 3)}×${Number(context.boardSize || 3)}</strong></div>
+      <div><span>Вариант</span><strong>${escapeHtml(contextVariant(context))}</strong></div>
       <div><span>Ставка</span><strong>${Number(context.bet || 0)} коинов</strong></div>
     </div>
   `;
+}
+
+function contextVariant(context){
+  const type = String(context?.gameType || '');
+  const size = Number(context?.boardSize || DEFAULT_SIZE[type] || 3);
+  if (type === 'domino') return 'Классика 0–6';
+  if (type === 'four_in_a_row') return `${size}×${Math.max(5, size - 1)}`;
+  return `${size}×${size}`;
 }
 
 function inviteSummary(invite){
