@@ -25,8 +25,9 @@ $assertTrue(
         && str_contains($source, '--json-root=')
         && str_contains($source, '--output-root=')
         && str_contains($source, '--checkpoint-id=')
+        && str_contains($source, '--expected-git-commit=')
         && str_contains($source, '--confirm='),
-    'Checkpoint script must require all explicit paths, identity and confirmation'
+    'Checkpoint script must require all explicit paths, identity, commit and confirmation'
 );
 $assertTrue(
     str_contains($source, 'CREATE_READ_ONLY_MVP14R_SAFETY_CHECKPOINT')
@@ -37,6 +38,13 @@ $assertTrue(
     str_contains($source, 'paths_overlap()')
         && str_contains($source, 'outside every archived source tree'),
     'Checkpoint output must be disjoint from all archived source trees'
+);
+$assertTrue(
+    str_contains($source, 'Deployed Git commit does not match')
+        && str_contains($source, 'Production checkout is dirty')
+        && str_contains($source, 'git -C "$PROJECT_ROOT" rev-parse --verify HEAD')
+        && str_contains($source, 'git -C "$PROJECT_ROOT" status --porcelain'),
+    'Checkpoint must bind to the exact clean deployed Git commit'
 );
 $assertTrue(
     str_contains($source, '--single-transaction')
