@@ -128,6 +128,7 @@ async function refreshStatsIfVisible(){
 }
 
 function canRefreshHomeStats(){
+  if (window.__MGW_V103_TARGETED_INTERACTIONS__?.leavePending) return false;
   if (document.visibilityState !== 'visible') return false;
   const activeScreen = document.querySelector('.screen.active');
   if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
