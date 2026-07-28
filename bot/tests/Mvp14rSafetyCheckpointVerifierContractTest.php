@@ -54,6 +54,13 @@ $assertTrue(
     'Verifier must decode every restored JSON file strictly'
 );
 $assertTrue(
+    str_contains($source, 'JSON_FILE_LIST="$TMP_ROOT/json-files.list"')
+        && str_contains($source, 'done < "$JSON_FILE_LIST"')
+        && !str_contains($source, '< <(')
+        && !str_contains($source, '/dev/fd'),
+    'Verifier must use a regular temporary file instead of process substitution or /dev/fd'
+);
+$assertTrue(
     str_contains($source, 'PRODUCTION_RUNTIME_CHANGED=false')
         && str_contains($source, 'DATABASE_WRITE_EXECUTED=false')
         && !str_contains($source, 'mysql <')
