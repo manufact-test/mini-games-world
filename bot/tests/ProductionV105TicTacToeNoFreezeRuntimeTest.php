@@ -124,6 +124,7 @@ await window.fetch('https://mgw.test/bot/api.php', {
   method:'POST',
   body:JSON.stringify({action:'game_action',gameId:'g1'}),
 });
+await new Promise(resolve => setTimeout(resolve, 0));
 document.cell.textContent = '';
 document.cell.classList.values.clear();
 document.cell.disabled = false;
