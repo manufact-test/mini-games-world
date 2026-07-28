@@ -16,35 +16,17 @@ try {
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
-    $users = new UserService($config);
+    $accountId = trim((string)($tgUser['id'] ?? ''));
+    if ($accountId === '') throw new RuntimeException('Пользователь не найден.');
+
     $presence = new PresenceService();
     $stats = new StatsService($presence);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
-    if ($action === 'status') {
-        $result = $db->readOnly(static function (array $data) use ($stats): array {
-            return ['stats' => $stats->build($data)];
-        });
-        api_ok($result);
-    }
+    if ($action === 'ping') $presence->touch($accountId, $sessionId);
+    elseif ($action === 'leave') $presence->leave($accountId, $sessionId);
 
-    $result = $db->transaction(function (array &$data) use (
-        $action,
-        $sessionId,
-        $tgUser,
-        $users,
-        $presence,
-        $stats
-    ): array {
-        $user = $users->ensureUser($data, $tgUser);
-        $userId = (string)($user['id'] ?? '');
-        if ($userId === '') throw new RuntimeException('Пользователь не найден.');
-        $data['users'][$userId] = $user;
-        $stored =& $data['users'][$userId];
-
-        if ($action === 'leave') $presence->leave($stored, $sessionId);
-        else $presence->touch($stored, $sessionId);
-
+    $result = $db->readOnly(static function (array $data) use ($stats): array {
         return ['stats' => $stats->build($data)];
     });
 
