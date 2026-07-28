@@ -54,8 +54,10 @@ $assert(
         && str_contains($presenceClient, 'const STATUS_MS = 1200;')
         && str_contains($presenceClient, "window.addEventListener('pagehide'")
         && str_contains($presenceClient, 'navigator.sendBeacon')
-        && str_contains($presenceClient, "requestPresence('leave')") === false,
-    'Presence must use per-device heartbeat, fast read-only status polling and a beacon exit signal.'
+        && str_contains($presenceClient, "requestPresence('leave')") === false
+        && str_contains($presenceClient, "priority:'low'")
+        && str_contains($presenceClient, 'mgwPrefetch:true'),
+    'Presence must use per-device heartbeat, fast home-only status polling, a beacon exit signal and low-priority abortable reads.'
 );
 
 $assert(
@@ -103,9 +105,9 @@ $assert(
 
 $assert(
     str_contains($poll, 'APP_CONFIG.gameIntervalMs = Math.min')
-        && str_contains($poll, ', 350);')
+        && str_contains($poll, ', 500);')
         && !str_contains($poll, 'searchIntervalMs'),
-    'Only active-game confirmation polling may be shortened in v104.'
+    'Only active-game confirmation polling may be shortened to the balanced 500 ms cadence in v104.'
 );
 
 $assert(
