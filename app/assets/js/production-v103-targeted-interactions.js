@@ -150,7 +150,6 @@ async function leaveGameImmediately(game){
   state.activeGame = null;
   clearGameView();
   showScreen('home');
-  document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
 
   try {
     const result = await api.leaveGame(String(snapshot.id));
@@ -164,6 +163,7 @@ async function leaveGameImmediately(game){
     document.dispatchEvent(new CustomEvent('mgw:game-finished', {
       detail:{ game:result?.game || null, source:'v103-immediate-leave' },
     }));
+    document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
   } catch (error) {
     runtime.leavePending = false;
     updatePlayButtons();
