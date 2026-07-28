@@ -84,6 +84,14 @@ $assert(
 );
 
 $assert(
+    str_contains($guard, 'abortBackgroundReads();')
+        && str_contains($guard, "controller.abort('v103-leave-game')")
+        && str_contains($guard, 'if (!result?.session?.locked) clearV99PassiveLock();')
+        && str_contains($main, 'window.__MGW_V103_TARGETED_INTERACTIONS__?.leavePending'),
+    'Surrender must prevent an obsolete passive stats response from restoring a stale second-device lock.'
+);
+
+$assert(
     str_contains($stats, 'private const ONLINE_WINDOW_SEC = 75;')
         && str_contains($stats, '$user[\'telegram_id\'] ?? $user[\'id\'] ?? $storageKey')
         && str_contains($stats, '$onlineAccounts[$accountId] = true;')
