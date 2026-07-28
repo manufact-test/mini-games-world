@@ -7,6 +7,7 @@ PRIVATE_ROOT=""
 JSON_ROOT=""
 OUTPUT_ROOT=""
 CHECKPOINT_ID=""
+EXPECTED_GIT_COMMIT=""
 CONFIRM=""
 
 declare -A SEEN=()
@@ -17,6 +18,7 @@ for argument in "$@"; do
     --json-root=*) key="json"; value="${argument#*=}" ;;
     --output-root=*) key="output"; value="${argument#*=}" ;;
     --checkpoint-id=*) key="checkpoint"; value="${argument#*=}" ;;
+    --expected-git-commit=*) key="commit"; value="${argument#*=}" ;;
     --confirm=*) key="confirm"; value="${argument#*=}" ;;
     *) printf 'Unknown checkpoint option.\n' >&2; exit 2 ;;
   esac
@@ -35,11 +37,12 @@ for argument in "$@"; do
     json) JSON_ROOT="$value" ;;
     output) OUTPUT_ROOT="$value" ;;
     checkpoint) CHECKPOINT_ID="$value" ;;
+    commit) EXPECTED_GIT_COMMIT="$value" ;;
     confirm) CONFIRM="$value" ;;
   esac
 done
 
-for required in project private json output checkpoint confirm; do
+for required in project private json output checkpoint commit confirm; do
   if [[ -z "${SEEN[$required]:-}" ]]; then
     printf 'Checkpoint requires every explicit option.\n' >&2
     exit 2
@@ -55,6 +58,10 @@ done
 
 if [[ ! "$CHECKPOINT_ID" =~ ^MGW_SAFETY_CHECKPOINT_[A-Z0-9_-]{10,120}$ ]]; then
   printf 'Checkpoint ID is invalid.\n' >&2
+  exit 2
+fi
+if [[ ! "$EXPECTED_GIT_COMMIT" =~ ^[a-f0-9]{40}$ ]]; then
+  printf 'Expected deployed Git commit is invalid.\n' >&2
   exit 2
 fi
 if [[ "$CONFIRM" != "CREATE_READ_ONLY_MVP14R_SAFETY_CHECKPOINT" ]]; then
@@ -93,6 +100,21 @@ for source_root in "$PROJECT_ROOT" "$PRIVATE_ROOT" "$JSON_ROOT"; do
     exit 1
   fi
 done
+
+if ! command -v git >/dev/null 2>&1 || ! git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  printf 'Production project root is not an inspectable Git checkout.\n' >&2
+  exit 1
+fi
+GIT_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse --verify HEAD)"
+if [[ "$GIT_COMMIT" != "$EXPECTED_GIT_COMMIT" ]]; then
+  printf 'Deployed Git commit does not match the authorized checkpoint commit.\n' >&2
+  exit 1
+fi
+if [[ -n "$(git -C "$PROJECT_ROOT" status --porcelain)" ]]; then
+  printf 'Production checkout is dirty. Refusing to create an ambiguous checkpoint.\n' >&2
+  exit 1
+fi
+GIT_STATUS="clean"
 
 FINAL_DIR="$OUTPUT_ROOT/$CHECKPOINT_ID"
 if [[ -e "$FINAL_DIR" ]]; then
@@ -208,17 +230,6 @@ tar -C "$JSON_PARENT" -czf "$TEMP_DIR/mgw_data.tar.gz" "$(basename "$JSON_ROOT")
 for archive in public_html.tar.gz private_mgw.tar.gz mgw_data.tar.gz; do
   tar -tzf "$TEMP_DIR/$archive" >/dev/null
 done
-
-GIT_COMMIT="unknown"
-GIT_STATUS="unavailable"
-if command -v git >/dev/null 2>&1 && git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  GIT_COMMIT="$(git -C "$PROJECT_ROOT" rev-parse --verify HEAD)"
-  if [[ -z "$(git -C "$PROJECT_ROOT" status --porcelain)" ]]; then
-    GIT_STATUS="clean"
-  else
-    GIT_STATUS="dirty"
-  fi
-fi
 
 {
   printf 'checkpoint_id=%s\n' "$CHECKPOINT_ID"
