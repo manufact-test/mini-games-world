@@ -18,6 +18,8 @@ $main = $read('app/assets/js/main-v105.js');
 $ttt = $read('app/assets/js/production-v105-tictactoe-stability.js');
 $invite = $read('app/assets/js/production-v105-invite-latency.js');
 $watch = $read('bot/invite-watch.php');
+$signals = $read('bot/services/InviteSignalService.php');
+$invitesPhp = $read('bot/invites.php');
 $php = $read('app/v105.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 
@@ -57,7 +59,7 @@ $assert(
         && $optimisticPosition < $directAwaitPosition
         && str_contains($invite, 'Приглашение отправлено')
         && str_contains($invite, 'WATCH_INTERVAL_MS = 500'),
-    'Direct player invitations must transition immediately and use a fast read-only recipient watch.'
+    'Direct player invitations must transition immediately and use a fast recipient signal watch.'
 );
 
 $closePosition = strpos($invite, 'closeSheet();');
@@ -73,12 +75,26 @@ $assert(
 );
 
 $assert(
-    str_contains($watch, '$db->readOnly')
-        && !str_contains($watch, '$db->transaction')
-        && !str_contains($watch, 'ensureUser(')
-        && !str_contains($watch, '=&')
-        && str_contains($watch, "(string)(\$invite['status'] ?? '') !== 'pending'"),
-    'Fast invite watch must remain read-only and return only a currently pending incoming invite.'
+    str_contains($watch, 'InviteSignalService')
+        && str_contains($watch, '->latest($userId)')
+        && !str_contains($watch, 'StorageFactory')
+        && !str_contains($watch, 'readOnly')
+        && !str_contains($watch, 'transaction'),
+    'Fast invite watch must read only the isolated signal and never open application JSON.'
+);
+
+$publishPosition = strpos($invitesPhp, '$inviteSignals->publish(');
+$runtimeSyncPosition = strpos($invitesPhp, '$runtimeInvites->synchronize(');
+$assert(
+    str_contains($signals, 'sys_get_temp_dir()')
+        && str_contains($signals, 'file_put_contents($temporary, $json, LOCK_EX)')
+        && str_contains($signals, 'public function clear(')
+        && str_contains($signals, 'public function latest(')
+        && $publishPosition !== false
+        && $runtimeSyncPosition !== false
+        && $publishPosition < $runtimeSyncPosition
+        && str_contains($invitesPhp, '$inviteSignals->clear('),
+    'Direct invitations must publish a short-lived temp signal before optional repository synchronization and cancellation must clear it.'
 );
 
 $assert(
