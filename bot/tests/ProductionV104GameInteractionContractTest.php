@@ -84,19 +84,21 @@ $assert(
 $assert(
     str_contains($inviteControls, "origin.closest('[data-invite-friend]')")
         && str_contains($inviteControls, "origin.closest('[data-open-player-picker]')")
+        && str_contains($inviteControls, "origin.closest('[data-create-link-invite]')")
         && str_contains($inviteControls, "origin.closest('[data-direct-opponent]')")
         && str_contains($inviteControls, 'event.stopImmediatePropagation();')
         && str_contains($inviteControls, "inviteRequest('create_direct'")
         && str_contains($inviteControls, 'renderSendingSheet(context);')
-        && str_contains($inviteControls, 'renderOwnerWaiting(invite);'),
-    'Passive devices must be blocked before invite setup and direct invites must show an immediate local transition.'
+        && str_contains($inviteControls, 'renderOwnerWaiting(inviteResult);'),
+    'Passive devices must be blocked at every invite-creation entry and direct invites must show an immediate local transition.'
 );
 
 $assert(
     str_contains($inviteControls, 'speed?.gamePollControllers')
         && str_contains($inviteControls, 'speed?.backgroundControllers')
-        && str_contains($inviteControls, "origin.closest('#confirmLeaveGame"),
-    'Leave and invite actions must abort competing reads before the server mutation starts.'
+        && str_contains($inviteControls, "origin.closest('#confirmLeaveGame")
+        && !str_contains($inviteControls, "#confirmLeaveGame, [data-create-link-invite]"),
+    'Leave and invite mutations must abort competing reads without cancelling the prepared Telegram share request.'
 );
 
 $assert(
