@@ -97,9 +97,9 @@ $assert(
 );
 
 $assert(
-    str_contains($welcome, '/app/v102.php?v=102')
+    str_contains($welcome, '/app/v104.php?v=104')
         && !str_contains($welcome, "/app/?v=96"),
-    'Telegram launch buttons must advance from the retained v97 fallback to the current v102 entrypoint.'
+    'Telegram launch buttons must advance from the retained v97 fallback to the current v104 entrypoint.'
 );
 
 fwrite(STDOUT, "ProductionV97SingleRuntimeOwnerTest: {$assertions} assertions passed\n");
