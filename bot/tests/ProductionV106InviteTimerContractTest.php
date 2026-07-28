@@ -16,18 +16,23 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $entry = $read('app/assets/js/production-clean-entry-v106.js');
 $main = $read('app/assets/js/main-v106.js');
 $invite = $read('app/assets/js/production-v106-invite-actions.js');
+$toastPolicy = $read('app/assets/js/production-v106-self-toast-policy.js');
 $timer = $read('app/assets/js/production-v106-timer-mobile.js');
 $clock = $read('bot/game-clock.php');
 $registry = $read('bot/runtime/ProductionPrimaryApplicationEntrypoints.php');
 $php = $read('app/v106.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 
+$toastPosition = strpos($entry, 'initV106SelfToastPolicy();');
+$invitePosition = strpos($entry, 'initV106InviteActions();');
 $assert(
     str_contains($entry, "import './production-clean-entry-v105.js?v=105';")
-        && str_contains($entry, 'initV106InviteActions();')
+        && $toastPosition !== false
+        && $invitePosition !== false
+        && $toastPosition < $invitePosition
         && str_contains($entry, 'initV106TicTacToeTimerAndMobilePin();')
         && str_contains($entry, "v106-mvp14-invite-timer-mobile-stability"),
-    'v106 must retain v105 and add only the focused invite/timer/mobile layer.'
+    'v106 must retain v105 and install exact toast intent before the focused invite/timer/mobile owners.'
 );
 
 $assert(
@@ -61,9 +66,13 @@ $assert(
 $assert(
     str_contains($invite, 'suppressSelfConfirmation(action);')
         && str_contains($invite, 'installSelfToastFilter();')
-        && str_contains($invite, 'SELF_CONFIRMATIONS')
+        && str_contains($toastPolicy, "inviteAction === 'cancel'")
+        && str_contains($toastPolicy, "inviteAction === 'decline'")
+        && str_contains($toastPolicy, "control.id === 'cancelSearch'")
+        && str_contains($toastPolicy, "control.id === 'confirmLeaveGame'")
+        && str_contains($toastPolicy, 'queueMicrotask(() =>')
         && !str_contains($invite, "toast(action === 'decline'"),
-    'User-initiated cancel/decline confirmations must stay silent while errors and external events remain visible.'
+    'Only the exact user-initiated cancel/decline/search/leave confirmation must be silent; external events and errors remain visible.'
 );
 
 $assert(
