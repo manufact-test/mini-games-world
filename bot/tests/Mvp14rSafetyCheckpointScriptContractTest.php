@@ -35,6 +35,11 @@ $assertTrue(
     'Checkpoint script must be confirmation-gated and non-overwriting'
 );
 $assertTrue(
+    str_contains($source, 'if [[ -z "$value" ]]')
+        && !str_contains($source, '$\'\\0\''),
+    'Checkpoint argument validation must accept non-empty Bash strings without an impossible NUL pattern'
+);
+$assertTrue(
     str_contains($source, 'paths_overlap()')
         && str_contains($source, 'outside every archived source tree'),
     'Checkpoint output must be disjoint from all archived source trees'
@@ -71,6 +76,27 @@ $assertTrue(
         && !str_contains($source, 'production-cutover.json" >')
         && !str_contains($source, 'runtime.php" >'),
     'Checkpoint script must not switch code or rewrite production runtime controls'
+);
+
+$missingRoot = sys_get_temp_dir() . '/mgw-checkpoint-contract-' . bin2hex(random_bytes(6));
+$command = 'bash ' . escapeshellarg($path)
+    . ' --project-root=' . escapeshellarg($missingRoot . '/public_html')
+    . ' --private-root=' . escapeshellarg($missingRoot . '/_private_mgw')
+    . ' --json-root=' . escapeshellarg($missingRoot . '/mgw_data')
+    . ' --output-root=' . escapeshellarg($missingRoot . '/mgw_checkpoints')
+    . ' --checkpoint-id=' . escapeshellarg('MGW_SAFETY_CHECKPOINT_CONTRACT_TEST_123456')
+    . ' --expected-git-commit=' . escapeshellarg(str_repeat('a', 40))
+    . ' --confirm=' . escapeshellarg('CREATE_READ_ONLY_MVP14R_SAFETY_CHECKPOINT')
+    . ' 2>&1';
+$output = [];
+$exitCode = 0;
+exec($command, $output, $exitCode);
+$combinedOutput = implode("\n", $output);
+$assertTrue(
+    $exitCode === 1
+        && str_contains($combinedOutput, 'Required checkpoint source directory is unavailable')
+        && !str_contains($combinedOutput, 'Checkpoint option value is empty or invalid'),
+    'Real parser must accept every non-empty option and fail only at the intentionally missing source directories'
 );
 
 fwrite(STDOUT, "Mvp14rSafetyCheckpointScriptContractTest passed: {$assertions} assertions.\n");
