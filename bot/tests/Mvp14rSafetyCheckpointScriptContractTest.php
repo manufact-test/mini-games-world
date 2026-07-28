@@ -34,10 +34,11 @@ $assertTrue(
         && str_contains($source, 'Refusing to overwrite it'),
     'Checkpoint script must be confirmation-gated and non-overwriting'
 );
+$invalidNulExpression = '[[ "$value" == *$\'\\0\'* ]]';
 $assertTrue(
     str_contains($source, 'if [[ -z "$value" ]]')
-        && !str_contains($source, '$\'\\0\''),
-    'Checkpoint argument validation must accept non-empty Bash strings without an impossible NUL pattern'
+        && !str_contains($source, $invalidNulExpression),
+    'Checkpoint argument validation must accept non-empty Bash strings without the invalid NUL expression'
 );
 $assertTrue(
     str_contains($source, 'paths_overlap()')
