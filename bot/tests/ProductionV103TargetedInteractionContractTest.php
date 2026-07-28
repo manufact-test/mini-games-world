@@ -85,10 +85,10 @@ $assert(
 
 $assert(
     str_contains($stats, 'private const ONLINE_WINDOW_SEC = 75;')
-        && str_contains($stats, "$user['telegram_id'] ?? $user['id'] ?? $storageKey")
+        && str_contains($stats, '$user[\'telegram_id\'] ?? $user[\'id\'] ?? $storageKey')
         && str_contains($stats, '$onlineAccounts[$accountId] = true;')
-        && str_contains($stats, "str_starts_with($accountId, 'bot_')")
-        && str_contains($stats, "'online_players' => count($onlineAccounts)"),
+        && str_contains($stats, 'str_starts_with($accountId, \'bot_\')')
+        && str_contains($stats, '\'online_players\' => count($onlineAccounts)'),
     'Online players must be unique recent Telegram accounts, not sessions, devices, stale records or bots.'
 );
 
