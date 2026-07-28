@@ -10,19 +10,22 @@ if (!is_string($html)) {
     exit;
 }
 
+// Emergency rollback: every existing v108 Telegram menu link now serves the
+// accepted v105 client graph plus one isolated instant notification-open owner.
+// No data or backend state is rolled back.
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=96',
-    './assets/js/production-clean-entry-v108.js?v=108',
+    './assets/js/production-clean-entry-v105-fast-notifications.js?v=1051',
     $html
 );
 $html = str_replace(
     './assets/js/main.js?v=96',
-    './assets/js/main-v108.js?v=108',
+    './assets/js/main-v105.js?v=105',
     $html
 );
 $html = str_replace(
     'data-hotfix-build="v96-mvp14-root-cause-stabilization"',
-    'data-hotfix-build="v108-mvp14-authoritative-live-runtime"',
+    'data-hotfix-build="v105-mvp14-emergency-rollback-fast-notifications"',
     $html
 );
 
