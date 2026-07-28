@@ -43,7 +43,7 @@ function startPresence(){
     if (document.visibilityState === 'visible') void pingPresence();
   }, HEARTBEAT_MS);
   runtime.statusTimer = window.setInterval(() => {
-    if (document.visibilityState === 'visible') void refreshStatus();
+    if (canReadHomeStatus()) void refreshStatus();
   }, STATUS_MS);
 }
 
@@ -57,7 +57,7 @@ function resumePresence(){
   runtime.hiddenTimer = null;
   runtime.left = false;
   void pingPresence();
-  void refreshStatus();
+  if (canReadHomeStatus()) void refreshStatus();
 }
 
 function scheduleHiddenLeave(){
@@ -80,7 +80,7 @@ async function pingPresence(){
 }
 
 async function refreshStatus(){
-  if (runtime.statusBusy || document.visibilityState !== 'visible') return;
+  if (runtime.statusBusy || !canReadHomeStatus()) return;
   runtime.statusBusy = true;
   try {
     const data = await requestPresence('status');
@@ -90,6 +90,12 @@ async function refreshStatus(){
   } finally {
     runtime.statusBusy = false;
   }
+}
+
+function canReadHomeStatus(){
+  if (document.visibilityState !== 'visible') return false;
+  const active = document.querySelector('.screen.active');
+  return String(active?.dataset.screen || '') === 'home';
 }
 
 function applyStats(stats){
@@ -104,6 +110,8 @@ async function requestPresence(action){
     headers:{ 'Content-Type':'application/json' },
     body:JSON.stringify(payload(action)),
     keepalive:action === 'leave',
+    priority:'low',
+    mgwPrefetch:true,
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) throw new Error(data?.error || 'Presence request failed');
@@ -129,6 +137,7 @@ function sendLeaveBeacon(){
     headers:{ 'Content-Type':'application/json' },
     body,
     keepalive:true,
+    priority:'low',
   }).catch(() => null);
 }
 
