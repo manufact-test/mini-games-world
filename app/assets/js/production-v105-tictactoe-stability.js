@@ -74,11 +74,22 @@ async function stableFetch(input, init = {}){
     throw error;
   }
 
-  if (!meta || runtime.pending?.gameId !== meta.gameId) return response;
-  const data = await response.clone().json().catch(() => null);
+  if (meta && runtime.pending?.gameId === meta.gameId) {
+    try {
+      void reconcileResponse(response.clone(), meta);
+    } catch (error) {
+      clearPending();
+    }
+  }
+  return response;
+}
+
+async function reconcileResponse(response, meta){
+  const data = await response.json().catch(() => null);
+  if (runtime.pending?.gameId !== meta.gameId) return;
   if (!response.ok || !data || data.ok === false) {
     clearPending();
-    return response;
+    return;
   }
 
   const game = data?.game || null;
@@ -91,7 +102,6 @@ async function stableFetch(input, init = {}){
   } else {
     schedulePendingPaint();
   }
-  return response;
 }
 
 function schedulePendingPaint(){
