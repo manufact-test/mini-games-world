@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameInviteService.php';
+require_once __DIR__ . '/services/InviteSignalService.php';
 
 function mgw_invite_bot_username(array $config): string
 {
@@ -156,6 +157,7 @@ try {
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $invites = new GameInviteService($config, $catalog, $games);
+    $inviteSignals = new InviteSignalService($config);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
     $runtimeInvites = $legacyBridgeAllowed
@@ -242,6 +244,13 @@ try {
                 break;
 
             case 'cancel':
+                foreach ($data['invites'] ?? [] as $storedInvite) {
+                    if (!is_array($storedInvite) || (string)($storedInvite['token'] ?? '') !== $token) continue;
+                    $inviterId = (string)($storedInvite['inviter_id'] ?? '');
+                    $inviteeId = (string)($storedInvite['invitee_id'] ?? '');
+                    $core['signal_recipient_id'] = $userId === $inviterId ? $inviteeId : $inviterId;
+                    break;
+                }
                 $core['invite'] = $invites->cancel($data, $user, $token);
                 break;
 
@@ -273,6 +282,18 @@ try {
         $core['session'] = $sessions->publicState($user, $sessionId);
         return $core;
     });
+
+    $actorId = (string)($tgUser['id'] ?? '');
+    $signalToken = (string)($result['invite']['token'] ?? $payload['token'] ?? '');
+    if ($action === 'create_direct'
+        && is_array($result['invite'] ?? null)
+        && (string)($result['invite']['status'] ?? '') === 'pending') {
+        $inviteSignals->publish((string)($result['recipient_id'] ?? ''), $result['invite']);
+    } elseif (in_array($action, ['accept', 'decline', 'cancel', 'start'], true) && $signalToken !== '') {
+        $inviteSignals->clear($actorId, $signalToken);
+        $inviteSignals->clear((string)($result['signal_recipient_id'] ?? ''), $signalToken);
+    }
+    unset($result['signal_recipient_id']);
 
     if ($runtimeInvites instanceof RuntimeInviteRepository) {
         $snapshot = $db->readOnly(static fn(array $data): array => $data);
