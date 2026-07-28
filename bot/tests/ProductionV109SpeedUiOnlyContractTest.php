@@ -16,6 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $entry = $read('app/assets/js/production-clean-entry-v109.js');
 $main = $read('app/assets/js/main-v109.js');
 $invite = $read('app/assets/js/production-v109-invite-speed.js');
+$selfCancel = $read('app/assets/js/production-v109-self-cancel-refresh-guard.js');
 $share = $read('app/assets/js/production-v109-share-speed.js');
 $shareFallback = $read('app/assets/js/production-v109-share-fallback-guard.js');
 $notifications = $read('app/assets/js/production-v109-notifications.js');
@@ -35,6 +36,7 @@ $assert(
 
 $assert(
     str_contains($entry, 'initV109InviteSpeed();')
+        && str_contains($entry, 'initV109SelfCancelRefreshGuard();')
         && str_contains($entry, 'initV109ShareSpeed();')
         && str_contains($entry, 'initV109Notifications();')
         && str_contains($entry, 'initV109Presence();')
@@ -50,8 +52,9 @@ $assert(
         && strpos($invite, 'renderOptimisticOwnerSheet(context, opponentName);')
             < strpos($invite, "inviteRequest('create_direct'")
         && str_contains($invite, 'closeSheet();')
-        && !str_contains($invite, "toast('Приглашение отменено.')"),
-    'Direct invite and self-cancel must paint immediately without a duplicate self toast.'
+        && !str_contains($invite, "toast('Приглашение отменено.')")
+        && str_contains($selfCancel, 'event.stopImmediatePropagation();'),
+    'Direct invite and self-cancel must paint immediately without a duplicate self notification.'
 );
 
 $assert(
@@ -92,11 +95,14 @@ $assert(
 
 $assert(
     str_contains($searchClient, 'const SPEED_CHECK_MS = 2200;')
+        && str_contains($searchClient, 'const RETRY_CHECK_MS = 900;')
+        && str_contains($searchClient, 'const MAX_CHECKS = 3;')
+        && str_contains($searchClient, 'scheduleAttempt(generation, attempt + 1, RETRY_CHECK_MS);')
         && str_contains($searchClient, '/bot/search-speed.php')
         && str_contains($searchEndpoint, "time() - 12")
         && str_contains($searchEndpoint, "(string)(\$item['room'] ?? 'match') !== 'match'")
         && str_contains($registry, "'bot/search-speed.php' => 'search_speed'"),
-    'Bot fallback speed must use one isolated guarded checkpoint without changing game actions.'
+    'Bot fallback speed must retry a bounded guarded checkpoint without changing game actions.'
 );
 
 $assert(
