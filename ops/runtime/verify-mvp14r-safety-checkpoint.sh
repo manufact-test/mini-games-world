@@ -142,6 +142,8 @@ fi
 "$PHP_BIN" -l "$PUBLIC_RESTORE/bot/core/bootstrap.php" >/dev/null
 
 JSON_FILES=0
+JSON_FILE_LIST="$TMP_ROOT/json-files.list"
+find "$JSON_RESTORE" -type f -name '*.json' -print0 > "$JSON_FILE_LIST"
 while IFS= read -r -d '' file; do
   "$PHP_BIN" -r '
 $path = $argv[1] ?? "";
@@ -150,7 +152,7 @@ if (!is_string($contents)) exit(1);
 json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
 ' "$file"
   JSON_FILES=$((JSON_FILES + 1))
-done < <(find "$JSON_RESTORE" -type f -name '*.json' -print0)
+done < "$JSON_FILE_LIST"
 if [[ "$JSON_FILES" -lt 1 ]]; then
   printf 'Restored JSON checkpoint contains no JSON files.\n' >&2
   exit 1
