@@ -110,6 +110,7 @@ async function cancelInviteImmediately(token){
   const sheet = document.getElementById('sheet');
   const rollbackHtml = String(sheet?.innerHTML || '');
   closeSheet();
+  sheet?.replaceChildren();
 
   try {
     const result = await inviteRequest('cancel', { token });
