@@ -34,6 +34,11 @@ $assertTrue(
     'Checkpoint script must be confirmation-gated and non-overwriting'
 );
 $assertTrue(
+    str_contains($source, 'paths_overlap()')
+        && str_contains($source, 'outside every archived source tree'),
+    'Checkpoint output must be disjoint from all archived source trees'
+);
+$assertTrue(
     str_contains($source, '--single-transaction')
         && str_contains($source, '--skip-lock-tables')
         && str_contains($source, 'DATABASE_WRITE_EXECUTED=false'),
