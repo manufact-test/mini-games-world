@@ -41,7 +41,9 @@ function handlePointerDown(event){
   const origin = event.target;
   if (!(origin instanceof Element)) return;
 
-  if (origin.closest('#confirmLeaveGame, [data-create-link-invite], [data-direct-opponent], [data-invite-action]')) {
+  /* A prepared Telegram message is itself background work needed by the Share
+   * click, so it must not be cancelled here. */
+  if (origin.closest('#confirmLeaveGame, [data-direct-opponent], [data-invite-action]')) {
     abortCompetingReads('v104-game-control');
   }
 
