@@ -52,7 +52,7 @@ foreach ([
     "maintenance_mode'] ?? null) === true",
     "financial_read_only'] ?? null) === true",
     "rollback_driver'] ?? null) === 'json'",
-    "($expiresAt - $requestedAt) <= 900",
+    '($expiresAt - $requestedAt) <= 900',
     'all_modules_enabled_exact',
     'authorization_expected_revision_valid',
     'authorization_expected_sha_valid',
@@ -66,7 +66,7 @@ foreach ([
 foreach ([
     'WHERE singleton_id = 1 FOR UPDATE',
     'Production projection outbox is not a contiguous completed revision chain.',
-    "($audit['read_only'] ?? false) !== true",
+    '($audit[\'read_only\'] ?? false) !== true',
     "'database_write_executed' => false",
     "'live_json_changed' => false",
     "'persistent_config_changed' => false",
