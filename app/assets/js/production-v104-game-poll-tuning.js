@@ -7,5 +7,5 @@ export function initV104GamePollTuning(){
   initialized = true;
 
   /* Speed-only: server rules and action ownership remain unchanged. */
-  APP_CONFIG.gameIntervalMs = Math.min(Number(APP_CONFIG.gameIntervalMs || 800), 350);
+  APP_CONFIG.gameIntervalMs = Math.min(Number(APP_CONFIG.gameIntervalMs || 800), 500);
 }
