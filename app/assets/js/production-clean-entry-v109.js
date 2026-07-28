@@ -17,6 +17,7 @@ import { initV104ResultInstant } from './production-v104-result-instant.js?v=104
 import { initV105TicTacToeStability } from './production-v105-tictactoe-stability.js?v=105';
 import { initV105InviteLatency } from './production-v105-invite-latency.js?v=105';
 import { initV109InviteSpeed } from './production-v109-invite-speed.js?v=109';
+import { initV109SelfCancelRefreshGuard } from './production-v109-self-cancel-refresh-guard.js?v=109';
 import { initV109ShareFallbackGuard } from './production-v109-share-fallback-guard.js?v=109';
 import { initV109ShareSpeed } from './production-v109-share-speed.js?v=109';
 import { initV109Notifications } from './production-v109-notifications.js?v=109';
@@ -31,6 +32,7 @@ window.__MGW_REGRESSION_BUILD__ = 'v109-mvp14-speed-ui-only';
 // before retained document/element handlers and do not initialize any game,
 // timer, move, result or rematch owner.
 initV109Notifications();
+initV109SelfCancelRefreshGuard();
 initV109ShareFallbackGuard();
 initV109ShareSpeed();
 initV109InviteSpeed();
