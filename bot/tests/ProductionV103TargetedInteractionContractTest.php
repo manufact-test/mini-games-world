@@ -46,17 +46,17 @@ foreach ([
 
 $assert(
     str_contains($guard, 'currentV99PassiveLock()')
-        && str_contains($guard, "event.stopImmediatePropagation();")
+        && str_contains($guard, 'event.stopImmediatePropagation();')
         && str_contains($guard, "PLAY_IDS.has(String(button.id || ''))")
-        && !str_contains($guard, "[data-invite-friend]")
-        && !str_contains($guard, "[data-invite-action]"),
+        && !str_contains($guard, '[data-invite-friend]')
+        && !str_contains($guard, '[data-invite-action]'),
     'The second-device guard must stop only main Play buttons before setup, without changing invitation flows.'
 );
 
 $assert(
     str_contains($guard, 'new MutationObserver')
         && str_contains($guard, "document.getElementById('weeklyMatchInfo')")
-        && str_contains($guard, 'actions.classList.remove(\'single\')')
+        && str_contains($guard, "actions.classList.remove('single')")
         && str_contains($guard, '>Подробнее</button>'),
     'The Match-room details control must be restored after every room-card repaint on desktop and mobile.'
 );
@@ -71,7 +71,7 @@ $assert(
 );
 
 $homePosition = strpos($guard, "showScreen('home');");
-$requestPosition = strpos($guard, "await api.leaveGame(String(snapshot.id));");
+$requestPosition = strpos($guard, 'await api.leaveGame(String(snapshot.id));');
 $dismissPosition = strpos($guard, "new CustomEvent('mgw:game-dismissed')");
 $assert(
     $homePosition !== false
@@ -85,10 +85,10 @@ $assert(
 
 $assert(
     str_contains($stats, 'private const ONLINE_WINDOW_SEC = 75;')
-        && str_contains($stats, "\$user['telegram_id'] ?? \$user['id'] ?? \$storageKey")
-        && str_contains($stats, '\$onlineAccounts[\$accountId] = true;')
-        && str_contains($stats, "str_starts_with(\$accountId, 'bot_')")
-        && str_contains($stats, "'online_players' => count(\$onlineAccounts)"),
+        && str_contains($stats, "$user['telegram_id'] ?? $user['id'] ?? $storageKey")
+        && str_contains($stats, '$onlineAccounts[$accountId] = true;')
+        && str_contains($stats, "str_starts_with($accountId, 'bot_')")
+        && str_contains($stats, "'online_players' => count($onlineAccounts)"),
     'Online players must be unique recent Telegram accounts, not sessions, devices, stale records or bots.'
 );
 
