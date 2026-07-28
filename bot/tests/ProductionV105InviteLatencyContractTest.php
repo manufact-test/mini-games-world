@@ -44,8 +44,9 @@ $assert(
         && !str_contains($ttt, 'subtree:true')
         && !str_contains($ttt, 'attributes:true')
         && !str_contains($ttt, 'characterData:true')
-        && str_contains($ttt, 'runtime.paintScheduled'),
-    'Tic Tac Toe must observe only direct board replacement and coalesce repaint work.'
+        && str_contains($ttt, 'runtime.paintScheduled')
+        && str_contains($ttt, 'void reconcileResponse(response.clone(), meta);'),
+    'Tic Tac Toe must observe only direct board replacement, coalesce paint work and reconcile its cloned response off the action return path.'
 );
 
 $optimisticPosition = strpos($invite, 'renderOptimisticOwnerSheet(context, opponentName, requestId);');
@@ -65,9 +66,10 @@ $assert(
     $closePosition !== false
         && $cancelAwaitPosition !== false
         && $closePosition < $cancelAwaitPosition
+        && str_contains($invite, 'sheet?.replaceChildren();')
         && str_contains($invite, 'rollbackHtml')
         && str_contains($invite, 'openSheet(rollbackHtml)'),
-    'Cancel must close before server wait and restore the exact prior sheet only on failure.'
+    'Cancel must close and remove the stale token before server wait, restoring the exact prior sheet only on failure.'
 );
 
 $assert(
