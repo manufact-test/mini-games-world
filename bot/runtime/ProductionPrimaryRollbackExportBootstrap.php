@@ -47,5 +47,8 @@ require_once __DIR__ . '/RuntimePrimaryRepositoryProjectorFactory.php';
 require_once __DIR__ . '/ProductionPrimaryRollbackExportGate.php';
 require_once __DIR__ . '/ProductionPrimaryRollbackExportVerifier.php';
 require_once __DIR__ . '/ProductionPrimaryRollbackExportService.php';
+require_once __DIR__ . '/ProductionPrimaryRollbackSnapshotMaterializer.php';
+require_once __DIR__ . '/ProductionPrimaryRollbackMaterializedStateConnection.php';
 require_once __DIR__ . '/ProductionPrimaryRollbackAuditorFactory.php';
+require_once __DIR__ . '/ProductionPrimaryRollbackMaterializedExportService.php';
 require_once __DIR__ . '/ProductionPrimaryRollbackExportInputLoader.php';
