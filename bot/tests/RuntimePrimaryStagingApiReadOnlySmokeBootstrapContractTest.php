@@ -37,7 +37,10 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($requestGuard, "if (\$method === '' || PHP_SAPI === 'cli') return;")
-        && str_contains($requestGuard, "if (!in_array(\$script, ['api.php', 'invites.php'], true)) return;"),
+        && str_contains(
+            $requestGuard,
+            'if (!in_array($script, self::MAINTENANCE_BLOCKED_SCRIPTS, true)) return;'
+        ),
     'Runtime request guard must explicitly avoid HTTP enforcement in CLI'
 );
 $assertTrue(
