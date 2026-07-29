@@ -31,6 +31,11 @@ final class GameActionService
             return $game;
         }
 
+        $requestedActionType = trim((string)($action['type'] ?? ''));
+        if ($requestedActionType === 'cancel_preparation') {
+            return $this->cancelPreparation($db, $gameId);
+        }
+
         $this->assertLaunchReady($game);
         $previousTurn = (string)($game['turn'] ?? '');
 
@@ -41,7 +46,7 @@ final class GameActionService
         $definition = $this->catalog->get($gameType);
         $engine = (string)($definition['engine'] ?? '');
         $expectedActionType = (string)($definition['action_type'] ?? '');
-        $actionType = trim((string)($action['type'] ?? $expectedActionType));
+        $actionType = $requestedActionType !== '' ? $requestedActionType : $expectedActionType;
 
         $result = match ($engine) {
             'tictactoe' => $this->applyTicTacToeAction($db, $user, $gameId, $actionType, $action),
@@ -73,12 +78,89 @@ final class GameActionService
         if ($phase === 'preparing') {
             throw new RuntimeException('Матч ещё синхронизирует игроков.');
         }
+        if ($phase === 'preparation_timeout') {
+            throw new RuntimeException('Соперник не подключился. Матч отменяется.');
+        }
         if ($phase === 'countdown') {
             $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
             if ($startsAt <= 0 || $startsAt > time()) {
                 throw new RuntimeException('Матч начнётся после обратного отсчёта.');
             }
         }
+    }
+
+    private function cancelPreparation(array &$db, string $gameId): array
+    {
+        $game =& $db['games'][$gameId];
+        $phase = (string)($game['launch_phase'] ?? '');
+        if (!in_array($phase, ['preparing', 'preparation_timeout'], true)) {
+            return $game;
+        }
+
+        $deadline = strtotime((string)($game['preparation_deadline_at'] ?? '')) ?: 0;
+        if ($deadline <= 0 || $deadline > time()) {
+            throw new RuntimeException('Подготовка матча ещё продолжается.');
+        }
+        if (!empty($game['v111_preparation_refund_done'])) return $game;
+
+        $room = (string)($game['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
+        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $bet = max(0, (int)($game['bet'] ?? 0));
+        $playerIds = array_map('strval', $game['player_ids'] ?? []);
+
+        foreach ($playerIds as $playerId) {
+            if ($playerId === '' || str_starts_with($playerId, 'bot_')) continue;
+            if (!isset($db['users'][$playerId]) || !is_array($db['users'][$playerId])) continue;
+
+            $db['users'][$playerId][$balanceKey] = (int)($db['users'][$playerId][$balanceKey] ?? 0) + $bet;
+            if ((string)($db['users'][$playerId]['current_game_id'] ?? '') === $gameId) {
+                $db['users'][$playerId]['status'] = 'idle';
+                $db['users'][$playerId]['current_game_id'] = null;
+            }
+            $db['transactions'][] = [
+                'id' => make_id('tx'),
+                'type' => 'balance_change',
+                'category' => 'game_preparation_refund',
+                'user_id' => $playerId,
+                'username' => (string)($db['users'][$playerId]['username'] ?? ''),
+                'room' => $room,
+                'amount' => $bet,
+                'balance_after' => (int)$db['users'][$playerId][$balanceKey],
+                'game_id' => $gameId,
+                'description' => 'Возврат коинов: соперник не подключился к матчу',
+                'finish_reason' => 'preparation_timeout',
+                'created_at' => now_iso(),
+            ];
+        }
+
+        $game['status'] = 'finished';
+        $game['launch_phase'] = 'cancelled';
+        $game['winner_id'] = null;
+        $game['loser_id'] = null;
+        $game['finish_reason'] = 'preparation_timeout';
+        $game['payout'] = $bet;
+        $game['commission'] = 0;
+        $game['payout_done'] = true;
+        $game['payout_done_at'] = now_iso();
+        $game['finished_at'] = now_iso();
+        $game['updated_at'] = now_iso();
+        $game['v111_preparation_refund_done'] = true;
+        $db['transactions'][] = [
+            'id' => make_id('tx'),
+            'type' => 'game_finish',
+            'game_id' => $gameId,
+            'room' => $room,
+            'winner_id' => null,
+            'loser_id' => null,
+            'finish_reason' => 'preparation_timeout',
+            'bank' => $bet * max(2, count($playerIds)),
+            'commission' => 0,
+            'payout' => 0,
+            'is_bot_game' => !empty($game['is_bot_game']),
+            'created_at' => now_iso(),
+        ];
+
+        return $game;
     }
 
     private function synchronizeTurnHandoff(array &$db, string $gameId, string $previousTurn, array $fallback): array
