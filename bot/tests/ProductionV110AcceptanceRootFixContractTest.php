@@ -48,8 +48,9 @@ $assert(
 $assert(
     str_contains($runtime, 'next.actions = Array.isArray(item?.actions) ? [...item.actions] : [];')
         && !str_contains($runtime, 'function enrichInviteActions')
-        && !str_contains($runtime, "type === 'invite_accepted'"),
-    'Notification actions must come only from the authoritative server snapshot.'
+        && !str_contains($runtime, "type === 'invite_accepted'")
+        && !str_contains($runtime, '/bot/invites.php'),
+    'Notification actions and list data must come only from the authoritative notifications endpoint.'
 );
 $assert(
     str_contains($runtime, 'seedToastPreview(toast);')
@@ -74,8 +75,9 @@ $assert(
 $assert(
     str_contains($runtime, 'if (serverRemainingMs + 700 < localRemaining)')
         && str_contains($runtime, 'Never jump upward on a same-turn poll')
-        && str_contains($runtime, 'Math.ceil((clock.deadlinePerformance - performance.now()) / 1000)'),
-    'The visible timer must be smooth, monotonic for one turn and correct only downward from server evidence.'
+        && str_contains($runtime, 'Math.ceil((clock.deadline - performance.now()) / 1000)')
+        && str_contains($runtime, "if (value === null || value === undefined || value === '') return null;"),
+    'The visible timer must be smooth, monotonic for one turn and must not treat missing server timestamps as zero.'
 );
 $assert(
     str_contains($runtime, 'mgw-v110-search-summary')
