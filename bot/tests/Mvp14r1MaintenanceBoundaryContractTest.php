@@ -44,10 +44,19 @@ $assertBefore(
     'StorageFactory::createJson',
     'Maintenance Telegram handling must run before production storage bootstrap.'
 );
-$assertBefore(
-    $sources['webhook'],
-    "unset(\$GLOBALS['mgw_webhook_success_hook'])",
-    "exit('ok')",
+$maintenanceHandle = strpos($sources['webhook'], '$maintenanceGuard->handle($update)');
+$maintenanceUnset = is_int($maintenanceHandle)
+    ? strpos($sources['webhook'], "unset(\$GLOBALS['mgw_webhook_success_hook'])", $maintenanceHandle)
+    : false;
+$maintenanceExit = is_int($maintenanceUnset)
+    ? strpos($sources['webhook'], "exit('ok')", $maintenanceUnset)
+    : false;
+$assertTrue(
+    is_int($maintenanceHandle)
+        && is_int($maintenanceUnset)
+        && is_int($maintenanceExit)
+        && $maintenanceHandle < $maintenanceUnset
+        && $maintenanceUnset < $maintenanceExit,
     'Maintenance completion must clear deferred projection hooks before returning.'
 );
 $assertTrue(
@@ -91,10 +100,10 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($sources['export_gate'], "maintenance_enabled_exact")
-        && str_contains($sources['export_gate'], "financial_read_only_exact")
-        && str_contains($sources['export_gate'], "runtime_enabled_exact")
-        && str_contains($sources['export_gate'], "all_modules_enabled_exact"),
+    str_contains($sources['export_gate'], 'maintenance_enabled_exact')
+        && str_contains($sources['export_gate'], 'financial_read_only_exact')
+        && str_contains($sources['export_gate'], 'runtime_enabled_exact')
+        && str_contains($sources['export_gate'], 'all_modules_enabled_exact'),
     'Fresh export must still require maintenance, read-only and the exact active DB route.'
 );
 $assertTrue(
