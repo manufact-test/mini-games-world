@@ -18,12 +18,16 @@ try {
     $tgUser = $auth->getUserFromRequest($payload);
     $accountId = trim((string)($tgUser['id'] ?? ''));
     if ($accountId === '') throw new RuntimeException('Пользователь не найден.');
+    if ($sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');
 
     $presence = new PresenceService();
     $stats = new StatsService($presence);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
-    if ($action === 'ping') $presence->touch($accountId, $sessionId);
+    // Every authenticated visible status read confirms the requesting session
+    // before the unique-account count is calculated. This closes the race where
+    // the second account asked for status before its slower heartbeat finished.
+    if ($action === 'ping' || $action === 'status') $presence->touch($accountId, $sessionId);
     elseif ($action === 'leave') $presence->leave($accountId, $sessionId);
 
     $result = $db->readOnly(static function (array $data) use ($stats): array {
