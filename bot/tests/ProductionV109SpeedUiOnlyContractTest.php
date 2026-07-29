@@ -109,9 +109,9 @@ $assert(
     str_contains($php, 'production-clean-entry-v109.js?v=109')
         && str_contains($php, 'main-v109.js?v=109')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v110.php?v=110')
-        && str_contains($welcome, 'v109'),
-    'v109 must remain a valid no-store rollback build after the current launch advances to v110.'
+        && str_contains($welcome, '/app/v109.php?v=109')
+        && str_contains($welcome, '/app/v105.php?v=105'),
+    'New launches must use the no-store v109 speed build while v105 remains an explicit rollback.'
 );
 
 fwrite(STDOUT, "ProductionV109SpeedUiOnlyContractTest: {$assertions} assertions passed\n");
