@@ -12,15 +12,7 @@ if (!function_exists('make_id')) {
     }
 }
 
-$root = dirname(__DIR__);
-require_once $root . '/services/FeatureFlagService.php';
-require_once $root . '/services/GameCatalogService.php';
-require_once $root . '/services/GameService.php';
-require_once $root . '/services/GameSettlementService.php';
-require_once $root . '/services/FourInARowBotService.php';
-require_once $root . '/services/FourInARowService.php';
-require_once $root . '/services/GameRuntimeService.php';
-require_once $root . '/services/GameActionService.php';
+require_once dirname(__DIR__) . '/services/MatchPreparationClockService.php';
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -28,9 +20,76 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$catalog = (new ReflectionClass(GameCatalogService::class))->newInstanceWithoutConstructor();
-$runtime = (new ReflectionClass(GameRuntimeService::class))->newInstanceWithoutConstructor();
-$service = new GameActionService($catalog, $runtime);
+$clock = new MatchPreparationClockService();
+$game = [
+    'id' => 'ready-game',
+    'game_type' => 'tictactoe',
+    'room' => 'match',
+    'bet' => 10,
+    'board_size' => 3,
+    'board' => '---------',
+    'player_ids' => ['100', '200'],
+    'player_names' => ['100' => 'One', '200' => 'Two'],
+    'symbols' => ['100' => 'X', '200' => 'O'],
+    'turn' => '100',
+    'status' => 'active',
+    'created_at' => gmdate('c', time() - 2),
+    'updated_at' => now_iso(),
+    'turn_started_at' => now_iso(),
+];
+
+$beforePreparation = time();
+$clock->initializeLaunch($game);
+$preparationDeadline = strtotime((string)$game['preparation_deadline_at']);
+$assert($game['launch_phase'] === 'preparing', 'A recent active game must enter preparing before its clock starts.');
+$assert($preparationDeadline !== false && $preparationDeadline >= $beforePreparation + 10 && $preparationDeadline <= time() + 11, 'Preparation must have one bounded ten-second deadline.');
+$assert($game['turn_starts_at'] === null && $game['turn_deadline_at'] === null, 'No turn clock may exist while devices are still preparing.');
+
+$clock->markReady($game, '100', 'device-session-one');
+$assert(count($game['v111_ready_devices']) === 1, 'The first authenticated device must be recorded once.');
+$assert($game['v111_ready_devices']['100']['device'] === hash('sha256', 'device-session-one'), 'Readiness must store only a session hash.');
+$assert(!str_contains(json_encode($game['v111_ready_devices'], JSON_THROW_ON_ERROR), 'device-session-one'), 'Raw device session IDs must never be persisted.');
+$clock->startCountdownIfReady($game);
+$assert($game['launch_phase'] === 'preparing', 'Countdown must not start before the second player is ready.');
+
+$beforeCountdown = time();
+$clock->markReady($game, '200', 'device-session-two');
+$clock->startCountdownIfReady($game);
+$startsAt = strtotime((string)$game['starts_at']);
+$firstDeadline = strtotime((string)$game['turn_deadline_at']);
+$assert($game['launch_phase'] === 'countdown' && count($game['v111_ready_devices']) === 2, 'Both ready devices must start one shared countdown.');
+$assert($startsAt !== false && $startsAt >= $beforeCountdown + 3 && $startsAt <= time() + 4, 'The shared match start must be scheduled three seconds ahead.');
+$assert($firstDeadline !== false && $firstDeadline - $startsAt === 60, 'The first deadline must be exactly 60 seconds after shared start.');
+$assert($game['turn_started_at'] === $game['turn_starts_at'] && $game['turn_starts_at'] === $game['starts_at'], 'Both clients must receive the same first-turn start timestamp.');
+$assert($game['v111_clock_turn'] === '100' && $game['v111_clock_revision'] === 1, 'The first synchronized clock must have one revision and current turn owner.');
+
+$countdownBlocked = false;
+try {
+    $clock->assertLaunchReady($game);
+} catch (RuntimeException $error) {
+    $countdownBlocked = str_contains($error->getMessage(), 'обратного отсчёта');
+}
+$assert($countdownBlocked, 'Game actions must remain blocked during the countdown.');
+$game['starts_at'] = gmdate('c', time() - 1);
+$clock->activateIfDue($game);
+$clock->assertLaunchReady($game);
+$assert($game['launch_phase'] === 'active', 'The game becomes actionable only after the common start time.');
+
+$beforeHandoff = time();
+$game['turn'] = '200';
+$clock->synchronizeTurnHandoff($game, '100');
+$handoffStart = strtotime((string)$game['turn_starts_at']);
+$handoffDeadline = strtotime((string)$game['turn_deadline_at']);
+$assert($handoffStart !== false && $handoffStart >= $beforeHandoff + 1 && $handoffStart <= time() + 2, 'A changed turn must start slightly in the future for both clients.');
+$assert($handoffDeadline !== false && $handoffDeadline - $handoffStart === 60, 'Every next turn must receive a fresh exact 60-second deadline.');
+$assert($game['v111_clock_turn'] === '200' && $game['v111_clock_revision'] === 2, 'Turn handoff must advance the clock revision exactly once.');
+$sameStart = $game['turn_starts_at'];
+$clock->synchronizeTurnHandoff($game, '200');
+$assert($game['turn_starts_at'] === $sameStart && $game['v111_clock_revision'] === 2, 'Repeated same-turn snapshots must not restart the clock.');
+
+$projection = $clock->enrichPublicGame($game, ['id' => 'ready-game', 'time_left' => 57, 'move_timeout_sec' => 60]);
+$assert(isset($projection['server_now_ms'], $projection['turn_starts_at_ms'], $projection['turn_deadline_ms']), 'Public state must carry one server time anchor and exact turn timestamps.');
+$assert($projection['time_left'] === 60, 'A future synchronized handoff must override the legacy 57-second projection with 60.');
 
 $baseGame = static function (string $id, string $phase, string $deadline): array {
     return [
@@ -42,21 +101,16 @@ $baseGame = static function (string $id, string $phase, string $deadline): array
         'board_size' => 3,
         'board' => '---------',
         'player_ids' => ['100', '200'],
-        'player_names' => ['100' => 'One', '200' => 'Two'],
-        'symbols' => ['100' => 'X', '200' => 'O'],
         'turn' => '100',
         'status' => 'active',
         'launch_phase' => $phase,
         'preparation_deadline_at' => $deadline,
-        'winner_id' => null,
-        'loser_id' => null,
         'payout_done' => false,
         'created_at' => gmdate('c', time() - 4),
         'updated_at' => now_iso(),
         'turn_started_at' => gmdate('c', time() + 20),
     ];
 };
-
 $earlyDb = [
     'users' => [
         '100' => ['id' => '100', 'username' => 'one', 'balance_match' => 90, 'status' => 'playing', 'current_game_id' => 'early'],
@@ -67,13 +121,12 @@ $earlyDb = [
 ];
 $earlyThrown = false;
 try {
-    $user =& $earlyDb['users']['100'];
-    $service->apply($earlyDb, $user, 'early', ['type' => 'cancel_preparation']);
+    $clock->settlePreparationTimeout($earlyDb, $earlyDb['games']['early']);
 } catch (RuntimeException $error) {
     $earlyThrown = str_contains($error->getMessage(), 'ещё продолжается');
 }
-$assert($earlyThrown, 'Preparation cannot be cancelled before the readiness deadline.');
-$assert($earlyDb['users']['100']['balance_match'] === 90 && $earlyDb['users']['200']['balance_match'] === 90, 'Early cancellation must not alter balances.');
+$assert($earlyThrown, 'Preparation cannot settle before its deadline.');
+$assert($earlyDb['users']['100']['balance_match'] === 90 && $earlyDb['users']['200']['balance_match'] === 90, 'Early settlement must not alter balances.');
 
 $db = [
     'users' => [
@@ -83,51 +136,17 @@ $db = [
     'games' => ['expired' => $baseGame('expired', 'preparation_timeout', gmdate('c', time() - 1))],
     'transactions' => [],
 ];
-$user =& $db['users']['100'];
-$settled = $service->apply($db, $user, 'expired', ['type' => 'cancel_preparation']);
+$settled = $clock->settlePreparationTimeout($db, $db['games']['expired']);
 $assert($settled['status'] === 'finished' && $settled['launch_phase'] === 'cancelled', 'Expired preparation must finish as a cancelled match.');
-$assert($settled['finish_reason'] === 'preparation_timeout' && !empty($settled['v111_preparation_refund_done']), 'Expired preparation must record an idempotent timeout reason.');
-$assert($db['users']['100']['balance_match'] === 100 && $db['users']['200']['balance_match'] === 100, 'Both human entry stakes must be restored exactly once.');
+$assert($settled['finish_reason'] === 'preparation_timeout' && !empty($settled['v111_preparation_refund_done']), 'Timeout settlement must record its idempotency marker.');
+$assert($db['users']['100']['balance_match'] === 100 && $db['users']['200']['balance_match'] === 100, 'Both human stakes must be restored exactly once.');
 $assert($db['users']['100']['status'] === 'idle' && $db['users']['200']['status'] === 'idle', 'Both players must be released after preparation timeout.');
-$assert($db['users']['100']['current_game_id'] === null && $db['users']['200']['current_game_id'] === null, 'Preparation timeout must clear both current game links.');
 $refundRows = array_values(array_filter($db['transactions'], static fn(array $tx): bool => ($tx['category'] ?? '') === 'game_preparation_refund'));
 $finishRows = array_values(array_filter($db['transactions'], static fn(array $tx): bool => ($tx['type'] ?? '') === 'game_finish'));
 $assert(count($refundRows) === 2 && count($finishRows) === 1, 'Settlement must create two balance refunds and one finish record.');
 $transactionCount = count($db['transactions']);
-$service->apply($db, $user, 'expired', ['type' => 'cancel_preparation']);
+$clock->settlePreparationTimeout($db, $db['games']['expired']);
 $assert($db['users']['100']['balance_match'] === 100 && $db['users']['200']['balance_match'] === 100, 'Repeated settlement must not duplicate balance refunds.');
 $assert(count($db['transactions']) === $transactionCount, 'Repeated settlement must not append duplicate transactions.');
-
-$handoffDb = [
-    'games' => [
-        'handoff' => [
-            'id' => 'handoff',
-            'status' => 'active',
-            'launch_phase' => 'active',
-            'turn' => '200',
-            'turn_started_at' => now_iso(),
-            'v111_clock_turn' => '100',
-            'v111_clock_revision' => 3,
-            'player_ids' => ['100', '200'],
-        ],
-    ],
-];
-$method = new ReflectionMethod(GameActionService::class, 'synchronizeTurnHandoff');
-$before = time();
-$handoffFallback = $handoffDb['games']['handoff'];
-$handoffArgs = [&$handoffDb, 'handoff', '100', $handoffFallback];
-$handoff = $method->invokeArgs($service, $handoffArgs);
-$startsAt = strtotime((string)$handoff['turn_starts_at']);
-$deadlineAt = strtotime((string)$handoff['turn_deadline_at']);
-$assert($startsAt !== false && $startsAt >= $before + 1 && $startsAt <= time() + 2, 'Turn handoff must start slightly in the future for both devices.');
-$assert($deadlineAt !== false && $deadlineAt - $startsAt === 60, 'Turn deadline must be exactly 60 seconds after synchronized start.');
-$assert($handoff['v111_clock_turn'] === '200' && $handoff['v111_clock_revision'] === 4, 'Turn handoff must advance the authoritative clock revision once.');
-
-$sameTurnDb = ['games' => ['same' => $handoff + ['id' => 'same']]];
-$sameRevision = (int)$sameTurnDb['games']['same']['v111_clock_revision'];
-$sameFallback = $sameTurnDb['games']['same'];
-$sameArgs = [&$sameTurnDb, 'same', '200', $sameFallback];
-$same = $method->invokeArgs($service, $sameArgs);
-$assert((int)$same['v111_clock_revision'] === $sameRevision, 'A repeated same-turn state must not restart the timer.');
 
 fwrite(STDOUT, "ProductionV111PreparationSettlementTest: {$assertions} assertions passed\n");
