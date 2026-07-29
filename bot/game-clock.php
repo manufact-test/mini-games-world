@@ -15,14 +15,6 @@ function mgw_v111_epoch_ms(?string $value): ?int
     return $timestamp === false ? null : $timestamp * 1000;
 }
 
-function mgw_v111_human_player_ids(array $game): array
-{
-    return array_values(array_filter(
-        array_map('strval', $game['player_ids'] ?? []),
-        static fn(string $id): bool => $id !== '' && !str_starts_with($id, 'bot_')
-    ));
-}
-
 function mgw_v111_initialize_launch(array &$game): void
 {
     if (isset($game['launch_phase'])) return;
@@ -149,66 +141,16 @@ function mgw_v111_sync_engine_turn(array &$game): void
     }
 }
 
-function mgw_v111_cancel_unready_game(array &$data, array &$game): void
+function mgw_v111_mark_preparation_timeout(array &$game): void
 {
-    if ((string)($game['launch_phase'] ?? '') !== 'preparing' || !empty($game['v111_preparation_refund_done'])) return;
+    if ((string)($game['launch_phase'] ?? '') !== 'preparing') return;
     $deadline = strtotime((string)($game['preparation_deadline_at'] ?? '')) ?: 0;
     if ($deadline <= 0 || $deadline > time()) return;
 
-    $room = (string)($game['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
-    $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
-    $bet = max(0, (int)($game['bet'] ?? 0));
-    $gameId = (string)($game['id'] ?? '');
-
-    foreach (mgw_v111_human_player_ids($game) as $playerId) {
-        if (!isset($data['users'][$playerId]) || !is_array($data['users'][$playerId])) continue;
-        $data['users'][$playerId][$balanceKey] = (int)($data['users'][$playerId][$balanceKey] ?? 0) + $bet;
-        if ((string)($data['users'][$playerId]['current_game_id'] ?? '') === $gameId) {
-            $data['users'][$playerId]['status'] = 'idle';
-            $data['users'][$playerId]['current_game_id'] = null;
-        }
-        $data['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'balance_change',
-            'category' => 'game_preparation_refund',
-            'user_id' => $playerId,
-            'username' => (string)($data['users'][$playerId]['username'] ?? ''),
-            'room' => $room,
-            'amount' => $bet,
-            'balance_after' => (int)$data['users'][$playerId][$balanceKey],
-            'game_id' => $gameId,
-            'description' => 'Возврат коинов: соперник не подключился к матчу',
-            'finish_reason' => 'preparation_timeout',
-            'created_at' => now_iso(),
-        ];
-    }
-
-    $game['status'] = 'finished';
-    $game['launch_phase'] = 'cancelled';
-    $game['winner_id'] = null;
-    $game['loser_id'] = null;
-    $game['finish_reason'] = 'preparation_timeout';
-    $game['payout'] = $bet;
-    $game['commission'] = 0;
-    $game['payout_done'] = true;
-    $game['payout_done_at'] = now_iso();
-    $game['finished_at'] = now_iso();
+    // Financial settlement must go through api.php so all economy/ledger hooks run.
+    $game['launch_phase'] = 'preparation_timeout';
+    $game['turn_started_at'] = gmdate('c', time() + 3600);
     $game['updated_at'] = now_iso();
-    $game['v111_preparation_refund_done'] = true;
-    $data['transactions'][] = [
-        'id' => make_id('tx'),
-        'type' => 'game_finish',
-        'game_id' => $gameId,
-        'room' => $room,
-        'winner_id' => null,
-        'loser_id' => null,
-        'finish_reason' => 'preparation_timeout',
-        'bank' => $bet * max(2, count($game['player_ids'] ?? [])),
-        'commission' => 0,
-        'payout' => 0,
-        'is_bot_game' => !empty($game['is_bot_game']),
-        'created_at' => now_iso(),
-    ];
 }
 
 function mgw_v111_enrich_public_game(array $game, array $public): array
@@ -221,7 +163,8 @@ function mgw_v111_enrich_public_game(array $game, array $public): array
         $turnDeadlineMs = $turnStartsAtMs + (MGW_V111_MOVE_TIMEOUT_SEC * 1000);
     }
 
-    if ($phase === 'preparing' || $phase === 'countdown' || ($turnStartsAtMs !== null && $serverNowMs < $turnStartsAtMs)) {
+    if (in_array($phase, ['preparing', 'countdown', 'preparation_timeout'], true)
+        || ($turnStartsAtMs !== null && $serverNowMs < $turnStartsAtMs)) {
         $timeLeft = MGW_V111_MOVE_TIMEOUT_SEC;
     } elseif ($turnDeadlineMs !== null) {
         $timeLeft = max(0, min(MGW_V111_MOVE_TIMEOUT_SEC, (int)ceil(($turnDeadlineMs - $serverNowMs) / 1000)));
@@ -294,8 +237,9 @@ try {
         }
 
         mgw_v111_initialize_launch($game);
-        mgw_v111_cancel_unready_game($data, $game);
-        if ((string)($game['status'] ?? '') === 'active') {
+        mgw_v111_mark_preparation_timeout($game);
+        if ((string)($game['status'] ?? '') === 'active'
+            && (string)($game['launch_phase'] ?? '') !== 'preparation_timeout') {
             mgw_v111_mark_ready($game, $userId, $sessionId);
             mgw_v111_start_countdown($game);
             mgw_v111_activate_if_due($game);
