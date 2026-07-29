@@ -1,0 +1,53 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "passive_notifications_visibility_order",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T15:00:00+00:00"},
+  "random_seed": 1402204,
+  "id_sequence": {"result": ["result_notifications_001"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "1001": {
+        "id": "1001",
+        "telegram_id": "1001",
+        "first_name": "Илья",
+        "username": "ilya",
+        "photo_url": "",
+        "balance_match": 50,
+        "balance_gold": 0,
+        "gold_deposited_total": 0,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "registered_at": "2026-07-01T10:00:00+00:00",
+        "last_seen_at": "2026-07-29T14:59:55+00:00",
+        "status": "idle",
+        "current_game_id": null,
+        "active_session_id": null,
+        "active_session_at": null,
+        "stats": {}
+      }
+    },
+    "games": {},
+    "notifications": [
+      {"id": "notification_001", "user_id": "1001", "type": "old_unread", "title": "Старое", "message": "Первое", "tone": "info", "created_at": "2026-07-20T10:00:00+00:00", "read_at": null},
+      {"id": "notification_003", "user_id": "1001", "type": "same_time_high", "title": "Третье", "message": "Третье", "tone": "success", "created_at": "2026-07-29T12:00:00+00:00", "read_at": null},
+      {"id": "notification_002", "user_id": "1001", "type": "same_time_low", "title": "Второе", "message": "Второе", "tone": "info", "created_at": "2026-07-29T12:00:00+00:00", "read_at": "2026-07-29T12:30:00+00:00"},
+      {"id": "notification_hidden", "user_id": "1001", "type": "hidden", "title": "Скрытое", "message": "Не показывать", "tone": "danger", "created_at": "2026-07-29T14:00:00+00:00", "read_at": null, "hidden_at": "2026-07-29T14:01:00+00:00"},
+      {"id": "notification_other", "user_id": "2002", "type": "other", "title": "Чужое", "message": "Не показывать", "tone": "info", "created_at": "2026-07-29T15:00:00+00:00", "read_at": null}
+    ]
+  },
+  "scenario": {
+    "id": "passive.notifications.visibility-order",
+    "input": {
+      "action": "notifications",
+      "user_id": "1001",
+      "session_id": "device-alpha",
+      "config": {
+        "admin_ids": [],
+        "shop_min_order": 1000,
+        "active_session_timeout_sec": 180,
+        "notification_limit": 30
+      }
+    }
+  }
+}
