@@ -1,0 +1,129 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "payment_reject_cancel",
+  "clock": {
+    "timezone": "UTC",
+    "now": "2026-07-29T16:00:00+00:00"
+  },
+  "random_seed": 140256,
+  "id_sequence": {
+    "payment": [
+      "payment_reject_001",
+      "payment_cancel_001"
+    ],
+    "tx": [
+      "tx_payment_draft_1",
+      "tx_payment_reject",
+      "tx_payment_draft_2",
+      "tx_payment_cancel",
+      "tx_unused"
+    ]
+  },
+  "normalization": {
+    "path_categories": {},
+    "aliases": {}
+  },
+  "state": {
+    "users": {
+      "u1": {
+        "id": "u1",
+        "username": "alice",
+        "first_name": "Alice",
+        "balance_match": 50,
+        "balance_gold": 50,
+        "gold_deposited_total": 50,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "status": "idle",
+        "current_game_id": null,
+        "stats": {
+          "games_played": 0,
+          "wins": 0,
+          "losses": 0,
+          "draws": 0,
+          "match_games_this_week": 0
+        }
+      }
+    },
+    "games": {},
+    "transactions": [],
+    "shop_orders": [],
+    "payments": [],
+    "notifications": [],
+    "system": {}
+  },
+  "scenario": {
+    "id": "payments.reject-cancel",
+    "input": {
+      "config": {
+        "payment_rates": {
+          "match": 10,
+          "gold": 1
+        }
+      },
+      "history_user_ids": [],
+      "workflow": [
+        {
+          "action": "create_payment",
+          "actor_id": "u1",
+          "room": "gold",
+          "amount_rub": 200,
+          "provider": "manual_test",
+          "offset_sec": 0
+        },
+        {
+          "action": "reject_payment",
+          "actor_id": "admin",
+          "payment_ref": "last",
+          "admin_id": "admin-2",
+          "reason": "проверка не пройдена",
+          "offset_sec": 1
+        },
+        {
+          "action": "reject_payment",
+          "actor_id": "admin",
+          "payment_ref": "last",
+          "admin_id": "admin-2",
+          "reason": "повтор",
+          "offset_sec": 2
+        },
+        {
+          "action": "apply_payment",
+          "actor_id": "admin",
+          "payment_ref": "last",
+          "admin_id": "admin-2",
+          "expect_error": "Нельзя начислить отклонённую или отменённую заявку.",
+          "offset_sec": 3
+        },
+        {
+          "action": "create_payment",
+          "actor_id": "u1",
+          "room": "gold",
+          "amount_rub": 300,
+          "provider": "manual_test",
+          "offset_sec": 4
+        },
+        {
+          "action": "cancel_payment",
+          "actor_id": "u1",
+          "payment_ref": "last",
+          "offset_sec": 5
+        },
+        {
+          "action": "cancel_payment",
+          "actor_id": "u1",
+          "payment_ref": "last",
+          "offset_sec": 6
+        },
+        {
+          "action": "apply_payment",
+          "actor_id": "admin",
+          "payment_ref": "last",
+          "admin_id": "admin-2",
+          "expect_error": "Нельзя начислить отклонённую или отменённую заявку.",
+          "offset_sec": 7
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "economy_insufficient_balances",
+  "clock": {
+    "timezone": "UTC",
+    "now": "2026-07-29T16:00:00+00:00"
+  },
+  "random_seed": 140252,
+  "id_sequence": {
+    "tx": [
+      "tx_unused"
+    ]
+  },
+  "normalization": {
+    "path_categories": {},
+    "aliases": {}
+  },
+  "state": {
+    "users": {
+      "u1": {
+        "id": "u1",
+        "username": "alice",
+        "first_name": "Alice",
+        "balance_match": 9,
+        "balance_gold": 19,
+        "gold_deposited_total": 19,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "status": "idle",
+        "current_game_id": null,
+        "stats": {
+          "games_played": 0,
+          "wins": 0,
+          "losses": 0,
+          "draws": 0,
+          "match_games_this_week": 0
+        }
+      },
+      "u2": {
+        "id": "u2",
+        "username": "bob",
+        "first_name": "Bob",
+        "balance_match": 100,
+        "balance_gold": 100,
+        "gold_deposited_total": 100,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "status": "idle",
+        "current_game_id": null,
+        "stats": {
+          "games_played": 0,
+          "wins": 0,
+          "losses": 0,
+          "draws": 0,
+          "match_games_this_week": 0
+        }
+      }
+    },
+    "games": {},
+    "transactions": [],
+    "shop_orders": [],
+    "payments": [],
+    "notifications": [],
+    "system": {}
+  },
+  "scenario": {
+    "id": "economy.insufficient-balances",
+    "input": {
+      "config": {
+        "match_bet": 10
+      },
+      "history_user_ids": [
+        "u1"
+      ],
+      "workflow": [
+        {
+          "action": "reserve_game",
+          "actor_id": "u1",
+          "game_id": "ins_match",
+          "player_ids": [
+            "u1",
+            "u2"
+          ],
+          "room": "match",
+          "bet": 10,
+          "expect_error": "Недостаточно коинов для участия.",
+          "offset_sec": 0
+        },
+        {
+          "action": "reserve_game",
+          "actor_id": "u1",
+          "game_id": "ins_gold",
+          "player_ids": [
+            "u1",
+            "u2"
+          ],
+          "room": "gold",
+          "bet": 20,
+          "expect_error": "Недостаточно коинов для участия.",
+          "offset_sec": 1
+        },
+        {
+          "action": "read_history",
+          "actor_id": "u1",
+          "offset_sec": 2
+        }
+      ]
+    }
+  }
+}
