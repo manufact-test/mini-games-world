@@ -20,6 +20,7 @@ export function initV111SyncedMatchStart(){
   if (runtime.initialized) return;
   runtime.initialized = true;
 
+  retireV110ClockOwner();
   api.gameState = gameId => synchronizedState(gameId);
   api.gameAction = async (gameId, action) => {
     const result = await originalGameAction(gameId, action);
@@ -35,6 +36,16 @@ export function initV111SyncedMatchStart(){
     runtime.observer = new MutationObserver(paintAuthoritativeClock);
     runtime.observer.observe(timer, { childList:true, characterData:true, subtree:true });
   }
+}
+
+function retireV110ClockOwner(){
+  const v110 = window.__MGW_V110_ACCEPTANCE__;
+  if (!v110) return;
+  if (v110.timer) window.clearInterval(v110.timer);
+  v110.timer = null;
+  v110.observer?.disconnect?.();
+  v110.observer = null;
+  v110.clock = null;
 }
 
 async function synchronizedState(gameId){
@@ -94,6 +105,7 @@ function mergeResult(primary, synchronized){
 }
 
 function tick(){
+  reconcileV110PendingMove();
   const game = state.activeGame;
   if (!game?.id || String(game.status || '') === 'finished') {
     hideOverlay();
@@ -105,6 +117,25 @@ function tick(){
   rememberAnchor(game);
   renderPreparation(game);
   paintAuthoritativeClock();
+}
+
+function reconcileV110PendingMove(){
+  const v110 = window.__MGW_V110_ACCEPTANCE__;
+  const pending = v110?.pending;
+  if (!pending) return;
+  const item = window.__MGW_V100_GAME_RUNTIME__?.games?.get?.(pending.gameId);
+  const game = item?.authoritative || state.activeGame;
+  const board = String(game?.board || '');
+  const expired = Date.now() - Number(pending.startedAt || 0) > 5000;
+  const changedGame = String(state.activeGame?.id || '') !== String(pending.gameId || '');
+  const confirmed = board[Number(pending.cell)] === String(pending.symbol || '');
+  const finished = String(game?.status || '') === 'finished';
+  if (item?.running || Number(item?.queue?.length || 0) > 0) pending.sawRequest = true;
+  const rejected = pending.sawRequest && !item?.running && Number(item?.queue?.length || 0) === 0;
+  if (!expired && !changedGame && !confirmed && !finished && !rejected) return;
+  v110.pending = null;
+  if (v110.pendingFrame) window.cancelAnimationFrame(v110.pendingFrame);
+  v110.pendingFrame = 0;
 }
 
 function rememberAnchor(game){
