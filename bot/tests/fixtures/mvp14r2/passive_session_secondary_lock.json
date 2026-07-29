@@ -1,0 +1,48 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "passive_session_secondary_lock",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T15:00:00+00:00"},
+  "random_seed": 1402203,
+  "id_sequence": {"result": ["result_session_lock_001"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "1001": {
+        "id": "1001",
+        "telegram_id": "1001",
+        "first_name": "Илья",
+        "username": "ilya",
+        "photo_url": "",
+        "balance_match": 50,
+        "balance_gold": 0,
+        "gold_deposited_total": 0,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "registered_at": "2026-07-01T10:00:00+00:00",
+        "last_seen_at": "2026-07-29T14:59:55+00:00",
+        "status": "playing",
+        "current_game_id": "game_active",
+        "active_session_id": "device-owner",
+        "active_session_at": "2099-01-01T00:00:00+00:00",
+        "stats": {}
+      }
+    },
+    "games": {
+      "game_active": {"id": "game_active", "status": "active", "room": "match", "player_ids": ["1001", "2002"], "winner_id": null}
+    },
+    "notifications": []
+  },
+  "scenario": {
+    "id": "passive.session.secondary-lock",
+    "input": {
+      "action": "session_state",
+      "user_id": "1001",
+      "session_id": "device-secondary",
+      "config": {
+        "admin_ids": [],
+        "shop_min_order": 1000,
+        "active_session_timeout_sec": 180
+      }
+    }
+  }
+}

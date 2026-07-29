@@ -1,0 +1,59 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "account_profile_finished_games",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T15:00:00+00:00"},
+  "random_seed": 1402202,
+  "id_sequence": {"result": ["result_account_profile_001"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "1001": {
+        "id": "1001",
+        "telegram_id": "1001",
+        "first_name": "Илья",
+        "username": "ilya",
+        "photo_url": "",
+        "balance_match": 40,
+        "balance_gold": 90,
+        "gold_deposited_total": 200,
+        "gold_wagered_total": 75,
+        "gold_shop_spent_total": 20,
+        "registered_at": "2026-07-01T10:00:00+00:00",
+        "last_seen_at": "2026-07-29T14:59:55+00:00",
+        "status": "idle",
+        "current_game_id": null,
+        "active_session_id": null,
+        "active_session_at": null,
+        "stats": {"games_played": 500, "wins": 500, "losses": 0, "draws": 0}
+      },
+      "2002": {
+        "id": "2002",
+        "telegram_id": "2002",
+        "first_name": "Соперник",
+        "username": "opponent",
+        "status": "idle"
+      }
+    },
+    "games": {
+      "game_win": {"id": "game_win", "status": "finished", "room": "match", "player_ids": ["1001", "2002"], "winner_id": "1001"},
+      "game_loss": {"id": "game_loss", "status": "finished", "room": "gold", "player_ids": ["1001", "2002"], "winner_id": "2002"},
+      "game_draw": {"id": "game_draw", "status": "finished", "room": "match", "player_ids": ["1001", "2002"], "winner_id": null},
+      "game_active": {"id": "game_active", "status": "active", "room": "match", "player_ids": ["1001", "2002"], "winner_id": null},
+      "game_other": {"id": "game_other", "status": "finished", "room": "gold", "player_ids": ["2002", "3003"], "winner_id": "2002"}
+    },
+    "notifications": []
+  },
+  "scenario": {
+    "id": "account.profile.finished-games",
+    "input": {
+      "action": "profile",
+      "user_id": "1001",
+      "session_id": "device-alpha",
+      "config": {
+        "admin_ids": [],
+        "shop_min_order": 1000,
+        "active_session_timeout_sec": 180
+      }
+    }
+  }
+}
