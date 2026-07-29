@@ -114,7 +114,9 @@ $handoffDb = [
 ];
 $method = new ReflectionMethod(GameActionService::class, 'synchronizeTurnHandoff');
 $before = time();
-$handoff = $method->invoke($service, $handoffDb, 'handoff', '100', $handoffDb['games']['handoff']);
+$handoffFallback = $handoffDb['games']['handoff'];
+$handoffArgs = [&$handoffDb, 'handoff', '100', $handoffFallback];
+$handoff = $method->invokeArgs($service, $handoffArgs);
 $startsAt = strtotime((string)$handoff['turn_starts_at']);
 $deadlineAt = strtotime((string)$handoff['turn_deadline_at']);
 $assert($startsAt !== false && $startsAt >= $before + 1 && $startsAt <= time() + 2, 'Turn handoff must start slightly in the future for both devices.');
@@ -123,7 +125,9 @@ $assert($handoff['v111_clock_turn'] === '200' && $handoff['v111_clock_revision']
 
 $sameTurnDb = ['games' => ['same' => $handoff + ['id' => 'same']]];
 $sameRevision = (int)$sameTurnDb['games']['same']['v111_clock_revision'];
-$same = $method->invoke($service, $sameTurnDb, 'same', '200', $sameTurnDb['games']['same']);
+$sameFallback = $sameTurnDb['games']['same'];
+$sameArgs = [&$sameTurnDb, 'same', '200', $sameFallback];
+$same = $method->invokeArgs($service, $sameArgs);
 $assert((int)$same['v111_clock_revision'] === $sameRevision, 'A repeated same-turn state must not restart the timer.');
 
 fwrite(STDOUT, "ProductionV111PreparationSettlementTest: {$assertions} assertions passed\n");
