@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 final class GameActionService
 {
+    private const TURN_HANDOFF_DELAY_SEC = 1;
+    private const MOVE_TIMEOUT_SEC = 60;
+
     public function __construct(
         private GameCatalogService $catalog,
         private GameRuntimeService|ChessRuntimeService $runtime
@@ -15,6 +18,7 @@ final class GameActionService
             throw new RuntimeException('Игра не найдена.');
         }
 
+        $this->activateLaunchIfDue($db['games'][$gameId]);
         $game = $db['games'][$gameId];
         $userId = (string)($user['id'] ?? '');
         $playerIds = array_map('strval', $game['player_ids'] ?? []);
@@ -27,6 +31,9 @@ final class GameActionService
             return $game;
         }
 
+        $this->assertLaunchReady($game);
+        $previousTurn = (string)($game['turn'] ?? '');
+
         // Runtime flags block only creation of new games. An already active match
         // must keep resolving its engine and accepting legal actions safely.
         $gameType = trim((string)($game['game_type'] ?? ''));
@@ -36,7 +43,7 @@ final class GameActionService
         $expectedActionType = (string)($definition['action_type'] ?? '');
         $actionType = trim((string)($action['type'] ?? $expectedActionType));
 
-        return match ($engine) {
+        $result = match ($engine) {
             'tictactoe' => $this->applyTicTacToeAction($db, $user, $gameId, $actionType, $action),
             'four_in_a_row' => $this->applyFourInARowAction($db, $user, $gameId, $actionType, $action),
             'battleship' => $this->applyBattleshipAction($db, $user, $gameId, $action),
@@ -47,6 +54,57 @@ final class GameActionService
             'domino' => $this->runtime->applyDominoAction($db, $user, $gameId, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
+
+        return $this->synchronizeTurnHandoff($db, $gameId, $previousTurn, $result);
+    }
+
+    private function activateLaunchIfDue(array &$game): void
+    {
+        if ((string)($game['launch_phase'] ?? '') !== 'countdown') return;
+        $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
+        if ($startsAt <= 0 || $startsAt > time()) return;
+        $game['launch_phase'] = 'active';
+        $game['updated_at'] = now_iso();
+    }
+
+    private function assertLaunchReady(array $game): void
+    {
+        $phase = (string)($game['launch_phase'] ?? 'active');
+        if ($phase === 'preparing') {
+            throw new RuntimeException('Матч ещё синхронизирует игроков.');
+        }
+        if ($phase === 'countdown') {
+            $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
+            if ($startsAt <= 0 || $startsAt > time()) {
+                throw new RuntimeException('Матч начнётся после обратного отсчёта.');
+            }
+        }
+    }
+
+    private function synchronizeTurnHandoff(array &$db, string $gameId, string $previousTurn, array $fallback): array
+    {
+        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) return $fallback;
+        $game =& $db['games'][$gameId];
+        if ((string)($game['status'] ?? '') !== 'active') return $game;
+
+        $currentTurn = (string)($game['turn'] ?? '');
+        if ($currentTurn === '' || $currentTurn === $previousTurn) return $game;
+
+        $startsAt = time() + self::TURN_HANDOFF_DELAY_SEC;
+        $game['launch_phase'] = 'active';
+        $game['turn_started_at'] = gmdate('c', $startsAt);
+        $game['turn_starts_at'] = gmdate('c', $startsAt);
+        $game['turn_deadline_at'] = gmdate('c', $startsAt + self::MOVE_TIMEOUT_SEC);
+        $game['v111_clock_turn'] = $currentTurn;
+        $game['v111_clock_revision'] = (int)($game['v111_clock_revision'] ?? 0) + 1;
+        $game['updated_at'] = now_iso();
+
+        $botId = (string)($game['bot_id'] ?? '');
+        if (!empty($game['is_bot_game']) && $botId !== '' && $currentTurn === $botId) {
+            $game['bot_move_after_at'] = gmdate('c', $startsAt + 1);
+        }
+
+        return $game;
     }
 
     private function applyBattleshipAction(
