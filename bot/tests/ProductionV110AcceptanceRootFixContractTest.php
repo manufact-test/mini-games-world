@@ -80,12 +80,12 @@ $assert(
 $assert(
     str_contains($runtime, 'mgw-v110-search-summary')
         && str_contains($runtime, '#searchInfo{min-height:2.9em}')
-        && str_contains($runtime, "secondary:type === 'domino' ? 'Классика 0–6' : `Поле ${size}×${size}`"),
+        && str_contains($runtime, 'secondary:type === \'domino\' ? \'Классика 0–6\' : `Поле ${size}×${size}`'),
     'The complete search conditions must reserve their two-line layout before screen activation.'
 );
 $assert(
-    str_contains($presence, "if ($action === 'ping' || $action === 'status') $presence->touch($accountId, $sessionId);")
-        && str_contains($presence, "if ($sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');")
+    str_contains($presence, "if (\$action === 'ping' || \$action === 'status') \$presence->touch(\$accountId, \$sessionId);")
+        && str_contains($presence, "if (\$sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');")
         && strpos($presence, '$presence->touch') < strpos($presence, '$stats->build'),
     'An authenticated status read must confirm the current session before unique-account counting.'
 );
