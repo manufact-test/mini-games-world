@@ -6,7 +6,6 @@ import { getSessionId } from './session.js?v=27';
 const CLOCK_URL = `${window.location.origin}/bot/game-clock.php`;
 const originalGameState = api.gameState.bind(api);
 const originalGameAction = api.gameAction.bind(api);
-const originalMakeMove = api.makeMove.bind(api);
 const runtime = window.__MGW_V111_MATCH_START__ ||= {
   initialized:false,
   overlay:null,
@@ -14,7 +13,7 @@ const runtime = window.__MGW_V111_MATCH_START__ ||= {
   observer:null,
   anchor:null,
   anchorSignature:'',
-  syncing:false,
+  timeoutSettling:new Set(),
 };
 
 export function initV111SyncedMatchStart(){
@@ -26,10 +25,8 @@ export function initV111SyncedMatchStart(){
     const result = await originalGameAction(gameId, action);
     return result?.game ? mergeResult(result, await synchronizedState(gameId)) : result;
   };
-  api.makeMove = async (gameId, cell) => {
-    const result = await originalMakeMove(gameId, cell);
-    return result?.game ? mergeResult(result, await synchronizedState(gameId)) : result;
-  };
+  // Stale callers must not bypass the common launch/turn guard through make_move.
+  api.makeMove = (gameId, cell) => api.gameAction(gameId, { type:'cell', cell });
 
   installStyle();
   runtime.timer = window.setInterval(tick, 50);
@@ -44,9 +41,28 @@ async function synchronizedState(gameId){
   const id = String(gameId || state.activeGame?.id || '');
   if (!id) return originalGameState(gameId);
   try {
-    return await postClock(id);
+    const synchronized = await postClock(id);
+    if (String(synchronized?.game?.launch_phase || '') !== 'preparation_timeout') return synchronized;
+    return settlePreparationTimeout(id, synchronized);
   } catch (error) {
     return originalGameState(gameId);
+  }
+}
+
+async function settlePreparationTimeout(gameId, snapshot){
+  const id = String(gameId || '');
+  if (!id || runtime.timeoutSettling.has(id)) return snapshot;
+  runtime.timeoutSettling.add(id);
+  try {
+    const settled = await originalGameAction(id, { type:'cancel_preparation' });
+    try {
+      const finalSnapshot = await postClock(id);
+      return finalSnapshot?.game ? mergeResult(settled, finalSnapshot) : settled;
+    } catch (error) {
+      return settled;
+    }
+  } finally {
+    runtime.timeoutSettling.delete(id);
   }
 }
 
@@ -110,7 +126,9 @@ function renderPreparation(game){
   const phase = String(game.launch_phase || 'preparing');
   const startsAt = finiteNumber(game.starts_at_ms);
   const remainingMs = startsAt === null ? null : startsAt - estimatedServerNow();
-  const shouldShow = phase === 'preparing' || (phase === 'countdown' && (remainingMs === null || remainingMs > 0));
+  const shouldShow = phase === 'preparing'
+    || phase === 'preparation_timeout'
+    || (phase === 'countdown' && (remainingMs === null || remainingMs > 0));
   if (!shouldShow) return hideOverlay();
 
   const overlay = ensureOverlay();
@@ -126,9 +144,11 @@ function renderPreparation(game){
   overlay.querySelector('[data-v111-icon]').textContent = icon;
   overlay.querySelector('[data-v111-title]').textContent = title;
   overlay.querySelector('[data-v111-players]').textContent = `${first}  ·  ${second}`;
-  overlay.querySelector('[data-v111-status]').textContent = countdown === null
-    ? 'Синхронизируем игроков…'
-    : 'Матч начинается';
+  overlay.querySelector('[data-v111-status]').textContent = phase === 'preparation_timeout'
+    ? 'Соперник не подключился. Возвращаем ставку…'
+    : countdown === null
+      ? 'Синхронизируем игроков…'
+      : 'Матч начинается';
   const counter = overlay.querySelector('[data-v111-countdown]');
   counter.textContent = countdown === null ? '' : String(countdown);
   counter.hidden = countdown === null;
