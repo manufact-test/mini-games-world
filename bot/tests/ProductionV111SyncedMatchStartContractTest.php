@@ -45,6 +45,13 @@ $assert(
     'All state and stale move callers must pass through the shared synchronized owner.'
 );
 $assert(
+    str_contains($runtime, 'retireV110ClockOwner();')
+        && str_contains($runtime, 'window.clearInterval(v110.timer)')
+        && str_contains($runtime, 'v110.observer?.disconnect?.()')
+        && str_contains($runtime, 'reconcileV110PendingMove();'),
+    'v111 must retire only the duplicate v110 clock while preserving pending mobile move cleanup.'
+);
+$assert(
     str_contains($runtime, "const CLOCK_URL = `${window.location.origin}/bot/game-clock.php`;")
         && str_contains($registry, "'bot/game-clock.php' => 'game_clock'"),
     'Readiness must use the registered DB-primary clock entrypoint.'
@@ -66,6 +73,12 @@ $assert(
         && str_contains($clock, "\$game['turn_deadline_at'] = gmdate('c', \$startsAt + MGW_V111_MOVE_TIMEOUT_SEC)")
         && str_contains($clock, "'server_now_ms' => \$serverNowMs"),
     'The first turn must expose one server start, deadline and time anchor.'
+);
+$assert(
+    str_contains($clock, 'return array_replace($public, [')
+        && str_contains($clock, "'time_left' => \$timeLeft")
+        && str_contains($clock, "'move_timeout_sec' => MGW_V111_MOVE_TIMEOUT_SEC"),
+    'The authoritative projection must replace legacy time_left rather than lose to PHP array-union precedence.'
 );
 $assert(
     str_contains($actions, 'TURN_HANDOFF_DELAY_SEC = 1')
