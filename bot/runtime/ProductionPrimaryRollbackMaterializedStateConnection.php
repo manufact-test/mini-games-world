@@ -98,6 +98,11 @@ final class ProductionPrimaryRollbackMaterializedStateConnection implements Data
         return [$row];
     }
 
+    public function fetchValue(string $sql, array $params = []): mixed
+    {
+        return $this->database->fetchValue($sql, $params);
+    }
+
     public function transaction(callable $callback): mixed
     {
         return $this->database->transaction(
@@ -105,11 +110,6 @@ final class ProductionPrimaryRollbackMaterializedStateConnection implements Data
                 return $callback($this);
             }
         );
-    }
-
-    public function pdo(): PDO
-    {
-        return $this->database->pdo();
     }
 
     public function sourceLockVerified(): bool
