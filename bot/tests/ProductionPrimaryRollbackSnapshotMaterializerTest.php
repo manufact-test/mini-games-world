@@ -51,14 +51,17 @@ final class ProductionRollbackMaterializerTestDatabase implements DatabaseConnec
         throw new RuntimeException('Unexpected materializer test query: ' . $normalized);
     }
 
+    public function fetchValue(string $sql, array $params = []): mixed
+    {
+        $rows = $this->fetchAll($sql, $params);
+        if ($rows === [] || !is_array($rows[0])) return null;
+        $value = reset($rows[0]);
+        return $value === false ? null : $value;
+    }
+
     public function transaction(callable $callback): mixed
     {
         return $callback($this);
-    }
-
-    public function pdo(): PDO
-    {
-        throw new RuntimeException('PDO is not used by the materializer test.');
     }
 }
 
