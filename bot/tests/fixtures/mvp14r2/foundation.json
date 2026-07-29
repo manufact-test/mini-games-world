@@ -1,0 +1,84 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "foundation",
+  "clock": {
+    "timezone": "UTC",
+    "now": "2026-07-29T12:00:00+00:00"
+  },
+  "random_seed": 140201,
+  "id_sequence": {
+    "request": [
+      "request-foundation-1",
+      "request-foundation-2"
+    ],
+    "session": [
+      "session-device-a",
+      "session-device-b"
+    ],
+    "invite": [
+      "invite-foundation-1"
+    ],
+    "game": [
+      "game-foundation-1"
+    ]
+  },
+  "normalization": {
+    "path_categories": {
+      "/input/user_id": "USER",
+      "/input/session_id": "SESSION",
+      "/public_result/payload/user/id": "USER",
+      "/public_result/payload/session/id": "SESSION",
+      "/public_result/payload/invite/token": "INVITE",
+      "/domains/before/users/*/id": "USER",
+      "/domains/after/users/*/id": "USER",
+      "/domains/after/users/*/last_seen_at": "TIMESTAMP",
+      "/side_effects/notifications/*/recipient_id": "USER",
+      "/side_effects/notifications/*/created_at": "TIMESTAMP"
+    },
+    "aliases": {
+      "USER": {
+        "1001": "<USER_A>",
+        "1002": "<USER_B>"
+      },
+      "SESSION": {
+        "session-device-a": "<SESSION_A>",
+        "session-device-b": "<SESSION_B>"
+      },
+      "INVITE": {
+        "invite-foundation-1": "<INVITE_1>"
+      },
+      "GAME": {
+        "game-foundation-1": "<GAME_1>"
+      },
+      "TIMESTAMP": {
+        "2026-07-29T12:00:00+00:00": "<TIMESTAMP_1>"
+      }
+    }
+  },
+  "state": {
+    "users": {
+      "1001": {
+        "id": "1001",
+        "first_name": "Baseline A",
+        "balance_match": 100,
+        "balance_gold": 25
+      },
+      "1002": {
+        "id": "1002",
+        "first_name": "Baseline B",
+        "balance_match": 80,
+        "balance_gold": 10
+      }
+    },
+    "games": {},
+    "queue": [],
+    "transactions": [],
+    "notifications": [],
+    "invites": [],
+    "system": {}
+  },
+  "scenario": {
+    "id": "foundation_contract",
+    "description": "Deterministic fixture, aliases, scenario schema and fingerprint foundation."
+  }
+}
