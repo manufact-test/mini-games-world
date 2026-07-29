@@ -198,6 +198,7 @@ try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
 
+    $protocol = clean_string($payload['protocol'] ?? '', 20);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $gameId = clean_string($payload['gameId'] ?? '', 120);
     if ($sessionId === '') api_error('Сессия устройства не найдена.');
@@ -216,6 +217,7 @@ try {
         $users,
         $sessions,
         $games,
+        $protocol,
         $sessionId,
         $gameId
     ): array {
@@ -234,6 +236,40 @@ try {
         $game =& $data['games'][$gameId];
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
             throw new RuntimeException('Вы не участвуете в этой игре.');
+        }
+
+        // Backward-compatible v106 protocol: requests without an explicit v111
+        // marker keep the accepted bot-only first-turn arming behavior.
+        if ($protocol !== 'v111') {
+            $gameType = (string)($game['game_type'] ?? 'tictactoe');
+            $size = max(1, (int)($game['board_size'] ?? 3));
+            $emptyBoard = str_repeat('-', $size * $size);
+            $eligible = ($game['status'] ?? '') === 'active'
+                && $gameType === 'tictactoe'
+                && !empty($game['is_bot_game'])
+                && (string)($game['board'] ?? '') === $emptyBoard;
+
+            if ($eligible && empty($game['v106_first_turn_clock_armed_at'])) {
+                $now = now_iso();
+                $game['turn_started_at'] = $now;
+                $game['updated_at'] = $now;
+                $game['v106_first_turn_clock_armed_at'] = $now;
+
+                $botId = (string)($game['bot_id'] ?? '');
+                if ($botId !== '' && (string)($game['turn'] ?? '') === $botId) {
+                    $game['bot_move_after_at'] = gmdate('c', time() + 1);
+                } else {
+                    unset($game['bot_move_after_at']);
+                }
+            }
+
+            return [
+                'user' => $users->publicUser($user),
+                'me' => ['id' => $userId],
+                'game' => $games->publicGame($game, $userId),
+                'session' => $sessions->publicState($user, $sessionId),
+                'clock_armed' => !empty($game['v106_first_turn_clock_armed_at']),
+            ];
         }
 
         mgw_v111_initialize_launch($game);
