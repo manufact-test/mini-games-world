@@ -83,7 +83,7 @@ async function postClock(gameId){
   const response = await fetcher(CLOCK_URL, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
-    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), gameId }),
+    body:JSON.stringify({ protocol:'v111', initData:getInitData(), sessionId:getSessionId(), gameId }),
     cache:'no-store',
     priority:'high',
   });
