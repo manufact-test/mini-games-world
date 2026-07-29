@@ -50,7 +50,7 @@ $assert(
         && !str_contains($runtime, 'function enrichInviteActions')
         && !str_contains($runtime, "type === 'invite_accepted'")
         && !str_contains($runtime, '/bot/invites.php'),
-    'Notification actions and list data must come only from the authoritative notifications endpoint.'
+    'Notification actions must come only from the authoritative server snapshot.'
 );
 $assert(
     str_contains($runtime, 'seedToastPreview(toast);')
@@ -61,7 +61,7 @@ $assert(
 $assert(
     str_contains($runtime, "window.addEventListener('click', guardAndTrackTicTacToe, true)")
         && str_contains($runtime, 'event.stopImmediatePropagation();')
-        && str_contains($runtime, "String(authoritative?.turn || '') !== viewerId")
+        && str_contains($runtime, 'String(authoritative?.turn || \'\') !== viewerId')
         && str_contains($runtime, "board[cell] !== '-'"),
     'Invalid Tic Tac Toe taps must be rejected before any retained mobile owner can preview a mark.'
 );
@@ -77,7 +77,7 @@ $assert(
         && str_contains($runtime, 'Never jump upward on a same-turn poll')
         && str_contains($runtime, 'Math.ceil((clock.deadline - performance.now()) / 1000)')
         && str_contains($runtime, "if (value === null || value === undefined || value === '') return null;"),
-    'The visible timer must be smooth, monotonic for one turn and must not treat missing server timestamps as zero.'
+    'The visible timer must be smooth, monotonic for one turn and correct only downward from server evidence.'
 );
 $assert(
     str_contains($runtime, 'mgw-v110-search-summary')
@@ -95,9 +95,10 @@ $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=110')
         && str_contains($php, 'main-v110.js?v=110')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v109.php?v=109')
-        && !str_contains($welcome, '/app/v110.php?v=110'),
-    'The v110 no-store candidate must exist without changing the accepted Telegram launch guard.'
+        && str_contains($welcome, '/app/v110.php?v=110')
+        && !str_contains($welcome, '/app/v109.php?v=109')
+        && str_contains($welcome, 'Historical no-store entrypoints remain explicit rollback'),
+    'Authorized Telegram launches must select the no-store v110 candidate while historical builds remain rollback-only.'
 );
 $assert(
     !str_contains($runtime, '/bot/game-clock.php')
