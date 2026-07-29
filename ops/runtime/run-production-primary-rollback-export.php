@@ -152,15 +152,10 @@ try {
         throw new RuntimeException('Production rollback export database readiness failed.');
     }
 
-    $auditor = (new ProductionPrimaryRollbackAuditorFactory(
+    $verifier = new ProductionPrimaryRollbackExportVerifier();
+    $result = (new ProductionPrimaryRollbackMaterializedExportService(
         $config,
         $database,
-        $gateReport
-    ))->create();
-    $verifier = new ProductionPrimaryRollbackExportVerifier();
-    $result = (new ProductionPrimaryRollbackExportService(
-        $database,
-        $auditor,
         $verifier
     ))->export(
         $projectRoot,
@@ -174,6 +169,35 @@ try {
     printf("REQUEST_ID=%s\n", (string)($result['request_id'] ?? ''));
     printf("STATE_REVISION=%d\n", (int)($result['state_revision'] ?? 0));
     printf("STATE_SHA256=%s\n", (string)($result['state_sha256'] ?? ''));
+    printf("SOURCE_STATE_REVISION=%d\n", (int)($result['source_state_revision'] ?? 0));
+    printf("SOURCE_STATE_SHA256=%s\n", (string)($result['source_state_sha256'] ?? ''));
+    printf("MATERIALIZED_STATE_SHA256=%s\n", (string)($result['materialized_state_sha256'] ?? ''));
+    printf(
+        "MATERIALIZATION_CONTRACT_VERSION=%s\n",
+        (string)($result['materialization_contract_version'] ?? '')
+    );
+    printf(
+        "MATERIALIZATION_APPLIED=%s\n",
+        ($result['materialization_applied'] ?? false) === true ? 'true' : 'false'
+    );
+    printf("MATERIALIZED_USER_COUNT=%d\n", (int)($result['materialized_user_count'] ?? 0));
+    printf("MATERIALIZED_FIELD_COUNT=%d\n", (int)($result['materialized_field_count'] ?? 0));
+    printf(
+        "MATERIALIZATION_READ_ONLY=%s\n",
+        ($result['materialization_read_only'] ?? false) === true ? 'true' : 'false'
+    );
+    printf(
+        "SOURCE_STATE_ROW_LOCKED=%s\n",
+        ($result['source_state_row_locked'] ?? false) === true ? 'true' : 'false'
+    );
+    printf(
+        "ARTIFACT_MATERIALIZATION_METADATA_VERIFIED=%s\n",
+        ($result['artifact_materialization_metadata_verified'] ?? false) === true ? 'true' : 'false'
+    );
+    printf(
+        "AUTHORIZATION_FINGERPRINT=%s\n",
+        (string)($result['authorization_fingerprint'] ?? '')
+    );
     printf("SNAPSHOT_SHA256=%s\n", (string)($result['snapshot_sha256'] ?? ''));
     printf("ALL_MODULE_FINGERPRINT=%s\n", (string)($result['all_module_fingerprint'] ?? ''));
     printf("DATA_FILES=%d\n", (int)($result['data_files'] ?? 0));
