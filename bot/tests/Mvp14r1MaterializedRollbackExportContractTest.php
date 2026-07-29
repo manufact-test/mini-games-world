@@ -61,9 +61,10 @@ $assertTrue(
 foreach ([
     'write-sealed',
     'source state changed before lock acquisition',
-    'WHERE singleton_id = 1 FOR UPDATE',
+    'where singleton_id = 1 for update',
     'sourceLockVerified',
     'stateSubstitutionCount',
+    'public function fetchValue(',
 ] as $required) {
     $assertTrue(
         str_contains($sources['connection'], $required),
