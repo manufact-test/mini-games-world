@@ -72,13 +72,16 @@ $assertTrue(
     'API and webhook storage paths must not bypass StorageFactory'
 );
 
+$webhookMaintenance = strpos($sources['webhook'], '$maintenanceGuard->handle($update)');
 $webhookStorage = strpos($sources['webhook'], 'StorageFactory::createJson(');
-$webhookTelegram = strpos($sources['webhook'], 'new TelegramService(');
+$webhookRuntimeGuard = strpos($sources['webhook'], 'new RuntimeAdminGuard(');
 $assertTrue(
-    $webhookStorage !== false
-        && $webhookTelegram !== false
-        && $webhookStorage < $webhookTelegram,
-    'Webhook must install request storage before any guard or handler'
+    $webhookMaintenance !== false
+        && $webhookStorage !== false
+        && $webhookRuntimeGuard !== false
+        && $webhookMaintenance < $webhookStorage
+        && $webhookStorage < $webhookRuntimeGuard,
+    'Webhook must allow only the storage-free maintenance response before guarded request storage and remaining handlers'
 );
 $assertTrue(
     $containsAll($sources['webhook'], [
