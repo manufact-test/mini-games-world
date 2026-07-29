@@ -54,6 +54,7 @@ $project = $root . '/public_html';
 $private = $root . '/private';
 $output = $root . '/rollback-exports';
 $oldDatabaseOverride = getenv('MGW_DATABASE_CONFIG_FILE');
+$oldEnvironment = getenv('MGW_ENV');
 
 try {
     foreach ([$root, $project, $private, $output] as $directory) {
@@ -71,17 +72,19 @@ try {
     $cutoverFile = $private . '/production-cutover.json';
     $authorizationFile = $private . '/production-rollback-export-authorization.json';
 
-    $write($configFile, <<<'PHP'
+    $configRaw = <<<'PHP'
 <?php
 declare(strict_types=1);
 return [
-    'environment' => 'production',
-    'storage_driver' => 'json',
+    'base_url' => 'https://rollback-export.test',
+    'allowed_hosts' => ['rollback-export.test'],
+    'bot_token' => 'test-token-not-placeholder',
     'feature_flags' => [
         'maintenance_mode' => false,
     ],
 ];
-PHP);
+PHP;
+    $write($configFile, $configRaw);
     $write($runtimeFile, <<<'PHP'
 <?php
 declare(strict_types=1);
@@ -109,6 +112,12 @@ PHP);
     $write($cutoverFile, "{\n  \"state\": \"completed\"\n}\n");
     $write($authorizationFile, "{\n  \"authorized\": true\n}\n");
     putenv('MGW_DATABASE_CONFIG_FILE');
+    putenv('MGW_ENV');
+
+    $inputHashes = [];
+    foreach ([$configFile, $runtimeFile, $databaseFile, $cutoverFile, $authorizationFile] as $path) {
+        $inputHashes[$path] = hash_file('sha256', $path);
+    }
 
     $loader = new ProductionPrimaryRollbackExportInputLoader(
         realpath($project) ?: $project
@@ -120,7 +129,13 @@ PHP);
         realpath($output) ?: $output
     );
 
-    $assertSame('production', $loaded['config']['environment'], 'Environment must load exactly');
+    $assertSame('production', $loaded['config']['environment'], 'Legacy public config must normalize to production');
+    $assertSame(
+        'legacy-inference',
+        $loaded['config']['environment_context']['source'] ?? null,
+        'Export loader must use the application production environment contract'
+    );
+    $assertSame('json', $loaded['config']['storage_driver'], 'Missing legacy storage driver must normalize to JSON');
     $assertSame(true, $loaded['config']['feature_flags']['maintenance_mode'], 'Runtime overlay must merge');
     $assertSame(true, $loaded['config']['feature_flags']['financial_read_only'], 'Financial read-only must merge');
     $assertSame(true, $loaded['config']['database']['enabled'], 'Private database config must merge');
@@ -136,7 +151,32 @@ PHP);
         'Database config fingerprint must be available'
     );
     $assertSame(false, $loaded['paths_exposed'], 'Safe loader report must not claim path exposure');
+    $assertSame(false, $loaded['persistent_config_changed'], 'Loader must not change persistent config');
     $assertSame(false, $loaded['production_changed'], 'Loader must not change production');
+    foreach ($inputHashes as $path => $expectedHash) {
+        $assertSame(
+            $expectedHash,
+            hash_file('sha256', $path),
+            'Read-only normalization must not rewrite private input: ' . basename($path)
+        );
+    }
+
+    $invalidStorageRaw = str_replace(
+        "    'base_url' =>",
+        "    'storage_driver' => 'mysql',\n    'base_url' =>",
+        $configRaw
+    );
+    $write($configFile, $invalidStorageRaw);
+    $assertThrows(
+        static fn() => $loader->load(
+            $configFile,
+            $cutoverFile,
+            $authorizationFile,
+            $output
+        ),
+        'Only the JSON storage driver'
+    );
+    $write($configFile, $configRaw);
 
     chmod($authorizationFile, 0644);
     $assertThrows(
@@ -204,6 +244,11 @@ PHP);
         putenv('MGW_DATABASE_CONFIG_FILE');
     } else {
         putenv('MGW_DATABASE_CONFIG_FILE=' . $oldDatabaseOverride);
+    }
+    if ($oldEnvironment === false) {
+        putenv('MGW_ENV');
+    } else {
+        putenv('MGW_ENV=' . $oldEnvironment);
     }
     $remove($root);
 }
