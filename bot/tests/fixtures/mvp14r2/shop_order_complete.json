@@ -1,0 +1,298 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "shop_order_complete",
+  "clock": {
+    "timezone": "UTC",
+    "now": "2026-07-29T16:00:00+00:00"
+  },
+  "random_seed": 140253,
+  "id_sequence": {
+    "order": [
+      "shop_order_complete_001"
+    ],
+    "tx": [
+      "tx_shop_order",
+      "tx_shop_done",
+      "tx_unused"
+    ]
+  },
+  "normalization": {
+    "path_categories": {},
+    "aliases": {}
+  },
+  "state": {
+    "users": {
+      "u1": {
+        "id": "u1",
+        "username": "alice",
+        "first_name": "Alice",
+        "balance_match": 100,
+        "balance_gold": 1500,
+        "gold_deposited_total": 1500,
+        "gold_wagered_total": 1500,
+        "gold_shop_spent_total": 0,
+        "status": "idle",
+        "current_game_id": null,
+        "stats": {
+          "games_played": 0,
+          "wins": 0,
+          "losses": 0,
+          "draws": 0,
+          "match_games_this_week": 0
+        }
+      }
+    },
+    "games": {},
+    "transactions": [],
+    "shop_orders": [],
+    "payments": [],
+    "notifications": [],
+    "system": {}
+  },
+  "scenario": {
+    "id": "shop.order.complete",
+    "input": {
+      "config": {},
+      "history_user_ids": [
+        "u1"
+      ],
+      "workflow": [
+        {
+          "action": "read_catalog",
+          "actor_id": "u1",
+          "catalog": {
+            "version": 3,
+            "currency": "GOLD",
+            "updated_at": "2026-07-28T00:00:00+00:00",
+            "countries": [
+              {
+                "code": "PL",
+                "name": "Польша",
+                "enabled": true,
+                "sort_order": 1
+              },
+              {
+                "code": "XX",
+                "name": "Disabled",
+                "enabled": false,
+                "sort_order": 2
+              }
+            ],
+            "items": [
+              {
+                "id": "gift_pl",
+                "country_code": "PL",
+                "provider_code": "giftcard",
+                "provider": "Gift Card",
+                "title": "Подарочная карта",
+                "description": "Цифровой код",
+                "delivery_type": "manual_code",
+                "image": "/gift.png",
+                "image_alt": "Gift",
+                "enabled": true,
+                "sort_order": 1,
+                "denominations": [
+                  {
+                    "id": "gift_1000",
+                    "label": "1000 Gold",
+                    "gold_cost": 1000,
+                    "enabled": true,
+                    "sort_order": 1
+                  },
+                  {
+                    "id": "gift_off",
+                    "label": "Off",
+                    "gold_cost": 1,
+                    "enabled": false,
+                    "sort_order": 2
+                  }
+                ]
+              },
+              {
+                "id": "disabled_item",
+                "country_code": "PL",
+                "provider_code": "off",
+                "provider": "Off",
+                "enabled": false,
+                "denominations": [
+                  {
+                    "id": "off_1",
+                    "gold_cost": 1,
+                    "enabled": true
+                  }
+                ]
+              }
+            ]
+          },
+          "offset_sec": 0
+        },
+        {
+          "action": "create_shop_order",
+          "actor_id": "u1",
+          "request_id": "request_complete_0001",
+          "item_id": "gift_pl",
+          "denomination_id": "gift_1000",
+          "expected_amount": 1000,
+          "catalog": {
+            "version": 3,
+            "currency": "GOLD",
+            "updated_at": "2026-07-28T00:00:00+00:00",
+            "countries": [
+              {
+                "code": "PL",
+                "name": "Польша",
+                "enabled": true,
+                "sort_order": 1
+              },
+              {
+                "code": "XX",
+                "name": "Disabled",
+                "enabled": false,
+                "sort_order": 2
+              }
+            ],
+            "items": [
+              {
+                "id": "gift_pl",
+                "country_code": "PL",
+                "provider_code": "giftcard",
+                "provider": "Gift Card",
+                "title": "Подарочная карта",
+                "description": "Цифровой код",
+                "delivery_type": "manual_code",
+                "image": "/gift.png",
+                "image_alt": "Gift",
+                "enabled": true,
+                "sort_order": 1,
+                "denominations": [
+                  {
+                    "id": "gift_1000",
+                    "label": "1000 Gold",
+                    "gold_cost": 1000,
+                    "enabled": true,
+                    "sort_order": 1
+                  },
+                  {
+                    "id": "gift_off",
+                    "label": "Off",
+                    "gold_cost": 1,
+                    "enabled": false,
+                    "sort_order": 2
+                  }
+                ]
+              },
+              {
+                "id": "disabled_item",
+                "country_code": "PL",
+                "provider_code": "off",
+                "provider": "Off",
+                "enabled": false,
+                "denominations": [
+                  {
+                    "id": "off_1",
+                    "gold_cost": 1,
+                    "enabled": true
+                  }
+                ]
+              }
+            ]
+          },
+          "offset_sec": 1
+        },
+        {
+          "action": "create_shop_order",
+          "actor_id": "u1",
+          "request_id": "request_complete_0001",
+          "item_id": "gift_pl",
+          "denomination_id": "gift_1000",
+          "expected_amount": 1000,
+          "catalog": {
+            "version": 3,
+            "currency": "GOLD",
+            "updated_at": "2026-07-28T00:00:00+00:00",
+            "countries": [
+              {
+                "code": "PL",
+                "name": "Польша",
+                "enabled": true,
+                "sort_order": 1
+              },
+              {
+                "code": "XX",
+                "name": "Disabled",
+                "enabled": false,
+                "sort_order": 2
+              }
+            ],
+            "items": [
+              {
+                "id": "gift_pl",
+                "country_code": "PL",
+                "provider_code": "giftcard",
+                "provider": "Gift Card",
+                "title": "Подарочная карта",
+                "description": "Цифровой код",
+                "delivery_type": "manual_code",
+                "image": "/gift.png",
+                "image_alt": "Gift",
+                "enabled": true,
+                "sort_order": 1,
+                "denominations": [
+                  {
+                    "id": "gift_1000",
+                    "label": "1000 Gold",
+                    "gold_cost": 1000,
+                    "enabled": true,
+                    "sort_order": 1
+                  },
+                  {
+                    "id": "gift_off",
+                    "label": "Off",
+                    "gold_cost": 1,
+                    "enabled": false,
+                    "sort_order": 2
+                  }
+                ]
+              },
+              {
+                "id": "disabled_item",
+                "country_code": "PL",
+                "provider_code": "off",
+                "provider": "Off",
+                "enabled": false,
+                "denominations": [
+                  {
+                    "id": "off_1",
+                    "gold_cost": 1,
+                    "enabled": true
+                  }
+                ]
+              }
+            ]
+          },
+          "offset_sec": 2
+        },
+        {
+          "action": "complete_shop_order",
+          "actor_id": "admin",
+          "order_ref": "last",
+          "admin_id": "admin-1",
+          "note": "код отправлен",
+          "offset_sec": 3
+        },
+        {
+          "action": "complete_shop_order",
+          "actor_id": "admin",
+          "order_ref": "last",
+          "admin_id": "admin-1",
+          "offset_sec": 4
+        },
+        {
+          "action": "read_history",
+          "actor_id": "u1",
+          "offset_sec": 5
+        }
+      ]
+    }
+  }
+}
