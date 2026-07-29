@@ -173,7 +173,7 @@ function mgw_v111_enrich_public_game(array $game, array $public): array
     }
 
     $ready = is_array($game['v111_ready_devices'] ?? null) ? $game['v111_ready_devices'] : [];
-    return $public + [
+    return array_replace($public, [
         'launch_phase' => $phase,
         'preparing_started_at' => $game['preparing_started_at'] ?? null,
         'preparation_deadline_at' => $game['preparation_deadline_at'] ?? null,
@@ -191,7 +191,7 @@ function mgw_v111_enrich_public_game(array $game, array $public): array
         'ready_required' => count($game['player_ids'] ?? []),
         'time_left' => $timeLeft,
         'move_timeout_sec' => MGW_V111_MOVE_TIMEOUT_SEC,
-    ];
+    ]);
 }
 
 try {
