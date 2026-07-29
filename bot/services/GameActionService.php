@@ -1,15 +1,19 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/MatchPreparationClockService.php';
+
 final class GameActionService
 {
-    private const TURN_HANDOFF_DELAY_SEC = 1;
-    private const MOVE_TIMEOUT_SEC = 60;
+    private MatchPreparationClockService $matchClock;
 
     public function __construct(
         private GameCatalogService $catalog,
-        private GameRuntimeService|ChessRuntimeService $runtime
-    ) {}
+        private GameRuntimeService|ChessRuntimeService $runtime,
+        ?MatchPreparationClockService $matchClock = null
+    ) {
+        $this->matchClock = $matchClock ?? new MatchPreparationClockService();
+    }
 
     public function apply(array &$db, array &$user, string $gameId, array $action): array
     {
@@ -18,7 +22,7 @@ final class GameActionService
             throw new RuntimeException('Игра не найдена.');
         }
 
-        $this->activateLaunchIfDue($db['games'][$gameId]);
+        $this->matchClock->activateIfDue($db['games'][$gameId]);
         $game = $db['games'][$gameId];
         $userId = (string)($user['id'] ?? '');
         $playerIds = array_map('strval', $game['player_ids'] ?? []);
@@ -33,10 +37,10 @@ final class GameActionService
 
         $requestedActionType = trim((string)($action['type'] ?? ''));
         if ($requestedActionType === 'cancel_preparation') {
-            return $this->cancelPreparation($db, $gameId);
+            return $this->matchClock->settlePreparationTimeout($db, $db['games'][$gameId]);
         }
 
-        $this->assertLaunchReady($game);
+        $this->matchClock->assertLaunchReady($game);
         $previousTurn = (string)($game['turn'] ?? '');
 
         // Runtime flags block only creation of new games. An already active match
@@ -60,133 +64,11 @@ final class GameActionService
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
 
-        return $this->synchronizeTurnHandoff($db, $gameId, $previousTurn, $result);
-    }
-
-    private function activateLaunchIfDue(array &$game): void
-    {
-        if ((string)($game['launch_phase'] ?? '') !== 'countdown') return;
-        $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
-        if ($startsAt <= 0 || $startsAt > time()) return;
-        $game['launch_phase'] = 'active';
-        $game['updated_at'] = now_iso();
-    }
-
-    private function assertLaunchReady(array $game): void
-    {
-        $phase = (string)($game['launch_phase'] ?? 'active');
-        if ($phase === 'preparing') {
-            throw new RuntimeException('Матч ещё синхронизирует игроков.');
+        if (isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
+            $this->matchClock->synchronizeTurnHandoff($db['games'][$gameId], $previousTurn);
+            return $db['games'][$gameId];
         }
-        if ($phase === 'preparation_timeout') {
-            throw new RuntimeException('Соперник не подключился. Матч отменяется.');
-        }
-        if ($phase === 'countdown') {
-            $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
-            if ($startsAt <= 0 || $startsAt > time()) {
-                throw new RuntimeException('Матч начнётся после обратного отсчёта.');
-            }
-        }
-    }
-
-    private function cancelPreparation(array &$db, string $gameId): array
-    {
-        $game =& $db['games'][$gameId];
-        $phase = (string)($game['launch_phase'] ?? '');
-        if (!in_array($phase, ['preparing', 'preparation_timeout'], true)) {
-            return $game;
-        }
-
-        $deadline = strtotime((string)($game['preparation_deadline_at'] ?? '')) ?: 0;
-        if ($deadline <= 0 || $deadline > time()) {
-            throw new RuntimeException('Подготовка матча ещё продолжается.');
-        }
-        if (!empty($game['v111_preparation_refund_done'])) return $game;
-
-        $room = (string)($game['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
-        $bet = max(0, (int)($game['bet'] ?? 0));
-        $playerIds = array_map('strval', $game['player_ids'] ?? []);
-
-        foreach ($playerIds as $playerId) {
-            if ($playerId === '' || str_starts_with($playerId, 'bot_')) continue;
-            if (!isset($db['users'][$playerId]) || !is_array($db['users'][$playerId])) continue;
-
-            $db['users'][$playerId][$balanceKey] = (int)($db['users'][$playerId][$balanceKey] ?? 0) + $bet;
-            if ((string)($db['users'][$playerId]['current_game_id'] ?? '') === $gameId) {
-                $db['users'][$playerId]['status'] = 'idle';
-                $db['users'][$playerId]['current_game_id'] = null;
-            }
-            $db['transactions'][] = [
-                'id' => make_id('tx'),
-                'type' => 'balance_change',
-                'category' => 'game_preparation_refund',
-                'user_id' => $playerId,
-                'username' => (string)($db['users'][$playerId]['username'] ?? ''),
-                'room' => $room,
-                'amount' => $bet,
-                'balance_after' => (int)$db['users'][$playerId][$balanceKey],
-                'game_id' => $gameId,
-                'description' => 'Возврат коинов: соперник не подключился к матчу',
-                'finish_reason' => 'preparation_timeout',
-                'created_at' => now_iso(),
-            ];
-        }
-
-        $game['status'] = 'finished';
-        $game['launch_phase'] = 'cancelled';
-        $game['winner_id'] = null;
-        $game['loser_id'] = null;
-        $game['finish_reason'] = 'preparation_timeout';
-        $game['payout'] = $bet;
-        $game['commission'] = 0;
-        $game['payout_done'] = true;
-        $game['payout_done_at'] = now_iso();
-        $game['finished_at'] = now_iso();
-        $game['updated_at'] = now_iso();
-        $game['v111_preparation_refund_done'] = true;
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'game_finish',
-            'game_id' => $gameId,
-            'room' => $room,
-            'winner_id' => null,
-            'loser_id' => null,
-            'finish_reason' => 'preparation_timeout',
-            'bank' => $bet * max(2, count($playerIds)),
-            'commission' => 0,
-            'payout' => 0,
-            'is_bot_game' => !empty($game['is_bot_game']),
-            'created_at' => now_iso(),
-        ];
-
-        return $game;
-    }
-
-    private function synchronizeTurnHandoff(array &$db, string $gameId, string $previousTurn, array $fallback): array
-    {
-        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) return $fallback;
-        $game =& $db['games'][$gameId];
-        if ((string)($game['status'] ?? '') !== 'active') return $game;
-
-        $currentTurn = (string)($game['turn'] ?? '');
-        if ($currentTurn === '' || $currentTurn === $previousTurn) return $game;
-
-        $startsAt = time() + self::TURN_HANDOFF_DELAY_SEC;
-        $game['launch_phase'] = 'active';
-        $game['turn_started_at'] = gmdate('c', $startsAt);
-        $game['turn_starts_at'] = gmdate('c', $startsAt);
-        $game['turn_deadline_at'] = gmdate('c', $startsAt + self::MOVE_TIMEOUT_SEC);
-        $game['v111_clock_turn'] = $currentTurn;
-        $game['v111_clock_revision'] = (int)($game['v111_clock_revision'] ?? 0) + 1;
-        $game['updated_at'] = now_iso();
-
-        $botId = (string)($game['bot_id'] ?? '');
-        if (!empty($game['is_bot_game']) && $botId !== '' && $currentTurn === $botId) {
-            $game['bot_move_after_at'] = gmdate('c', $startsAt + 1);
-        }
-
-        return $game;
+        return $result;
     }
 
     private function applyBattleshipAction(
