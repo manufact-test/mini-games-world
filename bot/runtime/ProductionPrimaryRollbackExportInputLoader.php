@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../core/Environment.php';
+require_once __DIR__ . '/../core/ConfigValidator.php';
 require_once __DIR__ . '/../core/RuntimeConfigLoader.php';
 require_once __DIR__ . '/../core/DatabaseConfigLoader.php';
 
@@ -94,6 +96,14 @@ final class ProductionPrimaryRollbackExportInputLoader
         $baseConfig = $this->requireArray($configFile, 'Production private config');
         $config = RuntimeConfigLoader::merge($baseConfig, $configFile);
         $config = DatabaseConfigLoader::merge($config, $configFile);
+        $config = ConfigValidator::validate($config, []);
+
+        // Keep the rollback export gate on the same normalized global storage
+        // contract as the normal application bootstrap. Missing or empty legacy
+        // values mean JSON; any non-JSON value remains rejected by validation.
+        $globalStorageDriver = strtolower(trim((string)($config['storage_driver'] ?? 'json')));
+        $config['storage_driver'] = $globalStorageDriver !== '' ? $globalStorageDriver : 'json';
+
         if (!is_array($config)) {
             throw new RuntimeException('Production runtime config is invalid.');
         }
