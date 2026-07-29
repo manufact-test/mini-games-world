@@ -52,9 +52,11 @@ $assert(
     'v111 must retire only the duplicate v110 clock while preserving pending mobile move cleanup.'
 );
 $assert(
-    str_contains($runtime, "const CLOCK_URL = `${window.location.origin}/bot/game-clock.php`;")
+    str_contains($runtime, 'const CLOCK_URL = `${window.location.origin}/bot/game-clock.php`;')
+        && str_contains($runtime, "protocol:'v111'")
+        && str_contains($clock, "if (\$protocol !== 'v111')")
         && str_contains($registry, "'bot/game-clock.php' => 'game_clock'"),
-    'Readiness must use the registered DB-primary clock entrypoint.'
+    'Readiness must use an explicit v111 protocol on the registered clock entrypoint.'
 );
 $assert(
     str_contains($clock, "hash('sha256', \$sessionId)")
@@ -79,6 +81,12 @@ $assert(
         && str_contains($clock, "'time_left' => \$timeLeft")
         && str_contains($clock, "'move_timeout_sec' => MGW_V111_MOVE_TIMEOUT_SEC"),
     'The authoritative projection must replace legacy time_left rather than lose to PHP array-union precedence.'
+);
+$assert(
+    str_contains($clock, "'v106_first_turn_clock_armed_at'")
+        && str_contains($clock, "\$game['turn_started_at'] = \$now;")
+        && str_contains($clock, "\$games->publicGame(\$game, \$userId)"),
+    'Requests without v111 protocol must preserve the accepted v106 bot-clock rollback.'
 );
 $assert(
     str_contains($actions, 'TURN_HANDOFF_DELAY_SEC = 1')
