@@ -1,0 +1,30 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "games_chess_timeout",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T16:00:00+00:00"},
+  "random_seed": 140246,
+  "id_sequence": {"tx": ["tx_games_chess_timeout_1", "tx_games_chess_timeout_2", "tx_games_chess_timeout_3", "tx_games_chess_timeout_4"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "u1": {"id": "u1", "username": "alice", "first_name": "Alice", "balance_match": 90, "balance_gold": 50, "status": "playing", "current_game_id": "game_chess_001", "stats": {"games_played": 0, "wins": 0, "losses": 0, "draws": 0, "match_games_this_week": 0}},
+      "u2": {"id": "u2", "username": "bob", "first_name": "Bob", "balance_match": 90, "balance_gold": 50, "status": "playing", "current_game_id": "game_chess_001", "stats": {"games_played": 0, "wins": 0, "losses": 0, "draws": 0, "match_games_this_week": 0}}
+    },
+    "games": {
+      "game_chess_001": {"id": "game_chess_001", "game_type": "chess", "room": "match", "bet": 10, "bank": 20, "board_size": 8, "board_columns": 8, "board_rows": 8, "player_ids": ["u1", "u2"], "player_names": {"u1": "Alice", "u2": "Bob"}, "turn": "u1", "status": "active", "winner_id": null, "loser_id": null, "finish_reason": null, "payout_done": false, "created_at": "2026-07-29T15:59:00+00:00", "updated_at": "2026-07-29T15:59:55+00:00", "last_move_at": "2026-07-29T15:59:55+00:00", "turn_started_at": "2026-07-29T15:59:55+00:00", "is_bot_game": false, "board": ["","","","","k","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","P","","","","","","","","K","","",""], "chess_sides": {"u1": "white", "u2": "black"}, "chess_legal_moves": [{"from": 52, "to": 36, "promotion": "", "checkmate": false}], "chess_next_legal_moves": [], "chess_last_move": null, "chess_move_count": 0, "chess_end_reason": null}
+    },
+    "transactions": [], "invites": [], "notifications": [], "system": {}
+  },
+  "scenario": {
+    "id": "games.chess.timeout",
+    "input": {"game_id": "game_chess_001", "viewer_id": "u1", "config": {"commission_rate": 0.1, "move_timeout_sec": 60}, "workflow": [
+      {"action": "observe", "actor_id": "u1", "offset_sec": 0},
+      {"action": "chess_move", "actor_id": "u2", "from": 4, "to": 12, "promotion": "", "expect_error": "Сейчас ход соперника.", "offset_sec": 1},
+      {"action": "chess_move", "actor_id": "u1", "from": 52, "to": 36, "promotion": "", "offset_sec": 2},
+      {"action": "observe", "actor_id": "u2", "offset_sec": 10},
+      {"action": "timeout", "actor_id": "u1", "offset_sec": 63},
+      {"action": "chess_move", "actor_id": "u1", "from": 36, "to": 28, "promotion": "", "offset_sec": 64},
+      {"action": "rematch_projection", "actor_id": "u1", "offset_sec": 65}
+    ]}
+  }
+}
