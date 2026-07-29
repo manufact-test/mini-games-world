@@ -18,7 +18,8 @@ $entry = $read('app/assets/js/production-clean-entry-v111.js');
 $main = $read('app/assets/js/main-v111.js');
 $runtime = $read('app/assets/js/production-v111-synced-match-start.js');
 $php = $read('app/v111.php');
-$clock = $read('bot/game-clock.php');
+$clockEndpoint = $read('bot/game-clock.php');
+$clockService = $read('bot/services/MatchPreparationClockService.php');
 $actions = $read('bot/services/GameActionService.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $registry = $read('bot/runtime/ProductionPrimaryApplicationEntrypoints.php');
@@ -54,61 +55,71 @@ $assert(
 $assert(
     str_contains($runtime, 'const CLOCK_URL = `${window.location.origin}/bot/game-clock.php`;')
         && str_contains($runtime, "protocol:'v111'")
-        && str_contains($clock, "if (\$protocol !== 'v111')")
+        && str_contains($clockEndpoint, "if (\$protocol !== 'v111')")
         && str_contains($registry, "'bot/game-clock.php' => 'game_clock'"),
     'Readiness must use an explicit v111 protocol on the registered clock entrypoint.'
 );
 $assert(
-    str_contains($clock, "hash('sha256', \$sessionId)")
-        && str_contains($clock, "\$game['v111_ready_devices'][\$userId]")
-        && str_contains($clock, 'mgw_v111_all_ready'),
+    str_contains($clockEndpoint, 'new MatchPreparationClockService()')
+        && str_contains($clockEndpoint, '$matchClock->initializeLaunch($game)')
+        && str_contains($clockEndpoint, '$matchClock->enrichPublicGame(')
+        && !str_contains($clockEndpoint, 'function mgw_v111_'),
+    'The endpoint must remain a thin protocol adapter around one clock service.'
+);
+$assert(
+    str_contains($clockService, 'final class MatchPreparationClockService')
+        && str_contains($clockService, 'public const PREPARATION_TIMEOUT_SEC = 10')
+        && str_contains($clockService, 'public const COUNTDOWN_SEC = 3')
+        && str_contains($clockService, 'public const TURN_HANDOFF_SEC = 1')
+        && str_contains($clockService, 'public const MOVE_TIMEOUT_SEC = 60'),
+    'One service must own all preparation and turn timing constants.'
+);
+$assert(
+    str_contains($clockService, "hash('sha256', \$sessionId)")
+        && str_contains($clockService, "\$game['v111_ready_devices'][\$userId]")
+        && str_contains($clockService, 'startCountdownIfReady'),
     'Readiness must be per authenticated device without persisting the raw session ID.'
 );
 $assert(
-    str_contains($clock, 'MGW_V111_PREPARATION_TIMEOUT_SEC = 10')
-        && str_contains($clock, 'MGW_V111_COUNTDOWN_SEC = 3')
-        && str_contains($clock, "\$game['launch_phase'] = 'countdown'"),
-    'A bounded preparation phase and common countdown must be server-owned.'
+    str_contains($clockService, "\$game['turn_starts_at'] = gmdate('c', \$startsAt)")
+        && str_contains($clockService, "\$game['turn_deadline_at'] = gmdate('c', \$startsAt + self::MOVE_TIMEOUT_SEC)")
+        && str_contains($clockService, "'server_now_ms' => \$serverNowMs"),
+    'The service must expose one server start, deadline and time anchor.'
 );
 $assert(
-    str_contains($clock, "\$game['turn_starts_at'] = gmdate('c', \$startsAt)")
-        && str_contains($clock, "\$game['turn_deadline_at'] = gmdate('c', \$startsAt + MGW_V111_MOVE_TIMEOUT_SEC)")
-        && str_contains($clock, "'server_now_ms' => \$serverNowMs"),
-    'The first turn must expose one server start, deadline and time anchor.'
-);
-$assert(
-    str_contains($clock, 'return array_replace($public, [')
-        && str_contains($clock, "'time_left' => \$timeLeft")
-        && str_contains($clock, "'move_timeout_sec' => MGW_V111_MOVE_TIMEOUT_SEC"),
+    str_contains($clockService, 'return array_replace($public, [')
+        && str_contains($clockService, "'time_left' => \$timeLeft")
+        && str_contains($clockService, "'move_timeout_sec' => self::MOVE_TIMEOUT_SEC"),
     'The authoritative projection must replace legacy time_left rather than lose to PHP array-union precedence.'
 );
 $assert(
-    str_contains($clock, "'v106_first_turn_clock_armed_at'")
-        && str_contains($clock, "\$game['turn_started_at'] = \$now;")
-        && str_contains($clock, "\$games->publicGame(\$game, \$userId)"),
+    str_contains($clockEndpoint, "'v106_first_turn_clock_armed_at'")
+        && str_contains($clockEndpoint, "\$game['turn_started_at'] = \$now;")
+        && str_contains($clockEndpoint, "\$games->publicGame(\$game, \$userId)"),
     'Requests without v111 protocol must preserve the accepted v106 bot-clock rollback.'
 );
 $assert(
-    str_contains($actions, 'TURN_HANDOFF_DELAY_SEC = 1')
-        && str_contains($actions, 'synchronizeTurnHandoff')
-        && str_contains($actions, "\$game['turn_deadline_at'] = gmdate('c', \$startsAt + self::MOVE_TIMEOUT_SEC)"),
-    'Every engine turn change must receive the same future handoff contract.'
+    str_contains($actions, "require_once __DIR__ . '/MatchPreparationClockService.php';")
+        && str_contains($actions, '$this->matchClock->assertLaunchReady($game)')
+        && str_contains($actions, '$this->matchClock->synchronizeTurnHandoff('),
+    'Every game engine action must use the same launch guard and turn-handoff service.'
 );
 $assert(
     str_contains($actions, "if (\$requestedActionType === 'cancel_preparation')")
-        && str_contains($actions, "'category' => 'game_preparation_refund'")
-        && str_contains($actions, "\$game['v111_preparation_refund_done'] = true"),
-    'Preparation timeout settlement must be idempotent in the primary game action.'
+        && str_contains($actions, '$this->matchClock->settlePreparationTimeout(')
+        && str_contains($clockService, "'category' => 'game_preparation_refund'")
+        && str_contains($clockService, "\$game['v111_preparation_refund_done'] = true"),
+    'Preparation timeout settlement must be idempotent and entered through primary game_action.'
 );
 $assert(
-    !str_contains($clock, "'category' => 'game_preparation_refund'")
-        && str_contains($clock, 'Financial settlement must go through api.php'),
+    !str_contains($clockEndpoint, "'category' => 'game_preparation_refund'")
+        && str_contains($clockService, 'Settlement must run through api.php'),
     'The clock endpoint must never perform financial settlement outside primary API hooks.'
 );
 $assert(
     str_contains($runtime, "originalGameAction(id, { type:'cancel_preparation' })")
-        && str_contains($runtime, "runtime.timeoutSettling.add(id)")
-        && str_contains($runtime, "runtime.timeoutSettling.delete(id)"),
+        && str_contains($runtime, 'runtime.timeoutSettling.add(id)')
+        && str_contains($runtime, 'runtime.timeoutSettling.delete(id)'),
     'The client must settle an expired preparation once through api.php.'
 );
 $assert(
@@ -123,7 +134,7 @@ $assert(
     str_contains($runtime, 'Math.ceil((deadline - serverNow) / 1000)')
         && str_contains($runtime, 'serverNow < startsAt')
         && str_contains($runtime, '? timeout'),
-    'The visible clock must display 60 before the synchronized start and count from the server deadline.'
+    'The visible clock must display 60 before synchronized start and count from the server deadline.'
 );
 $assert(
     str_contains($php, 'production-clean-entry-v111.js?v=111')
