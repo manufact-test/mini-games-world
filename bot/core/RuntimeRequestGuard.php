@@ -3,6 +3,19 @@ declare(strict_types=1);
 
 final class RuntimeRequestGuard
 {
+    private const MAINTENANCE_BLOCKED_SCRIPTS = [
+        'api.php',
+        'invites.php',
+        'notifications.php',
+        'invite-opponents.php',
+        'game-clock.php',
+        'game-live-v108.php',
+        'search-speed.php',
+        'shop-history.php',
+    ];
+
+    private const ACTION_GUARDED_SCRIPTS = ['api.php', 'invites.php'];
+
     public static function enforce(array $config, array $server): void
     {
         $method = strtoupper((string)($server['REQUEST_METHOD'] ?? ''));
@@ -10,7 +23,7 @@ final class RuntimeRequestGuard
 
         $path = (string)(parse_url((string)($server['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
         $script = basename($path !== '' ? $path : (string)($server['SCRIPT_NAME'] ?? ''));
-        if (!in_array($script, ['api.php', 'invites.php'], true)) return;
+        if (!in_array($script, self::MAINTENANCE_BLOCKED_SCRIPTS, true)) return;
 
         $payload = self::payload();
         $reason = self::blockReason($config, $script, $payload);
@@ -22,12 +35,17 @@ final class RuntimeRequestGuard
     public static function blockReason(array $config, string $script, array $payload): ?string
     {
         $script = basename(trim($script));
-        if (!in_array($script, ['api.php', 'invites.php'], true)) return null;
+        if (!in_array($script, self::MAINTENANCE_BLOCKED_SCRIPTS, true)) return null;
+
+        $flags = new FeatureFlagService($config);
+        if ($flags->maintenanceEnabled()) {
+            return $flags->maintenanceMessage();
+        }
+
+        if (!in_array($script, self::ACTION_GUARDED_SCRIPTS, true)) return null;
 
         $action = trim((string)($payload['action'] ?? ''));
         if ($action === '') return null;
-
-        $flags = new FeatureFlagService($config);
 
         if ($script === 'api.php') {
             return match ($action) {
