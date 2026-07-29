@@ -48,7 +48,7 @@ foreach (['game_state', 'game_action', 'make_move', 'leave_game'] as $action) {
             'action' => $action,
             'gameType' => 'domino',
         ]),
-        "Active-game action {$action} must remain allowed"
+        "Ordinary runtime action {$action} must preserve the existing behavior"
     );
 }
 
@@ -56,23 +56,50 @@ $maintenance = [
     'feature_flags' => [
         'maintenance_mode' => true,
         'maintenance_message' => 'Плановые работы',
+        'financial_read_only' => true,
+        'database_runtime' => [
+            'enabled' => true,
+            'production_activated' => true,
+            'rollback_driver' => 'json',
+            'modules' => array_fill_keys([
+                'accounts', 'realtime', 'invites', 'notifications', 'economy',
+                'history', 'shop', 'payments', 'weekly_bonus',
+            ], true),
+        ],
     ],
 ];
-$assertSame(
-    'Плановые работы',
-    RuntimeRequestGuard::blockReason($maintenance, 'api.php', [
-        'action' => 'start_search',
-        'gameType' => 'tictactoe',
-    ]),
-    'Maintenance must block new matchmaking'
-);
-foreach (['game_state', 'game_action', 'make_move', 'leave_game'] as $action) {
+$maintenanceBefore = serialize($maintenance);
+foreach ([
+    'api.php',
+    'invites.php',
+    'notifications.php',
+    'invite-opponents.php',
+    'game-clock.php',
+    'game-live-v108.php',
+    'search-speed.php',
+    'shop-history.php',
+] as $script) {
     $assertSame(
-        null,
-        RuntimeRequestGuard::blockReason($maintenance, 'api.php', ['action' => $action]),
-        "Maintenance must not block active-game action {$action}"
+        'Плановые работы',
+        RuntimeRequestGuard::blockReason($maintenance, $script, []),
+        "Maintenance must block {$script} before any action or storage mutation"
     );
 }
+foreach (['bootstrap', 'stats', 'game_state', 'game_action', 'make_move', 'leave_game', 'support'] as $action) {
+    $assertSame(
+        'Плановые работы',
+        RuntimeRequestGuard::blockReason($maintenance, 'api.php', ['action' => $action]),
+        "Maintenance must block API action {$action}"
+    );
+}
+foreach (['sync', 'seen', 'decline', 'cancel', 'discard_draft', 'accept', 'start', 'rematch'] as $action) {
+    $assertSame(
+        'Плановые работы',
+        RuntimeRequestGuard::blockReason($maintenance, 'invites.php', ['action' => $action]),
+        "Maintenance must block invitation action {$action}"
+    );
+}
+$assertSame($maintenanceBefore, serialize($maintenance), 'Maintenance guard must not alter DB runtime configuration');
 
 $readOnly = [
     'feature_flags' => [
@@ -92,7 +119,7 @@ $assertContains(
 $assertSame(
     null,
     RuntimeRequestGuard::blockReason($readOnly, 'api.php', ['action' => 'game_action']),
-    'Financial read-only must not block settlement-producing active gameplay'
+    'Financial read-only alone must preserve active gameplay settlement behavior'
 );
 
 $invitesOff = [
@@ -114,14 +141,19 @@ foreach (['sync', 'seen', 'decline', 'cancel', 'discard_draft'] as $action) {
     $assertSame(
         null,
         RuntimeRequestGuard::blockReason($invitesOff, 'invites.php', ['action' => $action]),
-        "Cleanup/read invitation action {$action} must remain allowed"
+        "Cleanup/read invitation action {$action} must remain allowed outside maintenance"
     );
 }
 
 $assertSame(
     null,
     RuntimeRequestGuard::blockReason($maintenance, 'webhook.php', ['action' => 'start_search']),
-    'Unrelated endpoints must not be intercepted'
+    'Webhook must use its Telegram-aware maintenance guard'
+);
+$assertSame(
+    null,
+    RuntimeRequestGuard::blockReason($maintenance, 'weekly-match.php', ['action' => 'run']),
+    'Cron must remain outside the user-request guard'
 );
 
 fwrite(STDOUT, "RuntimeRequestGuardTest: {$assertions} assertions passed\n");
