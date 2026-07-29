@@ -93,9 +93,9 @@ $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=110')
         && str_contains($php, 'main-v110.js?v=110')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v110.php?v=110')
-        && str_contains($welcome, 'Historical no-store entrypoints remain explicit rollback'),
-    'New Telegram launches must select the no-store v110 candidate while historical builds remain rollback-only.'
+        && str_contains($welcome, '/app/v109.php?v=109')
+        && str_contains($welcome, 'v110 remains an isolated candidate'),
+    'The v110 no-store candidate must exist without changing the active Telegram launch before approval.'
 );
 $assert(
     !str_contains($runtime, '/bot/game-clock.php')
