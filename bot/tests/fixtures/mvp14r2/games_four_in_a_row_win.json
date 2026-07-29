@@ -1,0 +1,28 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "games_four_in_a_row_win",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T16:00:00+00:00"},
+  "random_seed": 140242,
+  "id_sequence": {"tx": ["tx_games_four_in_a_row_win_1", "tx_games_four_in_a_row_win_2", "tx_games_four_in_a_row_win_3", "tx_games_four_in_a_row_win_4"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "u1": {"id": "u1", "username": "alice", "first_name": "Alice", "balance_match": 90, "balance_gold": 50, "status": "playing", "current_game_id": "game_four_001", "stats": {"games_played": 0, "wins": 0, "losses": 0, "draws": 0, "match_games_this_week": 0}},
+      "u2": {"id": "u2", "username": "bob", "first_name": "Bob", "balance_match": 90, "balance_gold": 50, "status": "playing", "current_game_id": "game_four_001", "stats": {"games_played": 0, "wins": 0, "losses": 0, "draws": 0, "match_games_this_week": 0}}
+    },
+    "games": {
+      "game_four_001": {"id": "game_four_001", "game_type": "four_in_a_row", "room": "match", "bet": 10, "bank": 20, "board_size": 7, "board_columns": 7, "board_rows": 6, "player_ids": ["u1", "u2"], "player_names": {"u1": "Alice", "u2": "Bob"}, "turn": "u1", "status": "active", "winner_id": null, "loser_id": null, "finish_reason": null, "payout_done": false, "created_at": "2026-07-29T15:59:00+00:00", "updated_at": "2026-07-29T15:59:55+00:00", "last_move_at": "2026-07-29T15:59:55+00:00", "turn_started_at": "2026-07-29T15:59:55+00:00", "is_bot_game": false, "board": "---------------------Y------Y------Y------", "symbols": {"u1": "Y", "u2": "R"}, "winning_cells": [], "last_move": 21}
+    },
+    "transactions": [], "invites": [], "notifications": [], "system": {}
+  },
+  "scenario": {
+    "id": "games.four-in-a-row.win",
+    "input": {"game_id": "game_four_001", "viewer_id": "u1", "config": {"commission_rate": 0.1, "move_timeout_sec": 60}, "workflow": [
+      {"action": "observe", "actor_id": "u1", "offset_sec": 0},
+      {"action": "column", "actor_id": "u1", "column": 7, "expect_error": "Выберите доступный столбец.", "offset_sec": 1},
+      {"action": "column", "actor_id": "u1", "column": 0, "offset_sec": 2},
+      {"action": "column", "actor_id": "u1", "column": 0, "offset_sec": 3},
+      {"action": "rematch_projection", "actor_id": "u2", "offset_sec": 4}
+    ]}
+  }
+}
