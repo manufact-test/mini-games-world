@@ -93,6 +93,10 @@ $requiredBootstrapFiles = [
     'RuntimeStorageRouter.php',
     'RuntimePrimaryProjectionAuditorInterface.php',
     'RuntimePrimaryRepositoryProjectorFactory.php',
+    'RuntimeEconomyBalanceBootstrapService.php',
+    'LegacyEconomyDeltaImportService.php',
+    'LegacyEconomyRuntimeReconciliationService.php',
+    'WeeklyMatchEconomyService.php',
     'ProductionPrimaryRollbackExportGate.php',
     'ProductionPrimaryRollbackExportVerifier.php',
     'ProductionPrimaryRollbackExportService.php',
@@ -171,6 +175,10 @@ $assertTrue(
 
 require_once $bootstrapPath;
 foreach ([
+    'RuntimeEconomyBalanceBootstrapService',
+    'LegacyEconomyDeltaImportService',
+    'LegacyEconomyRuntimeReconciliationService',
+    'WeeklyMatchEconomyService',
     'ProductionPrimaryRollbackExportGate',
     'ProductionPrimaryRollbackExportVerifier',
     'ProductionPrimaryRollbackExportService',
