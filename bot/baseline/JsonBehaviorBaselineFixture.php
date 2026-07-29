@@ -121,7 +121,7 @@ final class JsonBehaviorBaselineFixture
 
         $clock = $data['clock'] ?? null;
         if (!is_array($clock)
-            || ($clock['timezone']'] ?? null) !== 'UTC'
+            || ($clock['timezone'] ?? null) !== 'UTC'
             || !is_string($clock['now'] ?? null)) {
             throw new RuntimeException('Baseline fixture clock is invalid.');
         }
