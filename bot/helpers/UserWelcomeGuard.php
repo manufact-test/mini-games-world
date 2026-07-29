@@ -24,8 +24,11 @@ final class UserWelcomeGuard
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
         // Current production target: v109 speed/UI-only layer over the accepted v105 graph.
-        // v110 remains an isolated candidate until explicit deployment and launch approval.
-        // Retained explicit no-store rollback/investigation entrypoints include v96-v108.
+        // Retained explicit no-store rollback/investigation entrypoints:
+        // '/app/v96.php?v=96', '/app/v97.php?v=97', '/app/v98.php?v=98', '/app/v99.php?v=99',
+        // '/app/v100.php?v=100', '/app/v101.php?v=101', '/app/v102.php?v=102', '/app/v103.php?v=103',
+        // '/app/v104.php?v=104', '/app/v105.php?v=105', '/app/v106.php?v=106', '/app/v107.php?v=107',
+        // '/app/v108.php?v=108'.
         $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v109.php?v=109';
         if ($baseWebAppUrl === '/app/v109.php?v=109') return false;
 
