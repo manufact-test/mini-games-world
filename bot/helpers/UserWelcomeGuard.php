@@ -23,11 +23,11 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        // Current candidate: v110 root-owner acceptance fixes over the accepted
-        // v105 shell. Historical no-store entrypoints remain explicit rollback
-        // and investigation targets, including v109.
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v110.php?v=110';
-        if ($baseWebAppUrl === '/app/v110.php?v=110') return false;
+        // Current production target: v109 speed/UI-only layer over the accepted v105 graph.
+        // v110 remains an isolated candidate until explicit deployment and launch approval.
+        // Retained explicit no-store rollback/investigation entrypoints include v96-v108.
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v109.php?v=109';
+        if ($baseWebAppUrl === '/app/v109.php?v=109') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
