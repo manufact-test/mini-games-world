@@ -38,17 +38,17 @@ $legacyV105Ttt = $read('app/assets/js/production-v105-tictactoe-stability.js');
 $legacyV109Notifications = $read('app/assets/js/production-v109-notifications.js');
 
 $assert(
-    str_contains($main, "import './main-v110-handoff-shell.js?v=1104';")
-        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r3-surrender-home-queue'")
-        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r3-surrender-home-queue'"),
-    'v110 must publish the surrender-home lifecycle through a fresh isolated shell.'
+    str_contains($main, "import './main-v110-handoff-shell.js?v=1105';")
+        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r3-invite-notification-speed'")
+        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r3-invite-notification-speed'"),
+    'v110 must publish the invite and notification speed build through a fresh isolated shell.'
 );
 
 $assert(
     $count($entry, 'initV110AcceptanceRuntime();') === 1
         && $count($entry, 'initV110TargetedInteractions();') === 1
         && $count($entry, 'initV110MatchLifecycle();') === 1
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-surrender-home-queue'"),
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-invite-notification-speed'"),
     'Every retained v110 owner must initialize exactly once.'
 );
 
@@ -67,7 +67,7 @@ $assert(
 
 $assert(
     $count($shell, 'initGameInvites();') === 1
-        && str_contains($shell, "from './games/game-invites.js?v=85'")
+        && str_contains($shell, "from './games/game-invites.js?v=1105'")
         && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
     'games/game-invites.js must be the single active invitation action and rematch owner.'
 );
@@ -118,10 +118,11 @@ $assert(
 
 $assert(
     str_contains($notifications, 'const seed = toastItem ? [cloneItem(toastItem)] : currentItems();')
+        && str_contains($notifications, 'mergeItems(seedItems);')
         && str_contains($notifications, 'if (immediate.length) renderNotifications(immediate);')
-        && str_contains($notifications, 'const visible = mergeNotificationItems(serverItems, immediate);')
+        && str_contains($notifications, 'const visible = mergeNotificationItems(serverItems, currentItems());')
         && str_contains($notifications, 'void rawNotifications(true).catch(() => null);'),
-    'Toast click must carry the exact live server item into the visible sheet before any network refresh.'
+    'Toast click must merge the exact live server item into the visible sheet before any network refresh.'
 );
 
 $assert(
@@ -168,11 +169,12 @@ $assert(
 );
 
 $assert(
-    str_contains($shell, "notifications-screen-v110.js?v=1103")
+    str_contains($shell, "notifications-screen-v110.js?v=1105")
+        && str_contains($shell, "games/game-invites.js?v=1105")
         && str_contains($entry, "production-v110-match-lifecycle.js?v=1104")
-        && str_contains($php, 'production-clean-entry-v110.js?v=1104')
-        && str_contains($php, 'main-v110.js?v=1104')
-        && str_contains($php, 'data-hotfix-build="v110-mvp14r3-surrender-home-queue"'),
+        && str_contains($php, 'production-clean-entry-v110.js?v=1105')
+        && str_contains($php, 'main-v110.js?v=1105')
+        && str_contains($php, 'data-hotfix-build="v110-mvp14r3-invite-notification-speed"'),
     'Every changed v110 browser owner must be reached through a fresh cache-busted URL.'
 );
 
