@@ -114,7 +114,7 @@ $assert(str_contains($launch, "runtime:'mgw-clean-v1'") && str_contains($launch,
 $assert(str_contains($apiPhp, "RuntimeConfig::fromEnvironment()") && str_contains($apiPhp, "new JsonFileRuntimeRepository"), 'Clean endpoint must construct one explicit staging adapter.');
 $assert(substr_count($allPhp, 'implements RuntimeRepository') === 1, 'The clean server must contain exactly one repository adapter implementation.');
 $assert(str_contains($config, "environment: 'staging'") && str_contains($config, "MGW_CLEAN_RUNTIME_DATA_DIR"), 'Clean server config must be staging-only and separately configurable.');
-$assert(str_contains($repository, "flock($lock, LOCK_EX)") && str_contains($repository, "rename($temporary, $this->stateFile)"), 'Clean JSON adapter must lock and publish atomically.');
+$assert(str_contains($repository, 'flock($lock, LOCK_EX)') && str_contains($repository, 'rename($temporary, $this->stateFile)'), 'Clean JSON adapter must lock and publish atomically.');
 $assert(!str_contains($repository, 'invite_token'), 'Clean staging persistence must not store invite tokens.');
 
 fwrite(STDOUT, "Mvp14R3CleanRuntimeArchitectureContractTest: {$assertions} assertions passed\n");
