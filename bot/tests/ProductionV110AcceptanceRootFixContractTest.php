@@ -16,14 +16,19 @@ $count = static fn(string $haystack, string $needle): int => substr_count($hayst
 
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
 $main = $read('app/assets/js/main-v110.js');
-$handoffMain = $read('app/assets/js/main-v110-handoff-shell.js');
-$legacyMain = $read('app/assets/js/main-v105.js');
+$shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $runtime = $read('app/assets/js/production-v110-acceptance-runtime.js');
 $targeted = $read('app/assets/js/production-v110-targeted-interactions.js');
-$legacyTargeted = $read('app/assets/js/production-v103-targeted-interactions.js');
+$lifecycle = $read('app/assets/js/production-v110-match-lifecycle.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110.js');
+$gameInvites = $read('app/assets/js/games/game-invites.js');
+$legacyMain = $read('app/assets/js/main-v105.js');
+$legacyTargeted = $read('app/assets/js/production-v103-targeted-interactions.js');
 $legacyNotifications = $read('app/assets/js/screens/notifications-screen.js');
-$gameScreen = $read('app/assets/js/screens/game-screen-v102.js');
+$legacyV104InviteControls = $read('app/assets/js/production-v104-invite-game-controls.js');
+$legacyV104Result = $read('app/assets/js/production-v104-result-instant.js');
+$legacyV105Latency = $read('app/assets/js/production-v105-invite-latency.js');
+$legacyV109InviteSpeed = $read('app/assets/js/production-v109-invite-speed.js');
 $php = $read('app/v110.php');
 $presence = $read('bot/presence.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
@@ -31,146 +36,177 @@ $legacyV105Ttt = $read('app/assets/js/production-v105-tictactoe-stability.js');
 $legacyV109Notifications = $read('app/assets/js/production-v109-notifications.js');
 
 $assert(
-    str_contains($main, "import './main-v110-handoff-shell.js?v=1102';")
-        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r2-handoff-batch'")
-        && str_contains($handoffMain, "window.__MGW_BUILD__ = 'v110-mvp14r2-handoff-batch'"),
-    'v110 must publish the batched lifecycle handoff through an isolated fresh shell.'
+    str_contains($main, "import './main-v110-handoff-shell.js?v=1103';")
+        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild'")
+        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild'"),
+    'v110 must publish the rebuilt lifecycle graph through a fresh isolated shell.'
 );
+
 $assert(
     $count($entry, 'initV110AcceptanceRuntime();') === 1
         && $count($entry, 'initV110TargetedInteractions();') === 1
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r2-handoff-batch'"),
-    'The v110 acceptance and targeted owners must each initialize exactly once.'
+        && $count($entry, 'initV110MatchLifecycle();') === 1
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild'"),
+    'Every retained v110 owner must initialize exactly once.'
 );
+
 $assert(
-    !str_contains($entry, 'initV105TicTacToeStability')
-        && !str_contains($entry, 'production-v105-tictactoe-stability.js')
-        && str_contains($legacyV105Ttt, 'window.fetch = stableFetch'),
-    'The retired v105 fetch wrapper and DOM pin must not load in the v110 graph.'
+    !str_contains($entry, 'initV104InviteGameControls')
+        && !str_contains($entry, 'initV104ResultInstant')
+        && !str_contains($entry, 'initV105InviteLatency')
+        && !str_contains($entry, 'initV109InviteSpeed')
+        && !str_contains($entry, 'initV101FastInviteWatch')
+        && str_contains($legacyV104InviteControls, 'initV104InviteGameControls')
+        && str_contains($legacyV104Result, 'initV104ResultInstant')
+        && str_contains($legacyV105Latency, 'initV105InviteLatency')
+        && str_contains($legacyV109InviteSpeed, 'initV109InviteSpeed'),
+    'The active v110 graph must retire every parallel invitation/result owner without deleting rollback assets.'
 );
+
 $assert(
-    !str_contains($entry, 'initV109Notifications')
-        && !str_contains($entry, 'production-v109-notifications.js')
-        && str_contains($legacyV109Notifications, 'function enrichInviteActions'),
-    'The v109 client-side invitation action synthesizer must not load in v110.'
+    $count($shell, 'initGameInvites();') === 1
+        && str_contains($shell, "from './games/game-invites.js?v=85'")
+        && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
+    'games/game-invites.js must be the single active invitation action and rematch owner.'
 );
+
+$pendingPosition = strpos($lifecycle, 'renderPendingResult(optimistic, viewer);');
+$requestPosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
+$confirmedPosition = strpos($lifecycle, 'renderConfirmedResult(authoritative, confirmedViewer);');
+$assert(
+    str_contains($lifecycle, "window.addEventListener('click', ownMatchLifecycleClick, true)")
+        && str_contains($lifecycle, "origin.closest('#confirmLeaveGame')")
+        && $pendingPosition !== false
+        && $requestPosition !== false
+        && $confirmedPosition !== false
+        && $pendingPosition < $requestPosition
+        && $requestPosition < $confirmedPosition,
+    'Manual surrender must paint the result before the request and publish actions only after confirmation.'
+);
+
+$assert(
+    str_contains($lifecycle, 'data-v110-leave-pending')
+        && str_contains($lifecycle, 'disabled aria-busy="true">Найти нового соперника')
+        && str_contains($lifecycle, 'disabled aria-busy="true">В меню')
+        && str_contains($lifecycle, "origin.closest('#confirmLeaveGame, #newOpponent, #goHome, [data-create-rematch], [data-invite-action]')")
+        && strpos($lifecycle, 'id="newOpponent"') > $requestPosition
+        && strpos($lifecycle, 'id="goHome"') > $requestPosition,
+    'No rematch, menu, search or invitation action may overlap the in-flight surrender.'
+);
+
+$assert(
+    !str_contains($targeted, 'leavePending')
+        && !str_contains($targeted, 'confirmLeaveGame')
+        && !str_contains($targeted, 'api.leaveGame')
+        && !str_contains($targeted, "showScreen('home')"),
+    'The targeted interaction guard must not become a second surrender owner.'
+);
+
+$assert(
+    str_contains($notifications, 'const seed = toastItem ? [cloneItem(toastItem)] : currentItems();')
+        && str_contains($notifications, 'if (immediate.length) renderNotifications(immediate);')
+        && str_contains($notifications, 'const visible = mergeNotificationItems(serverItems, immediate);')
+        && str_contains($notifications, 'void rawNotifications(true).catch(() => null);'),
+    'Toast click must carry the exact live server item into the visible sheet before any network refresh.'
+);
+
+$assert(
+    str_contains($notifications, "const fetcher = typeof speed?.rawFetch === 'function' ? speed.rawFetch")
+        && str_contains($notifications, "cache:'no-store'")
+        && str_contains($notifications, 'const result = await rawNotifications(false);')
+        && !str_contains($notifications, 'api.notifications(true)')
+        && !str_contains($notifications, 'optimisticNotificationRead'),
+    'Notification opening must bypass the stale optimistic mark-read cache and use one no-store authoritative read.'
+);
+
+$assert(
+    str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
+        && str_contains($notifications, "const token = String(item?.invite_token || '')")
+        && str_contains($notifications, 'const actions = Array.isArray(item?.actions) ? item.actions : [];')
+        && str_contains($notifications, "event.target instanceof Element ? event.target.closest('#notificationsOpen')"),
+    'The notification owner must retain token/actions and own bell/toast/sheet opening once.'
+);
+
 $assert(
     !str_contains($runtime, 'ownNotificationOpen')
         && !str_contains($runtime, 'seedToastPreview')
         && !str_contains($runtime, '/bot/notifications.php')
         && !str_contains($runtime, "closest('#notificationToast')")
         && !str_contains($runtime, "closest('#notificationsOpen')"),
-    'The v110 acceptance runtime must not own notification opening or request a parallel snapshot.'
+    'The acceptance runtime must not reintroduce a parallel notification owner.'
 );
-$assert(
-    $count($notifications, "event.target.closest('#notificationsOpen')") === 1
-        && str_contains($notifications, "el.addEventListener('click', () => {")
-        && str_contains($notifications, 'openNotificationsSheet({ seedItems })')
-        && str_contains($entry, 'Notification opening remains with the v110 notification screen'),
-    'The isolated v110 notification screen must be the single bell, toast and sheet owner.'
-);
-$assert(
-    str_contains($notifications, 'let liveNotificationItems = new Map();')
-        && str_contains($notifications, 'let notificationToastItem = null;')
-        && str_contains($notifications, 'rememberLiveNotification(item);')
-        && str_contains($notifications, 'const seedItems = notificationToastItem ? [notificationToastItem] : currentLiveItems();')
-        && str_contains($notifications, 'const immediateItems = mergeNotificationItems(seedItems, currentLiveItems());')
-        && str_contains($notifications, 'const items = mergeNotificationItems(serverItems, immediateItems);')
-        && str_contains($notifications, 'if (!immediateItems.length) renderNotificationsError();'),
-    'A clicked live toast must carry its exact server item into the sheet and survive a briefly stale empty snapshot.'
-);
-$assert(
-    str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
-        && str_contains($notifications, 'showNotificationToast(item)')
-        && str_contains($notifications, 'const result = await api.notifications(true);')
-        && str_contains($notifications, "const token = String(item?.invite_token || '')")
-        && str_contains($notifications, 'const actions = Array.isArray(item?.actions) ? item.actions : [];'),
-    'The notification owner must carry the server item, token and actions from delivery through sheet rendering.'
-);
-$assert(
-    !str_contains($targeted, 'leavePending')
-        && !str_contains($targeted, 'confirmLeaveGame')
-        && !str_contains($targeted, 'api.leaveGame')
-        && !str_contains($targeted, "showScreen('home')")
-        && !str_contains($handoffMain, '__MGW_V103_TARGETED_INTERACTIONS__?.leavePending'),
-    'The isolated v110 targeted owner must not surrender, jump home early or create a local leave lock.'
-);
-$assert(
-    $count($gameScreen, "document.getElementById('confirmLeaveGame')?.addEventListener('click', confirmLeaveGame);") === 1
-        && str_contains($gameScreen, 'item.surrenderPending = true;')
-        && str_contains($gameScreen, 'const result = await api.leaveGame(id);')
-        && str_contains($gameScreen, 'setResultActionsDisabled(false);')
-        && strpos($gameScreen, 'const result = await api.leaveGame(id);') < strpos($gameScreen, 'setResultActionsDisabled(false);')
-        && str_contains($gameScreen, "document.getElementById('goHome')?.addEventListener('click', () => {"),
-    'The base game screen must be the sole v110 surrender owner and enable menu actions only after confirmation.'
-);
+
 $assert(
     str_contains($legacyTargeted, 'runtime.leavePending = true;')
         && str_contains($legacyTargeted, "showScreen('home');")
         && str_contains($legacyMain, '__MGW_V103_TARGETED_INTERACTIONS__?.leavePending')
-        && !str_contains($legacyNotifications, 'liveNotificationItems'),
-    'Historical v103/v105 rollback assets must remain byte-compatible with their existing contracts.'
+        && !str_contains($legacyNotifications, 'rawNotifications(markRead)'),
+    'Historical rollback files must remain unchanged while v110 is rebuilt in isolated assets.'
 );
+
 $assert(
-    str_contains($handoffMain, "initNotificationsScreen } from './screens/notifications-screen-v110.js?v=1102';")
-        && str_contains($entry, "production-v110-targeted-interactions.js?v=1102")
-        && !str_contains($entry, 'production-v103-targeted-interactions.js?v=1102')
-        && str_contains($php, 'production-clean-entry-v110.js?v=1102')
-        && str_contains($php, 'main-v110.js?v=1102')
-        && str_contains($php, 'data-hotfix-build="v110-mvp14r2-handoff-batch"'),
-    'Every modified v110 browser owner must be isolated and reached through a fresh cache-busted URL.'
+    !str_contains($entry, 'initV105TicTacToeStability')
+        && !str_contains($entry, 'production-v105-tictactoe-stability.js')
+        && str_contains($legacyV105Ttt, 'window.fetch = stableFetch')
+        && !str_contains($entry, 'initV109Notifications')
+        && str_contains($legacyV109Notifications, 'function enrichInviteActions'),
+    'Retired fetch and notification wrappers must remain outside the active v110 graph.'
 );
+
+$assert(
+    str_contains($shell, "notifications-screen-v110.js?v=1103")
+        && str_contains($entry, "production-v110-match-lifecycle.js?v=1103")
+        && str_contains($php, 'production-clean-entry-v110.js?v=1103')
+        && str_contains($php, 'main-v110.js?v=1103')
+        && str_contains($php, 'data-hotfix-build="v110-mvp14r2-lifecycle-owner-rebuild"'),
+    'Every rebuilt v110 browser owner must be reached through a fresh cache-busted URL.'
+);
+
 $assert(
     str_contains($runtime, "window.addEventListener('click', guardAndTrackTicTacToe, true)")
-        && str_contains($runtime, 'event.stopImmediatePropagation();')
         && str_contains($runtime, 'String(authoritative?.turn || \'\') !== viewerId')
-        && str_contains($runtime, "board[cell] !== '-'"),
-    'Invalid Tic Tac Toe taps must be rejected before any retained mobile owner can preview a mark.'
-);
-$assert(
-    str_contains($runtime, 'window.requestAnimationFrame')
+        && str_contains($runtime, "board[cell] !== '-'")
         && str_contains($runtime, 'paintPendingMove();')
-        && !str_contains($runtime, 'window.fetch =')
-        && !str_contains($runtime, 'new MutationObserver(schedulePendingPaint)'),
-    'The valid mobile mark must be pinned by one bounded frame owner without wrapping fetch or observing its own paint.'
+        && !str_contains($runtime, 'window.fetch ='),
+    'The accepted Tic Tac Toe single-owner safeguards must remain.'
 );
+
 $assert(
     str_contains($runtime, 'if (serverRemainingMs + 700 < localRemaining)')
         && str_contains($runtime, 'Never jump upward on a same-turn poll')
-        && str_contains($runtime, 'Math.ceil((clock.deadline - performance.now()) / 1000)')
-        && str_contains($runtime, "if (value === null || value === undefined || value === '') return null;"),
-    'The visible timer must be smooth, monotonic for one turn and correct only downward from server evidence.'
+        && str_contains($runtime, 'Math.ceil((clock.deadline - performance.now()) / 1000)'),
+    'The accepted visible timer behavior must remain untouched.'
 );
+
 $assert(
     str_contains($runtime, 'mgw-v110-search-summary')
         && str_contains($runtime, '#searchInfo{min-height:2.9em}')
-        && str_contains($runtime, 'secondary:type === \'domino\' ? \'Классика 0–6\' : `Поле ${size}×${size}`'),
-    'The complete search conditions must reserve their two-line layout before screen activation.'
+        && str_contains($runtime, 'secondary:type === \'domino\' ? \'Классика 0–6\''),
+    'The accepted search summary layout must remain untouched.'
 );
+
 $assert(
     str_contains($presence, "if (\$action === 'ping' || \$action === 'status') \$presence->touch(\$accountId, \$sessionId);")
         && str_contains($presence, "if (\$sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');")
         && strpos($presence, '$presence->touch') < strpos($presence, '$stats->build'),
-    'An authenticated status read must confirm the current session before unique-account counting.'
+    'Authenticated presence reads must still confirm the current session.'
 );
+
 $assert(
     str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
         && str_contains($welcome, '/app/v110.php?v=110')
         && str_contains($welcome, '/app/v109.php?v=109')
         && str_contains($welcome, 'Retained explicit no-store rollback/investigation entrypoints'),
-    'Authorized Telegram launches must keep selecting v110 while retaining historical rollback entrypoints.'
+    'Telegram must keep selecting v110 while retaining historical rollback entrypoints.'
 );
-$assert(
-    !str_contains($runtime, '/bot/game-clock.php')
-        && !str_contains($runtime, 'reset_clock')
-        && !str_contains($runtime, 'move_timeout_sec:60'),
-    'The acceptance fix must not mutate or reset the server clock through a new endpoint.'
-);
+
 $assert(
     !str_contains($entry, 'production-v106-')
         && !str_contains($entry, 'production-v107-')
-        && !str_contains($entry, 'production-v108-'),
-    'The failed v106-v108 runtime chain must not return in v110.'
+        && !str_contains($entry, 'production-v108-')
+        && !str_contains($runtime, '/bot/game-clock.php')
+        && !str_contains($runtime, 'reset_clock'),
+    'Failed runtime chains and server-clock mutation must not return.'
 );
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");

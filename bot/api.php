@@ -194,9 +194,10 @@ try {
         // благодаря cycle key на пользователе.
         $weeklyMatch->applyDueForUser($data, $user);
 
-        // Cleanup scans all stored games, so background reads share one global pass.
-        // Mutating game actions still force cleanup before validation.
-        $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move', 'leave_game'], true);
+        // Game polling already performs the bounded two-second cleanup cadence.
+        // Manual surrender must not force a full scan of every stored game before
+        // it can finish one known game and release the current session.
+        $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move'], true);
         mgw_cleanup_games_if_due($data, $games, $forceCleanup);
 
         switch ($action) {

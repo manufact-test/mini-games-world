@@ -7,34 +7,30 @@ import { initV101PollTuning } from './production-v101-poll-tuning.js?v=101';
 import { initV101SpeedRuntime } from './production-v101-speed-runtime.js?v=101';
 import { initV101InviteSyncDedupe } from './production-v101-invite-sync-dedupe.js?v=101';
 import { initV101CacheSafety } from './production-v101-cache-safety.js?v=101';
-import { initV101FastInviteWatch } from './production-v101-fast-invite-watch.js?v=101';
 import { initV102BattleshipBridge } from './production-v102-battleship-bridge.js?v=102';
 import { initV102HistoryController } from './production-v102-history-controller.js?v=102';
-import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
 import { initV104GamePollTuning } from './production-v104-game-poll-tuning.js?v=104';
-import { initV104InviteGameControls } from './production-v104-invite-game-controls.js?v=104';
-import { initV104ResultInstant } from './production-v104-result-instant.js?v=104';
-import { initV105InviteLatency } from './production-v105-invite-latency.js?v=105';
-import { initV109InviteSpeed } from './production-v109-invite-speed.js?v=109';
 import { initV109SelfCancelRefreshGuard } from './production-v109-self-cancel-refresh-guard.js?v=109';
 import { initV109ShareFallbackGuard } from './production-v109-share-fallback-guard.js?v=109';
 import { initV109ShareSpeed } from './production-v109-share-speed.js?v=109';
 import { initV109Presence } from './production-v109-presence.js?v=109';
 import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
 import { initV110AcceptanceRuntime } from './production-v110-acceptance-runtime.js?v=110';
+import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1103';
+import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r2-handoff-batch';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild';
 
-// Notification opening remains with the v110 notification screen, which carries
-// the exact live server item into the sheet. Match surrender remains with the
-// base game screen; the v110 targeted guard has no immediate-home leave flow.
+// v110 keeps one invitation owner (games/game-invites.js), one notification
+// owner (notifications-screen-v110.js) and one manual surrender owner. Retired
+// v104/v105/v109 invitation/result overlays are deliberately not initialized.
 initV110AcceptanceRuntime();
+initV110MatchLifecycle();
 initV109SelfCancelRefreshGuard();
 initV109ShareFallbackGuard();
 initV109ShareSpeed();
-initV109InviteSpeed();
 initV109Presence();
 initV109SearchSpeed();
 
@@ -50,11 +46,6 @@ initV101CacheSafety();
 initV102BattleshipBridge();
 initV102HistoryController();
 initV110TargetedInteractions();
-
-initV105InviteLatency();
-initV104InviteGameControls();
-initV101FastInviteWatch();
-initV104ResultInstant();
 
 initV100SearchEventBridge();
 initV99InvitePickerHold();
