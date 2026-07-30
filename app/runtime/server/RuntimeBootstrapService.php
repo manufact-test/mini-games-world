@@ -55,7 +55,7 @@ final readonly class RuntimeBootstrapService
 
     private function boundedString(mixed $value, int $maxLength): string
     {
-        return mb_substr(trim((string)$value), 0, $maxLength);
+        return substr(trim((string)$value), 0, $maxLength);
     }
 
     private function boundedPath(mixed $value): string
