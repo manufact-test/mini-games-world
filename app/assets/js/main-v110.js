@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'v110-mvp14r2-handoff-batch';
+window.__MGW_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild';
 
-// Use an isolated v110 shell so historical v103/v105 rollback assets remain
-// byte-for-byte unchanged while the two corrected handoffs ship together.
-import './main-v110-handoff-shell.js?v=1102';
+// Use an isolated v110 shell so historical rollback assets remain byte-for-byte
+// unchanged while the active lifecycle graph has one owner per transition.
+import './main-v110-handoff-shell.js?v=1103';
