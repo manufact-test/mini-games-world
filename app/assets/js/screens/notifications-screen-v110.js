@@ -1,7 +1,8 @@
-import { api } from '../api/client.js?v=47';
 import { openSheet } from '../components/sheet.js?v=68';
-import { haptic } from '../telegram/telegram-app.js?v=27';
+import { haptic, getInitData } from '../telegram/telegram-app.js?v=27';
+import { getSessionId } from '../session.js?v=27';
 
+const NOTIFICATIONS_URL = `${window.location.origin}/bot/notifications.php`;
 const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v3';
 const MAX_ANNOUNCED_IDS = 300;
 const MAX_LIVE_ITEMS = 30;
@@ -15,33 +16,33 @@ let openingSheet = false;
 let appReady = false;
 let baselineLoaded = false;
 let announcedIds = loadAnnouncedIds();
-let liveNotificationItems = new Map();
-let notificationToastItem = null;
-let notificationToastTimer = null;
-let notificationToastPointer = null;
-let suppressNotificationToastClickUntil = 0;
+let liveItems = new Map();
+let toastItem = null;
+let toastTimer = null;
+let toastPointer = null;
+let suppressToastClickUntil = 0;
 
 export function initNotificationsScreen(){
   if (initialized) return;
   initialized = true;
-  ensureNotificationToast();
+  ensureToast();
 
   document.addEventListener('click', event => {
-    const trigger = event.target.closest('#notificationsOpen');
+    const trigger = event.target instanceof Element ? event.target.closest('#notificationsOpen') : null;
     if (!trigger) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    openNotificationsSheet({ seedItems:currentLiveItems() });
+    void openNotificationsSheet(currentItems());
   }, true);
 
   document.addEventListener('mgw:app-ready', () => {
     appReady = true;
-    refreshNotificationBadge(false);
+    void refreshBadge(false);
   }, { once:true });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') refreshNotificationBadge(true);
-    else dismissNotificationToast();
+    if (document.visibilityState === 'visible') void refreshBadge(true);
+    else dismissToast();
   });
 
   document.addEventListener('mgw:notification-count', event => {
@@ -54,109 +55,105 @@ export function initNotificationsScreen(){
     setUnreadCount(unreadCount);
     if (!item?.id) return;
 
-    rememberLiveNotification(item);
-
+    upsert(item);
     if (isNotificationsSheetOpen()) {
-      renderNotifications(currentLiveItems());
-      if (!openingSheet) {
-        openNotificationsSheet({ hapticFeedback:false, seedItems:currentLiveItems() });
-      }
+      renderNotifications(currentItems());
       return;
     }
 
     const id = String(item.id || '');
     if (!id || announcedIds.has(id)) return;
-    rememberNotificationId(id);
-    if (appReady) showNotificationToast(item);
+    rememberAnnouncedId(id);
+    if (appReady) showToast(item);
   });
 
   document.addEventListener('mgw:notifications-refresh', () => {
-    if (isNotificationsSheetOpen()) {
-      openNotificationsSheet({ hapticFeedback:false, seedItems:currentLiveItems() });
-    } else {
-      refreshNotificationBadge(false);
-    }
+    if (isNotificationsSheetOpen()) void openNotificationsSheet(currentItems(), false);
+    else void refreshBadge(false);
   });
 
-  // The first request is only a baseline. Historical weekly/payment events are
-  // remembered before the application is allowed to display live alerts.
-  refreshNotificationBadge(false);
-  notificationPoll = window.setInterval(() => refreshNotificationBadge(true), NOTIFICATION_POLL_MS);
+  void refreshBadge(false);
+  notificationPoll = window.setInterval(() => void refreshBadge(true), NOTIFICATION_POLL_MS);
 }
 
-export async function refreshNotificationBadge(announce = false){
+async function refreshBadge(announce){
   if (refreshingBadge) return;
   refreshingBadge = true;
   try {
-    const result = await api.notifications(false);
-    const items = Array.isArray(result.items) ? result.items : [];
-    rememberLiveNotifications(items);
-    setUnreadCount(Number(result.unread_count || 0));
+    const result = await rawNotifications(false);
+    const items = Array.isArray(result?.items) ? result.items : [];
+    mergeItems(items);
+    setUnreadCount(Number(result?.unread_count || 0));
 
     if (!baselineLoaded || !announce || !appReady) {
-      rememberNotifications(items);
+      rememberAnnouncedItems(items);
       baselineLoaded = true;
       return;
     }
 
-    const item = items.find(notification => {
-      const id = String(notification?.id || '');
-      return id && !notification?.read && !announcedIds.has(id);
+    const item = items.find(value => {
+      const id = String(value?.id || '');
+      return id && !value?.read && !announcedIds.has(id);
     });
     if (item) {
-      rememberNotificationId(String(item.id || ''));
-      showNotificationToast(item);
+      rememberAnnouncedId(String(item.id || ''));
+      showToast(item);
     }
   } catch (error) {
-    // Keep the last visible count during a temporary network error.
+    // Keep the last trustworthy live list and unread count.
   } finally {
     refreshingBadge = false;
   }
 }
 
-async function openNotificationsSheet({ hapticFeedback = true, seedItems = [] } = {}){
+async function openNotificationsSheet(seedItems = [], hapticFeedback = true){
   if (openingSheet) return;
   openingSheet = true;
 
-  const immediateItems = mergeNotificationItems(seedItems, currentLiveItems());
-  dismissNotificationToast();
+  const immediate = mergeNotificationItems(seedItems, currentItems());
+  dismissToast();
   if (hapticFeedback) haptic('light');
 
-  if (immediateItems.length) {
-    renderNotifications(immediateItems);
-  } else {
-    openSheet(`
-      <div class="sheet-head">
-        <div><h2>Уведомления</h2></div>
-        <button class="close" data-close-sheet type="button">×</button>
-      </div>
-      <div class="notifications-loading"><div>🔔</div><strong>Загружаем…</strong></div>
-    `);
-  }
+  if (immediate.length) renderNotifications(immediate);
+  else renderLoading();
 
   try {
-    const result = await api.notifications(true);
-    const serverItems = Array.isArray(result.items) ? result.items : [];
-    rememberLiveNotifications(serverItems);
-    rememberNotifications(serverItems);
+    // Opening never goes through the v101 optimistic mark-read cache. The first
+    // response is an authoritative no-store list, so a stale empty snapshot can
+    // never replace the live item that produced the toast.
+    const result = await rawNotifications(false);
+    const serverItems = Array.isArray(result?.items) ? result.items : [];
+    mergeItems(serverItems);
+    rememberAnnouncedItems(serverItems);
     baselineLoaded = true;
+
+    const visible = mergeNotificationItems(serverItems, immediate);
+    renderNotifications(visible);
     setUnreadCount(0);
 
-    // A live toast is already an authoritative server item. Keep it visible if
-    // the cached mark-read snapshot is briefly behind the event that produced it.
-    const items = mergeNotificationItems(serverItems, immediateItems);
-    renderNotifications(items);
+    // Marking read is a separate background mutation and never owns rendering.
+    void rawNotifications(true).catch(() => null);
   } catch (error) {
-    if (!immediateItems.length) renderNotificationsError();
+    if (!immediate.length) renderError();
   } finally {
     openingSheet = false;
   }
 }
 
+function renderLoading(){
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Уведомления</h2></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    <div class="notifications-loading"><div>🔔</div><strong>Загружаем…</strong></div>
+  `);
+}
+
 function renderNotifications(items){
   const body = items.length
     ? `<div class="notifications-list">${items.map(renderNotification).join('')}</div>`
-    : `<div class="notifications-empty"><div>🔔</div><strong>Пока уведомлений нет</strong></div>`;
+    : '<div class="notifications-empty"><div>🔔</div><strong>Пока уведомлений нет</strong></div>';
 
   openSheet(`
     <div class="sheet-head">
@@ -168,12 +165,10 @@ function renderNotifications(items){
 }
 
 function renderNotification(item){
-  const tone = ['success', 'danger', 'info', 'warning'].includes(String(item?.tone || ''))
+  const tone = ['success','danger','info','warning'].includes(String(item?.tone || ''))
     ? String(item.tone)
     : 'info';
   const message = notificationMessage(item);
-  const actions = renderInviteActions(item);
-
   return `
     <article class="notification-card ${tone}">
       <div class="notification-icon">${notificationIcon(tone, item?.type)}</div>
@@ -183,7 +178,7 @@ function renderNotification(item){
           <span>${escapeHtml(formatDate(item?.created_at))}</span>
         </div>
         ${message ? `<p>${escapeHtml(message)}</p>` : ''}
-        ${actions}
+        ${renderInviteActions(item)}
       </div>
     </article>
   `;
@@ -193,7 +188,6 @@ function renderInviteActions(item){
   const actions = Array.isArray(item?.actions) ? item.actions : [];
   const token = String(item?.invite_token || '');
   if (!token || !actions.length) return '';
-
   const buttons = actions.map(action => {
     const primary = action === 'accept' || action === 'start';
     return `<button class="btn ${primary ? 'primary' : 'ghost'} full" data-invite-action="${escapeHtml(action)}" data-invite-token="${escapeHtml(token)}" type="button">${escapeHtml(actionLabel(action))}</button>`;
@@ -210,141 +204,155 @@ function actionLabel(action){
   }[String(action || '')] || 'Открыть';
 }
 
-function ensureNotificationToast(){
-  let el = document.getElementById('notificationToast');
-  if (el) return el;
+function ensureToast(){
+  let element = document.getElementById('notificationToast');
+  if (element) return element;
 
-  el = document.createElement('div');
-  el.id = 'notificationToast';
-  el.className = 'notification-toast';
-  el.setAttribute('role', 'button');
-  el.setAttribute('tabindex', '0');
-  el.setAttribute('aria-label', 'Открыть уведомления');
-  el.innerHTML = `
+  element = document.createElement('div');
+  element.id = 'notificationToast';
+  element.className = 'notification-toast';
+  element.setAttribute('role', 'button');
+  element.setAttribute('tabindex', '0');
+  element.setAttribute('aria-label', 'Открыть уведомления');
+  element.innerHTML = `
     <div class="notification-toast-icon" aria-hidden="true">🔔</div>
     <div class="notification-toast-copy"><strong></strong><span></span></div>
   `;
-  (document.getElementById('app') || document.body).appendChild(el);
+  (document.getElementById('app') || document.body).appendChild(element);
 
-  el.addEventListener('click', () => {
-    if (!el.classList.contains('show') || Date.now() < suppressNotificationToastClickUntil) return;
-    const seedItems = notificationToastItem ? [notificationToastItem] : currentLiveItems();
-    dismissNotificationToast();
-    openNotificationsSheet({ seedItems });
+  element.addEventListener('click', () => {
+    if (!element.classList.contains('show') || Date.now() < suppressToastClickUntil) return;
+    const seed = toastItem ? [cloneItem(toastItem)] : currentItems();
+    dismissToast();
+    void openNotificationsSheet(seed);
   });
-  el.addEventListener('keydown', event => {
-    if (!el.classList.contains('show')) return;
+
+  element.addEventListener('keydown', event => {
+    if (!element.classList.contains('show')) return;
     if (event.key === 'Escape') {
       event.preventDefault();
-      dismissNotificationToast();
+      dismissToast();
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      const seedItems = notificationToastItem ? [notificationToastItem] : currentLiveItems();
-      dismissNotificationToast();
-      openNotificationsSheet({ seedItems });
+      const seed = toastItem ? [cloneItem(toastItem)] : currentItems();
+      dismissToast();
+      void openNotificationsSheet(seed);
     }
   });
-  el.addEventListener('pointerdown', event => {
-    if (!el.classList.contains('show')) return;
-    notificationToastPointer = { id:event.pointerId, startX:event.clientX, startY:event.clientY, dx:0, dy:0 };
-    el.classList.add('dragging');
-    el.setPointerCapture?.(event.pointerId);
+
+  element.addEventListener('pointerdown', event => {
+    if (!element.classList.contains('show')) return;
+    toastPointer = { id:event.pointerId, startX:event.clientX, startY:event.clientY, dx:0, dy:0 };
+    element.classList.add('dragging');
+    element.setPointerCapture?.(event.pointerId);
   });
-  el.addEventListener('pointermove', event => {
-    if (!notificationToastPointer || notificationToastPointer.id !== event.pointerId) return;
-    notificationToastPointer.dx = event.clientX - notificationToastPointer.startX;
-    notificationToastPointer.dy = event.clientY - notificationToastPointer.startY;
-    const distance = Math.max(Math.abs(notificationToastPointer.dx), Math.abs(notificationToastPointer.dy));
-    el.style.transform = `translate3d(${notificationToastPointer.dx}px,${notificationToastPointer.dy}px,0)`;
-    el.style.opacity = String(Math.max(.3, 1 - distance / 220));
+
+  element.addEventListener('pointermove', event => {
+    if (!toastPointer || toastPointer.id !== event.pointerId) return;
+    toastPointer.dx = event.clientX - toastPointer.startX;
+    toastPointer.dy = event.clientY - toastPointer.startY;
+    const distance = Math.max(Math.abs(toastPointer.dx), Math.abs(toastPointer.dy));
+    element.style.transform = `translate3d(${toastPointer.dx}px,${toastPointer.dy}px,0)`;
+    element.style.opacity = String(Math.max(.3, 1 - distance / 220));
   });
 
   const finishPointer = (event, cancelled = false) => {
-    if (!notificationToastPointer || notificationToastPointer.id !== event.pointerId) return;
-    const { dx, dy } = notificationToastPointer;
-    notificationToastPointer = null;
-    el.classList.remove('dragging');
-    el.releasePointerCapture?.(event.pointerId);
+    if (!toastPointer || toastPointer.id !== event.pointerId) return;
+    const { dx, dy } = toastPointer;
+    toastPointer = null;
+    element.classList.remove('dragging');
+    element.releasePointerCapture?.(event.pointerId);
     if (!cancelled && Math.max(Math.abs(dx), Math.abs(dy)) >= 64) {
-      suppressNotificationToastClickUntil = Date.now() + 400;
-      dismissNotificationToast();
+      suppressToastClickUntil = Date.now() + 400;
+      dismissToast();
       return;
     }
-    el.style.transform = '';
-    el.style.opacity = '';
+    element.style.transform = '';
+    element.style.opacity = '';
   };
-  el.addEventListener('pointerup', event => finishPointer(event));
-  el.addEventListener('pointercancel', event => finishPointer(event, true));
-  return el;
+
+  element.addEventListener('pointerup', event => finishPointer(event));
+  element.addEventListener('pointercancel', event => finishPointer(event, true));
+  return element;
 }
 
-function showNotificationToast(item){
-  if (!canShowNotificationToast()) return false;
-  const el = ensureNotificationToast();
-  const tone = ['success', 'danger', 'warning', 'info'].includes(String(item?.tone || ''))
+function showToast(item){
+  if (!canShowToast()) return false;
+  const element = ensureToast();
+  const tone = ['success','danger','warning','info'].includes(String(item?.tone || ''))
     ? String(item.tone)
     : 'info';
   const title = String(item?.title || 'Уведомление').trim();
   const message = notificationMessage(item);
 
-  rememberLiveNotification(item);
-  notificationToastItem = cloneNotification(item);
-  window.clearTimeout(notificationToastTimer);
-  notificationToastPointer = null;
-  el.className = `notification-toast ${tone}`;
-  el.style.transform = '';
-  el.style.opacity = '';
-  el.querySelector('.notification-toast-icon').textContent = notificationIcon(tone, item?.type);
-  el.querySelector('.notification-toast-copy strong').textContent = title;
-  el.querySelector('.notification-toast-copy span').textContent = message;
-  el.querySelector('.notification-toast-copy span').hidden = message === '';
-  el.setAttribute('aria-label', `${title}${message ? `. ${message}` : ''}`);
-  requestAnimationFrame(() => el.classList.add('show'));
-  notificationToastTimer = window.setTimeout(dismissNotificationToast, NOTIFICATION_TOAST_DURATION);
+  upsert(item);
+  toastItem = cloneItem(item);
+  window.clearTimeout(toastTimer);
+  toastPointer = null;
+  element.className = `notification-toast ${tone}`;
+  element.style.transform = '';
+  element.style.opacity = '';
+  element.querySelector('.notification-toast-icon').textContent = notificationIcon(tone, item?.type);
+  element.querySelector('.notification-toast-copy strong').textContent = title;
+  element.querySelector('.notification-toast-copy span').textContent = message;
+  element.querySelector('.notification-toast-copy span').hidden = message === '';
+  element.setAttribute('aria-label', `${title}${message ? `. ${message}` : ''}`);
+  requestAnimationFrame(() => element.classList.add('show'));
+  toastTimer = window.setTimeout(dismissToast, NOTIFICATION_TOAST_DURATION);
   haptic(tone === 'danger' ? 'medium' : 'light');
   return true;
 }
 
-function canShowNotificationToast(){
+function canShowToast(){
   if (!appReady || document.visibilityState !== 'visible') return false;
-  const activeScreen = document.querySelector('.screen.active');
-  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
+  const screen = document.querySelector('.screen.active');
+  if (String(screen?.dataset.screen || '') !== 'home') return false;
   return !document.getElementById('sheetOverlay')?.classList.contains('active');
 }
 
-function dismissNotificationToast(){
-  window.clearTimeout(notificationToastTimer);
-  notificationToastTimer = null;
-  notificationToastItem = null;
-  notificationToastPointer = null;
-  const el = document.getElementById('notificationToast');
-  if (!el) return;
-  el.classList.remove('show', 'dragging');
-  el.style.transform = '';
-  el.style.opacity = '';
+function dismissToast(){
+  window.clearTimeout(toastTimer);
+  toastTimer = null;
+  toastItem = null;
+  toastPointer = null;
+  const element = document.getElementById('notificationToast');
+  if (!element) return;
+  element.classList.remove('show','dragging');
+  element.style.transform = '';
+  element.style.opacity = '';
 }
 
-function rememberLiveNotifications(items){
-  for (const item of Array.isArray(items) ? items : []) rememberLiveNotification(item);
+async function rawNotifications(markRead){
+  const speed = window.__MGW_V101_SPEED__;
+  const fetcher = typeof speed?.rawFetch === 'function' ? speed.rawFetch : window.fetch.bind(window);
+  const response = await fetcher(NOTIFICATIONS_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), markRead:Boolean(markRead) }),
+    priority:'high',
+    cache:'no-store',
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data || data.ok === false) throw new Error(data?.error || `Ошибка уведомлений: ${response.status}`);
+  return data;
 }
 
-function rememberLiveNotification(item){
+function mergeItems(items){
+  for (const item of Array.isArray(items) ? items : []) upsert(item);
+}
+
+function upsert(item){
   const id = String(item?.id || '');
   if (!id) return;
-  liveNotificationItems.set(id, {
-    ...(liveNotificationItems.get(id) || {}),
-    ...cloneNotification(item),
-  });
-  liveNotificationItems = new Map(
-    currentLiveItems(MAX_LIVE_ITEMS).map(value => [String(value.id), value])
-  );
+  liveItems.set(id, { ...(liveItems.get(id) || {}), ...cloneItem(item) });
+  liveItems = new Map(currentItems(MAX_LIVE_ITEMS).map(value => [String(value.id), value]));
 }
 
-function currentLiveItems(limit = MAX_LIVE_ITEMS){
-  return [...liveNotificationItems.values()]
-    .sort((a, b) => notificationTime(b) - notificationTime(a))
+function currentItems(limit = MAX_LIVE_ITEMS){
+  return [...liveItems.values()]
+    .sort((a,b) => itemTime(b) - itemTime(a))
     .slice(0, limit)
-    .map(cloneNotification);
+    .map(cloneItem);
 }
 
 function mergeNotificationItems(primary, fallback){
@@ -352,20 +360,18 @@ function mergeNotificationItems(primary, fallback){
   for (const item of [...(Array.isArray(fallback) ? fallback : []), ...(Array.isArray(primary) ? primary : [])]) {
     const id = String(item?.id || '');
     if (!id) continue;
-    merged.set(id, { ...(merged.get(id) || {}), ...cloneNotification(item) });
+    merged.set(id, { ...(merged.get(id) || {}), ...cloneItem(item) });
   }
-  return [...merged.values()]
-    .sort((a, b) => notificationTime(b) - notificationTime(a))
-    .slice(0, MAX_LIVE_ITEMS);
+  return [...merged.values()].sort((a,b) => itemTime(b) - itemTime(a)).slice(0, MAX_LIVE_ITEMS);
 }
 
-function cloneNotification(item){
+function cloneItem(item){
   if (!item || typeof item !== 'object') return {};
   if (typeof structuredClone === 'function') return structuredClone(item);
   return JSON.parse(JSON.stringify(item));
 }
 
-function notificationTime(item){
+function itemTime(item){
   const value = Date.parse(String(item?.created_at || ''));
   return Number.isFinite(value) ? value : 0;
 }
@@ -373,14 +379,13 @@ function notificationTime(item){
 function notificationIcon(tone, type = ''){
   if (String(type).startsWith('invite_')) return '🎮';
   if (tone === 'success') return '✓';
-  if (tone === 'danger' || tone === 'warning') return '!';
-  return 'i';
+  return tone === 'danger' || tone === 'warning' ? '!' : 'i';
 }
 
 function notificationMessage(item){
   let message = String(item?.message || '').trim();
   if (!message) return '';
-  const technicalFragments = [
+  const technical = [
     /\s*Баланс уже обновлён\.?/giu,
     /\s*Баланс не изменён\.?/giu,
     /\s*Баланс:\s*-?[\d\s]+\s*→\s*-?[\d\s]+\.?/giu,
@@ -390,11 +395,11 @@ function notificationMessage(item){
     /\s*Возвращено\s*\+\s*[\d\s]+\s*Gold\.?/giu,
     /\s*Откройте Mini App[^.]*\.?/giu,
   ];
-  for (const pattern of technicalFragments) message = message.replace(pattern, ' ');
+  for (const pattern of technical) message = message.replace(pattern, ' ');
   return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/\.{2,}/g, '.').trim();
 }
 
-function renderNotificationsError(){
+function renderError(){
   openSheet(`
     <div class="sheet-head"><div><h2>Уведомления</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="notifications-empty error"><div>⚠️</div><strong>Не удалось открыть уведомления</strong><span>Попробуйте ещё раз.</span></div>
@@ -404,10 +409,10 @@ function renderNotificationsError(){
 function setUnreadCount(count){
   const button = document.getElementById('notificationsOpen');
   if (!button) return;
-  const safeCount = Math.max(0, Math.trunc(Number(count || 0)));
-  button.dataset.unread = safeCount > 99 ? '99+' : String(safeCount);
-  button.classList.toggle('has-unread', safeCount > 0);
-  button.setAttribute('aria-label', safeCount > 0 ? `Уведомления: ${safeCount} новых` : 'Уведомления');
+  const safe = Math.max(0, Math.trunc(Number(count || 0)));
+  button.dataset.unread = safe > 99 ? '99+' : String(safe);
+  button.classList.toggle('has-unread', safe > 0);
+  button.setAttribute('aria-label', safe > 0 ? `Уведомления: ${safe} новых` : 'Уведомления');
 }
 
 function isNotificationsSheetOpen(){
@@ -416,15 +421,15 @@ function isNotificationsSheetOpen(){
   return String(document.querySelector('#sheet .sheet-head h2')?.textContent || '').trim() === 'Уведомления';
 }
 
-function rememberNotifications(items){
-  for (const item of items) {
+function rememberAnnouncedItems(items){
+  for (const item of Array.isArray(items) ? items : []) {
     const id = String(item?.id || '');
     if (id) announcedIds.add(id);
   }
   persistAnnouncedIds();
 }
 
-function rememberNotificationId(id){
+function rememberAnnouncedId(id){
   if (!id) return;
   announcedIds.add(id);
   persistAnnouncedIds();
@@ -444,9 +449,7 @@ function persistAnnouncedIds(){
     const ids = Array.from(announcedIds).slice(-MAX_ANNOUNCED_IDS);
     announcedIds = new Set(ids);
     localStorage.setItem(ANNOUNCED_STORAGE_KEY, JSON.stringify(ids));
-  } catch (error) {
-    // Notifications still work when storage is unavailable.
-  }
+  } catch (error) {}
 }
 
 function formatDate(value){
@@ -459,9 +462,9 @@ function formatDate(value){
 
 function escapeHtml(value){
   return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#039;');
 }
