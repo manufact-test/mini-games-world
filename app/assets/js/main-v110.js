@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'v110-mvp14r2-acceptance-root-fixes';
+window.__MGW_BUILD__ = 'v110-mvp14r2-handoff-batch';
 
-// Retain the accepted application shell and server-authoritative game owner.
-// v110 replaces only the conflicting acceptance flows in its clean entry.
-import './main-v105.js?v=105';
+// Use an isolated v110 shell so historical v103/v105 rollback assets remain
+// byte-for-byte unchanged while the two corrected handoffs ship together.
+import './main-v110-handoff-shell.js?v=1102';
