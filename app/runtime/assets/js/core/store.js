@@ -10,6 +10,7 @@ const INITIAL_STATE = Object.freeze({
   matchmaking:null,
   activeMatch:null,
   matchResult:null,
+  matchTransition:null,
   invite:null,
   notifications:[],
   balances:null,

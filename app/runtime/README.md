@@ -19,7 +19,9 @@ Current package scope:
 - one client match owner for search, moves, surrender, result and immediate new search;
 - independent command and background-poll request lanes inside that one match owner;
 - player commands abort active background polling instead of waiting behind it;
-- winning moves and surrender show an immediate pending result while the authoritative response completes;
+- normal win, loss and draw keep the result screen;
+- manual surrender enters an explicit local `surrendering` transition and returns to home immediately;
+- a play request made during surrender is queued inside the same match owner and starts only after authoritative release and result dismissal;
 - command idempotency and atomic settlement;
 - monotonic server revision application on the client;
 - read-only shared-lock match sync plus atomic mutation publication;

@@ -1,3 +1,3 @@
-import { startCleanRuntime } from './core/app.js?v=6';
+import { startCleanRuntime } from './core/app.js?v=7';
 
 void startCleanRuntime();
