@@ -21,7 +21,8 @@ $runtime = $read('app/assets/js/production-v110-acceptance-runtime.js');
 $targeted = $read('app/assets/js/production-v110-targeted-interactions.js');
 $lifecycle = $read('app/assets/js/production-v110-match-lifecycle.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110.js');
-$gameInvites = $read('app/assets/js/games/game-invites.js');
+$gameInvites = $read('app/assets/js/games/game-invites-v110.js');
+$legacyGameInvites = $read('app/assets/js/games/game-invites.js');
 $legacyMain = $read('app/assets/js/main-v105.js');
 $legacyTargeted = $read('app/assets/js/production-v103-targeted-interactions.js');
 $legacyNotifications = $read('app/assets/js/screens/notifications-screen.js');
@@ -67,9 +68,11 @@ $assert(
 
 $assert(
     $count($shell, 'initGameInvites();') === 1
-        && str_contains($shell, "from './games/game-invites.js?v=1105'")
-        && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
-    'games/game-invites.js must be the single active invitation action and rematch owner.'
+        && str_contains($shell, "from './games/game-invites-v110.js?v=1105'")
+        && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)")
+        && str_contains($legacyGameInvites, 'const SYNC_INTERVAL_MS = 1500;')
+        && !str_contains($legacyGameInvites, '/bot/invite-watch.php'),
+    'The isolated v110 file must be the single active invitation owner while rollback assets remain unchanged.'
 );
 
 $homePosition = strpos($lifecycle, "showScreen('home');");
@@ -170,7 +173,7 @@ $assert(
 
 $assert(
     str_contains($shell, "notifications-screen-v110.js?v=1105")
-        && str_contains($shell, "games/game-invites.js?v=1105")
+        && str_contains($shell, "games/game-invites-v110.js?v=1105")
         && str_contains($entry, "production-v110-match-lifecycle.js?v=1104")
         && str_contains($php, 'production-clean-entry-v110.js?v=1105')
         && str_contains($php, 'main-v110.js?v=1105')
