@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'v110-mvp14r2-acceptance-root-fixes';
+window.__MGW_BUILD__ = 'v110-mvp14r2-handoff-batch';
 
-// Retain the accepted application shell and server-authoritative game owner.
-// v110 replaces only the conflicting acceptance flows in its clean entry.
-import './main-v105.js?v=105';
+// Retain the accepted application shell while cache-busting the two corrected
+// lifecycle handoffs: live notification opening and authoritative surrender.
+import './main-v105.js?v=1102';
