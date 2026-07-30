@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use Mgw\CleanRuntime\Server\Auth\AuthenticationException;
+use Mgw\CleanRuntime\Server\Auth\RuntimeAuthenticationService;
+use Mgw\CleanRuntime\Server\Auth\TelegramInitDataVerifier;
 use Mgw\CleanRuntime\Server\RuntimeBootstrapService;
 use Mgw\CleanRuntime\Server\RuntimeConfig;
 use Mgw\CleanRuntime\Server\RuntimeKernel;
@@ -8,6 +11,10 @@ use Mgw\CleanRuntime\Server\Storage\JsonFileRuntimeRepository;
 
 require_once __DIR__ . '/server/contracts/RuntimeRepository.php';
 require_once __DIR__ . '/server/RuntimeConfig.php';
+require_once __DIR__ . '/server/auth/AuthenticationException.php';
+require_once __DIR__ . '/server/auth/AuthenticatedIdentity.php';
+require_once __DIR__ . '/server/auth/TelegramInitDataVerifier.php';
+require_once __DIR__ . '/server/auth/RuntimeAuthenticationService.php';
 require_once __DIR__ . '/server/storage/JsonFileRuntimeRepository.php';
 require_once __DIR__ . '/server/RuntimeBootstrapService.php';
 require_once __DIR__ . '/server/RuntimeKernel.php';
@@ -41,7 +48,13 @@ try {
 
     $config = RuntimeConfig::fromEnvironment();
     $repository = new JsonFileRuntimeRepository($config->dataDirectory);
-    $service = new RuntimeBootstrapService($config, $repository);
+    $telegramVerifier = new TelegramInitDataVerifier(
+        $config->botToken,
+        $config->telegramInitDataMaxAgeSec,
+        $config->telegramInitDataClockSkewSec,
+    );
+    $authentication = new RuntimeAuthenticationService($config, $telegramVerifier);
+    $service = new RuntimeBootstrapService($config, $repository, $authentication);
     $kernel = new RuntimeKernel($service);
     $response = $kernel->handle($method, $action, $payload);
 
@@ -50,6 +63,9 @@ try {
 } catch (JsonException $error) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'Invalid clean runtime JSON body.'], JSON_THROW_ON_ERROR);
+} catch (AuthenticationException $error) {
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'error' => $error->getMessage()], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 } catch (InvalidArgumentException $error) {
     http_response_code(422);
     echo json_encode(['ok' => false, 'error' => $error->getMessage()], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
