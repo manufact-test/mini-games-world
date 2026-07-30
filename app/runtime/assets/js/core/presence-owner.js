@@ -18,6 +18,10 @@ export function createPresenceOwner({ api, store, requestContext, intervalMs = D
           session:result.session,
           presence:result.presence,
           storage:result.storage,
+          matchmaking:result.matchmaking,
+          activeMatch:result.active_match,
+          matchResult:result.match_result,
+          balances:result.balances,
         });
         document.dispatchEvent(new CustomEvent('mgw:clean-presence-updated', {
           detail:{ presence:result.presence, session:result.session },
