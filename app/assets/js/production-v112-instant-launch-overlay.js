@@ -23,6 +23,7 @@ const runtime = window.__MGW_V112_INSTANT_LAUNCH__ ||= {
   readyFrame:null,
   failureTimer:null,
   hardTimer:null,
+  interactionTimer:null,
   sourceButton:null,
   screenObserver:null,
 };
@@ -81,10 +82,18 @@ function showOverlay(title){
 
   runtime.generation++;
   runtime.shownAt = performance.now();
+  overlay.dataset.interactive = 'false';
   overlay.hidden = false;
   overlay.setAttribute('aria-hidden', 'false');
   document.documentElement.classList.add('mgw-v112-launch-open');
   document.body.classList.add('mgw-v112-launch-open');
+
+  // The layer paints on pointerdown, but it must not steal the pointerup/click
+  // that belongs to the original Start button. It becomes blocking next task.
+  window.clearTimeout(runtime.interactionTimer);
+  runtime.interactionTimer = window.setTimeout(() => {
+    if (!overlay.hidden) overlay.dataset.interactive = 'true';
+  }, 0);
 
   window.clearTimeout(runtime.hardTimer);
   runtime.hardTimer = window.setTimeout(() => {
@@ -100,11 +109,14 @@ function hideOverlay(){
   window.cancelAnimationFrame(runtime.readyFrame);
   window.clearInterval(runtime.failureTimer);
   window.clearTimeout(runtime.hardTimer);
+  window.clearTimeout(runtime.interactionTimer);
   runtime.readyFrame = null;
   runtime.failureTimer = null;
   runtime.hardTimer = null;
+  runtime.interactionTimer = null;
   runtime.sourceButton = null;
 
+  overlay.dataset.interactive = 'false';
   overlay.hidden = true;
   overlay.setAttribute('aria-hidden', 'true');
   document.documentElement.classList.remove('mgw-v112-launch-open');
@@ -164,6 +176,7 @@ function ensureOverlay(){
   const overlay = document.createElement('div');
   overlay.id = 'mgwV112LaunchOverlay';
   overlay.className = 'mgw-v112-launch-overlay';
+  overlay.dataset.interactive = 'false';
   overlay.hidden = true;
   overlay.setAttribute('aria-hidden', 'true');
   overlay.setAttribute('role', 'status');
@@ -193,6 +206,7 @@ function installStyles(){
   style.textContent = `
     .mgw-v112-launch-open{overflow:hidden!important}
     .mgw-v112-launch-overlay{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 38%,rgba(79,109,255,.18),transparent 38%),rgba(9,12,20,.98);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+    .mgw-v112-launch-overlay[data-interactive="false"]{pointer-events:none}
     .mgw-v112-launch-overlay[hidden]{display:none!important}
     .mgw-v112-launch-card{width:min(100%,380px);text-align:center;padding:30px 24px 26px;border:1px solid rgba(255,255,255,.1);border-radius:24px;background:linear-gradient(180deg,rgba(28,34,52,.96),rgba(15,19,31,.98));box-shadow:0 24px 70px rgba(0,0,0,.42)}
     .mgw-v112-launch-game{display:inline-flex;align-items:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);color:#cbd4ff;font-size:13px;font-weight:700;letter-spacing:.02em}
