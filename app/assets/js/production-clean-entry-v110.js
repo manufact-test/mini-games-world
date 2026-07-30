@@ -10,7 +10,7 @@ import { initV101CacheSafety } from './production-v101-cache-safety.js?v=101';
 import { initV101FastInviteWatch } from './production-v101-fast-invite-watch.js?v=101';
 import { initV102BattleshipBridge } from './production-v102-battleship-bridge.js?v=102';
 import { initV102HistoryController } from './production-v102-history-controller.js?v=102';
-import { initV103TargetedInteractions } from './production-v103-targeted-interactions.js?v=1102';
+import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
 import { initV104GamePollTuning } from './production-v104-game-poll-tuning.js?v=104';
 import { initV104InviteGameControls } from './production-v104-invite-game-controls.js?v=104';
 import { initV104ResultInstant } from './production-v104-result-instant.js?v=104';
@@ -27,9 +27,9 @@ import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r2-handoff-batch';
 
-// Notification opening remains with the base notification screen, which now
-// carries the exact live server item into the sheet. Match surrender remains
-// with the base game screen; v103 no longer owns an immediate-home leave flow.
+// Notification opening remains with the v110 notification screen, which carries
+// the exact live server item into the sheet. Match surrender remains with the
+// base game screen; the v110 targeted guard has no immediate-home leave flow.
 initV110AcceptanceRuntime();
 initV109SelfCancelRefreshGuard();
 initV109ShareFallbackGuard();
@@ -49,7 +49,7 @@ initV101InviteSyncDedupe();
 initV101CacheSafety();
 initV102BattleshipBridge();
 initV102HistoryController();
-initV103TargetedInteractions();
+initV110TargetedInteractions();
 
 initV105InviteLatency();
 initV104InviteGameControls();
