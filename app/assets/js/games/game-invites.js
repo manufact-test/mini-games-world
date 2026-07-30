@@ -10,7 +10,10 @@ import { renderBalances } from '../ui.js?v=27';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
 const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;
-const SYNC_INTERVAL_MS = 1500;
+const WATCH_URL = `${window.location.origin}/bot/invite-watch.php`;
+const IDLE_SYNC_INTERVAL_MS = 1500;
+const ACTIVE_SYNC_INTERVAL_MS = 500;
+const WATCH_INTERVAL_MS = 400;
 const SHARE_CALLBACK_TIMEOUT_MS = 90000;
 const MAX_OPPONENTS = 10;
 
@@ -29,6 +32,9 @@ let initialized = false;
 let appReady = false;
 let syncBusy = false;
 let syncTimer = null;
+let watchTimer = null;
+let watchBusy = false;
+let seenWatchTokens = new Set();
 let currentInvite = null;
 let deepLinkHandled = false;
 let eventBaselineReady = false;
@@ -46,14 +52,17 @@ export function initGameInvites(){
     if (document.visibilityState === 'visible') {
       syncNow({ announce:true });
       scheduleSync(0);
+      scheduleWatch(0);
     }
   });
   document.addEventListener('mgw:app-ready', () => {
     appReady = true;
     scheduleSync(0);
+    scheduleWatch(0);
   }, { once:true });
   document.addEventListener('mgw:game-dismissed', () => {
     window.setTimeout(() => syncNow({ announce:true }), 80);
+    scheduleWatch(80);
   });
 
   const sheet = document.getElementById('sheet');
@@ -68,6 +77,7 @@ export function initGameInvites(){
       tg.onEvent('activated', () => {
         syncNow({ announce:true });
         scheduleSync(0);
+        scheduleWatch(0);
       });
     } catch (error) {
       // Older Telegram clients do not expose this event.
@@ -90,7 +100,8 @@ export async function openIncomingInviteIfPresent(){
   }
 
   await syncNow({ announce:false });
-  scheduleSync(SYNC_INTERVAL_MS);
+  scheduleSync(nextSyncInterval());
+  scheduleWatch(0);
 }
 
 function handleDocumentClick(event){
@@ -255,8 +266,11 @@ function playerCard(item){
 async function createDirectInvite(context, inviteeId, button){
   if (!inviteeId || button.disabled) return;
   haptic('light');
-  document.querySelectorAll('[data-direct-opponent]').forEach(item => { item.disabled = true; });
-  button.classList.add('loading');
+  const opponentName = String(button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
+
+  // The existing invitation owner paints the owner surface immediately. Server
+  // authority still decides whether the invitation is actually created.
+  showDirectInvitePending(context, opponentName);
 
   try {
     const result = await inviteRequest('create_direct', { ...context, inviteeId });
@@ -268,8 +282,7 @@ async function createDirectInvite(context, inviteeId, button){
     scheduleSync(0);
   } catch (error) {
     toast(error.message || 'Не удалось отправить приглашение.');
-    document.querySelectorAll('[data-direct-opponent]').forEach(item => { item.disabled = false; });
-    button.classList.remove('loading');
+    await openPlayerPicker(context);
   }
 }
 
@@ -397,8 +410,22 @@ async function performInviteAction(action, token, button){
   if (!action || !token || button.disabled) return;
   haptic('light');
   const originalText = button.textContent;
+  const rollbackInvite = cloneInvite(currentInvite);
+  const rollbackHtml = String(document.getElementById('sheet')?.innerHTML || '');
   setInviteButtonsDisabled(true);
   button.textContent = actionText(action);
+
+  // Accept/decline/cancel own an immediate visible transition. The final start
+  // action stays authoritative for the later pre-match loading screen.
+  if (action === 'accept' && currentInvite?.source !== 'rematch') {
+    showInviteeWaiting({
+      ...currentInvite,
+      status:'accepted',
+      ready_deadline_at:currentInvite?.ready_deadline_at || new Date(Date.now() + 90000).toISOString(),
+    });
+  } else if (action === 'decline' || action === 'cancel') {
+    closeSheet();
+  }
 
   try {
     const result = await inviteRequest(action, { token });
@@ -415,16 +442,16 @@ async function performInviteAction(action, token, button){
         scheduleSync(0);
       } else {
         showInviteeWaiting(currentInvite);
+        scheduleSync(0);
       }
       return;
     }
     if (action === 'decline' || action === 'cancel') {
-      const sheetToken = openSheetInviteToken();
-      if (sheetToken === token) closeSheet();
       currentInvite = null;
       toast(action === 'decline' ? 'Приглашение отклонено.' : 'Приглашение отменено.');
       dispatchNotificationsRefresh();
       scheduleSync(0);
+      scheduleWatch(0);
       return;
     }
     if (action === 'start') {
@@ -435,9 +462,15 @@ async function performInviteAction(action, token, button){
     setInviteButtonsDisabled(false);
     button.textContent = originalText;
   } catch (error) {
+    currentInvite = rollbackInvite;
+    if (rollbackHtml) openSheet(rollbackHtml);
     toast(error.message || 'Не удалось выполнить действие.');
     setInviteButtonsDisabled(false);
-    button.textContent = originalText;
+    const restored = [...document.querySelectorAll('[data-invite-action][data-invite-token]')].find(candidate =>
+      String(candidate.dataset.inviteAction || '') === action
+        && String(candidate.dataset.inviteToken || '') === token
+    );
+    if (restored instanceof HTMLButtonElement) restored.textContent = originalText;
   }
 }
 
@@ -559,6 +592,17 @@ function updateOpenInviteSheet(){
   if (isTerminal(status)) showTerminalInvite(currentInvite);
 }
 
+function showDirectInvitePending(context, opponentName){
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Приглашение отправлено</h2><p>${escapeHtml(opponentName)} получит его в приложении.</p></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    ${contextSummary(context)}
+    <div class="small-note invite-status-note">Доставляем приглашение игроку…</div>
+  `);
+}
+
 function showIncomingInvite(invite){
   openSheet(`
     ${inviteMarker(invite)}
@@ -572,6 +616,17 @@ function showIncomingInvite(invite){
       <button class="btn ghost full" data-invite-action="decline" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отклонить</button>
     </div>
   `);
+}
+
+function contextSummary(context){
+  return `
+    <div class="topup-success">
+      <div><span>Игра</span><strong>${escapeHtml(gameTitle(context?.gameType))}</strong></div>
+      <div><span>Комната</span><strong>${escapeHtml(roomLabel(context?.room))}</strong></div>
+      <div><span>Вариант</span><strong>${escapeHtml(boardLabel(String(context?.gameType || ''), Number(context?.boardSize || 0)))}</strong></div>
+      <div><span>Ставка</span><strong>${Number(context?.bet || 0)} коинов</strong></div>
+    </div>
+  `;
 }
 
 function showOwnerWaiting(invite, message = 'Ждём ответа игрока. Коины пока не списываются.'){
@@ -651,13 +706,66 @@ function enterGame(game){
   startGamePolling(game.id);
 }
 
-function scheduleSync(delay = SYNC_INTERVAL_MS){
+function scheduleSync(delay = nextSyncInterval()){
   window.clearTimeout(syncTimer);
   if (!appReady && delay > 0) return;
   syncTimer = window.setTimeout(async () => {
     await syncNow({ announce:true });
-    scheduleSync(SYNC_INTERVAL_MS);
+    scheduleSync(nextSyncInterval());
   }, Math.max(0, delay));
+}
+
+function nextSyncInterval(){
+  return currentInvite?.token ? ACTIVE_SYNC_INTERVAL_MS : IDLE_SYNC_INTERVAL_MS;
+}
+
+function scheduleWatch(delay = WATCH_INTERVAL_MS){
+  window.clearTimeout(watchTimer);
+  if (!appReady && delay > 0) return;
+  watchTimer = window.setTimeout(async () => {
+    await watchIncomingInvite();
+    scheduleWatch(WATCH_INTERVAL_MS);
+  }, Math.max(0, delay));
+}
+
+async function watchIncomingInvite(){
+  if (watchBusy || currentInvite?.token || !canWatchIncomingInvite()) return null;
+  watchBusy = true;
+  try {
+    const response = await fetch(WATCH_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId() }),
+      priority:'low',
+      cache:'no-store',
+      mgwPrefetch:true,
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result || result.ok === false) return null;
+
+    const invite = result.invite || null;
+    const token = String(invite?.token || '');
+    if (!token || seenWatchTokens.has(token) || !canWatchIncomingInvite()) return null;
+
+    seenWatchTokens.add(token);
+    currentInvite = invite;
+    showIncomingInvite(invite);
+    dispatchNotificationCount(result.unread_count);
+    scheduleSync(0);
+    return invite;
+  } catch (error) {
+    return null;
+  } finally {
+    watchBusy = false;
+  }
+}
+
+function canWatchIncomingInvite(){
+  if (document.visibilityState !== 'visible') return false;
+  if (String(state.activeGame?.status || '') === 'active') return false;
+  const activeScreen = document.querySelector('.screen.active');
+  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
+  return !document.getElementById('sheetOverlay')?.classList.contains('active');
 }
 
 function scheduleResultEnhancement(){
@@ -770,6 +878,12 @@ async function postJson(url, payload){
     throw new Error(data?.error || 'Сервис приглашений временно недоступен.');
   }
   return data;
+}
+
+function cloneInvite(value){
+  if (!value || typeof value !== 'object') return value || null;
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
 }
 
 function incomingToken(){
