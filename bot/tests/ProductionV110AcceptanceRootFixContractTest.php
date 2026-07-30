@@ -17,6 +17,7 @@ $count = static fn(string $haystack, string $needle): int => substr_count($hayst
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
 $main = $read('app/assets/js/main-v110.js');
 $runtime = $read('app/assets/js/production-v110-acceptance-runtime.js');
+$notifications = $read('app/assets/js/screens/notifications-screen.js');
 $php = $read('app/v110.php');
 $presence = $read('bot/presence.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
@@ -46,17 +47,28 @@ $assert(
     'The v109 client-side invitation action synthesizer must not load in v110.'
 );
 $assert(
-    str_contains($runtime, 'next.actions = Array.isArray(item?.actions) ? [...item.actions] : [];')
-        && !str_contains($runtime, 'function enrichInviteActions')
-        && !str_contains($runtime, "type === 'invite_accepted'")
-        && !str_contains($runtime, '/bot/invites.php'),
-    'Notification actions must come only from the authoritative server snapshot.'
+    !str_contains($runtime, 'ownNotificationOpen')
+        && !str_contains($runtime, 'seedToastPreview')
+        && !str_contains($runtime, '/bot/notifications.php')
+        && !str_contains($runtime, "closest('#notificationToast')")
+        && !str_contains($runtime, "closest('#notificationsOpen')"),
+    'The v110 runtime must not own notification opening, synthesize preview items or request a parallel notification snapshot.'
 );
 $assert(
-    str_contains($runtime, 'seedToastPreview(toast);')
-        && strpos($runtime, 'renderNotifications(currentNotifications(), currentNotifications().length === 0);')
-            < strpos($runtime, 'await readNotificationSnapshot()'),
-    'A clicked toast or cached notification must paint before the authoritative refresh.'
+    $count($notifications, "event.target.closest('#notificationsOpen')") === 1
+        && str_contains($notifications, "el.addEventListener('click', () => {")
+        && str_contains($notifications, 'openNotificationsSheet();')
+        && str_contains($entry, 'Notification opening stays with the base notifications'),
+    'The base notifications screen must remain the single bell and toast opening owner.'
+);
+$assert(
+    str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
+        && str_contains($notifications, 'showNotificationToast(item)')
+        && str_contains($notifications, 'const result = await api.notifications(true);')
+        && str_contains($notifications, 'renderNotifications(items);')
+        && str_contains($notifications, "const token = String(item?.invite_token || '')")
+        && str_contains($notifications, 'const actions = Array.isArray(item?.actions) ? item.actions : [];'),
+    'The one notification owner must carry the authoritative server item, invite token and actions from toast delivery through sheet rendering.'
 );
 $assert(
     str_contains($runtime, "window.addEventListener('click', guardAndTrackTicTacToe, true)")
