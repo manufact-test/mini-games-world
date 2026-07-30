@@ -97,7 +97,7 @@ final class UserWelcomeGuard
                 $invites->bindFromLink($data, $data['users'][$userId], $token, false, false);
             });
         } catch (Throwable $e) {
-            error_log('Mini Games World invite recipient registration failed for ' . $chatId . ': ' . $e->getMessage());
+            error_log('Mini Games World invite recipient registration failed: ' . $e->getMessage());
         }
     }
 }
