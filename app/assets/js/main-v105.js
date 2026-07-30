@@ -17,7 +17,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen.js?v=1102';
+import { initNotificationsScreen } from './screens/notifications-screen.js?v=85';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
@@ -128,6 +128,7 @@ async function refreshStatsIfVisible(){
 }
 
 function canRefreshHomeStats(){
+  if (window.__MGW_V103_TARGETED_INTERACTIONS__?.leavePending) return false;
   if (document.visibilityState !== 'visible') return false;
   const activeScreen = document.querySelector('.screen.active');
   if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
