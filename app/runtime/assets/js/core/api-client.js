@@ -3,49 +3,51 @@ const ENDPOINT = new URL('../../../api.php', import.meta.url);
 export function createRuntimeApi(fetchImpl = window.fetch.bind(window)){
   if (typeof fetchImpl !== 'function') throw new TypeError('A fetch implementation is required.');
 
-  const bootstrap = context => post('bootstrap', buildPayload(context, true));
-  const heartbeat = context => post('heartbeat', buildPayload(context, false));
-  const syncMatch = context => post('match_sync', buildPayload(context, false));
-  const startSearch = (context, commandId) => post('match_start_search', {
+  const bootstrap = (context, options = {}) => post('bootstrap', buildPayload(context, true), options);
+  const heartbeat = (context, options = {}) => post('heartbeat', buildPayload(context, false), options);
+  const syncMatch = (context, options = {}) => post('match_sync', buildPayload(context, false), options);
+  const startSearch = (context, commandId, options = {}) => post('match_start_search', {
     ...buildPayload(context, false),
     command_id:String(commandId || ''),
-  });
-  const cancelSearch = (context, commandId) => post('match_cancel_search', {
+  }, options);
+  const cancelSearch = (context, commandId, options = {}) => post('match_cancel_search', {
     ...buildPayload(context, false),
     command_id:String(commandId || ''),
-  });
-  const makeMove = (context, gameId, cell, commandId) => post('match_move', {
+  }, options);
+  const makeMove = (context, gameId, cell, commandId, options = {}) => post('match_move', {
     ...buildPayload(context, false),
     game_id:String(gameId || ''),
     cell:Number(cell),
     command_id:String(commandId || ''),
-  });
-  const surrender = (context, gameId, commandId) => post('match_surrender', {
+  }, options);
+  const surrender = (context, gameId, commandId, options = {}) => post('match_surrender', {
     ...buildPayload(context, false),
     game_id:String(gameId || ''),
     command_id:String(commandId || ''),
-  });
-  const dismissResult = (context, commandId) => post('match_dismiss_result', {
+  }, options);
+  const dismissResult = (context, commandId, options = {}) => post('match_dismiss_result', {
     ...buildPayload(context, false),
     command_id:String(commandId || ''),
-  });
+  }, options);
 
-  async function health(){
-    const response = await fetch(`${ENDPOINT.href}?action=health`, {
+  async function health(options = {}){
+    const response = await fetchImpl(`${ENDPOINT.href}?action=health`, {
       method:'GET',
       cache:'no-store',
       credentials:'same-origin',
+      signal:options.signal,
     });
     return readResponse(response);
   }
 
-  async function post(action, payload){
-    const response = await fetch(`${ENDPOINT.href}?action=${encodeURIComponent(action)}`, {
+  async function post(action, payload, options = {}){
+    const response = await fetchImpl(`${ENDPOINT.href}?action=${encodeURIComponent(action)}`, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       cache:'no-store',
       credentials:'same-origin',
       body:JSON.stringify(payload),
+      signal:options.signal,
     });
     return readResponse(response);
   }

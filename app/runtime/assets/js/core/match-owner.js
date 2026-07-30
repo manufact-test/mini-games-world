@@ -1,6 +1,11 @@
 import { applyServerProjection } from './server-projection.js';
 
 const POLL_INTERVAL_MS = 500;
+const WINNING_LINES = Object.freeze([
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6],
+]);
 
 export function createMatchOwner({ root, api, store, router, requestContext }){
   if (!(root instanceof HTMLElement)) throw new TypeError('Clean match root is required.');
@@ -10,8 +15,12 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   if (typeof requestContext !== 'function') throw new TypeError('Clean match request context is required.');
 
   let started = false;
-  let inFlight = null;
+  let commandInFlight = null;
+  let commandAbortController = null;
+  let pollInFlight = null;
+  let pollAbortController = null;
   let pollTimer = 0;
+  let pendingResultTitle = '';
   let unsubscribe = null;
 
   function start(){
@@ -28,67 +37,101 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     root.removeEventListener('click', onClick);
     unsubscribe?.();
     unsubscribe = null;
+    pendingResultTitle = '';
     stopPolling();
+    commandAbortController?.abort();
+    commandAbortController = null;
   }
 
   async function onClick(event){
     const target = event.target instanceof Element ? event.target.closest('[data-match-action]') : null;
     if (!(target instanceof HTMLElement) || !root.contains(target)) return;
     const action = target.dataset.matchAction || '';
-    if (!action || inFlight || store.getState().session?.locked) return;
+    if (!action || commandInFlight || store.getState().session?.locked) return;
+
+    pausePolling();
 
     if (action === 'start-search') {
-      await run(() => api.startSearch(requestContext(), commandId()));
+      await runCommand(signal => api.startSearch(requestContext(), commandId(), { signal }));
       return;
     }
     if (action === 'cancel-search') {
-      await run(() => api.cancelSearch(requestContext(), commandId()));
+      await runCommand(signal => api.cancelSearch(requestContext(), commandId(), { signal }));
       return;
     }
     if (action === 'surrender') {
-      const gameId = String(store.getState().activeMatch?.id || '');
-      if (gameId) await run(() => api.surrender(requestContext(), gameId, commandId()));
+      const state = store.getState();
+      const gameId = String(state.activeMatch?.id || '');
+      if (gameId) {
+        showPendingResult('Завершаем матч', state);
+        await runCommand(signal => api.surrender(requestContext(), gameId, commandId(), { signal }));
+      }
       return;
     }
     if (action === 'dismiss-result') {
-      await run(() => api.dismissResult(requestContext(), commandId()));
+      await runCommand(signal => api.dismissResult(requestContext(), commandId(), { signal }));
       return;
     }
     if (action === 'new-search') {
-      await run(async () => {
+      await runCommand(async signal => {
         const context = requestContext();
-        await api.dismissResult(context, commandId());
-        return api.startSearch(context, commandId());
+        await api.dismissResult(context, commandId(), { signal });
+        return api.startSearch(context, commandId(), { signal });
       });
       return;
     }
     if (action === 'move') {
-      const game = store.getState().activeMatch;
+      const state = store.getState();
+      const game = state.activeMatch;
       const cell = Number(target.dataset.cell);
       if (!game?.id || !Number.isInteger(cell)) return;
-      await run(() => api.makeMove(requestContext(), game.id, cell, commandId()));
+      const pendingTitle = pendingMoveTitle(game, cell);
+      if (pendingTitle) showPendingResult(pendingTitle, state);
+      await runCommand(signal => api.makeMove(requestContext(), game.id, cell, commandId(), { signal }));
     }
   }
 
-  async function run(operation, { busy = true, reportError = true } = {}){
-    if (inFlight) return inFlight;
-    if (busy) setBusy(true);
-    inFlight = Promise.resolve()
-      .then(operation)
-      .then(applyProjection)
-      .catch(error => reportError ? showTransientError(error) : null)
+  async function runCommand(operation){
+    if (commandInFlight) return commandInFlight;
+    pausePolling();
+    const controller = new AbortController();
+    commandAbortController = controller;
+    setBusy(true);
+    commandInFlight = Promise.resolve()
+      .then(() => operation(controller.signal))
+      .then(result => {
+        pendingResultTitle = '';
+        return applyProjection(result);
+      })
+      .catch(error => {
+        pendingResultTitle = '';
+        return isAbortError(error) ? null : showTransientError(error);
+      })
       .finally(() => {
-        inFlight = null;
-        if (busy) setBusy(false);
+        if (commandAbortController === controller) commandAbortController = null;
+        commandInFlight = null;
+        setBusy(false);
+        startPolling();
       });
-    return inFlight;
+    return commandInFlight;
   }
 
   async function poll(){
-    if (inFlight) return;
+    if (!started || commandInFlight || pollInFlight) return pollInFlight;
     const state = store.getState();
-    if (!state.matchmaking && !state.activeMatch) return;
-    await run(() => api.syncMatch(requestContext()), { busy:false, reportError:false });
+    if (!state.matchmaking && !state.activeMatch) return null;
+
+    const controller = new AbortController();
+    pollAbortController = controller;
+    pollInFlight = api.syncMatch(requestContext(), { signal:controller.signal })
+      .then(applyProjection)
+      .catch(() => null)
+      .finally(() => {
+        if (pollAbortController === controller) pollAbortController = null;
+        pollInFlight = null;
+        startPolling();
+      });
+    return pollInFlight;
   }
 
   function applyProjection(result){
@@ -97,6 +140,11 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   }
 
   function render(state){
+    if (pendingResultTitle && commandInFlight) {
+      renderPendingResult(pendingResultTitle, state);
+      router.show('result');
+      return;
+    }
     if (state.matchResult) {
       renderResult(state);
       router.show('result');
@@ -124,7 +172,9 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     setText('[data-match-balance]', String(state.balances?.match ?? '—'));
     const button = root.querySelector('[data-match-action="start-search"]');
     if (button instanceof HTMLButtonElement) {
-      button.disabled = Boolean(state.session?.locked) || Number(state.balances?.match ?? 0) < 10;
+      button.disabled = Boolean(state.session?.locked)
+        || commandInFlight !== null
+        || Number(state.balances?.match ?? 0) < 10;
     }
   }
 
@@ -133,7 +183,9 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     setText('[data-search-bet]', String(matchmaking.bet ?? 10));
     setText('[data-search-balance]', String(state.balances?.match ?? '—'));
     const cancel = root.querySelector('[data-match-action="cancel-search"]');
-    if (cancel instanceof HTMLButtonElement) cancel.disabled = Boolean(state.session?.locked) || inFlight !== null;
+    if (cancel instanceof HTMLButtonElement) {
+      cancel.disabled = Boolean(state.session?.locked) || commandInFlight !== null;
+    }
   }
 
   function renderMatch(state){
@@ -154,13 +206,15 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
       const value = board[cell] || '-';
       button.textContent = value === '-' ? '' : value;
       button.disabled = locked
-        || inFlight !== null
+        || commandInFlight !== null
         || value !== '-'
         || match.turn !== match.viewer_id
         || !match.legal_actions?.includes('move');
     }
     const surrender = root.querySelector('[data-match-action="surrender"]');
-    if (surrender instanceof HTMLButtonElement) surrender.disabled = locked || inFlight !== null;
+    if (surrender instanceof HTMLButtonElement) {
+      surrender.disabled = locked || commandInFlight !== null;
+    }
   }
 
   function renderResult(state){
@@ -171,27 +225,58 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     setText('[data-result-balance]', String(state.balances?.match ?? '—'));
     setText('[data-result-payout]', String(result.outcome === 'loss' ? 0 : result.payout ?? 0));
     for (const button of root.querySelectorAll('[data-screen="result"] [data-match-action]')) {
-      if (button instanceof HTMLButtonElement) button.disabled = Boolean(state.session?.locked) || inFlight !== null;
+      if (button instanceof HTMLButtonElement) {
+        button.disabled = Boolean(state.session?.locked) || commandInFlight !== null;
+      }
+    }
+  }
+
+  function showPendingResult(title, state){
+    pendingResultTitle = title;
+    renderPendingResult(title, state);
+    router.show('result');
+  }
+
+  function renderPendingResult(title, state){
+    setText('[data-result-title]', title);
+    setText('[data-result-reason]', 'Подтверждаем результат на сервере…');
+    setText('[data-result-balance]', String(state.balances?.match ?? '—'));
+    setText('[data-result-payout]', '—');
+    for (const button of root.querySelectorAll('[data-screen="result"] [data-match-action]')) {
+      if (button instanceof HTMLButtonElement) button.disabled = true;
     }
   }
 
   function startPolling(){
-    if (pollTimer) return;
-    pollTimer = window.setInterval(() => void poll(), POLL_INTERVAL_MS);
+    if (!started || pollTimer || pollInFlight || commandInFlight) return;
+    const state = store.getState();
+    if (!state.matchmaking && !state.activeMatch) return;
+    pollTimer = window.setTimeout(() => {
+      pollTimer = 0;
+      void poll();
+    }, POLL_INTERVAL_MS);
+  }
+
+  function pausePolling(){
+    if (pollTimer) window.clearTimeout(pollTimer);
+    pollTimer = 0;
+    pollAbortController?.abort();
+    pollAbortController = null;
   }
 
   function stopPolling(){
-    if (!pollTimer) return;
-    window.clearInterval(pollTimer);
-    pollTimer = 0;
+    pausePolling();
   }
 
   function setBusy(busy){
     root.toggleAttribute('data-match-busy', busy);
-    for (const button of root.querySelectorAll('[data-match-action]')) {
-      if (button instanceof HTMLButtonElement && busy) button.disabled = true;
+    if (busy) {
+      for (const button of root.querySelectorAll('[data-match-action]')) {
+        if (button instanceof HTMLButtonElement) button.disabled = true;
+      }
+      return;
     }
-    if (!busy) render(store.getState());
+    render(store.getState());
   }
 
   function showTransientError(error){
@@ -212,6 +297,26 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   }
 
   return Object.freeze({ start, stop, sync:poll });
+}
+
+function pendingMoveTitle(match, cell){
+  const board = String(match?.board || '---------').split('');
+  const symbol = String(match?.viewer_symbol || match?.players?.find(player => player.id === match.viewer_id)?.symbol || '');
+  if (!Number.isInteger(cell) || cell < 0 || cell >= 9 || board[cell] !== '-' || !['X', 'O'].includes(symbol)) {
+    return '';
+  }
+  board[cell] = symbol;
+  if (WINNING_LINES.some(line => line.every(index => board[index] === symbol))) {
+    return 'Проверяем победу';
+  }
+  if (board.every(value => value !== '-')) {
+    return 'Проверяем ничью';
+  }
+  return '';
+}
+
+function isAbortError(error){
+  return String(error?.name || '') === 'AbortError';
 }
 
 function commandId(){
