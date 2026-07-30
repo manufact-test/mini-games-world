@@ -5,36 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <title>Mini Games World — Clean Runtime</title>
-  <link rel="stylesheet" href="./assets/css/app.css?v=1">
+  <link rel="stylesheet" href="./assets/css/app.css?v=2">
 </head>
 <body>
   <main class="runtime-shell" id="app" data-runtime="mgw-clean-v1">
     <section class="runtime-screen is-active" data-screen="boot" aria-live="polite">
       <div class="runtime-card">
         <span class="runtime-kicker">Mini Games World</span>
-        <h1>Подготавливаем чистый runtime</h1>
-        <p data-runtime-message>Проверяем единый запуск приложения.</p>
+        <h1>Подключаем чистый staging</h1>
+        <p data-runtime-message>Проверяем отдельный сервер и отдельное хранилище.</p>
       </div>
     </section>
 
     <section class="runtime-screen" data-screen="home" hidden>
       <div class="runtime-card">
         <span class="runtime-kicker">Staging</span>
-        <h1>Чистое ядро запущено</h1>
-        <p>Старый versioned runtime не загружен.</p>
+        <h1>Чистый сервер подключён</h1>
+        <p>Legacy bootstrap, production storage и DB bridges не загружены.</p>
         <dl class="runtime-details" data-launch-details></dl>
       </div>
     </section>
 
     <section class="runtime-screen" data-screen="error" hidden>
       <div class="runtime-card runtime-card--error">
-        <span class="runtime-kicker">Ошибка запуска</span>
-        <h1>Не удалось открыть приложение</h1>
-        <p data-error-message>Повторите запуск из Telegram.</p>
+        <span class="runtime-kicker">Ошибка staging</span>
+        <h1>Не удалось подключить чистый сервер</h1>
+        <p data-error-message>Проверьте staging endpoint и повторите запуск.</p>
       </div>
     </section>
   </main>
 
-  <script type="module" src="./assets/js/entry.js?v=1"></script>
+  <script type="module" src="./assets/js/entry.js?v=2"></script>
 </body>
 </html>
