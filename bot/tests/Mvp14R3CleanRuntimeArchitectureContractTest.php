@@ -29,6 +29,7 @@ $required = [
     'app/runtime/assets/js/core/installation.js',
     'app/runtime/assets/js/core/session.js',
     'app/runtime/assets/js/core/client-context.js',
+    'app/runtime/assets/js/core/server-projection.js',
     'app/runtime/assets/js/core/presence-owner.js',
     'app/runtime/assets/js/core/match-owner.js',
     'app/runtime/server/contracts/RuntimeStateStore.php',
@@ -106,6 +107,8 @@ foreach ([
     'synchronizeCurrentJson',
     'services/AuthService.php',
     'services/SessionService.php',
+    'services/GameService.php',
+    'ChessRuntimeService',
     'RuntimeAccountIdentityResolver',
     'mgw_dev_user_id',
     'JsonFileRuntimeRepository',
@@ -124,6 +127,7 @@ $store = $read('app/runtime/assets/js/core/store.js');
 $router = $read('app/runtime/assets/js/core/router.js');
 $launch = $read('app/runtime/assets/js/core/launch.js');
 $apiClient = $read('app/runtime/assets/js/core/api-client.js');
+$serverProjection = $read('app/runtime/assets/js/core/server-projection.js');
 $presenceOwner = $read('app/runtime/assets/js/core/presence-owner.js');
 $matchOwner = $read('app/runtime/assets/js/core/match-owner.js');
 $stateStore = $read('app/runtime/server/storage/JsonFileRuntimeStore.php');
@@ -145,6 +149,8 @@ $assert(substr_count($presenceOwner, 'export function createPresenceOwner') === 
 $assert(substr_count($matchOwner, 'export function createMatchOwner') === 1, 'Exactly one clean match owner implementation is allowed.');
 $assert(str_contains($matchOwner, "root.addEventListener('click'") && !str_contains($matchOwner, 'capture:true'), 'Match actions must be owned by one normal root listener.');
 $assert(substr_count($matchOwner, 'setInterval') === 1, 'The one match owner must own exactly one bounded poll cadence.');
+$assert(str_contains($presenceOwner, "import { applyServerProjection }") && str_contains($matchOwner, "import { applyServerProjection }"), 'Presence and match responses must share one monotonic projection guard.');
+$assert(str_contains($serverProjection, 'nextRevision < currentRevision') && str_contains($serverProjection, 'return false'), 'Older server revisions must never overwrite newer client state.');
 $assert(str_contains($router, "'search'") && str_contains($router, "'match'") && str_contains($router, "'result'"), 'The clean router must own match lifecycle screens.');
 $assert(str_contains($store, 'matchmaking:null') && str_contains($store, 'activeMatch:null') && str_contains($store, 'matchResult:null'), 'Clean store must own explicit match state slices.');
 $assert(str_contains($launch, "runtime:'mgw-clean-v1'") && str_contains($launch, 'inviteToken'), 'Canonical launch parser must remain the one launch owner.');
