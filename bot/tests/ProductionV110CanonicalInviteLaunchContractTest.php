@@ -44,7 +44,7 @@ $assert(
 
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $invites = $read('bot/invites.php');
-$gameInvites = $read('app/assets/js/games/game-invites.js');
+$gameInvites = $read('app/assets/js/games/game-invites-v110.js');
 $v110 = $read('app/v110.php');
 
 $assert(
