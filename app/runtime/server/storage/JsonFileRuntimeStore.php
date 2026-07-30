@@ -29,12 +29,25 @@ final class JsonFileRuntimeStore implements RuntimeStateStore
         $this->lockFile = $directory . '/runtime-state-v3.lock';
     }
 
+    public function read(callable $operation): mixed
+    {
+        $lock = $this->openLock();
+
+        try {
+            if (!flock($lock, LOCK_SH)) {
+                throw new \RuntimeException('Cannot acquire clean runtime staging read lock.');
+            }
+
+            return $operation($this->readState());
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
     public function transaction(callable $operation): mixed
     {
-        $lock = fopen($this->lockFile, 'c+');
-        if ($lock === false) {
-            throw new \RuntimeException('Cannot open clean runtime staging lock.');
-        }
+        $lock = $this->openLock();
 
         try {
             if (!flock($lock, LOCK_EX)) {
@@ -64,6 +77,16 @@ final class JsonFileRuntimeStore implements RuntimeStateStore
             'state_present' => is_file($this->stateFile),
             'location_fingerprint' => substr(hash('sha256', dirname($this->stateFile)), 0, 12),
         ];
+    }
+
+    /** @return resource */
+    private function openLock()
+    {
+        $lock = fopen($this->lockFile, 'c+');
+        if ($lock === false) {
+            throw new \RuntimeException('Cannot open clean runtime staging lock.');
+        }
+        return $lock;
     }
 
     /** @return array<string,mixed> */
