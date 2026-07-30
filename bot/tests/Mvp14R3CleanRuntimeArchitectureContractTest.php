@@ -163,7 +163,7 @@ $assert(str_contains($verifier, 'hash_equals') && str_contains($verifier, 'auth_
 $assert(str_contains($stateStore, 'runtime-state-v3.json') && str_contains($stateStore, 'SCHEMA_VERSION = 3'), 'Match lifecycle must publish a fresh v3 staging state file.');
 $assert(str_contains($stateStore, 'flock($lock, LOCK_EX)') && str_contains($stateStore, 'rename($temporary, $this->stateFile)'), 'Clean state store must lock and publish atomically.');
 $assert(str_contains($matchService, 'payout_done') && str_contains($matchService, 'commandSeen'), 'Clean match lifecycle must own atomic settlement and idempotency.');
-$assert(str_contains($matchService, "'status' => 'finished'") && str_contains($matchService, "'current_game_id'] = null"), 'Clean match finish must release player state in the same transaction.');
+$assert(str_contains($matchService, "\$game['status'] = 'finished'") && str_contains($matchService, "['current_game_id'] = null"), 'Clean match finish must release player state in the same transaction.');
 $assert(!str_contains($stateStore, 'init_data') && !str_contains($stateStore, 'invite_token'), 'Clean staging persistence must store neither Telegram initData nor invite tokens.');
 
 fwrite(STDOUT, "Mvp14R3CleanRuntimeArchitectureContractTest: {$assertions} assertions passed\n");
