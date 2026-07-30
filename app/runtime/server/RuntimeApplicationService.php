@@ -77,10 +77,24 @@ final readonly class RuntimeApplicationService
     {
         $context = $this->contexts->fromPayload($payload);
         $nowEpoch = time();
-        $projection = $this->store->transaction(function (array &$state) use ($context, $nowEpoch): array {
-            $this->sessions->heartbeat($state, $context, $nowEpoch);
-            $match = $this->matches->sync($state, $context, $nowEpoch);
+
+        $inspection = $this->store->read(function (array $state) use ($context, $nowEpoch): array {
             $session = $this->sessions->currentProjection($state, $context, $nowEpoch);
+            $match = $this->matches->projection($state, $context->accountId(), $nowEpoch);
+            return [
+                'requires_write' => $this->matchNeedsReconcile($state, $context->accountId(), $nowEpoch),
+                'projection' => $this->mergeProjection($state, $session, $match),
+            ];
+        });
+
+        if ($inspection['requires_write'] !== true) {
+            return $this->success($inspection['projection']);
+        }
+
+        $projection = $this->store->transaction(function (array &$state) use ($context, $nowEpoch): array {
+            $this->matches->reconcile($state, $context->accountId(), $nowEpoch);
+            $session = $this->sessions->currentProjection($state, $context, $nowEpoch);
+            $match = $this->matches->projection($state, $context->accountId(), $nowEpoch);
             return $this->mergeProjection($state, $session, $match);
         });
         return $this->success($projection);
@@ -150,6 +164,33 @@ final readonly class RuntimeApplicationService
             return $this->mergeProjection($state, $session, $match);
         });
         return $this->success($projection);
+    }
+
+    /** @param array<string,mixed> $state */
+    private function matchNeedsReconcile(array $state, string $accountId, int $nowEpoch): bool
+    {
+        $account = is_array($state['accounts'][$accountId] ?? null) ? $state['accounts'][$accountId] : null;
+        if ($account === null) return false;
+
+        $status = (string)($account['status'] ?? 'idle');
+        if ($status === 'searching') {
+            $queue = is_array($state['queue'][$accountId] ?? null) ? $state['queue'][$accountId] : null;
+            $updated = strtotime((string)($queue['updated_at'] ?? '')) ?: 0;
+            if ($queue === null || $updated <= 0 || $nowEpoch - $updated > $this->config->queueTimeoutSec) {
+                return true;
+            }
+        }
+
+        $gameId = trim((string)($account['current_game_id'] ?? ''));
+        if ($gameId === '') return $status === 'playing';
+
+        $game = is_array($state['games'][$gameId] ?? null) ? $state['games'][$gameId] : null;
+        if ($game === null || (string)($game['status'] ?? '') !== 'active') {
+            return true;
+        }
+
+        $turnStarted = strtotime((string)($game['turn_started_at'] ?? '')) ?: 0;
+        return $turnStarted > 0 && $nowEpoch - $turnStarted > $this->config->moveTimeoutSec;
     }
 
     /** @param array<string,mixed> $state @param array<string,mixed> $session @param array<string,mixed> $match */

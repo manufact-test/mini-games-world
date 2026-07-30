@@ -7,7 +7,7 @@ import { getOrCreateInstallationId } from './installation.js';
 import { getOrCreateSessionId } from './session.js';
 import { readTelegramInitData, readPresenceContext } from './client-context.js';
 import { createPresenceOwner } from './presence-owner.js';
-import { createMatchOwner } from './match-owner.js';
+import { createMatchOwner } from './match-owner.js?v=5';
 
 export async function startCleanRuntime(){
   const root = document.getElementById('app');

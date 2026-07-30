@@ -1,6 +1,6 @@
 import { applyServerProjection } from './server-projection.js';
 
-const POLL_INTERVAL_MS = 1500;
+const POLL_INTERVAL_MS = 500;
 
 export function createMatchOwner({ root, api, store, router, requestContext }){
   if (!(root instanceof HTMLElement)) throw new TypeError('Clean match root is required.');

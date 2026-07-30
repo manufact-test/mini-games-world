@@ -7,6 +7,13 @@ interface RuntimeStateStore
 {
     /**
      * @template T
+     * @param callable(array<string,mixed>):T $operation
+     * @return T
+     */
+    public function read(callable $operation): mixed;
+
+    /**
+     * @template T
      * @param callable(array<string,mixed>&):T $operation
      * @return T
      */
