@@ -26,7 +26,7 @@ final readonly class RuntimeApplicationService
         $nowEpoch = time();
 
         $projection = $this->store->transaction(function (array &$state) use ($context, $launch, $nowEpoch): array {
-            $session = $this->sessions->bootstrap($state, $context, [
+            $this->sessions->bootstrap($state, $context, [
                 'runtime' => $this->bounded($launch['runtime'] ?? '', 40),
                 'path' => $this->path($launch['path'] ?? ''),
                 'source' => $this->source($launch['source'] ?? ''),
@@ -34,7 +34,9 @@ final readonly class RuntimeApplicationService
                 'telegram_available' => (bool)($launch['telegram_available'] ?? false),
             ], $nowEpoch);
             $this->matches->reconcile($state, $context->accountId(), $nowEpoch);
-            return $this->mergeProjection($state, $session, $this->matches->projection($state, $context->accountId(), $nowEpoch));
+            $session = $this->sessions->currentProjection($state, $context, $nowEpoch);
+            $match = $this->matches->projection($state, $context->accountId(), $nowEpoch);
+            return $this->mergeProjection($state, $session, $match);
         });
         return $this->success($projection);
     }
@@ -45,9 +47,11 @@ final readonly class RuntimeApplicationService
         $context = $this->contexts->fromPayload($payload);
         $nowEpoch = time();
         $projection = $this->store->transaction(function (array &$state) use ($context, $nowEpoch): array {
-            $session = $this->sessions->heartbeat($state, $context, $nowEpoch);
+            $this->sessions->heartbeat($state, $context, $nowEpoch);
             $this->matches->reconcile($state, $context->accountId(), $nowEpoch);
-            return $this->mergeProjection($state, $session, $this->matches->projection($state, $context->accountId(), $nowEpoch));
+            $session = $this->sessions->currentProjection($state, $context, $nowEpoch);
+            $match = $this->matches->projection($state, $context->accountId(), $nowEpoch);
+            return $this->mergeProjection($state, $session, $match);
         });
         return $this->success($projection);
     }
@@ -74,8 +78,9 @@ final readonly class RuntimeApplicationService
         $context = $this->contexts->fromPayload($payload);
         $nowEpoch = time();
         $projection = $this->store->transaction(function (array &$state) use ($context, $nowEpoch): array {
-            $session = $this->sessions->heartbeat($state, $context, $nowEpoch);
+            $this->sessions->heartbeat($state, $context, $nowEpoch);
             $match = $this->matches->sync($state, $context, $nowEpoch);
+            $session = $this->sessions->currentProjection($state, $context, $nowEpoch);
             return $this->mergeProjection($state, $session, $match);
         });
         return $this->success($projection);
@@ -150,6 +155,12 @@ final readonly class RuntimeApplicationService
     /** @param array<string,mixed> $state @param array<string,mixed> $session @param array<string,mixed> $match */
     private function mergeProjection(array $state, array $session, array $match): array
     {
+        $result = is_array($match['match_result'] ?? null) ? $match['match_result'] : null;
+        if ($result !== null && (string)($result['outcome'] ?? '') === 'loss') {
+            $result['payout'] = 0;
+            $match['match_result'] = $result;
+        }
+
         return [
             ...$session,
             ...$match,
