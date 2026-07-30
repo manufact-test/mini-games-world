@@ -105,10 +105,17 @@ try {
     $gameId = (string)$searchB['active_match']['id'];
     $assert($searchB['balances']['match'] === 90, 'The second player entry must be deducted once.');
 
+    $stateFile = $temporary . '/runtime-state-v3.json';
+    $revisionAfterMatch = (int)$searchB['storage']['revision'];
+    $stateBeforeSync = file_get_contents($stateFile);
     $syncA = $application->syncMatch($payloadA);
+    $syncARepeat = $application->syncMatch($payloadA);
+    $stateAfterSync = file_get_contents($stateFile);
     $assert(($syncA['active_match']['id'] ?? null) === $gameId, 'The first player must observe the same game revision.');
     $assert($syncA['balances']['match'] === 90, 'The first player entry must be deducted once.');
     $assert($syncA['session']['locked'] === false && $searchB['session']['locked'] === false, 'Both active match sessions must remain owned and unlocked.');
+    $assert($syncA['storage']['revision'] === $revisionAfterMatch && $syncARepeat['storage']['revision'] === $revisionAfterMatch, 'Read-only match polling must not advance storage revision.');
+    $assert($stateBeforeSync === $stateAfterSync, 'Read-only match polling must not rewrite the staging state file.');
 
     $payloadByAccount = [$accountA => $payloadA, $accountB => $payloadB];
     $projection = $syncA;
@@ -126,14 +133,16 @@ try {
         }
     }
 
-    $assert($projection['active_match'] === null && is_array($projection['match_result']), 'The winning move must finish and release the match in one response.');
+    $assert($projection['active_match'] === null && is_array($projection['match_result']), 'The winning move must return the finished result directly without waiting for polling.');
     $winnerId = (string)$projection['match_result']['winner_id'];
     $loserId = $winnerId === $accountA ? $accountB : $accountA;
     $assert($projection['match_result']['outcome'] === 'win', 'The moving winner must receive a win result.');
     $winnerPayload = $payloadByAccount[$winnerId];
     $loserPayload = $payloadByAccount[$loserId];
+    $finishRevision = (int)$projection['storage']['revision'];
     $winnerSync = $application->syncMatch($winnerPayload);
     $loserSync = $application->syncMatch($loserPayload);
+    $assert($winnerSync['storage']['revision'] === $finishRevision && $loserSync['storage']['revision'] === $finishRevision, 'Result observation must be read-only for both players.');
     $assert($winnerSync['balances']['match'] === 108, 'Winner balance must be 100 - 10 + 18.');
     $assert($loserSync['balances']['match'] === 90, 'Loser balance must be 100 - 10.');
     $assert($loserSync['match_result']['outcome'] === 'loss', 'The opponent must receive the corresponding loss result.');
@@ -154,12 +163,11 @@ try {
     $assert($secondGameId !== '' && $secondGameId !== $gameId, 'A second clean match must use a new game id.');
 
     $surrenderCommand = $command('surrender_once');
-    $beforeSurrender = $application->syncMatch($payloadA);
     $surrender = $application->surrender($payloadA + [
         'game_id' => $secondGameId,
         'command_id' => $surrenderCommand,
     ]);
-    $assert($surrender['active_match'] === null && $surrender['match_result']['finish_reason'] === 'surrender', 'Surrender must finish and release in one transaction.');
+    $assert($surrender['active_match'] === null && $surrender['match_result']['finish_reason'] === 'surrender', 'Surrender must return the finished result directly without waiting for polling.');
     $balanceAfterSurrender = (int)$surrender['balances']['match'];
     $duplicateSurrender = $application->surrender($payloadA + [
         'game_id' => $secondGameId,
@@ -167,7 +175,7 @@ try {
     ]);
     $assert($duplicateSurrender['balances']['match'] === $balanceAfterSurrender, 'A duplicate surrender command must not change balance twice.');
 
-    $stored = file_get_contents($temporary . '/runtime-state-v3.json');
+    $stored = file_get_contents($stateFile);
     $decoded = json_decode((string)$stored, true, 512, JSON_THROW_ON_ERROR);
     $finishRows = array_values(array_filter(
         $decoded['ledger'] ?? [],
