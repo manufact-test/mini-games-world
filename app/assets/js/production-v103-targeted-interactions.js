@@ -1,6 +1,15 @@
 import { state } from './state.js?v=27';
+import { api } from './api/client.js?v=47';
 import { toast } from './components/toast.js?v=41';
-import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
+import { closeSheet } from './components/sheet.js?v=68';
+import { showScreen } from './router.js?v=27';
+import { clearTimer, renderBalances } from './ui.js?v=89';
+import { haptic } from './telegram/telegram-app.js?v=27';
+import {
+  currentV99PassiveLock,
+  clearV99PassiveLock,
+} from './production-v99-session-transport.js?v=99';
+import { enterGame, clearGameView } from './screens/game-screen-v102-safe.js?v=102';
 
 const PLAY_IDS = new Set([
   'playTicTacToe',
@@ -15,6 +24,7 @@ const PLAY_IDS = new Set([
 
 const runtime = window.__MGW_V103_TARGETED_INTERACTIONS__ ||= {
   initialized:false,
+  leavePending:false,
   lastLockToastAt:0,
   roomObserver:null,
 };
@@ -57,6 +67,15 @@ function interceptClick(event){
     return;
   }
 
+  if (button.id === 'confirmLeaveGame') {
+    const game = state.activeGame;
+    if (!game?.id || String(game.status || '') !== 'active') return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    void leaveGameImmediately(game);
+    return;
+  }
+
   if (button.matches('#gameBoard[data-game-type="tictactoe"] [data-game-cell]')) {
     if (!ticTacToeActionIsCurrent(button)) {
       event.preventDefault();
@@ -66,6 +85,9 @@ function interceptClick(event){
 }
 
 function currentLock(){
+  if (runtime.leavePending) {
+    return { locked:true, message:'Завершаем текущий матч. Подождите немного.' };
+  }
   return currentV99PassiveLock()?.locked ? currentV99PassiveLock() : null;
 }
 
@@ -117,4 +139,54 @@ function ticTacToeActionIsCurrent(button){
   if (String(authoritative?.turn || '') !== viewerId) return false;
   if (cell < 0 || cell >= board.length || board[cell] !== '-') return false;
   return true;
+}
+
+async function leaveGameImmediately(game){
+  if (runtime.leavePending) return;
+  runtime.leavePending = true;
+  updatePlayButtons();
+  abortBackgroundReads();
+  haptic('medium');
+
+  const snapshot = clone(game);
+  state.timers.game = clearTimer(state.timers.game);
+  closeSheet();
+  state.activeGame = null;
+  clearGameView();
+  showScreen('home');
+
+  try {
+    const result = await api.leaveGame(String(snapshot.id));
+    if (result?.user) {
+      state.user = result.user;
+      renderBalances(state.user);
+    }
+    if (result?.session) state.session = result.session;
+    if (!result?.session?.locked) clearV99PassiveLock();
+    runtime.leavePending = false;
+    updatePlayButtons();
+    document.dispatchEvent(new CustomEvent('mgw:game-finished', {
+      detail:{ game:result?.game || null, source:'v103-immediate-leave' },
+    }));
+    document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
+  } catch (error) {
+    runtime.leavePending = false;
+    updatePlayButtons();
+    enterGame(snapshot, null);
+    toast(error?.message || 'Не удалось завершить матч. Игра восстановлена.');
+  }
+}
+
+function abortBackgroundReads(){
+  const controllers = window.__MGW_V101_SPEED__?.backgroundControllers;
+  if (!controllers || typeof controllers[Symbol.iterator] !== 'function') return;
+  for (const controller of [...controllers]) {
+    try { controller.abort('v103-leave-game'); } catch (error) {}
+  }
+  controllers.clear?.();
+}
+
+function clone(value){
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
 }
