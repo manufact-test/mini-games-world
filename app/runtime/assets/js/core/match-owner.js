@@ -68,16 +68,16 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     }
   }
 
-  async function run(operation){
+  async function run(operation, { busy = true, reportError = true } = {}){
     if (inFlight) return inFlight;
-    setBusy(true);
+    if (busy) setBusy(true);
     inFlight = Promise.resolve()
       .then(operation)
       .then(applyProjection)
-      .catch(error => showTransientError(error))
+      .catch(error => reportError ? showTransientError(error) : null)
       .finally(() => {
         inFlight = null;
-        setBusy(false);
+        if (busy) setBusy(false);
       });
     return inFlight;
   }
@@ -86,7 +86,7 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     if (inFlight) return;
     const state = store.getState();
     if (!state.matchmaking && !state.activeMatch) return;
-    await run(() => api.syncMatch(requestContext()));
+    await run(() => api.syncMatch(requestContext()), { busy:false, reportError:false });
   }
 
   function applyProjection(result){
@@ -202,8 +202,9 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   }
 
   function setText(selector, value){
-    const element = root.querySelector(selector);
-    if (element instanceof HTMLElement) element.textContent = value;
+    for (const element of root.querySelectorAll(selector)) {
+      if (element instanceof HTMLElement) element.textContent = value;
+    }
   }
 
   return Object.freeze({ start, stop, sync:poll });
@@ -222,7 +223,7 @@ function reasonLabel(reason){
   const labels = {
     normal_win:'Линия из трёх символов',
     draw:'Поле заполнено',
-    surrender:'Соперник завершил матч',
+    surrender:'Игрок завершил матч',
     timeout:'Время хода истекло',
   };
   return labels[String(reason || '')] || 'Матч завершён';
