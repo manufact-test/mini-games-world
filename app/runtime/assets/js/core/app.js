@@ -2,12 +2,14 @@ import { createRuntimeStore } from './store.js';
 import { createRuntimeRouter } from './router.js';
 import { readCanonicalLaunch } from './launch.js';
 import { installRuntimeErrorBoundary } from './error-boundary.js';
-import { createRuntimeApi } from './api-client.js';
+import { createRuntimeApi } from './api-client.js?v=6';
 import { getOrCreateInstallationId } from './installation.js';
 import { getOrCreateSessionId } from './session.js';
 import { readTelegramInitData, readPresenceContext } from './client-context.js';
 import { createPresenceOwner } from './presence-owner.js';
-import { createMatchOwner } from './match-owner.js?v=5';
+import { createMatchOwner } from './match-owner.js?v=6';
+
+const CLIENT_BUILD = 'clean-client-v6-action-priority';
 
 export async function startCleanRuntime(){
   const root = document.getElementById('app');
@@ -54,6 +56,7 @@ export async function startCleanRuntime(){
     store.subscribe(state => renderRuntimeDetails(root, state));
     renderRuntimeDetails(root, store.getState());
     document.documentElement.setAttribute('data-mgw-runtime', 'clean-v1');
+    document.documentElement.setAttribute('data-mgw-client-build', CLIENT_BUILD);
 
     const matchOwner = createMatchOwner({ root, api, store, router, requestContext });
     matchOwner.start();
@@ -64,6 +67,7 @@ export async function startCleanRuntime(){
     document.dispatchEvent(new CustomEvent('mgw:clean-runtime-ready', {
       detail:{
         launch,
+        client_build:CLIENT_BUILD,
         server:bootstrap.server,
         storage:bootstrap.storage,
         account:bootstrap.account,
@@ -92,6 +96,7 @@ function renderRuntimeDetails(root, state){
 
   target.replaceChildren(
     detailRow('Runtime', launch.runtime),
+    detailRow('Client build', CLIENT_BUILD),
     detailRow('Источник', launch.source),
     detailRow('Авторизация', authLabel(account.auth_method)),
     detailRow('Игрок', account.first_name || 'Staging player'),
