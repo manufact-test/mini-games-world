@@ -143,11 +143,9 @@ $assert(
     'The v111 no-store candidate entrypoint must be complete.'
 );
 $assert(
-    str_contains($welcome, "Current authorized acceptance target: v111")
-        && str_contains($welcome, "/app/v111.php?v=111")
-        && str_contains($welcome, "/app/v110.php?v=110")
-        && str_contains($welcome, 'Retained explicit no-store rollback/investigation entrypoints'),
-    'Authorized Telegram launches must select v111 while retaining v110 as an explicit rollback entrypoint.'
+    str_contains($welcome, '/app/v110.php?v=110')
+        && !str_contains($welcome, '/app/v111.php?v=111'),
+    'v111 must remain inactive until manual acceptance and explicit launch approval.'
 );
 
 fwrite(STDOUT, "ProductionV111SyncedMatchStartContractTest: {$assertions} assertions passed\n");
