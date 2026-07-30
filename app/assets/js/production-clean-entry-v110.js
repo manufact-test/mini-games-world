@@ -27,10 +27,10 @@ import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r2-acceptance-root-fixes';
 
-// One v110 owner handles notification opening, stable search summary, mobile
-// Tic Tac Toe input and the visible monotonic clock. The retired v105
-// TicTacToe fetch wrapper/DOM pin and the v109 notification action synthesizer
-// are deliberately not initialized in this graph.
+// v110 owns stable search summary, mobile Tic Tac Toe input and the visible
+// monotonic clock. Notification opening stays with the base notifications
+// screen as its sole UI owner. The retired v105 TicTacToe fetch wrapper/DOM
+// pin and the v109 notification action synthesizer remain outside this graph.
 initV110AcceptanceRuntime();
 initV109SelfCancelRefreshGuard();
 initV109ShareFallbackGuard();
