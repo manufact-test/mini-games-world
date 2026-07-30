@@ -1,0 +1,22 @@
+:root{
+  color-scheme:dark;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:#0b0f18;
+  color:#f4f6ff;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%;margin:0;background:#0b0f18}
+body{min-height:100svh}
+button,input,select,textarea{font:inherit}
+.runtime-shell{min-height:100svh;display:grid;place-items:center;padding:24px}
+.runtime-screen{width:min(100%,460px)}
+.runtime-screen[hidden]{display:none!important}
+.runtime-card{padding:28px;border:1px solid rgba(255,255,255,.1);border-radius:24px;background:linear-gradient(180deg,#171d2a,#101520);box-shadow:0 24px 80px rgba(0,0,0,.38)}
+.runtime-card--error{border-color:rgba(255,111,111,.32)}
+.runtime-kicker{display:inline-flex;margin-bottom:14px;padding:6px 10px;border-radius:999px;background:rgba(121,139,255,.12);color:#aebaff;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+h1{margin:0;font-size:clamp(26px,7vw,34px);line-height:1.12}
+p{margin:12px 0 0;color:#b9c1d7;line-height:1.55}
+.runtime-details{display:grid;gap:10px;margin:22px 0 0}
+.runtime-details div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08)}
+.runtime-details dt{color:#9ca7c2}
+.runtime-details dd{margin:0;max-width:220px;overflow-wrap:anywhere;text-align:right;color:#f4f6ff;font-weight:650}
