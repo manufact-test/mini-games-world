@@ -14,7 +14,8 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$invites = $read('app/assets/js/games/game-invites.js');
+$invites = $read('app/assets/js/games/game-invites-v110.js');
+$legacyInvites = $read('app/assets/js/games/game-invites.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
@@ -91,11 +92,13 @@ $assert(
 $assert(
     substr_count($shell, 'initGameInvites();') === 1
         && substr_count($shell, 'initNotificationsScreen();') === 1
-        && str_contains($shell, "./games/game-invites.js?v=1105")
+        && str_contains($shell, "./games/game-invites-v110.js?v=1105")
         && str_contains($shell, "./screens/notifications-screen-v110.js?v=1105")
         && !str_contains($entry, 'initV105InviteLatency')
-        && !str_contains($entry, 'initV109InviteSpeed'),
-    'The active graph must retain exactly one invite owner and one notification owner.'
+        && !str_contains($entry, 'initV109InviteSpeed')
+        && str_contains($legacyInvites, 'const SYNC_INTERVAL_MS = 1500;')
+        && !str_contains($legacyInvites, '/bot/invite-watch.php'),
+    'The active graph must retain exactly one isolated invite owner and one notification owner without changing rollback assets.'
 );
 
 $assert(
