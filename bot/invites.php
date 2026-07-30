@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';
 require_once __DIR__ . '/services/GameInviteService.php';
 require_once __DIR__ . '/services/InviteSignalService.php';
 
@@ -24,8 +25,7 @@ function mgw_invite_bot_username(array $config): string
 
 function mgw_invite_webapp_url(array $config, string $token): string
 {
-    $baseUrl = rtrim((string)($config['base_url'] ?? ''), '/');
-    return $baseUrl . '/app/?v=85&invite=' . rawurlencode($token);
+    return WebAppLaunchUrl::invitation($config, $token);
 }
 
 function mgw_invite_share_url(array $config, string $token): string
@@ -108,6 +108,9 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
 {
     if ($recipientId === '' || (string)($invite['token'] ?? '') === '') return false;
 
+    $webAppUrl = mgw_invite_webapp_url($config, (string)$invite['token']);
+    if ($webAppUrl === '') return false;
+
     $text = (string)($invite['source'] ?? '') === 'rematch'
         ? "🎮 Вам предлагают реванш\n\n"
             . (string)($invite['inviter_name'] ?? 'Игрок') . ' ждёт повторную партию в «'
@@ -129,7 +132,7 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
                 'inline_keyboard' => [[
                     [
                         'text' => '🎮 Открыть приглашение',
-                        'web_app' => ['url' => mgw_invite_webapp_url($config, (string)$invite['token'])],
+                        'web_app' => ['url' => $webAppUrl],
                     ],
                 ]],
             ],
