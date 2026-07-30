@@ -46,9 +46,22 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   async function onClick(event){
     const target = event.target instanceof Element ? event.target.closest('[data-match-action]') : null;
     if (!(target instanceof HTMLElement) || !root.contains(target)) return;
-    const action = target.dataset.matchAction || '';
-    if (!action || commandInFlight || store.getState().session?.locked) return;
 
+    const action = target.dataset.matchAction || '';
+    const state = store.getState();
+    if (!action || state.session?.locked) return;
+
+    const transition = state.matchTransition;
+    if (transition?.type === 'surrendering') {
+      if (action === 'start-search' && transition.next !== 'start-search') {
+        store.setState({
+          matchTransition:{ ...transition, next:'start-search' },
+        });
+      }
+      return;
+    }
+
+    if (commandInFlight) return;
     pausePolling();
 
     if (action === 'start-search') {
@@ -60,12 +73,8 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
       return;
     }
     if (action === 'surrender') {
-      const state = store.getState();
       const gameId = String(state.activeMatch?.id || '');
-      if (gameId) {
-        showPendingResult('Завершаем матч', state);
-        await runCommand(signal => api.surrender(requestContext(), gameId, commandId(), { signal }));
-      }
+      if (gameId) await runSurrenderTransition(state, gameId);
       return;
     }
     if (action === 'dismiss-result') {
@@ -81,7 +90,6 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
       return;
     }
     if (action === 'move') {
-      const state = store.getState();
       const game = state.activeMatch;
       const cell = Number(target.dataset.cell);
       if (!game?.id || !Number.isInteger(cell)) return;
@@ -116,6 +124,67 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     return commandInFlight;
   }
 
+  async function runSurrenderTransition(state, gameId){
+    if (commandInFlight) return commandInFlight;
+    pausePolling();
+
+    const controller = new AbortController();
+    const context = requestContext();
+    commandAbortController = controller;
+    store.setState({
+      matchTransition:{
+        type:'surrendering',
+        next:null,
+        started_at:Date.now(),
+      },
+    });
+
+    commandInFlight = (async () => {
+      let surrenderProjection = null;
+      let dismissedProjection = null;
+
+      try {
+        surrenderProjection = await api.surrender(context, gameId, commandId(), { signal:controller.signal });
+        dismissedProjection = await api.dismissResult(context, commandId(), { signal:controller.signal });
+
+        const latestTransition = store.getState().matchTransition;
+        let finalProjection = dismissedProjection;
+        if (latestTransition?.type === 'surrendering' && latestTransition.next === 'start-search') {
+          finalProjection = await api.startSearch(context, commandId(), { signal:controller.signal });
+        }
+
+        store.setState({ matchTransition:null });
+        applyProjection(finalProjection);
+        return finalProjection;
+      } catch (error) {
+        store.setState({ matchTransition:null });
+        if (surrenderProjection) {
+          applyProjection(surrenderProjection);
+        } else {
+          await restoreAuthoritativeMatch();
+        }
+        if (!isAbortError(error)) showTransientError(error);
+        return null;
+      } finally {
+        if (commandAbortController === controller) commandAbortController = null;
+        commandInFlight = null;
+        render(store.getState());
+        startPolling();
+      }
+    })();
+
+    return commandInFlight;
+  }
+
+  async function restoreAuthoritativeMatch(){
+    try {
+      const result = await api.syncMatch(requestContext());
+      applyProjection(result);
+    } catch {
+      // The visible error from the original command is sufficient.
+    }
+  }
+
   async function poll(){
     if (!started || commandInFlight || pollInFlight) return pollInFlight;
     const state = store.getState();
@@ -140,6 +209,12 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   }
 
   function render(state){
+    if (state.matchTransition?.type === 'surrendering') {
+      renderHome(state);
+      router.show('home');
+      stopPolling();
+      return;
+    }
     if (pendingResultTitle && commandInFlight) {
       renderPendingResult(pendingResultTitle, state);
       router.show('result');
@@ -169,12 +244,17 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   }
 
   function renderHome(state){
+    const transition = state.matchTransition;
+    const queuedSearch = transition?.type === 'surrendering' && transition.next === 'start-search';
+    const balance = Number(state.balances?.match ?? 0);
     setText('[data-match-balance]', String(state.balances?.match ?? '—'));
+
     const button = root.querySelector('[data-match-action="start-search"]');
     if (button instanceof HTMLButtonElement) {
+      button.textContent = queuedSearch ? 'Запускаем поиск…' : 'Найти соперника';
       button.disabled = Boolean(state.session?.locked)
-        || commandInFlight !== null
-        || Number(state.balances?.match ?? 0) < 10;
+        || balance < 10
+        || (transition?.type === 'surrendering' ? queuedSearch : commandInFlight !== null);
     }
   }
 
