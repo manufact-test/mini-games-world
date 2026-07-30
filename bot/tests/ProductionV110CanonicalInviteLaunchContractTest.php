@@ -72,8 +72,9 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'production-clean-entry-v110.js?v=1104')
-        && str_contains($v110, 'main-v110.js?v=1104')
+    str_contains($v110, 'production-clean-entry-v110.js?v=1105')
+        && str_contains($v110, 'main-v110.js?v=1105')
+        && str_contains($v110, 'data-hotfix-build="v110-mvp14r3-invite-notification-speed"')
         && str_contains($v110, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'Canonical invite launches must reach the currently accepted no-store v110 build.'
 );
