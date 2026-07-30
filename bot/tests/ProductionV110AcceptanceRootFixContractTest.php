@@ -32,6 +32,8 @@ $legacyV109InviteSpeed = $read('app/assets/js/production-v109-invite-speed.js');
 $php = $read('app/v110.php');
 $presence = $read('bot/presence.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
+$launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
+$invitesEndpoint = $read('bot/invites.php');
 $legacyV105Ttt = $read('app/assets/js/production-v105-tictactoe-stability.js');
 $legacyV109Notifications = $read('app/assets/js/production-v109-notifications.js');
 
@@ -206,10 +208,15 @@ $assert(
 
 $assert(
     str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v110.php?v=110')
-        && str_contains($welcome, '/app/v109.php?v=109')
-        && str_contains($welcome, 'Retained explicit no-store rollback/investigation entrypoints'),
-    'Telegram must keep selecting v110 while retaining historical rollback entrypoints.'
+        && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=110';")
+        && str_contains($welcome, "require_once __DIR__ . '/WebAppLaunchUrl.php';")
+        && str_contains($welcome, 'WebAppLaunchUrl::base($this->config)')
+        && str_contains($welcome, 'WebAppLaunchUrl::invitation($this->config, $inviteToken)')
+        && str_contains($invitesEndpoint, "require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';")
+        && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);')
+        && !str_contains($welcome, '/app/?v=85')
+        && !str_contains($invitesEndpoint, '/app/?v=85'),
+    'Every Telegram start, menu, direct invite and shared fallback must use one canonical v110 URL builder.'
 );
 
 $assert(
