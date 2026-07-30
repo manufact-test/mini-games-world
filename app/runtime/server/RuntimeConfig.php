@@ -64,7 +64,7 @@ final readonly class RuntimeConfig
         return new self(
             environment: 'staging',
             dataDirectory: rtrim($dataDirectory, '/\\'),
-            build: 'mgw-clean-server-v3',
+            build: 'mgw-clean-server-v4-action-priority',
             botToken: $botToken,
             telegramInitDataMaxAgeSec: max(60, (int)(getenv('MGW_CLEAN_TELEGRAM_MAX_AGE_SEC') ?: 86400)),
             telegramInitDataClockSkewSec: max(0, (int)(getenv('MGW_CLEAN_TELEGRAM_CLOCK_SKEW_SEC') ?: 300)),
