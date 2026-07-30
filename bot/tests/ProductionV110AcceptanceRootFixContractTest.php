@@ -36,17 +36,17 @@ $legacyV105Ttt = $read('app/assets/js/production-v105-tictactoe-stability.js');
 $legacyV109Notifications = $read('app/assets/js/production-v109-notifications.js');
 
 $assert(
-    str_contains($main, "import './main-v110-handoff-shell.js?v=1103';")
-        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild'")
-        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild'"),
-    'v110 must publish the rebuilt lifecycle graph through a fresh isolated shell.'
+    str_contains($main, "import './main-v110-handoff-shell.js?v=1104';")
+        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r3-surrender-home-queue'")
+        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r3-surrender-home-queue'"),
+    'v110 must publish the surrender-home lifecycle through a fresh isolated shell.'
 );
 
 $assert(
     $count($entry, 'initV110AcceptanceRuntime();') === 1
         && $count($entry, 'initV110TargetedInteractions();') === 1
         && $count($entry, 'initV110MatchLifecycle();') === 1
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild'"),
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-surrender-home-queue'"),
     'Every retained v110 owner must initialize exactly once.'
 );
 
@@ -70,28 +70,40 @@ $assert(
     'games/game-invites.js must be the single active invitation action and rematch owner.'
 );
 
-$pendingPosition = strpos($lifecycle, 'renderPendingResult(optimistic, viewer);');
+$homePosition = strpos($lifecycle, "showScreen('home');");
 $requestPosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
-$confirmedPosition = strpos($lifecycle, 'renderConfirmedResult(authoritative, confirmedViewer);');
+$replayPosition = strpos($lifecycle, 'window.queueMicrotask(() => queuedButton.click());');
 $assert(
     str_contains($lifecycle, "window.addEventListener('click', ownMatchLifecycleClick, true)")
         && str_contains($lifecycle, "origin.closest('#confirmLeaveGame')")
-        && $pendingPosition !== false
+        && $homePosition !== false
         && $requestPosition !== false
-        && $confirmedPosition !== false
-        && $pendingPosition < $requestPosition
-        && $requestPosition < $confirmedPosition,
-    'Manual surrender must paint the result before the request and publish actions only after confirmation.'
+        && $replayPosition !== false
+        && $homePosition < $requestPosition
+        && $requestPosition < $replayPosition,
+    'Manual surrender must route home before the request and replay queued search only after release.'
 );
 
 $assert(
-    str_contains($lifecycle, 'data-v110-leave-pending')
-        && str_contains($lifecycle, 'disabled aria-busy="true">Найти нового соперника')
-        && str_contains($lifecycle, 'disabled aria-busy="true">В меню')
-        && str_contains($lifecycle, "origin.closest('#confirmLeaveGame, #newOpponent, #goHome, [data-create-rematch], [data-invite-action]')")
-        && strpos($lifecycle, 'id="newOpponent"') > $requestPosition
-        && strpos($lifecycle, 'id="goHome"') > $requestPosition,
-    'No rematch, menu, search or invitation action may overlap the in-flight surrender.'
+    str_contains($lifecycle, 'const SEARCH_START_IDS = new Set([')
+        && str_contains($lifecycle, 'queueSearchAfterRelease(startButton);')
+        && str_contains($lifecycle, "button.textContent = 'Запускаем поиск…';")
+        && str_contains($lifecycle, 'const queuedButton = releaseQueuedSearchButton();')
+        && str_contains($lifecycle, "document.dispatchEvent(new CustomEvent('mgw:game-dismissed'))")
+        && !str_contains($lifecycle, 'renderPendingResult')
+        && !str_contains($lifecycle, 'renderConfirmedResult')
+        && !str_contains($lifecycle, 'data-v110-leave-pending')
+        && !str_contains($lifecycle, 'openSheet('),
+    'Manual surrender must use one home/queue transition and expose no blocked result overlay.'
+);
+
+$assert(
+    str_contains($lifecycle, 'state.activeGame = null;')
+        && str_contains($lifecycle, 'closeSheet();')
+        && str_contains($lifecycle, 'clearGameView();')
+        && str_contains($lifecycle, "source:'v110-surrender-home'")
+        && str_contains($lifecycle, 'enterGame(snapshot, viewer);'),
+    'The transition must clear the playable surface immediately and restore the authoritative game on failure.'
 );
 
 $assert(
@@ -155,11 +167,11 @@ $assert(
 
 $assert(
     str_contains($shell, "notifications-screen-v110.js?v=1103")
-        && str_contains($entry, "production-v110-match-lifecycle.js?v=1103")
-        && str_contains($php, 'production-clean-entry-v110.js?v=1103')
-        && str_contains($php, 'main-v110.js?v=1103')
-        && str_contains($php, 'data-hotfix-build="v110-mvp14r2-lifecycle-owner-rebuild"'),
-    'Every rebuilt v110 browser owner must be reached through a fresh cache-busted URL.'
+        && str_contains($entry, "production-v110-match-lifecycle.js?v=1104")
+        && str_contains($php, 'production-clean-entry-v110.js?v=1104')
+        && str_contains($php, 'main-v110.js?v=1104')
+        && str_contains($php, 'data-hotfix-build="v110-mvp14r3-surrender-home-queue"'),
+    'Every changed v110 browser owner must be reached through a fresh cache-busted URL.'
 );
 
 $assert(

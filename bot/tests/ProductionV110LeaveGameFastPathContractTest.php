@@ -32,11 +32,24 @@ $assert(
     'leave_game must finish the known game and release the same session in one response.'
 );
 
-$paint = strpos($lifecycle, 'renderPendingResult(optimistic, viewer);');
+$home = strpos($lifecycle, "showScreen('home');");
 $request = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
+$replay = strpos($lifecycle, 'window.queueMicrotask(() => queuedButton.click());');
 $assert(
-    $paint !== false && $request !== false && $paint < $request,
-    'The visible result must render before the bounded server request starts.'
+    $home !== false
+        && $request !== false
+        && $replay !== false
+        && $home < $request
+        && $request < $replay,
+    'The player must see home before leave_game starts and queued search must replay only after release.'
+);
+
+$assert(
+    !str_contains($lifecycle, 'renderPendingResult')
+        && !str_contains($lifecycle, 'renderConfirmedResult')
+        && !str_contains($lifecycle, 'data-v110-leave-pending')
+        && str_contains($lifecycle, 'queueSearchAfterRelease(startButton);'),
+    'The fast path must not hide leave latency behind another blocked result sheet.'
 );
 
 fwrite(STDOUT, "ProductionV110LeaveGameFastPathContractTest: {$assertions} assertions passed\n");
