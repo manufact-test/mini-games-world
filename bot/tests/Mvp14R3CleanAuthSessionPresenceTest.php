@@ -5,19 +5,30 @@ use Mgw\CleanRuntime\Server\Auth\AuthenticatedIdentity;
 use Mgw\CleanRuntime\Server\Auth\AuthenticationException;
 use Mgw\CleanRuntime\Server\Auth\RuntimeAuthenticationService;
 use Mgw\CleanRuntime\Server\Auth\TelegramInitDataVerifier;
-use Mgw\CleanRuntime\Server\RuntimeBootstrapService;
+use Mgw\CleanRuntime\Server\Context\RuntimeRequestContextFactory;
+use Mgw\CleanRuntime\Server\Match\RuntimeMatchService;
+use Mgw\CleanRuntime\Server\Match\TicTacToeRules;
+use Mgw\CleanRuntime\Server\RuntimeApplicationService;
 use Mgw\CleanRuntime\Server\RuntimeConfig;
-use Mgw\CleanRuntime\Server\Storage\JsonFileRuntimeRepository;
+use Mgw\CleanRuntime\Server\Session\RuntimeSessionService;
+use Mgw\CleanRuntime\Server\Storage\JsonFileRuntimeStore;
 
 $root = dirname(__DIR__, 2);
-require_once $root . '/app/runtime/server/contracts/RuntimeRepository.php';
-require_once $root . '/app/runtime/server/RuntimeConfig.php';
-require_once $root . '/app/runtime/server/auth/AuthenticationException.php';
-require_once $root . '/app/runtime/server/auth/AuthenticatedIdentity.php';
-require_once $root . '/app/runtime/server/auth/TelegramInitDataVerifier.php';
-require_once $root . '/app/runtime/server/auth/RuntimeAuthenticationService.php';
-require_once $root . '/app/runtime/server/storage/JsonFileRuntimeRepository.php';
-require_once $root . '/app/runtime/server/RuntimeBootstrapService.php';
+foreach ([
+    '/app/runtime/server/contracts/RuntimeStateStore.php',
+    '/app/runtime/server/RuntimeConfig.php',
+    '/app/runtime/server/auth/AuthenticationException.php',
+    '/app/runtime/server/auth/AuthenticatedIdentity.php',
+    '/app/runtime/server/auth/TelegramInitDataVerifier.php',
+    '/app/runtime/server/auth/RuntimeAuthenticationService.php',
+    '/app/runtime/server/context/RuntimeRequestContext.php',
+    '/app/runtime/server/context/RuntimeRequestContextFactory.php',
+    '/app/runtime/server/storage/JsonFileRuntimeStore.php',
+    '/app/runtime/server/session/RuntimeSessionService.php',
+    '/app/runtime/server/match/TicTacToeRules.php',
+    '/app/runtime/server/match/RuntimeMatchService.php',
+    '/app/runtime/server/RuntimeApplicationService.php',
+] as $file) require_once $root . $file;
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -71,28 +82,25 @@ $verifier = new TelegramInitDataVerifier($botToken, 3600, 120, static fn(): int 
 
 $identity = $verifier->verify($validInitData);
 $assert($identity instanceof AuthenticatedIdentity, 'Valid Telegram initData must return one identity value.');
-$assert($identity->accountId === 'tg_987654321', 'Telegram account id must be derived from the signed Telegram id.');
+$assert($identity->accountId === 'tg_987654321', 'Telegram account id must derive from the signed Telegram id.');
 $assert($identity->method === 'telegram' && $identity->telegramId === '987654321', 'Telegram auth method and id must be explicit.');
 $assert($identity->firstName === 'Илья' && $identity->username === 'mgw_test', 'Signed Telegram profile fields must be projected.');
 
 $tampered = preg_replace('/hash=[a-f0-9]{64}/', 'hash=' . str_repeat('0', 64), $validInitData);
 $expect(AuthenticationException::class, fn() => $verifier->verify((string)$tampered), 'A forged Telegram hash must fail closed.');
-
 $stale = $sign(array_replace($baseFields, ['auth_date' => (string)($now - 7200)]), $botToken);
 $expect(AuthenticationException::class, fn() => $verifier->verify($stale), 'Expired Telegram initData must be rejected.');
-
 $future = $sign(array_replace($baseFields, ['auth_date' => (string)($now + 600)]), $botToken);
 $expect(AuthenticationException::class, fn() => $verifier->verify($future), 'Telegram initData beyond clock skew must be rejected.');
-
 $duplicate = $validInitData . '&auth_date=' . ($now - 20);
-$expect(AuthenticationException::class, fn() => $verifier->verify($duplicate), 'Duplicate Telegram fields must be rejected before signature validation.');
+$expect(AuthenticationException::class, fn() => $verifier->verify($duplicate), 'Duplicate Telegram fields must be rejected.');
 
 $temporary = sys_get_temp_dir() . '/mgw-clean-auth-' . bin2hex(random_bytes(8));
 try {
     $config = new RuntimeConfig(
         environment: 'staging',
         dataDirectory: $temporary,
-        build: 'test-clean-auth',
+        build: 'test-clean-auth-v3',
         botToken: $botToken,
         telegramInitDataMaxAgeSec: 3600,
         telegramInitDataClockSkewSec: 120,
@@ -101,10 +109,19 @@ try {
         allowBrowserStagingIdentity: true,
     );
     $authentication = new RuntimeAuthenticationService($config, $verifier);
+    $contexts = new RuntimeRequestContextFactory($authentication);
+    $store = new JsonFileRuntimeStore($temporary);
+    $application = new RuntimeApplicationService(
+        $config,
+        $store,
+        $contexts,
+        new RuntimeSessionService($config),
+        new RuntimeMatchService($config, new TicTacToeRules()),
+    );
+
     $installationId = 'install_auth_12345678901234567890';
     $sessionOne = 'session_auth_12345678901234567890';
     $sessionTwo = 'session_auth_09876543210987654321';
-
     $telegramPayload = [
         'installation_id' => $installationId,
         'session_id' => $sessionOne,
@@ -125,51 +142,47 @@ try {
 
     $authenticated = $authentication->authenticate($telegramPayload, $installationId);
     $assert($authenticated->accountId === 'tg_987654321', 'The clean auth owner must return the Telegram identity.');
-
     $forgedPayload = array_replace($telegramPayload, ['init_data' => (string)$tampered]);
-    $expect(AuthenticationException::class, fn() => $authentication->authenticate($forgedPayload, $installationId), 'Invalid Telegram data must never fall back to a browser identity.');
-
+    $expect(AuthenticationException::class, fn() => $authentication->authenticate($forgedPayload, $installationId), 'Invalid Telegram data must never fall back to browser staging.');
     $missingTelegramData = array_replace($telegramPayload, ['init_data' => '']);
-    $expect(AuthenticationException::class, fn() => $authentication->authenticate($missingTelegramData, $installationId), 'Telegram launch without initData must fail instead of creating a staging user.');
+    $expect(AuthenticationException::class, fn() => $authentication->authenticate($missingTelegramData, $installationId), 'Telegram launch without initData must fail closed.');
 
     $browserPayload = array_replace($telegramPayload, [
         'init_data' => '',
         'launch' => array_replace($telegramPayload['launch'], ['telegram_available' => false]),
     ]);
     $browserIdentity = $authentication->authenticate($browserPayload, $installationId);
-    $assert($browserIdentity->method === 'browser_staging', 'Direct browser staging must use only its explicit staging identity.');
-    $assert(str_starts_with($browserIdentity->accountId, 'stg_'), 'Browser staging account ids must be isolated from Telegram ids.');
+    $assert($browserIdentity->method === 'browser_staging' && str_starts_with($browserIdentity->accountId, 'stg_'), 'Browser staging identity must remain explicit and isolated.');
 
-    $repository = new JsonFileRuntimeRepository($temporary);
-    $service = new RuntimeBootstrapService($config, $repository, $authentication);
-    $first = $service->bootstrap($telegramPayload);
+    $first = $application->bootstrap($telegramPayload);
     $assert($first['account']['id'] === 'tg_987654321', 'Bootstrap must persist the authenticated Telegram account.');
     $assert($first['session']['id'] === $sessionOne && $first['session']['active_session_id'] === $sessionOne, 'The first clean session must own the idle account.');
-    $assert($first['session']['locked'] === false, 'The first clean session must not be locked.');
-    $assert($first['presence']['state'] === 'online' && $first['presence']['visibility'] === 'visible', 'Bootstrap must publish one online presence record.');
+    $assert($first['session']['locked'] === false, 'The first clean session must be unlocked.');
+    $assert($first['presence']['state'] === 'online' && $first['presence']['visibility'] === 'visible', 'Bootstrap must publish online presence.');
 
-    $heartbeat = $service->heartbeat($telegramPayload);
-    $assert($heartbeat['storage']['revision'] === 2, 'Heartbeat must advance the same atomic staging state.');
+    $heartbeat = $application->heartbeat($telegramPayload);
+    $assert($heartbeat['storage']['revision'] === 2, 'Heartbeat must advance the same v3 state.');
     $assert($heartbeat['account']['id'] === $first['account']['id'], 'Heartbeat must remain bound to the authenticated account.');
-    $assert(strtotime($heartbeat['presence']['expires_at']) > strtotime($heartbeat['presence']['last_seen_at']), 'Presence expiry must be later than the heartbeat.');
+    $assert(strtotime($heartbeat['presence']['expires_at']) > strtotime($heartbeat['presence']['last_seen_at']), 'Presence expiry must follow the heartbeat.');
 
     $secondSessionPayload = array_replace($telegramPayload, ['session_id' => $sessionTwo]);
-    $second = $service->bootstrap($secondSessionPayload);
-    $assert($second['session']['active_session_id'] === $sessionTwo, 'A new idle-device session may become the active session.');
-    $assert($second['session']['locked'] === false, 'Idle session takeover must remain explicit and unlocked.');
-    $assert($second['account']['id'] === $first['account']['id'], 'Multiple sessions must not create duplicate Telegram accounts.');
+    $second = $application->bootstrap($secondSessionPayload);
+    $assert($second['session']['active_session_id'] === $sessionTwo, 'A new idle-device session may become the active owner.');
+    $assert($second['session']['locked'] === false, 'Idle session takeover must remain unlocked.');
+    $assert($second['account']['id'] === $first['account']['id'], 'Multiple sessions must not duplicate Telegram accounts.');
 
     $unknownSessionPayload = array_replace($telegramPayload, ['session_id' => 'session_unknown_12345678901234567']);
-    $expect(RuntimeException::class, fn() => $service->heartbeat($unknownSessionPayload), 'Heartbeat must reject a session that was never bootstrapped.');
+    $expect(RuntimeException::class, fn() => $application->heartbeat($unknownSessionPayload), 'Heartbeat must reject a session that was never bootstrapped.');
 
-    $stored = file_get_contents($temporary . '/runtime-state-v2.json');
-    $assert(is_string($stored) && $stored !== '', 'The clean auth contour must publish the replacement staging state.');
+    $stored = file_get_contents($temporary . '/runtime-state-v3.json');
+    $assert(is_string($stored) && $stored !== '', 'The clean auth contour must publish v3 state.');
     $assert(!str_contains((string)$stored, $validInitData), 'Raw Telegram initData must never be persisted.');
-    $assert(!str_contains((string)$stored, (string)($baseFields['query_id'] ?? '')), 'Telegram query ids must never be persisted.');
+    $assert(!str_contains((string)$stored, (string)$baseFields['query_id']), 'Telegram query ids must never be persisted.');
     $assert(!str_contains((string)$stored, 'hash='), 'Telegram hashes must never be persisted.');
     $decoded = json_decode((string)$stored, true, 512, JSON_THROW_ON_ERROR);
-    $assert(count($decoded['accounts'] ?? []) === 1, 'One Telegram user must produce exactly one clean account record.');
-    $assert(count($decoded['sessions'] ?? []) === 2, 'Two bootstrapped devices must produce two explicit clean sessions.');
+    $assert(count($decoded['accounts'] ?? []) === 1, 'One Telegram user must produce one clean account.');
+    $assert(count($decoded['sessions'] ?? []) === 2, 'Two devices must produce two explicit clean sessions.');
+    $assert(count($decoded['presence'] ?? []) === 2, 'Presence must remain separate for two sessions.');
     $assert(($decoded['accounts']['tg_987654321']['active_session_id'] ?? null) === $sessionTwo, 'The account must expose one active session owner.');
 
     $noBrowserConfig = new RuntimeConfig(
@@ -180,11 +193,13 @@ try {
         allowBrowserStagingIdentity: false,
     );
     $strictAuth = new RuntimeAuthenticationService($noBrowserConfig, $verifier);
-    $expect(AuthenticationException::class, fn() => $strictAuth->authenticate($browserPayload, $installationId), 'Browser staging identity must be removable without adding another auth path.');
+    $expect(AuthenticationException::class, fn() => $strictAuth->authenticate($browserPayload, $installationId), 'Browser staging identity must be removable without another auth path.');
 
-    $unconfiguredVerifier = new TelegramInitDataVerifier('', 3600, 120, static fn(): int => $now);
-    $unconfiguredAuth = new RuntimeAuthenticationService($config, $unconfiguredVerifier);
-    $expect(RuntimeException::class, fn() => $unconfiguredAuth->authenticate($telegramPayload, $installationId), 'Telegram auth without a configured token must fail and must not fall back.');
+    $unconfiguredAuth = new RuntimeAuthenticationService(
+        $config,
+        new TelegramInitDataVerifier('', 3600, 120, static fn(): int => $now),
+    );
+    $expect(RuntimeException::class, fn() => $unconfiguredAuth->authenticate($telegramPayload, $installationId), 'Telegram auth without a token must fail without fallback.');
 } finally {
     $cleanup($temporary);
 }
