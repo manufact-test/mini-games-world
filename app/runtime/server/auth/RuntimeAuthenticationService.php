@@ -21,7 +21,7 @@ final readonly class RuntimeAuthenticationService
         }
 
         if (!$this->config->allowBrowserStagingIdentity) {
-            throw new \RuntimeException('Откройте clean staging через Telegram.');
+            throw new AuthenticationException('Откройте clean staging через Telegram.');
         }
 
         $installationId = trim($installationId);
