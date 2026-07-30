@@ -100,9 +100,10 @@ $assert(
     'The no-store v112 candidate entrypoint must be complete.'
 );
 $assert(
-    str_contains($welcome, '/app/v110.php?v=110')
-        && !str_contains($welcome, '/app/v112.php?v=112'),
-    'v112 must remain inactive until focused manual acceptance and explicit launch approval.'
+    str_contains($welcome, '/app/v112.php?v=112')
+        && str_contains($welcome, '/app/v110.php?v=110')
+        && str_contains($welcome, 'Current authorized acceptance target: v112'),
+    'v112 must be the authorized Telegram launch while v110 remains an explicit rollback.'
 );
 $assert(
     str_contains($v110, 'seedToastPreview(toast);')
