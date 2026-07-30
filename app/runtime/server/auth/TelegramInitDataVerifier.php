@@ -34,7 +34,7 @@ final readonly class TelegramInitDataVerifier
         $hash = strtolower(trim((string)($data['hash'] ?? '')));
         $userJson = (string)($data['user'] ?? '');
         if (!preg_match('/^[a-f0-9]{64}$/', $hash) || $userJson === '') {
-            throw new \RuntimeException('Не удалось подтвердить запуск через Telegram.');
+            throw new AuthenticationException('Не удалось подтвердить запуск через Telegram.');
         }
 
         unset($data['hash']);
@@ -47,7 +47,7 @@ final readonly class TelegramInitDataVerifier
         $secretKey = hash_hmac('sha256', $this->botToken, 'WebAppData', true);
         $calculated = hash_hmac('sha256', $checkString, $secretKey);
         if (!hash_equals($calculated, $hash)) {
-            throw new \RuntimeException('Не удалось подтвердить запуск через Telegram.');
+            throw new AuthenticationException('Не удалось подтвердить запуск через Telegram.');
         }
 
         $authDate = (int)($data['auth_date'] ?? 0);
@@ -55,17 +55,21 @@ final readonly class TelegramInitDataVerifier
         if ($authDate <= 0
             || $authDate > $now + $this->clockSkewSec
             || $now - $authDate > $this->maxAgeSec) {
-            throw new \RuntimeException('Срок подтверждения запуска через Telegram истёк. Откройте приложение заново.');
+            throw new AuthenticationException('Срок подтверждения запуска через Telegram истёк. Откройте приложение заново.');
         }
 
-        $user = json_decode($userJson, true, 32, JSON_THROW_ON_ERROR);
+        try {
+            $user = json_decode($userJson, true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            throw new AuthenticationException('Не удалось прочитать профиль Telegram.');
+        }
         if (!is_array($user)) {
-            throw new \RuntimeException('Не удалось прочитать профиль Telegram.');
+            throw new AuthenticationException('Не удалось прочитать профиль Telegram.');
         }
 
         $telegramId = trim((string)($user['id'] ?? ''));
         if (!preg_match('/^[0-9]{1,24}$/', $telegramId)) {
-            throw new \RuntimeException('Не удалось определить пользователя Telegram.');
+            throw new AuthenticationException('Не удалось определить пользователя Telegram.');
         }
 
         return new AuthenticatedIdentity(
@@ -84,7 +88,7 @@ final readonly class TelegramInitDataVerifier
     {
         $query = trim($query);
         if ($query === '' || strlen($query) > 16384) {
-            throw new \RuntimeException('Не удалось подтвердить запуск через Telegram.');
+            throw new AuthenticationException('Не удалось подтвердить запуск через Telegram.');
         }
 
         $result = [];
@@ -94,7 +98,7 @@ final readonly class TelegramInitDataVerifier
             $key = urldecode($rawKey);
             $value = urldecode($rawValue);
             if ($key === '' || array_key_exists($key, $result)) {
-                throw new \RuntimeException('Не удалось подтвердить запуск через Telegram.');
+                throw new AuthenticationException('Не удалось подтвердить запуск через Telegram.');
             }
             $result[$key] = $value;
         }
