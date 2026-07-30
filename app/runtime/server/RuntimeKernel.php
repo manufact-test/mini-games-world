@@ -22,6 +22,9 @@ final readonly class RuntimeKernel
         if ($method === 'POST' && $action === 'bootstrap') {
             return ['status' => 200, 'body' => $this->bootstrapService->bootstrap($payload)];
         }
+        if ($method === 'POST' && $action === 'heartbeat') {
+            return ['status' => 200, 'body' => $this->bootstrapService->heartbeat($payload)];
+        }
 
         return [
             'status' => 404,
