@@ -4,19 +4,28 @@ declare(strict_types=1);
 use Mgw\CleanRuntime\Server\Auth\AuthenticationException;
 use Mgw\CleanRuntime\Server\Auth\RuntimeAuthenticationService;
 use Mgw\CleanRuntime\Server\Auth\TelegramInitDataVerifier;
-use Mgw\CleanRuntime\Server\RuntimeBootstrapService;
+use Mgw\CleanRuntime\Server\Context\RuntimeRequestContextFactory;
+use Mgw\CleanRuntime\Server\Match\RuntimeMatchService;
+use Mgw\CleanRuntime\Server\Match\TicTacToeRules;
+use Mgw\CleanRuntime\Server\RuntimeApplicationService;
 use Mgw\CleanRuntime\Server\RuntimeConfig;
 use Mgw\CleanRuntime\Server\RuntimeKernel;
-use Mgw\CleanRuntime\Server\Storage\JsonFileRuntimeRepository;
+use Mgw\CleanRuntime\Server\Session\RuntimeSessionService;
+use Mgw\CleanRuntime\Server\Storage\JsonFileRuntimeStore;
 
-require_once __DIR__ . '/server/contracts/RuntimeRepository.php';
+require_once __DIR__ . '/server/contracts/RuntimeStateStore.php';
 require_once __DIR__ . '/server/RuntimeConfig.php';
 require_once __DIR__ . '/server/auth/AuthenticationException.php';
 require_once __DIR__ . '/server/auth/AuthenticatedIdentity.php';
 require_once __DIR__ . '/server/auth/TelegramInitDataVerifier.php';
 require_once __DIR__ . '/server/auth/RuntimeAuthenticationService.php';
-require_once __DIR__ . '/server/storage/JsonFileRuntimeRepository.php';
-require_once __DIR__ . '/server/RuntimeBootstrapService.php';
+require_once __DIR__ . '/server/context/RuntimeRequestContext.php';
+require_once __DIR__ . '/server/context/RuntimeRequestContextFactory.php';
+require_once __DIR__ . '/server/storage/JsonFileRuntimeStore.php';
+require_once __DIR__ . '/server/session/RuntimeSessionService.php';
+require_once __DIR__ . '/server/match/TicTacToeRules.php';
+require_once __DIR__ . '/server/match/RuntimeMatchService.php';
+require_once __DIR__ . '/server/RuntimeApplicationService.php';
 require_once __DIR__ . '/server/RuntimeKernel.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -47,15 +56,18 @@ try {
     }
 
     $config = RuntimeConfig::fromEnvironment();
-    $repository = new JsonFileRuntimeRepository($config->dataDirectory);
+    $store = new JsonFileRuntimeStore($config->dataDirectory);
     $telegramVerifier = new TelegramInitDataVerifier(
         $config->botToken,
         $config->telegramInitDataMaxAgeSec,
         $config->telegramInitDataClockSkewSec,
     );
     $authentication = new RuntimeAuthenticationService($config, $telegramVerifier);
-    $service = new RuntimeBootstrapService($config, $repository, $authentication);
-    $kernel = new RuntimeKernel($service);
+    $contexts = new RuntimeRequestContextFactory($authentication);
+    $sessions = new RuntimeSessionService($config);
+    $matches = new RuntimeMatchService($config, new TicTacToeRules());
+    $application = new RuntimeApplicationService($config, $store, $contexts, $sessions, $matches);
+    $kernel = new RuntimeKernel($application);
     $response = $kernel->handle($method, $action, $payload);
 
     http_response_code($response['status']);
@@ -68,6 +80,9 @@ try {
     echo json_encode(['ok' => false, 'error' => $error->getMessage()], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 } catch (InvalidArgumentException $error) {
     http_response_code(422);
+    echo json_encode(['ok' => false, 'error' => $error->getMessage()], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+} catch (RuntimeException $error) {
+    http_response_code(409);
     echo json_encode(['ok' => false, 'error' => $error->getMessage()], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 } catch (Throwable $error) {
     error_log('MGW clean runtime API failure: ' . $error->getMessage());
