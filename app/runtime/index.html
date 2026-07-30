@@ -12,29 +12,30 @@
     <section class="runtime-screen is-active" data-screen="boot" aria-live="polite">
       <div class="runtime-card">
         <span class="runtime-kicker">Mini Games World</span>
-        <h1>Подключаем чистый staging</h1>
-        <p data-runtime-message>Проверяем отдельный сервер и отдельное хранилище.</p>
+        <h1>Подготавливаем clean staging</h1>
+        <p data-runtime-message>Проверяем авторизацию, сессию и присутствие.</p>
       </div>
     </section>
 
     <section class="runtime-screen" data-screen="home" hidden>
       <div class="runtime-card">
         <span class="runtime-kicker">Staging</span>
-        <h1>Чистый сервер подключён</h1>
-        <p>Legacy bootstrap, production storage и DB bridges не загружены.</p>
+        <h1>Clean runtime подключён</h1>
+        <p>Авторизация, сессия и присутствие работают через один изолированный контур.</p>
         <dl class="runtime-details" data-launch-details></dl>
       </div>
     </section>
 
     <section class="runtime-screen" data-screen="error" hidden>
       <div class="runtime-card runtime-card--error">
-        <span class="runtime-kicker">Ошибка staging</span>
-        <h1>Не удалось подключить чистый сервер</h1>
-        <p data-error-message>Проверьте staging endpoint и повторите запуск.</p>
+        <span class="runtime-kicker">Ошибка запуска</span>
+        <h1>Не удалось открыть приложение</h1>
+        <p data-error-message>Повторите запуск из Telegram.</p>
       </div>
     </section>
   </main>
 
-  <script type="module" src="./assets/js/entry.js?v=2"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script type="module" src="./assets/js/entry.js?v=3"></script>
 </body>
 </html>
