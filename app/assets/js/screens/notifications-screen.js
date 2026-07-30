@@ -4,7 +4,6 @@ import { haptic } from '../telegram/telegram-app.js?v=27';
 
 const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v3';
 const MAX_ANNOUNCED_IDS = 300;
-const MAX_LIVE_ITEMS = 30;
 const NOTIFICATION_POLL_MS = 30000;
 const NOTIFICATION_TOAST_DURATION = 8000;
 
@@ -15,8 +14,6 @@ let openingSheet = false;
 let appReady = false;
 let baselineLoaded = false;
 let announcedIds = loadAnnouncedIds();
-let liveNotificationItems = new Map();
-let notificationToastItem = null;
 let notificationToastTimer = null;
 let notificationToastPointer = null;
 let suppressNotificationToastClickUntil = 0;
@@ -31,7 +28,7 @@ export function initNotificationsScreen(){
     if (!trigger) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    openNotificationsSheet({ seedItems:currentLiveItems() });
+    openNotificationsSheet();
   }, true);
 
   document.addEventListener('mgw:app-ready', () => {
@@ -54,13 +51,8 @@ export function initNotificationsScreen(){
     setUnreadCount(unreadCount);
     if (!item?.id) return;
 
-    rememberLiveNotification(item);
-
     if (isNotificationsSheetOpen()) {
-      renderNotifications(currentLiveItems());
-      if (!openingSheet) {
-        openNotificationsSheet({ hapticFeedback:false, seedItems:currentLiveItems() });
-      }
+      openNotificationsSheet({ hapticFeedback:false });
       return;
     }
 
@@ -71,11 +63,8 @@ export function initNotificationsScreen(){
   });
 
   document.addEventListener('mgw:notifications-refresh', () => {
-    if (isNotificationsSheetOpen()) {
-      openNotificationsSheet({ hapticFeedback:false, seedItems:currentLiveItems() });
-    } else {
-      refreshNotificationBadge(false);
-    }
+    if (isNotificationsSheetOpen()) openNotificationsSheet({ hapticFeedback:false });
+    else refreshNotificationBadge(false);
   });
 
   // The first request is only a baseline. Historical weekly/payment events are
@@ -90,7 +79,6 @@ export async function refreshNotificationBadge(announce = false){
   try {
     const result = await api.notifications(false);
     const items = Array.isArray(result.items) ? result.items : [];
-    rememberLiveNotifications(items);
     setUnreadCount(Number(result.unread_count || 0));
 
     if (!baselineLoaded || !announce || !appReady) {
@@ -114,40 +102,29 @@ export async function refreshNotificationBadge(announce = false){
   }
 }
 
-async function openNotificationsSheet({ hapticFeedback = true, seedItems = [] } = {}){
+async function openNotificationsSheet({ hapticFeedback = true } = {}){
   if (openingSheet) return;
   openingSheet = true;
-
-  const immediateItems = mergeNotificationItems(seedItems, currentLiveItems());
   dismissNotificationToast();
   if (hapticFeedback) haptic('light');
 
-  if (immediateItems.length) {
-    renderNotifications(immediateItems);
-  } else {
-    openSheet(`
-      <div class="sheet-head">
-        <div><h2>Уведомления</h2></div>
-        <button class="close" data-close-sheet type="button">×</button>
-      </div>
-      <div class="notifications-loading"><div>🔔</div><strong>Загружаем…</strong></div>
-    `);
-  }
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Уведомления</h2></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    <div class="notifications-loading"><div>🔔</div><strong>Загружаем…</strong></div>
+  `);
 
   try {
     const result = await api.notifications(true);
-    const serverItems = Array.isArray(result.items) ? result.items : [];
-    rememberLiveNotifications(serverItems);
-    rememberNotifications(serverItems);
+    const items = Array.isArray(result.items) ? result.items : [];
+    rememberNotifications(items);
     baselineLoaded = true;
     setUnreadCount(0);
-
-    // A live toast is already an authoritative server item. Keep it visible if
-    // the cached mark-read snapshot is briefly behind the event that produced it.
-    const items = mergeNotificationItems(serverItems, immediateItems);
     renderNotifications(items);
   } catch (error) {
-    if (!immediateItems.length) renderNotificationsError();
+    renderNotificationsError();
   } finally {
     openingSheet = false;
   }
@@ -228,9 +205,8 @@ function ensureNotificationToast(){
 
   el.addEventListener('click', () => {
     if (!el.classList.contains('show') || Date.now() < suppressNotificationToastClickUntil) return;
-    const seedItems = notificationToastItem ? [notificationToastItem] : currentLiveItems();
     dismissNotificationToast();
-    openNotificationsSheet({ seedItems });
+    openNotificationsSheet();
   });
   el.addEventListener('keydown', event => {
     if (!el.classList.contains('show')) return;
@@ -239,9 +215,8 @@ function ensureNotificationToast(){
       dismissNotificationToast();
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      const seedItems = notificationToastItem ? [notificationToastItem] : currentLiveItems();
       dismissNotificationToast();
-      openNotificationsSheet({ seedItems });
+      openNotificationsSheet();
     }
   });
   el.addEventListener('pointerdown', event => {
@@ -287,8 +262,6 @@ function showNotificationToast(item){
   const title = String(item?.title || 'Уведомление').trim();
   const message = notificationMessage(item);
 
-  rememberLiveNotification(item);
-  notificationToastItem = cloneNotification(item);
   window.clearTimeout(notificationToastTimer);
   notificationToastPointer = null;
   el.className = `notification-toast ${tone}`;
@@ -315,59 +288,12 @@ function canShowNotificationToast(){
 function dismissNotificationToast(){
   window.clearTimeout(notificationToastTimer);
   notificationToastTimer = null;
-  notificationToastItem = null;
   notificationToastPointer = null;
   const el = document.getElementById('notificationToast');
   if (!el) return;
   el.classList.remove('show', 'dragging');
   el.style.transform = '';
   el.style.opacity = '';
-}
-
-function rememberLiveNotifications(items){
-  for (const item of Array.isArray(items) ? items : []) rememberLiveNotification(item);
-}
-
-function rememberLiveNotification(item){
-  const id = String(item?.id || '');
-  if (!id) return;
-  liveNotificationItems.set(id, {
-    ...(liveNotificationItems.get(id) || {}),
-    ...cloneNotification(item),
-  });
-  liveNotificationItems = new Map(
-    currentLiveItems(MAX_LIVE_ITEMS).map(value => [String(value.id), value])
-  );
-}
-
-function currentLiveItems(limit = MAX_LIVE_ITEMS){
-  return [...liveNotificationItems.values()]
-    .sort((a, b) => notificationTime(b) - notificationTime(a))
-    .slice(0, limit)
-    .map(cloneNotification);
-}
-
-function mergeNotificationItems(primary, fallback){
-  const merged = new Map();
-  for (const item of [...(Array.isArray(fallback) ? fallback : []), ...(Array.isArray(primary) ? primary : [])]) {
-    const id = String(item?.id || '');
-    if (!id) continue;
-    merged.set(id, { ...(merged.get(id) || {}), ...cloneNotification(item) });
-  }
-  return [...merged.values()]
-    .sort((a, b) => notificationTime(b) - notificationTime(a))
-    .slice(0, MAX_LIVE_ITEMS);
-}
-
-function cloneNotification(item){
-  if (!item || typeof item !== 'object') return {};
-  if (typeof structuredClone === 'function') return structuredClone(item);
-  return JSON.parse(JSON.stringify(item));
-}
-
-function notificationTime(item){
-  const value = Date.parse(String(item?.created_at || ''));
-  return Number.isFinite(value) ? value : 0;
 }
 
 function notificationIcon(tone, type = ''){
