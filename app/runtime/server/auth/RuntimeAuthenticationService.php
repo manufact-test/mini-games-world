@@ -20,6 +20,11 @@ final readonly class RuntimeAuthenticationService
             return $this->telegramVerifier->verify($initData);
         }
 
+        $launch = is_array($payload['launch'] ?? null) ? $payload['launch'] : [];
+        if ((bool)($launch['telegram_available'] ?? false)) {
+            throw new AuthenticationException('Telegram не передал данные авторизации. Закройте приложение и откройте заново.');
+        }
+
         if (!$this->config->allowBrowserStagingIdentity) {
             throw new AuthenticationException('Откройте clean staging через Telegram.');
         }
