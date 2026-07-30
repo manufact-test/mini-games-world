@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14r2-handoff-batch';
+window.__MGW_BUILD__ = 'v110-mvp14r2-lifecycle-owner-rebuild';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -17,7 +17,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110.js?v=1102';
+import { initNotificationsScreen } from './screens/notifications-screen-v110.js?v=1103';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
