@@ -1,6 +1,9 @@
 const INITIAL_STATE = Object.freeze({
   phase:'booting',
   launch:null,
+  server:null,
+  storage:null,
+  installation:null,
   account:null,
   session:null,
   presence:null,
