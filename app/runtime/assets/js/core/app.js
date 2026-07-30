@@ -4,6 +4,9 @@ import { readCanonicalLaunch } from './launch.js';
 import { installRuntimeErrorBoundary } from './error-boundary.js';
 import { createRuntimeApi } from './api-client.js';
 import { getOrCreateInstallationId } from './installation.js';
+import { getOrCreateSessionId } from './session.js';
+import { readTelegramInitData, readPresenceContext } from './client-context.js';
+import { createPresenceOwner } from './presence-owner.js';
 
 export async function startCleanRuntime(){
   const root = document.getElementById('app');
@@ -17,26 +20,48 @@ export async function startCleanRuntime(){
   try {
     const launch = readCanonicalLaunch();
     const installationId = getOrCreateInstallationId();
+    const sessionId = getOrCreateSessionId();
+    const initData = readTelegramInitData();
+    const requestContext = () => ({
+      installationId,
+      sessionId,
+      initData,
+      launch,
+      presence:readPresenceContext(),
+    });
+
+    window.Telegram?.WebApp?.ready?.();
+    window.Telegram?.WebApp?.expand?.();
     store.setState({ phase:'connecting', launch });
 
-    const bootstrap = await api.bootstrap({ installationId, launch });
+    const bootstrap = await api.bootstrap(requestContext());
     store.setState({
       phase:'ready',
       launch,
       server:bootstrap.server,
       storage:bootstrap.storage,
       installation:bootstrap.installation,
+      account:bootstrap.account,
+      session:bootstrap.session,
+      presence:bootstrap.presence,
     });
 
+    store.subscribe(state => renderRuntimeDetails(root, state));
     renderRuntimeDetails(root, store.getState());
     router.show('home');
     document.documentElement.setAttribute('data-mgw-runtime', 'clean-v1');
+
+    const presenceOwner = createPresenceOwner({ api, store, requestContext });
+    presenceOwner.start();
+
     document.dispatchEvent(new CustomEvent('mgw:clean-runtime-ready', {
       detail:{
         launch,
         server:bootstrap.server,
         storage:bootstrap.storage,
-        installation:bootstrap.installation,
+        account:bootstrap.account,
+        session:bootstrap.session,
+        presence:bootstrap.presence,
       },
     }));
   } catch (error) {
@@ -51,19 +76,26 @@ function renderRuntimeDetails(root, state){
   const server = state.server || {};
   const storage = state.storage || {};
   const installation = state.installation || {};
+  const account = state.account || {};
+  const session = state.session || {};
+  const presence = state.presence || {};
 
   target.replaceChildren(
     detailRow('Runtime', launch.runtime),
-    detailRow('Маршрут', launch.path),
     detailRow('Источник', launch.source),
-    detailRow('Invite token', launch.inviteToken || 'нет'),
-    detailRow('Telegram', launch.telegramAvailable ? 'доступен' : 'не обнаружен'),
+    detailRow('Авторизация', authLabel(account.auth_method)),
+    detailRow('Игрок', account.first_name || 'Staging player'),
+    detailRow('Сессия', session.locked ? 'занята другим устройством' : 'активна'),
+    detailRow('Присутствие', presence.state === 'online' ? 'онлайн' : presence.state || '—'),
     detailRow('Server build', server.build),
-    detailRow('Среда', server.environment),
     detailRow('Storage', storage.adapter),
     detailRow('Ревизия', storage.revision),
     detailRow('Запусков staging', installation.launch_count),
   );
+}
+
+function authLabel(method){
+  return method === 'telegram' ? 'Telegram' : method === 'browser_staging' ? 'Browser staging' : '—';
 }
 
 function detailRow(label, value){
