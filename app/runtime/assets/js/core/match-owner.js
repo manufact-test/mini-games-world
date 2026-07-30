@@ -20,6 +20,7 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   let pollInFlight = null;
   let pollAbortController = null;
   let pollTimer = 0;
+  let pendingResultTitle = '';
   let unsubscribe = null;
 
   function start(){
@@ -36,6 +37,7 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     root.removeEventListener('click', onClick);
     unsubscribe?.();
     unsubscribe = null;
+    pendingResultTitle = '';
     stopPolling();
     commandAbortController?.abort();
     commandAbortController = null;
@@ -97,8 +99,14 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     setBusy(true);
     commandInFlight = Promise.resolve()
       .then(() => operation(controller.signal))
-      .then(applyProjection)
-      .catch(error => isAbortError(error) ? null : showTransientError(error))
+      .then(result => {
+        pendingResultTitle = '';
+        return applyProjection(result);
+      })
+      .catch(error => {
+        pendingResultTitle = '';
+        return isAbortError(error) ? null : showTransientError(error);
+      })
       .finally(() => {
         if (commandAbortController === controller) commandAbortController = null;
         commandInFlight = null;
@@ -117,7 +125,7 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     pollAbortController = controller;
     pollInFlight = api.syncMatch(requestContext(), { signal:controller.signal })
       .then(applyProjection)
-      .catch(error => isAbortError(error) ? null : null)
+      .catch(() => null)
       .finally(() => {
         if (pollAbortController === controller) pollAbortController = null;
         pollInFlight = null;
@@ -132,6 +140,11 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   }
 
   function render(state){
+    if (pendingResultTitle && commandInFlight) {
+      renderPendingResult(pendingResultTitle, state);
+      router.show('result');
+      return;
+    }
     if (state.matchResult) {
       renderResult(state);
       router.show('result');
@@ -219,6 +232,12 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
   }
 
   function showPendingResult(title, state){
+    pendingResultTitle = title;
+    renderPendingResult(title, state);
+    router.show('result');
+  }
+
+  function renderPendingResult(title, state){
     setText('[data-result-title]', title);
     setText('[data-result-reason]', 'Подтверждаем результат на сервере…');
     setText('[data-result-balance]', String(state.balances?.match ?? '—'));
@@ -226,7 +245,6 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     for (const button of root.querySelectorAll('[data-screen="result"] [data-match-action]')) {
       if (button instanceof HTMLButtonElement) button.disabled = true;
     }
-    router.show('result');
   }
 
   function startPolling(){
@@ -298,7 +316,7 @@ function pendingMoveTitle(match, cell){
 }
 
 function isAbortError(error){
-  return error instanceof DOMException && error.name === 'AbortError';
+  return String(error?.name || '') === 'AbortError';
 }
 
 function commandId(){
