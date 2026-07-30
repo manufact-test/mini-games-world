@@ -1,4 +1,4 @@
-import { createRuntimeStore } from './store.js';
+import { createRuntimeStore } from './store.js?v=7';
 import { createRuntimeRouter } from './router.js';
 import { readCanonicalLaunch } from './launch.js';
 import { installRuntimeErrorBoundary } from './error-boundary.js';
@@ -7,9 +7,9 @@ import { getOrCreateInstallationId } from './installation.js';
 import { getOrCreateSessionId } from './session.js';
 import { readTelegramInitData, readPresenceContext } from './client-context.js';
 import { createPresenceOwner } from './presence-owner.js';
-import { createMatchOwner } from './match-owner.js?v=6';
+import { createMatchOwner } from './match-owner.js?v=7';
 
-const CLIENT_BUILD = 'clean-client-v6-action-priority';
+const CLIENT_BUILD = 'clean-client-v7-surrender-transition';
 
 export async function startCleanRuntime(){
   const root = document.getElementById('app');
