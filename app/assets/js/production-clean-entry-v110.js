@@ -21,7 +21,7 @@ import { initV110TargetedInteractions } from './production-v110-targeted-interac
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-surrender-home-queue';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-invite-notification-speed';
 
 // v110 keeps one invitation owner (games/game-invites.js), one notification
 // owner (notifications-screen-v110.js) and one manual surrender owner. Retired

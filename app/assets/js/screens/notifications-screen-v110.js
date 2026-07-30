@@ -13,6 +13,7 @@ let initialized = false;
 let notificationPoll = null;
 let refreshingBadge = false;
 let openingSheet = false;
+let openingSheetPromise = null;
 let appReady = false;
 let baselineLoaded = false;
 let announcedIds = loadAnnouncedIds();
@@ -107,37 +108,46 @@ async function refreshBadge(announce){
 }
 
 async function openNotificationsSheet(seedItems = [], hapticFeedback = true){
-  if (openingSheet) return;
-  openingSheet = true;
-
-  const immediate = mergeNotificationItems(seedItems, currentItems());
+  mergeItems(seedItems);
+  const immediate = currentItems();
   dismissToast();
   if (hapticFeedback) haptic('light');
 
+  // A live toast can be clicked while an older bell request is still opening.
+  // Never discard that second seed: paint the merged live list immediately and
+  // let the one in-flight authoritative request finish underneath it.
   if (immediate.length) renderNotifications(immediate);
-  else renderLoading();
+  else if (!openingSheetPromise) renderLoading();
 
-  try {
-    // Opening never goes through the v101 optimistic mark-read cache. The first
-    // response is an authoritative no-store list, so a stale empty snapshot can
-    // never replace the live item that produced the toast.
-    const result = await rawNotifications(false);
-    const serverItems = Array.isArray(result?.items) ? result.items : [];
-    mergeItems(serverItems);
-    rememberAnnouncedItems(serverItems);
-    baselineLoaded = true;
+  if (openingSheetPromise) return openingSheetPromise;
 
-    const visible = mergeNotificationItems(serverItems, immediate);
-    renderNotifications(visible);
-    setUnreadCount(0);
+  openingSheet = true;
+  openingSheetPromise = (async () => {
+    try {
+      // Opening never goes through the v101 optimistic mark-read cache. The first
+      // response is an authoritative no-store list, so a stale empty snapshot can
+      // never replace the live item that produced the toast.
+      const result = await rawNotifications(false);
+      const serverItems = Array.isArray(result?.items) ? result.items : [];
+      mergeItems(serverItems);
+      rememberAnnouncedItems(serverItems);
+      baselineLoaded = true;
 
-    // Marking read is a separate background mutation and never owns rendering.
-    void rawNotifications(true).catch(() => null);
-  } catch (error) {
-    if (!immediate.length) renderError();
-  } finally {
-    openingSheet = false;
-  }
+      const visible = mergeNotificationItems(serverItems, currentItems());
+      renderNotifications(visible);
+      setUnreadCount(0);
+
+      // Marking read is a separate background mutation and never owns rendering.
+      void rawNotifications(true).catch(() => null);
+    } catch (error) {
+      if (!currentItems().length) renderError();
+    } finally {
+      openingSheet = false;
+      openingSheetPromise = null;
+    }
+  })();
+
+  return openingSheetPromise;
 }
 
 function renderLoading(){
