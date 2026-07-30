@@ -23,14 +23,14 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        // Current authorized acceptance target: v110 root-owner fixes over the accepted v105 shell.
+        // Current authorized acceptance target: v112 client-only instant launch overlay over accepted v110.
         // Retained explicit no-store rollback/investigation entrypoints:
         // '/app/v96.php?v=96', '/app/v97.php?v=97', '/app/v98.php?v=98', '/app/v99.php?v=99',
         // '/app/v100.php?v=100', '/app/v101.php?v=101', '/app/v102.php?v=102', '/app/v103.php?v=103',
         // '/app/v104.php?v=104', '/app/v105.php?v=105', '/app/v106.php?v=106', '/app/v107.php?v=107',
-        // '/app/v108.php?v=108', '/app/v109.php?v=109'.
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v110.php?v=110';
-        if ($baseWebAppUrl === '/app/v110.php?v=110') return false;
+        // '/app/v108.php?v=108', '/app/v109.php?v=109', '/app/v110.php?v=110'.
+        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/v112.php?v=112';
+        if ($baseWebAppUrl === '/app/v112.php?v=112') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
