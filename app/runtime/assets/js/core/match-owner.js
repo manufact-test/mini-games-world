@@ -74,7 +74,7 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     }
     if (action === 'surrender') {
       const gameId = String(state.activeMatch?.id || '');
-      if (gameId) await runSurrenderTransition(state, gameId);
+      if (gameId) await runSurrenderTransition(gameId);
       return;
     }
     if (action === 'dismiss-result') {
@@ -124,7 +124,7 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
     return commandInFlight;
   }
 
-  async function runSurrenderTransition(state, gameId){
+  async function runSurrenderTransition(gameId){
     if (commandInFlight) return commandInFlight;
     pausePolling();
 
@@ -153,8 +153,8 @@ export function createMatchOwner({ root, api, store, router, requestContext }){
           finalProjection = await api.startSearch(context, commandId(), { signal:controller.signal });
         }
 
-        store.setState({ matchTransition:null });
         applyProjection(finalProjection);
+        store.setState({ matchTransition:null });
         return finalProjection;
       } catch (error) {
         store.setState({ matchTransition:null });
