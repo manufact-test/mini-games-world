@@ -3,13 +3,32 @@ const ENDPOINT = new URL('../../../api.php', import.meta.url);
 export function createRuntimeApi(fetchImpl = window.fetch.bind(window)){
   if (typeof fetchImpl !== 'function') throw new TypeError('A fetch implementation is required.');
 
-  async function bootstrap(context){
-    return post('bootstrap', buildPayload(context, true));
-  }
-
-  async function heartbeat(context){
-    return post('heartbeat', buildPayload(context, false));
-  }
+  const bootstrap = context => post('bootstrap', buildPayload(context, true));
+  const heartbeat = context => post('heartbeat', buildPayload(context, false));
+  const syncMatch = context => post('match_sync', buildPayload(context, false));
+  const startSearch = (context, commandId) => post('match_start_search', {
+    ...buildPayload(context, false),
+    command_id:String(commandId || ''),
+  });
+  const cancelSearch = (context, commandId) => post('match_cancel_search', {
+    ...buildPayload(context, false),
+    command_id:String(commandId || ''),
+  });
+  const makeMove = (context, gameId, cell, commandId) => post('match_move', {
+    ...buildPayload(context, false),
+    game_id:String(gameId || ''),
+    cell:Number(cell),
+    command_id:String(commandId || ''),
+  });
+  const surrender = (context, gameId, commandId) => post('match_surrender', {
+    ...buildPayload(context, false),
+    game_id:String(gameId || ''),
+    command_id:String(commandId || ''),
+  });
+  const dismissResult = (context, commandId) => post('match_dismiss_result', {
+    ...buildPayload(context, false),
+    command_id:String(commandId || ''),
+  });
 
   async function health(){
     const response = await fetch(`${ENDPOINT.href}?action=health`, {
@@ -31,7 +50,17 @@ export function createRuntimeApi(fetchImpl = window.fetch.bind(window)){
     return readResponse(response);
   }
 
-  return Object.freeze({ bootstrap, heartbeat, health });
+  return Object.freeze({
+    bootstrap,
+    heartbeat,
+    health,
+    syncMatch,
+    startSearch,
+    cancelSearch,
+    makeMove,
+    surrender,
+    dismissResult,
+  });
 }
 
 function buildPayload(context, includeLaunch){
