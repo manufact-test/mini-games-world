@@ -8,15 +8,47 @@
 html,body{min-height:100%;margin:0;background:#0b0f18}
 body{min-height:100svh}
 button,input,select,textarea{font:inherit}
-.runtime-shell{min-height:100svh;display:grid;place-items:center;padding:24px}
-.runtime-screen{width:min(100%,460px)}
+button{touch-action:manipulation}
+.runtime-shell{min-height:100svh;display:grid;place-items:center;padding:20px}
+.runtime-screen{width:min(100%,480px)}
 .runtime-screen[hidden]{display:none!important}
 .runtime-card{padding:28px;border:1px solid rgba(255,255,255,.1);border-radius:24px;background:linear-gradient(180deg,#171d2a,#101520);box-shadow:0 24px 80px rgba(0,0,0,.38)}
 .runtime-card--error{border-color:rgba(255,111,111,.32)}
+.runtime-card--center{text-align:center}
+.runtime-card--game{padding:24px}
 .runtime-kicker{display:inline-flex;margin-bottom:14px;padding:6px 10px;border-radius:999px;background:rgba(121,139,255,.12);color:#aebaff;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 h1{margin:0;font-size:clamp(26px,7vw,34px);line-height:1.12}
 p{margin:12px 0 0;color:#b9c1d7;line-height:1.55}
-.runtime-details{display:grid;gap:10px;margin:22px 0 0}
+.runtime-balance{margin:22px 0 14px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.05);color:#b9c1d7}
+.runtime-balance strong{color:#fff}
+.runtime-button{width:100%;min-height:52px;margin-top:16px;padding:14px 18px;border:0;border-radius:16px;background:#7b8cff;color:#fff;font-weight:750;cursor:pointer;transition:transform .18s ease,opacity .18s ease,background .18s ease}
+.runtime-button:hover:not(:disabled){transform:translateY(-1px);background:#8c9aff}
+.runtime-button:disabled{opacity:.48;cursor:not-allowed}
+.runtime-button--secondary{background:rgba(255,255,255,.09);color:#e8ebf5}
+.runtime-button--danger{background:rgba(255,91,104,.16);color:#ff98a1;border:1px solid rgba(255,91,104,.28)}
+.runtime-actions{display:grid;gap:10px;margin-top:14px}
+.runtime-actions .runtime-button{margin-top:0}
+.runtime-details{display:grid;gap:10px;margin:18px 0 0}
 .runtime-details div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08)}
 .runtime-details dt{color:#9ca7c2}
 .runtime-details dd{margin:0;max-width:220px;overflow-wrap:anywhere;text-align:right;color:#f4f6ff;font-weight:650}
+.runtime-debug{margin-top:20px;color:#9ca7c2;font-size:13px}
+.runtime-debug summary{cursor:pointer}
+.runtime-loader{width:38px;height:38px;margin:24px auto 10px;border:3px solid rgba(255,255,255,.12);border-top-color:#8c9aff;border-radius:50%;animation:runtime-spin .8s linear infinite}
+.runtime-game-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0;color:#aeb6cc;font-size:13px}
+.runtime-game-meta span{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05)}
+.runtime-board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}
+.runtime-board button{aspect-ratio:1;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.055);color:#fff;font-size:clamp(34px,12vw,58px);font-weight:800;cursor:pointer;transition:background .15s ease,transform .15s ease}
+.runtime-board button:hover:not(:disabled){background:rgba(123,140,255,.18);transform:scale(.985)}
+.runtime-board button:disabled{cursor:default;opacity:1}
+.runtime-inline-error{min-height:22px;margin-top:12px;color:#ff98a1;font-size:13px}
+.runtime-shell[data-match-busy] .runtime-board,.runtime-shell[data-match-busy] .runtime-actions{pointer-events:none}
+@keyframes runtime-spin{to{transform:rotate(360deg)}}
+@media (max-width:420px){
+  .runtime-shell{padding:12px}
+  .runtime-card{padding:22px 18px;border-radius:20px}
+  .runtime-card--game{padding:18px 14px}
+  .runtime-board{gap:6px}
+  .runtime-board button{border-radius:13px}
+  .runtime-game-meta{grid-template-columns:1fr}
+}

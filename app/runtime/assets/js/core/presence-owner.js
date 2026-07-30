@@ -1,3 +1,5 @@
+import { applyServerProjection } from './server-projection.js';
+
 const DEFAULT_INTERVAL_MS = 25000;
 
 export function createPresenceOwner({ api, store, requestContext, intervalMs = DEFAULT_INTERVAL_MS }){
@@ -13,12 +15,7 @@ export function createPresenceOwner({ api, store, requestContext, intervalMs = D
     if (inFlight) return inFlight;
     inFlight = api.heartbeat(requestContext())
       .then(result => {
-        store.setState({
-          account:result.account,
-          session:result.session,
-          presence:result.presence,
-          storage:result.storage,
-        });
+        applyServerProjection(store, result);
         document.dispatchEvent(new CustomEvent('mgw:clean-presence-updated', {
           detail:{ presence:result.presence, session:result.session },
         }));

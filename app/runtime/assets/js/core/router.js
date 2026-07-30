@@ -1,4 +1,4 @@
-const ALLOWED_SCREENS = new Set(['boot', 'home', 'error']);
+const ALLOWED_SCREENS = new Set(['boot', 'home', 'search', 'match', 'result', 'error']);
 
 export function createRuntimeRouter(root){
   if (!(root instanceof HTMLElement)) throw new TypeError('Runtime root element is required.');
