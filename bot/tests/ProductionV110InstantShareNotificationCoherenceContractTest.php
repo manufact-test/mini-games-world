@@ -45,10 +45,10 @@ $assert(
 );
 $assert(
     str_contains($owner, "window.addEventListener('mgw:notification-sync', rememberAlreadyPresentedInviteToast, true)")
+        && str_contains($owner, 'function rememberAlreadyPresentedInviteToast(event){')
         && str_contains($owner, "#sheet [data-invite-sheet][data-invite-token]")
         && str_contains($owner, 'new MutationObserver(suppressMatchingInviteToast)')
-        && str_contains($owner, 'mgw-invite-toast-suppressed')
-        && !str_contains($owner, "function rememberAlreadyPresentedInviteToast(event){\n") === false,
+        && str_contains($owner, 'mgw-invite-toast-suppressed'),
     'An invite already visible in its canonical sheet must suppress only the later duplicate blue toast.'
 );
 $assert(
