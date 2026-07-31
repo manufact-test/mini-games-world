@@ -32,8 +32,10 @@ $assert(
 $assert(
     str_contains($owner, 'prepareMessage:false')
         && str_contains($owner, 'runtime.serial = runtime.serial')
-        && str_contains($owner, 'void warmDraft(defaultContext(gameType))'),
-    'Link drafts must be prewarmed serially without waiting for Telegram prepared-message creation.'
+        && str_contains($owner, 'void warmDraft(defaultContext(gameType))')
+        && str_contains($owner, "origin.closest('[data-open-player-picker]')")
+        && str_contains($owner, "abort('direct-player-picker')"),
+    'Link drafts must be prewarmed serially without delaying the direct-player picker.'
 );
 $assert(
     str_contains($owner, 'https://t.me/share/url?url=')
