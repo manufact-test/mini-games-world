@@ -1,7 +1,7 @@
 import { state } from '../state.js?v=27';
 import { APP_CONFIG } from '../config.js?v=38';
-import { openSheet, closeSheet } from '../components/sheet.js?v=68';
-import { toast } from '../components/toast.js?v=41';
+import { openSheet, closeSheet } from '../components/sheet.js?v=1109';
+import { toast } from '../components/toast.js?v=1109';
 import { getTelegram, getInitData, haptic } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
 import { showScreen } from '../router.js?v=27';
@@ -448,7 +448,7 @@ async function performInviteAction(action, token, button){
     }
     if (action === 'decline' || action === 'cancel') {
       currentInvite = null;
-      toast(action === 'decline' ? 'Приглашение отклонено.' : 'Приглашение отменено.');
+      if (action === 'decline') toast('Приглашение отклонено.');
       dispatchNotificationsRefresh();
       scheduleSync(0);
       scheduleWatch(0);
@@ -831,10 +831,12 @@ function isGameLaunchControl(target){
 }
 
 function openSheetInviteToken(){
+  if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return '';
   return String(document.querySelector('#sheet [data-invite-sheet][data-invite-token]')?.dataset.inviteToken || '');
 }
 
 function openSheetInviteState(){
+  if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return '';
   return String(document.querySelector('#sheet [data-invite-sheet][data-invite-state]')?.dataset.inviteState || '');
 }
 

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/PresenceService.php';
+
 final class AuthService
 {
     public function __construct(private array $config) {}
@@ -35,7 +37,26 @@ final class AuthService
 
     private function attachMgwIdentity(array $user, string $sessionId): array
     {
-        return (new RuntimeAccountIdentityResolver($this->config))->attach($user, $sessionId);
+        $resolved = (new RuntimeAccountIdentityResolver($this->config))->attach($user, $sessionId);
+        $this->touchAuthenticatedPresence($resolved, $sessionId);
+        return $resolved;
+    }
+
+    private function touchAuthenticatedPresence(array $user, string $sessionId): void
+    {
+        $accountId = trim((string)($user['id'] ?? $user['telegram_id'] ?? ''));
+        $sessionId = trim($sessionId);
+        if ($accountId === '' || $sessionId === '') return;
+
+        // Authentication is the first authoritative point shared by normal and
+        // invitation launches. Presence must therefore not depend on an earlier
+        // fire-and-forget request from Telegram WebView.
+        try {
+            (new PresenceService())->touch($accountId, $sessionId);
+        } catch (Throwable $error) {
+            // Presence is observable state, not permission to enter the app.
+            error_log('Mini Games World authenticated presence failed: ' . $error->getMessage());
+        }
     }
 
     private function browserDevUserAllowed(): bool
