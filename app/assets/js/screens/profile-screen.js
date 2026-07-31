@@ -4,15 +4,9 @@ import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
 import { renderUser, renderBalances } from '../ui.js?v=89';
 
-const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1';
 let profileLoading = false;
 
 export function initProfileScreen(){
-  if (!hasProfileStats(state.profileStats)) {
-    const cached = loadCachedProfileStats();
-    if (cached) state.profileStats = cached;
-  }
-  renderProfileStats(state.profileStats || null);
   document.addEventListener('mgw:open-profile', openProfile);
 }
 
@@ -36,10 +30,9 @@ export async function openProfile(){
       ? ordersResult.orders
       : (Array.isArray(state.profileOrders) ? state.profileOrders : []);
 
-    if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
     renderUser(state.user);
     renderBalances(state.user);
-    renderProfileStats(state.profileStats || null);
+    if (hasProfileStats(state.profileStats)) renderProfileStats(state.profileStats);
     renderProfileOverview(state.user || {}, state.profileOrders);
   } catch (error) {
     toast(error.message || 'Не удалось обновить профиль.');
@@ -54,7 +47,7 @@ function showProfileImmediately(){
     renderUser(state.user);
     renderBalances(state.user);
   }
-  renderProfileStats(state.profileStats || loadCachedProfileStats());
+  if (hasProfileStats(state.profileStats)) renderProfileStats(state.profileStats);
   renderProfileOverview(
     state.user || {},
     Array.isArray(state.profileOrders) ? state.profileOrders : []
@@ -88,39 +81,15 @@ function hasProfileStats(stats){
 }
 
 function renderProfileStats(stats){
+  if (!hasProfileStats(stats)) return;
   const el = document.getElementById('profileStats');
   if (!el) return;
-
-  const ready = hasProfileStats(stats);
-  const value = key => ready ? Number(stats[key]) : '—';
   el.innerHTML = `
-    <div class="stat"><div class="num">${value('games_played')}</div><div class="label">игр сыграно</div></div>
-    <div class="stat"><div class="num">${value('wins')}</div><div class="label">побед</div></div>
-    <div class="stat"><div class="num">${value('losses')}</div><div class="label">поражений</div></div>
-    <div class="stat"><div class="num">${value('draws')}</div><div class="label">ничьих</div></div>
+    <div class="stat"><div class="num">${Number(stats.games_played)}</div><div class="label">игр сыграно</div></div>
+    <div class="stat"><div class="num">${Number(stats.wins)}</div><div class="label">побед</div></div>
+    <div class="stat"><div class="num">${Number(stats.losses)}</div><div class="label">поражений</div></div>
+    <div class="stat"><div class="num">${Number(stats.draws)}</div><div class="label">ничьих</div></div>
   `;
-}
-
-function loadCachedProfileStats(){
-  try {
-    const parsed = JSON.parse(localStorage.getItem(PROFILE_STATS_CACHE_KEY) || 'null');
-    return hasProfileStats(parsed) ? parsed : null;
-  } catch (error) {
-    return null;
-  }
-}
-
-function saveCachedProfileStats(stats){
-  try {
-    localStorage.setItem(PROFILE_STATS_CACHE_KEY, JSON.stringify({
-      games_played:Number(stats.games_played),
-      wins:Number(stats.wins),
-      losses:Number(stats.losses),
-      draws:Number(stats.draws),
-    }));
-  } catch (error) {
-    // Profile remains usable when storage is unavailable.
-  }
 }
 
 function renderProfileOverview(user = {}, orders = []){
