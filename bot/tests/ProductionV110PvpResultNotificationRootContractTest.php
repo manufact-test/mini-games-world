@@ -19,6 +19,7 @@ $sync = $read('app/assets/js/production-v110-readonly-game-sync.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
 $legacyPresence = $read('app/assets/js/production-v109-presence.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110-root.js');
+$preflight = $read('app/assets/js/production-v110-notification-preflight.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
@@ -113,24 +114,28 @@ $assert(
 $assert(
     str_contains($notifications, 'if (!visible.length && (Number(result?.unread_count || 0) > 0 || unreadHint > 0))')
         && str_contains($notifications, 'renderLoading();')
-        && str_contains($notifications, 'await delay(EMPTY_RETRY_MS);'),
-    'An unread hint may show loading/retry but never a false empty notification list.'
+        && str_contains($notifications, 'await delay(EMPTY_RETRY_MS);')
+        && str_contains($preflight, "primeAndOpen(target.id === 'notificationToast')")
+        && !str_contains($preflight, 'openSheet'),
+    'An unread toast must be primed into the existing owner and never become a false empty list.'
 );
 
 $assert(
-    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1107';")
-        && str_contains($html, './assets/js/production-clean-entry-v110.js?v=1107')
-        && str_contains($html, './assets/js/main-v110.js?v=1107')
-        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-pvp-lockfree-presence-root"'),
+    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1108';")
+        && str_contains($html, './assets/js/production-clean-entry-v110.js?v=1108')
+        && str_contains($html, './assets/js/main-v110.js?v=1108')
+        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-invite-presence-notification-profile-root"'),
     'Telegram must open a genuinely fresh outer and inner v110 browser revision.'
 );
 
 $assert(
     str_contains($shell, "notifications-screen-v110-root.js?v=1107")
         && str_contains($shell, "production-v110-readonly-game-sync.js?v=1107")
+        && str_contains($shell, "production-v110-notification-preflight.js?v=1108")
         && substr_count($shell, 'initNotificationsScreen();') === 1
-        && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
-    'The fresh graph must retain one notification owner and one non-rendering PvP transport.'
+        && substr_count($shell, 'initV110ReadonlyGameSync();') === 1
+        && substr_count($shell, 'initV110NotificationPreflight();') === 1,
+    'The fresh graph must retain one notification owner, one non-rendering PvP transport and one transport-only notification preflight.'
 );
 
 fwrite(STDOUT, "ProductionV110PvpResultNotificationRootContractTest: {$assertions} assertions passed\n");

@@ -17,6 +17,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $legacyInvites = $read('app/assets/js/games/game-invites.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110-root.js');
+$preflight = $read('app/assets/js/production-v110-notification-preflight.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
 
@@ -86,26 +87,34 @@ $assert(
 $assert(
     str_contains($notifications, 'if (!visible.length && (Number(result?.unread_count || 0) > 0 || unreadHint > 0))')
         && str_contains($notifications, 'await delay(EMPTY_RETRY_MS);')
-        && str_contains($notifications, 'if (!currentItems().length) renderError();'),
-    'Unread notification state must retry instead of flashing an empty list.'
+        && str_contains($notifications, 'if (!currentItems().length) renderError();')
+        && str_contains($preflight, "primeAndOpen(target.id === 'notificationToast')")
+        && str_contains($preflight, "mgw:notification-sync")
+        && !str_contains($preflight, 'openSheet'),
+    'Unread notification state must be primed into the existing owner and never flash an empty list.'
 );
 
+$preflightPosition = strpos($shell, 'initV110NotificationPreflight();');
+$ownerPosition = strpos($shell, 'initNotificationsScreen();');
 $assert(
     substr_count($shell, 'initGameInvites();') === 1
         && substr_count($shell, 'initNotificationsScreen();') === 1
+        && substr_count($shell, 'initV110NotificationPreflight();') === 1
+        && $preflightPosition !== false && $ownerPosition !== false && $preflightPosition < $ownerPosition
         && str_contains($shell, './games/game-invites-v110.js?v=1105')
         && str_contains($shell, './screens/notifications-screen-v110-root.js?v=1107')
+        && str_contains($shell, './production-v110-notification-preflight.js?v=1108')
         && !str_contains($entry, 'initV105InviteLatency')
         && !str_contains($entry, 'initV109InviteSpeed')
         && str_contains($legacyInvites, 'const SYNC_INTERVAL_MS = 1500;')
         && !str_contains($legacyInvites, '/bot/invite-watch.php'),
-    'The active graph must retain exactly one isolated invite owner and one fresh notification owner without changing rollback assets.'
+    'The active graph must retain one invite owner and one notification owner, with one transport-only preflight before it.'
 );
 
 $assert(
-    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1107')
-        && str_contains($html, './assets/js/main-v110.js?v=1107')
-        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-pvp-lockfree-presence-root"'),
+    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1108')
+        && str_contains($html, './assets/js/main-v110.js?v=1108')
+        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-invite-presence-notification-profile-root"'),
     'Telegram v110 must publish the exact fresh cache-busted invite and notification build.'
 );
 

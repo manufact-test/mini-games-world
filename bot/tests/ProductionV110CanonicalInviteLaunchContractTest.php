@@ -21,19 +21,19 @@ $token = 'ABCDEF0123456789ABCDEF01';
 $normalizedToken = strtolower($token);
 
 $assert(
-    WebAppLaunchUrl::base($config) === 'https://example.test/app/v110.php?v=1107',
-    'Canonical base URL must select the fresh production v1107 Telegram entrypoint.'
+    WebAppLaunchUrl::base($config) === 'https://example.test/app/v110.php?v=1108',
+    'Canonical base URL must select the fresh production v1108 Telegram entrypoint.'
 );
 
 $assert(
     WebAppLaunchUrl::invitation($config, $token)
-        === 'https://example.test/app/v110.php?v=1107&invite=' . $normalizedToken,
+        === 'https://example.test/app/v110.php?v=1108&invite=' . $normalizedToken,
     'Canonical invitation URL must append one normalized token to the fresh entrypoint.'
 );
 
 $assert(
     WebAppLaunchUrl::invitation($config, 'not-a-token')
-        === 'https://example.test/app/v110.php?v=1107',
+        === 'https://example.test/app/v110.php?v=1108',
     'Invalid tokens must never create a second or malformed launch route.'
 );
 
@@ -50,7 +50,7 @@ $v110 = $read('app/v110.php');
 $assert(
     str_contains($welcome, 'WebAppLaunchUrl::base($this->config)')
         && str_contains($welcome, 'WebAppLaunchUrl::invitation($this->config, $inviteToken)')
-        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1107'.")
+        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1108'.")
         && str_contains($invites, 'return WebAppLaunchUrl::invitation($config, $token);')
         && substr_count($welcome, "require_once __DIR__ . '/WebAppLaunchUrl.php';") === 1
         && substr_count($invites, "require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';") === 1,
@@ -73,9 +73,9 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'production-clean-entry-v110.js?v=1107')
-        && str_contains($v110, 'main-v110.js?v=1107')
-        && str_contains($v110, 'data-hotfix-build="v110-mvp14r3-pvp-lockfree-presence-root"')
+    str_contains($v110, 'production-clean-entry-v110.js?v=1108')
+        && str_contains($v110, 'main-v110.js?v=1108')
+        && str_contains($v110, 'data-hotfix-build="v110-mvp14r3-invite-presence-notification-profile-root"')
         && str_contains($v110, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'Canonical invite launches must reach the exact fresh no-store production build.'
 );

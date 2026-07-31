@@ -8,7 +8,8 @@ $config = [
     'base_url' => 'https://v105-runtime-' . bin2hex(random_bytes(6)) . '.test',
     'data_dir' => '/nonexistent/application-json-' . bin2hex(random_bytes(4)),
 ];
-$signals = new InviteSignalService($config);
+$signalRoot = sys_get_temp_dir() . '/mgw-invite-signal-test-' . bin2hex(random_bytes(8));
+$signals = new InviteSignalService($config, $signalRoot);
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
@@ -38,21 +39,33 @@ $invite = [
     'board_rows' => 3,
 ];
 
-$signals->publish('recipient-1', $invite);
-$received = $signals->latest('recipient-1');
-$assert(is_array($received), 'The intended recipient must read the transient signal.');
-$assert(($received['token'] ?? '') === $invite['token'], 'The signal must preserve the exact invite token.');
-$assert(!empty($received['is_invitee']) && empty($received['is_owner']), 'The signal must expose the invitee view, not the sender view.');
-$assert(!empty($received['can_accept']) && !empty($received['can_decline']) && empty($received['can_cancel']), 'The invitee action permissions must be correct.');
-$assert($signals->latest('recipient-2') === null, 'A different account must not see the signal.');
+try {
+    $signals->publish('recipient-1', $invite);
+    $received = $signals->latest('recipient-1');
+    $assert(is_array($received), 'The intended recipient must read the transient signal.');
+    $assert(($received['token'] ?? '') === $invite['token'], 'The signal must preserve the exact invite token.');
+    $assert(!empty($received['is_invitee']) && empty($received['is_owner']), 'The signal must expose the invitee view, not the sender view.');
+    $assert(!empty($received['can_accept']) && !empty($received['can_decline']) && empty($received['can_cancel']), 'The invitee action permissions must be correct.');
+    $assert($signals->latest('recipient-2') === null, 'A different account must not see the signal.');
 
-$signals->clear('recipient-1', $invite['token']);
-$assert($signals->latest('recipient-1') === null, 'Cancellation must remove the transient signal immediately.');
+    $signals->clear('recipient-1', $invite['token']);
+    $assert($signals->latest('recipient-1') === null, 'Cancellation must remove the transient signal immediately.');
 
-$finished = $invite;
-$finished['token'] = bin2hex(random_bytes(12));
-$finished['status'] = 'cancelled';
-$signals->publish('recipient-1', $finished);
-$assert($signals->latest('recipient-1') === null, 'A non-pending invite must never be published.');
+    $finished = $invite;
+    $finished['token'] = bin2hex(random_bytes(12));
+    $finished['status'] = 'cancelled';
+    $signals->publish('recipient-1', $finished);
+    $assert($signals->latest('recipient-1') === null, 'A non-pending invite must never be published.');
+} finally {
+    $iterator = is_dir($signalRoot)
+        ? new RecursiveIteratorIterator(new RecursiveDirectoryIterator($signalRoot, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST)
+        : null;
+    if ($iterator) {
+        foreach ($iterator as $item) {
+            $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+        }
+        @rmdir($signalRoot);
+    }
+}
 
 fwrite(STDOUT, "ProductionV105InviteSignalRuntimeTest: {$assertions} assertions passed\n");

@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root';
+window.__MGW_BUILD__ = 'v110-mvp14r3-invite-presence-notification-profile-root';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -21,7 +21,7 @@ import { initNotificationsScreen } from './screens/notifications-screen-v110-roo
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
-import { initProfileScreen } from './screens/profile-screen.js?v=92';
+import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites-v110.js?v=1105';
@@ -37,6 +37,7 @@ import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107';
 import { initV110Presence } from './production-v110-presence.js?v=1107';
+import { initV110NotificationPreflight } from './production-v110-notification-preflight.js?v=1108';
 
 let statsRefreshing = false;
 
@@ -47,6 +48,8 @@ initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
+// The preflight capture listener must register before the notification owner.
+initV110NotificationPreflight();
 initNotificationsScreen();
 
 initGameScreen();

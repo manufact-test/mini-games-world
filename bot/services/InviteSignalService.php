@@ -6,11 +6,26 @@ final class InviteSignalService
     private const TTL_SEC = 30;
     private string $root;
 
-    public function __construct(array $config)
+    public function __construct(array $config, ?string $root = null)
     {
-        $scope = hash('sha256', (string)($config['base_url'] ?? '') . '|' . (string)($config['data_dir'] ?? ''));
-        $this->root = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
-            . DIRECTORY_SEPARATOR . 'mini-games-world-invite-signals-' . substr($scope, 0, 16);
+        if ($root !== null && trim($root) !== '') {
+            // Tests and isolated diagnostics may provide their own writable root.
+            // Production callers omit it and always use shared application data.
+            $this->root = rtrim($root, DIRECTORY_SEPARATOR);
+            return;
+        }
+
+        $dataDirectory = rtrim(
+            (string)($config['data_dir'] ?? (dirname(__DIR__) . '/data')),
+            DIRECTORY_SEPARATOR
+        );
+        $scope = hash('sha256', (string)($config['base_url'] ?? '') . '|' . $dataDirectory);
+
+        // Invite delivery must be visible to every PHP worker. Shared runtime
+        // storage is reliable here; a worker-local directory is not.
+        $this->root = $dataDirectory
+            . DIRECTORY_SEPARATOR . '.runtime'
+            . DIRECTORY_SEPARATOR . 'invite-signals-' . substr($scope, 0, 16);
     }
 
     public function publish(string $recipientId, array $invite): void
@@ -99,7 +114,8 @@ final class InviteSignalService
     private function signalPath(string $recipientId, string $token): string
     {
         return $this->accountDirectory($recipientId)
-            . DIRECTORY_SEPARATOR . 'invite-' . hash('sha256', $token) . '.signal';
+            . DIRECTORY_SEPARATOR
+            . 'invite-' . hash('sha256', $token) . '.signal';
     }
 
     private function pruneDirectory(string $directory): void
