@@ -5,8 +5,6 @@ import { getSessionId } from './session.js?v=27';
 import { toast } from './components/toast.js?v=1109';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
-const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v5';
-const MAX_ANNOUNCED_IDS = 300;
 const DEFAULT_SIZES = {
   tictactoe:3,
   four_in_a_row:7,
@@ -25,6 +23,8 @@ const runtime = window.__MGW_V110_INVITE_SHARE_NOTIFICATION_OWNER__ ||= {
   serial:Promise.resolve(),
   sharing:false,
   lastGameType:'tictactoe',
+  suppressedInviteToast:null,
+  toastObserver:null,
 };
 
 initV110InviteShareNotificationOwner();
@@ -35,7 +35,8 @@ export function initV110InviteShareNotificationOwner(){
 
   window.addEventListener('pointerdown', rememberShareIntent, true);
   window.addEventListener('click', ownInviteShareClick, true);
-  window.addEventListener('mgw:notification-sync', suppressAlreadyPresentedInviteToast, true);
+  window.addEventListener('mgw:notification-sync', rememberAlreadyPresentedInviteToast, true);
+  installToastSuppressionObserver();
 }
 
 function rememberShareIntent(event){
@@ -169,7 +170,7 @@ function openTelegramShare(invite){
   }
 }
 
-function suppressAlreadyPresentedInviteToast(event){
+function rememberAlreadyPresentedInviteToast(event){
   const item = event.detail?.item || null;
   const token = String(item?.invite_token || '');
   const id = String(item?.id || '');
@@ -179,24 +180,65 @@ function suppressAlreadyPresentedInviteToast(event){
   const marker = document.querySelector('#sheet [data-invite-sheet][data-invite-token]');
   if (!overlay?.classList.contains('active') || String(marker?.dataset.inviteToken || '') !== token) return;
 
-  event.stopImmediatePropagation();
-  rememberAnnouncedId(id);
-  document.dispatchEvent(new CustomEvent('mgw:notification-count', {
-    detail:{ unreadCount:Number(event.detail?.unreadCount || 0) },
-  }));
-  window.queueMicrotask(() => {
-    document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
-  });
+  // Let the canonical notification owner receive this event and mark it as
+  // announced. We only suppress its later duplicate visual toast.
+  runtime.suppressedInviteToast = {
+    id,
+    title:String(item?.title || 'Уведомление').trim(),
+    expiresAt:Date.now() + 15000,
+  };
+  suppressMatchingInviteToast();
 }
 
-function rememberAnnouncedId(id){
-  try {
-    const parsed = JSON.parse(localStorage.getItem(ANNOUNCED_STORAGE_KEY) || '[]');
-    const ids = Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
-    const next = ids.filter(value => value !== id);
-    next.push(id);
-    localStorage.setItem(ANNOUNCED_STORAGE_KEY, JSON.stringify(next.slice(-MAX_ANNOUNCED_IDS)));
-  } catch (error) {}
+function installToastSuppressionObserver(){
+  const attach = () => {
+    const element = document.getElementById('notificationToast');
+    if (!element) {
+      window.setTimeout(attach, 50);
+      return;
+    }
+    if (runtime.toastObserver || typeof MutationObserver !== 'function') return;
+
+    ensureToastSuppressionStyle();
+    runtime.toastObserver = new MutationObserver(suppressMatchingInviteToast);
+    runtime.toastObserver.observe(element, {
+      attributes:true,
+      attributeFilter:['class'],
+      childList:true,
+      characterData:true,
+      subtree:true,
+    });
+  };
+  attach();
+}
+
+function ensureToastSuppressionStyle(){
+  if (document.getElementById('mgw-invite-toast-suppression-style')) return;
+  const style = document.createElement('style');
+  style.id = 'mgw-invite-toast-suppression-style';
+  style.textContent = '.notification-toast.mgw-invite-toast-suppressed{display:none!important}';
+  document.head.appendChild(style);
+}
+
+function suppressMatchingInviteToast(){
+  const pending = runtime.suppressedInviteToast;
+  if (!pending) return;
+  if (Date.now() > Number(pending.expiresAt || 0)) {
+    runtime.suppressedInviteToast = null;
+    return;
+  }
+
+  const element = document.getElementById('notificationToast');
+  if (!element) return;
+  const title = String(element.querySelector('.notification-toast-copy strong')?.textContent || '').trim();
+  if (!title || title !== pending.title) return;
+
+  element.classList.add('mgw-invite-toast-suppressed');
+  if (!element.classList.contains('show')) return;
+
+  element.classList.remove('show', 'dragging');
+  runtime.suppressedInviteToast = null;
+  window.setTimeout(() => element.classList.remove('mgw-invite-toast-suppressed'), 80);
 }
 
 function readSetupContext(){
