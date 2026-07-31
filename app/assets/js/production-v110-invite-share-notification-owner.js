@@ -48,6 +48,11 @@ function rememberShareIntent(event){
   const origin = event.target;
   if (!(origin instanceof Element)) return;
 
+  if (origin.closest('[data-open-player-picker]')) {
+    cancelWarmDraft();
+    return;
+  }
+
   const invite = origin.closest('[data-invite-friend]');
   if (invite) {
     const gameType = String(invite.dataset.inviteFriend || state.selectedGame || 'tictactoe');
@@ -120,6 +125,7 @@ function warmDraft(context){
     context:normalized,
     draft:null,
     promise:null,
+    controller:new AbortController(),
   };
   runtime.warm = entry;
 
@@ -130,7 +136,7 @@ function warmDraft(context){
       const result = await inviteRequest('create_link_draft', {
         ...normalized,
         prepareMessage:false,
-      });
+      }, { signal:entry.controller.signal });
       const draft = result?.invite || null;
       if (!draft?.token || !draft?.share_url) throw new Error('Не удалось подготовить ссылку.');
       if (runtime.warm?.id !== entry.id) return null;
@@ -143,6 +149,12 @@ function warmDraft(context){
     });
 
   return entry.promise;
+}
+
+function cancelWarmDraft(){
+  const warm = runtime.warm;
+  runtime.warm = null;
+  try { warm?.controller?.abort('direct-player-picker'); } catch (error) {}
 }
 
 async function preparedDraft(context){
@@ -372,7 +384,7 @@ function contextKey(value){
   return `${context.gameType}|${context.room}|${context.boardSize}|${context.bet}`;
 }
 
-async function inviteRequest(action, payload = {}){
+async function inviteRequest(action, payload = {}, options = {}){
   const response = await fetch(INVITES_URL, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
@@ -383,6 +395,7 @@ async function inviteRequest(action, payload = {}){
       ...payload,
     }),
     priority:'high',
+    signal:options.signal,
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
