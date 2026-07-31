@@ -70,7 +70,8 @@ try {
         }
     }
 
-    api_ok([
+    json_response([
+        'ok' => true,
         'game' => $game,
         'me' => ['id' => $userId],
     ]);
