@@ -43,17 +43,17 @@ $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
 $assert(
-    str_contains($main, "import './main-v110-handoff-shell.js?v=1107';")
-        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root'")
-        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root'"),
-    'v110 must publish the fresh lock-free PvP and presence build through an isolated shell.'
+    str_contains($main, "import './main-v110-handoff-shell.js?v=1108';")
+        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r3-invite-presence-notification-profile-root'")
+        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r3-invite-presence-notification-profile-root'"),
+    'v110 must publish the fresh invite, presence, notification and profile build through an isolated shell.'
 );
 
 $assert(
     $count($entry, 'initV110AcceptanceRuntime();') === 1
         && $count($entry, 'initV110TargetedInteractions();') === 1
         && $count($entry, 'initV110MatchLifecycle();') === 1
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root'"),
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-invite-presence-notification-profile-root'"),
     'Every retained production entry owner must initialize exactly once.'
 );
 
@@ -170,12 +170,12 @@ $assert(
 );
 
 $assert(
-    str_contains($shell, 'notifications-screen-v110-root.js?v=1107')
+    str_contains($shell, 'notifications-screen-v110-root.js?v=1108')
         && str_contains($shell, 'production-v110-readonly-game-sync.js?v=1107')
-        && str_contains($shell, 'production-v110-presence.js?v=1107')
-        && str_contains($php, 'production-clean-entry-v110.js?v=1107')
-        && str_contains($php, 'main-v110.js?v=1107'),
-    'Every changed browser owner must be reached through the fresh v1107 asset graph.'
+        && str_contains($shell, 'production-v110-presence.js?v=1108')
+        && str_contains($php, 'production-clean-entry-v110.js?v=1108')
+        && str_contains($php, 'main-v110.js?v=1108'),
+    'Every changed browser owner must be reached through the fresh v1108 asset graph.'
 );
 
 $assert(
@@ -240,13 +240,13 @@ $assert(
 
 $assert(
     str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1107';")
-        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1107'.")
+        && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1108';")
+        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1108'.")
         && str_contains($welcome, 'WebAppLaunchUrl::base($this->config)')
         && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);')
         && !str_contains($welcome, '/app/?v=85')
         && !str_contains($invitesEndpoint, '/app/?v=85'),
-    'Every Telegram start, menu and invite must use the fresh canonical v1107 URL builder.'
+    'Every Telegram start, menu and invite must use the fresh canonical v1108 URL builder.'
 );
 
 $assert(
