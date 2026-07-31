@@ -25,6 +25,9 @@ const runtime = window.__MGW_V110_INVITE_SHARE_NOTIFICATION_OWNER__ ||= {
   lastGameType:'tictactoe',
   suppressedInviteToast:null,
   toastObserver:null,
+  inviteItems:new Map(),
+  stickyNotification:null,
+  rawNotificationBridgeInstalled:false,
 };
 
 initV110InviteShareNotificationOwner();
@@ -35,8 +38,10 @@ export function initV110InviteShareNotificationOwner(){
 
   window.addEventListener('pointerdown', rememberShareIntent, true);
   window.addEventListener('click', ownInviteShareClick, true);
-  window.addEventListener('mgw:notification-sync', rememberAlreadyPresentedInviteToast, true);
+  window.addEventListener('mgw:notification-sync', rememberInviteNotification, true);
+  window.addEventListener('click', keepClickedInviteToastVisible, true);
   installToastSuppressionObserver();
+  installRawNotificationBridge();
 }
 
 function rememberShareIntent(event){
@@ -170,11 +175,17 @@ function openTelegramShare(invite){
   }
 }
 
-function rememberAlreadyPresentedInviteToast(event){
+function rememberInviteNotification(event){
   const item = event.detail?.item || null;
   const token = String(item?.invite_token || '');
   const id = String(item?.id || '');
   if (!token || !id || !String(item?.type || '').startsWith('invite_')) return;
+
+  runtime.inviteItems.set(id, cloneItem(item));
+  if (runtime.inviteItems.size > 20) {
+    const oldest = runtime.inviteItems.keys().next().value;
+    if (oldest) runtime.inviteItems.delete(oldest);
+  }
 
   const overlay = document.getElementById('sheetOverlay');
   const marker = document.querySelector('#sheet [data-invite-sheet][data-invite-token]');
@@ -185,9 +196,85 @@ function rememberAlreadyPresentedInviteToast(event){
   runtime.suppressedInviteToast = {
     id,
     title:String(item?.title || 'Уведомление').trim(),
-    expiresAt:Date.now() + 15000,
+    expiresAt:Date.now() + 300000,
   };
   suppressMatchingInviteToast();
+}
+
+function keepClickedInviteToastVisible(event){
+  const origin = event.target;
+  if (!(origin instanceof Element)) return;
+  const element = origin.closest('#notificationToast');
+  if (!element?.classList.contains('show')) return;
+
+  const title = String(element.querySelector('.notification-toast-copy strong')?.textContent || '').trim();
+  const item = [...runtime.inviteItems.values()]
+    .reverse()
+    .find(value => String(value?.title || '').trim() === title) || null;
+  if (!item?.id) return;
+
+  runtime.stickyNotification = {
+    item:cloneItem(item),
+    expiresAt:Date.now() + 4000,
+  };
+}
+
+function installRawNotificationBridge(){
+  const attach = () => {
+    const speed = window.__MGW_V101_SPEED__;
+    if (typeof speed?.rawFetch !== 'function') {
+      window.setTimeout(attach, 50);
+      return;
+    }
+    if (runtime.rawNotificationBridgeInstalled) return;
+
+    const previous = speed.rawFetch;
+    const wrapped = async (input, init = {}) => {
+      const response = await previous(input, init);
+      const sticky = runtime.stickyNotification;
+      if (!sticky || Date.now() > Number(sticky.expiresAt || 0) || !isNotificationListRequest(input, init)) {
+        return response;
+      }
+
+      const data = await response.clone().json().catch(() => null);
+      if (!response.ok || !data || data.ok === false) return response;
+
+      const item = cloneItem(sticky.item);
+      const items = Array.isArray(data.items) ? data.items : [];
+      data.items = [item, ...items.filter(value => String(value?.id || '') !== String(item.id || ''))];
+      if (!item.read) data.unread_count = Math.max(1, Number(data.unread_count || 0));
+
+      const headers = new Headers(response.headers);
+      headers.set('Content-Type', 'application/json; charset=utf-8');
+      return new Response(JSON.stringify(data), {
+        status:response.status,
+        statusText:response.statusText,
+        headers,
+      });
+    };
+    wrapped.__mgwInviteNotificationBridge = true;
+    speed.rawFetch = wrapped;
+    runtime.rawNotificationBridgeInstalled = true;
+  };
+  attach();
+}
+
+function isNotificationListRequest(input, init){
+  try {
+    const rawUrl = typeof input === 'string' ? input : String(input?.url || '');
+    const url = new URL(rawUrl, window.location.href);
+    if (!url.pathname.endsWith('/bot/notifications.php')) return false;
+    const payload = typeof init?.body === 'string' ? JSON.parse(init.body) : {};
+    return !payload?.markRead;
+  } catch (error) {
+    return false;
+  }
+}
+
+function cloneItem(item){
+  if (!item || typeof item !== 'object') return {};
+  if (typeof structuredClone === 'function') return structuredClone(item);
+  return JSON.parse(JSON.stringify(item));
 }
 
 function installToastSuppressionObserver(){
