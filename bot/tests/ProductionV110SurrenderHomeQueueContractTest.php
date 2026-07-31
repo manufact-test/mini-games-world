@@ -25,9 +25,9 @@ $html = ob_get_clean();
 if (!is_string($html)) throw new RuntimeException('Cannot render v110 Telegram entrypoint.');
 
 $assert(
-    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1110')
-        && str_contains($html, './assets/js/main-v110.js?v=1110')
-        && str_contains($html, 'data-hotfix-build="v110-mvp14r5-presence-invite-resume-root"'),
+    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1111')
+        && str_contains($html, './assets/js/main-v110.js?v=1111')
+        && str_contains($html, 'data-hotfix-build="v110-mvp14r6-invite-actions-root"'),
     'The Telegram v110 entrypoint must publish the exact current browser build.'
 );
 
@@ -74,7 +74,7 @@ $assert(
 $assert(
     substr_count($entry, 'initV110MatchLifecycle();') === 1
         && str_contains($entry, 'production-v110-match-lifecycle.js?v=1104')
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r5-presence-invite-resume-root'"),
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r6-invite-actions-root'"),
     'The production entry must retain exactly one accepted surrender owner in the current build.'
 );
 
