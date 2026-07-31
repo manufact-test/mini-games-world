@@ -44,11 +44,17 @@ $assert(
     'Share cancellation must return to the unchanged setup immediately and remain silent.'
 );
 $assert(
-    str_contains($owner, "window.addEventListener('mgw:notification-sync', suppressAlreadyPresentedInviteToast, true)")
+    str_contains($owner, "window.addEventListener('mgw:notification-sync', rememberAlreadyPresentedInviteToast, true)")
         && str_contains($owner, "#sheet [data-invite-sheet][data-invite-token]")
-        && str_contains($owner, 'event.stopImmediatePropagation();')
-        && str_contains($owner, "new CustomEvent('mgw:notifications-refresh')"),
-    'An invite already visible in its canonical sheet must not become a stale blue toast.'
+        && str_contains($owner, 'new MutationObserver(suppressMatchingInviteToast)')
+        && str_contains($owner, 'mgw-invite-toast-suppressed')
+        && !str_contains($owner, "function rememberAlreadyPresentedInviteToast(event){\n") === false,
+    'An invite already visible in its canonical sheet must suppress only the later duplicate blue toast.'
+);
+$assert(
+    str_contains($owner, 'Let the canonical notification owner receive this event')
+        && !str_contains($owner, "event.stopImmediatePropagation();\n  rememberAnnouncedId"),
+    'Duplicate-toast suppression must not swallow the canonical notification state update.'
 );
 $assert(
     !str_contains($clean, 'initV109ShareSpeed')
