@@ -12,17 +12,17 @@ if (!is_string($html)) {
 
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=96',
-    './assets/js/production-clean-entry-v110.js?v=1109',
+    './assets/js/production-clean-entry-v110.js?v=1110',
     $html
 );
 $html = str_replace(
     './assets/js/main.js?v=96',
-    './assets/js/main-v110.js?v=1109',
+    './assets/js/main-v110.js?v=1110',
     $html
 );
 $html = str_replace(
     'data-hotfix-build="v96-mvp14-root-cause-stabilization"',
-    'data-hotfix-build="v110-mvp14r4-invite-notification-presence-root"',
+    'data-hotfix-build="v110-mvp14r5-presence-invite-resume-root"',
     $html
 );
 

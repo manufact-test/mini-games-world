@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'v110-mvp14r4-invite-notification-presence-root';
+window.__MGW_BUILD__ = 'v110-mvp14r5-presence-invite-resume-root';
 
 // Use an isolated v110 shell so historical rollback assets remain byte-for-byte
 // unchanged while the active lifecycle graph has one owner per transition.
-import './main-v110-handoff-shell.js?v=1109';
+import './main-v110-handoff-shell.js?v=1110';

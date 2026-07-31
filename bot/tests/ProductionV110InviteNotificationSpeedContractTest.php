@@ -15,7 +15,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $invites = $read('app/assets/js/games/game-invites-v110.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r4.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
 $sheet = $read('app/assets/js/components/sheet.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $clean = $read('app/assets/js/production-clean-entry-v110.js');

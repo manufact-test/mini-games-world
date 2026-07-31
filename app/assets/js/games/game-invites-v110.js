@@ -64,6 +64,11 @@ export function initGameInvites(){
     window.setTimeout(() => syncNow({ announce:true }), 80);
     scheduleWatch(80);
   });
+  document.addEventListener('mgw:before-game-launch', event => {
+    if (!hasActionableInvite()) return;
+    event.preventDefault();
+    openCurrentInvite();
+  }, true);
 
   const sheet = document.getElementById('sheet');
   if (sheet) {
@@ -126,10 +131,9 @@ function handleDocumentClick(event){
   }
 
   const launchTarget = event.target.closest('button, [role="button"]');
-  if (launchTarget && currentInvite?.status === 'accepted' && isGameLaunchControl(launchTarget)) {
+  if (launchTarget && hasActionableInvite() && isGameLaunchControl(launchTarget)) {
     event.preventDefault();
     event.stopImmediatePropagation();
-    toast('Сначала запустите или отмените подтверждённое приглашение.');
     openCurrentInvite();
     return;
   }
@@ -142,7 +146,7 @@ function handleDocumentClick(event){
 }
 
 function openInviteSetup(gameType, preserved = null){
-  if (currentInvite?.status === 'accepted') return openCurrentInvite();
+  if (hasActionableInvite()) return openCurrentInvite();
 
   const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
   const room = preserved?.room || (state.room === 'gold' ? 'gold' : 'match');
@@ -823,6 +827,10 @@ function actionText(action){
     decline:'Отклоняем…',
     cancel:'Отменяем…',
   }[action] || 'Подождите…';
+}
+
+function hasActionableInvite(){
+  return ['pending', 'accepted'].includes(String(currentInvite?.status || ''));
 }
 
 function isGameLaunchControl(target){

@@ -19,7 +19,7 @@ import { initV110TargetedInteractions } from './production-v110-targeted-interac
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r4-invite-notification-presence-root';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r5-presence-invite-resume-root';
 
 // Active v110 keeps one invitation owner, one notification owner, one game
 // renderer/result owner, one presence owner and one manual surrender owner.

@@ -17,7 +17,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $watch = $read('bot/game-watch.php');
 $sync = $read('app/assets/js/production-v110-readonly-game-sync.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r4.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
@@ -55,7 +55,7 @@ $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
     && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
     'The active graph must retain one notification owner and one non-rendering PvP transport.');
-$assert(str_contains($launch, '/app/v110.php?v=1109'),
+$assert(str_contains($launch, '/app/v110.php?v=1110'),
     'Telegram launches must use the corrected outer revision.');
 
 fwrite(STDOUT, 'ProductionV110PvpResultNotificationRootContractTest: ' . $assertions . " assertions passed\n");
