@@ -30,10 +30,10 @@ function interceptOpen(event){
 
   event.preventDefault();
   event.stopImmediatePropagation();
-  void primeAndOpen();
+  void primeAndOpen(target.id === 'notificationToast');
 }
 
-async function primeAndOpen(){
+async function primeAndOpen(requireItem){
   if (runtime.busy) return;
   runtime.busy = true;
 
@@ -54,7 +54,8 @@ async function primeAndOpen(){
         }));
       }
 
-      if (items.length > 0 || lastUnread <= 0) break;
+      if (items.length > 0) break;
+      if (!requireItem && lastUnread <= 0) break;
       await delay(RETRY_MS);
     }
   } finally {
