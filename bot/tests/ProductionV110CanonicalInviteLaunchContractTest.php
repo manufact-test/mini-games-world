@@ -72,11 +72,11 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'production-clean-entry-v110.js?v=1105')
-        && str_contains($v110, 'main-v110.js?v=1105')
-        && str_contains($v110, 'data-hotfix-build="v110-mvp14r3-invite-notification-speed"')
+    str_contains($v110, 'production-clean-entry-v110.js?v=1106')
+        && str_contains($v110, 'main-v110.js?v=1106')
+        && str_contains($v110, 'data-hotfix-build="v110-mvp14r3-pvp-result-notification-root"')
         && str_contains($v110, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
-    'Canonical invite launches must reach the currently accepted no-store v110 build.'
+    'Canonical invite launches must reach the current no-store v110 build.'
 );
 
 fwrite(STDOUT, "ProductionV110CanonicalInviteLaunchContractTest: {$assertions} assertions passed\n");

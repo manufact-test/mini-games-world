@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14r3-invite-notification-speed';
+window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-result-notification-root';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -17,7 +17,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110.js?v=1105';
+import { initNotificationsScreen } from './screens/notifications-screen-v110-root.js?v=1106';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
@@ -35,6 +35,7 @@ import { initChessEntry } from './games/chess/entry.js?v=74';
 import { initGoEntry } from './games/go/entry.js?v=74';
 import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
+import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1106';
 
 let statsRefreshing = false;
 
@@ -47,6 +48,7 @@ initGameCardCopy();
 initNotificationsScreen();
 
 initGameScreen();
+initV110ReadonlyGameSync();
 initGameInvites();
 initSearchScreen();
 initDominoChainLayout();
