@@ -21,7 +21,7 @@ import { initNotificationsScreen } from './screens/notifications-screen-v110-roo
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
-import { initProfileScreen } from './screens/profile-screen.js?v=1108';
+import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites-v110.js?v=1105';
