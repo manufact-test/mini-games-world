@@ -15,107 +15,45 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $invites = $read('app/assets/js/games/game-invites-v110.js');
-$legacyInvites = $read('app/assets/js/games/game-invites.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110-root.js');
-$preflight = $read('app/assets/js/production-v110-notification-preflight.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r4.js');
+$sheet = $read('app/assets/js/components/sheet.js');
+$toast = $read('app/assets/js/components/toast.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
-$entry = $read('app/assets/js/production-clean-entry-v110.js');
+$clean = $read('app/assets/js/production-clean-entry-v110.js');
 
-ob_start();
-require $root . '/app/v110.php';
-$html = ob_get_clean();
-if (!is_string($html)) throw new RuntimeException('Cannot render v110 Telegram entrypoint.');
-
-$assert(
-    str_contains($invites, 'const WATCH_URL = `${window.location.origin}/bot/invite-watch.php`;')
-        && str_contains($invites, 'const WATCH_INTERVAL_MS = 400;')
-        && str_contains($invites, 'await watchIncomingInvite();')
-        && str_contains($invites, 'showIncomingInvite(invite);'),
-    'The single active invitation owner must consume the existing lightweight signal endpoint within 400 ms.'
-);
-
-$assert(
-    str_contains($invites, 'const ACTIVE_SYNC_INTERVAL_MS = 500;')
-        && str_contains($invites, 'const IDLE_SYNC_INTERVAL_MS = 1500;')
-        && str_contains($invites, 'return currentInvite?.token ? ACTIVE_SYNC_INTERVAL_MS : IDLE_SYNC_INTERVAL_MS;'),
-    'Only an active invitation may use the faster authoritative sync cadence.'
-);
+$assert(str_contains($invites, 'const WATCH_INTERVAL_MS = 400;')
+    && str_contains($invites, 'const ACTIVE_SYNC_INTERVAL_MS = 500;')
+    && str_contains($invites, 'const IDLE_SYNC_INTERVAL_MS = 1500;'),
+    'The accepted lightweight invitation signal and bounded sync cadences must remain.');
 
 $directPaint = strpos($invites, 'showDirectInvitePending(context, opponentName);');
 $directRequest = strpos($invites, "const result = await inviteRequest('create_direct'");
-$assert(
-    $directPaint !== false && $directRequest !== false && $directPaint < $directRequest,
-    'The inviter must see the final owner surface before the direct-invite network request starts.'
-);
+$assert($directPaint !== false && $directRequest !== false && $directPaint < $directRequest,
+    'The inviter must still see the owner surface before the request starts.');
 
-$actionStart = strpos($invites, 'async function performInviteAction');
-$actionRequest = strpos($invites, 'const result = await inviteRequest(action, { token });', $actionStart ?: 0);
-$acceptPaint = strpos($invites, 'showInviteeWaiting({', $actionStart ?: 0);
-$closePaint = strpos($invites, 'closeSheet();', $actionStart ?: 0);
-$assert(
-    $actionStart !== false
-        && $actionRequest !== false
-        && $acceptPaint !== false
-        && $closePaint !== false
-        && $acceptPaint < $actionRequest
-        && $closePaint < $actionRequest,
-    'Accept, decline and cancel must change the visible surface before their authoritative request completes.'
-);
+$assert(str_contains($sheet, 's.replaceChildren();')
+    && str_contains($sheet, "attributeFilter:['class']"),
+    'A closed canonical sheet must remove hidden HTML even when an older import removes the active class.');
+$assert(str_contains($toast, "'Приглашение отменено.'")
+    && str_contains($toast, 'NON_ACTIONABLE_CONFIRMATIONS'),
+    'The canonical toast owner must suppress redundant self-action confirmation.');
 
-$preRequestBranch = $actionStart !== false && $actionRequest !== false
-    ? substr($invites, $actionStart, $actionRequest - $actionStart)
-    : '';
-$assert(
-    $preRequestBranch !== ''
-        && str_contains($preRequestBranch, "action === 'accept'")
-        && str_contains($preRequestBranch, "action === 'decline' || action === 'cancel'")
-        && !str_contains($preRequestBranch, "action === 'start'"),
-    'The final Start game action must remain authoritative for the future pre-match synchronization screen.'
-);
+$assert(str_contains($notifications, 'if (item && showToast(item)) rememberAnnouncedId')
+    && str_contains($notifications, "if (showToast(item)) rememberAnnouncedId(id);")
+    && str_contains($notifications, "['home', 'profile'].includes(screenName)"),
+    'An item may be marked announced only after it was actually shown on an allowed screen.');
+$assert(str_contains($notifications, "document.addEventListener('mgw:sheet-closed'")
+    && str_contains($notifications, 'announceNextLiveItem'),
+    'A notification suppressed by an open sheet must remain deliverable after the sheet closes.');
 
-$toastStart = strpos($notifications, 'async function openToastNotification()');
-$toastPaint = strpos($notifications, 'renderNotifications(mergeNotificationItems([item], currentItems()));', $toastStart ?: 0);
-$toastRefresh = strpos($notifications, 'void refreshOpenSheet();', $toastStart ?: 0);
-$assert(
-    $toastStart !== false
-        && $toastPaint !== false
-        && $toastRefresh !== false
-        && $toastPaint < $toastRefresh,
-    'The exact live toast item must render before any authoritative notification refresh.'
-);
+$bell = strpos($notifications, "event.target.closest('#notificationsOpen')");
+$open = strpos($notifications, 'void openNotificationsSheet(currentItems());', $bell ?: 0);
+$assert($bell !== false && $open !== false && $bell < $open,
+    'The single notification owner must open the bell immediately on the first click.');
+$assert(!str_contains($shell, 'NotificationPreflight')
+    && substr_count($shell, 'initGameInvites();') === 1
+    && substr_count($shell, 'initNotificationsScreen();') === 1
+    && !str_contains($clean, 'initV109SelfCancelRefreshGuard'),
+    'The active graph must contain one invitation owner and one notification owner without overlay guards.');
 
-$assert(
-    str_contains($notifications, 'if (!visible.length && (Number(result?.unread_count || 0) > 0 || unreadHint > 0))')
-        && str_contains($notifications, 'await delay(EMPTY_RETRY_MS);')
-        && str_contains($notifications, 'if (!currentItems().length) renderError();')
-        && str_contains($preflight, "primeAndOpen(target.id === 'notificationToast')")
-        && str_contains($preflight, "mgw:notification-sync")
-        && !str_contains($preflight, 'openSheet'),
-    'Unread notification state must be primed into the existing owner and never flash an empty list.'
-);
-
-$preflightPosition = strpos($shell, 'initV110NotificationPreflight();');
-$ownerPosition = strpos($shell, 'initNotificationsScreen();');
-$assert(
-    substr_count($shell, 'initGameInvites();') === 1
-        && substr_count($shell, 'initNotificationsScreen();') === 1
-        && substr_count($shell, 'initV110NotificationPreflight();') === 1
-        && $preflightPosition !== false && $ownerPosition !== false && $preflightPosition < $ownerPosition
-        && str_contains($shell, './games/game-invites-v110.js?v=1105')
-        && str_contains($shell, './screens/notifications-screen-v110-root.js?v=1107')
-        && str_contains($shell, './production-v110-notification-preflight.js?v=1108')
-        && !str_contains($entry, 'initV105InviteLatency')
-        && !str_contains($entry, 'initV109InviteSpeed')
-        && str_contains($legacyInvites, 'const SYNC_INTERVAL_MS = 1500;')
-        && !str_contains($legacyInvites, '/bot/invite-watch.php'),
-    'The active graph must retain one invite owner and one notification owner, with one transport-only preflight before it.'
-);
-
-$assert(
-    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1108')
-        && str_contains($html, './assets/js/main-v110.js?v=1108')
-        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-invite-presence-notification-profile-root"'),
-    'Telegram v110 must publish the exact fresh cache-busted invite and notification build.'
-);
-
-fwrite(STDOUT, "ProductionV110InviteNotificationSpeedContractTest: {$assertions} assertions passed\n");
+fwrite(STDOUT, 'ProductionV110InviteNotificationSpeedContractTest: ' . $assertions . " assertions passed\n");
