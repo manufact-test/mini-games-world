@@ -37,19 +37,23 @@ $assert(str_contains($sync, 'const WATCH_INTERVAL_MS = 250;')
     && !str_contains($sync, 'openSheet('),
     'PvP freshness must remain a non-rendering transport.');
 
-$assert(str_contains($presence, '// Start immediately.')
-    && str_contains($presence, 'startPresence();')
+$assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
+    && str_contains($presence, "window.addEventListener('pageshow'")
+    && str_contains($presence, 'cancelInFlightRequests()')
+    && str_contains($presence, 'REQUEST_TIMEOUT_MS = 4500')
     && !str_contains($presence, 'mgwPrefetch'),
-    'The single client presence owner must still start before application boot.');
+    'The single client presence owner must start from app-ready and refresh immediately after resume.');
 
 $toastStart = strpos($notifications, 'async function openToastNotification()');
-$toastPaint = strpos($notifications, 'renderNotifications(mergeNotificationItems([item], currentItems()));', $toastStart ?: 0);
-$toastRefresh = strpos($notifications, 'void refreshOpenSheet();', $toastStart ?: 0);
+$toastOpen = strpos($notifications, 'void openNotificationsSheet(mergeNotificationItems([item], currentItems()), true);', $toastStart ?: 0);
+$immediatePaint = strpos($notifications, 'renderNotifications(immediate);');
+$generationRefresh = strpos($notifications, 'return refreshOpenSheet(generation);');
 $assert($toastStart !== false
-    && $toastPaint !== false
-    && $toastRefresh !== false
-    && $toastPaint < $toastRefresh,
-    'The exact blue-toast item must still paint before authoritative refresh.');
+    && $toastOpen !== false
+    && $immediatePaint !== false
+    && $generationRefresh !== false
+    && $immediatePaint < $generationRefresh,
+    'The exact blue-toast item must enter the single sheet owner, paint cached data and then refresh within its generation.');
 
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
