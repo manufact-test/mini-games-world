@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-result-notification-root';
+window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root';
 
 // Use an isolated v110 shell so historical rollback assets remain byte-for-byte
 // unchanged while the active lifecycle graph has one owner per transition.
-import './main-v110-handoff-shell.js?v=1106';
+import './main-v110-handoff-shell.js?v=1107';
