@@ -13,9 +13,12 @@ final class PresenceService
 
     public function __construct(?string $directory = null)
     {
-        $scope = substr(hash('sha256', dirname(__DIR__, 2)), 0, 16);
+        // Production requests can be served by different PHP workers. A system
+        // temp directory is not a reliable cross-request source there, so the
+        // default presence root lives beside the shared JSON runtime instead.
+        $defaultDirectory = dirname(__DIR__) . '/data/.runtime/presence';
         $this->directory = rtrim(
-            $directory ?: (sys_get_temp_dir() . '/mini-games-world-presence-' . $scope),
+            $directory ?: $defaultDirectory,
             DIRECTORY_SEPARATOR
         );
     }
