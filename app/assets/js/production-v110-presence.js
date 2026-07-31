@@ -1,21 +1,26 @@
 import { getInitData, getTelegram } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
-import { state } from './state.js?v=27';
-import { renderStats } from './screens/home-screen.js?v=74';
+import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1110';
 
 const PRESENCE_URL = `${window.location.origin}/bot/presence.php`;
 const HEARTBEAT_MS = 4000;
 const STATUS_MS = 1200;
 const RETRY_MS = 500;
+const REQUEST_TIMEOUT_MS = 4500;
 
 const runtime = window.__MGW_V110_PRESENCE__ ||= {
   initialized:false,
   started:false,
+  appReady:false,
   heartbeatTimer:null,
   statusTimer:null,
   retryTimer:null,
   pingBusy:false,
   statusBusy:false,
+  pingRequestId:0,
+  statusRequestId:0,
+  pingController:null,
+  statusController:null,
   left:false,
 };
 
@@ -23,22 +28,32 @@ export function initV110Presence(){
   if (runtime.initialized) return;
   runtime.initialized = true;
 
-  // Start immediately. Invite launches must not depend on catching a one-shot
-  // app-ready event after another module has already dispatched it.
-  startPresence();
-  document.addEventListener('mgw:app-ready', resumePresence, { once:true });
+  document.addEventListener('mgw:app-ready', () => {
+    runtime.appReady = true;
+    startPresence();
+  }, { once:true });
+
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') resumePresence();
+    if (document.visibilityState === 'visible') resumePresence(true);
+    else cancelInFlightRequests();
   });
-  window.addEventListener('pagehide', sendLeaveBeacon, { capture:true });
+
+  window.addEventListener('pageshow', () => {
+    if (document.visibilityState === 'visible') resumePresence(true);
+  }, { capture:true });
+
+  window.addEventListener('pagehide', event => {
+    if (!event.persisted) sendLeaveBeacon();
+  }, { capture:true });
 
   const telegram = getTelegram();
   if (typeof telegram?.onEvent === 'function') {
-    try { telegram.onEvent('activated', resumePresence); } catch (error) {}
+    try { telegram.onEvent('activated', () => resumePresence(true)); } catch (error) {}
   }
 }
 
 function startPresence(){
+  if (!runtime.appReady) return;
   if (!runtime.started) {
     runtime.started = true;
     runtime.heartbeatTimer = window.setInterval(() => {
@@ -48,48 +63,85 @@ function startPresence(){
       if (canReadHomeStatus()) void refreshStatus();
     }, STATUS_MS);
   }
-  resumePresence();
+  resumePresence(true);
 }
 
-function resumePresence(){
+function resumePresence(force = false){
+  if (!runtime.appReady || document.visibilityState !== 'visible') return;
   runtime.left = false;
   window.clearTimeout(runtime.retryTimer);
   runtime.retryTimer = null;
+  if (force) cancelInFlightRequests();
   void pingPresence();
-  if (canReadHomeStatus()) void refreshStatus();
+}
+
+function cancelInFlightRequests(){
+  runtime.pingRequestId += 1;
+  runtime.statusRequestId += 1;
+  runtime.pingController?.abort();
+  runtime.statusController?.abort();
+  runtime.pingController = null;
+  runtime.statusController = null;
+  runtime.pingBusy = false;
+  runtime.statusBusy = false;
 }
 
 async function pingPresence(){
-  if (runtime.pingBusy || document.visibilityState !== 'visible') return false;
+  if (runtime.pingBusy || !runtime.appReady || document.visibilityState !== 'visible') return false;
+
+  const requestId = ++runtime.pingRequestId;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const statsTicket = beginStatsRequest();
+  runtime.pingController = controller;
   runtime.pingBusy = true;
   runtime.left = false;
+
   try {
-    const data = await requestPresence('ping');
-    applyStats(data?.stats);
+    const data = await requestPresence('ping', controller.signal);
+    if (requestId !== runtime.pingRequestId) return false;
+    applyStatsSnapshot(statsTicket, data?.stats);
     return true;
   } catch (error) {
-    scheduleRetry();
+    if (requestId === runtime.pingRequestId) scheduleRetry();
     return false;
   } finally {
-    runtime.pingBusy = false;
+    window.clearTimeout(timeout);
+    if (requestId === runtime.pingRequestId) {
+      runtime.pingBusy = false;
+      runtime.pingController = null;
+    }
   }
 }
 
 async function refreshStatus(){
-  if (runtime.statusBusy || !canReadHomeStatus()) return;
+  if (runtime.statusBusy || !runtime.appReady || !canReadHomeStatus()) return false;
+
+  const requestId = ++runtime.statusRequestId;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const statsTicket = beginStatsRequest();
+  runtime.statusController = controller;
   runtime.statusBusy = true;
+
   try {
-    const data = await requestPresence('status');
-    applyStats(data?.stats);
+    const data = await requestPresence('status', controller.signal);
+    if (requestId !== runtime.statusRequestId) return false;
+    applyStatsSnapshot(statsTicket, data?.stats);
+    return true;
   } catch (error) {
-    // Normal stats polling remains the fallback.
+    return false;
   } finally {
-    runtime.statusBusy = false;
+    window.clearTimeout(timeout);
+    if (requestId === runtime.statusRequestId) {
+      runtime.statusBusy = false;
+      runtime.statusController = null;
+    }
   }
 }
 
 function scheduleRetry(){
-  if (runtime.retryTimer || document.visibilityState !== 'visible') return;
+  if (runtime.retryTimer || !runtime.appReady || document.visibilityState !== 'visible') return;
   runtime.retryTimer = window.setTimeout(() => {
     runtime.retryTimer = null;
     void pingPresence();
@@ -102,13 +154,7 @@ function canReadHomeStatus(){
   return String(active?.dataset.screen || '') === 'home';
 }
 
-function applyStats(stats){
-  if (!stats || typeof stats !== 'object') return;
-  state.stats = stats;
-  renderStats(stats);
-}
-
-async function requestPresence(action){
+async function requestPresence(action, signal){
   const speed = window.__MGW_V101_SPEED__;
   const fetcher = typeof speed?.rawFetch === 'function'
     ? speed.rawFetch
@@ -120,6 +166,7 @@ async function requestPresence(action){
     keepalive:action === 'leave',
     priority:'high',
     cache:'no-store',
+    signal,
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) throw new Error(data?.error || 'Presence request failed');
@@ -129,6 +176,7 @@ async function requestPresence(action){
 function sendLeaveBeacon(){
   if (runtime.left) return;
   runtime.left = true;
+  cancelInFlightRequests();
   const body = JSON.stringify(payload('leave'));
   try {
     const blob = new Blob([body], { type:'application/json' });

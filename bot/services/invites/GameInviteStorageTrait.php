@@ -209,6 +209,7 @@ trait GameInviteStorageTrait
     {
         $type = (string)($notification['type'] ?? '');
         if (!str_starts_with($type, 'invite_')) return true;
+        if (in_array($type, ['invite_expired', 'invite_timed_out'], true)) return false;
         $token = (string)($notification['invite_token'] ?? '');
         $invite = $token !== '' ? ($invitesByToken[$token] ?? null) : null;
         if (!is_array($invite)) return true;
@@ -229,19 +230,11 @@ trait GameInviteStorageTrait
                 $invite['status'] = 'expired';
                 $invite['updated_at'] = now_iso();
                 if ($status === 'pending') {
-                    foreach ([(string)($invite['inviter_id'] ?? ''), (string)($invite['invitee_id'] ?? '')] as $userId) {
-                        if ($userId === '') continue;
-                        $this->addNotification(
-                            $db,
-                            $userId,
-                            'invite:' . (string)($invite['id'] ?? '') . ':expired:' . $userId,
-                            'invite_expired',
-                            'Срок приглашения истёк',
-                            'Матч «' . (string)($invite['game_title'] ?? 'Игра') . '» не начался.',
-                            'warning',
-                            (string)($invite['token'] ?? '')
-                        );
-                    }
+                    $this->hideReceivedNotification(
+                        $db,
+                        (string)($invite['invitee_id'] ?? ''),
+                        (string)($invite['token'] ?? '')
+                    );
                 }
             }
             return;
@@ -250,21 +243,14 @@ trait GameInviteStorageTrait
         if ($status !== 'awaiting_start') return;
         $deadline = strtotime((string)($invite['ready_deadline_at'] ?? '')) ?: 0;
         if ($deadline <= 0 || $deadline > $now) return;
+
         $invite['status'] = 'timed_out';
         $invite['updated_at'] = now_iso();
-        foreach ([(string)($invite['inviter_id'] ?? ''), (string)($invite['invitee_id'] ?? '')] as $userId) {
-            if ($userId === '') continue;
-            $this->addNotification(
-                $db,
-                $userId,
-                'invite:' . (string)($invite['id'] ?? '') . ':timed_out:' . $userId,
-                'invite_timed_out',
-                'Время ожидания истекло',
-                'Матч «' . (string)($invite['game_title'] ?? 'Игра') . '» не был запущен.',
-                'warning',
-                (string)($invite['token'] ?? '')
-            );
-        }
+        $this->hideReceivedNotification(
+            $db,
+            (string)($invite['invitee_id'] ?? ''),
+            (string)($invite['token'] ?? '')
+        );
     }
 
     private function normalizeLegacy(array &$invite): void

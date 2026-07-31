@@ -175,11 +175,19 @@ try {
     $payments = new PaymentService($config, $users);
     $telegram = new TelegramService($config);
     $sessions = new SessionService($config);
-    $statsService = new StatsService();
+    $presenceService = new PresenceService();
+    $statsService = new StatsService($presenceService);
     $history = new HistoryService($config, $users);
     $weeklyMatch = new WeeklyMatchEconomyService($config, new NotificationService());
 
     $tgUser = $auth->getUserFromRequest($payload);
+    if ($action === 'bootstrap' && $sessionId !== '') {
+        try {
+            $presenceService->touch((string)($tgUser['id'] ?? ''), $sessionId);
+        } catch (Throwable $presenceError) {
+            error_log('Mini Games World bootstrap presence failed: ' . $presenceError->getMessage());
+        }
+    }
 
     $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId) {
         $user = $users->ensureUser($data, $tgUser);

@@ -23,6 +23,7 @@ function mgw_notification_is_visible(array $item, ?array $invite): bool
 {
     $type = (string)($item['type'] ?? '');
     if (!str_starts_with($type, 'invite_')) return true;
+    if (in_array($type, ['invite_expired', 'invite_timed_out'], true)) return false;
     if (!is_array($invite)) return true;
 
     $status = (string)($invite['status'] ?? '');

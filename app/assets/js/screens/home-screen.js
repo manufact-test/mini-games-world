@@ -79,6 +79,8 @@ export function renderStats(stats){
 }
 
 function openGameSetup(){
+  const inviteGuard = new CustomEvent('mgw:before-game-launch', { cancelable:true });
+  if (!document.dispatchEvent(inviteGuard)) return;
   if (isSessionLocked(state.session)) return toast(sessionMessage(state.session));
   haptic('light');
   const isGold = state.room === 'gold';

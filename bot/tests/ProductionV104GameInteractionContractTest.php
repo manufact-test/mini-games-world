@@ -76,12 +76,14 @@ $assert(
         && str_contains($presenceService, "'.runtime'")
         && str_contains($presenceService, "'presence'")
         && str_contains($presenceService, "session-' . hash('sha256', \$sessionId) . '.presence")
-        && str_contains($presenceService, '@unlink($this->sessionPath($accountId, $sessionId))')
         && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 75;')
+        && str_contains($presenceService, 'private const LEAVE_GRACE_SEC = 4;')
+        && str_contains($presenceService, "'leave_after'")
+        && str_contains($presenceService, 'readSessionState(')
         && !str_contains($presenceService, 'presence_sessions')
         && !str_contains($presenceService, "['last_seen_at']")
         && str_contains($stats, '$this->presence->onlineAccountIds()'),
-    'Online counting must use one configured bounded runtime root and never add fields to users JSON.'
+    'Online counting must use one configured bounded runtime root, a renewable leave lease and no users JSON fields.'
 );
 
 $assert(

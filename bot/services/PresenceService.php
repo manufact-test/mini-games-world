@@ -7,6 +7,7 @@ final class PresenceService
     // A longer bounded window keeps two genuinely open accounts visible while
     // pagehide still removes a closed client immediately through sendBeacon.
     private const ONLINE_WINDOW_SEC = 75;
+    private const LEAVE_GRACE_SEC = 4;
     private const MARKER_FILE = '.enabled';
 
     private string $directory;
@@ -46,7 +47,11 @@ final class PresenceService
 
         $path = $this->sessionPath($accountId, $sessionId);
         $temporary = $path . '.tmp.' . bin2hex(random_bytes(4));
-        if (@file_put_contents($temporary, (string)time(), LOCK_EX) === false) {
+        $payload = json_encode([
+            'touched_at' => time(),
+            'leave_after' => 0,
+        ], JSON_UNESCAPED_SLASHES);
+        if (!is_string($payload) || @file_put_contents($temporary, $payload, LOCK_EX) === false) {
             @unlink($temporary);
             throw new RuntimeException('Не удалось обновить присутствие игрока.');
         }
@@ -67,7 +72,15 @@ final class PresenceService
 
         $this->ensureDirectory();
         @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
-        @unlink($this->sessionPath($accountId, $sessionId));
+        $path = $this->sessionPath($accountId, $sessionId);
+        if (!is_file($path)) return;
+
+        $state = $this->readSessionState($path);
+        $payload = json_encode([
+            'touched_at' => max(1, (int)($state['touched_at'] ?? time())),
+            'leave_after' => time() + self::LEAVE_GRACE_SEC,
+        ], JSON_UNESCAPED_SLASHES);
+        if (is_string($payload)) @file_put_contents($path, $payload, LOCK_EX);
         $this->pruneAccountDirectory($this->accountDirectory($accountId));
     }
 
@@ -133,10 +146,17 @@ final class PresenceService
     private function pruneAccountDirectory(string $accountDirectory): void
     {
         if (!is_dir($accountDirectory)) return;
-        $cutoff = time() - self::ONLINE_WINDOW_SEC;
+        $now = time();
+        $cutoff = $now - self::ONLINE_WINDOW_SEC;
         foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
-            $timestamp = (int)trim((string)@file_get_contents($path));
-            if ($timestamp <= 0 || $timestamp < $cutoff) @unlink($path);
+            $state = $this->readSessionState($path);
+            $touchedAt = (int)($state['touched_at'] ?? 0);
+            $leaveAfter = (int)($state['leave_after'] ?? 0);
+            if ($touchedAt <= 0
+                || $touchedAt < $cutoff
+                || ($leaveAfter > 0 && $leaveAfter <= $now)) {
+                @unlink($path);
+            }
         }
 
         if (!$this->directoryHasLiveSession($accountDirectory)) {
@@ -147,6 +167,30 @@ final class PresenceService
 
     private function directoryHasLiveSession(string $accountDirectory): bool
     {
-        return (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: []) !== [];
+        $now = time();
+        $cutoff = $now - self::ONLINE_WINDOW_SEC;
+        foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
+            $state = $this->readSessionState($path);
+            $touchedAt = (int)($state['touched_at'] ?? 0);
+            $leaveAfter = (int)($state['leave_after'] ?? 0);
+            if ($touchedAt >= $cutoff && ($leaveAfter <= 0 || $leaveAfter > $now)) return true;
+        }
+        return false;
+    }
+
+    private function readSessionState(string $path): array
+    {
+        $raw = trim((string)@file_get_contents($path));
+        if ($raw === '') return ['touched_at' => 0, 'leave_after' => 0];
+
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            return [
+                'touched_at' => (int)($decoded['touched_at'] ?? 0),
+                'leave_after' => (int)($decoded['leave_after'] ?? 0),
+            ];
+        }
+
+        return ['touched_at' => (int)$raw, 'leave_after' => 0];
     }
 }

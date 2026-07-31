@@ -36,12 +36,26 @@ try {
     $assert($stats->build($db)['online_players'] === 2, 'Closing one of two sessions must keep the account online.');
 
     $presence->leave('100', 'mobile');
-    $assert($stats->build($db)['online_players'] === 1, 'Closing the final session must remove the account immediately.');
+    $assert($stats->build($db)['online_players'] === 2, 'A final leave must keep a short renewable grace window for mobile resume.');
+
+    $account100 = $tempDir . '/account-' . hash('sha256', '100');
+    $account100Files = glob($account100 . '/session-*.presence') ?: [];
+    if ($account100Files === []) throw new RuntimeException('Account 100 presence files were not created.');
+    foreach ($account100Files as $path) {
+        $state = json_decode((string)file_get_contents($path), true);
+        if (!is_array($state)) throw new RuntimeException('Presence lease must use the structured marker format.');
+        $state['leave_after'] = time() - 1;
+        file_put_contents($path, json_encode($state, JSON_UNESCAPED_SLASHES), LOCK_EX);
+    }
+    $assert($stats->build($db)['online_players'] === 1, 'An elapsed leave lease must remove the final account session.');
 
     $account200 = $tempDir . '/account-' . hash('sha256', '200');
     $sessionFiles = glob($account200 . '/session-*.presence') ?: [];
     if ($sessionFiles === []) throw new RuntimeException('Presence test session file was not created.');
-    file_put_contents($sessionFiles[0], (string)(time() - 90), LOCK_EX);
+    file_put_contents($sessionFiles[0], json_encode([
+        'touched_at' => time() - 90,
+        'leave_after' => 0,
+    ], JSON_UNESCAPED_SLASHES), LOCK_EX);
     $assert($stats->build($db)['online_players'] === 0, 'A session older than the bounded Telegram background window must fall out.');
 
     $assert(serialize($db) === $originalDb, 'Presence tracking must not add or change fields in application JSON data.');
