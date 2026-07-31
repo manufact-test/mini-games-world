@@ -186,7 +186,7 @@ trait GameInviteStorageTrait
         $count = 0;
         foreach ($db['notifications'] ?? [] as $notification) {
             if (!is_array($notification)) continue;
-            if ((string)($notification['user_id'] ?? '') !== $userId) continue;
+            if ((string)($notification['user_id']'] ?? '') !== $userId) continue;
             if (!empty($notification['hidden_at']) || !empty($notification['read_at'])) continue;
             if (!$this->inviteNotificationVisible($notification, $invites)) continue;
             $count++;
@@ -229,13 +229,6 @@ trait GameInviteStorageTrait
             if ($expiresAt > 0 && $expiresAt <= $now) {
                 $invite['status'] = 'expired';
                 $invite['updated_at'] = now_iso();
-                if ($status === 'pending') {
-                    $this->hideReceivedNotification(
-                        $db,
-                        (string)($invite['invitee_id'] ?? ''),
-                        (string)($invite['token'] ?? '')
-                    );
-                }
             }
             return;
         }
@@ -246,11 +239,6 @@ trait GameInviteStorageTrait
 
         $invite['status'] = 'timed_out';
         $invite['updated_at'] = now_iso();
-        $this->hideReceivedNotification(
-            $db,
-            (string)($invite['invitee_id'] ?? ''),
-            (string)($invite['token'] ?? '')
-        );
     }
 
     private function normalizeLegacy(array &$invite): void
