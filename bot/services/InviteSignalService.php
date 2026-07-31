@@ -6,8 +6,15 @@ final class InviteSignalService
     private const TTL_SEC = 30;
     private string $root;
 
-    public function __construct(array $config)
+    public function __construct(array $config, ?string $root = null)
     {
+        if ($root !== null && trim($root) !== '') {
+            // Tests and isolated diagnostics may provide their own writable root.
+            // Production callers omit it and always use shared application data.
+            $this->root = rtrim($root, DIRECTORY_SEPARATOR);
+            return;
+        }
+
         $dataDirectory = rtrim(
             (string)($config['data_dir'] ?? (dirname(__DIR__) . '/data')),
             DIRECTORY_SEPARATOR
@@ -15,7 +22,7 @@ final class InviteSignalService
         $scope = hash('sha256', (string)($config['base_url'] ?? '') . '|' . $dataDirectory);
 
         // Invite delivery must be visible to every PHP worker. Shared runtime
-        // storage is reliable here; a worker-local system temp directory is not.
+        // storage is reliable here; a worker-local directory is not.
         $this->root = $dataDirectory
             . DIRECTORY_SEPARATOR . '.runtime'
             . DIRECTORY_SEPARATOR . 'invite-signals-' . substr($scope, 0, 16);
