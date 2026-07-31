@@ -186,7 +186,7 @@ trait GameInviteStorageTrait
         $count = 0;
         foreach ($db['notifications'] ?? [] as $notification) {
             if (!is_array($notification)) continue;
-            if ((string)($notification['user_id']'] ?? '') !== $userId) continue;
+            if ((string)($notification['user_id'] ?? '') !== $userId) continue;
             if (!empty($notification['hidden_at']) || !empty($notification['read_at'])) continue;
             if (!$this->inviteNotificationVisible($notification, $invites)) continue;
             $count++;
