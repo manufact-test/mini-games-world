@@ -42,8 +42,11 @@ $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
     && str_contains($shell, 'notifications-screen-v110r5.js?v=1110'),
     'The active graph must have exactly one notification owner and no click interceptor.');
-$assert(!str_contains($clean, 'initV109SelfCancelRefreshGuard'),
-    'The inactive v109 self-cancel overlay guard must not remain in the active graph.');
+$assert(!str_contains($clean, 'initV109SelfCancelRefreshGuard')
+    && !str_contains($clean, 'initV109ShareSpeed')
+    && !str_contains($clean, 'initV109ShareFallbackGuard')
+    && !str_contains($clean, 'initV99InvitePickerHold'),
+    'Inactive self-cancel, share and picker layers must not remain in the active graph.');
 $assert(str_contains($notifications, "event.target.closest('#notificationsOpen')")
     && str_contains($notifications, 'void openNotificationsSheet(currentItems());')
     && str_contains($notifications, 'isCurrentNotificationsSheet(generation)'),
@@ -54,16 +57,16 @@ $assert(str_contains($profile, "PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1'
     && !str_contains($legacyProfile, 'PROFILE_STATS_CACHE_KEY'),
     'The accepted isolated profile first frame must remain unchanged.');
 
-$build = 'v110-mvp14r5-presence-invite-resume-root';
+$build = 'v110-mvp14r6-invite-actions-root';
 $assert(str_contains($shell, $build)
     && str_contains($main, $build)
     && str_contains($clean, $build)
     && str_contains($entry, $build),
     'Every active v110 entry owner must share the same build identity.');
-$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1110')
-    && str_contains($entry, 'production-clean-entry-v110.js?v=1110')
-    && str_contains($entry, 'main-v110.js?v=1110')
-    && str_contains($launch, '/app/v110.php?v=1110'),
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1111')
+    && str_contains($entry, 'production-clean-entry-v110.js?v=1111')
+    && str_contains($entry, 'main-v110.js?v=1111')
+    && str_contains($launch, '/app/v110.php?v=1111'),
     'Telegram launch and active modules must use the fresh outer revision.');
 
 fwrite(STDOUT, 'ProductionV110InvitePresenceNotificationProfileRootContractTest: ' . $assertions . " assertions passed\n");

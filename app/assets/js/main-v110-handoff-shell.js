@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14r5-presence-invite-resume-root';
+window.__MGW_BUILD__ = 'v110-mvp14r6-invite-actions-root';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';

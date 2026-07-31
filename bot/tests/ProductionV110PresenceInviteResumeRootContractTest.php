@@ -4,7 +4,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
-    if (!is_string($content)) throw new RuntimeException('Cannot read R5 source: ' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read R6 source: ' . $path);
     return $content;
 };
 $assertions = 0;
@@ -70,11 +70,11 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
     && !str_contains($inviteStorage, "'Время ожидания истекло'")
     && str_contains($inviteStorage, "['invite_expired', 'invite_timed_out']")
     && str_contains($notificationEndpoint, "['invite_expired', 'invite_timed_out']"),
-    'Passive expiration and timeout must be silent cleanup and hidden from existing notification history.');
+    'Passive expiration and timeout must stay notification-free and hidden from existing history.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1110')
-    && str_contains($php, 'main-v110.js?v=1110')
-    && str_contains($php, 'v110-mvp14r5-presence-invite-resume-root'),
-    'Only the canonical no-store v1110 entrypoint may activate R5.');
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1111')
+    && str_contains($php, 'main-v110.js?v=1111')
+    && str_contains($php, 'v110-mvp14r6-invite-actions-root'),
+    'Only the canonical no-store v1111 entrypoint may activate R6.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");
