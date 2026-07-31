@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: mgw-ci-${{ github.workflow }}-${{ github.ref }}
@@ -65,7 +65,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          ref: agent/v110-presence-invite-resume-root
+          fetch-depth: 0
+
+      - name: Apply canonical R5 root changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/apply-r5-root.py
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            app/assets/js/stats-owner-v110.js \
+            app/assets/js/production-v110-presence.js \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/screens/home-screen.js \
+            app/assets/js/screens/notifications-screen-v110r5.js \
+            app/assets/js/main-v110-handoff-shell.js \
+            app/assets/js/main-v110.js \
+            app/assets/js/production-clean-entry-v110.js \
+            app/v110.php \
+            bot/helpers/UserWelcomeGuard.php \
+            bot/helpers/WebAppLaunchUrl.php \
+            bot/services/AuthService.php \
+            bot/services/PresenceService.php \
+            bot/api.php \
+            bot/services/invites/GameInviteStorageTrait.php \
+            bot/services/GameInviteService.php \
+            bot/notifications.php \
+            bot/tests
+          git rm scripts/ci/apply-r5-root.py
+
+          if git diff --cached --quiet; then
+            echo "Canonical R5 root changes already applied."
+          else
+            git commit -m "fix presence, invite recovery and resume roots"
+            git push origin HEAD:agent/v110-presence-invite-resume-root
+          fi
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
