@@ -17,7 +17,6 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r4.js');
 $sheet = $read('app/assets/js/components/sheet.js');
-$toast = $read('app/assets/js/components/toast.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $clean = $read('app/assets/js/production-clean-entry-v110.js');
 
@@ -34,9 +33,11 @@ $assert($directPaint !== false && $directRequest !== false && $directPaint < $di
 $assert(str_contains($sheet, 's.replaceChildren();')
     && str_contains($sheet, "attributeFilter:['class']"),
     'A closed canonical sheet must remove hidden HTML even when an older import removes the active class.');
-$assert(str_contains($toast, "'Приглашение отменено.'")
-    && str_contains($toast, 'NON_ACTIONABLE_CONFIRMATIONS'),
-    'The canonical toast owner must suppress redundant self-action confirmation.');
+$assert(str_contains($invites, "../components/sheet.js?v=1109")
+    && str_contains($invites, "../components/toast.js?v=1109")
+    && str_contains($invites, "if (action === 'decline') toast('Приглашение отклонено.');")
+    && !str_contains($invites, "toast(action === 'decline' ?"),
+    'The canonical invitation owner must use the fresh shared components and keep self-cancel silent.');
 
 $assert(str_contains($notifications, 'if (item && showToast(item)) rememberAnnouncedId')
     && str_contains($notifications, "if (showToast(item)) rememberAnnouncedId(id);")

@@ -15,7 +15,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $sheet = $read('app/assets/js/components/sheet.js');
-$toast = $read('app/assets/js/components/toast.js');
+$invites = $read('app/assets/js/games/game-invites-v110.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r4.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $clean = $read('app/assets/js/production-clean-entry-v110.js');
@@ -25,9 +25,11 @@ $auth = $read('bot/services/AuthService.php');
 $assert(str_contains($sheet, 's.replaceChildren();')
     && str_contains($sheet, "document.dispatchEvent(new CustomEvent('mgw:sheet-closed'))"),
     'Closing a sheet must remove stale content and announce the lifecycle transition.');
-$assert(str_contains($toast, 'NON_ACTIONABLE_CONFIRMATIONS')
-    && str_contains($toast, "'Приглашение отменено.'"),
-    'The canonical toast policy must suppress redundant self-cancel confirmation.');
+$assert(str_contains($invites, "../components/sheet.js?v=1109")
+    && str_contains($invites, "../components/toast.js?v=1109")
+    && str_contains($invites, "if (action === 'decline') toast('Приглашение отклонено.');")
+    && !str_contains($invites, "toast(action === 'decline' ?"),
+    'The canonical invitation owner must directly own fresh shared components and silent self-cancel.');
 $assert(str_contains($notifications, "event.target.closest('#notificationsOpen')")
     && str_contains($notifications, 'void openNotificationsSheet(currentItems());'),
     'The first bell click must immediately enter the single notification owner.');

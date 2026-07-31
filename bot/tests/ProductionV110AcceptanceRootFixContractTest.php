@@ -23,7 +23,6 @@ $lifecycle = $read('app/assets/js/production-v110-match-lifecycle.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r4.js');
 $gameInvites = $read('app/assets/js/games/game-invites-v110.js');
 $sheet = $read('app/assets/js/components/sheet.js');
-$toast = $read('app/assets/js/components/toast.js');
 $presenceClient = $read('app/assets/js/production-v110-presence.js');
 $presenceService = $read('bot/services/PresenceService.php');
 $auth = $read('bot/services/AuthService.php');
@@ -59,9 +58,11 @@ $assert($count($shell, 'initGameInvites();') === 1
 $assert(str_contains($sheet, 's.replaceChildren();')
     && str_contains($sheet, "attributeFilter:['class']"),
     'A closed sheet must destroy hidden stale ownership state at the canonical component.');
-$assert(str_contains($toast, 'NON_ACTIONABLE_CONFIRMATIONS')
-    && str_contains($toast, "'Приглашение отменено.'"),
-    'The canonical toast owner must suppress redundant self-cancel confirmation.');
+$assert(str_contains($gameInvites, "../components/sheet.js?v=1109")
+    && str_contains($gameInvites, "../components/toast.js?v=1109")
+    && str_contains($gameInvites, "if (action === 'decline') toast('Приглашение отклонено.');")
+    && !str_contains($gameInvites, "toast(action === 'decline' ?"),
+    'The canonical invitation owner must directly own fresh component imports and silent self-cancel.');
 
 $homePosition = strpos($lifecycle, "showScreen('home');");
 $requestPosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
