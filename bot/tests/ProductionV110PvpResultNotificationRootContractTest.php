@@ -21,12 +21,12 @@ $notifications = $read('app/assets/js/screens/notifications-screen-v110r4.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
-$jsonFastPath = strpos($watch, "if ($driver === 'json')");
+$jsonFastPath = strpos($watch, "if (\$driver === 'json')");
 $storageFallback = strpos($watch, 'StorageFactory::create($config)');
 $assert($jsonFastPath !== false
     && $storageFallback !== false
     && $jsonFastPath < $storageFallback
-    && str_contains($watch, "fopen($path, 'rb')")
+    && str_contains($watch, "fopen(\$path, 'rb')")
     && str_contains($watch, 'flock($handle, LOCK_SH)')
     && !str_contains($watch, 'app.lock'),
     'The accepted lock-free PvP watch must remain unchanged.');
