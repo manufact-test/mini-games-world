@@ -14,69 +14,86 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$shell = $read('app/assets/js/main-v110-handoff-shell.js');
-$main = $read('app/assets/js/main-v110.js');
-$entry = $read('app/assets/js/production-clean-entry-v110.js');
-$sync = $read('app/assets/js/production-v110-readonly-game-sync.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110-root.js');
 $watch = $read('bot/game-watch.php');
-$v110 = $read('app/v110.php');
+$sync = $read('app/assets/js/production-v110-readonly-game-sync.js');
+$presence = $read('app/assets/js/production-v110-presence.js');
+$legacyPresence = $read('app/assets/js/production-v109-presence.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110-root.js');
+$shell = $read('app/assets/js/main-v110-handoff-shell.js');
+$entry = $read('app/assets/js/production-clean-entry-v110.js');
+$launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
+ob_start();
+require $root . '/app/v110.php';
+$html = ob_get_clean();
+if (!is_string($html)) throw new RuntimeException('Cannot render v110 Telegram entrypoint.');
+
+$jsonFastPath = strpos($watch, "if (\$driver === 'json')");
+$storageFallback = strpos($watch, 'StorageFactory::create($config)');
 $assert(
-    str_contains($v110, 'production-clean-entry-v110.js?v=1106')
-        && str_contains($v110, 'main-v110.js?v=1106')
-        && str_contains($v110, 'data-hotfix-build="v110-mvp14r3-pvp-result-notification-root"')
-        && str_contains($main, "main-v110-handoff-shell.js?v=1106")
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-pvp-result-notification-root'"),
-    'Telegram v110 must publish one fresh PvP result and notification root build.'
+    $jsonFastPath !== false
+        && $storageFallback !== false
+        && $jsonFastPath < $storageFallback
+        && str_contains($watch, "'games.json'")
+        && str_contains($watch, "fopen(\$path, 'rb')")
+        && str_contains($watch, 'flock($handle, LOCK_SH)')
+        && str_contains($watch, 'stream_get_contents($handle)')
+        && !str_contains($watch, 'app.lock'),
+    'Production JSON game watch must read only games.json under its own shared file lock.'
 );
 
 $assert(
-    substr_count($shell, 'initV110ReadonlyGameSync();') === 1
-        && substr_count($shell, 'initGameScreen();') === 1
-        && str_contains($shell, "production-v110-readonly-game-sync.js?v=1106")
-        && str_contains($shell, "notifications-screen-v110-root.js?v=1106")
-        && !str_contains($shell, "notifications-screen-v110.js?v=1105"),
-    'Active v110 must initialize one read-only transport and one replacement notification owner.'
+    str_contains($watch, "json_response([\n        'ok' => true")
+        && !str_contains($watch, 'api_ok(['),
+    'The read-only game watch must not execute general API success hooks.'
+);
+
+$assert(
+    str_contains($watch, "in_array(\$userId, \$participants, true)")
+        && str_contains($watch, '$games->publicGame($candidate, $userId)'),
+    'Only an authenticated match participant may receive a public game projection.'
 );
 
 $assert(
     str_contains($sync, 'const WATCH_INTERVAL_MS = 250;')
         && str_contains($sync, 'const FALLBACK_GAME_POLL_MS = 1500;')
-        && str_contains($sync, 'APP_CONFIG.gameIntervalMs = Math.max')
-        && str_contains($sync, 'await watchCurrentGame();'),
-    'PvP freshness must use a fast shared-lock watch while the heavy game_state poll stays a slower fallback.'
+        && str_contains($sync, "typeof speed?.rawFetch === 'function'")
+        && str_contains($sync, 'enterGame(game, result.me || null);'),
+    'PvP freshness must use the lock-free watch while the existing game screen remains renderer/result owner.'
 );
 
 $assert(
     str_contains($sync, 'if (game?.is_bot_game) return false;')
-        && str_contains($sync, "String(screen?.dataset.screen || '') === 'game'")
-        && str_contains($sync, 'item?.running || Number(item?.queue?.length || 0) > 0 || item?.surrenderPending'),
-    'The read-only transport must target visible PvP only and never race a local action or surrender.'
+        && str_contains($sync, 'actionIsBusy(gameRuntimeItem(gameId))')
+        && !str_contains($sync, 'openSheet(')
+        && !str_contains($sync, 'finishGame('),
+    'The transport must not race local actions, alter bot games or create another result surface.'
 );
 
 $assert(
-    str_contains($sync, "import { enterGame } from './screens/game-screen-v102-safe.js?v=102';")
-        && str_contains($sync, 'enterGame(game, result.me || null);')
-        && !str_contains($sync, 'openResultSheet')
-        && !str_contains($sync, 'openSheet('),
-    'The transport may supply a projection but the existing game screen must remain the only result/render owner.'
+    !str_contains($entry, 'initV109Presence')
+        && !str_contains($entry, "from './production-v109-presence.js")
+        && str_contains($legacyPresence, 'export function initV109Presence'),
+    'Legacy presence must remain available only as an inactive rollback asset.'
+);
+
+$presenceInit = strpos($shell, 'initV110Presence();');
+$bootCall = strrpos($shell, 'boot();');
+$assert(
+    substr_count($shell, 'initV110Presence();') === 1
+        && str_contains($shell, "from './production-v110-presence.js?v=1107'")
+        && $presenceInit !== false
+        && $bootCall !== false
+        && $presenceInit < $bootCall,
+    'Exactly one v110 presence owner must start before application boot.'
 );
 
 $assert(
-    str_contains($watch, '$storage = StorageFactory::create($config);')
-        && str_contains($watch, '$storage->readOnly(')
-        && str_contains($watch, "in_array(\$userId, \$participants, true)")
-        && !str_contains($watch, '->transaction('),
-    'The watch endpoint must use authenticated participant-only shared-lock reads without a write transaction.'
-);
-
-$assert(
-    !str_contains($watch, '$sessions->touch')
-        && !str_contains($watch, 'cleanup(')
-        && !str_contains($watch, 'releaseIfCurrent')
-        && str_contains($watch, "header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');"),
-    'The watch endpoint must not mutate session, game cleanup or production state.'
+    str_contains($presence, '// Start immediately.')
+        && str_contains($presence, 'startPresence();')
+        && str_contains($presence, "typeof speed?.rawFetch === 'function'")
+        && !str_contains($presence, 'mgwPrefetch'),
+    'Invite presence must start immediately and never be an abortable background-prefetch request.'
 );
 
 $toastStart = strpos($notifications, 'async function openToastNotification()');
@@ -90,23 +107,30 @@ $assert(
         && $toastRefresh !== false
         && $toastPaint < $toastDismiss
         && $toastDismiss < $toastRefresh,
-    'A blue-toast click must paint the exact live notification before hiding the toast or starting a list request.'
+    'The exact blue-toast item must be painted before dismissal and before any server list refresh.'
 );
 
 $assert(
-    str_contains($notifications, 'void openToastNotification();')
-        && str_contains($notifications, 'upsert(item);')
-        && str_contains($notifications, 'const item = toastItem ? cloneItem(toastItem)')
-        && str_contains($notifications, 'event.stopImmediatePropagation();'),
-    'The toast element must route directly through the synchronous live-item path.'
-);
-
-$assert(
-    str_contains($notifications, 'const EMPTY_RETRY_MS = 160;')
-        && str_contains($notifications, 'Number(result?.unread_count || 0) > 0 || unreadHint > 0')
+    str_contains($notifications, 'if (!visible.length && (Number(result?.unread_count || 0) > 0 || unreadHint > 0))')
         && str_contains($notifications, 'renderLoading();')
         && str_contains($notifications, 'await delay(EMPTY_RETRY_MS);'),
-    'An unread hint may show loading and retry, but must not flash a false empty state.'
+    'An unread hint may show loading/retry but never a false empty notification list.'
+);
+
+$assert(
+    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1107';")
+        && str_contains($html, './assets/js/production-clean-entry-v110.js?v=1107')
+        && str_contains($html, './assets/js/main-v110.js?v=1107')
+        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-pvp-lockfree-presence-root"'),
+    'Telegram must open a genuinely fresh outer and inner v110 browser revision.'
+);
+
+$assert(
+    str_contains($shell, "notifications-screen-v110-root.js?v=1107")
+        && str_contains($shell, "production-v110-readonly-game-sync.js?v=1107")
+        && substr_count($shell, 'initNotificationsScreen();') === 1
+        && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
+    'The fresh graph must retain one notification owner and one non-rendering PvP transport.'
 );
 
 fwrite(STDOUT, "ProductionV110PvpResultNotificationRootContractTest: {$assertions} assertions passed\n");

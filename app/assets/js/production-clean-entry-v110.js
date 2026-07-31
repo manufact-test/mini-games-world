@@ -13,7 +13,6 @@ import { initV104GamePollTuning } from './production-v104-game-poll-tuning.js?v=
 import { initV109SelfCancelRefreshGuard } from './production-v109-self-cancel-refresh-guard.js?v=109';
 import { initV109ShareFallbackGuard } from './production-v109-share-fallback-guard.js?v=109';
 import { initV109ShareSpeed } from './production-v109-share-speed.js?v=109';
-import { initV109Presence } from './production-v109-presence.js?v=109';
 import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
 import { initV110AcceptanceRuntime } from './production-v110-acceptance-runtime.js?v=110';
 import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1104';
@@ -21,17 +20,16 @@ import { initV110TargetedInteractions } from './production-v110-targeted-interac
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-pvp-result-notification-root';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root';
 
 // Active v110 keeps one invitation owner, one notification owner, one game
-// rendering/result owner and one manual surrender owner. The read-only PvP
-// transport only supplies newer authoritative projections to that game owner.
+// renderer/result owner, one presence owner and one manual surrender owner.
+// Historical v109 presence remains a rollback asset but is not initialized.
 initV110AcceptanceRuntime();
 initV110MatchLifecycle();
 initV109SelfCancelRefreshGuard();
 initV109ShareFallbackGuard();
 initV109ShareSpeed();
-initV109Presence();
 initV109SearchSpeed();
 
 initSessionOwnershipFix();
