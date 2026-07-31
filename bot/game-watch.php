@@ -14,7 +14,7 @@ function mgw_game_watch_load_games(array $config): array
     if ($driver === '') $driver = 'json';
 
     // Production currently uses JSON. Read only games.json under that file's own
-    // shared lock, never the global app.lock used by write transactions.
+    // shared lock, never the global transaction lock used by write operations.
     if ($driver === 'json') {
         return mgw_game_watch_read_json_games($config);
     }
