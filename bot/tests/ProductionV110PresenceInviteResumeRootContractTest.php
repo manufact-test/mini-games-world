@@ -45,7 +45,7 @@ $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     'Mobile resume must cancel suspended requests and start a fresh bounded presence request.');
 
 $assert(!str_contains($auth, 'touchAuthenticatedPresence')
-    && str_contains($api, "$action === 'bootstrap'")
+    && str_contains($api, "\$action === 'bootstrap'")
     && str_contains($api, '$presenceService->touch('),
     'Generic authentication must not resurrect a leaving session; bootstrap owns launch presence.');
 
