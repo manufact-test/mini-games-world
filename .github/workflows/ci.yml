@@ -72,6 +72,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('scripts/ci/apply-r5-root.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''service = "bot/services/GameInviteService.php"
+          replace_once(service,
+          """        $type = (string)($notification['type'] ?? '');
+                  if (!str_starts_with($type, 'invite_')) return true;
+          """,
+          """        $type = (string)($notification['type'] ?? '');
+                  if (!str_starts_with($type, 'invite_')) return true;
+                  if (in_array($type, ['invite_expired', 'invite_timed_out'], true)) return false;
+          """)
+          '''
+          new = '''replace_once(storage,
+          """        $type = (string)($notification['type'] ?? '');
+                  if (!str_starts_with($type, 'invite_')) return true;
+          """,
+          """        $type = (string)($notification['type'] ?? '');
+                  if (!str_starts_with($type, 'invite_')) return true;
+                  if (in_array($type, ['invite_expired', 'invite_timed_out'], true)) return false;
+          """)
+          '''
+          if text.count(old) != 1:
+              raise SystemExit('R5 transform owner patch not found exactly once')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           python3 scripts/ci/apply-r5-root.py
 
           git config user.name "github-actions[bot]"
@@ -92,7 +119,6 @@ jobs:
             bot/services/PresenceService.php \
             bot/api.php \
             bot/services/invites/GameInviteStorageTrait.php \
-            bot/services/GameInviteService.php \
             bot/notifications.php \
             bot/tests
           git rm scripts/ci/apply-r5-root.py
