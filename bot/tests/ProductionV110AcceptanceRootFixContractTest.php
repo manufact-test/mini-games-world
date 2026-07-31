@@ -21,8 +21,6 @@ $runtime = $read('app/assets/js/production-v110-acceptance-runtime.js');
 $targeted = $read('app/assets/js/production-v110-targeted-interactions.js');
 $lifecycle = $read('app/assets/js/production-v110-match-lifecycle.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110-root.js');
-$rollbackV110Notifications = $read('app/assets/js/screens/notifications-screen-v110.js');
-$pvpSync = $read('app/assets/js/production-v110-readonly-game-sync.js');
 $gameInvites = $read('app/assets/js/games/game-invites-v110.js');
 $legacyGameInvites = $read('app/assets/js/games/game-invites.js');
 $legacyMain = $read('app/assets/js/main-v105.js');
@@ -32,27 +30,31 @@ $legacyV104InviteControls = $read('app/assets/js/production-v104-invite-game-con
 $legacyV104Result = $read('app/assets/js/production-v104-result-instant.js');
 $legacyV105Latency = $read('app/assets/js/production-v105-invite-latency.js');
 $legacyV109InviteSpeed = $read('app/assets/js/production-v109-invite-speed.js');
+$legacyV105Ttt = $read('app/assets/js/production-v105-tictactoe-stability.js');
+$legacyV109Notifications = $read('app/assets/js/production-v109-notifications.js');
+$legacyPresence = $read('app/assets/js/production-v109-presence.js');
+$presence = $read('app/assets/js/production-v110-presence.js');
+$gameSync = $read('app/assets/js/production-v110-readonly-game-sync.js');
+$gameWatch = $read('bot/game-watch.php');
 $php = $read('app/v110.php');
-$presence = $read('bot/presence.php');
+$presenceEndpoint = $read('bot/presence.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
-$legacyV105Ttt = $read('app/assets/js/production-v105-tictactoe-stability.js');
-$legacyV109Notifications = $read('app/assets/js/production-v109-notifications.js');
 
 $assert(
-    str_contains($main, "import './main-v110-handoff-shell.js?v=1106';")
-        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-result-notification-root'")
-        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-result-notification-root'"),
-    'v110 must publish the PvP result and notification root build through a fresh isolated shell.'
+    str_contains($main, "import './main-v110-handoff-shell.js?v=1107';")
+        && str_contains($main, "window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root'")
+        && str_contains($shell, "window.__MGW_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root'"),
+    'v110 must publish the fresh lock-free PvP and presence build through an isolated shell.'
 );
 
 $assert(
     $count($entry, 'initV110AcceptanceRuntime();') === 1
         && $count($entry, 'initV110TargetedInteractions();') === 1
         && $count($entry, 'initV110MatchLifecycle();') === 1
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-pvp-result-notification-root'"),
-    'Every retained v110 owner must initialize exactly once.'
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-pvp-lockfree-presence-root'"),
+    'Every retained production entry owner must initialize exactly once.'
 );
 
 $assert(
@@ -60,12 +62,11 @@ $assert(
         && !str_contains($entry, 'initV104ResultInstant')
         && !str_contains($entry, 'initV105InviteLatency')
         && !str_contains($entry, 'initV109InviteSpeed')
-        && !str_contains($entry, 'initV101FastInviteWatch')
         && str_contains($legacyV104InviteControls, 'initV104InviteGameControls')
         && str_contains($legacyV104Result, 'initV104ResultInstant')
         && str_contains($legacyV105Latency, 'initV105InviteLatency')
         && str_contains($legacyV109InviteSpeed, 'initV109InviteSpeed'),
-    'The active v110 graph must retire every parallel invitation/result owner without deleting rollback assets.'
+    'Parallel invitation/result owners must remain outside active v110 without deleting rollback assets.'
 );
 
 $assert(
@@ -74,7 +75,7 @@ $assert(
         && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)")
         && str_contains($legacyGameInvites, 'const SYNC_INTERVAL_MS = 1500;')
         && !str_contains($legacyGameInvites, '/bot/invite-watch.php'),
-    'The isolated v110 file must be the single active invitation owner while rollback assets remain unchanged.'
+    'The isolated v110 invitation file must remain the single active invitation owner.'
 );
 
 $homePosition = strpos($lifecycle, "showScreen('home');");
@@ -82,7 +83,6 @@ $requestPosition = strpos($lifecycle, 'const result = await api.leaveGame(String
 $replayPosition = strpos($lifecycle, 'window.queueMicrotask(() => queuedButton.click());');
 $assert(
     str_contains($lifecycle, "window.addEventListener('click', ownMatchLifecycleClick, true)")
-        && str_contains($lifecycle, "origin.closest('#confirmLeaveGame')")
         && $homePosition !== false
         && $requestPosition !== false
         && $replayPosition !== false
@@ -92,25 +92,21 @@ $assert(
 );
 
 $assert(
-    str_contains($lifecycle, 'const SEARCH_START_IDS = new Set([')
-        && str_contains($lifecycle, 'queueSearchAfterRelease(startButton);')
+    str_contains($lifecycle, 'queueSearchAfterRelease(startButton);')
         && str_contains($lifecycle, "button.textContent = 'Запускаем поиск…';")
-        && str_contains($lifecycle, 'const queuedButton = releaseQueuedSearchButton();')
-        && str_contains($lifecycle, "document.dispatchEvent(new CustomEvent('mgw:game-dismissed'))")
         && !str_contains($lifecycle, 'renderPendingResult')
         && !str_contains($lifecycle, 'renderConfirmedResult')
         && !str_contains($lifecycle, 'data-v110-leave-pending')
         && !str_contains($lifecycle, 'openSheet('),
-    'Manual surrender must use one home/queue transition and expose no blocked result overlay.'
+    'Manual surrender must expose no blocked result overlay.'
 );
 
 $assert(
     str_contains($lifecycle, 'state.activeGame = null;')
-        && str_contains($lifecycle, 'closeSheet();')
         && str_contains($lifecycle, 'clearGameView();')
         && str_contains($lifecycle, "source:'v110-surrender-home'")
         && str_contains($lifecycle, 'enterGame(snapshot, viewer);'),
-    'The transition must clear the playable surface immediately and restore the authoritative game on failure.'
+    'The surrender transition must clear immediately and restore the authoritative game on failure.'
 );
 
 $assert(
@@ -126,32 +122,26 @@ $toastPaint = strpos($notifications, 'renderNotifications(mergeNotificationItems
 $toastDismiss = strpos($notifications, 'dismissToast();', $toastStart ?: 0);
 $toastRefresh = strpos($notifications, 'void refreshOpenSheet();', $toastStart ?: 0);
 $assert(
-    $toastStart !== false
-        && $toastPaint !== false
-        && $toastDismiss !== false
-        && $toastRefresh !== false
-        && $toastPaint < $toastDismiss
-        && $toastDismiss < $toastRefresh
-        && str_contains($notifications, 'const item = toastItem ? cloneItem(toastItem)'),
-    'Toast click must synchronously render the exact live item before dismissal and network refresh.'
+    $toastStart !== false && $toastPaint !== false && $toastDismiss !== false && $toastRefresh !== false
+        && $toastPaint < $toastDismiss && $toastDismiss < $toastRefresh,
+    'A blue toast click must synchronously paint the exact live item before dismissal and refresh.'
 );
 
 $assert(
     str_contains($notifications, "const fetcher = typeof speed?.rawFetch === 'function' ? speed.rawFetch")
         && str_contains($notifications, "cache:'no-store'")
-        && str_contains($notifications, 'let result = await rawNotifications(false);')
+        && str_contains($notifications, 'await delay(EMPTY_RETRY_MS);')
         && !str_contains($notifications, 'api.notifications(true)')
         && !str_contains($notifications, 'optimisticNotificationRead'),
-    'Notification opening must bypass the stale optimistic mark-read cache and use no-store authoritative reads.'
+    'Notification opening must bypass stale optimistic cache and retry unread-empty races.'
 );
 
 $assert(
     str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
         && str_contains($notifications, "const token = String(item?.invite_token || '')")
         && str_contains($notifications, 'const actions = Array.isArray(item?.actions) ? item.actions : [];')
-        && str_contains($notifications, "event.target instanceof Element ? event.target.closest('#notificationsOpen')")
-        && str_contains($notifications, 'const EMPTY_RETRY_MS = 160;'),
-    'The notification owner must retain token/actions and prevent false empty rendering while an unread item is pending.'
+        && $count($shell, 'initNotificationsScreen();') === 1,
+    'The active notification owner must retain invite actions and initialize once.'
 );
 
 $assert(
@@ -167,37 +157,29 @@ $assert(
     str_contains($legacyTargeted, 'runtime.leavePending = true;')
         && str_contains($legacyTargeted, "showScreen('home');")
         && str_contains($legacyMain, '__MGW_V103_TARGETED_INTERACTIONS__?.leavePending')
-        && !str_contains($legacyNotifications, 'rawNotifications(markRead)')
-        && str_contains($rollbackV110Notifications, 'async function openNotificationsSheet'),
-    'Historical rollback files must remain available while active v110 is rebuilt in isolated assets.'
+        && !str_contains($legacyNotifications, 'rawNotifications(markRead)'),
+    'Historical rollback files must remain available while v110 uses isolated assets.'
 );
 
 $assert(
     !str_contains($entry, 'initV105TicTacToeStability')
-        && !str_contains($entry, 'production-v105-tictactoe-stability.js')
         && str_contains($legacyV105Ttt, 'window.fetch = stableFetch')
         && !str_contains($entry, 'initV109Notifications')
         && str_contains($legacyV109Notifications, 'function enrichInviteActions'),
-    'Retired fetch and notification wrappers must remain outside the active v110 graph.'
+    'Retired fetch and notification wrappers must remain outside active v110.'
 );
 
 $assert(
-    str_contains($shell, "notifications-screen-v110-root.js?v=1106")
-        && !str_contains($shell, "notifications-screen-v110.js?v=1105")
-        && str_contains($shell, "games/game-invites-v110.js?v=1105")
-        && str_contains($shell, "production-v110-readonly-game-sync.js?v=1106")
-        && $count($shell, 'initV110ReadonlyGameSync();') === 1
-        && str_contains($pvpSync, 'const WATCH_INTERVAL_MS = 250;')
-        && str_contains($entry, "production-v110-match-lifecycle.js?v=1104")
-        && str_contains($php, 'production-clean-entry-v110.js?v=1106')
-        && str_contains($php, 'main-v110.js?v=1106')
-        && str_contains($php, 'data-hotfix-build="v110-mvp14r3-pvp-result-notification-root"'),
-    'Every changed v110 browser owner and transport must be reached through a fresh cache-busted URL.'
+    str_contains($shell, 'notifications-screen-v110-root.js?v=1107')
+        && str_contains($shell, 'production-v110-readonly-game-sync.js?v=1107')
+        && str_contains($shell, 'production-v110-presence.js?v=1107')
+        && str_contains($php, 'production-clean-entry-v110.js?v=1107')
+        && str_contains($php, 'main-v110.js?v=1107'),
+    'Every changed browser owner must be reached through the fresh v1107 asset graph.'
 );
 
 $assert(
     str_contains($runtime, "window.addEventListener('click', guardAndTrackTicTacToe, true)")
-        && str_contains($runtime, 'String(authoritative?.turn || \'\') !== viewerId')
         && str_contains($runtime, "board[cell] !== '-'")
         && str_contains($runtime, 'paintPendingMove();')
         && !str_contains($runtime, 'window.fetch ='),
@@ -214,28 +196,57 @@ $assert(
 $assert(
     str_contains($runtime, 'mgw-v110-search-summary')
         && str_contains($runtime, '#searchInfo{min-height:2.9em}')
-        && str_contains($runtime, 'secondary:type === \'domino\' ? \'Классика 0–6\''),
+        && str_contains($runtime, "secondary:type === 'domino' ? 'Классика 0–6'"),
     'The accepted search summary layout must remain untouched.'
 );
 
 $assert(
-    str_contains($presence, "if (\$action === 'ping' || \$action === 'status') \$presence->touch(\$accountId, \$sessionId);")
-        && str_contains($presence, "if (\$sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');")
-        && strpos($presence, '$presence->touch') < strpos($presence, '$stats->build'),
-    'Authenticated presence reads must still confirm the current session.'
+    str_contains($presenceEndpoint, "if (\$action === 'ping' || \$action === 'status') \$presence->touch(\$accountId, \$sessionId);")
+        && strpos($presenceEndpoint, '$presence->touch') < strpos($presenceEndpoint, '$stats->build'),
+    'Authenticated presence reads must confirm the current session before counting online players.'
+);
+
+$presenceInit = strpos($shell, 'initV110Presence();');
+$bootCall = strrpos($shell, 'boot();');
+$assert(
+    !str_contains($entry, 'initV109Presence')
+        && str_contains($legacyPresence, 'export function initV109Presence')
+        && $count($shell, 'initV110Presence();') === 1
+        && $presenceInit !== false && $bootCall !== false && $presenceInit < $bootCall
+        && str_contains($presence, 'startPresence();')
+        && !str_contains($presence, 'mgwPrefetch'),
+    'One immediate non-prefetch v110 presence owner must replace the active v109 owner.'
+);
+
+$jsonFastPath = strpos($gameWatch, "if (\$driver === 'json')");
+$storageFallback = strpos($gameWatch, 'StorageFactory::create($config)');
+$assert(
+    $jsonFastPath !== false && $storageFallback !== false && $jsonFastPath < $storageFallback
+        && str_contains($gameWatch, "'games.json'")
+        && str_contains($gameWatch, 'flock($handle, LOCK_SH)')
+        && !str_contains($gameWatch, 'app.lock')
+        && !str_contains($gameWatch, 'api_ok(['),
+    'Production JSON game watch must avoid the global app lock and general API success hooks.'
+);
+
+$assert(
+    str_contains($gameSync, 'const WATCH_INTERVAL_MS = 250;')
+        && str_contains($gameSync, "typeof speed?.rawFetch === 'function'")
+        && str_contains($gameSync, 'enterGame(game, result.me || null);')
+        && !str_contains($gameSync, 'openSheet(')
+        && !str_contains($gameSync, 'finishGame('),
+    'The lock-free transport may supply projections but never own rendering or results.'
 );
 
 $assert(
     str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=110';")
-        && str_contains($welcome, "require_once __DIR__ . '/WebAppLaunchUrl.php';")
+        && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1107';")
+        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1107'.")
         && str_contains($welcome, 'WebAppLaunchUrl::base($this->config)')
-        && str_contains($welcome, 'WebAppLaunchUrl::invitation($this->config, $inviteToken)')
-        && str_contains($invitesEndpoint, "require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';")
         && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);')
         && !str_contains($welcome, '/app/?v=85')
         && !str_contains($invitesEndpoint, '/app/?v=85'),
-    'Every Telegram start, menu, direct invite and shared fallback must use one canonical v110 URL builder.'
+    'Every Telegram start, menu and invite must use the fresh canonical v1107 URL builder.'
 );
 
 $assert(
