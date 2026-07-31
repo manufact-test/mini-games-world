@@ -13,10 +13,17 @@ final class PresenceService
 
     public function __construct(?string $directory = null)
     {
-        // Production requests can be served by different PHP workers. A system
-        // temp directory is not a reliable cross-request source there, so the
-        // default presence root lives beside the shared JSON runtime instead.
-        $defaultDirectory = dirname(__DIR__) . '/data/.runtime/presence';
+        // Every request must resolve the same configured data root. Production
+        // may place runtime JSON outside bot/data, so deriving presence only from
+        // __DIR__ can split writers and readers even inside one deployment.
+        $configuredDataDirectory = trim((string)($GLOBALS['config']['data_dir'] ?? ''));
+        $dataDirectory = $configuredDataDirectory !== ''
+            ? $configuredDataDirectory
+            : dirname(__DIR__) . '/data';
+        $defaultDirectory = rtrim($dataDirectory, DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR . '.runtime'
+            . DIRECTORY_SEPARATOR . 'presence';
+
         $this->directory = rtrim(
             $directory ?: $defaultDirectory,
             DIRECTORY_SEPARATOR
