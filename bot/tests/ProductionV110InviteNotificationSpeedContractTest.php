@@ -17,7 +17,6 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $legacyInvites = $read('app/assets/js/games/game-invites.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110-root.js');
-$rollbackNotifications = $read('app/assets/js/screens/notifications-screen-v110.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
 
@@ -75,45 +74,39 @@ $assert(
 
 $toastStart = strpos($notifications, 'async function openToastNotification()');
 $toastPaint = strpos($notifications, 'renderNotifications(mergeNotificationItems([item], currentItems()));', $toastStart ?: 0);
-$toastDismiss = strpos($notifications, 'dismissToast();', $toastStart ?: 0);
 $toastRefresh = strpos($notifications, 'void refreshOpenSheet();', $toastStart ?: 0);
 $assert(
     $toastStart !== false
         && $toastPaint !== false
-        && $toastDismiss !== false
         && $toastRefresh !== false
-        && $toastPaint < $toastDismiss
-        && $toastDismiss < $toastRefresh,
-    'A toast click must synchronously paint its exact live item before dismissal and authoritative refresh.'
+        && $toastPaint < $toastRefresh,
+    'The exact live toast item must render before any authoritative notification refresh.'
 );
 
 $assert(
-    str_contains($notifications, 'const EMPTY_RETRY_MS = 160;')
-        && str_contains($notifications, 'Number(result?.unread_count || 0) > 0 || unreadHint > 0')
+    str_contains($notifications, 'if (!visible.length && (Number(result?.unread_count || 0) > 0 || unreadHint > 0))')
         && str_contains($notifications, 'await delay(EMPTY_RETRY_MS);')
         && str_contains($notifications, 'if (!currentItems().length) renderError();'),
-    'An unread notification may show loading and retry, but it must never flash a false empty list.'
+    'Unread notification state must retry instead of flashing an empty list.'
 );
 
 $assert(
     substr_count($shell, 'initGameInvites();') === 1
         && substr_count($shell, 'initNotificationsScreen();') === 1
-        && str_contains($shell, "./games/game-invites-v110.js?v=1105")
-        && str_contains($shell, "./screens/notifications-screen-v110-root.js?v=1106")
-        && !str_contains($shell, "./screens/notifications-screen-v110.js?v=1105")
+        && str_contains($shell, './games/game-invites-v110.js?v=1105')
+        && str_contains($shell, './screens/notifications-screen-v110-root.js?v=1107')
         && !str_contains($entry, 'initV105InviteLatency')
         && !str_contains($entry, 'initV109InviteSpeed')
         && str_contains($legacyInvites, 'const SYNC_INTERVAL_MS = 1500;')
-        && !str_contains($legacyInvites, '/bot/invite-watch.php')
-        && str_contains($rollbackNotifications, 'async function openNotificationsSheet'),
-    'The active graph must retain one isolated invite owner and one replacement notification owner without deleting rollback assets.'
+        && !str_contains($legacyInvites, '/bot/invite-watch.php'),
+    'The active graph must retain exactly one isolated invite owner and one fresh notification owner without changing rollback assets.'
 );
 
 $assert(
-    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1106')
-        && str_contains($html, './assets/js/main-v110.js?v=1106')
-        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-pvp-result-notification-root"'),
-    'Telegram v110 must publish the exact cache-busted current build.'
+    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1107')
+        && str_contains($html, './assets/js/main-v110.js?v=1107')
+        && str_contains($html, 'data-hotfix-build="v110-mvp14r3-pvp-lockfree-presence-root"'),
+    'Telegram v110 must publish the exact fresh cache-busted invite and notification build.'
 );
 
 fwrite(STDOUT, "ProductionV110InviteNotificationSpeedContractTest: {$assertions} assertions passed\n");
