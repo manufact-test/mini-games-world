@@ -26,7 +26,7 @@ $entry = $read('app/v110.php');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
 $assert(!str_contains($presence, 'sys_get_temp_dir'), 'Presence must not use worker-local temporary storage.');
-$assert(str_contains($presence, "$GLOBALS['config']['data_dir']")
+$assert(str_contains($presence, "\$GLOBALS['config']['data_dir']")
     && str_contains($presence, "'.runtime'")
     && str_contains($presence, "'presence'"),
     'Every presence reader and writer must derive one configured shared runtime root.');
