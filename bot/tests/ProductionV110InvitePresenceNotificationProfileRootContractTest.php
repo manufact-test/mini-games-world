@@ -17,7 +17,8 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $presence = $read('bot/services/PresenceService.php');
 $signals = $read('bot/services/InviteSignalService.php');
 $preflight = $read('app/assets/js/production-v110-notification-preflight.js');
-$profile = $read('app/assets/js/screens/profile-screen.js');
+$profile = $read('app/assets/js/screens/profile-screen-v110.js');
+$legacyProfile = $read('app/assets/js/screens/profile-screen.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $main = $read('app/assets/js/main-v110.js');
 $entry = $read('app/v110.php');
@@ -41,6 +42,9 @@ $assert(str_contains($profile, "PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1'
 $assert(str_contains($profile, "renderProfileStats(state.profileStats || null);"), 'Profile cards must be rendered during initialization.');
 $assert(str_contains($profile, "ready ? Number(stats[key]) : '—'"), 'Profile must reserve all four statistic cards before fresh data arrives.');
 $assert(str_contains($profile, 'saveCachedProfileStats(state.profileStats)'), 'Fresh profile statistics must refresh the first-frame cache.');
+$assert(str_contains($shell, "./screens/profile-screen-v110.js?v=1108")
+        && !str_contains($legacyProfile, 'PROFILE_STATS_CACHE_KEY'),
+    'The active v110 profile owner must be isolated without changing the historical rollback owner.');
 
 $build = 'v110-mvp14r3-invite-presence-notification-profile-root';
 $assert(str_contains($shell, $build) && str_contains($main, $build) && str_contains($entry, $build),
