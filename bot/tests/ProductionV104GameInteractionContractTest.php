@@ -72,14 +72,16 @@ $assert(
 
 $assert(
     !str_contains($presenceService, 'sys_get_temp_dir()')
-        && str_contains($presenceService, "/data/.runtime/presence")
+        && str_contains($presenceService, "\$GLOBALS['config']['data_dir']")
+        && str_contains($presenceService, "'.runtime'")
+        && str_contains($presenceService, "'presence'")
         && str_contains($presenceService, "session-' . hash('sha256', \$sessionId) . '.presence")
         && str_contains($presenceService, '@unlink($this->sessionPath($accountId, $sessionId))')
         && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 75;')
         && !str_contains($presenceService, 'presence_sessions')
         && !str_contains($presenceService, "['last_seen_at']")
         && str_contains($stats, '$this->presence->onlineAccountIds()'),
-    'Online counting must use shared bounded runtime files and never add fields to users JSON.'
+    'Online counting must use one configured bounded runtime root and never add fields to users JSON.'
 );
 
 $assert(
@@ -132,7 +134,7 @@ $assert(
         && str_contains($php, 'main-v104.js?v=104')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
         && str_contains($welcome, '/app/v104.php?v=104'),
-    'Only new no-store Telegram launches may activate v104.'
+    'Only explicit rollback launches may activate v104.'
 );
 
 fwrite(STDOUT, "ProductionV104GameInteractionContractTest: {$assertions} assertions passed\n");
