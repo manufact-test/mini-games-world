@@ -44,8 +44,8 @@ $assert(
     'Share cancellation must return to the unchanged setup immediately and remain silent.'
 );
 $assert(
-    str_contains($owner, "window.addEventListener('mgw:notification-sync', rememberAlreadyPresentedInviteToast, true)")
-        && str_contains($owner, 'function rememberAlreadyPresentedInviteToast(event){')
+    str_contains($owner, "window.addEventListener('mgw:notification-sync', rememberInviteNotification, true)")
+        && str_contains($owner, 'function rememberInviteNotification(event){')
         && str_contains($owner, "#sheet [data-invite-sheet][data-invite-token]")
         && str_contains($owner, 'new MutationObserver(suppressMatchingInviteToast)')
         && str_contains($owner, 'mgw-invite-toast-suppressed'),
@@ -55,6 +55,13 @@ $assert(
     str_contains($owner, 'Let the canonical notification owner receive this event')
         && !str_contains($owner, "event.stopImmediatePropagation();\n  rememberAnnouncedId"),
     'Duplicate-toast suppression must not swallow the canonical notification state update.'
+);
+$assert(
+    str_contains($owner, "window.addEventListener('click', keepClickedInviteToastVisible, true)")
+        && str_contains($owner, 'installRawNotificationBridge();')
+        && str_contains($owner, "url.pathname.endsWith('/bot/notifications.php')")
+        && str_contains($owner, 'data.items = [item, ...items.filter'),
+    'Clicking a valid invite toast must keep that exact item visible while the bell refreshes.'
 );
 $assert(
     !str_contains($clean, 'initV109ShareSpeed')
