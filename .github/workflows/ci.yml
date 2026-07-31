@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: mgw-ci-${{ github.workflow }}-${{ github.ref }}
@@ -65,126 +65,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-          fetch-depth: 0
-
-      - name: Finalize canonical invite owner
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/v110-invite-notification-presence-regression-root'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
-
-          def replace_once(path, old, new):
-              p = Path(path)
-              text = p.read_text(encoding='utf-8')
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected one occurrence, found {count}: {old!r}')
-              p.write_text(text.replace(old, new, 1), encoding='utf-8')
-
-          invite_path = Path('app/assets/js/games/game-invites-v110.js')
-          invite_text = invite_path.read_text(encoding='utf-8')
-          already_done = (
-              "../components/sheet.js?v=1109" in invite_text
-              and "../components/toast.js?v=1109" in invite_text
-              and "if (action === 'decline') toast('Приглашение отклонено.');" in invite_text
-              and "toast(action === 'decline' ?" not in invite_text
-          )
-
-          if not already_done:
-              invite = str(invite_path)
-              replace_once(invite,
-                  "import { openSheet, closeSheet } from '../components/sheet.js?v=68';",
-                  "import { openSheet, closeSheet } from '../components/sheet.js?v=1109';")
-              replace_once(invite,
-                  "import { toast } from '../components/toast.js?v=41';",
-                  "import { toast } from '../components/toast.js?v=1109';")
-              replace_once(invite,
-                  "      toast(action === 'decline' ? 'Приглашение отклонено.' : 'Приглашение отменено.');",
-                  "      if (action === 'decline') toast('Приглашение отклонено.');")
-              replace_once(invite,
-                  """function openSheetInviteToken(){
-            return String(document.querySelector('#sheet [data-invite-sheet][data-invite-token]')?.dataset.inviteToken || '');
-          }
-
-          function openSheetInviteState(){
-            return String(document.querySelector('#sheet [data-invite-sheet][data-invite-state]')?.dataset.inviteState || '');
-          }""",
-                  """function openSheetInviteToken(){
-            if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return '';
-            return String(document.querySelector('#sheet [data-invite-sheet][data-invite-token]')?.dataset.inviteToken || '');
-          }
-
-          function openSheetInviteState(){
-            if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return '';
-            return String(document.querySelector('#sheet [data-invite-sheet][data-invite-state]')?.dataset.inviteState || '');
-          }""")
-
-              Path('app/assets/js/components/toast.js').write_text("""let timer = null;
-          export function toast(message, duration = 2600){
-            const el = document.getElementById('toast');
-            if (!el) return;
-            el.textContent = message;
-            el.classList.add('show');
-            clearTimeout(timer);
-            timer = setTimeout(() => el.classList.remove('show'), duration);
-          }
-          """, encoding='utf-8')
-
-              speed = 'bot/tests/ProductionV110InviteNotificationSpeedContractTest.php'
-              replace_once(speed, "$toast = $read('app/assets/js/components/toast.js');\n", '')
-              replace_once(speed,
-                  """$assert(str_contains($toast, "'Приглашение отменено.'")
-              && str_contains($toast, 'NON_ACTIONABLE_CONFIRMATIONS'),
-              'The canonical toast owner must suppress redundant self-action confirmation.');""",
-                  """$assert(str_contains($invites, "../components/sheet.js?v=1109")
-              && str_contains($invites, "../components/toast.js?v=1109")
-              && str_contains($invites, "if (action === 'decline') toast('Приглашение отклонено.');")
-              && !str_contains($invites, "toast(action === 'decline' ?"),
-              'The canonical invitation owner must use the fresh shared components and keep self-cancel silent.');""")
-
-              acceptance = 'bot/tests/ProductionV110AcceptanceRootFixContractTest.php'
-              replace_once(acceptance, "$toast = $read('app/assets/js/components/toast.js');\n", '')
-              replace_once(acceptance,
-                  """$assert(str_contains($toast, 'NON_ACTIONABLE_CONFIRMATIONS')
-              && str_contains($toast, "'Приглашение отменено.'"),
-              'The canonical toast owner must suppress redundant self-cancel confirmation.');""",
-                  """$assert(str_contains($gameInvites, "../components/sheet.js?v=1109")
-              && str_contains($gameInvites, "../components/toast.js?v=1109")
-              && str_contains($gameInvites, "if (action === 'decline') toast('Приглашение отклонено.');")
-              && !str_contains($gameInvites, "toast(action === 'decline' ?"),
-              'The canonical invitation owner must directly own fresh component imports and silent self-cancel.');""")
-
-              focused = 'bot/tests/ProductionV110InviteNotificationPresenceRegressionContractTest.php'
-              replace_once(focused, "$toast = $read('app/assets/js/components/toast.js');\n", "$invites = $read('app/assets/js/games/game-invites-v110.js');\n")
-              replace_once(focused,
-                  """$assert(str_contains($toast, 'NON_ACTIONABLE_CONFIRMATIONS')
-              && str_contains($toast, "'Приглашение отменено.'"),
-              'The canonical toast policy must suppress redundant self-cancel confirmation.');""",
-                  """$assert(str_contains($invites, "../components/sheet.js?v=1109")
-              && str_contains($invites, "../components/toast.js?v=1109")
-              && str_contains($invites, "if (action === 'decline') toast('Приглашение отклонено.');")
-              && !str_contains($invites, "toast(action === 'decline' ?"),
-              'The canonical invitation owner must directly own fresh shared components and silent self-cancel.');""")
-          PY
-
-          git add \
-            app/assets/js/games/game-invites-v110.js \
-            app/assets/js/components/toast.js \
-            bot/tests/ProductionV110InviteNotificationSpeedContractTest.php \
-            bot/tests/ProductionV110AcceptanceRootFixContractTest.php \
-            bot/tests/ProductionV110InviteNotificationPresenceRegressionContractTest.php
-
-          if git diff --cached --quiet; then
-            echo "Canonical invite owner already finalized."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "finalize canonical invite owner"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
+          fetch-depth: 1
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
