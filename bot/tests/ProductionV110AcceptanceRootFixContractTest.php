@@ -34,12 +34,12 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
-$build = 'v110-mvp14r5-presence-invite-resume-root';
-$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1110';")
+$build = 'v110-mvp14r6-invite-actions-root';
+$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1111';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
-    'v110 must publish one consistent R5 root build.');
+    'v110 must publish one consistent R6 root build.');
 
 $assert($count($entry, 'initV110AcceptanceRuntime();') === 1
     && $count($entry, 'initV110TargetedInteractions();') === 1
@@ -49,8 +49,11 @@ $assert(!str_contains($entry, 'initV104InviteGameControls')
     && !str_contains($entry, 'initV104ResultInstant')
     && !str_contains($entry, 'initV105InviteLatency')
     && !str_contains($entry, 'initV109InviteSpeed')
-    && !str_contains($entry, 'initV109SelfCancelRefreshGuard'),
-    'Retired invitation, result and self-cancel overlays must remain outside active v110.');
+    && !str_contains($entry, 'initV109SelfCancelRefreshGuard')
+    && !str_contains($entry, 'initV109ShareSpeed')
+    && !str_contains($entry, 'initV109ShareFallbackGuard')
+    && !str_contains($entry, 'initV99InvitePickerHold'),
+    'Retired invitation, share, result and self-cancel overlays must remain outside active v110.');
 
 $assert($count($shell, 'initGameInvites();') === 1
     && str_contains($shell, "from './games/game-invites-v110.js?v=1110'")
@@ -118,12 +121,12 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     && str_contains($runtime, 'mgw-v110-search-summary'),
     'Accepted Tic Tac Toe, timer and search-summary behavior must remain untouched.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1110')
-    && str_contains($php, 'main-v110.js?v=1110')
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1111')
+    && str_contains($php, 'main-v110.js?v=1111')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-    && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1110';")
-    && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1110'.")
+    && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1111';")
+    && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1111'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
-    'Every Telegram start, menu and invite must use the fresh canonical R5 entrypoint.');
+    'Every Telegram start, menu and invite must use the fresh canonical R6 entrypoint.');
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");
