@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: mgw-ci-${{ github.workflow }}-${{ github.ref }}
@@ -65,87 +65,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: agent/v110-presence-invite-resume-root
-          fetch-depth: 0
-
-      - name: Apply canonical R5 root changes
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          from pathlib import Path
-          path = Path('scripts/ci/apply-r5-root.py')
-          text = path.read_text(encoding='utf-8')
-
-          owner_old = '''service = "bot/services/GameInviteService.php"
-          replace_once(service,
-          """        $type = (string)($notification['type'] ?? '');
-                  if (!str_starts_with($type, 'invite_')) return true;
-          """,
-          """        $type = (string)($notification['type'] ?? '');
-                  if (!str_starts_with($type, 'invite_')) return true;
-                  if (in_array($type, ['invite_expired', 'invite_timed_out'], true)) return false;
-          """)
-          '''
-          owner_new = '''replace_once(storage,
-          """        $type = (string)($notification['type'] ?? '');
-                  if (!str_starts_with($type, 'invite_')) return true;
-          """,
-          """        $type = (string)($notification['type'] ?? '');
-                  if (!str_starts_with($type, 'invite_')) return true;
-                  if (in_array($type, ['invite_expired', 'invite_timed_out'], true)) return false;
-          """)
-          '''
-          if text.count(owner_old) != 1:
-              raise SystemExit('R5 transform owner patch not found exactly once')
-          text = text.replace(owner_old, owner_new, 1)
-
-          assertion_old = '''$assert(!str_contains($inviteStorage, "'invite_expired'")
-              && !str_contains($inviteStorage, "'invite_timed_out'")
-              && str_contains($notificationEndpoint, "['invite_expired', 'invite_timed_out']")
-              && str_contains($notificationEndpoint, 'return false;'),
-              'Passive expiration and timeout must be silent cleanup and hidden from existing notification history.');'''
-          assertion_new = '''$assert(!str_contains($inviteStorage, "'Срок приглашения истёк'")
-              && !str_contains($inviteStorage, "'Время ожидания истекло'")
-              && str_contains($inviteStorage, "['invite_expired', 'invite_timed_out']")
-              && str_contains($notificationEndpoint, "['invite_expired', 'invite_timed_out']"),
-              'Passive expiration and timeout must be silent cleanup and hidden from existing notification history.');'''
-          if text.count(assertion_old) != 1:
-              raise SystemExit('R5 passive notification assertion patch not found exactly once')
-          text = text.replace(assertion_old, assertion_new, 1)
-
-          path.write_text(text, encoding='utf-8')
-          PY
-          python3 scripts/ci/apply-r5-root.py
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            app/assets/js/stats-owner-v110.js \
-            app/assets/js/production-v110-presence.js \
-            app/assets/js/games/game-invites-v110.js \
-            app/assets/js/screens/home-screen.js \
-            app/assets/js/screens/notifications-screen-v110r5.js \
-            app/assets/js/main-v110-handoff-shell.js \
-            app/assets/js/main-v110.js \
-            app/assets/js/production-clean-entry-v110.js \
-            app/v110.php \
-            bot/helpers/UserWelcomeGuard.php \
-            bot/helpers/WebAppLaunchUrl.php \
-            bot/services/AuthService.php \
-            bot/services/PresenceService.php \
-            bot/api.php \
-            bot/services/invites/GameInviteStorageTrait.php \
-            bot/notifications.php \
-            bot/tests
-          git rm -f scripts/ci/apply-r5-root.py
-
-          if git diff --cached --quiet; then
-            echo "Canonical R5 root changes already applied."
-          else
-            git commit -m "fix presence, invite recovery and resume roots"
-            git push origin HEAD:agent/v110-presence-invite-resume-root
-          fi
+          fetch-depth: 1
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
