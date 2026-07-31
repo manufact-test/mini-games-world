@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 final class WebAppLaunchUrl
 {
-    private const ENTRY_PATH = '/app/v110.php?v=110';
+    private const ENTRY_PATH = '/app/v110.php?v=1107';
     private const INVITE_PATTERN = '/^[a-f0-9]{24}$/i';
 
     public static function base(array $config): string
