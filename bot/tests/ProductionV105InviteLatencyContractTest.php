@@ -87,7 +87,8 @@ $assert(
 $publishPosition = strpos($invitesPhp, '$inviteSignals->publish(');
 $runtimeSyncPosition = strpos($invitesPhp, '$runtimeInvites->synchronize(');
 $assert(
-    str_contains($signals, 'sys_get_temp_dir()')
+    !str_contains($signals, 'sys_get_temp_dir()')
+        && str_contains($signals, "DIRECTORY_SEPARATOR . '.runtime'")
         && str_contains($signals, 'file_put_contents($temporary, $json, LOCK_EX)')
         && str_contains($signals, 'public function clear(')
         && str_contains($signals, 'public function latest(')
@@ -95,7 +96,7 @@ $assert(
         && $runtimeSyncPosition !== false
         && $publishPosition < $runtimeSyncPosition
         && str_contains($invitesPhp, '$inviteSignals->clear('),
-    'Direct invitations must publish a short-lived temp signal before optional repository synchronization and cancellation must clear it.'
+    'Direct invitations must publish a shared short-lived signal before optional repository synchronization and cancellation must clear it.'
 );
 
 $assert(
