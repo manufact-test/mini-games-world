@@ -16,6 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $presence = $read('bot/services/PresenceService.php');
 $auth = $read('bot/services/AuthService.php');
+$api = $read('bot/api.php');
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $legacyProfile = $read('app/assets/js/screens/profile-screen.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
@@ -30,10 +31,11 @@ $assert(str_contains($presence, "\$GLOBALS['config']['data_dir']")
     && str_contains($presence, "'.runtime'")
     && str_contains($presence, "'presence'"),
     'Every presence reader and writer must derive one configured shared runtime root.');
-$assert(str_contains($auth, 'touchAuthenticatedPresence')
-    && str_contains($auth, '(new PresenceService())->touch($accountId, $sessionId);'),
-    'Successful authentication must confirm presence for normal and invitation launches.');
-$assert(str_contains($auth, 'Presence is observable state, not permission to enter the app.'),
+$assert(!str_contains($auth, 'touchAuthenticatedPresence')
+    && str_contains($api, "\$action === 'bootstrap'")
+    && str_contains($api, '$presenceService->touch('),
+    'Successful normal and invitation launches must confirm presence only through authenticated bootstrap.');
+$assert(str_contains($api, 'Mini Games World bootstrap presence failed:'),
     'A presence storage failure must never become an authentication failure.');
 
 $assert(!str_contains($shell, 'NotificationPreflight')
@@ -43,8 +45,9 @@ $assert(!str_contains($shell, 'NotificationPreflight')
 $assert(!str_contains($clean, 'initV109SelfCancelRefreshGuard'),
     'The inactive v109 self-cancel overlay guard must not remain in the active graph.');
 $assert(str_contains($notifications, "event.target.closest('#notificationsOpen')")
-    && str_contains($notifications, 'void openNotificationsSheet(currentItems());'),
-    'The notification owner must open the bell surface immediately on the first click.');
+    && str_contains($notifications, 'void openNotificationsSheet(currentItems());')
+    && str_contains($notifications, 'isCurrentNotificationsSheet(generation)'),
+    'The notification owner must open immediately and reject late rendering into a closed sheet.');
 
 $assert(str_contains($profile, "PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1'")
     && str_contains($profile, 'renderProfileStats(state.profileStats || null);')
