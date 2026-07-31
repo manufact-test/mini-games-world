@@ -10,7 +10,6 @@ import { initV101CacheSafety } from './production-v101-cache-safety.js?v=101';
 import { initV102BattleshipBridge } from './production-v102-battleship-bridge.js?v=102';
 import { initV102HistoryController } from './production-v102-history-controller.js?v=102';
 import { initV104GamePollTuning } from './production-v104-game-poll-tuning.js?v=104';
-import { initV109SelfCancelRefreshGuard } from './production-v109-self-cancel-refresh-guard.js?v=109';
 import { initV109ShareFallbackGuard } from './production-v109-share-fallback-guard.js?v=109';
 import { initV109ShareSpeed } from './production-v109-share-speed.js?v=109';
 import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
@@ -20,14 +19,14 @@ import { initV110TargetedInteractions } from './production-v110-targeted-interac
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r3-invite-presence-notification-profile-root';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r4-invite-notification-presence-root';
 
 // Active v110 keeps one invitation owner, one notification owner, one game
 // renderer/result owner, one presence owner and one manual surrender owner.
-// The notification preflight is transport only and never renders a second sheet.
+// Closed sheets own no stale state; invitation and notification transitions are
+// fixed in their canonical owners rather than through another overlay guard.
 initV110AcceptanceRuntime();
 initV110MatchLifecycle();
-initV109SelfCancelRefreshGuard();
 initV109ShareFallbackGuard();
 initV109ShareSpeed();
 initV109SearchSpeed();
