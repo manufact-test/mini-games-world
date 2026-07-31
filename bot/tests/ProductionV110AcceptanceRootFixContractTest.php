@@ -173,7 +173,7 @@ $assert(
     str_contains($shell, 'notifications-screen-v110-root.js?v=1107')
         && str_contains($shell, 'production-v110-readonly-game-sync.js?v=1107')
         && str_contains($shell, 'production-v110-presence.js?v=1107')
-        && str_contains($shell, 'profile-screen.js?v=1108')
+        && str_contains($shell, 'profile-screen-v110.js?v=1108')
         && str_contains($shell, 'production-v110-notification-preflight.js?v=1108')
         && str_contains($php, 'production-clean-entry-v110.js?v=1108')
         && str_contains($php, 'main-v110.js?v=1108'),
