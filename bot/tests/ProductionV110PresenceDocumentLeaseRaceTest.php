@@ -67,7 +67,7 @@ try {
         && str_contains($client, 'presenceLeaseId,')
         && str_contains($client, 'function createPresenceLeaseId()'),
         'The canonical client presence owner must keep one unique lease for each app document.');
-    $assert(str_contains($endpoint, "$presenceLeaseId = clean_string($payload['presenceLeaseId'] ?? '', 120);")
+    $assert(str_contains($endpoint, '$presenceLeaseId = clean_string($payload[\'presenceLeaseId\'] ?? \'\', 120);')
         && str_contains($endpoint, '$presence->touch($accountId, $sessionId, $presenceLeaseId);')
         && str_contains($endpoint, '$presence->leave($accountId, $sessionId, $presenceLeaseId);'),
         'The canonical endpoint must route ping and leave through the same document lease.');
