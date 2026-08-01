@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: mgw-ci-${{ github.workflow }}-${{ github.ref }}
@@ -66,7 +66,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -79,29 +78,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Apply R10 mobile fix
-        if: github.head_ref == 'agent/v110-mobile-notification-invite-r10'
-        run: python3 scripts/ci/r10-apply.py
-
-      - name: Publish R10 product source
-        if: github.head_ref == 'agent/v110-mobile-notification-invite-r10'
-        run: |
-          if git diff --quiet; then exit 0; fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            app/assets/js/games/game-invites-v110.js \
-            app/assets/js/screens/notifications-screen-v110r5.js \
-            app/assets/js/main-v110-handoff-shell.js \
-            app/assets/js/main-v110.js \
-            app/assets/js/production-clean-entry-v110.js \
-            app/v110.php \
-            bot/helpers/WebAppLaunchUrl.php \
-            bot/helpers/UserWelcomeGuard.php \
-            bot/tests
-          git commit -m "fix: restore mobile notifications and direct invites"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Run repository checks
         shell: bash
