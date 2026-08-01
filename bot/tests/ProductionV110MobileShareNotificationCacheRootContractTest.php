@@ -4,7 +4,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
-    if (!is_string($content)) throw new RuntimeException('Cannot read R10 source: ' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read R9 source: ' . $path);
     return $content;
 };
 $assertions = 0;
