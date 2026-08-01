@@ -54,6 +54,7 @@ export function initNotificationsScreen(){
     if (!trigger) return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (Date.now() < suppressToastClickUntil) return;
     void openNotificationsSheet(currentItems());
   }, true);
 
@@ -142,7 +143,9 @@ async function refreshBadge(announce){
   try {
     const result = await rawNotifications(false);
     const items = Array.isArray(result?.items) ? result.items : [];
-    if (authorityRevision !== notificationAuthorityRevision || Date.now() < localAuthorityUntil) {
+    if (notificationSheetActive
+        || authorityRevision !== notificationAuthorityRevision
+        || Date.now() < localAuthorityUntil) {
       mergeItems(items);
       setUnreadCount(Math.max(unreadHint, Number(result?.unread_count || 0)));
       return;
@@ -199,7 +202,13 @@ async function openToastNotification(){
     return;
   }
 
+  notificationAuthorityRevision += 1;
+  const guardUntil = Date.now() + MOBILE_CLOSE_GUARD_MS;
+  localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_GRACE_MS;
+  suppressToastClickUntil = Math.max(suppressToastClickUntil, guardUntil);
+  suppressAnnouncementsUntil = Math.max(suppressAnnouncementsUntil, guardUntil);
   upsert(item);
+  rememberAnnouncedId(String(item.id || ''));
   dismissToast();
   void openNotificationsSheet([item], true, true);
 }
