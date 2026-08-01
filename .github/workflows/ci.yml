@@ -82,7 +82,9 @@ jobs:
 
       - name: Apply R9 mobile fixes
         if: github.head_ref == 'agent/v110-mobile-share-notification-r9'
-        run: python3 scripts/ci/r9-apply.py
+        run: |
+          python3 scripts/ci/r9-apply.py
+          python3 scripts/ci/r9-followup.py
 
       - name: Publish R9 product source
         if: github.head_ref == 'agent/v110-mobile-share-notification-r9'
@@ -98,6 +100,7 @@ jobs:
             app/assets/js/production-clean-entry-v110.js \
             app/v110.php \
             bot/helpers/WebAppLaunchUrl.php \
+            bot/helpers/UserWelcomeGuard.php \
             bot/tests
           git commit -m "fix: stabilize mobile share prewarm and notification cache"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
