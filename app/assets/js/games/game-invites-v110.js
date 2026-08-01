@@ -16,6 +16,8 @@ const ACTIVE_SYNC_INTERVAL_MS = 500;
 const WATCH_INTERVAL_MS = 400;
 const SHARE_CALLBACK_TIMEOUT_MS = 12000;
 const SHARE_WARM_DELAY_MS = 40;
+const SHARE_WARM_KEEPALIVE_MS = 180000;
+const SHARE_PREFETCH_ROOT_MARGIN = '240px 0px';
 const MAX_OPPONENTS = 10;
 
 const GAME_OPTIONS = {
@@ -45,6 +47,9 @@ let resultEnhanceTimer = null;
 let lastFinishedGame = null;
 let shareWarmSequence = 0;
 let shareWarmTimer = null;
+let shareWarmExpiryTimer = null;
+let shareVisibleWarmTimer = null;
+let shareVisibilityObserver = null;
 let shareWarm = null;
 let shareWarmSerial = Promise.resolve();
 let shareAttempt = null;
@@ -52,6 +57,7 @@ let shareAttempt = null;
 export function initGameInvites(){
   if (initialized) return;
   initialized = true;
+  initShareVisibilityPrewarm();
 
   document.addEventListener('pointerdown', handleInvitePointerDown, true);
   document.addEventListener('click', handleDocumentClick, true);
@@ -60,24 +66,29 @@ export function initGameInvites(){
       syncNow({ announce:true });
       scheduleSync(0);
       scheduleWatch(0);
+      scheduleVisibleShareWarm(80);
     }
   });
   document.addEventListener('mgw:app-ready', () => {
     appReady = true;
     scheduleSync(0);
     scheduleWatch(0);
+    scheduleVisibleShareWarm(0);
   }, { once:true });
   document.addEventListener('mgw:game-dismissed', () => {
     window.setTimeout(() => syncNow({ announce:true }), 80);
     scheduleWatch(80);
   });
   document.addEventListener('mgw:sheet-closed', () => {
-    if (!shareAttempt?.nativePending) cancelWarmShareDraft();
+    if (!shareAttempt?.nativePending) scheduleVisibleShareWarm(120);
   });
   document.addEventListener('mgw:before-game-launch', event => {
-    if (!hasActionableInvite()) return;
-    event.preventDefault();
-    openCurrentInvite();
+    if (hasActionableInvite()) {
+      event.preventDefault();
+      openCurrentInvite();
+      return;
+    }
+    cancelWarmShareDraft();
   }, true);
 
   const sheet = document.getElementById('sheet');
@@ -130,6 +141,43 @@ function handleInvitePointerDown(event){
   scheduleWarmShareDraft(defaultInviteContext(gameType), 0);
 }
 
+function initShareVisibilityPrewarm(){
+  if (shareVisibilityObserver || typeof IntersectionObserver !== 'function') return;
+  shareVisibilityObserver = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    scheduleVisibleShareWarm(40);
+  }, { root:null, rootMargin:SHARE_PREFETCH_ROOT_MARGIN, threshold:[0.01, 0.35] });
+  document.querySelectorAll('[data-invite-friend]').forEach(trigger => shareVisibilityObserver.observe(trigger));
+}
+
+function scheduleVisibleShareWarm(delay = 0){
+  window.clearTimeout(shareVisibleWarmTimer);
+  shareVisibleWarmTimer = window.setTimeout(() => {
+    if (!appReady || shareAttempt?.nativePending || hasActionableInvite()) return;
+    const trigger = nearestVisibleInviteTrigger();
+    if (!trigger) return;
+    scheduleWarmShareDraft(defaultInviteContext(String(trigger.dataset.inviteFriend || 'tictactoe')), 0);
+  }, Math.max(0, Number(delay || 0)));
+}
+
+function nearestVisibleInviteTrigger(){
+  const viewportCenter = window.innerHeight / 2;
+  return [...document.querySelectorAll('[data-invite-friend]')]
+    .filter(trigger => {
+      const rect = trigger.getBoundingClientRect();
+      return rect.bottom >= -240 && rect.top <= window.innerHeight + 240;
+    })
+    .sort((a, b) => {
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      const aDistance = Math.abs((aRect.top + aRect.bottom) / 2 - viewportCenter);
+      const bDistance = Math.abs((bRect.top + bRect.bottom) / 2 - viewportCenter);
+      return aDistance - bDistance;
+    })[0] || null;
+}
+
+
+
 function handleDocumentClick(event){
   const actionButton = event.target.closest('[data-invite-action]');
   if (actionButton) {
@@ -158,6 +206,9 @@ function handleDocumentClick(event){
     openCurrentInvite();
     return;
   }
+
+  const roomButton = event.target.closest('[data-room]');
+  if (roomButton) window.setTimeout(() => scheduleVisibleShareWarm(0), 0);
 
   const inviteButton = event.target.closest('[data-invite-friend]');
   if (!inviteButton) return;
@@ -364,6 +415,7 @@ function warmShareDraft(context){
   const normalized = normalizeInviteContext(context);
   const key = inviteContextKey(normalized);
   if (shareWarm?.key === key && ['queued','loading','ready'].includes(String(shareWarm.status || ''))) {
+    if (shareWarm.status === 'ready') armWarmShareExpiry(shareWarm);
     return shareWarm.promise;
   }
 
@@ -379,6 +431,7 @@ function warmShareDraft(context){
   shareWarm = entry;
 
   if (previous?.status === 'ready' && previous.result?.invite?.token) {
+    window.clearTimeout(shareWarmExpiryTimer);
     void discardDraft(previous.result.invite);
   }
 
@@ -395,6 +448,7 @@ function warmShareDraft(context){
       }
       entry.result = result;
       entry.status = 'ready';
+      armWarmShareExpiry(entry);
       return result;
     })
     .catch(error => {
@@ -408,13 +462,51 @@ function warmShareDraft(context){
 
 function cancelWarmShareDraft(){
   window.clearTimeout(shareWarmTimer);
+  window.clearTimeout(shareWarmExpiryTimer);
   shareWarmTimer = null;
+  shareWarmExpiryTimer = null;
   const warm = shareWarm;
   shareWarm = null;
   if (warm?.status === 'ready' && warm.result?.invite?.token) {
     void discardDraft(warm.result.invite);
   }
 }
+
+function armWarmShareExpiry(entry){
+  window.clearTimeout(shareWarmExpiryTimer);
+  shareWarmExpiryTimer = window.setTimeout(() => {
+    if (shareWarm?.id !== entry?.id || shareAttempt?.nativePending) return;
+    const stale = shareWarm;
+    shareWarm = null;
+    shareWarmExpiryTimer = null;
+    if (stale?.status === 'ready' && stale.result?.invite?.token) void discardDraft(stale.result.invite);
+  }, SHARE_WARM_KEEPALIVE_MS);
+}
+
+function restoreWarmShareDraft(attempt){
+  const invite = cloneInvite(attempt?.invite);
+  const token = String(invite?.token || '');
+  const preparedId = String(invite?.prepared_message_id || '');
+  if (!token || !preparedId) {
+    scheduleWarmShareDraft(attempt?.context || defaultInviteContext('tictactoe'), 0);
+    return;
+  }
+
+  const context = normalizeInviteContext(attempt.context);
+  const result = { invite };
+  const entry = {
+    id:++shareWarmSequence,
+    key:inviteContextKey(context),
+    context,
+    status:'ready',
+    result,
+    promise:Promise.resolve(result),
+  };
+  shareWarm = entry;
+  armWarmShareExpiry(entry);
+}
+
+
 
 async function obtainPreparedShareResult(context){
   const normalized = normalizeInviteContext(context);
@@ -427,7 +519,11 @@ async function obtainPreparedShareResult(context){
   if (!warm?.promise) throw new Error('Не удалось подготовить ссылку.');
   const result = await warm.promise;
   if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
-  if (shareWarm?.id === warm.id) shareWarm = null;
+  if (shareWarm?.id === warm.id) {
+    shareWarm = null;
+    window.clearTimeout(shareWarmExpiryTimer);
+    shareWarmExpiryTimer = null;
+  }
   return result;
 }
 
@@ -480,9 +576,7 @@ function settleNativeShare(sent, errorCode = '', targetAttempt = null){
   }
 
   if (String(errorCode || '') === 'USER_DECLINED' || String(errorCode || '') === '') {
-    void discardDraft(attempt.invite).finally(() => {
-      if (isInviteSetupOpen()) scheduleWarmShareDraft(attempt.context, 0);
-    });
+    restoreWarmShareDraft(attempt);
     return;
   }
 

@@ -38,9 +38,10 @@ $assert(
 );
 $assert(
     str_contains($invites, "String(errorCode || '') === 'USER_DECLINED'")
-        && str_contains($invites, 'void discardDraft(attempt.invite).finally')
+        && str_contains($invites, 'restoreWarmShareDraft(attempt);')
+        && !str_contains($invites, 'void discardDraft(attempt.invite).finally')
         && !str_contains($invites, "toast(sent === false"),
-    'Native cancellation must silently discard its draft without a technical toast or waiting surface.'
+    'Native cancellation must silently reuse its valid draft without a technical toast or waiting surface.'
 );
 $watchStart = strpos($invites, 'async function watchIncomingInvite()');
 $watchEnd = strpos($invites, 'function canWatchIncomingInvite()', $watchStart ?: 0);
@@ -88,9 +89,9 @@ $assert(
 $assert(
     !str_contains($clean, 'initV109ShareSpeed')
         && !str_contains($clean, 'initV109ShareFallbackGuard')
-        && str_contains($shell, 'game-invites-v110.js?v=1112')
-        && str_contains($shell, 'notifications-screen-v110r5.js?v=1112')
-        && str_contains($entry, 'main-v110.js?v=1112'),
+        && str_contains($shell, 'game-invites-v110.js?v=1113')
+        && str_contains($shell, 'notifications-screen-v110r5.js?v=1113')
+        && str_contains($entry, 'main-v110.js?v=1113'),
     'No historical share layer may return; only the fresh canonical R8 owners may be active.'
 );
 
