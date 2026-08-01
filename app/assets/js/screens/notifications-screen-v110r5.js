@@ -13,6 +13,8 @@ const LIVE_STORAGE_KEY_PREFIX = 'mgw_notification_live_items_v1';
 const LIVE_STORAGE_TTL_MS = 900000;
 const LIVE_STORAGE_KEY_PREFIX = 'mgw_notification_live_items_v1';
 const LIVE_STORAGE_TTL_MS = 900000;
+const LIVE_STORAGE_KEY_PREFIX = 'mgw_notification_live_items_v1';
+const LIVE_STORAGE_TTL_MS = 900000;
 
 let initialized = false;
 let notificationPoll = null;
@@ -609,6 +611,42 @@ function persistAnnouncedIds(){
     const ids = Array.from(announcedIds).slice(-MAX_ANNOUNCED_IDS);
     announcedIds = new Set(ids);
     localStorage.setItem(ANNOUNCED_STORAGE_KEY, JSON.stringify(ids));
+  } catch (error) {}
+}
+
+function notificationCacheKey(){
+  let scope = String(getSessionId() || 'anonymous');
+  try {
+    const rawUser = new URLSearchParams(getInitData()).get('user');
+    const user = rawUser ? JSON.parse(rawUser) : null;
+    if (user?.id) scope = String(user.id);
+  } catch (error) {}
+  return `${LIVE_STORAGE_KEY_PREFIX}:${scope}`;
+}
+
+function loadLiveItems(){
+  try {
+    const parsed = JSON.parse(localStorage.getItem(notificationCacheKey()) || 'null');
+    if (!parsed || Date.now() - Number(parsed.saved_at || 0) > LIVE_STORAGE_TTL_MS) return new Map();
+    const items = Array.isArray(parsed.items) ? parsed.items : [];
+    return new Map(
+      items
+        .slice(0, MAX_LIVE_ITEMS)
+        .map(cloneItem)
+        .filter(item => String(item?.id || '') !== '')
+        .map(item => [String(item.id), item])
+    );
+  } catch (error) {
+    return new Map();
+  }
+}
+
+function persistLiveItems(){
+  try {
+    localStorage.setItem(notificationCacheKey(), JSON.stringify({
+      saved_at:Date.now(),
+      items:currentItems(MAX_LIVE_ITEMS),
+    }));
   } catch (error) {}
 }
 

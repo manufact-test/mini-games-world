@@ -75,6 +75,7 @@ export function initGameInvites(){
     scheduleWatch(0);
     scheduleVisibleShareWarm(0);
     scheduleVisibleShareWarm(0);
+    scheduleVisibleShareWarm(0);
   }, { once:true });
   document.addEventListener('mgw:game-dismissed', () => {
     window.setTimeout(() => syncNow({ announce:true }), 80);
@@ -212,6 +213,41 @@ function nearestVisibleInviteTrigger(){
     })[0] || null;
 }
 
+function initShareVisibilityPrewarm(){
+  if (shareVisibilityObserver || typeof IntersectionObserver !== 'function') return;
+  shareVisibilityObserver = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    scheduleVisibleShareWarm(40);
+  }, { root:null, rootMargin:SHARE_PREFETCH_ROOT_MARGIN, threshold:[0.01, 0.35] });
+  document.querySelectorAll('[data-invite-friend]').forEach(trigger => shareVisibilityObserver.observe(trigger));
+}
+
+function scheduleVisibleShareWarm(delay = 0){
+  window.clearTimeout(shareVisibleWarmTimer);
+  shareVisibleWarmTimer = window.setTimeout(() => {
+    if (!appReady || shareAttempt?.nativePending || hasActionableInvite()) return;
+    const trigger = nearestVisibleInviteTrigger();
+    if (!trigger) return;
+    scheduleWarmShareDraft(defaultInviteContext(String(trigger.dataset.inviteFriend || 'tictactoe')), 0);
+  }, Math.max(0, Number(delay || 0)));
+}
+
+function nearestVisibleInviteTrigger(){
+  const viewportCenter = window.innerHeight / 2;
+  return [...document.querySelectorAll('[data-invite-friend]')]
+    .filter(trigger => {
+      const rect = trigger.getBoundingClientRect();
+      return rect.bottom >= -240 && rect.top <= window.innerHeight + 240;
+    })
+    .sort((a, b) => {
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      const aDistance = Math.abs((aRect.top + aRect.bottom) / 2 - viewportCenter);
+      const bDistance = Math.abs((bRect.top + bRect.bottom) / 2 - viewportCenter);
+      return aDistance - bDistance;
+    })[0] || null;
+}
+
 function handleDocumentClick(event){
   const actionButton = event.target.closest('[data-invite-action]');
   if (actionButton) {
@@ -240,6 +276,9 @@ function handleDocumentClick(event){
     openCurrentInvite();
     return;
   }
+
+  const roomButton = event.target.closest('[data-room]');
+  if (roomButton) window.setTimeout(() => scheduleVisibleShareWarm(0), 0);
 
   const roomButton = event.target.closest('[data-room]');
   if (roomButton) window.setTimeout(() => scheduleVisibleShareWarm(0), 0);
@@ -507,6 +546,40 @@ function cancelWarmShareDraft(){
   if (warm?.status === 'ready' && warm.result?.invite?.token) {
     void discardDraft(warm.result.invite);
   }
+}
+
+function armWarmShareExpiry(entry){
+  window.clearTimeout(shareWarmExpiryTimer);
+  shareWarmExpiryTimer = window.setTimeout(() => {
+    if (shareWarm?.id !== entry?.id || shareAttempt?.nativePending) return;
+    const stale = shareWarm;
+    shareWarm = null;
+    shareWarmExpiryTimer = null;
+    if (stale?.status === 'ready' && stale.result?.invite?.token) void discardDraft(stale.result.invite);
+  }, SHARE_WARM_KEEPALIVE_MS);
+}
+
+function restoreWarmShareDraft(attempt){
+  const invite = cloneInvite(attempt?.invite);
+  const token = String(invite?.token || '');
+  const preparedId = String(invite?.prepared_message_id || '');
+  if (!token || !preparedId) {
+    scheduleWarmShareDraft(attempt?.context || defaultInviteContext('tictactoe'), 0);
+    return;
+  }
+
+  const context = normalizeInviteContext(attempt.context);
+  const result = { invite };
+  const entry = {
+    id:++shareWarmSequence,
+    key:inviteContextKey(context),
+    context,
+    status:'ready',
+    result,
+    promise:Promise.resolve(result),
+  };
+  shareWarm = entry;
+  armWarmShareExpiry(entry);
 }
 
 function armWarmShareExpiry(entry){
