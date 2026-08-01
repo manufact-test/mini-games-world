@@ -27,6 +27,10 @@ let announcementTimer = null;
 let screenObserver = null;
 let sheetGeneration = 0;
 let openingSheetGeneration = 0;
+let seededSheetGeneration = 0;
+let seededSheetItems = [];
+let seededSheetUntil = 0;
+let notificationAuthorityRevision = 0;
 
 export function initNotificationsScreen(){
   if (initialized) return;
@@ -60,6 +64,9 @@ export function initNotificationsScreen(){
 
   document.addEventListener('mgw:sheet-closed', () => {
     sheetGeneration += 1;
+    seededSheetGeneration = 0;
+    seededSheetItems = [];
+    seededSheetUntil = 0;
     if (openingSheetGeneration !== sheetGeneration) openingSheetPromise = null;
     scheduleAnnouncement(40);
   });
@@ -75,9 +82,15 @@ export function initNotificationsScreen(){
     setUnreadCount(unreadCount);
     if (!item?.id) return;
 
+    notificationAuthorityRevision += 1;
     upsert(item);
     if (isNotificationsSheetOpen()) {
       renderNotifications(currentItems());
+      rememberAnnouncedId(String(item.id || ''));
+      return;
+    }
+
+    if (isInviteAlreadyPresented(item)) {
       rememberAnnouncedId(String(item.id || ''));
       return;
     }
@@ -99,9 +112,15 @@ export function initNotificationsScreen(){
 async function refreshBadge(announce){
   if (refreshingBadge) return;
   refreshingBadge = true;
+  const authorityRevision = notificationAuthorityRevision;
   try {
     const result = await rawNotifications(false);
     const items = Array.isArray(result?.items) ? result.items : [];
+    if (authorityRevision !== notificationAuthorityRevision) {
+      mergeItems(items);
+      setUnreadCount(Math.max(unreadHint, Number(result?.unread_count || 0)));
+      return;
+    }
     reconcileItems(items);
     setUnreadCount(Number(result?.unread_count || 0));
 
@@ -112,6 +131,10 @@ async function refreshBadge(announce){
     }
 
     const item = nextUnannouncedItem(items);
+    if (item && isInviteAlreadyPresented(item)) {
+      rememberAnnouncedId(String(item.id || ''));
+      return;
+    }
     if (item && showToast(item)) rememberAnnouncedId(String(item.id || ''));
   } catch (error) {
     // Background failures keep the last trustworthy live list.
@@ -120,8 +143,9 @@ async function refreshBadge(announce){
   }
 }
 
-async function openNotificationsSheet(seedItems = [], hapticFeedback = true){
+async function openNotificationsSheet(seedItems = [], hapticFeedback = true, preserveSeed = false){
   const generation = ++sheetGeneration;
+  setSheetSeed(generation, seedItems, preserveSeed);
   mergeItems(seedItems);
   const immediate = currentItems();
   if (immediate.length) renderNotifications(immediate);
@@ -141,7 +165,7 @@ async function openToastNotification(){
 
   upsert(item);
   dismissToast();
-  void openNotificationsSheet(mergeNotificationItems([item], currentItems()), true);
+  void openNotificationsSheet([item], true, true);
 }
 
 async function refreshOpenSheet(generation = sheetGeneration){
@@ -152,7 +176,7 @@ async function refreshOpenSheet(generation = sheetGeneration){
     try {
       let result = await rawNotifications(false);
       let serverItems = Array.isArray(result?.items) ? result.items : [];
-      reconcileItems(serverItems);
+      reconcileItems(mergeNotificationItems(sheetSeedItems(generation), serverItems));
       rememberAnnouncedItems(serverItems);
       baselineLoaded = true;
 
@@ -167,7 +191,7 @@ async function refreshOpenSheet(generation = sheetGeneration){
         await delay(EMPTY_RETRY_MS);
         result = await rawNotifications(false);
         serverItems = Array.isArray(result?.items) ? result.items : [];
-        reconcileItems(serverItems);
+        reconcileItems(mergeNotificationItems(sheetSeedItems(generation), serverItems));
         rememberAnnouncedItems(serverItems);
         visible = currentItems();
       }
@@ -194,6 +218,31 @@ async function refreshOpenSheet(generation = sheetGeneration){
       openingSheetGeneration = 0;
     }
   }
+}
+
+function setSheetSeed(generation, items, preserve){
+  if (!preserve) {
+    seededSheetGeneration = 0;
+    seededSheetItems = [];
+    seededSheetUntil = 0;
+    return;
+  }
+  seededSheetGeneration = generation;
+  seededSheetItems = mergeNotificationItems(items, []);
+  seededSheetUntil = Date.now() + 2000;
+}
+
+function sheetSeedItems(generation){
+  if (generation !== seededSheetGeneration || Date.now() > seededSheetUntil) return [];
+  return seededSheetItems.map(cloneItem);
+}
+
+function isInviteAlreadyPresented(item){
+  const token = String(item?.invite_token || '');
+  if (!token || !String(item?.type || '').startsWith('invite_')) return false;
+  if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return false;
+  const marker = document.querySelector('#sheet [data-invite-sheet][data-invite-token]');
+  return String(marker?.dataset.inviteToken || '') === token;
 }
 
 function renderLoading(){

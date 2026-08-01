@@ -34,12 +34,12 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
-$build = 'v110-mvp14r6-invite-actions-root';
-$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1111';")
+$build = 'v110-mvp14r8-canonical-share-notifications-root';
+$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1112';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
-    'v110 must publish one consistent R6 root build.');
+    'v110 must publish one consistent R8 root build.');
 
 $assert($count($entry, 'initV110AcceptanceRuntime();') === 1
     && $count($entry, 'initV110TargetedInteractions();') === 1
@@ -56,7 +56,7 @@ $assert(!str_contains($entry, 'initV104InviteGameControls')
     'Retired invitation, share, result and self-cancel overlays must remain outside active v110.');
 
 $assert($count($shell, 'initGameInvites();') === 1
-    && str_contains($shell, "from './games/game-invites-v110.js?v=1110'")
+    && str_contains($shell, "from './games/game-invites-v110.js?v=1112'")
     && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
     'The isolated invitation file must remain the single active invitation owner.');
 $assert(str_contains($sheet, 's.replaceChildren();')
@@ -79,7 +79,7 @@ $assert(!str_contains($targeted, 'confirmLeaveGame')
     'The targeted interaction guard must not become a second surrender owner.');
 
 $assert($count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r5.js?v=1110')
+    && str_contains($shell, 'notifications-screen-v110r5.js?v=1112')
     && !str_contains($shell, 'NotificationPreflight'),
     'The active graph must contain one notification owner and no click preflight.');
 $assert(str_contains($notifications, "event.target.closest('#notificationsOpen')")
@@ -89,7 +89,8 @@ $assert(str_contains($notifications, "event.target.closest('#notificationsOpen')
     'Bell opening must be immediate and suppressed notifications must remain deliverable.');
 $assert(str_contains($notifications, 'renderNotifications(immediate);')
     && str_contains($notifications, 'return refreshOpenSheet(generation);')
-    && str_contains($notifications, 'void openNotificationsSheet(mergeNotificationItems([item], currentItems()), true);'),
+    && str_contains($notifications, 'void openNotificationsSheet([item], true, true);')
+    && str_contains($notifications, 'sheetSeedItems(generation)'),
     'A blue-toast click must enter the same generation-bound sheet owner and paint cached data before refresh.');
 $assert(!str_contains($runtime, 'ownNotificationOpen')
     && !str_contains($runtime, '/bot/notifications.php'),
@@ -121,12 +122,12 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     && str_contains($runtime, 'mgw-v110-search-summary'),
     'Accepted Tic Tac Toe, timer and search-summary behavior must remain untouched.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1111')
-    && str_contains($php, 'main-v110.js?v=1111')
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1112')
+    && str_contains($php, 'main-v110.js?v=1112')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1111';")
     && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1111'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
-    'Every Telegram start, menu and invite must use the fresh canonical R6 entrypoint.');
+    'Every Telegram start, menu and invite must use the canonical v110 entrypoint with fresh R8 assets.');
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");
