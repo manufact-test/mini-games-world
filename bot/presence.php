@@ -14,6 +14,7 @@ try {
     }
 
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
+    $presenceLeaseId = clean_string($payload['presenceLeaseId'] ?? '', 120);
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $accountId = trim((string)($tgUser['id'] ?? ''));
@@ -24,11 +25,14 @@ try {
     $stats = new StatsService($presence);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
-    // Every authenticated visible status read confirms the requesting session
-    // before the unique-account count is calculated. This closes the race where
-    // the second account asked for status before its slower heartbeat finished.
-    if ($action === 'ping' || $action === 'status') $presence->touch($accountId, $sessionId);
-    elseif ($action === 'leave') $presence->leave($accountId, $sessionId);
+    // Every visible document owns its own presence lease. A delayed pagehide
+    // from an older Telegram document therefore cannot mark the newly opened
+    // document offline even when both use the same persistent device session.
+    if ($action === 'ping' || $action === 'status') {
+        $presence->touch($accountId, $sessionId, $presenceLeaseId);
+    } elseif ($action === 'leave') {
+        $presence->leave($accountId, $sessionId, $presenceLeaseId);
+    }
 
     $result = $db->readOnly(static function (array $data) use ($stats): array {
         return ['stats' => $stats->build($data)];
