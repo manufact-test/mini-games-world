@@ -128,6 +128,6 @@ $assert(str_contains($php, 'production-clean-entry-v110.js?v=1113')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1113';")
     && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1113'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
-    'Every Telegram start, menu and invite must use the canonical v110 entrypoint with fresh R8 assets.');
+    'Every Telegram start, menu and invite must use the canonical v110 entrypoint with fresh R9 assets.');
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");

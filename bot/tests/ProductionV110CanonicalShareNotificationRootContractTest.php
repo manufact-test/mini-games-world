@@ -38,9 +38,10 @@ $assert(
 );
 $assert(
     str_contains($invites, "String(errorCode || '') === 'USER_DECLINED'")
-        && str_contains($invites, 'void discardDraft(attempt.invite).finally')
+        && str_contains($invites, 'restoreWarmShareDraft(attempt);')
+        && !str_contains($invites, 'void discardDraft(attempt.invite).finally')
         && !str_contains($invites, "toast(sent === false"),
-    'Native cancellation must silently discard its draft without a technical toast or waiting surface.'
+    'Native cancellation must silently reuse its valid draft without a technical toast or waiting surface.'
 );
 $watchStart = strpos($invites, 'async function watchIncomingInvite()');
 $watchEnd = strpos($invites, 'function canWatchIncomingInvite()', $watchStart ?: 0);
