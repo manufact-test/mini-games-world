@@ -21,7 +21,7 @@ $entry = $read('app/v110.php');
 $assert(!str_contains($invites, 'scheduleVisibleShareWarm')
     && !str_contains($invites, 'initShareVisibilityPrewarm')
     && str_contains($invites, 'scheduleWarmShareDraft(currentContext(), 0);')
-    && str_contains($invites, 'cancelWarmShareDraft();\n    openPlayerPicker(currentContext());'),
+    && str_contains($invites, "cancelWarmShareDraft();\n    openPlayerPicker(currentContext());"),
     'Player selection must retain the accepted setup prewarm only and cancel it before loading opponents.');
 $assert(str_contains($invites, 'restoreWarmShareDraft(attempt);')
     && str_contains($invites, 'armWarmShareExpiry(entry)')
