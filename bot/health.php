@@ -20,13 +20,15 @@ try {
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $managedMigrationConfig = ManagedMigrationConfig::fromApplicationConfig($config);
+    $databaseRuntimeRequired = $runtimeStorageRouter->enabledModules() !== [];
     $databaseStatus = $databaseConfig->safeSummary();
+    $databaseStatus['required_by_runtime'] = $databaseRuntimeRequired;
     $databaseStatus['connected'] = null;
     $databaseStatus['schema_current'] = null;
     $databaseStatus['applied_migrations'] = null;
     $databaseStatus['pending_migrations'] = null;
     $databaseStatus['managed_migrations'] = $managedMigrationConfig->safeSummary();
-    if ($databaseConfig->enabled()) {
+    if ($databaseConfig->enabled() && $databaseRuntimeRequired) {
         try {
             $database = PdoConnectionFactory::create($databaseConfig);
             $databaseStatus['connected'] = (int)$database->fetchValue('SELECT 1') === 1;
@@ -41,7 +43,7 @@ try {
         }
     }
 
-    $databaseReady = !$databaseConfig->enabled()
+    $databaseReady = !$databaseRuntimeRequired
         || ($databaseStatus['connected'] === true && $databaseStatus['schema_current'] === true);
     $runtime = $flags->publicStatus();
     $ok = $storageReady && $databaseReady;
@@ -77,6 +79,7 @@ try {
             'database' => [
                 'enabled' => false,
                 'configured' => false,
+                'required_by_runtime' => false,
                 'connected' => null,
                 'schema_current' => null,
                 'applied_migrations' => null,
