@@ -21,17 +21,17 @@ $token = 'ABCDEF0123456789ABCDEF01';
 $normalizedToken = strtolower($token);
 
 $assert(
-    WebAppLaunchUrl::base($config) === 'https://example.test/app/v110.php?v=1115',
+    WebAppLaunchUrl::base($config) === 'https://example.test/app/v110.php?v=1114',
     'Canonical base URL must select the fresh production v1111 Telegram entrypoint.'
 );
 $assert(
     WebAppLaunchUrl::invitation($config, $token)
-        === 'https://example.test/app/v110.php?v=1115&invite=' . $normalizedToken,
+        === 'https://example.test/app/v110.php?v=1114&invite=' . $normalizedToken,
     'Canonical invitation URL must append one normalized token to the fresh entrypoint.'
 );
 $assert(
     WebAppLaunchUrl::invitation($config, 'not-a-token')
-        === 'https://example.test/app/v110.php?v=1115',
+        === 'https://example.test/app/v110.php?v=1114',
     'Invalid tokens must never create a second or malformed launch route.'
 );
 $assert(
@@ -47,7 +47,7 @@ $v110 = $read('app/v110.php');
 $assert(
     str_contains($welcome, 'WebAppLaunchUrl::base($this->config)')
         && str_contains($welcome, 'WebAppLaunchUrl::invitation($this->config, $inviteToken)')
-        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1115'.")
+        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1114'.")
         && str_contains($invites, 'return WebAppLaunchUrl::invitation($config, $token);')
         && substr_count($welcome, "require_once __DIR__ . '/WebAppLaunchUrl.php';") === 1
         && substr_count($invites, "require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';") === 1,
@@ -67,9 +67,9 @@ $assert(
     'The active client must accept Telegram start_param and canonical invite query tokens through one open_link action.'
 );
 $assert(
-    str_contains($v110, 'production-clean-entry-v110.js?v=1115')
-        && str_contains($v110, 'main-v110.js?v=1115')
-        && str_contains($v110, 'data-hotfix-build="v110-mvp14r11-mobile-toast-authority"')
+    str_contains($v110, 'production-clean-entry-v110.js?v=1114')
+        && str_contains($v110, 'main-v110.js?v=1114')
+        && str_contains($v110, 'data-hotfix-build="v110-mvp14r10-mobile-notification-invite-restore"')
         && str_contains($v110, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'Canonical invitation launches must reach the exact fresh no-store production build.'
 );
