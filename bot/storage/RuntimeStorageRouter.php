@@ -7,6 +7,12 @@ final class RuntimeStorageRouter
     public const DRIVER_DATABASE = 'database';
     public const PRODUCTION_ACTIVATION_BUILD = 'v103-mvp14-production-cutover';
 
+    // Emergency production failback. The canonical JSON store remains the
+    // rollback source while the configured MySQL runtime is unavailable.
+    // Remove only after database connectivity and schema health are restored
+    // and a fresh production activation is verified independently.
+    private const PRODUCTION_JSON_FAILBACK = true;
+
     private const MODULES = [
         'accounts',
         'realtime',
@@ -43,6 +49,7 @@ final class RuntimeStorageRouter
 
     public function enabled(): bool
     {
+        if ($this->productionJsonFailbackActive()) return false;
         return $this->boolValue($this->settings()['enabled'] ?? false);
     }
 
@@ -64,6 +71,7 @@ final class RuntimeStorageRouter
             'enabled_modules' => $this->enabledModules(),
             'production_allowed' => $this->productionAllowed(),
             'rollback_requires_fresh_db_export' => $this->productionAllowed(),
+            'emergency_json_failback' => $this->productionJsonFailbackActive(),
         ];
     }
 
@@ -170,6 +178,12 @@ final class RuntimeStorageRouter
             if (($modules[$module] ?? null) !== true) return false;
         }
         return true;
+    }
+
+    private function productionJsonFailbackActive(): bool
+    {
+        return self::PRODUCTION_JSON_FAILBACK
+            && strtolower(trim((string)($this->config['environment'] ?? 'production'))) === 'production';
     }
 
     private function settings(): array
