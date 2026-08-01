@@ -38,7 +38,7 @@ $assert(!str_contains($auth, 'touchAuthenticatedPresence')
 
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1117')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1118')
     && !str_contains($shell, 'notifications-screen-v110r5.js'),
     'The active graph must have exactly one current notification owner.');
 $assert(!str_contains($clean, 'initV109SelfCancelRefreshGuard')
@@ -57,16 +57,16 @@ $assert(str_contains($profile, "PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1'
     && !str_contains($legacyProfile, 'PROFILE_STATS_CACHE_KEY'),
     'The accepted isolated profile first frame must remain unchanged.');
 
-$build = 'v110-mvp14r11-mobile-toast-authority';
+$build = 'v110-mvp14r12-notification-invite-presence-stability';
 $assert(str_contains($shell, $build)
     && str_contains($main, $build)
     && str_contains($clean, $build)
     && str_contains($entry, $build),
-    'Every active outer entry owner must share the same build identity.');
-$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1115')
-    && str_contains($entry, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($entry, 'main-v110.js?v=1115')
-    && str_contains($launch, '/app/v110.php?v=1115'),
-    'Telegram launch and active modules must keep the canonical outer revision.');
+    'Every active outer entry owner must share the final build identity.');
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1118')
+    && str_contains($entry, 'production-clean-entry-v110.js?v=1118')
+    && str_contains($entry, 'main-v110.js?v=1118')
+    && str_contains($launch, '/app/v110.php?v=1118'),
+    'Telegram launch and active modules must keep the final v1118 revision.');
 
 fwrite(STDOUT, 'ProductionV110InvitePresenceNotificationProfileRootContractTest: ' . $assertions . " assertions passed\n");
