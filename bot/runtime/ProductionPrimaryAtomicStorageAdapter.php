@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInterface
 {
     public const DRIVER = 'database';
-    public const CONTRACT_VERSION = 'v2-production-atomic-worker-parity-reuse';
+    public const CONTRACT_VERSION = 'v3-production-atomic-bounded-outbox-parity';
 
     private const MODULES = [
         'accounts', 'realtime', 'economy', 'notifications', 'invites',
@@ -79,9 +79,10 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                     'state_sha256' => $beforeSha,
                     'worker_tick_count' => 0,
                     'projected_modules' => self::MODULES,
+                    'all_module_fingerprint' => (string)($baseline['all_module_fingerprint'] ?? ''),
                     'baseline_locked' => true,
-                    'baseline_projection_chain_verified' => true,
-                    'baseline_full_module_audit_executed' => false,
+                    'baseline_projection_chain_verified' => ($baseline['projection_chain_verified'] ?? false) === true,
+                    'baseline_full_module_audit_executed' => ($baseline['full_module_audit_executed'] ?? false) === true,
                     'final_full_module_audit_executed' => false,
                     'worker_parity_proof_reused' => false,
                     'housekeeping_only_change_discarded' => $housekeepingOnlyChangeDiscarded,
@@ -162,9 +163,9 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 )),
                 'all_module_fingerprint' => $workerFingerprint,
                 'baseline_locked' => true,
-                'baseline_projection_chain_verified' => true,
-                'baseline_full_module_audit_executed' => false,
-                'final_full_module_audit_executed' => false,
+                'baseline_projection_chain_verified' => ($baseline['projection_chain_verified'] ?? false) === true,
+                'baseline_full_module_audit_executed' => ($baseline['full_module_audit_executed'] ?? false) === true,
+                'final_full_module_audit_executed' => ($final['full_module_audit_executed'] ?? false) === true,
                 'worker_parity_proof_reused' => true,
                 'housekeeping_only_change_discarded' => false,
                 'atomic_commit_pending' => true,
@@ -229,11 +230,70 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             throw new RuntimeException('Production atomic ' . $stage . ' snapshot fingerprint mismatch.');
         }
 
+        $queue = $this->queueStatus($revision);
+        $projectionChainVerified = ($queue['current_revision_covered'] ?? false) === true;
+        $fullModuleAuditExecuted = false;
+        $allModuleFingerprint = '';
+
+        if (!$projectionChainVerified) {
+            $allModuleFingerprint = $this->assertAuditReport(
+                $this->auditor->auditOnly($snapshot, $revision, $stateSha),
+                $revision,
+                $stateSha,
+                $stage
+            );
+            $fullModuleAuditExecuted = true;
+        }
+
         return [
             'state_revision' => $revision,
             'state_sha256' => $stateSha,
-            'queue' => $this->queueStatus($revision),
+            'queue' => $queue,
+            'projection_chain_verified' => $projectionChainVerified,
+            'full_module_audit_executed' => $fullModuleAuditExecuted,
+            'all_module_fingerprint' => $allModuleFingerprint,
         ];
+    }
+
+    private function assertAuditReport(
+        array $audit,
+        int $revision,
+        string $stateSha,
+        string $stage
+    ): string {
+        if (($audit['ok'] ?? false) !== true
+            || ($audit['parity_ok'] ?? false) !== true
+            || ($audit['read_only'] ?? false) !== true
+            || (int)($audit['state_revision'] ?? 0) !== $revision
+            || !hash_equals(
+                $stateSha,
+                strtolower(trim((string)($audit['state_sha256'] ?? '')))
+            )) {
+            throw new RuntimeException(
+                'Production atomic ' . $stage . ' full-module parity audit failed.'
+            );
+        }
+
+        $modules = array_values(array_unique(array_map(
+            static fn(mixed $value): string => strtolower(trim((string)$value)),
+            (array)($audit['projected_modules'] ?? [])
+        )));
+        sort($modules, SORT_STRING);
+        $expectedModules = self::MODULES;
+        sort($expectedModules, SORT_STRING);
+        if ($modules !== $expectedModules) {
+            throw new RuntimeException(
+                'Production atomic ' . $stage . ' audit is missing required modules.'
+            );
+        }
+
+        $fingerprint = strtolower(trim((string)($audit['all_module_fingerprint'] ?? '')));
+        if (preg_match('/\A[a-f0-9]{64}\z/', $fingerprint) !== 1) {
+            throw new RuntimeException(
+                'Production atomic ' . $stage . ' audit fingerprint is invalid.'
+            );
+        }
+        return $fingerprint;
     }
 
     /**
@@ -380,11 +440,26 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             }
         }
 
-        if ($completedCount !== $revision
-            || $completedMin !== 1
-            || $completedMax !== $revision) {
+        if ($completedCount === 0) {
+            return [
+                'completed_event_count' => 0,
+                'min_revision' => 0,
+                'max_revision' => 0,
+                'pending_event_count' => 0,
+                'processing_event_count' => 0,
+                'failed_event_count' => 0,
+                'current_revision_covered' => false,
+                'history_compacted' => true,
+            ];
+        }
+
+        if ($completedCount > RuntimePrimaryProjectionOutboxWriter::COMPLETED_RETENTION_ROWS
+            || $completedMin < 1
+            || $completedMax < $completedMin
+            || $completedCount !== ($completedMax - $completedMin + 1)
+            || $completedMax > $revision) {
             throw new RuntimeException(
-                'Production atomic projection queue is not a contiguous completed revision chain.'
+                'Production atomic projection queue retained tail is invalid.'
             );
         }
 
@@ -395,6 +470,8 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             'pending_event_count' => 0,
             'processing_event_count' => 0,
             'failed_event_count' => 0,
+            'current_revision_covered' => $completedMax === $revision,
+            'history_compacted' => $completedMin > 1 || $completedCount < $revision,
         ];
     }
 
