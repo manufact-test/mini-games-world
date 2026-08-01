@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInterface
 {
     public const DRIVER = 'database';
-    public const CONTRACT_VERSION = 'v2-production-atomic-worker-parity-reuse';
+    public const CONTRACT_VERSION = 'v3-production-atomic-retained-outbox-tail';
 
     private const MODULES = [
         'accounts', 'realtime', 'economy', 'notifications', 'invites',
@@ -64,6 +64,10 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             $beforeSha = (string)$baseline['state_sha256'];
             $afterRevision = (int)($afterWrite['revision'] ?? 0);
             $afterSha = strtolower(trim((string)($afterWrite['state_sha256'] ?? '')));
+            $recoveryWorkerTicks = max(0, (int)($baseline['recovery_worker_tick_count'] ?? 0));
+            $baselineTailVerified = ($baseline['queue']['retained_tail_verified'] ?? false) === true;
+            $baselineAnchorRebuilt = ($baseline['projection_anchor_rebuilt'] ?? false) === true;
+            $baselineHistoryReset = ($baseline['projection_history_reset_detected'] ?? false) === true;
 
             if ($afterRevision === $beforeRevision) {
                 if (!hash_equals($beforeSha, $afterSha)) {
@@ -77,13 +81,17 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                     'contract_version' => self::CONTRACT_VERSION,
                     'state_revision' => $beforeRevision,
                     'state_sha256' => $beforeSha,
-                    'worker_tick_count' => 0,
+                    'worker_tick_count' => $recoveryWorkerTicks,
                     'projected_modules' => self::MODULES,
+                    'all_module_fingerprint' => (string)($baseline['recovery_worker_fingerprint'] ?? ''),
                     'baseline_locked' => true,
-                    'baseline_projection_chain_verified' => true,
+                    'baseline_projection_chain_verified' => $baselineTailVerified,
+                    'baseline_projection_retained_tail_verified' => $baselineTailVerified,
+                    'baseline_projection_history_reset_detected' => $baselineHistoryReset,
+                    'baseline_projection_anchor_rebuilt' => $baselineAnchorRebuilt,
                     'baseline_full_module_audit_executed' => false,
                     'final_full_module_audit_executed' => false,
-                    'worker_parity_proof_reused' => false,
+                    'worker_parity_proof_reused' => $recoveryWorkerTicks > 0,
                     'housekeeping_only_change_discarded' => $housekeepingOnlyChangeDiscarded,
                     'atomic_commit_pending' => true,
                     'json_rollback_source_changed' => false,
@@ -101,38 +109,12 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             }
 
             $tick = $this->worker->runOnce();
-            if (($tick['ok'] ?? false) !== true
-                || ($tick['action'] ?? '') !== 'projection_completed'
-                || ($tick['claimed'] ?? false) !== true
-                || (int)($tick['state_revision'] ?? 0) !== $afterRevision
-                || !hash_equals($afterSha, strtolower(trim((string)($tick['state_sha256'] ?? ''))))
-                || ($tick['parity_ok'] ?? false) !== true) {
-                throw new RuntimeException(
-                    'Production atomic projection did not complete the exact state revision.'
-                );
-            }
-
-            $workerFingerprint = strtolower(trim((string)(
-                $tick['all_module_fingerprint'] ?? ''
-            )));
-            if (preg_match('/\A[a-f0-9]{64}\z/', $workerFingerprint) !== 1) {
-                throw new RuntimeException(
-                    'Production atomic worker parity fingerprint is invalid.'
-                );
-            }
-
-            $workerModules = array_values(array_unique(array_map(
-                static fn(mixed $value): string => strtolower(trim((string)$value)),
-                (array)($tick['projected_modules'] ?? [])
-            )));
-            sort($workerModules, SORT_STRING);
-            $expectedModules = self::MODULES;
-            sort($expectedModules, SORT_STRING);
-            if ($workerModules !== $expectedModules) {
-                throw new RuntimeException(
-                    'Production atomic worker parity proof is missing required modules.'
-                );
-            }
+            $workerFingerprint = $this->assertCompletedProjectionTick(
+                $tick,
+                $afterRevision,
+                $afterSha,
+                'Production atomic projection'
+            );
 
             $final = $this->captureFinalIdentity();
             if ((int)$final['state_revision'] !== $afterRevision
@@ -149,7 +131,7 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 'baseline_state_revision' => $beforeRevision,
                 'state_revision' => $afterRevision,
                 'state_sha256' => $afterSha,
-                'worker_tick_count' => 1,
+                'worker_tick_count' => $recoveryWorkerTicks + 1,
                 'worker_attempt_count' => max(1, (int)($tick['attempt_count'] ?? 0)),
                 'projected_modules' => self::MODULES,
                 'mutated_modules' => array_values(array_map(
@@ -162,7 +144,10 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
                 )),
                 'all_module_fingerprint' => $workerFingerprint,
                 'baseline_locked' => true,
-                'baseline_projection_chain_verified' => true,
+                'baseline_projection_chain_verified' => $baselineTailVerified,
+                'baseline_projection_retained_tail_verified' => $baselineTailVerified,
+                'baseline_projection_history_reset_detected' => $baselineHistoryReset,
+                'baseline_projection_anchor_rebuilt' => $baselineAnchorRebuilt,
                 'baseline_full_module_audit_executed' => false,
                 'final_full_module_audit_executed' => false,
                 'worker_parity_proof_reused' => true,
@@ -201,7 +186,55 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
     private function captureLockedBaseline(array $snapshot): array
     {
         $status = $this->stateStorage->status();
-        return $this->captureIdentity($snapshot, $status, 'baseline');
+        $baseline = $this->captureIdentity($snapshot, $status, 'baseline');
+        if (($baseline['queue']['history_reset'] ?? false) !== true) {
+            return $baseline + [
+                'projection_history_reset_detected' => false,
+                'projection_anchor_rebuilt' => false,
+                'recovery_worker_tick_count' => 0,
+                'recovery_worker_fingerprint' => '',
+            ];
+        }
+
+        $revision = (int)$baseline['state_revision'];
+        $stateSha = (string)$baseline['state_sha256'];
+        $stateJson = $this->canonicalJson($snapshot);
+        $created = (new RuntimePrimaryProjectionOutboxWriter())->ensurePending(
+            $this->database,
+            $revision,
+            $stateJson,
+            $stateSha
+        );
+        if (($created['created'] ?? false) !== true
+            || ($created['status'] ?? '') !== 'pending'
+            || (int)($created['state_revision'] ?? 0) !== $revision) {
+            throw new RuntimeException(
+                'Production atomic projection anchor could not be rebuilt after history reset.'
+            );
+        }
+
+        $tick = $this->worker->runOnce();
+        $fingerprint = $this->assertCompletedProjectionTick(
+            $tick,
+            $revision,
+            $stateSha,
+            'Production atomic projection anchor recovery'
+        );
+
+        $recovered = $this->captureIdentity($snapshot, $status, 'recovered baseline');
+        if (($recovered['queue']['retained_tail_verified'] ?? false) !== true
+            || ($recovered['queue']['history_reset'] ?? true) !== false) {
+            throw new RuntimeException(
+                'Production atomic projection anchor recovery did not establish a retained tail.'
+            );
+        }
+
+        return $recovered + [
+            'projection_history_reset_detected' => true,
+            'projection_anchor_rebuilt' => true,
+            'recovery_worker_tick_count' => 1,
+            'recovery_worker_fingerprint' => $fingerprint,
+        ];
     }
 
     private function captureFinalIdentity(): array
@@ -234,6 +267,40 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             'state_sha256' => $stateSha,
             'queue' => $this->queueStatus($revision),
         ];
+    }
+
+    private function assertCompletedProjectionTick(
+        array $tick,
+        int $revision,
+        string $stateSha,
+        string $label
+    ): string {
+        if (($tick['ok'] ?? false) !== true
+            || ($tick['action'] ?? '') !== 'projection_completed'
+            || ($tick['claimed'] ?? false) !== true
+            || (int)($tick['state_revision'] ?? 0) !== $revision
+            || !hash_equals($stateSha, strtolower(trim((string)($tick['state_sha256'] ?? ''))))
+            || ($tick['parity_ok'] ?? false) !== true) {
+            throw new RuntimeException($label . ' did not complete the exact state revision.');
+        }
+
+        $fingerprint = strtolower(trim((string)($tick['all_module_fingerprint'] ?? '')));
+        if (preg_match('/\A[a-f0-9]{64}\z/', $fingerprint) !== 1) {
+            throw new RuntimeException($label . ' parity fingerprint is invalid.');
+        }
+
+        $modules = array_values(array_unique(array_map(
+            static fn(mixed $value): string => strtolower(trim((string)$value)),
+            (array)($tick['projected_modules'] ?? [])
+        )));
+        sort($modules, SORT_STRING);
+        $expectedModules = self::MODULES;
+        sort($expectedModules, SORT_STRING);
+        if ($modules !== $expectedModules) {
+            throw new RuntimeException($label . ' parity proof is missing required modules.');
+        }
+
+        return $fingerprint;
     }
 
     /**
@@ -380,18 +447,27 @@ final class ProductionPrimaryAtomicStorageAdapter implements StorageAdapterInter
             }
         }
 
-        if ($completedCount !== $revision
-            || $completedMin !== 1
-            || $completedMax !== $revision) {
-            throw new RuntimeException(
-                'Production atomic projection queue is not a contiguous completed revision chain.'
-            );
+        $historyReset = $completedCount === 0;
+        if (!$historyReset) {
+            $expectedCount = $completedMax - $completedMin + 1;
+            $maximumRetainedRows = RuntimePrimaryProjectionOutboxWriter::COMPLETED_RETENTION_ROWS + 1;
+            if ($completedMin < 1
+                || $completedMax !== $revision
+                || $completedCount !== $expectedCount
+                || $completedCount > $maximumRetainedRows) {
+                throw new RuntimeException(
+                    'Production atomic projection queue is not a contiguous retained completed tail.'
+                );
+            }
         }
 
         return [
             'completed_event_count' => $completedCount,
             'min_revision' => $completedMin,
             'max_revision' => $completedMax,
+            'retained_tail_verified' => !$historyReset,
+            'history_reset' => $historyReset,
+            'retention_limit' => RuntimePrimaryProjectionOutboxWriter::COMPLETED_RETENTION_ROWS,
             'pending_event_count' => 0,
             'processing_event_count' => 0,
             'failed_event_count' => 0,
