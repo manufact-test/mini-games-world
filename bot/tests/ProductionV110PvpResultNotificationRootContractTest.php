@@ -17,7 +17,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $watch = $read('bot/game-watch.php');
 $sync = $read('app/assets/js/production-v110-readonly-game-sync.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
@@ -41,25 +41,27 @@ $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     && str_contains($presence, "window.addEventListener('pageshow'")
     && str_contains($presence, 'cancelInFlightRequests()')
     && str_contains($presence, 'REQUEST_TIMEOUT_MS = 4500')
+    && str_contains($presence, '// Presence transport starts before the profile bootstrap.')
     && !str_contains($presence, 'mgwPrefetch'),
-    'The single client presence owner must start from app-ready and refresh immediately after resume.');
+    'The single client presence owner must establish its document lease before bootstrap and refresh after resume.');
 
 $toastStart = strpos($notifications, 'async function openToastNotification()');
-$toastOpen = strpos($notifications, 'void openNotificationsSheet([item], true, true);', $toastStart ?: 0);
+$toastOpen = strpos($notifications, "openNotificationsSheet({ seed:[item], source:'toast' })", $toastStart ?: 0);
 $immediatePaint = strpos($notifications, 'renderNotifications(immediate);');
-$generationRefresh = strpos($notifications, 'return refreshOpenSheet(generation);');
+$generationRefresh = strpos($notifications, 'await refreshOpenSheet(generation);');
 $assert($toastStart !== false
     && $toastOpen !== false
     && $immediatePaint !== false
     && $generationRefresh !== false
     && $immediatePaint < $generationRefresh,
-    'The exact blue-toast item must enter the single sheet owner, paint cached data and then refresh within its generation.');
+    'The exact blue-toast item must enter the single sheet owner, paint immediately and then refresh within its generation.');
 
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1118')
     && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
-    'The active graph must retain one notification owner and one non-rendering PvP transport.');
-$assert(str_contains($launch, '/app/v110.php?v=1115'),
-    'Telegram launches must use the current R11 outer revision.');
+    'The active graph must retain one final notification owner and one non-rendering PvP transport.');
+$assert(str_contains($launch, '/app/v110.php?v=1118'),
+    'Telegram launches must use the final R12 outer revision.');
 
 fwrite(STDOUT, 'ProductionV110PvpResultNotificationRootContractTest: ' . $assertions . " assertions passed\n");
