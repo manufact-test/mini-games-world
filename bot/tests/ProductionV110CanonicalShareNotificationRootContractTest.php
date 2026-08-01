@@ -88,9 +88,9 @@ $assert(
 $assert(
     !str_contains($clean, 'initV109ShareSpeed')
         && !str_contains($clean, 'initV109ShareFallbackGuard')
-        && str_contains($shell, 'game-invites-v110.js?v=1112')
-        && str_contains($shell, 'notifications-screen-v110r5.js?v=1112')
-        && str_contains($entry, 'main-v110.js?v=1112'),
+        && str_contains($shell, 'game-invites-v110.js?v=1113')
+        && str_contains($shell, 'notifications-screen-v110r5.js?v=1113')
+        && str_contains($entry, 'main-v110.js?v=1113'),
     'No historical share layer may return; only the fresh canonical R8 owners may be active.'
 );
 
