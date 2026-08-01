@@ -76,8 +76,9 @@ $assert(str_contains($shell, 'production-v110-presence.js?v=1118')
 $assert(str_contains($invites, 'tg.shareMessage(preparedId')
     && str_contains($invites, "String(errorCode || '') === 'USER_DECLINED'")
     && str_contains($invites, 'restoreWarmShareDraft(attempt);')
-    && !str_contains($invites, 'https://t.me/share/url'),
-    'The accepted native editable Telegram share and instant cancellation must remain unchanged.');
+    && str_contains($invites, 'function openFallbackShare(invite)')
+    && str_contains($invites, 'https://t.me/share/url'),
+    'Native editable Telegram share must remain primary while the explicit unsupported-device fallback stays isolated.');
 
 $homePosition = strpos($lifecycle, "showScreen('home');");
 $leavePosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
