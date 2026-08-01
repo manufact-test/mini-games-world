@@ -63,8 +63,8 @@ $assert(
 $assert(
     str_contains($presencePhp, "['status', 'ping', 'leave']")
         && str_contains($presencePhp, '$db->readOnly')
-        && str_contains($presencePhp, '$presence->touch($accountId, $sessionId, $presenceLeaseId)')
-        && str_contains($presencePhp, '$presence->leave($accountId, $sessionId, $presenceLeaseId)')
+        && str_contains($presencePhp, '$presence->touch($accountId, $sessionId)')
+        && str_contains($presencePhp, '$presence->leave($accountId, $sessionId)')
         && !str_contains($presencePhp, '$db->transaction')
         && !str_contains($presencePhp, '$data[\'users\']'),
     'Presence ping and leave must stay outside application JSON while status reads existing statistics only.'
@@ -75,8 +75,7 @@ $assert(
         && str_contains($presenceService, "\$GLOBALS['config']['data_dir']")
         && str_contains($presenceService, "'.runtime'")
         && str_contains($presenceService, "'presence'")
-        && str_contains($presenceService, '$leaseKey = $presenceLeaseId === \'\'')
-        && str_contains($presenceService, "'session-' . hash('sha256', \$leaseKey) . '.presence")
+        && str_contains($presenceService, "session-' . hash('sha256', \$sessionId) . '.presence")
         && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 75;')
         && str_contains($presenceService, 'private const LEAVE_GRACE_SEC = 4;')
         && str_contains($presenceService, "'leave_after'")
@@ -84,7 +83,7 @@ $assert(
         && !str_contains($presenceService, 'presence_sessions')
         && !str_contains($presenceService, "['last_seen_at']")
         && str_contains($stats, '$this->presence->onlineAccountIds()'),
-    'Online counting must use one configured bounded runtime root, independent document leases and no users JSON fields.'
+    'Online counting must use one configured bounded runtime root, a renewable leave lease and no users JSON fields.'
 );
 
 $assert(
