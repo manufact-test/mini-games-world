@@ -25,7 +25,7 @@ $assert(str_contains($endpoint, "foreach (\$data['users'] ?? [] as \$candidateId
     && str_contains($endpoint, '$hasHistory = isset($lastGameAt[$candidateId]);')
     && str_contains($endpoint, '86400 * 30'),
     'The list must include online and recently known human players instead of only finished-match opponents.');
-$assert(str_contains($endpoint, "$candidateId === $userId")
+$assert(str_contains($endpoint, '$candidateId === $userId')
     && str_contains($endpoint, "str_starts_with(\$candidateId, 'bot_')")
     && str_contains($endpoint, 'array_slice($result, 0, 10)'),
     'The player source must exclude self and bots and remain bounded.');
