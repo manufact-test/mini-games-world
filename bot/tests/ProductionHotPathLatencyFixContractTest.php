@@ -30,10 +30,10 @@ $index = $read('app/index.html');
 
 $assertTrue(
     str_contains($atomic, 'baseline_full_module_audit_executed')
-        && str_contains($atomic, "($baseline['full_module_audit_executed'] ?? false) === true")
-        && str_contains($atomic, "if (!$projectionChainVerified)")
+        && str_contains($atomic, "(\$baseline['full_module_audit_executed'] ?? false) === true")
+        && str_contains($atomic, 'if (!$projectionChainVerified)')
         && str_contains($atomic, '$this->auditor->auditOnly($snapshot, $revision, $stateSha)')
-        && str_contains($atomic, "'current_revision_covered' => $completedMax === $revision"),
+        && str_contains($atomic, "'current_revision_covered' => \$completedMax === \$revision"),
     'Locked baseline must use the retained current event on the hot path and audit only after compacted-history recovery.'
 );
 
