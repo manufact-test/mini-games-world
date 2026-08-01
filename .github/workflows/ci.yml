@@ -19,7 +19,7 @@ concurrency:
 jobs:
   quality:
     name: Quality and smoke checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 18
 
     services:
@@ -89,7 +89,21 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/screens/notifications-screen-v110r5.js \
+            app/assets/js/main-v110-handoff-shell.js \
+            app/assets/js/main-v110.js \
+            app/assets/js/production-clean-entry-v110.js \
+            app/v110.php \
+            bot/invites.php \
+            bot/tests/ProductionV110AcceptanceRootFixContractTest.php \
+            bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php \
+            bot/tests/ProductionV110InviteActionsRootContractTest.php \
+            bot/tests/ProductionV110InvitePresenceNotificationProfileRootContractTest.php \
+            bot/tests/ProductionV110PresenceInviteResumeRootContractTest.php \
+            bot/tests/ProductionV110SurrenderHomeQueueContractTest.php \
+            bot/tests/ProductionV110CanonicalShareNotificationRootContractTest.php
           git commit -m "fix: canonical fast share and invite notifications"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
