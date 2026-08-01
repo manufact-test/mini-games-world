@@ -4,7 +4,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
-    if (!is_string($content)) throw new RuntimeException('Cannot read R8 source: ' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read R11 source: ' . $path);
     return $content;
 };
 $assertions = 0;
@@ -92,10 +92,10 @@ $assert(
 $assert(
     !str_contains($clean, 'initV109ShareSpeed')
         && !str_contains($clean, 'initV109ShareFallbackGuard')
-        && str_contains($shell, 'game-invites-v110.js?v=1115')
+        && str_contains($shell, 'game-invites-v110.js?v=1114')
         && str_contains($shell, 'notifications-screen-v110r5.js?v=1115')
         && str_contains($entry, 'main-v110.js?v=1115'),
-    'No historical share layer may return; only the fresh canonical R8 owners may be active.'
+    'No historical share layer may return; only the current canonical owners may be active.'
 );
 
 fwrite(STDOUT, "ProductionV110CanonicalShareNotificationRootContractTest: {$assertions} assertions passed\n");
