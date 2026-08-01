@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14r11-mobile-toast-authority';
+window.__MGW_BUILD__ = 'v110-mvp14r10-mobile-notification-invite-restore';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -17,7 +17,7 @@ import { renderRoomCard, initHomeScreen, setRoom } from './screens/home-screen.j
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110r5.js?v=1115';
+import { initNotificationsScreen } from './screens/notifications-screen-v110r5.js?v=1114';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
@@ -36,7 +36,7 @@ import { initGoEntry } from './games/go/entry.js?v=74';
 import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107';
-import { initV110Presence } from './production-v110-presence.js?v=1116';
+import { initV110Presence } from './production-v110-presence.js?v=1110';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1110';
 
 let statsRefreshing = false;
