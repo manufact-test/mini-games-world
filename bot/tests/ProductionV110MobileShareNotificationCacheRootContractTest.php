@@ -42,10 +42,10 @@ $assert(str_contains($notifications, 'let notificationSheetActive = false;')
     && str_contains($notifications, 'markCurrentItemsReadLocally();')
     && str_contains($notifications, 'MAX_EMPTY_SHEET_RETRIES'),
     'Closing the mobile notification sheet must not re-announce or touch-through reopen it, and known unread data must not flash as empty.');
-$assert(str_contains($shell, 'game-invites-v110.js?v=1114')
-    && str_contains($shell, 'notifications-screen-v110r5.js?v=1114')
-    && str_contains($entry, 'main-v110.js?v=1114')
-    && str_contains($launch, '/app/v110.php?v=1114'),
+$assert(str_contains($shell, 'game-invites-v110.js?v=1115')
+    && str_contains($shell, 'notifications-screen-v110r5.js?v=1115')
+    && str_contains($entry, 'main-v110.js?v=1115')
+    && str_contains($launch, '/app/v110.php?v=1115'),
     'All active mobile entry owners must load the R10 cache-busted build.');
 
 fwrite(STDOUT, "ProductionV110MobileShareNotificationCacheRootContractTest: {$assertions} assertions passed\n");

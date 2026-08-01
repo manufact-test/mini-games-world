@@ -40,9 +40,9 @@ $assert(str_contains($notifications, 'MAX_EMPTY_SHEET_RETRIES = 4')
     && str_contains($notifications, 'renderLoading();')
     && str_contains($notifications, 'void refreshOpenSheet(generation);'),
     'Known unread data must stay in a bounded loading state instead of flashing an incorrect empty screen.');
-$assert(str_contains($shell, 'game-invites-v110.js?v=1114')
-    && str_contains($shell, 'notifications-screen-v110r5.js?v=1114')
-    && str_contains($entry, 'main-v110.js?v=1114'),
+$assert(str_contains($shell, 'game-invites-v110.js?v=1115')
+    && str_contains($shell, 'notifications-screen-v110r5.js?v=1115')
+    && str_contains($entry, 'main-v110.js?v=1115'),
     'The canonical production graph must load only the R10 owners.');
 
 fwrite(STDOUT, "ProductionV110MobileNotificationInviteRestoreContractTest: {$assertions} assertions passed\n");
