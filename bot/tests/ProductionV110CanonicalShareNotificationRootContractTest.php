@@ -70,7 +70,8 @@ $assert(
 $assert(
     str_contains($notifications, 'let notificationAuthorityRevision = 0;')
         && str_contains($notifications, 'const authorityRevision = notificationAuthorityRevision;')
-        && str_contains($notifications, 'if (authorityRevision !== notificationAuthorityRevision)')
+        && str_contains($notifications, 'localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_GRACE_MS;')
+        && str_contains($notifications, 'if (authorityRevision !== notificationAuthorityRevision || Date.now() < localAuthorityUntil)')
         && str_contains($notifications, 'setUnreadCount(Math.max(unreadHint, Number(result?.unread_count || 0)))'),
     'A notification event must not be erased by an older badge request that started before it arrived.'
 );
