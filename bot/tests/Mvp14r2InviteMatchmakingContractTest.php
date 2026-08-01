@@ -37,8 +37,15 @@ $assert(str_contains($endpoint, "case 'accept':")
     && str_contains($endpoint, "case 'start':")
     && str_contains($endpoint, "case 'cancel':")
     && str_contains($endpoint, "case 'rematch':"), 'Invite lifecycle actions changed.');
-$assert(str_contains($endpoint, '$invites->bindFromLink($data, $user, $token, true, true)')
-    && str_contains($endpoint, '$invites->markSeen($data, $userId, $token)'), 'Link opening must bind, hide and mark the received invite event.');
+$openLinkStart = strpos($endpoint, "case 'open_link':");
+$openLinkEnd = strpos($endpoint, "case 'sync':", $openLinkStart ?: 0);
+$openLinkBlock = $openLinkStart !== false && $openLinkEnd !== false
+    ? substr($endpoint, $openLinkStart, $openLinkEnd - $openLinkStart)
+    : '';
+$assert(str_contains($openLinkBlock, '$invites->bindFromLink($data, $user, $token, true, false)')
+    && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
+    && !str_contains($openLinkBlock, '$invites->markSeen('),
+    'Link opening must preserve and return the unread invite notification.');
 $assert(str_contains($endpoint, '$inviteSignals->publish((string)($result[\'recipient_id\'] ?? \'\'), $result[\'invite\'])'), 'Direct invite transient signal publishing changed.');
 $assert(str_contains($endpoint, 'in_array($action, [\'accept\', \'decline\', \'cancel\', \'start\'], true)')
     && str_contains($endpoint, '$inviteSignals->clear('), 'Invite terminal-action signal cleanup changed.');

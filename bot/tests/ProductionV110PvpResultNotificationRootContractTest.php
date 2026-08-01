@@ -45,7 +45,7 @@ $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     'The single client presence owner must start from app-ready and refresh immediately after resume.');
 
 $toastStart = strpos($notifications, 'async function openToastNotification()');
-$toastOpen = strpos($notifications, 'void openNotificationsSheet(mergeNotificationItems([item], currentItems()), true);', $toastStart ?: 0);
+$toastOpen = strpos($notifications, 'void openNotificationsSheet([item], true, true);', $toastStart ?: 0);
 $immediatePaint = strpos($notifications, 'renderNotifications(immediate);');
 $generationRefresh = strpos($notifications, 'return refreshOpenSheet(generation);');
 $assert($toastStart !== false

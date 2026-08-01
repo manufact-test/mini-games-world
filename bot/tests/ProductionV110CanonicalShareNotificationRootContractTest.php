@@ -42,17 +42,28 @@ $assert(
         && !str_contains($invites, "toast(sent === false"),
     'Native cancellation must silently discard its draft without a technical toast or waiting surface.'
 );
+$watchStart = strpos($invites, 'async function watchIncomingInvite()');
+$watchEnd = strpos($invites, 'function canWatchIncomingInvite()', $watchStart ?: 0);
+$watchBlock = $watchStart !== false && $watchEnd !== false
+    ? substr($invites, $watchStart, $watchEnd - $watchStart)
+    : '';
 $assert(
     str_contains($invites, 'announceLinkedInviteNotification(result, token);')
         && !str_contains($invites, 'if (currentInvite?.token) openCurrentInvite();')
-        && str_contains($invites, 'currentInvite = invite;\n    dispatchNotificationCount(result.unread_count);')
-        && !str_contains($invites, 'currentInvite = invite;\n    showIncomingInvite(invite);'),
+        && str_contains($watchBlock, 'currentInvite = invite;')
+        && str_contains($watchBlock, 'dispatchNotificationCount(result.unread_count);')
+        && !str_contains($watchBlock, 'showIncomingInvite(invite);'),
     'Incoming link and live invites must enter through the notification owner instead of forcing the invitation sheet open.'
 );
+$openLinkStart = strpos($endpoint, "case 'open_link':");
+$openLinkEnd = strpos($endpoint, "case 'sync':", $openLinkStart ?: 0);
+$openLinkBlock = $openLinkStart !== false && $openLinkEnd !== false
+    ? substr($endpoint, $openLinkStart, $openLinkEnd - $openLinkStart)
+    : '';
 $assert(
-    str_contains($endpoint, '$invites->bindFromLink($data, $user, $token, true, false)')
-        && str_contains($endpoint, '$core = $invites->sync($data, $user, $token);')
-        && !str_contains($endpoint, "$invites->markSeen($data, $userId, $token);"),
+    str_contains($openLinkBlock, '$invites->bindFromLink($data, $user, $token, true, false)')
+        && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
+        && !str_contains($openLinkBlock, '$invites->markSeen('),
     'Opening a shared link must create an unread authoritative invitation notification and return that event to the client.'
 );
 $assert(
