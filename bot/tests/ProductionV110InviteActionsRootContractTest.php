@@ -45,17 +45,17 @@ $assert($expireBody !== ''
     && str_contains($expireBody, "'timed_out'"),
     'Passive expiry must change only invitation state; notification visibility owns cleanup.');
 
-$build = 'v110-mvp14r9-mobile-share-notification-cache-root';
+$build = 'v110-mvp14r10-mobile-notification-invite-restore';
 $assert(str_contains($entry, $build)
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($php, $build),
     'Every active entry owner must publish the R8 build identity.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1113')
-    && str_contains($php, 'main-v110.js?v=1113')
-    && str_contains($main, 'main-v110-handoff-shell.js?v=1113')
-    && str_contains($launch, '/app/v110.php?v=1113'),
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1114')
+    && str_contains($php, 'main-v110.js?v=1114')
+    && str_contains($main, 'main-v110-handoff-shell.js?v=1114')
+    && str_contains($launch, '/app/v110.php?v=1114'),
     'Telegram and browser entrypoints must use the fresh v1111 revision.');
 
 fwrite(STDOUT, 'ProductionV110InviteActionsRootContractTest: ' . $assertions . " assertions passed\n");

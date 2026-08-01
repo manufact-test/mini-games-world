@@ -70,7 +70,8 @@ $assert(
 $assert(
     str_contains($notifications, 'let notificationAuthorityRevision = 0;')
         && str_contains($notifications, 'const authorityRevision = notificationAuthorityRevision;')
-        && str_contains($notifications, 'if (authorityRevision !== notificationAuthorityRevision)')
+        && str_contains($notifications, 'localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_GRACE_MS;')
+        && str_contains($notifications, 'if (authorityRevision !== notificationAuthorityRevision || Date.now() < localAuthorityUntil)')
         && str_contains($notifications, 'setUnreadCount(Math.max(unreadHint, Number(result?.unread_count || 0)))'),
     'A notification event must not be erased by an older badge request that started before it arrived.'
 );
@@ -82,16 +83,16 @@ $assert(
 );
 $assert(
     str_contains($notifications, 'void openNotificationsSheet([item], true, true);')
-        && str_contains($notifications, 'setSheetSeed(generation, seedItems, preserveSeed)')
+        && str_contains($notifications, 'setSheetSeed(generation, immediate, preserveSeed || immediate.length > 0)')
         && str_contains($notifications, 'reconcileItems(mergeNotificationItems(sheetSeedItems(generation), serverItems))'),
     'Clicking a real blue toast must paint and retain that exact notification while the bell refreshes.'
 );
 $assert(
     !str_contains($clean, 'initV109ShareSpeed')
         && !str_contains($clean, 'initV109ShareFallbackGuard')
-        && str_contains($shell, 'game-invites-v110.js?v=1113')
-        && str_contains($shell, 'notifications-screen-v110r5.js?v=1113')
-        && str_contains($entry, 'main-v110.js?v=1113'),
+        && str_contains($shell, 'game-invites-v110.js?v=1114')
+        && str_contains($shell, 'notifications-screen-v110r5.js?v=1114')
+        && str_contains($entry, 'main-v110.js?v=1114'),
     'No historical share layer may return; only the fresh canonical R8 owners may be active.'
 );
 

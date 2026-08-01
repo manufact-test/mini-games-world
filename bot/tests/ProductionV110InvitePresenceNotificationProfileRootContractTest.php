@@ -40,7 +40,7 @@ $assert(str_contains($api, 'Mini Games World bootstrap presence failed:'),
 
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r5.js?v=1113'),
+    && str_contains($shell, 'notifications-screen-v110r5.js?v=1114'),
     'The active graph must have exactly one notification owner and no click interceptor.');
 $assert(!str_contains($clean, 'initV109SelfCancelRefreshGuard')
     && !str_contains($clean, 'initV109ShareSpeed')
@@ -57,16 +57,16 @@ $assert(str_contains($profile, "PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1'
     && !str_contains($legacyProfile, 'PROFILE_STATS_CACHE_KEY'),
     'The accepted isolated profile first frame must remain unchanged.');
 
-$build = 'v110-mvp14r9-mobile-share-notification-cache-root';
+$build = 'v110-mvp14r10-mobile-notification-invite-restore';
 $assert(str_contains($shell, $build)
     && str_contains($main, $build)
     && str_contains($clean, $build)
     && str_contains($entry, $build),
     'Every active v110 entry owner must share the same build identity.');
-$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1113')
-    && str_contains($entry, 'production-clean-entry-v110.js?v=1113')
-    && str_contains($entry, 'main-v110.js?v=1113')
-    && str_contains($launch, '/app/v110.php?v=1113'),
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1114')
+    && str_contains($entry, 'production-clean-entry-v110.js?v=1114')
+    && str_contains($entry, 'main-v110.js?v=1114')
+    && str_contains($launch, '/app/v110.php?v=1114'),
     'Telegram launch and active modules must use the fresh outer revision.');
 
 fwrite(STDOUT, 'ProductionV110InvitePresenceNotificationProfileRootContractTest: ' . $assertions . " assertions passed\n");
