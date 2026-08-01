@@ -24,6 +24,7 @@ import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
+import { initInviteTerminalActions } from './games/invite-terminal-actions-v110r12.js?v=1117';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites-v110.js?v=1114';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
@@ -52,6 +53,7 @@ initNotificationsScreen();
 
 initGameScreen();
 initV110ReadonlyGameSync();
+initInviteTerminalActions();
 initGameInvites();
 initSearchScreen();
 initDominoChainLayout();
