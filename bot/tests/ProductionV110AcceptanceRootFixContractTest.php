@@ -34,12 +34,12 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
-$build = 'v110-mvp14r11-mobile-toast-authority';
-$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1115';")
+$build = 'v110-mvp14r12-notification-invite-presence-stability';
+$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1118';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
-    'The isolated notification task must preserve one consistent outer production build.');
+    'The final integration must publish one consistent production build.');
 
 $assert($count($entry, 'initV110AcceptanceRuntime();') === 1
     && $count($entry, 'initV110TargetedInteractions();') === 1
@@ -58,7 +58,7 @@ $assert(!str_contains($entry, 'initV104InviteGameControls')
 $assert($count($shell, 'initGameInvites();') === 1
     && str_contains($shell, "from './games/game-invites-v110.js?v=1114'")
     && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
-    'The canonical invitation file must remain the single invitation owner.');
+    'The canonical invitation file must remain the single broad invitation owner.');
 $assert(str_contains($sheet, 's.replaceChildren();')
     && str_contains($sheet, "attributeFilter:['class']"),
     'A closed sheet must destroy hidden stale ownership state.');
@@ -74,7 +74,7 @@ $assert(!str_contains($targeted, 'confirmLeaveGame')
     'The targeted interaction guard must not become a second surrender owner.');
 
 $assert($count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1117')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1118')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && !str_contains($shell, 'NotificationPreflight'),
     'The active graph must contain exactly one current notification owner.');
@@ -83,7 +83,7 @@ $assert(str_contains($notifications, 'sheetState.pinned')
     && str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
     && str_contains($notifications, "openNotificationsSheet({ seed:[item], source:'toast' })")
     && str_contains($notifications, 'renderLoading();')
-    && str_contains($notifications, "mgw:invite-action-local-result"),
+    && str_contains($notifications, "document.addEventListener('mgw:notification-sync'"),
     'The notification owner must preserve the tapped item, reject stale refreshes and suppress ghost reopen.');
 $assert(!str_contains($runtime, 'ownNotificationOpen')
     && !str_contains($runtime, '/bot/notifications.php'),
@@ -92,8 +92,9 @@ $assert(!str_contains($runtime, 'ownNotificationOpen')
 $assert(str_contains($presenceClient, "document.addEventListener('mgw:app-ready'")
     && str_contains($presenceClient, "window.addEventListener('pageshow'")
     && str_contains($presenceClient, 'cancelInFlightRequests()')
+    && str_contains($presenceClient, '// Presence transport starts before the profile bootstrap.')
     && $count($shell, 'initV110Presence();') === 1,
-    'One resume-aware client presence owner must remain.');
+    'One pre-bootstrap resume-aware client presence owner must remain.');
 $assert(str_contains($presenceService, '$GLOBALS[\'config\'][\'data_dir\']')
     && !str_contains($auth, 'touchAuthenticatedPresence')
     && str_contains($api, "\$action === 'bootstrap'")
@@ -114,12 +115,12 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     && str_contains($runtime, 'mgw-v110-search-summary'),
     'Accepted game interaction behavior must remain untouched.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($php, 'main-v110.js?v=1115')
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1118')
+    && str_contains($php, 'main-v110.js?v=1118')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-    && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1115';")
-    && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1115'.")
+    && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1118';")
+    && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1118'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
-    'All Telegram launches must keep the canonical v110 entrypoint.');
+    'All Telegram launches must use the final v1118 entrypoint.');
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");
