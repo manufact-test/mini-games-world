@@ -80,9 +80,9 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
     && str_contains($notificationEndpoint, "['invite_expired', 'invite_timed_out']"),
     'Passive expiration and timeout must stay notification-free and hidden from existing history.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($php, 'main-v110.js?v=1115')
-    && str_contains($php, 'v110-mvp14r11-mobile-toast-authority'),
-    'The isolated presence task must preserve the current outer production entrypoint.');
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1118')
+    && str_contains($php, 'main-v110.js?v=1118')
+    && str_contains($php, 'v110-mvp14r12-notification-invite-presence-stability'),
+    'The final presence task must publish the final production entrypoint.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");
