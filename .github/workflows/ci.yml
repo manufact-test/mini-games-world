@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: mgw-ci-${{ github.workflow }}-${{ github.ref }}
@@ -66,7 +66,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -79,22 +78,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Remove duplicate R9 blocks
-        if: github.head_ref == 'agent/v110-mobile-share-notification-r9'
-        run: python3 scripts/ci/r9-dedupe.py
-
-      - name: Publish clean R9 source
-        if: github.head_ref == 'agent/v110-mobile-share-notification-r9'
-        run: |
-          if git diff --quiet; then exit 0; fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            app/assets/js/games/game-invites-v110.js \
-            app/assets/js/screens/notifications-screen-v110r5.js
-          git commit -m "fix: remove duplicate R9 mobile owners"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Run repository checks
         shell: bash
