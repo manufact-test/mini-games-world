@@ -31,11 +31,10 @@ final class PresenceService
         );
     }
 
-    public function touch(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
+    public function touch(string $accountId, string $sessionId): void
     {
         $accountId = trim($accountId);
         $sessionId = trim($sessionId);
-        $presenceLeaseId = trim($presenceLeaseId);
         if ($accountId === '' || $sessionId === '' || str_starts_with($accountId, 'bot_')) return;
 
         $this->ensureDirectory();
@@ -46,7 +45,7 @@ final class PresenceService
             throw new RuntimeException('Не удалось обновить присутствие игрока.');
         }
 
-        $path = $this->sessionPath($accountId, $sessionId, $presenceLeaseId);
+        $path = $this->sessionPath($accountId, $sessionId);
         $temporary = $path . '.tmp.' . bin2hex(random_bytes(4));
         $payload = json_encode([
             'touched_at' => time(),
@@ -65,16 +64,15 @@ final class PresenceService
         $this->pruneAccountDirectory($accountDirectory);
     }
 
-    public function leave(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
+    public function leave(string $accountId, string $sessionId): void
     {
         $accountId = trim($accountId);
         $sessionId = trim($sessionId);
-        $presenceLeaseId = trim($presenceLeaseId);
         if ($accountId === '' || $sessionId === '') return;
 
         $this->ensureDirectory();
         @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
-        $path = $this->sessionPath($accountId, $sessionId, $presenceLeaseId);
+        $path = $this->sessionPath($accountId, $sessionId);
         if (!is_file($path)) return;
 
         $state = $this->readSessionState($path);
@@ -138,15 +136,11 @@ final class PresenceService
         return $directory;
     }
 
-    private function sessionPath(string $accountId, string $sessionId, string $presenceLeaseId = ''): string
+    private function sessionPath(string $accountId, string $sessionId): string
     {
-        $leaseKey = $presenceLeaseId === ''
-            ? $sessionId
-            : $sessionId . "\0presence:" . $presenceLeaseId;
-
         return $this->accountDirectory($accountId)
             . DIRECTORY_SEPARATOR
-            . 'session-' . hash('sha256', $leaseKey) . '.presence';
+            . 'session-' . hash('sha256', $sessionId) . '.presence';
     }
 
     private function pruneAccountDirectory(string $accountDirectory): void
