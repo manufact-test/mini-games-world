@@ -82,16 +82,16 @@ $assert(
 );
 $assert(
     str_contains($notifications, 'void openNotificationsSheet([item], true, true);')
-        && str_contains($notifications, 'setSheetSeed(generation, seedItems, preserveSeed)')
+        && str_contains($notifications, 'setSheetSeed(generation, immediate, preserveSeed || immediate.length > 0)')
         && str_contains($notifications, 'reconcileItems(mergeNotificationItems(sheetSeedItems(generation), serverItems))'),
     'Clicking a real blue toast must paint and retain that exact notification while the bell refreshes.'
 );
 $assert(
     !str_contains($clean, 'initV109ShareSpeed')
         && !str_contains($clean, 'initV109ShareFallbackGuard')
-        && str_contains($shell, 'game-invites-v110.js?v=1113')
-        && str_contains($shell, 'notifications-screen-v110r5.js?v=1113')
-        && str_contains($entry, 'main-v110.js?v=1113'),
+        && str_contains($shell, 'game-invites-v110.js?v=1114')
+        && str_contains($shell, 'notifications-screen-v110r5.js?v=1114')
+        && str_contains($entry, 'main-v110.js?v=1114'),
     'No historical share layer may return; only the fresh canonical R8 owners may be active.'
 );
 

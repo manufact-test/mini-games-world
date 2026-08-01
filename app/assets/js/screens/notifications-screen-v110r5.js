@@ -9,6 +9,9 @@ const MAX_LIVE_ITEMS = 30;
 const NOTIFICATION_POLL_MS = 30000;
 const NOTIFICATION_TOAST_DURATION = 8000;
 const EMPTY_RETRY_MS = 160;
+const MAX_EMPTY_SHEET_RETRIES = 4;
+const MOBILE_CLOSE_GUARD_MS = 700;
+const LOCAL_AUTHORITY_GRACE_MS = 2500;
 const LIVE_STORAGE_KEY_PREFIX = 'mgw_notification_live_items_v1';
 const LIVE_STORAGE_TTL_MS = 900000;
 
@@ -32,11 +35,15 @@ let openingSheetGeneration = 0;
 let seededSheetGeneration = 0;
 let seededSheetItems = [];
 let notificationAuthorityRevision = 0;
+let notificationSheetActive = false;
+let cacheHydrated = false;
+let localAuthorityUntil = 0;
+let suppressAnnouncementsUntil = 0;
+let emptySheetRetryCount = 0;
 
 export function initNotificationsScreen(){
   if (initialized) return;
   initialized = true;
-  liveItems = loadLiveItems();
   ensureToast();
   observeScreenChanges();
 
@@ -52,23 +59,38 @@ export function initNotificationsScreen(){
 
   document.addEventListener('mgw:app-ready', () => {
     appReady = true;
+    hydrateLiveItems();
     void refreshBadge(false);
   }, { once:true });
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+      hydrateLiveItems();
       void refreshBadge(true);
-      scheduleAnnouncement(40);
+      if (Date.now() >= suppressAnnouncementsUntil) scheduleAnnouncement(40);
     } else {
       dismissToast();
     }
   });
 
   document.addEventListener('mgw:sheet-closed', () => {
+    const closedNotificationsSheet = notificationSheetActive;
+    notificationSheetActive = false;
     sheetGeneration += 1;
     seededSheetGeneration = 0;
     seededSheetItems = [];
+    emptySheetRetryCount = 0;
     if (openingSheetGeneration !== sheetGeneration) openingSheetPromise = null;
+
+    if (closedNotificationsSheet) {
+      const guardUntil = Date.now() + MOBILE_CLOSE_GUARD_MS;
+      suppressToastClickUntil = Math.max(suppressToastClickUntil, guardUntil);
+      suppressAnnouncementsUntil = Math.max(suppressAnnouncementsUntil, guardUntil);
+      markCurrentItemsReadLocally();
+      dismissToast();
+      return;
+    }
+
     scheduleAnnouncement(40);
   });
   document.addEventListener('mgw:game-dismissed', () => scheduleAnnouncement(80));
@@ -84,10 +106,14 @@ export function initNotificationsScreen(){
     if (!item?.id) return;
 
     notificationAuthorityRevision += 1;
+    localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_GRACE_MS;
     upsert(item);
     if (isNotificationsSheetOpen()) {
       renderNotifications(currentItems());
       rememberAnnouncedId(String(item.id || ''));
+      markCurrentItemsReadLocally();
+      setUnreadCount(0);
+      void rawNotifications(true).catch(() => null);
       return;
     }
 
@@ -106,7 +132,6 @@ export function initNotificationsScreen(){
     else void refreshBadge(false);
   });
 
-  void refreshBadge(false);
   notificationPoll = window.setInterval(() => void refreshBadge(true), NOTIFICATION_POLL_MS);
 }
 
@@ -117,7 +142,7 @@ async function refreshBadge(announce){
   try {
     const result = await rawNotifications(false);
     const items = Array.isArray(result?.items) ? result.items : [];
-    if (authorityRevision !== notificationAuthorityRevision) {
+    if (authorityRevision !== notificationAuthorityRevision || Date.now() < localAuthorityUntil) {
       mergeItems(items);
       setUnreadCount(Math.max(unreadHint, Number(result?.unread_count || 0)));
       return;
@@ -145,12 +170,22 @@ async function refreshBadge(announce){
 }
 
 async function openNotificationsSheet(seedItems = [], hapticFeedback = true, preserveSeed = false){
+  hydrateLiveItems();
   const generation = ++sheetGeneration;
-  setSheetSeed(generation, seedItems, preserveSeed);
+  notificationSheetActive = true;
+  emptySheetRetryCount = 0;
   mergeItems(seedItems);
   const immediate = mergeNotificationItems(seedItems, currentItems());
-  if (immediate.length) renderNotifications(immediate);
-  else renderLoading();
+  setSheetSeed(generation, immediate, preserveSeed || immediate.length > 0);
+
+  if (immediate.length) {
+    renderNotifications(immediate);
+    rememberAnnouncedItems(immediate);
+    markCurrentItemsReadLocally();
+    setUnreadCount(0);
+  } else {
+    renderLoading();
+  }
 
   if (hapticFeedback) haptic('light');
   dismissToast();
@@ -202,8 +237,23 @@ async function refreshOpenSheet(generation = sheetGeneration){
         return;
       }
 
+      if (!visible.length
+          && (Number(result?.unread_count || 0) > 0 || unreadHint > 0)
+          && emptySheetRetryCount < MAX_EMPTY_SHEET_RETRIES) {
+        emptySheetRetryCount += 1;
+        renderLoading();
+        window.setTimeout(() => {
+          if (isCurrentNotificationsSheet(generation)) void refreshOpenSheet(generation);
+        }, EMPTY_RETRY_MS * (emptySheetRetryCount + 1));
+        return;
+      }
+
+      emptySheetRetryCount = 0;
       renderNotifications(visible);
+      rememberAnnouncedItems(visible);
+      markCurrentItemsReadLocally();
       setUnreadCount(0);
+      localAuthorityUntil = 0;
       void rawNotifications(true).catch(() => null);
     } catch (error) {
       if (isCurrentNotificationsSheet(generation) && !currentItems().length) renderError();
@@ -410,6 +460,7 @@ function showToast(item){
 
 function canShowToast(){
   if (!appReady || document.visibilityState !== 'visible') return false;
+  if (Date.now() < suppressAnnouncementsUntil) return false;
   const screenName = String(document.querySelector('.screen.active')?.dataset.screen || '');
   if (!['home', 'profile'].includes(screenName)) return false;
   return !document.getElementById('sheetOverlay')?.classList.contains('active');
@@ -608,6 +659,28 @@ function persistAnnouncedIds(){
     announcedIds = new Set(ids);
     localStorage.setItem(ANNOUNCED_STORAGE_KEY, JSON.stringify(ids));
   } catch (error) {}
+}
+
+function hydrateLiveItems(){
+  if (cacheHydrated) return;
+  cacheHydrated = true;
+  const cached = loadLiveItems();
+  if (!(cached instanceof Map) || !cached.size) return;
+
+  for (const [id, item] of cached.entries()) {
+    if (!id) continue;
+    liveItems.set(String(id), cloneItem(item));
+  }
+  liveItems = new Map(currentItems(MAX_LIVE_ITEMS).map(item => [String(item.id), item]));
+  if (currentItems().some(item => !item?.read)) {
+    localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_GRACE_MS;
+  }
+}
+
+function markCurrentItemsReadLocally(){
+  const items = currentItems(MAX_LIVE_ITEMS).map(item => ({ ...item, read:true }));
+  liveItems = new Map(items.map(item => [String(item.id), item]));
+  persistLiveItems();
 }
 
 function notificationCacheKey(){
