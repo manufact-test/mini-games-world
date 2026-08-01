@@ -109,19 +109,16 @@ final class RuntimePrimaryProjectionOutboxWriter
 
     private function pruneCompletedHistory(DatabaseConnectionInterface $database): int
     {
-        $cutoffRows = $database->fetchAll(
+        $cutoffValue = $database->fetchValue(
             'SELECT state_revision
              FROM ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . "
              WHERE status = 'completed'
              ORDER BY state_revision DESC
              LIMIT 1 OFFSET " . self::COMPLETED_RETENTION_ROWS
         );
-        if ($cutoffRows === []) return 0;
-        if (count($cutoffRows) !== 1 || !is_array($cutoffRows[0])) {
-            throw new RuntimeException('Projection outbox retention cutoff is invalid.');
-        }
+        if ($cutoffValue === null || $cutoffValue === false || $cutoffValue === '') return 0;
 
-        $cutoffRevision = (int)($cutoffRows[0]['state_revision'] ?? 0);
+        $cutoffRevision = (int)$cutoffValue;
         if ($cutoffRevision < 1) {
             throw new RuntimeException('Projection outbox retention revision is invalid.');
         }
