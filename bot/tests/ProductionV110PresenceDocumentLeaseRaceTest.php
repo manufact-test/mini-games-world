@@ -80,8 +80,8 @@ try {
         && str_contains($service, '$sessionId . "\\0presence:" . $presenceLeaseId')
         && str_contains($service, 'private const LEAVE_GRACE_SEC = 12;'),
         'Presence storage must isolate documents and keep a bounded Telegram handoff grace.');
-    $assert(str_contains($shell, 'production-v110-presence.js?v=1116'),
-        'The active shell must load the document-scoped presence owner.');
+    $assert(str_contains($shell, 'production-v110-presence.js?v=1118'),
+        'The active shell must load the final document-scoped presence owner.');
 } finally {
     $remove = static function (string $path) use (&$remove): void {
         if (is_dir($path)) {
