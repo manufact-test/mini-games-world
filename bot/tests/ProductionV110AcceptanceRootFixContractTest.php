@@ -39,7 +39,7 @@ $assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1115';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
-    'v110 must publish one consistent R8 root build.');
+    'v110 must publish one consistent R11 root build.');
 
 $assert($count($entry, 'initV110AcceptanceRuntime();') === 1
     && $count($entry, 'initV110TargetedInteractions();') === 1
@@ -56,7 +56,7 @@ $assert(!str_contains($entry, 'initV104InviteGameControls')
     'Retired invitation, share, result and self-cancel overlays must remain outside active v110.');
 
 $assert($count($shell, 'initGameInvites();') === 1
-    && str_contains($shell, "from './games/game-invites-v110.js?v=1115'")
+    && str_contains($shell, "from './games/game-invites-v110.js?v=1114'")
     && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
     'The isolated invitation file must remain the single active invitation owner.');
 $assert(str_contains($sheet, 's.replaceChildren();')
@@ -128,6 +128,6 @@ $assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1115';")
     && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1115'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
-    'Every Telegram start, menu and invite must use the canonical v110 entrypoint with fresh R9 assets.');
+    'Every Telegram start, menu and invite must use the canonical v110 entrypoint with fresh R11 assets.');
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");
