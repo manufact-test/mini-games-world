@@ -25,11 +25,6 @@ $html = str_replace(
     'data-hotfix-build="v110-mvp14r6-invite-actions-root"',
     $html
 );
-$html = str_replace(
-    '</body>',
-    '  <script type="module" src="./assets/js/production-v110-invite-share-notification-owner.js?v=1112"></script>' . PHP_EOL . '</body>',
-    $html
-);
 
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
