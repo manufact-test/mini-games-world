@@ -36,9 +36,10 @@ async function handleTerminalAction(event){
     const result = await inviteRequest(action, token);
     const invite = result?.invite && typeof result.invite === 'object' ? result.invite : { token };
     const unreadCount = Math.max(0, Number(result?.unread_count || 0));
+    const item = terminalNotificationItem(action, token, invite);
 
-    document.dispatchEvent(new CustomEvent('mgw:invite-action-local-result', {
-      detail:{ action, token, invite, unreadCount },
+    document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
+      detail:{ item, unreadCount, announce:false },
     }));
     document.dispatchEvent(new CustomEvent('mgw:notification-count', {
       detail:{ unreadCount },
@@ -57,6 +58,31 @@ async function handleTerminalAction(event){
   } finally {
     busyToken = '';
   }
+}
+
+function terminalNotificationItem(action, token, invite){
+  const card = [...document.querySelectorAll('[data-notification-invite-token]')]
+    .find(element => String(element.getAttribute('data-notification-invite-token') || '') === token);
+  const notificationId = String(card?.getAttribute('data-notification-id') || `local_invite_${token}`);
+  const source = String(invite?.source || '');
+  const type = action === 'decline'
+    ? (source === 'rematch' ? 'invite_rematch_received' : 'invite_received')
+    : 'invite_accepted';
+
+  return {
+    id:notificationId,
+    type,
+    title:action === 'decline' ? 'Приглашение отклонено' : 'Приглашение отменено',
+    message:action === 'decline'
+      ? 'Вы отклонили это приглашение.'
+      : 'Вы отменили это приглашение.',
+    tone:'warning',
+    invite_token:token,
+    invite_status:String(invite?.status || (action === 'decline' ? 'declined' : 'cancelled')),
+    actions:[],
+    read:true,
+    created_at:new Date().toISOString(),
+  };
 }
 
 async function inviteRequest(action, token){

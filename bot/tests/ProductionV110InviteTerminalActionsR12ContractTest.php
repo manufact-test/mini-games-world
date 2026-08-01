@@ -22,16 +22,23 @@ $assert(str_contains($owner, "const TERMINAL_ACTIONS = new Set(['decline', 'canc
     && str_contains($owner, "document.addEventListener('click', handleTerminalAction, true)")
     && str_contains($owner, 'event.stopImmediatePropagation();'),
     'Decline and cancel must have one scoped owner before the legacy invite handler.');
-$assert(str_contains($owner, "document.dispatchEvent(new CustomEvent('mgw:invite-action-local-result'")
+$assert(str_contains($owner, "document.dispatchEvent(new CustomEvent('mgw:notification-sync'")
+    && str_contains($owner, 'announce:false')
+    && !str_contains($owner, "mgw:invite-action-local-result")
     && !str_contains($owner, 'closeSheet(')
     && !str_contains($owner, "toast('Приглашение отклонено")
     && !str_contains($owner, "toast('Приглашение отменено"),
-    'Successful terminal actions must update the existing card without closing the sheet or showing a self-confirmation toast.');
-$assert(str_contains($notifications, "mgw:invite-action-local-result")
-    && str_contains($notifications, 'applyInviteActionResult')
-    && str_contains($notifications, 'actions:[]')
+    'Successful terminal actions must update the notification owner without closing the sheet or showing a self-confirmation toast.');
+$assert(str_contains($owner, "[data-notification-invite-token]")
+    && str_contains($owner, "data-notification-id")
+    && str_contains($owner, "source === 'rematch' ? 'invite_rematch_received' : 'invite_received'")
+    && str_contains($owner, ": 'invite_accepted';")
+    && str_contains($owner, 'actions:[]'),
+    'The terminal result must preserve the exact notification ID and lifecycle type so the existing card is replaced in place.');
+$assert(str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
+    && str_contains($notifications, 'pinItem(item);')
     && str_contains($notifications, 'renderNotifications(visibleSheetItems());'),
-    'The notification owner must convert the open invite card to terminal state in place.');
+    'The single notification owner must apply the same-card terminal update immediately.');
 $terminalInit = strpos($shell, 'initInviteTerminalActions();');
 $legacyInit = strpos($shell, 'initGameInvites();');
 $assert($terminalInit !== false && $legacyInit !== false && $terminalInit < $legacyInit
