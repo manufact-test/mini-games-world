@@ -14,7 +14,8 @@ const WATCH_URL = `${window.location.origin}/bot/invite-watch.php`;
 const IDLE_SYNC_INTERVAL_MS = 1500;
 const ACTIVE_SYNC_INTERVAL_MS = 500;
 const WATCH_INTERVAL_MS = 400;
-const SHARE_CALLBACK_TIMEOUT_MS = 90000;
+const SHARE_CALLBACK_TIMEOUT_MS = 12000;
+const SHARE_WARM_DELAY_MS = 40;
 const MAX_OPPONENTS = 10;
 
 const GAME_OPTIONS = {
@@ -42,11 +43,17 @@ let seenInviteEventIds = new Set();
 let resultObserver = null;
 let resultEnhanceTimer = null;
 let lastFinishedGame = null;
+let shareWarmSequence = 0;
+let shareWarmTimer = null;
+let shareWarm = null;
+let shareWarmSerial = Promise.resolve();
+let shareAttempt = null;
 
 export function initGameInvites(){
   if (initialized) return;
   initialized = true;
 
+  document.addEventListener('pointerdown', handleInvitePointerDown, true);
   document.addEventListener('click', handleDocumentClick, true);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
@@ -63,6 +70,9 @@ export function initGameInvites(){
   document.addEventListener('mgw:game-dismissed', () => {
     window.setTimeout(() => syncNow({ announce:true }), 80);
     scheduleWatch(80);
+  });
+  document.addEventListener('mgw:sheet-closed', () => {
+    if (!shareAttempt?.nativePending) cancelWarmShareDraft();
   });
   document.addEventListener('mgw:before-game-launch', event => {
     if (!hasActionableInvite()) return;
@@ -84,6 +94,10 @@ export function initGameInvites(){
         scheduleSync(0);
         scheduleWatch(0);
       });
+      tg.onEvent('shareMessageSent', () => settleNativeShare(true));
+      tg.onEvent('shareMessageFailed', event => {
+        settleNativeShare(false, String(event?.error || 'UNKNOWN_ERROR'));
+      });
     } catch (error) {
       // Older Telegram clients do not expose this event.
     }
@@ -98,7 +112,7 @@ export async function openIncomingInviteIfPresent(){
       const result = await inviteRequest('open_link', { token });
       syncState(result);
       currentInvite = result.invite || null;
-      if (currentInvite?.token) openCurrentInvite();
+      announceLinkedInviteNotification(result, token);
     } catch (error) {
       toast(error.message || 'Приглашение уже недоступно.');
     }
@@ -107,6 +121,13 @@ export async function openIncomingInviteIfPresent(){
   await syncNow({ announce:false });
   scheduleSync(nextSyncInterval());
   scheduleWatch(0);
+}
+
+function handleInvitePointerDown(event){
+  const trigger = event.target instanceof Element ? event.target.closest('[data-invite-friend]') : null;
+  if (!trigger || hasActionableInvite()) return;
+  const gameType = String(trigger.dataset.inviteFriend || 'tictactoe');
+  scheduleWarmShareDraft(defaultInviteContext(gameType), 0);
 }
 
 function handleDocumentClick(event){
@@ -195,16 +216,23 @@ function openInviteSetup(gameType, preserved = null){
     <div class="invite-method-note">Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.</div>
   `);
 
+  const currentContext = () => normalizeInviteContext({ gameType, room, boardSize, bet });
   document.querySelectorAll('[data-invite-size]').forEach(button => button.addEventListener('click', () => {
     boardSize = Number(button.dataset.inviteSize || option.defaultSize);
     document.querySelectorAll('[data-invite-size]').forEach(item => item.classList.toggle('active', item === button));
+    scheduleWarmShareDraft(currentContext());
   }));
   document.querySelectorAll('[data-invite-bet]').forEach(button => button.addEventListener('click', () => {
     bet = Number(button.dataset.inviteBet || APP_CONFIG.matchBet);
     document.querySelectorAll('[data-invite-bet]').forEach(item => item.classList.toggle('active', item === button));
+    scheduleWarmShareDraft(currentContext());
   }));
-  document.querySelector('[data-open-player-picker]')?.addEventListener('click', () => openPlayerPicker({ gameType, room, boardSize, bet }));
-  document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft({ gameType, room, boardSize, bet }, event.currentTarget));
+  document.querySelector('[data-open-player-picker]')?.addEventListener('click', () => {
+    cancelWarmShareDraft();
+    openPlayerPicker(currentContext());
+  });
+  document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
+  scheduleWarmShareDraft(currentContext(), 0);
 }
 
 async function openPlayerPicker(context){
@@ -269,6 +297,7 @@ function playerCard(item){
 
 async function createDirectInvite(context, inviteeId, button){
   if (!inviteeId || button.disabled) return;
+  cancelWarmShareDraft();
   haptic('light');
   const opponentName = String(button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
 
@@ -291,55 +320,236 @@ async function createDirectInvite(context, inviteeId, button){
 }
 
 async function createLinkDraft(context, button){
-  if (button.disabled) return;
+  if (button.disabled || shareAttempt?.nativePending) return;
   haptic('light');
+  const originalText = String(button.textContent || 'Поделиться ссылкой');
   button.disabled = true;
   button.textContent = 'Готовим ссылку…';
 
   try {
-    const result = await inviteRequest('create_link_draft', context);
+    const result = await obtainPreparedShareResult(context);
     syncState(result);
-    const draftInvite = result.invite || null;
+    const draftInvite = result?.invite || null;
     const draftToken = String(draftInvite?.token || '');
     if (!draftToken) throw new Error('Не удалось подготовить ссылку.');
-    currentInvite = draftInvite;
 
+    button.disabled = false;
+    button.textContent = originalText;
     const tg = getTelegram();
     const preparedId = String(draftInvite.prepared_message_id || '');
     if (preparedId && typeof tg?.shareMessage === 'function') {
-      showSharingSheet(draftInvite);
-      const sent = await sharePreparedMessage(tg, preparedId);
-      if (sent === true) {
-        const confirmed = await inviteRequest('confirm_shared', { token:draftToken });
-        syncState(confirmed);
-        currentInvite = confirmed.invite || draftInvite;
-        showOwnerWaiting(currentInvite, 'Приглашение отправлено. Ждём ответа игрока.');
-        scheduleSync(0);
-        return;
-      }
-
-      await inviteRequest('discard_draft', { token:draftToken }).catch(() => null);
-      if (String(currentInvite?.token || '') === draftToken) currentInvite = null;
-      openInviteSetup(context.gameType, context);
-      toast(sent === false ? 'Отправка отменена.' : 'Telegram не подтвердил отправку.');
-      scheduleSync(0);
+      openNativeShare(tg, draftInvite, context);
       return;
     }
 
+    currentInvite = draftInvite;
     showPreparedLink(draftInvite, context);
   } catch (error) {
-    toast(error.message || 'Не удалось подготовить приглашение.');
-    openInviteSetup(context.gameType, context);
+    button.disabled = false;
+    button.textContent = originalText;
+    if (String(error?.name || '') !== 'AbortError') {
+      toast(error.message || 'Не удалось подготовить приглашение.');
+    }
   }
 }
 
-function showSharingSheet(invite){
-  openSheet(`
-    ${inviteMarker(invite)}
-    <div class="sheet-head"><div><h2>Отправка приглашения</h2><p>Выберите человека в Telegram.</p></div></div>
-    ${inviteSummary(invite)}
-    <div class="notifications-loading"><div>✈️</div><strong>Ждём результата отправки…</strong></div>
-  `);
+function scheduleWarmShareDraft(context, delay = SHARE_WARM_DELAY_MS){
+  window.clearTimeout(shareWarmTimer);
+  shareWarmTimer = window.setTimeout(() => {
+    void warmShareDraft(context).catch(() => null);
+  }, Math.max(0, Number(delay || 0)));
+}
+
+function warmShareDraft(context){
+  const normalized = normalizeInviteContext(context);
+  const key = inviteContextKey(normalized);
+  if (shareWarm?.key === key && ['queued','loading','ready'].includes(String(shareWarm.status || ''))) {
+    return shareWarm.promise;
+  }
+
+  const previous = shareWarm;
+  const entry = {
+    id:++shareWarmSequence,
+    key,
+    context:normalized,
+    status:'queued',
+    result:null,
+    promise:null,
+  };
+  shareWarm = entry;
+
+  if (previous?.status === 'ready' && previous.result?.invite?.token) {
+    void discardDraft(previous.result.invite);
+  }
+
+  entry.promise = shareWarmSerial = shareWarmSerial
+    .catch(() => null)
+    .then(async () => {
+      if (shareWarm?.id !== entry.id) return null;
+      entry.status = 'loading';
+      const result = await inviteRequest('create_link_draft', normalized, { prefetch:true });
+      if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
+      if (shareWarm?.id !== entry.id) {
+        void discardDraft(result.invite);
+        return null;
+      }
+      entry.result = result;
+      entry.status = 'ready';
+      return result;
+    })
+    .catch(error => {
+      entry.status = 'failed';
+      if (shareWarm?.id === entry.id) shareWarm = null;
+      throw error;
+    });
+
+  return entry.promise;
+}
+
+function cancelWarmShareDraft(){
+  window.clearTimeout(shareWarmTimer);
+  shareWarmTimer = null;
+  const warm = shareWarm;
+  shareWarm = null;
+  if (warm?.status === 'ready' && warm.result?.invite?.token) {
+    void discardDraft(warm.result.invite);
+  }
+}
+
+async function obtainPreparedShareResult(context){
+  const normalized = normalizeInviteContext(context);
+  const key = inviteContextKey(normalized);
+  let warm = shareWarm;
+  if (!warm || warm.key !== key) {
+    await warmShareDraft(normalized);
+    warm = shareWarm;
+  }
+  if (!warm?.promise) throw new Error('Не удалось подготовить ссылку.');
+  const result = await warm.promise;
+  if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
+  if (shareWarm?.id === warm.id) shareWarm = null;
+  return result;
+}
+
+function openNativeShare(tg, invite, context){
+  const preparedId = String(invite?.prepared_message_id || '');
+  if (!preparedId) return showPreparedLink(invite, context);
+
+  const attempt = {
+    id:++shareWarmSequence,
+    invite:cloneInvite(invite),
+    context:normalizeInviteContext(context),
+    nativePending:true,
+    settled:false,
+    timeout:null,
+  };
+  shareAttempt = attempt;
+  attempt.timeout = window.setTimeout(() => {
+    if (attempt.settled) return;
+    attempt.settled = true;
+    attempt.nativePending = false;
+    if (shareAttempt?.id === attempt.id) shareAttempt = null;
+  }, SHARE_CALLBACK_TIMEOUT_MS);
+
+  try {
+    tg.shareMessage(preparedId, result => {
+      settleNativeShare(Boolean(result), result === false ? 'USER_DECLINED' : '', attempt);
+    });
+  } catch (error) {
+    window.clearTimeout(attempt.timeout);
+    shareAttempt = null;
+    currentInvite = invite;
+    showPreparedLink(invite, context);
+  }
+}
+
+function settleNativeShare(sent, errorCode = '', targetAttempt = null){
+  const attempt = targetAttempt || shareAttempt;
+  if (!attempt?.nativePending || attempt.settled) return;
+  attempt.settled = true;
+  attempt.nativePending = false;
+  window.clearTimeout(attempt.timeout);
+  if (shareAttempt?.id === attempt.id) shareAttempt = null;
+
+  const token = String(attempt.invite?.token || '');
+  if (!token) return;
+
+  if (sent === true) {
+    void confirmSharedInvite(attempt);
+    return;
+  }
+
+  if (String(errorCode || '') === 'USER_DECLINED' || String(errorCode || '') === '') {
+    void discardDraft(attempt.invite).finally(() => {
+      if (isInviteSetupOpen()) scheduleWarmShareDraft(attempt.context, 0);
+    });
+    return;
+  }
+
+  if (String(errorCode || '') === 'UNSUPPORTED' || String(errorCode || '') === 'MESSAGE_EXPIRED') {
+    currentInvite = attempt.invite;
+    showPreparedLink(attempt.invite, attempt.context);
+    return;
+  }
+
+  void discardDraft(attempt.invite);
+  toast('Не удалось отправить приглашение. Попробуйте ещё раз.');
+}
+
+async function confirmSharedInvite(attempt){
+  try {
+    const result = await inviteRequest('confirm_shared', { token:String(attempt.invite?.token || '') });
+    syncState(result);
+    currentInvite = result.invite || attempt.invite;
+    showOwnerWaiting(currentInvite, 'Приглашение отправлено. Ждём ответа игрока.');
+    scheduleSync(0);
+  } catch (error) {
+    // The shared link remains valid: opening it binds the draft authoritatively.
+    scheduleSync(0);
+  }
+}
+
+function discardDraft(invite){
+  const token = String(invite?.token || '');
+  if (!token) return Promise.resolve();
+  return inviteRequest('discard_draft', { token }).catch(() => null);
+}
+
+function isInviteSetupOpen(){
+  return Boolean(
+    document.getElementById('sheetOverlay')?.classList.contains('active')
+      && document.querySelector('#sheet [data-invite-setup]')
+  );
+}
+
+function normalizeInviteContext(value){
+  const gameType = String(value?.gameType || 'tictactoe');
+  const room = String(value?.room || '') === 'gold' ? 'gold' : 'match';
+  const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
+  return {
+    gameType,
+    room,
+    boardSize:Number(value?.boardSize || option.defaultSize),
+    bet:Number(value?.bet || (room === 'gold' ? APP_CONFIG.goldBets[0] : APP_CONFIG.matchBet)),
+  };
+}
+
+function defaultInviteContext(gameType){
+  const room = state.room === 'gold' ? 'gold' : 'match';
+  const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
+  return normalizeInviteContext({
+    gameType,
+    room,
+    boardSize:option.defaultSize,
+    bet:room === 'gold'
+      ? Number(APP_CONFIG.goldBets.includes(Number(state.selectedBet)) ? state.selectedBet : APP_CONFIG.goldBets[0])
+      : Number(APP_CONFIG.matchBet),
+  });
+}
+
+function inviteContextKey(context){
+  const normalized = normalizeInviteContext(context);
+  return `${normalized.gameType}|${normalized.room}|${normalized.boardSize}|${normalized.bet}`;
 }
 
 function showPreparedLink(invite, context){
@@ -390,24 +600,6 @@ async function copyInviteLink(url){
   } catch (error) {
     window.prompt('Скопируйте ссылку:', url);
   }
-}
-
-function sharePreparedMessage(tg, preparedId){
-  return new Promise(resolve => {
-    let settled = false;
-    const finish = value => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timeout);
-      resolve(value);
-    };
-    const timeout = window.setTimeout(() => finish(null), SHARE_CALLBACK_TIMEOUT_MS);
-    try {
-      tg.shareMessage(preparedId, result => finish(Boolean(result)));
-    } catch (error) {
-      finish(null);
-    }
-  });
 }
 
 async function performInviteAction(action, token, button){
@@ -577,6 +769,20 @@ function processInviteEvents(items, unreadCount, announce){
   }
 }
 
+function announceLinkedInviteNotification(result, token){
+  const unreadCount = Number(result?.unread_count || 0);
+  dispatchNotificationCount(unreadCount);
+  const item = (Array.isArray(result?.invite_events) ? result.invite_events : []).find(value => {
+    return String(value?.invite_token || '') === String(token || '') && !value?.read;
+  }) || null;
+  const id = String(item?.id || '');
+  if (!id) return;
+  seenInviteEventIds.add(id);
+  document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
+    detail:{ item, unreadCount },
+  }));
+}
+
 function updateOpenInviteSheet(){
   if (!currentInvite?.token) return;
   const openToken = openSheetInviteToken();
@@ -703,6 +909,7 @@ function openCurrentInvite(){
 
 function enterGame(game){
   if (!game?.id || String(game.status || '') !== 'active') return;
+  cancelWarmShareDraft();
   currentInvite = null;
   state.activeGame = game;
   closeSheet();
@@ -753,7 +960,6 @@ async function watchIncomingInvite(){
 
     seenWatchTokens.add(token);
     currentInvite = invite;
-    showIncomingInvite(invite);
     dispatchNotificationCount(result.unread_count);
     scheduleSync(0);
     return invite;
@@ -868,11 +1074,11 @@ function inviteSummary(invite){
   `;
 }
 
-async function inviteRequest(action, payload = {}){
-  return postJson(INVITES_URL, { action, ...payload });
+async function inviteRequest(action, payload = {}, options = {}){
+  return postJson(INVITES_URL, { action, ...payload }, options);
 }
 
-async function postJson(url, payload){
+async function postJson(url, payload, options = {}){
   const response = await fetch(url, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
@@ -881,6 +1087,10 @@ async function postJson(url, payload){
       sessionId:getSessionId(),
       ...payload,
     }),
+    signal:options.signal,
+    priority:options.prefetch ? 'low' : 'high',
+    cache:'no-store',
+    mgwPrefetch:Boolean(options.prefetch),
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {

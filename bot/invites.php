@@ -222,8 +222,9 @@ try {
                 break;
 
             case 'open_link':
-                $core['invite'] = $invites->bindFromLink($data, $user, $token, true, true);
-                $invites->markSeen($data, $userId, $token);
+                $boundInvite = $invites->bindFromLink($data, $user, $token, true, false);
+                $core = $invites->sync($data, $user, $token);
+                $core['invite'] = $boundInvite;
                 break;
 
             case 'sync':
