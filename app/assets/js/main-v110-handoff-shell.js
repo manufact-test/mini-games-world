@@ -36,7 +36,7 @@ import { initGoEntry } from './games/go/entry.js?v=74';
 import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107';
-import { initV110Presence } from './production-v110-presence.js?v=1110';
+import { initV110Presence } from './production-v110-presence.js?v=1116';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1110';
 
 let statsRefreshing = false;
