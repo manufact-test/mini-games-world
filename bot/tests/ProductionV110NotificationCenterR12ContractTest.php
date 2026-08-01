@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+// Isolated R12a contract: notification authority only.
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
