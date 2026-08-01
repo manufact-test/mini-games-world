@@ -7,6 +7,7 @@ const HEARTBEAT_MS = 4000;
 const STATUS_MS = 1200;
 const RETRY_MS = 500;
 const REQUEST_TIMEOUT_MS = 4500;
+const presenceLeaseId = createPresenceLeaseId();
 
 const runtime = window.__MGW_V110_PRESENCE__ ||= {
   initialized:false,
@@ -201,6 +202,14 @@ function payload(action){
   return {
     initData:getInitData(),
     sessionId:getSessionId(),
+    presenceLeaseId,
     action,
   };
+}
+
+function createPresenceLeaseId(){
+  const random = globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  return `presence_${random}`;
 }
