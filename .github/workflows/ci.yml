@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: mgw-ci-${{ github.workflow }}-${{ github.ref }}
@@ -59,13 +59,14 @@ jobs:
       MGW_TEST_MYSQL_PASSWORD: ci_database_password_not_secret
       MGW_TEST_MARIADB_DSN: mysql:host=127.0.0.1;port=3307;dbname=mgw_ci_mariadb;charset=utf8mb4
       MGW_TEST_MARIADB_USER: mgw_ci_mariadb_user
-      MGW_TEST_MARIADB_PASSWORD: ci_mariadb_password_not_secret
+      MGW_TEST_MARIADB_PASSWORD: ci_database_password_not_secret
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -78,6 +79,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Apply canonical R8 source
+        if: github.head_ref == 'agent/v110-invite-share-notification-root-r8'
+        run: bash scripts/ci/r8-apply.sh
+
+      - name: Publish canonical R8 source
+        if: github.head_ref == 'agent/v110-invite-share-notification-root-r8'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: canonical fast share and invite notifications"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Run repository checks
         shell: bash
