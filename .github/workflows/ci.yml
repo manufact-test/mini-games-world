@@ -80,13 +80,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Apply R9 mobile fixes
+      - name: Remove duplicate R9 blocks
         if: github.head_ref == 'agent/v110-mobile-share-notification-r9'
-        run: |
-          python3 scripts/ci/r9-apply.py
-          python3 scripts/ci/r9-followup.py
+        run: python3 scripts/ci/r9-dedupe.py
 
-      - name: Publish R9 product source
+      - name: Publish clean R9 source
         if: github.head_ref == 'agent/v110-mobile-share-notification-r9'
         run: |
           if git diff --quiet; then exit 0; fi
@@ -94,15 +92,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             app/assets/js/games/game-invites-v110.js \
-            app/assets/js/screens/notifications-screen-v110r5.js \
-            app/assets/js/main-v110-handoff-shell.js \
-            app/assets/js/main-v110.js \
-            app/assets/js/production-clean-entry-v110.js \
-            app/v110.php \
-            bot/helpers/WebAppLaunchUrl.php \
-            bot/helpers/UserWelcomeGuard.php \
-            bot/tests
-          git commit -m "fix: stabilize mobile share prewarm and notification cache"
+            app/assets/js/screens/notifications-screen-v110r5.js
+          git commit -m "fix: remove duplicate R9 mobile owners"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Run repository checks
