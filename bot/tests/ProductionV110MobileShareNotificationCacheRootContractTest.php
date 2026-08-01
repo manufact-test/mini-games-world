@@ -4,7 +4,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
-    if (!is_string($content)) throw new RuntimeException('Cannot read R11 source: ' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read R10 source: ' . $path);
     return $content;
 };
 $assertions = 0;
@@ -43,9 +43,9 @@ $assert(str_contains($notifications, 'let notificationSheetActive = false;')
     && str_contains($notifications, 'MAX_EMPTY_SHEET_RETRIES'),
     'Closing the mobile notification sheet must not re-announce or touch-through reopen it, and known unread data must not flash as empty.');
 $assert(str_contains($shell, 'game-invites-v110.js?v=1114')
-    && str_contains($shell, 'notifications-screen-v110r5.js?v=1115')
-    && str_contains($entry, 'main-v110.js?v=1115')
-    && str_contains($launch, '/app/v110.php?v=1115'),
-    'The accepted invite owner and focused R11 notification owner must load through the current entrypoint.');
+    && str_contains($shell, 'notifications-screen-v110r5.js?v=1114')
+    && str_contains($entry, 'main-v110.js?v=1114')
+    && str_contains($launch, '/app/v110.php?v=1114'),
+    'All active mobile entry owners must load the R10 cache-busted build.');
 
 fwrite(STDOUT, "ProductionV110MobileShareNotificationCacheRootContractTest: {$assertions} assertions passed\n");
