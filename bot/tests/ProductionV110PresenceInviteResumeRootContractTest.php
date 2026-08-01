@@ -72,9 +72,9 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
     && str_contains($notificationEndpoint, "['invite_expired', 'invite_timed_out']"),
     'Passive expiration and timeout must stay notification-free and hidden from existing history.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1114')
-    && str_contains($php, 'main-v110.js?v=1114')
-    && str_contains($php, 'v110-mvp14r10-mobile-notification-invite-restore'),
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
+    && str_contains($php, 'main-v110.js?v=1115')
+    && str_contains($php, 'v110-mvp14r11-mobile-toast-authority'),
     'Only the canonical no-store v110 entrypoint may activate R8 assets.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");
