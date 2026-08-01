@@ -5,6 +5,8 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('X-Content-Type-Options: nosniff');
 
+require_once __DIR__ . '/database/DatabaseFailureClassifier.php';
+
 $build = 'v102-mvp14-production-preflight';
 
 try {
@@ -25,6 +27,7 @@ try {
     $databaseStatus['schema_current'] = null;
     $databaseStatus['applied_migrations'] = null;
     $databaseStatus['pending_migrations'] = null;
+    $databaseStatus['failure'] = null;
     $databaseStatus['managed_migrations'] = $managedMigrationConfig->safeSummary();
     if ($databaseConfig->enabled()) {
         try {
@@ -37,6 +40,7 @@ try {
         } catch (Throwable $databaseError) {
             $databaseStatus['connected'] = false;
             $databaseStatus['schema_current'] = false;
+            $databaseStatus['failure'] = DatabaseFailureClassifier::classify($databaseError);
             error_log('[MiniGamesWorld database health] ' . $databaseError->getMessage());
         }
     }
@@ -81,6 +85,7 @@ try {
                 'schema_current' => null,
                 'applied_migrations' => null,
                 'pending_migrations' => null,
+                'failure' => null,
                 'managed_migrations' => null,
             ],
         ],
