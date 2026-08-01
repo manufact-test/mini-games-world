@@ -5,9 +5,9 @@ final class PresenceService
 {
     // Telegram deactivation/backgrounding is not the same as leaving the app.
     // A longer bounded window keeps two genuinely open accounts visible while
-    // pagehide still removes a closed client immediately through sendBeacon.
+    // pagehide still removes a closed client after a short handoff grace.
     private const ONLINE_WINDOW_SEC = 75;
-    private const LEAVE_GRACE_SEC = 4;
+    private const LEAVE_GRACE_SEC = 12;
     private const MARKER_FILE = '.enabled';
 
     private string $directory;

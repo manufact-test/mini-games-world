@@ -4,7 +4,7 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
-    if (!is_string($content)) throw new RuntimeException('Cannot read R6 source: ' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read current source: ' . $path);
     return $content;
 };
 $assertions = 0;
@@ -18,7 +18,7 @@ $presence = $read('app/assets/js/production-v110-presence.js');
 $stats = $read('app/assets/js/stats-owner-v110.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $home = $read('app/assets/js/screens/home-screen.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $auth = $read('bot/services/AuthService.php');
 $api = $read('bot/api.php');
 $presenceService = $read('bot/services/PresenceService.php');
@@ -44,15 +44,23 @@ $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     && str_contains($presence, 'new AbortController()'),
     'Mobile resume must cancel suspended requests and start a fresh bounded presence request.');
 
+$assert(str_contains($presence, '// Presence transport starts before the profile bootstrap.')
+    && str_contains($presence, "  startPresence();\n}")
+    && str_contains($presence, "if (runtime.pingBusy || document.visibilityState !== 'visible') return false;")
+    && !str_contains($presence, 'runtime.pingBusy || !runtime.appReady')
+    && str_contains($presence, "if (!runtime.appReady || document.visibilityState !== 'visible') return false;"),
+    'The document lease must start before bootstrap while visible status rendering stays gated by app readiness.');
+
 $assert(!str_contains($auth, 'touchAuthenticatedPresence')
     && str_contains($api, "\$action === 'bootstrap'")
     && str_contains($api, '$presenceService->touch('),
-    'Generic authentication must not resurrect a leaving session; bootstrap owns launch presence.');
+    'Generic authentication must not resurrect a leaving session; bootstrap remains the application-state owner.');
 
-$assert(str_contains($presenceService, 'LEAVE_GRACE_SEC = 4')
+$assert(str_contains($presenceService, 'LEAVE_GRACE_SEC = 12')
     && str_contains($presenceService, "'leave_after'")
-    && str_contains($presenceService, 'readSessionState('),
-    'Explicit leave must use a short renewable lease instead of an immediate delete race.');
+    && str_contains($presenceService, 'readSessionState(')
+    && str_contains($presenceService, '$sessionId . "\\0presence:" . $presenceLeaseId'),
+    'Explicit leave must use one bounded document handoff lease instead of an immediate delete race.');
 
 $assert(str_contains($invites, 'function hasActionableInvite()')
     && str_contains($invites, "['pending', 'accepted']")
@@ -60,11 +68,11 @@ $assert(str_contains($invites, 'function hasActionableInvite()')
     && str_contains($home, "new CustomEvent('mgw:before-game-launch'"),
     'Any game launch during an actionable invitation must reopen the canonical invitation actions.');
 
-$assert(str_contains($notifications, 'let sheetGeneration = 0;')
-    && str_contains($notifications, 'isCurrentNotificationsSheet(generation)')
-    && str_contains($notifications, 'reconcileItems(mergeNotificationItems(sheetSeedItems(generation), serverItems))')
-    && str_contains($notifications, 'data-notifications-sheet'),
-    'Late notification responses must update cache only and never reopen a closed sheet.');
+$assert(str_contains($notifications, 'sheetState.generation')
+    && str_contains($notifications, 'isCurrentSheet(generation)')
+    && str_contains($notifications, 'sheetState.pinned')
+    && str_contains($notifications, 'data-notifications-owner="r12"'),
+    'Late notification responses must update the current owner only and never reopen a closed sheet.');
 
 $assert(!str_contains($inviteStorage, "'Срок приглашения истёк'")
     && !str_contains($inviteStorage, "'Время ожидания истекло'")
@@ -75,6 +83,6 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
     && str_contains($php, 'main-v110.js?v=1115')
     && str_contains($php, 'v110-mvp14r11-mobile-toast-authority'),
-    'Only the canonical no-store v110 entrypoint may activate R8 assets.');
+    'The isolated presence task must preserve the current outer production entrypoint.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");
