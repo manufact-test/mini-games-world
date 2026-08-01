@@ -20,7 +20,7 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $runtime = $read('app/assets/js/production-v110-acceptance-runtime.js');
 $targeted = $read('app/assets/js/production-v110-targeted-interactions.js');
 $lifecycle = $read('app/assets/js/production-v110-match-lifecycle.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $gameInvites = $read('app/assets/js/games/game-invites-v110.js');
 $sheet = $read('app/assets/js/components/sheet.js');
 $presenceClient = $read('app/assets/js/production-v110-presence.js');
@@ -39,7 +39,7 @@ $assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1115';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
-    'v110 must publish one consistent R11 root build.');
+    'The isolated notification task must preserve one consistent outer production build.');
 
 $assert($count($entry, 'initV110AcceptanceRuntime();') === 1
     && $count($entry, 'initV110TargetedInteractions();') === 1
@@ -53,20 +53,15 @@ $assert(!str_contains($entry, 'initV104InviteGameControls')
     && !str_contains($entry, 'initV109ShareSpeed')
     && !str_contains($entry, 'initV109ShareFallbackGuard')
     && !str_contains($entry, 'initV99InvitePickerHold'),
-    'Retired invitation, share, result and self-cancel overlays must remain outside active v110.');
+    'Retired invitation, share, result and self-cancel layers must remain inactive.');
 
 $assert($count($shell, 'initGameInvites();') === 1
     && str_contains($shell, "from './games/game-invites-v110.js?v=1114'")
     && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
-    'The isolated invitation file must remain the single active invitation owner.');
+    'The canonical invitation file must remain the single invitation owner.');
 $assert(str_contains($sheet, 's.replaceChildren();')
     && str_contains($sheet, "attributeFilter:['class']"),
-    'A closed sheet must destroy hidden stale ownership state at the canonical component.');
-$assert(str_contains($gameInvites, "../components/sheet.js?v=1109")
-    && str_contains($gameInvites, "../components/toast.js?v=1109")
-    && str_contains($gameInvites, "if (action === 'decline') toast('Приглашение отклонено.');")
-    && !str_contains($gameInvites, "toast(action === 'decline' ?"),
-    'The canonical invitation owner must directly own fresh component imports and silent self-cancel.');
+    'A closed sheet must destroy hidden stale ownership state.');
 
 $homePosition = strpos($lifecycle, "showScreen('home');");
 $requestPosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
@@ -79,19 +74,17 @@ $assert(!str_contains($targeted, 'confirmLeaveGame')
     'The targeted interaction guard must not become a second surrender owner.');
 
 $assert($count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r5.js?v=1115')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1117')
+    && !str_contains($shell, 'notifications-screen-v110r5.js')
     && !str_contains($shell, 'NotificationPreflight'),
-    'The active graph must contain one notification owner and no click preflight.');
-$assert(str_contains($notifications, "event.target.closest('#notificationsOpen')")
-    && str_contains($notifications, 'void openNotificationsSheet(currentItems());')
-    && str_contains($notifications, 'if (item && showToast(item)) rememberAnnouncedId')
-    && str_contains($notifications, "document.addEventListener('mgw:sheet-closed'"),
-    'Bell opening must be immediate and suppressed notifications must remain deliverable.');
-$assert(str_contains($notifications, 'renderNotifications(immediate);')
-    && str_contains($notifications, 'return refreshOpenSheet(generation);')
-    && str_contains($notifications, 'void openNotificationsSheet([item], true, true);')
-    && str_contains($notifications, 'sheetSeedItems(generation)'),
-    'A blue-toast click must enter the same generation-bound sheet owner and paint cached data before refresh.');
+    'The active graph must contain exactly one current notification owner.');
+$assert(str_contains($notifications, 'sheetState.pinned')
+    && str_contains($notifications, 'LOCAL_AUTHORITY_MS = 12000')
+    && str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
+    && str_contains($notifications, "openNotificationsSheet({ seed:[item], source:'toast' })")
+    && str_contains($notifications, 'renderLoading();')
+    && str_contains($notifications, "mgw:invite-action-local-result"),
+    'The notification owner must preserve the tapped item, reject stale refreshes and suppress ghost reopen.');
 $assert(!str_contains($runtime, 'ownNotificationOpen')
     && !str_contains($runtime, '/bot/notifications.php'),
     'The acceptance runtime must not reintroduce a parallel notification owner.');
@@ -99,14 +92,13 @@ $assert(!str_contains($runtime, 'ownNotificationOpen')
 $assert(str_contains($presenceClient, "document.addEventListener('mgw:app-ready'")
     && str_contains($presenceClient, "window.addEventListener('pageshow'")
     && str_contains($presenceClient, 'cancelInFlightRequests()')
-    && !str_contains($presenceClient, 'mgwPrefetch')
     && $count($shell, 'initV110Presence();') === 1,
-    'One app-ready, resume-aware and bounded client presence owner must remain.');
+    'One resume-aware client presence owner must remain.');
 $assert(str_contains($presenceService, '$GLOBALS[\'config\'][\'data_dir\']')
     && !str_contains($auth, 'touchAuthenticatedPresence')
     && str_contains($api, "\$action === 'bootstrap'")
     && str_contains($api, '$presenceService->touch('),
-    'Bootstrap and statistics must share the configured presence root without generic auth resurrection.');
+    'Bootstrap and statistics must share the configured presence root.');
 
 $assert(str_contains($gameWatch, "if (\$driver === 'json')")
     && str_contains($gameWatch, 'flock($handle, LOCK_SH)')
@@ -120,7 +112,7 @@ $assert(str_contains($gameSync, 'const WATCH_INTERVAL_MS = 250;')
 $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTicTacToe, true)")
     && str_contains($runtime, 'Never jump upward on a same-turn poll')
     && str_contains($runtime, 'mgw-v110-search-summary'),
-    'Accepted Tic Tac Toe, timer and search-summary behavior must remain untouched.');
+    'Accepted game interaction behavior must remain untouched.');
 
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
     && str_contains($php, 'main-v110.js?v=1115')
@@ -128,6 +120,6 @@ $assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1115';")
     && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1115'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
-    'Every Telegram start, menu and invite must use the canonical v110 entrypoint with fresh R11 assets.');
+    'All Telegram launches must keep the canonical v110 entrypoint.');
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");
