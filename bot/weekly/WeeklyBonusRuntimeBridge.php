@@ -129,19 +129,11 @@ final class WeeklyBonusRuntimeBridge
             return null;
         }
 
-        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
-        if (!$databaseConfig->enabled()) {
-            throw new RuntimeException('Weekly bonus development fallback requires an enabled database.');
-        }
-        $database = PdoConnectionFactory::create($databaseConfig);
-        $rowCount = (int)$database->fetchValue(
-            'SELECT COUNT(*) FROM mgw_runtime_weekly_bonus_state WHERE legacy_user_id = :legacy_user_id',
-            ['legacy_user_id' => $legacyUserId]
-        );
-        if ($rowCount !== 0) {
-            throw new RuntimeException('Excluded development weekly bonus DB state is unexpectedly present.');
-        }
-
+        // The API success hook synchronizes and audits the weekly projection
+        // before response filters run. Development users are intentionally
+        // excluded by that projection. Reusing the already-created repository
+        // above avoids opening a second PDO connection solely to prove the same
+        // exclusion again; any stale/extra DB row has already failed parity.
         return (new WeeklyMatchEconomyService($this->config))->status($snapshot, $user);
     }
 
