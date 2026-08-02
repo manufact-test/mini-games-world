@@ -36,11 +36,11 @@ $assert(
 );
 
 $assert(
-    str_contains($main110, 'main-v110-handoff-shell.js?v=1123')
+    str_contains($main110, 'main-v110-handoff-shell.js?v=1124')
         && !str_contains($main110, 'main-v120-invite-controller-shell.js')
         && !str_contains($shell110, 'invite-controller-v120.js')
         && !str_contains($shell110, 'main-v120.js'),
-    'Only the accepted v110 shell may be active after rollback.'
+    'Only the accepted v1124 v110 shell may be active after rollback.'
 );
 
 $assert(
@@ -50,12 +50,12 @@ $assert(
 );
 
 $assert(
-    $blobSha($shell110) === '5c88f75179063945c15bf4f409bb32812b98cca8'
+    $blobSha($shell110) === 'fb1c82e02101e9626d23dd63cd79d6e4ffc999d5'
         && $blobSha($legacyInvites) === '4377c912b2a85d2e0144c5631115dcea96b5d6b1'
         && $blobSha($legacyNotifications) === '98df0056932f94b7fac1bea99be75ba842cb5880'
         && $blobSha($legacyTerminal) === '893817d00dd00b720b260f8ddb6625bdbcdd5ef7'
         && $blobSha($legacyLink) === 'b9697cb1d18b8c3b5f4398923d53ab58fb27beab',
-    'The accepted v110 invitation graph must remain byte-for-byte unchanged.'
+    'The v1124 shell may add only the serialized search/reconciliation owners while accepted invitation modules remain byte-for-byte unchanged.'
 );
 
 fwrite(STDOUT, "ProductionV120InviteControllerArchitectureContractTest: {$assertions} assertions passed\n");
