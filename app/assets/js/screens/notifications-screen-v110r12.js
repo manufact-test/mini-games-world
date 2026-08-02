@@ -89,8 +89,8 @@ export function initNotificationsScreen(){
     if (showToast(item)) rememberAnnouncedId(item.id);
   });
 
-  document.addEventListener('mgw:invite-action-local-result', event => {
-    applyInviteActionResult(event.detail || {});
+  document.addEventListener('mgw:notification-remove', event => {
+    removeInviteNotification(event.detail || {});
   });
 
   document.addEventListener('mgw:notifications-refresh', () => {
@@ -328,42 +328,31 @@ function visibleSheetItems(){
   return mergeNotificationItems(pinned, currentItems());
 }
 
-function applyInviteActionResult(detail){
-  const action = String(detail.action || '');
-  const invite = detail.invite && typeof detail.invite === 'object' ? detail.invite : {};
-  const token = String(invite.token || detail.token || '');
-  if (!token || !['decline','cancel'].includes(action)) return;
+function removeInviteNotification(detail){
+  const token = String(detail.inviteToken || detail.token || '');
+  if (!token) return;
 
-  const existing = currentItems(MAX_ITEMS).find(item => String(item.invite_token || '') === token)
-    || normalizeItem(detail.item);
-  const id = String(existing?.id || detail.notificationId || `local_invite_${token}`);
-  const title = action === 'decline' ? 'Приглашение отклонено' : 'Приглашение отменено';
-  const message = action === 'decline'
-    ? 'Вы отклонили это приглашение.'
-    : 'Вы отменили это приглашение.';
-  const terminal = normalizeItem({
-    ...existing,
-    id,
-    type:action === 'decline' ? 'invite_declined_local' : 'invite_cancelled_local',
-    title,
-    message,
-    tone:'warning',
-    invite_token:token,
-    invite_status:String(invite.status || (action === 'decline' ? 'declined' : 'cancelled')),
-    actions:[],
-    read:true,
-    created_at:String(existing?.created_at || new Date().toISOString()),
-  });
+  for (const [id, item] of items.entries()) {
+    if (String(item?.invite_token || '') === token) items.delete(id);
+  }
+  for (const [key, entry] of localAuthority.entries()) {
+    if (String(entry?.item?.invite_token || '') === token) localAuthority.delete(key);
+  }
+  for (const [key, item] of sheetState.pinned.entries()) {
+    if (String(item?.invite_token || '') === token) sheetState.pinned.delete(key);
+  }
 
-  rememberLocalAuthority(terminal);
-  upsert(terminal);
-  rememberAnnouncedId(terminal.id);
-  announcementGuardUntil = Date.now() + CLOSE_GUARD_MS;
-  dismissToast();
-  setUnreadCount(Number(detail.unreadCount || 0));
+  if (String(toastItem?.invite_token || '') === token
+      || String(pressedToastItem?.invite_token || '') === token) {
+    dismissToast();
+  }
+
+  announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
+  persistItems();
+  const exactUnread = Number(detail.unreadCount);
+  setUnreadCount(Number.isFinite(exactUnread) ? exactUnread : Math.max(0, unreadHint - 1));
 
   if (isNotificationsSheetOpen()) {
-    pinItem(terminal);
     renderNotifications(visibleSheetItems());
     markVisibleReadLocally();
   }

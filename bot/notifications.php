@@ -33,16 +33,7 @@ function mgw_notification_is_visible(array $item, ?array $invite, string $userId
 
     $status = (string)($invite['status'] ?? '');
     if (mgw_notification_is_received_type($type)) {
-        if (in_array($status, ['pending', 'accepted'], true)) return true;
-        if ($status === 'declined') {
-            return $userId !== ''
-                && (string)($invite['invitee_id'] ?? '') === $userId;
-        }
-        if ($status === 'cancelled') {
-            return $userId !== ''
-                && (string)($invite['cancelled_by'] ?? '') === $userId;
-        }
-        return false;
+        return in_array($status, ['pending', 'accepted'], true);
     }
     if ($type === 'invite_accepted') {
         return $status === 'accepted';
@@ -69,23 +60,10 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
     $type = (string)($item['type'] ?? '');
     if (!mgw_notification_is_received_type($type)) return $item;
 
-    $status = (string)($invite['status'] ?? '');
-    if ($status === 'accepted') {
+    if ((string)($invite['status'] ?? '') === 'accepted') {
         $item['title'] = 'Приглашение принято';
         $item['message'] = 'Ждём запуска матча от пригласившего игрока.';
         $item['tone'] = 'success';
-        $item['read'] = true;
-    } elseif ($status === 'declined'
-        && (string)($invite['invitee_id'] ?? '') === $userId) {
-        $item['title'] = 'Приглашение отклонено';
-        $item['message'] = 'Приглашение больше недоступно.';
-        $item['tone'] = 'warning';
-        $item['read'] = true;
-    } elseif ($status === 'cancelled'
-        && (string)($invite['cancelled_by'] ?? '') === $userId) {
-        $item['title'] = 'Приглашение отменено';
-        $item['message'] = 'Приглашение больше недоступно.';
-        $item['tone'] = 'warning';
         $item['read'] = true;
     }
     return $item;

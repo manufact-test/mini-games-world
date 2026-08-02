@@ -83,8 +83,10 @@ $assert(str_contains($notifications, 'sheetState.pinned')
     && str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
     && str_contains($notifications, "openNotificationsSheet({ seed:[item], source:'toast' })")
     && str_contains($notifications, 'renderLoading();')
-    && str_contains($notifications, "mgw:invite-action-local-result"),
-    'The notification owner must preserve the tapped item, reject stale refreshes and suppress ghost reopen.');
+    && str_contains($notifications, "mgw:notification-remove")
+    && str_contains($notifications, 'function removeInviteNotification(detail)')
+    && !str_contains($notifications, "mgw:invite-action-local-result"),
+    'The notification owner must preserve tapped items, reject stale refreshes, suppress ghost reopen and remove actor-declined cards instead of terminalizing them.');
 $assert(!str_contains($runtime, 'ownNotificationOpen')
     && !str_contains($runtime, '/bot/notifications.php'),
     'The acceptance runtime must not reintroduce a parallel notification owner.');

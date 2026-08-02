@@ -20,24 +20,23 @@ $invites = $read('app/assets/js/games/game-invites-v110.js');
 $assert(
     str_contains($actions, "import { closeSheet } from '../components/sheet.js?v=1109';")
         && str_contains($actions, 'const notificationSurface = isNotificationSurface(button);'),
-    'Terminal actions must identify which visible surface owns the clicked action.'
+    'Terminal actions must identify the source surface while keeping one capture owner.'
+);
+$closePosition = strpos($actions, 'closeSheet();');
+$requestPosition = strpos($actions, 'const result = await inviteRequest(action, token);');
+$assert(
+    $closePosition !== false && $requestPosition !== false && $closePosition < $requestPosition
+        && str_contains($actions, "new CustomEvent('mgw:notification-remove'")
+        && !str_contains($actions, 'if (notificationSurface) {')
+        && !str_contains($actions, 'announce:false'),
+    'A decline from either surface must close before the request and remove the actor card instead of updating it in place.'
 );
 $assert(
-    str_contains($actions, "sheet.querySelector('[data-notifications-owner=\"r12\"]')")
-        && str_contains($actions, 'if (notificationSurface) {')
-        && str_contains($actions, 'announce:false'),
-    'A decline inside the notification center must update the existing card without announcing another toast.'
-);
-$assert(
-    str_contains($actions, "} else {\n      closeSheet();\n    }")
-        && !str_contains($actions, "toast('Приглашение отклонено.')"),
-    'A decline inside the standalone invitation sheet must close silently instead of rendering a terminal confirmation sheet.'
-);
-$assert(
-    str_contains($actions, "message:'Приглашение больше недоступно.'")
-        && !str_contains($actions, 'Вы отклонили это приглашение.')
-        && !str_contains($actions, 'Вы отменили это приглашение.'),
-    'The retained notification card must describe terminal state without a redundant self-confirmation message.'
+    !str_contains($actions, "toast('Приглашение отклонено.')")
+        && !str_contains($actions, "toast('Приглашение отменено.')")
+        && !str_contains($actions, 'terminalNotificationItem(')
+        && !str_contains($actions, "message:'Приглашение больше недоступно.'"),
+    'Decline and cancel success must remain silent without a terminal confirmation sheet, toast or retained card.'
 );
 $assert(
     str_contains($actions, 'const rawUnreadCount = result?.unread_count;')
@@ -46,9 +45,17 @@ $assert(
     'A terminal action response without an unread count must never clear unrelated unread notifications.'
 );
 $assert(
-    str_contains($notifications, 'applyInviteActionResult')
-        && str_contains($invites, "if (action === 'decline') toast('Приглашение отклонено.');"),
-    'The R12 capture owner must remain responsible for terminal actions while the older handler stays blocked behind it.'
+    str_contains($notifications, "document.addEventListener('mgw:notification-remove'")
+        && str_contains($notifications, 'function removeInviteNotification(detail)')
+        && str_contains($notifications, 'items.delete(id)')
+        && str_contains($notifications, 'localAuthority.delete(key)')
+        && str_contains($notifications, 'sheetState.pinned.delete(key)')
+        && !str_contains($notifications, 'applyInviteActionResult'),
+    'The notification owner must remove the card from every local state instead of terminalizing it.'
+);
+$assert(
+    str_contains($invites, "if (action === 'decline') toast('Приглашение отклонено.');"),
+    'The older branch remains unreachable behind the earlier capture owner until the separate canonical invite cleanup task.'
 );
 
 fwrite(STDOUT, "ProductionV110InviteTerminalSurfaceContractTest: {$assertions} assertions passed\n");

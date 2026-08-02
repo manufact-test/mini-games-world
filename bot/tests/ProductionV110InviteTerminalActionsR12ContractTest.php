@@ -17,37 +17,58 @@ $owner = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $legacy = $read('app/assets/js/games/game-invites-v110.js');
+$endpoint = $read('bot/notifications.php');
+$actions = $read('bot/services/invites/GameInviteActionTrait.php');
 
 $assert(str_contains($owner, "const TERMINAL_ACTIONS = new Set(['decline', 'cancel'])")
     && str_contains($owner, "document.addEventListener('click', handleTerminalAction, true)")
     && str_contains($owner, 'event.stopImmediatePropagation();'),
-    'Decline and cancel must have one scoped owner before the legacy invite handler.');
-$assert(str_contains($owner, 'const notificationSurface = isNotificationSurface(button);')
-    && str_contains($owner, 'if (notificationSurface) {')
-    && str_contains($owner, "document.dispatchEvent(new CustomEvent('mgw:notification-sync'")
-    && str_contains($owner, 'announce:false')
-    && str_contains($owner, '} else {')
-    && str_contains($owner, 'closeSheet();')
-    && !str_contains($owner, "mgw:invite-action-local-result")
+    'Decline and cancel must have one scoped capture owner before the broader invite handler.');
+
+$closePosition = strpos($owner, 'closeSheet();');
+$requestPosition = strpos($owner, 'const result = await inviteRequest(action, token);');
+$assert($closePosition !== false && $requestPosition !== false && $closePosition < $requestPosition
+    && str_contains($owner, "new CustomEvent('mgw:notification-remove'")
+    && str_contains($owner, "new CustomEvent('mgw:invite-terminal-action-started'")
+    && str_contains($owner, "new CustomEvent('mgw:invite-terminal-action-completed'")
+    && !str_contains($owner, 'terminalNotificationItem(')
+    && !str_contains($owner, "new CustomEvent('mgw:notification-sync'")
     && !str_contains($owner, "toast('Приглашение отклонено")
     && !str_contains($owner, "toast('Приглашение отменено"),
-    'Notification actions must update in place, while standalone invitation actions close silently without a self-toast.');
-$assert(str_contains($owner, "[data-notification-invite-token]")
-    && str_contains($owner, "data-notification-id")
-    && str_contains($owner, "source === 'rematch' ? 'invite_rematch_received' : 'invite_received'")
-    && str_contains($owner, ": 'invite_accepted';")
-    && str_contains($owner, 'actions:[]'),
-    'The terminal result must preserve the exact notification ID and lifecycle type so the existing card is replaced in place.');
-$assert(str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
-    && str_contains($notifications, 'pinItem(item);')
-    && str_contains($notifications, 'renderNotifications(visibleSheetItems());'),
-    'The single notification owner must apply the same-card terminal update immediately.');
+    'Actor terminal actions must close and remove local state before the request, then finish without a success toast or confirmation card.');
+
+$assert(str_contains($notifications, "document.addEventListener('mgw:notification-remove'")
+    && str_contains($notifications, 'function removeInviteNotification(detail)')
+    && str_contains($notifications, "items.delete(id)")
+    && str_contains($notifications, 'localAuthority.delete(key)')
+    && str_contains($notifications, 'sheetState.pinned.delete(key)')
+    && !str_contains($notifications, "mgw:invite-action-local-result")
+    && !str_contains($notifications, 'function applyInviteActionResult(')
+    && !str_contains($notifications, 'Вы отклонили это приглашение.'),
+    'The notification owner must remove the actor card from memory, pinned state and cache instead of converting it into a terminal card.');
+
+$assert(str_contains($endpoint, "return in_array(\$status, ['pending', 'accepted'], true);")
+    && !str_contains($endpoint, "\$status === 'declined'")
+    && !str_contains($endpoint, "\$status === 'cancelled'"),
+    'The notification endpoint must stop returning received invitation cards to the actor after decline or cancellation.');
+
+$declineStart = strpos($actions, 'public function decline(');
+$cancelStart = strpos($actions, 'public function cancel(', $declineStart ?: 0);
+$declineBlock = $declineStart !== false && $cancelStart !== false
+    ? substr($actions, $declineStart, $cancelStart - $declineStart)
+    : '';
+$assert(str_contains($declineBlock, "'invite_declined'")
+    && str_contains($declineBlock, "(string)(\$invite['inviter_id'] ?? '')")
+    && str_contains($declineBlock, "'Приглашение отклонено'"),
+    'The inviter must still receive the authoritative server notification that the request was declined.');
+
 $terminalInit = strpos($shell, 'initInviteTerminalActions();');
 $legacyInit = strpos($shell, 'initGameInvites();');
 $assert($terminalInit !== false && $legacyInit !== false && $terminalInit < $legacyInit
     && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1120'),
-    'The terminal owner must initialize before the broader invite owner.');
+    'The silent terminal owner must initialize before the broader invite compatibility handler.');
+
 $assert(str_contains($legacy, "if (action === 'decline') toast('Приглашение отклонено.');"),
-    'The old success branch may remain only as an unreachable compatibility path behind the scoped capture owner.');
+    'The legacy success branch remains unreachable behind the earlier capture owner until the canonical invite cleanup task.');
 
 fwrite(STDOUT, "ProductionV110InviteTerminalActionsR12ContractTest: {$assertions} assertions passed\n");
