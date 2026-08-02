@@ -18,6 +18,7 @@ if ($method !== 'POST') {
 try {
     require __DIR__ . '/core/bootstrap.php';
     require_once __DIR__ . '/services/StagingTestAuthService.php';
+    require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
 
     $raw = file_get_contents('php://input');
     if (!is_string($raw) || strlen($raw) > 4096) {
@@ -40,15 +41,26 @@ try {
         ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
         ?? ''
     ));
-    $providedSecret = '';
+    $providedCredential = '';
     if (preg_match('/^Bearer\s+(.+)$/i', $authorization, $match) === 1) {
-        $providedSecret = trim((string)$match[1]);
+        $providedCredential = trim((string)$match[1]);
     }
 
     $service = new StagingTestAuthService($config);
     $action = strtolower(trim((string)($payload['action'] ?? 'issue')));
+    $authorizationMode = 'shared_secret';
 
     if ($action === 'issue') {
+        $providedSecret = $providedCredential;
+        if (substr_count($providedCredential, '.') === 2) {
+            (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
+            $providedSecret = trim((string)($config['staging_test_auth_secret'] ?? ''));
+            if ($providedSecret === '') {
+                $providedSecret = trim((string)($config['setup_secret'] ?? ''));
+            }
+            $authorizationMode = 'github_actions_oidc';
+        }
+
         $issued = $service->issue((string)($payload['slot'] ?? ''), $providedSecret, $_SERVER);
         setcookie(
             StagingTestAuthService::COOKIE_NAME,
@@ -60,6 +72,7 @@ try {
             'ok' => true,
             'service' => 'mini-games-world-staging-test-auth',
             'action' => 'issued',
+            'authorization_mode' => $authorizationMode,
             'player_slot' => $issued['slot'],
             'expires_at_utc' => $issued['expires_at_utc'],
             'ttl_seconds' => $issued['ttl_seconds'],
