@@ -26,7 +26,7 @@ $inviteStorage = $read('bot/services/invites/GameInviteStorageTrait.php');
 $notificationEndpoint = $read('bot/notifications.php');
 $php = $read('app/v110.php');
 
-$assert(str_contains($main, "stats-owner-v110.js?v=1110")
+$assert(str_contains($main, "stats-owner-v110.js?v=1119")
     && str_contains($main, 'beginStatsRequest()')
     && str_contains($main, 'applyStatsSnapshot(statsTicket, result.stats)')
     && !str_contains($main, 'state.stats = result.stats'),
@@ -81,9 +81,9 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
     && str_contains($notificationEndpoint, "['invite_expired', 'invite_timed_out']"),
     'Passive expiration and timeout must stay notification-free and hidden from existing history.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($php, 'main-v110.js?v=1115')
-    && str_contains($php, 'v110-mvp14r11-mobile-toast-authority'),
-    'The isolated presence task must preserve the current outer production entrypoint.');
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1119')
+    && str_contains($php, 'main-v110.js?v=1119')
+    && str_contains($php, 'v110-mvp14r12-invite-notification-stability'),
+    'The integrated presence task must use the final production entrypoint.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");
