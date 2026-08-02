@@ -1,33 +1,18 @@
 <?php
 declare(strict_types=1);
 
-$indexPath = __DIR__ . '/index.html';
-$html = file_get_contents($indexPath);
-if (!is_string($html)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World entrypoint is unavailable.';
-    exit;
+// v120 failed production acceptance and must never execute again. Telegram may
+// keep old Web App URLs in previously sent messages and in a saved menu button,
+// so this endpoint is a permanent compatibility tombstone that forwards every
+// stale launch to the accepted v110 application.
+$target = '/app/v110.php?v=1123';
+$inviteToken = strtolower(trim((string)($_GET['invite'] ?? '')));
+if (preg_match('/^[a-f0-9]{24}$/', $inviteToken)) {
+    $target .= '&invite=' . rawurlencode($inviteToken);
 }
 
-$html = str_replace(
-    './assets/js/production-regression-fix-entry.js?v=96',
-    './assets/js/production-clean-entry-v110.js?v=1120',
-    $html
-);
-$html = str_replace(
-    './assets/js/main.js?v=96',
-    './assets/js/main-v120.js?v=1200',
-    $html
-);
-$html = str_replace(
-    'data-hotfix-build="v96-mvp14-root-cause-stabilization"',
-    'data-hotfix-build="v120-mvp14r12-single-invite-controller"',
-    $html
-);
-
-header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-echo $html;
+header('Location: ' . $target, true, 302);
+exit;
