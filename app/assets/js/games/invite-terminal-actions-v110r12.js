@@ -11,7 +11,9 @@ let busyToken = '';
 export function initInviteTerminalActions(){
   if (initialized) return;
   initialized = true;
-  document.addEventListener('click', handleTerminalAction, true);
+  // Terminal actions are owned before any document-level compatibility handler.
+  // This guarantees that decline/cancel cannot fall through to an old success toast.
+  window.addEventListener('click', handleTerminalAction, true);
 }
 
 async function handleTerminalAction(event){
