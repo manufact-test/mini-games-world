@@ -41,7 +41,7 @@ $assert(str_contains($notifications, 'renderLoading();')
 $assert(str_contains($shell, 'game-invites-v110.js?v=1114')
     && str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1120'),
-    'The canonical graph must load the current owners.');
+    && str_contains($entry, 'main-v110.js?v=1121'),
+    'The canonical graph must load the current owners through the current statistics shell.');
 
 fwrite(STDOUT, "ProductionV110MobileNotificationInviteRestoreContractTest: {$assertions} assertions passed\n");
