@@ -23,9 +23,11 @@ $assert(
     'A received invitation card must remain server-visible while pending, accepted or terminal for its acting user.'
 );
 $assert(
-    str_contains($endpoint, "(string)(\$invite['invitee_id'] ?? '') === \$notificationUserId")
-        && str_contains($endpoint, "(string)(\$invite['cancelled_by'] ?? '') === \$notificationUserId"),
-    'Terminal visibility must be scoped to the user who declined or cancelled the invitation.'
+    str_contains($endpoint, "function mgw_notification_is_visible(array \$item, ?array \$invite, string \$userId = '')")
+        && str_contains($endpoint, "(string)(\$invite['invitee_id'] ?? '') === \$userId")
+        && str_contains($endpoint, "(string)(\$invite['cancelled_by'] ?? '') === \$userId")
+        && str_contains($endpoint, 'mgw_notification_is_visible($item, $invite, $userId)'),
+    'Terminal visibility must be scoped to the authenticated viewer rather than repository item shape.'
 );
 $assert(
     str_contains($endpoint, "\$item['title'] = 'Приглашение принято';")
