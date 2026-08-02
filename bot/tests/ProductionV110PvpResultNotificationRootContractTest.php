@@ -17,7 +17,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $watch = $read('bot/game-watch.php');
 $sync = $read('app/assets/js/production-v110-readonly-game-sync.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
+$rollbackNotifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
@@ -30,13 +30,11 @@ $assert($jsonFastPath !== false
     && str_contains($watch, 'flock($handle, LOCK_SH)')
     && !str_contains($watch, 'app.lock'),
     'The accepted lock-free PvP watch must remain unchanged.');
-
 $assert(str_contains($sync, 'const WATCH_INTERVAL_MS = 250;')
     && str_contains($sync, 'const FALLBACK_GAME_POLL_MS = 1500;')
     && str_contains($sync, "typeof speed?.rawFetch === 'function'")
     && !str_contains($sync, 'openSheet('),
     'PvP freshness must remain a non-rendering transport.');
-
 $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     && str_contains($presence, "window.addEventListener('pageshow'")
     && str_contains($presence, 'cancelInFlightRequests()')
@@ -44,22 +42,21 @@ $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     && !str_contains($presence, 'mgwPrefetch'),
     'The single client presence owner must start from app-ready and refresh immediately after resume.');
 
-$toastStart = strpos($notifications, 'async function openToastNotification()');
-$toastOpen = strpos($notifications, 'void openNotificationsSheet([item], true, true);', $toastStart ?: 0);
-$immediatePaint = strpos($notifications, 'renderNotifications(immediate);');
-$generationRefresh = strpos($notifications, 'return refreshOpenSheet(generation);');
+$toastStart = strpos($rollbackNotifications, 'async function openToastNotification()');
+$toastOpen = strpos($rollbackNotifications, 'void openNotificationsSheet([item], true, true);', $toastStart ?: 0);
+$immediatePaint = strpos($rollbackNotifications, 'renderNotifications(immediate);');
+$generationRefresh = strpos($rollbackNotifications, 'return refreshOpenSheet(generation);');
 $assert($toastStart !== false
     && $toastOpen !== false
     && $immediatePaint !== false
     && $generationRefresh !== false
     && $immediatePaint < $generationRefresh,
-    'The exact blue-toast item must enter the single sheet owner, paint cached data and then refresh within its generation.');
-
+    'The retained rollback notification implementation must still paint cached data before its generation refresh.');
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
     && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
     'The active graph must retain one notification owner and one non-rendering PvP transport.');
-$assert(str_contains($launch, '/app/v110.php?v=1115'),
-    'Telegram launches must use the current R11 outer revision.');
+$assert(str_contains($launch, '/app/v110.php?v=1120'),
+    'Telegram launches must use the final v1120 outer revision.');
 
 fwrite(STDOUT, 'ProductionV110PvpResultNotificationRootContractTest: ' . $assertions . " assertions passed\n");
