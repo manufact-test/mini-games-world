@@ -144,7 +144,7 @@ try {
         $assert(is_string($source), 'Required staging test-auth source is missing.');
     }
 
-    $assert(str_contains($endpoint, "$method !== 'POST'")
+    $assert(str_contains($endpoint, '$method !== \'POST\'')
         && str_contains($endpoint, "header('Allow: POST')")
         && str_contains($endpoint, '/^Bearer\\s+(.+)$/i')
         && !str_contains($endpoint, '$_GET'),
@@ -155,7 +155,7 @@ try {
         && str_contains($endpoint, "'same_site' => 'Strict'"),
         'The broker must publish only a secure HttpOnly SameSite cookie.');
     $assert(str_contains($endpoint, "'error' => 'test_auth_unavailable'")
-        && !str_contains($endpoint, "'message' => $error->getMessage()"),
+        && !str_contains($endpoint, '$error->getMessage()'),
         'Public broker failures must remain generic.');
     $assert(str_contains($auth, 'new StagingTestAuthService($this->config)')
         && strpos($auth, 'StagingTestAuthService') < strpos($auth, 'browserDevUserAllowed'),
