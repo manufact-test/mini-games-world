@@ -39,14 +39,14 @@ $assert(
 $assert(
     str_contains($endpoint, 'new PresenceService()')
         && str_contains($endpoint, 'onlineAccountIds()')
-        && str_contains($endpoint, "str_starts_with($candidateId, 'bot_')")
+        && str_contains($endpoint, 'str_starts_with($candidateId, \'bot_\')')
         && str_contains($endpoint, 'array_slice($result, 0, 10)'),
     'The endpoint must use shared presence, exclude bots and return one bounded authoritative list.'
 );
 $assert(
     str_contains($endpoint, '$presenceOnline = isset($onlineIds[$candidateId]);')
         && str_contains($endpoint, '$hasHistory = isset($lastGameAt[$candidateId]);')
-        && str_contains($endpoint, "time() - $lastSeen > 86400 * 30"),
+        && str_contains($endpoint, 'time() - $lastSeen > 86400 * 30'),
     'The authoritative list must include online users and bounded recent known human users without requiring a finished match.'
 );
 $assert(
