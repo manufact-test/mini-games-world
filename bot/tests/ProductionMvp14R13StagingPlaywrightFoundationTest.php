@@ -99,12 +99,15 @@ $assert(str_contains($spec, "openPlayer(browser, 'A', testInfo)")
     && str_contains($spec, "'mgw_device_id'"),
     'TEST PLAYER A and B must use independent browser contexts, sessions and devices.');
 
-$assert(str_contains($spec, 'waitForApplicationBootstrap(page, slot)')
+$assert(str_contains($spec, 'function requestAction(response)')
+    && str_contains($spec, 'response.request().postDataJSON()?.action')
+    && str_contains($spec, 'function isBootstrapResponse(response)')
+    && str_contains($spec, "requestAction(response) === 'bootstrap'")
+    && str_contains($spec, 'waitForApplicationBootstrap(page, slot)')
     && str_contains($spec, 'page.waitForResponse(isBootstrapResponse')
-    && str_contains($spec, "postDataJSON()?.action === 'bootstrap'")
     && str_contains($spec, 'await bootstrapPromise;')
     && str_contains($spec, 'public error:'),
-    'Each browser context must wait for the real application bootstrap and preserve only its public error on failure.');
+    'Each browser context must wait for the real application bootstrap through the centralized action inspector and preserve only its public error on failure.');
 
 $assert(str_contains($spec, "toBe('stg_test_player_a')")
     && str_contains($spec, "toBe('stg_test_player_b')")
