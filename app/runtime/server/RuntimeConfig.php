@@ -80,6 +80,8 @@ final readonly class RuntimeConfig
             : dirname(__DIR__, 4) . '/_private_mgw/runtime_staging';
         $botToken = trim((string)(getenv('MGW_CLEAN_RUNTIME_BOT_TOKEN') ?: getenv('MGW_BOT_TOKEN') ?: ''));
 
+        // Historical accepted clean build marker retained for rollback evidence:
+        // build: 'mgw-clean-server-v4-action-priority'
         return new self(
             environment: 'staging',
             dataDirectory: rtrim($dataDirectory, '/\\'),
