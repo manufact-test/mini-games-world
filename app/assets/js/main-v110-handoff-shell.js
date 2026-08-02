@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14r11-mobile-toast-authority';
+window.__MGW_BUILD__ = 'v110-mvp14r12-invite-notification-stability';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -17,15 +17,15 @@ import { renderRoomCard, initHomeScreen, setRoom } from './screens/home-screen.j
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1117';
+import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1119';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initInviteTerminalActions } from './games/invite-terminal-actions-v110r12.js?v=1117';
-import { initV110OpponentPickerStability } from './production-v110-opponent-picker-stability.js?v=1118';
+import { initInviteTerminalActions } from './games/invite-terminal-actions-v110r12.js?v=1119';
+import { initV110OpponentPickerStability } from './production-v110-opponent-picker-stability.js?v=1119';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites-v110.js?v=1114';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
@@ -39,7 +39,7 @@ import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107';
 import { initV110Presence } from './production-v110-presence.js?v=1116';
-import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1110';
+import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1119';
 
 let statsRefreshing = false;
 
