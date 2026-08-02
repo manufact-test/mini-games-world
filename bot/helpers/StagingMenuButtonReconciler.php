@@ -4,7 +4,8 @@ declare(strict_types=1);
 final class StagingMenuButtonReconciler
 {
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
-    private const MARKER_PREFIX = '.staging-menu-button-';
+    private const MARKER_PREFIX = '.staging-menu-button-v2-';
+    private const MARKER_TTL_SECONDS = 3600;
 
     public function __construct(
         private TelegramService $telegram,
@@ -33,7 +34,13 @@ final class StagingMenuButtonReconciler
         $webAppUrl = $baseUrl . '/app/';
         $identity = hash('sha256', $expectedUsername . "\n" . $webAppUrl);
         $markerFile = $this->markerFile($identity);
-        if (is_file($markerFile)) {
+
+        if ($this->markerIsFresh($markerFile)) {
+            return;
+        }
+
+        if ($this->menuButtonMatches($webAppUrl)) {
+            $this->writeMarker($markerFile, $identity);
             return;
         }
 
@@ -48,6 +55,40 @@ final class StagingMenuButtonReconciler
             throw new RuntimeException('Telegram rejected the staging Mini App menu button.');
         }
 
+        if (!$this->menuButtonMatches($webAppUrl)) {
+            throw new RuntimeException('Telegram did not persist the staging Mini App menu button.');
+        }
+
+        $this->writeMarker($markerFile, $identity);
+    }
+
+    private function menuButtonMatches(string $webAppUrl): bool
+    {
+        $response = $this->telegram->api('getChatMenuButton');
+        if (($response['ok'] ?? null) !== true || !is_array($response['result'] ?? null)) {
+            throw new RuntimeException('Telegram menu button state is unavailable.');
+        }
+
+        $button = $response['result'];
+        return ($button['type'] ?? null) === 'web_app'
+            && is_array($button['web_app'] ?? null)
+            && (string)($button['web_app']['url'] ?? '') === $webAppUrl;
+    }
+
+    private function markerIsFresh(string $markerFile): bool
+    {
+        if (!is_file($markerFile)) {
+            return false;
+        }
+
+        $modifiedAt = @filemtime($markerFile);
+        return is_int($modifiedAt)
+            && $modifiedAt > 0
+            && (time() - $modifiedAt) < self::MARKER_TTL_SECONDS;
+    }
+
+    private function writeMarker(string $markerFile, string $identity): void
+    {
         $directory = dirname($markerFile);
         if (!is_dir($directory) && !@mkdir($directory, 0770, true) && !is_dir($directory)) {
             throw new RuntimeException('Unable to create the staging menu button marker directory.');
