@@ -34,8 +34,8 @@ $assert(str_contains($bridge, "throw new RuntimeException('Excluded development 
 $assert(str_contains($bridge, 'new WeeklyMatchEconomyService($this->config)')
     && str_contains($bridge, '->status($snapshot, $user)'),
     'The fallback must calculate the same read-only status from the rollback snapshot.');
-$assert(!str_contains($bridge, 'is_staging_test_user']) || true,
-    'Placeholder assertion.');
+$assert(!str_contains($bridge, 'is_staging_test_user'),
+    'The intentional dev-user fallback must not depend on one hard-coded test-player marker.');
 
 // No generic catch-and-ignore is allowed around DB status replacement.
 $assert(!preg_match('/catch\s*\(Throwable[^)]*\)\s*\{\s*\$data\[\'weekly_match\'\]\s*=\s*\$data\[\'weekly_match\'\]/s', $bridge),
