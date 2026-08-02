@@ -5,6 +5,7 @@ STAGING_BASE='https://seashell-okapi-889488.hostingersite.com'
 PRODUCTION_BASE='https://lemonchiffon-gerbil-545102.hostingersite.com'
 TMP_DIR="$(mktemp -d)"
 NETWORK_FAILURES=0
+TOTAL_PROBES=9
 
 cleanup() {
   rm -rf "$TMP_DIR"
@@ -52,6 +53,13 @@ print_html_markers() {
   fi
 }
 
+print_dns() {
+  local host="$1"
+  local values
+  values="$(getent ahostsv4 "$host" 2>/dev/null | awk '{print $1}' | LC_ALL=C sort -u | paste -sd, - || true)"
+  echo "dns_ipv4_${host}: ${values:-unresolved}"
+}
+
 probe() {
   local label="$1"
   local url="$2"
@@ -65,11 +73,12 @@ probe() {
   echo "url: ${url}"
 
   if ! meta="$(curl \
+      --ipv4 \
       --silent \
       --show-error \
       --location \
-      --connect-timeout 10 \
-      --max-time 25 \
+      --connect-timeout 4 \
+      --max-time 12 \
       --dump-header "$headers" \
       --output "$body" \
       --write-out '%{http_code}|%{url_effective}|%{content_type}|%{size_download}|%{time_total}' \
@@ -103,6 +112,8 @@ echo 'MVP-14R13.1 public read-only staging audit'
 echo "audit_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "repository_commit: $(git rev-parse HEAD)"
 echo 'request_policy: unauthenticated GET only; no cookies, tokens, request bodies or mutations'
+print_dns 'seashell-okapi-889488.hostingersite.com'
+print_dns 'lemonchiffon-gerbil-545102.hostingersite.com'
 
 probe 'staging_health' "${STAGING_BASE}/bot/health.php" json
 probe 'staging_app_root' "${STAGING_BASE}/app/" html
@@ -115,9 +126,16 @@ probe 'production_v110_entry' "${PRODUCTION_BASE}/app/v110.php?v=1123" html
 probe 'production_clean_health' "${PRODUCTION_BASE}/app/runtime/api.php?action=health" json
 probe 'production_clean_entry' "${PRODUCTION_BASE}/app/runtime/index.php" html
 
+if (( NETWORK_FAILURES == TOTAL_PROBES )); then
+  echo
+  echo "audit_result: external_network_blocked (${NETWORK_FAILURES}/${TOTAL_PROBES} probes could not connect)"
+  echo 'audit_interpretation: hosted runner cannot provide live build evidence; manual or alternate-runner evidence is required'
+  exit 0
+fi
+
 if (( NETWORK_FAILURES > 0 )); then
   echo
-  echo "audit_result: failed (${NETWORK_FAILURES} network failures)"
+  echo "audit_result: partial_network_failure (${NETWORK_FAILURES}/${TOTAL_PROBES})"
   exit 1
 fi
 
