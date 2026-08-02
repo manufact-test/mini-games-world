@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/helpers/RsaJwkPublicKey.php';
+
 final class GitHubActionsOidcVerifier
 {
     private const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -38,19 +40,16 @@ final class GitHubActionsOidcVerifier
         $header = $this->decodeJsonPart($encodedHeader, 'header');
         $claims = $this->decodeJsonPart($encodedClaims, 'claims');
         $signature = $this->base64UrlDecode($encodedSignature);
+        $kid = trim((string)($header['kid'] ?? ''));
 
         if (($header['alg'] ?? null) !== 'RS256'
             || ($header['typ'] ?? null) !== 'JWT'
-            || !is_string($header['kid'] ?? null)
-            || trim((string)$header['kid']) === '') {
+            || $kid === ''
+            || strlen($kid) > 255) {
             throw new RuntimeException('GitHub Actions OIDC header is not trusted.');
         }
 
-        $this->verifySignature(
-            $encodedHeader . '.' . $encodedClaims,
-            $signature,
-            trim((string)$header['kid'])
-        );
+        $this->verifySignature($encodedHeader . '.' . $encodedClaims, $signature, $kid);
         $this->validateClaims($claims);
         $this->consumeJti((string)$claims['jti'], (int)$claims['exp']);
 
@@ -68,12 +67,10 @@ final class GitHubActionsOidcVerifier
     private function validateClaims(array $claims): void
     {
         $now = $this->now();
-        $issuer = trim((string)($claims['iss'] ?? ''));
         $audience = $claims['aud'] ?? null;
         $audienceMatches = is_string($audience)
             ? hash_equals(self::AUDIENCE, $audience)
             : (is_array($audience) && in_array(self::AUDIENCE, $audience, true));
-
         $issuedAt = (int)($claims['iat'] ?? 0);
         $notBefore = (int)($claims['nbf'] ?? $issuedAt);
         $expiresAt = (int)($claims['exp'] ?? 0);
@@ -81,7 +78,7 @@ final class GitHubActionsOidcVerifier
         $sha = trim((string)($claims['sha'] ?? ''));
         $runId = trim((string)($claims['run_id'] ?? ''));
 
-        if ($issuer !== self::ISSUER
+        if ((string)($claims['iss'] ?? '') !== self::ISSUER
             || !$audienceMatches
             || (string)($claims['repository'] ?? '') !== self::REPOSITORY
             || (string)($claims['repository_id'] ?? '') !== self::REPOSITORY_ID
@@ -115,33 +112,24 @@ final class GitHubActionsOidcVerifier
             throw new RuntimeException('OpenSSL is unavailable for OIDC verification.');
         }
 
-        $certificate = $this->certificateForKid($kid, false);
-        if ($certificate === null) {
-            $certificate = $this->certificateForKid($kid, true);
-        }
-        if ($certificate === null) {
+        $pem = $this->publicKeyForKid($kid, false) ?? $this->publicKeyForKid($kid, true);
+        if ($pem === null) {
             throw new RuntimeException('GitHub Actions OIDC signing key is unavailable.');
         }
-
-        $publicKey = openssl_pkey_get_public($certificate);
+        $publicKey = openssl_pkey_get_public($pem);
         if ($publicKey === false) {
             throw new RuntimeException('GitHub Actions OIDC public key is invalid.');
         }
-
-        try {
-            $verified = openssl_verify($input, $signature, $publicKey, OPENSSL_ALGO_SHA256);
-        } finally {
-            if (is_resource($publicKey)) {
-                openssl_free_key($publicKey);
-            }
+        $verified = openssl_verify($input, $signature, $publicKey, OPENSSL_ALGO_SHA256);
+        if (is_resource($publicKey)) {
+            openssl_free_key($publicKey);
         }
-
         if ($verified !== 1) {
             throw new RuntimeException('GitHub Actions OIDC signature is invalid.');
         }
     }
 
-    private function certificateForKid(string $kid, bool $forceRefresh): ?string
+    private function publicKeyForKid(string $kid, bool $forceRefresh): ?string
     {
         $jwks = $this->loadJwks($forceRefresh);
         foreach (($jwks['keys'] ?? []) as $key) {
@@ -152,14 +140,19 @@ final class GitHubActionsOidcVerifier
                 || (string)($key['alg'] ?? '') !== 'RS256') {
                 continue;
             }
+
             $chain = $key['x5c'] ?? null;
             $encodedCertificate = is_array($chain) ? trim((string)($chain[0] ?? '')) : '';
-            if ($encodedCertificate === '' || base64_decode($encodedCertificate, true) === false) {
-                continue;
+            if ($encodedCertificate !== '' && base64_decode($encodedCertificate, true) !== false) {
+                return "-----BEGIN CERTIFICATE-----\n"
+                    . chunk_split($encodedCertificate, 64, "\n")
+                    . "-----END CERTIFICATE-----\n";
             }
-            return "-----BEGIN CERTIFICATE-----\n"
-                . chunk_split($encodedCertificate, 64, "\n")
-                . "-----END CERTIFICATE-----\n";
+
+            $publicKey = RsaJwkPublicKey::toPem($key);
+            if ($publicKey !== null) {
+                return $publicKey;
+            }
         }
         return null;
     }
@@ -171,14 +164,13 @@ final class GitHubActionsOidcVerifier
             $modifiedAt = filemtime($cachePath) ?: 0;
             if ($modifiedAt > 0 && $this->now() - $modifiedAt <= self::JWKS_CACHE_SECONDS) {
                 $cached = $this->readJsonFile($cachePath);
-                if (is_array($cached['keys'] ?? null)) {
+                if (is_array($cached['keys'] ?? null) && $cached['keys'] !== []) {
                     return $cached;
                 }
             }
         }
 
-        $raw = $this->fetch(self::JWKS_URL);
-        $decoded = json_decode($raw, true, 64, JSON_THROW_ON_ERROR);
+        $decoded = json_decode($this->fetch(self::JWKS_URL), true, 64, JSON_THROW_ON_ERROR);
         if (!is_array($decoded) || !is_array($decoded['keys'] ?? null) || $decoded['keys'] === []) {
             throw new RuntimeException('GitHub Actions OIDC key set is invalid.');
         }
@@ -201,9 +193,7 @@ final class GitHubActionsOidcVerifier
 
         if (function_exists('curl_init')) {
             $curl = curl_init($url);
-            if ($curl === false) {
-                throw new RuntimeException('Could not initialize OIDC key request.');
-            }
+            if ($curl === false) throw new RuntimeException('Could not initialize OIDC key request.');
             curl_setopt_array($curl, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => false,
@@ -221,14 +211,12 @@ final class GitHubActionsOidcVerifier
             return $body;
         }
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 8,
-                'ignore_errors' => true,
-                'header' => "Accept: application/json\r\nUser-Agent: MiniGamesWorld-Staging-E2E/1.0\r\n",
-            ],
-        ]);
+        $context = stream_context_create(['http' => [
+            'method' => 'GET',
+            'timeout' => 8,
+            'ignore_errors' => true,
+            'header' => "Accept: application/json\r\nUser-Agent: MiniGamesWorld-Staging-E2E/1.0\r\n",
+        ]]);
         $body = @file_get_contents($url, false, $context);
         if (!is_string($body) || trim($body) === '') {
             throw new RuntimeException('OIDC key endpoint request failed.');
@@ -240,33 +228,24 @@ final class GitHubActionsOidcVerifier
     {
         $path = $this->privateDirectory() . '/used-jti.json';
         $handle = @fopen($path, 'c+');
-        if ($handle === false) {
-            throw new RuntimeException('OIDC replay registry is unavailable.');
-        }
+        if ($handle === false) throw new RuntimeException('OIDC replay registry is unavailable.');
         @chmod($path, 0600);
 
         try {
-            if (!flock($handle, LOCK_EX)) {
-                throw new RuntimeException('OIDC replay registry is busy.');
-            }
+            if (!flock($handle, LOCK_EX)) throw new RuntimeException('OIDC replay registry is busy.');
             rewind($handle);
             $raw = stream_get_contents($handle);
             $registry = ['schema_version' => 1, 'used' => []];
             if (is_string($raw) && trim($raw) !== '') {
                 $decoded = json_decode($raw, true);
-                if (!is_array($decoded)) {
-                    throw new RuntimeException('OIDC replay registry is invalid.');
-                }
+                if (!is_array($decoded)) throw new RuntimeException('OIDC replay registry is invalid.');
                 $registry['used'] = is_array($decoded['used'] ?? null) ? $decoded['used'] : [];
             }
 
             $now = $this->now();
             foreach ($registry['used'] as $hash => $storedExpiry) {
-                if ((int)$storedExpiry < $now - self::CLOCK_SKEW_SECONDS) {
-                    unset($registry['used'][$hash]);
-                }
+                if ((int)$storedExpiry < $now - self::CLOCK_SKEW_SECONDS) unset($registry['used'][$hash]);
             }
-
             $jtiHash = hash('sha256', 'github-actions-oidc|' . $jti);
             if (isset($registry['used'][$jtiHash])) {
                 throw new RuntimeException('GitHub Actions OIDC token replay was rejected.');
@@ -287,9 +266,7 @@ final class GitHubActionsOidcVerifier
     private function privateDirectory(): string
     {
         $dataDir = rtrim(trim((string)($this->config['data_dir'] ?? '')), '/\\');
-        if ($dataDir === '') {
-            throw new RuntimeException('OIDC private data directory is unavailable.');
-        }
+        if ($dataDir === '') throw new RuntimeException('OIDC private data directory is unavailable.');
         $directory = $dataDir . '/.runtime/staging-github-oidc';
         if (!is_dir($directory) && !@mkdir($directory, 0700, true) && !is_dir($directory)) {
             throw new RuntimeException('OIDC private data directory is unavailable.');
@@ -301,9 +278,7 @@ final class GitHubActionsOidcVerifier
     private function readJsonFile(string $path): array
     {
         $raw = @file_get_contents($path);
-        if (!is_string($raw) || trim($raw) === '') {
-            return [];
-        }
+        if (!is_string($raw) || trim($raw) === '') return [];
         $decoded = json_decode($raw, true);
         return is_array($decoded) ? $decoded : [];
     }
@@ -325,11 +300,8 @@ final class GitHubActionsOidcVerifier
 
     private function decodeJsonPart(string $encoded, string $label): array
     {
-        $decoded = $this->base64UrlDecode($encoded);
-        $value = json_decode($decoded, true, 64, JSON_THROW_ON_ERROR);
-        if (!is_array($value)) {
-            throw new RuntimeException('GitHub Actions OIDC ' . $label . ' is invalid.');
-        }
+        $value = json_decode($this->base64UrlDecode($encoded), true, 64, JSON_THROW_ON_ERROR);
+        if (!is_array($value)) throw new RuntimeException('GitHub Actions OIDC ' . $label . ' is invalid.');
         return $value;
     }
 
@@ -340,9 +312,7 @@ final class GitHubActionsOidcVerifier
         }
         $padding = (4 - strlen($encoded) % 4) % 4;
         $decoded = base64_decode(strtr($encoded . str_repeat('=', $padding), '-_', '+/'), true);
-        if ($decoded === false) {
-            throw new RuntimeException('GitHub Actions OIDC encoding is invalid.');
-        }
+        if ($decoded === false) throw new RuntimeException('GitHub Actions OIDC encoding is invalid.');
         return $decoded;
     }
 
