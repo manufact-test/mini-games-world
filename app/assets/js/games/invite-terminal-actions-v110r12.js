@@ -37,20 +37,26 @@ async function handleTerminalAction(event){
   try {
     const result = await inviteRequest(action, token);
     const invite = result?.invite && typeof result.invite === 'object' ? result.invite : { token };
-    const unreadCount = Math.max(0, Number(result?.unread_count || 0));
+    const rawUnreadCount = result?.unread_count;
+    const unreadCount = rawUnreadCount !== undefined && rawUnreadCount !== null
+      && Number.isFinite(Number(rawUnreadCount))
+      ? Math.max(0, Number(rawUnreadCount))
+      : null;
 
     if (notificationSurface) {
       const item = terminalNotificationItem(action, token, invite);
-      document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
-        detail:{ item, unreadCount, announce:false },
-      }));
+      const detail = { item, announce:false };
+      if (unreadCount !== null) detail.unreadCount = unreadCount;
+      document.dispatchEvent(new CustomEvent('mgw:notification-sync', { detail }));
     } else {
       closeSheet();
     }
 
-    document.dispatchEvent(new CustomEvent('mgw:notification-count', {
-      detail:{ unreadCount },
-    }));
+    if (unreadCount !== null) {
+      document.dispatchEvent(new CustomEvent('mgw:notification-count', {
+        detail:{ unreadCount },
+      }));
+    }
     document.dispatchEvent(new CustomEvent('mgw:invite-terminal-action-completed', {
       detail:{ action, token, invite, notificationSurface },
     }));
