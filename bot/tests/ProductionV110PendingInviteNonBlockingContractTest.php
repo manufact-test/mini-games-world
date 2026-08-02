@@ -39,7 +39,8 @@ $assert(
 $assert(
     str_contains($watch, "'invite' => null")
         && str_contains($watch, "'notification_pending' => \$pending")
-        && str_contains($watch, 'must not become currentInvite'),
+        && str_contains($watch, 'notification-only')
+        && !str_contains($watch, "'invite' => \$invite"),
     'The fast signal endpoint must not reintroduce a received pending invitation as currentInvite.'
 );
 $assert(
