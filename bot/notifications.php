@@ -19,6 +19,11 @@ function mgw_notification_invites_by_token(array $data): array
     return $result;
 }
 
+function mgw_notification_is_received_type(string $type): bool
+{
+    return in_array($type, ['invite_received', 'invite_rematch_received'], true);
+}
+
 function mgw_notification_is_visible(array $item, ?array $invite): bool
 {
     $type = (string)($item['type'] ?? '');
@@ -27,8 +32,18 @@ function mgw_notification_is_visible(array $item, ?array $invite): bool
     if (!is_array($invite)) return true;
 
     $status = (string)($invite['status'] ?? '');
-    if (in_array($type, ['invite_received', 'invite_rematch_received'], true)) {
-        return $status === 'pending';
+    if (mgw_notification_is_received_type($type)) {
+        if (in_array($status, ['pending', 'accepted'], true)) return true;
+        $notificationUserId = (string)($item['user_id'] ?? '');
+        if ($status === 'declined') {
+            return $notificationUserId !== ''
+                && (string)($invite['invitee_id'] ?? '') === $notificationUserId;
+        }
+        if ($status === 'cancelled') {
+            return $notificationUserId !== ''
+                && (string)($invite['cancelled_by'] ?? '') === $notificationUserId;
+        }
+        return false;
     }
     if ($type === 'invite_accepted') {
         return $status === 'accepted';
@@ -49,6 +64,34 @@ function mgw_notification_actions(array $item, ?array $invite, string $userId): 
     return [];
 }
 
+function mgw_notification_decorate(array $item, ?array $invite, string $userId): array
+{
+    if (!is_array($invite)) return $item;
+    $type = (string)($item['type'] ?? '');
+    if (!mgw_notification_is_received_type($type)) return $item;
+
+    $status = (string)($invite['status'] ?? '');
+    if ($status === 'accepted') {
+        $item['title'] = 'Приглашение принято';
+        $item['message'] = 'Ждём запуска матча от пригласившего игрока.';
+        $item['tone'] = 'success';
+        $item['read'] = true;
+    } elseif ($status === 'declined'
+        && (string)($invite['invitee_id'] ?? '') === $userId) {
+        $item['title'] = 'Приглашение отклонено';
+        $item['message'] = 'Приглашение больше недоступно.';
+        $item['tone'] = 'warning';
+        $item['read'] = true;
+    } elseif ($status === 'cancelled'
+        && (string)($invite['cancelled_by'] ?? '') === $userId) {
+        $item['title'] = 'Приглашение отменено';
+        $item['message'] = 'Приглашение больше недоступно.';
+        $item['tone'] = 'warning';
+        $item['read'] = true;
+    }
+    return $item;
+}
+
 function mgw_visible_notifications(
     array $data,
     NotificationService $notifications,
@@ -64,6 +107,7 @@ function mgw_visible_notifications(
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
         if (!mgw_notification_is_visible($item, $invite)) continue;
 
+        $item = mgw_notification_decorate($item, $invite, $userId);
         $item['actions'] = mgw_notification_actions($item, $invite, $userId);
         if (is_array($invite)) {
             $item['invite_status'] = (string)($invite['status'] ?? '');
@@ -87,7 +131,12 @@ function mgw_visible_unread_count(array $data, string $userId): int
 
         $token = (string)($notification['invite_token'] ?? '');
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
-        if (mgw_notification_is_visible($notification, $invite)) $count++;
+        if (!mgw_notification_is_visible($notification, $invite)) continue;
+
+        $type = (string)($notification['type'] ?? '');
+        $status = is_array($invite) ? (string)($invite['status'] ?? '') : '';
+        if (mgw_notification_is_received_type($type) && $status !== 'pending') continue;
+        $count++;
     }
     return $count;
 }
