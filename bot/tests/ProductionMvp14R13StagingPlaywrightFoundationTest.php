@@ -35,8 +35,9 @@ $assert(($decodedPackage['private'] ?? false) === true
 $assert(str_contains($workflow, "branches:\n      - agent/mvp-13-2-staging")
     && !str_contains($workflow, 'workflow_dispatch:')
     && str_contains($workflow, 'id-token: write')
-    && str_contains($workflow, 'contents: read'),
-    'The live browser workflow must run only on staging pushes with minimal OIDC permissions.');
+    && str_contains($workflow, 'contents: read')
+    && str_contains($workflow, 'statuses: write'),
+    'The live browser workflow must run only on staging pushes with minimal OIDC and status permissions.');
 
 $assert(str_contains($workflow, 'runs-on: ubuntu-latest')
     && str_contains($workflow, 'timeout-minutes: 18')
@@ -59,6 +60,23 @@ $assert(str_contains($workflow, 'actions/upload-artifact@v4')
     && str_contains($workflow, 'artifacts/playwright')
     && str_contains($workflow, 'retention-days: 7'),
     'Playwright traces, screenshots, videos and reports must be retained as bounded artifacts.');
+
+$assert(str_contains($workflow, 'Publish pending commit status')
+    && str_contains($workflow, 'Publish final commit status')
+    && str_contains($workflow, '--arg context staging-playwright-e2e')
+    && str_contains($workflow, '--arg state pending')
+    && str_contains($workflow, "state='success'")
+    && str_contains($workflow, "state='failure'")
+    && str_contains($workflow, "state='error'")
+    && str_contains($workflow, '/statuses/${{ github.sha }}')
+    && str_contains($workflow, 'if: always()'),
+    'The push workflow must publish one readable pending and final commit status for autonomous monitoring.');
+
+$assert(str_contains($workflow, 'GITHUB_TOKEN: ${{ github.token }}')
+    && str_contains($workflow, 'RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}')
+    && !str_contains($workflow, 'echo "${GITHUB_TOKEN}"')
+    && !str_contains($workflow, 'set -x'),
+    'Commit status publication must use only the ephemeral GitHub token without logging it.');
 
 $assert(str_contains($config, 'fullyParallel: false')
     && str_contains($config, 'workers: 1')

@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  statuses: write
 
 concurrency:
   group: mgw-staging-playwright-e2e
@@ -23,6 +24,26 @@ jobs:
       MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
 
     steps:
+      - name: Publish pending commit status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc \
+              --arg state pending \
+              --arg context staging-playwright-e2e \
+              --arg description 'Two-context staging browser test is running' \
+              --arg target_url "${RUN_URL}" \
+              '{state:$state,context:$context,description:$description,target_url:$target_url}')"
+
       - name: Checkout exact staging commit
         uses: actions/checkout@v4
         with:
@@ -92,3 +113,39 @@ jobs:
             staging-e2e-readiness.json
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Publish final commit status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          case "${JOB_STATUS}" in
+            success)
+              state='success'
+              description='Two-context staging browser test passed'
+              ;;
+            cancelled)
+              state='error'
+              description='Two-context staging browser test was cancelled'
+              ;;
+            *)
+              state='failure'
+              description='Two-context staging browser test failed'
+              ;;
+          esac
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc \
+              --arg state "${state}" \
+              --arg context staging-playwright-e2e \
+              --arg description "${description}" \
+              --arg target_url "${RUN_URL}" \
+              '{state:$state,context:$context,description:$description,target_url:$target_url}')"
