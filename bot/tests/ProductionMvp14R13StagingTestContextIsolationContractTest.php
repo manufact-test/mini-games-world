@@ -36,7 +36,7 @@ $assert(str_contains($presence, 'const presenceLeaseId = createPresenceLeaseId()
     && str_contains($presence, 'return `presence_${random}`;'),
     'Every opened test document must own a distinct presence lease.');
 
-$assert(str_contains($presenceEndpoint, "$payload['presenceLeaseId'] ?? ''")
+$assert(str_contains($presenceEndpoint, '$payload[\'presenceLeaseId\'] ?? \'\'')
     && str_contains($presenceEndpoint, '$presence->touch($accountId, $sessionId, $presenceLeaseId)')
     && str_contains($presenceEndpoint, '$presence->leave($accountId, $sessionId, $presenceLeaseId)'),
     'Presence transport must preserve the document lease through ping and leave.');
@@ -49,9 +49,9 @@ $assert(str_contains($authService, "'A' => [")
     && !str_contains($authService, "payload['accountId']"),
     'The broker must expose exactly two fixed identities without arbitrary account selection.');
 
-$assert(str_contains($authService, "hash('sha256', 'session|' . $sessionId)")
+$assert(str_contains($authService, 'hash(\'sha256\', \'session|\' . $sessionId)')
     && str_contains($authService, 'Staging test session replay was rejected.')
-    && str_contains($authService, "hash('sha256', 'device|' . $deviceId)"),
+    && str_contains($authService, 'hash(\'sha256\', \'device|\' . $deviceId)'),
     'A copied cookie must remain bound to its original session and device context.');
 
 $assert(str_contains($broker, 'HTTP_AUTHORIZATION')
@@ -61,7 +61,7 @@ $assert(str_contains($broker, 'HTTP_AUTHORIZATION')
     'Protected credentials and player slots must never be selected through a URL query.');
 
 $assert(str_contains($authService, "!== 'staging'")
-    && str_contains($authService, "self::STAGING_HOST")
+    && str_contains($authService, 'self::STAGING_HOST')
     && str_contains($authService, 'assertPaymentsDisabled()'),
     'Test context authentication must fail closed outside isolated non-live staging.');
 
