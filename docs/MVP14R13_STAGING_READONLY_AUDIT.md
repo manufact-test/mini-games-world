@@ -1,8 +1,9 @@
 # MVP-14R13.1 — READ-ONLY STAGING AUDIT
 
-Status: **IN PROGRESS — live public probe pending PR CI**  
+Status: **COMPLETE WITH EXTERNAL CONNECTIVITY BLOCKER**  
 Audit branch: `agent/mvp14r13-staging-readonly-audit`  
-Production changes: **none**
+Production changes: **none**  
+Staging changes: **none**
 
 ## 1. Exact repository state
 
@@ -18,10 +19,14 @@ Production changes: **none**
 | Safe Git operation available | non-forced fast-forward from staging head to an R13 integration commit based on current `main` |
 
 The last repository evidence that names the deployed staging revision also names
-`6e6bbcf7da3bfd5e517695e150d45f451a94b9e0`. A public GitHub Actions probe is
-included in this audit branch to compare the live Hostinger build markers with
-that recorded revision. Until that probe is complete, this is a documented
-last-known deployment, not an independently verified current deployment.
+`6e6bbcf7da3bfd5e517695e150d45f451a94b9e0`. The public audit attempted to
+compare live Hostinger markers with that recorded revision, but the GitHub-hosted
+runner could not establish an HTTPS connection to either staging or production.
+Therefore `6e6bbcf7...` remains the documented last-known staging deployment, not
+an independently verified live deployment.
+
+Exact connectivity evidence is stored in
+`docs/MVP14R13_STAGING_READONLY_AUDIT_EVIDENCE.md`.
 
 ## 2. Current topology map
 
@@ -90,9 +95,10 @@ current v1124 shell.
 ### External settings still requiring live evidence
 
 Repository code cannot prove the current BotFather Web App URL, registered
-webhook URL or Hostinger project branch selection. The R13.1 public probe proves
-public HTTP routing/build markers. BotFather and Hostinger dashboard values remain
-manual external evidence and are not guessed in this document.
+webhook URL, Hostinger project branch selection or Cron schedule. The public
+probe also could not reach either Hostinger project from GitHub-hosted Actions.
+These values must be confirmed at the first external R13.2 gate; they are not
+guessed in this document.
 
 ## 4. Config, storage and data boundaries
 
@@ -125,6 +131,22 @@ the two Hostinger projects having different external files, database credentials
 and data directories. Repository history proves the intended boundary; live
 private-file identity cannot be read through GitHub and must be proven through
 safe summaries/health output, never by exposing secrets.
+
+### Existing canonical environment guard
+
+`ConfigValidator` already requires staging to declare itself explicitly and
+provides these protections:
+
+- explicit staging host allowlist;
+- protected production-host metadata;
+- staging bot username and token isolation;
+- production bot-token hash comparison;
+- staging data directory may not equal production;
+- staging database fingerprint may not equal production;
+- live payment services are forbidden outside production;
+- forced browser development users are forbidden in production.
+
+These guards should be retained and extended, not replaced.
 
 ### Clean runtime boundary
 
@@ -176,6 +198,7 @@ an R13 integration branch created from the accepted `main`.
 - current canonical v110 application runtime from accepted `main`;
 - canonical `/bot/*.php` API contracts and game rules;
 - current DB-primary/storage safety architecture;
+- existing `ConfigValidator` isolation rules;
 - external private-config pattern;
 - existing staging Hostinger project;
 - existing staging Telegram Mini App/bot;
@@ -219,8 +242,10 @@ fail-closed environment/host guard. It must not be the user-facing staging route
 8. Fast-forward `agent/mvp-13-2-staging` to the exact accepted integration head;
    do not force-update before the rollback ref exists.
 9. Product owner performs one manual Hostinger staging Redeploy.
-10. Verify exact build ID, health, storage/DB isolation and staging Telegram route.
-11. Run non-destructive smoke before creating Player A/B auth.
+10. Verify exact build ID, health, storage/DB isolation and staging Telegram route
+    through a reachable manual or alternate-runner path.
+11. Confirm a browser/E2E runner can reach staging before creating Player A/B.
+12. Run non-destructive smoke before protected test authentication is enabled.
 
 ## 10. Rollback plan
 
@@ -257,21 +282,38 @@ R13.2 must verify in the staging Hostinger/BotFather configuration that:
 
 No webhook registration or Cron schedule is changed during R13.1.
 
-## 12. Public live probe
+## 12. Public live probe result
 
 Audit script:
 
 `scripts/audit/mvp14r13-staging-public-probe.sh`
 
-It performs unauthenticated GET requests only to public health/entry endpoints on
-both known hosts. It records HTTP status, redirect target, content type, selected
-safe JSON fields, build/script markers, body SHA and timing. It sends no cookie,
-auth header, token, request body or mutating request.
+The script performs unauthenticated GET requests only. It sends no cookie, auth
+header, token, request body or mutating request.
 
-The script runs only when `GITHUB_HEAD_REF` exactly equals this audit branch and
-its output is captured in the standard CI report.
+On CI run `#1328`, all normal repository checks passed. The runner then attempted
+nine public reads across both Hostinger projects. Every request timed out before
+an HTTP response while connecting to port 443.
 
-## 13. Current DoD state
+Therefore:
+
+```text
+LIVE BUILD MARKERS: NOT CAPTURED
+LIVE ENVIRONMENT SUMMARY: NOT CAPTURED
+LIVE STORAGE/DB SUMMARY: NOT CAPTURED
+GITHUB-HOSTED RUNNER REACHABILITY: BLOCKED
+```
+
+The failure is recorded as evidence, not interpreted as proof that the sites are
+down. The next version of the probe reports a complete two-host connectivity
+block as `external_network_blocked` without invalidating the repository suite.
+A partial network failure still fails CI.
+
+This changes the R13 execution topology: browser E2E cannot be declared ready on
+the existing GitHub-hosted runner until reachability is restored or an approved
+alternate/ephemeral runner is used.
+
+## 13. Final R13.1 DoD state
 
 - [x] staging branch/head known;
 - [x] production/staging Git relationship known;
@@ -282,10 +324,14 @@ its output is captured in the standard CI report.
 - [x] existing staging browser auth audited;
 - [x] exact synchronization plan written;
 - [x] exact rollback plan written;
-- [ ] live Hostinger build markers captured by PR CI;
-- [ ] current public health environment/storage summaries captured;
-- [ ] external BotFather/Hostinger webhook, WebApp URL and Cron values confirmed.
+- [x] public Hostinger probe executed and exact connectivity failure recorded;
+- [x] inability of the current GitHub-hosted runner to reach staging documented;
+- [x] external BotFather/Hostinger webhook, WebApp URL and Cron verification
+      assigned to the first manual/alternate-runner gate of R13.2;
+- [ ] live Hostinger build/environment/storage markers — blocked externally and
+      intentionally carried into R13.2 before any mutating staging test.
 
-R13.1 can close after the live probe is attached and the remaining external-only
-settings are explicitly assigned to the first manual gate of R13.2. No source or
-private data is modified by this audit.
+R13.1 is complete as a read-only audit. It found a real infrastructure blocker
+instead of silently assuming that the future Playwright runner could reach
+staging. R13.2 may begin with code-level parity and fail-closed guards, but no
+Player A/B browser E2E may be accepted until a reachable runner path is proven.
