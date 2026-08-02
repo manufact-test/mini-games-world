@@ -1,12 +1,17 @@
 import { APP_CONFIG } from '../config.js?v=38';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
-import { getSessionId } from '../session.js?v=21';
+import { getSessionId, getDeviceId } from '../session.js?v=21';
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), ...payload })
+    body:JSON.stringify({
+      initData:getInitData(),
+      sessionId:getSessionId(),
+      deviceId:getDeviceId(),
+      ...payload,
+    })
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
