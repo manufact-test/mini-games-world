@@ -17,6 +17,7 @@ $main = $read('app/assets/js/main-v110-handoff-shell.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
 $stats = $read('app/assets/js/stats-owner-v110.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
+$linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $home = $read('app/assets/js/screens/home-screen.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $auth = $read('bot/services/AuthService.php');
@@ -71,11 +72,16 @@ $assert(str_contains($presenceService, 'LEAVE_GRACE_SEC = 12')
 
 $assert(str_contains($inviteCreation, 'private function isNotificationOnlyPendingInvite(?array $invite): bool')
     && str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($activeInvite)) $activeInvite = null;')
-    && str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($trackedInvite)) $trackedInvite = null;')
+    && str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($candidate))')
+    && str_contains($inviteCreation, '$openedInvite = $candidate;')
+    && str_contains($inviteCreation, '$trackedInvite = $candidate;')
+    && str_contains($inviteCreation, "'opened_invite' => \$openedInvite")
     && str_contains($inviteCreation, "'invite_events' => \$this->inviteEventsForUser(\$db, \$userId)")
     && str_contains($inviteWatch, "'invite' => null")
-    && str_contains($inviteWatch, "'notification_pending' => \$pending"),
-    'A pending received invitation must remain in notification events but never become current or tracked invite state that intercepts unrelated games.');
+    && str_contains($inviteWatch, "'notification_pending' => \$pending")
+    && str_contains($linkEntry, 'const invite = result?.opened_invite || null;')
+    && !str_contains($linkEntry, 'currentInvite ='),
+    'A received pending invite must stay outside current/tracked state; Telegram may consume one opened_invite payload without blocking unrelated games.');
 
 $assert(str_contains($invites, 'function hasActionableInvite()')
     && str_contains($invites, 'mgw:before-game-launch')

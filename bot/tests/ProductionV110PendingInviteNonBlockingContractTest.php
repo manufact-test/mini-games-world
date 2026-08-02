@@ -19,12 +19,17 @@ $watch = $read('bot/invite-watch.php');
 $endpoint = $read('bot/invites.php');
 $notifications = $read('bot/notifications.php');
 $client = $read('app/assets/js/games/game-invites-v110.js');
+$linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 
 $assert(
     str_contains($creation, '$activeInvite = $this->activeForUser($db, $userId);')
         && str_contains($creation, 'if ($this->isNotificationOnlyPendingInvite($activeInvite)) $activeInvite = null;')
-        && str_contains($creation, 'if ($this->isNotificationOnlyPendingInvite($trackedInvite)) $trackedInvite = null;'),
-    'Pending received invitations must not be exposed as current or tracked invitation state.'
+        && str_contains($creation, '$openedInvite = null;')
+        && str_contains($creation, 'if ($this->isNotificationOnlyPendingInvite($candidate))')
+        && str_contains($creation, '$openedInvite = $candidate;')
+        && str_contains($creation, '$trackedInvite = $candidate;')
+        && str_contains($creation, "'opened_invite' => \$openedInvite"),
+    'Pending received invitations must stay out of current/tracked state while a tracked Telegram token may expose one one-shot opened_invite payload.'
 );
 $assert(
     str_contains($creation, "'invite_events' => \$this->inviteEventsForUser(\$db, \$userId)")
@@ -53,8 +58,10 @@ $assert(
     str_contains($openLinkBlock, '$invites->bindFromLink($data, $user, $token, true, false);')
         && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
         && !str_contains($openLinkBlock, '$core[\'invite\'] = $boundInvite;')
-        && !str_contains($openLinkBlock, '$boundInvite ='),
-    'Opening a Telegram invitation link must keep the bound pending invite notification-only instead of restoring currentInvite.'
+        && !str_contains($openLinkBlock, '$boundInvite =')
+        && str_contains($linkEntry, 'const invite = result?.opened_invite || null;')
+        && !str_contains($linkEntry, 'currentInvite ='),
+    'Opening a Telegram link may paint one opened_invite sheet but must not restore current or tracked client invite state.'
 );
 $assert(
     str_contains($notifications, "return in_array(\$status, ['pending', 'accepted'], true);")

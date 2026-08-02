@@ -25,7 +25,8 @@ import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initInviteTerminalActions } from './games/invite-terminal-actions-v110r12.js?v=1122';
-import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites-v110.js?v=1114';
+import { initGameInvites } from './games/game-invites-v110.js?v=1114';
+import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
@@ -100,7 +101,7 @@ async function boot(){
     if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
       enterGame(result.active_game, result.me || null);
     } else {
-      await openIncomingInviteIfPresent();
+      await openIncomingInviteFromTelegram();
     }
 
     startStatsPolling();
