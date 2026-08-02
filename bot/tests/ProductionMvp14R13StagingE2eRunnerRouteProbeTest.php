@@ -52,10 +52,16 @@ $assert(str_contains($source, "'secrets_used': False")
     && str_contains($source, "'state_changed': False"),
     'The safe report must explicitly declare that no secret or state change was involved.');
 
-$assert(str_contains($source, 'actions/upload-artifact@v4')
-    && !str_contains($source, 'route-probe/readiness.json\n')
-    && !str_contains($source, 'route-probe/routing.json\n')
-    && !str_contains($source, 'route-probe/app.html\n'),
+$artifactMarker = "      - name: Upload safe route report\n";
+$artifactOffset = strpos($source, $artifactMarker);
+$artifactSection = $artifactOffset === false ? '' : substr($source, $artifactOffset);
+$assert($artifactSection !== ''
+    && str_contains($artifactSection, 'actions/upload-artifact@v4')
+    && str_contains($artifactSection, 'route-probe/safe-report.json')
+    && str_contains($artifactSection, 'route-probe/auth-get-status.txt')
+    && !str_contains($artifactSection, 'route-probe/readiness.json')
+    && !str_contains($artifactSection, 'route-probe/routing.json')
+    && !str_contains($artifactSection, 'route-probe/app.html'),
     'Artifacts must contain only the reduced safe report, DNS evidence and status code.');
 
 fwrite(STDOUT, "ProductionMvp14R13StagingE2eRunnerRouteProbeTest: {$assertions} assertions passed\n");
