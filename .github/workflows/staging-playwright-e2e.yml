@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - agent/mvp-13-2-staging
-  workflow_dispatch:
 
 permissions:
   contents: read
