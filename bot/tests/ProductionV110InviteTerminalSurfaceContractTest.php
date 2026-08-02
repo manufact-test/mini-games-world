@@ -29,7 +29,7 @@ $assert(
     'A decline inside the notification center must update the existing card without announcing another toast.'
 );
 $assert(
-    str_contains($actions, '} else {\n      closeSheet();\n    }')
+    str_contains($actions, "} else {\n      closeSheet();\n    }")
         && !str_contains($actions, "toast('Приглашение отклонено.')"),
     'A decline inside the standalone invitation sheet must close silently instead of rendering a terminal confirmation sheet.'
 );
