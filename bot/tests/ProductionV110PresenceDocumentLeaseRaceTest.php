@@ -46,17 +46,17 @@ try {
     $presence->touch('200', 'phone-device', 'new-page');
     $presence->leave('200', 'phone-device', 'old-page');
     $expireLease('200', 'phone-device', 'old-page');
-    $assert(
-        $stats->build($db)['online_players'] === 2,
-        'A delayed leave from the old Telegram document must not turn the newly opened document offline.'
-    );
+    $assert($stats->build($db)['online_players'] === 2,
+        'A delayed leave from the old Telegram document must not turn the new document offline.');
 
     $presence->leave('200', 'phone-device', 'new-page');
     $expireLease('200', 'phone-device', 'new-page');
-    $assert($stats->build($db)['online_players'] === 1, 'The account may leave only after its final live document lease expires.');
+    $assert($stats->build($db)['online_players'] === 1,
+        'The account may leave only after its final live document lease expires.');
 
     $presence->touch('200', 'legacy-device');
-    $assert($stats->build($db)['online_players'] === 2, 'Legacy two-argument presence calls must remain compatible.');
+    $assert($stats->build($db)['online_players'] === 2,
+        'Legacy two-argument presence calls must remain compatible.');
 
     $client = $read('app/assets/js/production-v110-presence.js');
     $endpoint = $read('bot/presence.php');
@@ -67,14 +67,20 @@ try {
         && str_contains($client, 'presenceLeaseId,')
         && str_contains($client, 'function createPresenceLeaseId()'),
         'The canonical client presence owner must keep one unique lease for each app document.');
+    $assert(str_contains($client, "// Presence transport starts before the profile bootstrap.")
+        && str_contains($client, "  startPresence();\n}")
+        && str_contains($client, "if (runtime.pingBusy || document.visibilityState !== 'visible') return false;")
+        && !str_contains($client, "runtime.pingBusy || !runtime.appReady"),
+        'A new document must register its lease before profile bootstrap completes.');
     $assert(str_contains($endpoint, '$presenceLeaseId = clean_string($payload[\'presenceLeaseId\'] ?? \'\', 120);')
         && str_contains($endpoint, '$presence->touch($accountId, $sessionId, $presenceLeaseId);')
         && str_contains($endpoint, '$presence->leave($accountId, $sessionId, $presenceLeaseId);'),
-        'The canonical endpoint must route ping and leave through the same document lease.');
+        'The endpoint must route ping and leave through the same document lease.');
     $assert(str_contains($service, 'string $presenceLeaseId = \'\'')
-        && str_contains($service, '$sessionId . "\\0presence:" . $presenceLeaseId'),
-        'Presence storage must isolate documents while retaining the legacy session format.');
-    $assert(str_contains($shell, 'production-v110-presence.js?v=1116'),
+        && str_contains($service, '$sessionId . "\\0presence:" . $presenceLeaseId')
+        && str_contains($service, 'private const LEAVE_GRACE_SEC = 12;'),
+        'Presence storage must isolate documents and keep a bounded Telegram handoff grace.');
+    $assert(str_contains($shell, 'production-v110-presence.js?v=1120'),
         'The active shell must load the document-scoped presence owner.');
 } finally {
     $remove = static function (string $path) use (&$remove): void {

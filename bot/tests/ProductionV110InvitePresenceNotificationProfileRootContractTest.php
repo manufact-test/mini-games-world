@@ -7,7 +7,6 @@ $read = static function (string $path) use ($root): string {
     if (!is_string($content)) throw new RuntimeException('Cannot read production v110 source: ' . $path);
     return $content;
 };
-
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
@@ -19,7 +18,7 @@ $auth = $read('bot/services/AuthService.php');
 $api = $read('bot/api.php');
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $legacyProfile = $read('app/assets/js/screens/profile-screen.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $main = $read('app/assets/js/main-v110.js');
 $clean = $read('app/assets/js/production-clean-entry-v110.js');
@@ -30,43 +29,44 @@ $assert(!str_contains($presence, 'sys_get_temp_dir'), 'Presence must not use wor
 $assert(str_contains($presence, "\$GLOBALS['config']['data_dir']")
     && str_contains($presence, "'.runtime'")
     && str_contains($presence, "'presence'"),
-    'Every presence reader and writer must derive one configured shared runtime root.');
+    'Every presence reader and writer must derive one shared runtime root.');
 $assert(!str_contains($auth, 'touchAuthenticatedPresence')
     && str_contains($api, "\$action === 'bootstrap'")
-    && str_contains($api, '$presenceService->touch('),
-    'Successful normal and invitation launches must confirm presence only through authenticated bootstrap.');
-$assert(str_contains($api, 'Mini Games World bootstrap presence failed:'),
-    'A presence storage failure must never become an authentication failure.');
+    && str_contains($api, '$presenceService->touch(')
+    && str_contains($api, 'Mini Games World bootstrap presence failed:'),
+    'Presence confirmation must remain isolated from authentication failure.');
 
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r5.js?v=1115'),
-    'The active graph must have exactly one notification owner and no click interceptor.');
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
+    && !str_contains($shell, 'notifications-screen-v110r5.js'),
+    'The active graph must have exactly one current notification owner.');
 $assert(!str_contains($clean, 'initV109SelfCancelRefreshGuard')
     && !str_contains($clean, 'initV109ShareSpeed')
     && !str_contains($clean, 'initV109ShareFallbackGuard')
     && !str_contains($clean, 'initV99InvitePickerHold'),
-    'Inactive self-cancel, share and picker layers must not remain in the active graph.');
-$assert(str_contains($notifications, "event.target.closest('#notificationsOpen')")
-    && str_contains($notifications, 'void openNotificationsSheet(currentItems());')
-    && str_contains($notifications, 'isCurrentNotificationsSheet(generation)'),
-    'The notification owner must open immediately and reject late rendering into a closed sheet.');
+    'Inactive self-cancel, share and picker layers must stay inactive.');
+$assert(str_contains($notifications, 'sheetState.generation')
+    && str_contains($notifications, 'isCurrentSheet(generation)')
+    && str_contains($notifications, 'LOCAL_AUTHORITY_MS = 12000')
+    && str_contains($notifications, 'CLOSE_GUARD_MS = 1100'),
+    'The notification owner must reject late rendering and stale response replacement.');
 
 $assert(str_contains($profile, "PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1'")
     && str_contains($profile, 'renderProfileStats(state.profileStats || null);')
     && !str_contains($legacyProfile, 'PROFILE_STATS_CACHE_KEY'),
     'The accepted isolated profile first frame must remain unchanged.');
 
-$build = 'v110-mvp14r11-mobile-toast-authority';
+$build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(str_contains($shell, $build)
     && str_contains($main, $build)
     && str_contains($clean, $build)
     && str_contains($entry, $build),
-    'Every active v110 entry owner must share the same build identity.');
-$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1115')
-    && str_contains($entry, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($entry, 'main-v110.js?v=1115')
-    && str_contains($launch, '/app/v110.php?v=1115'),
-    'Telegram launch and active modules must use the fresh outer revision.');
+    'Every active outer entry owner must share the same build identity.');
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1120')
+    && str_contains($entry, 'production-clean-entry-v110.js?v=1120')
+    && str_contains($entry, 'main-v110.js?v=1120')
+    && str_contains($launch, '/app/v110.php?v=1120'),
+    'Telegram launch and active modules must use the clean canonical outer revision.');
 
 fwrite(STDOUT, 'ProductionV110InvitePresenceNotificationProfileRootContractTest: ' . $assertions . " assertions passed\n");

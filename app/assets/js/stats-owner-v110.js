@@ -12,8 +12,9 @@ export function beginStatsRequest(){
 }
 
 export function applyStatsSnapshot(ticket, stats){
+  if (!stats || typeof stats !== 'object') return false;
   const sequence = Number(ticket || 0);
-  if (!stats || typeof stats !== 'object' || sequence <= 0) return false;
+  if (!Number.isFinite(sequence) || sequence <= 0) return false;
   if (sequence < runtime.applied) return false;
 
   runtime.applied = sequence;

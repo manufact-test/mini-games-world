@@ -78,7 +78,7 @@ $assert(
         && str_contains($presenceService, '$leaseKey = $presenceLeaseId === \'\'')
         && str_contains($presenceService, "'session-' . hash('sha256', \$leaseKey) . '.presence")
         && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 75;')
-        && str_contains($presenceService, 'private const LEAVE_GRACE_SEC = 4;')
+        && str_contains($presenceService, 'private const LEAVE_GRACE_SEC = 12;')
         && str_contains($presenceService, "'leave_after'")
         && str_contains($presenceService, 'readSessionState(')
         && !str_contains($presenceService, 'presence_sessions')

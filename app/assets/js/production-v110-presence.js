@@ -1,6 +1,6 @@
 import { getInitData, getTelegram } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
-import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1110';
+import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1120';
 
 const PRESENCE_URL = `${window.location.origin}/bot/presence.php`;
 const HEARTBEAT_MS = 4000;
@@ -31,7 +31,7 @@ export function initV110Presence(){
 
   document.addEventListener('mgw:app-ready', () => {
     runtime.appReady = true;
-    startPresence();
+    resumePresence(true);
   }, { once:true });
 
   document.addEventListener('visibilitychange', () => {
@@ -51,10 +51,15 @@ export function initV110Presence(){
   if (typeof telegram?.onEvent === 'function') {
     try { telegram.onEvent('activated', () => resumePresence(true)); } catch (error) {}
   }
+
+  // Presence transport starts before the profile bootstrap. The newly opened
+  // Telegram document therefore owns a live lease while the old document is
+  // still inside its bounded leave grace, instead of appearing offline between
+  // the two documents.
+  startPresence();
 }
 
 function startPresence(){
-  if (!runtime.appReady) return;
   if (!runtime.started) {
     runtime.started = true;
     runtime.heartbeatTimer = window.setInterval(() => {
@@ -68,7 +73,7 @@ function startPresence(){
 }
 
 function resumePresence(force = false){
-  if (!runtime.appReady || document.visibilityState !== 'visible') return;
+  if (document.visibilityState !== 'visible') return;
   runtime.left = false;
   window.clearTimeout(runtime.retryTimer);
   runtime.retryTimer = null;
@@ -88,7 +93,7 @@ function cancelInFlightRequests(){
 }
 
 async function pingPresence(){
-  if (runtime.pingBusy || !runtime.appReady || document.visibilityState !== 'visible') return false;
+  if (runtime.pingBusy || document.visibilityState !== 'visible') return false;
 
   const requestId = ++runtime.pingRequestId;
   const controller = new AbortController();
@@ -142,7 +147,7 @@ async function refreshStatus(){
 }
 
 function scheduleRetry(){
-  if (runtime.retryTimer || !runtime.appReady || document.visibilityState !== 'visible') return;
+  if (runtime.retryTimer || document.visibilityState !== 'visible') return;
   runtime.retryTimer = window.setTimeout(() => {
     runtime.retryTimer = null;
     void pingPresence();
@@ -150,7 +155,7 @@ function scheduleRetry(){
 }
 
 function canReadHomeStatus(){
-  if (document.visibilityState !== 'visible') return false;
+  if (!runtime.appReady || document.visibilityState !== 'visible') return false;
   const active = document.querySelector('.screen.active');
   return String(active?.dataset.screen || '') === 'home';
 }

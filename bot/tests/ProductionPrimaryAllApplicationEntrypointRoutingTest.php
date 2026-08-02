@@ -32,6 +32,7 @@ $expected = [
     'bot/invites.php' => 'invites',
     'bot/notifications.php' => 'notifications',
     'bot/invite-opponents.php' => 'invite_opponents',
+    'bot/presence.php' => 'presence',
     'bot/game-clock.php' => 'game_clock',
     'bot/game-live-v108.php' => 'game_live_v108',
     'bot/search-speed.php' => 'search_speed',
@@ -106,11 +107,12 @@ $coordinator = file_get_contents($root . '/runtime/ProductionPrimaryRuntimeCoord
 $context = file_get_contents($root . '/runtime/ProductionPrimaryEntrypointStorageContext.php');
 $invites = file_get_contents($root . '/invites.php');
 $notifications = file_get_contents($root . '/notifications.php');
+$presence = file_get_contents($root . '/presence.php');
 $gameClock = file_get_contents($root . '/game-clock.php');
 $gameLive = file_get_contents($root . '/game-live-v108.php');
 $searchSpeed = file_get_contents($root . '/search-speed.php');
 $weekly = file_get_contents($root . '/cron/weekly-match.php');
-foreach ([$storageFactory, $bootstrap, $coordinator, $context, $invites, $notifications, $gameClock, $gameLive, $searchSpeed, $weekly] as $source) {
+foreach ([$storageFactory, $bootstrap, $coordinator, $context, $invites, $notifications, $presence, $gameClock, $gameLive, $searchSpeed, $weekly] as $source) {
     $assertTrue(is_string($source) && $source !== '', 'Routing contract source file must be readable');
 }
 
@@ -158,6 +160,11 @@ $assertContains(
     '$legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();',
     $notifications,
     'Notification endpoint must suppress legacy synchronize-and-list writes under atomic production storage'
+);
+$assertContains(
+    'StorageFactory::createJson(',
+    $presence,
+    'Presence heartbeat and status must use the same guarded production storage selector as bootstrap'
 );
 $assertContains(
     'StorageFactory::createJson(',

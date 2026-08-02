@@ -53,13 +53,13 @@ $assert($toastStart !== false
     && $immediatePaint !== false
     && $generationRefresh !== false
     && $immediatePaint < $generationRefresh,
-    'The exact blue-toast item must enter the single sheet owner, paint cached data and then refresh within its generation.');
+    'The exact blue-toast item must enter the retained rollback sheet owner, paint cached data and then refresh within its generation.');
 
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
     && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
     'The active graph must retain one notification owner and one non-rendering PvP transport.');
-$assert(str_contains($launch, '/app/v110.php?v=1115'),
-    'Telegram launches must use the current R11 outer revision.');
+$assert(str_contains($launch, '/app/v110.php?v=1120'),
+    'Telegram launches must use the current clean R12 outer revision.');
 
 fwrite(STDOUT, 'ProductionV110PvpResultNotificationRootContractTest: ' . $assertions . " assertions passed\n");
