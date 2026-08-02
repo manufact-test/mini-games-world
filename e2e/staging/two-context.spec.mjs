@@ -117,13 +117,37 @@ function collectDiagnostics(page, slot) {
   return report;
 }
 
+function isBootstrapResponse(response) {
+  if (response.url() !== API_ROUTE || response.request().method() !== 'POST') {
+    return false;
+  }
+  try {
+    return response.request().postDataJSON()?.action === 'bootstrap';
+  } catch {
+    return false;
+  }
+}
+
+async function waitForApplicationBootstrap(page, slot) {
+  const response = await page.waitForResponse(isBootstrapResponse, { timeout: 35_000 });
+  const payload = await response.json().catch(() => null);
+  const publicError = typeof payload?.error === 'string' ? payload.error.slice(0, 300) : 'no_public_error';
+  expect(
+    response.status(),
+    `Player ${slot} bootstrap status; public error: ${publicError}`,
+  ).toBe(200);
+  expect(payload?.ok, `Player ${slot} bootstrap payload`).toBe(true);
+  expect(payload?.user, `Player ${slot} bootstrap user`).toBeTruthy();
+  return payload;
+}
+
 async function readPlayerSnapshot(page) {
   await page.waitForFunction(() => (
     typeof localStorage.getItem('mgw_device_session_id') === 'string'
     && localStorage.getItem('mgw_device_session_id').length > 0
     && typeof localStorage.getItem('mgw_device_id') === 'string'
     && localStorage.getItem('mgw_device_id').length > 0
-  ));
+  ), null, { timeout: 20_000 });
 
   return page.evaluate(async () => {
     const sessionId = localStorage.getItem('mgw_device_session_id');
@@ -141,10 +165,11 @@ async function readPlayerSnapshot(page) {
         deviceId,
       }),
     });
-    const payload = await response.json();
+    const payload = await response.json().catch(() => null);
     return {
       status: response.status,
       ok: payload?.ok === true,
+      error: typeof payload?.error === 'string' ? payload.error.slice(0, 300) : null,
       user: payload?.user || null,
       session: payload?.session || null,
       sessionId,
@@ -167,15 +192,20 @@ async function openPlayer(browser, slot, testInfo) {
   const cookie = await authorizeContext(context, slot);
   const page = await context.newPage();
   const diagnostics = collectDiagnostics(page, slot);
+  const bootstrapPromise = waitForApplicationBootstrap(page, slot);
 
   const response = await page.goto(APP_ROUTE, { waitUntil: 'domcontentloaded' });
   expect(response, `Player ${slot} app response`).not.toBeNull();
   expect(response.ok(), `Player ${slot} app status`).toBe(true);
   await expect(page).toHaveTitle(/Mini Games World/i);
   await expect(page.locator('body')).toBeVisible();
+  await bootstrapPromise;
 
   const snapshot = await readPlayerSnapshot(page);
-  expect(snapshot.status).toBe(200);
+  expect(
+    snapshot.status,
+    `Player ${slot} profile status; public error: ${snapshot.error || 'no_public_error'}`,
+  ).toBe(200);
   expect(snapshot.ok).toBe(true);
   expect(snapshot.user).toBeTruthy();
   expect(snapshot.session?.locked ?? false).toBe(false);
