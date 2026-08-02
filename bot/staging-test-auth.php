@@ -89,7 +89,7 @@ try {
 
     throw new RuntimeException('Unknown staging test authorization action.');
 } catch (Throwable $error) {
-    error_log('[MiniGamesWorld staging test auth] ' . $error->getMessage());
+    error_log('[MiniGamesWorld staging test auth] denied: ' . get_class($error));
     http_response_code(403);
     echo json_encode([
         'ok' => false,
