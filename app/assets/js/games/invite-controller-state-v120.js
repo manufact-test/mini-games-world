@@ -37,10 +37,12 @@ export function applyInviteSnapshot(state, result, { announce = false } = {}) {
   const fresh = [];
 
   for (const item of events) {
+    removeSupersededInviteNotifications(state, item);
     const previous = state.notifications.get(item.id) || {};
     const merged = normalizeNotification({ ...previous, ...item });
     state.notifications.set(merged.id, merged);
     rememberLocalAuthority(state, merged);
+    if (!announce) markNotificationAnnounced(state, merged.id);
     if (announce && shouldAnnounceNotification(state, merged)) fresh.push(cloneValue(merged));
   }
 
@@ -54,12 +56,18 @@ export function applyInviteSnapshot(state, result, { announce = false } = {}) {
 export function applyNotificationSnapshot(state, result, { announce = false } = {}) {
   const serverItems = normalizeItems(result?.items);
   pruneLocalAuthority(state);
+  const terminalTokens = new Set(
+    serverItems.filter(isTerminalInviteNotification).map(item => String(item.invite_token || '')).filter(Boolean)
+  );
+  for (const token of terminalTokens) removeNotificationStateByToken(state, token);
   const next = new Map();
 
   for (const item of serverItems) {
+    if (item.invite_token && terminalTokens.has(item.invite_token) && !isTerminalInviteNotification(item)) continue;
     const previous = state.notifications.get(item.id) || equivalentNotification(state, item) || {};
     const merged = normalizeNotification({ ...previous, ...item });
     next.set(merged.id, merged);
+    if (!announce) markNotificationAnnounced(state, merged.id);
   }
 
   // Fresh invite events received from the invite channel are locally authoritative
@@ -138,6 +146,7 @@ export function removeInviteNotifications(state, token) {
 export function upsertNotification(state, value) {
   const item = normalizeNotification(value);
   if (!item.id) return null;
+  removeSupersededInviteNotifications(state, item);
   const equivalent = equivalentNotification(state, item);
   if (equivalent?.id && equivalent.id !== item.id) state.notifications.delete(equivalent.id);
   const previous = state.notifications.get(item.id) || equivalent || {};
@@ -228,6 +237,31 @@ function completeInviteActions(item) {
   }
   if (status === 'accepted') return item.invite_is_owner ? ['start', 'cancel'] : ['cancel'];
   return [];
+}
+
+function removeSupersededInviteNotifications(state, item) {
+  if (!isTerminalInviteNotification(item)) return;
+  removeNotificationStateByToken(state, String(item.invite_token || ''));
+}
+
+function removeNotificationStateByToken(state, token) {
+  const target = String(token || '');
+  if (!target) return;
+  for (const [id, value] of state.notifications.entries()) {
+    if (String(value?.invite_token || '') === target) state.notifications.delete(id);
+  }
+  for (const [key, entry] of state.localAuthority.entries()) {
+    if (String(entry?.item?.invite_token || '') === target) state.localAuthority.delete(key);
+  }
+}
+
+function isTerminalInviteNotification(item) {
+  const type = String(item?.type || '');
+  const status = String(item?.invite_status || '');
+  return Boolean(item?.invite_token) && (
+    ['invite_declined', 'invite_cancelled', 'invite_expired', 'invite_timed_out'].includes(type)
+      || ['declined', 'cancelled', 'expired', 'timed_out'].includes(status)
+  );
 }
 
 function rememberLocalAuthority(state, item) {
