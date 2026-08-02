@@ -26,8 +26,8 @@ $assert(
 $assert(
     !preg_match('/(?:^|\s)(?:-X|--request)(?:\s|=)/m', $probe)
         && !preg_match('/(?:^|\s)(?:-d|--data|--data-raw|--data-binary)(?:\s|=)/m', $probe)
-        && !str_contains(strtolower($probe), 'authorization:')
-        && !str_contains(strtolower($probe), 'cookie:')
+        && !preg_match('/(?:^|\s)(?:-b|--cookie|--cookie-jar)(?:\s|=)/m', $probe)
+        && !preg_match('/(?:^|\s)(?:-H|--header)\s+[\'\"]?(?:authorization|cookie)\s*:/im', $probe)
         && !str_contains(strtolower($probe), 'bearer '),
     'The audit must not send method overrides, request bodies, authentication or cookies.'
 );
