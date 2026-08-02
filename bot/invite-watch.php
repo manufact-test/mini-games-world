@@ -13,7 +13,15 @@ try {
     if ($userId === '') throw new RuntimeException('Пользователь не найден.');
 
     $invite = (new InviteSignalService($config))->latest($userId);
-    api_ok(['invite' => $invite]);
+    $pending = is_array($invite) && (string)($invite['status'] ?? '') === 'pending';
+
+    // Pending received invitations are notification-only. The canonical sync
+    // response still carries their invite_events and unread count, but they must
+    // not become currentInvite and intercept unrelated game launches.
+    api_ok([
+        'invite' => null,
+        'notification_pending' => $pending,
+    ]);
 } catch (Throwable $e) {
     api_error($e->getMessage());
 }
