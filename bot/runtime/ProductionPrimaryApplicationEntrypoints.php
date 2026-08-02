@@ -9,6 +9,7 @@ final class ProductionPrimaryApplicationEntrypoints
         'bot/invites.php' => 'invites',
         'bot/notifications.php' => 'notifications',
         'bot/invite-opponents.php' => 'invite_opponents',
+        'bot/presence.php' => 'presence',
         'bot/game-clock.php' => 'game_clock',
         'bot/game-live-v108.php' => 'game_live_v108',
         'bot/search-speed.php' => 'search_speed',
