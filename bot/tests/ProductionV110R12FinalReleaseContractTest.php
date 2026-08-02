@@ -19,6 +19,7 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $clean = $read('app/assets/js/production-clean-entry-v110.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $terminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
+$notificationEndpoint = $read('bot/notifications.php');
 $stats = $read('app/assets/js/stats-owner-v110.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
 $presenceService = $read('bot/services/PresenceService.php');
@@ -60,14 +61,27 @@ $assert(
         && str_contains($notifications, 'LOCAL_AUTHORITY_MS = 12000'),
     'A tapped blue toast must remain visible while a slower server response reconciles.'
 );
+$closePosition = strpos($terminal, 'closeSheet();');
+$requestPosition = strpos($terminal, 'const result = await inviteRequest(action, token);');
 $assert(
     str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1120')
-        && str_contains($terminal, 'const notificationSurface = isNotificationSurface(button);')
-        && str_contains($terminal, 'if (notificationSurface) {')
-        && str_contains($terminal, 'closeSheet();')
+        && $closePosition !== false
+        && $requestPosition !== false
+        && $closePosition < $requestPosition
+        && str_contains($terminal, "new CustomEvent('mgw:notification-remove'")
+        && !str_contains($terminal, 'terminalNotificationItem(')
+        && !str_contains($terminal, "new CustomEvent('mgw:notification-sync'")
         && !str_contains($terminal, 'Вы отклонили это приглашение.')
         && !str_contains($terminal, 'Вы отменили это приглашение.'),
-    'Notification-card terminal actions must stay in place while standalone invitation sheets close silently.'
+    'Decline and cancel must close before the network response and remove actor notification state without a success sheet or toast.'
+);
+$assert(
+    str_contains($notifications, 'function removeInviteNotification(detail)')
+        && str_contains($notifications, 'localAuthority.delete(key)')
+        && str_contains($notifications, 'sheetState.pinned.delete(key)')
+        && !str_contains($notifications, 'function applyInviteActionResult(')
+        && str_contains($notificationEndpoint, "return in_array(\$status, ['pending', 'accepted'], true);"),
+    'Actor terminal invitations must be removed from local state and excluded by the authoritative notification endpoint.'
 );
 $assert(
     !file_exists($wrapperPath)
@@ -106,9 +120,9 @@ $assert(
     'Telegram reopen continuity and online statistics must be owned by document-scoped presence, not UI masking.'
 );
 $homePosition = strpos($lifecycle, "showScreen('home');");
-$requestPosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
+$leavePosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');
 $assert(
-    $homePosition !== false && $requestPosition !== false && $homePosition < $requestPosition
+    $homePosition !== false && $leavePosition !== false && $homePosition < $leavePosition
         && !str_contains($lifecycle, 'openSheet('),
     'Immediate manual game cancellation must still return to the main menu before the network response.'
 );
