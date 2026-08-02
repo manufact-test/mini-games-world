@@ -25,7 +25,7 @@ $assert(
 $assert(
     str_contains($actions, "sheet.querySelector('[data-notifications-owner=\"r12\"]')")
         && str_contains($actions, 'if (notificationSurface) {')
-        && str_contains($actions, 'detail:{ item, unreadCount, announce:false }'),
+        && str_contains($actions, 'announce:false'),
     'A decline inside the notification center must update the existing card without announcing another toast.'
 );
 $assert(
@@ -38,6 +38,12 @@ $assert(
         && !str_contains($actions, 'Вы отклонили это приглашение.')
         && !str_contains($actions, 'Вы отменили это приглашение.'),
     'The retained notification card must describe terminal state without a redundant self-confirmation message.'
+);
+$assert(
+    str_contains($actions, 'const rawUnreadCount = result?.unread_count;')
+        && str_contains($actions, 'if (unreadCount !== null)')
+        && !str_contains($actions, 'Number(result?.unread_count || 0)'),
+    'A terminal action response without an unread count must never clear unrelated unread notifications.'
 );
 $assert(
     str_contains($notifications, 'applyInviteActionResult')
