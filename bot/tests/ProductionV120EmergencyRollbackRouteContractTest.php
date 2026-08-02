@@ -6,9 +6,9 @@ $launch = file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 $welcome = file_get_contents($root . '/bot/helpers/UserWelcomeGuard.php');
 $main110 = file_get_contents($root . '/app/assets/js/main-v110.js');
 $shell110 = file_get_contents($root . '/app/assets/js/main-v110-handoff-shell.js');
-$main120 = file_get_contents($root . '/app/assets/js/main-v120.js');
+$v120 = file_get_contents($root . '/app/v120.php');
 
-foreach ([$launch, $welcome, $main110, $shell110, $main120] as $content) {
+foreach ([$launch, $welcome, $main110, $shell110, $v120] as $content) {
     if (!is_string($content)) throw new RuntimeException('Rollback route source is missing.');
 }
 
@@ -21,7 +21,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'."),
-    'Telegram menu, start and invite links must be rolled back to v110.'
+    'Telegram menu, start and newly generated invite links must use v110.'
 );
 $assert(
     str_contains($main110, 'main-v110-handoff-shell.js?v=1123')
@@ -30,9 +30,13 @@ $assert(
     'The active v110 graph must not load the rejected controller.'
 );
 $assert(
-    str_contains($main120, 'main-v120-invite-controller-shell.js?v=1200')
-        && str_contains($launch, "// private const ENTRY_PATH = '/app/v120.php?v=1200';"),
-    'The v120 experiment must remain dormant and available only for postmortem.'
+    str_contains($v120, "\$target = '/app/v110.php?v=1123';")
+        && str_contains($v120, "\$_GET['invite']")
+        && str_contains($v120, "\$target .= '&invite=' . rawurlencode(\$inviteToken);")
+        && str_contains($v120, "header('Location: ' . \$target, true, 302);")
+        && !str_contains($v120, 'main-v120.js')
+        && !str_contains($v120, 'index.html'),
+    'Every stale v120 URL must hard-redirect to v110 while preserving a valid invite token.'
 );
 
 fwrite(STDOUT, "ProductionV120EmergencyRollbackRouteContractTest: {$assertions} assertions passed\n");
