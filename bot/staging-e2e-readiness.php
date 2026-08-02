@@ -41,10 +41,8 @@ try {
 
     $required = [
         'oidc_verifier' => __DIR__ . '/services/GitHubActionsOidcVerifier.php',
+        'rsa_jwk_public_key' => __DIR__ . '/helpers/RsaJwkPublicKey.php',
         'test_auth_broker' => __DIR__ . '/staging-test-auth.php',
-        'playwright_workflow' => dirname(__DIR__) . '/.github/workflows/staging-playwright-e2e.yml',
-        'playwright_config' => dirname(__DIR__) . '/e2e/playwright.config.mjs',
-        'two_context_spec' => dirname(__DIR__) . '/e2e/staging/two-context.spec.mjs',
     ];
     $capabilities = [];
     $fingerprintParts = [];
@@ -52,11 +50,11 @@ try {
         $present = is_file($path);
         $capabilities[$name] = $present;
         if (!$present) {
-            throw new RuntimeException('Staging E2E source is incomplete.');
+            throw new RuntimeException('Staging E2E runtime source is incomplete.');
         }
         $hash = hash_file('sha256', $path);
         if (!is_string($hash) || $hash === '') {
-            throw new RuntimeException('Staging E2E source cannot be fingerprinted.');
+            throw new RuntimeException('Staging E2E runtime source cannot be fingerprinted.');
         }
         $fingerprintParts[] = $name . ':' . $hash;
     }
