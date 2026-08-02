@@ -67,6 +67,12 @@ $assert(
     'Notification-card terminal actions must stay in place while standalone invitation sheets close silently.'
 );
 $assert(
+    str_contains($terminal, 'const rawUnreadCount = result?.unread_count;')
+        && str_contains($terminal, 'if (unreadCount !== null)')
+        && !str_contains($terminal, 'Number(result?.unread_count || 0)'),
+    'A terminal action without an authoritative unread count must preserve unrelated unread notifications.'
+);
+$assert(
     str_contains($shell, 'production-v110-opponent-picker-stability.js?v=1119')
         && str_contains($opponents, 'EMPTY_RETRY_DELAYS_MS = [240, 680]')
         && str_contains($opponents, 'freshCachedItems()')
