@@ -46,6 +46,16 @@ $assertSame = static function (mixed $expected, mixed $actual, string $message) 
             . ', got ' . var_export($actual, true));
     }
 };
+$assertThrows = static function (callable $callback, string $contains, string $message) use (&$assertions): void {
+    $assertions++;
+    try {
+        $callback();
+    } catch (Throwable $error) {
+        if (str_contains(strtolower($error->getMessage()), strtolower($contains))) return;
+        throw new RuntimeException($message . ': unexpected error ' . $error->getMessage());
+    }
+    throw new RuntimeException($message . ': no error was thrown');
+};
 
 $pdo = new PDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -134,6 +144,7 @@ $integrity = new LedgerIntegrityVerifier($database);
 
 $config = [
     'environment' => 'staging',
+    'base_url' => 'https://seashell-okapi-889488.hostingersite.com',
     'storage_driver' => 'json',
     'weekly_match_timezone' => 'Europe/Moscow',
     'weekly_match_start_at' => '2026-07-13 12:00:00',
@@ -183,5 +194,68 @@ $normalized = $bridge->normalizeApiData($data, '');
 $assertSame(true, $normalized['weekly_match']['enabled'], 'Weekly bridge must replace JSON response with verified DB status');
 $assertSame(50, $normalized['weekly_match']['bonus_amount'], 'Weekly bridge must preserve configured bonus amount');
 $assertSame(true, $bridge->shouldSynchronizeApiAction('anything'), 'Weekly bridge synchronization must not depend on a hidden action global');
+
+$testWeeklyStatus = [
+    'enabled' => true,
+    'bonus_amount' => 50,
+    'min_completed_games' => 3,
+    'completed_games' => 0,
+    'remaining_games' => 3,
+    'source' => 'already_calculated_json_test_status',
+];
+foreach (['stg_test_player_a', 'stg_test_player_b'] as $testPlayerId) {
+    $testData = [
+        'user' => ['id' => $testPlayerId],
+        'weekly_match' => $testWeeklyStatus,
+    ];
+    $testNormalized = $bridge->normalizeApiData($testData, 'bootstrap');
+    $assertSame(
+        $testWeeklyStatus,
+        $testNormalized['weekly_match'],
+        'Exact isolated staging test player must retain the already calculated JSON weekly status: ' . $testPlayerId
+    );
+}
+
+$assertThrows(
+    static fn() => $bridge->normalizeApiData([
+        'user' => ['id' => 'stg_test_player_c'],
+        'weekly_match' => $testWeeklyStatus,
+    ], 'bootstrap'),
+    'missing or ambiguous',
+    'Unknown staging identity must not bypass the DB-primary weekly status'
+);
+
+$productionConfig = $config;
+$productionConfig['environment'] = 'production';
+$productionConfig['base_url'] = 'https://mini-games-world.com';
+$productionBridge = new WeeklyBonusRuntimeBridge(
+    $productionConfig,
+    new RuntimeStorageRouter($productionConfig),
+    $repository
+);
+$assertThrows(
+    static fn() => $productionBridge->normalizeApiData([
+        'user' => ['id' => 'stg_test_player_a'],
+        'weekly_match' => $testWeeklyStatus,
+    ], 'bootstrap'),
+    'missing or ambiguous',
+    'Production must never bypass DB-primary weekly status for a staging test identity'
+);
+
+$wrongHostConfig = $config;
+$wrongHostConfig['base_url'] = 'https://staging.invalid.example';
+$wrongHostBridge = new WeeklyBonusRuntimeBridge(
+    $wrongHostConfig,
+    new RuntimeStorageRouter($wrongHostConfig),
+    $repository
+);
+$assertThrows(
+    static fn() => $wrongHostBridge->normalizeApiData([
+        'user' => ['id' => 'stg_test_player_b'],
+        'weekly_match' => $testWeeklyStatus,
+    ], 'bootstrap'),
+    'missing or ambiguous',
+    'Unexpected staging host must not bypass DB-primary weekly status'
+);
 
 fwrite(STDOUT, "WeeklyBonusRuntimeBridgeTest passed: {$assertions} assertions.\n");
