@@ -16,6 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $creation = $read('bot/services/invites/GameInviteCreationTrait.php');
 $actions = $read('bot/services/invites/GameInviteActionTrait.php');
 $watch = $read('bot/invite-watch.php');
+$endpoint = $read('bot/invites.php');
 $notifications = $read('bot/notifications.php');
 $client = $read('app/assets/js/games/game-invites-v110.js');
 
@@ -42,6 +43,18 @@ $assert(
         && str_contains($watch, 'notification-only')
         && !str_contains($watch, "'invite' => \$invite"),
     'The fast signal endpoint must not reintroduce a received pending invitation as currentInvite.'
+);
+$openLinkStart = strpos($endpoint, "case 'open_link':");
+$openLinkEnd = strpos($endpoint, "case 'sync':", $openLinkStart ?: 0);
+$openLinkBlock = $openLinkStart !== false && $openLinkEnd !== false
+    ? substr($endpoint, $openLinkStart, $openLinkEnd - $openLinkStart)
+    : '';
+$assert(
+    str_contains($openLinkBlock, '$invites->bindFromLink($data, $user, $token, true, false);')
+        && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
+        && !str_contains($openLinkBlock, '$core[\'invite\'] = $boundInvite;')
+        && !str_contains($openLinkBlock, '$boundInvite ='),
+    'Opening a Telegram invitation link must keep the bound pending invite notification-only instead of restoring currentInvite.'
 );
 $assert(
     str_contains($notifications, "return in_array(\$status, ['pending', 'accepted'], true);")
