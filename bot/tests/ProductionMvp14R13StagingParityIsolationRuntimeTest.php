@@ -74,7 +74,8 @@ try {
     $browserEnabled = RuntimeConfig::fromEnvironment();
     $assert($browserEnabled->allowBrowserStagingIdentity === true, 'Browser staging identity must require one explicit flag.');
 
-    $databasePassword = 'staging-password-never-returned';
+    $databasePassword = 'test-database-password-value';
+    $testBotToken = 'TEST_STAGING_BOT_TOKEN_VALUE';
     $config = [
         'environment' => 'staging',
         'base_url' => 'https://seashell-okapi-889488.hostingersite.com',
@@ -82,7 +83,7 @@ try {
         'storage_driver' => 'json',
         'data_dir' => $temporary . '/canonical-staging-data',
         'staging_bot_username' => 'mgw_staging_bot',
-        'bot_token' => '123456789:staging-token-never-returned',
+        'bot_token' => $testBotToken,
         'database' => [
             'enabled' => false,
             'driver' => 'mysql',
@@ -114,7 +115,7 @@ try {
     $assert(!in_array(false, $report['isolation'], true), 'Every required staging isolation control must be present.');
 
     $json = json_encode($report, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-    foreach ([$temporary, $databasePassword, 'staging-token-never-returned', 'staging-db.internal', 'mgw_staging_user'] as $secretValue) {
+    foreach ([$temporary, $databasePassword, $testBotToken, 'staging-db.internal', 'mgw_staging_user'] as $secretValue) {
         $assert(!str_contains($json, $secretValue), 'Readiness must not expose paths, credentials or database coordinates.');
     }
 
