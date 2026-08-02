@@ -11,6 +11,7 @@ $read = static function (string $path) use ($root): string {
 $probe = $read('scripts/audit/mvp14r13-staging-public-probe.sh');
 $runner = $read('scripts/ci/run.sh');
 $document = $read('docs/MVP14R13_STAGING_READONLY_AUDIT.md');
+$evidence = $read('docs/MVP14R13_STAGING_READONLY_AUDIT_EVIDENCE.md');
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
@@ -52,6 +53,15 @@ $assert(
 );
 
 $assert(
+    str_contains($probe, 'TOTAL_PROBES=9')
+        && str_contains($probe, 'if (( NETWORK_FAILURES == TOTAL_PROBES )); then')
+        && str_contains($probe, 'audit_result: external_network_blocked')
+        && str_contains($probe, 'if (( NETWORK_FAILURES > 0 )); then')
+        && str_contains($probe, 'audit_result: partial_network_failure'),
+    'A complete two-host runner block must be recorded as evidence while a partial failure remains a hard failure.'
+);
+
+$assert(
     str_contains($runner, "if [[ \"\${GITHUB_HEAD_REF:-}\" == 'agent/mvp14r13-staging-readonly-audit' ]]; then")
         && str_contains($runner, 'bash scripts/audit/mvp14r13-staging-public-probe.sh')
         && substr_count($runner, 'mvp14r13-staging-public-probe.sh') === 1,
@@ -77,8 +87,17 @@ $assert(
 $assert(
     str_contains($document, '## 9. Exact synchronization plan for R13.2')
         && str_contains($document, '## 10. Rollback plan')
-        && str_contains($document, 'No webhook registration or Cron schedule is changed during R13.1.'),
-    'The audit must include exact synchronization, rollback and external-infrastructure boundaries.'
+        && str_contains($document, 'No webhook registration or Cron schedule is changed during R13.1.')
+        && str_contains($document, 'Status: **COMPLETE WITH EXTERNAL CONNECTIVITY BLOCKER**'),
+    'The audit must include exact synchronization, rollback, external-infrastructure boundaries and a final status.'
+);
+
+$assert(
+    str_contains($evidence, 'Mini Games World CI #1328')
+        && str_contains($evidence, '930e15ed69322e1e3bc2025ac461c12fd1d3dcfe')
+        && str_contains($evidence, 'Every request failed before an HTTP response')
+        && str_contains($evidence, 'GitHub-hosted runner used by CI could not establish an HTTPS connection'),
+    'The exact failed public probe and its bounded interpretation must be preserved as audit evidence.'
 );
 
 fwrite(STDOUT, "ProductionMvp14R13ReadOnlyStagingAuditContractTest: {$assertions} assertions passed\n");
