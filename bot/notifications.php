@@ -24,7 +24,7 @@ function mgw_notification_is_received_type(string $type): bool
     return in_array($type, ['invite_received', 'invite_rematch_received'], true);
 }
 
-function mgw_notification_is_visible(array $item, ?array $invite): bool
+function mgw_notification_is_visible(array $item, ?array $invite, string $userId = ''): bool
 {
     $type = (string)($item['type'] ?? '');
     if (!str_starts_with($type, 'invite_')) return true;
@@ -34,14 +34,13 @@ function mgw_notification_is_visible(array $item, ?array $invite): bool
     $status = (string)($invite['status'] ?? '');
     if (mgw_notification_is_received_type($type)) {
         if (in_array($status, ['pending', 'accepted'], true)) return true;
-        $notificationUserId = (string)($item['user_id'] ?? '');
         if ($status === 'declined') {
-            return $notificationUserId !== ''
-                && (string)($invite['invitee_id'] ?? '') === $notificationUserId;
+            return $userId !== ''
+                && (string)($invite['invitee_id'] ?? '') === $userId;
         }
         if ($status === 'cancelled') {
-            return $notificationUserId !== ''
-                && (string)($invite['cancelled_by'] ?? '') === $notificationUserId;
+            return $userId !== ''
+                && (string)($invite['cancelled_by'] ?? '') === $userId;
         }
         return false;
     }
@@ -105,7 +104,7 @@ function mgw_visible_notifications(
     foreach ($items as $item) {
         $token = (string)($item['invite_token'] ?? '');
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
-        if (!mgw_notification_is_visible($item, $invite)) continue;
+        if (!mgw_notification_is_visible($item, $invite, $userId)) continue;
 
         $item = mgw_notification_decorate($item, $invite, $userId);
         $item['actions'] = mgw_notification_actions($item, $invite, $userId);
@@ -131,7 +130,7 @@ function mgw_visible_unread_count(array $data, string $userId): int
 
         $token = (string)($notification['invite_token'] ?? '');
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
-        if (!mgw_notification_is_visible($notification, $invite)) continue;
+        if (!mgw_notification_is_visible($notification, $invite, $userId)) continue;
 
         $type = (string)($notification['type'] ?? '');
         $status = is_array($invite) ? (string)($invite['status'] ?? '') : '';
