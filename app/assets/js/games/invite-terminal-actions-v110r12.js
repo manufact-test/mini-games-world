@@ -30,9 +30,14 @@ async function handleTerminalAction(event){
 
   const notificationSurface = isNotificationSurface(button);
   busyToken = token;
-  const originalLabel = button.textContent || '';
-  button.disabled = true;
-  button.textContent = action === 'decline' ? 'Отклоняем…' : 'Отменяем…';
+
+  document.dispatchEvent(new CustomEvent('mgw:invite-terminal-action-started', {
+    detail:{ action, token, notificationSurface },
+  }));
+  closeSheet();
+  document.dispatchEvent(new CustomEvent('mgw:notification-remove', {
+    detail:{ inviteToken:token },
+  }));
 
   try {
     const result = await inviteRequest(action, token);
@@ -43,15 +48,6 @@ async function handleTerminalAction(event){
       ? Math.max(0, Number(rawUnreadCount))
       : null;
 
-    if (notificationSurface) {
-      const item = terminalNotificationItem(action, token, invite);
-      const detail = { item, announce:false };
-      if (unreadCount !== null) detail.unreadCount = unreadCount;
-      document.dispatchEvent(new CustomEvent('mgw:notification-sync', { detail }));
-    } else {
-      closeSheet();
-    }
-
     if (unreadCount !== null) {
       document.dispatchEvent(new CustomEvent('mgw:notification-count', {
         detail:{ unreadCount },
@@ -60,13 +56,13 @@ async function handleTerminalAction(event){
     document.dispatchEvent(new CustomEvent('mgw:invite-terminal-action-completed', {
       detail:{ action, token, invite, notificationSurface },
     }));
-
-    window.setTimeout(() => {
-      document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
-    }, 600);
+    document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
+    document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
   } catch (error) {
-    button.disabled = false;
-    button.textContent = originalLabel;
+    document.dispatchEvent(new CustomEvent('mgw:invite-terminal-action-failed', {
+      detail:{ action, token, notificationSurface },
+    }));
+    document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
     toast(error?.message || 'Не удалось изменить приглашение.');
   } finally {
     busyToken = '';
@@ -79,29 +75,6 @@ function isNotificationSurface(button){
     sheet?.contains(button)
       && sheet.querySelector('[data-notifications-owner="r12"]')
   );
-}
-
-function terminalNotificationItem(action, token, invite){
-  const card = [...document.querySelectorAll('[data-notification-invite-token]')]
-    .find(element => String(element.getAttribute('data-notification-invite-token') || '') === token);
-  const notificationId = String(card?.getAttribute('data-notification-id') || `local_invite_${token}`);
-  const source = String(invite?.source || '');
-  const type = action === 'decline'
-    ? (source === 'rematch' ? 'invite_rematch_received' : 'invite_received')
-    : 'invite_accepted';
-
-  return {
-    id:notificationId,
-    type,
-    title:action === 'decline' ? 'Приглашение отклонено' : 'Приглашение отменено',
-    message:'Приглашение больше недоступно.',
-    tone:'warning',
-    invite_token:token,
-    invite_status:String(invite?.status || (action === 'decline' ? 'declined' : 'cancelled')),
-    actions:[],
-    read:true,
-    created_at:new Date().toISOString(),
-  };
 }
 
 async function inviteRequest(action, token){
