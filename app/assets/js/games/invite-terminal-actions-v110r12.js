@@ -1,5 +1,6 @@
 import { getInitData } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
+import { closeSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=1109';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
@@ -27,6 +28,7 @@ async function handleTerminalAction(event){
   event.stopImmediatePropagation();
   if (busyToken) return;
 
+  const notificationSurface = isNotificationSurface(button);
   busyToken = token;
   const originalLabel = button.textContent || '';
   button.disabled = true;
@@ -35,17 +37,28 @@ async function handleTerminalAction(event){
   try {
     const result = await inviteRequest(action, token);
     const invite = result?.invite && typeof result.invite === 'object' ? result.invite : { token };
-    const unreadCount = Math.max(0, Number(result?.unread_count || 0));
-    const item = terminalNotificationItem(action, token, invite);
+    const rawUnreadCount = result?.unread_count;
+    const unreadCount = rawUnreadCount !== undefined && rawUnreadCount !== null
+      && Number.isFinite(Number(rawUnreadCount))
+      ? Math.max(0, Number(rawUnreadCount))
+      : null;
 
-    document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
-      detail:{ item, unreadCount, announce:false },
-    }));
-    document.dispatchEvent(new CustomEvent('mgw:notification-count', {
-      detail:{ unreadCount },
-    }));
+    if (notificationSurface) {
+      const item = terminalNotificationItem(action, token, invite);
+      const detail = { item, announce:false };
+      if (unreadCount !== null) detail.unreadCount = unreadCount;
+      document.dispatchEvent(new CustomEvent('mgw:notification-sync', { detail }));
+    } else {
+      closeSheet();
+    }
+
+    if (unreadCount !== null) {
+      document.dispatchEvent(new CustomEvent('mgw:notification-count', {
+        detail:{ unreadCount },
+      }));
+    }
     document.dispatchEvent(new CustomEvent('mgw:invite-terminal-action-completed', {
-      detail:{ action, token, invite },
+      detail:{ action, token, invite, notificationSurface },
     }));
 
     window.setTimeout(() => {
@@ -58,6 +71,14 @@ async function handleTerminalAction(event){
   } finally {
     busyToken = '';
   }
+}
+
+function isNotificationSurface(button){
+  const sheet = document.getElementById('sheet');
+  return Boolean(
+    sheet?.contains(button)
+      && sheet.querySelector('[data-notifications-owner="r12"]')
+  );
 }
 
 function terminalNotificationItem(action, token, invite){
@@ -73,9 +94,7 @@ function terminalNotificationItem(action, token, invite){
     id:notificationId,
     type,
     title:action === 'decline' ? 'Приглашение отклонено' : 'Приглашение отменено',
-    message:action === 'decline'
-      ? 'Вы отклонили это приглашение.'
-      : 'Вы отменили это приглашение.',
+    message:'Приглашение больше недоступно.',
     tone:'warning',
     invite_token:token,
     invite_status:String(invite?.status || (action === 'decline' ? 'declined' : 'cancelled')),
