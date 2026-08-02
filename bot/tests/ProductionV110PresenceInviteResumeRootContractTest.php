@@ -22,6 +22,8 @@ $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $auth = $read('bot/services/AuthService.php');
 $api = $read('bot/api.php');
 $presenceService = $read('bot/services/PresenceService.php');
+$inviteCreation = $read('bot/services/invites/GameInviteCreationTrait.php');
+$inviteWatch = $read('bot/invite-watch.php');
 $inviteStorage = $read('bot/services/invites/GameInviteStorageTrait.php');
 $notificationEndpoint = $read('bot/notifications.php');
 $php = $read('app/v110.php');
@@ -67,11 +69,18 @@ $assert(str_contains($presenceService, 'LEAVE_GRACE_SEC = 12')
     && str_contains($presenceService, '$sessionId . "\\0presence:" . $presenceLeaseId'),
     'Explicit leave must use one bounded document handoff lease instead of an immediate delete race.');
 
+$assert(str_contains($inviteCreation, 'private function isNotificationOnlyPendingInvite(?array $invite): bool')
+    && str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($activeInvite)) $activeInvite = null;')
+    && str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($trackedInvite)) $trackedInvite = null;')
+    && str_contains($inviteCreation, "'invite_events' => \$this->inviteEventsForUser(\$db, \$userId)")
+    && str_contains($inviteWatch, "'invite' => null")
+    && str_contains($inviteWatch, "'notification_pending' => \$pending"),
+    'A pending received invitation must remain in notification events but never become current or tracked invite state that intercepts unrelated games.');
+
 $assert(str_contains($invites, 'function hasActionableInvite()')
-    && str_contains($invites, "['pending', 'accepted']")
     && str_contains($invites, 'mgw:before-game-launch')
     && str_contains($home, "new CustomEvent('mgw:before-game-launch'"),
-    'Any game launch during an actionable invitation must reopen the canonical invitation actions.');
+    'Accepted or owner-side active invite states may still protect conflicting game launches after the server filters notification-only pending invites.');
 
 $assert(str_contains($notifications, 'sheetState.generation')
     && str_contains($notifications, 'isCurrentSheet(generation)')
