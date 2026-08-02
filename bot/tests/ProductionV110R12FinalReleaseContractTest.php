@@ -33,22 +33,22 @@ $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1120')
-        && str_contains($php, 'main-v110.js?v=1121')
+        && str_contains($php, 'main-v110.js?v=1122')
         && str_contains($php, $build)
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1121')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1122')
         && str_contains($main, $build)
         && str_contains($shell, $build)
         && str_contains($clean, $build),
-    'Every active R12 entry owner must publish one build identity and the current statistics shell.'
+    'Every active R12 entry owner must publish one build identity and the current published shell.'
 );
 $assert(
-    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1120';")
-        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1120'."),
-    'Telegram menu, start and invitation paths must launch the same clean R12 entrypoint.'
+    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1122';")
+        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1122'."),
+    'Telegram menu, start and invitation paths must launch the same published R12 entrypoint.'
 );
 $assert(
     substr_count($shell, 'initNotificationsScreen();') === 1
-        && str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
+        && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
         && str_contains($notifications, 'data-notifications-owner="r12"')
         && str_contains($notifications, 'sheetState.pinned')
         && str_contains($notifications, 'CLOSE_GUARD_MS = 1100'),
@@ -71,7 +71,7 @@ $assert(
 $closePosition = strpos($terminal, 'closeSheet();');
 $requestPosition = strpos($terminal, 'const result = await inviteRequest(action, token);');
 $assert(
-    str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1120')
+    str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1122')
         && $closePosition !== false
         && $requestPosition !== false
         && $closePosition < $requestPosition
