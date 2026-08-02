@@ -33,7 +33,6 @@ $assert(
         && str_contains($main, "window.__MGW_BUILD__ = 'v109-mvp14-speed-ui-only'"),
     'v109 must retain the accepted v105 application and game graph.'
 );
-
 $assert(
     str_contains($entry, 'initV109InviteSpeed();')
         && str_contains($entry, 'initV109SelfCancelRefreshGuard();')
@@ -46,7 +45,6 @@ $assert(
         && !str_contains($entry, 'initV104Presence'),
     'v109 must replace only the identified slow UI owners.'
 );
-
 $assert(
     str_contains($invite, "window.addEventListener('click', ownInviteClick, true)")
         && strpos($invite, 'renderOptimisticOwnerSheet(context, opponentName);')
@@ -56,7 +54,6 @@ $assert(
         && str_contains($selfCancel, 'event.stopImmediatePropagation();'),
     'Direct invite and self-cancel must paint immediately without a duplicate self notification.'
 );
-
 $assert(
     str_contains($share, 'function warmContext(context)')
         && str_contains($share, 'const RETURN_RELEASE_MS = 450;')
@@ -67,14 +64,12 @@ $assert(
         && !str_contains($share, 'showSharingSheet'),
     'Prepared Telegram sharing must be prewarmed and must not leave a blocking native-return state.'
 );
-
 $assert(
     str_contains($shareFallback, "origin.closest('[data-v109-discard-draft]')")
         && str_contains($shareFallback, 'closeSheet();')
         && str_contains($shareFallback, "action:'discard_draft'"),
     'Fallback share cancellation must close immediately and discard asynchronously.'
 );
-
 $assert(
     str_contains($notifications, 'speed?.rawFetch')
         && str_contains($notifications, 'replaceItems(snapshot.notificationItems)')
@@ -84,7 +79,6 @@ $assert(
         && !str_contains($notifications, 'translate3d('),
     'Notifications must bypass stale optimistic reads and never freely drag the toast.'
 );
-
 $assert(
     str_contains($presenceClient, "window.addEventListener('pagehide', sendLeaveBeacon")
         && str_contains($presenceClient, 'Deactivated means backgrounded, not offline')
@@ -92,7 +86,6 @@ $assert(
         && str_contains($presenceService, 'private const ONLINE_WINDOW_SEC = 75;'),
     'Two open Telegram accounts must remain online while backgrounding stays bounded.'
 );
-
 $assert(
     str_contains($searchClient, 'const SPEED_CHECK_MS = 2200;')
         && str_contains($searchClient, 'const RETRY_CHECK_MS = 900;')
@@ -104,12 +97,11 @@ $assert(
         && str_contains($registry, "'bot/search-speed.php' => 'search_speed'"),
     'Bot fallback speed must retry a bounded guarded checkpoint without changing game actions.'
 );
-
 $assert(
     str_contains($php, 'production-clean-entry-v109.js?v=109')
         && str_contains($php, 'main-v109.js?v=109')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v110.php?v=1115')
+        && str_contains($welcome, '/app/v110.php?v=1120')
         && str_contains($welcome, 'v109'),
     'v109 must remain a valid no-store rollback build after the current launch advances to v110.'
 );
