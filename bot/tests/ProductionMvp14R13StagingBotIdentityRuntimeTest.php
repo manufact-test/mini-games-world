@@ -23,7 +23,10 @@ $sourceFiles = [
 ];
 foreach ($sourceFiles as $relative) {
     $path = $temporary . '/' . $relative;
-    @mkdir(dirname($path), 0770, true);
+    $directory = dirname($path);
+    if (!is_dir($directory) && !mkdir($directory, 0770, true) && !is_dir($directory)) {
+        throw new RuntimeException('Cannot create temporary source directory: ' . $directory);
+    }
     file_put_contents($path, $relative);
 }
 
