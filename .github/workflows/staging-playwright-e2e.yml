@@ -109,7 +109,7 @@ jobs:
         with:
           name: staging-playwright-e2e-${{ github.run_id }}
           path: |
-            artifacts/playwright
+            e2e/artifacts/playwright
             staging-e2e-readiness.json
           if-no-files-found: warn
           retention-days: 7
