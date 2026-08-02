@@ -186,21 +186,33 @@ trait GameInviteCreationTrait
         $userId = $this->requireUserId($user);
         $activeGame = $this->games->findActiveGameForUser($db, $userId);
 
+        $activeInvite = $this->activeForUser($db, $userId);
+        if ($this->isNotificationOnlyPendingInvite($activeInvite)) $activeInvite = null;
+
         $trackedInvite = null;
         if ($trackedToken !== '') {
             $index = $this->findIndex($db, $trackedToken);
             if ($index !== null && $this->isParticipant($db['invites'][$index], $userId)) {
                 $trackedInvite = $this->publicInvite($db['invites'][$index], $userId);
+                if ($this->isNotificationOnlyPendingInvite($trackedInvite)) $trackedInvite = null;
             }
         }
 
         return [
-            'invite' => $this->activeForUser($db, $userId),
+            'invite' => $activeInvite,
             'tracked_invite' => $trackedInvite,
             'active_game' => is_array($activeGame) ? $this->games->publicGame($activeGame, $userId) : null,
             'invite_events' => $this->inviteEventsForUser($db, $userId),
             'unread_count' => $this->unreadNotificationCount($db, $userId),
             'server_time' => now_iso(),
         ];
+    }
+
+    private function isNotificationOnlyPendingInvite(?array $invite): bool
+    {
+        return is_array($invite)
+            && (string)($invite['status'] ?? '') === 'pending'
+            && !empty($invite['is_invitee'])
+            && empty($invite['is_owner']);
     }
 }
