@@ -230,7 +230,7 @@ $productionConfig['environment'] = 'production';
 $productionConfig['base_url'] = 'https://mini-games-world.com';
 $productionBridge = new WeeklyBonusRuntimeBridge(
     $productionConfig,
-    new RuntimeStorageRouter($productionConfig),
+    $router,
     $repository
 );
 $assertThrows(
@@ -246,7 +246,7 @@ $wrongHostConfig = $config;
 $wrongHostConfig['base_url'] = 'https://staging.invalid.example';
 $wrongHostBridge = new WeeklyBonusRuntimeBridge(
     $wrongHostConfig,
-    new RuntimeStorageRouter($wrongHostConfig),
+    $router,
     $repository
 );
 $assertThrows(
