@@ -96,7 +96,8 @@ $assert(
     str_contains($evidence, 'Mini Games World CI #1328')
         && str_contains($evidence, '930e15ed69322e1e3bc2025ac461c12fd1d3dcfe')
         && str_contains($evidence, 'Every request failed before an HTTP response')
-        && str_contains($evidence, 'GitHub-hosted runner used by CI could not establish an HTTPS connection'),
+        && str_contains($evidence, 'GitHub-hosted runner used by CI could not')
+        && str_contains($evidence, 'establish an HTTPS connection to either Hostinger project'),
     'The exact failed public probe and its bounded interpretation must be preserved as audit evidence.'
 );
 
