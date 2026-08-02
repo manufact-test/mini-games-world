@@ -34,8 +34,9 @@ staging.
 
 ## 3. Required staging private config contract
 
-The external staging config must declare all of the following. Values shown here
-are descriptions, not credentials and must not be copied literally.
+The external staging config must declare all of the following. Secret values are
+read from protected Hostinger environment/private storage and never written into
+this repository.
 
 ```php
 return [
@@ -45,20 +46,20 @@ return [
         'seashell-okapi-889488.hostingersite.com',
     ],
 
-    'bot_token' => '<STAGING BOT TOKEN>',
-    'staging_bot_username' => '<EXPECTED STAGING BOT USERNAME>',
+    'bot_token' => (string)getenv('MGW_STAGING_BOT_TOKEN'),
+    'staging_bot_username' => (string)getenv('MGW_STAGING_BOT_USERNAME'),
 
-    'data_dir' => '<STAGING-ONLY ABSOLUTE DATA DIRECTORY>',
+    'data_dir' => (string)getenv('MGW_STAGING_DATA_DIR'),
     'storage_driver' => 'json',
 
     'database' => [
         'enabled' => false, // keep current cutover state unless separately approved
         'driver' => 'mysql',
-        'host' => '<STAGING DB HOST>',
+        'host' => (string)getenv('MGW_STAGING_DB_HOST'),
         'port' => 3306,
-        'name' => '<STAGING DB NAME>',
-        'user' => '<STAGING DB USER>',
-        'password' => '<STAGING DB PASSWORD>',
+        'name' => (string)getenv('MGW_STAGING_DB_NAME'),
+        'user' => (string)getenv('MGW_STAGING_DB_USER'),
+        'password' => (string)getenv('MGW_STAGING_DB_PASSWORD'),
         'charset' => 'utf8mb4',
     ],
 
@@ -66,9 +67,9 @@ return [
         'production_hosts' => [
             'lemonchiffon-gerbil-545102.hostingersite.com',
         ],
-        'production_data_dir' => '<PROTECTED PRODUCTION DATA DIRECTORY>',
-        'production_database_sha256' => '<SHA-256 OF PRODUCTION DB IDENTITY>',
-        'production_bot_token_sha256' => '<SHA-256 OF PRODUCTION BOT TOKEN>',
+        'production_data_dir' => (string)getenv('MGW_PROTECTED_PRODUCTION_DATA_DIR'),
+        'production_database_sha256' => (string)getenv('MGW_PROTECTED_PRODUCTION_DB_SHA256'),
+        'production_bot_token_sha256' => (string)getenv('MGW_PROTECTED_PRODUCTION_BOT_SHA256'),
     ],
 
     'external_payments_enabled' => false,
