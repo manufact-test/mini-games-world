@@ -25,8 +25,8 @@ final class GameInviteService
 
     /**
      * The live invite event is the same authoritative object used by the toast.
-     * It must already contain its legal actions so opening that toast never has
-     * to wait for a second notifications request before buttons can be rendered.
+     * It must already contain its legal actions and status so opening that toast
+     * can paint a complete mobile first frame before any follow-up request.
      */
     private function inviteEventsForUser(array $db, string $userId): array
     {
@@ -49,6 +49,9 @@ final class GameInviteService
                 'message' => (string)($notification['message'] ?? ''),
                 'tone' => (string)($notification['tone'] ?? 'info'),
                 'invite_token' => $token,
+                'invite_status' => $this->liveInviteStatus($invite),
+                'invite_is_owner' => is_array($invite)
+                    && (string)($invite['inviter_id'] ?? '') === $userId,
                 'actions' => $this->liveInviteActions($invite, $userId),
                 'created_at' => (string)($notification['created_at'] ?? ''),
                 'read' => !empty($notification['read_at']),
@@ -63,6 +66,13 @@ final class GameInviteService
         });
 
         return array_slice($events, 0, 20);
+    }
+
+    private function liveInviteStatus(?array $invite): string
+    {
+        if (!is_array($invite)) return '';
+        $status = (string)($invite['status'] ?? '');
+        return $status === 'awaiting_start' ? 'accepted' : $status;
     }
 
     private function liveInviteActions(?array $invite, string $userId): array
