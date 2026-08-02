@@ -400,9 +400,14 @@ final class ChessRuntimeService
             $status = (string)($invite['status'] ?? '');
             if (!in_array($status, ['pending', 'awaiting_start'], true)) continue;
 
-            $isParticipant = (string)($invite['inviter_id'] ?? '') === $userId
-                || (string)($invite['invitee_id'] ?? '') === $userId;
-            if (!$isParticipant) continue;
+            $isOwner = (string)($invite['inviter_id'] ?? '') === $userId;
+            $isInvitee = (string)($invite['invitee_id'] ?? '') === $userId;
+            if (!$isOwner && !$isInvitee) continue;
+
+            // A received invitation is notification-only until the recipient accepts it.
+            // It must not prevent unrelated matchmaking. The owner still has an
+            // outstanding commitment, and awaiting_start remains binding for both sides.
+            if ($status === 'pending' && $isInvitee && !$isOwner) continue;
 
             $deadlineField = $status === 'awaiting_start' ? 'ready_deadline_at' : 'expires_at';
             $deadline = strtotime((string)($invite[$deadlineField] ?? $invite['start_deadline_at'] ?? '')) ?: 0;
