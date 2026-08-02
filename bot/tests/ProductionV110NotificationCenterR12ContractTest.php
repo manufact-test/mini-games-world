@@ -18,9 +18,9 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $center = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 
 $assert(
-    str_contains($shell, "notifications-screen-v110r12.js?v=1117")
-        && !str_contains($shell, "notifications-screen-v110r5.js?v=1115"),
-    'The active shell must load only the R12 notification center.'
+    str_contains($shell, "notifications-screen-v110r12.js?v=1120")
+        && !str_contains($shell, "notifications-screen-v110r5.js"),
+    'The active shell must load only the current R12 notification center.'
 );
 $assert(
     str_contains($center, "data-notifications-owner=\"r12\"")
@@ -46,9 +46,10 @@ $assert(
     'Closing the notification sheet must suppress click-through and duplicate reopen.'
 );
 $assert(
-    str_contains($center, "mgw:invite-action-local-result")
-        && str_contains($center, 'applyInviteActionResult'),
-    'Invite actions must update the existing notification card through the notification owner.'
+    str_contains($center, "document.addEventListener('mgw:notification-sync'")
+        && str_contains($center, 'pinItem(item);')
+        && str_contains($center, 'renderNotifications(visibleSheetItems());'),
+    'Invite terminal actions must update the existing card through the single notification sync owner.'
 );
 
 fwrite(STDOUT, "ProductionV110NotificationCenterR12ContractTest: {$assertions} assertions passed\n");
