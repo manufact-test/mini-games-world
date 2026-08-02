@@ -34,12 +34,12 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
-$build = 'v110-mvp14r11-mobile-toast-authority';
-$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1115';")
+$build = 'v110-mvp14r12-invite-notification-stability';
+$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1119';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
-    'The isolated notification task must preserve one consistent outer production build.');
+    'The integrated release must publish one consistent outer production build.');
 
 $assert($count($entry, 'initV110AcceptanceRuntime();') === 1
     && $count($entry, 'initV110TargetedInteractions();') === 1
@@ -74,7 +74,7 @@ $assert(!str_contains($targeted, 'confirmLeaveGame')
     'The targeted interaction guard must not become a second surrender owner.');
 
 $assert($count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1117')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1119')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && !str_contains($shell, 'NotificationPreflight'),
     'The active graph must contain exactly one current notification owner.');
@@ -114,11 +114,11 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     && str_contains($runtime, 'mgw-v110-search-summary'),
     'Accepted game interaction behavior must remain untouched.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($php, 'main-v110.js?v=1115')
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1119')
+    && str_contains($php, 'main-v110.js?v=1119')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-    && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1115';")
-    && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1115'.")
+    && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1119';")
+    && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1119'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
     'All Telegram launches must keep the canonical v110 entrypoint.');
 
