@@ -48,8 +48,8 @@ $assert(
     'Notification actions must remain available while the invitation is pending.'
 );
 $assert(
-    str_contains($actions, "$this->assertAvailableForStart($db, $invitee, $token, 'Сначала завершите текущий поиск или игру.');")
-        && str_contains($actions, "$this->assertAvailableForStart($db, $inviter, $token, 'Пригласивший игрок сейчас занят в другой игре.');"),
+    str_contains($actions, '$this->assertAvailableForStart($db, $invitee, $token, \'Сначала завершите текущий поиск или игру.\');')
+        && str_contains($actions, '$this->assertAvailableForStart($db, $inviter, $token, \'Пригласивший игрок сейчас занят в другой игре.\');'),
     'Accepting later must still fail safely if either player is searching or playing.'
 );
 $assert(
