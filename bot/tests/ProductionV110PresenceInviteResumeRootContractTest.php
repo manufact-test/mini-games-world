@@ -33,7 +33,8 @@ $assert(str_contains($main, "stats-owner-v110.js?v=1110")
     'All home statistics responses must be ordered by one canonical stats owner.');
 
 $assert(str_contains($stats, 'sequence < runtime.applied')
-    && str_contains($stats, 'state.stats = { ...stats }')
+    && str_contains($stats, 'next.online_players = stableOnlineCount(next.online_players)')
+    && str_contains($stats, 'state.stats = next')
     && str_contains($stats, 'renderStats(state.stats)'),
     'A stale request must never overwrite a newer visible statistics snapshot.');
 
