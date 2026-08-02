@@ -29,16 +29,16 @@ $inviteEndpoint = $read('bot/invites.php');
 $inviteService = $read('bot/services/GameInviteService.php');
 
 $assert(
-    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1122';")
-        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1122'.")
-        && str_contains($php, 'main-v110.js?v=1122')
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1122')
+    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
+        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
+        && str_contains($php, 'main-v110.js?v=1123')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1123')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
-        && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1122')
+        && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
         && str_contains($shell, 'production-v110-presence.js?v=1121')
         && str_contains($shell, 'stats-owner-v110.js?v=1121'),
-    'Telegram, browser and active modules must publish the accepted v1122 graph plus the isolated v1123 link-entry owner.'
+    'Telegram, browser and active modules must publish the final v1123 graph while retaining validated notification and presence revisions.'
 );
 
 $assert(
@@ -54,16 +54,24 @@ $assert(
 
 $closePosition = strpos($terminal, 'closeSheet();');
 $requestPosition = strpos($terminal, 'const result = await inviteRequest(action, token);');
+$tryStart = strpos($terminal, '  try {');
+$catchStart = strpos($terminal, '  } catch (error) {', $tryStart ?: 0);
+$successBlock = $tryStart !== false && $catchStart !== false
+    ? substr($terminal, $tryStart, $catchStart - $tryStart)
+    : '';
 $assert(
     $closePosition !== false && $requestPosition !== false && $closePosition < $requestPosition
+        && str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")
         && str_contains($terminal, "new CustomEvent('mgw:notification-remove'")
         && !str_contains($terminal, 'terminalNotificationItem(')
         && !str_contains($terminal, "new CustomEvent('mgw:notification-sync'")
+        && $successBlock !== ''
+        && !str_contains($successBlock, "new CustomEvent('mgw:notifications-refresh'")
         && str_contains($notifications, 'function removeInviteNotification(detail)')
         && str_contains($notifications, 'localAuthority.delete(key)')
         && str_contains($notifications, 'sheetState.pinned.delete(key)')
         && !str_contains($notifications, 'applyInviteActionResult'),
-    'Decline/cancel must close before network completion and remove actor-side notification state without a success confirmation.'
+    'Decline/cancel must close before network completion, consume the click first and avoid actor confirmation or stale success refresh.'
 );
 
 $openLinkStart = strpos($inviteEndpoint, "case 'open_link':");
@@ -81,8 +89,9 @@ $assert(
         && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
         && !str_contains($openLinkBlock, '$core[\'invite\'] = $boundInvite;')
         && str_contains($linkEntry, 'const invite = result?.opened_invite || null;')
+        && str_contains($linkEntry, 'showIncomingInvite(invite);')
         && !str_contains($linkEntry, 'currentInvite ='),
-    'A received pending invitation must remain notification-only while Telegram may render exactly one non-blocking opened_invite sheet.'
+    'A received pending invitation must remain notification-only while Telegram renders one complete non-blocking opened_invite sheet.'
 );
 
 $paintPosition = strpos($notifications, "if (source === 'toast') await waitForFirstSheetPaint(generation);");

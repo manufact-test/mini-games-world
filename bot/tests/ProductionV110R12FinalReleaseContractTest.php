@@ -19,6 +19,7 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $clean = $read('app/assets/js/production-clean-entry-v110.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $terminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
+$linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $notificationEndpoint = $read('bot/notifications.php');
 $stats = $read('app/assets/js/stats-owner-v110.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
@@ -33,18 +34,18 @@ $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1120')
-        && str_contains($php, 'main-v110.js?v=1122')
+        && str_contains($php, 'main-v110.js?v=1123')
         && str_contains($php, $build)
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1122')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1123')
         && str_contains($main, $build)
         && str_contains($shell, $build)
         && str_contains($clean, $build),
-    'Every active R12 entry owner must publish one build identity and the current published shell.'
+    'Every active R12 entry owner must publish one build identity and the final v1123 shell.'
 );
 $assert(
-    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1122';")
-        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1122'."),
-    'Telegram menu, start and invitation paths must launch the same published R12 entrypoint.'
+    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
+        && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'."),
+    'Telegram menu, start and invitation paths must launch the same final R12 entrypoint.'
 );
 $assert(
     substr_count($shell, 'initNotificationsScreen();') === 1
@@ -70,17 +71,25 @@ $assert(
 );
 $closePosition = strpos($terminal, 'closeSheet();');
 $requestPosition = strpos($terminal, 'const result = await inviteRequest(action, token);');
+$tryStart = strpos($terminal, '  try {');
+$catchStart = strpos($terminal, '  } catch (error) {', $tryStart ?: 0);
+$successBlock = $tryStart !== false && $catchStart !== false
+    ? substr($terminal, $tryStart, $catchStart - $tryStart)
+    : '';
 $assert(
-    str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1122')
+    str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
         && $closePosition !== false
         && $requestPosition !== false
         && $closePosition < $requestPosition
+        && str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")
         && str_contains($terminal, "new CustomEvent('mgw:notification-remove'")
         && !str_contains($terminal, 'terminalNotificationItem(')
         && !str_contains($terminal, "new CustomEvent('mgw:notification-sync'")
+        && $successBlock !== ''
+        && !str_contains($successBlock, "new CustomEvent('mgw:notifications-refresh'")
         && !str_contains($terminal, 'Вы отклонили это приглашение.')
         && !str_contains($terminal, 'Вы отменили это приглашение.'),
-    'Decline and cancel must close before the network response and remove actor notification state without a success sheet or toast.'
+    'Decline and cancel must close before the request, consume the click first and avoid success sheets, toasts or stale refreshes.'
 );
 $assert(
     str_contains($notifications, 'function removeInviteNotification(detail)')
@@ -89,6 +98,15 @@ $assert(
         && !str_contains($notifications, 'function applyInviteActionResult(')
         && str_contains($notificationEndpoint, "return in_array(\$status, ['pending', 'accepted'], true);"),
     'Actor terminal invitations must be removed from local state and excluded by the authoritative notification endpoint.'
+);
+$assert(
+    str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
+        && str_contains($linkEntry, 'const invite = result?.opened_invite || null;')
+        && str_contains($linkEntry, 'showIncomingInvite(invite);')
+        && str_contains($linkEntry, 'data-invite-action="accept"')
+        && str_contains($linkEntry, 'data-invite-action="decline"')
+        && !str_contains($linkEntry, 'currentInvite ='),
+    'Telegram links must open one complete invitation sheet without restoring blocking current invite state.'
 );
 $assert(
     !file_exists($wrapperPath)
