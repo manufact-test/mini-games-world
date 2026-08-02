@@ -32,11 +32,12 @@ $assert(str_contains($main, "stats-owner-v110.js?v=1110")
     && !str_contains($main, 'state.stats = result.stats'),
     'All home statistics responses must be ordered by one canonical stats owner.');
 
-$assert(str_contains($stats, 'sequence < runtime.applied')
-    && str_contains($stats, 'next.online_players = stableOnlineCount(next.online_players)')
-    && str_contains($stats, 'state.stats = next')
-    && str_contains($stats, 'renderStats(state.stats)'),
-    'A stale request must never overwrite a newer visible statistics snapshot.');
+$assert(str_contains($stats, 'if (sequence < runtime.applied) return false;')
+    && str_contains($stats, 'state.stats = { ...stats };')
+    && str_contains($stats, 'renderStats(state.stats)')
+    && !str_contains($stats, 'stableOnlineCount')
+    && !str_contains($stats, 'ONLINE_DROP_GRACE_MS'),
+    'A stale request must never overwrite a newer snapshot, and accepted statistics must render without UI masking.');
 
 $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     && str_contains($presence, "window.addEventListener('pageshow'")
