@@ -58,12 +58,15 @@ async function handleTerminalAction(event){
     document.dispatchEvent(new CustomEvent('mgw:invite-terminal-action-completed', {
       detail:{ action, token, invite, notificationSurface },
     }));
+    // Local removal plus the authoritative unread_count are already complete.
+    // A success-side notifications refresh can return an older snapshot after
+    // the next invite toast has opened, so normal invite sync owns reconciliation.
     document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
-    document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
   } catch (error) {
     document.dispatchEvent(new CustomEvent('mgw:invite-terminal-action-failed', {
       detail:{ action, token, notificationSurface },
     }));
+    // Failure must restore the still-authoritative pending invitation.
     document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
     toast(error?.message || 'Не удалось изменить приглашение.');
   } finally {
