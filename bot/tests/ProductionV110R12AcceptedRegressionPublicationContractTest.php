@@ -31,14 +31,14 @@ $inviteService = $read('bot/services/GameInviteService.php');
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
-        && str_contains($php, 'main-v110.js?v=1123')
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1123')
+        && str_contains($php, 'main-v110.js?v=1124')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1124')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
         && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
         && str_contains($shell, 'production-v110-presence.js?v=1121')
         && str_contains($shell, 'stats-owner-v110.js?v=1121'),
-    'Telegram, browser and active modules must publish the final v1123 graph while retaining validated notification and presence revisions.'
+    'The canonical Telegram URL must publish the final v1124 graph while retaining validated notification, terminal, link and presence revisions.'
 );
 
 $assert(
