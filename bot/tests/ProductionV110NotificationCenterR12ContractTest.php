@@ -18,7 +18,7 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $center = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 
 $assert(
-    str_contains($shell, "notifications-screen-v110r12.js?v=1120")
+    str_contains($shell, "notifications-screen-v110r12.js?v=1122")
         && !str_contains($shell, "notifications-screen-v110r5.js?v=1115"),
     'The active shell must load only the R12 notification center.'
 );
