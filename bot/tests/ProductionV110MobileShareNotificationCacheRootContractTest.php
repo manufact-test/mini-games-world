@@ -45,8 +45,8 @@ $assert(str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
 $assert(str_contains($shell, 'game-invites-v110.js?v=1114')
     && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1122')
-    && str_contains($launch, '/app/v110.php?v=1122'),
-    'Current invitation and notification owners must load through the canonical published route.');
+    && str_contains($entry, 'main-v110.js?v=1123')
+    && str_contains($launch, '/app/v110.php?v=1123'),
+    'Current invitation and notification owners must load through the canonical final v1123 route.');
 
 fwrite(STDOUT, "ProductionV110MobileShareNotificationCacheRootContractTest: {$assertions} assertions passed\n");
