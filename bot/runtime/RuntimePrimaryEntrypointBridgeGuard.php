@@ -6,6 +6,11 @@ final class RuntimePrimaryEntrypointBridgeGuard
     public static function legacyJsonBridgeAllowed(): bool
     {
         return !class_exists('RuntimePrimaryEntrypointStorageContext', false)
-            || !RuntimePrimaryEntrypointStorageContext::installed();
+            || !RuntimePrimaryEntrypointStorageContext::installed()
+            ? (
+                !class_exists('ProductionPrimaryEntrypointStorageContext', false)
+                || !ProductionPrimaryEntrypointStorageContext::installed()
+            )
+            : false;
     }
 }

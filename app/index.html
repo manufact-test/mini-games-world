@@ -4,11 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mini Games World</title>
-  <link rel="stylesheet" href="./assets/css/main.css?v=85" />
+  <link rel="stylesheet" href="./assets/css/main.css?v=92" />
+  <link rel="stylesheet" href="./assets/css/production-v95-consistency.css?v=95" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div class="app" id="app" data-build="v86-mvp13-runtime-controls">
+  <div class="app" id="app" data-build="v92-mvp14-first-interaction-readiness-hotfix" data-hotfix-build="v96-mvp14-root-cause-stabilization">
     <div class="preloader" id="preloader">
       <div class="load-card">
         <div class="abstract-loader" aria-hidden="true">
@@ -32,7 +33,7 @@
           <div class="user-mini" id="profileOpen" role="button" tabindex="0" aria-label="Открыть профиль">
             <div class="avatar" id="topAvatar">MG</div>
             <div class="user-text">
-              <div class="user-name" id="topName">@player_demo</div>
+              <div class="user-name" id="topName">Загрузка профиля…</div>
               <div class="user-status"><span class="dot-online"></span><span>онлайн</span></div>
             </div>
           </div>
@@ -68,8 +69,8 @@
           </div>
         </section>
 
-        <section class="section-title"><h2>Сейчас в игре</h2></section>
-        <div class="activity-grid" id="activityGrid"></div>
+        <section class="section-title" id="activityTitle" hidden><h2>Сейчас в игре</h2></section>
+        <div class="activity-grid" id="activityGrid" hidden></div>
 
         <section class="section-title"><h2>Игры</h2></section>
         <section class="game-card has-rules" data-game-card="tictactoe">
@@ -258,6 +259,7 @@
     </div>
   </div>
 
-  <script type="module" src="./assets/js/main.js?v=86"></script>
+  <script type="module" src="./assets/js/production-regression-fix-entry.js?v=96"></script>
+  <script type="module" src="./assets/js/main.js?v=96"></script>
 </body>
 </html>

@@ -175,11 +175,19 @@ try {
     $payments = new PaymentService($config, $users);
     $telegram = new TelegramService($config);
     $sessions = new SessionService($config);
-    $statsService = new StatsService();
+    $presenceService = new PresenceService();
+    $statsService = new StatsService($presenceService);
     $history = new HistoryService($config, $users);
     $weeklyMatch = new WeeklyMatchEconomyService($config, new NotificationService());
 
     $tgUser = $auth->getUserFromRequest($payload);
+    if ($action === 'bootstrap' && $sessionId !== '') {
+        try {
+            $presenceService->touch((string)($tgUser['id'] ?? ''), $sessionId);
+        } catch (Throwable $presenceError) {
+            error_log('Mini Games World bootstrap presence failed: ' . $presenceError->getMessage());
+        }
+    }
 
     $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId) {
         $user = $users->ensureUser($data, $tgUser);
@@ -194,9 +202,10 @@ try {
         // благодаря cycle key на пользователе.
         $weeklyMatch->applyDueForUser($data, $user);
 
-        // Cleanup scans all stored games, so background reads share one global pass.
-        // Mutating game actions still force cleanup before validation.
-        $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move', 'leave_game'], true);
+        // Game polling already performs the bounded two-second cleanup cadence.
+        // Manual surrender must not force a full scan of every stored game before
+        // it can finish one known game and release the current session.
+        $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move'], true);
         mgw_cleanup_games_if_due($data, $games, $forceCleanup);
 
         switch ($action) {

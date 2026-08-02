@@ -4,6 +4,7 @@ declare(strict_types=1);
 final class RuntimePrimaryProjectionOutboxWriter
 {
     public const PROJECTION_VERSION = 'v1-normalized-all-modules';
+    public const COMPLETED_RETENTION_ROWS = 16;
 
     public function ensurePending(
         DatabaseConnectionInterface $database,
@@ -61,9 +62,11 @@ final class RuntimePrimaryProjectionOutboxWriter
                 'event_id' => $eventId,
                 'state_revision' => $revision,
                 'status' => (string)($row['status'] ?? ''),
+                'retention_deleted' => 0,
             ];
         }
 
+        $retentionDeleted = $this->pruneCompletedHistory($database);
         $now = gmdate(DATE_ATOM);
         $inserted = $database->execute(
             'INSERT INTO ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . '
@@ -100,7 +103,37 @@ final class RuntimePrimaryProjectionOutboxWriter
             'event_id' => $eventId,
             'state_revision' => $revision,
             'status' => 'pending',
+            'retention_deleted' => $retentionDeleted,
         ];
+    }
+
+    private function pruneCompletedHistory(DatabaseConnectionInterface $database): int
+    {
+        $keepBeforeInsert = self::COMPLETED_RETENTION_ROWS - 1;
+        if ($keepBeforeInsert < 0) {
+            throw new RuntimeException('Projection outbox retention bound is invalid.');
+        }
+
+        $cutoffValue = $database->fetchValue(
+            'SELECT state_revision
+             FROM ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . "
+             WHERE status = 'completed'
+             ORDER BY state_revision DESC
+             LIMIT 1 OFFSET " . $keepBeforeInsert
+        );
+        if ($cutoffValue === null || $cutoffValue === false || $cutoffValue === '') return 0;
+
+        $cutoffRevision = (int)$cutoffValue;
+        if ($cutoffRevision < 1) {
+            throw new RuntimeException('Projection outbox retention revision is invalid.');
+        }
+
+        return $database->execute(
+            'DELETE FROM ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE . "
+             WHERE status = 'completed'
+               AND state_revision <= :cutoff_revision",
+            ['cutoff_revision' => $cutoffRevision]
+        );
     }
 
     private function canonicalJson(array $value): string

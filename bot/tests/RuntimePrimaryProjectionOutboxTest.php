@@ -22,6 +22,32 @@ final class ProjectionOutboxTestConnection implements DatabaseConnectionInterfac
     public function pdo(): PDO { throw new RuntimeException('unused'); }
     public function failNextEvent(): void { $this->failNextEvent = true; }
     public function events(): array { ksort($this->events); return array_values($this->events); }
+    public function event(int $revision): array { return $this->events[$revision] ?? []; }
+
+    public function seedCompletedEvents(int $firstRevision, int $lastRevision): void
+    {
+        for ($revision = $firstRevision; $revision <= $lastRevision; $revision++) {
+            $json = json_encode(
+                ['system' => ['sequence' => $revision]],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+            );
+            $sha = hash('sha256', $json);
+            $this->events[$revision] = [
+                'state_revision' => $revision,
+                'event_id' => hash(
+                    'sha256',
+                    RuntimePrimaryProjectionOutboxWriter::PROJECTION_VERSION . '|' . $revision . '|' . $sha
+                ),
+                'projection_version' => RuntimePrimaryProjectionOutboxWriter::PROJECTION_VERSION,
+                'state_sha256' => $sha,
+                'state_json' => $json,
+                'status' => 'completed',
+                'attempt_count' => 1,
+                'created_at_utc' => '2026-07-20T10:00:00+00:00',
+            ];
+        }
+        ksort($this->events, SORT_NUMERIC);
+    }
 
     public function execute(string $sql, array $params = []): int
     {
@@ -55,6 +81,16 @@ final class ProjectionOutboxTestConnection implements DatabaseConnectionInterfac
             $this->state['state_sha256'] = (string)$params['state_sha256'];
             $this->state['updated_at_utc'] = (string)$params['updated_at_utc'];
             return 1;
+        }
+        if (str_starts_with($sql, 'delete from ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE)) {
+            $cutoff = (int)($params['cutoff_revision'] ?? 0);
+            $deleted = 0;
+            foreach ($this->events as $revision => $event) {
+                if ((string)($event['status'] ?? '') !== 'completed' || $revision > $cutoff) continue;
+                unset($this->events[$revision]);
+                $deleted++;
+            }
+            return $deleted;
         }
         if (str_starts_with($sql, 'insert into ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE)) {
             if ($this->failNextEvent) {
@@ -111,6 +147,18 @@ final class ProjectionOutboxTestConnection implements DatabaseConnectionInterfac
         }
         if (str_starts_with($sql, 'select singleton_id, revision, state_json')) {
             return $this->state === null ? [] : [$this->state];
+        }
+        if (str_starts_with($sql, 'select state_revision from ' . RuntimePrimaryProjectionOutboxSchemaInstaller::TABLE)
+            && str_contains($sql, "where status = 'completed'")) {
+            $completed = [];
+            foreach ($this->events as $revision => $event) {
+                if ((string)($event['status'] ?? '') === 'completed') $completed[] = $revision;
+            }
+            rsort($completed, SORT_NUMERIC);
+            $offset = RuntimePrimaryProjectionOutboxWriter::COMPLETED_RETENTION_ROWS;
+            return isset($completed[$offset])
+                ? [['state_revision' => $completed[$offset]]]
+                : [];
         }
         if (str_starts_with($sql, 'select state_revision, event_id, projection_version')) {
             $revision = (int)$params['state_revision'];
@@ -194,5 +242,33 @@ $throws(static function () use ($adapter): void {
 $assert(($adapter->status()['revision'] ?? 0) === 2, 'Event failure must roll back revision');
 $assert($adapter->readOnly(static fn(array $data): int => (int)$data['users']['100']['balance']) === 75, 'Event failure must roll back state');
 $assert(count($db->events()) === 2, 'Event failure must not leave partial event');
+
+$retentionDb = new ProjectionOutboxTestConnection();
+$retentionDb->seedCompletedEvents(1, 20);
+$retentionJson = json_encode(
+    ['system' => ['sequence' => 21]],
+    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+);
+$retentionResult = (new RuntimePrimaryProjectionOutboxWriter())->ensurePending(
+    $retentionDb,
+    21,
+    $retentionJson,
+    hash('sha256', $retentionJson)
+);
+$assert(($retentionResult['retention_deleted'] ?? 0) === 4, 'Retention must delete only completed rows beyond the bound');
+$assert(count($retentionDb->events()) === 17, 'Retention must keep sixteen completed snapshots plus the new pending event');
+$assert($retentionDb->event(4) === [], 'Old completed snapshots must be pruned');
+$assert(($retentionDb->event(5)['status'] ?? '') === 'completed', 'The sixteen newest completed snapshots must remain');
+$assert(($retentionDb->event(21)['status'] ?? '') === 'pending', 'The new projection event must remain pending');
+
+$retentionAgain = (new RuntimePrimaryProjectionOutboxWriter())->ensurePending(
+    $retentionDb,
+    21,
+    $retentionJson,
+    hash('sha256', $retentionJson)
+);
+$assert(($retentionAgain['created'] ?? true) === false, 'Repeated retained revision must remain idempotent');
+$assert(($retentionAgain['retention_deleted'] ?? -1) === 0, 'Idempotent lookup must not run retention again');
+$assert(count($retentionDb->events()) === 17, 'Idempotent lookup must not change retained history');
 
 fwrite(STDOUT, "RuntimePrimaryProjectionOutboxTest passed: {$assertions} assertions.\n");

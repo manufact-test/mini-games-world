@@ -1,0 +1,65 @@
+<?php
+declare(strict_types=1);
+
+$root = dirname(__DIR__, 2);
+$read = static function (string $path) use ($root): string {
+    $content = file_get_contents($root . '/' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read production v110 source: ' . $path);
+    return $content;
+};
+
+$assertions = 0;
+$assert = static function (bool $condition, string $message) use (&$assertions): void {
+    $assertions++;
+    if (!$condition) throw new RuntimeException($message);
+};
+
+$watch = $read('bot/game-watch.php');
+$sync = $read('app/assets/js/production-v110-readonly-game-sync.js');
+$presence = $read('app/assets/js/production-v110-presence.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r5.js');
+$shell = $read('app/assets/js/main-v110-handoff-shell.js');
+$launch = $read('bot/helpers/WebAppLaunchUrl.php');
+
+$jsonFastPath = strpos($watch, "if (\$driver === 'json')");
+$storageFallback = strpos($watch, 'StorageFactory::create($config)');
+$assert($jsonFastPath !== false
+    && $storageFallback !== false
+    && $jsonFastPath < $storageFallback
+    && str_contains($watch, "fopen(\$path, 'rb')")
+    && str_contains($watch, 'flock($handle, LOCK_SH)')
+    && !str_contains($watch, 'app.lock'),
+    'The accepted lock-free PvP watch must remain unchanged.');
+
+$assert(str_contains($sync, 'const WATCH_INTERVAL_MS = 250;')
+    && str_contains($sync, 'const FALLBACK_GAME_POLL_MS = 1500;')
+    && str_contains($sync, "typeof speed?.rawFetch === 'function'")
+    && !str_contains($sync, 'openSheet('),
+    'PvP freshness must remain a non-rendering transport.');
+
+$assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
+    && str_contains($presence, "window.addEventListener('pageshow'")
+    && str_contains($presence, 'cancelInFlightRequests()')
+    && str_contains($presence, 'REQUEST_TIMEOUT_MS = 4500')
+    && !str_contains($presence, 'mgwPrefetch'),
+    'The single client presence owner must start from app-ready and refresh immediately after resume.');
+
+$toastStart = strpos($notifications, 'async function openToastNotification()');
+$toastOpen = strpos($notifications, 'void openNotificationsSheet([item], true, true);', $toastStart ?: 0);
+$immediatePaint = strpos($notifications, 'renderNotifications(immediate);');
+$generationRefresh = strpos($notifications, 'return refreshOpenSheet(generation);');
+$assert($toastStart !== false
+    && $toastOpen !== false
+    && $immediatePaint !== false
+    && $generationRefresh !== false
+    && $immediatePaint < $generationRefresh,
+    'The exact blue-toast item must enter the retained rollback sheet owner, paint cached data and then refresh within its generation.');
+
+$assert(!str_contains($shell, 'NotificationPreflight')
+    && substr_count($shell, 'initNotificationsScreen();') === 1
+    && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
+    'The active graph must retain one notification owner and one non-rendering PvP transport.');
+$assert(str_contains($launch, '/app/v110.php?v=1123'),
+    'Telegram launches must use the final published R12 outer revision.');
+
+fwrite(STDOUT, 'ProductionV110PvpResultNotificationRootContractTest: ' . $assertions . " assertions passed\n");

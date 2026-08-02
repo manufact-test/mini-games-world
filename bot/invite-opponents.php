@@ -2,8 +2,9 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/services/PresenceService.php';
 
-function mgw_recent_opponent_name(array $user): string
+function mgw_invite_opponent_name(array $user): string
 {
     $username = trim((string)($user['username'] ?? ''));
     if ($username !== '') return '@' . ltrim($username, '@');
@@ -12,7 +13,7 @@ function mgw_recent_opponent_name(array $user): string
     return $name !== '' ? $name : 'Игрок';
 }
 
-function mgw_recent_opponent_activity(array $user): array
+function mgw_invite_opponent_activity(array $user, bool $presenceOnline): array
 {
     $status = (string)($user['status'] ?? 'idle');
     $lastSeen = strtotime((string)($user['last_seen_at'] ?? '')) ?: 0;
@@ -24,14 +25,17 @@ function mgw_recent_opponent_activity(array $user): array
     if ($status === 'searching') {
         return ['label' => 'ищет соперника', 'online' => true, 'busy' => true];
     }
-    if ($secondsAgo !== null && $secondsAgo <= 90) {
+    if ($presenceOnline) {
         return ['label' => 'онлайн', 'online' => true, 'busy' => false];
     }
     if ($secondsAgo !== null && $secondsAgo <= 3600) {
         return ['label' => 'был недавно', 'online' => false, 'busy' => false];
     }
+    if ($secondsAgo !== null && $secondsAgo <= 86400 * 7) {
+        return ['label' => 'заходил на этой неделе', 'online' => false, 'busy' => false];
+    }
 
-    return ['label' => 'недавний соперник', 'online' => false, 'busy' => false];
+    return ['label' => 'недавний игрок', 'online' => false, 'busy' => false];
 }
 
 try {
@@ -43,53 +47,71 @@ try {
     $userId = (string)($tgUser['id'] ?? '');
     if ($userId === '') api_error('Пользователь не найден.');
 
+    $presence = new PresenceService();
+    $onlineIds = array_fill_keys($presence->onlineAccountIds(), true);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
-    $items = $db->readOnly(function (array $data) use ($userId): array {
-        $games = array_values(array_filter($data['games'] ?? [], static function ($game) use ($userId): bool {
-            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished') return false;
-            if (!empty($game['is_bot_game'])) return false;
 
+    $items = $db->readOnly(function (array $data) use ($userId, $onlineIds): array {
+        $lastGameAt = [];
+        foreach ($data['games'] ?? [] as $game) {
+            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished' || !empty($game['is_bot_game'])) {
+                continue;
+            }
             $players = array_values(array_map('strval', $game['player_ids'] ?? []));
-            return count($players) === 2 && in_array($userId, $players, true);
-        }));
-
-        usort($games, static function (array $left, array $right): int {
-            $leftTime = strtotime((string)($left['finished_at'] ?? $left['updated_at'] ?? $left['created_at'] ?? '')) ?: 0;
-            $rightTime = strtotime((string)($right['finished_at'] ?? $right['updated_at'] ?? $right['created_at'] ?? '')) ?: 0;
-            return $rightTime <=> $leftTime;
-        });
-
-        $seen = [];
-        $result = [];
-        foreach ($games as $game) {
-            $players = array_values(array_map('strval', $game['player_ids'] ?? []));
+            if (count($players) !== 2 || !in_array($userId, $players, true)) continue;
             $opponentId = $players[0] === $userId ? ($players[1] ?? '') : ($players[0] ?? '');
-            if ($opponentId === '' || str_starts_with($opponentId, 'bot_') || isset($seen[$opponentId])) continue;
-            if (!isset($data['users'][$opponentId]) || !is_array($data['users'][$opponentId])) continue;
+            if ($opponentId === '' || str_starts_with($opponentId, 'bot_')) continue;
+            $timestamp = (string)($game['finished_at'] ?? $game['updated_at'] ?? $game['created_at'] ?? '');
+            $current = strtotime((string)($lastGameAt[$opponentId] ?? '')) ?: 0;
+            $candidate = strtotime($timestamp) ?: 0;
+            if ($candidate >= $current) $lastGameAt[$opponentId] = $timestamp;
+        }
 
-            $opponent = $data['users'][$opponentId];
-            $activity = mgw_recent_opponent_activity($opponent);
+        $result = [];
+        foreach ($data['users'] ?? [] as $candidateId => $candidate) {
+            $candidateId = (string)$candidateId;
+            if ($candidateId === ''
+                || $candidateId === $userId
+                || str_starts_with($candidateId, 'bot_')
+                || !is_array($candidate)) {
+                continue;
+            }
+
+            $presenceOnline = isset($onlineIds[$candidateId]);
+            $lastSeen = strtotime((string)($candidate['last_seen_at'] ?? '')) ?: 0;
+            $hasHistory = isset($lastGameAt[$candidateId]);
+            if (!$presenceOnline && !$hasHistory && ($lastSeen <= 0 || time() - $lastSeen > 86400 * 30)) {
+                continue;
+            }
+
+            $activity = mgw_invite_opponent_activity($candidate, $presenceOnline);
+            $gameTime = strtotime((string)($lastGameAt[$candidateId] ?? '')) ?: 0;
+            $score = !empty($activity['online']) ? 10000000000 : 0;
+            $score += !empty($activity['busy']) ? 1000000000 : 0;
+            $score += $hasHistory ? 100000000 : 0;
+            $score += max($gameTime, $lastSeen);
+
             $result[] = [
-                'id' => $opponentId,
-                'name' => mgw_recent_opponent_name($opponent),
+                'id' => $candidateId,
+                'name' => mgw_invite_opponent_name($candidate),
                 'activity' => (string)$activity['label'],
                 'online' => (bool)$activity['online'],
                 'busy' => (bool)$activity['busy'],
-                'last_game_at' => (string)($game['finished_at'] ?? $game['updated_at'] ?? $game['created_at'] ?? ''),
+                'last_game_at' => (string)($lastGameAt[$candidateId] ?? ''),
+                'last_seen_at' => (string)($candidate['last_seen_at'] ?? ''),
+                '_score' => $score,
             ];
-            $seen[$opponentId] = true;
-
-            if (count($result) >= 10) break;
         }
 
         usort($result, static function (array $left, array $right): int {
-            $onlineCompare = (int)!empty($right['online']) <=> (int)!empty($left['online']);
-            if ($onlineCompare !== 0) return $onlineCompare;
-            $leftTime = strtotime((string)($left['last_game_at'] ?? '')) ?: 0;
-            $rightTime = strtotime((string)($right['last_game_at'] ?? '')) ?: 0;
-            return $rightTime <=> $leftTime;
+            $scoreCompare = (int)($right['_score'] ?? 0) <=> (int)($left['_score'] ?? 0);
+            if ($scoreCompare !== 0) return $scoreCompare;
+            return strcasecmp((string)($left['name'] ?? ''), (string)($right['name'] ?? ''));
         });
 
+        $result = array_slice($result, 0, 10);
+        foreach ($result as &$item) unset($item['_score']);
+        unset($item);
         return $result;
     });
 

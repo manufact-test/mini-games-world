@@ -1,0 +1,30 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "games_go_two_passes",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T16:00:00+00:00"},
+  "random_seed": 140247,
+  "id_sequence": {"tx": ["tx_games_go_two_passes_1", "tx_games_go_two_passes_2", "tx_games_go_two_passes_3", "tx_games_go_two_passes_4"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "u1": {"id": "u1", "username": "alice", "first_name": "Alice", "balance_match": 90, "balance_gold": 50, "status": "playing", "current_game_id": "game_go_001", "stats": {"games_played": 0, "wins": 0, "losses": 0, "draws": 0, "match_games_this_week": 0}},
+      "u2": {"id": "u2", "username": "bob", "first_name": "Bob", "balance_match": 90, "balance_gold": 50, "status": "playing", "current_game_id": "game_go_001", "stats": {"games_played": 0, "wins": 0, "losses": 0, "draws": 0, "match_games_this_week": 0}}
+    },
+    "games": {
+      "game_go_001": {"id": "game_go_001", "game_type": "go", "room": "match", "bet": 10, "bank": 20, "board_size": 9, "board_columns": 9, "board_rows": 9, "player_ids": ["u1", "u2"], "player_names": {"u1": "Alice", "u2": "Bob"}, "turn": "u1", "status": "active", "winner_id": null, "loser_id": null, "finish_reason": null, "payout_done": false, "created_at": "2026-07-29T15:59:00+00:00", "updated_at": "2026-07-29T15:59:55+00:00", "last_move_at": "2026-07-29T15:59:55+00:00", "turn_started_at": "2026-07-29T15:59:55+00:00", "is_bot_game": false, "board": "-----------------------------------------W---------------------------------------", "go_sides": {"u1": "black", "u2": "white"}, "go_legal_moves": {"40": [41]}, "go_consecutive_passes": 0, "go_move_count": 0, "go_captures": {"black": 0, "white": 0}, "go_last_captured_cells": [], "go_score": {"black": 10.0, "white": 8.5}}
+    },
+    "transactions": [], "invites": [], "notifications": [], "system": {}
+  },
+  "scenario": {
+    "id": "games.go.two-passes",
+    "input": {"game_id": "game_go_001", "viewer_id": "u1", "config": {"commission_rate": 0.1, "move_timeout_sec": 60}, "workflow": [
+      {"action": "observe", "actor_id": "u1", "offset_sec": 0},
+      {"action": "place", "actor_id": "u1", "cell": 41, "expect_error": "Эта точка уже занята.", "offset_sec": 1},
+      {"action": "place", "actor_id": "u1", "cell": 40, "offset_sec": 2},
+      {"action": "pass", "actor_id": "u2", "offset_sec": 3},
+      {"action": "pass", "actor_id": "u1", "offset_sec": 4},
+      {"action": "pass", "actor_id": "u2", "offset_sec": 5},
+      {"action": "rematch_projection", "actor_id": "u2", "offset_sec": 6}
+    ]}
+  }
+}

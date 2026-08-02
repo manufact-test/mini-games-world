@@ -1,0 +1,70 @@
+name: Production Primary Rollback Export Safety
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/mvp-14-release-integration
+    paths:
+      - 'bot/runtime/ProductionPrimaryRollback*.php'
+      - 'bot/tests/ProductionPrimaryRollback*Test.php'
+      - 'ops/runtime/run-production-primary-rollback-export.php'
+      - 'ops/runtime/PRODUCTION_PRIMARY_ROLLBACK_EXPORT.md'
+      - 'ops/checks/production-primary-rollback-export-local.sh'
+      - '.github/workflows/production-primary-rollback-export-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-production-primary-rollback-export-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Verify DB-to-JSON rollback export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: mgw_rollback_ci
+          MYSQL_USER: mgw_rollback_ci_user
+          MYSQL_PASSWORD: rollback_ci_password_not_secret
+          MYSQL_ROOT_PASSWORD: rollback_ci_root_password_not_secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      MGW_TEST_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_rollback_ci;charset=utf8mb4
+      MGW_TEST_MYSQL_USER: mgw_rollback_ci_user
+      MGW_TEST_MYSQL_PASSWORD: rollback_ci_password_not_secret
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Verify exact PHP runtime
+        run: php -r 'printf("PHP_VERSION=%s\n", PHP_VERSION); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
+
+      - name: Run focused rollback export checks
+        run: bash ops/checks/production-primary-rollback-export-local.sh

@@ -31,6 +31,14 @@ fi
 
 echo "PHP smoke tests passed: ${test_count} files"
 
+echo "== Shell syntax =="
+shell_count=0
+while IFS= read -r -d '' file; do
+  bash -n "$file"
+  shell_count=$((shell_count + 1))
+done < <(git ls-files -z '*.sh')
+echo "Shell syntax passed: ${shell_count} files"
+
 echo "== JSON validation =="
 node scripts/ci/check-json.mjs
 
@@ -39,5 +47,10 @@ node scripts/ci/check-js.mjs
 
 echo "== Secret and private-file scan =="
 node scripts/ci/check-secrets.mjs
+
+if [[ "${GITHUB_HEAD_REF:-}" == 'agent/mvp14r13-staging-readonly-audit' ]]; then
+  echo "== MVP-14R13.1 public read-only staging audit =="
+  bash scripts/audit/mvp14r13-staging-public-probe.sh
+fi
 
 echo "All Mini Games World CI checks passed."

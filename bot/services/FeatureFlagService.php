@@ -40,7 +40,7 @@ final class FeatureFlagService
         $message = trim((string)($this->flags()['maintenance_message'] ?? ''));
         return $message !== ''
             ? $message
-            : 'Идут технические работы. Активные партии можно завершить, новые матчи временно недоступны.';
+            : 'Идут технические работы. Mini Games World скоро вернётся.';
     }
 
     public function financialReadOnly(): bool
@@ -161,7 +161,7 @@ final class FeatureFlagService
 
     public function activeGameActionsAllowed(): bool
     {
-        return true;
+        return !$this->maintenanceEnabled();
     }
 
     private function flags(): array

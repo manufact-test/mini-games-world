@@ -1,0 +1,41 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "invite_rematch_reuse_start",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T12:00:00+00:00"},
+  "random_seed": 140203,
+  "id_sequence": {
+    "invite": ["invite_rematch_001"],
+    "token": ["333333333333333333333333"],
+    "notification": ["notification_rematch_received", "notification_rematch_accepted"],
+    "game": ["game_rematch_001"],
+    "tx": ["tx_rematch_u1", "tx_rematch_u2", "tx_rematch_start"]
+  },
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "u1": {"id": "u1", "username": "alice", "first_name": "Alice", "balance_match": 100, "balance_gold": 50, "status": "idle", "current_game_id": null},
+      "u2": {"id": "u2", "username": "bob", "first_name": "Bob", "balance_match": 100, "balance_gold": 50, "status": "idle", "current_game_id": null}
+    },
+    "queue": [],
+    "games": {
+      "game_finished_001": {
+        "id": "game_finished_001", "game_type": "tictactoe", "room": "match", "bet": 10,
+        "board_size": 3, "board_columns": 3, "board_rows": 3,
+        "player_ids": ["u1", "u2"], "player_names": {"u1": "@alice", "u2": "@bob"},
+        "turn": "u2", "status": "finished", "winner_id": "u1", "is_bot_game": false,
+        "created_at": "2026-07-29T11:40:00+00:00", "updated_at": "2026-07-29T11:50:00+00:00", "turn_started_at": "2026-07-29T11:49:00+00:00"
+      }
+    },
+    "invites": [], "notifications": [], "transactions": []
+  },
+  "scenario": {
+    "id": "invites.rematch.reuse-start",
+    "input": {
+      "config": {"match_bet": 10, "bot_after_sec": 15, "move_timeout_sec": 60},
+      "workflow": [
+        {"action": "rematch", "actor_id": "u1", "game_id": "game_finished_001", "offset_sec": 0},
+        {"action": "rematch", "actor_id": "u2", "game_id": "game_finished_001", "offset_sec": 1}
+      ]
+    }
+  }
+}

@@ -1,46 +1,98 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
-import { toast } from '../components/toast.js?v=27';
-import { renderUser, renderBalances } from '../ui.js?v=27';
+import { toast } from '../components/toast.js?v=41';
+import { renderUser, renderBalances } from '../ui.js?v=89';
+
+let profileLoading = false;
 
 export function initProfileScreen(){
   document.addEventListener('mgw:open-profile', openProfile);
 }
 
 export async function openProfile(){
+  showProfileImmediately();
+  if (profileLoading) return;
+
+  profileLoading = true;
+  setProfileBusy(true);
+
   try {
     const [result, ordersResult] = await Promise.all([
       api.profile(),
       api.shopOrders().catch(() => null),
     ]);
-    state.user = result.user;
+
+    state.user = mergeUserState(state.user, result.user);
+    state.profileStats = result.stats || state.profileStats || null;
     state.session = result.session || state.session;
+    state.profileOrders = Array.isArray(ordersResult?.orders)
+      ? ordersResult.orders
+      : (Array.isArray(state.profileOrders) ? state.profileOrders : []);
+
     renderUser(state.user);
     renderBalances(state.user);
-    renderProfileStats(result.stats);
-    renderProfileOverview(
-      state.user || {},
-      Array.isArray(ordersResult?.orders) ? ordersResult.orders : null,
-    );
-    showScreen('profile');
+    if (hasProfileStats(state.profileStats)) renderProfileStats(state.profileStats);
+    renderProfileOverview(state.user || {}, state.profileOrders);
   } catch (error) {
-    toast(error.message);
+    toast(error.message || 'Не удалось обновить профиль.');
+  } finally {
+    profileLoading = false;
+    setProfileBusy(false);
   }
 }
 
-function renderProfileStats(stats = {}){
+function showProfileImmediately(){
+  if (state.user) {
+    renderUser(state.user);
+    renderBalances(state.user);
+  }
+  if (hasProfileStats(state.profileStats)) renderProfileStats(state.profileStats);
+  renderProfileOverview(
+    state.user || {},
+    Array.isArray(state.profileOrders) ? state.profileOrders : []
+  );
+  showScreen('profile');
+}
+
+function mergeUserState(currentUser, incomingUser){
+  const current = currentUser && typeof currentUser === 'object' ? currentUser : {};
+  const incoming = incomingUser && typeof incomingUser === 'object' ? incomingUser : {};
+  const merged = { ...current, ...incoming };
+
+  const incomingPhoto = String(incoming.photo_url || '').trim();
+  const currentPhoto = String(current.photo_url || '').trim();
+  if (!incomingPhoto && currentPhoto) merged.photo_url = currentPhoto;
+
+  return merged;
+}
+
+function setProfileBusy(busy){
+  const screen = document.getElementById('screen-profile');
+  if (!screen) return;
+  screen.classList.toggle('is-loading', Boolean(busy));
+  screen.setAttribute('aria-busy', busy ? 'true' : 'false');
+}
+
+function hasProfileStats(stats){
+  if (!stats || typeof stats !== 'object') return false;
+  return ['games_played', 'wins', 'losses', 'draws']
+    .every(key => Number.isFinite(Number(stats[key])));
+}
+
+function renderProfileStats(stats){
+  if (!hasProfileStats(stats)) return;
   const el = document.getElementById('profileStats');
   if (!el) return;
   el.innerHTML = `
-    <div class="stat"><div class="num">${stats.games_played ?? 0}</div><div class="label">игр сыграно</div></div>
-    <div class="stat"><div class="num">${stats.wins ?? 0}</div><div class="label">побед</div></div>
-    <div class="stat"><div class="num">${stats.losses ?? 0}</div><div class="label">поражений</div></div>
-    <div class="stat"><div class="num">${stats.draws ?? 0}</div><div class="label">ничьих</div></div>
+    <div class="stat"><div class="num">${Number(stats.games_played)}</div><div class="label">игр сыграно</div></div>
+    <div class="stat"><div class="num">${Number(stats.wins)}</div><div class="label">побед</div></div>
+    <div class="stat"><div class="num">${Number(stats.losses)}</div><div class="label">поражений</div></div>
+    <div class="stat"><div class="num">${Number(stats.draws)}</div><div class="label">ничьих</div></div>
   `;
 }
 
-function renderProfileOverview(user = {}, orders = null){
+function renderProfileOverview(user = {}, orders = []){
   const el = ensureProfileOverview();
   if (!el) return;
 

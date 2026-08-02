@@ -1,5 +1,8 @@
-window.__MGW_BUILD__ = 'v86-mvp13-runtime-controls';
-import { initRequestGuard } from './api/request-guard.js?v=80';
+window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
+import { initRequestGuard } from './api/request-guard.js?v=88';
+import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
+import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
@@ -10,8 +13,9 @@ import { initSheet } from './components/sheet.js?v=68';
 import { toast } from './components/toast.js?v=41';
 import { initAccountShortcuts } from './components/account-shortcuts.js?v=48';
 import { initUserCopy } from './components/user-copy.js?v=62';
+import { showHomeActivity, showBootFailure, dispatchAppReady } from './components/boot-state.js?v=87';
 import { initTypography } from './utils/typography.js?v=39';
-import { renderUser, renderBalances, clearTimer } from './ui.js?v=27';
+import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
 import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/home-screen.js?v=74';
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
@@ -20,7 +24,7 @@ import { initNotificationsScreen } from './screens/notifications-screen.js?v=85'
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
-import { initProfileScreen } from './screens/profile-screen.js?v=48';
+import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=85';
@@ -39,7 +43,11 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
+initFirstInteractionReadinessEarly();
 initRequestGuard();
+initResidualUiGameRaceFixEarly();
+initInteractionLatencyCoordinator();
+initResidualUiGameRaceFixAfter();
 initTelegramApp();
 initRuntimeStatus();
 initTypography();
@@ -82,8 +90,21 @@ async function boot(){
     renderUser(state.user);
     renderBalances(state.user);
     renderStats(state.stats);
+    showHomeActivity();
     renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
+
+    /* Profile, history, notifications and opponents improve the first click, but
+     * none of them may invalidate an otherwise authenticated application boot. */
+    const firstInteraction = await warmFirstInteractionData().catch(() => ({
+      profileReady:false,
+      historyReady:false,
+      notificationsReady:false,
+      ordersReady:false,
+      opponentsReady:false,
+    }));
+    window.__MGW_FIRST_INTERACTION_READY__ = firstInteraction;
+    dispatchAppReady();
 
     if (isSessionLocked(state.session)) {
       toast(sessionMessage(state.session));
@@ -97,7 +118,8 @@ async function boot(){
 
     startStatsPolling();
   } catch (error) {
-    toast(error.message);
+    showBootFailure();
+    toast(error.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
   } finally {
     hidePreloader();
   }

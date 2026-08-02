@@ -1,0 +1,24 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "matchmaking_queue_cancel",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T12:00:00+00:00"},
+  "random_seed": 140203,
+  "id_sequence": {"queue": ["queue_search_001"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "u1": {"id": "u1", "username": "alice", "first_name": "Alice", "balance_match": 100, "balance_gold": 50, "status": "idle", "current_game_id": null}
+    },
+    "queue": [], "games": {}, "invites": [], "notifications": [], "transactions": []
+  },
+  "scenario": {
+    "id": "matchmaking.queue.cancel",
+    "input": {
+      "config": {"match_bet": 10, "bot_after_sec": 15, "move_timeout_sec": 60},
+      "workflow": [
+        {"action": "start_search", "actor_id": "u1", "game_type": "tictactoe", "room": "match", "bet": 10, "board_size": 3, "offset_sec": 0},
+        {"action": "leave_search", "actor_id": "u1", "offset_sec": 1}
+      ]
+    }
+  }
+}

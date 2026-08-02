@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';
 require_once __DIR__ . '/services/GameInviteService.php';
+require_once __DIR__ . '/services/InviteSignalService.php';
 
 function mgw_invite_bot_username(array $config): string
 {
@@ -23,8 +25,7 @@ function mgw_invite_bot_username(array $config): string
 
 function mgw_invite_webapp_url(array $config, string $token): string
 {
-    $baseUrl = rtrim((string)($config['base_url'] ?? ''), '/');
-    return $baseUrl . '/app/?v=85&invite=' . rawurlencode($token);
+    return WebAppLaunchUrl::invitation($config, $token);
 }
 
 function mgw_invite_share_url(array $config, string $token): string
@@ -107,6 +108,9 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
 {
     if ($recipientId === '' || (string)($invite['token'] ?? '') === '') return false;
 
+    $webAppUrl = mgw_invite_webapp_url($config, (string)$invite['token']);
+    if ($webAppUrl === '') return false;
+
     $text = (string)($invite['source'] ?? '') === 'rematch'
         ? "🎮 Вам предлагают реванш\n\n"
             . (string)($invite['inviter_name'] ?? 'Игрок') . ' ждёт повторную партию в «'
@@ -128,7 +132,7 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
                 'inline_keyboard' => [[
                     [
                         'text' => '🎮 Открыть приглашение',
-                        'web_app' => ['url' => mgw_invite_webapp_url($config, (string)$invite['token'])],
+                        'web_app' => ['url' => $webAppUrl],
                     ],
                 ]],
             ],
@@ -147,6 +151,8 @@ try {
 
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
+    $prepareMessage = !array_key_exists('prepareMessage', $payload)
+        || !empty($payload['prepareMessage']);
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $users = new UserService($config);
@@ -154,8 +160,11 @@ try {
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
     $invites = new GameInviteService($config, $catalog, $games);
+    $inviteSignals = new InviteSignalService($config);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
-    $runtimeInvites = $runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE
+    $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
+    $runtimeInvites = $legacyBridgeAllowed
+        && $runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE
         ? new RuntimeInviteRepository($config, $runtimeStorageRouter)
         : null;
 
@@ -213,8 +222,8 @@ try {
                 break;
 
             case 'open_link':
-                $core['invite'] = $invites->bindFromLink($data, $user, $token, true, true);
-                $invites->markSeen($data, $userId, $token);
+                $invites->bindFromLink($data, $user, $token, true, false);
+                $core = $invites->sync($data, $user, $token);
                 break;
 
             case 'sync':
@@ -238,6 +247,13 @@ try {
                 break;
 
             case 'cancel':
+                foreach ($data['invites'] ?? [] as $storedInvite) {
+                    if (!is_array($storedInvite) || (string)($storedInvite['token'] ?? '') !== $token) continue;
+                    $inviterId = (string)($storedInvite['inviter_id'] ?? '');
+                    $inviteeId = (string)($storedInvite['invitee_id'] ?? '');
+                    $core['signal_recipient_id'] = $userId === $inviterId ? $inviteeId : $inviterId;
+                    break;
+                }
                 $core['invite'] = $invites->cancel($data, $user, $token);
                 break;
 
@@ -270,6 +286,18 @@ try {
         return $core;
     });
 
+    $actorId = (string)($tgUser['id'] ?? '');
+    $signalToken = (string)($result['invite']['token'] ?? $payload['token'] ?? '');
+    if ($action === 'create_direct'
+        && is_array($result['invite'] ?? null)
+        && (string)($result['invite']['status'] ?? '') === 'pending') {
+        $inviteSignals->publish((string)($result['recipient_id'] ?? ''), $result['invite']);
+    } elseif (in_array($action, ['accept', 'decline', 'cancel', 'start'], true) && $signalToken !== '') {
+        $inviteSignals->clear($actorId, $signalToken);
+        $inviteSignals->clear((string)($result['signal_recipient_id'] ?? ''), $signalToken);
+    }
+    unset($result['signal_recipient_id']);
+
     if ($runtimeInvites instanceof RuntimeInviteRepository) {
         $snapshot = $db->readOnly(static fn(array $data): array => $data);
         $runtimeInvites->synchronize($snapshot);
@@ -281,13 +309,15 @@ try {
         $shareText = mgw_invite_share_text($result['invite'], $shareUrl);
         $result['invite']['share_url'] = $shareUrl;
         $result['invite']['share_text'] = $shareText;
-        $result['invite']['prepared_message_id'] = mgw_prepare_invite_message(
-            $config,
-            (string)($tgUser['id'] ?? ''),
-            $result['invite'],
-            $shareUrl,
-            $shareText
-        );
+        $result['invite']['prepared_message_id'] = $prepareMessage
+            ? mgw_prepare_invite_message(
+                $config,
+                (string)($tgUser['id'] ?? ''),
+                $result['invite'],
+                $shareUrl,
+                $shareText
+            )
+            : '';
     }
 
     if (in_array($action, ['create_direct', 'rematch'], true)

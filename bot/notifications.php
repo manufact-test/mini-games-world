@@ -19,15 +19,21 @@ function mgw_notification_invites_by_token(array $data): array
     return $result;
 }
 
-function mgw_notification_is_visible(array $item, ?array $invite): bool
+function mgw_notification_is_received_type(string $type): bool
+{
+    return in_array($type, ['invite_received', 'invite_rematch_received'], true);
+}
+
+function mgw_notification_is_visible(array $item, ?array $invite, string $userId = ''): bool
 {
     $type = (string)($item['type'] ?? '');
     if (!str_starts_with($type, 'invite_')) return true;
+    if (in_array($type, ['invite_expired', 'invite_timed_out'], true)) return false;
     if (!is_array($invite)) return true;
 
     $status = (string)($invite['status'] ?? '');
-    if (in_array($type, ['invite_received', 'invite_rematch_received'], true)) {
-        return $status === 'pending';
+    if (mgw_notification_is_received_type($type)) {
+        return in_array($status, ['pending', 'accepted'], true);
     }
     if ($type === 'invite_accepted') {
         return $status === 'accepted';
@@ -48,6 +54,21 @@ function mgw_notification_actions(array $item, ?array $invite, string $userId): 
     return [];
 }
 
+function mgw_notification_decorate(array $item, ?array $invite, string $userId): array
+{
+    if (!is_array($invite)) return $item;
+    $type = (string)($item['type'] ?? '');
+    if (!mgw_notification_is_received_type($type)) return $item;
+
+    if ((string)($invite['status'] ?? '') === 'accepted') {
+        $item['title'] = 'Приглашение принято';
+        $item['message'] = 'Ждём запуска матча от пригласившего игрока.';
+        $item['tone'] = 'success';
+        $item['read'] = true;
+    }
+    return $item;
+}
+
 function mgw_visible_notifications(
     array $data,
     NotificationService $notifications,
@@ -61,8 +82,9 @@ function mgw_visible_notifications(
     foreach ($items as $item) {
         $token = (string)($item['invite_token'] ?? '');
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
-        if (!mgw_notification_is_visible($item, $invite)) continue;
+        if (!mgw_notification_is_visible($item, $invite, $userId)) continue;
 
+        $item = mgw_notification_decorate($item, $invite, $userId);
         $item['actions'] = mgw_notification_actions($item, $invite, $userId);
         if (is_array($invite)) {
             $item['invite_status'] = (string)($invite['status'] ?? '');
@@ -86,7 +108,12 @@ function mgw_visible_unread_count(array $data, string $userId): int
 
         $token = (string)($notification['invite_token'] ?? '');
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
-        if (mgw_notification_is_visible($notification, $invite)) $count++;
+        if (!mgw_notification_is_visible($notification, $invite, $userId)) continue;
+
+        $type = (string)($notification['type'] ?? '');
+        $status = is_array($invite) ? (string)($invite['status'] ?? '') : '';
+        if (mgw_notification_is_received_type($type) && $status !== 'pending') continue;
+        $count++;
     }
     return $count;
 }
@@ -106,8 +133,10 @@ try {
     $router = $runtimeStorageRouter instanceof RuntimeStorageRouter
         ? $runtimeStorageRouter
         : new RuntimeStorageRouter($config);
+    $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
 
-    if ($router->routeFor('notifications') === RuntimeStorageRouter::DRIVER_DATABASE) {
+    if ($legacyBridgeAllowed
+        && $router->routeFor('notifications') === RuntimeStorageRouter::DRIVER_DATABASE) {
         $snapshot = $markRead
             ? $db->transaction(function (array &$data) use ($notifications, $userId): array {
                 $notifications->markAllRead($data, $userId);

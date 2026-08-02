@@ -61,3 +61,10 @@
 }
 .history-tab-panel{display:none}
 .history-tab-panel.active{display:block}
+
+/* v90: navigation and sheets react in the same frame as the tap. */
+.overlay,
+.sheet{
+  transition:none !important;
+  animation:none !important;
+}

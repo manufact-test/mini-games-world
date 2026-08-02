@@ -1,0 +1,52 @@
+name: Production Primary Entrypoint Wiring Safety
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/mvp-14-release-integration
+    paths:
+      - 'bot/runtime/ProductionPrimary*.php'
+      - 'bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php'
+      - 'bot/storage/RuntimeStorageRouter.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'bot/webhook.php'
+      - 'bot/tests/ProductionPrimary*Test.php'
+      - 'bot/tests/RuntimeStorageRouterTest.php'
+      - 'ops/checks/production-primary-entrypoint-wiring-local.sh'
+      - 'ops/runtime/PRODUCTION_PRIMARY_ENTRYPOINT_WIRING.md'
+      - '.github/workflows/production-primary-entrypoint-wiring-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-production-primary-entrypoint-wiring-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Verify guarded atomic production wiring
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Verify exact PHP runtime
+        run: php -r 'printf("PHP_VERSION=%s\n", PHP_VERSION); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
+
+      - name: Run focused entrypoint wiring checks
+        run: bash ops/checks/production-primary-entrypoint-wiring-local.sh

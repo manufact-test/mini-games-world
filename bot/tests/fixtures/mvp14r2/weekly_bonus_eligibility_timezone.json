@@ -1,0 +1,206 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "weekly_bonus_eligibility_timezone",
+  "clock": {
+    "timezone": "UTC",
+    "now": "2026-07-20T09:59:59+00:00"
+  },
+  "random_seed": 140257,
+  "id_sequence": {
+    "tx": [
+      "tx_weekly_u1",
+      "tx_unused"
+    ],
+    "notification": [
+      "notification_weekly_u1",
+      "notification_unused"
+    ]
+  },
+  "normalization": {
+    "path_categories": {},
+    "aliases": {}
+  },
+  "state": {
+    "users": {
+      "u1": {
+        "id": "u1",
+        "username": "alice",
+        "first_name": "Alice",
+        "balance_match": 20,
+        "balance_gold": 50,
+        "gold_deposited_total": 50,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "status": "idle",
+        "current_game_id": null,
+        "stats": {
+          "games_played": 0,
+          "wins": 0,
+          "losses": 0,
+          "draws": 0,
+          "match_games_this_week": 0
+        }
+      },
+      "u2": {
+        "id": "u2",
+        "username": "bob",
+        "first_name": "Bob",
+        "balance_match": 30,
+        "balance_gold": 50,
+        "gold_deposited_total": 50,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "status": "idle",
+        "current_game_id": null,
+        "stats": {
+          "games_played": 0,
+          "wins": 0,
+          "losses": 0,
+          "draws": 0,
+          "match_games_this_week": 0
+        }
+      },
+      "u3": {
+        "id": "u3",
+        "username": "u3",
+        "first_name": "U3",
+        "balance_match": 40,
+        "balance_gold": 50,
+        "gold_deposited_total": 50,
+        "gold_wagered_total": 0,
+        "gold_shop_spent_total": 0,
+        "status": "idle",
+        "current_game_id": null,
+        "stats": {
+          "games_played": 0,
+          "wins": 0,
+          "losses": 0,
+          "draws": 0,
+          "match_games_this_week": 0
+        },
+        "is_dev_user": true
+      }
+    },
+    "games": {
+      "w1": {
+        "id": "w1",
+        "status": "finished",
+        "room": "match",
+        "player_ids": [
+          "u1",
+          "x1"
+        ],
+        "finished_at": "2026-07-13T10:00:00+00:00"
+      },
+      "w2": {
+        "id": "w2",
+        "status": "finished",
+        "room": "match",
+        "player_ids": [
+          "u1",
+          "x2"
+        ],
+        "finished_at": "2026-07-16T12:00:00+00:00"
+      },
+      "w3": {
+        "id": "w3",
+        "status": "finished",
+        "room": "match",
+        "player_ids": [
+          "u1",
+          "x3"
+        ],
+        "finished_at": "2026-07-20T09:59:59+00:00"
+      },
+      "w4": {
+        "id": "w4",
+        "status": "finished",
+        "room": "match",
+        "player_ids": [
+          "u1",
+          "x4"
+        ],
+        "finished_at": "2026-07-20T10:00:00+00:00"
+      },
+      "w5": {
+        "id": "w5",
+        "status": "finished",
+        "room": "match",
+        "player_ids": [
+          "u2",
+          "x5"
+        ],
+        "finished_at": "2026-07-14T10:00:00+00:00"
+      },
+      "w6": {
+        "id": "w6",
+        "status": "finished",
+        "room": "match",
+        "player_ids": [
+          "u2",
+          "x6"
+        ],
+        "finished_at": "2026-07-19T10:00:00+00:00"
+      },
+      "w7": {
+        "id": "w7",
+        "status": "finished",
+        "room": "gold",
+        "player_ids": [
+          "u2",
+          "x7"
+        ],
+        "finished_at": "2026-07-18T10:00:00+00:00"
+      }
+    },
+    "transactions": [],
+    "shop_orders": [],
+    "payments": [],
+    "notifications": [],
+    "system": {}
+  },
+  "scenario": {
+    "id": "weekly.eligibility-timezone",
+    "input": {
+      "config": {
+        "weekly_match_timezone": "Europe/Warsaw",
+        "weekly_match_start_at": "2026-07-13 12:00:00",
+        "weekly_match_bonus_amount": 50,
+        "weekly_match_min_completed": 3
+      },
+      "history_user_ids": [],
+      "workflow": [
+        {
+          "action": "weekly_status",
+          "actor_id": "u1",
+          "at": "2026-07-20T09:59:59+00:00",
+          "offset_sec": 0
+        },
+        {
+          "action": "run_weekly",
+          "actor_id": "cron",
+          "at": "2026-07-20T10:00:00+00:00",
+          "offset_sec": 1
+        },
+        {
+          "action": "run_weekly",
+          "actor_id": "cron",
+          "at": "2026-07-20T10:00:01+00:00",
+          "offset_sec": 2
+        },
+        {
+          "action": "weekly_status",
+          "actor_id": "u1",
+          "at": "2026-07-20T10:00:02+00:00",
+          "offset_sec": 3
+        },
+        {
+          "action": "weekly_status",
+          "actor_id": "u2",
+          "at": "2026-07-20T10:00:02+00:00",
+          "offset_sec": 4
+        }
+      ]
+    }
+  }
+}

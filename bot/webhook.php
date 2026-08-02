@@ -6,6 +6,8 @@ require_once __DIR__ . '/helpers/AdminPaymentRejectGuard.php';
 require_once __DIR__ . '/helpers/AdminGoldTopupNotificationGuard.php';
 require_once __DIR__ . '/helpers/AdminSystemCheckGuard.php';
 require_once __DIR__ . '/helpers/UserWelcomeGuard.php';
+require_once __DIR__ . '/helpers/InviteStartGuard.php';
+require_once __DIR__ . '/helpers/MaintenanceWebhookGuard.php';
 
 try {
     $update = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -15,15 +17,29 @@ try {
     }
 
     $telegram = new TelegramService($config);
+    $maintenanceGuard = new MaintenanceWebhookGuard($telegram, $config);
+    if ($maintenanceGuard->handle($update)) {
+        unset($GLOBALS['mgw_webhook_success_hook']);
+        http_response_code(200);
+        exit('ok');
+    }
+
+    // Install the guarded request storage before any remaining guard or handler.
+    // Maintenance is intercepted above without opening a storage transaction, so
+    // DB-primary remains configured while user writes stay fully quiescent.
+    $requestStorage = StorageFactory::createJson((string)($config['data_dir'] ?? ''));
+
     $runtimeGuard = new RuntimeAdminGuard($telegram, $config);
     $guard = new AdminPaymentRejectGuard($telegram, $config);
     $goldTopupGuard = new AdminGoldTopupNotificationGuard($telegram, $config);
     $auditGuard = new AdminSystemCheckGuard($telegram, $config);
+    $inviteStartGuard = new InviteStartGuard($telegram, $config);
     $welcomeGuard = new UserWelcomeGuard($telegram, $config);
     if (!$runtimeGuard->handle($update)
         && !$guard->handle($update)
         && !$goldTopupGuard->handle($update)
         && !$auditGuard->handle($update)
+        && !$inviteStartGuard->handle($update)
         && !$welcomeGuard->handle($update)) {
         $handler = new WebhookHandler($telegram, $config);
         $handler->handle($update);
@@ -37,6 +53,14 @@ try {
     echo 'ok';
 } catch (Throwable $e) {
     error_log('[MiniGamesWorld webhook] ' . $e->getMessage());
-    http_response_code(200);
-    echo 'ok';
+
+    $runtimeSettings = is_array($config['feature_flags']['database_runtime'] ?? null)
+        ? $config['feature_flags']['database_runtime']
+        : [];
+    $productionDbPrimaryRequested = ($config['environment'] ?? null) === 'production'
+        && ($runtimeSettings['enabled'] ?? null) === true
+        && ($runtimeSettings['production_activated'] ?? null) === true;
+
+    http_response_code($productionDbPrimaryRequested ? 503 : 200);
+    echo $productionDbPrimaryRequested ? 'temporary failure' : 'ok';
 }

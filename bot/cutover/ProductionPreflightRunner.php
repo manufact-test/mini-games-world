@@ -30,7 +30,10 @@ final class ProductionPreflightRunner
         if ($environment !== 'production') {
             throw new RuntimeException('Production preflight is enabled only in production.');
         }
-        if (FeatureFlagService::BUILD !== 'v102-mvp14-production-preflight') {
+        if (!in_array(FeatureFlagService::BUILD, [
+            'v102-mvp14-production-preflight',
+            'v103-mvp14-production-cutover',
+        ], true)) {
             throw new RuntimeException('Unexpected application build for production preflight.');
         }
 
@@ -150,6 +153,8 @@ final class ProductionPreflightRunner
             [$controlState, $controlActive] = $this->controlState($controlFile);
 
             $flags = new FeatureFlagService($this->config);
+            $databaseSummary = $databaseConfig->safeSummary();
+            $databaseSummary['identity_fingerprint'] = $databaseConfig->identityFingerprint();
             $runtime = [
                 'environment' => $environment,
                 'build' => FeatureFlagService::BUILD,
@@ -165,7 +170,7 @@ final class ProductionPreflightRunner
                 'migration_plan_fingerprint' => ManagedMigrationController::fingerprint(
                     is_array($migrationStatus['pending'] ?? null) ? $migrationStatus['pending'] : []
                 ),
-                'database' => $databaseConfig->safeSummary(),
+                'database' => $databaseSummary,
                 'database_runtime_requested' => $this->boolValue($databaseRuntime['enabled'] ?? false),
                 'database_runtime_requested_modules' => $requestedModules,
                 'maintenance_enabled' => $flags->maintenanceEnabled(),
@@ -264,14 +269,6 @@ final class ProductionPreflightRunner
         }
     }
 
-    private function boolValue(mixed $value): bool
-    {
-        if (is_bool($value)) return $value;
-        if (is_int($value)) return $value !== 0;
-        if (!is_string($value)) return false;
-        return in_array(strtolower(trim($value)), ['1', 'true', 'yes', 'on', 'enabled'], true);
-    }
-
     private function isInside(string $path, string $parent): bool
     {
         $path = rtrim(str_replace('\\', '/', trim($path)), '/');
@@ -284,5 +281,13 @@ final class ProductionPreflightRunner
         $message = preg_replace('~/(?:home|var|tmp|srv)/[^\s\'\"]+~', '[private-path]', $message) ?? $message;
         $message = preg_replace('/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i', '[redacted-email]', $message) ?? $message;
         return mb_substr(trim($message), 0, 500);
+    }
+
+    private function boolValue(mixed $value): bool
+    {
+        if (is_bool($value)) return $value;
+        if (is_int($value)) return $value !== 0;
+        if (!is_string($value)) return false;
+        return in_array(strtolower(trim($value)), ['1', 'true', 'yes', 'on', 'enabled'], true);
     }
 }

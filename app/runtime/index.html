@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Mini Games World — Clean Runtime</title>
+  <link rel="stylesheet" href="./assets/css/app.css?v=3">
+</head>
+<body>
+  <main class="runtime-shell" id="app" data-runtime="mgw-clean-v1">
+    <section class="runtime-screen is-active" data-screen="boot" aria-live="polite">
+      <div class="runtime-card">
+        <span class="runtime-kicker">Mini Games World</span>
+        <h1>Подготавливаем clean staging</h1>
+        <p data-runtime-message>Подключаем отдельный игровой контур.</p>
+      </div>
+    </section>
+
+    <section class="runtime-screen" data-screen="home" hidden>
+      <div class="runtime-card">
+        <span class="runtime-kicker">Clean staging</span>
+        <h1>Крестики-нолики</h1>
+        <p>Изолированный тестовый матч без подключения старого runtime.</p>
+        <div class="runtime-balance">Match-коины: <strong data-match-balance>—</strong></div>
+        <button class="runtime-button" type="button" data-match-action="start-search">Найти соперника</button>
+        <p class="runtime-inline-error" data-match-error aria-live="polite"></p>
+        <details class="runtime-debug">
+          <summary>Техническая информация</summary>
+          <dl class="runtime-details" data-launch-details></dl>
+        </details>
+      </div>
+    </section>
+
+    <section class="runtime-screen" data-screen="search" hidden>
+      <div class="runtime-card runtime-card--center">
+        <span class="runtime-kicker">Поиск соперника</span>
+        <h1>Ищем второй clean-клиент</h1>
+        <p>Ставка: <strong data-search-bet>10</strong> Match-коинов</p>
+        <p>Баланс: <strong data-search-balance>—</strong></p>
+        <div class="runtime-loader" aria-hidden="true"></div>
+        <button class="runtime-button runtime-button--secondary" type="button" data-match-action="cancel-search">Отменить поиск</button>
+        <p class="runtime-inline-error" data-match-error aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="runtime-screen" data-screen="match" hidden>
+      <div class="runtime-card runtime-card--game">
+        <span class="runtime-kicker">Тестовый матч</span>
+        <h1 data-match-title>Крестики-нолики</h1>
+        <div class="runtime-game-meta">
+          <span data-match-status>Подготовка матча</span>
+          <span>Ваш символ: <strong data-match-symbol>—</strong></span>
+          <span>Время: <strong data-match-time>—</strong></span>
+          <span>Баланс: <strong data-game-balance>—</strong></span>
+        </div>
+        <div class="runtime-board" role="grid" aria-label="Поле крестиков-ноликов">
+          <button type="button" role="gridcell" data-match-action="move" data-cell="0"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="1"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="2"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="3"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="4"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="5"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="6"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="7"></button>
+          <button type="button" role="gridcell" data-match-action="move" data-cell="8"></button>
+        </div>
+        <button class="runtime-button runtime-button--danger" type="button" data-match-action="surrender">Завершить матч</button>
+        <p class="runtime-inline-error" data-match-error aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="runtime-screen" data-screen="result" hidden>
+      <div class="runtime-card runtime-card--center">
+        <span class="runtime-kicker">Результат</span>
+        <h1 data-result-title>Матч завершён</h1>
+        <p data-result-reason></p>
+        <p>Начисление: <strong data-result-payout>0</strong></p>
+        <p>Баланс: <strong data-result-balance>—</strong></p>
+        <div class="runtime-actions">
+          <button class="runtime-button" type="button" data-match-action="new-search">Найти нового соперника</button>
+          <button class="runtime-button runtime-button--secondary" type="button" data-match-action="dismiss-result">В меню</button>
+        </div>
+        <p class="runtime-inline-error" data-match-error aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="runtime-screen" data-screen="error" hidden>
+      <div class="runtime-card runtime-card--error">
+        <span class="runtime-kicker">Ошибка запуска</span>
+        <h1>Не удалось открыть приложение</h1>
+        <p data-error-message>Повторите запуск из Telegram.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script type="module" src="./assets/js/entry.js?v=7"></script>
+</body>
+</html>

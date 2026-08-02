@@ -8,6 +8,15 @@ final class RuntimeConfigLoader
         $primaryConfigFile = trim($primaryConfigFile);
         if ($primaryConfigFile === '') return $config;
 
+        // The production cutover control CLI must be able to inspect, validate
+        // or recover runtime.php even when that file is malformed. Only the
+        // dedicated CLI defines this constant before bootstrap; normal API and
+        // webhook requests always load the runtime overlay as before.
+        if (defined('MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP')
+            && MINIGAMES_CUTOVER_CONTROL_BOOTSTRAP === true) {
+            return $config;
+        }
+
         $runtimeFile = dirname($primaryConfigFile) . '/runtime.php';
         if (is_file($runtimeFile)) {
             $runtime = require $runtimeFile;

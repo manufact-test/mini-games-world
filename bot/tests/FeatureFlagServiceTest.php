@@ -27,7 +27,7 @@ $assertSame(true, $defaults->featureEnabled('payments'), 'Payment drafts must pr
 $assertSame(false, $defaults->featureEnabled('tournaments'), 'Unavailable future feature must default to off');
 $assertSame(true, $defaults->gameEnabled('domino'), 'Released games must default to enabled');
 $assertSame(null, $defaults->newMatchBlockReason('domino'), 'Default runtime must allow new games');
-$assertSame(true, $defaults->activeGameActionsAllowed(), 'Active games must always remain playable');
+$assertSame(true, $defaults->activeGameActionsAllowed(), 'Normal runtime must allow active games');
 $defaultRuntime = $defaults->publicStatus()['database_runtime'] ?? [];
 $assertSame(false, $defaultRuntime['enabled'] ?? null, 'DB runtime routing must default to disabled');
 $assertSame('json', $defaultRuntime['rollback_driver'] ?? null, 'DB runtime rollback must default to JSON');
@@ -51,7 +51,12 @@ $maintenance = new FeatureFlagService([
 ]);
 $assertSame('Плановые работы', $maintenance->newMatchBlockReason('tictactoe'), 'Maintenance must block new matches with configured copy');
 $assertSame('Плановые работы', $maintenance->paymentBlockReason(), 'Maintenance must block payments');
-$assertSame(true, $maintenance->activeGameActionsAllowed(), 'Maintenance must not interrupt active games');
+$assertSame(false, $maintenance->activeGameActionsAllowed(), 'Maintenance must block active-game writes during recovery preparation');
+
+$defaultMaintenance = new FeatureFlagService([
+    'feature_flags' => ['maintenance_mode' => true],
+]);
+$assertContains('технические работы', $defaultMaintenance->maintenanceMessage(), 'Maintenance must have safe fallback copy');
 
 $readOnly = new FeatureFlagService([
     'feature_flags' => [
@@ -61,7 +66,7 @@ $readOnly = new FeatureFlagService([
 $assertContains('Новые матчи', $readOnly->newMatchBlockReason('go'), 'Financial read-only must block new stake matches');
 $assertContains('только для чтения', $readOnly->paymentBlockReason(), 'Financial read-only must block payment writes');
 $assertContains('только для чтения', $readOnly->shopBlockReason(), 'Financial read-only must block shop writes');
-$assertSame(true, $readOnly->activeGameActionsAllowed(), 'Financial read-only must let active matches settle');
+$assertSame(true, $readOnly->activeGameActionsAllowed(), 'Financial read-only alone must let active matches settle');
 
 $invitationsOff = new FeatureFlagService([
     'feature_flags' => [

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/WebAppLaunchUrl.php';
 require_once dirname(__DIR__) . '/services/GameInviteService.php';
 
 final class UserWelcomeGuard
@@ -23,8 +24,16 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        $baseWebAppUrl = rtrim((string)($this->config['base_url'] ?? ''), '/') . '/app/?v=85';
-        if ($baseWebAppUrl === '/app/?v=85') return false;
+        // Current production Telegram entrypoint. Every /start, menu and invite
+        // button must use the same canonical builder as bot/invites.php.
+        // Active canonical path: '/app/v110.php?v=1123'.
+        // Retained explicit no-store rollback/investigation entrypoints:
+        // '/app/v96.php?v=96', '/app/v97.php?v=97', '/app/v98.php?v=98', '/app/v99.php?v=99',
+        // '/app/v100.php?v=100', '/app/v101.php?v=101', '/app/v102.php?v=102', '/app/v103.php?v=103',
+        // '/app/v104.php?v=104', '/app/v105.php?v=105', '/app/v106.php?v=106', '/app/v107.php?v=107',
+        // '/app/v108.php?v=108', '/app/v109.php?v=109'.
+        $baseWebAppUrl = WebAppLaunchUrl::base($this->config);
+        if ($baseWebAppUrl === '') return false;
 
         $inviteToken = '';
         if (preg_match('/^\/start(?:@[a-zA-Z0-9_]+)?\s+invite_([a-f0-9]{24})$/i', $text, $matches)) {
@@ -33,7 +42,7 @@ final class UserWelcomeGuard
         }
 
         $buttonWebAppUrl = $inviteToken !== ''
-            ? $baseWebAppUrl . '&invite=' . rawurlencode($inviteToken)
+            ? WebAppLaunchUrl::invitation($this->config, $inviteToken)
             : $baseWebAppUrl;
 
         if (!$isAdmin) {
@@ -88,8 +97,6 @@ final class UserWelcomeGuard
                 $userId = (string)($user['id'] ?? '');
                 if ($userId === '') return;
                 $data['users'][$userId] = $user;
-                /* The bot command knows the recipient. Create the in-app bell event
-                 * even when the Mini App is already open in another Telegram window. */
                 $invites->bindFromLink($data, $data['users'][$userId], $token, false, false);
             });
         } catch (Throwable $e) {

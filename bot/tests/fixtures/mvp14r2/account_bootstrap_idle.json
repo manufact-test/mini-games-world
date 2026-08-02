@@ -1,0 +1,57 @@
+{
+  "contract_version": "mvp14r2-fixture-v1",
+  "fixture_id": "account_bootstrap_idle",
+  "clock": {"timezone": "UTC", "now": "2026-07-29T15:00:00+00:00"},
+  "random_seed": 1402201,
+  "id_sequence": {"result": ["result_account_bootstrap_001"]},
+  "normalization": {"path_categories": {}, "aliases": {}},
+  "state": {
+    "users": {
+      "1001": {
+        "id": "1001",
+        "telegram_id": "1001",
+        "first_name": "Илья",
+        "username": "ilya",
+        "photo_url": "https://example.test/avatar.jpg",
+        "balance_match": 70,
+        "balance_gold": 25,
+        "gold_deposited_total": 100,
+        "gold_wagered_total": 30,
+        "gold_shop_spent_total": 10,
+        "registered_at": "2026-07-01T10:00:00+00:00",
+        "last_seen_at": "2026-07-29T14:59:55+00:00",
+        "status": "idle",
+        "current_game_id": null,
+        "active_session_id": null,
+        "active_session_at": null,
+        "stats": {"games_played": 99, "wins": 99, "losses": 0, "draws": 0}
+      }
+    },
+    "games": {},
+    "notifications": [
+      {
+        "id": "notification_bootstrap_1",
+        "user_id": "1001",
+        "type": "welcome_match_grant",
+        "title": "Добро пожаловать!",
+        "message": "Начислено +50 коинов.",
+        "tone": "success",
+        "created_at": "2026-07-01T10:00:01+00:00",
+        "read_at": null
+      }
+    ]
+  },
+  "scenario": {
+    "id": "account.bootstrap.idle",
+    "input": {
+      "action": "bootstrap",
+      "user_id": "1001",
+      "session_id": "device-alpha",
+      "config": {
+        "admin_ids": [],
+        "shop_min_order": 1000,
+        "active_session_timeout_sec": 180
+      }
+    }
+  }
+}
