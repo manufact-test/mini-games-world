@@ -1,44 +1,40 @@
 # MVP-14R13.2 — безопасное закрытие staging operations gates
 
-Этот runbook закрывает только оставшиеся инфраструктурные доказательства R13.2.
-Он не изменяет production application, production data, webhook, Cron или BotFather.
-Секреты, bot token, DSN, имя/пользователь/пароль базы не отправлять в чат,
-в issue, PR, Actions log или commit.
+Этот runbook относится только к тестовой среде Mini Games World.
+Он не изменяет production application, production data, рабочий Telegram-бот,
+production webhook, production Cron или реальные платежи.
 
-## 1. Production bot fingerprint
+Токены, пароли, DSN и приватные настройки не отправлять в чат, issue, PR,
+Actions log или commit.
 
-Fingerprint вычисляется локально или в защищённом Hostinger terminal. Сам secret
-передаётся только через STDIN, чтобы он не оказался в shell history:
+## 1. Проверка тестового Telegram-бота
 
-```bash
-read -rsp 'Production bot token: ' MGW_SECRET_INPUT; echo
-printf '%s' "$MGW_SECRET_INPUT" | php ops/runtime/compute-secret-sha256.php
-unset MGW_SECRET_INPUT
-```
+В staging уже настроены собственный bot token и ожидаемый username тестового бота.
+Основной рабочий bot token и его SHA-256 для этой проверки не требуются.
 
-Результат имеет вид `sha256:<64 hex>`. В staging external private config нужно
-добавить только 64-символьное значение в:
+При открытии readiness endpoint сервер безопасно вызывает Telegram Bot API `getMe`
+с уже установленным staging token и сравнивает фактический username бота с
+`staging_bot_username` из приватной staging-конфигурации.
 
-```php
-'environment_guard' => [
-    'production_bot_token_sha256' => '<64 hex>',
-]
-```
-
-После staging reload/Redeploy повторно открыть:
+Проверка:
 
 ```text
 https://seashell-okapi-889488.hostingersite.com/bot/staging-readiness.php
 ```
 
-Принимается только ответ, где все isolation flags равны `true`, включая:
+Принимается ответ, где:
 
 ```text
 production_bot_identity_protected = true
 ```
 
-Если staging bot token совпадает с production fingerprint, ConfigValidator обязан
-fail-closed остановить staging. Сам fingerprint также не публикуется readiness.
+Поле сохранено под прежним названием для совместимости с R13.2. Теперь оно
+означает, что staging token в реальном ответе Telegram принадлежит ожидаемому
+тестовому боту. Если token относится к другому боту, Telegram недоступен или
+username не совпадает, проверка остаётся `false`.
+
+Ответ Telegram кешируется на короткое время. Токен, его hash, bot ID и приватные
+данные в публичный readiness JSON не выводятся.
 
 ## 2. Первый read-only аудит staging DB
 
@@ -97,7 +93,7 @@ completed <= 16
 
 ## 4. Оставшиеся routing checks
 
-До R13.3 вручную подтвердить:
+До R13.3 подтвердить:
 
 - BotFather test Mini App / Web App URL указывает на staging host;
 - staging webhook URL указывает на staging `/bot/webhook.php`;
