@@ -45,7 +45,7 @@ $assert(str_contains($notifications, "document.addEventListener('mgw:notificatio
 $terminalInit = strpos($shell, 'initInviteTerminalActions();');
 $legacyInit = strpos($shell, 'initGameInvites();');
 $assert($terminalInit !== false && $legacyInit !== false && $terminalInit < $legacyInit
-    && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1117'),
+    && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1120'),
     'The terminal owner must initialize before the broader invite owner.');
 $assert(str_contains($legacy, "if (action === 'decline') toast('Приглашение отклонено.');"),
     'The old success branch may remain only as an unreachable compatibility path behind the scoped capture owner.');
