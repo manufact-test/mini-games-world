@@ -16,7 +16,8 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $entrypoints = $read('bot/runtime/ProductionPrimaryApplicationEntrypoints.php');
 $factory = $read('bot/storage/StorageFactory.php');
 $presence = $read('bot/presence.php');
-$client = $read('app/assets/js/production-v110-presence.js');
+$presenceClient = $read('app/assets/js/production-v110-presence.js');
+$statsOwner = $read('app/assets/js/stats-owner-v110.js');
 
 $assert(
     str_contains($entrypoints, "'bot/presence.php' => 'presence'")
@@ -37,10 +38,17 @@ $assert(
     'The same presence request must update the lease and build statistics from the selected canonical storage.'
 );
 $assert(
-    str_contains($client, 'beginStatsRequest()')
-        && str_contains($client, 'applyStatsSnapshot($statsTicket, data?.stats)')
-        && !str_contains($client, 'ONLINE_DROP_GRACE_MS'),
-    'The client must keep the accepted request-order owner and must not hide stale server snapshots with UI smoothing.'
+    str_contains($presenceClient, 'beginStatsRequest()')
+        && str_contains($presenceClient, 'applyStatsSnapshot(statsTicket, data?.stats)'),
+    'Presence responses must pass through the single statistics owner.'
+);
+$assert(
+    str_contains($statsOwner, 'if (sequence < runtime.applied) return false;')
+        && str_contains($statsOwner, 'state.stats = { ...stats };')
+        && !str_contains($statsOwner, 'ONLINE_DROP_GRACE_MS')
+        && !str_contains($statsOwner, 'pendingOnlineDrop')
+        && !str_contains($statsOwner, 'stableOnlineCount('),
+    'The statistics owner must reject stale responses and render accepted authoritative values without UI smoothing.'
 );
 
 fwrite(STDOUT, "ProductionPresencePrimarySourceContractTest: {$assertions} assertions passed\n");
