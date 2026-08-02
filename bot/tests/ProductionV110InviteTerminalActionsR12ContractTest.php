@@ -21,9 +21,10 @@ $endpoint = $read('bot/notifications.php');
 $actions = $read('bot/services/invites/GameInviteActionTrait.php');
 
 $assert(str_contains($owner, "const TERMINAL_ACTIONS = new Set(['decline', 'cancel'])")
-    && str_contains($owner, "document.addEventListener('click', handleTerminalAction, true)")
+    && str_contains($owner, "window.addEventListener('click', handleTerminalAction, true)")
+    && !str_contains($owner, "document.addEventListener('click', handleTerminalAction, true)")
     && str_contains($owner, 'event.stopImmediatePropagation();'),
-    'Decline and cancel must have one scoped capture owner before the broader invite handler.');
+    'Decline and cancel must be owned at window capture before every document-level compatibility handler.');
 
 $closePosition = strpos($owner, 'closeSheet();');
 $requestPosition = strpos($owner, 'const result = await inviteRequest(action, token);');
@@ -68,7 +69,8 @@ $assert($terminalInit !== false && $legacyInit !== false && $terminalInit < $leg
     && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1122'),
     'The silent terminal owner must initialize before the broader invite compatibility handler.');
 
-$assert(str_contains($legacy, "if (action === 'decline') toast('Приглашение отклонено.');"),
-    'The legacy success branch remains unreachable behind the earlier capture owner until the canonical invite cleanup task.');
+$assert(str_contains($legacy, "if (action === 'decline') toast('Приглашение отклонено.');")
+    && str_contains($legacy, "document.addEventListener('click', handleDocumentClick, true)"),
+    'The rollback branch may retain its old success toast, but window capture must make it unreachable in the active graph.');
 
 fwrite(STDOUT, "ProductionV110InviteTerminalActionsR12ContractTest: {$assertions} assertions passed\n");
