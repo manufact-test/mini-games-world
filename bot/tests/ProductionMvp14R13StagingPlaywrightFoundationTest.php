@@ -57,9 +57,10 @@ $assert(!str_contains($workflow, 'secrets.')
     'The Playwright workflow must require no long-lived secret and must never target production.');
 
 $assert(str_contains($workflow, 'actions/upload-artifact@v4')
-    && str_contains($workflow, 'artifacts/playwright')
+    && str_contains($workflow, 'e2e/artifacts/playwright')
+    && str_contains($workflow, 'staging-e2e-readiness.json')
     && str_contains($workflow, 'retention-days: 7'),
-    'Playwright traces, screenshots, videos and reports must be retained as bounded artifacts.');
+    'Playwright traces, screenshots, videos and reports must be uploaded from the actual config-relative evidence path.');
 
 $assert(str_contains($workflow, 'Publish pending commit status')
     && str_contains($workflow, 'Publish final commit status')
@@ -97,6 +98,13 @@ $assert(str_contains($spec, "openPlayer(browser, 'A', testInfo)")
     && str_contains($spec, "'mgw_device_session_id'")
     && str_contains($spec, "'mgw_device_id'"),
     'TEST PLAYER A and B must use independent browser contexts, sessions and devices.');
+
+$assert(str_contains($spec, 'waitForApplicationBootstrap(page, slot)')
+    && str_contains($spec, 'page.waitForResponse(isBootstrapResponse')
+    && str_contains($spec, "postDataJSON()?.action === 'bootstrap'")
+    && str_contains($spec, 'await bootstrapPromise;')
+    && str_contains($spec, 'public error:'),
+    'Each browser context must wait for the real application bootstrap and preserve only its public error on failure.');
 
 $assert(str_contains($spec, "toBe('stg_test_player_a')")
     && str_contains($spec, "toBe('stg_test_player_b')")
