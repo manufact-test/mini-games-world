@@ -35,6 +35,7 @@ $stage = 'bootstrap';
 
 try {
     require_once __DIR__ . '/core/bootstrap.php';
+    require_once __DIR__ . '/helpers/StagingCronHeartbeat.php';
 
     $stage = 'validate_environment';
     $environment = strtolower(trim((string)($config['environment'] ?? '')));
@@ -107,6 +108,14 @@ try {
     $cronAvoidsProductionLiteral = $cronFilePresent
         && !str_contains(strtolower($cronSource), MGW_R13_ROUTING_PRODUCTION_HOST);
     $cronTargetHostFromThisDeployment = $baseHost === MGW_R13_ROUTING_STAGING_HOST;
+    $cronHeartbeatIntegrated = $cronFilePresent
+        && str_contains($cronSource, "require_once dirname(__DIR__) . '/helpers/StagingCronHeartbeat.php'")
+        && str_contains($cronSource, 'StagingCronHeartbeat::recordSuccessfulRun($config, $isCli)');
+
+    $stage = 'read_cron_heartbeat';
+    $cronHeartbeat = StagingCronHeartbeat::status($config);
+    $cronSuccessfulRunObserved = ($cronHeartbeat['observed_successful_run'] ?? false) === true;
+    $cronHeartbeatFresh = ($cronHeartbeat['fresh_within_eight_days'] ?? false) === true;
 
     $checks = [
         'isolated_staging_environment' => true,
@@ -125,6 +134,9 @@ try {
         'cron_http_access_secret_guarded' => $cronHttpSecretGuarded,
         'cron_code_avoids_production' => $cronAvoidsProductionLiteral,
         'cron_target_host_from_staging_deployment' => $cronTargetHostFromThisDeployment,
+        'cron_heartbeat_integrated' => $cronHeartbeatIntegrated,
+        'cron_successful_run_observed' => $cronSuccessfulRunObserved,
+        'cron_heartbeat_fresh' => $cronHeartbeatFresh,
     ];
 
     $report = [
@@ -160,11 +172,20 @@ try {
             'uses_same_staging_bootstrap' => $cronUsesSameBootstrap,
             'http_access_secret_guarded' => $cronHttpSecretGuarded,
             'production_host_literal_absent' => $cronAvoidsProductionLiteral,
-            'hostinger_schedule_visibility' => 'not_available_to_application',
+            'heartbeat_integrated' => $cronHeartbeatIntegrated,
+            'successful_run_observed' => $cronSuccessfulRunObserved,
+            'fresh_within_eight_days' => $cronHeartbeatFresh,
+            'recurring_run_observed' => ($cronHeartbeat['recurring_run_observed'] ?? false) === true,
+            'transport' => $cronHeartbeat['transport'] ?? null,
+            'run_count' => (int)($cronHeartbeat['run_count'] ?? 0),
+            'executed_at_utc' => $cronHeartbeat['executed_at_utc'] ?? null,
+            'previous_executed_at_utc' => $cronHeartbeat['previous_executed_at_utc'] ?? null,
+            'age_seconds' => $cronHeartbeat['age_seconds'] ?? null,
+            'hostinger_schedule_visibility' => 'proved_by_successful_target_execution',
         ],
         'checks' => $checks,
         'manual_check_remaining' => [
-            'hostinger_cron_task_exists_and_targets_this_staging_site' => true,
+            'hostinger_cron_task_exists_and_targets_this_staging_site' => !$cronSuccessfulRunObserved,
         ],
     ];
 
