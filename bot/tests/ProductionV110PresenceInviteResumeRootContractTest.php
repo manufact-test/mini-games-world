@@ -26,65 +26,56 @@ $inviteStorage = $read('bot/services/invites/GameInviteStorageTrait.php');
 $notificationEndpoint = $read('bot/notifications.php');
 $php = $read('app/v110.php');
 
-$assert(str_contains($main, "stats-owner-v110.js?v=1110")
+$assert(str_contains($main, "stats-owner-v110.js?v=1120")
     && str_contains($main, 'beginStatsRequest()')
     && str_contains($main, 'applyStatsSnapshot(statsTicket, result.stats)')
     && !str_contains($main, 'state.stats = result.stats'),
     'All home statistics responses must be ordered by one canonical stats owner.');
-
 $assert(str_contains($stats, 'if (sequence < runtime.applied) return false;')
     && str_contains($stats, 'state.stats = { ...stats };')
     && str_contains($stats, 'renderStats(state.stats)')
     && !str_contains($stats, 'stableOnlineCount')
     && !str_contains($stats, 'ONLINE_DROP_GRACE_MS'),
     'A stale request must never overwrite a newer snapshot, and accepted statistics must render without UI masking.');
-
 $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     && str_contains($presence, "window.addEventListener('pageshow'")
     && str_contains($presence, 'cancelInFlightRequests()')
     && str_contains($presence, 'REQUEST_TIMEOUT_MS = 4500')
     && str_contains($presence, 'new AbortController()'),
     'Mobile resume must cancel suspended requests and start a fresh bounded presence request.');
-
 $assert(str_contains($presence, '// Presence transport starts before the profile bootstrap.')
     && str_contains($presence, "  startPresence();\n}")
     && str_contains($presence, "if (runtime.pingBusy || document.visibilityState !== 'visible') return false;")
     && !str_contains($presence, 'runtime.pingBusy || !runtime.appReady')
     && str_contains($presence, "if (!runtime.appReady || document.visibilityState !== 'visible') return false;"),
     'The document lease must start before bootstrap while visible status rendering stays gated by app readiness.');
-
 $assert(!str_contains($auth, 'touchAuthenticatedPresence')
     && str_contains($api, "\$action === 'bootstrap'")
     && str_contains($api, '$presenceService->touch('),
     'Generic authentication must not resurrect a leaving session; bootstrap remains the application-state owner.');
-
 $assert(str_contains($presenceService, 'LEAVE_GRACE_SEC = 12')
     && str_contains($presenceService, "'leave_after'")
     && str_contains($presenceService, 'readSessionState(')
     && str_contains($presenceService, '$sessionId . "\\0presence:" . $presenceLeaseId'),
     'Explicit leave must use one bounded document handoff lease instead of an immediate delete race.');
-
 $assert(str_contains($invites, 'function hasActionableInvite()')
     && str_contains($invites, "['pending', 'accepted']")
     && str_contains($invites, 'mgw:before-game-launch')
     && str_contains($home, "new CustomEvent('mgw:before-game-launch'"),
     'Any game launch during an actionable invitation must reopen the canonical invitation actions.');
-
 $assert(str_contains($notifications, 'sheetState.generation')
     && str_contains($notifications, 'isCurrentSheet(generation)')
     && str_contains($notifications, 'sheetState.pinned')
     && str_contains($notifications, 'data-notifications-owner="r12"'),
     'Late notification responses must update the current owner only and never reopen a closed sheet.');
-
 $assert(!str_contains($inviteStorage, "'Срок приглашения истёк'")
     && !str_contains($inviteStorage, "'Время ожидания истекло'")
     && str_contains($inviteStorage, "['invite_expired', 'invite_timed_out']")
     && str_contains($notificationEndpoint, "['invite_expired', 'invite_timed_out']"),
     'Passive expiration and timeout must stay notification-free and hidden from existing history.');
-
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($php, 'main-v110.js?v=1115')
-    && str_contains($php, 'v110-mvp14r11-mobile-toast-authority'),
-    'The isolated presence task must preserve the current outer production entrypoint.');
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
+    && str_contains($php, 'main-v110.js?v=1120')
+    && str_contains($php, 'v110-mvp14r12-invite-notification-presence-stability'),
+    'The integrated presence task must use the final production entrypoint.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");
