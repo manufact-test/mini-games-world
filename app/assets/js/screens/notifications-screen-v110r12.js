@@ -114,7 +114,7 @@ function handlePointerDown(event){
 
   const toast = target.closest('#notificationToast');
   if (toast?.classList.contains('show')) {
-    pressedToastItem = toastItem ? cloneItem(toastItem) : newestItem();
+    pressedToastItem = toastSnapshot(toast);
   }
 }
 
@@ -179,11 +179,12 @@ async function openNotificationsSheet({ seed = [], source = 'bell' } = {}){
 
   haptic('light');
   dismissToast();
+  if (source === 'toast') await waitForFirstSheetPaint(generation);
   await refreshOpenSheet(generation);
 }
 
 async function openToastNotification(){
-  const item = normalizeItem(pressedToastItem || toastItem || newestItem());
+  const item = normalizeItem(pressedToastItem || toastSnapshot() || newestItem());
   pressedToastItem = null;
   if (!item.id) {
     void openNotificationsSheet({ seed:currentItems(), source:'toast' });
@@ -196,6 +197,12 @@ async function openToastNotification(){
   upsert(item);
   rememberAnnouncedId(item.id);
   await openNotificationsSheet({ seed:[item], source:'toast' });
+}
+
+async function waitForFirstSheetPaint(generation){
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
+  if (!isCurrentSheet(generation)) return;
+  await new Promise(resolve => window.requestAnimationFrame(resolve));
 }
 
 async function refreshOpenSheet(generation){
@@ -451,6 +458,7 @@ function ensureToast(){
     event.preventDefault();
     event.stopImmediatePropagation();
     if (Date.now() < closeGuardUntil || Date.now() < openGuardUntil) return;
+    pressedToastItem = toastSnapshot(element);
     void openToastNotification();
   });
 
@@ -461,14 +469,14 @@ function ensureToast(){
       dismissToast();
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      pressedToastItem = toastItem ? cloneItem(toastItem) : newestItem();
+      pressedToastItem = toastSnapshot(element);
       void openToastNotification();
     }
   });
 
   element.addEventListener('pointerdown', event => {
     if (!element.classList.contains('show')) return;
-    pressedToastItem = toastItem ? cloneItem(toastItem) : newestItem();
+    pressedToastItem = toastSnapshot(element);
     toastPointer = { id:event.pointerId, x:event.clientX, y:event.clientY, dx:0, dy:0 };
     element.classList.add('dragging');
     element.setPointerCapture?.(event.pointerId);
@@ -515,6 +523,7 @@ function showToast(value){
   upsert(item);
   toastItem = cloneItem(item);
   pressedToastItem = null;
+  element.__mgwNotificationItem = cloneItem(item);
   window.clearTimeout(toastTimer);
   element.className = `notification-toast ${tone}`;
   element.style.transform = '';
@@ -527,6 +536,13 @@ function showToast(value){
   toastTimer = window.setTimeout(dismissToast, TOAST_MS);
   haptic(tone === 'danger' ? 'medium' : 'light');
   return true;
+}
+
+function toastSnapshot(element = document.getElementById('notificationToast')){
+  const stored = element && typeof element.__mgwNotificationItem === 'object'
+    ? element.__mgwNotificationItem
+    : null;
+  return cloneItem(stored || toastItem || newestItem());
 }
 
 function canShowToast(){
@@ -545,6 +561,7 @@ function dismissToast(){
   toastPointer = null;
   const element = document.getElementById('notificationToast');
   if (!element) return;
+  element.__mgwNotificationItem = null;
   element.classList.remove('show','dragging');
   element.style.transform = '';
   element.style.opacity = '';
@@ -600,9 +617,10 @@ function normalizeItems(values){
 
 function normalizeItem(value){
   if (!value || typeof value !== 'object') return {
-    id:'', type:'', title:'', message:'', tone:'info', invite_token:'', actions:[], created_at:'', read:false,
+    id:'', type:'', title:'', message:'', tone:'info', invite_token:'', invite_status:'', invite_is_owner:false,
+    actions:[], created_at:'', read:false,
   };
-  return {
+  const item = {
     ...cloneItem(value),
     id:String(value.id || ''),
     type:String(value.type || ''),
@@ -610,10 +628,28 @@ function normalizeItem(value){
     message:String(value.message || ''),
     tone:String(value.tone || 'info'),
     invite_token:String(value.invite_token || ''),
+    invite_status:String(value.invite_status || ''),
+    invite_is_owner:Boolean(value.invite_is_owner),
     actions:Array.isArray(value.actions) ? value.actions.map(String) : [],
     created_at:String(value.created_at || ''),
     read:Boolean(value.read),
   };
+  item.actions = completeInviteActions(item);
+  return item;
+}
+
+function completeInviteActions(item){
+  if (Array.isArray(item.actions) && item.actions.length) return item.actions;
+  if (!item.invite_token) return [];
+
+  const status = String(item.invite_status || '');
+  const type = String(item.type || '');
+  if (status === 'pending' && !item.invite_is_owner
+      && ['invite_received','invite_rematch_received'].includes(type)) {
+    return ['accept','decline'];
+  }
+  if (status === 'accepted') return item.invite_is_owner ? ['start','cancel'] : ['cancel'];
+  return [];
 }
 
 function cloneItem(value){
