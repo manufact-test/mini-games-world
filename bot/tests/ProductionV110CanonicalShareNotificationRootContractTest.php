@@ -71,7 +71,7 @@ $assert(!str_contains($clean, 'initV109ShareSpeed')
     && str_contains($shell, 'game-invites-v110.js?v=1114')
     && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1123'),
-    'Only the canonical share and current notification owners may be active through the final v1123 shell.');
+    && str_contains($entry, 'main-v110.js?v=1124'),
+    'Only the canonical share and current notification owners may be active through the final v1124 shell.');
 
 fwrite(STDOUT, "ProductionV110CanonicalShareNotificationRootContractTest: {$assertions} assertions passed\n");
