@@ -14,48 +14,47 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
-$runtime = $read('app/assets/js/production-v110-opponent-picker-stability.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
+$endpoint = $read('bot/invite-opponents.php');
+$wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability.js';
 
 $assert(
-    str_contains($shell, "production-v110-opponent-picker-stability.js?v=1118")
-        && substr_count($shell, 'initV110OpponentPickerStability();') === 1
-        && strpos($shell, 'initV110OpponentPickerStability();') < strpos($shell, 'initGameInvites();'),
-    'The opponent cache must initialize exactly once before the canonical invite owner.'
+    !file_exists($wrapperPath)
+        && !str_contains($shell, 'production-v110-opponent-picker-stability.js')
+        && !str_contains($shell, 'initV110OpponentPickerStability'),
+    'Opponent loading must not install a global fetch wrapper or a second runtime owner.'
 );
 $assert(
-    str_contains($runtime, "OPPONENTS_PATH = '/bot/invite-opponents.php'")
-        && str_contains($runtime, 'if (!isOpponentRequest(input)) return runtime.originalFetch(input, init);'),
-    'The fetch wrapper must affect only the recent-opponents endpoint.'
+    str_contains($invites, 'async function openPlayerPicker(context)')
+        && str_contains($invites, 'notifications-loading')
+        && str_contains($invites, 'postJson(OPPONENTS_URL, {})')
+        && str_contains($invites, 'renderPlayerPicker(items, context);'),
+    'The canonical invitation owner must own the honest loading state, request and render transition.'
 );
 $assert(
-    str_contains($runtime, 'freshCachedItems()')
-        && str_contains($runtime, 'return jsonResponse({ ok:true, items:cached });')
-        && str_contains($runtime, 'void refreshFromNetwork'),
-    'A fresh non-empty cache must paint immediately while one background refresh reconciles it.'
+    substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1
+        && substr_count($invites, 'async function openPlayerPicker(context)') === 1,
+    'The player picker must have one endpoint and one canonical UI owner.'
 );
 $assert(
-    str_contains($runtime, 'EMPTY_RETRY_DELAYS_MS = [240, 680]')
-        && str_contains($runtime, 'for (const delayMs of EMPTY_RETRY_DELAYS_MS)')
-        && str_contains($runtime, 'if (hasItems(payload))'),
-    'A transient empty response must be retried before the picker is allowed to render an empty state.'
+    str_contains($endpoint, 'new PresenceService()')
+        && str_contains($endpoint, 'onlineAccountIds()')
+        && str_contains($endpoint, 'str_starts_with($candidateId, \'bot_\')')
+        && str_contains($endpoint, 'array_slice($result, 0, 10)'),
+    'The endpoint must use shared presence, exclude bots and return one bounded authoritative list.'
 );
 $assert(
-    str_contains($runtime, "document.addEventListener('mgw:app-ready'")
-        && str_contains($runtime, 'schedulePrefetch(0)')
-        && str_contains($runtime, 'PREFETCH_INTERVAL_MS = 12000'),
-    'The picker cache must warm only after authenticated app readiness and refresh while visible.'
+    str_contains($endpoint, '$presenceOnline = isset($onlineIds[$candidateId]);')
+        && str_contains($endpoint, '$hasHistory = isset($lastGameAt[$candidateId]);')
+        && str_contains($endpoint, 'time() - $lastSeen > 86400 * 30'),
+    'The authoritative list must include online users and bounded recent known human users without requiring a finished match.'
 );
 $assert(
-    str_contains($runtime, 'CACHE_TTL_MS = 5 * 60 * 1000')
-        && str_contains($runtime, 'cacheKey()')
-        && str_contains($runtime, "new URLSearchParams(getInitData()).get('user')"),
-    'Cached opponent lists must be bounded and scoped to the authenticated Telegram user.'
-);
-$assert(
-    str_contains($invites, 'renderPlayerPicker(items, context);')
-        && str_contains($invites, 'postJson(OPPONENTS_URL, {})'),
-    'The canonical picker renderer and direct-invite action owner must remain unchanged.'
+    !str_contains($shell, 'window.fetch =')
+        && !str_contains($invites, 'window.fetch =')
+        && !str_contains($endpoint, 'sleep(')
+        && !str_contains($endpoint, 'usleep('),
+    'The fix must not hide latency with global interception or server-side retry delays.'
 );
 
 fwrite(STDOUT, "ProductionV110OpponentPickerStabilityContractTest: {$assertions} assertions passed\n");
