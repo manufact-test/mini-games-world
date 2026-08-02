@@ -25,10 +25,15 @@ $assert(str_contains($notifications, 'LOCAL_AUTHORITY_MS = 12000')
     && str_contains($notifications, 'mergeServerItems(serverItems)')
     && str_contains($notifications, 'rememberLocalAuthority(item)'),
     'A stale background response must not replace locally authoritative data.');
-$assert(str_contains($notifications, 'pressedToastItem = toastItem ? cloneItem(toastItem) : newestItem();')
+$assert(str_contains($notifications, 'pressedToastItem = toastSnapshot(element);')
+    && str_contains($notifications, 'pressedToastItem || toastSnapshot() || newestItem()')
     && str_contains($notifications, "openNotificationsSheet({ seed:[item], source:'toast' })")
     && str_contains($notifications, 'sheetState.pinned'),
-    'The tapped toast item must become the first-frame sheet authority.');
+    'The tapped immutable toast snapshot must become the first-frame sheet authority.');
+$assert(str_contains($notifications, "if (source === 'toast') await waitForFirstSheetPaint(generation);")
+    && str_contains($notifications, 'window.requestAnimationFrame(resolve)')
+    && str_contains($notifications, 'await refreshOpenSheet(generation);'),
+    'Background reconciliation must not repaint before the exact mobile first frame is painted.');
 $assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && str_contains($entry, 'main-v110.js?v=1121'),
