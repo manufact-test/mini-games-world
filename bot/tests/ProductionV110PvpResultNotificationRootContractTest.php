@@ -59,7 +59,7 @@ $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
     && substr_count($shell, 'initV110ReadonlyGameSync();') === 1,
     'The active graph must retain one notification owner and one non-rendering PvP transport.');
-$assert(str_contains($launch, '/app/v110.php?v=1122'),
-    'Telegram launches must use the current published R12 outer revision.');
+$assert(str_contains($launch, '/app/v110.php?v=1123'),
+    'Telegram launches must use the final published R12 outer revision.');
 
 fwrite(STDOUT, 'ProductionV110PvpResultNotificationRootContractTest: ' . $assertions . " assertions passed\n");
