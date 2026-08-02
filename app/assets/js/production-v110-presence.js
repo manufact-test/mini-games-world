@@ -1,6 +1,6 @@
 import { getInitData, getTelegram } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
-import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1110';
+import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1119';
 
 const PRESENCE_URL = `${window.location.origin}/bot/presence.php`;
 const HEARTBEAT_MS = 4000;
