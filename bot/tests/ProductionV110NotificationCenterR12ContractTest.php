@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// Isolated R12a contract: notification authority only.
+// Isolated R12 notification authority contract.
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
@@ -46,9 +46,14 @@ $assert(
     'Closing the notification sheet must suppress click-through and duplicate reopen.'
 );
 $assert(
-    str_contains($center, "mgw:invite-action-local-result")
-        && str_contains($center, 'applyInviteActionResult'),
-    'Invite actions must update the existing notification card through the notification owner.'
+    str_contains($center, "document.addEventListener('mgw:notification-remove'")
+        && str_contains($center, 'function removeInviteNotification(detail)')
+        && str_contains($center, 'items.delete(id)')
+        && str_contains($center, 'localAuthority.delete(key)')
+        && str_contains($center, 'sheetState.pinned.delete(key)')
+        && !str_contains($center, "mgw:invite-action-local-result")
+        && !str_contains($center, 'applyInviteActionResult'),
+    'Actor terminal actions must remove the invitation card through the single notification owner instead of creating a self-confirmation state.'
 );
 
 fwrite(STDOUT, "ProductionV110NotificationCenterR12ContractTest: {$assertions} assertions passed\n");
