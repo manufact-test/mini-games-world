@@ -1,0 +1,8 @@
+{
+  "task": "MVP-14R13.1",
+  "mode": "read-only",
+  "production_changes": false,
+  "staging_changes": false,
+  "probe": "scripts/audit/mvp14r13-staging-public-probe.sh",
+  "report": "docs/MVP14R13_STAGING_READONLY_AUDIT.md"
+}
