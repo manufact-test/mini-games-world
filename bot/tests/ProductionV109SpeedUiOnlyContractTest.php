@@ -109,7 +109,7 @@ $assert(
     str_contains($php, 'production-clean-entry-v109.js?v=109')
         && str_contains($php, 'main-v109.js?v=109')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
-        && str_contains($welcome, '/app/v110.php?v=1120')
+        && str_contains($welcome, '/app/v110.php?v=1122')
         && str_contains($welcome, 'v109'),
     'v109 must remain a valid no-store rollback build after the current launch advances to v110.'
 );
