@@ -22,13 +22,16 @@ $assert(str_contains($owner, "const TERMINAL_ACTIONS = new Set(['decline', 'canc
     && str_contains($owner, "document.addEventListener('click', handleTerminalAction, true)")
     && str_contains($owner, 'event.stopImmediatePropagation();'),
     'Decline and cancel must have one scoped owner before the legacy invite handler.');
-$assert(str_contains($owner, "document.dispatchEvent(new CustomEvent('mgw:notification-sync'")
+$assert(str_contains($owner, 'const notificationSurface = isNotificationSurface(button);')
+    && str_contains($owner, 'if (notificationSurface) {')
+    && str_contains($owner, "document.dispatchEvent(new CustomEvent('mgw:notification-sync'")
     && str_contains($owner, 'announce:false')
+    && str_contains($owner, '} else {')
+    && str_contains($owner, 'closeSheet();')
     && !str_contains($owner, "mgw:invite-action-local-result")
-    && !str_contains($owner, 'closeSheet(')
     && !str_contains($owner, "toast('Приглашение отклонено")
     && !str_contains($owner, "toast('Приглашение отменено"),
-    'Successful terminal actions must update the notification owner without closing the sheet or showing a self-confirmation toast.');
+    'Notification actions must update in place, while standalone invitation actions close silently without a self-toast.');
 $assert(str_contains($owner, "[data-notification-invite-token]")
     && str_contains($owner, "data-notification-id")
     && str_contains($owner, "source === 'rematch' ? 'invite_rematch_received' : 'invite_received'")
@@ -42,7 +45,7 @@ $assert(str_contains($notifications, "document.addEventListener('mgw:notificatio
 $terminalInit = strpos($shell, 'initInviteTerminalActions();');
 $legacyInit = strpos($shell, 'initGameInvites();');
 $assert($terminalInit !== false && $legacyInit !== false && $terminalInit < $legacyInit
-    && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1117'),
+    && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1119'),
     'The terminal owner must initialize before the broader invite owner.');
 $assert(str_contains($legacy, "if (action === 'decline') toast('Приглашение отклонено.');"),
     'The old success branch may remain only as an unreachable compatibility path behind the scoped capture owner.');
