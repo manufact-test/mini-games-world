@@ -46,6 +46,9 @@ foreach ([
     'cron_uses_same_staging_bootstrap',
     'cron_http_access_secret_guarded',
     'cron_code_avoids_production',
+    'cron_heartbeat_integrated',
+    'cron_successful_run_observed',
+    'cron_heartbeat_fresh',
 ] as $check) {
     $assert(str_contains($source, "'{$check}'"), 'Missing routing evidence check: ' . $check);
 }
@@ -68,9 +71,10 @@ $assert(!str_contains($source, "\$config['bot_token']")
     && !str_contains(strtolower($source), 'dsn'),
     'The endpoint must not access or expose secret values or private database coordinates directly.');
 
-$assert(str_contains($source, "'hostinger_schedule_visibility' => 'not_available_to_application'")
-    && str_contains($source, "'hostinger_cron_task_exists_and_targets_this_staging_site' => true"),
-    'The report must clearly separate automated route checks from the remaining Hostinger scheduler confirmation.');
+$assert(str_contains($source, 'StagingCronHeartbeat::status($config)')
+    && str_contains($source, "'hostinger_schedule_visibility' => 'proved_by_successful_target_execution'")
+    && str_contains($source, "'hostinger_cron_task_exists_and_targets_this_staging_site' => !\$cronSuccessfulRunObserved"),
+    'The report must replace manual scheduler trust with safe successful-execution proof.');
 
 $assert(str_contains($source, "'error' => 'routing_audit_unavailable'")
     && !str_contains($source, "'message' => \$error->getMessage()"),
