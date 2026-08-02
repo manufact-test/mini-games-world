@@ -29,9 +29,18 @@ $assert(
     'The notification sheet must keep one explicit owner and pinned first-frame items.'
 );
 $assert(
-    str_contains($center, "pressedToastItem = toastItem ? cloneItem(toastItem) : newestItem();")
+    str_contains($center, 'element.__mgwNotificationItem = cloneItem(item);')
+        && str_contains($center, 'pressedToastItem = toastSnapshot(element);')
+        && str_contains($center, 'pressedToastItem || toastSnapshot() || newestItem()')
         && str_contains($center, "openNotificationsSheet({ seed:[item], source:'toast' })"),
-    'A tapped toast must preserve the exact item before any close or asynchronous refresh.'
+    'A tapped toast must preserve one exact immutable item before any close or asynchronous refresh.'
+);
+$paintPosition = strpos($center, "if (source === 'toast') await waitForFirstSheetPaint(generation);");
+$refreshPosition = strpos($center, 'await refreshOpenSheet(generation);', $paintPosition ?: 0);
+$assert(
+    $paintPosition !== false && $refreshPosition !== false && $paintPosition < $refreshPosition
+        && str_contains($center, 'window.requestAnimationFrame(resolve)'),
+    'The exact toast card must paint before background notification reconciliation may repaint it.'
 );
 $assert(
     str_contains($center, 'LOCAL_AUTHORITY_MS = 12000')
