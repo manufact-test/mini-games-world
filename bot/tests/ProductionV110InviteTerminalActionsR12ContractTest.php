@@ -66,7 +66,7 @@ $assert(str_contains($declineBlock, "'invite_declined'")
 $terminalInit = strpos($shell, 'initInviteTerminalActions();');
 $legacyInit = strpos($shell, 'initGameInvites();');
 $assert($terminalInit !== false && $legacyInit !== false && $terminalInit < $legacyInit
-    && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1122'),
+    && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123'),
     'The silent terminal owner must initialize before the broader invite compatibility handler.');
 
 $assert(str_contains($legacy, "if (action === 'decline') toast('Приглашение отклонено.');")
