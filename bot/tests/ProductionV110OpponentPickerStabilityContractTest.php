@@ -32,7 +32,7 @@ $assert(
     'The canonical invitation owner must own the honest loading state, request and render transition.'
 );
 $assert(
-    substr_count($invites, "const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;") === 1
+    substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1
         && substr_count($invites, 'async function openPlayerPicker(context)') === 1,
     'The player picker must have one endpoint and one canonical UI owner.'
 );
