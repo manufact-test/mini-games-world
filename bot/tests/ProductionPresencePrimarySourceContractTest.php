@@ -38,17 +38,19 @@ $assert(
     'The same presence request must update the lease and build statistics from the selected canonical storage.'
 );
 $assert(
-    str_contains($presenceClient, 'beginStatsRequest()')
+    substr_count($presenceClient, "beginStatsRequest('presence')") === 2
         && str_contains($presenceClient, 'applyStatsSnapshot(statsTicket, data?.stats)'),
-    'Presence responses must pass through the single statistics owner.'
+    'Presence ping and status responses must use the dedicated presence statistics channel.'
 );
 $assert(
-    str_contains($statsOwner, 'if (sequence < runtime.applied) return false;')
-        && str_contains($statsOwner, 'state.stats = { ...stats };')
+    str_contains($statsOwner, "issued:{ api:0, presence:0 }")
+        && str_contains($statsOwner, "applied:{ api:0, presence:0 }")
+        && str_contains($statsOwner, "if (owner === 'presence')")
+        && str_contains($statsOwner, "if (key === 'online_players') continue;")
         && !str_contains($statsOwner, 'ONLINE_DROP_GRACE_MS')
         && !str_contains($statsOwner, 'pendingOnlineDrop')
         && !str_contains($statsOwner, 'stableOnlineCount('),
-    'The statistics owner must reject stale responses and render accepted authoritative values without UI smoothing.'
+    'Presence must be the only online counter authority while API statistics remain independently ordered without UI smoothing.'
 );
 
 fwrite(STDOUT, "ProductionPresencePrimarySourceContractTest: {$assertions} assertions passed\n");

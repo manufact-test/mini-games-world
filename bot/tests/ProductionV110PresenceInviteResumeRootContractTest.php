@@ -26,25 +26,28 @@ $inviteStorage = $read('bot/services/invites/GameInviteStorageTrait.php');
 $notificationEndpoint = $read('bot/notifications.php');
 $php = $read('app/v110.php');
 
-$assert(str_contains($main, "stats-owner-v110.js?v=1120")
-    && str_contains($main, 'beginStatsRequest()')
+$assert(str_contains($main, "stats-owner-v110.js?v=1121")
+    && substr_count($main, "beginStatsRequest('api')") === 2
     && str_contains($main, 'applyStatsSnapshot(statsTicket, result.stats)')
     && !str_contains($main, 'state.stats = result.stats'),
-    'All home statistics responses must be ordered by one canonical stats owner.');
+    'Bootstrap and API polling must use the independently ordered API statistics channel.');
 
-$assert(str_contains($stats, 'if (sequence < runtime.applied) return false;')
-    && str_contains($stats, 'state.stats = { ...stats };')
+$assert(str_contains($stats, "issued:{ api:0, presence:0 }")
+    && str_contains($stats, "applied:{ api:0, presence:0 }")
+    && str_contains($stats, "if (owner === 'presence')")
+    && str_contains($stats, "if (key === 'online_players') continue;")
     && str_contains($stats, 'renderStats(state.stats)')
     && !str_contains($stats, 'stableOnlineCount')
     && !str_contains($stats, 'ONLINE_DROP_GRACE_MS'),
-    'A stale request must never overwrite a newer snapshot, and accepted statistics must render without UI masking.');
+    'API and presence snapshots must be ordered independently, with online_players owned only by presence and no UI masking.');
 
 $assert(str_contains($presence, "document.addEventListener('mgw:app-ready'")
     && str_contains($presence, "window.addEventListener('pageshow'")
     && str_contains($presence, 'cancelInFlightRequests()')
     && str_contains($presence, 'REQUEST_TIMEOUT_MS = 4500')
-    && str_contains($presence, 'new AbortController()'),
-    'Mobile resume must cancel suspended requests and start a fresh bounded presence request.');
+    && str_contains($presence, 'new AbortController()')
+    && substr_count($presence, "beginStatsRequest('presence')") === 2,
+    'Mobile resume must cancel suspended requests and start a fresh bounded request on the presence statistics channel.');
 
 $assert(str_contains($presence, '// Presence transport starts before the profile bootstrap.')
     && str_contains($presence, "  startPresence();\n}")
@@ -83,8 +86,8 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
     'Passive expiration and timeout must stay notification-free and hidden from existing history.');
 
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
-    && str_contains($php, 'main-v110.js?v=1120')
+    && str_contains($php, 'main-v110.js?v=1121')
     && str_contains($php, 'v110-mvp14r12-invite-notification-presence-stability'),
-    'The integrated presence task must use the final production entrypoint.');
+    'The integrated presence task must use the final production route and current statistics shell.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");

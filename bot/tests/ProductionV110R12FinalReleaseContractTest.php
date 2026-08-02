@@ -32,13 +32,13 @@ $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1120')
-        && str_contains($php, 'main-v110.js?v=1120')
+        && str_contains($php, 'main-v110.js?v=1121')
         && str_contains($php, $build)
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1120')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1121')
         && str_contains($main, $build)
         && str_contains($shell, $build)
         && str_contains($clean, $build),
-    'Every active R12 entry owner must publish the clean v1120 build identity.'
+    'Every active R12 entry owner must publish one build identity and the current statistics shell.'
 );
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1120';")
@@ -86,21 +86,24 @@ $assert(
     'The bounded opponent source must use shared presence and exclude bots.'
 );
 $assert(
-    str_contains($shell, 'stats-owner-v110.js?v=1120')
-        && str_contains($stats, 'if (sequence < runtime.applied) return false;')
-        && str_contains($stats, 'state.stats = { ...stats };')
+    str_contains($shell, 'stats-owner-v110.js?v=1121')
+        && str_contains($stats, "issued:{ api:0, presence:0 }")
+        && str_contains($stats, "applied:{ api:0, presence:0 }")
+        && str_contains($stats, "if (owner === 'presence')")
+        && str_contains($stats, "if (key === 'online_players') continue;")
         && !str_contains($stats, 'ONLINE_DROP_GRACE_MS')
         && !str_contains($stats, 'stableOnlineCount')
         && !str_contains($stats, 'pendingOnlineDrop'),
-    'The online counter must render the newest authoritative snapshot without UI smoothing.'
+    'The online counter must be owned only by independently ordered presence responses without UI smoothing.'
 );
 $assert(
-    str_contains($shell, 'production-v110-presence.js?v=1120')
+    str_contains($shell, 'production-v110-presence.js?v=1121')
+        && substr_count($presence, "beginStatsRequest('presence')") === 2
         && str_contains($presence, 'const presenceLeaseId = createPresenceLeaseId();')
         && str_contains($presence, '// Presence transport starts before the profile bootstrap.')
         && str_contains($presenceService, 'private const LEAVE_GRACE_SEC = 12;')
         && str_contains($presenceService, '$sessionId . "\\0presence:" . $presenceLeaseId'),
-    'Telegram reopen continuity must be owned by document-scoped presence leases, not by UI masking.'
+    'Telegram reopen continuity and online statistics must be owned by document-scoped presence, not UI masking.'
 );
 $homePosition = strpos($lifecycle, "showScreen('home');");
 $requestPosition = strpos($lifecycle, 'const result = await api.leaveGame(String(snapshot.id));');

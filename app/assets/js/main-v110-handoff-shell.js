@@ -37,8 +37,8 @@ import { initGoEntry } from './games/go/entry.js?v=74';
 import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107';
-import { initV110Presence } from './production-v110-presence.js?v=1120';
-import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1120';
+import { initV110Presence } from './production-v110-presence.js?v=1121';
+import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 
 let statsRefreshing = false;
 
@@ -85,7 +85,7 @@ document.addEventListener('mgw:v99-game-found', event => {
 async function boot(){
   try {
     setRoom(APP_CONFIG.defaultRoom);
-    const statsTicket = beginStatsRequest();
+    const statsTicket = beginStatsRequest('api');
     const result = await api.bootstrap();
     state.user = result.user;
     state.session = result.session || state.session;
@@ -120,7 +120,7 @@ function startStatsPolling(){
 async function refreshStatsIfVisible(){
   if (statsRefreshing || !canRefreshHomeStats()) return;
   statsRefreshing = true;
-  const statsTicket = beginStatsRequest();
+  const statsTicket = beginStatsRequest('api');
   try {
     const result = await api.stats();
     if (result?.stats) applyStatsSnapshot(statsTicket, result.stats);

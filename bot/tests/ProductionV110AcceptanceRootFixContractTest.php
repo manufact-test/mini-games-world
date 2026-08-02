@@ -35,7 +35,7 @@ $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
-$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1120';")
+$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1121';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
@@ -115,11 +115,12 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     'Accepted game interaction behavior must remain untouched.');
 
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
-    && str_contains($php, 'main-v110.js?v=1120')
+    && str_contains($php, 'main-v110.js?v=1121')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1120';")
     && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1120'.")
     && str_contains($invitesEndpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
-    'All Telegram launches must use the canonical clean v110 entrypoint.');
+    'All Telegram launches must use the canonical clean v110 entrypoint with the current statistics shell.'
+);
 
 fwrite(STDOUT, "ProductionV110AcceptanceRootFixContractTest: {$assertions} assertions passed\n");

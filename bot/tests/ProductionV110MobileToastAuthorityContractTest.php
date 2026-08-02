@@ -31,7 +31,7 @@ $assert(str_contains($notifications, 'pressedToastItem = toastItem ? cloneItem(t
     'The tapped toast item must become the first-frame sheet authority.');
 $assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1120'),
-    'Production must load only the current notification owner.');
+    && str_contains($entry, 'main-v110.js?v=1121'),
+    'Production must load only the current notification owner through the current statistics shell.');
 
 fwrite(STDOUT, "ProductionV110MobileToastAuthorityContractTest: {$assertions} assertions passed\n");

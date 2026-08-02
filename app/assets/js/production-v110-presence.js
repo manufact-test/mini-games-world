@@ -1,6 +1,6 @@
 import { getInitData, getTelegram } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
-import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1120';
+import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 
 const PRESENCE_URL = `${window.location.origin}/bot/presence.php`;
 const HEARTBEAT_MS = 4000;
@@ -98,7 +98,7 @@ async function pingPresence(){
   const requestId = ++runtime.pingRequestId;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const statsTicket = beginStatsRequest();
+  const statsTicket = beginStatsRequest('presence');
   runtime.pingController = controller;
   runtime.pingBusy = true;
   runtime.left = false;
@@ -126,7 +126,7 @@ async function refreshStatus(){
   const requestId = ++runtime.statusRequestId;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const statsTicket = beginStatsRequest();
+  const statsTicket = beginStatsRequest('presence');
   runtime.statusController = controller;
   runtime.statusBusy = true;
 
