@@ -3,6 +3,12 @@ declare(strict_types=1);
 
 final class WeeklyBonusRuntimeBridge
 {
+    private const STAGING_TEST_HOST = 'seashell-okapi-889488.hostingersite.com';
+    private const STAGING_TEST_USER_IDS = [
+        'stg_test_player_a',
+        'stg_test_player_b',
+    ];
+
     private RuntimeStorageRouter $router;
     private ?RuntimeWeeklyBonusRepository $repository;
 
@@ -87,8 +93,34 @@ final class WeeklyBonusRuntimeBridge
 
         $legacyUserId = trim((string)($data['user']['id'] ?? ''));
         if ($legacyUserId === '') return $data;
+
+        // TEST PLAYER A/B are deliberately development users: weekly grants and
+        // their DB mirror both exclude development accounts. Their bootstrap has
+        // already calculated a safe read-only JSON status, so replacing it with a
+        // DB row that must not exist would break the staging browser harness.
+        // Keep this exception pinned to the exact isolated staging host and two
+        // fixed identities. Every real/unknown user remains DB-primary and fails
+        // closed if its weekly state is absent or ambiguous.
+        if ($this->isFixedStagingTestUser($legacyUserId)) {
+            return $data;
+        }
+
         $data['weekly_match'] = $this->repository()->statusForLegacyUser($legacyUserId);
         return $data;
+    }
+
+    private function isFixedStagingTestUser(string $legacyUserId): bool
+    {
+        if (strtolower(trim((string)($this->config['environment'] ?? ''))) !== 'staging') {
+            return false;
+        }
+        $baseUrl = rtrim(trim((string)($this->config['base_url'] ?? '')), '/');
+        $scheme = strtolower((string)(parse_url($baseUrl, PHP_URL_SCHEME) ?: ''));
+        $host = strtolower((string)(parse_url($baseUrl, PHP_URL_HOST) ?: ''));
+        if ($scheme !== 'https' || $host !== self::STAGING_TEST_HOST) {
+            return false;
+        }
+        return in_array($legacyUserId, self::STAGING_TEST_USER_IDS, true);
     }
 
     private function repository(): RuntimeWeeklyBonusRepository
