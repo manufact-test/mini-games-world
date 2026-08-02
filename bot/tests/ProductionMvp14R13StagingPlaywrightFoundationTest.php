@@ -58,8 +58,10 @@ $assert(!str_contains($workflow, 'secrets.')
 
 $assert(str_contains($workflow, 'actions/upload-artifact@v4')
     && str_contains($workflow, 'artifacts/playwright')
-    && str_contains($workflow, 'retention-days: 7'),
-    'Playwright traces, screenshots, videos and reports must be retained as bounded artifacts.');
+    && str_contains($workflow, 'retention-days: 7')
+    && str_contains($config, "const outputRoot = '../artifacts/playwright'")
+    && !str_contains($config, "const outputRoot = 'artifacts/playwright'"),
+    'Playwright evidence must resolve to the repository-root directory uploaded by the workflow.');
 
 $assert(str_contains($workflow, 'Publish pending commit status')
     && str_contains($workflow, 'Publish final commit status')
@@ -91,11 +93,30 @@ $assert(str_contains($spec, 'ACTIONS_ID_TOKEN_REQUEST_URL')
     && str_contains($spec, "authorization_mode: 'github_actions_oidc'"),
     'The test must request short-lived GitHub OIDC credentials instead of reading a stored secret.');
 
+$assert(str_contains($spec, 'async function preflightProfile(')
+    && str_contains($spec, "phase: 'server_profile_preflight'")
+    && str_contains($spec, 'safeApiDiagnostic(')
+    && strpos($spec, 'await preflightProfile(context, slot, identity)')
+        < strpos($spec, 'const page = await context.newPage()'),
+    'Each test player must prove server authentication before opening the application UI.');
+
+$assert(str_contains($spec, 'await context.addInitScript(')
+    && str_contains($spec, 'localStorage.setItem(sessionKey, sessionId)')
+    && str_contains($spec, 'localStorage.setItem(deviceKey, deviceId)')
+    && str_contains($spec, 'window.__MGW_E2E_APP_READY__ = false')
+    && str_contains($spec, "document.addEventListener('mgw:app-ready'"),
+    'The browser must boot with the exact preflight session/device identity and retain an app-ready signal.');
+
+$assert(str_contains($spec, 'async function waitForApplicationBoot(')
+    && str_contains($spec, "document.getElementById('bootFailureBanner')")
+    && str_contains($spec, "phase: 'application_boot'"),
+    'The test must distinguish successful application boot from the visible boot-failure state.');
+
 $assert(str_contains($spec, "openPlayer(browser, 'A', testInfo)")
     && str_contains($spec, "openPlayer(browser, 'B', testInfo)")
     && str_contains($spec, 'browser.newContext')
-    && str_contains($spec, "'mgw_device_session_id'")
-    && str_contains($spec, "'mgw_device_id'"),
+    && str_contains($spec, "const SESSION_KEY = 'mgw_device_session_id'")
+    && str_contains($spec, "const DEVICE_KEY = 'mgw_device_id'"),
     'TEST PLAYER A and B must use independent browser contexts, sessions and devices.');
 
 $assert(str_contains($spec, "toBe('stg_test_player_a')")
@@ -111,7 +132,6 @@ $assert(str_contains($spec, "sessionId: 'sess_replay_context'")
     'The live browser suite must prove copied-cookie replay is rejected.');
 
 $assert(str_contains($spec, 'page.screenshot')
-    && str_contains($spec, "trace: 'retain-on-failure'") === false
     && str_contains($spec, "testInfo.attach('staging-two-context-report'")
     && !str_contains($spec, 'oidcToken,')
     && !str_contains($spec, 'cookie.value,'),
