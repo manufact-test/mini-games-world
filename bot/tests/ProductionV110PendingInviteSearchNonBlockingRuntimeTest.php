@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
-require_once $root . '/bot/core/bootstrap.php';
+require_once $root . '/bot/services/ChessRuntimeService.php';
 
 $reflection = new ReflectionClass(ChessRuntimeService::class);
 $runtime = $reflection->newInstanceWithoutConstructor();
