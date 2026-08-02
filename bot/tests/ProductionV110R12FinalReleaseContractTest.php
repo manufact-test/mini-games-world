@@ -34,18 +34,18 @@ $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1120')
-        && str_contains($php, 'main-v110.js?v=1123')
+        && str_contains($php, 'main-v110.js?v=1124')
         && str_contains($php, $build)
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1123')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1124')
         && str_contains($main, $build)
         && str_contains($shell, $build)
         && str_contains($clean, $build),
-    'Every active R12 entry owner must publish one build identity and the final v1123 shell.'
+    'Every active R12 entry owner must publish one build identity and the final v1124 shell.'
 );
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'."),
-    'Telegram menu, start and invitation paths must launch the same final R12 entrypoint.'
+    'Telegram menu, start and invitation paths must launch the same canonical R12 entrypoint.'
 );
 $assert(
     substr_count($shell, 'initNotificationsScreen();') === 1

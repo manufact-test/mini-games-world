@@ -29,9 +29,15 @@ const searchRuntime = window.__MGW_V100_SEARCH_RUNTIME__ ||= {
   initialized:false,
   epoch:0,
   active:false,
+  starting:false,
   pollBusy:false,
+  startPromise:null,
+  stopPromise:null,
   lastLockToastAt:0,
 };
+searchRuntime.starting = Boolean(searchRuntime.starting);
+searchRuntime.startPromise ||= null;
+searchRuntime.stopPromise ||= null;
 
 export function initSearchScreen(){
   if (searchRuntime.initialized) return;
@@ -53,7 +59,8 @@ export function initSearchScreen(){
     if (button instanceof HTMLButtonElement && START_IDS.has(button.id) && !button.disabled) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      beginSearch(searchContext(button.id));
+      button.disabled = true;
+      void beginSearch(searchContext(button.id));
       return;
     }
 
@@ -66,20 +73,25 @@ export function initSearchScreen(){
 
   document.addEventListener('mgw:v100-search-request', event => {
     const context = normalizeContext(event.detail || {});
-    beginSearch(context);
+    void beginSearch(context);
   });
 }
 
 export async function beginSearch(rawContext){
+  if (searchRuntime.active || searchRuntime.starting || searchRuntime.startPromise || searchRuntime.stopPromise) {
+    return null;
+  }
+
   const lock = currentV99PassiveLock();
   if (lock?.locked) {
     showExplicitLock();
-    return;
+    return null;
   }
 
   const context = normalizeContext(rawContext);
   const epoch = ++searchRuntime.epoch;
   searchRuntime.active = true;
+  searchRuntime.starting = true;
   searchRuntime.pollBusy = false;
   state.timers.search = clearTimer(state.timers.search);
   state.timers.game = clearTimer(state.timers.game);
@@ -96,19 +108,19 @@ export async function beginSearch(rawContext){
   showScreen('search');
   haptic('light');
 
+  const startPromise = api.startSearch(context.room, context.bet, context.size, context.gameType);
+  searchRuntime.startPromise = startPromise;
+
   try {
-    const result = await api.startSearch(context.room, context.bet, context.size, context.gameType);
-    if (epoch !== searchRuntime.epoch || !searchRuntime.active) {
-      api.leaveSearch().catch(() => null);
-      return;
-    }
+    const result = await startPromise;
+    if (epoch !== searchRuntime.epoch || !searchRuntime.active) return null;
 
     rememberUserAndSession(result);
     if (result?.session?.locked) {
       rememberV99PassiveLock(result.session);
       cancelLocalSearch();
       showExplicitLock();
-      return;
+      return null;
     }
     clearV99PassiveLock();
 
@@ -116,32 +128,69 @@ export async function beginSearch(rawContext){
       searchRuntime.active = false;
       state.timers.search = clearTimer(state.timers.search);
       enterGame(result.game, result.me || null);
-      return;
+      return result;
     }
 
     state.timers.search = window.setInterval(() => pollSearch(epoch), APP_CONFIG.searchIntervalMs);
-    pollSearch(epoch);
+    void pollSearch(epoch);
+    return result;
   } catch (error) {
-    if (epoch !== searchRuntime.epoch) return;
+    if (epoch !== searchRuntime.epoch) return null;
     cancelLocalSearch();
+    void stopSearchAuthoritatively(null);
     if (LOCK_PATTERN.test(String(error?.message || ''))) {
       rememberV99PassiveLock({ message:error.message });
       showExplicitLock();
-      return;
+      return null;
     }
     toast(error?.message || 'Не удалось начать поиск.');
+    return null;
+  } finally {
+    if (searchRuntime.startPromise === startPromise) searchRuntime.startPromise = null;
+    if (epoch === searchRuntime.epoch) searchRuntime.starting = false;
+    enableVisibleStartControls();
   }
 }
 
 function cancelSearch(){
+  const pendingStart = searchRuntime.startPromise;
   ++searchRuntime.epoch;
   cancelLocalSearch();
   haptic('light');
-  api.leaveSearch().then(rememberUserAndSession).catch(() => null);
+  void stopSearchAuthoritatively(pendingStart);
+}
+
+function stopSearchAuthoritatively(pendingStart){
+  if (searchRuntime.stopPromise) return searchRuntime.stopPromise;
+
+  let stopPromise;
+  stopPromise = (async () => {
+    if (pendingStart) {
+      try { await pendingStart; } catch (error) {}
+    }
+
+    try {
+      const result = await api.leaveSearch();
+      rememberUserAndSession(result);
+      return result;
+    } catch (error) {
+      return null;
+    } finally {
+      document.dispatchEvent(new CustomEvent('mgw:search-stopped', {
+        detail:{ authoritative:true },
+      }));
+      if (searchRuntime.stopPromise === stopPromise) searchRuntime.stopPromise = null;
+      enableVisibleStartControls();
+    }
+  })();
+
+  searchRuntime.stopPromise = stopPromise;
+  return stopPromise;
 }
 
 function cancelLocalSearch(){
   searchRuntime.active = false;
+  searchRuntime.starting = false;
   searchRuntime.pollBusy = false;
   state.timers.search = clearTimer(state.timers.search);
   state.activeGame = null;
@@ -178,6 +227,13 @@ async function pollSearch(epoch){
     // Search polling retries silently on the next interval.
   } finally {
     searchRuntime.pollBusy = false;
+  }
+}
+
+function enableVisibleStartControls(){
+  for (const id of START_IDS) {
+    const button = document.getElementById(id);
+    if (button instanceof HTMLButtonElement) button.disabled = false;
   }
 }
 

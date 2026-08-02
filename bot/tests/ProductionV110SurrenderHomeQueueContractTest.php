@@ -26,9 +26,9 @@ if (!is_string($html)) throw new RuntimeException('Cannot render v110 Telegram e
 
 $assert(
     str_contains($html, './assets/js/production-clean-entry-v110.js?v=1120')
-        && str_contains($html, './assets/js/main-v110.js?v=1123')
+        && str_contains($html, './assets/js/main-v110.js?v=1124')
         && str_contains($html, 'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"'),
-    'The Telegram v110 entrypoint must publish the exact current browser build and final v1123 shell.'
+    'The Telegram v110 entrypoint must publish the exact current browser build and final v1124 shell.'
 );
 
 $home = strpos($lifecycle, "showScreen('home');");
@@ -65,10 +65,12 @@ $assert(
 
 $assert(
     str_contains($search, 'const START_IDS = new Set([')
-        && str_contains($search, 'beginSearch(searchContext(button.id));')
+        && str_contains($search, 'void beginSearch(searchContext(button.id));')
         && str_contains($search, "document.addEventListener('mgw:v100-search-request'")
+        && str_contains($search, 'startPromise:null')
+        && str_contains($search, 'stopPromise:null')
         && substr_count($shell, 'initSearchScreen();') === 1,
-    'The existing v102 search screen must remain the single matchmaking owner.'
+    'The serialized v102 search screen must remain the single matchmaking owner.'
 );
 
 $assert(
