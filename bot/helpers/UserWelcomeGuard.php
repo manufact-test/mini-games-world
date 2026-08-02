@@ -26,7 +26,7 @@ final class UserWelcomeGuard
 
         // Current production Telegram entrypoint. Every /start, menu and invite
         // button must use the same canonical builder as bot/invites.php.
-        // Active canonical path: '/app/v110.php?v=1115'.
+        // Active canonical path: '/app/v110.php?v=1119'.
         // Retained explicit no-store rollback/investigation entrypoints:
         // '/app/v96.php?v=96', '/app/v97.php?v=97', '/app/v98.php?v=98', '/app/v99.php?v=99',
         // '/app/v100.php?v=100', '/app/v101.php?v=101', '/app/v102.php?v=102', '/app/v103.php?v=103',
