@@ -44,21 +44,21 @@ $assert($expireBody !== ''
     && str_contains($expireBody, "'timed_out'"),
     'Passive expiry must change only invitation state.');
 
-$build = 'v110-mvp14r11-mobile-toast-authority';
+$build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(str_contains($entry, $build)
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($php, $build),
-    'The isolated task must preserve the outer production build identity.');
-$assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1117')
+    'The final R12 publication must preserve one outer production build identity.');
+$assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && substr_count($shell, 'initNotificationsScreen();') === 1
     && str_contains($notifications, 'data-notifications-owner="r12"'),
     'Exactly one current notification owner must be active beside the invitation owner.');
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1115')
-    && str_contains($php, 'main-v110.js?v=1115')
-    && str_contains($main, 'main-v110-handoff-shell.js?v=1115')
-    && str_contains($launch, '/app/v110.php?v=1115'),
-    'Telegram and browser entrypoints must keep the canonical outer revision.');
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
+    && str_contains($php, 'main-v110.js?v=1120')
+    && str_contains($main, 'main-v110-handoff-shell.js?v=1120')
+    && str_contains($launch, '/app/v110.php?v=1120'),
+    'Telegram and browser entrypoints must keep the canonical v1120 revision.');
 
 fwrite(STDOUT, 'ProductionV110InviteActionsRootContractTest: ' . $assertions . " assertions passed\n");
