@@ -53,8 +53,8 @@ $assert(
     'The executable regression must prove that an old document leave cannot reduce online while the new lease is alive.'
 );
 $assert(
-    substr_count($shell, "from './stats-owner-v110.js?v=1110'") === 1
-        && substr_count($shell, "from './production-v110-presence.js?v=1116'") === 1,
+    substr_count($shell, "from './stats-owner-v110.js?v=1120'") === 1
+        && substr_count($shell, "from './production-v110-presence.js?v=1120'") === 1,
     'The active shell must keep one statistics owner and one presence owner.'
 );
 
