@@ -24,11 +24,12 @@ require $root . '/app/v110.php';
 $html = ob_get_clean();
 if (!is_string($html)) throw new RuntimeException('Cannot render v110 Telegram entrypoint.');
 
+$build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
-    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1115')
-        && str_contains($html, './assets/js/main-v110.js?v=1115')
-        && str_contains($html, 'data-hotfix-build="v110-mvp14r11-mobile-toast-authority"'),
-    'The Telegram v110 entrypoint must publish the exact current browser build.'
+    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1120')
+        && str_contains($html, './assets/js/main-v110.js?v=1120')
+        && str_contains($html, 'data-hotfix-build="' . $build . '"'),
+    'The Telegram v110 entrypoint must publish the exact current R12 browser build.'
 );
 
 $home = strpos($lifecycle, "showScreen('home');");
@@ -74,8 +75,8 @@ $assert(
 $assert(
     substr_count($entry, 'initV110MatchLifecycle();') === 1
         && str_contains($entry, 'production-v110-match-lifecycle.js?v=1104')
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r11-mobile-toast-authority'"),
-    'The production entry must retain exactly one accepted surrender owner in the current build.'
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = '" . $build . "'"),
+    'The production entry must retain exactly one accepted surrender owner in the current R12 build.'
 );
 
 fwrite(STDOUT, "ProductionV110SurrenderHomeQueueContractTest: {$assertions} assertions passed\n");
