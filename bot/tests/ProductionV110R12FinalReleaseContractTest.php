@@ -54,12 +54,19 @@ $assert(
         && str_contains($notifications, 'CLOSE_GUARD_MS = 1100'),
     'R12 must keep one notification owner with pinned first-frame data and duplicate-open protection.'
 );
+$paintPosition = strpos($notifications, "if (source === 'toast') await waitForFirstSheetPaint(generation);");
+$refreshPosition = strpos($notifications, 'await refreshOpenSheet(generation);', $paintPosition ?: 0);
 $assert(
-    str_contains($notifications, 'pressedToastItem = toastItem ? cloneItem(toastItem) : newestItem();')
+    str_contains($notifications, 'element.__mgwNotificationItem = cloneItem(item);')
+        && str_contains($notifications, 'pressedToastItem = toastSnapshot(element);')
+        && str_contains($notifications, 'pressedToastItem || toastSnapshot() || newestItem()')
         && str_contains($notifications, "openNotificationsSheet({ seed:[item], source:'toast' })")
+        && $paintPosition !== false
+        && $refreshPosition !== false
+        && $paintPosition < $refreshPosition
         && str_contains($notifications, 'mergeServerItems(serverItems)')
         && str_contains($notifications, 'LOCAL_AUTHORITY_MS = 12000'),
-    'A tapped blue toast must remain visible while a slower server response reconciles.'
+    'A tapped blue toast must paint its exact immutable card before a slower server response reconciles.'
 );
 $closePosition = strpos($terminal, 'closeSheet();');
 $requestPosition = strpos($terminal, 'const result = await inviteRequest(action, token);');
