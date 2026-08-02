@@ -50,15 +50,15 @@ $assert(str_contains($entry, $build)
     && str_contains($shell, $build)
     && str_contains($php, $build),
     'The integrated task must publish one outer production build identity.');
-$assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
+$assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && substr_count($shell, 'initNotificationsScreen();') === 1
     && str_contains($notifications, 'data-notifications-owner="r12"'),
     'Exactly one current notification owner must be active beside the invitation owner.');
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
-    && str_contains($php, 'main-v110.js?v=1121')
-    && str_contains($main, 'main-v110-handoff-shell.js?v=1121')
-    && str_contains($launch, '/app/v110.php?v=1120'),
-    'Telegram and browser entrypoints must use the clean canonical route and current statistics shell.');
+    && str_contains($php, 'main-v110.js?v=1122')
+    && str_contains($main, 'main-v110-handoff-shell.js?v=1122')
+    && str_contains($launch, '/app/v110.php?v=1122'),
+    'Telegram and browser entrypoints must use the clean canonical route and published shell.');
 
 fwrite(STDOUT, 'ProductionV110InviteActionsRootContractTest: ' . $assertions . " assertions passed\n");
