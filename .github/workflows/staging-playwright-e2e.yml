@@ -1,0 +1,95 @@
+name: Staging Playwright E2E
+
+on:
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: mgw-staging-playwright-e2e
+  cancel-in-progress: true
+
+jobs:
+  two-context:
+    name: TEST PLAYER A and B browser isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+    steps:
+      - name: Checkout exact staging commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Wait for Hostinger deployment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sleep 300
+          ready=0
+          for attempt in $(seq 1 24); do
+            if curl \
+              --fail-with-body \
+              --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              --output staging-e2e-readiness.json; then
+              if python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('staging-e2e-readiness.json').read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('build') == 'mgw-staging-playwright-r13.4-v1'
+          assert payload.get('environment') == 'staging'
+          assert payload.get('base_host') == 'seashell-okapi-889488.hostingersite.com'
+          assert payload.get('isolation', {}).get('live_payments_disabled') is True
+          capabilities = payload.get('capabilities', {})
+          assert capabilities and all(value is True for value in capabilities.values())
+          PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            sleep 15
+          done
+          test "$ready" = '1'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+
+      - name: Run two-context staging test
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm run test:e2e:staging
+
+      - name: Upload Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-playwright-e2e-${{ github.run_id }}
+          path: |
+            artifacts/playwright
+            staging-e2e-readiness.json
+          if-no-files-found: warn
+          retention-days: 7
