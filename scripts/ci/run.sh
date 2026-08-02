@@ -48,4 +48,9 @@ node scripts/ci/check-js.mjs
 echo "== Secret and private-file scan =="
 node scripts/ci/check-secrets.mjs
 
+if [[ "${GITHUB_HEAD_REF:-}" == 'agent/mvp14r13-staging-readonly-audit' ]]; then
+  echo "== MVP-14R13.1 public read-only staging audit =="
+  bash scripts/audit/mvp14r13-staging-public-probe.sh
+fi
+
 echo "All Mini Games World CI checks passed."
