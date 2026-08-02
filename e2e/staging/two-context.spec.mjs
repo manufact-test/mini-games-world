@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
@@ -8,9 +8,31 @@ const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
+const SESSION_KEY = 'mgw_device_session_id';
+const DEVICE_KEY = 'mgw_device_id';
 
 function sha256(value) {
   return createHash('sha256').update(String(value)).digest('hex');
+}
+
+function contextIdentity(slot) {
+  const suffix = randomUUID();
+  return {
+    sessionId: `sess_e2e_${slot.toLowerCase()}_${suffix}`,
+    deviceId: `device_e2e_${slot.toLowerCase()}_${suffix}`,
+  };
+}
+
+function safeApiDiagnostic(slot, phase, status, payload) {
+  return JSON.stringify({
+    slot,
+    phase,
+    status,
+    ok: payload?.ok === true,
+    error: typeof payload?.error === 'string' ? payload.error.slice(0, 500) : null,
+    userId: typeof payload?.user?.id === 'string' ? payload.user.id : null,
+    sessionLocked: payload?.session?.locked === true,
+  });
 }
 
 async function requestOidcToken() {
@@ -79,6 +101,33 @@ async function authorizeContext(context, slot) {
   return cookie;
 }
 
+async function preflightProfile(context, slot, identity) {
+  const response = await context.request.post(API_ROUTE, {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    data: {
+      action: 'profile',
+      initData: '',
+      sessionId: identity.sessionId,
+      deviceId: identity.deviceId,
+    },
+    timeout: 35_000,
+  });
+  const payload = await response.json().catch(() => ({
+    ok: false,
+    error: 'API response was not valid JSON.',
+  }));
+  const diagnostic = safeApiDiagnostic(slot, 'server_profile_preflight', response.status(), payload);
+
+  expect(response.status(), diagnostic).toBe(200);
+  expect(payload?.ok, diagnostic).toBe(true);
+  expect(payload?.user, diagnostic).toBeTruthy();
+  expect(payload?.session?.locked ?? false, diagnostic).toBe(false);
+  return payload;
+}
+
 function collectDiagnostics(page, slot) {
   const report = {
     slot,
@@ -117,17 +166,32 @@ function collectDiagnostics(page, slot) {
   return report;
 }
 
-async function readPlayerSnapshot(page) {
+async function waitForApplicationBoot(page, slot) {
   await page.waitForFunction(() => (
-    typeof localStorage.getItem('mgw_device_session_id') === 'string'
-    && localStorage.getItem('mgw_device_session_id').length > 0
-    && typeof localStorage.getItem('mgw_device_id') === 'string'
-    && localStorage.getItem('mgw_device_id').length > 0
+    window.__MGW_E2E_APP_READY__ === true
+    || document.getElementById('bootFailureBanner') !== null
   ));
 
-  return page.evaluate(async () => {
-    const sessionId = localStorage.getItem('mgw_device_session_id');
-    const deviceId = localStorage.getItem('mgw_device_id');
+  const boot = await page.evaluate(() => ({
+    ready: window.__MGW_E2E_APP_READY__ === true,
+    failure: document.getElementById('bootFailureBanner')?.textContent?.trim() || null,
+  }));
+  expect(boot.ready, JSON.stringify({ slot, phase: 'application_boot', ...boot })).toBe(true);
+  expect(boot.failure, JSON.stringify({ slot, phase: 'application_boot', ...boot })).toBeNull();
+}
+
+async function readPlayerSnapshot(page, slot, identity) {
+  const storage = await page.evaluate(({ sessionKey, deviceKey }) => ({
+    sessionId: localStorage.getItem(sessionKey),
+    deviceId: localStorage.getItem(deviceKey),
+    localStorageKeys: Object.keys(localStorage).sort(),
+    sessionStorageKeys: Object.keys(sessionStorage).sort(),
+  }), { sessionKey: SESSION_KEY, deviceKey: DEVICE_KEY });
+
+  expect(storage.sessionId, `Player ${slot} session identity`).toBe(identity.sessionId);
+  expect(storage.deviceId, `Player ${slot} device identity`).toBe(identity.deviceId);
+
+  const result = await page.evaluate(async ({ sessionId, deviceId }) => {
     const response = await fetch('/bot/api.php', {
       method: 'POST',
       headers: {
@@ -141,21 +205,30 @@ async function readPlayerSnapshot(page) {
         deviceId,
       }),
     });
-    const payload = await response.json();
+    const payload = await response.json().catch(() => ({
+      ok: false,
+      error: 'API response was not valid JSON.',
+    }));
     return {
       status: response.status,
       ok: payload?.ok === true,
+      error: typeof payload?.error === 'string' ? payload.error : null,
       user: payload?.user || null,
       session: payload?.session || null,
-      sessionId,
-      deviceId,
-      localStorageKeys: Object.keys(localStorage).sort(),
-      sessionStorageKeys: Object.keys(sessionStorage).sort(),
     };
-  });
+  }, identity);
+
+  const diagnostic = safeApiDiagnostic(slot, 'browser_profile_verification', result.status, result);
+  expect(result.status, diagnostic).toBe(200);
+  expect(result.ok, diagnostic).toBe(true);
+  expect(result.user, diagnostic).toBeTruthy();
+  expect(result.session?.locked ?? false, diagnostic).toBe(false);
+
+  return { ...result, ...storage };
 }
 
 async function openPlayer(browser, slot, testInfo) {
+  const identity = contextIdentity(slot);
   const context = await browser.newContext({
     locale: 'ru-RU',
     timezoneId: 'Europe/Vilnius',
@@ -164,7 +237,23 @@ async function openPlayer(browser, slot, testInfo) {
     isMobile: true,
     hasTouch: true,
   });
+
+  await context.addInitScript(({ sessionKey, deviceKey, sessionId, deviceId }) => {
+    localStorage.setItem(sessionKey, sessionId);
+    localStorage.setItem(deviceKey, deviceId);
+    window.__MGW_E2E_APP_READY__ = false;
+    document.addEventListener('mgw:app-ready', () => {
+      window.__MGW_E2E_APP_READY__ = true;
+    }, { once: true });
+  }, {
+    sessionKey: SESSION_KEY,
+    deviceKey: DEVICE_KEY,
+    sessionId: identity.sessionId,
+    deviceId: identity.deviceId,
+  });
+
   const cookie = await authorizeContext(context, slot);
+  const preflight = await preflightProfile(context, slot, identity);
   const page = await context.newPage();
   const diagnostics = collectDiagnostics(page, slot);
 
@@ -173,19 +262,17 @@ async function openPlayer(browser, slot, testInfo) {
   expect(response.ok(), `Player ${slot} app status`).toBe(true);
   await expect(page).toHaveTitle(/Mini Games World/i);
   await expect(page.locator('body')).toBeVisible();
+  await waitForApplicationBoot(page, slot);
 
-  const snapshot = await readPlayerSnapshot(page);
-  expect(snapshot.status).toBe(200);
-  expect(snapshot.ok).toBe(true);
-  expect(snapshot.user).toBeTruthy();
-  expect(snapshot.session?.locked ?? false).toBe(false);
+  const snapshot = await readPlayerSnapshot(page, slot, identity);
+  expect(snapshot.user.id).toBe(preflight.user.id);
 
   await page.screenshot({
     path: testInfo.outputPath(`player-${slot.toLowerCase()}-home.png`),
     fullPage: true,
   });
 
-  return { context, page, cookie, diagnostics, snapshot };
+  return { context, page, cookie, diagnostics, snapshot, identity };
 }
 
 async function revokeContext(context) {
