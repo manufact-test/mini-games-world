@@ -22,6 +22,7 @@ $stats = $read('app/assets/js/stats-owner-v110.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
 $terminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
+$linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $inviteCreation = $read('bot/services/invites/GameInviteCreationTrait.php');
 $inviteWatch = $read('bot/invite-watch.php');
 $inviteEndpoint = $read('bot/invites.php');
@@ -34,9 +35,10 @@ $assert(
         && str_contains($main, 'main-v110-handoff-shell.js?v=1122')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
         && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1122')
+        && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
         && str_contains($shell, 'production-v110-presence.js?v=1121')
         && str_contains($shell, 'stats-owner-v110.js?v=1121'),
-    'Telegram, browser and active modules must publish one fresh v1122 graph while preserving accepted presence/statistics revision v1121.'
+    'Telegram, browser and active modules must publish the accepted v1122 graph plus the isolated v1123 link-entry owner.'
 );
 
 $assert(
@@ -71,11 +73,16 @@ $openLinkBlock = $openLinkStart !== false && $openLinkEnd !== false
     : '';
 $assert(
     str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($activeInvite)) $activeInvite = null;')
-        && str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($trackedInvite)) $trackedInvite = null;')
+        && str_contains($inviteCreation, 'if ($this->isNotificationOnlyPendingInvite($candidate))')
+        && str_contains($inviteCreation, '$openedInvite = $candidate;')
+        && str_contains($inviteCreation, '$trackedInvite = $candidate;')
+        && str_contains($inviteCreation, "'opened_invite' => \$openedInvite")
         && str_contains($inviteWatch, "'invite' => null")
         && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
-        && !str_contains($openLinkBlock, '$core[\'invite\'] = $boundInvite;'),
-    'A received pending invitation must stay notification-only across normal sync, fast watch and Telegram open_link entry.'
+        && !str_contains($openLinkBlock, '$core[\'invite\'] = $boundInvite;')
+        && str_contains($linkEntry, 'const invite = result?.opened_invite || null;')
+        && !str_contains($linkEntry, 'currentInvite ='),
+    'A received pending invitation must remain notification-only while Telegram may render exactly one non-blocking opened_invite sheet.'
 );
 
 $paintPosition = strpos($notifications, "if (source === 'toast') await waitForFirstSheetPaint(generation);");
