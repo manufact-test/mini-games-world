@@ -1,6 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
-const outputRoot = 'artifacts/playwright';
+// Playwright resolves reporter/output paths from this config directory. Move one
+// level up so GitHub uploads the canonical repository-root artifacts directory.
+const outputRoot = '../artifacts/playwright';
 
 export default defineConfig({
   testDir: './staging',
