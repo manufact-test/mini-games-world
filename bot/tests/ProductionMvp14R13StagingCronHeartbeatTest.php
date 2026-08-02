@@ -77,13 +77,32 @@ try {
         'Heartbeat payload must not contain secrets or user data.');
 
     $cron = file_get_contents($root . '/bot/cron/weekly-match.php');
+    $operationsRunner = file_get_contents($root . '/ops/deploy/staging-operations-runner.php');
     $audit = file_get_contents($root . '/bot/staging-routing-audit.php');
     $assert(is_string($cron)
         && str_contains($cron, "require_once dirname(__DIR__) . '/helpers/StagingCronHeartbeat.php'")
         && str_contains($cron, 'StagingCronHeartbeat::recordSuccessfulRun($config, $isCli)'),
-        'The real weekly cron must record the heartbeat.');
+        'The standalone weekly cron must record the heartbeat.');
     $assert(strpos($cron, 'StagingCronHeartbeat::recordSuccessfulRun') > strpos($cron, '$db->transaction'),
-        'Heartbeat proof must be written only after the cron business transaction succeeds.');
+        'Standalone heartbeat proof must be written only after the cron business transaction succeeds.');
+
+    $assert(is_string($operationsRunner)
+        && str_contains($operationsRunner, "require_once \$projectRoot . '/bot/helpers/StagingCronHeartbeat.php'")
+        && str_contains($operationsRunner, 'new WeeklyMatchEconomyService($config, new NotificationService())')
+        && str_contains($operationsRunner, '$storage->transaction(')
+        && str_contains($operationsRunner, 'StagingCronHeartbeat::recordSuccessfulRun($config, true)'),
+        'The existing five-minute staging operations runner must execute and prove the weekly Match sweep.');
+    $assert(strpos($operationsRunner, 'StagingCronHeartbeat::recordSuccessfulRun($config, true)')
+            > strpos($operationsRunner, '$storage->transaction('),
+        'The existing runner must write heartbeat proof only after the weekly Match transaction succeeds.');
+    $assert(str_contains($operationsRunner, "if (\$environment !== 'staging')")
+        && str_contains($operationsRunner, "if (\$executionMode === 'run' && (\$result['ok'] ?? false) === true)"),
+        'The integrated weekly sweep must remain staging-only and unavailable in status mode.');
+    $assert(str_contains($operationsRunner, "'production_changed' => false")
+        && str_contains($operationsRunner, "'sensitive_identifiers_exposed' => false")
+        && !str_contains($operationsRunner, "\$config['setup_secret']"),
+        'The integrated runner report must remain safe and must not require an additional HTTP secret or Cron job.');
+
     $assert(is_string($audit)
         && str_contains($audit, 'StagingCronHeartbeat::status($config)')
         && str_contains($audit, "'cron_successful_run_observed'")
