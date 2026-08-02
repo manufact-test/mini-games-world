@@ -32,7 +32,8 @@ $assert(
         && str_contains($v120, 'production-clean-entry-v110.js?v=1120')
         && str_contains($v120, 'main-v120.js?v=1200')
         && str_contains($v120, 'v120-mvp14r12-single-invite-controller')
-        && str_contains($main, "main-v120-invite-controller-shell.js?v=1200"),
+        && str_contains($main, "main-v120-invite-controller-shell.js?v=1200")
+        && str_contains($shell, "window.__MGW_BUILD__ = 'v120-mvp14r12-single-invite-controller'"),
     'Telegram and browser launch must select the isolated v120 entry while retaining the accepted clean regression entry.'
 );
 
@@ -77,10 +78,11 @@ $assert(
     str_contains($controller, "const immediate = visibleNotifications();")
         && str_contains($controller, "else if (!model.notificationsLoaded) renderNotificationLoading();")
         && str_contains($controller, 'pinnedNotifications.set(notificationIdentity(item), item)')
-        && str_contains($controller, "if (source === 'toast') await waitForPaint(generation);")
+        && str_contains($controller, 'if (source === \'toast\') await waitForPaint(generation);')
         && str_contains($state, 'localAuthority:new Map()')
         && str_contains($state, 'expiresAt:Date.now() + 12000')
-        && str_contains($state, 'if (!sequence || sequence < state.requestApplied[key]) return false;'),
+        && str_contains($state, 'if (!sequence || sequence < state.requestApplied[key]) return false;')
+        && str_contains($state, 'if (!announce) markNotificationAnnounced(state, merged.id);'),
     'The notification first frame must pin exact data, show loading instead of false empty, and reject stale responses.'
 );
 
@@ -90,7 +92,9 @@ $assert(
         && str_contains($controller, 'closeSheet();')
         && !str_contains($controller, "toast('Приглашение отклонено")
         && !str_contains($controller, "toast('Приглашение отменено")
-        && !str_contains($controller, 'terminalNotificationItem('),
+        && !str_contains($controller, 'terminalNotificationItem(')
+        && str_contains($state, 'function removeSupersededInviteNotifications(state, item)')
+        && str_contains($state, "['invite_declined', 'invite_cancelled', 'invite_expired', 'invite_timed_out']"),
     'Decline/cancel must close and remove actor state without any actor-side success toast or confirmation card.'
 );
 
