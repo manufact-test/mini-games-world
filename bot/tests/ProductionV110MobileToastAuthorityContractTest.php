@@ -34,9 +34,9 @@ $assert(str_contains($notifications, "if (source === 'toast') await waitForFirst
     && str_contains($notifications, 'window.requestAnimationFrame(resolve)')
     && str_contains($notifications, 'await refreshOpenSheet(generation);'),
     'Background reconciliation must not repaint before the exact mobile first frame is painted.');
-$assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1120')
+$assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1121'),
-    'Production must load only the current notification owner through the current statistics shell.');
+    && str_contains($entry, 'main-v110.js?v=1122'),
+    'Production must load only the current notification owner through the published shell.');
 
 fwrite(STDOUT, "ProductionV110MobileToastAuthorityContractTest: {$assertions} assertions passed\n");
