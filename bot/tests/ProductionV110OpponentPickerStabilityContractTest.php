@@ -18,7 +18,7 @@ $runtime = $read('app/assets/js/production-v110-opponent-picker-stability.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 
 $assert(
-    str_contains($shell, "production-v110-opponent-picker-stability.js?v=1118")
+    str_contains($shell, "production-v110-opponent-picker-stability.js?v=1119")
         && substr_count($shell, 'initV110OpponentPickerStability();') === 1
         && strpos($shell, 'initV110OpponentPickerStability();') < strpos($shell, 'initGameInvites();'),
     'The opponent cache must initialize exactly once before the canonical invite owner.'
