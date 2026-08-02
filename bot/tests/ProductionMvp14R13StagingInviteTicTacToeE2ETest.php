@@ -32,7 +32,7 @@ $assert(str_contains($spec, "openNotificationsAndWaitForAction(\n      playerB.p
     && str_contains($spec, "clickInviteAction(playerA.page, startButton, 'start')"),
     'B must accept and A must start the invitation through the visible notifications UI.');
 
-$assert(str_contains($spec, "const winningSequence = [0, 3, 1, 4, 2]")
+$assert(str_contains($spec, 'const winningSequence = [0, 3, 1, 4, 2]')
     && str_contains($spec, 'playTicTacToeCell(actor, cell)')
     && str_contains($spec, '#screen-game.active [data-game-cell=')
     && str_contains($renderer, 'data-game-cell='),
@@ -40,7 +40,7 @@ $assert(str_contains($spec, "const winningSequence = [0, 3, 1, 4, 2]")
 
 $assert(str_contains($spec, "toHaveText('Победа!'")
     && str_contains($spec, "toHaveText('Поражение'")
-    && str_contains($spec, 'afterBalances[winnerId] - beforeBalances[winnerId]').
+    && str_contains($spec, 'afterBalances[winnerId] - beforeBalances[winnerId]')
     && str_contains($spec, 'afterBalances[loserId] - beforeBalances[loserId]'),
     'The suite must verify both result sheets and relative winner/loser Match balances.');
 
