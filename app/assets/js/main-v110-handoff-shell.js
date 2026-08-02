@@ -17,14 +17,14 @@ import { renderRoomCard, initHomeScreen, setRoom } from './screens/home-screen.j
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1120';
+import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1122';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=102';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initInviteTerminalActions } from './games/invite-terminal-actions-v110r12.js?v=1120';
+import { initInviteTerminalActions } from './games/invite-terminal-actions-v110r12.js?v=1122';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites-v110.js?v=1114';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
