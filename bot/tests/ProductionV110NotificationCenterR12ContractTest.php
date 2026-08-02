@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// Isolated R12a contract: notification authority only.
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
@@ -18,8 +17,8 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $center = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 
 $assert(
-    str_contains($shell, "notifications-screen-v110r12.js?v=1117")
-        && !str_contains($shell, "notifications-screen-v110r5.js?v=1115"),
+    str_contains($shell, "notifications-screen-v110r12.js?v=1120")
+        && !str_contains($shell, "notifications-screen-v110r5.js"),
     'The active shell must load only the R12 notification center.'
 );
 $assert(
