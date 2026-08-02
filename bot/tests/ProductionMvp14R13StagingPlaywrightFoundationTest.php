@@ -93,11 +93,13 @@ $assert(str_contains($spec, 'ACTIONS_ID_TOKEN_REQUEST_URL')
     && str_contains($spec, "authorization_mode: 'github_actions_oidc'"),
     'The test must request short-lived GitHub OIDC credentials instead of reading a stored secret.');
 
+$preflightOffset = strpos($spec, 'const preflight = await preflightProfile(context, slot, identity)');
+$pageOffset = strpos($spec, 'const page = await context.newPage()');
 $assert(str_contains($spec, 'async function preflightProfile(')
-    && str_contains($spec, "phase: 'server_profile_preflight'")
-    && str_contains($spec, 'safeApiDiagnostic(')
-    && strpos($spec, 'await preflightProfile(context, slot, identity)')
-        < strpos($spec, 'const page = await context.newPage()'),
+    && str_contains($spec, "safeApiDiagnostic(slot, 'server_profile_preflight'")
+    && $preflightOffset !== false
+    && $pageOffset !== false
+    && $preflightOffset < $pageOffset,
     'Each test player must prove server authentication before opening the application UI.');
 
 $assert(str_contains($spec, 'await context.addInitScript(')
