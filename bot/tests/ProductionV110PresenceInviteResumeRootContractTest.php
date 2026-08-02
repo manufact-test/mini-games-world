@@ -101,8 +101,8 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
     'Passive expiration and timeout must stay notification-free and hidden from existing history.');
 
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
-    && str_contains($php, 'main-v110.js?v=1123')
+    && str_contains($php, 'main-v110.js?v=1124')
     && str_contains($php, 'v110-mvp14r12-invite-notification-presence-stability'),
-    'The integrated presence task must use the final production route and v1123 shell.');
+    'The integrated presence task must use the final production route and v1124 shell.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");
