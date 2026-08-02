@@ -41,7 +41,7 @@ $assert(
 );
 $assert(
     str_contains($presence, 'applyStatsSnapshot(statsTicket, data?.stats);')
-        && substr_count($shell, "from './stats-owner-v110.js?v=1110'") === 1,
+        && substr_count($shell, "from './stats-owner-v110.js?v=1119'") === 1,
     'Presence and bootstrap polling must still share the same single statistics owner.'
 );
 
