@@ -25,10 +25,10 @@ $html = ob_get_clean();
 if (!is_string($html)) throw new RuntimeException('Cannot render v110 Telegram entrypoint.');
 
 $assert(
-    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1115')
-        && str_contains($html, './assets/js/main-v110.js?v=1115')
-        && str_contains($html, 'data-hotfix-build="v110-mvp14r11-mobile-toast-authority"'),
-    'The Telegram v110 entrypoint must publish the exact current browser build.'
+    str_contains($html, './assets/js/production-clean-entry-v110.js?v=1120')
+        && str_contains($html, './assets/js/main-v110.js?v=1120')
+        && str_contains($html, 'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"'),
+    'The Telegram v110 entrypoint must publish the exact final browser build.'
 );
 
 $home = strpos($lifecycle, "showScreen('home');");
@@ -45,7 +45,6 @@ $assert(
         && $release < $replay,
     'Visible home, authoritative release and queued search replay must stay in strict order.'
 );
-
 $assert(
     str_contains($lifecycle, "origin.closest('#confirmLeaveGame')")
         && str_contains($lifecycle, 'queueSearchAfterRelease(startButton);')
@@ -54,7 +53,6 @@ $assert(
         && !str_contains($lifecycle, 'api.startSearch('),
     'The lifecycle owner may queue play intent but must leave actual matchmaking to the search owner.'
 );
-
 $assert(
     !str_contains($lifecycle, 'renderPendingResult')
         && !str_contains($lifecycle, 'renderConfirmedResult')
@@ -62,7 +60,6 @@ $assert(
         && !str_contains($lifecycle, 'openSheet('),
     'No blocked surrender result sheet may remain in the active production owner.'
 );
-
 $assert(
     str_contains($search, 'const START_IDS = new Set([')
         && str_contains($search, 'beginSearch(searchContext(button.id));')
@@ -70,12 +67,11 @@ $assert(
         && substr_count($shell, 'initSearchScreen();') === 1,
     'The existing v102 search screen must remain the single matchmaking owner.'
 );
-
 $assert(
     substr_count($entry, 'initV110MatchLifecycle();') === 1
         && str_contains($entry, 'production-v110-match-lifecycle.js?v=1104')
-        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r11-mobile-toast-authority'"),
-    'The production entry must retain exactly one accepted surrender owner in the current build.'
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r12-invite-notification-presence-stability'"),
+    'The production entry must retain exactly one accepted surrender owner in the final build.'
 );
 
 fwrite(STDOUT, "ProductionV110SurrenderHomeQueueContractTest: {$assertions} assertions passed\n");
