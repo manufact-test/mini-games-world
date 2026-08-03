@@ -67,7 +67,7 @@ $assert($regressionEntry !== false
     && $regressionEntry < $sourceMainPosition
     && str_contains($entry, "'./assets/js/main.js?v=98.3'")
     && str_contains($entry, "'./assets/js/main.js?v=115'")
-    && str_contains($entry, 'data-hotfix-build=\"v115-mvp14-d1-feedback-integration\"')
+    && str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integration"')
     && str_contains($entry, 'X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration'),
     'The immutable source shell must retain its replacement anchor while the active staging wrapper publishes the v115 graph after the retained regression script.');
 
