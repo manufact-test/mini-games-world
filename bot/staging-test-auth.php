@@ -51,19 +51,33 @@ try {
     $action = strtolower(trim((string)($payload['action'] ?? 'issue')));
     $authorizationMode = 'shared_secret';
 
-    $residualRecovery = static function () use ($config, $runtimeStorageRouter): array {
-        return (new StagingTestInviteResidualRecoveryService(
+    $residualService = static function () use ($config, $runtimeStorageRouter): StagingTestInviteResidualRecoveryService {
+        return new StagingTestInviteResidualRecoveryService(
             $config,
             $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
-        ))->reconcile($_SERVER);
+        );
     };
+
+    if ($action === 'diagnose_invite_residuals') {
+        if (array_key_exists('slot', $payload) || substr_count($providedCredential, '.') !== 2) {
+            throw new RuntimeException('Staging test invite residual diagnosis requires GitHub OIDC.');
+        }
+        (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
+        $result = $residualService()->diagnose($_SERVER);
+
+        echo json_encode(
+            $result + ['authorization_mode' => 'github_actions_oidc'],
+            JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+        ) . PHP_EOL;
+        exit;
+    }
 
     if ($action === 'reconcile_invite_residuals') {
         if (array_key_exists('slot', $payload) || substr_count($providedCredential, '.') !== 2) {
             throw new RuntimeException('Staging test invite residual recovery requires GitHub OIDC.');
         }
         (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
-        $result = $residualRecovery();
+        $result = $residualService()->reconcile($_SERVER);
 
         echo json_encode(
             $result + ['authorization_mode' => 'github_actions_oidc'],
@@ -84,7 +98,7 @@ try {
             }
             $authorizationMode = 'github_actions_oidc';
             if ($slot === 'A') {
-                $recoveryResult = $residualRecovery();
+                $recoveryResult = $residualService()->reconcile($_SERVER);
             }
         }
 
