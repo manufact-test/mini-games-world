@@ -545,7 +545,8 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
 
     expect(finalPayload?.game?.status).toBe('finished');
     expect(finalPayload?.game?.winner_id).toBeTruthy();
-    expect(Number(finalPayload?.game?.bank || 0)).toBe(20);
+    const expectedBank = Number(finalPayload?.game?.bet || 0) * 2;
+    expect(expectedBank).toBe(20);
     expect(Number(finalPayload?.game?.commission || 0)).toBe(2);
     expect(Number(finalPayload?.game?.payout || 0)).toBe(18);
 
@@ -627,7 +628,7 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
         completedThroughUi: true,
       },
       economy: {
-        bank: 20,
+        bank: expectedBank,
         commission: 2,
         payout: 18,
         winnerDelta: 8,

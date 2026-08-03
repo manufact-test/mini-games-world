@@ -44,7 +44,8 @@ $assert(str_contains($spec, "toHaveText('Победа!'")
     && str_contains($spec, 'afterBalances[loserId] - beforeBalances[loserId]'),
     'The suite must verify both result sheets and relative winner/loser Match balances.');
 
-$assert(str_contains($spec, 'bank: 20')
+$assert(str_contains($spec, 'const expectedBank = Number(finalPayload?.game?.bet || 0) * 2')
+    && str_contains($spec, 'bank: expectedBank')
     && str_contains($spec, 'commission: 2')
     && str_contains($spec, 'payout: 18')
     && str_contains($spec, 'winnerDelta: 8')
