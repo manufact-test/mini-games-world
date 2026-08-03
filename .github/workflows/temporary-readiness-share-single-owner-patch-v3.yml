@@ -1,0 +1,55 @@
+name: TEMP readiness Share owner patch v3
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-readiness-share-single-owner
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-readiness-share-single-owner
+          fetch-depth: 0
+
+      - name: Run corrected v2 patch body
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/temporary-readiness-share-single-owner-patch-v2.yml').read_text(encoding='utf-8')
+          marker = '      - name: Create read-only readiness module\n'
+          start = workflow.index('        run: |\n', workflow.index(marker)) + len('        run: |\n')
+          end = workflow.index('\n      - name: Commit patch and remove temporary files', start)
+          script = textwrap.dedent(workflow[start:end])
+          script = script.replace(
+              'str_contains($invites, "target.matches(\'[data-create-link-invite]\')")',
+              "str_contains($invites, 'data-create-link-invite')",
+          )
+          Path('/tmp/apply-readiness-share-patch.sh').write_text(script, encoding='utf-8')
+          PY
+          bash /tmp/apply-readiness-share-patch.sh
+
+      - name: Commit patch and remove all temporary files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f .github/workflows/temporary-readiness-share-single-owner-patch.yml
+          rm -f .github/workflows/temporary-readiness-share-single-owner-patch-v2.yml
+          rm -f .github/workflows/temporary-readiness-share-single-owner-patch-v3.yml
+          rm -f .github/readiness-share-patch.trigger
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Keep first-interaction readiness read-only for Share'
+          git push origin HEAD:agent/mvp14r13-staging-readiness-share-single-owner
