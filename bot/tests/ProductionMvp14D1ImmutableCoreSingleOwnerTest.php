@@ -36,7 +36,7 @@ $assert(str_contains($entry, '"./assets/js/residual-ui-game-race-fix.js?v=91": "
 $assert(str_contains($entry, 'data-hotfix-build="v114-mvp14-d1-immutable-core-single-owner"')
     && str_contains($entry, './assets/js/main.js?v=114')
     && str_contains($entry, 'X-MGW-Frontend-Build: v114-mvp14-d1-immutable-core-single-owner')
-    && str_contains($entry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
+    && str_contains($entry, "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"),
     'The v114 entry must expose and deliver the exact no-cache frontend build.');
 
 $assert(str_contains($residual, 'window.__MGW_RESIDUAL_V114__')
@@ -63,9 +63,11 @@ $assert(str_contains($residual, 'api.gameState = coalescedGameState;')
     && str_contains($residual, 'baseGameState(gameId)'),
     'The residual layer may retain only same-game state request coalescing.');
 
-$assert(str_contains($notifications, "document.getElementById('notificationsOpen')?.addEventListener")
+$assert(str_contains($notifications, "document.addEventListener('click', event =>")
+    && str_contains($notifications, "event.target.closest('#notificationsOpen')")
+    && str_contains($notifications, 'event.stopImmediatePropagation();')
     && str_contains($notifications, 'openNotificationsSheet();'),
-    'The canonical notification screen must remain the sole bell owner.');
+    'The canonical notification screen must remain the sole delegated bell owner.');
 
 $assert(str_contains($invites, "document.querySelector('[data-create-link-invite]')?.addEventListener")
     && str_contains($invites, 'data-copy-invite-link')
