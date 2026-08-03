@@ -41,7 +41,7 @@ $assert(str_contains($historical, 'initPreparedShareFix')
     'The historical prepared-Share module must remain byte-addressable for rollback but inactive.');
 
 $activeScript = '<script type="module" src="./assets/js/production-regression-fix-entry.js?v=102"></script>';
-$mainScript = '<script type="module" src="./assets/js/main.js?v=98.2"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=98.3"></script>';
 $assert(str_contains($index, $activeScript)
     && strpos($index, $activeScript) < strpos($index, $mainScript)
     && !str_contains($index, 'production-regression-fix-entry.js?v=96'),
