@@ -1,0 +1,132 @@
+name: Temporary MVP-14R13 v100 residual notification owner removal
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-remove-residual-notification-owner
+    paths:
+      - .github/workflows/mvp14r13-v100-residual-notification-owner-removal.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-residual-owner:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-remove-residual-notification-owner
+          fetch-depth: 0
+
+      - name: Remove residual notification UI ownership and publish v100
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          residual_path = Path('app/assets/js/residual-ui-game-race-fix.js')
+          residual = residual_path.read_text(encoding='utf-8')
+
+          exact_replacements = {
+              "let historyCache = null;\nlet notificationsCache = null;\nlet historyRefreshPromise = null;\nlet notificationsRefreshPromise = null;\nlet lastHistoryRefreshAt = 0;\nlet lastNotificationsRefreshAt = 0;":
+                  "let historyCache = null;\nlet historyRefreshPromise = null;\nlet lastHistoryRefreshAt = 0;",
+              "  document.addEventListener('mgw:app-ready', () => {\n    refreshHistoryNetwork();\n    refreshNotificationsNetwork(false);\n  }, { once:true });":
+                  "  document.addEventListener('mgw:app-ready', refreshHistoryNetwork, { once:true });",
+              "  document.addEventListener('visibilitychange', () => {\n    if (document.visibilityState !== 'visible') return;\n    refreshHistoryNetwork();\n    refreshNotificationsNetwork(false);\n  });":
+                  "  document.addEventListener('visibilitychange', () => {\n    if (document.visibilityState === 'visible') refreshHistoryNetwork();\n  });",
+              "  if (target.id === 'notificationsOpen' && notificationsCache?.data) {\n    event.preventDefault();\n    event.stopImmediatePropagation();\n    haptic('light');\n    renderNotificationsSheet(notificationsCache.data.items || []);\n    setUnreadCount(0);\n    refreshNotificationsNetwork(true);\n    return;\n  }\n\n": "",
+              "    if (meta.kind === 'history') historyCache = { data, storedAt:Date.now() };\n    if (meta.kind === 'notifications') notificationsCache = { data, storedAt:Date.now() };":
+                  "    if (meta.kind === 'history') historyCache = { data, storedAt:Date.now() };",
+              "  if (url.pathname.endsWith('/bot/api.php') && String(payload.action || '') === 'history') return { kind:'history' };\n  if (url.pathname.endsWith('/bot/notifications.php')) return { kind:'notifications' };":
+                  "  if (url.pathname.endsWith('/bot/api.php') && String(payload.action || '') === 'history') return { kind:'history' };",
+          }
+          for old, new in exact_replacements.items():
+              if old not in residual:
+                  raise SystemExit(f'missing exact residual fragment: {old[:100]!r}')
+              residual = residual.replace(old, new, 1)
+
+          function_ranges = [
+              ('renderNotificationsSheet', 'bindHistoryTabs'),
+              ('refreshNotificationsNetwork', 'rememberResponse'),
+              ('notificationMessage', 'topupStatusText'),
+              ('setUnreadCount', 'symbolForUser'),
+          ]
+          for start_name, end_name in function_ranges:
+              pattern = rf"\nfunction {start_name}\([^\n]*\)\{{.*?(?=\nfunction {end_name}\()"
+              residual, count = re.subn(pattern, '\n', residual, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'failed to remove {start_name} block')
+
+          forbidden = [
+              "target.id === 'notificationsOpen'",
+              'notificationsCache',
+              'notificationsRefreshPromise',
+              'lastNotificationsRefreshAt',
+              'refreshNotificationsNetwork',
+              'renderNotificationsSheet',
+              "url.pathname.endsWith('/bot/notifications.php')",
+              'setUnreadCount(',
+              'notificationMessage(',
+              'notificationIcon(',
+              'actionLabel(',
+          ]
+          for token in forbidden:
+              if token in residual:
+                  raise SystemExit(f'residual notification owner token remains: {token}')
+          required = [
+              "target.id === 'balanceHistoryBtn'",
+              "target.id === 'matchHistoryBtn'",
+              'renderBalanceHistorySheet',
+              'renderMatchHistorySheet',
+              'api.gameState = serializedGameState;',
+              'handleTicTacToeCell',
+              "target.matches('[data-create-link-invite]')",
+          ]
+          for token in required:
+              if token not in residual:
+                  raise SystemExit(f'required residual behavior missing: {token}')
+          residual_path.write_text(residual, encoding='utf-8')
+
+          replacements = {
+              'main.js?v=98.1': 'main.js?v=100',
+              'v98-mvp14-notification-canonical-owner': 'v100-mvp14-final-notification-owner',
+              'residual-ui-game-race-fix.js?v=91': 'residual-ui-game-race-fix.js?v=100',
+          }
+          targets = [Path('app/index.html'), Path('app/assets/js/main.js'), Path('app/v110.php')]
+          targets.extend(sorted(Path('bot/tests').glob('*.php')))
+          for path in targets:
+              text = path.read_text(encoding='utf-8')
+              updated = text
+              for old, new in replacements.items():
+                  updated = updated.replace(old, new)
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+
+          index = Path('app/index.html').read_text(encoding='utf-8')
+          main = Path('app/assets/js/main.js').read_text(encoding='utf-8')
+          v110 = Path('app/v110.php').read_text(encoding='utf-8')
+          assert index.count('./assets/js/main.js?v=100') == 1
+          assert './assets/js/main.js?v=98.1' not in index
+          assert './assets/js/main.js?v=96' not in index
+          assert './assets/js/production-regression-fix-entry.js?v=96' in index
+          assert 'data-hotfix-build="v100-mvp14-final-notification-owner"' in index
+          assert "window.__MGW_HOTFIX_BUILD__ = 'v100-mvp14-final-notification-owner'" in main
+          assert "./residual-ui-game-race-fix.js?v=100" in main
+          assert "./screens/notifications-screen-v99.js?v=99" in main
+          assert "'./assets/js/main.js?v=100'" in v110
+
+          workflow = Path('.github/workflows/mvp14r13-v100-residual-notification-owner-removal.yml')
+          workflow.unlink()
+          PY
+
+      - name: Commit exact generated patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app bot/tests .github/workflows/mvp14r13-v100-residual-notification-owner-removal.yml
+          git commit -m "Remove residual notification UI owner and publish v100"
+          git push origin HEAD:agent/mvp14r13-staging-remove-residual-notification-owner
