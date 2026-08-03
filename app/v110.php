@@ -16,12 +16,12 @@ $html = str_replace(
     $html
 );
 $html = str_replace(
-    './assets/js/main.js?v=97',
+    './assets/js/main.js?v=98',
     './assets/js/main-v110.js?v=1124',
     $html
 );
 $html = str_replace(
-    'data-hotfix-build="v97-mvp14-notification-single-owner"',
+    'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
     'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"',
     $html
 );
