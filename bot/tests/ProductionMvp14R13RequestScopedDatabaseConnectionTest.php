@@ -22,12 +22,16 @@ $assert(str_contains($factory, '$cacheKey = self::privateCacheKey($config);')
     && str_contains($factory, 'return self::$requestConnections[$cacheKey];'),
     'Repeated modules using the exact same private DB configuration must reuse one connection object.');
 
+$assert(str_contains($factory, '$processId = getmypid();')
+    && str_contains($factory, '(string)$processId')
+    && str_contains($factory, "throw new RuntimeException('Database connection process identity is unavailable.')"),
+    'Forked CLI workers must receive a different private key instead of inheriting a parent PDO socket.');
 $assert(str_contains($factory, '$config->identityFingerprint()')
     && str_contains($factory, '$config->driver()')
     && str_contains($factory, '$config->user()')
     && str_contains($factory, '$config->password()')
     && str_contains($factory, "hash('sha256', implode(\"\\0\", ["),
-    'The private cache key must hash DB identity, driver, username and password together.');
+    'The private cache key must hash process, DB identity, driver, username and password together.');
 $assert(str_contains($config, "return hash('sha256', json_encode([")
     && str_contains($config, "'host' => strtolower(\$this->host)")
     && str_contains($config, "'port' => (string)\$this->port")
