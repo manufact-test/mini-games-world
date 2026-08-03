@@ -36,6 +36,10 @@ function initDesktopNotificationOpenOwner(){
     openNotificationsSheet({ hapticFeedback:false, keepVisible:true });
   });
 
+  document.addEventListener('mgw:notification-remove', event => {
+    removeInviteToken(String(event.detail?.inviteToken || ''));
+  });
+
   document.addEventListener('mgw:notifications-refresh', event => {
     if (!isDesktopSurface() || !isNotificationsSheetOpen()) return;
     event.stopImmediatePropagation();
@@ -85,6 +89,13 @@ function rememberItems(items){
   latestItems = Array.from(byId.values())
     .sort((a, b) => dateValue(b?.created_at) - dateValue(a?.created_at))
     .slice(0, 30);
+  latestItemsAt = Date.now();
+}
+
+function removeInviteToken(token){
+  if (!token) return;
+  generation += 1;
+  latestItems = latestItems.filter(item => String(item?.invite_token || '') !== token);
   latestItemsAt = Date.now();
 }
 
