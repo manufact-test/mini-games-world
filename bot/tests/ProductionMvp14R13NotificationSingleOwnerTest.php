@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $main = file_get_contents($root . '/app/assets/js/main.js');
-$canonical = file_get_contents($root . '/app/assets/js/screens/notifications-screen.js');
+$canonical = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v99.js');
 $prewarm = file_get_contents($root . '/app/assets/js/first-interaction-readiness.js');
 $index = file_get_contents($root . '/app/index.html');
 $v110 = file_get_contents($root . '/app/v110.php');
@@ -23,12 +23,12 @@ $prewarmInit = strpos($main, 'initFirstInteractionReadinessEarly();');
 $assert($canonicalInit !== false && $prewarmInit !== false && $canonicalInit < $prewarmInit,
     'The canonical notifications screen must initialize before generic first-interaction warming.');
 
-$assert(str_contains($main, "./screens/notifications-screen.js?v=99")
-    && !str_contains($main, "./screens/notifications-screen.js?v=85")
+$assert(str_contains($main, "./screens/notifications-screen-v99.js?v=99")
+    && !str_contains($main, "./screens/notifications-screen.js?v=99")
     && str_contains($main, "./first-interaction-readiness.js?v=98")
     && str_contains($main, "window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization'")
     && str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v98-mvp14-notification-canonical-owner'"),
-    'The canonical-owner release must publish a fresh notifications module URL while retaining reviewed lineage.');
+    'The canonical-owner release must publish a new notifications object name while retaining reviewed lineage.');
 
 $assert(str_contains($canonical, "const trigger = event.target.closest('#notificationsOpen')")
     && str_contains($canonical, 'event.stopImmediatePropagation();')
