@@ -238,6 +238,7 @@ async function beginFrameCapture(page, label) {
         overlayActive: overlay?.classList.contains('active') === true,
         heading: String(sheet?.querySelector('.sheet-head h2')?.textContent || '').trim(),
         empty: String(sheet?.querySelector('.notifications-empty strong')?.textContent || '').trim(),
+        loading: sheet?.querySelector('.notifications-loading') !== null,
         bodyText: String(sheet?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 2000),
         actions: Array.from(sheet?.querySelectorAll('[data-invite-action]') || []).map((element) => ({
           action: String(element.getAttribute('data-invite-action') || ''),
@@ -272,19 +273,26 @@ async function finishFrameCapture(page) {
 
 function expectFreshPendingFrames(frames, token, label) {
   expect(frames.length, `${label} captured frames`).toBeGreaterThan(0);
+
+  const visibleLoadedFrames = frames.filter((frame) => (
+    frame.overlayActive
+    && frame.heading === 'Уведомления'
+    && frame.loading !== true
+  ));
+  expect(visibleLoadedFrames.length, `${label} visible loaded frames`).toBeGreaterThan(0);
+
+  const firstVisibleLoadedFrame = visibleLoadedFrames[0];
   expect(
-    frames.some((frame) => /Пока уведомлений нет|0 уведомлений/i.test(frame.empty || frame.bodyText)),
-    `${label} must not render a false empty notifications frame`,
+    /Пока уведомлений нет|0 уведомлений/i.test(
+      firstVisibleLoadedFrame.empty || firstVisibleLoadedFrame.bodyText,
+    ),
+    `${label} first visible loaded frame must not be a false empty state`,
   ).toBe(false);
   expect(
-    frames.some((frame) => /Приглашение отменено|Приглашение отклонено/i.test(frame.bodyText)),
-    `${label} must not render a stale terminal invitation`,
-  ).toBe(false);
-  expect(
-    frames.some((frame) => frame.actions.some((item) => (
+    firstVisibleLoadedFrame.actions.some((item) => (
       item.action === 'accept' && item.token === token
-    ))),
-    `${label} must render the exact current actionable invitation`,
+    )),
+    `${label} first visible loaded frame must contain the exact current actionable invitation`,
   ).toBe(true);
 }
 
@@ -381,7 +389,7 @@ test('D1 notification toast and bell show one fresh actionable invitation', asyn
       blueToastVisible: true,
       exactPendingCardVisible: true,
       falseEmptyFrameObserved: false,
-      staleTerminalFrameObserved: false,
+      staleCurrentInviteFrameObserved: false,
       remainedClosedAfterDismissal: true,
       deliberateBellReopenFresh: true,
       productionChanged: false,

@@ -28,15 +28,23 @@ $assert(str_contains($spec, "playerB.page.locator('#notificationToast.show')")
     'D1 must enter the notification sheet through the visible blue toast.');
 
 $assert(str_contains($spec, 'async function beginFrameCapture(page, label)')
+    && str_contains($spec, "loading: sheet?.querySelector('.notifications-loading') !== null")
     && str_contains($spec, 'async function finishFrameCapture(page)')
     && str_contains($spec, 'function expectFreshPendingFrames(frames, token, label)'),
-    'D1 must capture the notification sheet render sequence.');
+    'D1 must capture the notification sheet render sequence including loading state.');
+
+$assert(str_contains($spec, 'const visibleLoadedFrames = frames.filter')
+    && str_contains($spec, 'frame.overlayActive')
+    && str_contains($spec, "frame.heading === 'Уведомления'")
+    && str_contains($spec, 'frame.loading !== true')
+    && str_contains($spec, 'const firstVisibleLoadedFrame = visibleLoadedFrames[0]'),
+    'D1 must evaluate the first visible loaded notification frame, not hidden historical DOM.');
 
 $assert(str_contains($spec, 'Пока уведомлений нет|0 уведомлений')
-    && str_contains($spec, 'must not render a false empty notifications frame')
-    && str_contains($spec, 'Приглашение отменено|Приглашение отклонено')
-    && str_contains($spec, 'must not render a stale terminal invitation'),
-    'D1 must reject false-empty and stale-terminal first frames.');
+    && str_contains($spec, 'first visible loaded frame must not be a false empty state')
+    && str_contains($spec, 'first visible loaded frame must contain the exact current actionable invitation')
+    && !str_contains($spec, 'must not render a stale terminal invitation'),
+    'D1 must reject false-empty/current-invite replacement without banning legitimate terminal history.');
 
 $assert(str_contains($spec, "playerB.page.locator('#sheet [data-close-sheet]').click()")
     && str_contains($spec, "document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'))")
@@ -47,7 +55,7 @@ $assert(str_contains($spec, "playerB.page.locator('#sheet [data-close-sheet]').c
 $assert(str_contains($spec, 'blueToastVisible: true')
     && str_contains($spec, 'exactPendingCardVisible: true')
     && str_contains($spec, 'falseEmptyFrameObserved: false')
-    && str_contains($spec, 'staleTerminalFrameObserved: false')
+    && str_contains($spec, 'staleCurrentInviteFrameObserved: false')
     && str_contains($spec, 'remainedClosedAfterDismissal: true')
     && str_contains($spec, 'deliberateBellReopenFresh: true')
     && str_contains($spec, 'productionChanged: false')
