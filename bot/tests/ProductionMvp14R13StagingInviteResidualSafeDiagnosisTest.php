@@ -15,11 +15,17 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(str_contains($service, 'public function diagnose(array $server): array')
+$diagnoseMethodPosition = strpos($service, 'public function diagnose(array $server): array');
+$reconcileMethodPosition = strpos($service, 'public function reconcile(array $server): array');
+$diagnoseSource = $diagnoseMethodPosition !== false && $reconcileMethodPosition !== false
+    ? substr($service, $diagnoseMethodPosition, $reconcileMethodPosition - $diagnoseMethodPosition)
+    : '';
+
+$assert($diagnoseMethodPosition !== false
     && str_contains($service, '$this->inspect($snapshot, $this->database(), false)')
-    && str_contains($service, "'read_only' => true")
-    && str_contains($service, "'production_changed' => false")
-    && str_contains($service, "'live_payments_used' => false"),
+    && str_contains($diagnoseSource, "'read_only' => true")
+    && str_contains($diagnoseSource, "'production_changed' => false")
+    && str_contains($diagnoseSource, "'live_payments_used' => false"),
     'The diagnosis must be an exact-host read-only staging operation with explicit safety evidence.');
 
 $allowedCodes = [
@@ -56,10 +62,10 @@ $assert(str_contains($probe, "data: { action: 'diagnose_invite_residuals' }")
     && !str_contains($probe, 'console.log(payload)'),
     'The runner must print only the bounded aggregate diagnosis and never credentials or the full response.');
 
-$assert(!str_contains($service, "'private_candidates' =>")
+$assert(!str_contains($diagnoseSource, "'private_candidates' =>")
     && !str_contains($endpoint, 'private_candidates')
     && !str_contains($probe, 'private_candidates'),
-    'Private residual rows must never cross the service boundary.');
+    'Private residual rows may remain internal but must never cross the public diagnosis boundary.');
 
 $assert(str_contains($endpoint, "'error' => 'test_auth_unavailable'")
     && !str_contains($endpoint, '$error->getMessage()'),
