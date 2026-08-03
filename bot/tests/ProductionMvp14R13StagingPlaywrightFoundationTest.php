@@ -39,16 +39,29 @@ $assert(str_contains($workflow, "branches:\n      - agent/mvp-13-2-staging")
     && str_contains($workflow, 'statuses: write'),
     'The live browser workflow must run only on staging pushes with minimal OIDC and status permissions.');
 
-$assert(str_contains($workflow, 'runs-on: ubuntu-latest')
-    && str_contains($workflow, 'timeout-minutes: 18')
+$assert(str_contains($workflow, 'linux-route:')
+    && str_contains($workflow, 'runs-on: ubuntu-latest')
+    && str_contains($workflow, 'timeout-minutes: 14')
     && str_contains($workflow, 'sleep 300')
     && str_contains($workflow, '/bot/staging-e2e-readiness.php'),
-    'The workflow must use a bounded ephemeral runner and wait for Hostinger deployment evidence.');
+    'The primary route must use a bounded ephemeral Linux runner and wait for Hostinger deployment evidence.');
 
-$assert(str_contains($workflow, '@playwright/test@1.62.0')
+$assert(str_contains($workflow, 'macos-route:')
+    && str_contains($workflow, 'runs-on: macos-latest')
+    && str_contains($workflow, 'timeout-minutes: 12')
+    && str_contains($workflow, "needs.linux-route.outputs.result == 'network_unavailable'")
+    && str_contains($workflow, "needs.linux-route.outputs.result == 'runner_infrastructure_failure'"),
+    'An independent macOS network route must run only after Linux network or runner infrastructure failure.');
+
+$assert(!str_contains($workflow, "needs.linux-route.outputs.result == 'application_failure'")
+    && str_contains($workflow, 'needs: linux-route'),
+    'Application failures must never be hidden by retrying the same scenario on another operating system.');
+
+$assert(substr_count($workflow, '@playwright/test@1.62.0') === 2
     && str_contains($workflow, 'playwright install --with-deps chromium')
-    && str_contains($workflow, 'npm run test:e2e:staging'),
-    'The workflow must install one pinned Playwright version and Chromium before the exact test command.');
+    && str_contains($workflow, 'playwright install chromium')
+    && substr_count($workflow, 'npm run test:e2e:staging') === 2,
+    'Both independent routes must install the same pinned Playwright version and run the exact staging suite.');
 
 $assert(!str_contains($workflow, 'secrets.')
     && !str_contains($workflow, 'setup_secret')
@@ -56,11 +69,26 @@ $assert(!str_contains($workflow, 'secrets.')
     && !str_contains($workflow, 'mini-games-world.com'),
     'The Playwright workflow must require no long-lived secret and must never target production.');
 
-$assert(str_contains($workflow, 'actions/upload-artifact@v4')
-    && str_contains($workflow, 'e2e/artifacts/playwright')
-    && str_contains($workflow, 'staging-e2e-readiness.json')
-    && str_contains($workflow, 'retention-days: 7'),
-    'Playwright traces, screenshots, videos and reports must be uploaded from the actual config-relative evidence path.');
+$assert(substr_count($workflow, 'actions/upload-artifact@v4') === 2
+    && substr_count($workflow, 'e2e/artifacts/playwright') === 2
+    && str_contains($workflow, 'staging-e2e-readiness-linux.json')
+    && str_contains($workflow, 'staging-e2e-readiness-macos.json')
+    && substr_count($workflow, 'retention-days: 7') === 2,
+    'Each route must preserve separate readiness and Playwright evidence for seven days.');
+
+$assert(str_contains($workflow, "result='network_unavailable'")
+    && str_contains($workflow, "result='runner_infrastructure_failure'")
+    && str_contains($workflow, "result='application_failure'")
+    && str_contains($workflow, "result='success'")
+    && str_contains($workflow, "printf 'result=%s\\n' \"\${result}\" >> \"\${GITHUB_OUTPUT}\""),
+    'Each route must publish an explicit machine-readable result without converting failures into false success.');
+
+$assert(str_contains($workflow, 'publish-result:')
+    && str_contains($workflow, "[[ \"\${LINUX_RESULT}\" == 'success' || \"\${MACOS_RESULT}\" == 'success' ]]")
+    && str_contains($workflow, "[[ \"\${LINUX_RESULT}\" == 'application_failure' || \"\${MACOS_RESULT}\" == 'application_failure' ]]")
+    && str_contains($workflow, "description='Staging was unreachable from independent GitHub runners'")
+    && str_contains($workflow, 'test "${state}" = \'success\''),
+    'The final job must accept one real route success, preserve application failures and fail when both networks are unavailable.');
 
 $assert(str_contains($workflow, 'Publish pending commit status')
     && str_contains($workflow, 'Publish final commit status')
@@ -71,7 +99,7 @@ $assert(str_contains($workflow, 'Publish pending commit status')
     && str_contains($workflow, "state='error'")
     && str_contains($workflow, '/statuses/${{ github.sha }}')
     && str_contains($workflow, 'if: always()'),
-    'The push workflow must publish one readable pending and final commit status for autonomous monitoring.');
+    'The workflow must publish one readable pending and final commit status for autonomous monitoring.');
 
 $assert(str_contains($workflow, 'GITHUB_TOKEN: ${{ github.token }}')
     && str_contains($workflow, 'RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}')
