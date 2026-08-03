@@ -65,8 +65,17 @@ test('OIDC runner reads only aggregate staging invite residual diagnosis', async
   });
   expect(['already_clean', 'recoverable', 'blocked']).toContain(payload.status);
   expect(typeof payload.recovery_ready).toBe('boolean');
-  expect(Number.isInteger(payload.candidate_count)).toBe(true);
-  expect(payload.candidate_count).toBeGreaterThanOrEqual(0);
+  for (const key of [
+    'candidate_count',
+    'test_player_candidate_count',
+    'terminal_staging_candidate_count',
+  ]) {
+    expect(Number.isInteger(payload[key]), `${key} must be an integer`).toBe(true);
+    expect(payload[key], `${key} must be non-negative`).toBeGreaterThanOrEqual(0);
+  }
+  expect(
+    payload.test_player_candidate_count + payload.terminal_staging_candidate_count,
+  ).toBe(payload.candidate_count);
   expect(Array.isArray(payload.blocker_codes)).toBe(true);
   for (const code of payload.blocker_codes) {
     expect(code).toMatch(/^[a-z0-9_]{3,64}$/);
@@ -77,6 +86,8 @@ test('OIDC runner reads only aggregate staging invite residual diagnosis', async
     status: payload.status,
     recovery_ready: payload.recovery_ready,
     candidate_count: payload.candidate_count,
+    test_player_candidate_count: payload.test_player_candidate_count,
+    terminal_staging_candidate_count: payload.terminal_staging_candidate_count,
     blocker_codes: payload.blocker_codes,
   })}`);
 });
