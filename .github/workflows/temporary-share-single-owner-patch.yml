@@ -1,0 +1,178 @@
+name: TEMP canonical Share owner patch
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-share-single-owner
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-share-single-owner
+          fetch-depth: 0
+
+      - name: Remove competing active Share owner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              return source.replace(old, new, 1)
+
+          entry_path = Path('app/assets/js/production-regression-fix-entry.js')
+          entry = entry_path.read_text(encoding='utf-8')
+          entry = replace_once(
+              entry,
+              "import { initPreparedShareFix } from './production-prepared-share-fix.js?v=93';\n",
+              '',
+              'prepared Share import',
+          )
+          entry = replace_once(entry, 'initPreparedShareFix();\n', '', 'prepared Share initializer')
+          entry_path.write_text(entry, encoding='utf-8')
+
+          for relative in ['app/index.html', 'app/v110.php']:
+              path = Path(relative)
+              source = path.read_text(encoding='utf-8')
+              source = replace_once(
+                  source,
+                  'production-regression-fix-entry.js?v=96',
+                  'production-regression-fix-entry.js?v=102',
+                  relative + ' active entry cache identity',
+              )
+              path.write_text(source, encoding='utf-8')
+
+          for path in Path('bot/tests').glob('*.php'):
+              source = path.read_text(encoding='utf-8')
+              source = source.replace(
+                  'production-regression-fix-entry.js?v=96',
+                  'production-regression-fix-entry.js?v=102',
+              )
+              source = re.sub(
+                  r"\n\s*&& str_contains\(\$entry, 'initPreparedShareFix\(\);'\)",
+                  '',
+                  source,
+              )
+              path.write_text(source, encoding='utf-8')
+
+          regression_path = Path('bot/tests/ProductionShareGameAvatarRegressionFixTest.php')
+          regression = regression_path.read_text(encoding='utf-8')
+          regression = replace_once(
+              regression,
+              "$share = $read('app/assets/js/production-prepared-share-fix.js');\n"
+              "$game = $read('app/assets/js/production-tictactoe-turn-fix.js');",
+              "$share = $read('app/assets/js/production-prepared-share-fix.js');\n"
+              "$invites = $read('app/assets/js/games/game-invites.js');\n"
+              "$game = $read('app/assets/js/production-tictactoe-turn-fix.js');",
+              'canonical invite owner source',
+          )
+          marker = "\n$assert(\n    str_contains($game, 'let viewer = viewerByGame.get(key) || null;')"
+          canonical_assertion = "\n$assert(\n"
+          canonical_assertion += "    !str_contains($entry, 'initPreparedShareFix();')\n"
+          canonical_assertion += "        && !str_contains($entry, 'production-prepared-share-fix.js')\n"
+          canonical_assertion += "        && str_contains($invites, 'async function createLinkDraft(context, button)')\n"
+          canonical_assertion += "        && str_contains($invites, 'showPreparedLink(draftInvite, context);')\n"
+          canonical_assertion += "        && str_contains($invites, 'data-fallback-share')\n"
+          canonical_assertion += "        && str_contains($invites, 'data-copy-invite-link')\n"
+          canonical_assertion += "        && str_contains($invites, 'data-discard-draft'),\n"
+          canonical_assertion += "    'The active application must use one canonical Share owner with prepared-message and link fallback paths.'\n"
+          canonical_assertion += ");\n"
+          regression = replace_once(regression, marker, canonical_assertion + marker, 'canonical Share assertion')
+          regression_path.write_text(regression, encoding='utf-8')
+
+          contract = '''<?php
+          declare(strict_types=1);
+
+          $root = dirname(__DIR__, 2);
+          $entry = file_get_contents($root . '/app/assets/js/production-regression-fix-entry.js');
+          $main = file_get_contents($root . '/app/assets/js/main.js');
+          $invites = file_get_contents($root . '/app/assets/js/games/game-invites.js');
+          $historical = file_get_contents($root . '/app/assets/js/production-prepared-share-fix.js');
+          $index = file_get_contents($root . '/app/index.html');
+          $v110 = file_get_contents($root . '/app/v110.php');
+          if (!is_string($entry) || !is_string($main) || !is_string($invites)
+              || !is_string($historical) || !is_string($index) || !is_string($v110)) {
+              throw new RuntimeException('Missing canonical Share ownership source.');
+          }
+
+          $assertions = 0;
+          $assert = static function (bool $condition, string $message) use (&$assertions): void {
+              $assertions++;
+              if (!$condition) throw new RuntimeException($message);
+          };
+
+          $assert(!str_contains($entry, 'initPreparedShareFix')
+              && !str_contains($entry, 'production-prepared-share-fix.js'),
+              'The active regression entry must not install the competing prepared-Share owner.');
+
+          $assert(substr_count($main, 'initGameInvites();') === 1
+              && str_contains($invites, 'async function createLinkDraft(context, button)')
+              && str_contains($invites, "const preparedId = String(draftInvite.prepared_message_id || '')")
+              && str_contains($invites, "typeof tg?.shareMessage === 'function'")
+              && str_contains($invites, 'showPreparedLink(draftInvite, context);'),
+              'The canonical invite coordinator must own both prepared-message and ordinary-link Share paths.');
+
+          $assert(str_contains($invites, 'data-fallback-share')
+              && str_contains($invites, 'data-copy-invite-link')
+              && str_contains($invites, 'data-discard-draft')
+              && str_contains($invites, "inviteRequest('discard_draft'"),
+              'The ordinary-link fallback must remain visible, copyable and cancellable.');
+
+          $assert(str_contains($historical, 'initPreparedShareFix')
+              && str_contains($historical, 'Telegram-сообщение не удалось подготовить.'),
+              'The historical prepared-Share module must remain byte-addressable for rollback but inactive.');
+
+          $activeScript = '<script type="module" src="./assets/js/production-regression-fix-entry.js?v=102"></script>';
+          $mainScript = '<script type="module" src="./assets/js/main.js?v=98.2"></script>';
+          $assert(str_contains($index, $activeScript)
+              && strpos($index, $activeScript) < strpos($index, $mainScript)
+              && !str_contains($index, 'production-regression-fix-entry.js?v=96'),
+              'The HTML shell must publish the fresh canonical-Share entry before active main.');
+
+          $assert(str_contains($v110, "'./assets/js/production-regression-fix-entry.js?v=102'")
+              && str_contains($v110, "'./assets/js/production-clean-entry-v110.js?v=1120'"),
+              'The v110 wrapper must replace the exact active base entry and retain its own accepted graph.');
+
+          $assert(!str_contains($entry, 'lemonchiffon-gerbil-545102.hostingersite.com')
+              && !str_contains($entry, 'mini-games-world.com'),
+              'The Share ownership fix must not introduce a production target.');
+
+          fwrite(STDOUT, "ProductionMvp14R13ShareSingleOwnerTest: {$assertions} assertions passed\n");
+          '''
+          Path('bot/tests/ProductionMvp14R13ShareSingleOwnerTest.php').write_text(contract, encoding='utf-8')
+          PY
+
+          node --check app/assets/js/production-regression-fix-entry.js
+          php -l bot/tests/ProductionMvp14R13ShareSingleOwnerTest.php
+          php bot/tests/ProductionMvp14R13ShareSingleOwnerTest.php
+          php bot/tests/ProductionShareGameAvatarRegressionFixTest.php
+          php bot/tests/ProductionV96RootCauseStabilizationTest.php
+          ! grep -Fq 'initPreparedShareFix' app/assets/js/production-regression-fix-entry.js
+          ! grep -Fq 'production-prepared-share-fix.js' app/assets/js/production-regression-fix-entry.js
+
+      - name: Commit exact patch and remove temporary workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm .github/workflows/temporary-share-single-owner-patch.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/assets/js/production-regression-fix-entry.js \
+            app/index.html app/v110.php bot/tests \
+            .github/workflows/temporary-share-single-owner-patch.yml
+          git diff --cached --check
+          git commit -m 'Make the invite coordinator the sole active Share owner'
+          git push origin HEAD:agent/mvp14r13-staging-share-single-owner
