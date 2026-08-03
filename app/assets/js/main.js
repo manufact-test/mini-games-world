@@ -1,9 +1,6 @@
 window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
 window.__MGW_HOTFIX_BUILD__ = 'v97-mvp14-notification-single-owner';
-/* Regression lineage only; the active import below intentionally uses v93:
- * first-interaction-readiness.js?v=92
- */
-import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=93';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
@@ -24,7 +21,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen.js?v=86';
+import { initNotificationsScreen } from './screens/notifications-screen.js?v=85';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
