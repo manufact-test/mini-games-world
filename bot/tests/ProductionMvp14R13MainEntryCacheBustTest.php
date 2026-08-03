@@ -14,13 +14,13 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(substr_count($index, './assets/js/main.js?v=97') === 1,
+$assert(substr_count($index, './assets/js/main.js?v=98') === 1,
     'The application HTML must load exactly one v97 main entry.');
 $assert(!str_contains($index, './assets/js/main.js?v=96'),
     'The stale v96 main entry must not remain reachable from the application HTML.');
-$assert(str_contains($index, 'data-hotfix-build="v97-mvp14-notification-single-owner"'),
+$assert(str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
     'The visible application shell must publish the same v97 notification hotfix identity.');
-$assert(str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v97-mvp14-notification-single-owner'"),
+$assert(str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v98-mvp14-notification-canonical-owner'"),
     'The loaded main module must publish the matching v97 hotfix marker.');
 
 $canonicalInit = strpos($main, 'initNotificationsScreen();');

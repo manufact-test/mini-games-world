@@ -162,7 +162,7 @@ $assertContains('v96-mvp14-root-cause-stabilization', $main, 'Main module must p
 $assertContains('./ui.js?v=89', $main, 'Main module must preserve avatar renderer cache busting');
 $assertContains('./screens/profile-screen.js?v=92', $main, 'Main module must load the first-open-safe profile screen');
 $assertContains('main.css?v=92', $index, 'Entrypoint must publish current CSS');
-$assertContains('main.js?v=97', $index, 'Entrypoint must publish the notification-ownership JavaScript cache identity');
+$assertContains('main.js?v=98', $index, 'Entrypoint must publish the notification-ownership JavaScript cache identity');
 $assertContains('transition:none !important', $css, 'Current sheet fix must be at least as immediate as the prior transition');
 $assertContains('animation:none !important', $css, 'Sheet must not show an intermediate animation frame');
 $assertContains('ProductionRuntimeInvitesModuleProjector', $factory, 'Production factory must install exact invite lifecycle projector');

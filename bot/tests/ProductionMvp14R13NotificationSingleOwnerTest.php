@@ -58,7 +58,7 @@ $activeMain = strpos($index, 'main.js?v=98');
 $assert($regressionEntry !== false
     && $activeMain !== false
     && $regressionEntry < $activeMain
-    && !str_contains($index, 'main.js?v=97')
+    && !str_contains($index, 'main.js?v=98')
     && !str_contains($index, 'main.js?v=96')
     && str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
     'The HTML shell must publish the v98 active entry after the retained v96 regression layer.');
