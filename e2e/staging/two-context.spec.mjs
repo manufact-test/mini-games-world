@@ -483,8 +483,12 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
     inviteToken = String(created.invite?.token || '');
     expect(inviteToken).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
     expect(created.invite?.status).toBe('pending');
-    expect(created.invite?.inviter_id).toBe('stg_test_player_a');
-    expect(created.invite?.invitee_id).toBe('stg_test_player_b');
+    expect(created.user?.id).toBe('stg_test_player_a');
+    expect(created.recipient_id).toBe('stg_test_player_b');
+    expect(created.invite?.is_owner).toBe(true);
+    expect(created.invite?.is_invitee).toBe(false);
+    expect(created.invite).not.toHaveProperty('inviter_id');
+    expect(created.invite).not.toHaveProperty('invitee_id');
 
     const acceptButton = await openNotificationsAndWaitForAction(
       playerB.page,
