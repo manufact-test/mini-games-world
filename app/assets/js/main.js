@@ -28,6 +28,7 @@ import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74'
 import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
+import { initInviteTerminalActions } from './games/invite-terminal-actions-v115.js?v=115';
 import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=85';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
@@ -58,7 +59,9 @@ initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
-/* One coordinator owns links, direct invitations, notification actions and rematches. */
+/* Terminal decline/cancel owns the earliest capture boundary and stays silent. */
+initInviteTerminalActions();
+/* One coordinator owns links, direct invitations, accept/start actions and rematches. */
 initGameInvites();
 initGameFinishStability();
 initDominoChainLayout();
