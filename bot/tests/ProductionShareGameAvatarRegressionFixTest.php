@@ -22,13 +22,13 @@ $share = $read('app/assets/js/production-prepared-share-fix.js');
 $game = $read('app/assets/js/production-tictactoe-turn-fix.js');
 
 $entryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
-$mainPosition = strpos($index, 'main.js?v=97');
+$mainPosition = strpos($index, 'main.js?v=98');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
         && !str_contains($index, 'main.js?v=96')
-        && str_contains($index, 'data-hotfix-build="v97-mvp14-notification-single-owner"'),
+        && str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
     'The retained v96 regression layer must load before the active v97 application entrypoint.'
 );
 

@@ -183,7 +183,7 @@ $warmPosition = strpos($main, 'const firstInteraction = await warmFirstInteracti
 $appReadyPosition = strpos($main, 'dispatchAppReady();');
 $assertTrue(
     str_contains($main, 'v96-mvp14-root-cause-stabilization')
-        && str_contains($main, 'first-interaction-readiness.js?v=92')
+        && str_contains($main, 'first-interaction-readiness.js?v=98')
         && str_contains($main, 'profile-screen.js?v=92')
         && $readinessInit !== false
         && $residualInit !== false
@@ -203,9 +203,9 @@ $assertTrue(
 );
 
 $regressionEntryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
-$activeMainPosition = strpos($index, 'main.js?v=97');
+$activeMainPosition = strpos($index, 'main.js?v=98');
 $assertTrue(
-    str_contains($index, 'data-hotfix-build="v97-mvp14-notification-single-owner"')
+    str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"')
         && str_contains($index, 'main.css?v=92')
         && $regressionEntryPosition !== false
         && $activeMainPosition !== false
