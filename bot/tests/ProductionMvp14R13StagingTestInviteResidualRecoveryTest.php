@@ -50,28 +50,32 @@ $assert(str_contains($service, "WHERE invite_id = :invite_id OR source_match_id 
     'A candidate with any direct or source-match reference must remain blocked using native-safe placeholders.');
 
 $assert(str_contains($service, '$idPresent xor $tokenPresent')
-    && str_contains($service, '$idPresent || $eventPresent')
+    && str_contains($service, 'isset($sourceNotificationIds[$notificationId])')
     && str_contains($service, 'is still present in JSON'),
     'Partial invite identity and any notification still present in JSON must block deletion.');
 
 $notificationDelete = strpos($service, 'DELETE FROM mgw_notifications');
 $eventDelete = strpos($service, 'DELETE FROM mgw_invite_events');
 $inviteDelete = strpos($service, 'DELETE FROM mgw_invites');
-$inviteAudit = strpos($service, '->auditParity($snapshot);');
+$inviteSync = strpos($service, '->synchronize($snapshot);');
+$notificationSync = strpos($service, '->synchronizeAndList($snapshot, $legacyUserId);');
 $assert($notificationDelete !== false
     && $eventDelete !== false
     && $inviteDelete !== false
-    && $inviteAudit !== false
+    && $inviteSync !== false
+    && $notificationSync !== false
     && $notificationDelete < $eventDelete
     && $eventDelete < $inviteDelete
-    && $inviteDelete < $inviteAudit,
-    'Dependent test notifications and events must be deleted before the invite and exact parity must run afterward.');
+    && $inviteDelete < $inviteSync
+    && $inviteSync < $notificationSync,
+    'Dependent test rows must be deleted before current JSON invites and A/B notifications are resynchronized.');
 
 $assert(str_contains($service, '$database->transaction(function (DatabaseConnectionInterface $db)')
     && str_contains($service, 'RuntimeInviteRepository($this->config, $this->router, $db)')
     && str_contains($service, 'RuntimeNotificationRepository($this->config, $this->router, $db)')
-    && substr_count($service, "'read_only'") >= 2,
-    'Deletion and post-delete invite/notification audits must share one database transaction.');
+    && str_contains($service, "(\$inviteSync['parity'] ?? false) !== true")
+    && str_contains($service, "(\$summary['parity'] ?? false) !== true"),
+    'Deletion and exact invite/notification resynchronization must share one database transaction.');
 
 $assert(str_contains($service, "'production_changed' => false")
     && str_contains($service, "'live_payments_used' => false")
@@ -120,7 +124,7 @@ $assert(str_contains($endpoint, "'invite_residual_recovery' => is_array(\$recove
 
 $assert(str_contains($repository, "'Invite JSON and DB counts differ.'")
     && str_contains($repository, "'Invite JSON and DB fingerprints differ.'")
-    && str_contains($notifications, "'Notification JSON and DB counts differ.'"),
+    && str_contains($notifications, 'Notification JSON and DB runtime parity check failed.'),
     'The existing strict JSON/DB parity blockers must remain unchanged.');
 
 $assert(!str_contains($service, 'lemonchiffon-gerbil-545102.hostingersite.com')
