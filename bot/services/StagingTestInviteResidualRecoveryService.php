@@ -21,6 +21,33 @@ final class StagingTestInviteResidualRecoveryService
         $this->router = $router ?? new RuntimeStorageRouter($config);
     }
 
+    public function diagnose(array $server): array
+    {
+        $this->assertAvailable($server);
+
+        return $this->withLock(function (): array {
+            $snapshot = $this->snapshot();
+            $plan = $this->inspect($snapshot, $this->database(), false);
+            $candidateCount = count($plan['private_candidates']);
+            $blockers = array_values($plan['blockers']);
+            $status = $blockers !== []
+                ? 'blocked'
+                : ($candidateCount > 0 ? 'recoverable' : 'already_clean');
+
+            return [
+                'ok' => true,
+                'service' => 'mini-games-world-staging-test-invite-residual-diagnosis',
+                'read_only' => true,
+                'status' => $status,
+                'recovery_ready' => $blockers === [],
+                'candidate_count' => $candidateCount,
+                'blocker_codes' => $blockers,
+                'production_changed' => false,
+                'live_payments_used' => false,
+            ];
+        });
+    }
+
     public function reconcile(array $server): array
     {
         $this->assertAvailable($server);
@@ -141,14 +168,14 @@ final class StagingTestInviteResidualRecoveryService
             $inviteId = trim((string)($invite['invite_id'] ?? ''));
             $token = trim((string)($invite['token'] ?? ''));
             if ($inviteId === '' || $token === '') {
-                $blockers[] = 'Normalized invite identity is incomplete.';
+                $blockers[] = 'invite_identity_incomplete';
                 continue;
             }
 
             $idPresent = isset($sourceInviteIds[$inviteId]);
             $tokenPresent = isset($sourceInviteTokens[$token]);
             if ($idPresent xor $tokenPresent) {
-                $blockers[] = 'Normalized invite identity partially conflicts with JSON.';
+                $blockers[] = 'invite_identity_partial_conflict';
                 continue;
             }
             if ($idPresent) continue;
@@ -159,17 +186,17 @@ final class StagingTestInviteResidualRecoveryService
             ];
             sort($participants, SORT_STRING);
             if ($participants !== $expectedParticipants) {
-                $blockers[] = 'A DB-only invite does not belong exclusively to TEST PLAYER A/B.';
+                $blockers[] = 'invite_not_test_players';
                 continue;
             }
 
             $status = trim((string)($invite['status'] ?? ''));
             if (!in_array($status, self::SAFE_RESIDUAL_STATUSES, true)) {
-                $blockers[] = 'A DB-only staging test invite has an unsafe status.';
+                $blockers[] = 'invite_unsafe_status';
                 continue;
             }
             if (trim((string)($invite['match_id'] ?? '')) !== '') {
-                $blockers[] = 'A DB-only staging test invite is attached to a match.';
+                $blockers[] = 'invite_attached_to_match';
                 continue;
             }
 
@@ -179,7 +206,7 @@ final class StagingTestInviteResidualRecoveryService
                 ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
             );
             if ($matchCount !== 0) {
-                $blockers[] = 'A DB-only staging test invite is referenced by a match.';
+                $blockers[] = 'invite_referenced_by_match';
                 continue;
             }
 
@@ -197,13 +224,13 @@ final class StagingTestInviteResidualRecoveryService
                 if ($notificationId === ''
                     || $eventKey === ''
                     || !in_array($legacyUserId, self::TEST_PLAYER_IDS, true)) {
-                    $blockers[] = 'A residual invite notification is not confined to TEST PLAYER A/B.';
+                    $blockers[] = 'notification_not_test_players';
                     $safe = false;
                     continue;
                 }
                 if (isset($sourceNotificationIds[$notificationId])
                     || isset($sourceNotificationEvents[$legacyUserId . '|' . $eventKey])) {
-                    $blockers[] = 'A residual invite notification is still present in JSON.';
+                    $blockers[] = 'notification_still_in_json';
                     $safe = false;
                 }
             }
@@ -222,7 +249,7 @@ final class StagingTestInviteResidualRecoveryService
         }
 
         if (count($candidates) > self::MAX_RESIDUAL_INVITES) {
-            $blockers[] = 'Too many staging test invite residuals were found.';
+            $blockers[] = 'residual_limit_exceeded';
         }
         $blockers = array_values(array_unique($blockers));
         sort($blockers, SORT_STRING);
