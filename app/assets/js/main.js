@@ -1,6 +1,6 @@
 window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
-window.__MGW_HOTFIX_BUILD__ = 'v97-mvp14-notification-single-owner';
-import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
+window.__MGW_HOTFIX_BUILD__ = 'v98-mvp14-notification-canonical-owner';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=98';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
@@ -44,9 +44,8 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
-/* The canonical notifications screen must register its capture listener before
- * the generic first-interaction cache. It owns opening, fresh reads and invite
- * action rendering; prewarm may never replace a fresh sheet on the same click. */
+/* The canonical notifications screen registers first and remains the only
+ * owner of bell clicks, fresh reads, mark-read requests and invite rendering. */
 initNotificationsScreen();
 initFirstInteractionReadinessEarly();
 initRequestGuard();
