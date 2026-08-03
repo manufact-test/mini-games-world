@@ -19,6 +19,7 @@ try {
     require __DIR__ . '/core/bootstrap.php';
     require_once __DIR__ . '/services/StagingTestAuthService.php';
     require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
+    require_once __DIR__ . '/services/StagingTestInviteResidualRecoveryService.php';
 
     $raw = file_get_contents('php://input');
     if (!is_string($raw) || strlen($raw) > 4096) {
@@ -49,6 +50,23 @@ try {
     $service = new StagingTestAuthService($config);
     $action = strtolower(trim((string)($payload['action'] ?? 'issue')));
     $authorizationMode = 'shared_secret';
+
+    if ($action === 'reconcile_invite_residuals') {
+        if (array_key_exists('slot', $payload) || substr_count($providedCredential, '.') !== 2) {
+            throw new RuntimeException('Staging test invite residual recovery requires GitHub OIDC.');
+        }
+        (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
+        $result = (new StagingTestInviteResidualRecoveryService(
+            $config,
+            $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
+        ))->reconcile($_SERVER);
+
+        echo json_encode(
+            $result + ['authorization_mode' => 'github_actions_oidc'],
+            JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+        ) . PHP_EOL;
+        exit;
+    }
 
     if ($action === 'issue') {
         $providedSecret = $providedCredential;
