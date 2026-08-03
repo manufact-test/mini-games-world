@@ -53,15 +53,17 @@ $assert(!str_contains($prewarm, "target.id === 'notificationsOpen'")
     && !str_contains($prewarm, 'api.notifications(Boolean(markRead))'),
     'Prewarm must not intercept, mark read, render or mutate the notifications interface.');
 
-$regressionEntry = strpos($index, 'production-regression-fix-entry.js?v=96');
-$activeMain = strpos($index, 'main.js?v=98');
+$retainedScript = '<script type="module" src="./assets/js/production-regression-fix-entry.js?v=96"></script>';
+$activeScript = '<script type="module" src="./assets/js/main.js?v=98"></script>';
+$regressionEntry = strpos($index, $retainedScript);
+$activeMain = strpos($index, $activeScript);
 $assert($regressionEntry !== false
     && $activeMain !== false
     && $regressionEntry < $activeMain
-    && !str_contains($index, 'main.js?v=98')
-    && !str_contains($index, 'main.js?v=96')
+    && !str_contains($index, './assets/js/main.js?v=97')
+    && !str_contains($index, './assets/js/main.js?v=96')
     && str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
-    'The HTML shell must publish the v98 active entry after the retained v96 regression layer.');
+    'The HTML shell must publish the exact v98 active script after the retained v96 regression script.');
 
 $assert(str_contains($v110, "'./assets/js/main.js?v=98'")
     && str_contains($v110, "'data-hotfix-build=\"v98-mvp14-notification-canonical-owner\"'"),
