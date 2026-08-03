@@ -6,13 +6,8 @@ final class StagingTestInviteResidualRecoveryService
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
     private const TEST_PLAYER_IDS = ['stg_test_player_a', 'stg_test_player_b'];
     private const SAFE_RESIDUAL_STATUSES = [
-        'draft',
-        'pending',
-        'awaiting_start',
-        'declined',
-        'cancelled',
-        'expired',
-        'timed_out',
+        'draft', 'pending', 'awaiting_start', 'declined',
+        'cancelled', 'expired', 'timed_out',
     ];
     private const MAX_RESIDUAL_INVITES = 20;
 
@@ -40,20 +35,14 @@ final class StagingTestInviteResidualRecoveryService
                     throw new RuntimeException('Staging test invite residual recovery is blocked.');
                 }
 
-                $deletedInvites = 0;
-                $deletedNotifications = 0;
-                $deletedEvents = 0;
-
+                $deleted = ['invite_rows' => 0, 'notification_rows' => 0, 'invite_event_rows' => 0];
                 foreach ($plan['private_candidates'] as $candidate) {
                     $invite = $candidate['invite'];
-                    $notifications = $candidate['notifications'];
-                    $events = $candidate['events'];
                     $inviteId = (string)$invite['invite_id'];
                     $token = (string)$invite['token'];
-                    $status = (string)$invite['status'];
 
-                    foreach ($notifications as $notification) {
-                        $deleted = $db->execute(
+                    foreach ($candidate['notifications'] as $notification) {
+                        $count = $db->execute(
                             'DELETE FROM mgw_notifications
                              WHERE notification_id = :notification_id
                                AND invite_token = :invite_token
@@ -64,22 +53,22 @@ final class StagingTestInviteResidualRecoveryService
                                 'legacy_user_id' => (string)$notification['legacy_user_id'],
                             ]
                         );
-                        if ($deleted !== 1) {
+                        if ($count !== 1) {
                             throw new RuntimeException('Staging test residual notification delete count is unexpected.');
                         }
-                        $deletedNotifications += $deleted;
+                        $deleted['notification_rows'] += $count;
                     }
 
-                    $eventDeleteCount = $db->execute(
+                    $eventCount = $db->execute(
                         'DELETE FROM mgw_invite_events WHERE invite_id = :invite_id',
                         ['invite_id' => $inviteId]
                     );
-                    if ($eventDeleteCount !== count($events)) {
+                    if ($eventCount !== count($candidate['events'])) {
                         throw new RuntimeException('Staging test residual invite-event delete count is unexpected.');
                     }
-                    $deletedEvents += $eventDeleteCount;
+                    $deleted['invite_event_rows'] += $eventCount;
 
-                    $inviteDeleteCount = $db->execute(
+                    $inviteCount = $db->execute(
                         'DELETE FROM mgw_invites
                          WHERE invite_id = :invite_id
                            AND token = :token
@@ -87,51 +76,47 @@ final class StagingTestInviteResidualRecoveryService
                         [
                             'invite_id' => $inviteId,
                             'token' => $token,
-                            'status' => $status,
+                            'status' => (string)$invite['status'],
                         ]
                     );
-                    if ($inviteDeleteCount !== 1) {
+                    if ($inviteCount !== 1) {
                         throw new RuntimeException('Staging test residual invite delete count is unexpected.');
                     }
-                    $deletedInvites += $inviteDeleteCount;
+                    $deleted['invite_rows'] += $inviteCount;
                 }
 
-                $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $db))
-                    ->auditParity($snapshot);
-                if (($inviteAudit['ok'] ?? false) !== true
-                    || ($inviteAudit['read_only'] ?? false) !== true) {
+                $inviteSync = (new RuntimeInviteRepository($this->config, $this->router, $db))
+                    ->synchronize($snapshot);
+                if (($inviteSync['parity'] ?? false) !== true) {
                     throw new RuntimeException('Staging test invite parity did not recover.');
                 }
 
-                $notificationAudits = [];
+                $notificationCounts = [];
                 foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
-                    $audit = (new RuntimeNotificationRepository($this->config, $this->router, $db))
-                        ->auditParity($snapshot, $legacyUserId);
-                    if (($audit['ok'] ?? false) !== true
-                        || ($audit['read_only'] ?? false) !== true) {
+                    $sync = (new RuntimeNotificationRepository($this->config, $this->router, $db))
+                        ->synchronizeAndList($snapshot, $legacyUserId);
+                    $summary = is_array($sync['summary'] ?? null) ? $sync['summary'] : [];
+                    if (($summary['parity'] ?? false) !== true) {
                         throw new RuntimeException('Staging test notification parity did not recover.');
                     }
-                    $notificationAudits[] = [
-                        'source_count' => (int)($audit['source_count'] ?? 0),
-                        'database_count' => (int)($audit['database_count'] ?? 0),
+                    $notificationCounts[] = [
+                        'source_count' => (int)($summary['source_count'] ?? 0),
+                        'database_count' => (int)($summary['database_count'] ?? 0),
+                        'created_count' => (int)($summary['created_count'] ?? 0),
                     ];
                 }
 
                 return [
                     'ok' => true,
                     'service' => 'mini-games-world-staging-test-invite-residual-recovery',
-                    'status' => $deletedInvites > 0 ? 'recovered' : 'already_clean',
+                    'status' => $deleted['invite_rows'] > 0 ? 'recovered' : 'already_clean',
                     'candidate_count' => count($plan['private_candidates']),
-                    'deleted' => [
-                        'invite_rows' => $deletedInvites,
-                        'notification_rows' => $deletedNotifications,
-                        'invite_event_rows' => $deletedEvents,
-                    ],
+                    'deleted' => $deleted,
                     'parity' => [
                         'invites' => true,
                         'test_player_notifications' => true,
                     ],
-                    'notification_counts' => $notificationAudits,
+                    'notification_counts' => $notificationCounts,
                     'production_changed' => false,
                     'live_payments_used' => false,
                 ];
@@ -149,6 +134,8 @@ final class StagingTestInviteResidualRecoveryService
         $lock = $forUpdate && $database->driver() === 'mysql' ? ' FOR UPDATE' : '';
         $blockers = [];
         $candidates = [];
+        $expectedParticipants = self::TEST_PLAYER_IDS;
+        sort($expectedParticipants, SORT_STRING);
 
         foreach ($database->fetchAll('SELECT * FROM mgw_invites ORDER BY invite_id' . $lock) as $invite) {
             $inviteId = trim((string)($invite['invite_id'] ?? ''));
@@ -164,16 +151,13 @@ final class StagingTestInviteResidualRecoveryService
                 $blockers[] = 'Normalized invite identity partially conflicts with JSON.';
                 continue;
             }
-            if ($idPresent && $tokenPresent) {
-                continue;
-            }
+            if ($idPresent) continue;
 
-            $inviterId = trim((string)($invite['inviter_legacy_user_id'] ?? ''));
-            $inviteeId = trim((string)($invite['invitee_legacy_user_id'] ?? ''));
-            $participants = [$inviterId, $inviteeId];
+            $participants = [
+                trim((string)($invite['inviter_legacy_user_id'] ?? '')),
+                trim((string)($invite['invitee_legacy_user_id'] ?? '')),
+            ];
             sort($participants, SORT_STRING);
-            $expectedParticipants = self::TEST_PLAYER_IDS;
-            sort($expectedParticipants, SORT_STRING);
             if ($participants !== $expectedParticipants) {
                 $blockers[] = 'A DB-only invite does not belong exclusively to TEST PLAYER A/B.';
                 continue;
@@ -192,10 +176,7 @@ final class StagingTestInviteResidualRecoveryService
             $matchCount = (int)$database->fetchValue(
                 'SELECT COUNT(*) FROM mgw_matches
                  WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
-                [
-                    'invite_id' => $inviteId,
-                    'source_match_id' => $inviteId,
-                ]
+                ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
             );
             if ($matchCount !== 0) {
                 $blockers[] = 'A DB-only staging test invite is referenced by a match.';
@@ -208,7 +189,7 @@ final class StagingTestInviteResidualRecoveryService
                  ORDER BY notification_id' . $lock,
                 ['invite_token' => $token]
             );
-            $notificationsSafe = true;
+            $safe = true;
             foreach ($notifications as $notification) {
                 $notificationId = trim((string)($notification['notification_id'] ?? ''));
                 $eventKey = trim((string)($notification['event_key'] ?? ''));
@@ -217,26 +198,20 @@ final class StagingTestInviteResidualRecoveryService
                     || $eventKey === ''
                     || !in_array($legacyUserId, self::TEST_PLAYER_IDS, true)) {
                     $blockers[] = 'A residual invite notification is not confined to TEST PLAYER A/B.';
-                    $notificationsSafe = false;
+                    $safe = false;
                     continue;
                 }
-
-                $scope = $legacyUserId . '|' . $eventKey;
-                $idPresent = isset($sourceNotificationIds[$notificationId]);
-                $eventPresent = isset($sourceNotificationEvents[$scope]);
-                if ($idPresent || $eventPresent) {
+                if (isset($sourceNotificationIds[$notificationId])
+                    || isset($sourceNotificationEvents[$legacyUserId . '|' . $eventKey])) {
                     $blockers[] = 'A residual invite notification is still present in JSON.';
-                    $notificationsSafe = false;
+                    $safe = false;
                 }
             }
-            if (!$notificationsSafe) {
-                continue;
-            }
+            if (!$safe) continue;
 
             $events = $database->fetchAll(
                 'SELECT * FROM mgw_invite_events
-                 WHERE invite_id = :invite_id
-                 ORDER BY event_id' . $lock,
+                 WHERE invite_id = :invite_id ORDER BY event_id' . $lock,
                 ['invite_id' => $inviteId]
             );
             $candidates[] = [
@@ -249,13 +224,9 @@ final class StagingTestInviteResidualRecoveryService
         if (count($candidates) > self::MAX_RESIDUAL_INVITES) {
             $blockers[] = 'Too many staging test invite residuals were found.';
         }
-
         $blockers = array_values(array_unique($blockers));
         sort($blockers, SORT_STRING);
-        return [
-            'blockers' => $blockers,
-            'private_candidates' => $candidates,
-        ];
+        return ['blockers' => $blockers, 'private_candidates' => $candidates];
     }
 
     private function sourceInviteIdentity(array $snapshot): array
@@ -299,14 +270,10 @@ final class StagingTestInviteResidualRecoveryService
     private function snapshot(): array
     {
         $dataDir = rtrim(trim((string)($this->config['data_dir'] ?? '')), '/\\');
-        if ($dataDir === '') {
-            throw new RuntimeException('Staging test data directory is unavailable.');
-        }
+        if ($dataDir === '') throw new RuntimeException('Staging test data directory is unavailable.');
         $storage = StorageFactory::createJson($dataDir);
         $snapshot = $storage->readOnly(static fn(array $data): array => $data);
-        if (!is_array($snapshot)) {
-            throw new RuntimeException('Staging test JSON snapshot is unavailable.');
-        }
+        if (!is_array($snapshot)) throw new RuntimeException('Staging test JSON snapshot is unavailable.');
         return $snapshot;
     }
 
@@ -322,17 +289,15 @@ final class StagingTestInviteResidualRecoveryService
 
     private function assertAvailable(array $server): void
     {
-        $environmentValue = $this->config['environment'] ?? '';
-        $environment = $environmentValue instanceof BackedEnum
-            ? strtolower(trim((string)$environmentValue->value))
-            : strtolower(trim((string)$environmentValue));
+        $value = $this->config['environment'] ?? '';
+        $environment = $value instanceof BackedEnum
+            ? strtolower(trim((string)$value->value))
+            : strtolower(trim((string)$value));
         $baseUrl = rtrim(trim((string)($this->config['base_url'] ?? '')), '/');
         $baseScheme = strtolower((string)(parse_url($baseUrl, PHP_URL_SCHEME) ?: ''));
         $baseHost = strtolower((string)(parse_url($baseUrl, PHP_URL_HOST) ?: ''));
         $requestHost = strtolower(trim((string)($server['HTTP_HOST'] ?? '')));
-        if (str_contains($requestHost, ':')) {
-            $requestHost = explode(':', $requestHost, 2)[0];
-        }
+        if (str_contains($requestHost, ':')) $requestHost = explode(':', $requestHost, 2)[0];
 
         if ($environment !== 'staging'
             || $baseScheme !== 'https'
@@ -359,18 +324,14 @@ final class StagingTestInviteResidualRecoveryService
     private function withLock(Closure $callback): mixed
     {
         $dataDir = rtrim(trim((string)($this->config['data_dir'] ?? '')), '/\\');
-        if ($dataDir === '') {
-            throw new RuntimeException('Staging test invite recovery lock directory is unavailable.');
-        }
+        if ($dataDir === '') throw new RuntimeException('Staging test invite recovery lock directory is unavailable.');
         $directory = $dataDir . '/.runtime/staging-test-auth';
         if (!is_dir($directory) && !@mkdir($directory, 0700, true) && !is_dir($directory)) {
             throw new RuntimeException('Staging test invite recovery lock directory cannot be created.');
         }
         $path = $directory . '/invite-residual-recovery.lock';
         $handle = @fopen($path, 'c+');
-        if ($handle === false) {
-            throw new RuntimeException('Staging test invite recovery lock cannot be opened.');
-        }
+        if ($handle === false) throw new RuntimeException('Staging test invite recovery lock cannot be opened.');
         @chmod($path, 0600);
 
         try {
