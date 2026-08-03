@@ -30,7 +30,7 @@ $canonicalInit = strpos($main, 'initNotificationsScreen();');
 $prewarmInit = strpos($main, 'initFirstInteractionReadinessEarly();');
 $assert($canonicalInit !== false && $prewarmInit !== false && $canonicalInit < $prewarmInit,
     'The cache-busted entry must initialize the canonical notification owner before generic prewarm.');
-$assert(str_contains($index, './assets/js/production-regression-fix-entry.js?v=96'),
+$assert(str_contains($index, './assets/js/production-regression-fix-entry.js?v=102'),
     'The unrelated production regression entry must retain its reviewed cache identity.');
 $assert(!str_contains($index, 'lemonchiffon-gerbil-545102.hostingersite.com')
     && !str_contains($index, 'mini-games-world.com'),

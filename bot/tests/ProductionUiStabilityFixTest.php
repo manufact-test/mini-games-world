@@ -24,7 +24,7 @@ $ticTacToe = $read('app/assets/js/production-tictactoe-turn-fix.js');
 $icons = $read('app/assets/js/production-deterministic-icons.js');
 $css = $read('app/assets/css/production-v95-consistency.css');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=102');
 $mainPosition = strpos($index, 'main.js?v=98');
 $assert(
     $entryPosition !== false
