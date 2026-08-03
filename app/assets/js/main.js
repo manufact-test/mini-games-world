@@ -28,7 +28,8 @@ import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74'
 import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=85';
+import { initGameInvites } from './games/game-invites.js?v=85';
+import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v115.js?v=115';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
@@ -115,7 +116,7 @@ async function boot(){
       showScreen('game');
       startGamePolling(result.active_game.id);
     } else {
-      await openIncomingInviteIfPresent();
+      await openIncomingInviteFromTelegram();
     }
 
     startStatsPolling();
