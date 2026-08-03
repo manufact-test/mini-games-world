@@ -11,6 +11,7 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
+$bellFirstClickGuard = '<script type="module" src="./assets/js/screens/notification-bell-first-click-v115.js?v=115"></script>';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -39,7 +40,11 @@ if (!str_contains($html, $telegramScript)) {
     exit;
 }
 
-$html = str_replace($telegramScript, $telegramScript . "\n  " . $importMap, $html);
+$html = str_replace(
+    $telegramScript,
+    $telegramScript . "\n  " . $importMap . "\n  " . $bellFirstClickGuard,
+    $html
+);
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
     'data-hotfix-build="v114-mvp14-d1-immutable-core-single-owner"',
