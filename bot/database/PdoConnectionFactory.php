@@ -7,6 +7,8 @@ final class PdoConnectionFactory
      * PHP userland statics are request-scoped under the web runtime. Keeping one
      * connection object per exact private identity prevents each runtime bridge
      * from opening another concurrent PDO connection during the same API call.
+     * The process ID is part of the key so forked CLI workers never reuse an
+     * inherited parent PDO socket.
      *
      * @var array<string,PdoDatabaseConnection>
      */
@@ -55,7 +57,13 @@ final class PdoConnectionFactory
             throw new RuntimeException('Database identity is not configured.');
         }
 
+        $processId = getmypid();
+        if (!is_int($processId) || $processId <= 0) {
+            throw new RuntimeException('Database connection process identity is unavailable.');
+        }
+
         return hash('sha256', implode("\0", [
+            (string)$processId,
             $identity,
             $config->driver(),
             $config->user(),
