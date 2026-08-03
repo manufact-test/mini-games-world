@@ -15,18 +15,21 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(substr_count($index, './assets/js/main.js?v=98') === 1,
-    'The application HTML must load exactly one v97 main entry.');
-$assert(!str_contains($index, './assets/js/main.js?v=96'),
-    'The stale v96 main entry must not remain reachable from the application HTML.');
+    'The application HTML must load exactly one v98 main entry.');
+$assert(!str_contains($index, './assets/js/main.js?v=97')
+    && !str_contains($index, './assets/js/main.js?v=96'),
+    'No stale v97 or v96 main entry may remain reachable from the application HTML.');
 $assert(str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
-    'The visible application shell must publish the same v97 notification hotfix identity.');
+    'The visible application shell must publish the v98 canonical-owner identity.');
 $assert(str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v98-mvp14-notification-canonical-owner'"),
-    'The loaded main module must publish the matching v97 hotfix marker.');
+    'The loaded main module must publish the matching v98 hotfix marker.');
+$assert(str_contains($main, "./first-interaction-readiness.js?v=98"),
+    'The active main graph must cache-bust the changed first-interaction module.');
 
 $canonicalInit = strpos($main, 'initNotificationsScreen();');
 $prewarmInit = strpos($main, 'initFirstInteractionReadinessEarly();');
 $assert($canonicalInit !== false && $prewarmInit !== false && $canonicalInit < $prewarmInit,
-    'The cache-busted entry must contain the canonical-before-prewarm listener order.');
+    'The cache-busted entry must initialize the canonical notification owner before generic prewarm.');
 $assert(str_contains($index, './assets/js/production-regression-fix-entry.js?v=96'),
     'The unrelated production regression entry must retain its reviewed cache identity.');
 $assert(!str_contains($index, 'lemonchiffon-gerbil-545102.hostingersite.com')
