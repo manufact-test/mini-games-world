@@ -23,7 +23,7 @@ $assert(!str_contains($entry, "'./assets/js/main.js?v=114'")
     && !str_contains($entry, "'./assets/js/main.js?v=97'")
     && !str_contains($entry, "'./assets/js/main.js?v=96'"),
     'No stale v114, v97 or v96 active main target may remain in the staging wrapper.');
-$assert(str_contains($entry, 'data-hotfix-build=\"v115-mvp14-d1-feedback-integration\"')
+$assert(str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integration"')
     && str_contains($entry, 'X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration'),
     'The served application shell and response header must publish the v115 integration identity.');
 $assert(str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v115-mvp14-d1-feedback-integration'"),
