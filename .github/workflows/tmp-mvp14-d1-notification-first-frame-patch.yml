@@ -1,0 +1,231 @@
+name: Temporary MVP-14 D1 notification first-frame patch
+
+on:
+  push:
+    branches:
+      - agent/mvp14-deferred-d1-notification-first-frame-e2e
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-deferred-d1-notification-first-frame-e2e
+          fetch-depth: 0
+
+      - name: Apply exact D1 staging E2E patch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('e2e/staging/two-context.spec.mjs')
+          source = path.read_text(encoding='utf-8')
+
+          helper_needle = "async function clickInviteAction(page, button, action) {\n"
+          helper = r'''async function beginNotificationFrameCapture(page, label) {
+            await page.evaluate((captureLabel) => {
+              window.__MGW_D1_NOTIFICATION_OBSERVER__?.disconnect?.();
+              window.__MGW_D1_NOTIFICATION_FRAMES__ = [];
+
+              const capture = () => {
+                const sheet = document.getElementById('sheet');
+                const overlay = document.getElementById('sheetOverlay');
+                window.__MGW_D1_NOTIFICATION_FRAMES__.push({
+                  label: captureLabel,
+                  overlayActive: overlay?.classList.contains('active') === true,
+                  heading: String(sheet?.querySelector('.sheet-head h2')?.textContent || '').trim(),
+                  empty: String(sheet?.querySelector('.notifications-empty strong')?.textContent || '').trim(),
+                  loading: sheet?.querySelector('.notifications-loading') !== null,
+                  bodyText: String(sheet?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 2000),
+                  actions: Array.from(sheet?.querySelectorAll('[data-invite-action]') || []).map((element) => ({
+                    action: String(element.getAttribute('data-invite-action') || ''),
+                    token: String(element.getAttribute('data-invite-token') || ''),
+                  })),
+                });
+              };
+
+              const sheet = document.getElementById('sheet');
+              if (!sheet) throw new Error('Notification sheet root is unavailable.');
+              const observer = new MutationObserver(capture);
+              observer.observe(sheet, {
+                childList: true,
+                subtree: true,
+                characterData: true,
+                attributes: true,
+              });
+              window.__MGW_D1_NOTIFICATION_OBSERVER__ = observer;
+              capture();
+            }, label);
+          }
+
+          async function finishNotificationFrameCapture(page) {
+            return page.evaluate(() => {
+              window.__MGW_D1_NOTIFICATION_OBSERVER__?.disconnect?.();
+              window.__MGW_D1_NOTIFICATION_OBSERVER__ = null;
+              return Array.isArray(window.__MGW_D1_NOTIFICATION_FRAMES__)
+                ? window.__MGW_D1_NOTIFICATION_FRAMES__
+                : [];
+            });
+          }
+
+          function expectFreshPendingNotificationFrames(frames, token, label) {
+            expect(frames.length, `${label} captured frames`).toBeGreaterThan(0);
+            expect(
+              frames.some((frame) => /Пока уведомлений нет|0 уведомлений/i.test(frame.empty || frame.bodyText)),
+              `${label} must not render a false empty notifications frame`,
+            ).toBe(false);
+            expect(
+              frames.some((frame) => /Приглашение отменено|Приглашение отклонено/i.test(frame.bodyText)),
+              `${label} must not render a stale terminal invitation before any terminal action`,
+            ).toBe(false);
+            expect(
+              frames.some((frame) => frame.actions.some((item) => item.action === 'accept' && item.token === token)),
+              `${label} must render the exact current actionable invitation`,
+            ).toBe(true);
+          }
+
+          '''
+          if source.count(helper_needle) != 1:
+              raise SystemExit('Unexpected clickInviteAction helper anchor count')
+          source = source.replace(helper_needle, helper + helper_needle, 1)
+
+          old = r'''    const acceptButton = await openNotificationsAndWaitForAction(
+              playerB.page,
+              inviteToken,
+              'accept',
+            );
+            const accepted = await clickInviteAction(playerB.page, acceptButton, 'accept');
+          '''
+          new = r'''    await playerB.page.waitForFunction(() => window.__MGW_FIRST_INTERACTION_READY__ !== undefined, null, {
+              timeout: 20_000,
+            });
+            await beginNotificationFrameCapture(playerB.page, 'blue-toast-open');
+            await playerB.page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+
+            const notificationToast = playerB.page.locator('#notificationToast.show');
+            await expect(notificationToast).toBeVisible({ timeout: 20_000 });
+            await expect(notificationToast.locator('.notification-toast-copy strong')).not.toHaveText('');
+            await notificationToast.click();
+
+            const firstOpenAccept = playerB.page.locator(
+              `[data-invite-action="accept"][data-invite-token="${inviteToken}"]`,
+            );
+            await expect(firstOpenAccept).toBeVisible({ timeout: 25_000 });
+            await expect(firstOpenAccept).toBeEnabled();
+            const toastOpenFrames = await finishNotificationFrameCapture(playerB.page);
+            expectFreshPendingNotificationFrames(toastOpenFrames, inviteToken, 'Blue notification toast open');
+
+            await playerB.page.locator('#sheet [data-close-sheet]').click();
+            await expect(playerB.page.locator('#sheetOverlay')).not.toHaveClass(/active/, { timeout: 10_000 });
+            await playerB.page.evaluate(() => {
+              document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
+              document.dispatchEvent(new Event('visibilitychange'));
+            });
+            await playerB.page.waitForTimeout(750);
+            await expect(playerB.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+
+            await beginNotificationFrameCapture(playerB.page, 'bell-reopen');
+            const acceptButton = await openNotificationsAndWaitForAction(
+              playerB.page,
+              inviteToken,
+              'accept',
+            );
+            const bellOpenFrames = await finishNotificationFrameCapture(playerB.page);
+            expectFreshPendingNotificationFrames(bellOpenFrames, inviteToken, 'Bell reopen');
+
+            const accepted = await clickInviteAction(playerB.page, acceptButton, 'accept');
+          '''
+          if source.count(old) != 1:
+              raise SystemExit('Unexpected invitation accept block count')
+          source = source.replace(old, new, 1)
+
+          report_needle = "        receivedThroughNotificationsUi: true,\n"
+          report = """        blueToastVisible: true,
+                  falseEmptyFrameObserved: false,
+                  staleTerminalFrameObserved: false,
+                  remainedClosedAfterDismissal: true,
+                  bellReopenFresh: true,
+                  receivedThroughNotificationsUi: true,
+          """
+          if source.count(report_needle) != 1:
+              raise SystemExit('Unexpected invitation report anchor count')
+          source = source.replace(report_needle, report, 1)
+          path.write_text(source, encoding='utf-8')
+          PY
+
+          cat > bot/tests/ProductionMvp14DeferredNotificationFirstFrameE2ETest.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+
+          $root = dirname(__DIR__, 2);
+          $spec = file_get_contents($root . '/e2e/staging/two-context.spec.mjs');
+          $notifications = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v99.js');
+          if (!is_string($spec) || !is_string($notifications)) {
+              throw new RuntimeException('Missing deferred notification first-frame sources.');
+          }
+
+          $assertions = 0;
+          $assert = static function (bool $condition, string $message) use (&$assertions): void {
+              $assertions++;
+              if (!$condition) throw new RuntimeException($message);
+          };
+
+          $assert(str_contains($spec, 'async function beginNotificationFrameCapture(page, label)')
+              && str_contains($spec, 'async function finishNotificationFrameCapture(page)')
+              && str_contains($spec, 'function expectFreshPendingNotificationFrames(frames, token, label)'),
+              'The staging suite must capture every notification-sheet render frame.');
+
+          $assert(str_contains($spec, "playerB.page.locator('#notificationToast.show')")
+              && str_contains($spec, "notificationToast.locator('.notification-toast-copy strong')")
+              && str_contains($spec, 'await notificationToast.click()'),
+              'The deferred D1 scenario must open the invitation through the visible blue notification toast.');
+
+          $assert(str_contains($spec, 'Пока уведомлений нет|0 уведомлений')
+              && str_contains($spec, 'must not render a false empty notifications frame')
+              && str_contains($spec, 'Приглашение отменено|Приглашение отклонено')
+              && str_contains($spec, 'must not render a stale terminal invitation'),
+              'The D1 scenario must reject false-empty and stale-terminal first frames.');
+
+          $assert(str_contains($spec, "playerB.page.locator('#sheet [data-close-sheet]').click()")
+              && str_contains($spec, "document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'))")
+              && str_contains($spec, "playerB.page.locator('#sheetOverlay')).not.toHaveClass(/active/")
+              && str_contains($spec, "beginNotificationFrameCapture(playerB.page, 'bell-reopen')"),
+              'Closing the sheet must remain closed through refresh/resume before a deliberate bell reopen.');
+
+          $assert(str_contains($spec, 'blueToastVisible: true')
+              && str_contains($spec, 'falseEmptyFrameObserved: false')
+              && str_contains($spec, 'staleTerminalFrameObserved: false')
+              && str_contains($spec, 'remainedClosedAfterDismissal: true')
+              && str_contains($spec, 'bellReopenFresh: true'),
+              'The safe report must explicitly record the accepted D1 UI guarantees.');
+
+          $assert(str_contains($notifications, '<div class="notifications-loading"><div>🔔</div><strong>Загружаем…</strong></div>')
+              && str_contains($notifications, 'const result = await api.notifications(true);')
+              && str_contains($notifications, 'renderNotifications(items);'),
+              'The canonical owner must show a loading state until the fresh notification response is rendered.');
+
+          $assert(str_contains($notifications, "if (!appReady || document.visibilityState !== 'visible') return false;")
+              && str_contains($notifications, "return !document.getElementById('sheetOverlay')?.classList.contains('active');")
+              && str_contains($notifications, 'openNotificationsSheet();'),
+              'The blue toast must remain owned by the canonical notification screen and never compete with an open sheet.');
+
+          fwrite(STDOUT, "ProductionMvp14DeferredNotificationFirstFrameE2ETest: {$assertions} assertions passed\n");
+          PHP
+
+          rm -f .github/workflows/tmp-mvp14-d1-notification-first-frame-patch.yml
+          node --check e2e/staging/two-context.spec.mjs
+          php -l bot/tests/ProductionMvp14DeferredNotificationFirstFrameE2ETest.php
+          php bot/tests/ProductionMvp14DeferredNotificationFirstFrameE2ETest.php
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add e2e/staging/two-context.spec.mjs bot/tests/ProductionMvp14DeferredNotificationFirstFrameE2ETest.php .github/workflows/tmp-mvp14-d1-notification-first-frame-patch.yml
+          git commit -m 'Add D1 notification first-frame staging E2E'
+          git push origin HEAD:agent/mvp14-deferred-d1-notification-first-frame-e2e
