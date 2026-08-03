@@ -17,21 +17,24 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $assert(str_contains($factory, 'private static array $requestConnections = [];'),
     'The PDO factory must keep one private request-scoped connection registry.');
-$assert(str_contains($factory, '$cacheKey = self::privateCacheKey($config);')
-    && str_contains($factory, 'if (isset(self::$requestConnections[$cacheKey]))')
-    && str_contains($factory, 'return self::$requestConnections[$cacheKey];'),
-    'Repeated modules using the exact same private DB configuration must reuse one connection object.');
+$assert(str_contains($factory, "if (PHP_SAPI === 'cli')")
+    && str_contains($factory, 'return self::connect($config);'),
+    'CLI and forked workers must always receive a fresh connection outside the web request registry.');
 
-$assert(str_contains($factory, '$processId = getmypid();')
-    && str_contains($factory, '(string)$processId')
-    && str_contains($factory, "throw new RuntimeException('Database connection process identity is unavailable.')"),
-    'Forked CLI workers must receive a different private key instead of inheriting a parent PDO socket.');
+$cliPosition = strpos($factory, "if (PHP_SAPI === 'cli')");
+$keyPosition = strpos($factory, '$cacheKey = self::privateCacheKey($config);');
+$assert($cliPosition !== false && $keyPosition !== false && $cliPosition < $keyPosition,
+    'CLI bypass must occur before any cached connection lookup.');
+$assert(str_contains($factory, 'if (isset(self::$requestConnections[$cacheKey]))')
+    && str_contains($factory, 'return self::$requestConnections[$cacheKey];'),
+    'Repeated web modules using the exact same private DB configuration must reuse one connection object.');
+
 $assert(str_contains($factory, '$config->identityFingerprint()')
     && str_contains($factory, '$config->driver()')
     && str_contains($factory, '$config->user()')
     && str_contains($factory, '$config->password()')
     && str_contains($factory, "hash('sha256', implode(\"\\0\", ["),
-    'The private cache key must hash process, DB identity, driver, username and password together.');
+    'The private web cache key must hash DB identity, driver, username and password together.');
 $assert(str_contains($config, "return hash('sha256', json_encode([")
     && str_contains($config, "'host' => strtolower(\$this->host)")
     && str_contains($config, "'port' => (string)\$this->port")
@@ -39,21 +42,23 @@ $assert(str_contains($config, "return hash('sha256', json_encode([")
     'Database identity fingerprint must continue to separate host, port and database name.');
 
 $assert(str_contains($factory, 'PDO::ATTR_PERSISTENT => false'),
-    'Request reuse must never become a cross-request persistent PDO connection.');
+    'Web request reuse must never become a cross-request persistent PDO connection.');
 $assert(str_contains($factory, "throw new RuntimeException('Database identity is not configured.')"),
-    'An enabled connection without an identity must fail closed before caching.');
+    'An enabled web connection without an identity must fail closed before caching.');
 
-$pdoPosition = strpos($factory, '$pdo = new PDO(');
-$wrapperPosition = strpos($factory, '$connection = new PdoDatabaseConnection($pdo);');
+$connectCallPosition = strpos($factory, '$connection = self::connect($config);');
 $cachePosition = strpos($factory, 'self::$requestConnections[$cacheKey] = $connection;');
 $returnPosition = strpos($factory, 'return $connection;');
-$assert($pdoPosition !== false
-    && $wrapperPosition !== false
+$pdoPosition = strpos($factory, '$pdo = new PDO(');
+$wrapperReturnPosition = strpos($factory, 'return new PdoDatabaseConnection($pdo);');
+$assert($connectCallPosition !== false
     && $cachePosition !== false
     && $returnPosition !== false
-    && $pdoPosition < $wrapperPosition
-    && $wrapperPosition < $cachePosition
-    && $cachePosition < $returnPosition,
+    && $connectCallPosition < $cachePosition
+    && $cachePosition < $returnPosition
+    && $pdoPosition !== false
+    && $wrapperReturnPosition !== false
+    && $pdoPosition < $wrapperReturnPosition,
     'The registry must be populated only after PDO and its wrapper are constructed successfully.');
 
 $assert(str_contains($factory, "throw new RuntimeException('Database connection failed. Check the private configuration and server availability.', 0, \$error)"),
@@ -74,6 +79,6 @@ $assert(!str_contains($factory, 'public static function reset')
 $assert(str_contains($connection, 'private int $transactionDepth = 0;')
     && str_contains($connection, "SAVEPOINT ' . \$savepoint")
     && str_contains($connection, "ROLLBACK TO SAVEPOINT ' . \$savepoint"),
-    'The shared connection wrapper must retain nested-transaction savepoint safety.');
+    'The shared web connection wrapper must retain nested-transaction savepoint safety.');
 
 fwrite(STDOUT, "ProductionMvp14R13RequestScopedDatabaseConnectionTest: {$assertions} assertions passed\n");
