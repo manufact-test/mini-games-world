@@ -7,7 +7,7 @@ $main = file_get_contents($root . '/app/assets/js/main.js');
 $link = file_get_contents($root . '/app/assets/js/games/invite-link-entry-v115.js');
 $terminal = file_get_contents($root . '/app/assets/js/games/invite-terminal-actions-v115.js');
 $empty = file_get_contents($root . '/app/assets/js/screens/notification-empty-frame-guard-v115.js');
-$bell = file_get_contents($root . '/app/assets/js/screens/notification-bell-first-click-v115.js');
+$bell = file_get_contents($root . '/app/assets/js/screens/notification-bell-first-click-v116.js');
 $opponents = file_get_contents($root . '/app/assets/js/opponents-empty-cache-guard-v115.js');
 $presence = file_get_contents($root . '/app/assets/js/presence-v115.js');
 if (!is_string($entry) || !is_string($main) || !is_string($link) || !is_string($terminal)
@@ -44,19 +44,21 @@ $assert(
 
 $publishedScripts = [
     'notification-empty-frame-guard-v115.js?v=115',
-    'notification-bell-first-click-v115.js?v=115',
+    'notification-bell-first-click-v116.js?v=116',
     'opponents-native-fetch-v115.js?v=115',
     'opponents-empty-cache-guard-v115.js?v=115',
 ];
 foreach ($publishedScripts as $script) {
     $assert(substr_count($entry, $script) === 1, "Integrated entry must publish {$script} exactly once.");
 }
+$assert(!str_contains($entry, 'notification-bell-first-click-v115.js?v=115'),
+    'The stale bell retry guard must not remain active beside v116.');
 
 $assert(
     str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integration"')
         && str_contains($entry, './assets/js/main.js?v=115')
         && str_contains($entry, 'X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration'),
-    'The combined package must have one coherent v115 browser cache identity.'
+    'The combined package must keep one coherent v115 browser cache identity with a fresh v116 bell guard.'
 );
 
 $assert(
@@ -77,9 +79,12 @@ $assert(
 $assert(
     !str_contains($empty, 'stopImmediatePropagation')
         && !str_contains($bell, 'stopImmediatePropagation')
+        && !str_contains($bell, 'openSheet(')
+        && str_contains($bell, "document.addEventListener('mgw:sheet-closed'")
+        && str_contains($bell, 'closeSheet();')
         && !str_contains($opponents, 'openSheet(')
         && !str_contains($presence, 'openSheet('),
-    'Visual, retry, opponent and presence guards must not compete for UI ownership.'
+    'Guards must not compete for rendering ownership, while v116 may close only a stale notification repaint.'
 );
 
 $assert(

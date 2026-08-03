@@ -166,7 +166,7 @@ test('staging app root serves one integrated v115 frontend graph', async ({ brow
       '/assets/js/screens/notifications-screen-v99.js?v=114',
       '/assets/js/games/game-invites.js?v=114',
       '/assets/js/screens/notification-empty-frame-guard-v115.js?v=115',
-      '/assets/js/screens/notification-bell-first-click-v115.js?v=115',
+      '/assets/js/screens/notification-bell-first-click-v116.js?v=116',
       '/assets/js/opponents-native-fetch-v115.js?v=115',
       '/assets/js/opponents-empty-cache-guard-v115.js?v=115',
       '/assets/js/presence-v115.js?v=115',

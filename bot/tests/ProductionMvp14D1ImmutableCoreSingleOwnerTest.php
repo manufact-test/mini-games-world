@@ -41,10 +41,11 @@ $assert(str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integrat
     'The entry must expose and deliver the exact no-cache integrated v115 build.');
 
 $assert(substr_count($entry, 'notification-empty-frame-guard-v115.js?v=115') === 1
-    && substr_count($entry, 'notification-bell-first-click-v115.js?v=115') === 1
+    && substr_count($entry, 'notification-bell-first-click-v116.js?v=116') === 1
+    && !str_contains($entry, 'notification-bell-first-click-v115.js?v=115')
     && substr_count($entry, 'opponents-native-fetch-v115.js?v=115') === 1
     && substr_count($entry, 'opponents-empty-cache-guard-v115.js?v=115') === 1,
-    'Each non-owning first-paint/retry/cache guard must be published exactly once.');
+    'Each non-owning first-paint/retry/cache guard must be published exactly once with the fresh bell race guard.');
 
 $assert(str_contains($residual, 'window.__MGW_RESIDUAL_V114__')
     && str_contains($residual, 'uiOwner:false')
@@ -94,8 +95,9 @@ $assert(str_contains($smoke, 'APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_fronte
     && str_contains($smoke, "toHaveAttribute('data-hotfix-build', EXPECTED_BUILD)")
     && str_contains($smoke, 'Frontend module graph failed before bootstrap')
     && str_contains($smoke, "'/assets/js/main.js?v=115'")
+    && str_contains($smoke, "'/assets/js/screens/notification-bell-first-click-v116.js?v=116'")
     && str_contains($smoke, "'/assets/js/presence-v115.js?v=115'"),
-    'The live smoke test must prove the integrated v115 root and module graph.');
+    'The live smoke test must prove the integrated v115 root and fresh v116 bell guard graph.');
 
 $assert(!str_contains($entry, 'mini-games-world.com')
     && !str_contains($smoke, 'mini-games-world.com')

@@ -12,7 +12,7 @@ if (!is_string($html)) {
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
 $emptyFrameGuard = '<script type="module" src="./assets/js/screens/notification-empty-frame-guard-v115.js?v=115"></script>';
-$bellFirstClickGuard = '<script type="module" src="./assets/js/screens/notification-bell-first-click-v115.js?v=115"></script>';
+$bellFirstClickGuard = '<script type="module" src="./assets/js/screens/notification-bell-first-click-v116.js?v=116"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
 $importMap = <<<'HTML'
