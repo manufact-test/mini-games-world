@@ -1,6 +1,6 @@
 window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
 window.__MGW_HOTFIX_BUILD__ = 'v98-mvp14-notification-canonical-owner';
-import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=98';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness-v103.js?v=103';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';

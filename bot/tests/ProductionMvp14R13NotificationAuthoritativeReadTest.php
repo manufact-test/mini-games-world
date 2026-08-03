@@ -41,14 +41,14 @@ $assert(str_contains($legacyCoordinator, 'NOTIFICATIONS_CACHE_TTL_MS')
     && str_contains($legacyCoordinator, 'notificationsCache'),
     'The reviewed historical coordinator must remain available for older accepted graphs.');
 
-$assert(substr_count($index, './assets/js/main.js?v=98.2') === 1
+$assert(substr_count($index, './assets/js/main.js?v=98.3') === 1
     && !str_contains($index, './assets/js/main.js?v=98.1'),
     'The active HTML must publish exactly one fresh main graph for the corrected coordinator.');
 
 $published = str_replace(
     [
         './assets/js/production-regression-fix-entry.js?v=102',
-        './assets/js/main.js?v=98.2',
+        './assets/js/main.js?v=98.3',
         'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
     ],
     [
@@ -58,10 +58,10 @@ $published = str_replace(
     ],
     $index
 );
-$assert(str_contains($v110, "'./assets/js/main.js?v=98.2'")
+$assert(str_contains($v110, "'./assets/js/main.js?v=98.3'")
     && substr_count($published, './assets/js/main-v110.js?v=1124') === 1
     && !str_contains($published, 'main-v110.js?v=1124.2')
-    && !str_contains($published, './assets/js/main.js?v=98.2'),
+    && !str_contains($published, './assets/js/main.js?v=98.3'),
     'The v110 publication must replace the exact active URL without a leaked subrevision.');
 
 $assert(!str_contains($coordinator, 'lemonchiffon-gerbil-545102.hostingersite.com')
