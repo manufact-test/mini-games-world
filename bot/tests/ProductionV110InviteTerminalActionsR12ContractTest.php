@@ -46,12 +46,13 @@ $assert(str_contains($notifications, "document.addEventListener('mgw:notificatio
     && !str_contains($notifications, "mgw:invite-action-local-result")
     && !str_contains($notifications, 'function applyInviteActionResult(')
     && !str_contains($notifications, 'Вы отклонили это приглашение.'),
-    'The notification owner must remove the actor card from memory, pinned state and cache instead of converting it into a terminal card.');
+    'The active notification owner must remove the actionable card immediately rather than painting local terminal feedback.');
 
-$assert(str_contains($endpoint, "return in_array(\$status, ['pending', 'accepted'], true);")
-    && !str_contains($endpoint, "\$status === 'declined'")
-    && !str_contains($endpoint, "\$status === 'cancelled'"),
-    'The notification endpoint must stop returning received invitation cards to the actor after decline or cancellation.');
+$assert(str_contains($endpoint, "return in_array(\$status, ['pending', 'accepted', 'declined'], true);")
+    && str_contains($endpoint, "\$status === 'declined' && \$isInvitee")
+    && str_contains($endpoint, "\$item['read'] = true;")
+    && !str_contains($endpoint, "\$status === 'cancelled' && \$isInvitee"),
+    'The endpoint must restore only a read declined-history card on the next authoritative open, never an actionable or cancelled self-card.');
 
 $declineStart = strpos($actions, 'public function decline(');
 $cancelStart = strpos($actions, 'public function cancel(', $declineStart ?: 0);
