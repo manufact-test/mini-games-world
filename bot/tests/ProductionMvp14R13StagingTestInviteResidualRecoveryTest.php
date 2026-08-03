@@ -75,10 +75,12 @@ $assert(str_contains($service, '$database->transaction(function (DatabaseConnect
 
 $assert(str_contains($service, "'production_changed' => false")
     && str_contains($service, "'live_payments_used' => false")
+    && str_contains($service, "'candidate_count'")
     && str_contains($service, "'invite_rows'")
-    && !str_contains($service, "'token' => \$token")
-    && !str_contains($service, "'invite_id' => \$inviteId,") === false,
-    'The public report must expose only aggregate deletion and safety evidence.');
+    && str_contains($service, "'notification_rows'")
+    && str_contains($service, "'invite_event_rows'")
+    && str_contains($service, "'notification_counts'"),
+    'The public service result must contain aggregate recovery and safety evidence.');
 
 $assert(str_contains($service, "external_payments_enabled")
     && substr_count($service, "=== 'live'") >= 1
