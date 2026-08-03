@@ -319,6 +319,31 @@ async function openNotificationsAndWaitForAction(page, token, action) {
   return actionButton;
 }
 
+async function openNotificationToastAndWaitForAction(page, token, action) {
+  const toast = page.locator('#notificationToast');
+  await expect(toast).toBeVisible({ timeout: 25_000 });
+  await expect(toast).toHaveClass(/show/, { timeout: 25_000 });
+  await toast.click();
+  await expect(page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления', { timeout: 20_000 });
+
+  const selector = `[data-invite-action="${action}"][data-invite-token="${token}"]`;
+  const actionButton = page.locator(selector);
+  await expect(actionButton).toBeVisible({ timeout: 25_000 });
+  await expect(actionButton).toBeEnabled();
+  return actionButton;
+}
+
+async function closeNotificationSheetAndAssertStable(page) {
+  const overlay = page.locator('#sheetOverlay');
+  const close = page.locator('#sheet [data-close-sheet]').first();
+  await expect(close).toBeVisible({ timeout: 15_000 });
+  await close.click();
+  await expect(overlay).not.toHaveClass(/active/, { timeout: 15_000 });
+  await page.waitForTimeout(3_500);
+  await expect(overlay).not.toHaveClass(/active/);
+  await expect(page.locator('#notificationToast')).not.toHaveClass(/show/);
+}
+
 async function clickInviteAction(page, button, action) {
   const responsePromise = page.waitForResponse(isActionResponse(INVITES_ROUTE, action), {
     timeout: 30_000,
@@ -368,6 +393,13 @@ test('TEST PLAYER A and B run in isolated browser contexts', async ({ browser },
     expect(playerA.snapshot.sessionId).not.toBe(playerB.snapshot.sessionId);
     expect(playerA.snapshot.deviceId).not.toBe(playerB.snapshot.deviceId);
     expect(playerA.cookie.value).not.toBe(playerB.cookie.value);
+
+    await playerA.page.locator('#profileOpen').click();
+    await expect(playerA.page.locator('#screen-profile')).toHaveClass(/active/, { timeout: 20_000 });
+    await expect(playerA.page.locator('#profileName')).toHaveText(/\S+/, { timeout: 20_000 });
+    expect((await playerA.page.locator('#profileName').innerText()).trim()).not.toBe('Игрок');
+    await playerA.page.locator('[data-back-home]').click();
+    await expect(playerA.page.locator('#screen-home')).toHaveClass(/active/, { timeout: 20_000 });
 
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
@@ -442,6 +474,128 @@ test('TEST PLAYER A and B run in isolated browser contexts', async ({ browser },
   }
 });
 
+test('Player A uses Share, player picker and cancellation through the live UI', async ({ browser }, testInfo) => {
+  let playerA;
+  let playerB;
+  let directToken = '';
+
+  try {
+    playerA = await openPlayer(browser, 'A', testInfo);
+    playerB = await openPlayer(browser, 'B', testInfo);
+    await cleanupPlayer(playerA);
+    await cleanupPlayer(playerB);
+
+    await playerA.page.evaluate(() => {
+      if (window.Telegram?.WebApp) window.Telegram.WebApp.shareMessage = undefined;
+    });
+
+    await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toContainText('Пригласить в', { timeout: 20_000 });
+
+    const draftPromise = playerA.page.waitForResponse(isActionResponse(INVITES_ROUTE, 'create_link_draft'), {
+      timeout: 30_000,
+    });
+    await playerA.page.locator('[data-create-link-invite]').click();
+    const draftResponse = await draftPromise;
+    const draftPayload = await draftResponse.json().catch(() => null);
+    expect(draftResponse.status()).toBe(200);
+    expect(draftPayload?.ok).toBe(true);
+    expect(String(draftPayload?.invite?.token || '')).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
+
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Ссылка подготовлена', {
+      timeout: 20_000,
+    });
+    await expect(playerA.page.locator('[data-copy-invite-link]')).toBeVisible();
+    await expect(playerA.page.locator('[data-discard-draft]')).toBeVisible();
+
+    const discardPromise = playerA.page.waitForResponse(isActionResponse(INVITES_ROUTE, 'discard_draft'), {
+      timeout: 30_000,
+    });
+    await playerA.page.locator('[data-discard-draft]').click();
+    const discardResponse = await discardPromise;
+    expect(discardResponse.status()).toBe(200);
+    expect((await discardResponse.json().catch(() => null))?.ok).toBe(true);
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toContainText('Пригласить в', {
+      timeout: 20_000,
+    });
+
+    await playerA.page.locator('[data-open-player-picker]').click();
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Выберите игрока', {
+      timeout: 20_000,
+    });
+    const opponent = playerA.page.locator('[data-direct-opponent="stg_test_player_b"]');
+    await expect(opponent).toBeVisible({ timeout: 25_000 });
+    await expect(opponent).toBeEnabled();
+
+    const createPromise = playerA.page.waitForResponse(isActionResponse(INVITES_ROUTE, 'create_direct'), {
+      timeout: 30_000,
+    });
+    await opponent.click();
+    const createResponse = await createPromise;
+    const created = await createResponse.json().catch(() => null);
+    expect(createResponse.status()).toBe(200);
+    expect(created?.ok).toBe(true);
+    directToken = String(created?.invite?.token || '');
+    expect(directToken).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено', {
+      timeout: 20_000,
+    });
+
+    const cancelButton = playerA.page.locator(
+      `[data-invite-action="cancel"][data-invite-token="${directToken}"]`,
+    );
+    await expect(cancelButton).toBeVisible();
+    const cancelled = await clickInviteAction(playerA.page, cancelButton, 'cancel');
+    expect(['cancelled', 'canceled']).toContain(String(cancelled?.invite?.status || ''));
+    await expect(playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/, { timeout: 15_000 });
+
+    const bNotifications = await expectPlayerRequest(
+      playerB.page,
+      '/bot/notifications.php',
+      { markRead: true },
+      'Player B cancelled invitation notifications',
+    );
+    const cancelledItem = (Array.isArray(bNotifications.items) ? bNotifications.items : [])
+      .find(item => String(item?.invite_token || '') === directToken);
+    expect(cancelledItem).toBeTruthy();
+    expect(Array.isArray(cancelledItem.actions) ? cancelledItem.actions : []).toEqual([]);
+
+    expect(playerA.diagnostics.pageErrors).toEqual([]);
+    expect(playerB.diagnostics.pageErrors).toEqual([]);
+    expect(playerA.diagnostics.failedRequests).toEqual([]);
+    expect(playerB.diagnostics.failedRequests).toEqual([]);
+    expect(playerA.diagnostics.serverErrors).toEqual([]);
+    expect(playerB.diagnostics.serverErrors).toEqual([]);
+
+    await testInfo.attach('staging-r11-live-ui-report', {
+      body: Buffer.from(`${JSON.stringify({
+        ok: true,
+        profileUiCovered: true,
+        shareDraftPrepared: true,
+        shareDraftDiscarded: true,
+        playerPickerUsed: true,
+        directInviteCancelled: true,
+        cancelledInviteActionsRemoved: true,
+        directTokenSha256: sha256(directToken),
+        productionChanged: false,
+        livePaymentsUsed: false,
+      }, null, 2)}\n`, 'utf8'),
+      contentType: 'application/json',
+    });
+  } finally {
+    if (playerA) await cleanupPlayer(playerA);
+    if (playerB) await cleanupPlayer(playerB);
+    if (playerA?.context) {
+      await revokeContext(playerA.context);
+      await playerA.context.close();
+    }
+    if (playerB?.context) {
+      await revokeContext(playerB.context);
+      await playerB.context.close();
+    }
+  }
+});
+
 test('A invites B through notifications and they finish a Tic Tac Toe match', async ({ browser }, testInfo) => {
   let playerA;
   let playerB;
@@ -489,6 +643,14 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
     expect(created.invite?.is_invitee).toBe(false);
     expect(created.invite).not.toHaveProperty('inviter_id');
     expect(created.invite).not.toHaveProperty('invitee_id');
+
+    const toastActionButton = await openNotificationToastAndWaitForAction(
+      playerB.page,
+      inviteToken,
+      'accept',
+    );
+    await expect(toastActionButton).toBeVisible();
+    await closeNotificationSheetAndAssertStable(playerB.page);
 
     const acceptButton = await openNotificationsAndWaitForAction(
       playerB.page,
