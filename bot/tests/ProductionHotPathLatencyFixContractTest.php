@@ -22,7 +22,8 @@ $profile = $read('app/assets/js/screens/profile-screen.js');
 $requestGuard = $read('app/assets/js/api/request-guard.js');
 $coordinator = $read('app/assets/js/interaction-latency-coordinator.js');
 $residual = $read('app/assets/js/residual-ui-game-race-fix.js');
-$readiness = $read('app/assets/js/first-interaction-readiness.js');
+$readiness = $read('app/assets/js/first-interaction-readiness-v103.js');
+$invites = $read('app/assets/js/games/game-invites.js');
 $invitesEndpoint = $read('bot/invites.php');
 $mainCss = $read('app/assets/css/main.css');
 $main = $read('app/assets/js/main.js');
@@ -135,13 +136,15 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($readiness, "target.matches('[data-invite-friend]')")
-        && str_contains($readiness, "target.matches('[data-invite-size], [data-invite-bet]')")
-        && str_contains($readiness, "target.matches('[data-create-link-invite]')")
-        && str_contains($readiness, 'prepareMessage:false')
-        && str_contains($readiness, 'openTelegramShare(shareUrl, shareText)')
-        && str_contains($readiness, 'openTelegramLink'),
-    'Link drafts must be prepared before the tap and opened through the ready share URL.'
+    str_contains($readiness, "[data-invite-friend], [data-open-player-picker]")
+        && str_contains($readiness, 'refreshOpponentsNetwork(false)')
+        && !str_contains($readiness, 'data-create-link-invite')
+        && !str_contains($readiness, 'create_link_draft')
+        && !str_contains($readiness, 'openTelegramShare')
+        && str_contains($invites, 'data-create-link-invite')
+        && str_contains($invites, 'async function createLinkDraft(context, button)')
+        && str_contains($invites, 'showPreparedLink(draftInvite, context);'),
+    'Readiness must stay read-only while the invite coordinator exclusively owns Share creation and fallback UI.'
 );
 
 $assertTrue(
@@ -183,7 +186,7 @@ $warmPosition = strpos($main, 'const firstInteraction = await warmFirstInteracti
 $appReadyPosition = strpos($main, 'dispatchAppReady();');
 $assertTrue(
     str_contains($main, 'v96-mvp14-root-cause-stabilization')
-        && str_contains($main, 'first-interaction-readiness.js?v=98')
+        && str_contains($main, 'first-interaction-readiness-v103.js?v=103')
         && str_contains($main, 'profile-screen.js?v=92')
         && $readinessInit !== false
         && $residualInit !== false
