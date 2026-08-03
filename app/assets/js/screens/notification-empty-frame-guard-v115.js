@@ -2,20 +2,28 @@ const GUARD_MS = 420;
 let guardUntil = 0;
 let restoreTimer = null;
 let observer = null;
+let clickInstalled = false;
 
 initNotificationEmptyFrameGuard();
 
 function initNotificationEmptyFrameGuard(){
-  document.addEventListener('click', event => {
-    const target = event.target instanceof Element ? event.target : null;
-    if (!target?.closest('#notificationsOpen, #notificationToast')) return;
-    guardUntil = performance.now() + GUARD_MS;
-    window.clearTimeout(restoreTimer);
-    queueMicrotask(guardTransientEmptyFrame);
-  }, true);
+  if (!clickInstalled) {
+    clickInstalled = true;
+    document.addEventListener('click', event => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target?.closest('#notificationsOpen, #notificationToast')) return;
+      guardUntil = performance.now() + GUARD_MS;
+      window.clearTimeout(restoreTimer);
+      queueMicrotask(guardTransientEmptyFrame);
+    }, true);
+  }
 
   const sheet = document.getElementById('sheet');
-  if (!sheet) return;
+  if (!sheet) {
+    document.addEventListener('DOMContentLoaded', initNotificationEmptyFrameGuard, { once:true });
+    return;
+  }
+  if (observer) return;
   observer = new MutationObserver(guardTransientEmptyFrame);
   observer.observe(sheet, { childList:true, subtree:true });
 }
