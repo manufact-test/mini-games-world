@@ -545,7 +545,9 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
 
     expect(finalPayload?.game?.status).toBe('finished');
     expect(finalPayload?.game?.winner_id).toBeTruthy();
-    expect(Number(finalPayload?.game?.payout || 0)).toBe(20);
+    expect(Number(finalPayload?.game?.bank || 0)).toBe(20);
+    expect(Number(finalPayload?.game?.commission || 0)).toBe(2);
+    expect(Number(finalPayload?.game?.payout || 0)).toBe(18);
 
     const winnerId = String(finalPayload.game.winner_id);
     const winner = playersById[winnerId];
@@ -582,10 +584,13 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
     };
     const loserId = winnerId === 'stg_test_player_a' ? 'stg_test_player_b' : 'stg_test_player_a';
 
-    expect(afterBalances[winnerId] - beforeBalances[winnerId]).toBe(10);
-    expect(afterBalances[loserId] - beforeBalances[loserId]).toBe(-10);
-    expect(afterBalances.stg_test_player_a + afterBalances.stg_test_player_b)
-      .toBe(beforeBalances.stg_test_player_a + beforeBalances.stg_test_player_b);
+    const winnerDelta = afterBalances[winnerId] - beforeBalances[winnerId];
+    const loserDelta = afterBalances[loserId] - beforeBalances[loserId];
+    const commission = Number(finalPayload.game.commission || 0);
+
+    expect(winnerDelta).toBe(8);
+    expect(loserDelta).toBe(-10);
+    expect(winnerDelta + loserDelta + commission).toBe(0);
 
     await playerA.page.screenshot({
       path: testInfo.outputPath('player-a-match-result.png'),
@@ -622,9 +627,12 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
         completedThroughUi: true,
       },
       economy: {
-        winnerDelta: 10,
+        bank: 20,
+        commission: 2,
+        payout: 18,
+        winnerDelta: 8,
         loserDelta: -10,
-        totalPreserved: true,
+        totalPlusCommissionPreserved: true,
       },
       diagnostics: {
         A: playerA.diagnostics,
