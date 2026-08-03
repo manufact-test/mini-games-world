@@ -5,9 +5,12 @@ final class StagingTestInviteResidualRecoveryService
 {
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
     private const TEST_PLAYER_IDS = ['stg_test_player_a', 'stg_test_player_b'];
-    private const SAFE_RESIDUAL_STATUSES = [
+    private const TEST_PLAYER_SAFE_STATUSES = [
         'draft', 'pending', 'awaiting_start', 'declined',
         'cancelled', 'expired', 'timed_out',
+    ];
+    private const TERMINAL_SAFE_STATUSES = [
+        'declined', 'cancelled', 'expired', 'timed_out',
     ];
     private const MAX_RESIDUAL_INVITES = 20;
 
@@ -41,6 +44,8 @@ final class StagingTestInviteResidualRecoveryService
                 'status' => $status,
                 'recovery_ready' => $blockers === [],
                 'candidate_count' => $candidateCount,
+                'test_player_candidate_count' => (int)$plan['test_player_candidate_count'],
+                'terminal_staging_candidate_count' => (int)$plan['terminal_staging_candidate_count'],
                 'blocker_codes' => $blockers,
                 'production_changed' => false,
                 'live_payments_used' => false,
@@ -63,10 +68,15 @@ final class StagingTestInviteResidualRecoveryService
                 }
 
                 $deleted = ['invite_rows' => 0, 'notification_rows' => 0, 'invite_event_rows' => 0];
+                $notificationUserIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
+
                 foreach ($plan['private_candidates'] as $candidate) {
                     $invite = $candidate['invite'];
                     $inviteId = (string)$invite['invite_id'];
                     $token = (string)$invite['token'];
+                    foreach ($candidate['participant_ids'] as $legacyUserId) {
+                        $notificationUserIds[(string)$legacyUserId] = true;
+                    }
 
                     foreach ($candidate['notifications'] as $notification) {
                         $count = $db->execute(
@@ -81,7 +91,7 @@ final class StagingTestInviteResidualRecoveryService
                             ]
                         );
                         if ($count !== 1) {
-                            throw new RuntimeException('Staging test residual notification delete count is unexpected.');
+                            throw new RuntimeException('Staging residual notification delete count is unexpected.');
                         }
                         $deleted['notification_rows'] += $count;
                     }
@@ -91,7 +101,7 @@ final class StagingTestInviteResidualRecoveryService
                         ['invite_id' => $inviteId]
                     );
                     if ($eventCount !== count($candidate['events'])) {
-                        throw new RuntimeException('Staging test residual invite-event delete count is unexpected.');
+                        throw new RuntimeException('Staging residual invite-event delete count is unexpected.');
                     }
                     $deleted['invite_event_rows'] += $eventCount;
 
@@ -107,7 +117,7 @@ final class StagingTestInviteResidualRecoveryService
                         ]
                     );
                     if ($inviteCount !== 1) {
-                        throw new RuntimeException('Staging test residual invite delete count is unexpected.');
+                        throw new RuntimeException('Staging residual invite delete count is unexpected.');
                     }
                     $deleted['invite_rows'] += $inviteCount;
                 }
@@ -115,16 +125,18 @@ final class StagingTestInviteResidualRecoveryService
                 $inviteSync = (new RuntimeInviteRepository($this->config, $this->router, $db))
                     ->synchronize($snapshot);
                 if (($inviteSync['parity'] ?? false) !== true) {
-                    throw new RuntimeException('Staging test invite parity did not recover.');
+                    throw new RuntimeException('Staging invite parity did not recover.');
                 }
 
                 $notificationCounts = [];
-                foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+                $notificationUserIds = array_keys($notificationUserIds);
+                sort($notificationUserIds, SORT_STRING);
+                foreach ($notificationUserIds as $legacyUserId) {
                     $sync = (new RuntimeNotificationRepository($this->config, $this->router, $db))
                         ->synchronizeAndList($snapshot, $legacyUserId);
                     $summary = is_array($sync['summary'] ?? null) ? $sync['summary'] : [];
                     if (($summary['parity'] ?? false) !== true) {
-                        throw new RuntimeException('Staging test notification parity did not recover.');
+                        throw new RuntimeException('Staging scoped notification parity did not recover.');
                     }
                     $notificationCounts[] = [
                         'source_count' => (int)($summary['source_count'] ?? 0),
@@ -138,11 +150,15 @@ final class StagingTestInviteResidualRecoveryService
                     'service' => 'mini-games-world-staging-test-invite-residual-recovery',
                     'status' => $deleted['invite_rows'] > 0 ? 'recovered' : 'already_clean',
                     'candidate_count' => count($plan['private_candidates']),
+                    'test_player_candidate_count' => (int)$plan['test_player_candidate_count'],
+                    'terminal_staging_candidate_count' => (int)$plan['terminal_staging_candidate_count'],
                     'deleted' => $deleted,
                     'parity' => [
                         'invites' => true,
+                        'scoped_notifications' => true,
                         'test_player_notifications' => true,
                     ],
+                    'notification_account_count' => count($notificationUserIds),
                     'notification_counts' => $notificationCounts,
                     'production_changed' => false,
                     'live_payments_used' => false,
@@ -161,8 +177,10 @@ final class StagingTestInviteResidualRecoveryService
         $lock = $forUpdate && $database->driver() === 'mysql' ? ' FOR UPDATE' : '';
         $blockers = [];
         $candidates = [];
-        $expectedParticipants = self::TEST_PLAYER_IDS;
-        sort($expectedParticipants, SORT_STRING);
+        $testPlayerCandidateCount = 0;
+        $terminalStagingCandidateCount = 0;
+        $expectedTestParticipants = self::TEST_PLAYER_IDS;
+        sort($expectedTestParticipants, SORT_STRING);
 
         foreach ($database->fetchAll('SELECT * FROM mgw_invites ORDER BY invite_id' . $lock) as $invite) {
             $inviteId = trim((string)($invite['invite_id'] ?? ''));
@@ -180,21 +198,39 @@ final class StagingTestInviteResidualRecoveryService
             }
             if ($idPresent) continue;
 
-            $participants = [
-                trim((string)($invite['inviter_legacy_user_id'] ?? '')),
-                trim((string)($invite['invitee_legacy_user_id'] ?? '')),
-            ];
-            sort($participants, SORT_STRING);
-            if ($participants !== $expectedParticipants) {
-                $blockers[] = 'invite_not_test_players';
+            $inviterId = trim((string)($invite['inviter_legacy_user_id'] ?? ''));
+            $inviteeId = trim((string)($invite['invitee_legacy_user_id'] ?? ''));
+            $participantIds = array_values(array_unique(array_filter(
+                [$inviterId, $inviteeId],
+                static fn(string $value): bool => $value !== ''
+            )));
+            sort($participantIds, SORT_STRING);
+            if ($inviterId === '' || $participantIds === []) {
+                $blockers[] = 'invite_participant_identity_incomplete';
                 continue;
             }
 
+            $isExactTestPair = $participantIds === $expectedTestParticipants;
             $status = trim((string)($invite['status'] ?? ''));
-            if (!in_array($status, self::SAFE_RESIDUAL_STATUSES, true)) {
-                $blockers[] = 'invite_unsafe_status';
+            if ($isExactTestPair) {
+                if (!in_array($status, self::TEST_PLAYER_SAFE_STATUSES, true)) {
+                    $blockers[] = 'invite_unsafe_status';
+                    continue;
+                }
+            } elseif (!in_array($status, self::TERMINAL_SAFE_STATUSES, true)) {
+                $blockers[] = 'invite_non_test_nonterminal';
                 continue;
             }
+
+            $ownershipByLegacyId = $this->validateInviteOwnership(
+                $database,
+                $invite,
+                $participantIds,
+                $lock,
+                $blockers
+            );
+            if ($ownershipByLegacyId === null) continue;
+
             if (trim((string)($invite['match_id'] ?? '')) !== '') {
                 $blockers[] = 'invite_attached_to_match';
                 continue;
@@ -223,8 +259,20 @@ final class StagingTestInviteResidualRecoveryService
                 $legacyUserId = trim((string)($notification['legacy_user_id'] ?? ''));
                 if ($notificationId === ''
                     || $eventKey === ''
-                    || !in_array($legacyUserId, self::TEST_PLAYER_IDS, true)) {
-                    $blockers[] = 'notification_not_test_players';
+                    || !isset($ownershipByLegacyId[$legacyUserId])) {
+                    $blockers[] = 'notification_not_invite_participant';
+                    $safe = false;
+                    continue;
+                }
+                $ownership = $ownershipByLegacyId[$legacyUserId];
+                if (!hash_equals(
+                    (string)$ownership['account_ref'],
+                    trim((string)($notification['recipient_ref'] ?? ''))
+                ) || !hash_equals(
+                    (string)$ownership['mgw_id'],
+                    trim((string)($notification['mgw_id'] ?? ''))
+                )) {
+                    $blockers[] = 'notification_ownership_mismatch';
                     $safe = false;
                     continue;
                 }
@@ -242,10 +290,13 @@ final class StagingTestInviteResidualRecoveryService
                 ['invite_id' => $inviteId]
             );
             $candidates[] = [
+                'scope' => $isExactTestPair ? 'test_players' : 'terminal_staging',
                 'invite' => $invite,
+                'participant_ids' => $participantIds,
                 'notifications' => $notifications,
                 'events' => $events,
             ];
+            $isExactTestPair ? $testPlayerCandidateCount++ : $terminalStagingCandidateCount++;
         }
 
         if (count($candidates) > self::MAX_RESIDUAL_INVITES) {
@@ -253,7 +304,64 @@ final class StagingTestInviteResidualRecoveryService
         }
         $blockers = array_values(array_unique($blockers));
         sort($blockers, SORT_STRING);
-        return ['blockers' => $blockers, 'private_candidates' => $candidates];
+        return [
+            'blockers' => $blockers,
+            'private_candidates' => $candidates,
+            'test_player_candidate_count' => $testPlayerCandidateCount,
+            'terminal_staging_candidate_count' => $terminalStagingCandidateCount,
+        ];
+    }
+
+    private function validateInviteOwnership(
+        DatabaseConnectionInterface $database,
+        array $invite,
+        array $participantIds,
+        string $lock,
+        array &$blockers
+    ): ?array {
+        $roles = [
+            trim((string)($invite['inviter_legacy_user_id'] ?? '')) => [
+                'account_ref' => trim((string)($invite['inviter_ref'] ?? '')),
+                'mgw_id' => trim((string)($invite['inviter_mgw_id'] ?? '')),
+            ],
+        ];
+        $inviteeId = trim((string)($invite['invitee_legacy_user_id'] ?? ''));
+        if ($inviteeId !== '') {
+            $roles[$inviteeId] = [
+                'account_ref' => trim((string)($invite['invitee_ref'] ?? '')),
+                'mgw_id' => trim((string)($invite['invitee_mgw_id'] ?? '')),
+            ];
+        }
+
+        $ownershipByLegacyId = [];
+        foreach ($participantIds as $legacyUserId) {
+            $rows = $database->fetchAll(
+                'SELECT account_ref, mgw_id, ownership_status
+                 FROM mgw_account_ownership
+                 WHERE legacy_user_id = :legacy_user_id' . $lock,
+                ['legacy_user_id' => $legacyUserId]
+            );
+            if (count($rows) !== 1
+                || (string)($rows[0]['ownership_status'] ?? '') !== 'active') {
+                $blockers[] = 'invite_participant_ownership_invalid';
+                return null;
+            }
+            $actual = [
+                'account_ref' => trim((string)($rows[0]['account_ref'] ?? '')),
+                'mgw_id' => trim((string)($rows[0]['mgw_id'] ?? '')),
+            ];
+            $expected = $roles[$legacyUserId] ?? null;
+            if (!is_array($expected)
+                || $actual['account_ref'] === ''
+                || $actual['mgw_id'] === ''
+                || !hash_equals($actual['account_ref'], (string)$expected['account_ref'])
+                || !hash_equals($actual['mgw_id'], (string)$expected['mgw_id'])) {
+                $blockers[] = 'invite_participant_ownership_mismatch';
+                return null;
+            }
+            $ownershipByLegacyId[$legacyUserId] = $actual;
+        }
+        return $ownershipByLegacyId;
     }
 
     private function sourceInviteIdentity(array $snapshot): array
