@@ -42,8 +42,9 @@ $assert(
     !str_contains($terminal, "toast('Приглашение отклонено")
         && !str_contains($terminal, "toast('Приглашение отменено")
         && !str_contains($terminal, 'Понятно')
-        && !str_contains($terminal, 'showTerminalInvite')
-        && !str_contains($terminal, 'mgw:notifications-refresh')); // failure refresh checked separately below
+        && !str_contains($terminal, 'showTerminalInvite'),
+    'The terminal owner must contain no actor success toast or second confirmation sheet.'
+);
 
 $successBlockStart = strpos($terminal, 'try {');
 $catchStart = strpos($terminal, '} catch (error) {');
