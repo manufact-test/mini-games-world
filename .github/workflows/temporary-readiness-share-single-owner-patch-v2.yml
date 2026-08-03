@@ -1,0 +1,163 @@
+name: TEMP readiness Share owner patch v2
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-readiness-share-single-owner
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-readiness-share-single-owner
+          fetch-depth: 0
+
+      - name: Create read-only readiness module
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return text.replace(old, new, 1)
+
+          src = Path('app/assets/js/first-interaction-readiness.js').read_text(encoding='utf-8')
+          src = once(src, "import { APP_CONFIG } from './config.js?v=38';\n", '', 'APP_CONFIG import')
+          src = once(
+              src,
+              "import { openSheet, closeSheet } from './components/sheet.js?v=68';\n"
+              "import { toast } from './components/toast.js?v=41';\n"
+              "import { getTelegram, getInitData, haptic } from './telegram/telegram-app.js?v=27';",
+              "import { openSheet } from './components/sheet.js?v=68';\n"
+              "import { getInitData } from './telegram/telegram-app.js?v=27';",
+              'Share imports',
+          )
+          for line in [
+              "const INVITES_URL = `${window.location.origin}/bot/invites.php`;\n",
+              'const DRAFT_WARM_DELAY_MS = 60;\n',
+              'let draftWarmTimer = null;\n',
+              'let draftSerial = Promise.resolve();\n',
+              'let draftGeneration = 0;\n',
+              'let preparedDraft = null;\n',
+              'let shareBusy = false;\n',
+          ]:
+              src = once(src, line, '', line.strip())
+
+          begin = src.index("  if (target.matches('[data-invite-friend]')) {")
+          finish = src.index('\n}\n\nfunction scheduleCurrentDraftWarm', begin)
+          src = src[:begin] + "  if (target.matches('[data-invite-friend], [data-open-player-picker]')) {\n    refreshOpponentsNetwork(false);\n  }" + src[finish:]
+
+          begin = src.index('function scheduleCurrentDraftWarm(')
+          finish = src.index('function refreshHistorySnapshot(', begin)
+          src = src[:begin] + src[finish:]
+          src = once(
+              src,
+              "async function inviteRequest(action, payload = {}){\n  return requestUrl(INVITES_URL, { action, ...payload });\n}\n\n",
+              '',
+              'invite request helper',
+          )
+
+          for forbidden in [
+              'data-create-link-invite', 'create_link_draft', 'sharePreparedLink',
+              'openTelegramShare', 'scheduleCurrentDraftWarm', 'preparedDraft', 'INVITES_URL'
+          ]:
+              if forbidden in src:
+                  raise SystemExit(f'Forbidden Share token remains: {forbidden}')
+
+          Path('app/assets/js/first-interaction-readiness-v103.js').write_text(src, encoding='utf-8')
+
+          main_path = Path('app/assets/js/main.js')
+          main = main_path.read_text(encoding='utf-8')
+          main = once(main, "from './first-interaction-readiness.js?v=98';", "from './first-interaction-readiness-v103.js?v=103';", 'main import')
+          main_path.write_text(main, encoding='utf-8')
+
+          for relative in ['app/index.html', 'app/v110.php']:
+              path = Path(relative)
+              text = path.read_text(encoding='utf-8')
+              text = once(text, 'main.js?v=98.2', 'main.js?v=98.3', relative)
+              path.write_text(text, encoding='utf-8')
+
+          for path in Path('bot/tests').glob('*.php'):
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('main.js?v=98.2', 'main.js?v=98.3')
+              text = text.replace("./first-interaction-readiness.js?v=98", "./first-interaction-readiness-v103.js?v=103")
+              if path.name in {
+                  'ProductionMvp14R13NotificationSingleOwnerTest.php',
+                  'ProductionMvp14R13ShareSingleOwnerTest.php',
+              }:
+                  text = text.replace('app/assets/js/first-interaction-readiness.js', 'app/assets/js/first-interaction-readiness-v103.js')
+              path.write_text(text, encoding='utf-8')
+
+          contract = '''<?php
+          declare(strict_types=1);
+          $root = dirname(__DIR__, 2);
+          $main = file_get_contents($root . '/app/assets/js/main.js');
+          $readiness = file_get_contents($root . '/app/assets/js/first-interaction-readiness-v103.js');
+          $invites = file_get_contents($root . '/app/assets/js/games/game-invites.js');
+          $index = file_get_contents($root . '/app/index.html');
+          $v110 = file_get_contents($root . '/app/v110.php');
+          if (!is_string($main) || !is_string($readiness) || !is_string($invites) || !is_string($index) || !is_string($v110)) {
+              throw new RuntimeException('Missing readiness Share ownership source.');
+          }
+          $assertions = 0;
+          $assert = static function (bool $condition, string $message) use (&$assertions): void {
+              $assertions++;
+              if (!$condition) throw new RuntimeException($message);
+          };
+          $assert(str_contains($main, "./first-interaction-readiness-v103.js?v=103")
+              && substr_count($main, 'initFirstInteractionReadinessEarly();') === 1
+              && substr_count($main, 'initGameInvites();') === 1,
+              'Main must install one readiness owner and one invite coordinator.');
+          $assert(!str_contains($readiness, 'data-create-link-invite')
+              && !str_contains($readiness, 'create_link_draft')
+              && !str_contains($readiness, 'sharePreparedLink')
+              && !str_contains($readiness, 'openTelegramShare'),
+              'Readiness must not intercept, create or navigate Share.');
+          $assert(str_contains($readiness, "[data-invite-friend], [data-open-player-picker]")
+              && str_contains($readiness, 'refreshOpponentsNetwork(false)')
+              && str_contains($readiness, 'warmNotificationsSnapshot()'),
+              'Readiness must retain read-only warming.');
+          $assert(str_contains($invites, "target.matches('[data-create-link-invite]')")
+              && str_contains($invites, 'showPreparedLink(draftInvite, context);')
+              && str_contains($invites, 'data-copy-invite-link')
+              && str_contains($invites, 'data-discard-draft'),
+              'Invite coordinator must own complete Share UI.');
+          $assert(str_contains($index, 'main.js?v=98.3') && !str_contains($index, 'main.js?v=98.2'),
+              'HTML must publish the fresh main graph.');
+          $assert(str_contains($v110, "'./assets/js/main.js?v=98.3'")
+              && str_contains($v110, "'./assets/js/main-v110.js?v=1124'"),
+              'v110 must replace the exact fresh base main.');
+          fwrite(STDOUT, "ProductionMvp14R13ReadinessShareSingleOwnerTest: {$assertions} assertions passed\n");
+          '''
+          Path('bot/tests/ProductionMvp14R13ReadinessShareSingleOwnerTest.php').write_text(contract, encoding='utf-8')
+          PY
+
+          node --check app/assets/js/first-interaction-readiness-v103.js
+          node --check app/assets/js/main.js
+          php bot/tests/ProductionMvp14R13ReadinessShareSingleOwnerTest.php
+          php bot/tests/ProductionMvp14R13NotificationSingleOwnerTest.php
+          php bot/tests/ProductionMvp14R13ShareSingleOwnerTest.php
+
+      - name: Commit patch and remove temporary files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f .github/workflows/temporary-readiness-share-single-owner-patch.yml
+          rm -f .github/workflows/temporary-readiness-share-single-owner-patch-v2.yml
+          rm -f .github/readiness-share-patch.trigger
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Keep first-interaction readiness read-only for Share'
+          git push origin HEAD:agent/mvp14r13-staging-readiness-share-single-owner
