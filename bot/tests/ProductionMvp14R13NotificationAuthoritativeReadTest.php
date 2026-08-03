@@ -47,7 +47,7 @@ $assert(substr_count($index, './assets/js/main.js?v=98.2') === 1
 
 $published = str_replace(
     [
-        './assets/js/production-regression-fix-entry.js?v=96',
+        './assets/js/production-regression-fix-entry.js?v=102',
         './assets/js/main.js?v=98.2',
         'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
     ],

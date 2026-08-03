@@ -55,7 +55,7 @@ $assert(!str_contains($prewarm, "target.id === 'notificationsOpen'")
     && !str_contains($prewarm, 'api.notifications(Boolean(markRead))'),
     'Prewarm must not intercept, mark read, render or mutate the notifications interface.');
 
-$retainedScript = '<script type="module" src="./assets/js/production-regression-fix-entry.js?v=96"></script>';
+$retainedScript = '<script type="module" src="./assets/js/production-regression-fix-entry.js?v=102"></script>';
 $activeScript = '<script type="module" src="./assets/js/main.js?v=98.2"></script>';
 $regressionEntry = strpos($index, $retainedScript);
 $activeMain = strpos($index, $activeScript);
