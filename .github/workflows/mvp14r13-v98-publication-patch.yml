@@ -1,0 +1,68 @@
+name: Temporary MVP-14R13 v98 publication patch
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-notification-canonical-owner
+    paths:
+      - .github/workflows/mvp14r13-v98-publication-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-publication-contracts:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-notification-canonical-owner
+          fetch-depth: 0
+
+      - name: Patch exact publication identities
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'main.js?v=97': 'main.js?v=98',
+              'v97-mvp14-notification-single-owner': 'v98-mvp14-notification-canonical-owner',
+              'first-interaction-readiness.js?v=92': 'first-interaction-readiness.js?v=98',
+          }
+
+          targets = [Path('app/index.html')]
+          targets.extend(sorted(Path('bot/tests').glob('*.php')))
+
+          changed = []
+          for path in targets:
+              text = path.read_text(encoding='utf-8')
+              updated = text
+              for old, new in replacements.items():
+                  updated = updated.replace(old, new)
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+                  changed.append(str(path))
+
+          index = Path('app/index.html').read_text(encoding='utf-8')
+          assert index.count('main.js?v=98') == 1
+          assert 'main.js?v=97' not in index
+          assert 'main.js?v=96' not in index
+          assert 'production-regression-fix-entry.js?v=96' in index
+          assert 'data-hotfix-build="v98-mvp14-notification-canonical-owner"' in index
+
+          workflow = Path('.github/workflows/mvp14r13-v98-publication-patch.yml')
+          workflow.unlink()
+          changed.append(str(workflow))
+          print('\n'.join(changed))
+          PY
+
+      - name: Commit exact generated patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/index.html bot/tests .github/workflows/mvp14r13-v98-publication-patch.yml
+          git commit -m "Publish v98 canonical notification owner contracts"
+          git push origin HEAD:agent/mvp14r13-staging-notification-canonical-owner
