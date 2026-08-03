@@ -1,0 +1,123 @@
+name: TEMP staging E2E economy contract patch
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-e2e-match-commission-contract
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-e2e-match-commission-contract
+          fetch-depth: 0
+
+      - name: Apply exact economy expectation patch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              return source.replace(old, new, 1)
+
+          spec_path = Path('e2e/staging/two-context.spec.mjs')
+          spec = spec_path.read_text(encoding='utf-8')
+          spec = replace_once(
+              spec,
+              "    expect(Number(finalPayload?.game?.payout || 0)).toBe(20);",
+              "    expect(Number(finalPayload?.game?.bank || 0)).toBe(20);\n"
+              "    expect(Number(finalPayload?.game?.commission || 0)).toBe(2);\n"
+              "    expect(Number(finalPayload?.game?.payout || 0)).toBe(18);",
+              'finished-game economy projection',
+          )
+          spec = replace_once(
+              spec,
+              "    expect(afterBalances[winnerId] - beforeBalances[winnerId]).toBe(10);\n"
+              "    expect(afterBalances[loserId] - beforeBalances[loserId]).toBe(-10);\n"
+              "    expect(afterBalances.stg_test_player_a + afterBalances.stg_test_player_b)\n"
+              "      .toBe(beforeBalances.stg_test_player_a + beforeBalances.stg_test_player_b);",
+              "    const winnerDelta = afterBalances[winnerId] - beforeBalances[winnerId];\n"
+              "    const loserDelta = afterBalances[loserId] - beforeBalances[loserId];\n"
+              "    const commission = Number(finalPayload.game.commission || 0);\n\n"
+              "    expect(winnerDelta).toBe(8);\n"
+              "    expect(loserDelta).toBe(-10);\n"
+              "    expect(winnerDelta + loserDelta + commission).toBe(0);",
+              'post-match balance deltas',
+          )
+          spec = replace_once(
+              spec,
+              "      economy: {\n"
+              "        winnerDelta: 10,\n"
+              "        loserDelta: -10,\n"
+              "        totalPreserved: true,\n"
+              "      },",
+              "      economy: {\n"
+              "        bank: 20,\n"
+              "        commission: 2,\n"
+              "        payout: 18,\n"
+              "        winnerDelta: 8,\n"
+              "        loserDelta: -10,\n"
+              "        totalPlusCommissionPreserved: true,\n"
+              "      },",
+              'safe economy report',
+          )
+          spec_path.write_text(spec, encoding='utf-8')
+
+          contract_path = Path('bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php')
+          contract = contract_path.read_text(encoding='utf-8')
+          contract = replace_once(
+              contract,
+              "$assert(str_contains($spec, 'totalPreserved: true')\n"
+              "    && str_contains($spec, 'winnerDelta: 10')\n"
+              "    && str_contains($spec, 'loserDelta: -10')\n"
+              "    && str_contains($spec, 'livePaymentsUsed: false')\n"
+              "    && str_contains($spec, 'productionChanged: false'),\n"
+              "    'The report must prove conservation, exact Match deltas and staging-only execution.');",
+              "$assert(str_contains($spec, 'bank: 20')\n"
+              "    && str_contains($spec, 'commission: 2')\n"
+              "    && str_contains($spec, 'payout: 18')\n"
+              "    && str_contains($spec, 'winnerDelta: 8')\n"
+              "    && str_contains($spec, 'loserDelta: -10')\n"
+              "    && str_contains($spec, 'totalPlusCommissionPreserved: true')\n"
+              "    && str_contains($spec, 'winnerDelta + loserDelta + commission')\n"
+              "    && str_contains($spec, 'livePaymentsUsed: false')\n"
+              "    && str_contains($spec, 'productionChanged: false'),\n"
+              "    'The report must prove the frozen Match bank, commission, payout, exact deltas and staging-only execution.');",
+              'PHP source contract',
+          )
+          contract_path.write_text(contract, encoding='utf-8')
+          PY
+
+          node --check e2e/staging/two-context.spec.mjs
+          php -l bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php
+          php bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php
+
+          ! grep -Fq 'totalPreserved: true' e2e/staging/two-context.spec.mjs
+          ! grep -Fq 'winnerDelta: 10' e2e/staging/two-context.spec.mjs
+          ! grep -Fq 'payout || 0)).toBe(20)' e2e/staging/two-context.spec.mjs
+
+      - name: Commit exact patch and remove temporary workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm .github/workflows/temporary-staging-e2e-economy-contract-patch.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add e2e/staging/two-context.spec.mjs \
+            bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php \
+            .github/workflows/temporary-staging-e2e-economy-contract-patch.yml
+          git diff --cached --check
+          git commit -m 'Align staging A/B economy assertions with Match commission contract'
+          git push origin HEAD:agent/mvp14r13-staging-e2e-match-commission-contract
