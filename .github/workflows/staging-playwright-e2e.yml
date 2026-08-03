@@ -14,17 +14,20 @@ concurrency:
   group: mgw-staging-playwright-e2e
   cancel-in-progress: true
 
-jobs:
-  two-context:
-    name: TEST PLAYER A and B browser isolation
-    runs-on: ubuntu-latest
-    timeout-minutes: 18
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
 
-    env:
-      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+jobs:
+  linux-route:
+    name: TEST PLAYER A/B — Linux route
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    outputs:
+      result: ${{ steps.classify.outputs.result }}
 
     steps:
       - name: Publish pending commit status
+        continue-on-error: true
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -49,25 +52,30 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Wait for Hostinger deployment
+      - name: Wait for Hostinger deployment on Linux route
+        id: readiness
+        continue-on-error: true
         shell: bash
         run: |
           set -Eeuo pipefail
           sleep 300
           ready=0
-          for attempt in $(seq 1 24); do
+          for attempt in $(seq 1 8); do
+            rm -f staging-e2e-readiness-linux.json
             if curl \
               --fail-with-body \
               --silent --show-error \
               --connect-timeout 10 --max-time 25 \
+              --retry 1 --retry-delay 2 --retry-connrefused \
               --header 'Accept: application/json' \
               "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
-              --output staging-e2e-readiness.json; then
-              if python3 - <<'PY'
+              --output staging-e2e-readiness-linux.json; then
+              if python3 - staging-e2e-readiness-linux.json <<'PY'
           import json
+          import sys
           from pathlib import Path
 
-          payload = json.loads(Path('staging-e2e-readiness.json').read_text(encoding='utf-8'))
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
           assert payload.get('ok') is True
           assert payload.get('build') == 'mgw-staging-playwright-r13.4-v1'
           assert payload.get('environment') == 'staging'
@@ -85,58 +93,213 @@ jobs:
           done
           test "$ready" = '1'
 
-      - name: Set up Node.js
+      - name: Set up Node.js on Linux route
+        id: setup-node
+        if: steps.readiness.outcome == 'success'
+        continue-on-error: true
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Install pinned Playwright
+      - name: Install pinned Playwright on Linux route
+        id: install
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success'
+        continue-on-error: true
         shell: bash
         run: |
           set -Eeuo pipefail
           npm install --no-save --package-lock=false @playwright/test@1.62.0
           npx --no-install playwright install --with-deps chromium
 
-      - name: Run two-context staging test
+      - name: Run two-context staging test on Linux route
+        id: e2e
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.install.outcome == 'success'
+        continue-on-error: true
         shell: bash
         run: |
           set -Eeuo pipefail
           npm run test:e2e:staging
 
-      - name: Upload Playwright evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: staging-playwright-e2e-${{ github.run_id }}
-          path: |
-            e2e/artifacts/playwright
-            staging-e2e-readiness.json
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Publish final commit status
+      - name: Classify Linux route
+        id: classify
         if: always()
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          JOB_STATUS: ${{ job.status }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+          SETUP_OUTCOME: ${{ steps.setup-node.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e.outcome }}
         run: |
           set -Eeuo pipefail
-          case "${JOB_STATUS}" in
-            success)
-              state='success'
-              description='Two-context staging browser test passed'
-              ;;
-            cancelled)
-              state='error'
-              description='Two-context staging browser test was cancelled'
-              ;;
-            *)
-              state='failure'
-              description='Two-context staging browser test failed'
-              ;;
-          esac
+          if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
+            result='network_unavailable'
+          elif [[ "${SETUP_OUTCOME}" != 'success' || "${INSTALL_OUTCOME}" != 'success' ]]; then
+            result='runner_infrastructure_failure'
+          elif [[ "${E2E_OUTCOME}" == 'success' ]]; then
+            result='success'
+          else
+            result='application_failure'
+          fi
+          printf 'result=%s\n' "${result}" >> "${GITHUB_OUTPUT}"
+          printf 'Linux route result: %s\n' "${result}"
+
+      - name: Upload Linux Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-playwright-e2e-linux-${{ github.run_id }}
+          path: |
+            e2e/artifacts/playwright
+            staging-e2e-readiness-linux.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  macos-route:
+    name: TEST PLAYER A/B — macOS fallback route
+    needs: linux-route
+    if: needs.linux-route.outputs.result == 'network_unavailable' || needs.linux-route.outputs.result == 'runner_infrastructure_failure'
+    runs-on: macos-latest
+    timeout-minutes: 12
+    outputs:
+      result: ${{ steps.classify.outputs.result }}
+
+    steps:
+      - name: Checkout exact staging commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify Hostinger on macOS fallback route
+        id: readiness
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ready=0
+          for attempt in $(seq 1 12); do
+            rm -f staging-e2e-readiness-macos.json
+            if curl \
+              --fail-with-body \
+              --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --retry 1 --retry-delay 2 --retry-connrefused \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              --output staging-e2e-readiness-macos.json; then
+              if python3 - staging-e2e-readiness-macos.json <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('build') == 'mgw-staging-playwright-r13.4-v1'
+          assert payload.get('environment') == 'staging'
+          assert payload.get('base_host') == 'seashell-okapi-889488.hostingersite.com'
+          assert payload.get('isolation', {}).get('live_payments_disabled') is True
+          capabilities = payload.get('capabilities', {})
+          assert capabilities and all(value is True for value in capabilities.values())
+          PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            sleep 15
+          done
+          test "$ready" = '1'
+
+      - name: Set up Node.js on macOS fallback route
+        id: setup-node
+        if: steps.readiness.outcome == 'success'
+        continue-on-error: true
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright on macOS fallback route
+        id: install
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Run two-context staging test on macOS fallback route
+        id: e2e
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.install.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm run test:e2e:staging
+
+      - name: Classify macOS fallback route
+        id: classify
+        if: always()
+        shell: bash
+        env:
+          READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+          SETUP_OUTCOME: ${{ steps.setup-node.outcome }}
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e.outcome }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
+            result='network_unavailable'
+          elif [[ "${SETUP_OUTCOME}" != 'success' || "${INSTALL_OUTCOME}" != 'success' ]]; then
+            result='runner_infrastructure_failure'
+          elif [[ "${E2E_OUTCOME}" == 'success' ]]; then
+            result='success'
+          else
+            result='application_failure'
+          fi
+          printf 'result=%s\n' "${result}" >> "${GITHUB_OUTPUT}"
+          printf 'macOS fallback result: %s\n' "${result}"
+
+      - name: Upload macOS Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-playwright-e2e-macos-${{ github.run_id }}
+          path: |
+            e2e/artifacts/playwright
+            staging-e2e-readiness-macos.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  publish-result:
+    name: Publish final staging E2E result
+    needs:
+      - linux-route
+      - macos-route
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Publish final commit status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LINUX_RESULT: ${{ needs.linux-route.outputs.result }}
+          MACOS_RESULT: ${{ needs.macos-route.outputs.result }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${LINUX_RESULT}" == 'success' || "${MACOS_RESULT}" == 'success' ]]; then
+            state='success'
+            description='Two-context staging browser test passed'
+          elif [[ "${LINUX_RESULT}" == 'application_failure' || "${MACOS_RESULT}" == 'application_failure' ]]; then
+            state='failure'
+            description='Two-context staging browser test found an application failure'
+          else
+            state='error'
+            description='Staging was unreachable from independent GitHub runners'
+          fi
+
           curl --fail-with-body --silent --show-error \
             --request POST \
             --header "Authorization: Bearer ${GITHUB_TOKEN}" \
@@ -149,3 +312,6 @@ jobs:
               --arg description "${description}" \
               --arg target_url "${RUN_URL}" \
               '{state:$state,context:$context,description:$description,target_url:$target_url}')"
+
+          printf 'Linux result: %s\nmacOS result: %s\n' "${LINUX_RESULT:-skipped}" "${MACOS_RESULT:-skipped}"
+          test "${state}" = 'success'
