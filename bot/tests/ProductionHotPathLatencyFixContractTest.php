@@ -192,7 +192,7 @@ $assertTrue(
         && $appReadyPosition !== false
         && $warmPosition < $appReadyPosition
         && !str_contains($main, 'if (!firstInteractionReady)'),
-    'V96 must keep warm-first behavior without letting an optional warm failure invalidate bootstrap.'
+    'The retained v96 main lineage must keep warm-first behavior without letting an optional warm failure invalidate bootstrap.'
 );
 
 $assertTrue(
@@ -202,12 +202,16 @@ $assertTrue(
     'Sheet opening and closing must not expose intermediate animation frames.'
 );
 
+$regressionEntryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
+$activeMainPosition = strpos($index, 'main.js?v=97');
 $assertTrue(
-    str_contains($index, 'data-hotfix-build="v96-mvp14-root-cause-stabilization"')
+    str_contains($index, 'data-hotfix-build="v97-mvp14-notification-single-owner"')
         && str_contains($index, 'main.css?v=92')
-        && str_contains($index, 'production-regression-fix-entry.js?v=96')
-        && str_contains($index, 'main.js?v=96'),
-    'Telegram WebView entrypoint must publish the cache-busted v96 stabilization graph.'
+        && $regressionEntryPosition !== false
+        && $activeMainPosition !== false
+        && $regressionEntryPosition < $activeMainPosition
+        && !str_contains($index, 'main.js?v=96'),
+    'Telegram WebView must retain the reviewed v96 regression layer before the cache-busted v97 application entry.'
 );
 
 fwrite(STDOUT, 'ProductionHotPathLatencyFixContractTest: ' . $assertions . " assertions passed\n");
