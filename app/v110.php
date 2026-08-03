@@ -11,7 +11,7 @@ if (!is_string($html)) {
 }
 
 $html = str_replace(
-    './assets/js/production-regression-fix-entry.js?v=96',
+    './assets/js/production-regression-fix-entry.js?v=102',
     './assets/js/production-clean-entry-v110.js?v=1120',
     $html
 );

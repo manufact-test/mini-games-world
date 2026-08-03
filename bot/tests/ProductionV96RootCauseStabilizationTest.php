@@ -25,7 +25,7 @@ $main = $read('app/assets/js/main.js');
 $admin = $read('bot/helpers/AdminPaymentRejectGuard.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=102');
 $mainPosition = strpos($index, 'main.js?v=98');
 $assert(
     $entryPosition !== false

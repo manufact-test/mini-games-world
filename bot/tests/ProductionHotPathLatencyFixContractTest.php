@@ -202,7 +202,7 @@ $assertTrue(
     'Sheet opening and closing must not expose intermediate animation frames.'
 );
 
-$regressionEntryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
+$regressionEntryPosition = strpos($index, 'production-regression-fix-entry.js?v=102');
 $activeMainPosition = strpos($index, 'main.js?v=98');
 $assertTrue(
     str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"')
