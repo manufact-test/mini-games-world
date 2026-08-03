@@ -39,7 +39,7 @@ $assert(str_contains($service, "'draft'")
     'Only non-active residual invitation statuses may be recovered.');
 
 $assert(str_contains($service, '$participants !== $expectedParticipants')
-    && str_contains($service, 'does not belong exclusively to TEST PLAYER A/B')
+    && str_contains($service, "'invite_not_test_players'")
     && str_contains($service, 'MAX_RESIDUAL_INVITES = 20'),
     'Every DB-only candidate must contain exactly A and B and the batch must remain bounded.');
 
@@ -51,7 +51,7 @@ $assert(str_contains($service, "WHERE invite_id = :invite_id OR source_match_id 
 
 $assert(str_contains($service, '$idPresent xor $tokenPresent')
     && str_contains($service, 'isset($sourceNotificationIds[$notificationId])')
-    && str_contains($service, 'is still present in JSON'),
+    && str_contains($service, "'notification_still_in_json'"),
     'Partial invite identity and any notification still present in JSON must block deletion.');
 
 $notificationDelete = strpos($service, 'DELETE FROM mgw_notifications');
@@ -95,7 +95,7 @@ $assert(str_contains($service, "external_payments_enabled")
 
 $reconcilePosition = strpos($endpoint, "if (\$action === 'reconcile_invite_residuals')");
 $verifyPosition = strpos($endpoint, 'verifyAndConsume($providedCredential)', $reconcilePosition ?: 0);
-$runPosition = strpos($endpoint, '$result = $residualRecovery();', $reconcilePosition ?: 0);
+$runPosition = strpos($endpoint, '$result = $residualService()->reconcile($_SERVER);', $reconcilePosition ?: 0);
 $assert($reconcilePosition !== false
     && $verifyPosition !== false
     && $runPosition !== false
