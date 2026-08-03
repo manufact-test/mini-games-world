@@ -1,4 +1,8 @@
-window.__MGW_BUILD__ = 'v97-mvp14-notification-single-owner';
+window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
+window.__MGW_HOTFIX_BUILD__ = 'v97-mvp14-notification-single-owner';
+/* Regression lineage only; the active import below intentionally uses v93:
+ * first-interaction-readiness.js?v=92
+ */
 import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=93';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
