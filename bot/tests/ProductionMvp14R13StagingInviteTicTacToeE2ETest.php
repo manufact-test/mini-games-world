@@ -44,12 +44,16 @@ $assert(str_contains($spec, "toHaveText('Победа!'")
     && str_contains($spec, 'afterBalances[loserId] - beforeBalances[loserId]'),
     'The suite must verify both result sheets and relative winner/loser Match balances.');
 
-$assert(str_contains($spec, 'totalPreserved: true')
-    && str_contains($spec, 'winnerDelta: 10')
+$assert(str_contains($spec, 'bank: 20')
+    && str_contains($spec, 'commission: 2')
+    && str_contains($spec, 'payout: 18')
+    && str_contains($spec, 'winnerDelta: 8')
     && str_contains($spec, 'loserDelta: -10')
+    && str_contains($spec, 'totalPlusCommissionPreserved: true')
+    && str_contains($spec, 'winnerDelta + loserDelta + commission')
     && str_contains($spec, 'livePaymentsUsed: false')
     && str_contains($spec, 'productionChanged: false'),
-    'The report must prove conservation, exact Match deltas and staging-only execution.');
+    'The report must prove the frozen Match bank, commission, payout, exact deltas and staging-only execution.');
 
 $assert(str_contains($spec, 'async function cleanupPlayer(player)')
     && str_contains($spec, "action: 'leave_game'")
