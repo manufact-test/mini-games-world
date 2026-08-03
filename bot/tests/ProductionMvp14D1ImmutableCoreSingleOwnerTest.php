@@ -36,7 +36,7 @@ $assert(str_contains($entry, '"./assets/js/residual-ui-game-race-fix.js?v=91": "
 $assert(str_contains($entry, 'data-hotfix-build="v114-mvp14-d1-immutable-core-single-owner"')
     && str_contains($entry, './assets/js/main.js?v=114')
     && str_contains($entry, 'X-MGW-Frontend-Build: v114-mvp14-d1-immutable-core-single-owner')
-    && str_contains($entry, "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"),
+    && str_contains($entry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'The v114 entry must expose and deliver the exact no-cache frontend build.');
 
 $assert(str_contains($residual, 'window.__MGW_RESIDUAL_V114__')
@@ -72,7 +72,7 @@ $assert(str_contains($invites, "document.querySelector('[data-create-link-invite
     && str_contains($invites, 'data-discard-draft'),
     'The canonical invite coordinator must remain the sole Share owner.');
 
-$assert(str_contains($smoke, "APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v114`")
+$assert(str_contains($smoke, 'APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v114`')
     && str_contains($smoke, "response.headers()['x-mgw-frontend-build']")
     && str_contains($smoke, "toHaveAttribute('data-hotfix-build', EXPECTED_BUILD)")
     && str_contains($smoke, 'Frontend module graph failed before bootstrap')
