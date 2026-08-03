@@ -5,6 +5,7 @@ import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
+import { initV115Presence } from './presence-v115.js?v=115';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -53,6 +54,8 @@ initResidualUiGameRaceFixEarly();
 initInteractionLatencyCoordinator();
 initResidualUiGameRaceFixAfter();
 initTelegramApp();
+/* Presence starts before bootstrap for both ordinary and invitation launches. */
+initV115Presence();
 initRuntimeStatus();
 initTypography();
 initSheet();
@@ -87,7 +90,7 @@ async function boot(){
     setRoom(APP_CONFIG.defaultRoom);
     const result = await api.bootstrap();
     state.user = result.user;
-    state.stats = result.stats;
+    state.stats = mergePresenceOnline(result.stats);
     state.session = result.session || state.session;
     renderUser(state.user);
     renderBalances(state.user);
@@ -137,7 +140,7 @@ async function refreshStatsIfVisible(){
   statsRefreshing = true;
   try {
     const result = await api.stats();
-    state.stats = result.stats;
+    state.stats = mergePresenceOnline(result.stats);
     state.session = result.session || state.session;
     renderStats(state.stats);
   } catch (error) {
@@ -145,6 +148,13 @@ async function refreshStatsIfVisible(){
   } finally {
     statsRefreshing = false;
   }
+}
+
+function mergePresenceOnline(stats){
+  const next = stats && typeof stats === 'object' ? { ...stats } : {};
+  const ownedOnline = Number(window.__MGW_V115_PRESENCE_ONLINE__);
+  if (Number.isFinite(ownedOnline)) next.online_players = ownedOnline;
+  return next;
 }
 
 function canRefreshHomeStats(){
