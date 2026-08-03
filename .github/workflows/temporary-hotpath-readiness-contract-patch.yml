@@ -1,0 +1,93 @@
+name: TEMP hot-path readiness contract patch
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-readiness-share-single-owner-v2
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-readiness-share-single-owner-v2
+          fetch-depth: 0
+
+      - name: Align retained hot-path contract with read-only readiness
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('bot/tests/ProductionHotPathLatencyFixContractTest.php')
+          text = path.read_text(encoding='utf-8')
+
+          def once(old, new, label):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              text = text.replace(old, new, 1)
+
+          once(
+              "$readiness = $read('app/assets/js/first-interaction-readiness.js');\n"
+              "$invitesEndpoint = $read('bot/invites.php');",
+              "$readiness = $read('app/assets/js/first-interaction-readiness-v103.js');\n"
+              "$invites = $read('app/assets/js/games/game-invites.js');\n"
+              "$invitesEndpoint = $read('bot/invites.php');",
+              'readiness and invite owners',
+          )
+
+          old = '''$assertTrue(
+              str_contains($readiness, "target.matches('[data-invite-friend]')")
+                  && str_contains($readiness, "target.matches('[data-invite-size], [data-invite-bet]')")
+                  && str_contains($readiness, "target.matches('[data-create-link-invite]')")
+                  && str_contains($readiness, 'prepareMessage:false')
+                  && str_contains($readiness, 'openTelegramShare(shareUrl, shareText)')
+                  && str_contains($readiness, 'openTelegramLink'),
+              'Link drafts must be prepared before the tap and opened through the ready share URL.'
+          );'''
+          new = '''$assertTrue(
+              str_contains($readiness, "[data-invite-friend], [data-open-player-picker]")
+                  && str_contains($readiness, 'refreshOpponentsNetwork(false)')
+                  && !str_contains($readiness, 'data-create-link-invite')
+                  && !str_contains($readiness, 'create_link_draft')
+                  && !str_contains($readiness, 'openTelegramShare')
+                  && str_contains($invites, 'data-create-link-invite')
+                  && str_contains($invites, 'async function createLinkDraft(context, button)')
+                  && str_contains($invites, 'showPreparedLink(draftInvite, context);'),
+              'Readiness must stay read-only while the invite coordinator exclusively owns Share creation and fallback UI.'
+          );'''
+          once(old, new, 'Share ownership assertion')
+
+          once(
+              "&& str_contains($main, 'first-interaction-readiness.js?v=98')",
+              "&& str_contains($main, 'first-interaction-readiness-v103.js?v=103')",
+              'active readiness import',
+          )
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          php -l bot/tests/ProductionHotPathLatencyFixContractTest.php
+          php bot/tests/ProductionHotPathLatencyFixContractTest.php
+          php bot/tests/ProductionMvp14R13ReadinessShareSingleOwnerTest.php
+
+      - name: Commit patch and remove temporary files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f .github/workflows/temporary-hotpath-readiness-contract-patch.yml
+          rm -f .github/hotpath-readiness-contract.trigger
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Align retained hot-path contract with read-only Share readiness'
+          git push origin HEAD:agent/mvp14r13-staging-readiness-share-single-owner-v2
