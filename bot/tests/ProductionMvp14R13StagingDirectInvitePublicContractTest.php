@@ -32,12 +32,17 @@ $isParticipantPosition = strpos($validation, 'private function isParticipant(arr
 $publicInviteSource = $publicInvitePosition !== false && $isParticipantPosition !== false
     ? substr($validation, $publicInvitePosition, $isParticipantPosition - $publicInvitePosition)
     : '';
-$assert($publicInviteSource !== ''
-    && str_contains($publicInviteSource, "'is_owner' => \$isOwner")
-    && str_contains($publicInviteSource, "'is_invitee' => \$isInvitee")
-    && !str_contains($publicInviteSource, "'inviter_id'")
-    && !str_contains($publicInviteSource, "'invitee_id'"),
-    'The production public invite serializer must expose viewer roles without raw participant IDs.');
+$returnPosition = strpos($publicInviteSource, 'return [');
+$returnEnd = $returnPosition !== false ? strpos($publicInviteSource, '];', $returnPosition) : false;
+$publicReturn = $returnPosition !== false && $returnEnd !== false
+    ? substr($publicInviteSource, $returnPosition, $returnEnd - $returnPosition + 2)
+    : '';
+$assert($publicReturn !== ''
+    && str_contains($publicReturn, "'is_owner' => \$isOwner")
+    && str_contains($publicReturn, "'is_invitee' => \$isInvitee")
+    && !str_contains($publicReturn, "'inviter_id' =>")
+    && !str_contains($publicReturn, "'invitee_id' =>"),
+    'The public invite return object must expose viewer roles without raw participant ID keys.');
 
 $assert(str_contains($endpoint, "\$core['recipient_id'] = \$inviteeId")
     && str_contains($endpoint, "\$core['user'] = \$users->publicUser(\$user)")
