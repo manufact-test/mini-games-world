@@ -15,16 +15,11 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$nativePosition = strpos($entry, 'opponents-native-fetch-v115.js?v=115');
-$mainPosition = strpos($entry, '$mainScript');
-$afterPosition = strpos($entry, 'opponents-empty-cache-guard-v115.js?v=115');
 $assert(
-    $nativePosition !== false
-        && $mainPosition !== false
-        && $afterPosition !== false
-        && $nativePosition < $mainPosition
-        && $mainPosition < $afterPosition,
-    'Native fetch must be captured before main readiness wrapping and the empty-cache guard must install after main.'
+    str_contains($entry, '$telegramScript . "\\n  " . $importMap . "\\n  " . $nativeFetchGuard')
+        && str_contains($entry, '$mainScript . "\\n  " . $opponentsGuard')
+        && str_contains($entry, 'str_replace($mainScript, $mainScript . "\\n  " . $opponentsGuard, $html);'),
+    'Rendered HTML must capture native fetch before main readiness wrapping and install the empty-cache guard after main.'
 );
 
 $assert(
