@@ -31,17 +31,24 @@ $assert($diagnoseMethodPosition !== false
 $allowedCodes = [
     'invite_identity_incomplete',
     'invite_identity_partial_conflict',
-    'invite_not_test_players',
+    'invite_participant_identity_incomplete',
     'invite_unsafe_status',
+    'invite_non_test_nonterminal',
+    'invite_participant_ownership_invalid',
+    'invite_participant_ownership_mismatch',
     'invite_attached_to_match',
     'invite_referenced_by_match',
-    'notification_not_test_players',
+    'notification_not_invite_participant',
+    'notification_ownership_mismatch',
     'notification_still_in_json',
     'residual_limit_exceeded',
 ];
 foreach ($allowedCodes as $code) {
     $assert(str_contains($service, "'{$code}'"), 'Missing safe blocker code: ' . $code);
 }
+$assert(!str_contains($service, "'invite_not_test_players'")
+    && !str_contains($service, "'notification_not_test_players'"),
+    'Non-test terminal staging rows must be classified by lifecycle and ownership rather than blanket identity rejection.');
 
 $diagnosePosition = strpos($endpoint, "if (\$action === 'diagnose_invite_residuals')");
 $verifyPosition = strpos($endpoint, 'verifyAndConsume($providedCredential)', $diagnosePosition ?: 0);
@@ -56,11 +63,12 @@ $assert($diagnosePosition !== false
 
 $assert(str_contains($probe, "data: { action: 'diagnose_invite_residuals' }")
     && str_contains($probe, 'MGW_SAFE_INVITE_RESIDUAL_DIAGNOSIS')
-    && str_contains($probe, 'candidate_count')
+    && str_contains($probe, 'test_player_candidate_count')
+    && str_contains($probe, 'terminal_staging_candidate_count')
     && str_contains($probe, 'blocker_codes')
     && !str_contains($probe, 'console.log(oidcToken)')
     && !str_contains($probe, 'console.log(payload)'),
-    'The runner must print only the bounded aggregate diagnosis and never credentials or the full response.');
+    'The runner must print only bounded scope counts and blocker codes, never credentials or the full response.');
 
 $assert(!str_contains($diagnoseSource, "'private_candidates' =>")
     && !str_contains($endpoint, 'private_candidates')
