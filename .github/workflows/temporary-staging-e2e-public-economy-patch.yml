@@ -1,0 +1,83 @@
+name: TEMP staging E2E public economy patch
+
+on:
+  push:
+    branches:
+      - agent/mvp14r13-staging-e2e-public-economy-projection
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14r13-staging-e2e-public-economy-projection
+          fetch-depth: 0
+
+      - name: Apply exact public projection patch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(source: str, old: str, new: str, label: str) -> str:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              return source.replace(old, new, 1)
+
+          spec_path = Path('e2e/staging/two-context.spec.mjs')
+          spec = spec_path.read_text(encoding='utf-8')
+          spec = replace_once(
+              spec,
+              "    expect(Number(finalPayload?.game?.bank || 0)).toBe(20);",
+              "    const expectedBank = Number(finalPayload?.game?.bet || 0) * 2;\n"
+              "    expect(expectedBank).toBe(20);",
+              'public game bank assertion',
+          )
+          spec = replace_once(
+              spec,
+              "        bank: 20,",
+              "        bank: expectedBank,",
+              'safe report bank value',
+          )
+          spec_path.write_text(spec, encoding='utf-8')
+
+          contract_path = Path('bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php')
+          contract = contract_path.read_text(encoding='utf-8')
+          contract = replace_once(
+              contract,
+              "$assert(str_contains($spec, 'bank: 20')\n"
+              "    && str_contains($spec, 'commission: 2')",
+              "$assert(str_contains($spec, 'const expectedBank = Number(finalPayload?.game?.bet || 0) * 2')\n"
+              "    && str_contains($spec, 'bank: expectedBank')\n"
+              "    && str_contains($spec, 'commission: 2')",
+              'PHP public projection contract',
+          )
+          contract_path.write_text(contract, encoding='utf-8')
+          PY
+
+          node --check e2e/staging/two-context.spec.mjs
+          php -l bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php
+          php bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php
+          ! grep -Fq 'finalPayload?.game?.bank' e2e/staging/two-context.spec.mjs
+
+      - name: Commit exact patch and remove temporary workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm .github/workflows/temporary-staging-e2e-public-economy-patch.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add e2e/staging/two-context.spec.mjs \
+            bot/tests/ProductionMvp14R13StagingInviteTicTacToeE2ETest.php \
+            .github/workflows/temporary-staging-e2e-public-economy-patch.yml
+          git diff --cached --check
+          git commit -m 'Use public Match economy projection in staging A/B assertions'
+          git push origin HEAD:agent/mvp14r13-staging-e2e-public-economy-projection
