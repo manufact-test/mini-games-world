@@ -19,6 +19,7 @@ try {
     require __DIR__ . '/core/bootstrap.php';
     require_once __DIR__ . '/services/StagingTestAuthService.php';
     require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
+    require_once __DIR__ . '/services/StagingTestInviteResidualRecoveryService.php';
 
     $raw = file_get_contents('php://input');
     if (!is_string($raw) || strlen($raw) > 4096) {
@@ -50,8 +51,31 @@ try {
     $action = strtolower(trim((string)($payload['action'] ?? 'issue')));
     $authorizationMode = 'shared_secret';
 
+    $residualRecovery = static function () use ($config, $runtimeStorageRouter): array {
+        return (new StagingTestInviteResidualRecoveryService(
+            $config,
+            $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
+        ))->reconcile($_SERVER);
+    };
+
+    if ($action === 'reconcile_invite_residuals') {
+        if (array_key_exists('slot', $payload) || substr_count($providedCredential, '.') !== 2) {
+            throw new RuntimeException('Staging test invite residual recovery requires GitHub OIDC.');
+        }
+        (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
+        $result = $residualRecovery();
+
+        echo json_encode(
+            $result + ['authorization_mode' => 'github_actions_oidc'],
+            JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+        ) . PHP_EOL;
+        exit;
+    }
+
     if ($action === 'issue') {
+        $slot = strtoupper(trim((string)($payload['slot'] ?? '')));
         $providedSecret = $providedCredential;
+        $recoveryResult = null;
         if (substr_count($providedCredential, '.') === 2) {
             (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
             $providedSecret = trim((string)($config['staging_test_auth_secret'] ?? ''));
@@ -59,9 +83,12 @@ try {
                 $providedSecret = trim((string)($config['setup_secret'] ?? ''));
             }
             $authorizationMode = 'github_actions_oidc';
+            if ($slot === 'A') {
+                $recoveryResult = $residualRecovery();
+            }
         }
 
-        $issued = $service->issue((string)($payload['slot'] ?? ''), $providedSecret, $_SERVER);
+        $issued = $service->issue($slot, $providedSecret, $_SERVER);
         setcookie(
             StagingTestAuthService::COOKIE_NAME,
             (string)$issued['token'],
@@ -81,6 +108,16 @@ try {
                 'secure' => true,
                 'same_site' => 'Strict',
             ],
+            'invite_residual_recovery' => is_array($recoveryResult) ? [
+                'status' => (string)($recoveryResult['status'] ?? ''),
+                'candidate_count' => (int)($recoveryResult['candidate_count'] ?? 0),
+                'deleted' => is_array($recoveryResult['deleted'] ?? null)
+                    ? $recoveryResult['deleted']
+                    : [],
+                'parity' => is_array($recoveryResult['parity'] ?? null)
+                    ? $recoveryResult['parity']
+                    : [],
+            ] : null,
         ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL;
         exit;
     }
