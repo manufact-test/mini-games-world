@@ -11,6 +11,10 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
+$emptyFrameGuard = '<script type="module" src="./assets/js/screens/notification-empty-frame-guard-v115.js?v=115"></script>';
+$bellFirstClickGuard = '<script type="module" src="./assets/js/screens/notification-bell-first-click-v115.js?v=115"></script>';
+$nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
+$opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -39,21 +43,37 @@ if (!str_contains($html, $telegramScript)) {
     exit;
 }
 
-$html = str_replace($telegramScript, $telegramScript . "\n  " . $importMap, $html);
+$html = str_replace(
+    $telegramScript,
+    $telegramScript . "\n  " . $importMap
+      . "\n  " . $emptyFrameGuard
+      . "\n  " . $bellFirstClickGuard
+      . "\n  " . $nativeFetchGuard,
+    $html
+);
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v114-mvp14-d1-immutable-core-single-owner"',
+    'data-hotfix-build="v115-mvp14-d1-feedback-integration"',
     $html
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main.js?v=114',
+    './assets/js/main.js?v=115',
     $html
 );
+
+$mainScript = '<script type="module" src="./assets/js/main.js?v=115"></script>';
+if (!str_contains($html, $mainScript)) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World main-script anchor is unavailable.';
+    exit;
+}
+$html = str_replace($mainScript, $mainScript . "\n  " . $opponentsGuard, $html);
 
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: v114-mvp14-d1-immutable-core-single-owner');
+header('X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration');
 echo $html;

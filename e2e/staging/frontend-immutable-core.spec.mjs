@@ -4,10 +4,10 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v114`;
+const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v115`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
-const EXPECTED_BUILD = 'v114-mvp14-d1-immutable-core-single-owner';
+const EXPECTED_BUILD = 'v115-mvp14-d1-feedback-integration';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -90,7 +90,7 @@ async function revokeContext(context) {
   }
 }
 
-test('staging app root serves one immutable v114 core graph', async ({ browser }) => {
+test('staging app root serves one integrated v115 frontend graph', async ({ browser }) => {
   const context = await browser.newContext({
     locale: 'ru-RU',
     timezoneId: 'Europe/Vilnius',
@@ -142,6 +142,7 @@ test('staging app root serves one immutable v114 core graph', async ({ browser }
 
     const graph = await page.evaluate(() => ({
       residual: window.__MGW_RESIDUAL_V114__ || null,
+      presence: Boolean(window.__MGW_V115_PRESENCE__?.initialized),
       resources: performance.getEntriesByType('resource').map((entry) => entry.name),
     }));
 
@@ -153,8 +154,10 @@ test('staging app root serves one immutable v114 core graph', async ({ browser }
       gameMoveOwner: false,
       gameStateCoalescing: true,
     });
+    expect(graph.presence).toBe(true);
 
     const requiredFreshResources = [
+      '/assets/js/main.js?v=115',
       '/assets/js/api/client.js?v=114',
       '/assets/js/session.js?v=114',
       '/assets/js/first-interaction-readiness-v103.js?v=114',
@@ -162,6 +165,13 @@ test('staging app root serves one immutable v114 core graph', async ({ browser }
       '/assets/js/interaction-latency-coordinator-v101.js?v=114',
       '/assets/js/screens/notifications-screen-v99.js?v=114',
       '/assets/js/games/game-invites.js?v=114',
+      '/assets/js/screens/notification-empty-frame-guard-v115.js?v=115',
+      '/assets/js/screens/notification-bell-first-click-v115.js?v=115',
+      '/assets/js/opponents-native-fetch-v115.js?v=115',
+      '/assets/js/opponents-empty-cache-guard-v115.js?v=115',
+      '/assets/js/presence-v115.js?v=115',
+      '/assets/js/games/invite-terminal-actions-v115.js?v=115',
+      '/assets/js/games/invite-link-entry-v115.js?v=115',
     ];
     for (const suffix of requiredFreshResources) {
       expect(
