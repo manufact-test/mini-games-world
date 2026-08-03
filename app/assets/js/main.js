@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
-import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
+window.__MGW_BUILD__ = 'v97-mvp14-notification-single-owner';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=93';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
@@ -20,7 +20,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen.js?v=85';
+import { initNotificationsScreen } from './screens/notifications-screen.js?v=86';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
@@ -43,6 +43,10 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
+/* The canonical notifications screen must register its capture listener before
+ * the generic first-interaction cache. It owns opening, fresh reads and invite
+ * action rendering; prewarm may never replace a fresh sheet on the same click. */
+initNotificationsScreen();
 initFirstInteractionReadinessEarly();
 initRequestGuard();
 initResidualUiGameRaceFixEarly();
@@ -54,8 +58,6 @@ initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
-/* Notification baseline must exist before the invitation synchronizer starts. */
-initNotificationsScreen();
 /* One coordinator owns links, direct invitations, notification actions and rematches. */
 initGameInvites();
 initGameFinishStability();
