@@ -20,11 +20,11 @@ $prewarmInit = strpos($main, 'initFirstInteractionReadinessEarly();');
 $assert($canonicalInit !== false && $prewarmInit !== false && $canonicalInit < $prewarmInit,
     'The canonical notifications capture listener must register before the generic prewarm listener.');
 
-$assert(str_contains($main, "./screens/notifications-screen.js?v=86")
-    && str_contains($main, "from './first-interaction-readiness.js?v=93'")
+$assert(str_contains($main, "./screens/notifications-screen.js?v=85")
+    && str_contains($main, "./first-interaction-readiness.js?v=92")
     && str_contains($main, "window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization'")
     && str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v97-mvp14-notification-single-owner'"),
-    'The notification ownership fix must use new active CDN identities while preserving the reviewed v96 build lineage.');
+    'The notification ownership fix must preserve consistent internal module identities and publish the v97 hotfix marker.');
 
 $assert(str_contains($canonical, "const trigger = event.target.closest('#notificationsOpen')")
     && str_contains($canonical, 'event.stopImmediatePropagation();')
