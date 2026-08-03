@@ -23,7 +23,7 @@ $assert(str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonica
     'The visible application shell must publish the v98 canonical-owner identity.');
 $assert(str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v98-mvp14-notification-canonical-owner'"),
     'The loaded main module must publish the matching v98 hotfix marker.');
-$assert(str_contains($main, "./first-interaction-readiness.js?v=98"),
+$assert(str_contains($main, "./first-interaction-readiness-v103.js?v=103"),
     'The active main graph must cache-bust the changed first-interaction module.');
 
 $canonicalInit = strpos($main, 'initNotificationsScreen();');
