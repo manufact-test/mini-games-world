@@ -26,9 +26,10 @@ $assert($canonicalInit !== false && $prewarmInit !== false && $canonicalInit < $
 $assert(str_contains($main, "./screens/notifications-screen-v99.js?v=99")
     && !str_contains($main, "./screens/notifications-screen.js?v=99")
     && str_contains($main, "./first-interaction-readiness.js?v=98")
+    && str_contains($main, "./interaction-latency-coordinator-v101.js?v=101")
     && str_contains($main, "window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization'")
     && str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v98-mvp14-notification-canonical-owner'"),
-    'The canonical-owner release must publish a new notifications object name while retaining reviewed lineage.');
+    'The canonical-owner release must publish fresh notification and authoritative-read module objects.');
 
 $assert(str_contains($canonical, "const trigger = event.target.closest('#notificationsOpen')")
     && str_contains($canonical, 'event.stopImmediatePropagation();')
@@ -55,20 +56,23 @@ $assert(!str_contains($prewarm, "target.id === 'notificationsOpen'")
     'Prewarm must not intercept, mark read, render or mutate the notifications interface.');
 
 $retainedScript = '<script type="module" src="./assets/js/production-regression-fix-entry.js?v=96"></script>';
-$activeScript = '<script type="module" src="./assets/js/main.js?v=98.1"></script>';
+$activeScript = '<script type="module" src="./assets/js/main.js?v=98.2"></script>';
 $regressionEntry = strpos($index, $retainedScript);
 $activeMain = strpos($index, $activeScript);
 $assert($regressionEntry !== false
     && $activeMain !== false
     && $regressionEntry < $activeMain
+    && !str_contains($index, './assets/js/main.js?v=98.1')
     && !str_contains($index, './assets/js/main.js?v=97')
     && !str_contains($index, './assets/js/main.js?v=96')
     && str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
-    'The HTML shell must publish the fresh v98.1 entry after the retained v96 regression script.');
+    'The HTML shell must publish the fresh v98.2 graph after the retained v96 regression script.');
 
-$assert(str_contains($v110, "'./assets/js/main.js?v=98'")
+$assert(str_contains($v110, "'./assets/js/main.js?v=98.2'")
+    && !str_contains($v110, "'./assets/js/main.js?v=98',")
+    && str_contains($v110, "'./assets/js/main-v110.js?v=1124'")
     && str_contains($v110, "'data-hotfix-build=\"v98-mvp14-notification-canonical-owner\"'"),
-    'The v110 wrapper must transform the current v98 source shell, including its cache subrevision.');
+    'The v110 wrapper must replace the exact active source URL without leaking a cache suffix.');
 
 $assert(substr_count($main, 'initNotificationsScreen();') === 1
     && substr_count($main, 'initFirstInteractionReadinessEarly();') === 1,
