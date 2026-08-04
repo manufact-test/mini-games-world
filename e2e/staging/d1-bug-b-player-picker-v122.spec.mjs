@@ -98,19 +98,31 @@ async function runPickerScenario(browser, isMobile) {
   try {
     playerB = await openPlayer(browser, 'B', isMobile);
     await playerB.page.waitForTimeout(500);
+
     playerA = await openPlayer(browser, 'A', isMobile, async page => {
       await page.route(OPPONENTS_ROUTE, async route => {
         if (phase === 'prefetch-empty') {
           prefetchEmptyCalls += 1;
           return route.fulfill({
-            status:200, contentType:'application/json; charset=utf-8',
-            body:JSON.stringify({ ok:true, items:[], authoritative:true, storage_driver:'database' }),
+            status:200,
+            contentType:'application/json; charset=utf-8',
+            body:JSON.stringify({
+              ok:true,
+              items:[],
+              authoritative:true,
+              complete:true,
+              storage_driver:'json',
+              online_opponent_count:0,
+              unresolved_online_count:0,
+            }),
           });
         }
+
         stressCalls += 1;
         if (stressCalls <= 6) {
           return route.fulfill({
-            status:200, contentType:'application/json; charset=utf-8',
+            status:200,
+            contentType:'application/json; charset=utf-8',
             body:JSON.stringify({ ok:true, items:[] }),
           });
         }
@@ -118,17 +130,23 @@ async function runPickerScenario(browser, isMobile) {
       });
     });
 
-    await expect.poll(() => prefetchEmptyCalls, { timeout:15_000 }).toBeGreaterThanOrEqual(2);
+    // The first-interaction prefetch is allowed to happen before the v122
+    // transport guard is installed, so one cold empty prefetch is sufficient.
+    await expect.poll(() => prefetchEmptyCalls, { timeout:15_000 }).toBeGreaterThanOrEqual(1);
     await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
     await expect(playerA.page.locator('[data-open-player-picker]')).toBeVisible({ timeout:15_000 });
+
     phase = 'stress';
     stressCalls = 0;
     const traceKey = isMobile ? '__MGW_D1_B_MOBILE' : '__MGW_D1_B_DESKTOP';
     await recordVisibleSheetFrames(playerA.page, traceKey);
     await playerA.page.locator('[data-open-player-picker]').click();
 
-    await expect(playerA.page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:20_000 });
-    await expect(playerA.page.locator('[data-direct-opponent="stg_test_player_b"]')).toContainText(/онлайн|играет|ищет соперника/u);
+    await expect(playerA.page.locator('[data-direct-opponent="stg_test_player_b"]'))
+      .toBeVisible({ timeout:20_000 });
+    await expect(playerA.page.locator('[data-direct-opponent="stg_test_player_b"]'))
+      .toContainText(/онлайн|играет|ищет соперника/u);
+
     const frames = await takeVisibleSheetFrames(playerA.page, traceKey);
     const forbidden = /(Недавних соперников пока нет|игроков нет|соперников нет)/iu;
     expect(frames.some(frame => forbidden.test(frame)), `Visible frames: ${JSON.stringify(frames)}`).toBe(false);
@@ -137,7 +155,8 @@ async function runPickerScenario(browser, isMobile) {
 
     const finalResponse = await playerA.page.evaluate(async () => {
       const response = await fetch('/bot/invite-opponents.php', {
-        method:'POST', headers:{ 'Content-Type':'application/json', Accept:'application/json' },
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', Accept:'application/json' },
         body:JSON.stringify({
           initData:'',
           sessionId:localStorage.getItem('mgw_device_session_id'),
@@ -147,7 +166,13 @@ async function runPickerScenario(browser, isMobile) {
       });
       return response.json();
     });
-    expect(finalResponse).toMatchObject({ ok:true, authoritative:true, storage_driver:'database' });
+    expect(finalResponse).toMatchObject({
+      ok:true,
+      authoritative:true,
+      complete:true,
+      storage_driver:'json',
+      unresolved_online_count:0,
+    });
     expect(finalResponse.items.some(item => item.id === 'stg_test_player_b')).toBe(true);
   } finally {
     await closePlayer(playerA);
