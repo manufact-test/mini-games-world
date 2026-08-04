@@ -118,7 +118,9 @@ async function runPickerScenario(browser, isMobile) {
       });
     });
 
-    await expect.poll(() => prefetchEmptyCalls, { timeout:15_000 }).toBeGreaterThanOrEqual(2);
+    // The warm request starts from main before the post-main confirmation
+    // wrapper is installed, so exactly one prefetched empty is the valid setup.
+    await expect.poll(() => prefetchEmptyCalls, { timeout:15_000 }).toBeGreaterThanOrEqual(1);
     await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
     await expect(playerA.page.locator('[data-open-player-picker]')).toBeVisible({ timeout:15_000 });
     phase = 'stress';
