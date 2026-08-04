@@ -14,7 +14,7 @@ $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></s
 $notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v119.js?v=119"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
-$opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v117.js?v=117"></script>';
+$opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v122.js?v=122"></script>';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -52,7 +52,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v119-mvp14-notification-canonical-owner"',
+    'data-hotfix-build="v122-mvp14-opponents-authoritative-source"',
     $html
 );
 $html = str_replace(
@@ -78,5 +78,5 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: v119-mvp14-notification-canonical-owner');
+header('X-MGW-Frontend-Build: v122-mvp14-opponents-authoritative-source');
 echo $html;
