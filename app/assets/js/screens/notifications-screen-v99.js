@@ -15,6 +15,7 @@ let refreshingBadge = false;
 let notificationPoll = null;
 let notificationToastTimer = null;
 let notificationToastPointer = null;
+let notificationToastGeneration = 0;
 let suppressNotificationToastClickUntil = 0;
 let pendingNotification = null;
 let activeToastNotification = null;
@@ -415,6 +416,7 @@ function showNotificationToast(item){
   const message = notificationMessage(item);
 
   window.clearTimeout(notificationToastTimer);
+  const generation = ++notificationToastGeneration;
   notificationToastPointer = null;
   activeToastNotification = item;
   el.className = `notification-toast ${tone}`;
@@ -425,7 +427,10 @@ function showNotificationToast(item){
   el.querySelector('.notification-toast-copy span').textContent = message;
   el.querySelector('.notification-toast-copy span').hidden = message === '';
   el.setAttribute('aria-label', `${title}${message ? `. ${message}` : ''}`);
-  requestAnimationFrame(() => el.classList.add('show'));
+  requestAnimationFrame(() => {
+    if (generation !== notificationToastGeneration || activeToastNotification !== item) return;
+    el.classList.add('show');
+  });
   notificationToastTimer = window.setTimeout(dismissNotificationToast, NOTIFICATION_TOAST_DURATION);
   haptic(tone === 'danger' ? 'medium' : 'light');
   return true;
@@ -441,6 +446,7 @@ function canShowNotificationToast(){
 function dismissNotificationToast(){
   window.clearTimeout(notificationToastTimer);
   notificationToastTimer = null;
+  notificationToastGeneration += 1;
   notificationToastPointer = null;
   activeToastNotification = null;
   const el = document.getElementById('notificationToast');

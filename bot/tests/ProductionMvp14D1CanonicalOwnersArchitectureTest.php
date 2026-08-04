@@ -48,6 +48,9 @@ $assert(substr_count($notifications, "document.addEventListener('click', handleN
     && !str_contains($notifications, 'MutationObserver')
     && str_contains($notifications, "let sheetState = 'closed'")
     && str_contains($notifications, 'let sheetGeneration = 0')
+    && str_contains($notifications, 'let notificationToastGeneration = 0')
+    && str_contains($notifications, 'generation !== notificationToastGeneration')
+    && str_contains($notifications, 'notificationToastGeneration += 1')
     && str_contains($notifications, 'openNotificationsShell()')
     && str_contains($notifications, 'data-notifications-body'),
     'Notifications must own one click path and one explicit sheet state machine.');
