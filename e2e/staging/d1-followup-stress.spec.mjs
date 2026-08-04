@@ -123,7 +123,10 @@ async function postFromPlayer(page, pathname, data) {
 
 async function expectPost(page, pathname, data, label) {
   const result = await postFromPlayer(page, pathname, data);
-  expect(result.status, `${label} status`).toBe(200);
+  const publicError = typeof result.payload?.error === 'string'
+    ? result.payload.error.slice(0, 300)
+    : 'no_public_error';
+  expect(result.status, `${label} status; public error: ${publicError}`).toBe(200);
   expect(result.payload?.ok, `${label} payload`).toBe(true);
   return result.payload;
 }
@@ -184,6 +187,7 @@ async function recordSheetTrace(page, key) {
     };
     const observer = new MutationObserver(record);
     if (sheet) observer.observe(sheet, { childList:true, subtree:true, characterData:true });
+    record();
     window[`${traceKey}_TRACE`] = trace;
     window[`${traceKey}_OBSERVER`] = observer;
   }, key);
