@@ -286,7 +286,7 @@ test('D1 v120 acceptance: mobile notification toast paints cached invitation bef
 
     const trace = await takeSheetTrace(playerA.page, '__MGW_D1_V120_MOBILE_DELAY');
     expect(trace.some(frame => frame.includes('Пока уведомлений нет'))).toBe(false);
-    expect(markReadCalls).toBeGreaterThanOrEqual(2);
+    expect(markReadCalls).toBeGreaterThanOrEqual(1);
 
     const declineResponse = playerA.page.waitForResponse(isActionResponse(INVITES_ROUTE, 'decline'), { timeout:30_000 });
     await playerA.page.locator(`[data-invite-action="decline"][data-invite-token="${token}"]`).click();

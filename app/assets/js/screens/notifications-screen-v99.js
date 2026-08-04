@@ -17,6 +17,7 @@ let notificationToastTimer = null;
 let notificationToastPointer = null;
 let suppressNotificationToastClickUntil = 0;
 let pendingNotification = null;
+let activeToastNotification = null;
 let announcedIds = loadAnnouncedIds();
 let sheetState = 'closed';
 let sheetGeneration = 0;
@@ -139,10 +140,13 @@ function handleNotificationActivation(event){
   if (trigger.id === 'notificationToast' && !trigger.classList.contains('show')) return;
   if (trigger.id === 'notificationToast' && Date.now() < suppressNotificationToastClickUntil) return;
 
+  const seedItems = trigger.id === 'notificationToast' && activeToastNotification
+    ? [activeToastNotification]
+    : [];
   event.preventDefault();
   event.stopPropagation();
   dismissNotificationToast();
-  loadNotificationsSheet({ hapticFeedback:true, keepShell:false });
+  loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems });
 }
 
 function handleSheetClosed(){
@@ -151,7 +155,7 @@ function handleSheetClosed(){
   sheetState = 'closed';
 }
 
-async function loadNotificationsSheet({ hapticFeedback = true, keepShell = false } = {}){
+async function loadNotificationsSheet({ hapticFeedback = true, keepShell = false, seedItems = [] } = {}){
   const alreadyOpen = isNotificationsSheetOpen();
   if (!keepShell && alreadyOpen && ['opening', 'loading', 'ready'].includes(sheetState)) return;
 
@@ -163,13 +167,21 @@ async function loadNotificationsSheet({ hapticFeedback = true, keepShell = false
     sheetState = 'opening';
     openNotificationsShell();
   }
-  sheetState = 'loading';
-  renderNotificationsLoading();
+
+  const immediateItems = normalizeItems(seedItems);
+  if (immediateItems.length) {
+    sheetItems = mergeNotificationCollections([], immediateItems);
+    sheetState = 'ready';
+    renderNotificationsBody(sheetItems);
+  } else {
+    sheetState = 'loading';
+    renderNotificationsLoading();
+  }
 
   try {
     const result = await api.notifications(true);
     if (!canApplySheetResult(generation)) return;
-    sheetItems = normalizeItems(result?.items);
+    sheetItems = mergeNotificationCollections(normalizeItems(result?.items), immediateItems);
     rememberNotifications(sheetItems);
     baselineLoaded = true;
     setUnreadCount(0);
@@ -227,13 +239,21 @@ function canApplySheetResult(generation){
 }
 
 function mergeSheetItems(items){
-  const byId = new Map(sheetItems.map(item => [String(item?.id || ''), item]));
-  for (const item of normalizeItems(items)) {
+  sheetItems = mergeNotificationCollections(sheetItems, items);
+}
+
+function mergeNotificationCollections(primaryItems, overlayItems){
+  const byId = new Map();
+  for (const item of normalizeItems(primaryItems)) {
+    const id = String(item?.id || '');
+    if (id) byId.set(id, item);
+  }
+  for (const item of normalizeItems(overlayItems)) {
     const id = String(item?.id || '');
     if (!id) continue;
     byId.set(id, { ...byId.get(id), ...item });
   }
-  sheetItems = Array.from(byId.values())
+  return Array.from(byId.values())
     .sort((left, right) => dateValue(right?.created_at) - dateValue(left?.created_at))
     .slice(0, 30);
 }
@@ -396,6 +416,7 @@ function showNotificationToast(item){
 
   window.clearTimeout(notificationToastTimer);
   notificationToastPointer = null;
+  activeToastNotification = item;
   el.className = `notification-toast ${tone}`;
   el.style.transform = '';
   el.style.opacity = '';
@@ -421,6 +442,7 @@ function dismissNotificationToast(){
   window.clearTimeout(notificationToastTimer);
   notificationToastTimer = null;
   notificationToastPointer = null;
+  activeToastNotification = null;
   const el = document.getElementById('notificationToast');
   if (!el) return;
   el.classList.remove('show', 'dragging');

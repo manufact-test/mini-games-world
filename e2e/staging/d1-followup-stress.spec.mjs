@@ -355,60 +355,45 @@ test('D1 follow-up: desktop bell opens during an unfinished request and ignores 
   }
 });
 
-test('D1 follow-up: desktop player picker confirms transient empty snapshots before rendering', async ({ browser }) => {
+test('canonical desktop picker renders empty only after one authoritative response', async ({ browser }) => {
   let playerA;
-  let playerB;
-  let stressPhase = false;
-  let stressCalls = 0;
+  let opponentCalls = 0;
   try {
-    playerB = await openPlayer(browser, 'B', { isMobile:false });
-    await cleanupPlayer(playerB);
-
     playerA = await openPlayer(browser, 'A', {
       isMobile:false,
       beforeGoto:async page => {
         await page.route(OPPONENTS_ROUTE, async route => {
-          if (!stressPhase) {
-            return route.fulfill({
-              status:200,
-              contentType:'application/json; charset=utf-8',
-              body:JSON.stringify({ ok:true, items:[] }),
-            });
-          }
-          stressCalls += 1;
-          if (stressCalls <= 4) {
-            return route.fulfill({
-              status:200,
-              contentType:'application/json; charset=utf-8',
-              body:JSON.stringify({ ok:true, items:[] }),
-            });
-          }
-          return route.continue();
+          opponentCalls += 1;
+          await delay(350);
+          return route.fulfill({
+            status:200,
+            contentType:'application/json; charset=utf-8',
+            body:JSON.stringify({
+              ok:true,
+              authoritative:true,
+              storage_driver:'database',
+              items:[],
+            }),
+          });
         });
       },
     });
     await cleanupPlayer(playerA);
+    expect(opponentCalls).toBe(0);
 
     await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
     await expect(playerA.page.locator('[data-open-player-picker]')).toBeVisible({ timeout:15_000 });
-    stressPhase = true;
-    stressCalls = 0;
-    await recordSheetTrace(playerA.page, '__MGW_D1_OPPONENT_EMPTY');
     await playerA.page.locator('[data-open-player-picker]').click();
 
-    const opponent = playerA.page.locator('[data-direct-opponent="stg_test_player_b"]');
-    await expect(opponent).toBeVisible({ timeout:20_000 });
-    const trace = await takeSheetTrace(playerA.page, '__MGW_D1_OPPONENT_EMPTY');
-    expect(trace.some(frame => frame.includes('Недавних соперников пока нет'))).toBe(false);
-    expect(stressCalls).toBeGreaterThanOrEqual(5);
+    await expect(playerA.page.locator('[data-player-picker-state="loading"]')).toBeVisible();
+    await expect(playerA.page.locator('[data-player-picker-state="empty"]')).toHaveCount(0);
+    await expect(playerA.page.locator('[data-player-picker-state="empty"]')).toBeVisible({ timeout:5_000 });
+    expect(opponentCalls).toBe(1);
 
     await playerA.page.unroute(OPPONENTS_ROUTE);
-    expectClean(playerA, 'Player A opponent empty confirmations');
-    expectClean(playerB, 'Player B opponent empty confirmations');
+    expectClean(playerA, 'Player A canonical confirmed empty');
   } finally {
     if (playerA) await cleanupPlayer(playerA);
-    if (playerB) await cleanupPlayer(playerB);
     await closePlayer(playerA);
-    await closePlayer(playerB);
   }
 });
