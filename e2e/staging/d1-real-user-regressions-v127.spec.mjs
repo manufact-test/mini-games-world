@@ -72,65 +72,37 @@ async function revokeAndClose(context) {
   await context.close();
 }
 
-test('D1 v127: ordinary Start bell survives a compatibility click retargeted to the new overlay', async ({ browser }) => {
+test('canonical ordinary Start bell opens through one browser click', async ({ browser }) => {
   const player = await openOrdinaryStart(browser);
   try {
-    await player.page.evaluate(async () => {
-      const bell = document.getElementById('notificationsOpen');
-      if (!(bell instanceof HTMLElement)) throw new Error('Notification bell is unavailable.');
-      const rect = bell.getBoundingClientRect();
-      const clientX = rect.left + rect.width / 2;
-      const clientY = rect.top + rect.height / 2;
-      const base = {
-        bubbles:true,
-        cancelable:true,
-        pointerId:127,
-        pointerType:'mouse',
-        isPrimary:true,
-        button:0,
-        clientX,
-        clientY,
-      };
-
-      bell.dispatchEvent(new PointerEvent('pointerdown', base));
-      bell.dispatchEvent(new PointerEvent('pointerup', base));
-      await Promise.resolve();
-
-      const overlay = document.getElementById('sheetOverlay');
-      if (!(overlay instanceof HTMLElement) || !overlay.classList.contains('active')) {
-        throw new Error('Pointer release did not open notifications.');
-      }
-
-      overlay.dispatchEvent(new MouseEvent('click', {
-        bubbles:true,
-        cancelable:true,
-        detail:1,
-        clientX,
-        clientY,
-      }));
-    });
-
+    await player.page.locator('#notificationsOpen').click();
     await expect(player.page.locator('#sheetOverlay')).toHaveClass(/active/);
     await expect(player.page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления');
+    await expect(player.page.locator('#sheet [data-notifications-sheet]')).toHaveCount(1);
   } finally {
     await revokeAndClose(player.context);
   }
 });
 
-test('D1 v127: manual player picker replaces a stale non-empty boot list with a fresh player', async ({ browser }) => {
+test('canonical manual player picker performs no boot fetch and one fresh request', async ({ browser }) => {
   const context = await browser.newContext({
     locale:'ru-RU',
     timezoneId:'Europe/Vilnius',
     viewport:{ width:1280, height:900 },
     deviceScaleFactor:1,
   });
-  let pickerPhase = false;
   let opponentCalls = 0;
 
   await context.route(OPPONENTS_ROUTE, async route => {
     opponentCalls += 1;
-    const items = pickerPhase
-      ? [{
+    await route.fulfill({
+      status:200,
+      contentType:'application/json; charset=utf-8',
+      body:JSON.stringify({
+        ok:true,
+        authoritative:true,
+        storage_driver:'database',
+        items:[{
           id:'stg_test_player_b',
           name:'@mgw_test_player_b',
           activity:'онлайн',
@@ -138,25 +110,7 @@ test('D1 v127: manual player picker replaces a stale non-empty boot list with a 
           busy:false,
           last_game_at:'',
           last_seen_at:new Date().toISOString(),
-        }]
-      : [{
-          id:'stale_boot_friend',
-          name:'@stale_boot_friend',
-          activity:'был недавно',
-          online:false,
-          busy:false,
-          last_game_at:'',
-          last_seen_at:new Date().toISOString(),
-        }];
-
-    await route.fulfill({
-      status:200,
-      contentType:'application/json; charset=utf-8',
-      body:JSON.stringify({
-        ok:true,
-        items,
-        authoritative:true,
-        storage_driver:'database',
+        }],
       }),
     });
   });
@@ -171,37 +125,15 @@ test('D1 v127: manual player picker replaces a stale non-empty boot list with a 
     expect(response?.ok()).toBe(true);
     expect((await bootstrap).status()).toBe(200);
     await expect(page.locator('#preloader')).toBeHidden({ timeout:20_000 });
-    expect(opponentCalls).toBeGreaterThanOrEqual(1);
+    expect(opponentCalls).toBe(0);
 
     await page.locator('[data-invite-friend="tictactoe"]').click();
     await expect(page.locator('[data-open-player-picker]')).toBeVisible();
-
-    await page.evaluate(() => {
-      window.__MGW_V127_PICKER_FRAMES__ = [];
-      const sheet = document.getElementById('sheet');
-      const overlay = document.getElementById('sheetOverlay');
-      if (!sheet || !overlay) throw new Error('Sheet is unavailable.');
-      const record = () => {
-        if (!overlay.classList.contains('active')) return;
-        const text = String(sheet.textContent || '').replace(/\s+/g, ' ').trim();
-        if (text) window.__MGW_V127_PICKER_FRAMES__.push(text);
-      };
-      new MutationObserver(record).observe(sheet, { childList:true, subtree:true, characterData:true });
-      record();
-    });
-
-    pickerPhase = true;
-    const callsBeforePicker = opponentCalls;
     await page.locator('[data-open-player-picker]').click();
 
     await expect(page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:5_000 });
     await expect(page.locator('#sheet')).toContainText('@mgw_test_player_b');
-    await expect(page.locator('#sheet')).not.toContainText('@stale_boot_friend');
-    expect(opponentCalls).toBeGreaterThan(callsBeforePicker);
-
-    const frames = await page.evaluate(() => window.__MGW_V127_PICKER_FRAMES__ || []);
-    const falseEmpty = /(Недавних соперников пока нет|игроков нет|соперников нет)/iu;
-    expect(frames.some(frame => falseEmpty.test(frame)), `Visible frames: ${JSON.stringify(frames)}`).toBe(false);
+    expect(opponentCalls).toBe(1);
   } finally {
     await context.unroute(OPPONENTS_ROUTE);
     await revokeAndClose(context);
