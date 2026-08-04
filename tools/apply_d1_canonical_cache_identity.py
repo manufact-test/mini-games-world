@@ -48,8 +48,10 @@ replace_exact('e2e/staging/frontend-immutable-core.spec.mjs', [
 
 main = Path('app/assets/js/main.js').read_text(encoding='utf-8')
 entry = Path('app/v114.php').read_text(encoding='utf-8')
-assert NEW_MAIN in entry and OLD_MAIN not in entry
-assert NEW_NOTIFICATIONS in main and OLD_NOTIFICATIONS not in main
+assert f"'{NEW_MAIN}'" in entry
+assert f"'{OLD_MAIN}'" not in entry
+assert NEW_NOTIFICATIONS in main
+assert f"'{OLD_NOTIFICATIONS}'" not in main
 assert f"window.__MGW_BUILD__ = '{NEW_BUILD}';" in main
 assert f'X-MGW-Frontend-Build: {NEW_BUILD}' in entry
 print('Canonical cache identity updated without adding a new owner or hotfix asset.')
