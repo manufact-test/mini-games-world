@@ -4,6 +4,7 @@ const outputRoot = 'artifacts/playwright';
 
 export default defineConfig({
   testDir: './staging',
+  globalSetup:'./staging-global-setup.mjs',
   outputDir: `${outputRoot}/test-results`,
   fullyParallel: false,
   workers: 1,
