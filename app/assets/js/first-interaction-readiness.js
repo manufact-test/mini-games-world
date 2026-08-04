@@ -7,19 +7,13 @@ import { getTelegram, getInitData, haptic } from './telegram/telegram-app.js?v=2
 import { getSessionId } from './session.js?v=27';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
-const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;
-const OPPONENT_REFRESH_GAP_MS = 3000;
 const SNAPSHOT_REFRESH_GAP_MS = 1200;
 const DRAFT_WARM_DELAY_MS = 60;
 
 let initialized = false;
-let networkFetch = null;
 let historySnapshot = null;
-let opponentsCache = null;
 let historyRefreshPromise = null;
-let opponentsRefreshPromise = null;
 let lastHistoryRefreshAt = 0;
-let lastOpponentsRefreshAt = 0;
 let draftWarmTimer = null;
 let draftSerial = Promise.resolve();
 let draftGeneration = 0;
@@ -30,13 +24,11 @@ export function initFirstInteractionReadinessEarly(){
   if (initialized) return;
   initialized = true;
 
-  installOpponentResponseCache();
   document.addEventListener('click', handleEarlyClick, true);
 
   document.addEventListener('mgw:game-dismissed', () => {
     refreshHistorySnapshot(true);
     warmProfileSnapshot().catch(() => null);
-    refreshOpponentsNetwork(true);
   });
 
   document.addEventListener('mgw:history-refresh', () => {
@@ -46,7 +38,6 @@ export function initFirstInteractionReadinessEarly(){
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     refreshHistorySnapshot(false);
-    refreshOpponentsNetwork(false);
   });
 }
 
@@ -56,7 +47,6 @@ export async function warmFirstInteractionData(){
     warmHistorySnapshot(),
     warmNotificationsSnapshot(),
     warmShopOrders(),
-    refreshOpponentsNetwork(true),
   ];
 
   const results = await Promise.allSettled(tasks);
@@ -66,7 +56,7 @@ export async function warmFirstInteractionData(){
     historyReady:results[1].status === 'fulfilled',
     notificationsReady:results[2].status === 'fulfilled',
     ordersReady:results[3].status === 'fulfilled',
-    opponentsReady:results[4].status === 'fulfilled',
+    opponentsReady:false,
   };
 }
 
@@ -96,21 +86,6 @@ async function warmShopOrders(){
   return result;
 }
 
-function installOpponentResponseCache(){
-  networkFetch = window.fetch.bind(window);
-
-  window.fetch = async function firstInteractionFetch(input, init = {}){
-    if (isOpponentsRequest(input, init) && opponentsCache?.data) {
-      refreshOpponentsNetwork(false);
-      return jsonResponse(opponentsCache.data);
-    }
-
-    const response = await networkFetch(input, init);
-    if (isOpponentsRequest(input, init)) rememberOpponentsResponse(response);
-    return response;
-  };
-}
-
 function handleEarlyClick(event){
   const origin = event.target;
   if (!(origin instanceof Element)) return;
@@ -137,7 +112,6 @@ function handleEarlyClick(event){
   }
 
   if (target.matches('[data-invite-friend]')) {
-    refreshOpponentsNetwork(false);
     queueMicrotask(() => scheduleCurrentDraftWarm(0));
     return;
   }
@@ -147,10 +121,6 @@ function handleEarlyClick(event){
     return;
   }
 
-  if (target.matches('[data-open-player-picker]')) {
-    refreshOpponentsNetwork(false);
-    return;
-  }
 
   if (!target.matches('[data-create-link-invite]')) return;
 
@@ -294,43 +264,6 @@ function refreshHistorySnapshot(force = false){
   return historyRefreshPromise;
 }
 
-function refreshOpponentsNetwork(force = false){
-  const now = Date.now();
-  if (opponentsRefreshPromise) return opponentsRefreshPromise;
-  if (!force && now - lastOpponentsRefreshAt < OPPONENT_REFRESH_GAP_MS) {
-    return Promise.resolve(opponentsCache?.data || { ok:true, items:[] });
-  }
-
-  lastOpponentsRefreshAt = now;
-  opponentsRefreshPromise = requestUrl(OPPONENTS_URL, {})
-    .then(data => {
-      opponentsCache = { data, storedAt:Date.now() };
-      return data;
-    })
-    .finally(() => { opponentsRefreshPromise = null; });
-
-  return opponentsRefreshPromise;
-}
-
-function rememberOpponentsResponse(response){
-  if (!response?.ok) return;
-  response.clone().json().then(data => {
-    opponentsCache = { data, storedAt:Date.now() };
-  }).catch(() => null);
-}
-
-function isOpponentsRequest(input, init){
-  const method = String(init?.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
-  if (method !== 'POST') return false;
-
-  try {
-    const url = new URL(typeof input === 'string' ? input : input.url, window.location.href);
-    return url.pathname.endsWith('/bot/invite-opponents.php');
-  } catch (error) {
-    return false;
-  }
-}
-
 function renderBalanceHistorySheet(history, topups = []){
   const operations = Array.isArray(history?.operations) ? history.operations : [];
   const topupHtml = topups.length
@@ -428,7 +361,7 @@ async function inviteRequest(action, payload = {}){
 }
 
 async function requestUrl(url, payload = {}){
-  const response = await networkFetch(url, {
+  const response = await fetch(url, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
     body:JSON.stringify({
@@ -458,12 +391,6 @@ function mergeUserState(currentUser, incomingUser){
   return merged;
 }
 
-function jsonResponse(data){
-  return new Response(JSON.stringify(data), {
-    status:200,
-    headers:{ 'Content-Type':'application/json; charset=utf-8' },
-  });
-}
 
 function topupStatusText(status){
   if (status === 'paid') return 'Пополнение начислено';
