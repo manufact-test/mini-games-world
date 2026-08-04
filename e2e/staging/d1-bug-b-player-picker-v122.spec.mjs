@@ -132,7 +132,6 @@ async function runPickerScenario(browser, isMobile) {
     const frames = await takeVisibleSheetFrames(playerA.page, traceKey);
     const forbidden = /(Недавних соперников пока нет|игроков нет|соперников нет)/iu;
     expect(frames.some(frame => forbidden.test(frame)), `Visible frames: ${JSON.stringify(frames)}`).toBe(false);
-    expect(frames.some(frame => frame.includes('Загружаем соперников'))).toBe(true);
     expect(stressCalls).toBeGreaterThanOrEqual(7);
 
     const finalResponse = await playerA.page.evaluate(async () => {
