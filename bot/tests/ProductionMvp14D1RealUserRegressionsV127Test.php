@@ -7,7 +7,7 @@ $compat = file_get_contents($root . '/app/assets/js/notification-compat-click-gu
 $fresh = file_get_contents($root . '/app/assets/js/opponents-fresh-user-action-v128.js');
 $reset = file_get_contents($root . '/bot/services/StagingTestPlayerStateResetService.php');
 if (!is_string($entry) || !is_string($compat) || !is_string($fresh) || !is_string($reset)) {
-    throw new RuntimeException('Missing v130 real-user regression sources.');
+    throw new RuntimeException('Missing v131 real-user regression sources.');
 }
 
 $assertions = 0;
@@ -26,11 +26,11 @@ $assert($compatPosition !== false && $ownerPosition !== false && $compatPosition
 $assert($freshPosition !== false && $confirmPosition !== false && $freshPosition > $confirmPosition,
     'The fresh manual-picker transport must be the final opponent fetch owner.');
 $assert(str_contains($entry, 'notifications-passive-v130.js?v=130')
-        && str_contains($entry, 'notification-deeplink-toast-policy-v130.js?v=130')
+        && str_contains($entry, 'notification-deeplink-toast-policy-v131.js?v=131')
         && str_contains($entry, 'notification-window-owner-v121.js?v=121')
         && !str_contains($entry, 'notifications-passive-v124.js')
         && !str_contains($entry, 'notification-window-owner-v124.js'),
-    'v130 may repair the baseline race only while keeping the rejected v124 owner absent and suppressing duplicate deep-link toast behavior.');
+    'v131 may suppress duplicate deep-link toast only while keeping passive v130 and the rejected v124 owner absent.');
 
 $assert(str_contains($compat, "target?.id === 'sheetOverlay'")
         && str_contains($compat, 'event.stopImmediatePropagation();'),
@@ -58,4 +58,4 @@ $assert(!str_contains($reset, 'synchronizePrimaryState(')
         && !str_contains($reset, "['status'] = 'idle'"),
     'The rejected v124 E2E reset must not write test identities or status into DB-primary state.');
 
-fwrite(STDOUT, "ProductionMvp14D1RealUserRegressionsV130Test: {$assertions} assertions passed\n");
+fwrite(STDOUT, "ProductionMvp14D1RealUserRegressionsV131Test: {$assertions} assertions passed\n");

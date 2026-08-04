@@ -11,7 +11,7 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
-$notificationDeepLinkPolicy = '<script type="module" src="./assets/js/notification-deeplink-toast-policy-v130.js?v=130"></script>';
+$notificationDeepLinkPolicy = '<script type="module" src="./assets/js/notification-deeplink-toast-policy-v131.js?v=131"></script>';
 $notificationCompatibilityGuard = '<script type="module" src="./assets/js/notification-compat-click-guard-v127.js?v=127"></script>';
 $notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v121.js?v=121"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
