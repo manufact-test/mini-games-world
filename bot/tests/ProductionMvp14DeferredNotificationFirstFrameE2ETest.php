@@ -62,14 +62,14 @@ $assert(str_contains($spec, 'blueToastVisible: true')
     && str_contains($spec, 'livePaymentsUsed: false'),
     'The D1 evidence report must record every accepted staging-only UI guarantee.');
 
-$assert(str_contains($notifications, '<div class="notifications-loading"><div>🔔</div><strong>Загружаем…</strong></div>')
+$assert(str_contains($notifications, '<div class="notifications-loading" data-notifications-state="loading">')
     && str_contains($notifications, 'const result = await api.notifications(true);')
-    && str_contains($notifications, 'renderNotifications(items);'),
+    && str_contains($notifications, 'renderNotificationsBody(sheetItems);'),
     'The canonical owner must keep a loading state until a fresh notification response is rendered.');
 
 $assert(str_contains($notifications, "if (!appReady || document.visibilityState !== 'visible') return false;")
     && str_contains($notifications, "return !document.getElementById('sheetOverlay')?.classList.contains('active');")
-    && str_contains($notifications, 'openNotificationsSheet();'),
+    && str_contains($notifications, 'loadNotificationsSheet({ hapticFeedback:true, keepShell:false });'),
     'The blue toast must remain owned by the canonical notification screen and not compete with an open sheet.');
 
 $assert(!str_contains($spec, 'setup_secret')
