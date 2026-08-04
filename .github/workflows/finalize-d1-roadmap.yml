@@ -1,0 +1,63 @@
+name: Finalize D1 architecture roadmap
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-roadmap-trigger-base
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Update canonical roadmap and export master copy
+        run: |
+          python tools/update_d1_architecture_roadmap.py
+          python tools/finalize_d1_run_status.py
+
+      - name: Validate roadmap checkpoint
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          roadmap = Path('docs/MVP-14R-RELATIONAL-MYSQL-REBUILD-ROADMAP.md').read_text(encoding='utf-8')
+          export = Path('MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md')
+          required = [
+              'CURRENT STAGING COMMIT: 76e25cd34ceb53259b27fd26689d04d0ea16ef72',
+              '**Статус:** COMPLETE.',
+              'RETIRED HOTFIX GRAPH',
+              'IMPLEMENTATION RECORD — 2026-08-04',
+              'RUN 30943775973 — APPLICATION FAILURE, 19/20',
+              'CANONICAL NOTIFICATION OWNER FIX REQUIRED',
+              'Do not touch main/production without explicit authorization.',
+          ]
+          for token in required:
+              assert token in roadmap, token
+          assert export.is_file() and export.stat().st_size > 1000
+          assert export.read_text(encoding='utf-8') == roadmap
+          print('Roadmap validation passed')
+          PY
+
+      - name: Upload user roadmap file
+        uses: actions/upload-artifact@v4
+        with:
+          name: MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD
+          path: MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          retention-days: 14
+
+      - name: Commit canonical roadmap and remove temporary runner
+        run: |
+          rm -f tools/update_d1_architecture_roadmap.py tools/finalize_d1_run_status.py .github/workflows/finalize-d1-roadmap.yml MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Update D1 architecture roadmap checkpoint"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
