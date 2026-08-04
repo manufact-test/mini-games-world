@@ -6,12 +6,12 @@ $main = file_get_contents($root . '/app/assets/js/main.js');
 $link = file_get_contents($root . '/app/assets/js/games/invite-link-entry-v115.js');
 $terminal = file_get_contents($root . '/app/assets/js/games/invite-terminal-actions-v115.js');
 $notifications = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v121.js');
-$background = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v121.js');
+$background = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v130.js');
 $opponents = file_get_contents($root . '/app/assets/js/opponents-authoritative-confirm-v122.js');
 $presence = file_get_contents($root . '/app/assets/js/presence-v115.js');
 if (!is_string($entry) || !is_string($main) || !is_string($link) || !is_string($terminal)
     || !is_string($notifications) || !is_string($background) || !is_string($opponents) || !is_string($presence)) {
-    throw new RuntimeException('Missing integrated D1 v123 sources.');
+    throw new RuntimeException('Missing integrated D1 v130 sources.');
 }
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void { $assertions++; if (!$condition) throw new RuntimeException($message); };
@@ -23,8 +23,8 @@ $bootstrap = strpos($main, 'const result = await api.bootstrap();');
 $assert($presenceInit !== false && $terminalInit !== false && $inviteInit !== false && $bootstrap !== false
     && $presenceInit < $terminalInit && $terminalInit < $inviteInit && $inviteInit < $bootstrap, 'Owner order must remain presence, terminal, invites, bootstrap.');
 $assert(substr_count($entry, 'notification-window-owner-v121.js?v=121') === 1
-    && str_contains($entry, 'notifications-passive-v121.js?v=121')
-    && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must publish one v121 notification owner and passive service.');
+    && str_contains($entry, 'notifications-passive-v130.js?v=130')
+    && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must publish one v121 notification owner and passive v130 service.');
 $assert(substr_count($entry, 'opponents-authoritative-confirm-v122.js?v=122') === 1
     && !str_contains($entry, 'opponents-authoritative-confirm-v117.js?v=117'), 'v123 must publish only v122 opponent confirmation.');
 $assert(!str_contains($entry, 'notification-empty-frame-guard-v115.js?v=115')
@@ -40,7 +40,7 @@ $assert(str_contains($notifications, "window.addEventListener('pointerdown'")
     && str_contains($notifications, "window.addEventListener('pointerup'")
     && str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
     && !str_contains($notifications, '.click()')
-    && !str_contains($background, 'openNotificationsSheet('), 'v121 must exclusively own real notification input and sheet rendering.');
+    && !str_contains($background, 'openNotificationsSheet('), 'v121 must exclusively own real notification input and sheet rendering while v130 stays passive.');
 $assert(str_contains($opponents, 'REQUIRED_AUTHORITATIVE_EMPTY_RESPONSES = 2')
     && str_contains($opponents, "payload?.storage_driver === 'database'")
     && !str_contains($opponents, 'openSheet(')
