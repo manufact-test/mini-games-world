@@ -4,13 +4,13 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
 $owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v121.js');
-$passive = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v121.js');
-if (!is_string($entry) || !is_string($owner) || !is_string($passive)) throw new RuntimeException('Missing v123 notification sources.');
+$passive = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v130.js');
+if (!is_string($entry) || !is_string($owner) || !is_string($passive)) throw new RuntimeException('Missing v130 notification sources.');
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void { $assertions++; if (!$condition) throw new RuntimeException($message); };
 
 $assert(substr_count($entry, 'notification-window-owner-v121.js?v=121') === 1, 'v123 must publish v121 owner exactly once.');
-$assert(str_contains($entry, 'notifications-passive-v121.js?v=121') && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must replace v119 and route background work to passive v121.');
+$assert(str_contains($entry, 'notifications-passive-v130.js?v=130') && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must replace v119 and route background work to passive v130.');
 $assert(!str_contains($entry, 'notification-empty-frame-guard-v115.js?v=115')
     && !str_contains($entry, 'notification-mobile-open-owner-v117.js?v=117')
     && !str_contains($entry, 'notification-desktop-open-owner-v117.js?v=117')
