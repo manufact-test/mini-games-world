@@ -11,10 +11,12 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
+$notificationCompatibilityGuard = '<script type="module" src="./assets/js/notification-compat-click-guard-v127.js?v=127"></script>';
 $notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v121.js?v=121"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
 $opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v122.js?v=122"></script>';
+$opponentsFreshUserAction = '<script type="module" src="./assets/js/opponents-fresh-user-action-v127.js?v=127"></script>';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -46,6 +48,7 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap
+      . "\n  " . $notificationCompatibilityGuard
       . "\n  " . $notificationWindowOwner
       . "\n  " . $nativeFetchGuard,
     $html
@@ -70,7 +73,7 @@ if (!str_contains($html, $mainScript)) {
 }
 $html = str_replace(
     $mainScript,
-    $mainScript . "\n  " . $opponentsGuard . "\n  " . $opponentsConfirm,
+    $mainScript . "\n  " . $opponentsGuard . "\n  " . $opponentsConfirm . "\n  " . $opponentsFreshUserAction,
     $html
 );
 
