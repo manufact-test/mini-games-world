@@ -1,0 +1,34 @@
+name: Export final D1 master roadmap
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-final-export-trigger
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+
+      - name: Prepare final master roadmap
+        run: |
+          cp docs/MVP-14R-RELATIONAL-MYSQL-REBUILD-ROADMAP.md MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          test -s MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          grep -q 'LATEST STAGING E2E: SUCCESS — RUN 30947927723 — 20/20' MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          grep -q 'AUTOMATED COMPLETE; MANUAL ACCEPTANCE PENDING' MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          grep -q 'CURRENT STAGING COMMIT: 2c0675451daf0f3207bd5f41b79f5bc50a4cb3e5' MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+
+      - name: Upload final master roadmap
+        uses: actions/upload-artifact@v4
+        with:
+          name: MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD_FINAL
+          path: MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          retention-days: 14
