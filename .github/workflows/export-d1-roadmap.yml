@@ -1,0 +1,33 @@
+name: Export D1 master roadmap
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-roadmap-export-trigger
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+
+      - name: Prepare master roadmap
+        run: |
+          cp docs/MVP-14R-RELATIONAL-MYSQL-REBUILD-ROADMAP.md MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          test -s MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          grep -q 'RUN 30943775973 — APPLICATION FAILURE, 19/20' MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          grep -q 'MVP-14 D1 STATUS: NOT DONE' MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+
+      - name: Upload master roadmap
+        uses: actions/upload-artifact@v4
+        with:
+          name: MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD
+          path: MGW_MASTER_MVP_ROADMAP_V2_UPDATED_2026-08-04_ARCHITECTURE_REBUILD.md
+          retention-days: 14
