@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
-$guard = file_get_contents($root . '/app/assets/js/screens/notification-bell-first-click-v116.js');
-if (!is_string($entry) || !is_string($guard)) {
-    throw new RuntimeException('Missing desktop bell close-race sources.');
+$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v119.js');
+if (!is_string($entry) || !is_string($owner)) {
+    throw new RuntimeException('Missing canonical desktop bell close-race sources.');
 }
 
 $assertions = 0;
@@ -15,43 +15,39 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    str_contains($entry, 'notification-bell-first-click-v116.js?v=116')
-        && substr_count($entry, 'notification-bell-first-click-v116.js?v=116') === 1
-        && !str_contains($entry, 'notification-bell-first-click-v115.js?v=115'),
-    'The staging entry must load exactly one fresh v116 bell close-race guard.'
+    substr_count($entry, 'notification-window-owner-v119.js?v=119') === 1
+        && !str_contains($entry, 'notification-bell-first-click-v116.js?v=116'),
+    'The staging entry must load one canonical v119 owner and no retired bell retry guard.'
 );
 
 $assert(
-    str_contains($guard, "const RETRY_DELAYS_MS = [180, 520]")
-        && str_contains($guard, "target?.closest('#notificationsOpen')")
-        && str_contains($guard, '!event.isTrusted')
-        && str_contains($guard, 'bell.click();'),
-    'A trusted first click may receive only bounded canonical-owner retries.'
+    str_contains($owner, "window.addEventListener('click'")
+        && str_contains($owner, "target?.closest('#notificationsOpen, #notificationToast')")
+        && str_contains($owner, 'event.preventDefault();')
+        && str_contains($owner, 'event.stopImmediatePropagation();'),
+    'Every original bell gesture must be handled once before historical document listeners.'
 );
 
 $assert(
-    str_contains($guard, "document.addEventListener('mgw:sheet-closed'")
-        && str_contains($guard, 'blockAutomaticReopenUntil = performance.now() + STALE_REOPEN_BLOCK_MS;')
-        && str_contains($guard, "new MutationObserver(() =>")
-        && str_contains($guard, 'if (performance.now() < blockAutomaticReopenUntil)')
-        && str_contains($guard, 'closeSheet();'),
-    'Manual close must invalidate retries and close a late stale notification repaint.'
+    str_contains($owner, "document.addEventListener('mgw:sheet-closed'")
+        && str_contains($owner, 'const requestGeneration = ++generation;')
+        && str_contains($owner, 'if (wasActive && !active) invalidateOpenRequest();')
+        && str_contains($owner, 'requestGeneration === generation'),
+    'Manual close must invalidate every in-flight response without blocking the next real click.'
 );
 
 $assert(
-    str_contains($guard, "target?.closest('[data-close-sheet]') || target?.id === 'sheetOverlay'")
-        && str_contains($guard, "document.visibilityState !== 'visible'")
-        && str_contains($guard, 'retryTimers.forEach(timer => window.clearTimeout(timer));'),
-    'Close button, overlay close, hidden document and successful sheet opening must cancel pending retries.'
+    !str_contains($owner, 'STALE_REOPEN_BLOCK_MS')
+        && !str_contains($owner, 'bell.click();')
+        && !str_contains($owner, 'openingSheet'),
+    'The canonical owner must not synthesize retries or impose a post-close click blackout.'
 );
 
 $assert(
-    !str_contains($guard, 'preventDefault')
-        && !str_contains($guard, 'stopImmediatePropagation')
-        && !str_contains($guard, 'openSheet(')
-        && !str_contains($guard, 'api.notifications')
-        && !str_contains($guard, 'data-invite-action'),
-    'The guard must not become a second notification renderer, network owner or invite-action owner.'
+    str_contains($owner, 'renderLoading();')
+        && substr_count($owner, 'api.notifications(true)') >= 2
+        && str_contains($owner, 'if (!items.length && freshItems().length) items = freshItems();'),
+    'The owner itself must render immediately and confirm delayed empty responses.'
 );
 
 fwrite(STDOUT, "ProductionMvp14D1FeedbackDesktopBellFirstClickTest: {$assertions} assertions passed\n");
