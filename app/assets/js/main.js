@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'd1-canonical-owners';
+window.__MGW_BUILD__ = 'd1-canonical-toast-seed';
 import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=d1';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
@@ -21,7 +21,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v99.js?v=d1';
+import { initNotificationsScreen } from './screens/notifications-screen-v99.js?v=d1-canonical-toast-seed';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';

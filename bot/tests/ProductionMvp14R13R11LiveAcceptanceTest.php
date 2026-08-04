@@ -47,7 +47,8 @@ $assert(str_contains($spec, 'cancelledInviteActionsRemoved: true')
 $assert(str_contains($notifications, "ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v3'")
     && str_contains($notifications, "document.addEventListener('click', handleNotificationActivation)")
     && str_contains($notifications, 'dismissNotificationToast();')
-    && str_contains($notifications, 'loadNotificationsSheet({ hapticFeedback:true, keepShell:false });'),
+    && str_contains($notifications, "const seedItems = trigger.id === 'notificationToast' && activeToastNotification")
+    && str_contains($notifications, 'loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems });'),
     'The tested toast must remain backed by canonical notification ownership.');
 
 $assert(str_contains($invites, "data-open-player-picker")

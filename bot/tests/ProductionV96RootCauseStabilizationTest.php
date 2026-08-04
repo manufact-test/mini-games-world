@@ -81,7 +81,7 @@ $assert(
 );
 
 $assert(
-    str_contains($main, "window.__MGW_BUILD__ = 'd1-canonical-owners'")
+    str_contains($main, "window.__MGW_BUILD__ = 'd1-canonical-toast-seed'")
         && str_contains($main, 'const firstInteraction = await warmFirstInteractionData().catch')
         && !str_contains($main, 'Не удалось подготовить данные интерфейса. Откройте приложение снова.'),
     'Optional first-click warmers must not fail an authenticated application boot.'

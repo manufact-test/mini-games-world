@@ -30,8 +30,8 @@ $retired = [
     'app/assets/js/first-interaction-readiness-v103.js',
 ];
 foreach ($retired as $file) $assert(!is_file($root . '/' . $file), 'Retired patch file still exists: ' . $file);
-$assert(str_contains($entry, './assets/js/main.js?v=d1')
-    && str_contains($entry, 'X-MGW-Frontend-Build: d1-canonical-owners')
+$assert(str_contains($entry, './assets/js/main.js?v=d1-canonical-toast-seed')
+    && str_contains($entry, 'X-MGW-Frontend-Build: d1-canonical-toast-seed')
     && str_contains($entry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'Staging entry must publish the canonical no-cache graph.');
 foreach (['notification-compat-click-guard', 'notification-window-owner', 'notifications-passive',
@@ -39,7 +39,7 @@ foreach (['notification-compat-click-guard', 'notification-window-owner', 'notif
           'opponents-authoritative-confirm', 'opponents-fresh-user-action'] as $name) {
     $assert(!str_contains($entry, $name) && !str_contains($main, $name), 'Active graph still names retired layer: ' . $name);
 }
-$assert(substr_count($main, "./screens/notifications-screen-v99.js?v=d1") === 1
+$assert(substr_count($main, "./screens/notifications-screen-v99.js?v=d1-canonical-toast-seed") === 1
     && substr_count($main, 'initNotificationsScreen();') === 1,
     'Main must initialize one canonical notification owner.');
 $assert(substr_count($notifications, "document.addEventListener('click', handleNotificationActivation)") === 1

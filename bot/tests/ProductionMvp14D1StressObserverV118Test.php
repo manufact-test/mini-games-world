@@ -23,10 +23,12 @@ $assert($observerBlock !== ''
 $assert(str_contains($stress, 'public error: ${publicError}')
         && str_contains($stress, "result.payload.error.slice(0, 300)"),
     'Direct staging API failures must expose the bounded public error in CI logs.');
-$assert(str_contains($stress, "frame.includes('Недавних соперников пока нет')")
-        && str_contains($stress, 'expect(stressCalls).toBeGreaterThanOrEqual(5)')
-        && str_contains($stress, "data-direct-opponent=\"stg_test_player_b\""),
-    'The opponent stress scenario must reject false empty state, survive five responses and render the real player.');
+$assert(str_contains($stress, "test('canonical desktop picker renders empty only after one authoritative response'")
+        && str_contains($stress, 'expect(opponentCalls).toBe(0)')
+        && str_contains($stress, 'data-player-picker-state="loading"')
+        && str_contains($stress, 'data-player-picker-state="empty"')
+        && str_contains($stress, 'expect(opponentCalls).toBe(1)'),
+    'The canonical opponent scenario must prove loading before one authoritative empty response and no boot request.');
 $assert(!str_contains($stress, "expect(trace.some(frame => frame.includes('Загружаем соперников'))).toBe(true)"),
     'A direct transition to the real player list must not fail merely because loading text was too fast to observe.');
 
