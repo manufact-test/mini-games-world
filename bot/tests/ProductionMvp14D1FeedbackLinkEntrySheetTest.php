@@ -16,8 +16,8 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    str_contains($main, "import { initGameInvites } from './games/game-invites.js?v=85';")
-        && str_contains($main, "import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v115.js?v=115';")
+    str_contains($main, "import { initGameInvites } from './games/game-invites.js?v=d1';")
+        && str_contains($main, "import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v115.js?v=d1';")
         && str_contains($main, 'await openIncomingInviteFromTelegram();')
         && !str_contains($main, 'await openIncomingInviteIfPresent();'),
     'Boot must use the dedicated one-shot link-entry owner while retaining the canonical invite action coordinator.'

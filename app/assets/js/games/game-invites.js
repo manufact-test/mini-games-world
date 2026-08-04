@@ -36,6 +36,8 @@ let seenInviteEventIds = new Set();
 let resultObserver = null;
 let resultEnhanceTimer = null;
 let lastFinishedGame = null;
+let playerPickerGeneration = 0;
+let playerPickerController = null;
 
 export function initGameInvites(){
   if (initialized) return;
@@ -55,6 +57,7 @@ export function initGameInvites(){
   document.addEventListener('mgw:game-dismissed', () => {
     window.setTimeout(() => syncNow({ announce:true }), 80);
   });
+  document.addEventListener('mgw:sheet-closed', invalidatePlayerPickerRequest);
 
   const sheet = document.getElementById('sheet');
   if (sheet) {
@@ -193,47 +196,86 @@ function openInviteSetup(gameType, preserved = null){
 }
 
 async function openPlayerPicker(context){
+  const generation = ++playerPickerGeneration;
+  playerPickerController?.abort();
+  playerPickerController = new AbortController();
+
   openSheet(`
+    <span data-player-picker data-player-picker-generation="${generation}" hidden></span>
     <div class="sheet-head">
       <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    <div class="notifications-loading"><div>👥</div><strong>Загружаем соперников…</strong></div>
-  `);
-
-  try {
-    const result = await postJson(OPPONENTS_URL, {});
-    const items = Array.isArray(result.items) ? result.items.slice(0, MAX_OPPONENTS) : [];
-    items.sort((a, b) => Number(Boolean(b.online)) - Number(Boolean(a.online)));
-    renderPlayerPicker(items, context);
-  } catch (error) {
-    openSheet(`
-      <div class="sheet-head"><div><h2>Не удалось загрузить игроков</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-      <div class="small-note">${escapeHtml(error.message || 'Попробуйте ещё раз.')}</div>
-      <button class="btn ghost full" data-back-to-invite-setup type="button">Назад</button>
-    `);
-    document.querySelector('[data-back-to-invite-setup]')?.addEventListener('click', () => openInviteSetup(context.gameType, context));
-  }
-}
-
-function renderPlayerPicker(items, context){
-  const list = items.length
-    ? `<div class="invite-player-list">${items.map(playerCard).join('')}</div>`
-    : `<div class="notifications-empty invite-empty-state"><div>👥</div><strong>Недавних соперников пока нет</strong><span>Вернитесь назад и отправьте ссылку.</span></div>`;
-
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-    ${list}
+    <div data-player-picker-body></div>
     <button class="btn ghost full" data-back-to-invite-setup type="button">Назад к условиям</button>
   `);
 
-  document.querySelector('[data-back-to-invite-setup]')?.addEventListener('click', () => openInviteSetup(context.gameType, context));
-  document.querySelectorAll('[data-direct-opponent]').forEach(button => button.addEventListener('click', () => {
+  document.querySelector('[data-back-to-invite-setup]')?.addEventListener('click', () => {
+    invalidatePlayerPickerRequest();
+    openInviteSetup(context.gameType, context);
+  });
+  renderPlayerPickerState('loading', [], context);
+
+  try {
+    const result = await postJson(OPPONENTS_URL, {}, {
+      cache:'no-store',
+      signal:playerPickerController.signal,
+      headers:{
+        'Cache-Control':'no-cache, no-store, max-age=0',
+        'Pragma':'no-cache',
+        'X-MGW-Opponents-Source':'manual-player-picker',
+      },
+    });
+    if (!isCurrentPlayerPicker(generation)) return;
+    if (result?.authoritative !== true) throw new Error('Список игроков не подтверждён сервером.');
+
+    const items = Array.isArray(result.items) ? result.items.slice(0, MAX_OPPONENTS) : [];
+    items.sort((a, b) => Number(Boolean(b.online)) - Number(Boolean(a.online)));
+    renderPlayerPickerState(items.length ? 'loaded' : 'empty', items, context);
+  } catch (error) {
+    if (error?.name === 'AbortError' || !isCurrentPlayerPicker(generation)) return;
+    renderPlayerPickerState('error', [], context, error);
+  } finally {
+    if (generation === playerPickerGeneration) playerPickerController = null;
+  }
+}
+
+function renderPlayerPickerState(status, items, context, error = null){
+  const body = document.querySelector('#sheet [data-player-picker-body]');
+  if (!(body instanceof HTMLElement)) return;
+
+  if (status === 'loading') {
+    body.innerHTML = `<div class="notifications-loading" data-player-picker-state="loading"><div>👥</div><strong>Загружаем соперников…</strong></div>`;
+    return;
+  }
+
+  if (status === 'error') {
+    body.innerHTML = `<div class="notifications-empty error" data-player-picker-state="error"><div>⚠️</div><strong>Не удалось загрузить игроков</strong><span>${escapeHtml(error?.message || 'Попробуйте ещё раз.')}</span></div>`;
+    return;
+  }
+
+  if (status === 'empty') {
+    body.innerHTML = `<div class="notifications-empty invite-empty-state" data-player-picker-state="empty"><div>👥</div><strong>Недавних соперников пока нет</strong><span>Вернитесь назад и отправьте ссылку.</span></div>`;
+    return;
+  }
+
+  body.innerHTML = `<div class="invite-player-list" data-player-picker-state="loaded">${items.map(playerCard).join('')}</div>`;
+  body.querySelectorAll('[data-direct-opponent]').forEach(button => button.addEventListener('click', () => {
     createDirectInvite(context, String(button.dataset.directOpponent || ''), button);
   }));
+}
+
+function invalidatePlayerPickerRequest(){
+  playerPickerGeneration += 1;
+  playerPickerController?.abort();
+  playerPickerController = null;
+}
+
+function isCurrentPlayerPicker(generation){
+  const marker = document.querySelector('#sheet [data-player-picker]');
+  return document.getElementById('sheetOverlay')?.classList.contains('active')
+    && Number(marker?.dataset.playerPickerGeneration || 0) === generation
+    && generation === playerPickerGeneration;
 }
 
 function playerCard(item){
@@ -754,15 +796,21 @@ async function inviteRequest(action, payload = {}){
   return postJson(INVITES_URL, { action, ...payload });
 }
 
-async function postJson(url, payload){
+async function postJson(url, payload, options = {}){
+  const headers = {
+    'Content-Type':'application/json',
+    ...(options.headers || {}),
+  };
   const response = await fetch(url, {
     method:'POST',
-    headers:{ 'Content-Type':'application/json' },
+    headers,
     body:JSON.stringify({
       initData:getInitData(),
       sessionId:getSessionId(),
       ...payload,
     }),
+    cache:options.cache || 'default',
+    signal:options.signal || undefined,
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {

@@ -45,9 +45,9 @@ $assert(str_contains($spec, 'cancelledInviteActionsRemoved: true')
     'The safe report must preserve staging-only and no-payment evidence.');
 
 $assert(str_contains($notifications, "ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v3'")
-    && str_contains($notifications, "el.addEventListener('click'")
+    && str_contains($notifications, "document.addEventListener('click', handleNotificationActivation)")
     && str_contains($notifications, 'dismissNotificationToast();')
-    && str_contains($notifications, 'openNotificationsSheet();'),
+    && str_contains($notifications, 'loadNotificationsSheet({ hapticFeedback:true, keepShell:false });'),
     'The tested toast must remain backed by canonical notification ownership.');
 
 $assert(str_contains($invites, "data-open-player-picker")
