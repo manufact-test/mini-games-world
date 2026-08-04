@@ -6,12 +6,14 @@ $entry = file_get_contents($root . '/app/v114.php');
 $main = file_get_contents($root . '/app/assets/js/main.js');
 $link = file_get_contents($root . '/app/assets/js/games/invite-link-entry-v115.js');
 $terminal = file_get_contents($root . '/app/assets/js/games/invite-terminal-actions-v115.js');
-$empty = file_get_contents($root . '/app/assets/js/screens/notification-empty-frame-guard-v115.js');
-$bell = file_get_contents($root . '/app/assets/js/screens/notification-bell-first-click-v116.js');
+$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v118.js');
+$legacyEmpty = file_get_contents($root . '/app/assets/js/screens/notification-empty-frame-guard-v115.js');
+$legacyBell = file_get_contents($root . '/app/assets/js/screens/notification-bell-first-click-v116.js');
 $opponents = file_get_contents($root . '/app/assets/js/opponents-empty-cache-guard-v115.js');
 $presence = file_get_contents($root . '/app/assets/js/presence-v115.js');
 if (!is_string($entry) || !is_string($main) || !is_string($link) || !is_string($terminal)
-    || !is_string($empty) || !is_string($bell) || !is_string($opponents) || !is_string($presence)) {
+    || !is_string($owner) || !is_string($legacyEmpty) || !is_string($legacyBell)
+    || !is_string($opponents) || !is_string($presence)) {
     throw new RuntimeException('Missing integrated D1 feedback sources.');
 }
 
@@ -39,26 +41,32 @@ $assert(
         && substr_count($main, "./games/invite-link-entry-v115.js?v=115") === 1
         && substr_count($main, 'openIncomingInviteFromTelegram();') === 1
         && !str_contains($main, 'openIncomingInviteIfPresent'),
-    'The integrated runtime must expose each active owner exactly once and remove the stale link-entry path.'
+    'The integrated runtime must expose each active main owner exactly once and remove the stale link-entry path.'
 );
 
 $publishedScripts = [
-    'notification-empty-frame-guard-v115.js?v=115',
-    'notification-bell-first-click-v116.js?v=116',
+    'notification-window-owner-v118.js?v=118',
     'opponents-native-fetch-v115.js?v=115',
     'opponents-empty-cache-guard-v115.js?v=115',
+    'opponents-authoritative-confirm-v117.js?v=117',
 ];
 foreach ($publishedScripts as $script) {
     $assert(substr_count($entry, $script) === 1, "Integrated entry must publish {$script} exactly once.");
 }
-$assert(!str_contains($entry, 'notification-bell-first-click-v115.js?v=115'),
-    'The stale bell retry guard must not remain active beside v116.');
+foreach ([
+    'notification-empty-frame-guard-v115.js?v=115',
+    'notification-bell-first-click-v116.js?v=116',
+    'notification-mobile-open-owner-v117.js?v=117',
+    'notification-desktop-open-owner-v117.js?v=117',
+] as $script) {
+    $assert(!str_contains($entry, $script), "Superseded notification layer must be inactive: {$script}");
+}
 
 $assert(
     str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integration"')
         && str_contains($entry, './assets/js/main.js?v=115')
         && str_contains($entry, 'X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration'),
-    'The combined package must keep one coherent v115 browser cache identity with a fresh v116 bell guard.'
+    'The combined package must keep one coherent no-cache browser identity while immutable owner URLs change.'
 );
 
 $assert(
@@ -77,14 +85,19 @@ $assert(
 );
 
 $assert(
-    !str_contains($empty, 'stopImmediatePropagation')
-        && !str_contains($bell, 'stopImmediatePropagation')
-        && !str_contains($bell, 'openSheet(')
-        && str_contains($bell, "document.addEventListener('mgw:sheet-closed'")
-        && str_contains($bell, 'closeSheet();')
+    str_contains($owner, "window.addEventListener('click'")
+        && str_contains($owner, 'event.stopImmediatePropagation();')
+        && !str_contains($owner, 'openingSheet')
+        && !str_contains($owner, 'STALE_REOPEN_BLOCK_MS')
         && !str_contains($opponents, 'openSheet(')
         && !str_contains($presence, 'openSheet('),
-    'Guards must not compete for rendering ownership, while v116 may close only a stale notification repaint.'
+    'One notification owner must own user interaction while opponent and presence guards stay non-rendering.'
+);
+
+$assert(
+    str_contains($legacyEmpty, 'const GUARD_MS = 420;')
+        && str_contains($legacyBell, 'STALE_REOPEN_BLOCK_MS = 1200'),
+    'Superseded notification guards remain available for rollback evidence but are not active.'
 );
 
 $assert(

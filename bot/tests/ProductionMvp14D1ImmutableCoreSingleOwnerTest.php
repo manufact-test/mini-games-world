@@ -8,9 +8,10 @@ $main = file_get_contents($root . '/app/assets/js/main.js');
 $residual = file_get_contents($root . '/app/assets/js/residual-ui-game-race-fix-v114.js');
 $smoke = file_get_contents($root . '/e2e/staging/frontend-immutable-core.spec.mjs');
 $notifications = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v99.js');
+$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v118.js');
 $invites = file_get_contents($root . '/app/assets/js/games/game-invites.js');
 if (!is_string($entry) || !is_string($htaccess) || !is_string($main) || !is_string($residual)
-    || !is_string($smoke) || !is_string($notifications) || !is_string($invites)) {
+    || !is_string($smoke) || !is_string($notifications) || !is_string($owner) || !is_string($invites)) {
     throw new RuntimeException('Missing v115 integrated immutable-core sources.');
 }
 
@@ -40,12 +41,15 @@ $assert(str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integrat
     && str_contains($entry, "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"),
     'The entry must expose and deliver the exact no-cache integrated v115 build.');
 
-$assert(substr_count($entry, 'notification-empty-frame-guard-v115.js?v=115') === 1
-    && substr_count($entry, 'notification-bell-first-click-v116.js?v=116') === 1
-    && !str_contains($entry, 'notification-bell-first-click-v115.js?v=115')
+$assert(substr_count($entry, 'notification-window-owner-v118.js?v=118') === 1
+    && !str_contains($entry, 'notification-empty-frame-guard-v115.js?v=115')
+    && !str_contains($entry, 'notification-bell-first-click-v116.js?v=116')
+    && !str_contains($entry, 'notification-mobile-open-owner-v117.js?v=117')
+    && !str_contains($entry, 'notification-desktop-open-owner-v117.js?v=117')
     && substr_count($entry, 'opponents-native-fetch-v115.js?v=115') === 1
-    && substr_count($entry, 'opponents-empty-cache-guard-v115.js?v=115') === 1,
-    'Each non-owning first-paint/retry/cache guard must be published exactly once with the fresh bell race guard.');
+    && substr_count($entry, 'opponents-empty-cache-guard-v115.js?v=115') === 1
+    && substr_count($entry, 'opponents-authoritative-confirm-v117.js?v=117') === 1,
+    'The active graph must publish one notification owner and the proven opponent transport chain exactly once.');
 
 $assert(str_contains($residual, 'window.__MGW_RESIDUAL_V114__')
     && str_contains($residual, 'uiOwner:false')
@@ -72,9 +76,10 @@ $assert(str_contains($residual, 'api.gameState = coalescedGameState;')
 
 $assert(str_contains($notifications, "document.addEventListener('click', event =>")
     && str_contains($notifications, "event.target.closest('#notificationsOpen')")
-    && str_contains($notifications, 'event.stopImmediatePropagation();')
-    && str_contains($notifications, 'openNotificationsSheet();'),
-    'The canonical notification screen must remain the sole delegated bell renderer.');
+    && str_contains($notifications, 'openNotificationsSheet();')
+    && str_contains($owner, "window.addEventListener('click'")
+    && str_contains($owner, 'event.stopImmediatePropagation();'),
+    'The window owner must consume live clicks before the retained canonical document compatibility handler.');
 
 $assert(str_contains($invites, "document.querySelector('[data-create-link-invite]')?.addEventListener")
     && str_contains($invites, 'data-copy-invite-link')
@@ -87,7 +92,7 @@ $assert(str_contains($main, "import { initV115Presence } from './presence-v115.j
     && substr_count($main, 'initV115Presence();') === 1
     && substr_count($main, 'initInviteTerminalActions();') === 1
     && substr_count($main, 'openIncomingInviteFromTelegram();') === 1,
-    'The integrated main entry must initialize each new runtime owner exactly once.');
+    'The integrated main entry must initialize each main runtime owner exactly once.');
 
 $assert(str_contains($smoke, 'APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v115`')
     && str_contains($smoke, "EXPECTED_BUILD = 'v115-mvp14-d1-feedback-integration'")
@@ -95,9 +100,10 @@ $assert(str_contains($smoke, 'APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_fronte
     && str_contains($smoke, "toHaveAttribute('data-hotfix-build', EXPECTED_BUILD)")
     && str_contains($smoke, 'Frontend module graph failed before bootstrap')
     && str_contains($smoke, "'/assets/js/main.js?v=115'")
-    && str_contains($smoke, "'/assets/js/screens/notification-bell-first-click-v116.js?v=116'")
+    && str_contains($smoke, "'/assets/js/screens/notification-window-owner-v118.js?v=118'")
+    && str_contains($smoke, 'forbiddenNotificationOwners')
     && str_contains($smoke, "'/assets/js/presence-v115.js?v=115'"),
-    'The live smoke test must prove the integrated v115 root and fresh v116 bell guard graph.');
+    'The live smoke test must prove the single-owner graph and reject superseded notification modules.');
 
 $assert(!str_contains($entry, 'mini-games-world.com')
     && !str_contains($smoke, 'mini-games-world.com')
