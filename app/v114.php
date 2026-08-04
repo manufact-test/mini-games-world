@@ -12,9 +12,12 @@ if (!is_string($html)) {
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
 $emptyFrameGuard = '<script type="module" src="./assets/js/screens/notification-empty-frame-guard-v115.js?v=115"></script>';
+$mobileNotificationOwner = '<script type="module" src="./assets/js/screens/notification-mobile-open-owner-v117.js?v=117"></script>';
+$desktopNotificationOwner = '<script type="module" src="./assets/js/screens/notification-desktop-open-owner-v117.js?v=117"></script>';
 $bellFirstClickGuard = '<script type="module" src="./assets/js/screens/notification-bell-first-click-v116.js?v=116"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
+$opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v117.js?v=117"></script>';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -47,6 +50,8 @@ $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap
       . "\n  " . $emptyFrameGuard
+      . "\n  " . $mobileNotificationOwner
+      . "\n  " . $desktopNotificationOwner
       . "\n  " . $bellFirstClickGuard
       . "\n  " . $nativeFetchGuard,
     $html
@@ -69,7 +74,11 @@ if (!str_contains($html, $mainScript)) {
     echo 'Mini Games World main-script anchor is unavailable.';
     exit;
 }
-$html = str_replace($mainScript, $mainScript . "\n  " . $opponentsGuard, $html);
+$html = str_replace(
+    $mainScript,
+    $mainScript . "\n  " . $opponentsGuard . "\n  " . $opponentsConfirm,
+    $html
+);
 
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
