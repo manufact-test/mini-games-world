@@ -11,6 +11,7 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
+$notificationDeepLinkPolicy = '<script type="module" src="./assets/js/notification-deeplink-toast-policy-v130.js?v=130"></script>';
 $notificationCompatibilityGuard = '<script type="module" src="./assets/js/notification-compat-click-guard-v127.js?v=127"></script>';
 $notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v121.js?v=121"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
@@ -48,6 +49,7 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap
+      . "\n  " . $notificationDeepLinkPolicy
       . "\n  " . $notificationCompatibilityGuard
       . "\n  " . $notificationWindowOwner
       . "\n  " . $nativeFetchGuard,
@@ -55,7 +57,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v123-mvp14-d1-two-manual-regressions"',
+    'data-hotfix-build="v130-mvp14-d1-real-entry-separation"',
     $html
 );
 $html = str_replace(
@@ -81,5 +83,5 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: v123-mvp14-d1-two-manual-regressions');
+header('X-MGW-Frontend-Build: v130-mvp14-d1-real-entry-separation');
 echo $html;
