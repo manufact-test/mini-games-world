@@ -22,8 +22,17 @@ $staleTitles = [
 ];
 foreach ($staleTitles as $title) {
     $assert(str_contains($stale, "test('{$title}'"), "The superseded scenario must remain identifiable: {$title}");
-    $assert(str_contains($config, preg_quote($title, '/')) || str_contains($config, $title),
-        "The exact superseded title must be excluded: {$title}");
+}
+
+$assert(str_contains($config, '/D1 follow-up: ('),
+    'The superseded filter must retain the exact shared D1 follow-up prefix.');
+foreach ([
+    'declined invitation remains read history without actions or toast',
+    'mobile cached invitation wins over a delayed false-empty response',
+    'desktop bell opens during an unfinished request and ignores its stale finish',
+] as $alternative) {
+    $assert(str_contains($config, $alternative),
+        "The superseded filter must include only the named alternative: {$alternative}");
 }
 
 $replacementTitles = [
@@ -41,12 +50,12 @@ $assert(substr_count($replacement, "test('D1 v120 acceptance:") === 3,
 $assert(str_contains($replacement, "toContainText('@mgw_test_player_b')")
         && !str_contains($replacement, "toContainText('TEST PLAYER B')"),
     'Declined history acceptance must verify the public username shown to the user.');
-$assert(str_contains($replacement, "await toast.click();")
-        && str_contains($replacement, "Cached mobile toast first-paint latency")
+$assert(str_contains($replacement, 'await toast.click();')
+        && str_contains($replacement, 'Cached mobile toast first-paint latency')
         && !str_contains($replacement, "locator('#notificationsOpen').click();\n    const accept"),
     'Mobile first-paint timing must start from the visible blue notification surface, not a covered bell.');
 $assert(str_contains($replacement, 'expect(markReadCalls).toBeGreaterThanOrEqual(1);')
-        && !str_contains($replacement, 'expect(markReadCalls).toBeGreaterThanOrEqual(2);\n    await playerA.page.unroute(NOTIFICATIONS_ROUTE);\n    expectClean(playerA, \'Player A v120 desktop'),
+        && !str_contains($replacement, "expect(markReadCalls).toBeGreaterThanOrEqual(2);\n    await playerA.page.unroute(NOTIFICATIONS_ROUTE);\n    expectClean(playerA, 'Player A v120 desktop"),
     'Desktop acceptance must verify immediate reusable UI and stale-close safety without requiring a redundant second request.');
 $assert(str_contains($config, 'grepInvert:supersededD1StressScenarios'),
     'The Playwright config must apply only the named superseded-scenario filter.');
