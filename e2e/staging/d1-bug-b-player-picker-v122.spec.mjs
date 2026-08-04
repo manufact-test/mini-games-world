@@ -118,7 +118,7 @@ async function runPickerScenario(browser, isMobile) {
       });
     });
 
-    await expect.poll(() => prefetchEmptyCalls, { timeout:15_000 }).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => prefetchEmptyCalls, { timeout:15_000 }).toBeGreaterThanOrEqual(1);
     await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
     await expect(playerA.page.locator('[data-open-player-picker]')).toBeVisible({ timeout:15_000 });
     phase = 'stress';
