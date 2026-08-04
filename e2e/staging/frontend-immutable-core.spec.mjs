@@ -165,10 +165,10 @@ test('staging app root serves one integrated v115 frontend graph', async ({ brow
       '/assets/js/interaction-latency-coordinator-v101.js?v=114',
       '/assets/js/screens/notifications-screen-v99.js?v=114',
       '/assets/js/games/game-invites.js?v=114',
-      '/assets/js/screens/notification-empty-frame-guard-v115.js?v=115',
-      '/assets/js/screens/notification-bell-first-click-v116.js?v=116',
+      '/assets/js/screens/notification-window-owner-v118.js?v=118',
       '/assets/js/opponents-native-fetch-v115.js?v=115',
       '/assets/js/opponents-empty-cache-guard-v115.js?v=115',
+      '/assets/js/opponents-authoritative-confirm-v117.js?v=117',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
       '/assets/js/games/invite-link-entry-v115.js?v=115',
@@ -178,6 +178,19 @@ test('staging app root serves one integrated v115 frontend graph', async ({ brow
         graph.resources.some((url) => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix)),
         `Fresh module graph must include ${suffix}`,
       ).toBe(true);
+    }
+
+    const forbiddenNotificationOwners = [
+      '/assets/js/screens/notification-empty-frame-guard-v115.js?v=115',
+      '/assets/js/screens/notification-bell-first-click-v116.js?v=116',
+      '/assets/js/screens/notification-mobile-open-owner-v117.js?v=117',
+      '/assets/js/screens/notification-desktop-open-owner-v117.js?v=117',
+    ];
+    for (const suffix of forbiddenNotificationOwners) {
+      expect(
+        graph.resources.some((url) => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix)),
+        `Superseded notification owner must be absent: ${suffix}`,
+      ).toBe(false);
     }
 
     expect(pageErrors).toEqual([]);
