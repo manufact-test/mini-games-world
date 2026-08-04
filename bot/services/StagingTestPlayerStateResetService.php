@@ -31,10 +31,13 @@ final class StagingTestPlayerStateResetService
                 }
                 $before[$legacyUserId] = (int)($data['users'][$legacyUserId]['balance_match'] ?? 0);
                 $data['users'][$legacyUserId]['balance_match'] = self::MATCH_BALANCE;
+                $data['users'][$legacyUserId]['status'] = 'idle';
             }
 
             return $data;
         });
+
+        $primaryState = $this->synchronizePrimaryState($snapshot);
 
         $economy = new RuntimeEconomyRepository($this->config, $this->router);
         $synchronized = $economy->synchronize($snapshot);
@@ -59,9 +62,39 @@ final class StagingTestPlayerStateResetService
             'match_balance' => self::MATCH_BALANCE,
             'players' => $balances,
             'economy_parity' => true,
+            'primary_state_synced' => ($primaryState['ok'] ?? false) === true,
+            'primary_state_driver' => (string)($primaryState['driver'] ?? ''),
             'production_changed' => false,
             'live_payments_used' => false,
         ];
+    }
+
+    private function synchronizePrimaryState(array $snapshot): array
+    {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('Staging test-player DB-primary reset is unavailable.');
+        }
+
+        $primary = new DatabasePrimaryStateStorageAdapter(
+            PdoConnectionFactory::create($databaseConfig),
+            null
+        );
+        $primary->transaction(function (array &$data) use ($snapshot): void {
+            if (!isset($data['users']) || !is_array($data['users'])) {
+                $data['users'] = [];
+            }
+
+            foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+                $user = $snapshot['users'][$legacyUserId] ?? null;
+                if (!is_array($user)) {
+                    throw new RuntimeException('Staging test player snapshot is unavailable.');
+                }
+                $data['users'][$legacyUserId] = $user;
+            }
+        });
+
+        return $primary->status();
     }
 
     private function assertAvailable(array $server): void

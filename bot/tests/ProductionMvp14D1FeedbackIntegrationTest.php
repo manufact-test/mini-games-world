@@ -5,13 +5,13 @@ $entry = file_get_contents($root . '/app/v114.php');
 $main = file_get_contents($root . '/app/assets/js/main.js');
 $link = file_get_contents($root . '/app/assets/js/games/invite-link-entry-v115.js');
 $terminal = file_get_contents($root . '/app/assets/js/games/invite-terminal-actions-v115.js');
-$notifications = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v121.js');
-$background = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v121.js');
+$notifications = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v124.js');
+$background = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v124.js');
 $opponents = file_get_contents($root . '/app/assets/js/opponents-authoritative-confirm-v122.js');
 $presence = file_get_contents($root . '/app/assets/js/presence-v115.js');
 if (!is_string($entry) || !is_string($main) || !is_string($link) || !is_string($terminal)
     || !is_string($notifications) || !is_string($background) || !is_string($opponents) || !is_string($presence)) {
-    throw new RuntimeException('Missing integrated D1 v123 sources.');
+    throw new RuntimeException('Missing integrated D1 v124 sources.');
 }
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void { $assertions++; if (!$condition) throw new RuntimeException($message); };
@@ -22,25 +22,30 @@ $inviteInit = strpos($main, 'initGameInvites();');
 $bootstrap = strpos($main, 'const result = await api.bootstrap();');
 $assert($presenceInit !== false && $terminalInit !== false && $inviteInit !== false && $bootstrap !== false
     && $presenceInit < $terminalInit && $terminalInit < $inviteInit && $inviteInit < $bootstrap, 'Owner order must remain presence, terminal, invites, bootstrap.');
-$assert(substr_count($entry, 'notification-window-owner-v121.js?v=121') === 1
-    && str_contains($entry, 'notifications-passive-v121.js?v=121')
-    && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must publish one v121 notification owner and passive service.');
+$assert(substr_count($entry, 'notification-window-owner-v124.js?v=124') === 1
+    && str_contains($entry, 'notifications-passive-v124.js?v=124')
+    && !str_contains($entry, 'notification-window-owner-v121.js?v=121')
+    && !str_contains($entry, 'notifications-passive-v121.js?v=121'), 'v124 must publish one notification owner and passive service.');
 $assert(substr_count($entry, 'opponents-authoritative-confirm-v122.js?v=122') === 1
-    && !str_contains($entry, 'opponents-authoritative-confirm-v117.js?v=117'), 'v123 must publish only v122 opponent confirmation.');
+    && !str_contains($entry, 'opponents-authoritative-confirm-v117.js?v=117'), 'v124 must publish only v122 opponent confirmation.');
 $assert(!str_contains($entry, 'notification-empty-frame-guard-v115.js?v=115')
     && !str_contains($entry, 'notification-mobile-open-owner-v117.js?v=117')
     && !str_contains($entry, 'notification-desktop-open-owner-v117.js?v=117')
     && !str_contains($entry, 'notification-bell-first-click-v116.js?v=116'), 'Retired notification owners must remain excluded.');
-$assert(str_contains($entry, 'data-hotfix-build="v123-mvp14-d1-two-manual-regressions"')
+$assert(str_contains($entry, 'data-hotfix-build="v124-mvp14-d1-live-failure-fixes"')
     && str_contains($entry, './assets/js/main.js?v=115')
-    && str_contains($entry, 'X-MGW-Frontend-Build: v123-mvp14-d1-two-manual-regressions'), 'The integrated package must expose v123 and retain main v115.');
+    && str_contains($entry, 'X-MGW-Frontend-Build: v124-mvp14-d1-live-failure-fixes'), 'The integrated package must expose v124 and retain main v115.');
 $assert(str_contains($link, 'result?.opened_invite || null') && !str_contains($link, 'Понятно') && str_contains($link, 'announce:false'), 'Deep-link entry must remain one actionable sheet.');
 $assert(str_contains($terminal, "const TERMINAL_ACTIONS = new Set(['decline', 'cancel']);") && !str_contains($terminal, 'Понятно'), 'Decline and cancel must remain silent for the actor.');
 $assert(str_contains($notifications, "window.addEventListener('pointerdown'")
     && str_contains($notifications, "window.addEventListener('pointerup'")
+    && str_contains($notifications, "window.addEventListener('touchend'")
     && str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
     && !str_contains($notifications, '.click()')
-    && !str_contains($background, 'openNotificationsSheet('), 'v121 must exclusively own real notification input and sheet rendering.');
+    && !str_contains($background, 'openNotificationsSheet('), 'v124 must exclusively own real notification input and sheet rendering.');
+$assert(str_contains($background, 'rememberBaselineNotifications(items, requestStartedAt)')
+    && str_contains($background, 'pendingNotification')
+    && str_contains($background, 'createdAt > threshold'), 'A notification created during baseline fetch must remain eligible for the blue toast.');
 $assert(str_contains($opponents, 'REQUIRED_AUTHORITATIVE_EMPTY_RESPONSES = 2')
     && str_contains($opponents, "payload?.storage_driver === 'database'")
     && !str_contains($opponents, 'openSheet(')
