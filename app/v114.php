@@ -11,11 +11,7 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
-$notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v118.js?v=118"></script>';
-$emptyFrameGuard = '<script type="module" src="./assets/js/screens/notification-empty-frame-guard-v115.js?v=115"></script>';
-$mobileNotificationOwner = '<script type="module" src="./assets/js/screens/notification-mobile-open-owner-v117.js?v=117"></script>';
-$desktopNotificationOwner = '<script type="module" src="./assets/js/screens/notification-desktop-open-owner-v117.js?v=117"></script>';
-$bellFirstClickGuard = '<script type="module" src="./assets/js/screens/notification-bell-first-click-v116.js?v=116"></script>';
+$notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v119.js?v=119"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
 $opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v117.js?v=117"></script>';
@@ -51,16 +47,12 @@ $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap
       . "\n  " . $notificationWindowOwner
-      . "\n  " . $emptyFrameGuard
-      . "\n  " . $mobileNotificationOwner
-      . "\n  " . $desktopNotificationOwner
-      . "\n  " . $bellFirstClickGuard
       . "\n  " . $nativeFetchGuard,
     $html
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v115-mvp14-d1-feedback-integration"',
+    'data-hotfix-build="v119-mvp14-notification-canonical-owner"',
     $html
 );
 $html = str_replace(
@@ -86,5 +78,5 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration');
+header('X-MGW-Frontend-Build: v119-mvp14-notification-canonical-owner');
 echo $html;

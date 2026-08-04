@@ -23,19 +23,19 @@ $assert(!str_contains($entry, "'./assets/js/main.js?v=114'")
     && !str_contains($entry, "'./assets/js/main.js?v=97'")
     && !str_contains($entry, "'./assets/js/main.js?v=96'"),
     'No stale v114, v97 or v96 active main target may remain in the staging wrapper.');
-$assert(str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integration"')
-    && str_contains($entry, 'X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration'),
-    'The served application shell and response header must publish the v115 integration identity.');
+$assert(str_contains($entry, 'data-hotfix-build="v119-mvp14-notification-canonical-owner"')
+    && str_contains($entry, 'X-MGW-Frontend-Build: v119-mvp14-notification-canonical-owner'),
+    'The served application shell and response header must publish the v119 canonical-owner identity.');
 $assert(str_contains($main, "window.__MGW_HOTFIX_BUILD__ = 'v115-mvp14-d1-feedback-integration'"),
-    'The loaded main module must publish the matching v115 hotfix marker.');
+    'The retained main module must keep its matching reviewed v115 hotfix marker.');
 $assert(str_contains($main, "./first-interaction-readiness-v103.js?v=103")
     && str_contains($entry, '"./assets/js/first-interaction-readiness-v103.js?v=103": "./assets/js/first-interaction-readiness-v103.js?v=114"'),
     'The active graph must retain the reviewed prewarm specifier and route it to one immutable module object.');
-
-$canonicalInit = strpos($main, 'initNotificationsScreen();');
-$prewarmInit = strpos($main, 'initFirstInteractionReadinessEarly();');
-$assert($canonicalInit !== false && $prewarmInit !== false && $canonicalInit < $prewarmInit,
-    'The cache-busted entry must initialize the canonical notification owner before generic prewarm.');
+$assert(substr_count($entry, 'notification-window-owner-v119.js?v=119') === 1
+    && !str_contains($entry, 'notification-bell-first-click-v116.js?v=116')
+    && !str_contains($entry, 'notification-mobile-open-owner-v117.js?v=117')
+    && !str_contains($entry, 'notification-desktop-open-owner-v117.js?v=117'),
+    'The cache-busted shell must publish one v119 notification owner without retired competing owners.');
 $assert(str_contains($index, './assets/js/production-regression-fix-entry.js?v=102'),
     'The unrelated production regression entry must retain its reviewed cache identity.');
 $assert(!str_contains($entry, 'lemonchiffon-gerbil-545102.hostingersite.com')

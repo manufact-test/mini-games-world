@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
-$guard = file_get_contents($root . '/app/assets/js/screens/notification-empty-frame-guard-v115.js');
-if (!is_string($entry) || !is_string($guard)) {
-    throw new RuntimeException('Missing mobile notification empty-frame sources.');
+$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v119.js');
+if (!is_string($entry) || !is_string($owner)) {
+    throw new RuntimeException('Missing canonical mobile notification first-frame sources.');
 }
 
 $assertions = 0;
@@ -15,37 +15,37 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    str_contains($entry, 'notification-empty-frame-guard-v115.js?v=115')
-        && substr_count($entry, 'notification-empty-frame-guard-v115.js?v=115') === 1,
-    'The staging entry must load exactly one fresh empty-frame guard.'
+    substr_count($entry, 'notification-window-owner-v119.js?v=119') === 1
+        && !str_contains($entry, 'notification-empty-frame-guard-v115.js?v=115'),
+    'The staging entry must publish one canonical v119 owner and no retired empty-frame guard.'
 );
 
 $assert(
-    str_contains($guard, "target?.closest('#notificationsOpen, #notificationToast')")
-        && str_contains($guard, 'guardUntil = performance.now() + GUARD_MS;')
-        && str_contains($guard, "new MutationObserver(guardTransientEmptyFrame)"),
-    'The guard must cover both bell and blue-toast openings and observe only rendered sheet changes.'
+    str_contains($owner, "target?.closest('#notificationsOpen, #notificationToast')")
+        && str_contains($owner, "document.addEventListener('mgw:notification-sync'")
+        && str_contains($owner, 'rememberItems([item])'),
+    'Bell and blue-toast openings must use the cache primed by live document notification events.'
 );
 
 $assert(
-    str_contains($guard, "'Пока уведомлений нет'")
-        && str_contains($guard, "empty.innerHTML = '<div>🔔</div><strong>Загружаем…</strong>'")
-        && str_contains($guard, 'empty.innerHTML = originalHtml;'),
-    'A transient empty frame must stay loading while a genuine confirmed empty state remains available.'
+    str_contains($owner, 'const cached = freshItems();')
+        && str_contains($owner, 'if (cached.length) renderNotifications(cached);')
+        && str_contains($owner, 'EMPTY_CONFIRM_DELAY_MS = 180'),
+    'A fresh actionable item must paint immediately while a possible empty response is confirmed.'
 );
 
 $assert(
-    !str_contains($guard, 'stopImmediatePropagation')
-        && !str_contains($guard, 'preventDefault')
-        && !str_contains($guard, 'api.notifications')
-        && !str_contains($guard, 'data-invite-action'),
-    'This isolated visual guard must not own bell clicks, network reads or invitation actions.'
+    substr_count($owner, 'api.notifications(true)') >= 2
+        && str_contains($owner, 'if (!items.length && freshItems().length) items = freshItems();')
+        && str_contains($owner, 'requestGeneration === generation'),
+    'A delayed false-empty result must not replace the fresh item and stale generations must be ignored.'
 );
 
 $assert(
-    str_contains($guard, "document.addEventListener('DOMContentLoaded', initNotificationEmptyFrameGuard, { once:true })")
-        && str_contains($guard, 'if (observer) return;'),
-    'The guard must initialize once even when loaded before the sheet DOM.'
+    !str_contains($owner, 'GUARD_MS')
+        && !str_contains($owner, 'originalHtml')
+        && !str_contains($owner, 'openingSheet'),
+    'The canonical owner must solve the first frame through state and requests, not temporary DOM masking or a blocking flag.'
 );
 
 fwrite(STDOUT, "ProductionMvp14D1FeedbackMobileNotificationEmptyFrameTest: {$assertions} assertions passed\n");

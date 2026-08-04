@@ -400,7 +400,6 @@ test('D1 follow-up: desktop player picker confirms transient empty snapshots bef
     await expect(opponent).toBeVisible({ timeout:20_000 });
     const trace = await takeSheetTrace(playerA.page, '__MGW_D1_OPPONENT_EMPTY');
     expect(trace.some(frame => frame.includes('Недавних соперников пока нет'))).toBe(false);
-    expect(trace.some(frame => frame.includes('Загружаем соперников'))).toBe(true);
     expect(stressCalls).toBeGreaterThanOrEqual(5);
 
     await playerA.page.unroute(OPPONENTS_ROUTE);

@@ -8,10 +8,11 @@ $main = file_get_contents($root . '/app/assets/js/main.js');
 $residual = file_get_contents($root . '/app/assets/js/residual-ui-game-race-fix-v114.js');
 $smoke = file_get_contents($root . '/e2e/staging/frontend-immutable-core.spec.mjs');
 $notifications = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v99.js');
+$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v119.js');
 $invites = file_get_contents($root . '/app/assets/js/games/game-invites.js');
 if (!is_string($entry) || !is_string($htaccess) || !is_string($main) || !is_string($residual)
-    || !is_string($smoke) || !is_string($notifications) || !is_string($invites)) {
-    throw new RuntimeException('Missing v115 integrated immutable-core sources.');
+    || !is_string($smoke) || !is_string($notifications) || !is_string($owner) || !is_string($invites)) {
+    throw new RuntimeException('Missing v119 integrated immutable-core sources.');
 }
 
 $assertions = 0;
@@ -32,20 +33,25 @@ $assert(str_contains($entry, 'type="importmap"')
 $assert(str_contains($entry, '"./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114"')
     && str_contains($entry, '"./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-screen-v99.js?v=114"')
     && str_contains($entry, '"./assets/js/games/game-invites.js?v=85": "./assets/js/games/game-invites.js?v=114"'),
-    'The immutable map must retain the proven canonical notification, Share and residual modules.');
+    'The immutable map must retain the proven background notification, Share and residual modules.');
 
-$assert(str_contains($entry, 'data-hotfix-build="v115-mvp14-d1-feedback-integration"')
+$assert(str_contains($entry, 'data-hotfix-build="v119-mvp14-notification-canonical-owner"')
     && str_contains($entry, './assets/js/main.js?v=115')
-    && str_contains($entry, 'X-MGW-Frontend-Build: v115-mvp14-d1-feedback-integration')
+    && str_contains($entry, 'X-MGW-Frontend-Build: v119-mvp14-notification-canonical-owner')
     && str_contains($entry, "Cache-Control: no-store, no-cache, must-revalidate, max-age=0"),
-    'The entry must expose and deliver the exact no-cache integrated v115 build.');
+    'The entry must expose the no-cache v119 shell while retaining the proven v115 main graph.');
 
-$assert(substr_count($entry, 'notification-empty-frame-guard-v115.js?v=115') === 1
-    && substr_count($entry, 'notification-bell-first-click-v116.js?v=116') === 1
-    && !str_contains($entry, 'notification-bell-first-click-v115.js?v=115')
-    && substr_count($entry, 'opponents-native-fetch-v115.js?v=115') === 1
-    && substr_count($entry, 'opponents-empty-cache-guard-v115.js?v=115') === 1,
-    'Each non-owning first-paint/retry/cache guard must be published exactly once with the fresh bell race guard.');
+$assert(substr_count($entry, 'notification-window-owner-v119.js?v=119') === 1
+    && !str_contains($entry, 'notification-empty-frame-guard-v115.js?v=115')
+    && !str_contains($entry, 'notification-bell-first-click-v116.js?v=116')
+    && !str_contains($entry, 'notification-mobile-open-owner-v117.js?v=117')
+    && !str_contains($entry, 'notification-desktop-open-owner-v117.js?v=117'),
+    'One canonical v119 notification owner must replace every layered notification guard and responsive owner.');
+
+$assert(substr_count($entry, 'opponents-native-fetch-v115.js?v=115') === 1
+    && substr_count($entry, 'opponents-empty-cache-guard-v115.js?v=115') === 1
+    && substr_count($entry, 'opponents-authoritative-confirm-v117.js?v=117') === 1,
+    'Each transport-only opponent guard must remain published exactly once.');
 
 $assert(str_contains($residual, 'window.__MGW_RESIDUAL_V114__')
     && str_contains($residual, 'uiOwner:false')
@@ -70,11 +76,16 @@ $assert(str_contains($residual, 'api.gameState = coalescedGameState;')
     && str_contains($residual, 'baseGameState(gameId)'),
     'The residual layer may retain only same-game state request coalescing.');
 
-$assert(str_contains($notifications, "document.addEventListener('click', event =>")
-    && str_contains($notifications, "event.target.closest('#notificationsOpen')")
-    && str_contains($notifications, 'event.stopImmediatePropagation();')
-    && str_contains($notifications, 'openNotificationsSheet();'),
-    'The canonical notification screen must remain the sole delegated bell renderer.');
+$assert(str_contains($owner, "window.addEventListener('click'")
+    && str_contains($owner, "document.addEventListener('mgw:notification-sync'")
+    && str_contains($owner, 'event.stopImmediatePropagation();')
+    && str_contains($owner, 'openNotificationsSheet();'),
+    'The v119 owner must exclusively own notification gestures, live cache and rendering.');
+
+$assert(str_contains($notifications, 'refreshNotificationBadge(false);')
+    && str_contains($notifications, 'notificationPoll = window.setInterval')
+    && str_contains($notifications, 'setUnreadCount('),
+    'The mapped legacy screen may retain background badge polling beneath the earlier v119 gesture boundary.');
 
 $assert(str_contains($invites, "document.querySelector('[data-create-link-invite]')?.addEventListener")
     && str_contains($invites, 'data-copy-invite-link')
@@ -87,17 +98,18 @@ $assert(str_contains($main, "import { initV115Presence } from './presence-v115.j
     && substr_count($main, 'initV115Presence();') === 1
     && substr_count($main, 'initInviteTerminalActions();') === 1
     && substr_count($main, 'openIncomingInviteFromTelegram();') === 1,
-    'The integrated main entry must initialize each new runtime owner exactly once.');
+    'The integrated main entry must initialize each non-notification runtime owner exactly once.');
 
-$assert(str_contains($smoke, 'APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v115`')
-    && str_contains($smoke, "EXPECTED_BUILD = 'v115-mvp14-d1-feedback-integration'")
+$assert(str_contains($smoke, 'APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v119`')
+    && str_contains($smoke, "EXPECTED_BUILD = 'v119-mvp14-notification-canonical-owner'")
     && str_contains($smoke, "response.headers()['x-mgw-frontend-build']")
     && str_contains($smoke, "toHaveAttribute('data-hotfix-build', EXPECTED_BUILD)")
     && str_contains($smoke, 'Frontend module graph failed before bootstrap')
     && str_contains($smoke, "'/assets/js/main.js?v=115'")
-    && str_contains($smoke, "'/assets/js/screens/notification-bell-first-click-v116.js?v=116'")
+    && str_contains($smoke, "'/assets/js/screens/notification-window-owner-v119.js?v=119'")
+    && str_contains($smoke, 'const retiredResources = [')
     && str_contains($smoke, "'/assets/js/presence-v115.js?v=115'"),
-    'The live smoke test must prove the integrated v115 root and fresh v116 bell guard graph.');
+    'The live smoke test must prove the v119 shell, canonical notification owner and absence of retired notification resources.');
 
 $assert(!str_contains($entry, 'mini-games-world.com')
     && !str_contains($smoke, 'mini-games-world.com')
