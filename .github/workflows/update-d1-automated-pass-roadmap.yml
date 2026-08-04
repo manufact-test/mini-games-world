@@ -1,0 +1,51 @@
+name: Update D1 automated-pass roadmap
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-roadmap-pass-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Update canonical roadmap
+        run: python tools/update_d1_automated_pass_roadmap.py
+
+      - name: Validate final checkpoint
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('docs/MVP-14R-RELATIONAL-MYSQL-REBUILD-ROADMAP.md').read_text(encoding='utf-8')
+          required = [
+              'CURRENT STAGING COMMIT: 2c0675451daf0f3207bd5f41b79f5bc50a4cb3e5',
+              'LATEST STAGING E2E: SUCCESS — RUN 30947927723 — 20/20',
+              'AUTOMATED D1 GATE: PASS',
+              'Fresh canonical CDN identity | #432',
+              '`30947927723` | **20/20, success**',
+              'AUTOMATED COMPLETE; MANUAL ACCEPTANCE PENDING',
+          ]
+          for token in required:
+              assert token in text, token
+          assert 'RUN 30943775973 — APPLICATION FAILURE, 19/20' not in text
+          print('Final roadmap checkpoint validated')
+          PY
+
+      - name: Commit roadmap and remove temporary runner
+        run: |
+          rm -f tools/update_d1_automated_pass_roadmap.py .github/workflows/update-d1-automated-pass-roadmap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Record D1 automated gate success"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
