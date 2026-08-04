@@ -10,7 +10,9 @@ export async function openIncomingInviteFromTelegram(){
   const token = incomingToken();
   if (!token || handled) return false;
   handled = true;
+  publishInviteLinkLifecycle('mgw:invite-link-opening', token, false);
 
+  let opened = false;
   try {
     const result = await inviteRequest(token);
     publishNotificationSnapshot(result, token);
@@ -21,11 +23,14 @@ export async function openIncomingInviteFromTelegram(){
     }
 
     showIncomingInvite(invite);
+    opened = true;
     return true;
   } catch (error) {
     console.warn('Mini Games World invitation link entry failed.', error);
     toast('Не удалось открыть приглашение. Попробуйте открыть ссылку ещё раз.');
     return false;
+  } finally {
+    publishInviteLinkLifecycle('mgw:invite-link-resolved', token, opened);
   }
 }
 
@@ -47,6 +52,12 @@ async function inviteRequest(token){
     throw new Error(data?.error || `Invite entry failed: ${response.status}`);
   }
   return data;
+}
+
+function publishInviteLinkLifecycle(type, token, opened){
+  document.dispatchEvent(new CustomEvent(type, {
+    detail:{ token, opened:Boolean(opened) },
+  }));
 }
 
 function publishNotificationSnapshot(result, token){
