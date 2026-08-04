@@ -5,8 +5,9 @@ $root = dirname(__DIR__, 2);
 $endpoint = file_get_contents($root . '/bot/invite-opponents.php');
 $entry = file_get_contents($root . '/app/v114.php');
 $confirm = file_get_contents($root . '/app/assets/js/opponents-authoritative-confirm-v122.js');
-if (!is_string($endpoint) || !is_string($entry) || !is_string($confirm)) {
-    throw new RuntimeException('Missing D1 opponent authoritative v122 sources.');
+$reset = file_get_contents($root . '/bot/services/StagingTestPlayerStateResetService.php');
+if (!is_string($endpoint) || !is_string($entry) || !is_string($confirm) || !is_string($reset)) {
+    throw new RuntimeException('Missing D1 opponent authoritative v124 sources.');
 }
 
 $assertions = 0;
@@ -30,8 +31,11 @@ $assert(str_contains($endpoint, 'return StorageFactory::createJson('),
     'Production and rollback contexts must retain the guarded storage route.');
 $assert(str_contains($entry, 'opponents-authoritative-confirm-v122.js?v=122')
         && !str_contains($entry, 'opponents-authoritative-confirm-v117.js?v=117'),
-    'v123 must publish only v122 opponent confirmation.');
-$assert(str_contains($entry, 'v123-mvp14-d1-two-manual-regressions'), 'The integrated shell must expose v123.');
+    'v124 must publish only v122 opponent confirmation.');
+$assert(str_contains($entry, 'v124-mvp14-d1-live-failure-fixes'), 'The integrated shell must expose v124.');
+$assert(str_contains($reset, 'DatabasePrimaryStateStorageAdapter(')
+        && str_contains($reset, "$data['users'][$legacyUserId] = $user;"),
+    'The isolated staging reset must seed the same DB-primary user source read by the picker.');
 $assert(str_contains($confirm, 'REQUIRED_AUTHORITATIVE_EMPTY_RESPONSES = 2'),
     'A single empty snapshot must never become final.');
 $assert(str_contains($confirm, 'payload?.authoritative === true')
