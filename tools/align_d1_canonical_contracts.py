@@ -57,7 +57,7 @@ replace_once(
 
 replace_once(
     'bot/tests/ProductionMvp14D1StressObserverV118Test.php',
-    '''$assert(str_contains($stress, "frame.includes('Недавних соперников пока нет')")
+    r'''$assert(str_contains($stress, "frame.includes('Недавних соперников пока нет')")
         && str_contains($stress, 'expect(stressCalls).toBeGreaterThanOrEqual(5)')
         && str_contains($stress, "data-direct-opponent=\"stg_test_player_b\""),
     'The opponent stress scenario must reject false empty state, survive five responses and render the real player.');''',
