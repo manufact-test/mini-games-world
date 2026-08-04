@@ -55,11 +55,17 @@ export async function refreshNotificationBadge(announce = false){
     const result = await api.notifications(false);
     const items = Array.isArray(result.items) ? result.items : [];
     setUnreadCount(Number(result.unread_count || 0));
-    if (!baselineLoaded || !announce || !appReady) {
+
+    // Seed only the true pre-application baseline. Once the baseline exists, a
+    // silent count refresh must not mark a newly arrived invite as announced;
+    // the canonical invite sync event still needs to display its blue toast.
+    if (!baselineLoaded || !appReady) {
       rememberNotifications(items);
       baselineLoaded = true;
       return;
     }
+    if (!announce) return;
+
     const item = items.find(notification => {
       const id = String(notification?.id || '');
       return id && !notification?.read && !announcedIds.has(id);
