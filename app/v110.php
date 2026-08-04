@@ -11,17 +11,17 @@ if (!is_string($html)) {
 }
 
 $html = str_replace(
-    './assets/js/production-regression-fix-entry.js?v=96',
+    './assets/js/production-regression-fix-entry.js?v=102',
     './assets/js/production-clean-entry-v110.js?v=1120',
     $html
 );
 $html = str_replace(
-    './assets/js/main.js?v=96',
+    './assets/js/main.js?v=98.3',
     './assets/js/main-v110.js?v=1124',
     $html
 );
 $html = str_replace(
-    'data-hotfix-build="v96-mvp14-root-cause-stabilization"',
+    'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
     'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"',
     $html
 );

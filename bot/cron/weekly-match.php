@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require dirname(__DIR__) . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/helpers/StagingCronHeartbeat.php';
 
 $isCli = PHP_SAPI === 'cli';
 if (!$isCli) {
@@ -37,12 +38,25 @@ try {
         }
     }
 
+    $cronHeartbeatWritten = null;
+    if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging') {
+        $cronHeartbeatWritten = StagingCronHeartbeat::recordSuccessfulRun($config, $isCli);
+        if (!$cronHeartbeatWritten) {
+            error_log('[MiniGamesWorld staging cron heartbeat] Unable to record successful weekly-match run.');
+        }
+    }
+
     if (!$isCli) {
         header('Content-Type: application/json; charset=utf-8');
     }
 
     echo json_encode(
-        ['ok' => true, 'weekly_match' => $result, 'runtime_sync' => $runtimeSync],
+        [
+            'ok' => true,
+            'weekly_match' => $result,
+            'runtime_sync' => $runtimeSync,
+            'staging_cron_heartbeat_written' => $cronHeartbeatWritten,
+        ],
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
     ) . PHP_EOL;
 } catch (Throwable $e) {

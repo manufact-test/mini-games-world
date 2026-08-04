@@ -1,0 +1,131 @@
+name: Staging E2E Runner Route Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-staging-e2e-route-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: Probe GitHub runner to staging
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/mvp14r13-staging-e2e-runner-route'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    env:
+      STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Resolve staging host
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          getent ahosts seashell-okapi-889488.hostingersite.com | head -n 6 | tee route-dns.txt
+          test -s route-dns.txt
+
+      - name: Probe public staging routes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p route-probe
+
+          curl --fail-with-body \
+            --silent --show-error \
+            --retry 2 --retry-delay 2 --retry-all-errors \
+            --connect-timeout 12 --max-time 35 \
+            --header 'Accept: application/json' \
+            "${STAGING_ORIGIN}/bot/staging-readiness.php" \
+            --output route-probe/readiness.json
+
+          curl --fail-with-body \
+            --silent --show-error \
+            --retry 2 --retry-delay 2 --retry-all-errors \
+            --connect-timeout 12 --max-time 35 \
+            --header 'Accept: application/json' \
+            "${STAGING_ORIGIN}/bot/staging-routing-audit.php" \
+            --output route-probe/routing.json
+
+          curl --fail-with-body \
+            --silent --show-error \
+            --retry 2 --retry-delay 2 --retry-all-errors \
+            --connect-timeout 12 --max-time 35 \
+            "${STAGING_ORIGIN}/app/" \
+            --output route-probe/app.html
+
+          auth_status="$(curl \
+            --silent --show-error \
+            --retry 2 --retry-delay 2 --retry-all-errors \
+            --connect-timeout 12 --max-time 35 \
+            --output route-probe/auth-get.json \
+            --write-out '%{http_code}' \
+            "${STAGING_ORIGIN}/bot/staging-test-auth.php")"
+          printf '%s\n' "$auth_status" > route-probe/auth-get-status.txt
+          test "$auth_status" = '405'
+
+      - name: Validate route responses
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('route-probe')
+          readiness = json.loads((root / 'readiness.json').read_text(encoding='utf-8'))
+          routing = json.loads((root / 'routing.json').read_text(encoding='utf-8'))
+          app = (root / 'app.html').read_text(encoding='utf-8')
+          auth = json.loads((root / 'auth-get.json').read_text(encoding='utf-8'))
+
+          expected_host = 'seashell-okapi-889488.hostingersite.com'
+          assert readiness.get('ok') is True
+          assert readiness.get('environment') == 'staging'
+          assert readiness.get('base_host') == expected_host
+          assert routing.get('ok') is True
+          assert routing.get('environment') == 'staging'
+          assert routing.get('base_host') == expected_host
+          assert 'Mini Games World' in app
+          assert auth.get('ok') is False
+          assert auth.get('error') == 'method_not_allowed'
+
+          safe_report = {
+              'ok': True,
+              'runner': 'github-hosted-ubuntu',
+              'staging_host': expected_host,
+              'readiness_reached': True,
+              'routing_audit_reached': True,
+              'application_reached': True,
+              'protected_auth_route_reached': True,
+              'secrets_used': False,
+              'state_changed': False,
+          }
+          (root / 'safe-report.json').write_text(
+              json.dumps(safe_report, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(safe_report, sort_keys=True))
+          PY
+
+      - name: Upload safe route report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-e2e-route-probe
+          path: |
+            route-dns.txt
+            route-probe/safe-report.json
+            route-probe/auth-get-status.txt
+          if-no-files-found: warn
+          retention-days: 3
