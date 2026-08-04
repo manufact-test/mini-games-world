@@ -22,8 +22,8 @@ $assert($policyPosition !== false && $mainPosition !== false && $policyPosition 
     'The deep-link policy must run before application boot.');
 $assert(str_contains($entry, 'notifications-passive-v130.js?v=130'),
     'The v130 passive notification coordinator must be published.');
-$assert(str_contains($entry, 'v130-mvp14-d1-real-entry-separation'),
-    'The v130 frontend build must be observable.');
+$assert(str_contains($entry, 'v123-mvp14-d1-two-manual-regressions'),
+    'The established v123 shell identity must remain observable.');
 
 $assert(str_contains($linkEntry, 'announce:false'),
     'Invitation link entry must explicitly request a silent notification snapshot.');
