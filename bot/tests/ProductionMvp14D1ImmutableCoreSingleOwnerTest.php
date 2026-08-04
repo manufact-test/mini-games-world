@@ -6,21 +6,21 @@ $htaccess = file_get_contents($root . '/app/.htaccess');
 $main = file_get_contents($root . '/app/assets/js/main.js');
 $residual = file_get_contents($root . '/app/assets/js/residual-ui-game-race-fix-v114.js');
 $smoke = file_get_contents($root . '/e2e/staging/frontend-immutable-core.spec.mjs');
-$passive = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v121.js');
+$passive = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v130.js');
 $owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v121.js');
 $opponents = file_get_contents($root . '/app/assets/js/opponents-authoritative-confirm-v122.js');
 $endpoint = file_get_contents($root . '/bot/invite-opponents.php');
 if (!is_string($entry) || !is_string($htaccess) || !is_string($main) || !is_string($residual)
     || !is_string($smoke) || !is_string($passive) || !is_string($owner)
-    || !is_string($opponents) || !is_string($endpoint)) throw new RuntimeException('Missing v123 immutable sources.');
+    || !is_string($opponents) || !is_string($endpoint)) throw new RuntimeException('Missing v130 immutable sources.');
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void { $assertions++; if (!$condition) throw new RuntimeException($message); };
 $assert(str_contains($htaccess, 'DirectoryIndex v114.php index.html'), 'The staging root must continue through the no-cache PHP entry.');
 $assert(str_contains($entry, 'type="importmap"')
     && str_contains($entry, '"./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=114"')
     && str_contains($entry, '"./assets/js/session.js?v=27": "./assets/js/session.js?v=114"'), 'The immutable API/session graph must remain compatible.');
-$assert(str_contains($entry, '"./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-passive-v121.js?v=121"')
-    && str_contains($entry, '"./assets/js/games/game-invites.js?v=85": "./assets/js/games/game-invites.js?v=114"'), 'The map must route passive notifications and retain canonical invites.');
+$assert(str_contains($entry, '"./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-passive-v130.js?v=130"')
+    && str_contains($entry, '"./assets/js/games/game-invites.js?v=85": "./assets/js/games/game-invites.js?v=114"'), 'The map must route passive v130 notifications and retain canonical invites.');
 $assert(str_contains($entry, 'data-hotfix-build="v123-mvp14-d1-two-manual-regressions"')
     && str_contains($entry, './assets/js/main.js?v=115')
     && str_contains($entry, 'X-MGW-Frontend-Build: v123-mvp14-d1-two-manual-regressions')
@@ -49,7 +49,7 @@ $assert(str_contains($owner, "window.addEventListener('pointerdown'")
 $assert(str_contains($passive, 'refreshNotificationBadge(false)')
     && str_contains($passive, 'notificationPoll = window.setInterval')
     && str_contains($passive, 'setUnreadCount(')
-    && !str_contains($passive, 'openNotificationsSheet('), 'The passive module may poll badges and show toast content but cannot open the sheet.');
+    && !str_contains($passive, 'openNotificationsSheet('), 'The passive v130 module may poll badges and show toast content but cannot open the sheet.');
 $assert(str_contains($opponents, 'REQUIRED_AUTHORITATIVE_EMPTY_RESPONSES = 2')
     && str_contains($opponents, "payload?.storage_driver === 'database'")
     && !str_contains($opponents, 'openSheet('), 'v122 must require DB-primary confirmation without rendering UI.');

@@ -4,9 +4,9 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
 $owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v121.js');
-$passive = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v121.js');
+$passive = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v130.js');
 if (!is_string($entry) || !is_string($owner) || !is_string($passive)) {
-    throw new RuntimeException('Missing D1 short-input v121 sources.');
+    throw new RuntimeException('Missing D1 short-input v130 sources.');
 }
 
 $assertions = 0;
@@ -16,7 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(str_contains($entry, 'notification-window-owner-v121.js?v=121'), 'v123 must publish v121 notification input owner.');
-$assert(str_contains($entry, 'notifications-passive-v121.js?v=121'), 'v123 must route the old notification service to passive v121.');
+$assert(str_contains($entry, 'notifications-passive-v130.js?v=130'), 'v123 must route the old notification service to passive v130.');
 $assert(!str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'Retired click-only v119 must not remain active.');
 $assert(str_contains($entry, 'v123-mvp14-d1-two-manual-regressions'), 'The integrated shell must expose v123.');
 foreach (['pointerdown', 'pointerup', 'pointercancel', 'click', 'keydown'] as $eventName) {
@@ -36,6 +36,6 @@ $assert(!str_contains($passive, 'openNotificationsSheet(')
         && !str_contains($passive, "from '../components/sheet.js")
         && str_contains($passive, 'refreshNotificationBadge(false)')
         && str_contains($passive, 'showNotificationToast(item)'),
-    'The passive service may poll and display toast content but cannot open the sheet.');
+    'The passive v130 service may poll and display toast content but cannot open the sheet.');
 
-fwrite(STDOUT, "ProductionMvp14D1ShortInputOwnerV121Test: {$assertions} assertions passed\n");
+fwrite(STDOUT, "ProductionMvp14D1ShortInputOwnerV130Test: {$assertions} assertions passed\n");

@@ -3,16 +3,16 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
 $notifications = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v121.js');
-$background = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v121.js');
+$background = file_get_contents($root . '/app/assets/js/screens/notifications-passive-v130.js');
 $opponents = file_get_contents($root . '/app/assets/js/opponents-authoritative-confirm-v122.js');
 $endpoint = file_get_contents($root . '/bot/notifications.php');
 if (!is_string($entry) || !is_string($notifications) || !is_string($background)
-    || !is_string($opponents) || !is_string($endpoint)) throw new RuntimeException('Missing integrated D1 v123 sources.');
+    || !is_string($opponents) || !is_string($endpoint)) throw new RuntimeException('Missing integrated D1 v130 sources.');
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void { $assertions++; if (!$condition) throw new RuntimeException($message); };
 $assert(substr_count($entry, 'notification-window-owner-v121.js?v=121') === 1
-    && str_contains($entry, 'notifications-passive-v121.js?v=121')
-    && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must publish one v121 owner and passive service.');
+    && str_contains($entry, 'notifications-passive-v130.js?v=130')
+    && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must publish one v121 owner and passive v130 service.');
 $assert(substr_count($entry, 'opponents-authoritative-confirm-v122.js?v=122') === 1
     && !str_contains($entry, 'opponents-authoritative-confirm-v117.js?v=117'), 'v123 must publish v122 opponent confirmation once.');
 $assert(!str_contains($entry, 'notification-mobile-open-owner-v117.js?v=117')

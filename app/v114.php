@@ -11,6 +11,7 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
+$notificationDeepLinkPolicy = '<script type="module" src="./assets/js/notification-deeplink-toast-policy-v130.js?v=130"></script>';
 $notificationCompatibilityGuard = '<script type="module" src="./assets/js/notification-compat-click-guard-v127.js?v=127"></script>';
 $notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v121.js?v=121"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
@@ -31,7 +32,7 @@ $importMap = <<<'HTML'
     "./assets/js/first-interaction-readiness-v103.js?v=103": "./assets/js/first-interaction-readiness-v103.js?v=114",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
     "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114",
-    "./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-passive-v121.js?v=121",
+    "./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-passive-v130.js?v=130",
     "./assets/js/games/game-invites.js?v=85": "./assets/js/games/game-invites.js?v=114"
   }
 }
@@ -48,6 +49,7 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap
+      . "\n  " . $notificationDeepLinkPolicy
       . "\n  " . $notificationCompatibilityGuard
       . "\n  " . $notificationWindowOwner
       . "\n  " . $nativeFetchGuard,
