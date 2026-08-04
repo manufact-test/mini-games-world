@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
-$guard = file_get_contents($root . '/app/assets/js/screens/notification-bell-first-click-v116.js');
-if (!is_string($entry) || !is_string($guard)) {
-    throw new RuntimeException('Missing desktop bell close-race sources.');
+$legacy = file_get_contents($root . '/app/assets/js/screens/notification-bell-first-click-v116.js');
+$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v118.js');
+if (!is_string($entry) || !is_string($legacy) || !is_string($owner)) {
+    throw new RuntimeException('Missing desktop bell ownership sources.');
 }
 
 $assertions = 0;
@@ -14,44 +15,21 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(
-    str_contains($entry, 'notification-bell-first-click-v116.js?v=116')
-        && substr_count($entry, 'notification-bell-first-click-v116.js?v=116') === 1
-        && !str_contains($entry, 'notification-bell-first-click-v115.js?v=115'),
-    'The staging entry must load exactly one fresh v116 bell close-race guard.'
-);
-
-$assert(
-    str_contains($guard, "const RETRY_DELAYS_MS = [180, 520]")
-        && str_contains($guard, "target?.closest('#notificationsOpen')")
-        && str_contains($guard, '!event.isTrusted')
-        && str_contains($guard, 'bell.click();'),
-    'A trusted first click may receive only bounded canonical-owner retries.'
-);
-
-$assert(
-    str_contains($guard, "document.addEventListener('mgw:sheet-closed'")
-        && str_contains($guard, 'blockAutomaticReopenUntil = performance.now() + STALE_REOPEN_BLOCK_MS;')
-        && str_contains($guard, "new MutationObserver(() =>")
-        && str_contains($guard, 'if (performance.now() < blockAutomaticReopenUntil)')
-        && str_contains($guard, 'closeSheet();'),
-    'Manual close must invalidate retries and close a late stale notification repaint.'
-);
-
-$assert(
-    str_contains($guard, "target?.closest('[data-close-sheet]') || target?.id === 'sheetOverlay'")
-        && str_contains($guard, "document.visibilityState !== 'visible'")
-        && str_contains($guard, 'retryTimers.forEach(timer => window.clearTimeout(timer));'),
-    'Close button, overlay close, hidden document and successful sheet opening must cancel pending retries.'
-);
-
-$assert(
-    !str_contains($guard, 'preventDefault')
-        && !str_contains($guard, 'stopImmediatePropagation')
-        && !str_contains($guard, 'openSheet(')
-        && !str_contains($guard, 'api.notifications')
-        && !str_contains($guard, 'data-invite-action'),
-    'The guard must not become a second notification renderer, network owner or invite-action owner.'
-);
+$assert(substr_count($entry, 'notification-window-owner-v118.js?v=118') === 1
+        && !str_contains($entry, 'notification-bell-first-click-v116.js?v=116'),
+    'The active entry must publish the window owner exactly once and retire the v116 retry guard.');
+$assert(str_contains($legacy, 'STALE_REOPEN_BLOCK_MS = 1200')
+        && str_contains($legacy, 'closeSheet();'),
+    'The retained rollback file documents why v116 cannot coexist with immediate legitimate reopen clicks.');
+$assert(str_contains($owner, "window.addEventListener('click'")
+        && str_contains($owner, 'event.stopImmediatePropagation();')
+        && str_contains($owner, 'const requestGeneration = ++generation;'),
+    'The active owner must receive the original click before document handlers and gate stale responses by generation.');
+$assert(str_contains($owner, "document.addEventListener('mgw:sheet-closed'")
+        && str_contains($owner, 'if (wasActive && !active) invalidateOpenRequest();'),
+    'Manual close must invalidate only in-flight responses without blocking the next trusted click.');
+$assert(!str_contains($owner, 'STALE_REOPEN_BLOCK_MS')
+        && !str_contains($owner, 'bell.click();'),
+    'The single owner must not synthesize clicks or impose a post-close dead window.');
 
 fwrite(STDOUT, "ProductionMvp14D1FeedbackDesktopBellFirstClickTest: {$assertions} assertions passed\n");
