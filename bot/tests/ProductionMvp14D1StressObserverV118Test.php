@@ -23,8 +23,11 @@ $assert($observerBlock !== ''
 $assert(str_contains($stress, 'public error: ${publicError}')
         && str_contains($stress, "result.payload.error.slice(0, 300)"),
     'Direct staging API failures must expose the bounded public error in CI logs.');
-$assert(str_contains($stress, "frame.includes('Загружаем соперников')")
-        && str_contains($stress, "frame.includes('Недавних соперников пока нет')"),
-    'The opponent stress scenario must distinguish loading from a false authoritative empty state.');
+$assert(str_contains($stress, "frame.includes('Недавних соперников пока нет')")
+        && str_contains($stress, 'expect(stressCalls).toBeGreaterThanOrEqual(5)')
+        && str_contains($stress, "data-direct-opponent=\"stg_test_player_b\""),
+    'The opponent stress scenario must reject false empty state, survive five responses and render the real player.');
+$assert(!str_contains($stress, "expect(trace.some(frame => frame.includes('Загружаем соперников'))).toBe(true)"),
+    'A direct transition to the real player list must not fail merely because loading text was too fast to observe.');
 
 fwrite(STDOUT, "ProductionMvp14D1StressObserverV118Test: {$assertions} assertions passed\n");
