@@ -2,13 +2,14 @@
 declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
-$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v121.js');
-if (!is_string($entry) || !is_string($owner)) throw new RuntimeException('Missing v123 desktop close-race sources.');
+$owner = file_get_contents($root . '/app/assets/js/screens/notification-window-owner-v124.js');
+if (!is_string($entry) || !is_string($owner)) throw new RuntimeException('Missing v124 desktop close-race sources.');
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void { $assertions++; if (!$condition) throw new RuntimeException($message); };
-$assert(substr_count($entry, 'notification-window-owner-v121.js?v=121') === 1
+$assert(substr_count($entry, 'notification-window-owner-v124.js?v=124') === 1
     && !str_contains($entry, 'notification-bell-first-click-v116.js?v=116')
-    && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v123 must load one v121 owner and no retired click retry owner.');
+    && !str_contains($entry, 'notification-window-owner-v121.js?v=121')
+    && !str_contains($entry, 'notification-window-owner-v119.js?v=119'), 'v124 must load one owner and no retired click retry owner.');
 $assert(str_contains($owner, "window.addEventListener('pointerdown'")
     && str_contains($owner, "window.addEventListener('pointerup'")
     && str_contains($owner, 'event.preventDefault();')
