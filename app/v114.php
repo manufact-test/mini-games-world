@@ -16,7 +16,7 @@ $notificationWindowOwner = '<script type="module" src="./assets/js/screens/notif
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
 $opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v122.js?v=122"></script>';
-$opponentsFreshUserAction = '<script type="module" src="./assets/js/opponents-fresh-user-action-v127.js?v=127"></script>';
+$opponentsFreshUserAction = '<script type="module" src="./assets/js/opponents-fresh-user-action-v128.js?v=128"></script>';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
