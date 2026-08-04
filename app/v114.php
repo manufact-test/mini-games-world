@@ -11,10 +11,10 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
-$notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v119.js?v=119"></script>';
+$notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v121.js?v=121"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
-$opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v117.js?v=117"></script>';
+$opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v122.js?v=122"></script>';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -29,7 +29,7 @@ $importMap = <<<'HTML'
     "./assets/js/first-interaction-readiness-v103.js?v=103": "./assets/js/first-interaction-readiness-v103.js?v=114",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
     "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114",
-    "./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-screen-v99.js?v=114",
+    "./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-passive-v121.js?v=121",
     "./assets/js/games/game-invites.js?v=85": "./assets/js/games/game-invites.js?v=114"
   }
 }
@@ -52,7 +52,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v119-mvp14-notification-canonical-owner"',
+    'data-hotfix-build="v123-mvp14-d1-two-manual-regressions"',
     $html
 );
 $html = str_replace(
@@ -78,5 +78,5 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: v119-mvp14-notification-canonical-owner');
+header('X-MGW-Frontend-Build: v123-mvp14-d1-two-manual-regressions');
 echo $html;
