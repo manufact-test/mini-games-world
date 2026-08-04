@@ -4,10 +4,10 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v123`;
+const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=v124`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
-const EXPECTED_BUILD = 'v123-mvp14-d1-two-manual-regressions';
+const EXPECTED_BUILD = 'v124-mvp14-d1-live-failure-fixes';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -46,7 +46,7 @@ async function revokeContext(context) {
   try { await context.request.post(AUTH_ROUTE, { data:{ action:'revoke' }, timeout:15_000 }); } catch {}
 }
 
-test('staging app root serves integrated v123 notification and opponent graph', async ({ browser }) => {
+test('staging app root serves integrated v124 notification and opponent graph', async ({ browser }) => {
   const context = await browser.newContext({
     locale:'ru-RU', timezoneId:'Europe/Vilnius', viewport:{ width:390, height:844 },
     deviceScaleFactor:1, isMobile:true, hasTouch:true,
@@ -91,8 +91,8 @@ test('staging app root serves integrated v123 notification and opponent graph', 
       '/assets/js/first-interaction-readiness-v103.js?v=114',
       '/assets/js/residual-ui-game-race-fix-v114.js?v=114',
       '/assets/js/interaction-latency-coordinator-v101.js?v=114',
-      '/assets/js/screens/notifications-passive-v121.js?v=121',
-      '/assets/js/screens/notification-window-owner-v121.js?v=121',
+      '/assets/js/screens/notifications-passive-v124.js?v=124',
+      '/assets/js/screens/notification-window-owner-v124.js?v=124',
       '/assets/js/games/game-invites.js?v=114',
       '/assets/js/opponents-native-fetch-v115.js?v=115',
       '/assets/js/opponents-empty-cache-guard-v115.js?v=115',
@@ -107,6 +107,8 @@ test('staging app root serves integrated v123 notification and opponent graph', 
 
     const retired = [
       '/assets/js/screens/notifications-screen-v99.js?v=114',
+      '/assets/js/screens/notifications-passive-v121.js?v=121',
+      '/assets/js/screens/notification-window-owner-v121.js?v=121',
       '/assets/js/screens/notification-window-owner-v119.js?v=119',
       '/assets/js/screens/notification-empty-frame-guard-v115.js?v=115',
       '/assets/js/screens/notification-bell-first-click-v116.js?v=116',
