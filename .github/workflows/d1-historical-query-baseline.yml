@@ -1,0 +1,56 @@
+name: D1 historical query baseline
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-rewrite-trigger-base
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Restore immutable historical imports and baseline the split
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import json
+
+          historical = [Path(f'app/assets/js/main-v{version}.js') for version in range(99, 106)]
+          for path in historical:
+              text = path.read_text()
+              old = 'game-invites.js?v=d1'
+              if old not in text:
+                  raise SystemExit(f'Missing temporary canonical identity in {path}')
+              path.write_text(text.replace(old, 'game-invites.js?v=85', 1))
+
+          baseline_path = Path('scripts/ci/query-version-baseline.json')
+          baseline = json.loads(baseline_path.read_text())
+          baseline['app/assets/js/games/game-invites.js'] = ['85', 'd1']
+          baseline_path.write_text(json.dumps(baseline, ensure_ascii=False, indent=2) + '\n')
+          PY
+
+      - name: Run focused checks
+        run: |
+          node scripts/ci/check-js.mjs
+          php bot/tests/ProductionV105InviteLatencyContractTest.php
+          php bot/tests/ProductionMvp14D1CanonicalOwnersArchitectureTest.php
+
+      - name: Commit restoration and remove temporary runner
+        run: |
+          rm -f .github/workflows/d1-historical-query-baseline.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Preserve historical invite module identities"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
