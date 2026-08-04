@@ -1,146 +1,374 @@
-# MVP-14R — Clean relational MySQL rebuild
+# MVP-14R — CLEAN RELATIONAL MYSQL REBUILD
 
-## Goal
+## AUTHORITATIVE CHECKPOINT — 2026-08-04 20:52 (+03:00)
 
-Finish MVP-14 with one stable server runtime for Telegram, Google Play and App Store.
+```text
+PROJECT: Mini Games World
+REPOSITORY: manufact-test/mini-games-world
+PRODUCTION BRANCH: main
+PRODUCTION COMMIT: e11bb4909d549c1c5262de6eaf18338388e7bcdb
+STAGING BRANCH: agent/mvp-13-2-staging
+FAILED STAGING COMMIT: 10142d903c0f608c291530c738f79b4a9865c245
+PRODUCTION CHANGES AUTHORIZED: NO
+CURRENT BLOCK: MVP-14 D1 — notifications, player picker and real-device UI lifecycle
+MANUAL ACCEPTANCE: FAILED
+CONFIRMED WORKING CHANGE: deep-link invitation opens without duplicate blue toast
+CONFIRMED NOT FIXED: bell reliability, real-account visibility, false empty/loading flash
+NEXT ACTION: REMOVE HOTFIX GRAPH AND REBUILD BOTH UI OWNERS ARCHITECTURALLY
+```
 
-The final runtime must use normalized MySQL tables and domain repositories. JSON is retained only as a temporary recovery baseline, import/export format and backup source.
+# !!! КРИТИЧЕСКОЕ ПРАВИЛО ПРОЕКТА: НИКАКИХ ЗАПЛАТОК !!!
 
-The current MySQL database is not deleted. The current production state is preserved before any switch.
+Это правило является блокирующим gate, а не рекомендацией.
 
-## Confirmed architectural boundary
+## ЗАПРЕЩЕНО
 
-The existing DB-primary hot path stores the whole application state in one `state_json` singleton row. Every mutation locks that row, decodes the full state, runs a legacy whole-array callback, re-encodes and hashes the full state, updates the singleton row, then creates a projection event.
+Нельзя начинать или продолжать реализацию, если изменение добавляет ещё один слой поверх уже конфликтующей логики:
 
-The new runtime must not use the singleton whole-state row or full-state projections in its request hot path.
+- новый глобальный `click`, `pointerdown`, `pointerup`, `touchend` или compatibility interceptor для того же действия;
+- новый `window.fetch` wrapper поверх существующего transport owner;
+- новый `MutationObserver`, polling loop, timer или CSS-hider, который догоняет неправильное состояние;
+- дополнительный owner модального окна, toast, bell или player picker;
+- параллельный client-side cache/status, который конкурирует с authoritative response;
+- новый versioned hotfix-файл вместо исправления canonical owner;
+- сохранение старого owner «на всякий случай» после переноса его ответственности;
+- тест, подогнанный под частный порядок событий добавленной заплатки;
+- объявление задачи готовой только потому, что автоматический тест зелёный;
+- переход к следующей задаче до реальной ручной приёмки пользовательского сценария.
 
-## Mandatory process
+## ОБЯЗАТЕЛЬНО ДО ПЕРВОГО ИЗМЕНЕНИЯ КОДА
 
-- No new production client hotfix layers while the rebuild is being designed.
-- Every sub-MVP has exact commit/PR, automated checks, rollback instructions and measurable acceptance criteria.
-- User-visible sub-MVPs require a manual product-owner check before the next sub-MVP begins.
-- Production export, import, deploy, rollback and cutover require separate explicit approval.
-- MVP-15 stays blocked until MVP-14R.10 is accepted.
+Для каждого проблемного узла должна быть составлена карта:
 
-## Sub-MVPs
+1. Authoritative state и его источник.
+2. Единственный server-side owner.
+3. Единственный client-side owner.
+4. Все текущие handlers, wrappers, observers, polls и caches.
+5. Какие механизмы остаются.
+6. Какие механизмы удаляются из active graph.
+7. Какие файлы удаляются полностью после переноса.
+8. Какие автоматические проверки действительно применимы.
+9. Какие сценарии можно принять только вручную на реальных устройствах.
+10. Rollback checkpoint.
 
-### MVP-14R.0 — Safety checkpoint and architecture audit
+Без этой карты implementation PR создавать нельзя.
 
-**Status:** code/audit complete; production checkpoint execution pending explicit approval.
+## КРИТЕРИЙ «ЭТО АРХИТЕКТУРНОЕ ИСПРАВЛЕНИЕ»
 
-- freeze exact current code checkpoint;
-- preserve the complete historical roadmap;
-- identify the last accepted JSON behavior baseline;
-- inventory entrypoints, storage selection, singleton locks, bridges, projections and client owners;
-- prepare one-command production snapshot and isolated-restore verifier;
-- do not change production runtime.
+Изменение считается корневым только если одновременно выполнены все условия:
 
-**Exact JSON behavior baseline:** production checkout `4295f42c84d28b02eae25fb9aa069ed186bde5ac`, latest functional code `c1f51e1188af12a18bd72a94cc289429f7d4960a`, with zero changed files between them; JSON-only storage and the accepted v85/v86 client graph.
+- существует один названный authoritative owner;
+- старые конфликтующие owners перечислены;
+- новый механизм заменяет их обязанности, а не оборачивает их;
+- конфликтующие handlers/wrappers/observers/polls удалены из active graph;
+- после переноса нет зависимости от versioned hotfix-файлов;
+- UI имеет явную state machine;
+- тест подтверждает отсутствие двойного владельца;
+- focused automation проходит в своей реальной области применимости;
+- реальное устройство подтверждает пользовательское поведение, если automation его не воспроизводит.
 
-**Done when:** the production SQL/deployment/private/JSON checkpoint is created and its file/JSON restore verification passes.
+# !!! ПРАВИЛО ИСПОЛЬЗОВАНИЯ ТЕСТОВЫХ БОТОВ !!!
 
-### MVP-14R.1 — Full production snapshot and temporary JSON recovery
+Боты подключаются только тогда, когда они способны проверить требуемое свойство. Нельзя тратить полный E2E-прогон ради сценария, который тестовая среда принципиально не воспроизводит.
 
-- create the guarded current DB→JSON export under maintenance/read-only mode;
-- verify the export and restore it into an isolated directory;
-- preserve the SQL and full-file checkpoint from MVP-14R.0;
-- switch production to the verified JSON recovery runtime only after separate approval;
-- preserve the original MySQL database untouched.
+## БОТЫ ПРИМЕНИМЫ
 
-**Manual check:** app boot, profile, balance, history, invitation and one full match.
+Боты и Playwright используются для:
 
-### MVP-14R.2 — JSON behavior and latency baseline
+- API/state transitions;
+- сохранения, чтения и синхронизации данных в staging DB;
+- отсутствия duplicate requests и duplicate owners;
+- deterministic race conditions, которые можно воспроизвести контролируемыми ответами;
+- DOM-состояния в обычном Chromium;
+- regression существующих функций после архитектурного изменения;
+- контрактов loading/loaded/empty/error;
+- проверки, что test identities A/B видят друг друга в тестовом контуре;
+- проверки, что старые hotfix assets отсутствуют в active graph.
 
-- capture request/response contracts and side effects for critical flows;
-- measure cold/warm latency;
-- freeze deterministic fixtures and user-visible acceptance scenarios.
+## БОТЫ НЕ ЯВЛЯЮТСЯ ДОКАЗАТЕЛЬСТВОМ
 
-**Manual check:** product owner confirms the baseline reflects the known working bot.
+Playwright с тестовой cookie не доказывает:
 
-### MVP-14R.3 — Relational foundation and parity harness
+- работу реального Telegram Desktop/WebView;
+- работу реального Telegram mobile WebView;
+- поведение настоящих Telegram-аккаунтов и их session/presence lifecycle;
+- физический tap/hold и Telegram-generated compatibility events;
+- отсутствие визуального flash длительностью 0–500 мс на реальном устройстве;
+- поведение уже давно открытого приложения с реальным local/session cache;
+- сетевую задержку между двумя реальными устройствами.
 
-- normalized schemas and repositories;
-- domain transaction boundaries;
-- deterministic migrations and fixtures;
-- dual-run comparison harness that executes the same scenario against JSON baseline and relational MySQL;
+Для этих свойств автоматический тест может быть только вспомогательной диагностикой. Финальный gate — ручная проверка на компьютере и телефоне с двумя настоящими аккаунтами.
+
+## ОБЯЗАТЕЛЬНАЯ TEST-SCOPE ЗАПИСЬ
+
+До запуска тестов в PR должно быть указано:
+
+```text
+PROPERTY UNDER TEST:
+AUTOMATION CAN PROVE:
+AUTOMATION CANNOT PROVE:
+FOCUSED TESTS REQUIRED:
+FULL SUITE REQUIRED: YES/NO + WHY
+REAL-DEVICE CHECK REQUIRED: YES/NO + EXACT STEPS
+```
+
+Нельзя писать «20/20 — исправлено», если тесты не проверяют реальный Telegram-сценарий.
+
+## ПРАВИЛО ВРЕМЕНИ
+
+- Во время разработки запускаются только static/architecture checks и focused tests, относящиеся к изменённому owner.
+- Полный repository CI запускается один раз перед merge архитектурного блока.
+- Полный staging E2E запускается только если изменения могут затронуть соответствующие сценарии.
+- Ручной-only баг не должен многократно запускать четырёхчасовой bot suite без новой проверяемой гипотезы.
+- Повторный полный прогон разрешён только после конкретного изменения, способного повлиять на ранее упавший автоматизируемый сценарий.
+
+# CURRENT FAILURE — ЧТО ПРИЗНАНО НЕГОТОВЫМ
+
+## 1. Notification bell
+
+На реальном компьютере и телефоне короткий tap/click срабатывает нестабильно. Удержание также не является надёжным обходом.
+
+Текущий active graph содержит несколько пересекающихся owners и guards. Это архитектурно неприемлемо.
+
+## 2. Player picker / real accounts
+
+Тестовые `stg_test_player_a/b` видны в controlled E2E, но реальный аккаунт, открытый позже на телефоне, не появляется у пользователя на компьютере.
+
+Следовательно, тест test-player visibility не является доказательством real-account presence/picker behavior.
+
+## 3. False empty/loading flash
+
+На обоих устройствах пользователь видит промежуточный пустой/старый слой приблизительно 0–500 мс до появления списка.
+
+Предыдущий E2E начинал запись только после `sheetOverlay.active`, поэтому не мог видеть кадр до активации overlay. Такой тест не принимает этот баг.
+
+## 4. Deep-link duplicate toast
+
+Единственный подтверждённый исправленный сценарий: при входе по invitation link появляется decision sheet без дополнительного синего toast.
+
+При архитектурной переработке это поведение должно быть сохранено внутри нового canonical notification owner без отдельного policy/hider layer.
+
+# CURRENT HOTFIX GRAPH TO RETIRE
+
+Следующие active layers не должны наращиваться и должны быть удалены из active graph после переноса ответственности:
+
+```text
+app/assets/js/notification-deeplink-toast-policy-v131.js
+app/assets/js/notification-compat-click-guard-v127.js
+app/assets/js/screens/notification-window-owner-v121.js
+app/assets/js/screens/notifications-passive-v130.js
+app/assets/js/opponents-native-fetch-v115.js
+app/assets/js/opponents-empty-cache-guard-v115.js
+app/assets/js/opponents-authoritative-confirm-v122.js
+app/assets/js/opponents-fresh-user-action-v128.js
+```
+
+Также удаляются или переписываются тесты, которые проверяют наличие именно этих hotfix layers вместо canonical behavior.
+
+Удаление выполняется не отдельным слепым commit, который ломает staging, а внутри replacement branch: новый owner сначала принимает обязанности, затем old graph удаляется в том же архитектурном блоке.
+
+# MVP-14 D1 ARCHITECTURE REBUILD
+
+## D1.0 — Read-only owner audit
+
+**Статус:** IN PROGRESS.
+
+Нужно определить:
+
+### Notifications
+
+- canonical notification data source;
+- один reader/sync owner;
+- один bell input owner;
+- один modal render owner;
+- один toast decision owner;
+- deep-link suppression как параметр canonical transition, а не отдельный DOM watcher;
+- точный список старых listeners/owners для удаления.
+
+### Player picker
+
+- canonical presence source;
+- canonical opponents endpoint;
+- кто выполняет boot prefetch;
+- кто инициирует user-request refresh;
+- кто хранит cache;
+- кто рисует loading/loaded/confirmed-empty/error;
+- точный список fetch wrappers/cache guards для удаления.
+
+**Done when:** в репозитории находится документированная owner map и retirement list. Код поведения ещё не меняется.
+
+**Bots:** не нужны для составления карты. Допустимы только static searches/contracts.
+
+## D1.1 — Single notification owner
+
+Целевая модель:
+
+```text
+closed
+→ opening
+→ loading
+→ ready
+→ closing
+→ closed
+```
+
+Отдельная event policy внутри owner:
+
+```text
+normal notification → may show toast
+invite deep-link being opened → consume/sync silently, show decision sheet, never show duplicate toast
+```
+
+Требования:
+
+- один зарегистрированный handler на bell action;
+- handler использует обычный `click`/accessible activation без pointerup+compatibility competition;
+- один owner открывает и закрывает sheet;
+- bell не зависит от hold;
+- deep-link policy является входным параметром/state, не отдельным module-level observer/poller;
+- старые notification hotfix layers удалены из active graph;
+- duplicate toast remains fixed.
+
+**Focused automation:** DOM state machine, exactly-one-handler contract, normal invitation toast, silent deep-link transition.
+
+**Real-device gate:** desktop Telegram short click 10/10; mobile Telegram tap 10/10; close/reopen; deep-link without duplicate toast.
+
+## D1.2 — Single player-picker owner
+
+Целевая модель:
+
+```text
+idle
+→ loading
+→ loaded(items)
+→ confirmed-empty
+→ error
+```
+
+Требования:
+
+- открытие picker всегда начинает один fresh authoritative request;
+- boot prefetch не является final source for a later user action;
+- stale list and empty message never paint before current request resolves;
+- modal shell paints once in `loading`, without old content underneath;
+- `confirmed-empty` разрешён только после authoritative success with empty items;
+- одна request cancellation policy;
+- одна cache policy;
+- no `window.fetch` wrappers;
+- old opponent guards removed from active graph;
+- real account presence lifecycle investigated separately from test identities.
+
+**Focused automation:** state machine transitions, no stale cache on manual open, no empty state before authoritative result, exactly one opponents request owner.
+
+**Real-device gate:** computer opens first, phone account opens later, computer picker shows phone account; reverse direction; no false empty/old layer on either device.
+
+## D1.3 — Integration and regression
+
+После D1.1 и D1.2:
+
+- run static architecture checks;
+- run focused notification and picker tests;
+- run full repository CI once;
+- run only relevant staging E2E regression once;
+- do not call the block accepted before the real-device gate;
+- `main` remains unchanged until explicit production authorization.
+
+# SUB-MVP ROADMAP
+
+## MVP-14R.0 — Safety checkpoint and architecture audit
+
+**Status:** complete for the relational rebuild baseline; D1 owner audit reopened because manual acceptance exposed a prohibited hotfix graph.
+
+- preserve exact code checkpoints;
+- preserve historical roadmap;
+- inventory entrypoints, storage, locks, bridges, projections and UI owners;
+- do not change production without explicit approval.
+
+## MVP-14R.1 — Full production snapshot and temporary JSON recovery
+
+- guarded DB→JSON export;
+- isolated restore verification;
+- preserve SQL/files/private checkpoint;
+- production switch only after explicit approval.
+
+## MVP-14R.2 — Behavior and latency baseline
+
+- request/response contracts;
+- deterministic fixtures;
+- cold/warm latency;
+- accepted real-device scenarios.
+
+## MVP-14R.3 — Relational foundation and parity harness
+
+- normalized schemas/repositories;
+- transaction boundaries;
+- migrations/fixtures;
+- dual-run parity;
 - no production change.
 
-**Manual check:** none; schema, migration and parity harness are automated.
+## MVP-14R.4 — Accounts, auth, sessions and presence
 
-### MVP-14R.4 — Accounts, auth, sessions and presence
+- provider-neutral account/identity;
+- sessions/devices;
+- unique online presence;
+- two-real-device manual acceptance.
 
-- MGW accounts and provider identities;
-- Telegram and future Google/Apple identity linking contract;
-- sessions, device ownership and active/passive behavior;
-- online presence by unique account.
+## MVP-14R.5 — Invites, notifications and Telegram sharing
 
-**Manual check:** two accounts on two devices, online count and active/passive session behavior.
+- direct/link invitations;
+- accept/decline/cancel;
+- canonical notification center/toast/bell;
+- Telegram share;
+- no duplicate owners.
 
-### MVP-14R.5 — Invites, notifications and Telegram sharing
+## MVP-14R.6 — Matchmaking, search and bot fallback
 
-- direct and link invitations;
-- accept, decline and cancel;
-- notification list, unread counter and toast gestures;
-- Telegram prepared-message sharing and retry behavior.
+- relational queues;
+- human match/cancel/repeat;
+- bounded gameplay bot fallback;
+- no global state lock.
 
-**Manual check:** all invitation/share/notification flows on two accounts.
+## MVP-14R.7 — Games, clocks, results and rematches
 
-### MVP-14R.6 — Matchmaking, search and bot fallback
+- relational game state/actions;
+- authoritative clocks;
+- results/settlement/rematch;
+- all eight games.
 
-- relational queues scoped by room, game, size and bet;
-- player match, cancel and repeated search;
-- bounded bot fallback without a global application-state lock.
+## MVP-14R.8 — Economy, history, shop, payments and weekly bonus
 
-**Manual check:** two-player match, one-player bot fallback, cancel and repeat.
+- ledger-first balance;
+- settlement/history/inventory;
+- payments;
+- weekly eligibility/grant.
 
-### MVP-14R.7 — Games, clocks, results and rematches
+## MVP-14R.9 — Concurrency, load, failure and rollback rehearsal
 
-- relational game state and actions;
-- clocks and turn ownership;
-- result generation, settlement trigger and rematch lifecycle;
-- all eight games handled through one proven runtime contract or individually verified repositories.
+- idempotency/deadlock retry;
+- duplicate requests;
+- process interruption/recovery;
+- backup/restore/load.
 
-**Manual check:** mandatory full check of all eight games.
+## MVP-14R.10 — Final migration and production cutover
 
-### MVP-14R.8 — Economy, history, shop, payments and weekly bonus
+- fresh import/parity;
+- backup gate;
+- guarded cutover;
+- full production regression;
+- explicit release approval.
 
-- ledger-first balance mutations;
-- bets and settlement;
-- balance/match history;
-- inventory and store ownership;
-- payment lifecycle;
-- weekly Match-coin eligibility and grant.
+# NEXT EXECUTION ORDER
 
-**Manual check:** balances before/after games, history, store and weekly fixtures.
-
-### MVP-14R.9 — Concurrency, load, failure and rollback rehearsal
-
-- concurrent accounts and games;
-- deadlock retry and idempotency;
-- duplicate Telegram requests and repeated clicks;
-- process interruption and recovery;
-- backup and full isolated rollback rehearsal.
-
-**Manual check:** controlled staging stress and restored-copy verification.
-
-### MVP-14R.10 — Final migration and production cutover
-
-- fresh JSON→relational import;
-- exact parity and backup gate;
-- guarded maintenance window and runtime switch;
-- smoke before release;
-- separate release approval;
-- final production regression and rollback window.
-
-**Manual check:** complete production regression before MVP-14 is closed.
-
-## Current checkpoint
-
-- current main/code deployed: `f7e956000c027de640f196e8900b20a2140d0ca0` / v109;
-- immutable code checkpoint: `checkpoint/2026-07-28-v109-before-json-rollback-mysql-rebuild`;
-- working branch: `agent/mvp14r0-baseline-audit`;
-- exact JSON behavior baseline: `4295f42c84d28b02eae25fb9aa069ed186bde5ac` / v85-v86;
-- production manual v109 regression: failed;
-- production data/file checkpoint: pending execution;
-- production runtime changes during MVP-14R.0: prohibited;
-- next gate: green exact-head CI, merge authorization, code-only deploy, then the read-only checkpoint plus isolated verification commands.
+```text
+1. Merge this roadmap into staging only.
+2. Create D1 architecture audit branch from the merged staging commit.
+3. Produce exact notification and player-picker owner map.
+4. Do not add v132 or any new compatibility/fetch/cache guard.
+5. Replace notification graph with one canonical owner and remove old layers.
+6. Replace player-picker graph with one canonical owner and remove old layers.
+7. Run focused applicable automation.
+8. Run full CI once at integration gate.
+9. Deploy staging only.
+10. Stop for mandatory real-device acceptance.
+11. Do not touch main/production without explicit authorization.
+```
