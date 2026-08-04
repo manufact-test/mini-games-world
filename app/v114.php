@@ -48,11 +48,11 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main.js?v=d1-canonical-toast-seed',
+    './assets/js/main.js?v=d1-bell-capture',
     $html
 );
 
-$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-canonical-toast-seed"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-bell-capture"></script>';
 if (!str_contains($html, $mainScript)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');

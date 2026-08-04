@@ -30,7 +30,7 @@ export function initNotificationsScreen(){
   initialized = true;
   ensureNotificationToast();
 
-  document.addEventListener('click', handleNotificationActivation);
+  document.addEventListener('click', handleNotificationActivation, true);
   document.addEventListener('mgw:sheet-closed', handleSheetClosed);
 
   document.addEventListener('mgw:app-ready', () => {
@@ -145,7 +145,7 @@ function handleNotificationActivation(event){
     ? [activeToastNotification]
     : [];
   event.preventDefault();
-  event.stopPropagation();
+  event.stopImmediatePropagation();
   dismissNotificationToast();
   loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems });
 }
