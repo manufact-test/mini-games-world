@@ -7,14 +7,14 @@ const CACHE_TTL_MS = 15000;
 const TAP_MOVE_TOLERANCE_PX = 14;
 const TAP_MAX_DURATION_MS = 1400;
 const CLICK_SUPPRESSION_MS = 700;
+const CLICK_SUPPRESSION_RADIUS_PX = 32;
 
 let generation = 0;
 let latestItems = [];
 let latestItemsAt = 0;
 let initialized = false;
 let activePointer = null;
-let suppressClickUntil = 0;
-let suppressClickTarget = '';
+let suppressedClickTail = null;
 
 initNotificationWindowOwner();
 
@@ -71,16 +71,26 @@ function handlePointerUp(event){
   const pointer = activePointer;
   activePointer = null;
   if (!pointer || pointer.pointerId !== event.pointerId || !isPrimaryPointer(event)) return;
-  const trigger = notificationTrigger(event.target);
-  if (!trigger || trigger.id !== pointer.trigger) return;
-  const dx = Number(event.clientX || 0) - pointer.startX;
-  const dy = Number(event.clientY || 0) - pointer.startY;
+
+  const endX = Number(event.clientX || 0);
+  const endY = Number(event.clientY || 0);
+  const dx = endX - pointer.startX;
+  const dy = endY - pointer.startY;
   const duration = performance.now() - pointer.startedAt;
   if (Math.hypot(dx, dy) > TAP_MOVE_TOLERANCE_PX || duration > TAP_MAX_DURATION_MS) return;
+
+  const originalTrigger = document.getElementById(pointer.trigger);
+  const currentTrigger = notificationTrigger(event.target);
+  if (!(originalTrigger instanceof HTMLElement)) return;
+  if (currentTrigger?.id !== pointer.trigger && !pointInsideElement(originalTrigger, endX, endY, TAP_MOVE_TOLERANCE_PX)) return;
+
   event.preventDefault();
   event.stopImmediatePropagation();
-  suppressClickUntil = Date.now() + CLICK_SUPPRESSION_MS;
-  suppressClickTarget = pointer.trigger;
+  suppressedClickTail = {
+    until:Date.now() + CLICK_SUPPRESSION_MS,
+    x:endX,
+    y:endY,
+  };
   openFromUserInput();
 }
 
@@ -89,15 +99,21 @@ function handlePointerCancel(event){
 }
 
 function handleClickFallback(event){
+  // Opening the sheet on pointerup changes the element under the finger. Some
+  // Telegram WebViews then retarget the generated click to the new overlay.
+  // Consume that coordinate-matched tail before inspecting its new target, or
+  // the overlay immediately closes the sheet and the tap appears to be lost.
+  if (isSuppressedClickTail(event)) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    suppressedClickTail = null;
+    return;
+  }
+
   const trigger = notificationTrigger(event.target);
   if (!trigger) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  if (Date.now() <= suppressClickUntil && trigger.id === suppressClickTarget) {
-    suppressClickUntil = 0;
-    suppressClickTarget = '';
-    return;
-  }
   openFromUserInput();
 }
 
@@ -107,6 +123,26 @@ function handleKeyboardOpen(event){
   event.preventDefault();
   event.stopImmediatePropagation();
   openFromUserInput();
+}
+
+function isSuppressedClickTail(event){
+  const tail = suppressedClickTail;
+  if (!tail) return false;
+  if (Date.now() > tail.until) {
+    suppressedClickTail = null;
+    return false;
+  }
+  const dx = Number(event.clientX || 0) - tail.x;
+  const dy = Number(event.clientY || 0) - tail.y;
+  return Math.hypot(dx, dy) <= CLICK_SUPPRESSION_RADIUS_PX;
+}
+
+function pointInsideElement(element, x, y, padding = 0){
+  const rect = element.getBoundingClientRect();
+  return x >= rect.left - padding
+    && x <= rect.right + padding
+    && y >= rect.top - padding
+    && y <= rect.bottom + padding;
 }
 
 function openFromUserInput(){
