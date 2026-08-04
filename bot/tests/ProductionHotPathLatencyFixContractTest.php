@@ -185,7 +185,7 @@ $residualInit = strpos($main, 'initResidualUiGameRaceFixEarly();');
 $warmPosition = strpos($main, 'const firstInteraction = await warmFirstInteractionData().catch');
 $appReadyPosition = strpos($main, 'dispatchAppReady();');
 $assertTrue(
-    str_contains($main, 'd1-canonical-owners')
+    str_contains($main, 'd1-canonical-toast-seed')
         && str_contains($main, 'first-interaction-readiness.js?v=d1')
         && str_contains($main, 'profile-screen.js?v=92')
         && $readinessInit !== false

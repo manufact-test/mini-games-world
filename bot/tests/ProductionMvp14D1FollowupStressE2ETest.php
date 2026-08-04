@@ -11,8 +11,9 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(substr_count($spec, "test('D1 follow-up:") === 4,
-    'The live suite must contain four focused follow-up stress scenarios.');
+$assert(substr_count($spec, "test('D1 follow-up:") === 3
+        && str_contains($spec, "test('canonical desktop picker renders empty only after one authoritative response'"),
+    'The live suite must contain three notification follow-ups and one canonical picker scenario.');
 $assert(str_contains($spec, 'Приглашение отклонено')
         && str_contains($spec, "toHaveCount(0)")
         && str_contains($spec, "not.toHaveText('')"),
@@ -26,10 +27,12 @@ $assert(str_contains($spec, 'await delay(2_000);')
         && str_contains($spec, 'for (let iteration = 0; iteration < 8; iteration += 1)')
         && str_contains($spec, 'await playerA.page.waitForTimeout(2_300);'),
     'Desktop bots must click repeatedly while an old request is unfinished and verify no stale reopen.');
-$assert(str_contains($spec, 'if (stressCalls <= 4)')
-        && str_contains($spec, 'expect(stressCalls).toBeGreaterThanOrEqual(5)')
-        && str_contains($spec, 'Недавних соперников пока нет'),
-    'Opponent bots must inject multiple transient empty snapshots before the real list.');
+$assert(str_contains($spec, "test('canonical desktop picker renders empty only after one authoritative response'")
+        && str_contains($spec, 'expect(opponentCalls).toBe(0)')
+        && str_contains($spec, 'data-player-picker-state="loading"')
+        && str_contains($spec, 'data-player-picker-state="empty"')
+        && str_contains($spec, 'expect(opponentCalls).toBe(1)'),
+    'Opponent automation must prove no boot fetch and one authoritative manual empty response.');
 $assert(str_contains($spec, 'beforeGoto:async page =>')
         && str_contains($spec, 'isMobile:false')
         && str_contains($spec, 'isMobile = options.isMobile ?? true'),
