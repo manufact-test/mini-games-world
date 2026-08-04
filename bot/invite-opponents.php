@@ -38,6 +38,30 @@ function mgw_invite_opponent_activity(array $user, bool $presenceOnline): array
     return ['label' => 'недавний игрок', 'online' => false, 'busy' => false];
 }
 
+function mgw_invite_opponents_storage(array $config): StorageAdapterInterface
+{
+    $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
+
+    // Staging mutations already use DB-primary state through api.php. Reading
+    // this endpoint from the lagging JSON projection creates a split-brain list:
+    // Presence can know that B is online while the user snapshot still omits B.
+    // The picker is read-only, so resolve the same DB-primary state directly.
+    if ($environment === 'staging') {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('Authoritative staging opponent storage is unavailable.');
+        }
+        return new DatabasePrimaryStateStorageAdapter(
+            PdoConnectionFactory::create($databaseConfig),
+            null
+        );
+    }
+
+    // Production keeps its existing guarded entrypoint context. Environments
+    // without an activated DB-primary context retain the JSON rollback source.
+    return StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
@@ -49,9 +73,9 @@ try {
 
     $presence = new PresenceService();
     $onlineIds = array_fill_keys($presence->onlineAccountIds(), true);
-    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $storage = mgw_invite_opponents_storage($config);
 
-    $items = $db->readOnly(function (array $data) use ($userId, $onlineIds): array {
+    $items = $storage->readOnly(function (array $data) use ($userId, $onlineIds): array {
         $lastGameAt = [];
         foreach ($data['games'] ?? [] as $game) {
             if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished' || !empty($game['is_bot_game'])) {
@@ -115,7 +139,11 @@ try {
         return $result;
     });
 
-    api_ok(['items' => $items]);
+    api_ok([
+        'items' => $items,
+        'authoritative' => true,
+        'storage_driver' => $storage->driver(),
+    ]);
 } catch (Throwable $e) {
     api_error($e->getMessage());
 }
