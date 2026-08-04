@@ -1,0 +1,49 @@
+name: D1 contract cleanup
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-rewrite-trigger-base
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Remove duplicate owners and stale patch contracts
+        run: python tools/d1_contract_cleanup.py
+
+      - name: Validate focused architecture sources
+        run: |
+          node --check app/assets/js/main.js
+          node --check app/assets/js/first-interaction-readiness.js
+          node --check app/assets/js/screens/notifications-screen-v99.js
+          node --check app/assets/js/games/game-invites.js
+          node --check app/assets/js/games/invite-link-entry-v115.js
+          node --check e2e/staging/frontend-immutable-core.spec.mjs
+          node --check e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          php -l app/v114.php
+          php bot/tests/ProductionMvp14D1CanonicalOwnersArchitectureTest.php
+          php bot/tests/ProductionMvp14D1DeepLinkCanonicalTransitionTest.php
+          php bot/tests/ProductionMvp14R13MainEntryCacheBustTest.php
+          php bot/tests/ProductionMvp14R13ReadinessShareSingleOwnerTest.php
+          ! grep -q "window.fetch =" app/assets/js/first-interaction-readiness.js
+          ! grep -q "data-create-link-invite\|create_link_draft\|openTelegramShare\|invite-opponents.php" app/assets/js/first-interaction-readiness.js
+
+      - name: Commit cleanup and remove temporary runner
+        run: |
+          rm -f tools/d1_contract_cleanup.py .github/workflows/d1-contract-cleanup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Remove duplicate owners and patch-specific contracts"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
