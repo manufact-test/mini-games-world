@@ -32,7 +32,7 @@ $importMap = <<<'HTML'
     "./assets/js/first-interaction-readiness-v103.js?v=103": "./assets/js/first-interaction-readiness-v103.js?v=114",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
     "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114",
-    "./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-passive-v121.js?v=121",
+    "./assets/js/screens/notifications-screen-v99.js?v=99": "./assets/js/screens/notifications-passive-v130.js?v=130",
     "./assets/js/games/game-invites.js?v=85": "./assets/js/games/game-invites.js?v=114"
   }
 }
