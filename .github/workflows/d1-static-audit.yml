@@ -1,0 +1,34 @@
+name: D1 static architecture audit
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-rewrite-trigger-base
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          node --check app/assets/js/main.js
+          node --check app/assets/js/first-interaction-readiness.js
+          node --check app/assets/js/screens/notifications-screen-v99.js
+          node --check app/assets/js/games/game-invites.js
+          node --check app/assets/js/games/invite-link-entry-v115.js
+          php -l app/v114.php
+      - name: Architecture ownership
+        run: |
+          ! grep -R -n "window.fetch =" app/assets/js/first-interaction-readiness.js app/assets/js/games/game-invites.js
+          ! grep -R -n "notification-compat-click-guard-v127\|notification-window-owner-v121\|notifications-passive-v130\|notification-deeplink-toast-policy-v131\|opponents-native-fetch-v115\|opponents-empty-cache-guard-v115\|opponents-authoritative-confirm-v122\|opponents-fresh-user-action-v128" app/v114.php app/assets/js/main.js
+          grep -q "data-player-picker-state=\"loading\"" app/assets/js/games/game-invites.js
+          grep -q "cache:'no-store'" app/assets/js/games/game-invites.js
+          grep -q "mgw:invite-link-opening" app/assets/js/screens/notifications-screen-v99.js
+          grep -q "mgw:invite-link-resolved" app/assets/js/games/invite-link-entry-v115.js
+      - name: Find stale repository contracts
+        run: |
+          grep -R -n -E "notification-compat-click-guard-v127|notification-window-owner-v121|notifications-passive-v130|notification-deeplink-toast-policy-v131|opponents-native-fetch-v115|opponents-empty-cache-guard-v115|opponents-authoritative-confirm-v122|opponents-fresh-user-action-v128|first-interaction-readiness-v103" bot/tests e2e .github app --exclude-dir=node_modules || true
