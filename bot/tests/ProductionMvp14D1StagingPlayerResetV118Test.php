@@ -16,7 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(str_contains($endpoint, "if ($action === 'reset_test_players')")
+$assert(str_contains($endpoint, "if (\$action === 'reset_test_players')")
         && str_contains($endpoint, 'substr_count($providedCredential, \'.\') !== 2')
         && str_contains($endpoint, 'verifyAndConsume($providedCredential)'),
     'The reset action must require a fresh GitHub Actions OIDC token.');
