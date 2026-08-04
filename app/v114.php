@@ -12,10 +12,6 @@ if (!is_string($html)) {
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
 $notificationWindowOwner = '<script type="module" src="./assets/js/screens/notification-window-owner-v118.js?v=118"></script>';
-$emptyFrameGuard = '<script type="module" src="./assets/js/screens/notification-empty-frame-guard-v115.js?v=115"></script>';
-$mobileNotificationOwner = '<script type="module" src="./assets/js/screens/notification-mobile-open-owner-v117.js?v=117"></script>';
-$desktopNotificationOwner = '<script type="module" src="./assets/js/screens/notification-desktop-open-owner-v117.js?v=117"></script>';
-$bellFirstClickGuard = '<script type="module" src="./assets/js/screens/notification-bell-first-click-v116.js?v=116"></script>';
 $nativeFetchGuard = '<script type="module" src="./assets/js/opponents-native-fetch-v115.js?v=115"></script>';
 $opponentsGuard = '<script type="module" src="./assets/js/opponents-empty-cache-guard-v115.js?v=115"></script>';
 $opponentsConfirm = '<script type="module" src="./assets/js/opponents-authoritative-confirm-v117.js?v=117"></script>';
@@ -51,10 +47,6 @@ $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap
       . "\n  " . $notificationWindowOwner
-      . "\n  " . $emptyFrameGuard
-      . "\n  " . $mobileNotificationOwner
-      . "\n  " . $desktopNotificationOwner
-      . "\n  " . $bellFirstClickGuard
       . "\n  " . $nativeFetchGuard,
     $html
 );
