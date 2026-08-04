@@ -1,0 +1,9 @@
+DirectoryIndex v114.php index.html
+
+<IfModule mod_headers.c>
+  <Files "v114.php">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </Files>
+</IfModule>

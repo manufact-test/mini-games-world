@@ -1,0 +1,8 @@
+{
+  "name": "mini-games-world-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e:staging": "playwright test --config=e2e/playwright.config.mjs"
+  }
+}

@@ -19,22 +19,11 @@ function mgw_invite_opponent_activity(array $user, bool $presenceOnline): array
     $lastSeen = strtotime((string)($user['last_seen_at'] ?? '')) ?: 0;
     $secondsAgo = $lastSeen > 0 ? max(0, time() - $lastSeen) : null;
 
-    if ($status === 'playing') {
-        return ['label' => 'сейчас играет', 'online' => true, 'busy' => true];
-    }
-    if ($status === 'searching') {
-        return ['label' => 'ищет соперника', 'online' => true, 'busy' => true];
-    }
-    if ($presenceOnline) {
-        return ['label' => 'онлайн', 'online' => true, 'busy' => false];
-    }
-    if ($secondsAgo !== null && $secondsAgo <= 3600) {
-        return ['label' => 'был недавно', 'online' => false, 'busy' => false];
-    }
-    if ($secondsAgo !== null && $secondsAgo <= 86400 * 7) {
-        return ['label' => 'заходил на этой неделе', 'online' => false, 'busy' => false];
-    }
-
+    if ($status === 'playing') return ['label' => 'сейчас играет', 'online' => true, 'busy' => true];
+    if ($status === 'searching') return ['label' => 'ищет соперника', 'online' => true, 'busy' => true];
+    if ($presenceOnline) return ['label' => 'онлайн', 'online' => true, 'busy' => false];
+    if ($secondsAgo !== null && $secondsAgo <= 3600) return ['label' => 'был недавно', 'online' => false, 'busy' => false];
+    if ($secondsAgo !== null && $secondsAgo <= 86400 * 7) return ['label' => 'заходил на этой неделе', 'online' => false, 'busy' => false];
     return ['label' => 'недавний игрок', 'online' => false, 'busy' => false];
 }
 
@@ -48,15 +37,31 @@ try {
     if ($userId === '') api_error('Пользователь не найден.');
 
     $presence = new PresenceService();
-    $onlineIds = array_fill_keys($presence->onlineAccountIds(), true);
-    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $onlineIds = array_fill_keys(array_map('strval', $presence->onlineAccountIds()), true);
+    $storage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
-    $items = $db->readOnly(function (array $data) use ($userId, $onlineIds): array {
+    // The canonical player profile directory is the JSON application state.
+    // Presence is an independent live source layered onto those profiles. The
+    // DB projection does not necessarily contain staging test or recent-user
+    // profiles, so using it as the picker catalog drops valid online players.
+    $result = $storage->readOnly(function (array $data) use ($userId, $onlineIds): array {
+        $users = is_array($data['users'] ?? null) ? $data['users'] : [];
+        $knownUserIds = array_fill_keys(array_map('strval', array_keys($users)), true);
+        $onlineOpponentIds = [];
+        foreach (array_keys($onlineIds) as $onlineId) {
+            $onlineId = (string)$onlineId;
+            if ($onlineId === '' || $onlineId === $userId || str_starts_with($onlineId, 'bot_')) continue;
+            $onlineOpponentIds[$onlineId] = true;
+        }
+
+        $unresolvedOnlineCount = 0;
+        foreach (array_keys($onlineOpponentIds) as $onlineId) {
+            if (!isset($knownUserIds[$onlineId])) $unresolvedOnlineCount++;
+        }
+
         $lastGameAt = [];
         foreach ($data['games'] ?? [] as $game) {
-            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished' || !empty($game['is_bot_game'])) {
-                continue;
-            }
+            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished' || !empty($game['is_bot_game'])) continue;
             $players = array_values(array_map('strval', $game['player_ids'] ?? []));
             if (count($players) !== 2 || !in_array($userId, $players, true)) continue;
             $opponentId = $players[0] === $userId ? ($players[1] ?? '') : ($players[0] ?? '');
@@ -67,22 +72,15 @@ try {
             if ($candidate >= $current) $lastGameAt[$opponentId] = $timestamp;
         }
 
-        $result = [];
-        foreach ($data['users'] ?? [] as $candidateId => $candidate) {
+        $items = [];
+        foreach ($users as $candidateId => $candidate) {
             $candidateId = (string)$candidateId;
-            if ($candidateId === ''
-                || $candidateId === $userId
-                || str_starts_with($candidateId, 'bot_')
-                || !is_array($candidate)) {
-                continue;
-            }
+            if ($candidateId === '' || $candidateId === $userId || str_starts_with($candidateId, 'bot_') || !is_array($candidate)) continue;
 
-            $presenceOnline = isset($onlineIds[$candidateId]);
+            $presenceOnline = isset($onlineOpponentIds[$candidateId]);
             $lastSeen = strtotime((string)($candidate['last_seen_at'] ?? '')) ?: 0;
             $hasHistory = isset($lastGameAt[$candidateId]);
-            if (!$presenceOnline && !$hasHistory && ($lastSeen <= 0 || time() - $lastSeen > 86400 * 30)) {
-                continue;
-            }
+            if (!$presenceOnline && !$hasHistory && ($lastSeen <= 0 || time() - $lastSeen > 86400 * 30)) continue;
 
             $activity = mgw_invite_opponent_activity($candidate, $presenceOnline);
             $gameTime = strtotime((string)($lastGameAt[$candidateId] ?? '')) ?: 0;
@@ -91,7 +89,7 @@ try {
             $score += $hasHistory ? 100000000 : 0;
             $score += max($gameTime, $lastSeen);
 
-            $result[] = [
+            $items[] = [
                 'id' => $candidateId,
                 'name' => mgw_invite_opponent_name($candidate),
                 'activity' => (string)$activity['label'],
@@ -103,19 +101,33 @@ try {
             ];
         }
 
-        usort($result, static function (array $left, array $right): int {
+        usort($items, static function (array $left, array $right): int {
             $scoreCompare = (int)($right['_score'] ?? 0) <=> (int)($left['_score'] ?? 0);
             if ($scoreCompare !== 0) return $scoreCompare;
             return strcasecmp((string)($left['name'] ?? ''), (string)($right['name'] ?? ''));
         });
 
-        $result = array_slice($result, 0, 10);
+        $result = array_slice($items, 0, 10);
         foreach ($result as &$item) unset($item['_score']);
         unset($item);
-        return $result;
+
+        return [
+            'items' => $result,
+            'online_opponent_count' => count($onlineOpponentIds),
+            'unresolved_online_count' => $unresolvedOnlineCount,
+        ];
     });
 
-    api_ok(['items' => $items]);
+    $complete = (int)($result['unresolved_online_count'] ?? 0) === 0;
+    api_ok([
+        'items' => is_array($result['items'] ?? null) ? $result['items'] : [],
+        'authoritative' => $complete,
+        'complete' => $complete,
+        'storage_driver' => $storage->driver(),
+        'online_opponent_count' => max(0, (int)($result['online_opponent_count'] ?? 0)),
+        'unresolved_online_count' => max(0, (int)($result['unresolved_online_count'] ?? 0)),
+        'presence_observed_at' => gmdate(DATE_ATOM),
+    ]);
 } catch (Throwable $e) {
     api_error($e->getMessage());
 }
