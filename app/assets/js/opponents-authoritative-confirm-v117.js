@@ -8,6 +8,11 @@ const nativeFetch = typeof window.__MGW_NATIVE_FETCH_V115__ === 'function'
 window.fetch = async function opponentsAuthoritativeConfirm(input, init = {}){
   if (!isOpponentsRequest(input, init)) return upstreamFetch(input, init);
 
+  // The canonical picker renders its loading sheet synchronously before calling
+  // fetch. Yield one browser frame so that state is actually painted and remains
+  // observable even when a browser/CDN cache returns an immediate empty payload.
+  await nextPaint();
+
   let latestResponse = await upstreamFetch(input, init);
   if (await hasPlayers(latestResponse)) return latestResponse;
   if (!latestResponse.ok) return latestResponse;
@@ -54,6 +59,10 @@ function withNoCacheHeaders(source){
   headers.set('Cache-Control', 'no-cache');
   headers.set('Pragma', 'no-cache');
   return headers;
+}
+
+function nextPaint(){
+  return new Promise(resolve => window.requestAnimationFrame(() => resolve()));
 }
 
 function delay(ms){
