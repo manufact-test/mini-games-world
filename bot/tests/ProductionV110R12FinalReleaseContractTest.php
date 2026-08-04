@@ -96,8 +96,10 @@ $assert(
         && str_contains($notifications, 'localAuthority.delete(key)')
         && str_contains($notifications, 'sheetState.pinned.delete(key)')
         && !str_contains($notifications, 'function applyInviteActionResult(')
-        && str_contains($notificationEndpoint, "return in_array(\$status, ['pending', 'accepted'], true);"),
-    'Actor terminal invitations must be removed from local state and excluded by the authoritative notification endpoint.'
+        && str_contains($notificationEndpoint, "return in_array(\$status, ['pending', 'accepted', 'declined'], true);")
+        && str_contains($notificationEndpoint, "\$item['title'] = 'Приглашение отклонено';")
+        && str_contains($notificationEndpoint, "\$item['read'] = true;"),
+    'Actor terminal actions must disappear immediately, while the next authoritative read may restore only read declined history without actions.'
 );
 $assert(
     str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
@@ -115,7 +117,7 @@ $assert(
         && !str_contains($shell, 'window.fetch =')
         && str_contains($invites, 'async function openPlayerPicker(context)')
         && str_contains($invites, 'postJson(OPPONENTS_URL, {})'),
-    'The player picker must remain inside the canonical invite owner without a global fetch wrapper.'
+    'The player picker must remain inside the canonical invite owner without the retired R12 wrapper.'
 );
 $assert(
     str_contains($opponentEndpoint, 'new PresenceService()')
