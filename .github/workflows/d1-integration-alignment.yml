@@ -1,0 +1,44 @@
+name: D1 canonical integration alignment
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-integration-trigger-base
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply canonical owner and contract alignment
+        run: python tools/d1_integration_alignment.py
+
+      - name: Validate focused sources
+        run: |
+          node --check app/assets/js/screens/notifications-screen-v99.js
+          node --check e2e/staging/d1-followup-acceptance-v120.spec.mjs
+          node --check e2e/staging/d1-followup-stress.spec.mjs
+          node --check e2e/staging/d1-real-user-regressions-v127.spec.mjs
+          php bot/tests/ProductionMvp14D1CanonicalOwnersArchitectureTest.php
+          php bot/tests/ProductionMvp14D1DeepLinkCanonicalTransitionTest.php
+          grep -q "mergeNotificationCollections(normalizeItems(result?.items), immediateItems)" app/assets/js/screens/notifications-screen-v99.js
+          ! grep -q "compatibility click retargeted" e2e/staging/d1-real-user-regressions-v127.spec.mjs
+          ! grep -q "confirms transient empty snapshots" e2e/staging/d1-followup-stress.spec.mjs
+
+      - name: Commit alignment and remove temporary runner
+        run: |
+          rm -f tools/d1_integration_alignment.py .github/workflows/d1-integration-alignment.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Align integration contracts with canonical D1 owners"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
