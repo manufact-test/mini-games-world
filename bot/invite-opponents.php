@@ -19,22 +19,11 @@ function mgw_invite_opponent_activity(array $user, bool $presenceOnline): array
     $lastSeen = strtotime((string)($user['last_seen_at'] ?? '')) ?: 0;
     $secondsAgo = $lastSeen > 0 ? max(0, time() - $lastSeen) : null;
 
-    if ($status === 'playing') {
-        return ['label' => 'сейчас играет', 'online' => true, 'busy' => true];
-    }
-    if ($status === 'searching') {
-        return ['label' => 'ищет соперника', 'online' => true, 'busy' => true];
-    }
-    if ($presenceOnline) {
-        return ['label' => 'онлайн', 'online' => true, 'busy' => false];
-    }
-    if ($secondsAgo !== null && $secondsAgo <= 3600) {
-        return ['label' => 'был недавно', 'online' => false, 'busy' => false];
-    }
-    if ($secondsAgo !== null && $secondsAgo <= 86400 * 7) {
-        return ['label' => 'заходил на этой неделе', 'online' => false, 'busy' => false];
-    }
-
+    if ($status === 'playing') return ['label' => 'сейчас играет', 'online' => true, 'busy' => true];
+    if ($status === 'searching') return ['label' => 'ищет соперника', 'online' => true, 'busy' => true];
+    if ($presenceOnline) return ['label' => 'онлайн', 'online' => true, 'busy' => false];
+    if ($secondsAgo !== null && $secondsAgo <= 3600) return ['label' => 'был недавно', 'online' => false, 'busy' => false];
+    if ($secondsAgo !== null && $secondsAgo <= 86400 * 7) return ['label' => 'заходил на этой неделе', 'online' => false, 'busy' => false];
     return ['label' => 'недавний игрок', 'online' => false, 'busy' => false];
 }
 
@@ -72,9 +61,7 @@ try {
 
         $lastGameAt = [];
         foreach ($data['games'] ?? [] as $game) {
-            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished' || !empty($game['is_bot_game'])) {
-                continue;
-            }
+            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished' || !empty($game['is_bot_game'])) continue;
             $players = array_values(array_map('strval', $game['player_ids'] ?? []));
             if (count($players) !== 2 || !in_array($userId, $players, true)) continue;
             $opponentId = $players[0] === $userId ? ($players[1] ?? '') : ($players[0] ?? '');
@@ -88,19 +75,12 @@ try {
         $items = [];
         foreach ($users as $candidateId => $candidate) {
             $candidateId = (string)$candidateId;
-            if ($candidateId === ''
-                || $candidateId === $userId
-                || str_starts_with($candidateId, 'bot_')
-                || !is_array($candidate)) {
-                continue;
-            }
+            if ($candidateId === '' || $candidateId === $userId || str_starts_with($candidateId, 'bot_') || !is_array($candidate)) continue;
 
             $presenceOnline = isset($onlineOpponentIds[$candidateId]);
             $lastSeen = strtotime((string)($candidate['last_seen_at'] ?? '')) ?: 0;
             $hasHistory = isset($lastGameAt[$candidateId]);
-            if (!$presenceOnline && !$hasHistory && ($lastSeen <= 0 || time() - $lastSeen > 86400 * 30)) {
-                continue;
-            }
+            if (!$presenceOnline && !$hasHistory && ($lastSeen <= 0 || time() - $lastSeen > 86400 * 30)) continue;
 
             $activity = mgw_invite_opponent_activity($candidate, $presenceOnline);
             $gameTime = strtotime((string)($lastGameAt[$candidateId] ?? '')) ?: 0;
@@ -127,12 +107,12 @@ try {
             return strcasecmp((string)($left['name'] ?? ''), (string)($right['name'] ?? ''));
         });
 
-        $items = array_slice($items, 0, 10);
-        foreach ($items as &$item) unset($item['_score']);
+        $result = array_slice($items, 0, 10);
+        foreach ($result as &$item) unset($item['_score']);
         unset($item);
 
         return [
-            'items' => $items,
+            'items' => $result,
             'online_opponent_count' => count($onlineOpponentIds),
             'unresolved_online_count' => $unresolvedOnlineCount,
         ];
