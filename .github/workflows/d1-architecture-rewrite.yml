@@ -1,0 +1,39 @@
+name: D1 architecture rewrite
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-rewrite-trigger-base
+
+permissions:
+  contents: write
+
+jobs:
+  rewrite:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Apply canonical owner rewrite
+        run: python tools/d1_architecture_rewrite.py
+
+      - name: Validate rewrite shape
+        run: |
+          node --check app/assets/js/games/game-invites.js
+          node --check app/assets/js/first-interaction-readiness.js
+          ! grep -R "window.fetch =" app/assets/js/first-interaction-readiness.js app/assets/js/games/game-invites.js
+          grep -q "data-player-picker-state=\"loading\"" app/assets/js/games/game-invites.js
+
+      - name: Commit rewrite and remove temporary runner
+        run: |
+          rm -f tools/d1_architecture_rewrite.py .github/workflows/d1-architecture-rewrite.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Rebuild canonical player-picker transport and state"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
