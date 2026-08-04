@@ -34,7 +34,7 @@ $assert(str_contains($entry, 'opponents-authoritative-confirm-v122.js?v=122')
     'v124 must publish only v122 opponent confirmation.');
 $assert(str_contains($entry, 'v124-mvp14-d1-live-failure-fixes'), 'The integrated shell must expose v124.');
 $assert(str_contains($reset, 'DatabasePrimaryStateStorageAdapter(')
-        && str_contains($reset, "$data['users'][$legacyUserId] = $user;"),
+        && str_contains($reset, "\$data['users'][\$legacyUserId] = \$user;"),
     'The isolated staging reset must seed the same DB-primary user source read by the picker.');
 $assert(str_contains($confirm, 'REQUIRED_AUTHORITATIVE_EMPTY_RESPONSES = 2'),
     'A single empty snapshot must never become final.');
