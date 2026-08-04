@@ -57,7 +57,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v130-mvp14-d1-real-entry-separation"',
+    'data-hotfix-build="v123-mvp14-d1-two-manual-regressions"',
     $html
 );
 $html = str_replace(
@@ -83,5 +83,5 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: v130-mvp14-d1-real-entry-separation');
+header('X-MGW-Frontend-Build: v123-mvp14-d1-two-manual-regressions');
 echo $html;
