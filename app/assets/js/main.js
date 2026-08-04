@@ -1,6 +1,5 @@
-window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
-window.__MGW_HOTFIX_BUILD__ = 'v115-mvp14-d1-feedback-integration';
-import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness-v103.js?v=103';
+window.__MGW_BUILD__ = 'd1-canonical-owners';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=132';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';
@@ -22,7 +21,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v99.js?v=99';
+import { initNotificationsScreen } from './screens/notifications-screen-v99.js?v=132';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
@@ -30,8 +29,8 @@ import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initInviteTerminalActions } from './games/invite-terminal-actions-v115.js?v=115';
-import { initGameInvites } from './games/game-invites.js?v=85';
-import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v115.js?v=115';
+import { initGameInvites } from './games/game-invites.js?v=132';
+import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v115.js?v=132';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
@@ -47,7 +46,6 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
-/* The canonical notifications screen remains the only bell/network renderer. */
 initNotificationsScreen();
 initFirstInteractionReadinessEarly();
 initRequestGuard();
@@ -55,16 +53,13 @@ initResidualUiGameRaceFixEarly();
 initInteractionLatencyCoordinator();
 initResidualUiGameRaceFixAfter();
 initTelegramApp();
-/* Presence starts before bootstrap for both ordinary and invitation launches. */
 initV115Presence();
 initRuntimeStatus();
 initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
-/* Decline/cancel owns the earliest capture boundary and succeeds silently. */
 initInviteTerminalActions();
-/* The canonical coordinator owns direct invitations, accept/start and Share. */
 initGameInvites();
 initGameFinishStability();
 initDominoChainLayout();
