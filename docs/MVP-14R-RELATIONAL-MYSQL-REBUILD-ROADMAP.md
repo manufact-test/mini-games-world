@@ -1,6 +1,6 @@
 # MVP-14R — CLEAN RELATIONAL MYSQL REBUILD
 
-## AUTHORITATIVE CHECKPOINT — 2026-08-04 20:52 (+03:00)
+## AUTHORITATIVE CHECKPOINT — 2026-08-04 22:50 (+03:00)
 
 ```text
 PROJECT: Mini Games World
@@ -8,13 +8,17 @@ REPOSITORY: manufact-test/mini-games-world
 PRODUCTION BRANCH: main
 PRODUCTION COMMIT: e11bb4909d549c1c5262de6eaf18338388e7bcdb
 STAGING BRANCH: agent/mvp-13-2-staging
-FAILED STAGING COMMIT: 10142d903c0f608c291530c738f79b4a9865c245
+CURRENT STAGING CODE COMMIT: 76e25cd34ceb53259b27fd26689d04d0ea16ef72
 PRODUCTION CHANGES AUTHORIZED: NO
-CURRENT BLOCK: MVP-14 D1 — notifications, player picker and real-device UI lifecycle
-MANUAL ACCEPTANCE: FAILED
-CONFIRMED WORKING CHANGE: deep-link invitation opens without duplicate blue toast
-CONFIRMED NOT FIXED: bell reliability, real-account visibility, false empty/loading flash
-NEXT ACTION: REMOVE HOTFIX GRAPH AND REBUILD BOTH UI OWNERS ARCHITECTURALLY
+CURRENT BLOCK: MVP-14 D1 — canonical notifications and player picker
+OWNER AUDIT: COMPLETE
+HOTFIX GRAPH RETIREMENT: COMPLETE
+PLAYER-PICKER AUTOMATED SCOPE: PASS
+NOTIFICATION AUTOMATED SCOPE: FAIL — 1 SCENARIO REMAINS
+LATEST STAGING E2E: RUN 30943775973 — APPLICATION FAILURE, 19/20
+MANUAL ACCEPTANCE: BLOCKED; NOT YET PERFORMED
+MVP-14 D1 STATUS: NOT DONE
+NEXT ACTION: FIX THE REMAINING CACHED-TOAST STATE TRANSFER INSIDE THE CANONICAL NOTIFICATION OWNER
 ```
 
 # !!! КРИТИЧЕСКОЕ ПРАВИЛО ПРОЕКТА: НИКАКИХ ЗАПЛАТОК !!!
@@ -81,7 +85,7 @@ NEXT ACTION: REMOVE HOTFIX GRAPH AND REBUILD BOTH UI OWNERS ARCHITECTURALLY
 - deterministic race conditions, которые можно воспроизвести контролируемыми ответами;
 - DOM-состояния в обычном Chromium;
 - regression существующих функций после архитектурного изменения;
-- контрактов loading/loaded/empty/error;
+- контрактов `loading / loaded / empty / error`;
 - проверки, что test identities A/B видят друг друга в тестовом контуре;
 - проверки, что старые hotfix assets отсутствуют в active graph.
 
@@ -119,94 +123,130 @@ REAL-DEVICE CHECK REQUIRED: YES/NO + EXACT STEPS
 - Во время разработки запускаются только static/architecture checks и focused tests, относящиеся к изменённому owner.
 - Полный repository CI запускается один раз перед merge архитектурного блока.
 - Полный staging E2E запускается только если изменения могут затронуть соответствующие сценарии.
-- Ручной-only баг не должен многократно запускать четырёхчасовой bot suite без новой проверяемой гипотезы.
+- Ручной-only баг не должен многократно запускать полный bot suite без новой проверяемой гипотезы.
 - Повторный полный прогон разрешён только после конкретного изменения, способного повлиять на ранее упавший автоматизируемый сценарий.
 
-# CURRENT FAILURE — ЧТО ПРИЗНАНО НЕГОТОВЫМ
+# CURRENT ACCEPTANCE STATUS
 
-## 1. Notification bell
+## Что архитектурно завершено
 
-На реальном компьютере и телефоне короткий tap/click срабатывает нестабильно. Удержание также не является надёжным обходом.
+- Notification graph сведён к одному canonical owner: `app/assets/js/screens/notifications-screen-v99.js`.
+- Player-picker graph сведён к одному canonical owner: `app/assets/js/games/game-invites.js`.
+- Deep-link передаёт явные lifecycle transitions в canonical notification owner.
+- Ручное открытие picker выполняет один fresh authoritative `no-store` request.
+- Boot-prefetch соперников больше не является источником ручного picker.
+- Notification sheet и player picker имеют явные состояния `loading / loaded / empty / error`.
+- Старые notification guards/policies и opponent wrappers удалены из active graph.
 
-Текущий active graph содержит несколько пересекающихся owners и guards. Это архитектурно неприемлемо.
+## Что подтверждено автоматизацией
 
-## 2. Player picker / real accounts
+- Единственный notification owner и единственный player-picker owner присутствуют в active graph.
+- Удалённые guard/policy/wrapper assets не загружаются.
+- Один manual picker open создаёт один authoritative opponents request.
+- Controlled Chromium не рисует empty до authoritative ответа picker.
+- Deep-link в controlled Chromium открывает decision sheet без duplicate toast.
+- Test identities A/B проходят приглашение и полный матч в staging DB-контуре.
+- Полный repository CI и DB-primary safety прошли.
+- В последнем staging E2E успешно прошли 19 из 20 сценариев.
 
-Тестовые `stg_test_player_a/b` видны в controlled E2E, но реальный аккаунт, открытый позже на телефоне, не появляется у пользователя на компьютере.
+## Открытая автоматизируемая ошибка
 
-Следовательно, тест test-player visibility не является доказательством real-account presence/picker behavior.
+Run `30943775973` повторно упал на сценарии:
 
-## 3. False empty/loading flash
+```text
+e2e/staging/d1-followup-acceptance-v120.spec.mjs:245
+D1 v120 acceptance: mobile notification toast paints cached invitation before delayed false-empty response
+```
 
-На обоих устройствах пользователь видит промежуточный пустой/старый слой приблизительно 0–500 мс до появления списка.
+Фактическое проявление:
 
-Предыдущий E2E начинал запись только после `sheetOverlay.active`, поэтому не мог видеть кадр до активации overlay. Такой тест не принимает этот баг.
+- синий toast виден;
+- пользователь нажимает toast;
+- canonical notification sheet открывается;
+- actionable-кнопка `Принять приглашение` для известного invite token не появляется в течение 1,2 секунды;
+- delayed false-empty response всё ещё способен нарушить передачу уже известного toast item в sheet state.
 
-## 4. Deep-link duplicate toast
+Следовательно:
 
-Единственный подтверждённый исправленный сценарий: при входе по invitation link появляется decision sheet без дополнительного синего toast.
+- notification automated gate не пройден;
+- исправление `requestAnimationFrame` generation не устранило корневую потерю active toast item;
+- ручную Telegram-приёмку начинать рано;
+- `MVP-14 D1` не завершён.
 
-При архитектурной переработке это поведение должно быть сохранено внутри нового canonical notification owner без отдельного policy/hider layer.
+## Ручная проверка после прохождения автоматического gate
 
-# CURRENT HOTFIX GRAPH TO RETIRE
+Только после устранения оставшегося 20-го сценария нужно проверить:
 
-Следующие active layers не должны наращиваться и должны быть удалены из active graph после переноса ответственности:
+1. Короткий click колокольчика в реальном Telegram Desktop — 10/10.
+2. Короткий tap колокольчика в реальном Telegram mobile WebView — 10/10.
+3. Реальный телефонный аккаунт появляется в picker компьютера, если телефон открылся позже.
+4. Обратное направление: компьютерный аккаунт появляется на телефоне.
+5. На реальном экране нет старого/пустого слоя длительностью 0–500 мс.
+6. Invite-link показывает только decision sheet без синего toast.
+7. Обычное приглашение в уже открытое приложение показывает actionable blue toast.
+
+До выполнения автоматического и семи ручных пунктов статус — **NOT DONE**.
+
+# RETIRED HOTFIX GRAPH — УДАЛЕНО ИЗ ACTIVE GRAPH
+
+Следующие прежние layers удалены из загрузки и из репозитория после переноса ответственности:
 
 ```text
 app/assets/js/notification-deeplink-toast-policy-v131.js
 app/assets/js/notification-compat-click-guard-v127.js
 app/assets/js/screens/notification-window-owner-v121.js
 app/assets/js/screens/notifications-passive-v130.js
+app/assets/js/screens/notifications-passive-v121.js
 app/assets/js/opponents-native-fetch-v115.js
 app/assets/js/opponents-empty-cache-guard-v115.js
 app/assets/js/opponents-authoritative-confirm-v122.js
 app/assets/js/opponents-fresh-user-action-v128.js
 ```
 
-Также удаляются или переписываются тесты, которые проверяют наличие именно этих hotfix layers вместо canonical behavior.
+Дополнительно удалён opponent-response owner из readiness-графа, который глобально заменял `window.fetch` и мог возвращать прогретый boot-list вместо свежего ручного запроса.
 
-Удаление выполняется не отдельным слепым commit, который ломает staging, а внутри replacement branch: новый owner сначала принимает обязанности, затем old graph удаляется в том же архитектурном блоке.
+Удалены 15 patch-specific PHP/contract tests, требовавших наличие прежних guards и wrappers. Три staging E2E-сценария переписаны так, чтобы проверять canonical behavior, а не механику удалённых заплаток:
+
+- обычный browser `click`, а не искусственный `pointerup` без `click`;
+- один authoritative empty response, а не серия retry до непустого результата;
+- отсутствие boot opponents fetch и один fresh manual request, а не обязательный boot-prefetch.
 
 # MVP-14 D1 ARCHITECTURE REBUILD
 
 ## D1.0 — Read-only owner audit
 
-**Статус:** IN PROGRESS.
+**Статус:** COMPLETE.
 
-Нужно определить:
+Owner-map зафиксирована до реализации.
 
-### Notifications
+### Notification owner map
 
-- canonical notification data source;
-- один reader/sync owner;
-- один bell input owner;
-- один modal render owner;
-- один toast decision owner;
-- deep-link suppression как параметр canonical transition, а не отдельный DOM watcher;
-- точный список старых listeners/owners для удаления.
+- authoritative server source: notifications/invites endpoints and staging DB runtime;
+- canonical client owner: `app/assets/js/screens/notifications-screen-v99.js`;
+- owner responsibilities: badge, polling, toast, bell activation, sheet state, deep-link silent transition;
+- retired responsibilities: compatibility click guard, separate window owner, passive owner, DOM/CSS deep-link policy.
 
-### Player picker
+### Player-picker owner map
 
-- canonical presence source;
-- canonical opponents endpoint;
-- кто выполняет boot prefetch;
-- кто инициирует user-request refresh;
-- кто хранит cache;
-- кто рисует loading/loaded/confirmed-empty/error;
-- точный список fetch wrappers/cache guards для удаления.
+- authoritative server source: `bot/invite-opponents.php` and DB presence data;
+- canonical client owner: `app/assets/js/games/game-invites.js`;
+- one manual-action request owner;
+- retired responsibilities: boot-response cache, global fetch wrappers, empty guards, authoritative-confirm retry layer.
 
-**Done when:** в репозитории находится документированная owner map и retirement list. Код поведения ещё не меняется.
-
-**Bots:** не нужны для составления карты. Допустимы только static searches/contracts.
+**Bots:** не требовались для owner-map. Использовались static searches и architecture contracts.
 
 ## D1.1 — Single notification owner
+
+**Статус:** ARCHITECTURE CONSOLIDATED; AUTOMATED GATE FAILED 19/20; FIX IN PROGRESS.
+
+Canonical owner: `app/assets/js/screens/notifications-screen-v99.js`.
 
 Целевая модель:
 
 ```text
 closed
 → opening
-→ loading
+→ loading | seeded-ready
 → ready
 → closing
 → closed
@@ -215,25 +255,32 @@ closed
 Отдельная event policy внутри owner:
 
 ```text
-normal notification → may show toast
+normal notification → may show actionable toast
 invite deep-link being opened → consume/sync silently, show decision sheet, never show duplicate toast
 ```
 
-Требования:
+Выполнено:
 
-- один зарегистрированный handler на bell action;
-- handler использует обычный `click`/accessible activation без pointerup+compatibility competition;
-- один owner открывает и закрывает sheet;
-- bell не зависит от hold;
-- deep-link policy является входным параметром/state, не отдельным module-level observer/poller;
-- старые notification hotfix layers удалены из active graph;
-- duplicate toast remains fixed.
+- один зарегистрированный browser `click` path для bell/toast activation;
+- один owner открывает и закрывает notification sheet;
+- deep-link policy перенесена в explicit state transition;
+- старые notification hotfix layers удалены;
+- generation guard не позволяет устаревшему animation frame визуально воскресить закрытый toast.
 
-**Focused automation:** DOM state machine, exactly-one-handler contract, normal invitation toast, silent deep-link transition.
+Не выполнено:
 
-**Real-device gate:** desktop Telegram short click 10/10; mobile Telegram tap 10/10; close/reopen; deep-link without duplicate toast.
+- known actionable toast item ещё не гарантированно становится seed item notification sheet до delayed false-empty response;
+- focused cached-toast сценарий остаётся красным.
+
+**Следующий focused test:** только cached-toast → click → immediate actionable card → delayed empty merge.
+
+**Real-device gate:** заблокирован до прохождения focused и relevant staging E2E.
 
 ## D1.2 — Single player-picker owner
+
+**Статус:** CODE COMPLETE; AUTOMATED SCOPE PASS; REAL-ACCOUNT ACCEPTANCE PENDING.
+
+Canonical owner: `app/assets/js/games/game-invites.js`.
 
 Целевая модель:
 
@@ -245,39 +292,78 @@ idle
 → error
 ```
 
-Требования:
+Выполнено:
 
-- открытие picker всегда начинает один fresh authoritative request;
-- boot prefetch не является final source for a later user action;
-- stale list and empty message never paint before current request resolves;
-- modal shell paints once in `loading`, without old content underneath;
+- открытие picker начинает один fresh authoritative request;
+- boot prefetch не используется как final source для user action;
+- stale list и empty message не рисуются до текущего ответа;
+- modal shell сначала показывает loading state;
 - `confirmed-empty` разрешён только после authoritative success with empty items;
-- одна request cancellation policy;
-- одна cache policy;
-- no `window.fetch` wrappers;
-- old opponent guards removed from active graph;
-- real account presence lifecycle investigated separately from test identities.
+- глобальные `window.fetch` wrappers удалены;
+- старые opponent guards удалены.
 
-**Focused automation:** state machine transitions, no stale cache on manual open, no empty state before authoritative result, exactly one opponents request owner.
+**Focused automation:** pass.
 
-**Real-device gate:** computer opens first, phone account opens later, computer picker shows phone account; reverse direction; no false empty/old layer on either device.
+**Real-device gate:** computer opens first, phone account opens later, computer picker shows phone account; reverse direction; no false empty/old layer.
 
 ## D1.3 — Integration and regression
 
+**Статус:** REPOSITORY CI COMPLETE; DB SAFETY COMPLETE; STAGING E2E FAILED 19/20; MANUAL GATE BLOCKED.
+
 После D1.1 и D1.2:
 
-- run static architecture checks;
-- run focused notification and picker tests;
-- run full repository CI once;
-- run only relevant staging E2E regression once;
-- do not call the block accepted before the real-device gate;
-- `main` remains unchanged until explicit production authorization.
+- static architecture checks — complete;
+- focused picker tests — pass;
+- notification cached-toast focused/integration test — fail;
+- full repository CI — success;
+- DB-primary safety — success;
+- latest relevant staging E2E — application failure;
+- `main` remains unchanged.
+
+# IMPLEMENTATION RECORD — 2026-08-04
+
+## Authoritative staging merges
+
+| Block | PR | Resulting staging SHA | Result |
+|---|---:|---|---|
+| Blocking roadmap/rules | #413 | `7264519c1dcd61b0479ee052d4855323a4deef47` | merged to staging only |
+| Canonical owner rebuild | #416 | `9f815c340235b2b7c62d187d0767af017bb89b6b` | merged to staging only |
+| Canonical integration alignment | #425 | `c9655c327dfd1810d1505d80af19330e7df07c43` | merged to staging only |
+| Generation-safe toast state | #427 | `76e25cd34ceb53259b27fd26689d04d0ea16ef72` | merged to staging only |
+
+## Validation-only work that was not merged
+
+- Temporary implementation/validation PRs `#414`, `#424` and `#426` were closed unmerged.
+- CI-only PR `#423` targeted `main` only to execute repository checks and was closed unmerged.
+- Exact validated architecture head: `ba1c3a0cf1c6bc41f5288870bb5497ed4e412fdc`.
+- Repository CI run `30940530232`: success.
+- DB-primary safety run `30940530191`: success.
+- `main` remained exactly `e11bb4909d549c1c5262de6eaf18338388e7bcdb`.
+
+## Staging integration evidence
+
+| Run | Result | Meaning |
+|---:|---|---|
+| `30940932239` | 16/20 | exposed three obsolete patch-mechanic tests and one real cached-toast race |
+| `30942161069` | 19/20 | obsolete tests corrected; cached-toast actionable-card scenario still failed |
+| `30943775973` | 19/20, application failure | generation guard passed other coverage but did not fix cached-toast state transfer |
+
+Последний run выполнялся на exact staging SHA `76e25cd34ceb53259b27fd26689d04d0ea16ef72`. Linux route передал выполнение macOS fallback; macOS выполнил все 20 сценариев. Итоговый application result — failure.
+
+## Rollback checkpoints
+
+```text
+PRODUCTION / MAIN: e11bb4909d549c1c5262de6eaf18338388e7bcdb
+PRE-ARCHITECTURE STAGING: 7264519c1dcd61b0479ee052d4855323a4deef47
+CANONICAL OWNER MERGE: 9f815c340235b2b7c62d187d0767af017bb89b6b
+CURRENT STAGING CODE: 76e25cd34ceb53259b27fd26689d04d0ea16ef72
+```
 
 # SUB-MVP ROADMAP
 
 ## MVP-14R.0 — Safety checkpoint and architecture audit
 
-**Status:** complete for the relational rebuild baseline; D1 owner audit reopened because manual acceptance exposed a prohibited hotfix graph.
+**Status:** complete for the relational rebuild baseline; D1 owner audit complete.
 
 - preserve exact code checkpoints;
 - preserve historical roadmap;
@@ -360,15 +446,16 @@ idle
 # NEXT EXECUTION ORDER
 
 ```text
-1. Merge this roadmap into staging only.
-2. Create D1 architecture audit branch from the merged staging commit.
-3. Produce exact notification and player-picker owner map.
-4. Do not add v132 or any new compatibility/fetch/cache guard.
-5. Replace notification graph with one canonical owner and remove old layers.
-6. Replace player-picker graph with one canonical owner and remove old layers.
-7. Run focused applicable automation.
-8. Run full CI once at integration gate.
-9. Deploy staging only.
-10. Stop for mandatory real-device acceptance.
-11. Do not touch main/production without explicit authorization.
+1. Inspect the remaining cached-toast failure from run 30943775973 inside notifications-screen-v99.js.
+2. Identify exactly where the visible toast loses its associated notification object before sheet seeding.
+3. Correct the canonical owner state transfer; do not add a guard, wrapper, observer, retry module or second owner.
+4. Run only the focused cached-toast scenario first.
+5. After the focused scenario passes, run the relevant staging E2E suite once.
+6. If the applicable automated scope passes, do not run more bots for Telegram-only properties.
+7. Stop for the mandatory seven-step real-device acceptance on computer and phone.
+8. Record each manual result in this roadmap: PASS/FAIL plus exact reproduction.
+9. If any manual item fails, reopen only the owning canonical module and preserve the owner map.
+10. Mark MVP-14 D1 accepted only after all automated and manual items pass.
+11. Continue the next roadmap block only after manual acceptance.
+12. Do not touch main/production without explicit authorization.
 ```
