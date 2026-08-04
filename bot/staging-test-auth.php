@@ -20,6 +20,7 @@ try {
     require_once __DIR__ . '/services/StagingTestAuthService.php';
     require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
     require_once __DIR__ . '/services/StagingTestInviteResidualRecoveryService.php';
+    require_once __DIR__ . '/services/StagingTestPlayerStateResetService.php';
 
     $raw = file_get_contents('php://input');
     if (!is_string($raw) || strlen($raw) > 4096) {
@@ -57,6 +58,12 @@ try {
             $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
         );
     };
+    $playerResetService = static function () use ($config, $runtimeStorageRouter): StagingTestPlayerStateResetService {
+        return new StagingTestPlayerStateResetService(
+            $config,
+            $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
+        );
+    };
 
     if ($action === 'diagnose_invite_residuals') {
         if (array_key_exists('slot', $payload) || substr_count($providedCredential, '.') !== 2) {
@@ -78,6 +85,20 @@ try {
         }
         (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
         $result = $residualService()->reconcile($_SERVER);
+
+        echo json_encode(
+            $result + ['authorization_mode' => 'github_actions_oidc'],
+            JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+        ) . PHP_EOL;
+        exit;
+    }
+
+    if ($action === 'reset_test_players') {
+        if (array_key_exists('slot', $payload) || substr_count($providedCredential, '.') !== 2) {
+            throw new RuntimeException('Staging test-player reset requires GitHub OIDC.');
+        }
+        (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
+        $result = $playerResetService()->reset($_SERVER);
 
         echo json_encode(
             $result + ['authorization_mode' => 'github_actions_oidc'],
