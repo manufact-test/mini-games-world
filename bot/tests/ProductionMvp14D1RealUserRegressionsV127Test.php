@@ -4,10 +4,10 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $entry = file_get_contents($root . '/app/v114.php');
 $compat = file_get_contents($root . '/app/assets/js/notification-compat-click-guard-v127.js');
-$fresh = file_get_contents($root . '/app/assets/js/opponents-fresh-user-action-v127.js');
+$fresh = file_get_contents($root . '/app/assets/js/opponents-fresh-user-action-v128.js');
 $reset = file_get_contents($root . '/bot/services/StagingTestPlayerStateResetService.php');
 if (!is_string($entry) || !is_string($compat) || !is_string($fresh) || !is_string($reset)) {
-    throw new RuntimeException('Missing v127 real-user regression sources.');
+    throw new RuntimeException('Missing v128 real-user regression sources.');
 }
 
 $assertions = 0;
@@ -18,7 +18,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $compatPosition = strpos($entry, 'notification-compat-click-guard-v127.js?v=127');
 $ownerPosition = strpos($entry, 'notification-window-owner-v121.js?v=121');
-$freshPosition = strpos($entry, 'opponents-fresh-user-action-v127.js?v=127');
+$freshPosition = strpos($entry, 'opponents-fresh-user-action-v128.js?v=128');
 $confirmPosition = strpos($entry, 'opponents-authoritative-confirm-v122.js?v=122');
 
 $assert($compatPosition !== false && $ownerPosition !== false && $compatPosition < $ownerPosition,
@@ -43,12 +43,12 @@ $assert(str_contains($compat, 'COMPATIBILITY_CLICK_DISTANCE_PX')
 
 $assert(str_contains($fresh, 'window.__MGW_NATIVE_FETCH_V115__')
         && str_contains($fresh, "cache:'no-store'")
-        && str_contains($fresh, "headers.set('X-MGW-Opponents-Source', 'manual-picker-v127')"),
+        && str_contains($fresh, "headers.set('X-MGW-Opponents-Source', 'manual-picker-v128')"),
     'Manual player selection must bypass the boot-time response cache.');
-$assert(str_contains($fresh, 'RETRY_DELAYS_MS = [140, 320, 620]')
+$assert(str_contains($fresh, 'RETRY_DELAYS_MS = [80, 140, 240, 400, 650, 950]')
         && str_contains($fresh, 'snapshot.hasPlayers')
         && str_contains($fresh, "payload?.storage_driver === 'database'"),
-    'The picker must keep loading until a fresh player or confirmed DB-primary empty response arrives.');
+    'The picker must retain the full seven-sample window before confirming DB-primary empty.');
 $assert(!str_contains($fresh, 'return jsonResponse(') && !str_contains($fresh, 'opponentsCache'),
     'The manual picker must never render an old non-empty cache as the current player list.');
 
@@ -56,4 +56,4 @@ $assert(!str_contains($reset, 'synchronizePrimaryState(')
         && !str_contains($reset, "['status'] = 'idle'"),
     'The rejected v124 E2E reset must not write test identities or status into DB-primary state.');
 
-fwrite(STDOUT, "ProductionMvp14D1RealUserRegressionsV127Test: {$assertions} assertions passed\n");
+fwrite(STDOUT, "ProductionMvp14D1RealUserRegressionsV128Test: {$assertions} assertions passed\n");
