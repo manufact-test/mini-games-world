@@ -16,6 +16,7 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $e2e = $read('e2e/staging/d1-real-user-regressions-v127.spec.mjs');
 
+// This contract intentionally follows the ordinary Telegram Start route, not the staging-only /app/ menu.
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';"),
     'Ordinary Telegram Start must remain on the canonical v110 route.'
