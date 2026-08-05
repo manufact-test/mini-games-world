@@ -29,9 +29,14 @@ jobs:
           source = Path('.github/workflows/zz-one-shot-d1-no-visible-loader.yml').read_text(encoding='utf-8').splitlines(True)
           marker = next(i for i, line in enumerate(source) if line.strip() == 'run: |')
           script = textwrap.dedent(''.join(source[marker + 1:]))
+          old_titles = "replace_once(e2e_path, 'never paints false empty before Player B', 'opens only when the ready Player B list can paint')\nreplace_once(e2e_path, 'never paints false empty before Player B', 'opens only when the ready Player B list can paint')\n"
+          new_titles = "e2e_titles = Path(e2e_path).read_text(encoding='utf-8')\nold_title = 'never paints false empty before Player B'\nnew_title = 'opens only when the ready Player B list can paint'\nif e2e_titles.count(old_title) != 2:\n    raise SystemExit('Expected exactly two desktop/mobile picker titles')\nPath(e2e_path).write_text(e2e_titles.replace(old_title, new_title), encoding='utf-8')\n"
+          if old_titles not in script:
+              raise SystemExit('Embedded title replacement block not found')
+          script = script.replace(old_titles, new_titles, 1)
           script = script.replace(
               'rm -f .github/workflows/zz-one-shot-d1-no-visible-loader.yml',
-              'rm -f .github/workflows/zz-one-shot-d1-no-visible-loader.yml .github/workflows/zz-pr-trigger-d1-no-visible-loader.yml',
+              'rm -f .github/workflows/zz-one-shot-d1-no-visible-loader.yml .github/workflows/zz-pr-trigger-d1-no-visible-loader.yml bot/tests/.d1-no-visible-loader-trigger',
               1,
           )
           Path('/tmp/apply-d1-no-visible-loader.sh').write_text(script, encoding='utf-8')
