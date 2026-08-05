@@ -58,7 +58,7 @@ $assert(
 
 $assert(
     str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
-        && str_contains($e2e, "url.searchParams.get('v') === '1127'")
+        && str_contains($e2e, "url.searchParams.get('v') === '1129'")
         && str_contains($e2e, 'requestAnimationFrame(capture);')
         && str_contains($e2e, 'FALSE_EMPTY_PATTERN')
         && str_contains($e2e, 'setTimeout(resolve, 1500)')
@@ -73,4 +73,4 @@ $assert(
     'Desktop and mobile Chromium must be validated independently.'
 );
 
-fwrite(STDOUT, "ProductionMvp14D1ActualStartPlayerPickerV1127Test: {$assertions} assertions passed\n");
+fwrite(STDOUT, "ProductionMvp14D1ActualStartPlayerPickerV1129Test: {$assertions} assertions passed\n");
