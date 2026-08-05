@@ -40,9 +40,10 @@ $assert(str_contains($focusedTest, 'Successful sync must commit the DB transacti
     && str_contains($focusedTest, 'Failed sync must roll back')
     && str_contains($focusedTest, "'RELEASE_LOCK'"),
     'Focused tests must prove commit, rollback and advisory-lock release.');
-$assert(str_contains($e2e, 'notificationByInviteToken(playerB.page, directToken)')
+$assert(str_contains($e2e, 'notificationByInviteToken(playerB, directToken)')
+    && str_contains($e2e, 'player.context.request.post(NOTIFICATIONS_ROUTE')
     && str_contains($e2e, 'invite_status')
     && str_contains($e2e, 'cancelled|canceled'),
-    'The live regression must still require Player B terminal cancellation delivery.');
+    'The live regression must still require Player B terminal cancellation delivery from the raw authenticated response.');
 
 fwrite(STDOUT, "ProductionMvp14NotificationBridgeSerializedSnapshotTest: {$assertions} assertions passed\n");
