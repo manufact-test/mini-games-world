@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/NotificationService.php';
+require_once __DIR__ . '/notifications/RuntimeNotificationBridgeCoordinator.php';
 
 function mgw_notification_invites_by_token(array $data): array
 {
@@ -151,24 +152,38 @@ try {
 
     if ($legacyBridgeAllowed
         && $router->routeFor('notifications') === RuntimeStorageRouter::DRIVER_DATABASE) {
-        $snapshot = $markRead
-            ? $db->transaction(function (array &$data) use ($notifications, $userId): array {
-                $notifications->markAllRead($data, $userId);
-                return $data;
-            })
-            : $db->readOnly(static fn(array $data): array => $data);
+        if (!$db instanceof ExclusiveSnapshotStorageInterface) {
+            throw new RuntimeException('Notification bridge requires exclusive JSON snapshots.');
+        }
 
-        $runtimeNotifications = new RuntimeNotificationRepository($config, $router);
-        $synchronized = $runtimeNotifications->synchronizeAndList(
-            $snapshot,
-            $userId,
-            (string)($tgUser['mgw_id'] ?? '')
+        if ($markRead) {
+            $db->transaction(function (array &$data) use ($notifications, $userId): void {
+                $notifications->markAllRead($data, $userId);
+            });
+        }
+
+        $runtimeNotifications = new RuntimeNotificationBridgeCoordinator($config, $router);
+        $result = $db->exclusiveReadOnlySections(
+            ['invites', 'notifications'],
+            function (array $snapshot) use (
+                $runtimeNotifications,
+                $notifications,
+                $userId,
+                $tgUser,
+                $markRead
+            ): array {
+                $synchronized = $runtimeNotifications->synchronizeAndList(
+                    $snapshot,
+                    $userId,
+                    (string)($tgUser['mgw_id'] ?? '')
+                );
+                $snapshot['notifications'] = $synchronized['items'];
+                return [
+                    'items' => mgw_visible_notifications($snapshot, $notifications, $userId, 30),
+                    'unread_count' => $markRead ? 0 : mgw_visible_unread_count($snapshot, $userId),
+                ];
+            }
         );
-        $snapshot['notifications'] = $synchronized['items'];
-        $result = [
-            'items' => mgw_visible_notifications($snapshot, $notifications, $userId, 30),
-            'unread_count' => $markRead ? 0 : mgw_visible_unread_count($snapshot, $userId),
-        ];
     } elseif ($markRead) {
         $result = $db->transaction(function (array &$data) use ($notifications, $userId): array {
             $items = mgw_visible_notifications($data, $notifications, $userId, 30);
