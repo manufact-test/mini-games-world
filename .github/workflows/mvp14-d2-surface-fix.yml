@@ -70,4 +70,4 @@ jobs:
           git commit -m "fix: detect the notification owner within the active sheet"
           git push origin HEAD:agent/mvp14-d2-terminal-card-in-place-v1130
 
-# Triggered explicitly after DOM read-back.
+# Run before the isolated draft PRs are reopened.
