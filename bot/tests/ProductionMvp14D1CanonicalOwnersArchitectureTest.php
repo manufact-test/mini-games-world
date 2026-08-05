@@ -9,6 +9,7 @@ $read = static function (string $path) use ($root): string {
 $entry = $read('app/v114.php');
 $main = $read('app/assets/js/main.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v99.js');
+$home = $read('app/assets/js/screens/home-screen.js');
 $readiness = $read('app/assets/js/first-interaction-readiness.js');
 $invites = $read('app/assets/js/games/game-invites.js');
 $inviteLink = $read('app/assets/js/games/invite-link-entry-v115.js');
@@ -30,8 +31,8 @@ $retired = [
     'app/assets/js/first-interaction-readiness-v103.js',
 ];
 foreach ($retired as $file) $assert(!is_file($root . '/' . $file), 'Retired patch file still exists: ' . $file);
-$assert(str_contains($entry, './assets/js/main.js?v=d1-canonical-toast-seed')
-    && str_contains($entry, 'X-MGW-Frontend-Build: d1-canonical-toast-seed')
+$assert(str_contains($entry, './assets/js/main.js?v=d1-bell-single-owner')
+    && str_contains($entry, 'X-MGW-Frontend-Build: d1-bell-single-owner')
     && str_contains($entry, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'Staging entry must publish the canonical no-cache graph.');
 foreach (['notification-compat-click-guard', 'notification-window-owner', 'notifications-passive',
@@ -39,10 +40,13 @@ foreach (['notification-compat-click-guard', 'notification-window-owner', 'notif
           'opponents-authoritative-confirm', 'opponents-fresh-user-action'] as $name) {
     $assert(!str_contains($entry, $name) && !str_contains($main, $name), 'Active graph still names retired layer: ' . $name);
 }
-$assert(substr_count($main, "./screens/notifications-screen-v99.js?v=d1-canonical-toast-seed") === 1
+$assert(substr_count($main, "./screens/notifications-screen-v99.js?v=d1-bell-single-owner") === 1
     && substr_count($main, 'initNotificationsScreen();') === 1,
     'Main must initialize one canonical notification owner.');
-$assert(substr_count($notifications, "document.addEventListener('click', handleNotificationActivation)") === 1
+$assert(substr_count($notifications, "document.addEventListener('click', handleNotificationBellActivation, true)") === 1
+    && substr_count($notifications, "document.addEventListener('click', handleNotificationToastActivation)") === 1
+    && !str_contains($notifications, 'handleNotificationActivation')
+    && !str_contains($home, "target.id === 'notificationsOpen'")
     && !str_contains($notifications, "window.addEventListener('pointerdown'")
     && !str_contains($notifications, "window.addEventListener('pointerup'")
     && !str_contains($notifications, 'MutationObserver')

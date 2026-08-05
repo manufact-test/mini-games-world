@@ -30,7 +30,8 @@ export function initNotificationsScreen(){
   initialized = true;
   ensureNotificationToast();
 
-  document.addEventListener('click', handleNotificationActivation);
+  document.addEventListener('click', handleNotificationBellActivation, true);
+  document.addEventListener('click', handleNotificationToastActivation);
   document.addEventListener('mgw:sheet-closed', handleSheetClosed);
 
   document.addEventListener('mgw:app-ready', () => {
@@ -133,17 +134,25 @@ export async function refreshNotificationBadge(announce = false){
   }
 }
 
-function handleNotificationActivation(event){
+function handleNotificationBellActivation(event){
   const origin = event.target;
   if (!(origin instanceof Element)) return;
-  const trigger = origin.closest('#notificationsOpen, #notificationToast');
+  const trigger = origin.closest('#notificationsOpen');
   if (!(trigger instanceof HTMLElement)) return;
-  if (trigger.id === 'notificationToast' && !trigger.classList.contains('show')) return;
-  if (trigger.id === 'notificationToast' && Date.now() < suppressNotificationToastClickUntil) return;
 
-  const seedItems = trigger.id === 'notificationToast' && activeToastNotification
-    ? [activeToastNotification]
-    : [];
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems:[] });
+}
+
+function handleNotificationToastActivation(event){
+  const origin = event.target;
+  if (!(origin instanceof Element)) return;
+  const trigger = origin.closest('#notificationToast');
+  if (!(trigger instanceof HTMLElement) || !trigger.classList.contains('show')) return;
+  if (Date.now() < suppressNotificationToastClickUntil) return;
+
+  const seedItems = activeToastNotification ? [activeToastNotification] : [];
   event.preventDefault();
   event.stopPropagation();
   dismissNotificationToast();
