@@ -184,6 +184,53 @@ function createActionCounter(page) {
   };
 }
 
+async function installPreparedMessageHarness(page) {
+  const evidence = {
+    serverPreparedIds: [],
+    effectivePreparedIds: [],
+  };
+  const syntheticPreparedId = 'staging-e2e-d3-prepared-message';
+  const handler = async route => {
+    const request = route.request();
+    if (request.url() !== INVITES_ROUTE
+      || request.method() !== 'POST'
+      || requestAction(request) !== 'create_link_draft') {
+      await route.continue();
+      return;
+    }
+
+    const response = await route.fetch();
+    const payload = await response.json().catch(() => null);
+    if (!response.ok() || payload?.ok !== true || !payload?.invite?.token) {
+      throw new Error(`D3 prepared-message harness received invalid create_link_draft response: ${response.status()}`);
+    }
+
+    const serverPreparedId = String(payload.invite.prepared_message_id || '');
+    const effectivePreparedId = serverPreparedId || syntheticPreparedId;
+    evidence.serverPreparedIds.push(serverPreparedId);
+    evidence.effectivePreparedIds.push(effectivePreparedId);
+
+    await route.fulfill({
+      response,
+      json: {
+        ...payload,
+        invite: {
+          ...payload.invite,
+          prepared_message_id: effectivePreparedId,
+        },
+      },
+    });
+  };
+
+  await page.route(INVITES_ROUTE, handler);
+  return {
+    evidence,
+    async stop() {
+      await page.unroute(INVITES_ROUTE, handler);
+    },
+  };
+}
+
 async function openPlayerPage(context, slot, appRoute = APP_ROUTE, beforeOpen = null) {
   const page = await context.newPage();
   const diagnostics = collectDiagnostics(page, slot);
@@ -282,6 +329,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
   let playerB;
   let counterA;
   let counterB;
+  let preparedHarness;
   let token = '';
   let gameId = '';
 
@@ -310,6 +358,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     playerA = await openPlayerPage(contextA, 'A');
     await cleanupPlayer(playerA.page);
     counterA = createActionCounter(playerA.page);
+    preparedHarness = await installPreparedMessageHarness(playerA.page);
 
     await playerA.page.evaluate(() => {
       window.__MGW_D3_TELEGRAM_SHARE__.mode = 'decline';
@@ -341,6 +390,8 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     });
     expect(firstShare.preparedId).not.toBe('');
     expect(firstShare.result).toBe('declined');
+    expect(preparedHarness.evidence.serverPreparedIds).toHaveLength(1);
+    expect(preparedHarness.evidence.effectivePreparedIds).toEqual([firstShare.preparedId]);
 
     await playerA.page.evaluate(() => {
       window.__MGW_D3_TELEGRAM_SHARE__.mode = 'sent';
@@ -437,6 +488,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
         nativeShareInvoked: true,
         nativeCancellationQuiet: true,
         cancelledDraftReused: true,
+        preparedMessageSource: preparedHarness.evidence.serverPreparedIds[0] ? 'server' : 'staging_harness',
         createLinkDraftRequests: counterA.count('create_link_draft'),
         confirmSharedRequests: counterA.count('confirm_shared'),
         openLinkRequests: counterB.count('open_link'),
@@ -448,6 +500,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       contentType: 'application/json',
     });
   } finally {
+    await preparedHarness?.stop();
     counterA?.stop();
     counterB?.stop();
     await cleanupPlayer(playerA?.page);

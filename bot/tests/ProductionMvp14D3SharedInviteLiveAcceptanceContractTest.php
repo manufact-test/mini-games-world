@@ -25,6 +25,22 @@ $assert(str_contains($e2e, "import { openOrdinaryStartReady } from './support/or
     && str_contains($e2e, 'D3 native share cancellation is quiet and one shared link creates one match'),
     'D3 live acceptance must run through the ordinary v110 Start route and shared readiness helper.');
 
+$assert(str_contains($e2e, 'async function installPreparedMessageHarness(page)')
+    && str_contains($e2e, "requestAction(request) !== 'create_link_draft'")
+    && str_contains($e2e, 'const response = await route.fetch();')
+    && str_contains($e2e, 'payload?.ok !== true || !payload?.invite?.token')
+    && str_contains($e2e, "const serverPreparedId = String(payload.invite.prepared_message_id || '')")
+    && str_contains($e2e, 'const effectivePreparedId = serverPreparedId || syntheticPreparedId')
+    && str_contains($e2e, 'prepared_message_id: effectivePreparedId')
+    && str_contains($e2e, 'await page.unroute(INVITES_ROUTE, handler);'),
+    'The staging harness must pass through the real draft and inject only a missing prepared message ID for create_link_draft.');
+
+$assert(str_contains($e2e, 'expect(preparedHarness.evidence.serverPreparedIds).toHaveLength(1)')
+    && str_contains($e2e, 'expect(preparedHarness.evidence.effectivePreparedIds).toEqual([firstShare.preparedId])')
+    && str_contains($e2e, "preparedMessageSource: preparedHarness.evidence.serverPreparedIds[0] ? 'server' : 'staging_harness'")
+    && str_contains($e2e, 'await preparedHarness?.stop();'),
+    'The live report must disclose the prepared-message source and always remove the route harness.');
+
 $assert(str_contains($e2e, 'shareMessage(preparedId, callback)')
     && str_contains($e2e, "window.__MGW_D3_TELEGRAM_SHARE__.mode = 'decline'")
     && str_contains($e2e, "window.__MGW_D3_TELEGRAM_SHARE__.mode = 'sent'")
