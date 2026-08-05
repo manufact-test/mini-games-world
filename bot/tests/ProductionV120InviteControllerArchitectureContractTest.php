@@ -36,8 +36,8 @@ $assert(
 );
 
 $assert(
-    str_contains($main110, 'main-v110-handoff-shell.js?v=1127')
-        && str_contains($shell110, 'game-invites-v110.js?v=1127')
+    str_contains($main110, 'main-v110-handoff-shell.js?v=1129')
+        && str_contains($shell110, 'game-invites-v110.js?v=1129')
         && !str_contains($main110, 'main-v120-invite-controller-shell.js')
         && !str_contains($shell110, 'invite-controller-v120.js')
         && !str_contains($shell110, 'main-v120.js'),

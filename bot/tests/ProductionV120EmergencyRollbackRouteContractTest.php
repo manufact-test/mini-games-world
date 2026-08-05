@@ -24,8 +24,8 @@ $assert(
     'Telegram menu, start and newly generated invite links must use v110.'
 );
 $assert(
-    str_contains($main110, 'main-v110-handoff-shell.js?v=1127')
-        && str_contains($shell110, 'game-invites-v110.js?v=1127')
+    str_contains($main110, 'main-v110-handoff-shell.js?v=1129')
+        && str_contains($shell110, 'game-invites-v110.js?v=1129')
         && !str_contains($main110, 'main-v120-invite-controller-shell.js')
         && !str_contains($shell110, 'invite-controller-v120.js'),
     'The active v110 graph must publish v1129 without loading the rejected controller.'

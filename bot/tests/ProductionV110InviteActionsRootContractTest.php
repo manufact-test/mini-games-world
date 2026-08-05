@@ -56,9 +56,9 @@ $assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
     && str_contains($notifications, 'data-notifications-owner="r12"'),
     'Exactly one current notification owner must be active beside the invitation owner.');
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
-    && str_contains($php, 'main-v110.js?v=1127')
-    && str_contains($main, 'main-v110-handoff-shell.js?v=1127')
-    && str_contains($shell, 'game-invites-v110.js?v=1127')
+    && str_contains($php, 'main-v110.js?v=1129')
+    && str_contains($main, 'main-v110-handoff-shell.js?v=1129')
+    && str_contains($shell, 'game-invites-v110.js?v=1129')
     && str_contains($launch, '/app/v110.php?v=1123'),
     'Telegram keeps the canonical v1123 URL while browser entrypoints publish the final v1129 shell and canonical picker owner.');
 

@@ -63,10 +63,10 @@ $assert(str_contains($shell, $build)
     && str_contains($clean, $build)
     && str_contains($entry, $build),
     'Every active outer entry owner must share the same build identity.');
-$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1127')
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1129')
     && str_contains($entry, 'production-clean-entry-v110.js?v=1120')
-    && str_contains($entry, 'main-v110.js?v=1127')
-    && str_contains($shell, 'game-invites-v110.js?v=1127')
+    && str_contains($entry, 'main-v110.js?v=1129')
+    && str_contains($shell, 'game-invites-v110.js?v=1129')
     && str_contains($launch, '/app/v110.php?v=1123'),
     'Telegram keeps the canonical route while active modules publish the final v1129 shell and picker owner.');
 

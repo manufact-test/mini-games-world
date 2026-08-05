@@ -71,7 +71,7 @@ $assert(
 );
 $assert(
     str_contains($v110, 'production-clean-entry-v110.js?v=1120')
-        && str_contains($v110, 'main-v110.js?v=1127')
+        && str_contains($v110, 'main-v110.js?v=1129')
         && str_contains($v110, 'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"')
         && str_contains($v110, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'Canonical invitation launches must reach the clean no-store entrypoint publishing the final v1129 shell.'

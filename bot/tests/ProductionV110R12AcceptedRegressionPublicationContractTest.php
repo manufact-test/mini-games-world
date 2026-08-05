@@ -31,9 +31,9 @@ $inviteService = $read('bot/services/GameInviteService.php');
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
-        && str_contains($php, 'main-v110.js?v=1127')
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1127')
-        && str_contains($shell, 'game-invites-v110.js?v=1127')
+        && str_contains($php, 'main-v110.js?v=1129')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1129')
+        && str_contains($shell, 'game-invites-v110.js?v=1129')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
         && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')

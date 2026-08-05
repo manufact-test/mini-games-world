@@ -28,7 +28,7 @@ $assert(
 );
 
 $assert(
-    str_contains($shell, "import { initGameInvites } from './games/game-invites-v110.js?v=1127';")
+    str_contains($shell, "import { initGameInvites } from './games/game-invites-v110.js?v=1129';")
         && !str_contains($shell, 'openIncomingInviteIfPresent')
         && str_contains($shell, "openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123'")
         && str_contains($shell, 'await openIncomingInviteFromTelegram();'),

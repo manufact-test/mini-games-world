@@ -35,11 +35,11 @@ $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1120')
-        && str_contains($php, 'main-v110.js?v=1127')
+        && str_contains($php, 'main-v110.js?v=1129')
         && str_contains($php, $build)
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1127')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1129')
         && str_contains($main, $build)
-        && str_contains($shell, 'game-invites-v110.js?v=1127')
+        && str_contains($shell, 'game-invites-v110.js?v=1129')
         && str_contains($shell, $build)
         && str_contains($clean, $build),
     'Every active R12 entry owner must publish one build identity and the final v1129 shell.'
