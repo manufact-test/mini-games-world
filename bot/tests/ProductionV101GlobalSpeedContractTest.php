@@ -69,9 +69,11 @@ $assert(
         && str_contains($speed, 'abortTracked(runtime.backgroundControllers);')
         && str_contains($speed, "document.dispatchEvent(new CustomEvent('mgw:v101-finished-response'")
         && str_contains($speed, 'seedBootstrapCaches(meta.scope, data)')
-        && str_contains($speed, 'optimisticNotificationRead')
+        && str_contains($speed, 'authoritativeNotificationRead')
+        && str_contains($speed, "descriptor.id === 'notifications' && meta.markRead")
+        && !str_contains($speed, 'optimisticNotificationRead')
         && str_contains($speed, 'schedulePassivePrefetch'),
-    'One global request layer must prioritize actions, abort stale reads, seed cache and publish finished server responses.'
+    'One global request layer must prioritize actions, abort stale reads, seed cache, return authoritative mark-read notifications and publish finished server responses.'
 );
 
 $assert(
