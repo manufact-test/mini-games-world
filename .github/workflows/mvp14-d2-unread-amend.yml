@@ -1,0 +1,76 @@
+name: Amend isolated MVP-14 D2 unread handling
+
+on:
+  push:
+    branches:
+      - agent/mvp14-d2-terminal-card-in-place-v1130
+    paths:
+      - .github/workflows/mvp14-d2-unread-amend.yml
+
+permissions:
+  contents: write
+
+jobs:
+  amend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-d2-terminal-card-in-place-v1130
+          fetch-depth: 0
+      - name: Preserve optional unread authority
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          invites_path = Path('app/assets/js/games/game-invites-v110.js')
+          invites = invites_path.read_text(encoding='utf-8')
+          old = """          detail:{
+            item:terminalNotificationItem(terminalContext, terminalInvite),
+            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
+            announce:false,
+          },"""
+          new = """          detail:{
+            item:terminalNotificationItem(terminalContext, terminalInvite),
+            announce:false,
+            ...(Number.isFinite(unreadCount) ? { unreadCount:Math.max(0, unreadCount) } : {}),
+          },"""
+          if invites.count(old) != 1:
+              raise SystemExit('Expected one terminal notification detail block.')
+          invites_path.write_text(invites.replace(old, new), encoding='utf-8')
+
+          notifications_path = Path('app/assets/js/screens/notifications-screen-v110r12.js')
+          notifications = notifications_path.read_text(encoding='utf-8')
+          old = """    const item = normalizeItem(event.detail?.item);
+    const unreadCount = Number(event.detail?.unreadCount || 0);
+    const announce = event.detail?.announce !== false;
+    if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);"""
+          new = """    const item = normalizeItem(event.detail?.item);
+    const rawUnreadCount = event.detail?.unreadCount;
+    const unreadCount = rawUnreadCount !== undefined && rawUnreadCount !== null
+      && Number.isFinite(Number(rawUnreadCount))
+      ? Math.max(0, Number(rawUnreadCount))
+      : null;
+    const announce = event.detail?.announce !== false;
+    if (unreadCount !== null) setUnreadCount(unreadCount);"""
+          if notifications.count(old) != 1:
+              raise SystemExit('Expected one notification-sync unread block.')
+          notifications_path.write_text(notifications.replace(old, new), encoding='utf-8')
+          PY
+      - name: Verify amended sources
+        shell: bash
+        run: |
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/screens/notifications-screen-v110r12.js
+          php bot/tests/ProductionV110InviteTerminalActionsR12ContractTest.php
+          php bot/tests/ProductionMvp14D2TerminalCardInPlaceV1130Test.php
+      - name: Commit amendment
+        shell: bash
+        run: |
+          rm .github/workflows/mvp14-d2-unread-amend.yml
+          git config user.name "manufact-test"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: preserve unread authority during terminal sync"
+          git push origin HEAD:agent/mvp14-d2-terminal-card-in-place-v1130
