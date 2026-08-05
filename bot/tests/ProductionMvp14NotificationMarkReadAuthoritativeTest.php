@@ -14,9 +14,11 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$speed = $read('app/assets/js/production-v101-speed-runtime.js');
+$speed = $read('app/assets/js/production-v101-speed-runtime-v102.js');
+$historicalSpeed = $read('app/assets/js/production-v101-speed-runtime.js');
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
 $v110 = $read('app/v110.php');
+$manifest = $read('bot/helpers/staging-e2e-runtime-files.txt');
 
 $branchStart = strpos($speed, "if (descriptor.id === 'notifications' && meta.markRead)");
 $branchEnd = $branchStart !== false ? strpos($speed, "return cachedFetch", $branchStart) : false;
@@ -44,11 +46,18 @@ $assert($function !== ''
 $assert(!str_contains($speed, 'optimisticReadNotifications')
     && !str_contains($speed, 'markReadInFlight')
     && !str_contains($speed, 'optimisticNotificationRead'),
-    'The stale optimistic notification mark-read implementation must be removed completely.');
+    'The active v110 speed runtime must not contain the stale optimistic mark-read implementation.');
+$assert(str_contains($historicalSpeed, 'optimisticNotificationRead')
+    && str_contains($historicalSpeed, 'markReadInFlight'),
+    'The historical v101 rollback runtime must remain unchanged and isolated from the active v110 graph.');
 
-$assert(str_contains($entry, "production-v101-speed-runtime.js?v=102"),
-    'The canonical clean entry must publish the corrected speed runtime with a fresh URL.');
+$assert(str_contains($entry, "production-v101-speed-runtime-v102.js?v=102")
+    && !str_contains($entry, "production-v101-speed-runtime.js?v=102"),
+    'The canonical clean entry must publish only the isolated corrected speed runtime.');
 $assert(str_contains($v110, "production-clean-entry-v110.js?v=1121"),
     'The ordinary v110 entrypoint must publish the corrected canonical entry with a fresh URL.');
+$assert(str_contains($manifest, "app/assets/js/production-clean-entry-v110.js\n")
+    && str_contains($manifest, "app/assets/js/production-v101-speed-runtime-v102.js\n"),
+    'Exact staging readiness must fingerprint the active clean entry and corrected speed runtime.');
 
 fwrite(STDOUT, 'ProductionMvp14NotificationMarkReadAuthoritativeTest: ' . $assertions . " assertions passed\n");
