@@ -26,8 +26,8 @@ $assert(str_contains($e2e, "import { openOrdinaryStartReady } from './support/or
     'D3 live acceptance must run through the ordinary v110 Start route and shared readiness helper.');
 
 $assert(str_contains($e2e, 'shareMessage(preparedId, callback)')
-    && str_contains($e2e, "state.mode = 'decline'")
-    && str_contains($e2e, "state.mode = 'sent'")
+    && str_contains($e2e, "window.__MGW_D3_TELEGRAM_SHARE__.mode = 'decline'")
+    && str_contains($e2e, "window.__MGW_D3_TELEGRAM_SHARE__.mode = 'sent'")
     && str_contains($e2e, 'callback?.(false)')
     && str_contains($e2e, 'callback?.(true)'),
     'The live test must exercise both native cancellation and successful native sharing callbacks.');
