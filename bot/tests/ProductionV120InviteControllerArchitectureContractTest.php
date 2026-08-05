@@ -36,11 +36,12 @@ $assert(
 );
 
 $assert(
-    str_contains($main110, 'main-v110-handoff-shell.js?v=1126')
+    str_contains($main110, 'main-v110-handoff-shell.js?v=1127')
+        && str_contains($shell110, 'game-invites-v110.js?v=1127')
         && !str_contains($main110, 'main-v120-invite-controller-shell.js')
         && !str_contains($shell110, 'invite-controller-v120.js')
         && !str_contains($shell110, 'main-v120.js'),
-    'Only the accepted v1126 v110 shell may be active after rollback.'
+    'Only the accepted v1127 v110 shell may be active after rollback.'
 );
 
 $assert(
@@ -50,12 +51,12 @@ $assert(
 );
 
 $assert(
-    $blobSha($shell110) === 'b57bfbaf7955a05aa2b74f4b2e0b9a1a55270f92'
+    $blobSha($shell110) === '8e4930c6909f290b34438d6790624c80835f0364'
         && $blobSha($legacyInvites) === '4377c912b2a85d2e0144c5631115dcea96b5d6b1'
         && $blobSha($legacyNotifications) === '3368cfb4a3ff832b846f26681af66f8ed8c32009'
         && $blobSha($legacyTerminal) === '893817d00dd00b720b260f8ddb6625bdbcdd5ef7'
         && $blobSha($legacyLink) === 'b9697cb1d18b8c3b5f4398923d53ab58fb27beab',
-    'The v1126 shell retains serialized search/reconciliation owners while only the canonical notification owner changes for BUG A.'
+    'The v1127 shell changes only the canonical player-picker publication while rollback owners remain byte-identical.'
 );
 
 fwrite(STDOUT, "ProductionV120InviteControllerArchitectureContractTest: {$assertions} assertions passed\n");

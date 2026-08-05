@@ -42,11 +42,11 @@ $assert(str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
     && str_contains($notifications, 'markVisibleReadLocally();')
     && str_contains($notifications, 'renderLoading();'),
     'Closing the sheet must not re-announce or reopen it, and unknown data must not flash empty.');
-$assert(str_contains($shell, 'game-invites-v110.js?v=1114')
+$assert(str_contains($shell, 'game-invites-v110.js?v=1127')
     && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1126')
+    && str_contains($entry, 'main-v110.js?v=1127')
     && str_contains($launch, '/app/v110.php?v=1123'),
-    'Current invitation and notification owners must load through the canonical URL publishing the final v1126 shell.');
+    'Current invitation and notification owners must load through the canonical URL publishing the final v1127 shell.');
 
 fwrite(STDOUT, "ProductionV110MobileShareNotificationCacheRootContractTest: {$assertions} assertions passed\n");

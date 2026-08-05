@@ -28,11 +28,11 @@ $assert(
 );
 
 $assert(
-    str_contains($shell, "import { initGameInvites } from './games/game-invites-v110.js?v=1114';")
+    str_contains($shell, "import { initGameInvites } from './games/game-invites-v110.js?v=1127';")
         && !str_contains($shell, 'openIncomingInviteIfPresent')
         && str_contains($shell, "openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123'")
         && str_contains($shell, 'await openIncomingInviteFromTelegram();'),
-    'The active graph must have one Telegram deep-link entry owner and must not call the legacy open-link path.'
+    'The active graph must have one freshly published invitation owner and one Telegram deep-link entry owner without the legacy open-link path.'
 );
 
 $assert(

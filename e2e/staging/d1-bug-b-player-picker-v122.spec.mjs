@@ -4,10 +4,11 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
+const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const OPPONENTS_ROUTE = `${STAGING_ORIGIN}/bot/invite-opponents.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
+const FALSE_EMPTY_PATTERN = /(недавних соперников пока нет|игроков нет|соперников нет|никого нет)/i;
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -17,7 +18,9 @@ async function requestOidcToken() {
   url.searchParams.set('audience', OIDC_AUDIENCE);
   const response = await fetch(url, { headers:{ Authorization:`bearer ${requestToken}`, Accept:'application/json' } });
   if (!response.ok) throw new Error(`OIDC request failed: ${response.status}`);
-  return (await response.json()).value;
+  const payload = await response.json();
+  if (typeof payload?.value !== 'string') throw new Error('OIDC token is unavailable.');
+  return payload.value;
 }
 
 async function authorizeContext(context, slot) {
@@ -52,46 +55,94 @@ async function openPlayer(browser, slot, isMobile) {
   return { context, page };
 }
 
-async function runCanonicalPicker(browser, isMobile) {
+async function startVisibleFrameTrace(page) {
+  await page.evaluate(() => {
+    const frames = [];
+    let running = true;
+    const capture = () => {
+      if (!running) return;
+      const overlay = document.getElementById('sheetOverlay');
+      const sheet = document.getElementById('sheet');
+      if (overlay?.classList.contains('active') && sheet) {
+        frames.push({
+          at:performance.now(),
+          text:String(sheet.innerText || '').replace(/\s+/g, ' ').trim(),
+        });
+      }
+      requestAnimationFrame(capture);
+    };
+    window.__MGW_PLAYER_PICKER_FRAMES__ = frames;
+    window.__MGW_STOP_PLAYER_PICKER_FRAMES__ = () => { running = false; };
+    requestAnimationFrame(capture);
+  });
+}
+
+async function stopVisibleFrameTrace(page) {
+  return page.evaluate(() => {
+    window.__MGW_STOP_PLAYER_PICKER_FRAMES__?.();
+    return Array.isArray(window.__MGW_PLAYER_PICKER_FRAMES__)
+      ? window.__MGW_PLAYER_PICKER_FRAMES__.slice()
+      : [];
+  });
+}
+
+async function runActualStartPicker(browser, isMobile) {
   const player = await openPlayer(browser, 'A', isMobile);
   let requests = 0;
-  let seenHeaders = null;
   try {
     await player.page.route(OPPONENTS_ROUTE, async route => {
       requests += 1;
-      seenHeaders = route.request().headers();
-      await new Promise(resolve => setTimeout(resolve, 350));
+      await new Promise(resolve => setTimeout(resolve, 700));
       await route.fulfill({
         status:200,
         contentType:'application/json; charset=utf-8',
         body:JSON.stringify({
           ok:true, authoritative:true, storage_driver:'database',
-          items:[{ id:'stg_test_player_b', name:'TEST PLAYER B', activity:'онлайн', online:true, busy:false }],
+          items:[{
+            id:'stg_test_player_b',
+            name:'TEST PLAYER B',
+            activity:'онлайн',
+            online:true,
+            busy:false,
+            last_game_at:'',
+            last_seen_at:new Date().toISOString(),
+          }],
         }),
       });
     });
 
+    const resources = await player.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
+    expect(resources.some(rawUrl => {
+      const url = new URL(rawUrl);
+      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1127';
+    }), 'Ordinary Start must execute the freshly published canonical v110 player-picker owner.').toBe(true);
+    expect(requests).toBe(0);
+
     await player.page.locator('[data-invite-friend="tictactoe"]').click();
     await expect(player.page.locator('[data-open-player-picker]')).toBeVisible();
+    await startVisibleFrameTrace(player.page);
     await player.page.locator('[data-open-player-picker]').click();
 
-    await expect(player.page.locator('[data-player-picker-state="loading"]')).toBeVisible();
-    await expect(player.page.locator('[data-player-picker-state="empty"]')).toHaveCount(0);
+    await expect(player.page.locator('#sheet')).toContainText('Загружаем соперников…');
     await expect(player.page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:5_000 });
-    await expect(player.page.locator('[data-player-picker-state="loaded"]')).toBeVisible();
+    await expect(player.page.locator('#sheet')).toContainText('TEST PLAYER B');
+
+    const frames = await stopVisibleFrameTrace(player.page);
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames.some(frame => String(frame.text).includes('Загружаем соперников'))).toBe(true);
+    expect(frames.some(frame => String(frame.text).includes('TEST PLAYER B'))).toBe(true);
+    expect(frames.filter(frame => FALSE_EMPTY_PATTERN.test(String(frame.text)))).toEqual([]);
     expect(requests).toBe(1);
-    expect(seenHeaders?.['cache-control']).toContain('no-store');
-    expect(seenHeaders?.['x-mgw-opponents-source']).toBe('manual-player-picker');
   } finally {
     try { await player.context.request.post(AUTH_ROUTE, { data:{ action:'revoke' }, timeout:15_000 }); } catch {}
     await player.context.close();
   }
 }
 
-test('canonical desktop picker uses one fresh request and never paints empty while loading', async ({ browser }) => {
-  await runCanonicalPicker(browser, false);
+test('actual Start desktop picker never paints false empty before the real player list', async ({ browser }) => {
+  await runActualStartPicker(browser, false);
 });
 
-test('canonical mobile Chromium picker uses one fresh request and never paints empty while loading', async ({ browser }) => {
-  await runCanonicalPicker(browser, true);
+test('actual Start mobile picker never paints false empty before the real player list', async ({ browser }) => {
+  await runActualStartPicker(browser, true);
 });

@@ -24,19 +24,20 @@ $linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
-        && str_contains($php, 'main-v110.js?v=1126')
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1126'),
-    'The canonical Telegram URL must select the final v1126 browser graph.'
+        && str_contains($php, 'main-v110.js?v=1127')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1127'),
+    'The canonical Telegram URL must select the final v1127 browser graph.'
 );
 $assert(
-    str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
+    str_contains($shell, 'game-invites-v110.js?v=1127')
+        && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
         && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
         && str_contains($shell, 'production-v110-presence.js?v=1121')
         && str_contains($shell, 'stats-owner-v110.js?v=1121')
         && str_contains($shell, 'search-screen-v102.js?v=103')
         && str_contains($shell, 'search-invite-reconciliation-v110r12.js?v=1124'),
-    'Only the outer graph, serialized search owner and reconciliation bridge advance for v1124; validated owners keep their revisions.'
+    'Only the outer graph and canonical picker publication advance for v1127; validated notification, terminal, link, presence and search owners keep their revisions.'
 );
 $assert(
     str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")
