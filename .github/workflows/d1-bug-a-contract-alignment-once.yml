@@ -82,6 +82,10 @@ jobs:
               ('as v1124', 'as v1126'),
               ('publish v1124', 'publish v1126'),
               ('accepted v1124 v110 shell', 'accepted v1126 v110 shell'),
+              ("'fb1c82e02101e9626d23dd63cd79d6e4ffc999d5'", "'b57bfbaf7955a05aa2b74f4b2e0b9a1a55270f92'"),
+              ("'98df0056932f94b7fac1bea99be75ba842cb5880'", "'3368cfb4a3ff832b846f26681af66f8ed8c32009'"),
+              ('The v1124 shell may add only the serialized search/reconciliation owners while accepted invitation modules remain byte-for-byte unchanged.',
+               'The v1126 shell retains serialized search/reconciliation owners while only the canonical notification owner changes for BUG A.'),
           )
 
           for path in v110_publication_files:
@@ -136,7 +140,7 @@ jobs:
       - name: Run focused failed-contract set
         shell: bash
         run: |
-          set -uo pipefail
+          set -Eeuo pipefail
           tests=(
             bot/tests/ProductionAvatarInviteRegressionHotfixTest.php
             bot/tests/ProductionHotPathLatencyFixContractTest.php
@@ -163,16 +167,11 @@ jobs:
             bot/tests/ProductionV120InviteControllerArchitectureContractTest.php
             bot/tests/ProductionV96RootCauseStabilizationTest.php
           )
-          failed=0
           for test_file in "${tests[@]}"; do
-            if ! php "$test_file"; then
-              echo "FOCUSED_FAILED: $test_file"
-              failed=1
-            fi
+            php "$test_file"
           done
-          node --check app/assets/js/screens/notifications-screen-v110r12.js || failed=1
-          git diff --check || failed=1
-          exit "$failed"
+          node --check app/assets/js/screens/notifications-screen-v110r12.js
+          git diff --check
 
       - name: Commit exact expectation-only alignment
         shell: bash
