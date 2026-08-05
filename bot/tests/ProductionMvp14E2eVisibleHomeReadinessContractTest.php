@@ -24,12 +24,12 @@ $consumers = [
     'e2e/staging/d2-d3-d5-integration.spec.mjs',
 ];
 
-$assert(str_contains($helper, "export async function openOrdinaryStartReady(page")
+$assert(str_contains($helper, 'export async function openOrdinaryStartReady(page')
     && str_contains($helper, "page.goto(appRoute, { waitUntil: 'domcontentloaded' })")
-    && str_contains($helper, "expect(response.ok(), `${label} app status`).toBe(true)"),
+    && str_contains($helper, 'expect(response.ok(), `${label} app status`).toBe(true)'),
     'The shared helper must validate the ordinary Start document response.');
 $assert(str_contains($helper, "page.locator('#screen-home')")
-    && str_contains($helper, ".toHaveClass(/active/, { timeout })")
+    && str_contains($helper, '.toHaveClass(/active/, { timeout })')
     && str_contains($helper, "page.locator('#preloader')")
     && str_contains($helper, '.toBeHidden({ timeout })'),
     'Visible active home and hidden preloader must be the authoritative readiness criteria.');
@@ -52,7 +52,7 @@ foreach ($consumers as $path) {
     $assert(str_contains($source, "import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';")
         && str_contains($source, 'await openOrdinaryStartReady(page, {'),
         $path . ' must use the shared visible-home readiness helper.');
-    $assert(!str_contains($source, "waitForResponse(response => response.url() === API_ROUTE")
+    $assert(!str_contains($source, 'waitForResponse(response => response.url() === API_ROUTE')
         && !str_contains($source, 'waitForResponse(isBootstrapResponse'),
         $path . ' must not restore mandatory bootstrap-response waiting.');
 }
