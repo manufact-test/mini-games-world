@@ -14,25 +14,30 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $endpoint = $read('bot/invite-opponents.php');
+$service = $read('bot/services/InviteOpponentService.php');
 $client = $read('app/assets/js/games/game-invites-v110.js');
 $presence = $read('bot/services/PresenceService.php');
 
 $assert(str_contains($endpoint, 'new PresenceService()')
-    && str_contains($endpoint, '$presence->onlineAccountIds()')
+    && str_contains($endpoint, '->onlineAccountIds()')
     && str_contains($presence, 'public function onlineAccountIds(): array'),
     'The player picker must use the same shared presence authority as the online counter.');
-$assert(str_contains($endpoint, "foreach (\$data['users'] ?? [] as \$candidateId => \$candidate)")
-    && str_contains($endpoint, '$hasHistory = isset($lastGameAt[$candidateId]);')
-    && str_contains($endpoint, '86400 * 30'),
+$assert(str_contains($service, "foreach (\$data['users'] ?? [] as \$candidateId => \$candidate)")
+    && str_contains($service, '$hasHistory = isset($lastGameAt[$candidateId]);')
+    && str_contains($service, 'RECENT_WINDOW_SEC = 86400 * 30'),
     'The list must include online and recently known human players instead of only finished-match opponents.');
-$assert(str_contains($endpoint, '$candidateId === $userId')
-    && str_contains($endpoint, "str_starts_with(\$candidateId, 'bot_')")
-    && str_contains($endpoint, 'array_slice($result, 0, 10)'),
+$assert(str_contains($service, '$candidateId === $userId')
+    && str_contains($service, "str_starts_with(\$candidateId, 'bot_')")
+    && str_contains($service, 'array_slice($result, 0, self::MAX_ITEMS)'),
     'The player source must exclude self and bots and remain bounded.');
-$assert(str_contains($endpoint, "'online' => (bool)\$activity['online']")
-    && str_contains($endpoint, "'busy' => (bool)\$activity['busy']")
-    && str_contains($endpoint, "unset(\$item['_score'])"),
+$assert(str_contains($service, "'online' => (bool)\$activity['online']")
+    && str_contains($service, "'busy' => (bool)\$activity['busy']")
+    && str_contains($service, "unset(\$item['_score'])"),
     'The response must expose only stable player status fields without internal ranking data.');
+$assert(str_contains($endpoint, 'StorageFactory::createJson(')
+    && str_contains($endpoint, 'new InviteOpponentService()')
+    && !str_contains($endpoint, 'DatabasePrimaryStateStorageAdapter'),
+    'The endpoint must read the same active runtime used by direct invitation creation.');
 $assert(str_contains($client, '<strong>Загружаем соперников…</strong>')
     && str_contains($client, 'const result = await postJson(OPPONENTS_URL, {});')
     && !str_contains($client, 'renderPlayerPicker([], context);'),
