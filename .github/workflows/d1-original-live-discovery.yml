@@ -12,28 +12,25 @@ jobs:
   discover:
     runs-on: ubuntu-latest
     steps:
-      - name: Print exact live notification owner implementations
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-13-2-staging
+          fetch-depth: 0
+
+      - name: Locate every staging Telegram launch URL owner
         shell: bash
         run: |
           set -Eeuo pipefail
-          original='https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/screens/notifications-screen-v110r12.js?v=1122'
-          staging='https://seashell-okapi-889488.hostingersite.com/app/assets/js/screens/notifications-screen-v99.js?v=d1-bell-single-owner'
-          nonce="$(date +%s%N)"
-          curl --fail-with-body --silent --show-error --location \
-            --header 'Cache-Control: no-cache' \
-            "${original}&focused_audit=${nonce}" -o original-notifications.js
-          curl --fail-with-body --silent --show-error --location \
-            --header 'Cache-Control: no-cache' \
-            "${staging}&focused_audit=${nonce}" -o staging-notifications.js
+          echo '=== FILES WITH WEB APP / START BUTTON LOGIC ==='
+          git grep -l -I -E 'web_app|setChatMenuButton|reply_markup|inline_keyboard|Открыть игру|Запустить|UserWelcome|startapp|base_url' -- bot app ops config . 2>/dev/null | sort -u | head -300 || true
 
-          echo '=== ORIGINAL LINES 1-175 ==='
-          nl -ba original-notifications.js | sed -n '1,175p'
-          echo '=== ORIGINAL LINES 430-530 ==='
-          nl -ba original-notifications.js | sed -n '430,530p'
-          echo '=== STAGING LINES 1-180 ==='
-          nl -ba staging-notifications.js | sed -n '1,180p'
-          echo '=== STAGING LINES 340-430 ==='
-          nl -ba staging-notifications.js | sed -n '340,430p'
+          echo '=== EXACT MATCHES ==='
+          git grep -n -I -E 'web_app|setChatMenuButton|reply_markup|inline_keyboard|Открыть игру|Запустить|UserWelcome|startapp|base_url' -- bot app ops config . 2>/dev/null | head -1000 || true
 
-          echo '=== FOCUSED FUNCTION NAMES ==='
-          grep -nE 'function handlePointerDown|function handleDocumentClick|function handleNotificationBellActivation|function handleNotificationToastActivation|lastBell|suppress|pointer' original-notifications.js staging-notifications.js | head -200
+          echo '=== PUBLIC URL LITERALS ==='
+          git grep -h -I -Eo 'https://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]+' -- bot app ops config . 2>/dev/null \
+            | sed -E 's/["'"'"'<>),;]+$//' \
+            | sort -u | head -300 || true
+
+          echo '=== APP ENTRY REFERENCES ==='
+          git grep -n -I -E '/app/|v114\.php|index\.html|DirectoryIndex' -- bot app ops config . 2>/dev/null | head -1000 || true
