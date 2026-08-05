@@ -25,6 +25,14 @@ $assert(str_contains($e2e, "import { openOrdinaryStartReady } from './support/or
     && str_contains($e2e, 'D3 native share cancellation is quiet and one shared link creates one match'),
     'D3 live acceptance must run through the ordinary v110 Start route and shared readiness helper.');
 
+$assert(str_contains($e2e, 'const telegram = {};')
+    && str_contains($e2e, "Object.defineProperty(telegram, 'WebApp', {")
+    && str_contains($e2e, "Object.defineProperty(window, 'Telegram', {")
+    && substr_count($e2e, 'configurable: false') >= 2
+    && str_contains($e2e, 'get: () => webApp')
+    && str_contains($e2e, 'get: () => telegram'),
+    'The Telegram SDK must not be able to replace either the root Telegram mock or its WebApp object.');
+
 $assert(str_contains($e2e, 'async function installPreparedMessageHarness(page)')
     && str_contains($e2e, "requestAction(request) !== 'create_link_draft'")
     && str_contains($e2e, 'const response = await route.fetch();')
