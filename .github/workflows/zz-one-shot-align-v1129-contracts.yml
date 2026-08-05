@@ -1,0 +1,135 @@
+name: One-shot align v1129 no-loader contracts
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    if: github.head_ref == 'agent/mvp14-d1-bug-b-no-visible-loader-v1129'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-d1-bug-b-no-visible-loader-v1129
+          fetch-depth: 0
+
+      - name: Align only stale publication and picker contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          publication_files = [
+              'bot/tests/ProductionMvp14D1BellImmediateReopenV1126Test.php',
+              'bot/tests/ProductionV110AcceptanceRootFixContractTest.php',
+              'bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php',
+              'bot/tests/ProductionV110CanonicalShareNotificationRootContractTest.php',
+              'bot/tests/ProductionV110InviteActionsRootContractTest.php',
+              'bot/tests/ProductionV110InvitePresenceNotificationProfileRootContractTest.php',
+              'bot/tests/ProductionV110MobileNotificationInviteRestoreContractTest.php',
+              'bot/tests/ProductionV110MobileShareNotificationCacheRootContractTest.php',
+              'bot/tests/ProductionV110MobileToastAuthorityContractTest.php',
+              'bot/tests/ProductionV110PresenceInviteResumeRootContractTest.php',
+              'bot/tests/ProductionV110R12AcceptedRegressionPublicationContractTest.php',
+              'bot/tests/ProductionV110R12FinalReleaseContractTest.php',
+              'bot/tests/ProductionV110R12V1123PublicationContractTest.php',
+              'bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php',
+              'bot/tests/ProductionV110SurrenderHomeQueueContractTest.php',
+              'bot/tests/ProductionV110TelegramInviteEntrySheetContractTest.php',
+              'bot/tests/ProductionV120EmergencyRollbackRouteContractTest.php',
+              'bot/tests/ProductionV120InviteControllerArchitectureContractTest.php',
+          ]
+
+          for raw_path in publication_files:
+              path = Path(raw_path)
+              text = path.read_text(encoding='utf-8')
+              count = text.count('v1127')
+              if count < 1:
+                  raise SystemExit(f'{raw_path}: expected at least one stale v1127 expectation')
+              path.write_text(text.replace('v1127', 'v1129'), encoding='utf-8')
+
+          def replace_once(raw_path, old, new):
+              path = Path(raw_path)
+              text = path.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{raw_path}: expected one semantic block, found {count}')
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'bot/tests/ProductionMvp14D1OpponentSourceParityTest.php',
+              '''$assert(
+              !str_contains($e2e, 'page.route(OPPONENTS_ROUTE')
+                  && !str_contains($e2e, 'route.fulfill(')
+                  && str_contains($e2e, "openPlayer(browser, 'B', false)")
+                  && str_contains($e2e, 'data-direct-opponent="stg_test_player_b"')
+                  && str_contains($e2e, 'expect(requests).toBe(1);'),
+              'BUG B E2E must use the live endpoint with a real second player instead of a fabricated response.'
+          );''',
+              '''$assert(
+              str_contains($e2e, 'page.route(OPPONENTS_ROUTE')
+                  && str_contains($e2e, 'route.continue()')
+                  && !str_contains($e2e, 'route.fulfill(')
+                  && str_contains($e2e, "openPlayer(browser, 'B', false)")
+                  && str_contains($e2e, "expect(payload?.storage_driver).toBe('json');")
+                  && str_contains($e2e, 'data-direct-opponent="stg_test_player_b"')
+                  && str_contains($e2e, 'expect(requests).toBe(1);'),
+              'BUG B E2E must delay the live endpoint without fabricating its response and must use a real second player.'
+          );''',
+          )
+
+          replace_once(
+              'bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php',
+              '''$assert(str_contains($client, '<strong>Загружаем соперников…</strong>')
+              && str_contains($client, 'const result = await postJson(OPPONENTS_URL, {});')
+              && !str_contains($client, 'renderPlayerPicker([], context);'),
+              'The client must show an honest loading state and never paint a fake empty list before the response.');''',
+              '''$assert(!str_contains($client, 'Загружаем соперников')
+              && str_contains($client, 'async function openPlayerPicker(context, sourceButton = null)')
+              && str_contains($client, 'const result = await postJson(OPPONENTS_URL, {});')
+              && str_contains($client, 'playerPickerRequestGeneration')
+              && strpos($client, 'const result = await postJson(OPPONENTS_URL, {});') < strpos($client, 'renderPlayerPicker(items, context);')
+              && !str_contains($client, 'renderPlayerPicker([], context);'),
+              'The client must keep the setup sheet visible and open the picker only from the completed authoritative response.');''',
+          )
+
+          replace_once(
+              'bot/tests/ProductionV110OpponentPickerStabilityContractTest.php',
+              '''$assert(
+              str_contains($invites, 'async function openPlayerPicker(context)')
+                  && str_contains($invites, 'notifications-loading')
+                  && str_contains($invites, 'postJson(OPPONENTS_URL, {})')
+                  && str_contains($invites, 'renderPlayerPicker(items, context);'),
+              'The canonical invitation owner must own the honest loading state, request and render transition.'
+          );''',
+              '''$assert(
+              str_contains($invites, 'async function openPlayerPicker(context, sourceButton = null)')
+                  && !str_contains($invites, 'Загружаем соперников')
+                  && str_contains($invites, 'playerPickerRequestGeneration')
+                  && str_contains($invites, 'postJson(OPPONENTS_URL, {})')
+                  && strpos($invites, 'postJson(OPPONENTS_URL, {})') < strpos($invites, 'renderPlayerPicker(items, context);'),
+              'The canonical invitation owner must keep the setup sheet visible and render the picker only after the authoritative response.'
+          );''',
+          )
+          replace_once(
+              'bot/tests/ProductionV110OpponentPickerStabilityContractTest.php',
+              '''substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1
+                  && substr_count($invites, 'async function openPlayerPicker(context)') === 1,''',
+              '''substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1
+                  && substr_count($invites, 'async function openPlayerPicker(context, sourceButton = null)') === 1,''',
+          )
+          PY
+
+          rm -f .github/workflows/zz-one-shot-align-v1129-contracts.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot/tests .github/workflows/zz-one-shot-align-v1129-contracts.yml
+          git diff --cached --check
+          git commit -m 'test: align historical contracts with no-loader v1129 graph'
+          git push origin HEAD:agent/mvp14-d1-bug-b-no-visible-loader-v1129
