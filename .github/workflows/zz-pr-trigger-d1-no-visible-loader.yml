@@ -1,0 +1,39 @@
+name: Trigger one-shot D1 no visible loader patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/mvp14-d1-bug-b-no-visible-loader-v1129'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-d1-bug-b-no-visible-loader-v1129
+          fetch-depth: 0
+
+      - name: Execute embedded one-shot source patch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source = Path('.github/workflows/zz-one-shot-d1-no-visible-loader.yml').read_text(encoding='utf-8').splitlines(True)
+          marker = next(i for i, line in enumerate(source) if line.strip() == 'run: |')
+          script = textwrap.dedent(''.join(source[marker + 1:]))
+          script = script.replace(
+              'rm -f .github/workflows/zz-one-shot-d1-no-visible-loader.yml',
+              'rm -f .github/workflows/zz-one-shot-d1-no-visible-loader.yml .github/workflows/zz-pr-trigger-d1-no-visible-loader.yml',
+              1,
+          )
+          Path('/tmp/apply-d1-no-visible-loader.sh').write_text(script, encoding='utf-8')
+          PY
+          bash /tmp/apply-d1-no-visible-loader.sh
