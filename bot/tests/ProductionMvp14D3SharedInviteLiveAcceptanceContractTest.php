@@ -21,15 +21,15 @@ $owner = $read('app/assets/js/games/game-invites-v110.js');
 $linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 
 $assert(str_contains($e2e, "import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';")
-    && str_contains($e2e, "const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;")
+    && str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
     && str_contains($e2e, 'D3 native share cancellation is quiet and one shared link creates one match'),
     'D3 live acceptance must run through the ordinary v110 Start route and shared readiness helper.');
 
 $assert(str_contains($e2e, 'shareMessage(preparedId, callback)')
     && str_contains($e2e, "state.mode = 'decline'")
     && str_contains($e2e, "state.mode = 'sent'")
-    && str_contains($e2e, "callback?.(false)")
-    && str_contains($e2e, "callback?.(true)"),
+    && str_contains($e2e, 'callback?.(false)')
+    && str_contains($e2e, 'callback?.(true)'),
     'The live test must exercise both native cancellation and successful native sharing callbacks.');
 
 $assert(str_contains($e2e, "await expect(playerA.page.locator('#toast')).not.toHaveClass(/show/)")
@@ -44,7 +44,7 @@ $assert(str_contains($e2e, "expect(String(shareState.calls[0]?.preparedId || '')
     'Cancellation retry must reuse one prepared draft and confirm it once.');
 
 $assert(str_contains($e2e, '`${APP_ROUTE}&invite=${encodeURIComponent(token)}`')
-    && str_contains($e2e, "counterB = createActionCounter(page)")
+    && str_contains($e2e, 'counterB = createActionCounter(page)')
     && str_contains($e2e, "expect(counterB.count('open_link')).toBe(1)"),
     'The recipient must open the canonical shared link through exactly one open_link request observed from navigation start.');
 
