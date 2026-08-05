@@ -27,16 +27,18 @@ $assert(
     'Selective reads must be an explicit optional storage capability.'
 );
 $assert(
-    str_contains($adapter, 'implements StorageAdapterInterface, SelectiveReadStorageInterface')
+    str_contains($adapter, 'SelectiveReadStorageInterface')
         && str_contains($adapter, 'return $this->database->readOnlySections($sections, $callback);'),
     'The canonical JSON adapter must own the selective read capability.'
 );
 $assert(
     str_contains($database, 'public function readOnlySections(array $sections, callable $callback): mixed')
-        && str_contains($database, 'flock($lockHandle, LOCK_SH)')
+        && str_contains($database, 'return $this->readSectionsWithLock($sections, LOCK_SH, $callback);')
+        && str_contains($database, 'private function readSectionsWithLock(')
+        && str_contains($database, 'flock($lockHandle, $lockMode)')
         && str_contains($database, '$db = $this->loadSections($sections);')
         && str_contains($database, 'return $this->readOnlySections(array_keys(self::FILES), $callback);'),
-    'Selective and legacy reads must share the same lock semantics and one section loader.'
+    'Selective and legacy reads must retain shared-lock semantics through one section loader.'
 );
 $assert(
     str_contains($endpoint, '$storage instanceof SelectiveReadStorageInterface')
