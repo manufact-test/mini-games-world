@@ -21,26 +21,29 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    str_contains($v110, "./assets/js/main-v110.js?v=1127")
-        && str_contains($main, "./main-v110-handoff-shell.js?v=1127")
-        && str_contains($shell, "./games/game-invites-v110.js?v=1127"),
-    'Ordinary Telegram Start must publish the canonical v110 player-picker owner through one fresh v1127 chain.'
+    str_contains($v110, "./assets/js/main-v110.js?v=1129")
+        && str_contains($main, "./main-v110-handoff-shell.js?v=1129")
+        && str_contains($shell, "./games/game-invites-v110.js?v=1129"),
+    'Ordinary Telegram Start must publish the canonical v110 player-picker owner through one fresh v1129 chain.'
 );
 
 $assert(
-    substr_count($shell, "game-invites-v110.js?v=1127") === 1
+    substr_count($shell, "game-invites-v110.js?v=1129") === 1
         && substr_count($shell, 'initGameInvites();') === 1
-        && substr_count($invites, 'async function openPlayerPicker(context)') === 1
+        && substr_count($invites, 'async function openPlayerPicker(context, sourceButton = null)') === 1
         && substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1,
     'The actual Start graph must keep exactly one player-picker module, initializer, UI owner and endpoint owner.'
 );
 
 $assert(
-    str_contains($invites, '<strong>Загружаем соперников…</strong>')
+    !str_contains($invites, 'Загружаем соперников')
         && str_contains($invites, 'const result = await postJson(OPPONENTS_URL, {});')
+        && str_contains($invites, 'playerPickerRequestGeneration')
+        && str_contains($invites, "trigger.setAttribute('aria-busy', 'true');")
         && str_contains($invites, 'renderPlayerPicker(items, context);')
+        && strpos($invites, 'const result = await postJson(OPPONENTS_URL, {});') < strpos($invites, 'renderPlayerPicker(items, context);')
         && !str_contains($invites, 'renderPlayerPicker([], context);'),
-    'The canonical owner must paint neutral loading first and may render empty only from the completed authoritative response.'
+    'The canonical owner must keep the setup sheet visible and open the picker only from the completed authoritative response.'
 );
 
 $assert(
@@ -58,6 +61,8 @@ $assert(
         && str_contains($e2e, "url.searchParams.get('v') === '1127'")
         && str_contains($e2e, 'requestAnimationFrame(capture);')
         && str_contains($e2e, 'FALSE_EMPTY_PATTERN')
+        && str_contains($e2e, 'setTimeout(resolve, 1500)')
+        && str_contains($e2e, 'pickerFrames[0].text')
         && str_contains($e2e, 'expect(requests).toBe(1);'),
     'The live regression must exercise ordinary Start, verify the exact owner URL and inspect every visible frame on one fresh request.'
 );
