@@ -17,7 +17,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main-v110.js?v=1124',
+    './assets/js/main-v110.js?v=1125',
     $html
 );
 $html = str_replace(
