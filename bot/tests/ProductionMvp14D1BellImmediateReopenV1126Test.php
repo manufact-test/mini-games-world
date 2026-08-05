@@ -69,7 +69,7 @@ $assert(
     'Toast and announcement protections must remain available outside the bell handler.'
 );
 $assert(
-    str_contains($e2e, "const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;"),
+    str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;'),
     'The real-user regression must exercise the actual ordinary Telegram Start route.'
 );
 $assert(

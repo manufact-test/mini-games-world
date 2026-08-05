@@ -69,7 +69,7 @@ $assert(str_contains($notifications, '<div class="notifications-loading" data-no
 
 $assert(str_contains($notifications, "if (!appReady || document.visibilityState !== 'visible') return false;")
     && str_contains($notifications, "return !document.getElementById('sheetOverlay')?.classList.contains('active');")
-    && str_contains($notifications, "const seedItems = trigger.id === 'notificationToast' && activeToastNotification")
+    && str_contains($notifications, "const seedItems = activeToastNotification ? [activeToastNotification] : []")
     && str_contains($notifications, 'loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems });'),
     'The blue toast must remain owned by the canonical notification screen and not compete with an open sheet.');
 
