@@ -51,12 +51,12 @@ $assert(
 );
 
 $assert(
-    $blobSha($shell110) === '8e4930c6909f290b34438d6790624c80835f0364'
-        && $blobSha($legacyInvites) === '4377c912b2a85d2e0144c5631115dcea96b5d6b1'
+    $blobSha($shell110) === '092c5cef0cb40a1c6e5ace1e74cc546efc0cad6d'
+        && $blobSha($legacyInvites) === '4653cfd4a6f4b360a83c33ff4317f6630929c793'
         && $blobSha($legacyNotifications) === '3368cfb4a3ff832b846f26681af66f8ed8c32009'
         && $blobSha($legacyTerminal) === '893817d00dd00b720b260f8ddb6625bdbcdd5ef7'
         && $blobSha($legacyLink) === 'b9697cb1d18b8c3b5f4398923d53ab58fb27beab',
-    'The v1129 shell changes only the canonical player-picker publication while rollback owners remain byte-identical.'
+    'The v1129 publication intentionally changes the canonical shell and picker owner while rollback-only notification, terminal and link owners remain byte-identical.'
 );
 
 fwrite(STDOUT, "ProductionV120InviteControllerArchitectureContractTest: {$assertions} assertions passed\n");
