@@ -25,6 +25,7 @@ $stats = $read('app/assets/js/stats-owner-v110.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
 $presenceService = $read('bot/services/PresenceService.php');
 $opponentEndpoint = $read('bot/invite-opponents.php');
+$opponentService = $read('bot/services/InviteOpponentService.php');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $lifecycle = $read('app/assets/js/production-v110-match-lifecycle.js');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
@@ -122,10 +123,13 @@ $assert(
 );
 $assert(
     str_contains($opponentEndpoint, 'new PresenceService()')
-        && str_contains($opponentEndpoint, 'onlineAccountIds()')
-        && str_contains($opponentEndpoint, 'array_slice($result, 0, 10)')
-        && str_contains($opponentEndpoint, 'str_starts_with($candidateId, \'bot_\')'),
-    'The bounded opponent source must use shared presence and exclude bots.'
+        && str_contains($opponentEndpoint, '->onlineAccountIds()')
+        && str_contains($opponentEndpoint, 'new InviteOpponentService()')
+        && str_contains($opponentEndpoint, 'StorageFactory::createJson(')
+        && !str_contains($opponentEndpoint, 'DatabasePrimaryStateStorageAdapter')
+        && str_contains($opponentService, "str_starts_with(\$candidateId, 'bot_')")
+        && str_contains($opponentService, 'array_slice($result, 0, self::MAX_ITEMS)'),
+    'The bounded opponent source must use shared presence, the active invite runtime and one service that excludes bots.'
 );
 $assert(
     str_contains($shell, 'stats-owner-v110.js?v=1121')
