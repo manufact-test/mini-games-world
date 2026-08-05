@@ -20,9 +20,15 @@ try {
     $storage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $onlineIds = (new PresenceService())->onlineAccountIds();
     $opponents = new InviteOpponentService();
-    $items = $storage->readOnly(
-        static fn(array $data): array => $opponents->list($data, $userId, $onlineIds)
-    );
+    $reader = static fn(array $data): array => $opponents->list($data, $userId, $onlineIds);
+
+    // The picker needs only users and finished-game history. JSON storage can
+    // preserve the same shared-lock snapshot while skipping unrelated ledgers,
+    // payments, notifications, invites and support archives. Future storage
+    // drivers remain correct through the ordinary full-snapshot fallback.
+    $items = $storage instanceof SelectiveReadStorageInterface
+        ? $storage->readOnlySections(['users', 'games'], $reader)
+        : $storage->readOnly($reader);
 
     api_ok([
         'items' => $items,
