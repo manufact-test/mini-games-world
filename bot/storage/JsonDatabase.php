@@ -64,20 +64,44 @@ final class JsonDatabase
     }
 
     /**
-     * Execute one shared-lock read while decoding only the requested runtime
-     * sections. This preserves one consistent JSON snapshot without forcing a
-     * small read-only endpoint to load unrelated ledgers and archives.
-     *
      * @param list<string> $sections
      */
     public function readOnlySections(array $sections, callable $callback): mixed
     {
+        return $this->readSectionsWithLock($sections, LOCK_SH, $callback);
+    }
+
+    public function exclusiveReadOnly(callable $callback): mixed
+    {
+        return $this->exclusiveReadOnlySections(array_keys(self::FILES), $callback);
+    }
+
+    /**
+     * Hold the JSON lock exclusively while a stable snapshot is consumed by
+     * an external bridge. The callback receives data by value and therefore
+     * cannot mutate the JSON source. Writers remain blocked until the bridge
+     * has completed, so no stale snapshot can race a newer JSON transaction.
+     *
+     * @param list<string> $sections
+     */
+    public function exclusiveReadOnlySections(array $sections, callable $callback): mixed
+    {
+        return $this->readSectionsWithLock($sections, LOCK_EX, $callback);
+    }
+
+    /** @param list<string> $sections */
+    private function readSectionsWithLock(array $sections, int $lockMode, callable $callback): mixed
+    {
+        if (!in_array($lockMode, [LOCK_SH, LOCK_EX], true)) {
+            throw new InvalidArgumentException('Некорректный режим блокировки JSON-хранилища.');
+        }
+
         $lockHandle = fopen($this->lockFile, 'c+');
         if (!$lockHandle) {
             throw new RuntimeException('Не удалось открыть lock-файл.');
         }
         try {
-            if (!flock($lockHandle, LOCK_SH)) {
+            if (!flock($lockHandle, $lockMode)) {
                 throw new RuntimeException('Не удалось заблокировать хранилище.');
             }
             $db = $this->loadSections($sections);

@@ -20,75 +20,129 @@ final class RuntimeInviteRepository
     {
         $this->assertDatabaseRoute();
         $database = $this->database();
-        $store = new RealtimeDatabaseStore($database);
-        $source = $this->sourceRows($jsonData, $database);
-        $created = 0;
-        $updated = 0;
-        $unchanged = 0;
 
-        foreach ($source as $inviteId => $expected) {
-            $existingRows = $database->fetchAll(
-                'SELECT * FROM mgw_invites WHERE invite_id = :invite_id',
-                ['invite_id' => $inviteId]
-            );
+        return $this->withSynchronizationLock(
+            $database,
+            function (DatabaseConnectionInterface $database) use ($jsonData): array {
+                $store = new RealtimeDatabaseStore($database);
+                $source = $this->sourceRows($jsonData, $database);
+                $created = 0;
+                $updated = 0;
+                $unchanged = 0;
 
-            if ($existingRows === []) {
-                $stored = $store->upsertInvite($expected);
-                $this->assertRowMatches($expected, $stored);
-                $created++;
-                continue;
+                foreach ($source as $inviteId => $expected) {
+                    $existingRows = $database->fetchAll(
+                        'SELECT * FROM mgw_invites WHERE invite_id = :invite_id',
+                        ['invite_id' => $inviteId]
+                    );
+
+                    if ($existingRows === []) {
+                        $stored = $store->upsertInvite($expected);
+                        $this->assertRowMatches($expected, $stored);
+                        $created++;
+                        continue;
+                    }
+
+                    $existing = $this->normalizeDatabaseRow($existingRows[0]);
+                    $this->assertImmutableIdentity($expected, $existing);
+                    if ($existing === $expected) {
+                        $unchanged++;
+                        continue;
+                    }
+
+                    if ($this->timestampSortValue($existing['updated_at_utc'])
+                        > $this->timestampSortValue($expected['updated_at_utc'])) {
+                        throw new RuntimeException('Invite DB state is ahead of the JSON rollback source.');
+                    }
+
+                    $stored = $store->upsertInvite($expected);
+                    $this->assertRowMatches($expected, $stored);
+                    $updated++;
+                }
+
+                $comparison = $this->compare($source, $this->databaseRows($database));
+                if (!$comparison['ok']) {
+                    throw new RuntimeException(implode(' ', $comparison['blockers']));
+                }
+
+                return [
+                    'source_count' => count($source),
+                    'database_count' => $comparison['database_count'],
+                    'created_count' => $created,
+                    'updated_count' => $updated,
+                    'unchanged_count' => $unchanged,
+                    'source_fingerprint' => $comparison['source_fingerprint'],
+                    'database_fingerprint' => $comparison['database_fingerprint'],
+                    'parity' => true,
+                ];
             }
-
-            $existing = $this->normalizeDatabaseRow($existingRows[0]);
-            $this->assertImmutableIdentity($expected, $existing);
-            if ($existing === $expected) {
-                $unchanged++;
-                continue;
-            }
-
-            if ($this->timestampSortValue($existing['updated_at_utc'])
-                > $this->timestampSortValue($expected['updated_at_utc'])) {
-                throw new RuntimeException('Invite DB state is ahead of the JSON rollback source.');
-            }
-
-            $stored = $store->upsertInvite($expected);
-            $this->assertRowMatches($expected, $stored);
-            $updated++;
-        }
-
-        $comparison = $this->compare($source, $this->databaseRows($database));
-        if (!$comparison['ok']) {
-            throw new RuntimeException(implode(' ', $comparison['blockers']));
-        }
-
-        return [
-            'source_count' => count($source),
-            'database_count' => $comparison['database_count'],
-            'created_count' => $created,
-            'updated_count' => $updated,
-            'unchanged_count' => $unchanged,
-            'source_fingerprint' => $comparison['source_fingerprint'],
-            'database_fingerprint' => $comparison['database_fingerprint'],
-            'parity' => true,
-        ];
+        );
     }
 
     public function auditParity(array $jsonData): array
     {
         $this->assertDatabaseRoute();
         $database = $this->database();
-        $source = $this->sourceRows($jsonData, $database);
-        $comparison = $this->compare($source, $this->databaseRows($database));
 
-        return [
-            'ok' => $comparison['ok'],
-            'read_only' => true,
-            'source_count' => $comparison['source_count'],
-            'database_count' => $comparison['database_count'],
-            'source_fingerprint' => $comparison['source_fingerprint'],
-            'database_fingerprint' => $comparison['database_fingerprint'],
-            'blockers' => $comparison['blockers'],
-        ];
+        return $this->withSynchronizationLock(
+            $database,
+            function (DatabaseConnectionInterface $database) use ($jsonData): array {
+                $source = $this->sourceRows($jsonData, $database);
+                $comparison = $this->compare($source, $this->databaseRows($database));
+
+                return [
+                    'ok' => $comparison['ok'],
+                    'read_only' => true,
+                    'source_count' => $comparison['source_count'],
+                    'database_count' => $comparison['database_count'],
+                    'source_fingerprint' => $comparison['source_fingerprint'],
+                    'database_fingerprint' => $comparison['database_fingerprint'],
+                    'blockers' => $comparison['blockers'],
+                ];
+            }
+        );
+    }
+
+    private function withSynchronizationLock(
+        DatabaseConnectionInterface $database,
+        callable $callback
+    ): mixed {
+        $lockName = null;
+        if ($database->driver() === 'mysql') {
+            $lockName = $this->synchronizationLockName();
+            $acquired = $database->fetchValue(
+                'SELECT GET_LOCK(:lock_name, 10)',
+                ['lock_name' => $lockName]
+            );
+            if ((int)$acquired !== 1) {
+                throw new RuntimeException('Invite DB synchronization lock is unavailable.');
+            }
+        }
+
+        try {
+            return $database->transaction(
+                static fn(DatabaseConnectionInterface $transaction): mixed => $callback($transaction)
+            );
+        } finally {
+            if ($lockName !== null) {
+                try {
+                    $database->fetchValue(
+                        'SELECT RELEASE_LOCK(:lock_name)',
+                        ['lock_name' => $lockName]
+                    );
+                } catch (Throwable $error) {
+                    error_log('Mini Games World invite DB lock release failed: ' . $error->getMessage());
+                }
+            }
+        }
+    }
+
+    private function synchronizationLockName(): string
+    {
+        $scope = trim((string)($this->config['environment'] ?? ''))
+            . '|'
+            . trim((string)($this->config['database']['name'] ?? ''));
+        return 'mgw_invites_sync_' . substr(hash('sha256', $scope), 0, 40);
     }
 
     private function assertDatabaseRoute(): void

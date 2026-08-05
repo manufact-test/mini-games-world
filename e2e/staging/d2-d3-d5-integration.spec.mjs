@@ -283,8 +283,14 @@ test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in
     await opponent.click();
     const createResponse = await createPromise;
     const created = await createResponse.json().catch(() => null);
-    expect(createResponse.status()).toBe(200);
-    expect(created?.ok).toBe(true);
+    const createPublicError = typeof created?.error === 'string'
+      ? created.error.slice(0, 300)
+      : 'no_public_error';
+    expect(
+      createResponse.status(),
+      `create_direct status; public error: ${createPublicError}`,
+    ).toBe(200);
+    expect(created?.ok, `create_direct payload; public error: ${createPublicError}`).toBe(true);
     directToken = String(created?.invite?.token || '');
     expect(directToken).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
     await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено', {
