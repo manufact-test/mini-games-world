@@ -12,129 +12,47 @@ jobs:
   discover:
     runs-on: ubuntu-latest
     steps:
-      - name: Compare exact production and staging Start entries
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-13-2-staging
+          fetch-depth: 0
+
+      - name: Audit exact Telegram cache identities and notification history
         shell: bash
         run: |
           set -Eeuo pipefail
-          cat > /tmp/compare_start_graphs.py <<'PY'
-          import hashlib
-          import json
-          import re
-          import time
-          import urllib.parse
-          import urllib.request
+          echo '=== NOTIFICATION FILE HISTORY ON STAGING ANCESTRY ==='
+          git log --all --date=iso-strict --format='%H %ad %s' -- app/assets/js/screens/notifications-screen-v110r12.js | head -100
+          echo '=== MAIN V110 FILE HISTORY ==='
+          git log --all --date=iso-strict --format='%H %ad %s' -- app/assets/js/main-v110.js app/assets/js/main-v110-handoff-shell.js app/v110.php | head -150
+          echo '=== CURRENT BLOBS ==='
+          git ls-tree HEAD app/v110.php app/assets/js/main-v110.js app/assets/js/main-v110-handoff-shell.js app/assets/js/screens/notifications-screen-v110r12.js
 
-          TARGETS = {
-              'ORIGINAL': 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/v110.php?v=1123',
-              'STAGING_START': 'https://seashell-okapi-889488.hostingersite.com/app/v110.php?v=1123',
+          fetch_exact() {
+            label="$1"
+            url="$2"
+            body="${label}.body"
+            headers="${label}.headers"
+            curl --fail-with-body --silent --show-error --location \
+              --user-agent 'TelegramBot (like TwitterBot)' \
+              "$url" -D "$headers" -o "$body"
+            echo "=== ${label} ==="
+            sha256sum "$body"
+            grep -Ei '^(HTTP/|date:|cache-control:|age:|last-modified:|etag:|x-hcdn-cache-status:|x-hcdn-request-id:|content-type:)' "$headers" || true
+            grep -nE "__MGW_BUILD__|notifications-screen|handlePointerDown|handleDocumentClick|notificationsOpen" "$body" | head -30 || true
           }
-          MODULE_SRC_RE = re.compile(
-              r'<script\b[^>]*\btype=["\x27]module["\x27][^>]*\bsrc=["\x27]([^"\x27]+)["\x27][^>]*>',
-              re.I,
-          )
-          IMPORT_RE = re.compile(
-              r'(?:^|[;\n])\s*(?:import|export)\s+(?:[^"\x27;]*?\s+from\s+)?["\x27]([^"\x27]+)["\x27]',
-              re.M,
-          )
-          DYNAMIC_RE = re.compile(r'import\(\s*["\x27]([^"\x27]+)["\x27]\s*\)')
-          IMPORTANT = re.compile(
-              r'notificationsOpen|notificationToast|pointerdown|pointerup|pointercancel|'
-              r'handleDocumentClick|handlePointerDown|sheetOverlay|closeSheet|openSheet|'
-              r'stopImmediatePropagation|stopPropagation',
-              re.I,
-          )
 
-          def fetch(url):
-              separator = '&' if '?' in url else '?'
-              request = urllib.request.Request(
-                  url + separator + 'start_graph_audit=' + str(time.time_ns()),
-                  headers={
-                      'User-Agent': 'MGW-start-graph-audit/1.0',
-                      'Cache-Control': 'no-cache',
-                      'Pragma': 'no-cache',
-                  },
-              )
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  raw = response.read()
-                  headers = {k.lower(): v for k, v in response.headers.items()}
-                  final_url = response.geturl()
-              return raw.decode('utf-8', errors='replace'), headers, final_url
+          fetch_exact original_entry 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/v110.php?v=1123'
+          fetch_exact staging_entry 'https://seashell-okapi-889488.hostingersite.com/app/v110.php?v=1123'
+          fetch_exact original_main 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/main-v110.js?v=1124'
+          fetch_exact staging_main 'https://seashell-okapi-889488.hostingersite.com/app/assets/js/main-v110.js?v=1124'
+          fetch_exact original_shell 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/main-v110-handoff-shell.js?v=1124'
+          fetch_exact staging_shell 'https://seashell-okapi-889488.hostingersite.com/app/assets/js/main-v110-handoff-shell.js?v=1124'
+          fetch_exact original_notifications 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/screens/notifications-screen-v110r12.js?v=1122'
+          fetch_exact staging_notifications 'https://seashell-okapi-889488.hostingersite.com/app/assets/js/screens/notifications-screen-v110r12.js?v=1122'
 
-          def same_origin(left, right):
-              a = urllib.parse.urlsplit(left)
-              b = urllib.parse.urlsplit(right)
-              return (a.scheme, a.netloc) == (b.scheme, b.netloc)
-
-          def crawl(label, entry_url):
-              html, headers, final_entry = fetch(entry_url)
-              roots = [urllib.parse.urljoin(final_entry, src) for src in MODULE_SRC_RE.findall(html)]
-              print(f'=== {label} ENTRY ===')
-              print('URL', final_entry)
-              print('HTML_SHA256', hashlib.sha256(html.encode()).hexdigest())
-              for key in ('x-mgw-frontend-build', 'cache-control', 'last-modified', 'etag', 'x-hcdn-cache-status'):
-                  if key in headers:
-                      print(f'HEADER {key}: {headers[key]}')
-              print('ROOTS', json.dumps(roots))
-
-              queue = list(roots)
-              seen = set()
-              modules = {}
-              while queue:
-                  url = queue.pop(0).split('#', 1)[0]
-                  if url in seen or not same_origin(url, final_entry):
-                      continue
-                  seen.add(url)
-                  text, module_headers, final_url = fetch(url)
-                  path_key = urllib.parse.urlsplit(final_url).path + '?' + urllib.parse.urlsplit(final_url).query.split('&start_graph_audit=', 1)[0]
-                  modules[path_key] = {
-                      'url': final_url,
-                      'text': text,
-                      'sha': hashlib.sha256(text.encode()).hexdigest(),
-                      'headers': module_headers,
-                  }
-                  for specifier in IMPORT_RE.findall(text) + DYNAMIC_RE.findall(text):
-                      resolved = urllib.parse.urljoin(final_url, specifier)
-                      if same_origin(resolved, final_entry) and resolved not in seen:
-                          queue.append(resolved)
-
-              print(f'MODULE_COUNT {len(modules)}')
-              for key, value in sorted(modules.items()):
-                  print(f'MODULE {key} SHA256={value["sha"]}')
-                  if IMPORTANT.search(value['text']):
-                      for number, line in enumerate(value['text'].splitlines(), 1):
-                          if IMPORTANT.search(line):
-                              compact = line.strip()
-                              if len(compact) > 260:
-                                  compact = compact[:260] + '...'
-                              print(f'  MATCH L{number}: {compact}')
-              return html, modules
-
-          results = {label: crawl(label, url) for label, url in TARGETS.items()}
-          original_html, original = results['ORIGINAL']
-          staging_html, staging = results['STAGING_START']
-
-          print('=== PATH/HASH COMPARISON ===')
-          all_paths = sorted(set(original) | set(staging))
-          differences = 0
-          for path in all_paths:
-              left = original.get(path)
-              right = staging.get(path)
-              if left is None:
-                  differences += 1
-                  print('ONLY_STAGING', path, right['sha'])
-              elif right is None:
-                  differences += 1
-                  print('ONLY_ORIGINAL', path, left['sha'])
-              elif left['sha'] != right['sha']:
-                  differences += 1
-                  print('DIFF', path, left['sha'], right['sha'])
-          print('DIFFERENCE_COUNT', differences)
-
-          print('=== NOTIFICATION OWNER BYTE COMPARISON ===')
-          notification_paths = sorted(path for path in all_paths if 'notifications-screen' in path)
-          for path in notification_paths:
-              left = original.get(path)
-              right = staging.get(path)
-              print(path, 'ORIGINAL=' + (left['sha'] if left else 'missing'), 'STAGING=' + (right['sha'] if right else 'missing'))
-          PY
-          python3 /tmp/compare_start_graphs.py
+          echo '=== EXACT BYTE COMPARISONS ==='
+          cmp -s original_entry.body staging_entry.body && echo 'entry: identical' || echo 'entry: DIFFERENT'
+          cmp -s original_main.body staging_main.body && echo 'main: identical' || echo 'main: DIFFERENT'
+          cmp -s original_shell.body staging_shell.body && echo 'shell: identical' || echo 'shell: DIFFERENT'
+          cmp -s original_notifications.body staging_notifications.body && echo 'notifications: identical' || echo 'notifications: DIFFERENT'
