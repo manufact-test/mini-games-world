@@ -20,6 +20,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
+// Product visual contract: the picker may become visible only when its authoritative list is ready to paint.
 $start = strpos($invites, 'async function openPlayerPicker(context, sourceButton = null)');
 $end = strpos($invites, "\nfunction renderPlayerPicker", $start === false ? 0 : $start);
 $assert($start !== false && $end !== false, 'Canonical player-picker function must be present once.');
