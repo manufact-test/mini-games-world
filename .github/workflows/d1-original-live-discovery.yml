@@ -1,0 +1,40 @@
+name: D1 original live discovery
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-original-live-discovery-base2
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Find original production launch and public hosts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo '=== USER WELCOME GUARD FILES ==='
+          find . -type f \( -iname '*Welcome*' -o -iname '*welcome*' -o -iname '*Telegram*' -o -iname '*telegram*' \) -not -path './.git/*' | sort | head -200
+
+          echo '=== USER WELCOME GUARD REFERENCES ==='
+          git grep -n -I -E 'UserWelcomeGuard|v110\.php|v111\.php|v105\.php|web_app|setChatMenuButton|menu_button' -- . ':!vendor' ':!node_modules' | head -500 || true
+
+          echo '=== PUBLIC URL CANDIDATES ==='
+          git grep -h -I -Eo 'https://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]+' -- . ':!vendor' ':!node_modules' \
+            | sed -E 's/["'"'"'<>),;]+$//' \
+            | grep -Ev 'github\.com|githubusercontent\.com|telegram\.org|t\.me|schema\.org|example\.|w3\.org|googleapis\.com|google\.com|microsoft\.com|npmjs\.|playwright\.|localhost|127\.0\.0\.1' \
+            | sort -u | head -300 || true
+
+          echo '=== HOSTINGER / PROJECT REFERENCES ==='
+          git grep -n -I -E 'hostingersite\.com|lemonchiffon|seashell-okapi|base_url|production_host|allowed_hosts' -- . ':!vendor' ':!node_modules' | head -500 || true
+
+          echo '=== HISTORY REFERENCES ==='
+          git log --all --oneline -G 'v110\.php|v111\.php|v105\.php|lemonchiffon|hostingersite\.com' -- bot app ops docs .github | head -200 || true
