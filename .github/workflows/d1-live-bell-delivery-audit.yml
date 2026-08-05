@@ -1,0 +1,44 @@
+name: D1 live bell delivery audit
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-bell-audit-final-base
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect exact live entry and notification module
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          curl --fail-with-body --silent --show-error --location \
+            --header 'Cache-Control: no-cache' \
+            "${origin}/app/?audit=$(date +%s)" -D live-entry.headers -o live-entry.html
+          echo '=== ENTRY HEADERS ==='
+          cat live-entry.headers
+          echo '=== ENTRY BUILD/MODULE REFERENCES ==='
+          grep -Eo 'X-MGW-Frontend-Build[^<]*|main\.js\?v=[^"<]+' live-entry.html live-entry.headers || true
+          main_url="$(grep -Eo './assets/js/main\.js\?v=[^"<]+' live-entry.html | tail -1)"
+          test -n "$main_url"
+          curl --fail-with-body --silent --show-error --location \
+            --header 'Cache-Control: no-cache' \
+            "${origin}/app/${main_url#./}&audit=$(date +%s)" -D live-main.headers -o live-main.js
+          echo '=== MAIN HEADERS ==='
+          cat live-main.headers
+          echo '=== MAIN BUILD/NOTIFICATION IMPORT ==='
+          grep -E "__MGW_BUILD__|notifications-screen[^']+" live-main.js
+          module_url="$(grep -Eo "./screens/notifications-screen[^']+" live-main.js | head -1)"
+          test -n "$module_url"
+          curl --fail-with-body --silent --show-error --location \
+            --header 'Cache-Control: no-cache' \
+            "${origin}/app/assets/js/${module_url#./}&audit=$(date +%s)" -D live-notifications.headers -o live-notifications.js
+          echo '=== NOTIFICATION MODULE HEADERS ==='
+          cat live-notifications.headers
+          echo '=== LIVE BELL OWNERSHIP ==='
+          grep -nE "addEventListener\('click'|notificationsOpen|stopImmediatePropagation|stopPropagation" live-notifications.js | head -40
