@@ -1,0 +1,159 @@
+name: D1 bell single owner rebuild
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-bell-audit-final-base
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Rebuild bell ownership without touching other notification behavior
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 occurrence, found {count}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          notifications = 'app/assets/js/screens/notifications-screen-v99.js'
+          replace_once(
+              notifications,
+              "  document.addEventListener('click', handleNotificationActivation);",
+              "  document.addEventListener('click', handleNotificationBellActivation, true);\n  document.addEventListener('click', handleNotificationToastActivation);",
+              'notification listener split',
+          )
+          replace_once(
+              notifications,
+              """function handleNotificationActivation(event){
+  const origin = event.target;
+  if (!(origin instanceof Element)) return;
+  const trigger = origin.closest('#notificationsOpen, #notificationToast');
+  if (!(trigger instanceof HTMLElement)) return;
+  if (trigger.id === 'notificationToast' && !trigger.classList.contains('show')) return;
+  if (trigger.id === 'notificationToast' && Date.now() < suppressNotificationToastClickUntil) return;
+
+  const seedItems = trigger.id === 'notificationToast' && activeToastNotification
+    ? [activeToastNotification]
+    : [];
+  event.preventDefault();
+  event.stopPropagation();
+  dismissNotificationToast();
+  loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems });
+}
+""",
+              """function handleNotificationBellActivation(event){
+  const origin = event.target;
+  if (!(origin instanceof Element)) return;
+  const trigger = origin.closest('#notificationsOpen');
+  if (!(trigger instanceof HTMLElement)) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems:[] });
+}
+
+function handleNotificationToastActivation(event){
+  const origin = event.target;
+  if (!(origin instanceof Element)) return;
+  const trigger = origin.closest('#notificationToast');
+  if (!(trigger instanceof HTMLElement) || !trigger.classList.contains('show')) return;
+  if (Date.now() < suppressNotificationToastClickUntil) return;
+
+  const seedItems = activeToastNotification ? [activeToastNotification] : [];
+  event.preventDefault();
+  event.stopPropagation();
+  dismissNotificationToast();
+  loadNotificationsSheet({ hapticFeedback:true, keepShell:false, seedItems });
+}
+""",
+              'notification handler split',
+          )
+
+          replace_once(
+              'app/assets/js/screens/home-screen.js',
+              "    if (target.id === 'notificationsOpen') return toast('Уведомлений пока нет.');\n",
+              '',
+              'retired home-screen bell owner',
+          )
+
+          replace_once(
+              'app/assets/js/main.js',
+              "window.__MGW_BUILD__ = 'd1-canonical-toast-seed';",
+              "window.__MGW_BUILD__ = 'd1-bell-single-owner';",
+              'main build marker',
+          )
+          replace_once(
+              'app/assets/js/main.js',
+              "./screens/notifications-screen-v99.js?v=d1-canonical-toast-seed",
+              "./screens/notifications-screen-v99.js?v=d1-bell-single-owner",
+              'notification cache identity',
+          )
+
+          entry = Path('app/v114.php')
+          text = entry.read_text(encoding='utf-8')
+          if text.count('./assets/js/main.js?v=d1-canonical-toast-seed') != 2:
+              raise SystemExit('entry main cache identity count mismatch')
+          text = text.replace('./assets/js/main.js?v=d1-canonical-toast-seed', './assets/js/main.js?v=d1-bell-single-owner')
+          text = text.replace("'data-hotfix-build=\"d1-canonical-toast-seed\"'", "'data-hotfix-build=\"d1-bell-single-owner\"'")
+          text = text.replace('X-MGW-Frontend-Build: d1-canonical-toast-seed', 'X-MGW-Frontend-Build: d1-bell-single-owner')
+          entry.write_text(text, encoding='utf-8')
+
+          test = Path('bot/tests/ProductionMvp14D1CanonicalOwnersArchitectureTest.php')
+          text = test.read_text(encoding='utf-8')
+          text = text.replace("$notifications = $read('app/assets/js/screens/notifications-screen-v99.js');", "$notifications = $read('app/assets/js/screens/notifications-screen-v99.js');\n$home = $read('app/assets/js/screens/home-screen.js');")
+          text = text.replace('d1-canonical-toast-seed', 'd1-bell-single-owner')
+          old = """$assert(substr_count($notifications, \"document.addEventListener('click', handleNotificationActivation)\") === 1
+    && !str_contains($notifications, \"window.addEventListener('pointerdown'\")"""
+          new = """$assert(substr_count($notifications, \"document.addEventListener('click', handleNotificationBellActivation, true)\") === 1
+    && substr_count($notifications, \"document.addEventListener('click', handleNotificationToastActivation)\") === 1
+    && !str_contains($notifications, 'handleNotificationActivation')
+    && !str_contains($home, \"target.id === 'notificationsOpen'\")
+    && !str_contains($notifications, \"window.addEventListener('pointerdown'\")"""
+          if old not in text:
+              raise SystemExit('architecture assertion anchor missing')
+          text = text.replace(old, new, 1)
+          test.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate narrow architecture change
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/screens/notifications-screen-v99.js
+          node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/main.js
+          php bot/tests/ProductionMvp14D1CanonicalOwnersArchitectureTest.php
+          grep -Fq "document.addEventListener('click', handleNotificationBellActivation, true);" app/assets/js/screens/notifications-screen-v99.js
+          grep -Fq 'event.stopImmediatePropagation();' app/assets/js/screens/notifications-screen-v99.js
+          ! grep -Fq "target.id === 'notificationsOpen'" app/assets/js/screens/home-screen.js
+          git diff --check
+
+      - name: Commit rebuilt single owner and remove temporary runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f .github/workflows/d1-bell-single-owner.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Restore one canonical bell click owner"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
