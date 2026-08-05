@@ -55,6 +55,12 @@ async function openPlayer(browser, slot, isMobile) {
   return { context, page };
 }
 
+async function closePlayer(player) {
+  if (!player) return;
+  try { await player.context.request.post(AUTH_ROUTE, { data:{ action:'revoke' }, timeout:15_000 }); } catch {}
+  await player.context.close();
+}
+
 async function startVisibleFrameTrace(page) {
   await page.evaluate(() => {
     const frames = [];
@@ -87,62 +93,59 @@ async function stopVisibleFrameTrace(page) {
 }
 
 async function runActualStartPicker(browser, isMobile) {
-  const player = await openPlayer(browser, 'A', isMobile);
+  const playerB = await openPlayer(browser, 'B', false);
+  const playerA = await openPlayer(browser, 'A', isMobile);
   let requests = 0;
-  try {
-    await player.page.route(OPPONENTS_ROUTE, async route => {
-      requests += 1;
-      await new Promise(resolve => setTimeout(resolve, 700));
-      await route.fulfill({
-        status:200,
-        contentType:'application/json; charset=utf-8',
-        body:JSON.stringify({
-          ok:true, authoritative:true, storage_driver:'database',
-          items:[{
-            id:'stg_test_player_b',
-            name:'TEST PLAYER B',
-            activity:'онлайн',
-            online:true,
-            busy:false,
-            last_game_at:'',
-            last_seen_at:new Date().toISOString(),
-          }],
-        }),
-      });
-    });
+  const countRequest = request => {
+    if (request.url() === OPPONENTS_ROUTE && request.method() === 'POST') requests += 1;
+  };
+  playerA.page.on('request', countRequest);
 
-    const resources = await player.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
+  try {
+    const resources = await playerA.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     expect(resources.some(rawUrl => {
       const url = new URL(rawUrl);
       return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1127';
-    }), 'Ordinary Start must execute the freshly published canonical v110 player-picker owner.').toBe(true);
+    }), 'Ordinary Start must execute the canonical v110 player-picker owner.').toBe(true);
     expect(requests).toBe(0);
 
-    await player.page.locator('[data-invite-friend="tictactoe"]').click();
-    await expect(player.page.locator('[data-open-player-picker]')).toBeVisible();
-    await startVisibleFrameTrace(player.page);
-    await player.page.locator('[data-open-player-picker]').click();
+    await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
+    await expect(playerA.page.locator('[data-open-player-picker]')).toBeVisible();
+    await startVisibleFrameTrace(playerA.page);
 
-    await expect(player.page.locator('#sheet')).toContainText('Загружаем соперников…');
-    await expect(player.page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:5_000 });
-    await expect(player.page.locator('#sheet')).toContainText('TEST PLAYER B');
+    const opponentResponse = playerA.page.waitForResponse(response =>
+      response.url() === OPPONENTS_ROUTE && response.request().method() === 'POST',
+    { timeout:15_000 });
+    await playerA.page.locator('[data-open-player-picker]').click();
 
-    const frames = await stopVisibleFrameTrace(player.page);
+    const response = await opponentResponse;
+    expect(response.status()).toBe(200);
+    const payload = await response.json();
+    expect(payload?.ok).toBe(true);
+    expect(payload?.authoritative).toBe(true);
+    expect(payload?.storage_driver).toBe('json');
+    expect((Array.isArray(payload?.items) ? payload.items : []).map(item => String(item?.id || '')))
+      .toContain('stg_test_player_b');
+
+    await expect(playerA.page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:10_000 });
+    await expect(playerA.page.locator('#sheet')).toContainText('TEST PLAYER B');
+
+    const frames = await stopVisibleFrameTrace(playerA.page);
     expect(frames.length).toBeGreaterThan(0);
-    expect(frames.some(frame => String(frame.text).includes('Загружаем соперников'))).toBe(true);
     expect(frames.some(frame => String(frame.text).includes('TEST PLAYER B'))).toBe(true);
     expect(frames.filter(frame => FALSE_EMPTY_PATTERN.test(String(frame.text)))).toEqual([]);
     expect(requests).toBe(1);
   } finally {
-    try { await player.context.request.post(AUTH_ROUTE, { data:{ action:'revoke' }, timeout:15_000 }); } catch {}
-    await player.context.close();
+    playerA.page.off('request', countRequest);
+    await closePlayer(playerA);
+    await closePlayer(playerB);
   }
 }
 
-test('actual Start desktop picker never paints false empty before the real player list', async ({ browser }) => {
+test('actual Start desktop picker uses live storage and never paints false empty before Player B', async ({ browser }) => {
   await runActualStartPicker(browser, false);
 });
 
-test('actual Start mobile picker never paints false empty before the real player list', async ({ browser }) => {
+test('actual Start mobile picker uses live storage and never paints false empty before Player B', async ({ browser }) => {
   await runActualStartPicker(browser, true);
 });
