@@ -1,0 +1,53 @@
+name: D1 live bell single-owner audit
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d1-bell-audit-final-base
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for exact live bell build and verify ownership
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          ok=0
+          for attempt in $(seq 1 24); do
+            nonce="$(date +%s)-${attempt}"
+            rm -f entry.headers entry.html main.js notifications.js home.js
+            if curl --fail-with-body --silent --show-error --location \
+              --header 'Cache-Control: no-cache' \
+              "${origin}/app/?audit=${nonce}" -D entry.headers -o entry.html; then
+              build="$(awk 'BEGIN{IGNORECASE=1} /^x-mgw-frontend-build:/ {gsub("\r",""); print $2}' entry.headers | tail -1)"
+              main_url="$(grep -Eo './assets/js/main\.js\?v=[^"<]+' entry.html | tail -1 || true)"
+              if [[ "$build" == 'd1-bell-single-owner' && "$main_url" == './assets/js/main.js?v=d1-bell-single-owner' ]]; then
+                curl --fail-with-body --silent --show-error --location \
+                  --header 'Cache-Control: no-cache' \
+                  "${origin}/app/${main_url#./}&audit=${nonce}" -o main.js
+                module_url="$(grep -Eo "./screens/notifications-screen[^']+" main.js | head -1 || true)"
+                if [[ "$module_url" == './screens/notifications-screen-v99.js?v=d1-bell-single-owner' ]]; then
+                  curl --fail-with-body --silent --show-error --location \
+                    --header 'Cache-Control: no-cache' \
+                    "${origin}/app/assets/js/${module_url#./}&audit=${nonce}" -o notifications.js
+                  curl --fail-with-body --silent --show-error --location \
+                    --header 'Cache-Control: no-cache' \
+                    "${origin}/app/assets/js/screens/home-screen.js?v=74&audit=${nonce}" -o home.js
+                  grep -Fq "document.addEventListener('click', handleNotificationBellActivation, true);" notifications.js
+                  grep -Fq 'event.stopImmediatePropagation();' notifications.js
+                  grep -Fq "document.addEventListener('click', handleNotificationToastActivation);" notifications.js
+                  ! grep -Fq "target.id === 'notificationsOpen'" home.js
+                  ok=1
+                  echo "Exact live build verified on attempt ${attempt}."
+                  break
+                fi
+              fi
+            fi
+            sleep 20
+          done
+          test "$ok" = '1'
