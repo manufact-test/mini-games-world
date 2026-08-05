@@ -46,8 +46,8 @@ $assert(str_contains($invites, "card.closest('#sheet')?.querySelector('[data-not
     && str_contains($invites, 'actions:[]'),
     'The canonical owner must replace the exact active notification card with a non-actionable terminal card.');
 
-$assert(str_contains($notifications, "event.target.closest('#notificationsOpen')")
-    && str_contains($notifications, "openNotificationsSheet({ seed:currentItems(), source:'bell' })")
+$assert(str_contains($notifications, "const bell = target.closest('#notificationsOpen');")
+    && str_contains($notifications, "void openNotificationsSheet({ seed:currentItems(), source:'bell' });")
     && str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
     && str_contains($notifications, 'pinItem(item);')
     && str_contains($notifications, 'renderNotifications(visibleSheetItems());'),
