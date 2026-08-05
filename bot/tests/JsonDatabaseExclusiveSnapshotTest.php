@@ -1,17 +1,21 @@
 <?php
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/storage/JsonDatabase.php';
+$rootDir = dirname(__DIR__);
+require $rootDir . '/storage/contracts/StorageTransactionInterface.php';
+require $rootDir . '/storage/contracts/StorageAdapterInterface.php';
+require $rootDir . '/storage/JsonDatabase.php';
+require $rootDir . '/storage/JsonStorageAdapter.php';
 
 $mode = (string)($argv[1] ?? 'parent');
 if ($mode === 'child') {
     $dataDir = (string)($argv[2] ?? '');
     $readyFile = (string)($argv[3] ?? '');
     $resultFile = (string)($argv[4] ?? '');
-    $database = new JsonDatabase($dataDir);
+    $storage = new JsonStorageAdapter($dataDir);
     file_put_contents($readyFile, 'ready');
     $started = microtime(true);
-    $database->transaction(static function (array &$data): void {
+    $storage->transaction(static function (array &$data): void {
         $data['invites'][] = ['id' => 'child-write'];
     });
     file_put_contents($resultFile, json_encode([
@@ -45,45 +49,45 @@ $removeTree = static function (string $path) use (&$removeTree): void {
 };
 
 try {
-    $database = new JsonDatabase($root);
-    $database->transaction(static function (array &$data): void {
+    $storage = new JsonStorageAdapter($root);
+    $storage->transaction(static function (array &$data): void {
         $data['invites'] = [['id' => 'initial']];
     });
 
-    $database->exclusiveReadOnlySections(
+    $storage->exclusiveReadOnlySections(
         ['invites'],
         function (array $snapshot) use (
-  &$process,
-  &$pipes,
-  $root,
-  $readyFile,
-  $resultFile,
-  $assert
+            &$process,
+            &$pipes,
+            $root,
+            $readyFile,
+            $resultFile,
+            $assert
         ): void {
-  $assert(array_keys($snapshot) === ['invites'],
-      'Exclusive snapshot must decode only requested sections.');
-  $assert(($snapshot['invites'][0]['id'] ?? '') === 'initial',
-      'Exclusive snapshot must expose the stable pre-writer state.');
+            $assert(array_keys($snapshot) === ['invites'],
+                'Exclusive snapshot must decode only requested sections.');
+            $assert(($snapshot['invites'][0]['id'] ?? '') === 'initial',
+                'Exclusive snapshot must expose the stable pre-writer state.');
 
-  $process = proc_open(
-      [PHP_BINARY, __FILE__, 'child', $root, $readyFile, $resultFile],
-      [
-          0 => ['pipe', 'r'],
-          1 => ['pipe', 'w'],
-          2 => ['pipe', 'w'],
-      ],
-      $pipes
-  );
-  $assert(is_resource($process), 'Child JSON writer must start.');
-  fclose($pipes[0]);
+            $process = proc_open(
+                [PHP_BINARY, __FILE__, 'child', $root, $readyFile, $resultFile],
+                [
+                    0 => ['pipe', 'r'],
+                    1 => ['pipe', 'w'],
+                    2 => ['pipe', 'w'],
+                ],
+                $pipes
+            );
+            $assert(is_resource($process), 'Child JSON writer must start.');
+            fclose($pipes[0]);
 
-  $deadline = microtime(true) + 3.0;
-  while (!is_file($readyFile) && microtime(true) < $deadline) usleep(10000);
-  $assert(is_file($readyFile), 'Child writer must reach the lock attempt.');
-  usleep(180000);
-  $status = proc_get_status($process);
-  $assert(!empty($status['running']),
-      'JSON writer must remain blocked while the exclusive snapshot callback runs.');
+            $deadline = microtime(true) + 3.0;
+            while (!is_file($readyFile) && microtime(true) < $deadline) usleep(10000);
+            $assert(is_file($readyFile), 'Child writer must reach the lock attempt.');
+            usleep(180000);
+            $status = proc_get_status($process);
+            $assert(!empty($status['running']),
+                'JSON writer must remain blocked while the exclusive snapshot callback runs.');
         }
     );
 
@@ -97,7 +101,7 @@ try {
     $assert(is_array($timing) && (float)($timing['elapsed'] ?? 0) >= 0.15,
         'Child writer must measure the exclusive snapshot blocking interval.');
 
-    $final = $database->readOnlySections(
+    $final = $storage->readOnlySections(
         ['invites'],
         static fn(array $data): array => $data['invites'] ?? []
     );
