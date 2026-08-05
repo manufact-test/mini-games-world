@@ -44,11 +44,13 @@ $assert($perform !== ''
     'Decline/cancel must keep the sheet open and replace the current surface without a self-toast.');
 
 $assert(str_contains($owner, 'function terminalActionContext(')
+    && str_contains($owner, "card.closest('#sheet')?.querySelector('[data-notifications-owner=\"r12\"]')")
+    && !str_contains($owner, "button.closest('[data-notifications-owner=\"r12\"]')")
     && str_contains($owner, 'data-notification-type')
     && str_contains($owner, 'function terminalNotificationItem(')
     && str_contains($owner, 'actions:[]')
     && str_contains($owner, "message:''"),
-    'The canonical owner must preserve exact notification identity and render a non-actionable terminal card.');
+    'The canonical owner must preserve exact notification identity and resolve the owner from the active sheet.');
 
 $assert(str_contains($notifications, 'data-notification-type="${escapeHtml(item.type)}"')
     && str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
