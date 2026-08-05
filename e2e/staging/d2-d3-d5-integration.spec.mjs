@@ -65,6 +65,14 @@ async function authorizeContext(context, slot) {
   expect(cookie.sameSite).toBe('Strict');
 }
 
+function isExpectedPresenceResumeAbort(request) {
+  if (!request.url().startsWith(STAGING_ORIGIN)) return false;
+  const failure = String(request.failure()?.errorText || '');
+  return request.method() === 'POST'
+    && new URL(request.url()).pathname === '/bot/presence.php'
+    && failure === 'net::ERR_ABORTED';
+}
+
 function collectDiagnostics(page, slot) {
   const report = {
     slot,
@@ -81,13 +89,15 @@ function collectDiagnostics(page, slot) {
     report.pageErrors.push(String(error?.message || error).slice(0, 500));
   });
   page.on('requestfailed', request => {
-    if (request.url().startsWith(STAGING_ORIGIN)) {
-      report.failedRequests.push({
-        method: request.method(),
-        path: new URL(request.url()).pathname,
-        error: String(request.failure()?.errorText || 'request_failed').slice(0, 200),
-      });
-    }
+    if (!request.url().startsWith(STAGING_ORIGIN)) return;
+    // A forced resume intentionally aborts the superseded presence ping and
+    // immediately replaces it with a fresh request. Every other failure remains fatal.
+    if (isExpectedPresenceResumeAbort(request)) return;
+    report.failedRequests.push({
+      method: request.method(),
+      path: new URL(request.url()).pathname,
+      error: String(request.failure()?.errorText || 'request_failed').slice(0, 200),
+    });
   });
   page.on('response', response => {
     if (response.url().startsWith(STAGING_ORIGIN) && response.status() >= 500) {
