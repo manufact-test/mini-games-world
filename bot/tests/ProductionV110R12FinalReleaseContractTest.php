@@ -34,7 +34,7 @@ $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability
 
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
-    str_contains($php, 'production-clean-entry-v110.js?v=1120')
+    str_contains($php, 'production-clean-entry-v110.js?v=1121')
         && str_contains($php, 'main-v110.js?v=1130')
         && str_contains($php, $build)
         && str_contains($main, 'main-v110-handoff-shell.js?v=1130')
