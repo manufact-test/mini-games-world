@@ -4,7 +4,7 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
+const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const OPPONENTS_ROUTE = `${STAGING_ORIGIN}/bot/invite-opponents.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
@@ -72,13 +72,17 @@ async function revokeAndClose(context) {
   await context.close();
 }
 
-test('canonical ordinary Start bell opens through one browser click', async ({ browser }) => {
+test('canonical ordinary Start bell reopens immediately for 25 click cycles', async ({ browser }) => {
   const player = await openOrdinaryStart(browser);
   try {
-    await player.page.locator('#notificationsOpen').click();
-    await expect(player.page.locator('#sheetOverlay')).toHaveClass(/active/);
-    await expect(player.page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления');
-    await expect(player.page.locator('#sheet [data-notifications-sheet]')).toHaveCount(1);
+    for (let cycle = 0; cycle < 25; cycle += 1) {
+      await player.page.locator('#notificationsOpen').click({ timeout:5_000 });
+      await expect(player.page.locator('#sheetOverlay')).toHaveClass(/active/);
+      await expect(player.page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления');
+      await expect(player.page.locator('#sheet [data-notifications-sheet]')).toHaveCount(1);
+      await player.page.locator('#sheet [data-close-sheet]').click({ timeout:5_000 });
+      await expect(player.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+    }
   } finally {
     await revokeAndClose(player.context);
   }
