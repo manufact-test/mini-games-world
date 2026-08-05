@@ -23,6 +23,9 @@ $assert(substr_count($shell, 'initGameInvites();') === 1
 $assert(str_contains($owner, 'const terminalContext = terminalActionContext(button, action, token);')
     && str_contains($owner, 'const terminalInvite = terminalInviteResult('),
     'D2 must preserve the current surface and use the authoritative result.');
+$assert(str_contains($owner, "card.closest('#sheet')?.querySelector('[data-notifications-owner=\"r12\"]')")
+    && !str_contains($owner, "button.closest('[data-notifications-owner=\"r12\"]')"),
+    'D2 must resolve the notification owner from the active sheet, not from a non-ancestor marker.');
 $assert(str_contains($owner, 'terminalContext.notificationSurface')
     && str_contains($owner, 'showTerminalInvite(terminalInvite);'),
     'Both notification-card and standalone invite-sheet surfaces must transition in place.');
