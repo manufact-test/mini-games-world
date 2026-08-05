@@ -102,9 +102,15 @@ async function installTelegramShareMock(context) {
       openTelegramLink() {},
     };
 
-    const telegram = { WebApp: webApp };
+    const telegram = {};
+    Object.defineProperty(telegram, 'WebApp', {
+      configurable: false,
+      enumerable: true,
+      get: () => webApp,
+      set: () => {},
+    });
     Object.defineProperty(window, 'Telegram', {
-      configurable: true,
+      configurable: false,
       get: () => telegram,
       set: () => {},
     });
