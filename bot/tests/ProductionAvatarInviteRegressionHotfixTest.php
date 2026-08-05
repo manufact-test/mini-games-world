@@ -158,7 +158,7 @@ $assertContains('explicitPhotoUrl || telegramPhotoUrl || existingPhotoUrl', $ui,
 $assertContains('mergeUserState(state.user, result.user)', $profile, 'Profile refresh must merge partial user payloads');
 $assertContains('../ui.js?v=89', $profile, 'Profile must import the hotfix avatar renderer');
 $assertContains('hasProfileStats(state.profileStats)', $profile, 'Profile must keep the warmed real statistics visible');
-$assertContains('d1-canonical-toast-seed', $main, 'Main module must publish the canonical D1 owner graph without losing prior avatar fixes');
+$assertContains('d1-bell-single-owner', $main, 'Main module must publish the canonical D1 owner graph without losing prior avatar fixes');
 $assertContains('./ui.js?v=89', $main, 'Main module must preserve avatar renderer cache busting');
 $assertContains('./screens/profile-screen.js?v=92', $main, 'Main module must load the first-open-safe profile screen');
 $assertContains('main.css?v=92', $index, 'Entrypoint must publish current CSS');

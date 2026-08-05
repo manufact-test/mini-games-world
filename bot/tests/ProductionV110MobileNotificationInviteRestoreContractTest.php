@@ -39,9 +39,9 @@ $assert(str_contains($notifications, 'renderLoading();')
     && str_contains($notifications, 'await refreshOpenSheet(generation);'),
     'Unknown first state must show loading instead of a false empty screen.');
 $assert(str_contains($shell, 'game-invites-v110.js?v=1114')
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1124'),
-    'The canonical graph must load the current owners through the final v1124 shell.');
+    && str_contains($entry, 'main-v110.js?v=1126'),
+    'The canonical graph must load the current owners through the final v1126 shell.');
 
 fwrite(STDOUT, "ProductionV110MobileNotificationInviteRestoreContractTest: {$assertions} assertions passed\n");

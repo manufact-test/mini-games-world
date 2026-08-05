@@ -38,7 +38,7 @@ $assert(!str_contains($auth, 'touchAuthenticatedPresence')
 
 $assert(!str_contains($shell, 'NotificationPreflight')
     && substr_count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1122')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
     && !str_contains($shell, 'notifications-screen-v110r5.js'),
     'The active graph must have exactly one current notification owner.');
 $assert(!str_contains($clean, 'initV109SelfCancelRefreshGuard')
@@ -63,10 +63,10 @@ $assert(str_contains($shell, $build)
     && str_contains($clean, $build)
     && str_contains($entry, $build),
     'Every active outer entry owner must share the same build identity.');
-$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1124')
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1126')
     && str_contains($entry, 'production-clean-entry-v110.js?v=1120')
-    && str_contains($entry, 'main-v110.js?v=1124')
+    && str_contains($entry, 'main-v110.js?v=1126')
     && str_contains($launch, '/app/v110.php?v=1123'),
-    'Telegram keeps the canonical route while active modules publish the final v1124 shell.');
+    'Telegram keeps the canonical route while active modules publish the final v1126 shell.');
 
 fwrite(STDOUT, 'ProductionV110InvitePresenceNotificationProfileRootContractTest: ' . $assertions . " assertions passed\n");

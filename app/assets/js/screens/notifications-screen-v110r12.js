@@ -126,8 +126,8 @@ function handleDocumentClick(event){
   if (bell) {
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (Date.now() < closeGuardUntil || Date.now() < openGuardUntil) return;
-    openGuardUntil = Date.now() + OPEN_GUARD_MS;
+    // The bell already has one capture-phase owner. A timer blackout after
+    // closing the sheet only discards the next real user click.
     void openNotificationsSheet({ seed:currentItems(), source:'bell' });
   }
 }
