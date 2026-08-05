@@ -82,6 +82,6 @@ $assertSame('@carl_player', $carl['name'] ?? null, 'Telegram username must remai
 $assertSame(true, $carl['online'] ?? null, 'Presence must mark Carl online');
 $assertSame(false, $carl['busy'] ?? null, 'Idle online player must not be marked busy');
 $assertSame('онлайн', $carl['activity'] ?? null, 'Online activity label must remain stable');
-$assertSame(3, count($mainItems), 'Only eligible human opponents must be returned');
+$assertSame(2, count($mainItems), 'Only eligible human opponents other than the current account must be returned');
 
 fwrite(STDOUT, "InviteOpponentServiceTest: {$assertions} assertions passed\n");
