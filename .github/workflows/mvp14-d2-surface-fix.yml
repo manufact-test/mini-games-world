@@ -1,9 +1,13 @@
 name: Fix isolated MVP-14 D2 notification surface detection
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/mvp14-d2-terminal-card-in-place-v1130
+      - agent/mvp-13-2-staging
+    types:
+      - opened
+      - reopened
+      - synchronize
     paths:
       - .github/workflows/mvp14-d2-surface-fix.yml
 
@@ -12,6 +16,7 @@ permissions:
 
 jobs:
   fix:
+    if: github.event.pull_request.head.ref == 'agent/mvp14-d2-terminal-card-in-place-v1130'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,5 +74,3 @@ jobs:
           git add -A
           git commit -m "fix: detect the notification owner within the active sheet"
           git push origin HEAD:agent/mvp14-d2-terminal-card-in-place-v1130
-
-# Run before the isolated draft PRs are reopened.
