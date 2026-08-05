@@ -151,6 +151,35 @@ async function expectPlayerRequest(page, pathname, data, label) {
   return result.payload;
 }
 
+async function notificationByInviteToken(page, inviteToken) {
+  return page.evaluate(async ({ inviteToken: expectedToken }) => {
+    const sessionId = localStorage.getItem('mgw_device_session_id');
+    const deviceId = localStorage.getItem('mgw_device_id');
+    const response = await fetch('/bot/notifications.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        markRead: true,
+        initData: '',
+        sessionId,
+        deviceId,
+      }),
+    });
+    const payload = await response.json().catch(() => null);
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    const item = items.find(candidate =>
+      String(candidate?.invite_token || '') === String(expectedToken || '')
+    ) || null;
+    return {
+      status: response.status,
+      ok: payload?.ok === true,
+      publicError: typeof payload?.error === 'string' ? payload.error.slice(0, 300) : null,
+      item,
+      availableTokens: items.slice(0, 8).map(candidate => String(candidate?.invite_token || '')),
+    };
+  }, { inviteToken });
+}
+
 async function openPlayer(browser, slot) {
   const context = await browser.newContext({
     locale: 'ru-RU',
@@ -319,17 +348,18 @@ test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in
     await expect(playerA.page.locator('#sheet')).toContainText('Это приглашение больше нельзя использовать.');
     await expect(playerA.page.locator('#notificationToast')).not.toHaveClass(/show/);
 
-    const bNotifications = await expectPlayerRequest(
-      playerB.page,
-      '/bot/notifications.php',
-      { markRead: true },
-      'Player B cancelled invitation notifications',
-    );
-    const cancelledItem = (Array.isArray(bNotifications.items) ? bNotifications.items : [])
-      .find(item => String(item?.invite_token || '') === directToken);
-    expect(cancelledItem).toBeTruthy();
-    expect(String(cancelledItem?.invite_status || '')).toMatch(/cancelled|canceled/);
-    expect(Array.isArray(cancelledItem.actions) ? cancelledItem.actions : []).toEqual([]);
+    const bNotification = await notificationByInviteToken(playerB.page, directToken);
+    expect(
+      bNotification.status,
+      `Player B terminal notification status; public error: ${bNotification.publicError || 'no_public_error'}`,
+    ).toBe(200);
+    expect(bNotification.ok, 'Player B terminal notification payload').toBe(true);
+    expect(
+      bNotification.item,
+      `Expected terminal token ${directToken}; first tokens: ${bNotification.availableTokens.join(', ')}`,
+    ).toBeTruthy();
+    expect(String(bNotification.item?.invite_status || '')).toMatch(/cancelled|canceled/);
+    expect(Array.isArray(bNotification.item?.actions) ? bNotification.item.actions : []).toEqual([]);
 
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
