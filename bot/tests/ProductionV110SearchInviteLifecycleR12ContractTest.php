@@ -55,9 +55,9 @@ $assert(
     str_contains($shell, "search-screen-v102.js?v=103")
         && str_contains($shell, "search-invite-reconciliation-v110r12.js?v=1124")
         && str_contains($shell, 'initSearchInviteReconciliation();')
-        && str_contains($main, "main-v110-handoff-shell.js?v=1127")
-        && str_contains($entry, "main-v110.js?v=1127"),
-    'The full active v110 publication graph must deliver the unchanged search lifecycle fix through the v1127 outer chain.'
+        && str_contains($main, "main-v110-handoff-shell.js?v=1129")
+        && str_contains($entry, "main-v110.js?v=1129"),
+    'The full active v110 publication graph must deliver the unchanged search lifecycle fix through the v1129 outer chain.'
 );
 
 fwrite(STDOUT, "ProductionV110SearchInviteLifecycleR12ContractTest: {$assertions} assertions passed\n");

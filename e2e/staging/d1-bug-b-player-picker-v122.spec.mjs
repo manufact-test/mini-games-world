@@ -101,12 +101,17 @@ async function runActualStartPicker(browser, isMobile) {
     if (request.url() === OPPONENTS_ROUTE && request.method() === 'POST') requests += 1;
   };
   playerA.page.on('request', countRequest);
+  const delayLiveOpponentRequest = async route => {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    await route.continue();
+  };
+  await playerA.page.route(OPPONENTS_ROUTE, delayLiveOpponentRequest);
 
   try {
     const resources = await playerA.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     expect(resources.some(rawUrl => {
       const url = new URL(rawUrl);
-      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1127';
+      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1129';
     }), 'Ordinary Start must execute the canonical v110 player-picker owner.').toBe(true);
     expect(requests).toBe(0);
 
@@ -133,20 +138,24 @@ async function runActualStartPicker(browser, isMobile) {
 
     const frames = await stopVisibleFrameTrace(playerA.page);
     expect(frames.length).toBeGreaterThan(0);
-    expect(frames.some(frame => String(frame.text).includes(PLAYER_B_VISIBLE_NAME))).toBe(true);
+    expect(frames.filter(frame => /Загружаем соперников/i.test(String(frame.text)))).toEqual([]);
     expect(frames.filter(frame => FALSE_EMPTY_PATTERN.test(String(frame.text)))).toEqual([]);
+    const pickerFrames = frames.filter(frame => String(frame.text).includes('Выберите игрока'));
+    expect(pickerFrames.length).toBeGreaterThan(0);
+    expect(String(pickerFrames[0].text)).toContain(PLAYER_B_VISIBLE_NAME);
     expect(requests).toBe(1);
   } finally {
+    await playerA.page.unroute(OPPONENTS_ROUTE, delayLiveOpponentRequest);
     playerA.page.off('request', countRequest);
     await closePlayer(playerA);
     await closePlayer(playerB);
   }
 }
 
-test('actual Start desktop picker uses live storage and never paints false empty before Player B', async ({ browser }) => {
+test('actual Start desktop picker uses live storage and opens only when the ready Player B list can paint', async ({ browser }) => {
   await runActualStartPicker(browser, false);
 });
 
-test('actual Start mobile picker uses live storage and never paints false empty before Player B', async ({ browser }) => {
+test('actual Start mobile picker uses live storage and opens only when the ready Player B list can paint', async ({ browser }) => {
   await runActualStartPicker(browser, true);
 });

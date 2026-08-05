@@ -68,10 +68,10 @@ $assert(str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
 
 $assert(!str_contains($clean, 'initV109ShareSpeed')
     && !str_contains($clean, 'initV109ShareFallbackGuard')
-    && str_contains($shell, 'game-invites-v110.js?v=1127')
+    && str_contains($shell, 'game-invites-v110.js?v=1129')
     && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1127'),
-    'Only the freshly published canonical share owner and accepted notification owner may be active through the final v1127 shell.');
+    && str_contains($entry, 'main-v110.js?v=1129'),
+    'Only the freshly published canonical share owner and accepted notification owner may be active through the final v1129 shell.');
 
 fwrite(STDOUT, "ProductionV110CanonicalShareNotificationRootContractTest: {$assertions} assertions passed\n");

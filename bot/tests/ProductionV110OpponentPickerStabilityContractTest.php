@@ -26,15 +26,16 @@ $assert(
     'Opponent loading must not install a global fetch wrapper or a second runtime owner.'
 );
 $assert(
-    str_contains($invites, 'async function openPlayerPicker(context)')
-        && str_contains($invites, 'notifications-loading')
+    str_contains($invites, 'async function openPlayerPicker(context, sourceButton = null)')
+        && !str_contains($invites, 'Загружаем соперников')
+        && str_contains($invites, 'playerPickerRequestGeneration')
         && str_contains($invites, 'postJson(OPPONENTS_URL, {})')
-        && str_contains($invites, 'renderPlayerPicker(items, context);'),
-    'The canonical invitation owner must own the honest loading state, request and render transition.'
+        && strpos($invites, 'postJson(OPPONENTS_URL, {})') < strpos($invites, 'renderPlayerPicker(items, context);'),
+    'The canonical invitation owner must keep the setup sheet visible and render the picker only after the authoritative response.'
 );
 $assert(
     substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1
-        && substr_count($invites, 'async function openPlayerPicker(context)') === 1,
+        && substr_count($invites, 'async function openPlayerPicker(context, sourceButton = null)') === 1,
     'The player picker must have one endpoint and one canonical UI owner.'
 );
 $assert(

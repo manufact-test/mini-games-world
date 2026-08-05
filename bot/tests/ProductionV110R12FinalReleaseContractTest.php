@@ -35,14 +35,14 @@ $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability
 $build = 'v110-mvp14r12-invite-notification-presence-stability';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1120')
-        && str_contains($php, 'main-v110.js?v=1127')
+        && str_contains($php, 'main-v110.js?v=1129')
         && str_contains($php, $build)
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1127')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1129')
         && str_contains($main, $build)
-        && str_contains($shell, 'game-invites-v110.js?v=1127')
+        && str_contains($shell, 'game-invites-v110.js?v=1129')
         && str_contains($shell, $build)
         && str_contains($clean, $build),
-    'Every active R12 entry owner must publish one build identity and the final v1127 shell.'
+    'Every active R12 entry owner must publish one build identity and the final v1129 shell.'
 );
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
@@ -117,9 +117,10 @@ $assert(
         && !str_contains($shell, 'production-v110-opponent-picker-stability.js')
         && !str_contains($shell, 'initV110OpponentPickerStability')
         && !str_contains($shell, 'window.fetch =')
-        && str_contains($invites, 'async function openPlayerPicker(context)')
+        && str_contains($invites, 'async function openPlayerPicker(context, sourceButton = null)')
+        && !str_contains($invites, 'Загружаем соперников')
         && str_contains($invites, 'postJson(OPPONENTS_URL, {})'),
-    'The player picker must remain inside the canonical invite owner without the retired R12 wrapper.'
+    'The ready-first player picker must remain inside the canonical invite owner without the retired R12 wrapper.'
 );
 $assert(
     str_contains($opponentEndpoint, 'new PresenceService()')

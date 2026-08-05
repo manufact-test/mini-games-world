@@ -50,6 +50,7 @@ let shareWarmExpiryTimer = null;
 let shareWarm = null;
 let shareWarmSerial = Promise.resolve();
 let shareAttempt = null;
+let playerPickerRequestGeneration = 0;
 
 export function initGameInvites(){
   if (initialized) return;
@@ -74,6 +75,7 @@ export function initGameInvites(){
     scheduleWatch(80);
   });
   document.addEventListener('mgw:sheet-closed', () => {
+    playerPickerRequestGeneration += 1;
     if (!shareAttempt?.nativePending) cancelWarmShareDraft();
   });
   document.addEventListener('mgw:before-game-launch', event => {
@@ -233,35 +235,41 @@ function openInviteSetup(gameType, preserved = null){
     document.querySelectorAll('[data-invite-bet]').forEach(item => item.classList.toggle('active', item === button));
     scheduleWarmShareDraft(currentContext());
   }));
-  document.querySelector('[data-open-player-picker]')?.addEventListener('click', () => {
+  document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
     cancelWarmShareDraft();
-    openPlayerPicker(currentContext());
+    openPlayerPicker(currentContext(), event.currentTarget);
   });
   document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
   scheduleWarmShareDraft(currentContext(), 0);
 }
 
-async function openPlayerPicker(context){
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-    <div class="notifications-loading"><div>👥</div><strong>Загружаем соперников…</strong></div>
-  `);
+async function openPlayerPicker(context, sourceButton = null){
+  const requestGeneration = ++playerPickerRequestGeneration;
+  const trigger = sourceButton instanceof HTMLButtonElement ? sourceButton : null;
+  if (trigger) {
+    trigger.disabled = true;
+    trigger.setAttribute('aria-busy', 'true');
+  }
 
   try {
     const result = await postJson(OPPONENTS_URL, {});
+    if (requestGeneration !== playerPickerRequestGeneration) return;
     const items = Array.isArray(result.items) ? result.items.slice(0, MAX_OPPONENTS) : [];
     items.sort((a, b) => Number(Boolean(b.online)) - Number(Boolean(a.online)));
     renderPlayerPicker(items, context);
   } catch (error) {
+    if (requestGeneration !== playerPickerRequestGeneration) return;
     openSheet(`
       <div class="sheet-head"><div><h2>Не удалось загрузить игроков</h2></div><button class="close" data-close-sheet type="button">×</button></div>
       <div class="small-note">${escapeHtml(error.message || 'Попробуйте ещё раз.')}</div>
       <button class="btn ghost full" data-back-to-invite-setup type="button">Назад</button>
     `);
     document.querySelector('[data-back-to-invite-setup]')?.addEventListener('click', () => openInviteSetup(context.gameType, context));
+  } finally {
+    if (trigger?.isConnected && requestGeneration === playerPickerRequestGeneration) {
+      trigger.disabled = false;
+      trigger.removeAttribute('aria-busy');
+    }
   }
 }
 
