@@ -1,20 +1,14 @@
 name: Fix isolated MVP-14 D2 notification surface detection
 
 on:
-  pull_request_target:
-    branches:
-      - agent/mvp14-d2-terminal-card-in-place-v1130
-    types:
-      - opened
-      - reopened
-      - synchronize
+  push:
 
 permissions:
   contents: write
 
 jobs:
   fix:
-    if: github.event.pull_request.head.ref == 'agent/mvp14-d2-surface-trigger'
+    if: github.ref == 'refs/heads/agent/mvp14-d2-terminal-card-in-place-v1130'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
