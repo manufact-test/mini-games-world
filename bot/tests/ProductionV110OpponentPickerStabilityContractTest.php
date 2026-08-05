@@ -16,6 +16,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $endpoint = $read('bot/invite-opponents.php');
+$service = $read('bot/services/InviteOpponentService.php');
 $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability.js';
 
 $assert(
@@ -38,23 +39,26 @@ $assert(
 );
 $assert(
     str_contains($endpoint, 'new PresenceService()')
-        && str_contains($endpoint, 'onlineAccountIds()')
-        && str_contains($endpoint, 'str_starts_with($candidateId, \'bot_\')')
-        && str_contains($endpoint, 'array_slice($result, 0, 10)'),
-    'The endpoint must use shared presence, exclude bots and return one bounded authoritative list.'
+        && str_contains($endpoint, '->onlineAccountIds()')
+        && str_contains($endpoint, 'new InviteOpponentService()')
+        && str_contains($service, "str_starts_with(\$candidateId, 'bot_')")
+        && str_contains($service, 'array_slice($result, 0, self::MAX_ITEMS)'),
+    'The endpoint and one canonical selector service must use shared presence, exclude bots and return one bounded authoritative list.'
 );
 $assert(
-    str_contains($endpoint, '$presenceOnline = isset($onlineIds[$candidateId]);')
-        && str_contains($endpoint, '$hasHistory = isset($lastGameAt[$candidateId]);')
-        && str_contains($endpoint, 'time() - $lastSeen > 86400 * 30'),
+    str_contains($service, '$presenceOnline = isset($onlineIds[$candidateId]);')
+        && str_contains($service, '$hasHistory = isset($lastGameAt[$candidateId]);')
+        && str_contains($service, 'time() - $lastSeen > self::RECENT_WINDOW_SEC'),
     'The authoritative list must include online users and bounded recent known human users without requiring a finished match.'
 );
 $assert(
-    !str_contains($shell, 'window.fetch =')
+    str_contains($endpoint, 'StorageFactory::createJson(')
+        && !str_contains($endpoint, 'DatabasePrimaryStateStorageAdapter')
+        && !str_contains($shell, 'window.fetch =')
         && !str_contains($invites, 'window.fetch =')
         && !str_contains($endpoint, 'sleep(')
         && !str_contains($endpoint, 'usleep('),
-    'The fix must not hide latency with global interception or server-side retry delays.'
+    'The fix must share active invitation storage and must not hide latency with interception or retry delays.'
 );
 
 fwrite(STDOUT, "ProductionV110OpponentPickerStabilityContractTest: {$assertions} assertions passed\n");
