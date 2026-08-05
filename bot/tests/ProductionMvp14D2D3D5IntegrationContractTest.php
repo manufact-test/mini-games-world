@@ -77,16 +77,18 @@ $assert(str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=
     && !str_contains($e2e, "toHaveText('Приглашение отменено'")
     && str_contains($e2e, "#sheet [data-invite-action]')).toHaveCount(0")
     && str_contains($e2e, "#notificationToast')).not.toHaveClass(/show/")
-    && str_contains($e2e, 'async function notificationByInviteToken(page, inviteToken)')
+    && str_contains($e2e, 'async function notificationByInviteToken(player, inviteToken)')
+    && str_contains($e2e, 'player.context.request.post(NOTIFICATIONS_ROUTE')
     && str_contains($e2e, 'items.find(candidate =>')
-    && str_contains($e2e, 'const bNotification = await notificationByInviteToken(playerB.page, directToken);')
+    && str_contains($e2e, 'const bNotification = await notificationByInviteToken(playerB, directToken);')
     && str_contains($e2e, 'otherParticipantTerminalStatusPresent: true'),
-    'The live E2E must use the authoritative label and return one exact-token terminal notification from the browser context.');
+    'The live E2E must use the authoritative label and return one exact-token terminal notification through the authenticated BrowserContext request.');
 
 $assert(!str_contains($e2e, 'const bNotifications = await expectPlayerRequest(')
     && !str_contains($e2e, 'Array.isArray(bNotifications.items)')
+    && !str_contains($e2e, "fetch('/bot/notifications.php'")
     && str_contains($e2e, 'bNotification.availableTokens.join'),
-    'The full notification history must not cross the Playwright structured-clone boundary.');
+    'The notification history must bypass the application page fetch and structured-clone boundaries.');
 
 $assert(!str_contains($e2e, "not.toHaveClass(/active/")
     && str_contains($e2e, "await expect(overlay).toHaveClass(/active/"),
