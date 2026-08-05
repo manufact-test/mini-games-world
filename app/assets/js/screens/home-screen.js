@@ -18,7 +18,6 @@ export function initHomeScreen(){
     if (target.matches('[data-room]')) return setRoom(target.dataset.room);
     if (target.id === 'playTicTacToe') return openGameSetup();
     if (target.id === 'inviteFriend') return toast('Приглашения друзей появятся позже.');
-    if (target.id === 'notificationsOpen') return toast('Уведомлений пока нет.');
     if (target.id === 'moreMenuOpen' || target.id === 'gameMenuOpen') return openMoreMenuSheet();
     if (target.id === 'profileOpen') return openProfileFromTop();
     if (target.matches('[data-back-home]')) return showScreen('home');

@@ -43,16 +43,16 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="d1-canonical-toast-seed"',
+    'data-hotfix-build="d1-bell-single-owner"',
     $html
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main.js?v=d1-canonical-toast-seed',
+    './assets/js/main.js?v=d1-bell-single-owner',
     $html
 );
 
-$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-canonical-toast-seed"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-bell-single-owner"></script>';
 if (!str_contains($html, $mainScript)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
@@ -64,5 +64,5 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: d1-canonical-toast-seed');
+header('X-MGW-Frontend-Build: d1-bell-single-owner');
 echo $html;
