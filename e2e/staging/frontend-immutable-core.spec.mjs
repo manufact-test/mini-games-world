@@ -7,7 +7,7 @@ const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
-const EXPECTED_BUILD = 'd1-canonical-toast-seed';
+const EXPECTED_BUILD = 'd1-bell-single-owner';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -64,11 +64,11 @@ test('staging app serves one canonical notification and player-picker graph', as
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     const has = suffix => resources.some(url => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix));
     for (const required of [
-      '/assets/js/main.js?v=d1-canonical-toast-seed',
+      '/assets/js/main.js?v=d1-bell-single-owner',
       '/assets/js/api/client.js?v=114',
       '/assets/js/session.js?v=114',
       '/assets/js/first-interaction-readiness.js?v=d1',
-      '/assets/js/screens/notifications-screen-v99.js?v=d1-canonical-toast-seed',
+      '/assets/js/screens/notifications-screen-v99.js?v=d1-bell-single-owner',
       '/assets/js/games/game-invites.js?v=d1',
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
