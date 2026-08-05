@@ -8,6 +8,7 @@ const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const OPPONENTS_ROUTE = `${STAGING_ORIGIN}/bot/invite-opponents.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
+const PLAYER_B_VISIBLE_NAME = '@mgw_test_player_b';
 const FALSE_EMPTY_PATTERN = /(недавних соперников пока нет|игроков нет|соперников нет|никого нет)/i;
 
 async function requestOidcToken() {
@@ -128,11 +129,11 @@ async function runActualStartPicker(browser, isMobile) {
       .toContain('stg_test_player_b');
 
     await expect(playerA.page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:10_000 });
-    await expect(playerA.page.locator('#sheet')).toContainText('TEST PLAYER B');
+    await expect(playerA.page.locator('#sheet')).toContainText(PLAYER_B_VISIBLE_NAME);
 
     const frames = await stopVisibleFrameTrace(playerA.page);
     expect(frames.length).toBeGreaterThan(0);
-    expect(frames.some(frame => String(frame.text).includes('TEST PLAYER B'))).toBe(true);
+    expect(frames.some(frame => String(frame.text).includes(PLAYER_B_VISIBLE_NAME))).toBe(true);
     expect(frames.filter(frame => FALSE_EMPTY_PATTERN.test(String(frame.text)))).toEqual([]);
     expect(requests).toBe(1);
   } finally {
