@@ -184,9 +184,10 @@ function createActionCounter(page) {
   };
 }
 
-async function openPlayerPage(context, slot, appRoute = APP_ROUTE) {
+async function openPlayerPage(context, slot, appRoute = APP_ROUTE, beforeOpen = null) {
   const page = await context.newPage();
   const diagnostics = collectDiagnostics(page, slot);
+  if (typeof beforeOpen === 'function') await beforeOpen(page);
   await openOrdinaryStartReady(page, {
     appRoute,
     apiRoute: API_ROUTE,
@@ -372,8 +373,14 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     expect(counterA.count('create_link_draft')).toBe(1);
     expect(counterA.count('confirm_shared')).toBe(1);
 
-    playerB = await openPlayerPage(contextB, 'B', `${APP_ROUTE}&invite=${encodeURIComponent(token)}`);
-    counterB = createActionCounter(playerB.page);
+    playerB = await openPlayerPage(
+      contextB,
+      'B',
+      `${APP_ROUTE}&invite=${encodeURIComponent(token)}`,
+      page => {
+        counterB = createActionCounter(page);
+      },
+    );
     await expect(playerB.page.locator('#sheet .sheet-head h2')).toHaveText('Вас приглашают сыграть', {
       timeout: 30_000,
     });
