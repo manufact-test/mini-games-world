@@ -117,9 +117,10 @@ $assert(
         && !str_contains($shell, 'production-v110-opponent-picker-stability.js')
         && !str_contains($shell, 'initV110OpponentPickerStability')
         && !str_contains($shell, 'window.fetch =')
-        && str_contains($invites, 'async function openPlayerPicker(context)')
+        && str_contains($invites, 'async function openPlayerPicker(context, sourceButton = null)')
+        && !str_contains($invites, 'Загружаем соперников')
         && str_contains($invites, 'postJson(OPPONENTS_URL, {})'),
-    'The player picker must remain inside the canonical invite owner without the retired R12 wrapper.'
+    'The ready-first player picker must remain inside the canonical invite owner without the retired R12 wrapper.'
 );
 $assert(
     str_contains($opponentEndpoint, 'new PresenceService()')
