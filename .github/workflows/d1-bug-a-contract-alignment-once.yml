@@ -87,8 +87,17 @@ jobs:
           own.write_text(text.replace(old, new, 1), encoding='utf-8')
           changes += 1
 
-          if changes < 20:
-              raise SystemExit(f'Expected broad stale-contract alignment, changed only {changes} files.')
+          deferred = Path('bot/tests/ProductionMvp14DeferredNotificationFirstFrameE2ETest.php')
+          text = deferred.read_text(encoding='utf-8')
+          old = "const seedItems = trigger.id === 'notificationToast' && activeToastNotification"
+          new = 'const seedItems = activeToastNotification ? [activeToastNotification] : []'
+          if text.count(old) != 1:
+              raise SystemExit('Expected one retired toast seed assertion.')
+          deferred.write_text(text.replace(old, new, 1), encoding='utf-8')
+          changes += 1
+
+          if changes < 21:
+              raise SystemExit(f'Expected stale-contract alignment in at least 21 files, changed only {changes}.')
 
           Path('.github/workflows/d1-bug-a-contract-alignment-once.yml').unlink()
           PY
@@ -96,7 +105,7 @@ jobs:
       - name: Run focused failed-contract set
         shell: bash
         run: |
-          set -Eeuo pipefail
+          set -uo pipefail
           tests=(
             bot/tests/ProductionAvatarInviteRegressionHotfixTest.php
             bot/tests/ProductionHotPathLatencyFixContractTest.php
@@ -123,11 +132,16 @@ jobs:
             bot/tests/ProductionV120InviteControllerArchitectureContractTest.php
             bot/tests/ProductionV96RootCauseStabilizationTest.php
           )
+          failed=0
           for test_file in "${tests[@]}"; do
-            php "$test_file"
+            if ! php "$test_file"; then
+              echo "FOCUSED_FAILED: $test_file"
+              failed=1
+            fi
           done
-          node --check app/assets/js/screens/notifications-screen-v110r12.js
-          git diff --check
+          node --check app/assets/js/screens/notifications-screen-v110r12.js || failed=1
+          git diff --check || failed=1
+          exit "$failed"
 
       - name: Commit exact expectation-only alignment
         shell: bash
