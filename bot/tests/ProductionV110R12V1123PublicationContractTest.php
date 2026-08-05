@@ -26,7 +26,7 @@ $assert(
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
         && str_contains($php, 'main-v110.js?v=1127')
         && str_contains($main, 'main-v110-handoff-shell.js?v=1127'),
-    'The canonical Telegram URL must select the final v1127 browser graph.'
+    'The canonical Telegram URL must select the final v1129 browser graph.'
 );
 $assert(
     str_contains($shell, 'game-invites-v110.js?v=1127')
@@ -37,7 +37,7 @@ $assert(
         && str_contains($shell, 'stats-owner-v110.js?v=1121')
         && str_contains($shell, 'search-screen-v102.js?v=103')
         && str_contains($shell, 'search-invite-reconciliation-v110r12.js?v=1124'),
-    'Only the outer graph and canonical picker publication advance for v1127; validated notification, terminal, link, presence and search owners keep their revisions.'
+    'Only the outer graph and canonical picker publication advance for v1129; validated notification, terminal, link, presence and search owners keep their revisions.'
 );
 $assert(
     str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")

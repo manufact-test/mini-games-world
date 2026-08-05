@@ -37,6 +37,6 @@ $assert(str_contains($notifications, "if (source === 'toast') await waitForFirst
 $assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && str_contains($entry, 'main-v110.js?v=1127'),
-    'Production must load only the current notification owner through the final v1127 outer shell.');
+    'Production must load only the current notification owner through the final v1129 outer shell.');
 
 fwrite(STDOUT, "ProductionV110MobileToastAuthorityContractTest: {$assertions} assertions passed\n");

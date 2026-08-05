@@ -23,11 +23,11 @@ $assert(
 );
 $assert(
     str_contains($entry, './assets/js/main-v110.js?v=1127'),
-    'The ordinary Start entry must publish the fresh v1127 main identity.'
+    'The ordinary Start entry must publish the fresh v1129 main identity.'
 );
 $assert(
     str_contains($main, './main-v110-handoff-shell.js?v=1127'),
-    'The ordinary Start main module must publish the fresh v1127 shell identity.'
+    'The ordinary Start main module must publish the fresh v1129 shell identity.'
 );
 $assert(
     str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1126"),

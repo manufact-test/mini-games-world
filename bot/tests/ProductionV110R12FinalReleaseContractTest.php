@@ -42,7 +42,7 @@ $assert(
         && str_contains($shell, 'game-invites-v110.js?v=1127')
         && str_contains($shell, $build)
         && str_contains($clean, $build),
-    'Every active R12 entry owner must publish one build identity and the final v1127 shell.'
+    'Every active R12 entry owner must publish one build identity and the final v1129 shell.'
 );
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")

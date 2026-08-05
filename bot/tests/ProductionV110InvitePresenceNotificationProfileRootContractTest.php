@@ -68,6 +68,6 @@ $assert(str_contains($main, 'main-v110-handoff-shell.js?v=1127')
     && str_contains($entry, 'main-v110.js?v=1127')
     && str_contains($shell, 'game-invites-v110.js?v=1127')
     && str_contains($launch, '/app/v110.php?v=1123'),
-    'Telegram keeps the canonical route while active modules publish the final v1127 shell and picker owner.');
+    'Telegram keeps the canonical route while active modules publish the final v1129 shell and picker owner.');
 
 fwrite(STDOUT, 'ProductionV110InvitePresenceNotificationProfileRootContractTest: ' . $assertions . " assertions passed\n");

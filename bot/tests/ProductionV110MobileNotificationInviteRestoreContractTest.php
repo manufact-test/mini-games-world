@@ -42,6 +42,6 @@ $assert(str_contains($shell, 'game-invites-v110.js?v=1127')
     && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && str_contains($entry, 'main-v110.js?v=1127'),
-    'The canonical graph must load the freshly published picker and accepted notification owner through the final v1127 shell.');
+    'The canonical graph must load the freshly published picker and accepted notification owner through the final v1129 shell.');
 
 fwrite(STDOUT, "ProductionV110MobileNotificationInviteRestoreContractTest: {$assertions} assertions passed\n");

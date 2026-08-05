@@ -28,7 +28,7 @@ $assert(
     str_contains($html, './assets/js/production-clean-entry-v110.js?v=1120')
         && str_contains($html, './assets/js/main-v110.js?v=1127')
         && str_contains($html, 'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"'),
-    'The Telegram v110 entrypoint must publish the exact current browser build and final v1127 shell.'
+    'The Telegram v110 entrypoint must publish the exact current browser build and final v1129 shell.'
 );
 
 $home = strpos($lifecycle, "showScreen('home');");

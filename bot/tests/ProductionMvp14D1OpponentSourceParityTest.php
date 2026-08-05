@@ -44,12 +44,14 @@ $assert(
 );
 
 $assert(
-    !str_contains($e2e, 'page.route(OPPONENTS_ROUTE')
+    str_contains($e2e, 'page.route(OPPONENTS_ROUTE')
+        && str_contains($e2e, 'route.continue()')
         && !str_contains($e2e, 'route.fulfill(')
         && str_contains($e2e, "openPlayer(browser, 'B', false)")
+        && str_contains($e2e, "expect(payload?.storage_driver).toBe('json');")
         && str_contains($e2e, 'data-direct-opponent="stg_test_player_b"')
         && str_contains($e2e, 'expect(requests).toBe(1);'),
-    'BUG B E2E must use the live endpoint with a real second player instead of a fabricated response.'
+    'BUG B E2E must delay the live endpoint without fabricating its response and must use a real second player.'
 );
 
 fwrite(STDOUT, "ProductionMvp14D1OpponentSourceParityTest: {$assertions} assertions passed\n");

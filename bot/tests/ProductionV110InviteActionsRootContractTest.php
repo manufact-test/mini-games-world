@@ -60,6 +60,6 @@ $assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
     && str_contains($main, 'main-v110-handoff-shell.js?v=1127')
     && str_contains($shell, 'game-invites-v110.js?v=1127')
     && str_contains($launch, '/app/v110.php?v=1123'),
-    'Telegram keeps the canonical v1123 URL while browser entrypoints publish the final v1127 shell and canonical picker owner.');
+    'Telegram keeps the canonical v1123 URL while browser entrypoints publish the final v1129 shell and canonical picker owner.');
 
 fwrite(STDOUT, 'ProductionV110InviteActionsRootContractTest: ' . $assertions . " assertions passed\n");

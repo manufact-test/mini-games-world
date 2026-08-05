@@ -38,9 +38,12 @@ $assert(str_contains($endpoint, 'StorageFactory::createJson(')
     && str_contains($endpoint, 'new InviteOpponentService()')
     && !str_contains($endpoint, 'DatabasePrimaryStateStorageAdapter'),
     'The endpoint must read the same active runtime used by direct invitation creation.');
-$assert(str_contains($client, '<strong>Загружаем соперников…</strong>')
+$assert(!str_contains($client, 'Загружаем соперников')
+    && str_contains($client, 'async function openPlayerPicker(context, sourceButton = null)')
     && str_contains($client, 'const result = await postJson(OPPONENTS_URL, {});')
+    && str_contains($client, 'playerPickerRequestGeneration')
+    && strpos($client, 'const result = await postJson(OPPONENTS_URL, {});') < strpos($client, 'renderPlayerPicker(items, context);')
     && !str_contains($client, 'renderPlayerPicker([], context);'),
-    'The client must show an honest loading state and never paint a fake empty list before the response.');
+    'The client must keep the setup sheet visible and open the picker only from the completed authoritative response.');
 
 fwrite(STDOUT, "ProductionV110InviteOpponentSourceR12ContractTest: {$assertions} assertions passed\n");

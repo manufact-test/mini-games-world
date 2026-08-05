@@ -39,7 +39,7 @@ $assert(
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
         && str_contains($shell, 'production-v110-presence.js?v=1121')
         && str_contains($shell, 'stats-owner-v110.js?v=1121'),
-    'The canonical Telegram URL must publish the final v1127 graph while retaining validated notification, terminal, link and presence revisions.'
+    'The canonical Telegram URL must publish the final v1129 graph while retaining validated notification, terminal, link and presence revisions.'
 );
 
 $assert(

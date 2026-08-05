@@ -28,7 +28,7 @@ $assert(
         && str_contains($shell110, 'game-invites-v110.js?v=1127')
         && !str_contains($main110, 'main-v120-invite-controller-shell.js')
         && !str_contains($shell110, 'invite-controller-v120.js'),
-    'The active v110 graph must publish v1127 without loading the rejected controller.'
+    'The active v110 graph must publish v1129 without loading the rejected controller.'
 );
 $assert(
     str_contains($v120, "\$target = '/app/v110.php?v=1123';")
