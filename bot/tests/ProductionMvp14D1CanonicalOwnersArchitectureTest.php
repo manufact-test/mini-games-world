@@ -14,6 +14,7 @@ $readiness = $read('app/assets/js/first-interaction-readiness.js');
 $invites = $read('app/assets/js/games/game-invites.js');
 $inviteLink = $read('app/assets/js/games/invite-link-entry-v115.js');
 $endpoint = $read('bot/invite-opponents.php');
+$opponentService = $read('bot/services/InviteOpponentService.php');
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
@@ -79,11 +80,14 @@ $assert(substr_count($invites, 'postJson(OPPONENTS_URL') === 1
     && str_contains($invites, 'data-player-picker-state="error"')
     && !str_contains($invites, 'window.fetch ='),
     'Player picker must own one fresh request and one explicit UI state machine.');
-$assert(str_contains($endpoint, 'new DatabasePrimaryStateStorageAdapter(')
+$assert(str_contains($endpoint, 'StorageFactory::createJson(')
+    && str_contains($endpoint, 'new InviteOpponentService()')
     && str_contains($endpoint, '$storage->readOnly(')
     && str_contains($endpoint, "'authoritative' => true")
-    && str_contains($endpoint, "'storage_driver' => \$storage->driver()"),
-    'Opponent endpoint must remain the authoritative DB-primary reader.');
+    && str_contains($endpoint, "'storage_driver' => \$storage->driver()")
+    && !str_contains($endpoint, 'DatabasePrimaryStateStorageAdapter')
+    && str_contains($opponentService, 'final class InviteOpponentService'),
+    'Opponent endpoint must remain authoritative through the same active runtime as create_direct and one canonical selector service.');
 $assert(str_contains($inviteLink, "publishInviteLinkLifecycle('mgw:invite-link-opening'")
     && str_contains($inviteLink, "publishInviteLinkLifecycle('mgw:invite-link-resolved'")
     && str_contains($inviteLink, 'announce:false'),
