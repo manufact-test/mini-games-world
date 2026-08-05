@@ -48,7 +48,7 @@ $assert(str_contains($index, $activeScript)
     'The HTML shell must publish the fresh canonical-Share entry before active main.');
 
 $assert(str_contains($v110, "'./assets/js/production-regression-fix-entry.js?v=102'")
-    && str_contains($v110, "'./assets/js/production-clean-entry-v110.js?v=1120'"),
+    && str_contains($v110, "'./assets/js/production-clean-entry-v110.js?v=1121'"),
     'The v110 wrapper must replace the exact active base entry and retain its own accepted graph.');
 
 $assert(!str_contains($entry, 'lemonchiffon-gerbil-545102.hostingersite.com')

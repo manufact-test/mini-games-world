@@ -70,7 +70,7 @@ $assert(
     'A Telegram link must paint one complete non-blocking invite sheet.'
 );
 $assert(
-    str_contains($php, 'production-clean-entry-v110.js?v=1120')
+    str_contains($php, 'production-clean-entry-v110.js?v=1121')
         && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'The accepted clean entry owner and no-store response must remain unchanged.'
 );
