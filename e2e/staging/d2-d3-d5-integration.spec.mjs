@@ -151,33 +151,36 @@ async function expectPlayerRequest(page, pathname, data, label) {
   return result.payload;
 }
 
-async function notificationByInviteToken(page, inviteToken) {
-  return page.evaluate(async ({ inviteToken: expectedToken }) => {
-    const sessionId = localStorage.getItem('mgw_device_session_id');
-    const deviceId = localStorage.getItem('mgw_device_id');
-    const response = await fetch('/bot/notifications.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        markRead: true,
-        initData: '',
-        sessionId,
-        deviceId,
-      }),
-    });
-    const payload = await response.json().catch(() => null);
-    const items = Array.isArray(payload?.items) ? payload.items : [];
-    const item = items.find(candidate =>
-      String(candidate?.invite_token || '') === String(expectedToken || '')
-    ) || null;
-    return {
-      status: response.status,
-      ok: payload?.ok === true,
-      publicError: typeof payload?.error === 'string' ? payload.error.slice(0, 300) : null,
-      item,
-      availableTokens: items.slice(0, 8).map(candidate => String(candidate?.invite_token || '')),
-    };
-  }, { inviteToken });
+async function notificationByInviteToken(player, inviteToken) {
+  const identity = await player.page.evaluate(() => ({
+    sessionId: localStorage.getItem('mgw_device_session_id'),
+    deviceId: localStorage.getItem('mgw_device_id'),
+  }));
+  const response = await player.context.request.post(NOTIFICATIONS_ROUTE, {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    data: {
+      markRead: true,
+      initData: '',
+      sessionId: identity.sessionId,
+      deviceId: identity.deviceId,
+    },
+    timeout: 35_000,
+  });
+  const payload = await response.json().catch(() => null);
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const item = items.find(candidate =>
+    String(candidate?.invite_token || '') === String(inviteToken || '')
+  ) || null;
+  return {
+    status: response.status(),
+    ok: payload?.ok === true,
+    publicError: typeof payload?.error === 'string' ? payload.error.slice(0, 300) : null,
+    item,
+    availableTokens: items.slice(0, 8).map(candidate => String(candidate?.invite_token || '')),
+  };
 }
 
 async function openPlayer(browser, slot) {
@@ -348,7 +351,7 @@ test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in
     await expect(playerA.page.locator('#sheet')).toContainText('Это приглашение больше нельзя использовать.');
     await expect(playerA.page.locator('#notificationToast')).not.toHaveClass(/show/);
 
-    const bNotification = await notificationByInviteToken(playerB.page, directToken);
+    const bNotification = await notificationByInviteToken(playerB, directToken);
     expect(
       bNotification.status,
       `Player B terminal notification status; public error: ${bNotification.publicError || 'no_public_error'}`,
