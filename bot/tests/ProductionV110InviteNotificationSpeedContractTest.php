@@ -48,16 +48,16 @@ $assert(str_contains($invites, "../components/sheet.js?v=1109")
     && str_contains($perform, 'showTerminalInvite(terminalInvite);'),
     'The canonical invitation owner must preserve the current surface and keep actor terminal actions silent.');
 
-$assert(str_contains($notifications, 'if (item && showToast(item)) rememberAnnouncedId')
-    && str_contains($notifications, "if (showToast(item)) rememberAnnouncedId(id);")
-    && str_contains($notifications, "['home', 'profile'].includes(screenName)"),
+$assert(str_contains($notifications, 'if (showToast(item)) rememberAnnouncedId(item.id);')
+    && str_contains($notifications, 'if (next && showToast(next)) rememberAnnouncedId(next.id);')
+    && str_contains($notifications, "return ['home','profile'].includes(screen);"),
     'An item may be marked announced only after it was actually shown on an allowed screen.');
-$assert(str_contains($notifications, "document.addEventListener('mgw:sheet-closed'")
-    && str_contains($notifications, 'announceNextLiveItem'),
-    'A notification suppressed by an open sheet must remain deliverable after the sheet closes.');
+$assert(str_contains($notifications, "document.addEventListener('mgw:sheet-closed', handleSheetClosed);")
+    && str_contains($notifications, 'announcementGuardUntil'),
+    'Notifications suppressed by active sheet lifecycle guards must remain bounded and independently deliverable.');
 
-$bell = strpos($notifications, "event.target.closest('#notificationsOpen')");
-$open = strpos($notifications, "openNotificationsSheet({ seed:currentItems(), source:'bell' })", $bell ?: 0);
+$bell = strpos($notifications, "const bell = target.closest('#notificationsOpen');");
+$open = strpos($notifications, "void openNotificationsSheet({ seed:currentItems(), source:'bell' });", $bell ?: 0);
 $assert($bell !== false && $open !== false && $bell < $open,
     'The single notification owner must open the bell immediately on the first click.');
 $assert(!str_contains($shell, 'NotificationPreflight')
