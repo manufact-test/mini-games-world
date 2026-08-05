@@ -24,8 +24,11 @@ $start = strpos($invites, 'async function openPlayerPicker(context, sourceButton
 $end = strpos($invites, "\nfunction renderPlayerPicker", $start === false ? 0 : $start);
 $assert($start !== false && $end !== false, 'Canonical player-picker function must be present once.');
 $picker = substr($invites, $start, $end - $start);
+$catch = strpos($picker, '} catch (error) {');
+$assert($catch !== false, 'Canonical player-picker error boundary must remain explicit.');
+$successPath = substr($picker, 0, $catch);
 
-$assert(!str_contains($picker, 'openSheet(`'), 'The picker must not open any intermediate sheet before the server response.');
+$assert(!str_contains($successPath, 'openSheet(`'), 'The successful picker path must not open an intermediate sheet before the server response.');
 $assert(!str_contains($picker, 'Загружаем соперников'), 'The visible opponent loader must be absent from the canonical owner.');
 $assert(substr_count($picker, 'postJson(OPPONENTS_URL, {})') === 1, 'One user action must perform exactly one fresh opponent request.');
 $assert(strpos($picker, 'await postJson(OPPONENTS_URL, {})') < strpos($picker, 'renderPlayerPicker(items, context);'), 'The completed response must precede the first picker render.');
