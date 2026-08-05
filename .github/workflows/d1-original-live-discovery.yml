@@ -5,12 +5,17 @@ on:
     branches:
       - agent/mvp14-original-live-discovery-base2
 
+concurrency:
+  group: d1-original-live-discovery
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   discover:
     runs-on: ubuntu-latest
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,10 +26,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo '=== NOTIFICATION FILE HISTORY ON STAGING ANCESTRY ==='
-          git log --all --date=iso-strict --format='%H %ad %s' -- app/assets/js/screens/notifications-screen-v110r12.js | head -100
-          echo '=== MAIN V110 FILE HISTORY ==='
-          git log --all --date=iso-strict --format='%H %ad %s' -- app/assets/js/main-v110.js app/assets/js/main-v110-handoff-shell.js app/v110.php | head -150
+          echo '=== NOTIFICATION FILE HISTORY ==='
+          git log --date=iso-strict --format='%H %ad %s' -- app/assets/js/screens/notifications-screen-v110r12.js | head -40
           echo '=== CURRENT BLOBS ==='
           git ls-tree HEAD app/v110.php app/assets/js/main-v110.js app/assets/js/main-v110-handoff-shell.js app/assets/js/screens/notifications-screen-v110r12.js
 
@@ -34,6 +37,7 @@ jobs:
             body="${label}.body"
             headers="${label}.headers"
             curl --fail-with-body --silent --show-error --location \
+              --connect-timeout 8 --max-time 20 --retry 1 --retry-delay 1 \
               --user-agent 'TelegramBot (like TwitterBot)' \
               "$url" -D "$headers" -o "$body"
             echo "=== ${label} ==="
