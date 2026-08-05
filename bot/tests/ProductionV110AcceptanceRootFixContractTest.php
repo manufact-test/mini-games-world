@@ -116,7 +116,7 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     && str_contains($runtime, 'mgw-v110-search-summary'),
     'Accepted game interaction behavior must remain untouched.');
 
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1120')
+$assert(str_contains($php, 'production-clean-entry-v110.js?v=1121')
     && str_contains($php, 'main-v110.js?v=1130')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
