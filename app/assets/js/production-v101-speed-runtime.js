@@ -3,7 +3,6 @@ import { getSessionId } from './session.js?v=27';
 import {
   cacheDisposition,
   mergeNotificationSnapshot,
-  optimisticReadNotifications,
   requestPriority,
   stableHash,
 } from './production-v101-speed-models.js?v=101';
@@ -25,7 +24,6 @@ const runtime = window.__MGW_V101_SPEED__ ||= {
   inFlight:new Map(),
   gamePollControllers:new Set(),
   backgroundControllers:new Set(),
-  markReadInFlight:null,
   prefetchScheduled:false,
   currentScope:'anonymous',
   metrics:[],
@@ -106,7 +104,7 @@ async function acceleratedFetch(input, init = {}){
   const descriptor = cacheDescriptor(meta);
   if (descriptor) {
     if (descriptor.id === 'notifications' && meta.markRead) {
-      return optimisticNotificationRead(input, init, meta, priority);
+      return authoritativeNotificationRead(input, init, meta, priority);
     }
     return cachedFetch(input, init, meta, descriptor, priority);
   }
@@ -194,30 +192,11 @@ function refreshCacheInBackground(input, init, meta, descriptor, priority, key){
   runtime.inFlight.set(key, promise);
 }
 
-async function optimisticNotificationRead(input, init, meta, priority){
+async function authoritativeNotificationRead(input, init, meta, priority){
   const key = cacheKey(meta.scope, 'notifications');
-  const cached = runtime.cache.get(key);
-  if (!cached) {
-    const snapshot = await fetchSnapshot(input, init, meta, priority, null);
-    if (snapshot.ok) rememberCache(key, 'notifications', snapshot);
-    return responseFromSnapshot(snapshot);
-  }
-
-  const optimisticData = optimisticReadNotifications(parseSnapshot(cached.snapshot));
-  const optimisticSnapshot = snapshotFromJson(optimisticData, 200, 'OK');
-  rememberCache(key, 'notifications', optimisticSnapshot);
-
-  if (!runtime.markReadInFlight) {
-    runtime.markReadInFlight = fetchSnapshot(input, init, meta, priority, null)
-      .then(snapshot => {
-        if (snapshot.ok) rememberCache(key, 'notifications', snapshot);
-        return snapshot;
-      })
-      .catch(() => null)
-      .finally(() => { runtime.markReadInFlight = null; });
-  }
-
-  return responseFromSnapshot(optimisticSnapshot);
+  const snapshot = await fetchSnapshot(input, init, meta, priority, null);
+  if (snapshot.ok) rememberCache(key, 'notifications', snapshot);
+  return responseFromSnapshot(snapshot);
 }
 
 async function fetchSnapshot(input, init, meta, priority, controllerSet){
