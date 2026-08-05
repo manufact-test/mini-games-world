@@ -12,7 +12,7 @@ if (!is_string($html)) {
 
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/production-clean-entry-v110.js?v=1120',
+    './assets/js/production-clean-entry-v110.js?v=1121',
     $html
 );
 $html = str_replace(
