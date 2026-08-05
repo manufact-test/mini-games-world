@@ -397,7 +397,6 @@ function warmShareDraft(context){
     window.clearTimeout(shareWarmExpiryTimer);
     void discardDraft(previous.result.invite);
   }
-
   entry.promise = shareWarmSerial = shareWarmSerial
     .catch(() => null)
     .then(async () => {
@@ -745,7 +744,7 @@ function terminalActionContext(button, action, token){
   const card = button.closest('[data-notification-id][data-notification-invite-token]');
   const notificationSurface = Boolean(
     card
-      && button.closest('[data-notifications-owner="r12"]')
+      && card.closest('#sheet')?.querySelector('[data-notifications-owner="r12"]')
       && String(card.getAttribute('data-notification-invite-token') || '') === token
   );
 
@@ -1197,7 +1196,6 @@ function inviteSummary(invite){
 async function inviteRequest(action, payload = {}, options = {}){
   return postJson(INVITES_URL, { action, ...payload }, options);
 }
-
 async function postJson(url, payload, options = {}){
   const response = await fetch(url, {
     method:'POST',
