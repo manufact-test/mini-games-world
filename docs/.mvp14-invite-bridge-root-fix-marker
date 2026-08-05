@@ -1,1 +1,0 @@
-Isolated root fix for serialized JSON-to-DB invitation snapshots. This marker exists only to make the exact branch head explicit before PR validation.
