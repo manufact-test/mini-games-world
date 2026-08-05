@@ -12,165 +12,28 @@ jobs:
   discover:
     runs-on: ubuntu-latest
     steps:
-      - name: Compare exact live original and staging JavaScript graphs
+      - name: Print exact live notification owner implementations
         shell: bash
         run: |
           set -Eeuo pipefail
-          cat > /tmp/compare_live_graphs.py <<'PY'
-          import hashlib
-          import json
-          import re
-          import sys
-          import time
-          import urllib.parse
-          import urllib.request
+          original='https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/screens/notifications-screen-v110r12.js?v=1122'
+          staging='https://seashell-okapi-889488.hostingersite.com/app/assets/js/screens/notifications-screen-v99.js?v=d1-bell-single-owner'
+          nonce="$(date +%s%N)"
+          curl --fail-with-body --silent --show-error --location \
+            --header 'Cache-Control: no-cache' \
+            "${original}&focused_audit=${nonce}" -o original-notifications.js
+          curl --fail-with-body --silent --show-error --location \
+            --header 'Cache-Control: no-cache' \
+            "${staging}&focused_audit=${nonce}" -o staging-notifications.js
 
-          TARGETS = {
-              'ORIGINAL': 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/v110.php?v=1123',
-              'STAGING': 'https://seashell-okapi-889488.hostingersite.com/app/',
-          }
-          NEEDLES = re.compile(
-              r'notificationsOpen|notificationToast|pointerdown|pointerup|pointercancel|'
-              r'addEventListener\(["\x27]click|sheetOverlay|closeSheet|openSheet|'
-              r'notification-window-owner|notification-compat-click-guard|notifications-passive|'
-              r'stopImmediatePropagation|stopPropagation',
-              re.I,
-          )
-          IMPORT_RE = re.compile(
-              r'(?:^|[;\n])\s*(?:import|export)\s+(?:[^"\x27;]*?\s+from\s+)?["\x27]([^"\x27]+)["\x27]',
-              re.M,
-          )
-          DYNAMIC_RE = re.compile(r'import\(\s*["\x27]([^"\x27]+)["\x27]\s*\)')
-          MODULE_SRC_RE = re.compile(
-              r'<script\b[^>]*\btype=["\x27]module["\x27][^>]*\bsrc=["\x27]([^"\x27]+)["\x27][^>]*>',
-              re.I,
-          )
-          IMPORTMAP_RE = re.compile(
-              r'<script\b[^>]*\btype=["\x27]importmap["\x27][^>]*>(.*?)</script>',
-              re.I | re.S,
-          )
+          echo '=== ORIGINAL LINES 1-175 ==='
+          nl -ba original-notifications.js | sed -n '1,175p'
+          echo '=== ORIGINAL LINES 430-530 ==='
+          nl -ba original-notifications.js | sed -n '430,530p'
+          echo '=== STAGING LINES 1-180 ==='
+          nl -ba staging-notifications.js | sed -n '1,180p'
+          echo '=== STAGING LINES 340-430 ==='
+          nl -ba staging-notifications.js | sed -n '340,430p'
 
-          def fetch(url):
-              separator = '&' if '?' in url else '?'
-              request = urllib.request.Request(
-                  url + separator + 'live_audit=' + str(time.time_ns()),
-                  headers={
-                      'User-Agent': 'MGW-live-graph-audit/1.0',
-                      'Cache-Control': 'no-cache',
-                      'Pragma': 'no-cache',
-                  },
-              )
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  raw = response.read()
-                  headers = {k.lower(): v for k, v in response.headers.items()}
-                  final_url = response.geturl()
-              return raw.decode('utf-8', errors='replace'), headers, final_url
-
-          def parse_import_map(html, document_url):
-              imports = {}
-              match = IMPORTMAP_RE.search(html)
-              if not match:
-                  return imports
-              payload = json.loads(match.group(1))
-              for specifier, target in payload.get('imports', {}).items():
-                  imports[specifier] = urllib.parse.urljoin(document_url, target)
-              return imports
-
-          def resolve(specifier, parent_url, import_map):
-              if specifier in import_map:
-                  return import_map[specifier]
-              if specifier.startswith(('http://', 'https://')):
-                  return specifier
-              return urllib.parse.urljoin(parent_url, specifier)
-
-          def same_origin(left, right):
-              a = urllib.parse.urlsplit(left)
-              b = urllib.parse.urlsplit(right)
-              return (a.scheme, a.netloc) == (b.scheme, b.netloc)
-
-          def crawl(label, entry_url):
-              html, entry_headers, final_entry = fetch(entry_url)
-              import_map = parse_import_map(html, final_entry)
-              roots = [urllib.parse.urljoin(final_entry, src) for src in MODULE_SRC_RE.findall(html)]
-              print(f'=== {label} ENTRY ===')
-              print('URL', final_entry)
-              for key in ('x-mgw-frontend-build', 'cache-control', 'last-modified', 'etag', 'x-hcdn-cache-status'):
-                  if key in entry_headers:
-                      print(f'HEADER {key}: {entry_headers[key]}')
-              print('MODULE_ROOTS')
-              for root in roots:
-                  print(root)
-              print('IMPORT_MAP')
-              for key, value in sorted(import_map.items()):
-                  print(f'{key} -> {value}')
-
-              queue = list(roots)
-              seen = set()
-              graph = {}
-              while queue:
-                  url = queue.pop(0)
-                  canonical = url.split('#', 1)[0]
-                  if canonical in seen or not same_origin(canonical, final_entry):
-                      continue
-                  seen.add(canonical)
-                  try:
-                      text, headers, final_url = fetch(canonical)
-                  except Exception as exc:
-                      print(f'FETCH_ERROR {canonical} {type(exc).__name__}: {exc}')
-                      continue
-                  graph[canonical] = (text, headers, final_url)
-                  specs = IMPORT_RE.findall(text) + DYNAMIC_RE.findall(text)
-                  for spec in specs:
-                      resolved = resolve(spec, final_url, import_map)
-                      if same_origin(resolved, final_entry) and resolved not in seen:
-                          queue.append(resolved)
-
-              print(f'=== {label} GRAPH {len(graph)} MODULES ===')
-              for url, (text, headers, final_url) in sorted(graph.items()):
-                  digest = hashlib.sha256(text.encode()).hexdigest()[:16]
-                  print(f'MODULE {url} SHA256={digest} FINAL={final_url}')
-                  for key in ('cache-control', 'last-modified', 'etag', 'x-hcdn-cache-status'):
-                      if key in headers:
-                          print(f'  HEADER {key}: {headers[key]}')
-                  for number, line in enumerate(text.splitlines(), 1):
-                      if NEEDLES.search(line):
-                          compact = line.strip()
-                          if len(compact) > 300:
-                              compact = compact[:300] + '...'
-                          print(f'  MATCH L{number}: {compact}')
-              return html, graph
-
-          results = {}
-          for label, url in TARGETS.items():
-              results[label] = crawl(label, url)
-
-          print('=== DIRECT OWNER SUMMARY ===')
-          for label, (_, graph) in results.items():
-              counts = {
-                  'notificationsOpen': 0,
-                  'pointerup': 0,
-                  'pointerdown': 0,
-                  'click_listener': 0,
-                  'sheetOverlay': 0,
-              }
-              files = {key: [] for key in counts}
-              for url, (text, _, _) in graph.items():
-                  probes = {
-                      'notificationsOpen': 'notificationsOpen',
-                      'pointerup': 'pointerup',
-                      'pointerdown': 'pointerdown',
-                      'click_listener': "addEventListener('click",
-                      'sheetOverlay': 'sheetOverlay',
-                  }
-                  for key, probe in probes.items():
-                      n = text.count(probe)
-                      if n:
-                          counts[key] += n
-                          files[key].append(url)
-              print(label, json.dumps(counts, sort_keys=True))
-              for key in counts:
-                  print(f'  {key}:')
-                  for url in files[key]:
-                      print('   ', url)
-          PY
-          python3 /tmp/compare_live_graphs.py
+          echo '=== FOCUSED FUNCTION NAMES ==='
+          grep -nE 'function handlePointerDown|function handleDocumentClick|function handleNotificationBellActivation|function handleNotificationToastActivation|lastBell|suppress|pointer' original-notifications.js staging-notifications.js | head -200
