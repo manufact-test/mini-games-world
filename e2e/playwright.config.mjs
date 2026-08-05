@@ -1,12 +1,12 @@
 import { defineConfig } from '@playwright/test';
 
 const outputRoot = 'artifacts/playwright';
-const supersededD1StressScenarios = /D1 follow-up: (declined invitation remains read history without actions or toast|mobile cached invitation wins over a delayed false-empty response|desktop bell opens during an unfinished request and ignores its stale finish)/;
+const supersededScenarios = /D1 follow-up: (declined invitation remains read history without actions or toast|mobile cached invitation wins over a delayed false-empty response|desktop bell opens during an unfinished request and ignores its stale finish)|Player A uses Share, player picker and cancellation through the live UI/;
 
 export default defineConfig({
   testDir: './staging',
   globalSetup:'./staging-global-setup.mjs',
-  grepInvert:supersededD1StressScenarios,
+  grepInvert:supersededScenarios,
   outputDir: `${outputRoot}/test-results`,
   fullyParallel: false,
   workers: 1,

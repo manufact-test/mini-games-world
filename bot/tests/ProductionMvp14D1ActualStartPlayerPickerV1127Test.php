@@ -21,14 +21,14 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    str_contains($v110, "./assets/js/main-v110.js?v=1129")
-        && str_contains($main, "./main-v110-handoff-shell.js?v=1129")
-        && str_contains($shell, "./games/game-invites-v110.js?v=1129"),
-    'Ordinary Telegram Start must publish the canonical v110 player-picker owner through one fresh v1129 chain.'
+    str_contains($v110, "./assets/js/main-v110.js?v=1130")
+        && str_contains($main, "./main-v110-handoff-shell.js?v=1130")
+        && str_contains($shell, "./games/game-invites-v110.js?v=1130"),
+    'Ordinary Telegram Start must publish the canonical v110 player-picker owner through one fresh v1130 chain.'
 );
 
 $assert(
-    substr_count($shell, "game-invites-v110.js?v=1129") === 1
+    substr_count($shell, "game-invites-v110.js?v=1130") === 1
         && substr_count($shell, 'initGameInvites();') === 1
         && substr_count($invites, 'async function openPlayerPicker(context, sourceButton = null)') === 1
         && substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1,
@@ -58,7 +58,7 @@ $assert(
 
 $assert(
     str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
-        && str_contains($e2e, "url.searchParams.get('v') === '1129'")
+        && str_contains($e2e, "url.searchParams.get('v') === '1130'")
         && str_contains($e2e, 'requestAnimationFrame(capture);')
         && str_contains($e2e, 'FALSE_EMPTY_PATTERN')
         && str_contains($e2e, 'setTimeout(resolve, 1500)')
@@ -73,4 +73,4 @@ $assert(
     'Desktop and mobile Chromium must be validated independently.'
 );
 
-fwrite(STDOUT, "ProductionMvp14D1ActualStartPlayerPickerV1129Test: {$assertions} assertions passed\n");
+fwrite(STDOUT, "ProductionMvp14D1ActualStartPlayerPickerV1130Test: {$assertions} assertions passed\n");

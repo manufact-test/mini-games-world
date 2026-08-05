@@ -32,7 +32,7 @@ foreach ([
     'desktop bell opens during an unfinished request and ignores its stale finish',
 ] as $alternative) {
     $assert(str_contains($config, $alternative),
-        "The superseded filter must include only the named alternative: {$alternative}");
+        "The superseded filter must include the named D1 alternative: {$alternative}");
 }
 
 $replacementTitles = [
@@ -57,7 +57,9 @@ $assert(str_contains($replacement, 'await toast.click();')
 $assert(str_contains($replacement, 'expect(markReadCalls).toBeGreaterThanOrEqual(1);')
         && !str_contains($replacement, "expect(markReadCalls).toBeGreaterThanOrEqual(2);\n    await playerA.page.unroute(NOTIFICATIONS_ROUTE);\n    expectClean(playerA, 'Player A v120 desktop"),
     'Desktop acceptance must verify immediate reusable UI and stale-close safety without requiring a redundant second request.');
-$assert(str_contains($config, 'grepInvert:supersededD1StressScenarios'),
-    'The Playwright config must apply only the named superseded-scenario filter.');
+$assert(str_contains($config, 'grepInvert:supersededScenarios')
+        && str_contains($config, 'Player A uses Share, player picker and cancellation through the live UI')
+        && !str_contains($config, 'grepInvert:supersededD1StressScenarios'),
+    'The Playwright config must retain the three D1 replacements and add only the named retired cancellation scenario.');
 
 fwrite(STDOUT, "ProductionMvp14D1AcceptanceV120Test: {$assertions} assertions passed\n");

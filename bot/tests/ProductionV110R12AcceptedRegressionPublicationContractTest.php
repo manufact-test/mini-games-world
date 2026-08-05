@@ -20,8 +20,9 @@ $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $stats = $read('app/assets/js/stats-owner-v110.js');
 $presence = $read('app/assets/js/production-v110-presence.js');
-$terminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
+$historicalTerminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
+$invites = $read('app/assets/js/games/game-invites-v110.js');
 $linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $inviteCreation = $read('bot/services/invites/GameInviteCreationTrait.php');
 $inviteWatch = $read('bot/invite-watch.php');
@@ -31,15 +32,16 @@ $inviteService = $read('bot/services/GameInviteService.php');
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
-        && str_contains($php, 'main-v110.js?v=1129')
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1129')
-        && str_contains($shell, 'game-invites-v110.js?v=1129')
+        && str_contains($php, 'main-v110.js?v=1130')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1130')
+        && str_contains($shell, 'game-invites-v110.js?v=1130')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
-        && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
+        && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
+        && !str_contains($shell, 'initInviteTerminalActions')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
         && str_contains($shell, 'production-v110-presence.js?v=1121')
         && str_contains($shell, 'stats-owner-v110.js?v=1121'),
-    'The canonical Telegram URL must publish the final v1129 graph while retaining validated notification, terminal, link and presence revisions.'
+    'The canonical Telegram URL must publish the v1130 graph with one invite owner and the validated notification, link and presence owners.'
 );
 
 $assert(
@@ -53,26 +55,31 @@ $assert(
     'Only independently ordered presence responses may update online_players, without UI smoothing.'
 );
 
-$closePosition = strpos($terminal, 'closeSheet();');
-$requestPosition = strpos($terminal, 'const result = await inviteRequest(action, token);');
-$tryStart = strpos($terminal, '  try {');
-$catchStart = strpos($terminal, '  } catch (error) {', $tryStart ?: 0);
-$successBlock = $tryStart !== false && $catchStart !== false
-    ? substr($terminal, $tryStart, $catchStart - $tryStart)
+$performStart = strpos($invites, 'async function performInviteAction(');
+$performEnd = strpos($invites, 'async function createRematch(', $performStart ?: 0);
+$perform = $performStart !== false && $performEnd !== false
+    ? substr($invites, $performStart, $performEnd - $performStart)
     : '';
 $assert(
-    $closePosition !== false && $requestPosition !== false && $closePosition < $requestPosition
-        && str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")
-        && str_contains($terminal, "new CustomEvent('mgw:notification-remove'")
-        && !str_contains($terminal, 'terminalNotificationItem(')
-        && !str_contains($terminal, "new CustomEvent('mgw:notification-sync'")
-        && $successBlock !== ''
-        && !str_contains($successBlock, "new CustomEvent('mgw:notifications-refresh'")
-        && str_contains($notifications, 'function removeInviteNotification(detail)')
-        && str_contains($notifications, 'localAuthority.delete(key)')
-        && str_contains($notifications, 'sheetState.pinned.delete(key)')
-        && !str_contains($notifications, 'applyInviteActionResult'),
-    'Decline/cancel must close before network completion, consume the click first and avoid actor confirmation or stale success refresh.'
+    str_contains($historicalTerminal, "window.addEventListener('click', handleTerminalAction, true)")
+        && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
+        && $perform !== ''
+        && !str_contains($perform, "action === 'decline' || action === 'cancel') {\n    closeSheet();")
+        && !str_contains($perform, "toast('Приглашение отклонено.')")
+        && str_contains($perform, "new CustomEvent('mgw:notification-sync'")
+        && str_contains($perform, 'showTerminalInvite(terminalInvite);')
+        && str_contains($perform, 'announce:false')
+        && !str_contains($perform, "new CustomEvent('mgw:notifications-refresh'"),
+    'Decline/cancel must stay in the canonical owner, terminalize the current surface and avoid actor confirmation or stale refresh.'
+);
+
+$assert(
+    str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
+        && str_contains($notifications, 'rememberLocalAuthority(item);')
+        && str_contains($notifications, 'pinItem(item);')
+        && str_contains($notifications, 'renderNotifications(visibleSheetItems());')
+        && str_contains($notifications, 'data-notification-type="${escapeHtml(item.type)}"'),
+    'The notification owner must preserve and replace the exact terminal card in place.'
 );
 
 $openLinkStart = strpos($inviteEndpoint, "case 'open_link':");

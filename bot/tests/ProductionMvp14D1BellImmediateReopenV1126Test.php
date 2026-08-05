@@ -22,12 +22,12 @@ $assert(
     'Ordinary Telegram Start must remain on the canonical v110 route.'
 );
 $assert(
-    str_contains($entry, './assets/js/main-v110.js?v=1129'),
-    'The ordinary Start entry must publish the fresh v1129 main identity.'
+    str_contains($entry, './assets/js/main-v110.js?v=1130'),
+    'The ordinary Start entry must publish the fresh v1130 main identity.'
 );
 $assert(
-    str_contains($main, './main-v110-handoff-shell.js?v=1129'),
-    'The ordinary Start main module must publish the fresh v1129 shell identity.'
+    str_contains($main, './main-v110-handoff-shell.js?v=1130'),
+    'The ordinary Start main module must publish the fresh v1130 shell identity.'
 );
 $assert(
     str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1126"),

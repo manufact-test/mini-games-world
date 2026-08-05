@@ -396,7 +396,7 @@ function renderNotification(item){
   const tone = ['success','danger','info','warning'].includes(item.tone) ? item.tone : 'info';
   const message = notificationMessage(item);
   return `
-    <article class="notification-card ${tone}" data-notification-id="${escapeHtml(item.id)}" data-notification-invite-token="${escapeHtml(item.invite_token)}">
+    <article class="notification-card ${tone}" data-notification-id="${escapeHtml(item.id)}" data-notification-type="${escapeHtml(item.type)}" data-notification-invite-token="${escapeHtml(item.invite_token)}">
       <div class="notification-icon">${notificationIcon(tone, item.type)}</div>
       <div class="notification-copy">
         <div class="notification-head">

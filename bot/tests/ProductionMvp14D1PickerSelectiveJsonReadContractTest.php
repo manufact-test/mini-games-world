@@ -60,7 +60,7 @@ $assert(
     'Server acceleration must preserve the accepted one-request ready-first client owner.'
 );
 $assert(
-    str_contains($shell, './games/game-invites-v110.js?v=1129'),
+    str_contains($shell, './games/game-invites-v110.js?v=1130'),
     'A server-only storage optimization must not invent a new client graph or cache identity.'
 );
 

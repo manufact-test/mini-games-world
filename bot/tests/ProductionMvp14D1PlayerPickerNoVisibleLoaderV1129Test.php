@@ -36,9 +36,9 @@ $assert(strpos($picker, 'await postJson(OPPONENTS_URL, {})') < strpos($picker, '
 $assert(str_contains($picker, 'playerPickerRequestGeneration') && str_contains($picker, 'requestGeneration !== playerPickerRequestGeneration'), 'Late responses must be ignored by the canonical owner.');
 $assert(str_contains($picker, "trigger.disabled = true;") && str_contains($picker, "trigger.setAttribute('aria-busy', 'true');"), 'The existing setup button must own the pending state without opening a loader sheet.');
 $assert(!str_contains($picker, 'setTimeout') && !str_contains($picker, 'window.fetch =') && !str_contains($picker, 'Promise.all'), 'The fix must not add timers, fetch interception, retries or parallel owners.');
-$assert(str_contains($v110, 'main-v110.js?v=1129') && str_contains($main, 'main-v110-handoff-shell.js?v=1129') && str_contains($shell, 'game-invites-v110.js?v=1129'), 'Ordinary Start must publish the no-loader owner through a fresh v1129 chain.');
+$assert(str_contains($v110, 'main-v110.js?v=1130') && str_contains($main, 'main-v110-handoff-shell.js?v=1130') && str_contains($shell, 'game-invites-v110.js?v=1130'), 'Ordinary Start must publish the no-loader owner through a fresh v1130 chain.');
 $assert(str_contains($e2e, 'setTimeout(resolve, 1500)') && str_contains($e2e, '/Загружаем соперников/i') && str_contains($e2e, 'pickerFrames[0].text'), 'The live test must hold the real response for 1.5 seconds and reject every visible loader frame.');
 $assert(str_contains($e2e, 'route.continue()') && !str_contains($e2e, 'route.fulfill('), 'The regression must delay the real endpoint instead of fabricating a response.');
 $assert(str_contains($e2e, 'expect(requests).toBe(1);'), 'The live regression must preserve one-request ownership.');
 
-fwrite(STDOUT, "ProductionMvp14D1PlayerPickerNoVisibleLoaderV1129Test: {$assertions} assertions passed\n");
+fwrite(STDOUT, "ProductionMvp14D1PlayerPickerNoVisibleLoaderV1130Test: {$assertions} assertions passed\n");

@@ -26,9 +26,9 @@ if (!is_string($html)) throw new RuntimeException('Cannot render v110 Telegram e
 
 $assert(
     str_contains($html, './assets/js/production-clean-entry-v110.js?v=1120')
-        && str_contains($html, './assets/js/main-v110.js?v=1129')
+        && str_contains($html, './assets/js/main-v110.js?v=1130')
         && str_contains($html, 'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"'),
-    'The Telegram v110 entrypoint must publish the exact current browser build and final v1129 shell.'
+    'The Telegram v110 entrypoint must publish the exact current browser build and final v1130 shell.'
 );
 
 $home = strpos($lifecycle, "showScreen('home');");
