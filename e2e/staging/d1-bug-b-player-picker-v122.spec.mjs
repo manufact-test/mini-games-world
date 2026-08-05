@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
@@ -34,11 +35,6 @@ async function authorizeContext(context, slot) {
   expect((await context.cookies(STAGING_ORIGIN)).some(item => item.name === TEST_COOKIE)).toBe(true);
 }
 
-function requestAction(response) {
-  try { return String(response.request().postDataJSON()?.action || ''); }
-  catch { return ''; }
-}
-
 async function openPlayer(browser, slot, isMobile) {
   const context = await browser.newContext({
     locale:'ru-RU', timezoneId:'Europe/Vilnius',
@@ -47,12 +43,11 @@ async function openPlayer(browser, slot, isMobile) {
   });
   await authorizeContext(context, slot);
   const page = await context.newPage();
-  const bootstrap = page.waitForResponse(response => response.url() === API_ROUTE
-    && response.request().method() === 'POST' && requestAction(response) === 'bootstrap', { timeout:35_000 });
-  const response = await page.goto(APP_ROUTE, { waitUntil:'domcontentloaded' });
-  expect(response?.ok()).toBe(true);
-  expect((await bootstrap).status()).toBe(200);
-  await expect(page.locator('#preloader')).toBeHidden({ timeout:20_000 });
+  await openOrdinaryStartReady(page, {
+    appRoute: APP_ROUTE,
+    apiRoute: API_ROUTE,
+    label: `Player ${slot}`,
+  });
   return { context, page };
 }
 

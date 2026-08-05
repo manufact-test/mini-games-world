@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
@@ -116,12 +117,6 @@ function requestAction(response) {
   }
 }
 
-function isBootstrapResponse(response) {
-  return response.url() === API_ROUTE
-    && response.request().method() === 'POST'
-    && requestAction(response) === 'bootstrap';
-}
-
 function isActionResponse(route, action) {
   return response => response.url() === route
     && response.request().method() === 'POST'
@@ -202,17 +197,11 @@ async function openPlayer(browser, slot) {
   await authorizeContext(context, slot);
   const page = await context.newPage();
   const diagnostics = collectDiagnostics(page, slot);
-  const bootstrapPromise = page.waitForResponse(isBootstrapResponse, { timeout: 35_000 });
-
-  const response = await page.goto(APP_ROUTE, { waitUntil: 'domcontentloaded' });
-  expect(response, `Player ${slot} app response`).not.toBeNull();
-  expect(response.ok(), `Player ${slot} app status`).toBe(true);
-  await expect(page).toHaveTitle(/Mini Games World/i);
-  const bootstrapResponse = await bootstrapPromise;
-  expect(bootstrapResponse.status(), `Player ${slot} bootstrap status`).toBe(200);
-  const bootstrap = await bootstrapResponse.json().catch(() => null);
-  expect(bootstrap?.ok, `Player ${slot} bootstrap payload`).toBe(true);
-  await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 20_000 });
+  await openOrdinaryStartReady(page, {
+    appRoute: APP_ROUTE,
+    apiRoute: API_ROUTE,
+    label: `Player ${slot}`,
+  });
 
   return { context, page, diagnostics };
 }
