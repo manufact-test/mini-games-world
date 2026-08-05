@@ -18,7 +18,8 @@ $main = $read('app/assets/js/main-v110.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
-$terminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
+$historicalTerminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
+$invites = $read('app/assets/js/games/game-invites-v110.js');
 $linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 
 $assert(
@@ -31,31 +32,34 @@ $assert(
 $assert(
     str_contains($shell, 'game-invites-v110.js?v=1130')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
-        && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
+        && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
+        && !str_contains($shell, 'initInviteTerminalActions')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
         && str_contains($shell, 'production-v110-presence.js?v=1121')
         && str_contains($shell, 'stats-owner-v110.js?v=1121')
         && str_contains($shell, 'search-screen-v102.js?v=103')
         && str_contains($shell, 'search-invite-reconciliation-v110r12.js?v=1124'),
-    'Only the outer graph and canonical picker publication advance for v1130; validated notification, terminal, link, presence and search owners keep their revisions.'
+    'The v1130 graph must advance the canonical invite owner while retaining validated notification, link, presence and search owners.'
 );
 $assert(
-    str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")
-        && !str_contains($terminal, "document.addEventListener('click', handleTerminalAction, true)")
-        && !str_contains($terminal, "toast('Приглашение отклонено")
-        && !str_contains($terminal, "toast('Приглашение отменено"),
-    'The final terminal owner must consume decline/cancel before legacy document handlers and never emit an actor success toast.'
+    str_contains($historicalTerminal, "window.addEventListener('click', handleTerminalAction, true)")
+        && !str_contains($shell, 'invite-terminal-actions-v110r12.js'),
+    'The retired terminal interceptor may remain as historical source but must not execute in the accepted graph.'
 );
-$tryStart = strpos($terminal, '  try {');
-$catchStart = strpos($terminal, '  } catch (error) {', $tryStart ?: 0);
-$successBlock = $tryStart !== false && $catchStart !== false
-    ? substr($terminal, $tryStart, $catchStart - $tryStart)
+
+$performStart = strpos($invites, 'async function performInviteAction(');
+$performEnd = strpos($invites, 'async function createRematch(', $performStart ?: 0);
+$perform = $performStart !== false && $performEnd !== false
+    ? substr($invites, $performStart, $performEnd - $performStart)
     : '';
 $assert(
-    $successBlock !== ''
-        && !str_contains($successBlock, "new CustomEvent('mgw:notifications-refresh'")
-        && str_contains($successBlock, "new CustomEvent('mgw:game-dismissed'"),
-    'Successful decline/cancel must not start a stale notifications repaint.'
+    $perform !== ''
+        && !str_contains($perform, "action === 'decline' || action === 'cancel') {\n    closeSheet();")
+        && !str_contains($perform, "toast('Приглашение отклонено.')")
+        && str_contains($perform, "new CustomEvent('mgw:notification-sync'")
+        && str_contains($perform, 'showTerminalInvite(terminalInvite);')
+        && !str_contains($perform, "new CustomEvent('mgw:notifications-refresh'"),
+    'Successful decline/cancel must terminalize the current surface without closing, actor toast or stale repaint.'
 );
 $assert(
     str_contains($linkEntry, 'const invite = result?.opened_invite || null;')
