@@ -68,7 +68,7 @@ $assert(str_contains($linkEntry, "action:'open_link'")
     'Telegram start_param and canonical invite query must converge on one open-link action.');
 
 $assert(str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
-    && str_contains($launch, "return $baseUrl . '&invite=' . rawurlencode($normalizedToken);")
+    && str_contains($launch, "return \$baseUrl . '&invite=' . rawurlencode(\$normalizedToken);")
     && str_contains($endpoint, 'return WebAppLaunchUrl::invitation($config, $token);'),
     'Shared and direct Telegram buttons must launch the ordinary canonical v110 runtime.');
 
