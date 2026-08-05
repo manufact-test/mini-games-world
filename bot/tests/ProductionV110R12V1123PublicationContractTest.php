@@ -24,12 +24,12 @@ $linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
-        && str_contains($php, 'main-v110.js?v=1129')
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1129'),
-    'The canonical Telegram URL must select the final v1129 browser graph.'
+        && str_contains($php, 'main-v110.js?v=1130')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1130'),
+    'The canonical Telegram URL must select the final v1130 browser graph.'
 );
 $assert(
-    str_contains($shell, 'game-invites-v110.js?v=1129')
+    str_contains($shell, 'game-invites-v110.js?v=1130')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
         && str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
@@ -37,7 +37,7 @@ $assert(
         && str_contains($shell, 'stats-owner-v110.js?v=1121')
         && str_contains($shell, 'search-screen-v102.js?v=103')
         && str_contains($shell, 'search-invite-reconciliation-v110r12.js?v=1124'),
-    'Only the outer graph and canonical picker publication advance for v1129; validated notification, terminal, link, presence and search owners keep their revisions.'
+    'Only the outer graph and canonical picker publication advance for v1130; validated notification, terminal, link, presence and search owners keep their revisions.'
 );
 $assert(
     str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")

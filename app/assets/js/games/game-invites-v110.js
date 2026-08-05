@@ -665,19 +665,19 @@ async function performInviteAction(action, token, button){
   const originalText = button.textContent;
   const rollbackInvite = cloneInvite(currentInvite);
   const rollbackHtml = String(document.getElementById('sheet')?.innerHTML || '');
+  const terminalContext = terminalActionContext(button, action, token);
   setInviteButtonsDisabled(true);
   button.textContent = actionText(action);
 
-  // Accept/decline/cancel own an immediate visible transition. The final start
-  // action stays authoritative for the later pre-match loading screen.
+  // Accept owns its existing immediate waiting transition. Decline and
+  // cancel deliberately keep the current sheet/card visible until the
+  // single authoritative request succeeds or fails.
   if (action === 'accept' && currentInvite?.source !== 'rematch') {
     showInviteeWaiting({
       ...currentInvite,
       status:'accepted',
       ready_deadline_at:currentInvite?.ready_deadline_at || new Date(Date.now() + 90000).toISOString(),
     });
-  } else if (action === 'decline' || action === 'cancel') {
-    closeSheet();
   }
 
   try {
@@ -700,9 +700,23 @@ async function performInviteAction(action, token, button){
       return;
     }
     if (action === 'decline' || action === 'cancel') {
+      const terminalInvite = terminalInviteResult(action, token, result?.invite || rollbackInvite);
+      const unreadCount = Number(result?.unread_count);
+
+      if (terminalContext.notificationSurface) {
+        document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
+          detail:{
+            item:terminalNotificationItem(terminalContext, terminalInvite),
+            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
+            announce:false,
+          },
+        }));
+      } else {
+        showTerminalInvite(terminalInvite);
+      }
+
+      if (Number.isFinite(unreadCount)) dispatchNotificationCount(Math.max(0, unreadCount));
       currentInvite = null;
-      if (action === 'decline') toast('Приглашение отклонено.');
-      dispatchNotificationsRefresh();
       scheduleSync(0);
       scheduleWatch(0);
       return;
@@ -725,6 +739,55 @@ async function performInviteAction(action, token, button){
     );
     if (restored instanceof HTMLButtonElement) restored.textContent = originalText;
   }
+}
+
+function terminalActionContext(button, action, token){
+  const card = button.closest('[data-notification-id][data-notification-invite-token]');
+  const notificationSurface = Boolean(
+    card
+      && button.closest('[data-notifications-owner="r12"]')
+      && String(card.getAttribute('data-notification-invite-token') || '') === token
+  );
+
+  return {
+    action,
+    token,
+    notificationSurface,
+    notificationId:String(card?.getAttribute('data-notification-id') || ''),
+    notificationType:String(card?.getAttribute('data-notification-type') || ''),
+  };
+}
+
+function terminalInviteResult(action, token, value){
+  const invite = cloneInvite(value) || {};
+  const status = String(invite.status || (action === 'decline' ? 'declined' : 'cancelled'));
+  return {
+    ...invite,
+    token,
+    status,
+    status_label:String(invite.status_label || terminalTitle(status)),
+  };
+}
+
+function terminalNotificationItem(context, invite){
+  const status = String(invite?.status || (context.action === 'decline' ? 'declined' : 'cancelled'));
+  const fallbackType = context.action === 'decline'
+    ? (String(invite?.source || '') === 'rematch' ? 'invite_rematch_received' : 'invite_received')
+    : 'invite_accepted';
+
+  return {
+    id:context.notificationId || `local_invite_${context.token}`,
+    type:context.notificationType || fallbackType,
+    title:String(invite?.status_label || terminalTitle(status)),
+    message:'',
+    tone:'warning',
+    invite_token:context.token,
+    invite_status:status,
+    invite_is_owner:Boolean(invite?.is_owner),
+    actions:[],
+    read:true,
+    created_at:String(invite?.updated_at || invite?.created_at || new Date().toISOString()),
+  };
 }
 
 async function createRematch(gameId, button){

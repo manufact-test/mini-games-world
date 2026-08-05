@@ -36,12 +36,12 @@ $assert(
 );
 
 $assert(
-    str_contains($main110, 'main-v110-handoff-shell.js?v=1129')
-        && str_contains($shell110, 'game-invites-v110.js?v=1129')
+    str_contains($main110, 'main-v110-handoff-shell.js?v=1130')
+        && str_contains($shell110, 'game-invites-v110.js?v=1130')
         && !str_contains($main110, 'main-v120-invite-controller-shell.js')
         && !str_contains($shell110, 'invite-controller-v120.js')
         && !str_contains($shell110, 'main-v120.js'),
-    'Only the accepted v1129 v110 shell may be active after rollback.'
+    'Only the accepted v1130 v110 shell may be active after rollback.'
 );
 
 $assert(
@@ -56,7 +56,7 @@ $assert(
         && $blobSha($legacyNotifications) === '3368cfb4a3ff832b846f26681af66f8ed8c32009'
         && $blobSha($legacyTerminal) === '893817d00dd00b720b260f8ddb6625bdbcdd5ef7'
         && $blobSha($legacyLink) === 'b9697cb1d18b8c3b5f4398923d53ab58fb27beab',
-    'The v1129 publication intentionally changes the canonical shell and picker owner while rollback-only notification, terminal and link owners remain byte-identical.'
+    'The v1130 publication intentionally changes the canonical shell and picker owner while rollback-only notification, terminal and link owners remain byte-identical.'
 );
 
 fwrite(STDOUT, "ProductionV120InviteControllerArchitectureContractTest: {$assertions} assertions passed\n");

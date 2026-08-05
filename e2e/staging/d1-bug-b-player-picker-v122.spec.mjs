@@ -111,7 +111,7 @@ async function runActualStartPicker(browser, isMobile) {
     const resources = await playerA.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     expect(resources.some(rawUrl => {
       const url = new URL(rawUrl);
-      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1129';
+      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1130';
     }), 'Ordinary Start must execute the canonical v110 player-picker owner.').toBe(true);
     expect(requests).toBe(0);
 
