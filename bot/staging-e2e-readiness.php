@@ -22,6 +22,7 @@ if ($_GET !== []) {
 
 try {
     require __DIR__ . '/core/bootstrap.php';
+    require_once __DIR__ . '/helpers/StagingE2eSourceFingerprint.php';
 
     $expectedHost = 'seashell-okapi-889488.hostingersite.com';
     $environment = strtolower(trim((string)($config['environment'] ?? '')));
@@ -43,21 +44,23 @@ try {
         'oidc_verifier' => __DIR__ . '/services/GitHubActionsOidcVerifier.php',
         'rsa_jwk_public_key' => __DIR__ . '/helpers/RsaJwkPublicKey.php',
         'test_auth_broker' => __DIR__ . '/staging-test-auth.php',
+        'runtime_fingerprint_helper' => __DIR__ . '/helpers/StagingE2eSourceFingerprint.php',
+        'runtime_fingerprint_manifest' => __DIR__ . '/helpers/staging-e2e-runtime-files.txt',
     ];
     $capabilities = [];
-    $fingerprintParts = [];
     foreach ($required as $name => $path) {
         $present = is_file($path);
         $capabilities[$name] = $present;
         if (!$present) {
             throw new RuntimeException('Staging E2E runtime source is incomplete.');
         }
-        $hash = hash_file('sha256', $path);
-        if (!is_string($hash) || $hash === '') {
-            throw new RuntimeException('Staging E2E runtime source cannot be fingerprinted.');
-        }
-        $fingerprintParts[] = $name . ':' . $hash;
     }
+
+    $fingerprint = (new StagingE2eSourceFingerprint(
+        dirname(__DIR__),
+        __DIR__ . '/helpers/staging-e2e-runtime-files.txt'
+    ))->calculate();
+    $capabilities['exact_runtime_fingerprint'] = true;
 
     if ($environment !== 'staging'
         || $baseHost !== $expectedHost
@@ -72,7 +75,8 @@ try {
         'build' => 'mgw-staging-playwright-r13.4-v1',
         'environment' => 'staging',
         'base_host' => $expectedHost,
-        'source_fingerprint_sha256' => hash('sha256', implode("\n", $fingerprintParts)),
+        'source_fingerprint_sha256' => $fingerprint['sha256'],
+        'runtime_file_count' => $fingerprint['file_count'],
         'capabilities' => $capabilities,
         'isolation' => [
             'exact_staging_host' => true,

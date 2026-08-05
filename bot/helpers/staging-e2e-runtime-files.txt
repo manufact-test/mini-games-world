@@ -1,0 +1,24 @@
+# Paths are relative to the repository/deployment root.
+app/v110.php
+app/assets/js/main-v110.js
+app/assets/js/main-v110-handoff-shell.js
+app/assets/js/games/game-invites-v110.js
+app/assets/js/screens/notifications-screen-v110r12.js
+bot/staging-e2e-readiness.php
+bot/staging-test-auth.php
+bot/services/StagingTestAuthService.php
+bot/services/GitHubActionsOidcVerifier.php
+bot/helpers/RsaJwkPublicKey.php
+bot/invite-opponents.php
+bot/invites.php
+bot/invites/RuntimeInviteRepository.php
+bot/notifications.php
+bot/notifications/RuntimeNotificationBridgeCoordinator.php
+bot/notifications/RuntimeNotificationRepository.php
+bot/services/GameInviteService.php
+bot/services/invites/GameInviteActionTrait.php
+bot/services/invites/GameInviteCreationTrait.php
+bot/services/invites/GameInviteStorageTrait.php
+bot/storage/JsonDatabase.php
+bot/storage/JsonStorageAdapter.php
+bot/storage/contracts/ExclusiveSnapshotStorageInterface.php
