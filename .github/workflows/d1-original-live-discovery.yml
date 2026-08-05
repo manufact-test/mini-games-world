@@ -15,48 +15,49 @@ permissions:
 jobs:
   discover:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: agent/mvp-13-2-staging
-          fetch-depth: 0
-
-      - name: Audit exact Telegram cache identities and notification history
+      - name: Wait for and verify the exact deployed Start graph
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo '=== NOTIFICATION FILE HISTORY ==='
-          git log --date=iso-strict --format='%H %ad %s' -- app/assets/js/screens/notifications-screen-v110r12.js | head -40
-          echo '=== CURRENT BLOBS ==='
-          git ls-tree HEAD app/v110.php app/assets/js/main-v110.js app/assets/js/main-v110-handoff-shell.js app/assets/js/screens/notifications-screen-v110r12.js
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          production='https://lemonchiffon-gerbil-545102.hostingersite.com'
+          ok=0
+          for attempt in $(seq 1 30); do
+            nonce="$(date +%s)-${attempt}"
+            rm -f entry.html main.js shell.js notifications.js production-notifications.js
+            if curl --fail-with-body --silent --show-error --location \
+              --connect-timeout 8 --max-time 20 \
+              --header 'Cache-Control: no-cache' \
+              "${origin}/app/v110.php?v=1123&verify=${nonce}" -o entry.html; then
+              if grep -Fq './assets/js/main-v110.js?v=1125' entry.html; then
+                curl --fail-with-body --silent --show-error --location \
+                  --connect-timeout 8 --max-time 20 \
+                  "${origin}/app/assets/js/main-v110.js?v=1125" -o main.js
+                curl --fail-with-body --silent --show-error --location \
+                  --connect-timeout 8 --max-time 20 \
+                  "${origin}/app/assets/js/main-v110-handoff-shell.js?v=1125" -o shell.js
+                curl --fail-with-body --silent --show-error --location \
+                  --connect-timeout 8 --max-time 20 \
+                  "${origin}/app/assets/js/screens/notifications-screen-v110r12.js?v=1125" -o notifications.js
+                curl --fail-with-body --silent --show-error --location \
+                  --connect-timeout 8 --max-time 20 \
+                  "${production}/app/assets/js/screens/notifications-screen-v110r12.js?v=1122" -o production-notifications.js
 
-          fetch_exact() {
-            label="$1"
-            url="$2"
-            body="${label}.body"
-            headers="${label}.headers"
-            curl --fail-with-body --silent --show-error --location \
-              --connect-timeout 8 --max-time 20 --retry 1 --retry-delay 1 \
-              --user-agent 'TelegramBot (like TwitterBot)' \
-              "$url" -D "$headers" -o "$body"
-            echo "=== ${label} ==="
-            sha256sum "$body"
-            grep -Ei '^(HTTP/|date:|cache-control:|age:|last-modified:|etag:|x-hcdn-cache-status:|x-hcdn-request-id:|content-type:)' "$headers" || true
-            grep -nE "__MGW_BUILD__|notifications-screen|handlePointerDown|handleDocumentClick|notificationsOpen" "$body" | head -30 || true
-          }
+                grep -Fq "import './main-v110-handoff-shell.js?v=1125';" main.js
+                grep -Fq "./screens/notifications-screen-v110r12.js?v=1125" shell.js
+                grep -Fq "document.addEventListener('pointerdown', handlePointerDown, true);" notifications.js
+                grep -Fq "document.addEventListener('click', handleDocumentClick, true);" notifications.js
+                grep -Fq "const bell = target.closest('#notificationsOpen');" notifications.js
+                cmp -s notifications.js production-notifications.js
 
-          fetch_exact original_entry 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/v110.php?v=1123'
-          fetch_exact staging_entry 'https://seashell-okapi-889488.hostingersite.com/app/v110.php?v=1123'
-          fetch_exact original_main 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/main-v110.js?v=1124'
-          fetch_exact staging_main 'https://seashell-okapi-889488.hostingersite.com/app/assets/js/main-v110.js?v=1124'
-          fetch_exact original_shell 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/main-v110-handoff-shell.js?v=1124'
-          fetch_exact staging_shell 'https://seashell-okapi-889488.hostingersite.com/app/assets/js/main-v110-handoff-shell.js?v=1124'
-          fetch_exact original_notifications 'https://lemonchiffon-gerbil-545102.hostingersite.com/app/assets/js/screens/notifications-screen-v110r12.js?v=1122'
-          fetch_exact staging_notifications 'https://seashell-okapi-889488.hostingersite.com/app/assets/js/screens/notifications-screen-v110r12.js?v=1122'
-
-          echo '=== EXACT BYTE COMPARISONS ==='
-          cmp -s original_entry.body staging_entry.body && echo 'entry: identical' || echo 'entry: DIFFERENT'
-          cmp -s original_main.body staging_main.body && echo 'main: identical' || echo 'main: DIFFERENT'
-          cmp -s original_shell.body staging_shell.body && echo 'shell: identical' || echo 'shell: DIFFERENT'
-          cmp -s original_notifications.body staging_notifications.body && echo 'notifications: identical' || echo 'notifications: DIFFERENT'
+                echo "Exact Start graph 1125 verified on attempt ${attempt}."
+                sha256sum notifications.js production-notifications.js
+                ok=1
+                break
+              fi
+            fi
+            sleep 20
+          done
+          test "$ok" = '1'
