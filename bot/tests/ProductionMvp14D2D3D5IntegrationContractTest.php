@@ -69,7 +69,7 @@ $assert(str_contains($config, 'Player A uses Share, player picker and cancellati
     && str_contains($config, 'grepInvert:supersededScenarios'),
     'The retired close-sheet E2E expectation must be excluded exactly by title.');
 
-$assert(str_contains($e2e, "const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;")
+$assert(str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
     && str_contains($e2e, "test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in place'")
     && str_contains($e2e, "toHaveText('Приглашение отменено'")
     && str_contains($e2e, "#sheet [data-invite-action]')).toHaveCount(0")
