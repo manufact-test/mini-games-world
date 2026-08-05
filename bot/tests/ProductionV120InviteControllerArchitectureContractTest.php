@@ -21,9 +21,9 @@ $shell110 = $read('app/assets/js/main-v110-handoff-shell.js');
 $main120 = $read('app/assets/js/main-v120.js');
 $controller120 = $read('app/assets/js/games/invite-controller-v120.js');
 
-$legacyInvites = $read('app/assets/js/games/game-invites-v110.js');
-$legacyNotifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
-$legacyTerminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
+$activeInvites = $read('app/assets/js/games/game-invites-v110.js');
+$activeNotifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
+$historicalTerminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
 $legacyLink = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 
 $assert(
@@ -51,12 +51,33 @@ $assert(
 );
 
 $assert(
-    $blobSha($shell110) === '092c5cef0cb40a1c6e5ace1e74cc546efc0cad6d'
-        && $blobSha($legacyInvites) === '4653cfd4a6f4b360a83c33ff4317f6630929c793'
-        && $blobSha($legacyNotifications) === '3368cfb4a3ff832b846f26681af66f8ed8c32009'
-        && $blobSha($legacyTerminal) === '893817d00dd00b720b260f8ddb6625bdbcdd5ef7'
+    substr_count($shell110, 'initGameInvites();') === 1
+        && substr_count($shell110, 'initNotificationsScreen();') === 1
+        && !str_contains($shell110, 'initInviteTerminalActions')
+        && !str_contains($shell110, 'invite-terminal-actions-v110r12.js')
+        && str_contains($historicalTerminal, "window.addEventListener('click', handleTerminalAction, true)"),
+    'The accepted v1130 graph must not reactivate the historical terminal interceptor.'
+);
+
+$performStart = strpos($activeInvites, 'async function performInviteAction(');
+$performEnd = strpos($activeInvites, 'async function createRematch(', $performStart ?: 0);
+$perform = $performStart !== false && $performEnd !== false
+    ? substr($activeInvites, $performStart, $performEnd - $performStart)
+    : '';
+$assert(
+    $perform !== ''
+        && !str_contains($perform, "action === 'decline' || action === 'cancel') {\n    closeSheet();")
+        && str_contains($perform, "new CustomEvent('mgw:notification-sync'")
+        && str_contains($perform, 'showTerminalInvite(terminalInvite);')
+        && str_contains($activeNotifications, "document.addEventListener('mgw:notification-sync'")
+        && str_contains($activeNotifications, 'data-notification-type="${escapeHtml(item.type)}"'),
+    'The current v110 owner may evolve after the v120 rollback, but decline/cancel must stay canonical and in place.'
+);
+
+$assert(
+    $blobSha($historicalTerminal) === '893817d00dd00b720b260f8ddb6625bdbcdd5ef7'
         && $blobSha($legacyLink) === 'b9697cb1d18b8c3b5f4398923d53ab58fb27beab',
-    'The v1130 publication intentionally changes the canonical shell and picker owner while rollback-only notification, terminal and link owners remain byte-identical.'
+    'The rejected historical terminal and link source files must remain intact for postmortem evidence even though the terminal file is inactive.'
 );
 
 fwrite(STDOUT, "ProductionV120InviteControllerArchitectureContractTest: {$assertions} assertions passed\n");
