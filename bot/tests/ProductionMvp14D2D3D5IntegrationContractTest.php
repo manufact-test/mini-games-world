@@ -71,11 +71,14 @@ $assert(str_contains($config, 'Player A uses Share, player picker and cancellati
 
 $assert(str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
     && str_contains($e2e, "test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in place'")
-    && str_contains($e2e, "toHaveText('Приглашение отменено'")
+    && str_contains($e2e, "const authoritativeCancelledLabel = String(cancelled?.invite?.status_label || '').trim();")
+    && str_contains($e2e, "expect(authoritativeCancelledLabel).toBe('Отменено');")
+    && str_contains($e2e, "toHaveText(authoritativeCancelledLabel")
+    && !str_contains($e2e, "toHaveText('Приглашение отменено'")
     && str_contains($e2e, "#sheet [data-invite-action]')).toHaveCount(0")
     && str_contains($e2e, "#notificationToast')).not.toHaveClass(/show/")
     && str_contains($e2e, 'otherParticipantTerminalStatusPresent: true'),
-    'The replacement live E2E must prove the accepted terminal-card behavior through ordinary Start.');
+    'The live E2E must use the authoritative cancelled label and still prove the complete terminal-card behavior.');
 
 $assert(!str_contains($e2e, "not.toHaveClass(/active/")
     && str_contains($e2e, "await expect(overlay).toHaveClass(/active/"),
