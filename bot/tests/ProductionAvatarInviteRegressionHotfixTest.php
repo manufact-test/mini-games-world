@@ -59,6 +59,8 @@ final class InviteRegressionFakeDatabase implements DatabaseConnectionInterface
 
     public function fetchValue(string $sql, array $parameters = []): mixed
     {
+        if (str_contains($sql, 'SELECT GET_LOCK(')) return 1;
+        if (str_contains($sql, 'SELECT RELEASE_LOCK(')) return 1;
         if (str_contains($sql, 'SELECT COUNT(*) FROM mgw_matches')) {
             return $this->relatedMatchCount;
         }

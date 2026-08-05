@@ -13,6 +13,12 @@ $assertContains = static function (string $needle, string $message) use (&$asser
         throw new RuntimeException($message);
     }
 };
+$assertNotContains = static function (string $needle, string $message) use (&$assertions, $source): void {
+    $assertions++;
+    if (str_contains($source, $needle)) {
+        throw new RuntimeException($message);
+    }
+};
 $assertBefore = static function (string $first, string $second, string $message) use (&$assertions, $source): void {
     $assertions++;
     $firstPosition = strpos($source, $first);
@@ -31,20 +37,32 @@ $assertContains(
     'Invite endpoint must construct the staged repository with the validated router'
 );
 $assertContains(
-    '$snapshot = $db->readOnly(static fn(array $data): array => $data);',
-    'Invite endpoint must reload the committed JSON rollback snapshot'
+    '$db instanceof ExclusiveSnapshotStorageInterface',
+    'Invite endpoint must require the explicit exclusive snapshot capability'
 );
 $assertContains(
-    '$runtimeInvites->synchronize($snapshot);',
-    'Invite endpoint must synchronize the committed JSON snapshot to DB'
+    '$db->exclusiveReadOnlySections(',
+    'Invite endpoint must keep the JSON writer lock while DB mirroring consumes the snapshot'
+);
+$assertContains(
+    "['invites']",
+    'Invite bridge must decode only the invites section'
+);
+$assertContains(
+    'static fn(array $data): array => $runtimeInvites->synchronize($data)',
+    'Invite endpoint must synchronize the locked committed JSON snapshot to DB'
+);
+$assertNotContains(
+    '$snapshot = $db->readOnly(static fn(array $data): array => $data);',
+    'Invite endpoint must not restore the detached snapshot race'
 );
 $assertBefore(
     '$result = $db->transaction(',
-    '$runtimeInvites->synchronize($snapshot);',
-    'JSON invite state must commit before DB mirroring starts'
+    '$db->exclusiveReadOnlySections(',
+    'JSON invite state must commit before the serialized DB mirror starts'
 );
 $assertBefore(
-    '$runtimeInvites->synchronize($snapshot);',
+    '$db->exclusiveReadOnlySections(',
     '$result[\'invite\'][\'share_url\'] = $shareUrl;',
     'Invite parity must be proven before external share preparation'
 );

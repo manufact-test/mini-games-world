@@ -169,6 +169,48 @@ $updated = $repository->synchronize($data);
 $assertSame(1, $updated['updated_count'], 'JSON status transition must update one DB row');
 $assertSame(true, $repository->auditParity($data)['ok'], 'Audit must pass after status transition');
 
+$existingRow = $database->fetchAll(
+    'SELECT * FROM mgw_invites WHERE invite_id = :invite_id',
+    ['invite_id' => 'invite-runtime-1']
+)[0] ?? [];
+$extraRow = $existingRow;
+$extraRow['invite_id'] = 'invite-runtime-extra';
+$extraRow['token'] = 'invite-token-extra';
+$extraRow['version'] = 1;
+$extraRow['created_at_utc'] = '2026-07-18 18:32:00.000000';
+$extraRow['updated_at_utc'] = '2026-07-18 18:32:00.000000';
+(new RealtimeDatabaseStore($database))->upsertInvite($extraRow);
+
+$raceData = $data;
+$secondInvite = $data['invites'][0];
+$secondInvite['id'] = 'invite-runtime-2';
+$secondInvite['token'] = 'invite-token-2';
+$secondInvite['status'] = 'pending';
+$secondInvite['created_at'] = '2026-07-18T18:32:00+00:00';
+$secondInvite['updated_at'] = '2026-07-18T18:32:00+00:00';
+$secondInvite['expires_at'] = '2026-07-18T18:47:00+00:00';
+$secondInvite['cancelled_at'] = null;
+$secondInvite['cancelled_by'] = null;
+$raceData['invites'][] = $secondInvite;
+
+$assertThrows(
+    static fn() => $repository->synchronize($raceData),
+    'counts differ',
+    'A parity failure after an insert must abort the whole DB synchronization'
+);
+$assertSame(
+    [],
+    $database->fetchAll(
+        'SELECT invite_id FROM mgw_invites WHERE invite_id = :invite_id',
+        ['invite_id' => 'invite-runtime-2']
+    ),
+    'A failed full synchronization must roll back rows inserted earlier in the same pass'
+);
+$database->execute(
+    'DELETE FROM mgw_invites WHERE invite_id = :invite_id',
+    ['invite_id' => 'invite-runtime-extra']
+);
+
 $database->execute(
     'UPDATE mgw_invites SET token = :token WHERE invite_id = :invite_id',
     ['token' => 'tampered-token', 'invite_id' => 'invite-runtime-1']

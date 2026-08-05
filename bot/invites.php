@@ -299,8 +299,15 @@ try {
     unset($result['signal_recipient_id']);
 
     if ($runtimeInvites instanceof RuntimeInviteRepository) {
-        $snapshot = $db->readOnly(static fn(array $data): array => $data);
-        $runtimeInvites->synchronize($snapshot);
+        if (!($db instanceof ExclusiveSnapshotStorageInterface)) {
+            throw new RuntimeException(
+                'Invite DB bridge requires an exclusive JSON snapshot capability.'
+            );
+        }
+        $db->exclusiveReadOnlySections(
+            ['invites'],
+            static fn(array $data): array => $runtimeInvites->synchronize($data)
+        );
     }
 
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
