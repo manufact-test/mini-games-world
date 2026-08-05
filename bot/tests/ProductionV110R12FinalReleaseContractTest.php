@@ -18,7 +18,7 @@ $main = $read('app/assets/js/main-v110.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $clean = $read('app/assets/js/production-clean-entry-v110.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
-$terminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
+$historicalTerminal = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
 $linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $notificationEndpoint = $read('bot/notifications.php');
 $stats = $read('app/assets/js/stats-owner-v110.js');
@@ -51,11 +51,13 @@ $assert(
 );
 $assert(
     substr_count($shell, 'initNotificationsScreen();') === 1
+        && substr_count($shell, 'initGameInvites();') === 1
+        && !str_contains($shell, 'initInviteTerminalActions')
+        && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
         && str_contains($shell, 'notifications-screen-v110r12.js?v=1126')
         && str_contains($notifications, 'data-notifications-owner="r12"')
-        && str_contains($notifications, 'sheetState.pinned')
-        && str_contains($notifications, 'CLOSE_GUARD_MS = 1100'),
-    'R12 must keep one notification owner with pinned first-frame data and duplicate-open protection.'
+        && str_contains($notifications, 'sheetState.pinned'),
+    'R12 must keep one notification renderer and one canonical invite action owner.'
 );
 $paintPosition = strpos($notifications, "if (source === 'toast') await waitForFirstSheetPaint(generation);");
 $refreshPosition = strpos($notifications, 'await refreshOpenSheet(generation);', $paintPosition ?: 0);
@@ -71,37 +73,38 @@ $assert(
         && str_contains($notifications, 'LOCAL_AUTHORITY_MS = 12000'),
     'A tapped blue toast must paint its exact immutable card before a slower server response reconciles.'
 );
-$closePosition = strpos($terminal, 'closeSheet();');
-$requestPosition = strpos($terminal, 'const result = await inviteRequest(action, token);');
-$tryStart = strpos($terminal, '  try {');
-$catchStart = strpos($terminal, '  } catch (error) {', $tryStart ?: 0);
-$successBlock = $tryStart !== false && $catchStart !== false
-    ? substr($terminal, $tryStart, $catchStart - $tryStart)
+
+$performStart = strpos($invites, 'async function performInviteAction(');
+$performEnd = strpos($invites, 'async function createRematch(', $performStart ?: 0);
+$perform = $performStart !== false && $performEnd !== false
+    ? substr($invites, $performStart, $performEnd - $performStart)
     : '';
 $assert(
-    str_contains($shell, 'invite-terminal-actions-v110r12.js?v=1123')
-        && $closePosition !== false
-        && $requestPosition !== false
-        && $closePosition < $requestPosition
-        && str_contains($terminal, "window.addEventListener('click', handleTerminalAction, true)")
-        && str_contains($terminal, "new CustomEvent('mgw:notification-remove'")
-        && !str_contains($terminal, 'terminalNotificationItem(')
-        && !str_contains($terminal, "new CustomEvent('mgw:notification-sync'")
-        && $successBlock !== ''
-        && !str_contains($successBlock, "new CustomEvent('mgw:notifications-refresh'")
-        && !str_contains($terminal, 'Вы отклонили это приглашение.')
-        && !str_contains($terminal, 'Вы отменили это приглашение.'),
-    'Decline and cancel must close before the request, consume the click first and avoid success sheets, toasts or stale refreshes.'
+    str_contains($historicalTerminal, "window.addEventListener('click', handleTerminalAction, true)")
+        && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
+        && $perform !== ''
+        && !str_contains($perform, "action === 'decline' || action === 'cancel') {\n    closeSheet();")
+        && !str_contains($perform, "toast('Приглашение отклонено.')")
+        && !str_contains($perform, "toast('Приглашение отменено.')")
+        && str_contains($perform, 'const terminalContext = terminalActionContext(button, action, token);')
+        && str_contains($perform, "new CustomEvent('mgw:notification-sync'")
+        && str_contains($perform, 'showTerminalInvite(terminalInvite);')
+        && str_contains($perform, 'announce:false')
+        && !str_contains($perform, "new CustomEvent('mgw:notifications-refresh'"),
+    'Decline and cancel must keep the current surface, replace it with a terminal state and avoid actor toasts or stale refreshes.'
 );
 $assert(
-    str_contains($notifications, 'function removeInviteNotification(detail)')
-        && str_contains($notifications, 'localAuthority.delete(key)')
-        && str_contains($notifications, 'sheetState.pinned.delete(key)')
-        && !str_contains($notifications, 'function applyInviteActionResult(')
+    str_contains($invites, "card.closest('#sheet')?.querySelector('[data-notifications-owner=\"r12\"]')")
+        && str_contains($invites, 'function terminalNotificationItem(')
+        && str_contains($invites, 'actions:[]')
+        && str_contains($notifications, "document.addEventListener('mgw:notification-sync'")
+        && str_contains($notifications, 'rememberLocalAuthority(item);')
+        && str_contains($notifications, 'pinItem(item);')
+        && str_contains($notifications, 'renderNotifications(visibleSheetItems());')
         && str_contains($notificationEndpoint, "return in_array(\$status, ['pending', 'accepted', 'declined'], true);")
         && str_contains($notificationEndpoint, "\$item['title'] = 'Приглашение отклонено';")
         && str_contains($notificationEndpoint, "\$item['read'] = true;"),
-    'Actor terminal actions must disappear immediately, while the next authoritative read may restore only read declined history without actions.'
+    'The exact actor card must become read terminal history without actions, while authoritative history remains available.'
 );
 $assert(
     str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')
