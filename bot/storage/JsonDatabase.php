@@ -3,6 +3,19 @@ declare(strict_types=1);
 
 final class JsonDatabase
 {
+    private const FILES = [
+        'users' => 'users.json',
+        'games' => 'games.json',
+        'queue' => 'queue.json',
+        'transactions' => 'transactions.json',
+        'support' => 'support.json',
+        'shop_orders' => 'shop_orders.json',
+        'payments' => 'payments.json',
+        'notifications' => 'notifications.json',
+        'invites' => 'invites.json',
+        'system' => 'system.json',
+    ];
+
     private string $dataDir;
     private string $lockFile;
     private string $writeBlockFile;
@@ -47,6 +60,18 @@ final class JsonDatabase
 
     public function readOnly(callable $callback): mixed
     {
+        return $this->readOnlySections(array_keys(self::FILES), $callback);
+    }
+
+    /**
+     * Execute one shared-lock read while decoding only the requested runtime
+     * sections. This preserves one consistent JSON snapshot without forcing a
+     * small read-only endpoint to load unrelated ledgers and archives.
+     *
+     * @param list<string> $sections
+     */
+    public function readOnlySections(array $sections, callable $callback): mixed
+    {
         $lockHandle = fopen($this->lockFile, 'c+');
         if (!$lockHandle) {
             throw new RuntimeException('Не удалось открыть lock-файл.');
@@ -55,7 +80,7 @@ final class JsonDatabase
             if (!flock($lockHandle, LOCK_SH)) {
                 throw new RuntimeException('Не удалось заблокировать хранилище.');
             }
-            $db = $this->loadAll();
+            $db = $this->loadSections($sections);
             $result = $callback($db);
             flock($lockHandle, LOCK_UN);
             fclose($lockHandle);
@@ -94,36 +119,27 @@ final class JsonDatabase
 
     private function loadAll(): array
     {
-        return [
-            'users' => $this->readFile('users.json'),
-            'games' => $this->readFile('games.json'),
-            'queue' => $this->readFile('queue.json'),
-            'transactions' => $this->readFile('transactions.json'),
-            'support' => $this->readFile('support.json'),
-            'shop_orders' => $this->readFile('shop_orders.json'),
-            'payments' => $this->readFile('payments.json'),
-            'notifications' => $this->readFile('notifications.json'),
-            'invites' => $this->readFile('invites.json'),
-            'system' => $this->readFile('system.json'),
-        ];
+        return $this->loadSections(array_keys(self::FILES));
+    }
+
+    /** @param list<string> $sections */
+    private function loadSections(array $sections): array
+    {
+        $result = [];
+        foreach ($sections as $section) {
+            $section = trim((string)$section);
+            if ($section === '' || !array_key_exists($section, self::FILES)) {
+                throw new InvalidArgumentException('Неизвестная секция JSON-хранилища: ' . $section);
+            }
+            if (array_key_exists($section, $result)) continue;
+            $result[$section] = $this->readFile(self::FILES[$section]);
+        }
+        return $result;
     }
 
     private function saveChanged(array $before, array $after): void
     {
-        $files = [
-            'users' => 'users.json',
-            'games' => 'games.json',
-            'queue' => 'queue.json',
-            'transactions' => 'transactions.json',
-            'support' => 'support.json',
-            'shop_orders' => 'shop_orders.json',
-            'payments' => 'payments.json',
-            'notifications' => 'notifications.json',
-            'invites' => 'invites.json',
-            'system' => 'system.json',
-        ];
-
-        foreach ($files as $key => $file) {
+        foreach (self::FILES as $key => $file) {
             $previous = $before[$key] ?? [];
             $current = $after[$key] ?? [];
             if ($previous === $current) {

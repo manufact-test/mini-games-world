@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-final class JsonStorageAdapter implements StorageAdapterInterface
+require_once __DIR__ . '/contracts/SelectiveReadStorageInterface.php';
+
+final class JsonStorageAdapter implements StorageAdapterInterface, SelectiveReadStorageInterface
 {
     private JsonDatabase $database;
 
@@ -18,6 +20,11 @@ final class JsonStorageAdapter implements StorageAdapterInterface
     public function readOnly(callable $callback): mixed
     {
         return $this->database->readOnly($callback);
+    }
+
+    public function readOnlySections(array $sections, callable $callback): mixed
+    {
+        return $this->database->readOnlySections($sections, $callback);
     }
 
     public function driver(): string
