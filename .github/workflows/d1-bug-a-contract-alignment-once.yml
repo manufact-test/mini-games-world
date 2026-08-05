@@ -68,12 +68,28 @@ jobs:
                   file.write_text(text, encoding='utf-8')
                   changes += 1
 
+          exact_publication_replacements = (
+              ('main-v110.js?v=1124', 'main-v110.js?v=1126'),
+              ('main-v110.js?v=1125', 'main-v110.js?v=1126'),
+              ('main-v110-handoff-shell.js?v=1124', 'main-v110-handoff-shell.js?v=1126'),
+              ('main-v110-handoff-shell.js?v=1125', 'main-v110-handoff-shell.js?v=1126'),
+              ('notifications-screen-v110r12.js?v=1122', 'notifications-screen-v110r12.js?v=1126'),
+              ('notifications-screen-v110r12.js?v=1125', 'notifications-screen-v110r12.js?v=1126'),
+              ('final v1124 shell', 'final v1126 shell'),
+              ('v1124 outer production build', 'v1126 outer production build'),
+              ('v1124 browser graph', 'v1126 browser graph'),
+              ('v1124 graph', 'v1126 graph'),
+              ('as v1124', 'as v1126'),
+              ('publish v1124', 'publish v1126'),
+              ('accepted v1124 v110 shell', 'accepted v1126 v110 shell'),
+          )
+
           for path in v110_publication_files:
               file = Path(path)
               text = file.read_text(encoding='utf-8')
               before = text
-              for old in ('v1122', 'v1124', 'v1125'):
-                  text = text.replace(old, 'v1126')
+              for old, new in exact_publication_replacements:
+                  text = text.replace(old, new)
               if text != before:
                   file.write_text(text, encoding='utf-8')
                   changes += 1
@@ -94,6 +110,21 @@ jobs:
           if text.count(old) != 1:
               raise SystemExit('Expected one retired toast seed assertion.')
           deferred.write_text(text.replace(old, new, 1), encoding='utf-8')
+          changes += 1
+
+          r11 = Path('bot/tests/ProductionMvp14R13R11LiveAcceptanceTest.php')
+          text = r11.read_text(encoding='utf-8')
+          replacements = (
+              ("document.addEventListener('click', handleNotificationActivation)",
+               "document.addEventListener('click', handleNotificationBellActivation, true)"),
+              ("const seedItems = trigger.id === 'notificationToast' && activeToastNotification",
+               'const seedItems = activeToastNotification ? [activeToastNotification] : []'),
+          )
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected one stale R11 assertion: {old}')
+              text = text.replace(old, new, 1)
+          r11.write_text(text, encoding='utf-8')
           changes += 1
 
           if changes < 21:
