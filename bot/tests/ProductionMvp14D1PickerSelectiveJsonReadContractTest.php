@@ -40,12 +40,12 @@ $assert(
 );
 $assert(
     str_contains($endpoint, '$storage instanceof SelectiveReadStorageInterface')
-        && str_contains($endpoint, "$storage->readOnlySections(['users', 'games'], $reader)")
+        && str_contains($endpoint, '$storage->readOnlySections([\'users\', \'games\'], $reader)')
         && str_contains($endpoint, ': $storage->readOnly($reader);'),
     'The picker must decode only users and games on JSON while preserving a correct fallback for other drivers.'
 );
 $assert(
-    substr_count($endpoint, "postJson") === 0
+    substr_count($endpoint, 'postJson') === 0
         && !str_contains($endpoint, 'transactions.json')
         && !str_contains($endpoint, 'notifications.json')
         && !str_contains($endpoint, 'invites.json')
@@ -60,7 +60,7 @@ $assert(
     'Server acceleration must preserve the accepted one-request ready-first client owner.'
 );
 $assert(
-    str_contains($shell, "./games/game-invites-v110.js?v=1129"),
+    str_contains($shell, './games/game-invites-v110.js?v=1129'),
     'A server-only storage optimization must not invent a new client graph or cache identity.'
 );
 
