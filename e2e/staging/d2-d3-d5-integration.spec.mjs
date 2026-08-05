@@ -307,7 +307,9 @@ test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in
 
     const overlay = playerA.page.locator('#sheetOverlay');
     await expect(overlay).toHaveClass(/active/, { timeout: 15_000 });
-    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отменено', {
+    const authoritativeCancelledLabel = String(cancelled?.invite?.status_label || '').trim();
+    expect(authoritativeCancelledLabel).toBe('Отменено');
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText(authoritativeCancelledLabel, {
       timeout: 15_000,
     });
     await expect(playerA.page.locator(
