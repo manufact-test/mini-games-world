@@ -119,6 +119,13 @@ function isExpectedInviteSyncAbort(request) {
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
 }
 
+function isExpectedBackgroundProfileAbort(request) {
+  return request.url() === API_ROUTE
+    && request.method() === 'POST'
+    && requestAction(request) === 'profile'
+    && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+}
+
 export function collectDiagnostics(page, slot) {
   const report = {
     slot,
@@ -127,6 +134,8 @@ export function collectDiagnostics(page, slot) {
     serverErrors: [],
     allowInviteSyncAbort: false,
     ignoredInviteSyncAborts: 0,
+    allowBackgroundProfileAbort: false,
+    ignoredBackgroundProfileAborts: 0,
   };
 
   page.on('pageerror', error => {
@@ -137,6 +146,10 @@ export function collectDiagnostics(page, slot) {
     if (isExpectedPresenceResumeAbort(request)) return;
     if (report.allowInviteSyncAbort && isExpectedInviteSyncAbort(request)) {
       report.ignoredInviteSyncAborts += 1;
+      return;
+    }
+    if (report.allowBackgroundProfileAbort && isExpectedBackgroundProfileAbort(request)) {
+      report.ignoredBackgroundProfileAborts += 1;
       return;
     }
     report.failedRequests.push({

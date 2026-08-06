@@ -125,6 +125,8 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
 
     playerA.diagnostics.allowInviteSyncAbort = true;
     playerB.diagnostics.allowInviteSyncAbort = true;
+    playerA.diagnostics.allowBackgroundProfileAbort = true;
+    playerB.diagnostics.allowBackgroundProfileAbort = true;
     let started;
     try {
       started = await clickInviteAction(playerA.page, 'start', token);
@@ -137,6 +139,8 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     } finally {
       playerA.diagnostics.allowInviteSyncAbort = false;
       playerB.diagnostics.allowInviteSyncAbort = false;
+      playerA.diagnostics.allowBackgroundProfileAbort = false;
+      playerB.diagnostics.allowBackgroundProfileAbort = false;
     }
 
     const gameA = await expectPlayerRequest(
@@ -159,6 +163,8 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     expect(counterB.count('open_link')).toBe(1);
     expect(playerA.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
     expect(playerB.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
+    expect(playerA.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
+    expect(playerB.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
 
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
@@ -180,6 +186,10 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
         controlledInviteSyncAborts: {
           playerA: playerA.diagnostics.ignoredInviteSyncAborts,
           playerB: playerB.diagnostics.ignoredInviteSyncAborts,
+        },
+        controlledBackgroundProfileAborts: {
+          playerA: playerA.diagnostics.ignoredBackgroundProfileAborts,
+          playerB: playerB.diagnostics.ignoredBackgroundProfileAborts,
         },
         createLinkDraftRequests: counterA.count('create_link_draft'),
         confirmSharedRequests: counterA.count('confirm_shared'),
