@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 // Exact recipient active-to-terminal replacement contract. Keep this focused
 // on one invite token, terminal priority, contextual copy and clean publication.
-// This file is intentionally part of the exact-head CI synchronize path.
+// This file is intentionally part of the standard exact-head CI synchronize path.
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
