@@ -59,9 +59,30 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
 {
     if (!is_array($invite)) return $item;
     $type = (string)($item['type'] ?? '');
+    $status = (string)($invite['status'] ?? '');
+
+    if ($type === 'invite_cancelled' && in_array($status, ['cancelled', 'canceled'], true)) {
+        $inviterId = (string)($invite['inviter_id'] ?? '');
+        $inviteeId = (string)($invite['invitee_id'] ?? '');
+        $cancelledBy = (string)($invite['cancelled_by'] ?? '');
+        $inviterName = trim((string)($invite['inviter_name'] ?? 'Игрок')) ?: 'Игрок';
+        $inviteeName = trim((string)($invite['invitee_name'] ?? 'Игрок')) ?: 'Игрок';
+        $gameTitle = trim((string)($invite['game_title'] ?? 'Игра')) ?: 'Игра';
+        $inviterCancelled = $cancelledBy !== ''
+            ? $cancelledBy === $inviterId
+            : $userId === $inviteeId;
+
+        $item['title'] = $inviterCancelled ? 'Приглашение отменено' : 'Соперник отменил участие';
+        $item['message'] = $inviterCancelled
+            ? $inviterName . ' отменил приглашение сыграть в «' . $gameTitle . '».'
+            : $inviteeName . ' отменил участие в матче «' . $gameTitle . '».';
+        $item['tone'] = 'warning';
+        $item['created_at'] = (string)($invite['cancelled_at'] ?? $invite['updated_at'] ?? $item['created_at'] ?? '');
+        return $item;
+    }
+
     if (!mgw_notification_is_received_type($type)) return $item;
 
-    $status = (string)($invite['status'] ?? '');
     if ($status === 'accepted') {
         $item['title'] = 'Приглашение принято';
         $item['message'] = 'Ждём запуска матча от пригласившего игрока.';
@@ -104,6 +125,9 @@ function mgw_visible_notifications(
         if (is_array($invite)) {
             $item['invite_status'] = (string)($invite['status'] ?? '');
             $item['game_title'] = (string)($invite['game_title'] ?? '');
+            $item['inviter_name'] = (string)($invite['inviter_name'] ?? '');
+            $item['invitee_name'] = (string)($invite['invitee_name'] ?? '');
+            $item['invite_is_owner'] = (string)($invite['inviter_id'] ?? '') === $userId;
         }
         $visible[] = $item;
         if (count($visible) >= $limit) break;
