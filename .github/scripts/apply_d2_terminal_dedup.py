@@ -1,0 +1,548 @@
+from pathlib import Path
+from textwrap import dedent
+
+
+def replace_once(path: str | Path, old: str, new: str) -> None:
+    path = Path(path)
+    text = path.read_text(encoding='utf-8')
+    count = text.count(old)
+    if count != 1:
+        raise SystemExit(f'{path}: expected one occurrence, found {count}: {old[:140]!r}')
+    path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+
+client_path = Path('app/assets/js/games/game-invites-v110.js')
+client = client_path.read_text(encoding='utf-8')
+terminal_start = client.index("    if (action === 'decline' || action === 'cancel') {")
+terminal_end = client.index("    if (action === 'start') {", terminal_start)
+terminal_block = dedent("""
+    if (action === 'decline' || action === 'cancel') {
+      const terminalInvite = terminalInviteResult(action, token, result?.invite || rollbackInvite);
+      const unreadCount = Number(result?.unread_count);
+      const selfCancelledOwner = action === 'cancel'
+        && Boolean(terminalInvite?.is_owner)
+        && !terminalContext.notificationSurface;
+
+      if (terminalContext.notificationSurface) {
+        document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
+          detail:{
+            item:terminalNotificationItem(terminalContext, terminalInvite),
+            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
+            announce:false,
+          },
+        }));
+      } else if (selfCancelledOwner) {
+        consumeInviteNotification(token, unreadCount);
+        closeSheet();
+        showScreen('home');
+      } else {
+        showTerminalInvite(terminalInvite);
+      }
+
+      if (Number.isFinite(unreadCount)) dispatchNotificationCount(Math.max(0, unreadCount));
+      currentInvite = null;
+      scheduleSync(0);
+      scheduleWatch(0);
+      return;
+    }
+""").lstrip('\n')
+client = client[:terminal_start] + terminal_block + client[terminal_end:]
+old_terminal_update = "  if (isTerminal(status)) showTerminalInvite(currentInvite);"
+new_terminal_update = dedent("""
+  if (isTerminal(status)) {
+    consumeInviteNotification(currentInvite.token);
+    showTerminalInvite(currentInvite);
+  }
+""").strip('\n')
+if client.count(old_terminal_update) != 1:
+    raise SystemExit('game-invites: terminal sheet update owner is not unique')
+client = client.replace(old_terminal_update, new_terminal_update, 1)
+helper_marker = "function dispatchNotificationCount(unreadCount){"
+helper = dedent("""
+function consumeInviteNotification(inviteToken, unreadCount = null){
+  const token = String(inviteToken || '');
+  if (!token) return;
+  const numericUnread = unreadCount === null || unreadCount === undefined
+    ? null
+    : Number(unreadCount);
+  document.dispatchEvent(new CustomEvent('mgw:notification-consume-invite', {
+    detail:{
+      inviteToken:token,
+      unreadCount:Number.isFinite(numericUnread) ? Math.max(0, numericUnread) : null,
+    },
+  }));
+}
+
+function dispatchNotificationCount(unreadCount){
+""").lstrip('\n')
+if client.count(helper_marker) != 1:
+    raise SystemExit('game-invites: notification count helper marker is not unique')
+client = client.replace(helper_marker, helper, 1)
+client_path.write_text(client, encoding='utf-8')
+
+screen_path = Path('app/assets/js/screens/notifications-screen-v110r12.js')
+screen = screen_path.read_text(encoding='utf-8')
+listener_old = dedent("""
+  document.addEventListener('mgw:notification-remove', event => {
+    removeInviteNotification(event.detail || {});
+  });
+
+  document.addEventListener('mgw:notifications-refresh', () => {
+""").lstrip('\n')
+listener_new = dedent("""
+  document.addEventListener('mgw:notification-remove', event => {
+    removeInviteNotification(event.detail || {});
+  });
+
+  document.addEventListener('mgw:notification-consume-invite', event => {
+    void consumeInviteNotification(event.detail || {});
+  });
+
+  document.addEventListener('mgw:notifications-refresh', () => {
+""").lstrip('\n')
+if screen.count(listener_old) != 1:
+    raise SystemExit('notifications-screen: consume listener anchor is not unique')
+screen = screen.replace(listener_old, listener_new, 1)
+remove_start = screen.index('function removeInviteNotification(detail){')
+remove_end = screen.index('function renderLoading(){', remove_start)
+remove_block = dedent("""
+function removeInviteNotification(detail){
+  const token = String(detail.inviteToken || detail.token || '');
+  if (!token) return;
+
+  const removedIds = [];
+  for (const [id, item] of items.entries()) {
+    if (String(item?.invite_token || '') !== token) continue;
+    removedIds.push(id);
+    items.delete(id);
+  }
+  for (const [key, entry] of localAuthority.entries()) {
+    if (String(entry?.item?.invite_token || '') === token) localAuthority.delete(key);
+  }
+  for (const [key, item] of sheetState.pinned.entries()) {
+    if (String(item?.invite_token || '') === token) sheetState.pinned.delete(key);
+  }
+
+  for (const id of removedIds) announcedIds.add(String(id));
+  if (removedIds.length) persistAnnouncedIds();
+
+  if (String(toastItem?.invite_token || '') === token
+      || String(pressedToastItem?.invite_token || '') === token) {
+    dismissToast();
+  }
+
+  announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
+  persistItems();
+  const exactUnread = Number(detail.unreadCount);
+  setUnreadCount(Number.isFinite(exactUnread) ? exactUnread : Math.max(0, unreadHint - 1));
+
+  if (isNotificationsSheetOpen()) {
+    renderNotifications(visibleSheetItems());
+    markVisibleReadLocally();
+  }
+}
+
+async function consumeInviteNotification(detail){
+  const token = String(detail.inviteToken || detail.token || '');
+  if (!token) return;
+
+  removeInviteNotification(detail);
+  try {
+    const result = await rawNotifications(false, { consumeInviteToken:token });
+    const unreadCount = Number(result?.unread_count);
+    if (Number.isFinite(unreadCount)) setUnreadCount(Math.max(0, unreadCount));
+  } catch (error) {
+    // The local surface is already consumed; a later authoritative refresh retries parity.
+  }
+}
+
+""").lstrip('\n')
+screen = screen[:remove_start] + remove_block + screen[remove_end:]
+replace_signature = 'async function rawNotifications(markRead){'
+if screen.count(replace_signature) != 1:
+    raise SystemExit('notifications-screen: rawNotifications owner is not unique')
+screen = screen.replace(replace_signature, 'async function rawNotifications(markRead, options = {}){', 1)
+raw_body_old = "body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), markRead:Boolean(markRead) }),"
+raw_body_new = dedent("""
+body:JSON.stringify({
+      initData:getInitData(),
+      sessionId:getSessionId(),
+      markRead:Boolean(markRead),
+      consumeInviteToken:String(options.consumeInviteToken || ''),
+    }),
+""").strip('\n')
+if screen.count(raw_body_old) != 1:
+    raise SystemExit('notifications-screen: raw notification body is not unique')
+screen = screen.replace(raw_body_old, raw_body_new, 1)
+screen_path.write_text(screen, encoding='utf-8')
+
+endpoint_path = Path('bot/notifications.php')
+endpoint = endpoint_path.read_text(encoding='utf-8')
+helper_anchor = '\ntry {\n'
+backend_helper = dedent("""
+function mgw_consume_invite_notifications(array &$data, string $userId, string $token): void
+{
+    $token = trim($token);
+    if ($token === '') return;
+    $now = now_iso();
+    foreach ($data['notifications'] ?? [] as &$notification) {
+        if (!is_array($notification)) continue;
+        if ((string)($notification['user_id'] ?? '') !== $userId) continue;
+        if ((string)($notification['invite_token'] ?? '') !== $token) continue;
+        if (empty($notification['read_at'])) $notification['read_at'] = $now;
+        if (empty($notification['hidden_at'])) $notification['hidden_at'] = $now;
+    }
+    unset($notification);
+}
+
+try {
+""").lstrip('\n')
+if endpoint.count(helper_anchor) != 1:
+    raise SystemExit(f'notifications.php: top-level try anchor count={endpoint.count(helper_anchor)}')
+endpoint = endpoint.replace(helper_anchor, '\n' + backend_helper, 1)
+mark_line = "    $markRead = !empty($payload['markRead']);"
+mark_replacement = mark_line + "\n    $consumeInviteToken = trim((string)($payload['consumeInviteToken'] ?? ''));"
+if endpoint.count(mark_line) != 1:
+    raise SystemExit('notifications.php: markRead parser is not unique')
+endpoint = endpoint.replace(mark_line, mark_replacement, 1)
+bridge_start = endpoint.index('        if ($markRead) {')
+bridge_end = endpoint.index('        $runtimeNotifications = new RuntimeNotificationBridgeCoordinator', bridge_start)
+bridge_block = dedent("""
+        if ($markRead || $consumeInviteToken !== '') {
+            $db->transaction(function (array &$data) use (
+                $notifications,
+                $userId,
+                $markRead,
+                $consumeInviteToken
+            ): void {
+                if ($markRead) {
+                    $notifications->markAllRead($data, $userId);
+                } else {
+                    mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
+                }
+            });
+        }
+
+""").lstrip('\n')
+endpoint = endpoint[:bridge_start] + bridge_block + endpoint[bridge_end:]
+json_start = endpoint.index('    } elseif ($markRead) {')
+json_end = endpoint.index('    } else {', json_start)
+json_block = dedent("""
+    } elseif ($markRead || $consumeInviteToken !== '') {
+        $result = $db->transaction(function (array &$data) use (
+            $notifications,
+            $userId,
+            $markRead,
+            $consumeInviteToken
+        ): array {
+            if ($markRead) {
+                $notifications->markAllRead($data, $userId);
+            } else {
+                mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
+            }
+            return [
+                'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
+                'unread_count' => mgw_visible_unread_count($data, $userId),
+            ];
+        });
+""").lstrip('\n')
+endpoint = endpoint[:json_start] + json_block + endpoint[json_end:]
+endpoint_path.write_text(endpoint, encoding='utf-8')
+
+replacements = {
+    'v110-mvp14r12-notification-publication-v1132': 'v110-mvp14r12-terminal-dedup-v1133',
+    './assets/js/main-v110.js?v=1132': './assets/js/main-v110.js?v=1133',
+    './main-v110-handoff-shell.js?v=1132': './main-v110-handoff-shell.js?v=1133',
+    './screens/notifications-screen-v110r12.js?v=1132': './screens/notifications-screen-v110r12.js?v=1133',
+    './games/game-invites-v110.js?v=1130': './games/game-invites-v110.js?v=1133',
+    'X-MGW-Notification-Graph: v1132': 'X-MGW-Notification-Graph: v1133',
+    "url.searchParams.get('v') === '1130'": "url.searchParams.get('v') === '1133'",
+}
+roots = [Path('.github'), Path('app'), Path('bot/tests'), Path('e2e'), Path('scripts')]
+allowed = {'.yml', '.yaml', '.js', '.mjs', '.php', '.py', '.json', '.md', '.txt'}
+for root in roots:
+    if not root.exists():
+        continue
+    for path in root.rglob('*'):
+        if not path.is_file() or path.suffix.lower() not in allowed:
+            continue
+        text = path.read_text(encoding='utf-8')
+        updated = text
+        for old, new in replacements.items():
+            updated = updated.replace(old, new)
+        if updated != text:
+            path.write_text(updated, encoding='utf-8')
+
+contract = dedent(r'''
+<?php
+declare(strict_types=1);
+
+$root = dirname(__DIR__, 2);
+$read = static function (string $path) use ($root): string {
+    $content = file_get_contents($root . '/' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read ' . $path);
+    return $content;
+};
+
+$invites = $read('app/assets/js/games/game-invites-v110.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
+$endpoint = $read('bot/notifications.php');
+$shell = $read('app/assets/js/main-v110-handoff-shell.js');
+$e2e = $read('e2e/staging/invite-terminal-dedup.spec.mjs');
+
+$assertions = 0;
+$assert = static function (bool $condition, string $message) use (&$assertions): void {
+    $assertions++;
+    if (!$condition) throw new RuntimeException($message);
+};
+
+$assert(
+    str_contains($invites, "const selfCancelledOwner = action === 'cancel'")
+        && str_contains($invites, 'consumeInviteNotification(token, unreadCount);')
+        && str_contains($invites, "closeSheet();\n        showScreen('home');"),
+    'An owner cancelling their own invitation must return directly home without a second terminal sheet.'
+);
+$assert(
+    str_contains($invites, 'consumeInviteNotification(currentInvite.token);')
+        && str_contains($invites, 'mgw:notification-consume-invite'),
+    'A terminal result already visible in the invite sheet must consume its duplicate notification.'
+);
+$assert(
+    str_contains($notifications, 'mgw:notification-consume-invite')
+        && str_contains($notifications, "consumeInviteToken:String(options.consumeInviteToken || '')")
+        && str_contains($notifications, 'removedIds')
+        && str_contains($notifications, 'persistAnnouncedIds();'),
+    'The canonical notification owner must remove the local duplicate immediately and request one targeted server consume.'
+);
+$assert(
+    str_contains($endpoint, 'function mgw_consume_invite_notifications')
+        && str_contains($endpoint, "if (empty($notification['hidden_at'])) $notification['hidden_at'] = $now;")
+        && str_contains($endpoint, "$consumeInviteToken = trim((string)($payload['consumeInviteToken'] ?? ''));")
+        && str_contains($endpoint, '$markRead || $consumeInviteToken !=='),
+    'The server must hide only the matching invite notification for the authenticated actor.'
+);
+$assert(
+    str_contains($shell, './screens/notifications-screen-v110r12.js?v=1133')
+        && str_contains($shell, './games/game-invites-v110.js?v=1133'),
+    'Both corrected owners must publish under fresh v1133 identities.'
+);
+$assert(
+    str_contains($e2e, 'remote decline already visible in owner sheet is not repeated as toast or bell card')
+        && str_contains($e2e, 'owner self-cancel returns directly home without terminal confirmation'),
+    'Live staging coverage must prove both exact user scenarios.'
+);
+
+fwrite(STDOUT, "ProductionMvp14D2TerminalDedupSelfCancelContractTest: {$assertions} assertions passed\n");
+''').lstrip()
+Path('bot/tests/ProductionMvp14D2TerminalDedupSelfCancelContractTest.php').write_text(contract, encoding='utf-8')
+
+e2e = dedent(r'''
+import { test, expect } from '@playwright/test';
+import {
+  APP_ROUTE,
+  INVITES_ROUTE,
+  STAGING_ORIGIN,
+  isActionResponse,
+} from './support/d3-shared-config.mjs';
+import {
+  authorizeContext,
+  openPlayerPage,
+  cleanupPlayer,
+  revokeContext,
+} from './support/d3-shared-context.mjs';
+import {
+  expectPlayerRequest,
+  clickInviteAction,
+} from './support/d3-shared-actions.mjs';
+
+const NOTIFICATIONS_ROUTE = `${STAGING_ORIGIN}/bot/notifications.php`;
+
+function isConsumeResponse(token) {
+  return response => {
+    if (response.url() !== NOTIFICATIONS_ROUTE || response.request().method() !== 'POST') return false;
+    try {
+      return String(response.request().postDataJSON()?.consumeInviteToken || '') === token;
+    } catch {
+      return false;
+    }
+  };
+}
+
+async function createPlayers(browser) {
+  const options = {
+    locale: 'ru-RU',
+    timezoneId: 'Europe/Vilnius',
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    isMobile: true,
+    hasTouch: true,
+  };
+  const contextA = await browser.newContext(options);
+  const contextB = await browser.newContext(options);
+  await authorizeContext(contextA, 'A');
+  await authorizeContext(contextB, 'B');
+  const playerA = await openPlayerPage(contextA, 'A', APP_ROUTE);
+  const playerB = await openPlayerPage(contextB, 'B', APP_ROUTE);
+  await cleanupPlayer(playerA.page);
+  await cleanupPlayer(playerB.page);
+  return { contextA, contextB, playerA, playerB };
+}
+
+async function disposePlayers(players) {
+  await cleanupPlayer(players?.playerA?.page);
+  await cleanupPlayer(players?.playerB?.page);
+  if (players?.contextA) {
+    await revokeContext(players.contextA);
+    await players.contextA.close();
+  }
+  if (players?.contextB) {
+    await revokeContext(players.contextB);
+    await players.contextB.close();
+  }
+}
+
+async function createDirectInvite(page) {
+  const created = await expectPlayerRequest(
+    page,
+    '/bot/invites.php',
+    {
+      action: 'create_direct',
+      inviteeId: 'stg_test_player_b',
+      gameType: 'tictactoe',
+      room: 'match',
+      bet: 10,
+      boardSize: 3,
+    },
+    'Player A creates terminal-dedup invitation',
+  );
+  const token = String(created?.invite?.token || '');
+  expect(token).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
+  return token;
+}
+
+async function syncOwnerInvite(page, token) {
+  let matched = false;
+  for (let attempt = 0; attempt < 4 && !matched; attempt += 1) {
+    const responsePromise = page.waitForResponse(
+      isActionResponse(INVITES_ROUTE, 'sync'),
+      { timeout: 8_000 },
+    ).catch(() => null);
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    const response = await responsePromise;
+    if (!response || response.status() !== 200) continue;
+    const payload = await response.json().catch(() => null);
+    const invite = payload?.invite || payload?.tracked_invite || null;
+    matched = String(invite?.token || '') === token;
+  }
+  expect(matched, 'Owner module must synchronize the created invitation').toBe(true);
+  await page.waitForTimeout(120);
+  await page.locator('[data-invite-friend="tictactoe"]').click();
+  await expect(page.locator(`#sheet [data-invite-sheet][data-invite-token="${token}"]`)).toHaveCount(1);
+  await expect(page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено');
+}
+
+async function expectTokenAbsentFromBell(page, token) {
+  await page.waitForTimeout(1_200);
+  await expect(page.locator('#notificationToast')).not.toHaveClass(/show/);
+  await page.locator('#notificationsOpen').click();
+  await expect(page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления', { timeout: 20_000 });
+  await expect(page.locator(`#sheet [data-notification-invite-token="${token}"]`)).toHaveCount(0);
+}
+
+test('remote decline already visible in owner sheet is not repeated as toast or bell card', async ({ browser }) => {
+  test.setTimeout(150_000);
+  const players = await createPlayers(browser);
+  try {
+    const token = await createDirectInvite(players.playerA.page);
+    await syncOwnerInvite(players.playerA.page, token);
+
+    const consumeResponse = players.playerA.page.waitForResponse(
+      isConsumeResponse(token),
+      { timeout: 35_000 },
+    );
+    const declined = await expectPlayerRequest(
+      players.playerB.page,
+      '/bot/invites.php',
+      { action: 'decline', token },
+      'Player B declines while Player A watches the waiting sheet',
+    );
+    expect(String(declined?.invite?.status || '')).toBe('declined');
+    await players.playerA.page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await expect(players.playerA.page.locator('#sheet .sheet-head h2')).toHaveText(
+      'Приглашение отклонено',
+      { timeout: 30_000 },
+    );
+    const consumed = await consumeResponse;
+    expect(consumed.status()).toBe(200);
+    expect((await consumed.json().catch(() => null))?.ok).toBe(true);
+
+    await players.playerA.page.locator('#sheet .btn.primary[data-close-sheet]').click();
+    await expect(players.playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+    await expectTokenAbsentFromBell(players.playerA.page, token);
+
+    expect(players.playerA.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerB.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerA.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerB.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerA.diagnostics.serverErrors).toEqual([]);
+    expect(players.playerB.diagnostics.serverErrors).toEqual([]);
+  } finally {
+    await disposePlayers(players);
+  }
+});
+
+test('owner self-cancel returns directly home without terminal confirmation', async ({ browser }) => {
+  test.setTimeout(150_000);
+  const players = await createPlayers(browser);
+  try {
+    const token = await createDirectInvite(players.playerA.page);
+    await syncOwnerInvite(players.playerA.page, token);
+
+    const consumeResponse = players.playerA.page.waitForResponse(
+      isConsumeResponse(token),
+      { timeout: 35_000 },
+    );
+    const cancelled = await clickInviteAction(players.playerA.page, 'cancel', token);
+    expect(String(cancelled?.invite?.status || '')).toMatch(/cancelled|canceled/);
+    const consumed = await consumeResponse;
+    expect(consumed.status()).toBe(200);
+    expect((await consumed.json().catch(() => null))?.ok).toBe(true);
+
+    await expect(players.playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+    await expect.poll(async () => players.playerA.page.evaluate(() => (
+      document.querySelector('.screen.active')?.dataset.screen || ''
+    )), { timeout: 10_000 }).toBe('home');
+    await expect(players.playerA.page.locator('#sheet .sheet-head h2')).not.toHaveText('Приглашение отменено');
+    await expectTokenAbsentFromBell(players.playerA.page, token);
+
+    expect(players.playerA.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerB.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerA.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerB.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerA.diagnostics.serverErrors).toEqual([]);
+    expect(players.playerB.diagnostics.serverErrors).toEqual([]);
+  } finally {
+    await disposePlayers(players);
+  }
+});
+''').lstrip()
+Path('e2e/staging/invite-terminal-dedup.spec.mjs').write_text(e2e, encoding='utf-8')
+
+stale = [
+    'v110-mvp14r12-notification-publication-v1132',
+    './assets/js/main-v110.js?v=1132',
+    './main-v110-handoff-shell.js?v=1132',
+    './screens/notifications-screen-v110r12.js?v=1132',
+    './games/game-invites-v110.js?v=1130',
+]
+for value in stale:
+    remaining = []
+    for root in roots:
+        if not root.exists():
+            continue
+        for path in root.rglob('*'):
+            if path.is_file() and path.suffix.lower() in allowed:
+                if value in path.read_text(encoding='utf-8'):
+                    remaining.append(str(path))
+    if remaining:
+        raise SystemExit(f'Stale publication value {value!r} remains in: {remaining[:20]}')
