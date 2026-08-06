@@ -22,11 +22,17 @@ $entry = $read('app/v110.php');
 $client = $read('app/assets/js/api/client.js');
 $session = $read('app/assets/js/session.js');
 
+foreach (['34', '38', '46', '47'] as $version) {
+    $assert(str_contains(
+        $entry,
+        '"./assets/js/api/client.js?v=' . $version . '": "./assets/js/api/client.js?v=1131"'
+    ), 'Every active historical API client specifier must resolve to client v1131: v=' . $version);
+}
+
 $assert(str_contains($entry, '<script type="importmap">')
-    && str_contains($entry, '"./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1131"')
     && str_contains($entry, '"./assets/js/session.js?v=21": "./assets/js/session.js?v=1131"')
     && str_contains($entry, '"./assets/js/session.js?v=27": "./assets/js/session.js?v=1131"'),
-    'The ordinary v110 route must centrally remap every retained API/session legacy specifier to v1131.');
+    'The ordinary v110 route must centrally remap every retained session specifier to v1131.');
 
 $assert(str_contains($entry, './assets/js/main-v110.js?v=1130')
     && str_contains($entry, 'v110-mvp14r12-invite-notification-presence-stability')
