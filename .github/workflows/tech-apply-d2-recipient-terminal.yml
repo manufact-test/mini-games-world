@@ -1,0 +1,46 @@
+name: Tech apply D2 recipient terminal patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14-d2-recipient-tech-base
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/mvp14-d2-recipient-tech-trigger'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout patch tool
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-d2-recipient-tech-base
+          path: tech
+          fetch-depth: 1
+
+      - name: Checkout exact feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-d2-recipient-terminal-replacement-context
+          path: target
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Apply focused patch
+        working-directory: target
+        run: python3 ../tech/.github/scripts/apply_d2_recipient_terminal_patch.py
+
+      - name: Commit focused product and acceptance changes
+        working-directory: target
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git diff --cached --quiet && { echo 'No changes produced'; exit 1; }
+          git commit -m "MVP-14 D2: replace recipient invite card with contextual terminal state"
+          git push origin HEAD:agent/mvp14-d2-recipient-terminal-replacement-context
