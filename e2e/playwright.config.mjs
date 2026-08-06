@@ -24,6 +24,13 @@ export default defineConfig({
     baseURL: process.env.MGW_STAGING_ORIGIN || 'https://seashell-okapi-889488.hostingersite.com',
     browserName: 'chromium',
     headless: true,
+    launchOptions: {
+      args: [
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+      ],
+    },
     actionTimeout: 15_000,
     navigationTimeout: 35_000,
     trace: 'retain-on-failure',
