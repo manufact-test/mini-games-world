@@ -18,15 +18,15 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $assert(str_contains($rendered, './assets/js/main-v110.js?v=1132'),
     'Rendered ordinary v110 entry must publish fresh main v1132.');
-$assert(!str_contains($rendered, './assets/js/main-v110.js?v=1130'),
+$assert(!str_contains($rendered, './assets/js/main-v110.js?v=1132'),
     'Rendered ordinary v110 entry must not retain the stale main identity.');
 $assert(str_contains($main, "./main-v110-handoff-shell.js?v=1132"),
     'Fresh main must publish fresh handoff shell v1132.');
-$assert(!str_contains($main, "./main-v110-handoff-shell.js?v=1130"),
+$assert(!str_contains($main, "./main-v110-handoff-shell.js?v=1132"),
     'Fresh main must not retain the stale shell identity.');
 $assert(str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1132"),
     'Fresh shell must publish the corrected notification owner under v1132.');
-$assert(!str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1126"),
+$assert(!str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1132"),
     'Fresh shell must not retain the CDN-stale notification identity.');
 $assert(str_contains($screen, 'let notificationReadGeneration = 0;')
     && str_contains($screen, "? 'Вы отменили своё приглашение.'"),

@@ -1,1 +1,0 @@
-Trigger the one-shot contract alignment workflow. This marker is removed by the workflow.
