@@ -34,8 +34,8 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
-$build = 'v110-mvp14r12-notification-publication-v1132';
-$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1132';")
+$build = 'v110-mvp14r12-terminal-dedup-v1133';
+$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1133';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
@@ -56,7 +56,7 @@ $assert(!str_contains($entry, 'initV104InviteGameControls')
     'Retired invitation, share, result and self-cancel layers must remain inactive.');
 
 $assert($count($shell, 'initGameInvites();') === 1
-    && str_contains($shell, "from './games/game-invites-v110.js?v=1130'")
+    && str_contains($shell, "from './games/game-invites-v110.js?v=1133'")
     && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
     'The freshly published canonical invitation file must remain the single invitation owner.');
 $assert(str_contains($sheet, 's.replaceChildren();')
@@ -74,7 +74,7 @@ $assert(!str_contains($targeted, 'confirmLeaveGame')
     'The targeted interaction guard must not become a second surrender owner.');
 
 $assert($count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1132')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1133')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && !str_contains($shell, 'NotificationPreflight'),
     'The active graph must contain exactly one current notification owner.');
@@ -117,7 +117,7 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     'Accepted game interaction behavior must remain untouched.');
 
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1121')
-    && str_contains($php, 'main-v110.js?v=1132')
+    && str_contains($php, 'main-v110.js?v=1133')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
     && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")

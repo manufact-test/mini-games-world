@@ -25,13 +25,13 @@ $linkEntry = $read('app/assets/js/games/invite-link-entry-v110r12.js');
 $assert(
     str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
         && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")
-        && str_contains($php, 'main-v110.js?v=1132')
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1132'),
+        && str_contains($php, 'main-v110.js?v=1133')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1133'),
     'The canonical Telegram URL must select the final v1130 browser graph.'
 );
 $assert(
-    str_contains($shell, 'game-invites-v110.js?v=1130')
-        && str_contains($shell, 'notifications-screen-v110r12.js?v=1132')
+    str_contains($shell, 'game-invites-v110.js?v=1133')
+        && str_contains($shell, 'notifications-screen-v110r12.js?v=1133')
         && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
         && !str_contains($shell, 'initInviteTerminalActions')
         && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123')

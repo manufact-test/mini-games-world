@@ -16,22 +16,22 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(str_contains($rendered, './assets/js/main-v110.js?v=1132'),
+$assert(str_contains($rendered, './assets/js/main-v110.js?v=1133'),
     'Rendered ordinary v110 entry must publish fresh main v1132.');
 $assert(!str_contains($rendered, './assets/js/main-v110.js?v=1130'),
     'Rendered ordinary v110 entry must not retain the stale main identity.');
-$assert(str_contains($main, "./main-v110-handoff-shell.js?v=1132"),
+$assert(str_contains($main, "./main-v110-handoff-shell.js?v=1133"),
     'Fresh main must publish fresh handoff shell v1132.');
 $assert(!str_contains($main, "./main-v110-handoff-shell.js?v=1130"),
     'Fresh main must not retain the stale shell identity.');
-$assert(str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1132"),
+$assert(str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1133"),
     'Fresh shell must publish the corrected notification owner under v1132.');
 $assert(!str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1126"),
     'Fresh shell must not retain the CDN-stale notification identity.');
 $assert(str_contains($screen, 'let notificationReadGeneration = 0;')
     && str_contains($screen, "? 'Вы отменили своё приглашение.'"),
     'Published notification owner must contain both accepted corrections.');
-$assert(str_contains($rendered, 'v110-mvp14r12-notification-publication-v1132'),
+$assert(str_contains($rendered, 'v110-mvp14r12-terminal-dedup-v1133'),
     'Rendered build marker must expose the fresh notification publication.');
 
 fwrite(STDOUT, 'ProductionMvp14NotificationPublicationV1132Test: '

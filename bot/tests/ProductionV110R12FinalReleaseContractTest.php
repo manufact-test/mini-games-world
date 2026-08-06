@@ -32,14 +32,14 @@ $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability.js';
 
-$build = 'v110-mvp14r12-notification-publication-v1132';
+$build = 'v110-mvp14r12-terminal-dedup-v1133';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1121')
-        && str_contains($php, 'main-v110.js?v=1132')
+        && str_contains($php, 'main-v110.js?v=1133')
         && str_contains($php, $build)
-        && str_contains($main, 'main-v110-handoff-shell.js?v=1132')
+        && str_contains($main, 'main-v110-handoff-shell.js?v=1133')
         && str_contains($main, $build)
-        && str_contains($shell, 'game-invites-v110.js?v=1130')
+        && str_contains($shell, 'game-invites-v110.js?v=1133')
         && str_contains($shell, $build)
         && str_contains($clean, $build),
     'Every active R12 entry owner must publish one build identity and the final v1130 shell.'
@@ -54,7 +54,7 @@ $assert(
         && substr_count($shell, 'initGameInvites();') === 1
         && !str_contains($shell, 'initInviteTerminalActions')
         && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
-        && str_contains($shell, 'notifications-screen-v110r12.js?v=1132')
+        && str_contains($shell, 'notifications-screen-v110r12.js?v=1133')
         && str_contains($notifications, 'data-notifications-owner="r12"')
         && str_contains($notifications, 'sheetState.pinned'),
     'R12 must keep one notification renderer and one canonical invite action owner.'

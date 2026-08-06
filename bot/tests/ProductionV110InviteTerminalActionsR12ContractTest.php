@@ -27,7 +27,7 @@ $assert(str_contains($owner, "document.addEventListener('click', handleDocumentC
 
 $assert(!str_contains($shell, 'initInviteTerminalActions')
     && !str_contains($shell, 'invite-terminal-actions-v110r12.js')
-    && str_contains($shell, 'game-invites-v110.js?v=1130'),
+    && str_contains($shell, 'game-invites-v110.js?v=1133'),
     'The old window-capture terminal interceptor must be absent from the active graph.');
 
 $performStart = strpos($owner, 'async function performInviteAction(');
@@ -71,8 +71,8 @@ $assert(str_contains($retired, "window.addEventListener('click', handleTerminalA
     && !str_contains($shell, 'invite-terminal-actions-v110r12.js'),
     'The historical file may remain for rollback evidence but must not execute.');
 
-$assert(str_contains($entry, 'main-v110.js?v=1132')
-    && str_contains($shell, 'game-invites-v110.js?v=1130'),
+$assert(str_contains($entry, 'main-v110.js?v=1133')
+    && str_contains($shell, 'game-invites-v110.js?v=1133'),
     'The D2 correction must be published through the v1130 ordinary Start graph.');
 
 fwrite(STDOUT, "ProductionV110InviteTerminalActionsR12ContractTest: {$assertions} assertions passed\n");

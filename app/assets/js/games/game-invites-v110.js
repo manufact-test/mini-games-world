@@ -701,6 +701,9 @@ async function performInviteAction(action, token, button){
     if (action === 'decline' || action === 'cancel') {
       const terminalInvite = terminalInviteResult(action, token, result?.invite || rollbackInvite);
       const unreadCount = Number(result?.unread_count);
+      const selfCancelledOwner = action === 'cancel'
+        && Boolean(terminalInvite?.is_owner)
+        && !terminalContext.notificationSurface;
 
       if (terminalContext.notificationSurface) {
         document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
@@ -710,6 +713,10 @@ async function performInviteAction(action, token, button){
             announce:false,
           },
         }));
+      } else if (selfCancelledOwner) {
+        consumeInviteNotification(token, unreadCount);
+        closeSheet();
+        showScreen('home');
       } else {
         showTerminalInvite(terminalInvite);
       }
@@ -918,7 +925,10 @@ function updateOpenInviteSheet(){
     else showInviteeWaiting(currentInvite);
     return;
   }
-  if (isTerminal(status)) showTerminalInvite(currentInvite);
+  if (isTerminal(status)) {
+    consumeInviteNotification(currentInvite.token);
+    showTerminalInvite(currentInvite);
+  }
 }
 
 function showDirectInvitePending(context, opponentName){
@@ -1126,7 +1136,22 @@ function dispatchNotificationsRefresh(){
   document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
 }
 
+function consumeInviteNotification(inviteToken, unreadCount = null){
+  const token = String(inviteToken || '');
+  if (!token) return;
+  const numericUnread = unreadCount === null || unreadCount === undefined
+    ? null
+    : Number(unreadCount);
+  document.dispatchEvent(new CustomEvent('mgw:notification-consume-invite', {
+    detail:{
+      inviteToken:token,
+      unreadCount:Number.isFinite(numericUnread) ? Math.max(0, numericUnread) : null,
+    },
+  }));
+}
+
 function dispatchNotificationCount(unreadCount){
+
   if (!Number.isFinite(Number(unreadCount))) return;
   document.dispatchEvent(new CustomEvent('mgw:notification-count', {
     detail:{ unreadCount:Number(unreadCount) },

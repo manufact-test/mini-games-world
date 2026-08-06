@@ -34,8 +34,8 @@ $assert(str_contains($entry, '<script type="importmap">')
     && str_contains($entry, '"./assets/js/session.js?v=27": "./assets/js/session.js?v=1131"'),
     'The ordinary v110 route must centrally remap every retained session specifier to v1131.');
 
-$assert(str_contains($entry, './assets/js/main-v110.js?v=1132')
-    && str_contains($entry, 'v110-mvp14r12-notification-publication-v1132')
+$assert(str_contains($entry, './assets/js/main-v110.js?v=1133')
+    && str_contains($entry, 'v110-mvp14r12-terminal-dedup-v1133')
     && str_contains($entry, 'X-MGW-Api-Session-Graph: v1131'),
     'The accepted v1130 outer graph must stay unchanged while v110 exposes the fresh inner API/session graph.');
 

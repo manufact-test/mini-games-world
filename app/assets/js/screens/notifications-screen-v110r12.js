@@ -23,6 +23,7 @@ let notificationReadGeneration = 0;
 let unreadHint = 0;
 let items = new Map();
 let localAuthority = new Map();
+let consumedInviteTokens = new Set();
 let announcedIds = loadAnnouncedIds();
 let cacheHydrated = false;
 let toastItem = null;
@@ -71,8 +72,10 @@ export function initNotificationsScreen(){
     const item = normalizeItem(event.detail?.item);
     const unreadCount = Number(event.detail?.unreadCount || 0);
     const announce = event.detail?.announce !== false;
-    if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);
     if (!item.id) return;
+    const inviteToken = String(item.invite_token || '');
+    if (inviteToken && consumedInviteTokens.has(inviteToken)) return;
+    if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);
 
     rememberLocalAuthority(item);
     upsert(item);
@@ -92,6 +95,10 @@ export function initNotificationsScreen(){
 
   document.addEventListener('mgw:notification-remove', event => {
     removeInviteNotification(event.detail || {});
+  });
+
+  document.addEventListener('mgw:notification-consume-invite', event => {
+    void consumeInviteNotification(event.detail || {});
   });
 
   document.addEventListener('mgw:notifications-refresh', () => {
@@ -277,7 +284,11 @@ async function refreshNotifications({ announce = false } = {}){
 function mergeServerItems(serverItems){
   pruneLocalAuthority();
   const preserved = [...localAuthority.values()].map(entry => entry.item);
-  const merged = mergeNotificationItems(preserved, serverItems);
+  const visibleServerItems = normalizeItems(serverItems).filter(item => {
+    const token = String(item.invite_token || '');
+    return !token || !consumedInviteTokens.has(token);
+  });
+  const merged = mergeNotificationItems(preserved, visibleServerItems);
   items = new Map(merged.map(item => [item.id, item]));
   persistItems();
 }
@@ -347,8 +358,11 @@ function removeInviteNotification(detail){
   const token = String(detail.inviteToken || detail.token || '');
   if (!token) return;
 
+  const removedIds = [];
   for (const [id, item] of items.entries()) {
-    if (String(item?.invite_token || '') === token) items.delete(id);
+    if (String(item?.invite_token || '') !== token) continue;
+    removedIds.push(id);
+    items.delete(id);
   }
   for (const [key, entry] of localAuthority.entries()) {
     if (String(entry?.item?.invite_token || '') === token) localAuthority.delete(key);
@@ -357,6 +371,9 @@ function removeInviteNotification(detail){
     if (String(item?.invite_token || '') === token) sheetState.pinned.delete(key);
   }
 
+  for (const id of removedIds) announcedIds.add(String(id));
+  if (removedIds.length) persistAnnouncedIds();
+
   if (String(toastItem?.invite_token || '') === token
       || String(pressedToastItem?.invite_token || '') === token) {
     dismissToast();
@@ -364,12 +381,34 @@ function removeInviteNotification(detail){
 
   announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
   persistItems();
-  const exactUnread = Number(detail.unreadCount);
+  const hasExactUnread = detail.unreadCount !== null && detail.unreadCount !== undefined;
+  const exactUnread = hasExactUnread ? Number(detail.unreadCount) : Number.NaN;
   setUnreadCount(Number.isFinite(exactUnread) ? exactUnread : Math.max(0, unreadHint - 1));
 
   if (isNotificationsSheetOpen()) {
     renderNotifications(visibleSheetItems());
     markVisibleReadLocally();
+  }
+}
+
+async function consumeInviteNotification(detail){
+  const token = String(detail.inviteToken || detail.token || '');
+  if (!token) return;
+
+  consumedInviteTokens.add(token);
+  while (consumedInviteTokens.size > MAX_ANNOUNCED_IDS) {
+    consumedInviteTokens.delete(consumedInviteTokens.values().next().value);
+  }
+  removeInviteNotification(detail);
+  try {
+    const result = await rawNotifications(false, { consumeInviteToken:token });
+    const unreadCount = Number(result?.unread_count);
+    removeInviteNotification({
+      inviteToken:token,
+      unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : null,
+    });
+  } catch (error) {
+    // Keep this token consumed in the current document; normal refreshes cannot reinsert it.
   }
 }
 
@@ -587,13 +626,18 @@ function isLatestNotificationRead(generation){
   return Number(generation) === notificationReadGeneration;
 }
 
-async function rawNotifications(markRead){
+async function rawNotifications(markRead, options = {}){
   const speed = window.__MGW_V101_SPEED__;
   const fetcher = typeof speed?.rawFetch === 'function' ? speed.rawFetch : window.fetch.bind(window);
   const response = await fetcher(NOTIFICATIONS_URL, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
-    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), markRead:Boolean(markRead) }),
+    body:JSON.stringify({
+      initData:getInitData(),
+      sessionId:getSessionId(),
+      markRead:Boolean(markRead),
+      consumeInviteToken:String(options.consumeInviteToken || ''),
+    }),
     priority:'high',
     cache:'no-store',
   });
