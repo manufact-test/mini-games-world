@@ -35,25 +35,43 @@ jobs:
           lines = workflow[start:end].splitlines()
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines)
 
-          tree = ast.parse(script)
-          new_terminal_block = None
-          for node in tree.body:
-            if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'new_terminal_block' for target in node.targets):
-              new_terminal_block = ast.literal_eval(node.value)
-              break
-          if not isinstance(new_terminal_block, str):
-            raise SystemExit('Cannot resolve new terminal block from embedded patch.')
+          wanted = {'new_terminal_block', 'new_bridge_mutation', 'new_json_mutation'}
+          values = {}
+          for node in ast.parse(script).body:
+            if not isinstance(node, ast.Assign):
+              continue
+            for target in node.targets:
+              if isinstance(target, ast.Name) and target.id in wanted:
+                values[target.id] = ast.literal_eval(node.value)
+          missing = wanted.difference(values)
+          if missing:
+            raise SystemExit(f'Cannot resolve embedded patch literals: {sorted(missing)}')
 
           client_path = Path('app/assets/js/games/game-invites-v110.js')
           client = client_path.read_text(encoding='utf-8')
           terminal_start = client.index("    if (action === 'decline' || action === 'cancel') {")
           terminal_end = client.index("    if (action === 'start') {", terminal_start)
-          client_path.write_text(client[:terminal_start] + new_terminal_block + client[terminal_end:], encoding='utf-8')
+          client_path.write_text(client[:terminal_start] + values['new_terminal_block'] + client[terminal_end:], encoding='utf-8')
 
-          exact_call = "replace_once(client_path, old_terminal_block, new_terminal_block)\n"
-          if script.count(exact_call) != 1:
-            raise SystemExit('Embedded terminal replacement call is not unique.')
-          script = script.replace(exact_call, '', 1)
+          endpoint_path = Path('bot/notifications.php')
+          endpoint = endpoint_path.read_text(encoding='utf-8')
+          bridge_start = endpoint.index("        if ($markRead) {")
+          bridge_end = endpoint.index("        $runtimeNotifications = new RuntimeNotificationBridgeCoordinator", bridge_start)
+          endpoint = endpoint[:bridge_start] + values['new_bridge_mutation'] + endpoint[bridge_end:]
+          json_start = endpoint.index("    } elseif ($markRead) {")
+          json_end = endpoint.index("    } else {", json_start)
+          endpoint = endpoint[:json_start] + values['new_json_mutation'] + endpoint[json_end:]
+          endpoint_path.write_text(endpoint, encoding='utf-8')
+
+          for exact_call in [
+            "replace_once(client_path, old_terminal_block, new_terminal_block)\n",
+            "replace_once(endpoint_path, old_bridge_mutation, new_bridge_mutation)\n",
+            "replace_once(endpoint_path, old_json_mutation, new_json_mutation)\n",
+          ]:
+            if script.count(exact_call) != 1:
+              raise SystemExit(f'Embedded replacement call is not unique: {exact_call!r}')
+            script = script.replace(exact_call, '', 1)
+
           exec(compile(script, '<embedded-d2-patch>', 'exec'), {'__name__':'__main__'})
           PY
 
