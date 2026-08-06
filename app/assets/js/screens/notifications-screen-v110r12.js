@@ -304,9 +304,15 @@ function upsert(value){
   const item = normalizeItem(value);
   if (!item.id) return;
   const existing = items.get(item.id) || findEquivalentItem(item) || {};
-  const merged = normalizeItem({ ...existing, ...item });
+  const merged = mergeEquivalentNotification(existing, item);
   if (!merged.id) return;
 
+  const identity = notificationIdentity(merged);
+  if (identity) {
+    for (const [id, candidate] of items.entries()) {
+      if (id !== merged.id && notificationIdentity(candidate) === identity) items.delete(id);
+    }
+  }
   if (existing.id && existing.id !== merged.id) items.delete(existing.id);
   items.set(merged.id, merged);
   items = new Map(currentItems(MAX_ITEMS).map(entry => [entry.id, entry]));
@@ -322,15 +328,17 @@ function findEquivalentItem(item){
 function notificationIdentity(item){
   const token = String(item?.invite_token || '');
   const type = String(item?.type || '');
-  if (token && type.startsWith('invite_')) return `${token}|${type}`;
+  if (token && type.startsWith('invite_')) return token;
   return String(item?.id || '');
 }
 
 function rememberLocalAuthority(value){
   const item = normalizeItem(value);
   if (!item.id) return;
-  localAuthority.set(notificationIdentity(item) || item.id, {
-    item,
+  const key = notificationIdentity(item) || item.id;
+  const existing = localAuthority.get(key)?.item || {};
+  localAuthority.set(key, {
+    item:mergeEquivalentNotification(existing, item),
     expiresAt:Date.now() + LOCAL_AUTHORITY_MS,
   });
 }
@@ -346,7 +354,8 @@ function pinItem(value){
   const item = normalizeItem(value);
   if (!item.id) return;
   const key = notificationIdentity(item) || item.id;
-  sheetState.pinned.set(key, item);
+  const existing = sheetState.pinned.get(key) || {};
+  sheetState.pinned.set(key, mergeEquivalentNotification(existing, item));
 }
 
 function visibleSheetItems(){
@@ -667,12 +676,35 @@ function mergeNotificationItems(primary, fallback){
     const identity = notificationIdentity(value) || value.id;
     if (!identity) continue;
     const previous = merged.get(identity) || {};
-    merged.set(identity, normalizeItem({ ...previous, ...value }));
+    merged.set(identity, mergeEquivalentNotification(previous, value));
   }
   return [...merged.values()]
     .filter(item => item.id)
     .sort((a,b) => itemTime(b) - itemTime(a) || b.id.localeCompare(a.id))
     .slice(0, MAX_ITEMS);
+}
+
+function mergeEquivalentNotification(previousValue, incomingValue){
+  const previous = normalizeItem(previousValue);
+  const incoming = normalizeItem(incomingValue);
+  if (!previous.id) return incoming;
+  if (!incoming.id) return previous;
+
+  const sameInvite = previous.invite_token
+    && previous.invite_token === incoming.invite_token
+    && String(previous.type || '').startsWith('invite_')
+    && String(incoming.type || '').startsWith('invite_');
+  if (sameInvite && isTerminalInviteNotification(previous) && !isTerminalInviteNotification(incoming)) {
+    return normalizeItem({ ...incoming, ...previous });
+  }
+  return normalizeItem({ ...previous, ...incoming });
+}
+
+function isTerminalInviteNotification(item){
+  const status = String(item?.invite_status || '');
+  const type = String(item?.type || '');
+  return ['cancelled','canceled','declined','expired','timed_out'].includes(status)
+    || ['invite_cancelled','invite_declined','invite_expired','invite_timed_out'].includes(type);
 }
 
 function normalizeItems(values){
@@ -703,6 +735,7 @@ function normalizeItem(value){
 }
 
 function completeInviteActions(item){
+  if (isTerminalInviteNotification(item)) return [];
   if (Array.isArray(item.actions) && item.actions.length) return item.actions;
   if (!item.invite_token) return [];
 
@@ -796,7 +829,7 @@ function hydrateItems(){
   try {
     const parsed = JSON.parse(localStorage.getItem(cacheKey()) || 'null');
     if (!parsed || Date.now() - Number(parsed.saved_at || 0) > CACHE_TTL_MS) return;
-    for (const item of normalizeItems(parsed.items)) items.set(item.id, item);
+    for (const item of normalizeItems(parsed.items)) upsert(item);
   } catch (error) {}
 }
 
@@ -845,9 +878,18 @@ function notificationMessage(item){
 function terminalNotificationFallback(item){
   const status = String(item?.invite_status || '');
   if (status === 'cancelled' || status === 'canceled') {
+    const inviterName = String(item?.inviter_name || '').trim();
+    const inviteeName = String(item?.invitee_name || '').trim();
+    const gameTitle = String(item?.game_title || '').trim();
+    if (!item?.invite_is_owner && inviterName && gameTitle) {
+      return `${inviterName} отменил приглашение сыграть в «${gameTitle}».`;
+    }
+    if (item?.invite_is_owner && inviteeName && gameTitle) {
+      return `${inviteeName} отменил участие в матче «${gameTitle}».`;
+    }
     return item?.invite_is_owner
       ? 'Вы отменили своё приглашение.'
-      : 'Вы отменили участие в приглашении.';
+      : 'Приглашение отменено.';
   }
   if (status === 'declined') return 'Вы отклонили приглашение.';
   return '';
