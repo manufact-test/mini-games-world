@@ -258,7 +258,7 @@ async function clickInviteAction(page, button, action) {
   return payload;
 }
 
-test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in place', async ({ browser }, testInfo) => {
+test('D2-D3-D5 integration: Share, picker and owner self-cancel return home while participant history stays terminal', async ({ browser }, testInfo) => {
   test.setTimeout(120_000);
   let playerA;
   let playerB;
@@ -334,17 +334,14 @@ test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in
     expect(['cancelled', 'canceled']).toContain(String(cancelled?.invite?.status || ''));
 
     const overlay = playerA.page.locator('#sheetOverlay');
-    await expect(overlay).toHaveClass(/active/, { timeout: 15_000 });
-    const authoritativeCancelledLabel = String(cancelled?.invite?.status_label || '').trim();
-    expect(authoritativeCancelledLabel).toBe('Отменено');
-    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText(authoritativeCancelledLabel, {
-      timeout: 15_000,
-    });
+    await expect(overlay).not.toHaveClass(/active/, { timeout: 15_000 });
+    await expect.poll(async () => playerA.page.evaluate(() => (
+      document.querySelector('.screen.active')?.dataset.screen || ''
+    )), { timeout: 10_000 }).toBe('home');
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveCount(0);
     await expect(playerA.page.locator(
       `#sheet [data-invite-sheet][data-invite-token="${directToken}"]`,
-    )).toHaveCount(1);
-    await expect(playerA.page.locator('#sheet [data-invite-action]')).toHaveCount(0);
-    await expect(playerA.page.locator('#sheet')).toContainText('Это приглашение больше нельзя использовать.');
+    )).toHaveCount(0);
     await expect(playerA.page.locator('#notificationToast')).not.toHaveClass(/show/);
 
     const bNotification = await notificationByInviteToken(playerB.page, directToken);
@@ -373,8 +370,8 @@ test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in
         ordinaryStartRoute: '/app/v110.php?v=1123',
         shareDraftPreparedAndDiscarded: true,
         playerPickerUsed: true,
-        terminalCardStayedOpen: true,
-        terminalCardActionsRemoved: true,
+        ownerSelfCancelReturnedHome: true,
+        ownerTerminalConfirmationAbsent: true,
         actorSelfToastAbsent: true,
         otherParticipantTerminalStatusPresent: true,
         productionChanged: false,
