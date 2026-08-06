@@ -41,7 +41,14 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     await authorizeContext(contextA, 'A');
     await authorizeContext(contextB, 'B');
 
-    playerA = await openPlayerPage(contextA, 'A');
+    playerA = await openPlayerPage(
+      contextA,
+      'A',
+      APP_ROUTE,
+      (_page, diagnostics) => {
+        diagnostics.allowBackgroundProfileAbort = true;
+      },
+    );
     await cleanupPlayer(playerA.page);
     counterA = createActionCounter(playerA.page);
     preparedHarness = await installPreparedMessageHarness(playerA.page);
@@ -108,7 +115,10 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       contextB,
       'B',
       `${APP_ROUTE}&invite=${encodeURIComponent(token)}`,
-      page => { counterB = createActionCounter(page); },
+      (page, diagnostics) => {
+        diagnostics.allowBackgroundProfileAbort = true;
+        counterB = createActionCounter(page);
+      },
     );
     await expect(playerB.page.locator('#sheet .sheet-head h2'))
       .toHaveText('Вас приглашают сыграть');
@@ -125,8 +135,6 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
 
     playerA.diagnostics.allowInviteSyncAbort = true;
     playerB.diagnostics.allowInviteSyncAbort = true;
-    playerA.diagnostics.allowBackgroundProfileAbort = true;
-    playerB.diagnostics.allowBackgroundProfileAbort = true;
     let started;
     try {
       started = await clickInviteAction(playerA.page, 'start', token);
@@ -139,8 +147,6 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     } finally {
       playerA.diagnostics.allowInviteSyncAbort = false;
       playerB.diagnostics.allowInviteSyncAbort = false;
-      playerA.diagnostics.allowBackgroundProfileAbort = false;
-      playerB.diagnostics.allowBackgroundProfileAbort = false;
     }
 
     const gameA = await expectPlayerRequest(
@@ -155,6 +161,9 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       { action: 'game_state', gameId },
       'Player B shared game state',
     );
+    playerA.diagnostics.allowBackgroundProfileAbort = false;
+    playerB.diagnostics.allowBackgroundProfileAbort = false;
+
     expect(String(gameA?.game?.id || '')).toBe(gameId);
     expect(String(gameB?.game?.id || '')).toBe(gameId);
     expect(gameA?.game?.status).toBe('active');
