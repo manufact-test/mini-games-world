@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   apply:
-    if: github.head_ref == 'agent/mvp14-d2-recipient-tech-trigger'
-    runs-on: ubuntu-latest
+    if: github.head_ref == 'agent/mvp14-d2-recipient-tech-trigger-macos'
+    runs-on: macos-latest
     steps:
       - name: Checkout patch tool
         uses: actions/checkout@v4
