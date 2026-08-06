@@ -1,0 +1,1 @@
+Apply the reviewed D2 recipient terminal replacement patch through the macOS runner pool.
