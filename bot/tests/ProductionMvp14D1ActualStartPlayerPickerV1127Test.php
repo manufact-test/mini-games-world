@@ -58,7 +58,7 @@ $assert(
 
 $assert(
     str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
-        && str_contains($e2e, "url.searchParams.get('v') === '1132'")
+        && str_contains($e2e, "url.searchParams.get('v') === '1130'")
         && str_contains($e2e, 'requestAnimationFrame(capture);')
         && str_contains($e2e, 'FALSE_EMPTY_PATTERN')
         && str_contains($e2e, 'setTimeout(resolve, 1500)')
