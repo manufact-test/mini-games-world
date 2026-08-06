@@ -664,18 +664,24 @@ async function performInviteAction(action, token, button){
   const rollbackInvite = cloneInvite(currentInvite);
   const rollbackHtml = String(document.getElementById('sheet')?.innerHTML || '');
   const terminalContext = terminalActionContext(button, action, token);
+  const optimisticOwnerCancel = action === 'cancel'
+    && Boolean(rollbackInvite?.is_owner)
+    && !terminalContext.notificationSurface;
   setInviteButtonsDisabled(true);
   button.textContent = actionText(action);
 
-  // Accept owns its existing immediate waiting transition. Decline and
-  // cancel deliberately keep the current sheet/card visible until the
-  // single authoritative request succeeds or fails.
+  // Accept and the owner's own cancellation react immediately. The single
+  // authoritative request still decides the result; failure restores the
+  // captured sheet and invitation state without adding another action owner.
   if (action === 'accept' && currentInvite?.source !== 'rematch') {
     showInviteeWaiting({
       ...currentInvite,
       status:'accepted',
       ready_deadline_at:currentInvite?.ready_deadline_at || new Date(Date.now() + 90000).toISOString(),
     });
+  } else if (optimisticOwnerCancel) {
+    closeSheet();
+    showScreen('home');
   }
 
   try {
@@ -714,8 +720,10 @@ async function performInviteAction(action, token, button){
         }));
       } else if (selfCancelledOwner) {
         consumeInviteNotification(token, unreadCount);
-        closeSheet();
-        showScreen('home');
+        if (!optimisticOwnerCancel) {
+          closeSheet();
+          showScreen('home');
+        }
       } else {
         showTerminalInvite(terminalInvite);
       }
@@ -976,7 +984,7 @@ function showOwnerWaiting(invite, message = 'Ждём ответа игрока.
     </div>
     ${inviteSummary(invite)}
     <div class="small-note invite-status-note">${escapeHtml(message)}</div>
-    <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
+    <button class="btn primary full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
   `);
 }
 
