@@ -1,1 +1,1 @@
-Trigger the already-present one-shot workflow after GitHub has registered it. This marker is removed after the workflow applies the exact test-only change.
+Trigger the registered one-shot workflow from the open draft PR. This marker is removed after the workflow applies the exact test-only change.
