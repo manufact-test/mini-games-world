@@ -15,6 +15,9 @@ $importMap = <<<'HTML'
 <script type="importmap">
 {
   "imports": {
+    "./assets/js/api/client.js?v=34": "./assets/js/api/client.js?v=1131",
+    "./assets/js/api/client.js?v=38": "./assets/js/api/client.js?v=1131",
+    "./assets/js/api/client.js?v=46": "./assets/js/api/client.js?v=1131",
     "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1131",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131"
