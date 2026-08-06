@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - agent/mvp14-interface-ci-validation-base
   push:
     branches:
       - main
