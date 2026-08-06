@@ -236,7 +236,6 @@ function openInviteSetup(gameType, preserved = null){
     scheduleWarmShareDraft(currentContext());
   }));
   document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
-    cancelWarmShareDraft();
     openPlayerPicker(currentContext(), event.currentTarget);
   });
   document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
@@ -311,7 +310,6 @@ function playerCard(item){
 
 async function createDirectInvite(context, inviteeId, button){
   if (!inviteeId || button.disabled) return;
-  cancelWarmShareDraft();
   haptic('light');
   const opponentName = String(button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
 
@@ -324,9 +322,10 @@ async function createDirectInvite(context, inviteeId, button){
     syncState(result);
     currentInvite = result.invite || null;
     if (!currentInvite?.token) throw new Error('Не удалось создать приглашение.');
-    showOwnerWaiting(currentInvite, result.telegram_sent ? 'Игрок получил приглашение в приложении и сообщение от бота.' : 'Игрок получил приглашение в приложении.');
+    showOwnerWaiting(currentInvite);
     dispatchNotificationCount(result.unread_count);
     scheduleSync(0);
+    window.setTimeout(cancelWarmShareDraft, 180);
   } catch (error) {
     toast(error.message || 'Не удалось отправить приглашение.');
     await openPlayerPicker(context);
@@ -557,7 +556,7 @@ async function confirmSharedInvite(attempt){
     const result = await inviteRequest('confirm_shared', { token:String(attempt.invite?.token || '') });
     syncState(result);
     currentInvite = result.invite || attempt.invite;
-    showOwnerWaiting(currentInvite, 'Приглашение отправлено. Ждём ответа игрока.');
+    showOwnerWaiting(currentInvite);
     scheduleSync(0);
   } catch (error) {
     // The shared link remains valid: opening it binds the draft authoritatively.
@@ -665,18 +664,24 @@ async function performInviteAction(action, token, button){
   const rollbackInvite = cloneInvite(currentInvite);
   const rollbackHtml = String(document.getElementById('sheet')?.innerHTML || '');
   const terminalContext = terminalActionContext(button, action, token);
+  const optimisticOwnerCancel = action === 'cancel'
+    && Boolean(rollbackInvite?.is_owner)
+    && !terminalContext.notificationSurface;
   setInviteButtonsDisabled(true);
   button.textContent = actionText(action);
 
-  // Accept owns its existing immediate waiting transition. Decline and
-  // cancel deliberately keep the current sheet/card visible until the
-  // single authoritative request succeeds or fails.
+  // Accept and the owner's own cancellation react immediately. The single
+  // authoritative request still decides the result; failure restores the
+  // captured sheet and invitation state without adding another action owner.
   if (action === 'accept' && currentInvite?.source !== 'rematch') {
     showInviteeWaiting({
       ...currentInvite,
       status:'accepted',
       ready_deadline_at:currentInvite?.ready_deadline_at || new Date(Date.now() + 90000).toISOString(),
     });
+  } else if (optimisticOwnerCancel) {
+    closeSheet();
+    showScreen('home');
   }
 
   try {
@@ -715,8 +720,10 @@ async function performInviteAction(action, token, button){
         }));
       } else if (selfCancelledOwner) {
         consumeInviteNotification(token, unreadCount);
-        closeSheet();
-        showScreen('home');
+        if (!optimisticOwnerCancel) {
+          closeSheet();
+          showScreen('home');
+        }
       } else {
         showTerminalInvite(terminalInvite);
       }
@@ -968,7 +975,7 @@ function contextSummary(context){
   `;
 }
 
-function showOwnerWaiting(invite, message = 'Ждём ответа игрока. Коины пока не списываются.'){
+function showOwnerWaiting(invite, message = ''){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
@@ -976,8 +983,8 @@ function showOwnerWaiting(invite, message = 'Ждём ответа игрока.
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    <div class="small-note invite-status-note">${escapeHtml(message)}</div>
-    <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
+    ${message ? `<div class="small-note invite-status-note">${escapeHtml(message)}</div>` : ''}
+    <button class="btn primary full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
   `);
 }
 
@@ -1231,7 +1238,7 @@ async function postJson(url, payload, options = {}){
       ...payload,
     }),
     signal:options.signal,
-    priority:options.prefetch ? 'low' : 'high',
+    priority:'high',
     cache:'no-store',
     mgwPrefetch:Boolean(options.prefetch),
   });
