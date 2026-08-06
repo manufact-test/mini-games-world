@@ -322,7 +322,7 @@ async function createDirectInvite(context, inviteeId, button){
     syncState(result);
     currentInvite = result.invite || null;
     if (!currentInvite?.token) throw new Error('Не удалось создать приглашение.');
-    showOwnerWaiting(currentInvite, result.telegram_sent ? 'Игрок получил приглашение в приложении и сообщение от бота.' : 'Игрок получил приглашение в приложении.');
+    showOwnerWaiting(currentInvite);
     dispatchNotificationCount(result.unread_count);
     scheduleSync(0);
     window.setTimeout(cancelWarmShareDraft, 180);
@@ -556,7 +556,7 @@ async function confirmSharedInvite(attempt){
     const result = await inviteRequest('confirm_shared', { token:String(attempt.invite?.token || '') });
     syncState(result);
     currentInvite = result.invite || attempt.invite;
-    showOwnerWaiting(currentInvite, 'Приглашение отправлено. Ждём ответа игрока.');
+    showOwnerWaiting(currentInvite);
     scheduleSync(0);
   } catch (error) {
     // The shared link remains valid: opening it binds the draft authoritatively.
@@ -975,7 +975,7 @@ function contextSummary(context){
   `;
 }
 
-function showOwnerWaiting(invite, message = 'Ждём ответа игрока. Коины пока не списываются.'){
+function showOwnerWaiting(invite, message = ''){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
@@ -983,7 +983,7 @@ function showOwnerWaiting(invite, message = 'Ждём ответа игрока.
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    <div class="small-note invite-status-note">${escapeHtml(message)}</div>
+    ${message ? `<div class="small-note invite-status-note">${escapeHtml(message)}</div>` : ''}
     <button class="btn primary full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
   `);
 }
