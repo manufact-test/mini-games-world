@@ -94,6 +94,10 @@ export function initNotificationsScreen(){
     removeInviteNotification(event.detail || {});
   });
 
+  document.addEventListener('mgw:notification-consume-invite', event => {
+    void consumeInviteNotification(event.detail || {});
+  });
+
   document.addEventListener('mgw:notifications-refresh', () => {
     void refreshNotifications({ announce:false });
   });
@@ -347,8 +351,11 @@ function removeInviteNotification(detail){
   const token = String(detail.inviteToken || detail.token || '');
   if (!token) return;
 
+  const removedIds = [];
   for (const [id, item] of items.entries()) {
-    if (String(item?.invite_token || '') === token) items.delete(id);
+    if (String(item?.invite_token || '') !== token) continue;
+    removedIds.push(id);
+    items.delete(id);
   }
   for (const [key, entry] of localAuthority.entries()) {
     if (String(entry?.item?.invite_token || '') === token) localAuthority.delete(key);
@@ -356,6 +363,9 @@ function removeInviteNotification(detail){
   for (const [key, item] of sheetState.pinned.entries()) {
     if (String(item?.invite_token || '') === token) sheetState.pinned.delete(key);
   }
+
+  for (const id of removedIds) announcedIds.add(String(id));
+  if (removedIds.length) persistAnnouncedIds();
 
   if (String(toastItem?.invite_token || '') === token
       || String(pressedToastItem?.invite_token || '') === token) {
@@ -370,6 +380,20 @@ function removeInviteNotification(detail){
   if (isNotificationsSheetOpen()) {
     renderNotifications(visibleSheetItems());
     markVisibleReadLocally();
+  }
+}
+
+async function consumeInviteNotification(detail){
+  const token = String(detail.inviteToken || detail.token || '');
+  if (!token) return;
+
+  removeInviteNotification(detail);
+  try {
+    const result = await rawNotifications(false, { consumeInviteToken:token });
+    const unreadCount = Number(result?.unread_count);
+    if (Number.isFinite(unreadCount)) setUnreadCount(Math.max(0, unreadCount));
+  } catch (error) {
+    // The local surface is already consumed; a later authoritative refresh retries parity.
   }
 }
 
@@ -587,13 +611,18 @@ function isLatestNotificationRead(generation){
   return Number(generation) === notificationReadGeneration;
 }
 
-async function rawNotifications(markRead){
+async function rawNotifications(markRead, options = {}){
   const speed = window.__MGW_V101_SPEED__;
   const fetcher = typeof speed?.rawFetch === 'function' ? speed.rawFetch : window.fetch.bind(window);
   const response = await fetcher(NOTIFICATIONS_URL, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
-    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), markRead:Boolean(markRead) }),
+    body:JSON.stringify({
+      initData:getInitData(),
+      sessionId:getSessionId(),
+      markRead:Boolean(markRead),
+      consumeInviteToken:String(options.consumeInviteToken || ''),
+    }),
     priority:'high',
     cache:'no-store',
   });

@@ -57,7 +57,7 @@ $assert(str_contains($profile, "PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1'
     && !str_contains($legacyProfile, 'PROFILE_STATS_CACHE_KEY'),
     'The accepted isolated profile first frame must remain unchanged.');
 
-$build = 'v110-mvp14r12-notification-publication-v1132';
+$build = 'v110-mvp14r12-terminal-dedup-v1133';
 $assert(str_contains($shell, $build)
     && str_contains($main, $build)
     && str_contains($clean, $build)

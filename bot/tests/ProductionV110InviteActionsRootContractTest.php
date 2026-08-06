@@ -44,7 +44,7 @@ $assert($expireBody !== ''
     && str_contains($expireBody, "'timed_out'"),
     'Passive expiry must change only invitation state.');
 
-$build = 'v110-mvp14r12-notification-publication-v1132';
+$build = 'v110-mvp14r12-terminal-dedup-v1133';
 $assert(str_contains($entry, $build)
     && str_contains($main, $build)
     && str_contains($shell, $build)

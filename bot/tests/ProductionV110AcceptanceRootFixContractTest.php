@@ -34,8 +34,8 @@ $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $launchUrl = $read('bot/helpers/WebAppLaunchUrl.php');
 $invitesEndpoint = $read('bot/invites.php');
 
-$build = 'v110-mvp14r12-notification-publication-v1132';
-$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1132';")
+$build = 'v110-mvp14r12-terminal-dedup-v1133';
+$assert(str_contains($main, "import './main-v110-handoff-shell.js?v=1133';")
     && str_contains($main, $build)
     && str_contains($shell, $build)
     && str_contains($entry, $build),
@@ -56,7 +56,7 @@ $assert(!str_contains($entry, 'initV104InviteGameControls')
     'Retired invitation, share, result and self-cancel layers must remain inactive.');
 
 $assert($count($shell, 'initGameInvites();') === 1
-    && str_contains($shell, "from './games/game-invites-v110.js?v=1130'")
+    && str_contains($shell, "from './games/game-invites-v110.js?v=1133'")
     && str_contains($gameInvites, "document.addEventListener('click', handleDocumentClick, true)"),
     'The freshly published canonical invitation file must remain the single invitation owner.');
 $assert(str_contains($sheet, 's.replaceChildren();')

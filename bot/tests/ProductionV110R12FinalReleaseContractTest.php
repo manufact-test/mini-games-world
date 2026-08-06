@@ -32,7 +32,7 @@ $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
 $wrapperPath = $root . '/app/assets/js/production-v110-opponent-picker-stability.js';
 
-$build = 'v110-mvp14r12-notification-publication-v1132';
+$build = 'v110-mvp14r12-terminal-dedup-v1133';
 $assert(
     str_contains($php, 'production-clean-entry-v110.js?v=1121')
         && str_contains($php, 'main-v110.js?v=1132')

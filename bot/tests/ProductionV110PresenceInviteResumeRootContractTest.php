@@ -102,7 +102,7 @@ $assert(!str_contains($inviteStorage, "'Срок приглашения истё
 
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1121')
     && str_contains($php, 'main-v110.js?v=1132')
-    && str_contains($php, 'v110-mvp14r12-notification-publication-v1132'),
+    && str_contains($php, 'v110-mvp14r12-terminal-dedup-v1133'),
     'The integrated presence task must use the final production route and v1130 outer shell.');
 
 fwrite(STDOUT, "ProductionV110PresenceInviteResumeRootContractTest: {$assertions} assertions passed\n");

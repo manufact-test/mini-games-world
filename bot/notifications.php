@@ -133,6 +133,21 @@ function mgw_visible_unread_count(array $data, string $userId): int
     return $count;
 }
 
+function mgw_consume_invite_notifications(array &$data, string $userId, string $token): void
+{
+    $token = trim($token);
+    if ($token === '') return;
+    $now = now_iso();
+    foreach ($data['notifications'] ?? [] as &$notification) {
+        if (!is_array($notification)) continue;
+        if ((string)($notification['user_id'] ?? '') !== $userId) continue;
+        if ((string)($notification['invite_token'] ?? '') !== $token) continue;
+        if (empty($notification['read_at'])) $notification['read_at'] = $now;
+        if (empty($notification['hidden_at'])) $notification['hidden_at'] = $now;
+    }
+    unset($notification);
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
@@ -143,6 +158,7 @@ try {
     if ($userId === '') api_error('Пользователь не найден.');
 
     $markRead = !empty($payload['markRead']);
+    $consumeInviteToken = trim((string)($payload['consumeInviteToken'] ?? ''));
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $notifications = new NotificationService();
     $router = $runtimeStorageRouter instanceof RuntimeStorageRouter
@@ -156,11 +172,20 @@ try {
             throw new RuntimeException('Notification bridge requires exclusive JSON snapshots.');
         }
 
+if ($markRead || $consumeInviteToken !== '') {
+    $db->transaction(function (array &$data) use (
+        $notifications,
+        $userId,
+        $markRead,
+        $consumeInviteToken
+    ): void {
         if ($markRead) {
-            $db->transaction(function (array &$data) use ($notifications, $userId): void {
-                $notifications->markAllRead($data, $userId);
-            });
+            $notifications->markAllRead($data, $userId);
+        } else {
+            mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
         }
+    });
+}
 
         $runtimeNotifications = new RuntimeNotificationBridgeCoordinator($config, $router);
         $result = $db->exclusiveReadOnlySections(
@@ -184,14 +209,23 @@ try {
                 ];
             }
         );
-    } elseif ($markRead) {
-        $result = $db->transaction(function (array &$data) use ($notifications, $userId): array {
-            $items = mgw_visible_notifications($data, $notifications, $userId, 30);
+} elseif ($markRead || $consumeInviteToken !== '') {
+    $result = $db->transaction(function (array &$data) use (
+        $notifications,
+        $userId,
+        $markRead,
+        $consumeInviteToken
+    ): array {
+        if ($markRead) {
             $notifications->markAllRead($data, $userId);
-            foreach ($items as &$item) $item['read'] = true;
-            unset($item);
-            return ['items' => $items, 'unread_count' => 0];
-        });
+        } else {
+            mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
+        }
+        return [
+            'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
+            'unread_count' => mgw_visible_unread_count($data, $userId),
+        ];
+    });
     } else {
         $result = $db->readOnly(function (array $data) use ($notifications, $userId): array {
             return [

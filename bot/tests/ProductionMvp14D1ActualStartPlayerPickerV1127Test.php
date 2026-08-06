@@ -21,9 +21,9 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    str_contains($v110, "./assets/js/main-v110.js?v=1132")
-        && str_contains($main, "./main-v110-handoff-shell.js?v=1132")
-        && str_contains($shell, "./games/game-invites-v110.js?v=1130"),
+    str_contains($v110, "./assets/js/main-v110.js?v=1133")
+        && str_contains($main, "./main-v110-handoff-shell.js?v=1133")
+        && str_contains($shell, "./games/game-invites-v110.js?v=1133"),
     'Ordinary Telegram Start must publish the fresh outer v1132 graph while retaining the canonical inner player-picker owner v1130.'
 );
 
@@ -58,7 +58,7 @@ $assert(
 
 $assert(
     str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
-        && str_contains($e2e, "url.searchParams.get('v') === '1130'")
+        && str_contains($e2e, "url.searchParams.get('v') === '1133'")
         && str_contains($e2e, 'requestAnimationFrame(capture);')
         && str_contains($e2e, 'FALSE_EMPTY_PATTERN')
         && str_contains($e2e, 'setTimeout(resolve, 1500)')
