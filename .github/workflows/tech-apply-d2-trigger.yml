@@ -1,4 +1,4 @@
-name: Tech synchronize D2 v1133 contracts
+name: Tech synchronize D2 live expectations
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.head_ref == 'agent/mvp14-d2-tech-contract-sync'
+    if: github.head_ref == 'agent/mvp14-d2-tech-live-expectations'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout patch tool
@@ -20,19 +20,19 @@ jobs:
           path: tech
           fetch-depth: 1
 
-      - name: Checkout exact feature branch
+      - name: Checkout exact test-only branch
         uses: actions/checkout@v4
         with:
-          ref: agent/mvp14-d2-terminal-dedup-self-cancel-home
+          ref: agent/mvp14-d2-terminal-live-expectations
           path: target
           fetch-depth: 1
           persist-credentials: true
 
-      - name: Synchronize active graph contracts
+      - name: Synchronize live expectations
         working-directory: target
-        run: python3 ../tech/.github/scripts/apply_d2_contract_sync.py
+        run: python3 ../tech/.github/scripts/apply_d2_live_expectation_sync.py
 
-      - name: Commit focused contract synchronization
+      - name: Commit test-only synchronization
         working-directory: target
         shell: bash
         run: |
@@ -42,5 +42,5 @@ jobs:
           git add -A
           git diff --cached --check
           git diff --cached --quiet && { echo 'No changes produced'; exit 1; }
-          git commit -m "MVP-14 D2: synchronize v1133 graph contracts"
-          git push origin HEAD:agent/mvp14-d2-terminal-dedup-self-cancel-home
+          git commit -m "MVP-14 D2 E2E: synchronize direct-home expectations"
+          git push origin HEAD:agent/mvp14-d2-terminal-live-expectations
