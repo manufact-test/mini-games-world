@@ -173,18 +173,13 @@ try {
             throw new RuntimeException('Notification bridge requires exclusive JSON snapshots.');
         }
 
-        if ($markRead || $consumeInviteToken !== '') {
-            $db->transaction(function (array &$data) use (
-                $notifications,
-                $userId,
-                $markRead,
-                $consumeInviteToken
-            ): void {
-                if ($markRead) {
-                    $notifications->markAllRead($data, $userId);
-                } else {
-                    mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
-                }
+        if ($markRead) {
+            $db->transaction(function (array &$data) use ($notifications, $userId): void {
+                $notifications->markAllRead($data, $userId);
+            });
+        } elseif ($consumeInviteToken !== '') {
+            $db->transaction(function (array &$data) use ($userId, $consumeInviteToken): void {
+                mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
             });
         }
 
@@ -210,18 +205,21 @@ try {
                 ];
             }
         );
-    } elseif ($markRead || $consumeInviteToken !== '') {
+    } elseif ($markRead) {
+        $result = $db->transaction(function (array &$data) use ($notifications, $userId): array {
+            $items = mgw_visible_notifications($data, $notifications, $userId, 30);
+            $notifications->markAllRead($data, $userId);
+            foreach ($items as &$item) $item['read'] = true;
+            unset($item);
+            return ['items' => $items, 'unread_count' => 0];
+        });
+    } elseif ($consumeInviteToken !== '') {
         $result = $db->transaction(function (array &$data) use (
             $notifications,
             $userId,
-            $markRead,
             $consumeInviteToken
         ): array {
-            if ($markRead) {
-                $notifications->markAllRead($data, $userId);
-            } else {
-                mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
-            }
+            mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
             return [
                 'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
                 'unread_count' => mgw_visible_unread_count($data, $userId),

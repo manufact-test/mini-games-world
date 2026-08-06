@@ -35,7 +35,7 @@ $assert(str_contains($owner, "new CustomEvent('mgw:notification-sync'")
     'The exact visible notification card must become a terminal card without duplication.');
 $assert(!str_contains($owner, "if (action === 'decline') toast('Приглашение отклонено.');"),
     'The actor must not receive a self-confirmation toast.');
-$assert(str_contains($shell, 'game-invites-v110.js?v=1130'),
+$assert(str_contains($shell, 'game-invites-v110.js?v=1133'),
     'D2 must publish a fresh immutable canonical owner.');
 
 fwrite(STDOUT, "ProductionMvp14D2TerminalCardInPlaceV1130Test: {$assertions} assertions passed\n");

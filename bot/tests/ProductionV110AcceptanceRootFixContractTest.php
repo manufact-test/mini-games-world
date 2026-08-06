@@ -74,7 +74,7 @@ $assert(!str_contains($targeted, 'confirmLeaveGame')
     'The targeted interaction guard must not become a second surrender owner.');
 
 $assert($count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1132')
+    && str_contains($shell, 'notifications-screen-v110r12.js?v=1133')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && !str_contains($shell, 'NotificationPreflight'),
     'The active graph must contain exactly one current notification owner.');
@@ -117,7 +117,7 @@ $assert(str_contains($runtime, "window.addEventListener('click', guardAndTrackTi
     'Accepted game interaction behavior must remain untouched.');
 
 $assert(str_contains($php, 'production-clean-entry-v110.js?v=1121')
-    && str_contains($php, 'main-v110.js?v=1132')
+    && str_contains($php, 'main-v110.js?v=1133')
     && str_contains($php, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
     && str_contains($launchUrl, "private const ENTRY_PATH = '/app/v110.php?v=1123';")
     && str_contains($welcome, "Active canonical path: '/app/v110.php?v=1123'.")

@@ -73,7 +73,7 @@ $assert(str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123'
     'Shared and direct Telegram buttons must launch the ordinary canonical v110 runtime.');
 
 $assert(substr_count($shell, 'initGameInvites();') === 1
-    && str_contains($shell, 'game-invites-v110.js?v=1130')
+    && str_contains($shell, 'game-invites-v110.js?v=1133')
     && str_contains($shell, 'invite-link-entry-v110r12.js?v=1123'),
     'The accepted staging graph must expose exactly one invitation owner and one link-entry adapter.');
 

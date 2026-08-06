@@ -23,9 +23,9 @@ $d5 = $read('bot/tests/PresenceServiceDocumentLeaseAcceptanceTest.php');
 $e2e = $read('e2e/staging/d2-d3-d5-integration.spec.mjs');
 $config = $read('e2e/playwright.config.mjs');
 
-$assert(str_contains($entry, 'main-v110.js?v=1132')
-    && str_contains($main, 'main-v110-handoff-shell.js?v=1132')
-    && str_contains($shell, 'game-invites-v110.js?v=1130'),
+$assert(str_contains($entry, 'main-v110.js?v=1133')
+    && str_contains($main, 'main-v110-handoff-shell.js?v=1133')
+    && str_contains($shell, 'game-invites-v110.js?v=1133'),
     'The integrated ordinary Start graph must publish the exact D2 canonical owner as v1130.');
 
 $assert(substr_count($shell, 'initGameInvites();') === 1
@@ -56,7 +56,7 @@ $assert(str_contains($invites, "card.closest('#sheet')?.querySelector('[data-not
 $assert(str_contains($d3, 'tg.shareMessage(preparedId')
     && str_contains($d3, "String(errorCode || '') === 'USER_DECLINED'")
     && str_contains($d3, "case 'open_link':")
-    && str_contains($d3, 'game-invites-v110.js?v=1130'),
+    && str_contains($d3, 'game-invites-v110.js?v=1133'),
     'The already-green D3 contract must be carried unchanged except for the accepted v1130 graph.');
 
 $assert(str_contains($d5, 'Two open documents for one account must count as one online player.')

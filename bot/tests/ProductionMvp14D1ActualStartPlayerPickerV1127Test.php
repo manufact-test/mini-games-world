@@ -28,7 +28,7 @@ $assert(
 );
 
 $assert(
-    substr_count($shell, "game-invites-v110.js?v=1130") === 1
+    substr_count($shell, "game-invites-v110.js?v=1133") === 1
         && substr_count($shell, 'initGameInvites();') === 1
         && substr_count($invites, 'async function openPlayerPicker(context, sourceButton = null)') === 1
         && substr_count($invites, 'const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;') === 1,
