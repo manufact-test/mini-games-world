@@ -23,8 +23,8 @@ $d5 = $read('bot/tests/PresenceServiceDocumentLeaseAcceptanceTest.php');
 $e2e = $read('e2e/staging/d2-d3-d5-integration.spec.mjs');
 $config = $read('e2e/playwright.config.mjs');
 
-$assert(str_contains($entry, 'main-v110.js?v=1130')
-    && str_contains($main, 'main-v110-handoff-shell.js?v=1130')
+$assert(str_contains($entry, 'main-v110.js?v=1132')
+    && str_contains($main, 'main-v110-handoff-shell.js?v=1132')
     && str_contains($shell, 'game-invites-v110.js?v=1130'),
     'The integrated ordinary Start graph must publish the exact D2 canonical owner as v1130.');
 

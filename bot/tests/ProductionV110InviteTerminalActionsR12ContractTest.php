@@ -71,7 +71,7 @@ $assert(str_contains($retired, "window.addEventListener('click', handleTerminalA
     && !str_contains($shell, 'invite-terminal-actions-v110r12.js'),
     'The historical file may remain for rollback evidence but must not execute.');
 
-$assert(str_contains($entry, 'main-v110.js?v=1130')
+$assert(str_contains($entry, 'main-v110.js?v=1132')
     && str_contains($shell, 'game-invites-v110.js?v=1130'),
     'The D2 correction must be published through the v1130 ordinary Start graph.');
 

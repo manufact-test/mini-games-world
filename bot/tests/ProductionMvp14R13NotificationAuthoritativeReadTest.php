@@ -54,7 +54,7 @@ $published = str_replace(
     [
         './assets/js/production-clean-entry-v110.js?v=1120',
         './assets/js/main-v110.js?v=1124',
-        'data-hotfix-build="v110-mvp14r12-invite-notification-presence-stability"',
+        'data-hotfix-build="v110-mvp14r12-notification-publication-v1132"',
     ],
     $index
 );
