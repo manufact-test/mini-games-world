@@ -763,7 +763,7 @@ function notificationIcon(tone, type){
 
 function notificationMessage(item){
   let message = String(item?.message || '').trim();
-  if (!message) return '';
+  if (!message) return terminalNotificationFallback(item);
   const technical = [
     /\s*Баланс уже обновлён\.?/giu,
     /\s*Баланс не изменён\.?/giu,
@@ -776,6 +776,17 @@ function notificationMessage(item){
   ];
   for (const pattern of technical) message = message.replace(pattern, ' ');
   return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/\.{2,}/g, '.').trim();
+}
+
+function terminalNotificationFallback(item){
+  const status = String(item?.invite_status || '');
+  if (status === 'cancelled' || status === 'canceled') {
+    return item?.invite_is_owner
+      ? 'Вы отменили своё приглашение.'
+      : 'Вы отменили участие в приглашении.';
+  }
+  if (status === 'declined') return 'Вы отклонили приглашение.';
+  return '';
 }
 
 function formatDate(value){
