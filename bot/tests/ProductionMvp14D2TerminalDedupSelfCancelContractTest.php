@@ -49,8 +49,9 @@ $assert(
         && str_contains($endpoint, 'foreach ($data[\'notifications\'] as &$notification)')
         && str_contains($endpoint, 'if (empty($notification[\'hidden_at\'])) $notification[\'hidden_at\'] = $now;')
         && str_contains($endpoint, '$consumeInviteToken = trim((string)($payload[\'consumeInviteToken\'] ?? \'\'));')
-        && str_contains($endpoint, '$markRead || $consumeInviteToken !=='),
-    'The server must hide only the matching invite notification for the authenticated actor.'
+        && str_contains($endpoint, '} elseif ($consumeInviteToken !== \'\') {')
+        && str_contains($endpoint, 'mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);'),
+    'The server must hide only the matching invite notification for the authenticated actor through a branch separate from markRead.'
 );
 $assert(
     str_contains($shell, './screens/notifications-screen-v110r12.js?v=1133')
