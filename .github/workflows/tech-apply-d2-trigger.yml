@@ -3,14 +3,14 @@ name: Tech apply D2 trigger
 on:
   pull_request:
     branches:
-      - main
+      - agent/mvp14-d2-tech-base
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.head_ref == 'agent/mvp14-d2-terminal-dedup-self-cancel-home'
+    if: github.head_ref == 'agent/mvp14-d2-tech-run'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
