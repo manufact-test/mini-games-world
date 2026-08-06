@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+// Exact D2 terminal-surface ownership and targeted notification-consume contract.
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
