@@ -24,8 +24,6 @@ $assert(str_contains($scenario, ".toHaveText('Вы отменили своё п�
     'The same terminal card must expose explanatory owner copy.');
 $assert(substr_count($scenario, 'await expect(card).toHaveCount(1);') >= 2,
     'The exact notification card must remain singular before and after cancellation.');
-$assert(str_contains($scenario, "card.locator('[data-invite-action]')")->toHaveCount(0) === false,
-    'String contract placeholder must never execute as JavaScript.');
 $assert(str_contains($scenario, "await expect(card.locator('[data-invite-action]')).toHaveCount(0);"),
     'Terminal actions must disappear from the retained card.');
 $assert(str_contains($scenario, "playerA.page.locator('#notificationToast')"),
