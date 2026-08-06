@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14r12-terminal-dedup-v1133';
+window.__MGW_BUILD__ = 'v110-mvp14r12-recipient-terminal-v1134';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -17,7 +17,7 @@ import { renderRoomCard, initHomeScreen, setRoom } from './screens/home-screen.j
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1133';
+import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1134';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
