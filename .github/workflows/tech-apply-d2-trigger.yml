@@ -1,4 +1,4 @@
-name: Tech apply D2 terminal dedup clean
+name: Tech harden D2 terminal dedup
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.head_ref == 'agent/mvp14-d2-tech-run-v2'
+    if: github.head_ref == 'agent/mvp14-d2-tech-followup'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout patch tool
@@ -28,11 +28,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: true
 
-      - name: Apply focused product and acceptance changes
+      - name: Apply focused race hardening
         working-directory: target
-        run: python3 ../tech/.github/scripts/run_d2_terminal_dedup.py
+        run: python3 ../tech/.github/scripts/apply_d2_terminal_dedup_followup.py
 
-      - name: Commit clean focused branch
+      - name: Commit focused follow-up
         working-directory: target
         shell: bash
         run: |
@@ -42,5 +42,5 @@ jobs:
           git add -A
           git diff --cached --check
           git diff --cached --quiet && { echo 'No changes produced'; exit 1; }
-          git commit -m "MVP-14 D2: remove duplicate terminal hints and return self-cancel home"
+          git commit -m "MVP-14 D2: harden targeted terminal notification consume"
           git push origin HEAD:agent/mvp14-d2-terminal-dedup-self-cancel-home
