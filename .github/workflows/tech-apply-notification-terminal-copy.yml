@@ -1,0 +1,108 @@
+name: TECH ONLY — apply notification terminal copy
+
+on:
+  push:
+    branches:
+      - agent/mvp14-notification-terminal-copy
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-notification-terminal-copy
+          fetch-depth: 1
+
+      - name: Apply exact canonical notification copy change
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/assets/js/screens/notifications-screen-v110r12.js')
+          text = path.read_text(encoding='utf-8')
+          old = """function notificationMessage(item){
+            let message = String(item?.message || '').trim();
+            if (!message) return '';
+            const technical = [
+          """
+          new = """function notificationMessage(item){
+            let message = String(item?.message || '').trim();
+            if (!message) return terminalNotificationFallback(item);
+            const technical = [
+          """
+          if text.count(old) != 1:
+              raise SystemExit('notificationMessage anchor mismatch')
+          text = text.replace(old, new, 1)
+
+          anchor = """function formatDate(value){
+          """
+          helper = """function terminalNotificationFallback(item){
+            const status = String(item?.invite_status || '');
+            if (status === 'cancelled' || status === 'canceled') {
+              return item?.invite_is_owner
+                ? 'Вы отменили своё приглашение.'
+                : 'Вы отменили участие в приглашении.';
+            }
+            if (status === 'declined') return 'Вы отклонили приглашение.';
+            return '';
+          }
+
+          function formatDate(value){
+          """
+          if text.count(anchor) != 1:
+              raise SystemExit('formatDate anchor mismatch')
+          text = text.replace(anchor, helper, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          cat > bot/tests/ProductionMvp14NotificationTerminalCopyContractTest.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+
+          $root = dirname(__DIR__, 2);
+          $source = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v110r12.js');
+          if (!is_string($source)) {
+              throw new RuntimeException('Cannot read canonical notification screen.');
+          }
+
+          $assertions = 0;
+          $assert = static function (bool $condition, string $message) use (&$assertions): void {
+              $assertions++;
+              if (!$condition) throw new RuntimeException($message);
+          };
+
+          $assert(str_contains($source, "if (!message) return terminalNotificationFallback(item);"),
+              'Empty terminal notification copy must be completed by the canonical renderer.');
+          $assert(str_contains($source, "? 'Вы отменили своё приглашение.'"),
+              'Owner cancellation must explain that the user cancelled their own invitation.');
+          $assert(str_contains($source, ": 'Вы отменили участие в приглашении.'"),
+              'Invitee cancellation must explain that the user cancelled participation.');
+          $assert(str_contains($source, "if (status === 'declined') return 'Вы отклонили приглашение.';"),
+              'Decline terminal cards must retain explanatory copy.');
+          $assert(!str_contains($source, "message:'Вы отменили своё приглашение.'"),
+              'The copy must stay in the existing renderer rather than creating a second event owner.');
+
+          fwrite(STDOUT, 'ProductionMvp14NotificationTerminalCopyContractTest: '
+              . $assertions . " assertions passed\n");
+          PHP
+
+          rm .github/workflows/tech-apply-notification-terminal-copy.yml
+
+      - name: Commit exact task result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/assets/js/screens/notifications-screen-v110r12.js \
+            bot/tests/ProductionMvp14NotificationTerminalCopyContractTest.php \
+            .github/workflows/tech-apply-notification-terminal-copy.yml
+          git commit -m 'MVP-14: explain locally cancelled notification cards'
+          git push origin HEAD:agent/mvp14-notification-terminal-copy
