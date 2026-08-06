@@ -124,6 +124,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       .toHaveText('Приглашение принято');
 
     playerA.diagnostics.allowInviteSyncAbort = true;
+    playerB.diagnostics.allowInviteSyncAbort = true;
     let started;
     try {
       started = await clickInviteAction(playerA.page, 'start', token);
@@ -135,6 +136,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       await expect(playerB.page.locator('#screen-game')).toHaveClass(/active/);
     } finally {
       playerA.diagnostics.allowInviteSyncAbort = false;
+      playerB.diagnostics.allowInviteSyncAbort = false;
     }
 
     const gameA = await expectPlayerRequest(
@@ -156,6 +158,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     expect(counterA.count('start')).toBe(1);
     expect(counterB.count('open_link')).toBe(1);
     expect(playerA.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
+    expect(playerB.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
 
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
@@ -174,7 +177,10 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
         preparedMessageSource: preparedHarness.evidence.serverPreparedIds[0]
           ? 'server'
           : 'staging_harness',
-        controlledInviteSyncAborts: playerA.diagnostics.ignoredInviteSyncAborts,
+        controlledInviteSyncAborts: {
+          playerA: playerA.diagnostics.ignoredInviteSyncAborts,
+          playerB: playerB.diagnostics.ignoredInviteSyncAborts,
+        },
         createLinkDraftRequests: counterA.count('create_link_draft'),
         confirmSharedRequests: counterA.count('confirm_shared'),
         openLinkRequests: counterB.count('open_link'),
