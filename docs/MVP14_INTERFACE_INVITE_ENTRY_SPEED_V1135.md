@@ -9,3 +9,9 @@ Changes:
 - the user-awaited warm share request uses high browser priority;
 - canonical invite owner is published as v1135;
 - no cache, second owner, retry, optimistic player list, global fetch wrapper, or additional endpoint was added.
+
+Validation boundary:
+
+- focused contract: `ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php`;
+- accepted ready-first player-picker contract remains active;
+- exact-head CI and DB/selector checks are required before integration.
