@@ -29,6 +29,10 @@ $sharedOwner = $sharedStart === false || $sharedEnd === false
     ? ''
     : substr($client, $sharedStart, $sharedEnd - $sharedStart);
 
+$conditionalNote = <<<'JS'
+${message ? `<div class="small-note invite-status-note">${escapeHtml(message)}</div>` : ''}
+JS;
+
 $assert(
     !str_contains($client, 'Игрок получил приглашение в приложении и сообщение от бота.')
         && !str_contains($client, 'Игрок получил приглашение в приложении.'),
@@ -45,7 +49,7 @@ $assert(
 $assert(
     $waitingOwner !== ''
         && str_contains($waitingOwner, "function showOwnerWaiting(invite, message = '')")
-        && str_contains($waitingOwner, '${message ? `<div class="small-note invite-status-note">${escapeHtml(message)}</div>` : \'\'}'),
+        && str_contains($waitingOwner, $conditionalNote),
     'The waiting note must render only for an explicitly supplied contextual message.'
 );
 $assert(
