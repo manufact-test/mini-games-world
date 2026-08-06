@@ -136,9 +136,10 @@ function mgw_visible_unread_count(array $data, string $userId): int
 function mgw_consume_invite_notifications(array &$data, string $userId, string $token): void
 {
     $token = trim($token);
-    if ($token === '') return;
+    if (!preg_match('/^[A-Za-z0-9_-]{12,80}$/', $token)) return;
+    if (!isset($data['notifications']) || !is_array($data['notifications'])) return;
     $now = now_iso();
-    foreach ($data['notifications'] ?? [] as &$notification) {
+    foreach ($data['notifications'] as &$notification) {
         if (!is_array($notification)) continue;
         if ((string)($notification['user_id'] ?? '') !== $userId) continue;
         if ((string)($notification['invite_token'] ?? '') !== $token) continue;

@@ -23,6 +23,7 @@ let notificationReadGeneration = 0;
 let unreadHint = 0;
 let items = new Map();
 let localAuthority = new Map();
+let consumedInviteTokens = new Set();
 let announcedIds = loadAnnouncedIds();
 let cacheHydrated = false;
 let toastItem = null;
@@ -73,6 +74,8 @@ export function initNotificationsScreen(){
     const announce = event.detail?.announce !== false;
     if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);
     if (!item.id) return;
+    const inviteToken = String(item.invite_token || '');
+    if (inviteToken && consumedInviteTokens.has(inviteToken)) return;
 
     rememberLocalAuthority(item);
     upsert(item);
@@ -374,7 +377,8 @@ function removeInviteNotification(detail){
 
   announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
   persistItems();
-  const exactUnread = Number(detail.unreadCount);
+  const hasExactUnread = detail.unreadCount !== null && detail.unreadCount !== undefined;
+  const exactUnread = hasExactUnread ? Number(detail.unreadCount) : Number.NaN;
   setUnreadCount(Number.isFinite(exactUnread) ? exactUnread : Math.max(0, unreadHint - 1));
 
   if (isNotificationsSheetOpen()) {
@@ -387,11 +391,18 @@ async function consumeInviteNotification(detail){
   const token = String(detail.inviteToken || detail.token || '');
   if (!token) return;
 
+  consumedInviteTokens.add(token);
+  while (consumedInviteTokens.size > MAX_ANNOUNCED_IDS) {
+    consumedInviteTokens.delete(consumedInviteTokens.values().next().value);
+  }
   removeInviteNotification(detail);
   try {
     const result = await rawNotifications(false, { consumeInviteToken:token });
     const unreadCount = Number(result?.unread_count);
-    if (Number.isFinite(unreadCount)) setUnreadCount(Math.max(0, unreadCount));
+    removeInviteNotification({
+      inviteToken:token,
+      unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : null,
+    });
   } catch (error) {
     // The local surface is already consumed; a later authoritative refresh retries parity.
   }
