@@ -236,7 +236,6 @@ function openInviteSetup(gameType, preserved = null){
     scheduleWarmShareDraft(currentContext());
   }));
   document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
-    cancelWarmShareDraft();
     openPlayerPicker(currentContext(), event.currentTarget);
   });
   document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
@@ -311,7 +310,6 @@ function playerCard(item){
 
 async function createDirectInvite(context, inviteeId, button){
   if (!inviteeId || button.disabled) return;
-  cancelWarmShareDraft();
   haptic('light');
   const opponentName = String(button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
 
@@ -327,6 +325,7 @@ async function createDirectInvite(context, inviteeId, button){
     showOwnerWaiting(currentInvite, result.telegram_sent ? 'Игрок получил приглашение в приложении и сообщение от бота.' : 'Игрок получил приглашение в приложении.');
     dispatchNotificationCount(result.unread_count);
     scheduleSync(0);
+    window.setTimeout(cancelWarmShareDraft, 180);
   } catch (error) {
     toast(error.message || 'Не удалось отправить приглашение.');
     await openPlayerPicker(context);
@@ -1231,7 +1230,7 @@ async function postJson(url, payload, options = {}){
       ...payload,
     }),
     signal:options.signal,
-    priority:options.prefetch ? 'low' : 'high',
+    priority:'high',
     cache:'no-store',
     mgwPrefetch:Boolean(options.prefetch),
   });
