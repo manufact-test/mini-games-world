@@ -70,9 +70,12 @@ $assert(str_contains($context, 'function isExpectedInviteSyncAbort(request)')
     && str_contains($context, 'report.allowInviteSyncAbort && isExpectedInviteSyncAbort(request)')
     && str_contains($context, 'report.ignoredInviteSyncAborts += 1;')
     && str_contains($spec, 'playerA.diagnostics.allowInviteSyncAbort = true;')
+    && str_contains($spec, 'playerB.diagnostics.allowInviteSyncAbort = true;')
     && str_contains($spec, 'playerA.diagnostics.allowInviteSyncAbort = false;')
-    && str_contains($spec, 'expect(playerA.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1)'),
-    'Only one invite sync abort inside the bounded start-to-active window may be ignored.');
+    && str_contains($spec, 'playerB.diagnostics.allowInviteSyncAbort = false;')
+    && str_contains($spec, 'expect(playerA.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1)')
+    && str_contains($spec, 'expect(playerB.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1)'),
+    'At most one invite sync abort per participant may be ignored inside the shared start-to-active window.');
 
 $assert(str_contains($spec, "expect(String(gameA?.game?.id || '')).toBe(gameId)")
     && str_contains($spec, "expect(String(gameB?.game?.id || '')).toBe(gameId)")
