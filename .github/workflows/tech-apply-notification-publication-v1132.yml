@@ -1,0 +1,96 @@
+name: TECH ONLY — apply notification publication v1132
+
+on:
+  push:
+    branches:
+      - agent/mvp14-notification-publication-v1132
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-notification-publication-v1132
+          fetch-depth: 1
+
+      - name: Publish exact active notification graph
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          shell = Path('app/assets/js/main-v110-handoff-shell.js')
+          text = shell.read_text(encoding='utf-8')
+          replacements = {
+              "window.__MGW_BUILD__ = 'v110-mvp14r12-invite-notification-presence-stability';":
+                  "window.__MGW_BUILD__ = 'v110-mvp14r12-notification-publication-v1132';",
+              "./screens/notifications-screen-v110r12.js?v=1126":
+                  "./screens/notifications-screen-v110r12.js?v=1132",
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'publication anchor mismatch: {old}')
+              text = text.replace(old, new, 1)
+          shell.write_text(text, encoding='utf-8')
+          PY
+
+          cat > bot/tests/ProductionMvp14NotificationPublicationV1132Test.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+
+          $root = dirname(__DIR__, 2);
+          $rendered = shell_exec('php ' . escapeshellarg($root . '/app/v110.php'));
+          $main = file_get_contents($root . '/app/assets/js/main-v110.js');
+          $shell = file_get_contents($root . '/app/assets/js/main-v110-handoff-shell.js');
+          $screen = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v110r12.js');
+          if (!is_string($rendered) || !is_string($main) || !is_string($shell) || !is_string($screen)) {
+              throw new RuntimeException('Cannot read notification publication graph.');
+          }
+
+          $assertions = 0;
+          $assert = static function (bool $condition, string $message) use (&$assertions): void {
+              $assertions++;
+              if (!$condition) throw new RuntimeException($message);
+          };
+
+          $assert(str_contains($rendered, './assets/js/main-v110.js?v=1132'),
+              'Rendered ordinary v110 entry must publish fresh main v1132.');
+          $assert(!str_contains($rendered, './assets/js/main-v110.js?v=1130'),
+              'Rendered ordinary v110 entry must not retain the stale main identity.');
+          $assert(str_contains($main, "./main-v110-handoff-shell.js?v=1132"),
+              'Fresh main must publish fresh handoff shell v1132.');
+          $assert(!str_contains($main, "./main-v110-handoff-shell.js?v=1130"),
+              'Fresh main must not retain the stale shell identity.');
+          $assert(str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1132"),
+              'Fresh shell must publish the corrected notification owner under v1132.');
+          $assert(!str_contains($shell, "./screens/notifications-screen-v110r12.js?v=1126"),
+              'Fresh shell must not retain the CDN-stale notification identity.');
+          $assert(str_contains($screen, 'let notificationReadGeneration = 0;')
+              && str_contains($screen, "? 'Вы отменили своё приглашение.'"),
+              'Published notification owner must contain both accepted corrections.');
+          $assert(str_contains($rendered, 'v110-mvp14r12-notification-publication-v1132'),
+              'Rendered build marker must expose the fresh notification publication.');
+
+          fwrite(STDOUT, 'ProductionMvp14NotificationPublicationV1132Test: '
+              . $assertions . " assertions passed\n");
+          PHP
+
+          rm .github/workflows/tech-apply-notification-publication-v1132.yml
+
+      - name: Commit exact publication result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/assets/js/main-v110-handoff-shell.js \
+            bot/tests/ProductionMvp14NotificationPublicationV1132Test.php \
+            .github/workflows/tech-apply-notification-publication-v1132.yml
+          git commit -m 'MVP-14 notifications: complete fresh v1132 publication graph'
+          git push origin HEAD:agent/mvp14-notification-publication-v1132
