@@ -1,0 +1,88 @@
+name: TECH ONLY — align notification publication v1132 contracts
+
+on:
+  push:
+    branches:
+      - agent/mvp14-notification-publication-v1132
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-notification-publication-v1132
+          fetch-depth: 1
+
+      - name: Align only active outer publication expectations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          roots = [Path('bot/tests'), Path('e2e/staging')]
+          replacements = {
+              'main-v110.js?v=1130': 'main-v110.js?v=1132',
+              'main-v110-handoff-shell.js?v=1130': 'main-v110-handoff-shell.js?v=1132',
+              'notifications-screen-v110r12.js?v=1126': 'notifications-screen-v110r12.js?v=1132',
+              "url.searchParams.get('v') === '1130'": "url.searchParams.get('v') === '1132'",
+              'v110-mvp14r12-invite-notification-presence-stability':
+                  'v110-mvp14r12-notification-publication-v1132',
+          }
+
+          changed = []
+          counts = {key: 0 for key in replacements}
+          for root in roots:
+              for path in root.rglob('*'):
+                  if path.suffix not in {'.php', '.mjs', '.js'}:
+                      continue
+                  text = path.read_text(encoding='utf-8')
+                  original = text
+                  for old, new in replacements.items():
+                      count = text.count(old)
+                      if count:
+                          counts[old] += count
+                          text = text.replace(old, new)
+                  if text != original:
+                      path.write_text(text, encoding='utf-8')
+                      changed.append(str(path))
+
+          required = [
+              'main-v110.js?v=1130',
+              'main-v110-handoff-shell.js?v=1130',
+              'notifications-screen-v110r12.js?v=1126',
+          ]
+          for pattern in required:
+              if counts[pattern] < 1:
+                  raise SystemExit(f'Expected active publication contract pattern was absent: {pattern}')
+
+          # Preserve the accepted inner invitation owner identity.
+          shell = Path('app/assets/js/main-v110-handoff-shell.js').read_text(encoding='utf-8')
+          if "./games/game-invites-v110.js?v=1130" not in shell:
+              raise SystemExit('Inner canonical invitation owner v1130 must remain unchanged')
+
+          print('Aligned files:')
+          print('\n'.join(changed))
+          print('Replacement counts:', counts)
+          PY
+
+          rm -f \
+            .github/workflows/tech-align-notification-publication-v1132-contracts.yml \
+            .github/notification-publication-v1132-contract-trigger.txt
+
+      - name: Commit aligned contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot/tests e2e/staging \
+            .github/workflows/tech-align-notification-publication-v1132-contracts.yml \
+            .github/notification-publication-v1132-contract-trigger.txt
+          git commit -m 'MVP-14 notifications: align accepted contracts with v1132 publication'
+          git push origin HEAD:agent/mvp14-notification-publication-v1132
