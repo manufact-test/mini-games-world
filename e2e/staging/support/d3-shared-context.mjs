@@ -174,7 +174,7 @@ export function collectDiagnostics(page, slot) {
 export async function openPlayerPage(context, slot, appRoute = APP_ROUTE, beforeOpen = null) {
   const page = await context.newPage();
   const diagnostics = collectDiagnostics(page, slot);
-  if (typeof beforeOpen === 'function') await beforeOpen(page);
+  if (typeof beforeOpen === 'function') await beforeOpen(page, diagnostics);
   await openOrdinaryStartReady(page, {
     appRoute,
     apiRoute: API_ROUTE,
