@@ -19,6 +19,7 @@ let appReady = false;
 let baselineLoaded = false;
 let pollTimer = null;
 let refreshPromise = null;
+let notificationReadGeneration = 0;
 let unreadHint = 0;
 let items = new Map();
 let localAuthority = new Map();
@@ -206,8 +207,11 @@ async function waitForFirstSheetPaint(generation){
 }
 
 async function refreshOpenSheet(generation){
+  const read = beginNotificationRead();
   try {
-    const result = await rawNotifications(false);
+    const result = await read.promise;
+    if (!isLatestNotificationRead(read.generation)) return;
+
     const serverItems = normalizeItems(result?.items);
     mergeServerItems(serverItems);
     baselineLoaded = true;
@@ -224,6 +228,7 @@ async function refreshOpenSheet(generation){
     setUnreadCount(0);
     void rawNotifications(true).catch(() => null);
   } catch (error) {
+    if (!isLatestNotificationRead(read.generation)) return;
     if (isCurrentSheet(generation) && !visibleSheetItems().length) renderError();
   }
 }
@@ -232,8 +237,11 @@ async function refreshNotifications({ announce = false } = {}){
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
+    const read = beginNotificationRead();
     try {
-      const result = await rawNotifications(false);
+      const result = await read.promise;
+      if (!isLatestNotificationRead(read.generation)) return;
+
       const serverItems = normalizeItems(result?.items);
       mergeServerItems(serverItems);
       const unreadCount = Number(result?.unread_count || 0);
@@ -567,6 +575,18 @@ function dismissToast(){
   element.style.opacity = '';
 }
 
+function beginNotificationRead(){
+  const generation = ++notificationReadGeneration;
+  return {
+    generation,
+    promise:rawNotifications(false),
+  };
+}
+
+function isLatestNotificationRead(generation){
+  return Number(generation) === notificationReadGeneration;
+}
+
 async function rawNotifications(markRead){
   const speed = window.__MGW_V101_SPEED__;
   const fetcher = typeof speed?.rawFetch === 'function' ? speed.rawFetch : window.fetch.bind(window);
@@ -763,7 +783,7 @@ function notificationIcon(tone, type){
 
 function notificationMessage(item){
   let message = String(item?.message || '').trim();
-  if (!message) return '';
+  if (!message) return terminalNotificationFallback(item);
   const technical = [
     /\s*Баланс уже обновлён\.?/giu,
     /\s*Баланс не изменён\.?/giu,
@@ -776,6 +796,17 @@ function notificationMessage(item){
   ];
   for (const pattern of technical) message = message.replace(pattern, ' ');
   return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/\.{2,}/g, '.').trim();
+}
+
+function terminalNotificationFallback(item){
+  const status = String(item?.invite_status || '');
+  if (status === 'cancelled' || status === 'canceled') {
+    return item?.invite_is_owner
+      ? 'Вы отменили своё приглашение.'
+      : 'Вы отменили участие в приглашении.';
+  }
+  if (status === 'declined') return 'Вы отклонили приглашение.';
+  return '';
 }
 
 function formatDate(value){
