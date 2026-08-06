@@ -30,7 +30,7 @@ jobs:
 
       - name: Apply focused product and acceptance changes
         working-directory: target
-        run: python3 ../tech/.github/scripts/apply_d2_terminal_dedup.py
+        run: python3 ../tech/.github/scripts/run_d2_terminal_dedup.py
 
       - name: Commit clean focused branch
         working-directory: target
