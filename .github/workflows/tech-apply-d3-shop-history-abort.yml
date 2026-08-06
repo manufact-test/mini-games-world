@@ -1,0 +1,213 @@
+name: TECH ONLY — apply D3 shop history prefetch abort contract
+
+on:
+  push:
+    branches:
+      - agent/mvp14-d3-shop-history-prefetch-abort
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-d3-shop-history-prefetch-abort
+          fetch-depth: 1
+
+      - name: Apply exact bounded D3 diagnostic
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          context = Path('e2e/staging/support/d3-shared-context.mjs')
+          text = context.read_text(encoding='utf-8')
+          old = """function isExpectedBackgroundProfileAbort(request) {
+            return request.url() === API_ROUTE
+              && request.method() === 'POST'
+              && requestAction(request) === 'profile'
+              && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+          }
+
+          export function collectDiagnostics(page, slot) {
+          """
+          new = """function isExpectedBackgroundProfileAbort(request) {
+            return request.url() === API_ROUTE
+              && request.method() === 'POST'
+              && requestAction(request) === 'profile'
+              && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+          }
+
+          function isExpectedBackgroundShopHistoryAbort(request) {
+            return request.url().startsWith(STAGING_ORIGIN)
+              && request.method() === 'POST'
+              && new URL(request.url()).pathname === '/bot/shop-history.php'
+              && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+          }
+
+          export function collectDiagnostics(page, slot) {
+          """
+          if text.count(old) != 1:
+              raise SystemExit('shop-history helper anchor mismatch')
+          text = text.replace(old, new, 1)
+
+          old = """    allowBackgroundProfileAbort: false,
+              ignoredBackgroundProfileAborts: 0,
+            };
+          """
+          new = """    allowBackgroundProfileAbort: false,
+              ignoredBackgroundProfileAborts: 0,
+              allowBackgroundShopHistoryAbort: false,
+              ignoredBackgroundShopHistoryAborts: 0,
+            };
+          """
+          if text.count(old) != 1:
+              raise SystemExit('shop-history report anchor mismatch')
+          text = text.replace(old, new, 1)
+
+          old = """    if (report.allowBackgroundProfileAbort && isExpectedBackgroundProfileAbort(request)) {
+              report.ignoredBackgroundProfileAborts += 1;
+              return;
+            }
+            report.failedRequests.push({
+          """
+          new = """    if (report.allowBackgroundProfileAbort && isExpectedBackgroundProfileAbort(request)) {
+              report.ignoredBackgroundProfileAborts += 1;
+              return;
+            }
+            if (report.allowBackgroundShopHistoryAbort && isExpectedBackgroundShopHistoryAbort(request)) {
+              report.ignoredBackgroundShopHistoryAborts += 1;
+              return;
+            }
+            report.failedRequests.push({
+          """
+          if text.count(old) != 1:
+              raise SystemExit('shop-history classifier anchor mismatch')
+          text = text.replace(old, new, 1)
+          context.write_text(text, encoding='utf-8')
+
+          scenario = Path('e2e/staging/d3-shared-invite.spec.mjs')
+          text = scenario.read_text(encoding='utf-8')
+          text = text.replace(
+              "diagnostics.allowBackgroundProfileAbort = true;",
+              "diagnostics.allowBackgroundProfileAbort = true;\n        diagnostics.allowBackgroundShopHistoryAbort = true;",
+          )
+          if text.count('diagnostics.allowBackgroundShopHistoryAbort = true;') != 2:
+              raise SystemExit('both players must arm shop-history classification')
+
+          old = """    playerA.diagnostics.allowBackgroundProfileAbort = false;
+            playerB.diagnostics.allowBackgroundProfileAbort = false;
+
+            expect(String(gameA?.game?.id || '')).toBe(gameId);
+          """
+          new = """    playerA.diagnostics.allowBackgroundProfileAbort = false;
+            playerB.diagnostics.allowBackgroundProfileAbort = false;
+            playerA.diagnostics.allowBackgroundShopHistoryAbort = false;
+            playerB.diagnostics.allowBackgroundShopHistoryAbort = false;
+
+            expect(String(gameA?.game?.id || '')).toBe(gameId);
+          """
+          if text.count(old) != 1:
+              raise SystemExit('shop-history lifecycle close anchor mismatch')
+          text = text.replace(old, new, 1)
+
+          old = """    expect(playerA.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
+            expect(playerB.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
+
+            expect(playerA.diagnostics.pageErrors).toEqual([]);
+          """
+          new = """    expect(playerA.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
+            expect(playerB.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
+            expect(playerA.diagnostics.ignoredBackgroundShopHistoryAborts).toBeLessThanOrEqual(1);
+            expect(playerB.diagnostics.ignoredBackgroundShopHistoryAborts).toBeLessThanOrEqual(1);
+
+            expect(playerA.diagnostics.pageErrors).toEqual([]);
+          """
+          if text.count(old) != 1:
+              raise SystemExit('shop-history count anchor mismatch')
+          text = text.replace(old, new, 1)
+
+          old = """        controlledBackgroundProfileAborts: {
+                  playerA: playerA.diagnostics.ignoredBackgroundProfileAborts,
+                  playerB: playerB.diagnostics.ignoredBackgroundProfileAborts,
+                },
+                createLinkDraftRequests: counterA.count('create_link_draft'),
+          """
+          new = """        controlledBackgroundProfileAborts: {
+                  playerA: playerA.diagnostics.ignoredBackgroundProfileAborts,
+                  playerB: playerB.diagnostics.ignoredBackgroundProfileAborts,
+                },
+                controlledBackgroundShopHistoryAborts: {
+                  playerA: playerA.diagnostics.ignoredBackgroundShopHistoryAborts,
+                  playerB: playerB.diagnostics.ignoredBackgroundShopHistoryAborts,
+                },
+                createLinkDraftRequests: counterA.count('create_link_draft'),
+          """
+          if text.count(old) != 1:
+              raise SystemExit('shop-history report attachment anchor mismatch')
+          text = text.replace(old, new, 1)
+          scenario.write_text(text, encoding='utf-8')
+          PY
+
+          cat > bot/tests/ProductionMvp14D3ShopHistoryPrefetchAbortContractTest.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+
+          $root = dirname(__DIR__, 2);
+          $speed = file_get_contents($root . '/app/assets/js/production-v101-speed-runtime-v102.js');
+          $context = file_get_contents($root . '/e2e/staging/support/d3-shared-context.mjs');
+          $scenario = file_get_contents($root . '/e2e/staging/d3-shared-invite.spec.mjs');
+          if (!is_string($speed) || !is_string($context) || !is_string($scenario)) {
+              throw new RuntimeException('Cannot read D3 shop-history prefetch contract sources.');
+          }
+
+          $assertions = 0;
+          $assert = static function (bool $condition, string $message) use (&$assertions): void {
+              $assertions++;
+              if (!$condition) throw new RuntimeException($message);
+          };
+
+          $assert(str_contains($speed, 'function prefetchShopOrders()')
+              && str_contains($speed, "prefetchJson('/bot/shop-history.php', {})")
+              && str_contains($speed, 'mgwPrefetch:true'),
+              'Shop history must remain an explicit passive prefetch in the canonical speed runtime.');
+          $assert(str_contains($context, "new URL(request.url()).pathname === '/bot/shop-history.php'")
+              && str_contains($context, "request.method() === 'POST'")
+              && str_contains($context, "request.failure()?.errorText || '') === 'net::ERR_ABORTED'"),
+              'The classifier must match only the exact aborted POST shop-history request.');
+          $assert(str_contains($context, 'report.allowBackgroundShopHistoryAbort && isExpectedBackgroundShopHistoryAbort(request)'),
+              'The exact request must remain fatal outside the explicit D3 lifecycle.');
+          $assert(substr_count($scenario, 'diagnostics.allowBackgroundShopHistoryAbort = true;') === 2,
+              'Both D3 players must arm the exact classifier before navigation.');
+          $assert(substr_count($scenario, 'ignoredBackgroundShopHistoryAborts).toBeLessThanOrEqual(1)') === 2,
+              'At most one controlled shop-history abort may be exposed per player.');
+          $assert(str_contains($scenario, 'playerA.diagnostics.allowBackgroundShopHistoryAbort = false;')
+              && str_contains($scenario, 'playerB.diagnostics.allowBackgroundShopHistoryAbort = false;'),
+              'The classification must close after both players prove the same active game.');
+          $assert(str_contains($scenario, 'expect(playerA.diagnostics.failedRequests).toEqual([])')
+              && str_contains($scenario, 'expect(playerB.diagnostics.failedRequests).toEqual([])'),
+              'All other failed requests must remain fatal.');
+
+          fwrite(STDOUT, 'ProductionMvp14D3ShopHistoryPrefetchAbortContractTest: '
+              . $assertions . " assertions passed\n");
+          PHP
+
+          rm .github/workflows/tech-apply-d3-shop-history-abort.yml
+
+      - name: Commit exact test-only result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add e2e/staging/support/d3-shared-context.mjs \
+            e2e/staging/d3-shared-invite.spec.mjs \
+            bot/tests/ProductionMvp14D3ShopHistoryPrefetchAbortContractTest.php \
+            .github/workflows/tech-apply-d3-shop-history-abort.yml
+          git commit -m 'MVP-14 D3: classify controlled shop-history prefetch abort'
+          git push origin HEAD:agent/mvp14-d3-shop-history-prefetch-abort
