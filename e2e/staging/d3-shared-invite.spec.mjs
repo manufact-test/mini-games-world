@@ -47,6 +47,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       APP_ROUTE,
       (_page, diagnostics) => {
         diagnostics.allowBackgroundProfileAbort = true;
+        diagnostics.allowBackgroundShopHistoryAbort = true;
       },
     );
     await cleanupPlayer(playerA.page);
@@ -117,6 +118,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       `${APP_ROUTE}&invite=${encodeURIComponent(token)}`,
       (page, diagnostics) => {
         diagnostics.allowBackgroundProfileAbort = true;
+        diagnostics.allowBackgroundShopHistoryAbort = true;
         counterB = createActionCounter(page);
       },
     );
@@ -163,6 +165,8 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     );
     playerA.diagnostics.allowBackgroundProfileAbort = false;
     playerB.diagnostics.allowBackgroundProfileAbort = false;
+    playerA.diagnostics.allowBackgroundShopHistoryAbort = false;
+    playerB.diagnostics.allowBackgroundShopHistoryAbort = false;
 
     expect(String(gameA?.game?.id || '')).toBe(gameId);
     expect(String(gameB?.game?.id || '')).toBe(gameId);
@@ -174,6 +178,8 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     expect(playerB.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
     expect(playerB.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
+    expect(playerA.diagnostics.ignoredBackgroundShopHistoryAborts).toBeLessThanOrEqual(1);
+    expect(playerB.diagnostics.ignoredBackgroundShopHistoryAborts).toBeLessThanOrEqual(1);
 
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
@@ -199,6 +205,10 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
         controlledBackgroundProfileAborts: {
           playerA: playerA.diagnostics.ignoredBackgroundProfileAborts,
           playerB: playerB.diagnostics.ignoredBackgroundProfileAborts,
+        },
+        controlledBackgroundShopHistoryAborts: {
+          playerA: playerA.diagnostics.ignoredBackgroundShopHistoryAborts,
+          playerB: playerB.diagnostics.ignoredBackgroundShopHistoryAborts,
         },
         createLinkDraftRequests: counterA.count('create_link_draft'),
         confirmSharedRequests: counterA.count('confirm_shared'),
