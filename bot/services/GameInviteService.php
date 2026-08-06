@@ -42,18 +42,24 @@ final class GameInviteService
 
             $token = (string)($notification['invite_token'] ?? '');
             $invite = $token !== '' ? ($invites[$token] ?? null) : null;
+            $type = (string)($notification['type'] ?? '');
             $events[] = [
                 'id' => (string)($notification['id'] ?? ''),
-                'type' => (string)($notification['type'] ?? ''),
+                'type' => $type,
                 'title' => (string)($notification['title'] ?? ''),
-                'message' => (string)($notification['message'] ?? ''),
+                'message' => $this->liveInviteMessage($notification, $invite, $userId),
                 'tone' => (string)($notification['tone'] ?? 'info'),
                 'invite_token' => $token,
                 'invite_status' => $this->liveInviteStatus($invite),
                 'invite_is_owner' => is_array($invite)
                     && (string)($invite['inviter_id'] ?? '') === $userId,
+                'inviter_name' => is_array($invite) ? (string)($invite['inviter_name'] ?? '') : '',
+                'invitee_name' => is_array($invite) ? (string)($invite['invitee_name'] ?? '') : '',
+                'game_title' => is_array($invite) ? (string)($invite['game_title'] ?? '') : '',
                 'actions' => $this->liveInviteActions($invite, $userId),
-                'created_at' => (string)($notification['created_at'] ?? ''),
+                'created_at' => $type === 'invite_cancelled' && is_array($invite)
+                    ? (string)($invite['cancelled_at'] ?? $invite['updated_at'] ?? $notification['created_at'] ?? '')
+                    : (string)($notification['created_at'] ?? ''),
                 'read' => !empty($notification['read_at']),
             ];
         }
@@ -66,6 +72,31 @@ final class GameInviteService
         });
 
         return array_slice($events, 0, 20);
+    }
+
+    private function liveInviteMessage(array $notification, ?array $invite, string $userId): string
+    {
+        $message = (string)($notification['message'] ?? '');
+        if (!is_array($invite) || (string)($notification['type'] ?? '') !== 'invite_cancelled') {
+            return $message;
+        }
+
+        $status = (string)($invite['status'] ?? '');
+        if (!in_array($status, ['cancelled', 'canceled'], true)) return $message;
+
+        $inviterId = (string)($invite['inviter_id'] ?? '');
+        $inviteeId = (string)($invite['invitee_id'] ?? '');
+        $cancelledBy = (string)($invite['cancelled_by'] ?? '');
+        $inviterName = trim((string)($invite['inviter_name'] ?? 'Игрок')) ?: 'Игрок';
+        $inviteeName = trim((string)($invite['invitee_name'] ?? 'Игрок')) ?: 'Игрок';
+        $gameTitle = trim((string)($invite['game_title'] ?? 'Игра')) ?: 'Игра';
+        $inviterCancelled = $cancelledBy !== ''
+            ? $cancelledBy === $inviterId
+            : $userId === $inviteeId;
+
+        return $inviterCancelled
+            ? $inviterName . ' отменил приглашение сыграть в «' . $gameTitle . '».'
+            : $inviteeName . ' отменил участие в матче «' . $gameTitle . '».';
     }
 
     private function liveInviteStatus(?array $invite): string
