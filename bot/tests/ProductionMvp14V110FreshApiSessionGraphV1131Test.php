@@ -28,10 +28,10 @@ $assert(str_contains($entry, '<script type="importmap">')
     && str_contains($entry, '"./assets/js/session.js?v=27": "./assets/js/session.js?v=1131"'),
     'The ordinary v110 route must centrally remap every retained API/session legacy specifier to v1131.');
 
-$assert(str_contains($entry, './assets/js/main-v110.js?v=1131')
-    && str_contains($entry, 'v110-mvp14r12-fresh-api-session-graph-v1131')
-    && str_contains($entry, 'X-MGW-Frontend-Build: v110-mvp14r12-fresh-api-session-graph-v1131'),
-    'The ordinary v110 publication must expose one immutable v1131 build identity.');
+$assert(str_contains($entry, './assets/js/main-v110.js?v=1130')
+    && str_contains($entry, 'v110-mvp14r12-invite-notification-presence-stability')
+    && str_contains($entry, 'X-MGW-Api-Session-Graph: v1131'),
+    'The accepted v1130 outer graph must stay unchanged while v110 exposes the fresh inner API/session graph.');
 
 $assert(str_contains($client, "import { getSessionId, getDeviceId } from '../session.js?v=1131';")
     && !str_contains($client, "from '../session.js?v=21'")
