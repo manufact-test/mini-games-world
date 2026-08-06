@@ -1,0 +1,119 @@
+name: D2 Recipient Exact Validation
+
+on:
+  push:
+    branches:
+      - agent/mvp14-d2-recipient-validation-run3
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-d2-recipient-exact-validation
+  cancel-in-progress: true
+
+jobs:
+  full-ci:
+    name: Exact product head full CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: mgw_ci
+          MYSQL_USER: mgw_ci_user
+          MYSQL_PASSWORD: ci_database_password_not_secret
+          MYSQL_ROOT_PASSWORD: ci_root_password_not_secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: mgw_ci_mariadb
+          MARIADB_USER: mgw_ci_mariadb_user
+          MARIADB_PASSWORD: ci_mariadb_password_not_secret
+          MARIADB_ROOT_PASSWORD: ci_mariadb_root_password_not_secret
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      MGW_TEST_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_ci;charset=utf8mb4
+      MGW_TEST_MYSQL_USER: mgw_ci_user
+      MGW_TEST_MYSQL_PASSWORD: ci_database_password_not_secret
+      MGW_TEST_MARIADB_DSN: mysql:host=127.0.0.1;port=3307;dbname=mgw_ci_mariadb;charset=utf8mb4
+      MGW_TEST_MARIADB_USER: mgw_ci_mariadb_user
+      MGW_TEST_MARIADB_PASSWORD: ci_mariadb_password_not_secret
+
+    steps:
+      - name: Checkout exact product head
+        uses: actions/checkout@v4
+        with:
+          ref: 13843b7ee71994b59a8c1a10336e03cf9aee60c6
+          fetch-depth: 1
+
+      - name: Verify exact checkout
+        run: test "$(git rev-parse HEAD)" = "13843b7ee71994b59a8c1a10336e03cf9aee60c6"
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run full repository CI
+        shell: bash
+        run: |
+          set -o pipefail
+          bash scripts/ci/run.sh 2>&1 | tee ci-report.txt
+
+      - name: Upload CI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d2-recipient-ci-report
+          path: ci-report.txt
+          if-no-files-found: error
+          retention-days: 3
+
+  db-selector:
+    name: Exact product head DB selector safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout exact product head
+        uses: actions/checkout@v4
+        with:
+          ref: 13843b7ee71994b59a8c1a10336e03cf9aee60c6
+          fetch-depth: 1
+
+      - name: Verify exact checkout
+        run: test "$(git rev-parse HEAD)" = "13843b7ee71994b59a8c1a10336e03cf9aee60c6"
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run DB selector safety
+        run: bash ops/checks/db-primary-staging-entrypoint-selector-local.sh
