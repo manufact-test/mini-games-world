@@ -70,27 +70,27 @@ $assert(str_contains($config, 'Player A uses Share, player picker and cancellati
     'The retired close-sheet E2E expectation must be excluded exactly by title.');
 
 $assert(str_contains($e2e, 'const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;')
-    && str_contains($e2e, "test('D2-D3-D5 integration: Share, picker and cancellation keep terminal card in place'")
-    && str_contains($e2e, "const authoritativeCancelledLabel = String(cancelled?.invite?.status_label || '').trim();")
-    && str_contains($e2e, "expect(authoritativeCancelledLabel).toBe('Отменено');")
-    && str_contains($e2e, "toHaveText(authoritativeCancelledLabel")
-    && !str_contains($e2e, "toHaveText('Приглашение отменено'")
-    && str_contains($e2e, "#sheet [data-invite-action]')).toHaveCount(0")
+    && str_contains($e2e, "test('D2-D3-D5 integration: Share, picker and owner self-cancel return home while participant history stays terminal'")
+    && str_contains($e2e, "await expect(overlay).not.toHaveClass(/active/")
+    && str_contains($e2e, "document.querySelector('.screen.active')?.dataset.screen")
+    && str_contains($e2e, "#sheet .sheet-head h2')).toHaveCount(0")
     && str_contains($e2e, "#notificationToast')).not.toHaveClass(/show/")
     && str_contains($e2e, 'async function notificationByInviteToken(page, inviteToken)')
     && str_contains($e2e, 'items.find(candidate =>')
     && str_contains($e2e, 'const bNotification = await notificationByInviteToken(playerB.page, directToken);')
+    && str_contains($e2e, 'ownerSelfCancelReturnedHome: true')
+    && str_contains($e2e, 'ownerTerminalConfirmationAbsent: true')
     && str_contains($e2e, 'otherParticipantTerminalStatusPresent: true'),
-    'The live E2E must use the authoritative label and return one exact-token terminal notification from the browser context.');
+    'The live E2E must prove direct owner return home while the other participant keeps exact-token terminal history.');
 
 $assert(!str_contains($e2e, 'const bNotifications = await expectPlayerRequest(')
     && !str_contains($e2e, 'Array.isArray(bNotifications.items)')
     && str_contains($e2e, 'bNotification.availableTokens.join'),
     'The full notification history must not cross the Playwright structured-clone boundary.');
 
-$assert(!str_contains($e2e, "not.toHaveClass(/active/")
-    && str_contains($e2e, "await expect(overlay).toHaveClass(/active/"),
-    'The replacement scenario must forbid the superseded close-sheet acceptance.');
+$assert(str_contains($e2e, "await expect(overlay).not.toHaveClass(/active/")
+    && !str_contains($e2e, "await expect(overlay).toHaveClass(/active/"),
+    'The replacement scenario must require the accepted direct-home owner self-cancel behavior.');
 
 $assert(str_contains($e2e, '[data-create-link-invite]')
     && str_contains($e2e, '[data-discard-draft]')

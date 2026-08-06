@@ -48,7 +48,10 @@ $assert(str_contains($runtimeTest, 'A failed full synchronization must roll back
     && str_contains($lockTest, 'JSON writer must remain blocked while the exclusive snapshot callback runs.'),
     'Focused tests must prove DB rollback and JSON writer serialization.');
 $assert(str_contains($e2e, 'create_direct status; public error: ${createPublicError}')
-    && str_contains($e2e, 'Share, picker and cancellation keep terminal card in place'),
+    && str_contains(
+        $e2e,
+        'Share, picker and owner self-cancel return home while participant history stays terminal'
+    ),
     'The live two-player regression must preserve the exact rapid Share-to-direct path.');
 
 fwrite(STDOUT, "ProductionMvp14InviteBridgeSerializedSnapshotTest: {$assertions} assertions passed\n");

@@ -128,9 +128,13 @@ test('remote decline already visible in owner sheet is not repeated as toast or 
       'Player B declines while Player A watches the waiting sheet',
     );
     expect(String(declined?.invite?.status || '')).toBe('declined');
+    const authoritativeDeclinedLabel = String(
+      declined?.invite?.status_label || 'Отклонено',
+    ).trim();
+    expect(authoritativeDeclinedLabel).not.toBe('');
     await players.playerA.page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
     await expect(players.playerA.page.locator('#sheet .sheet-head h2')).toHaveText(
-      'Приглашение отклонено',
+      authoritativeDeclinedLabel,
       { timeout: 30_000 },
     );
     const consumed = await consumeResponse;
@@ -173,7 +177,10 @@ test('owner self-cancel returns directly home without terminal confirmation', as
     await expect.poll(async () => players.playerA.page.evaluate(() => (
       document.querySelector('.screen.active')?.dataset.screen || ''
     )), { timeout: 10_000 }).toBe('home');
-    await expect(players.playerA.page.locator('#sheet .sheet-head h2')).not.toHaveText('Приглашение отменено');
+    await expect(players.playerA.page.locator('#sheet .sheet-head h2')).toHaveCount(0);
+    await expect(players.playerA.page.locator(
+      `#sheet [data-invite-sheet][data-invite-token="${token}"]`,
+    )).toHaveCount(0);
     await expectTokenAbsentFromBell(players.playerA.page, token);
 
     expect(players.playerA.diagnostics.pageErrors).toEqual([]);

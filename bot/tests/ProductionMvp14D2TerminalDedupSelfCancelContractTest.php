@@ -60,8 +60,10 @@ $assert(
 );
 $assert(
     str_contains($e2e, 'remote decline already visible in owner sheet is not repeated as toast or bell card')
-        && str_contains($e2e, 'owner self-cancel returns directly home without terminal confirmation'),
-    'Live staging coverage must prove both exact user scenarios.'
+        && str_contains($e2e, 'authoritativeDeclinedLabel')
+        && str_contains($e2e, 'owner self-cancel returns directly home without terminal confirmation')
+        && str_contains($e2e, "#sheet .sheet-head h2')).toHaveCount(0"),
+    'Live staging coverage must prove both exact user scenarios without assuming a non-existent terminal heading.'
 );
 
 fwrite(STDOUT, "ProductionMvp14D2TerminalDedupSelfCancelContractTest: {$assertions} assertions passed\n");
