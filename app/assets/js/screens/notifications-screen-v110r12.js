@@ -19,6 +19,7 @@ let appReady = false;
 let baselineLoaded = false;
 let pollTimer = null;
 let refreshPromise = null;
+let notificationReadGeneration = 0;
 let unreadHint = 0;
 let items = new Map();
 let localAuthority = new Map();
@@ -206,8 +207,11 @@ async function waitForFirstSheetPaint(generation){
 }
 
 async function refreshOpenSheet(generation){
+  const read = beginNotificationRead();
   try {
-    const result = await rawNotifications(false);
+    const result = await read.promise;
+    if (!isLatestNotificationRead(read.generation)) return;
+
     const serverItems = normalizeItems(result?.items);
     mergeServerItems(serverItems);
     baselineLoaded = true;
@@ -224,6 +228,7 @@ async function refreshOpenSheet(generation){
     setUnreadCount(0);
     void rawNotifications(true).catch(() => null);
   } catch (error) {
+    if (!isLatestNotificationRead(read.generation)) return;
     if (isCurrentSheet(generation) && !visibleSheetItems().length) renderError();
   }
 }
@@ -232,8 +237,11 @@ async function refreshNotifications({ announce = false } = {}){
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
+    const read = beginNotificationRead();
     try {
-      const result = await rawNotifications(false);
+      const result = await read.promise;
+      if (!isLatestNotificationRead(read.generation)) return;
+
       const serverItems = normalizeItems(result?.items);
       mergeServerItems(serverItems);
       const unreadCount = Number(result?.unread_count || 0);
@@ -565,6 +573,18 @@ function dismissToast(){
   element.classList.remove('show','dragging');
   element.style.transform = '';
   element.style.opacity = '';
+}
+
+function beginNotificationRead(){
+  const generation = ++notificationReadGeneration;
+  return {
+    generation,
+    promise:rawNotifications(false),
+  };
+}
+
+function isLatestNotificationRead(generation){
+  return Number(generation) === notificationReadGeneration;
 }
 
 async function rawNotifications(markRead){
