@@ -126,6 +126,13 @@ function isExpectedBackgroundProfileAbort(request) {
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
 }
 
+function isExpectedBackgroundShopHistoryAbort(request) {
+  return request.url().startsWith(STAGING_ORIGIN)
+    && request.method() === 'POST'
+    && new URL(request.url()).pathname === '/bot/shop-history.php'
+    && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+}
+
 export function collectDiagnostics(page, slot) {
   const report = {
     slot,
@@ -136,6 +143,8 @@ export function collectDiagnostics(page, slot) {
     ignoredInviteSyncAborts: 0,
     allowBackgroundProfileAbort: false,
     ignoredBackgroundProfileAborts: 0,
+    allowBackgroundShopHistoryAbort: false,
+    ignoredBackgroundShopHistoryAborts: 0,
   };
 
   page.on('pageerror', error => {
@@ -150,6 +159,10 @@ export function collectDiagnostics(page, slot) {
     }
     if (report.allowBackgroundProfileAbort && isExpectedBackgroundProfileAbort(request)) {
       report.ignoredBackgroundProfileAborts += 1;
+      return;
+    }
+    if (report.allowBackgroundShopHistoryAbort && isExpectedBackgroundShopHistoryAbort(request)) {
+      report.ignoredBackgroundShopHistoryAborts += 1;
       return;
     }
     report.failedRequests.push({
