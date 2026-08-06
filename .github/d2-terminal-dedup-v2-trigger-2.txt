@@ -1,0 +1,1 @@
+Second synchronize trigger for clean isolated D2 application. Never merge.
