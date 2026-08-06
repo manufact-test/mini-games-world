@@ -18,7 +18,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     }
 };
 
-$entry = $read('app/v110.php');
+$entrySource = $read('app/v110.php');
 $index = $read('app/index.html');
 $client = $read('app/assets/js/api/client.js');
 $session = $read('app/assets/js/session.js');
@@ -26,20 +26,37 @@ $store = $read('app/assets/js/screens/store-screen.js');
 $weekly = $read('app/assets/js/screens/weekly-match-info.js');
 $lifecycle = $read('app/assets/js/production-v110-match-lifecycle.js');
 
-$assert(str_contains($entry, '<script type="importmap">'),
-    'Ordinary Start must publish a native import map before active module scripts.');
-$assert(strpos($entry, '<script type="importmap">') < strpos($entry, 'production-clean-entry-v110.js?v=1121'),
-    'The import map must be parsed before either ordinary Start module graph begins.');
+ob_start();
+require $root . '/app/v110.php';
+$renderedEntry = ob_get_clean();
+if (!is_string($renderedEntry)) {
+    throw new RuntimeException('Ordinary Start entry did not render HTML.');
+}
+
+$importMapAt = strpos($renderedEntry, '<script type="importmap">');
+$cleanEntryAt = strpos(
+    $renderedEntry,
+    '<script type="module" src="./assets/js/production-clean-entry-v110.js?v=1121"></script>'
+);
+$mainEntryAt = strpos(
+    $renderedEntry,
+    '<script type="module" src="./assets/js/main-v110.js?v=1130"></script>'
+);
+$assert($importMapAt !== false,
+    'Ordinary Start must publish a native import map.');
+$assert($cleanEntryAt !== false && $mainEntryAt !== false
+    && $importMapAt < $cleanEntryAt && $importMapAt < $mainEntryAt,
+    'The rendered import map must be parsed before both ordinary Start module graphs.');
 
 foreach (['34', '38', '46', '47'] as $version) {
     $assert(str_contains(
-        $entry,
+        $renderedEntry,
         '"./assets/js/api/client.js?v=' . $version . '": "./assets/js/api/client.js?v=48"'
     ), 'Every active legacy API client identity must resolve to canonical v48.');
 }
 foreach (['21', '27'] as $version) {
     $assert(str_contains(
-        $entry,
+        $renderedEntry,
         '"./assets/js/session.js?v=' . $version . '": "./assets/js/session.js?v=28"'
     ), 'Every active legacy session identity must resolve to canonical v28.');
 }
@@ -57,7 +74,7 @@ $assert(str_contains($store, "../api/client.js?v=34")
     'Historical consumers must remain unchanged and be reconciled only at the ordinary Start entry graph.');
 $assert(!str_contains($index, 'api/client.js?v=48') && !str_contains($index, 'session.js?v=28'),
     'The technical /app/ graph must not be silently rewritten by the ordinary Start fix.');
-$assert(!str_contains($entry, 'window.fetch =') && !str_contains($entry, 'MutationObserver'),
+$assert(!str_contains($entrySource, 'window.fetch =') && !str_contains($entrySource, 'MutationObserver'),
     'The publication fix must not add a request wrapper or visual patch layer.');
 
 fwrite(STDOUT, 'ProductionMvp14D1ApiSessionPublicationV48Test: ' . $assertions . " assertions passed\n");
