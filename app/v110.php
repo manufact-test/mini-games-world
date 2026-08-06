@@ -10,6 +10,31 @@ if (!is_string($html)) {
     exit;
 }
 
+$telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
+$importMap = <<<'HTML'
+<script type="importmap">
+{
+  "imports": {
+    "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1131",
+    "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
+    "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131"
+  }
+}
+</script>
+HTML;
+
+if (!str_contains($html, $telegramScript)) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World import-map anchor is unavailable.';
+    exit;
+}
+
+$html = str_replace(
+    $telegramScript,
+    $telegramScript . "\n  " . $importMap,
+    $html
+);
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
     './assets/js/production-clean-entry-v110.js?v=1121',
@@ -30,4 +55,5 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
+header('X-MGW-Api-Session-Graph: v1131');
 echo $html;

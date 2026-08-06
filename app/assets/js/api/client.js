@@ -1,6 +1,6 @@
 import { APP_CONFIG } from '../config.js?v=38';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
-import { getSessionId, getDeviceId } from '../session.js?v=21';
+import { getSessionId, getDeviceId } from '../session.js?v=1131';
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
