@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-// Exact recipient active-to-terminal replacement contract. This comment also
-// records the clean post-outage CI trigger without changing runtime behavior.
+// Exact recipient active-to-terminal replacement contract. Keep this focused
+// on one invite token, terminal priority, contextual copy and clean publication.
 $root = dirname(__DIR__, 2);
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
