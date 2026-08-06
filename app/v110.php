@@ -45,12 +45,12 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main-v110.js?v=1134',
+    './assets/js/main-v110.js?v=1135',
     $html
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14r12-recipient-terminal-v1134"',
+    'data-hotfix-build="v110-mvp14-interface-invite-speed-v1135"',
     $html
 );
 
@@ -60,4 +60,5 @@ header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1134');
+header('X-MGW-Invite-Graph: v1135');
 echo $html;

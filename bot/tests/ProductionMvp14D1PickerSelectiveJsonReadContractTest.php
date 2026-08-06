@@ -62,8 +62,8 @@ $assert(
     'Server acceleration must preserve the accepted one-request ready-first client owner.'
 );
 $assert(
-    str_contains($shell, './games/game-invites-v110.js?v=1133'),
-    'A server-only storage optimization must not invent a new client graph or cache identity.'
+    str_contains($shell, './games/game-invites-v110.js?v=1135'),
+    'The accepted picker owner must remain singular while its immutable publication advances to v1135.'
 );
 
 fwrite(STDOUT, "ProductionMvp14D1PickerSelectiveJsonReadContractTest: {$assertions} assertions passed\n");
