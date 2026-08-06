@@ -26,6 +26,26 @@ $html = str_replace(
     $html
 );
 
+$importMap = <<<'HTML'
+  <script type="importmap">
+  {
+    "imports": {
+      "./assets/js/api/client.js?v=34": "./assets/js/api/client.js?v=48",
+      "./assets/js/api/client.js?v=38": "./assets/js/api/client.js?v=48",
+      "./assets/js/api/client.js?v=46": "./assets/js/api/client.js?v=48",
+      "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=48",
+      "./assets/js/session.js?v=21": "./assets/js/session.js?v=28",
+      "./assets/js/session.js?v=27": "./assets/js/session.js?v=28"
+    }
+  }
+  </script>
+HTML;
+$html = str_replace(
+    '  <script type="module" src="./assets/js/production-clean-entry-v110.js?v=1121"></script>',
+    $importMap . "\n\n  <script type=\"module\" src=\"./assets/js/production-clean-entry-v110.js?v=1121\"></script>",
+    $html
+);
+
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
