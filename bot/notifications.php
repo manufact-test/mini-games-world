@@ -173,20 +173,20 @@ try {
             throw new RuntimeException('Notification bridge requires exclusive JSON snapshots.');
         }
 
-if ($markRead || $consumeInviteToken !== '') {
-    $db->transaction(function (array &$data) use (
-        $notifications,
-        $userId,
-        $markRead,
-        $consumeInviteToken
-    ): void {
-        if ($markRead) {
-            $notifications->markAllRead($data, $userId);
-        } else {
-            mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
+        if ($markRead || $consumeInviteToken !== '') {
+            $db->transaction(function (array &$data) use (
+                $notifications,
+                $userId,
+                $markRead,
+                $consumeInviteToken
+            ): void {
+                if ($markRead) {
+                    $notifications->markAllRead($data, $userId);
+                } else {
+                    mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
+                }
+            });
         }
-    });
-}
 
         $runtimeNotifications = new RuntimeNotificationBridgeCoordinator($config, $router);
         $result = $db->exclusiveReadOnlySections(
@@ -210,23 +210,23 @@ if ($markRead || $consumeInviteToken !== '') {
                 ];
             }
         );
-} elseif ($markRead || $consumeInviteToken !== '') {
-    $result = $db->transaction(function (array &$data) use (
-        $notifications,
-        $userId,
-        $markRead,
-        $consumeInviteToken
-    ): array {
-        if ($markRead) {
-            $notifications->markAllRead($data, $userId);
-        } else {
-            mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
-        }
-        return [
-            'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
-            'unread_count' => mgw_visible_unread_count($data, $userId),
-        ];
-    });
+    } elseif ($markRead || $consumeInviteToken !== '') {
+        $result = $db->transaction(function (array &$data) use (
+            $notifications,
+            $userId,
+            $markRead,
+            $consumeInviteToken
+        ): array {
+            if ($markRead) {
+                $notifications->markAllRead($data, $userId);
+            } else {
+                mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
+            }
+            return [
+                'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
+                'unread_count' => mgw_visible_unread_count($data, $userId),
+            ];
+        });
     } else {
         $result = $db->readOnly(function (array $data) use ($notifications, $userId): array {
             return [

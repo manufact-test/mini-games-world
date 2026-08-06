@@ -72,10 +72,10 @@ export function initNotificationsScreen(){
     const item = normalizeItem(event.detail?.item);
     const unreadCount = Number(event.detail?.unreadCount || 0);
     const announce = event.detail?.announce !== false;
-    if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);
     if (!item.id) return;
     const inviteToken = String(item.invite_token || '');
     if (inviteToken && consumedInviteTokens.has(inviteToken)) return;
+    if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);
 
     rememberLocalAuthority(item);
     upsert(item);
@@ -284,7 +284,11 @@ async function refreshNotifications({ announce = false } = {}){
 function mergeServerItems(serverItems){
   pruneLocalAuthority();
   const preserved = [...localAuthority.values()].map(entry => entry.item);
-  const merged = mergeNotificationItems(preserved, serverItems);
+  const visibleServerItems = normalizeItems(serverItems).filter(item => {
+    const token = String(item.invite_token || '');
+    return !token || !consumedInviteTokens.has(token);
+  });
+  const merged = mergeNotificationItems(preserved, visibleServerItems);
   items = new Map(merged.map(item => [item.id, item]));
   persistItems();
 }
@@ -404,7 +408,7 @@ async function consumeInviteNotification(detail){
       unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : null,
     });
   } catch (error) {
-    // The local surface is already consumed; a later authoritative refresh retries parity.
+    // Keep this token consumed in the current document; normal refreshes cannot reinsert it.
   }
 }
 

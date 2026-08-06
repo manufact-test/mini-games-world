@@ -36,6 +36,8 @@ $assert(
         && str_contains($notifications, "consumeInviteToken:String(options.consumeInviteToken || '')")
         && str_contains($notifications, 'let consumedInviteTokens = new Set();')
         && str_contains($notifications, 'consumedInviteTokens.has(inviteToken)')
+        && str_contains($notifications, 'visibleServerItems')
+        && str_contains($notifications, '!consumedInviteTokens.has(token)')
         && str_contains($notifications, 'removedIds')
         && str_contains($notifications, 'persistAnnouncedIds();'),
     'The canonical notification owner must remove the local duplicate immediately and request one targeted server consume.'
