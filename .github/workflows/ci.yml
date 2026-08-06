@@ -7,10 +7,12 @@ on:
   push:
     branches:
       - main
+      - agent/mvp14-interface-ci-run
   workflow_dispatch:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: mgw-ci-${{ github.workflow }}-${{ github.ref }}
@@ -18,9 +20,9 @@ concurrency:
 
 jobs:
   quality:
-    name: Quality and smoke checks
+    name: Quality, smoke and DB-selector checks
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 22
 
     services:
       mysql:
@@ -80,16 +82,68 @@ jobs:
           node-version: '22'
 
       - name: Run repository checks
+        id: repository-checks
+        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
           bash scripts/ci/run.sh 2>&1 | tee ci-report.txt
 
-      - name: Upload CI report
+      - name: Run DB selector guard
+        id: db-selector
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          bash ops/checks/db-primary-staging-entrypoint-selector-local.sh 2>&1 | tee db-selector-report.txt
+
+      - name: Publish exact validation status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY_OUTCOME: ${{ steps.repository-checks.outcome }}
+          DB_SELECTOR_OUTCOME: ${{ steps.db-selector.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          state='success'
+          description='Full CI and DB selector guard passed'
+          if [[ "${REPOSITORY_OUTCOME}" != 'success' || "${DB_SELECTOR_OUTCOME}" != 'success' ]]; then
+            state='failure'
+            description="CI=${REPOSITORY_OUTCOME}; DB=${DB_SELECTOR_OUTCOME}"
+          fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc \
+              --arg state "${state}" \
+              --arg context 'mvp14-interface-full-ci-db' \
+              --arg description "${description}" \
+              --arg target_url "${RUN_URL}" \
+              '{state:$state,context:$context,description:$description,target_url:$target_url}')"
+
+      - name: Upload validation reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-report
-          path: ci-report.txt
-          if-no-files-found: error
+          name: interface-ci-validation-reports
+          path: |
+            ci-report.txt
+            db-selector-report.txt
+          if-no-files-found: warn
           retention-days: 3
+
+      - name: Enforce validation result
+        if: always()
+        shell: bash
+        env:
+          REPOSITORY_OUTCOME: ${{ steps.repository-checks.outcome }}
+          DB_SELECTOR_OUTCOME: ${{ steps.db-selector.outcome }}
+        run: |
+          set -Eeuo pipefail
+          test "${REPOSITORY_OUTCOME}" = 'success'
+          test "${DB_SELECTOR_OUTCOME}" = 'success'
