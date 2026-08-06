@@ -1,0 +1,762 @@
+name: Tech apply D2 terminal dedup
+
+on:
+  push:
+    branches:
+      - agent/mvp14-d2-terminal-dedup-self-cancel-home
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp14-d2-terminal-dedup-self-cancel-home
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Apply exact D2 UX changes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ROOT = Path('.')
+
+          def replace_once(path, old, new):
+              file = ROOT / path
+              text = file.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one occurrence, found {count}: {old[:120]!r}')
+              file.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          def replace_all_exact(path, old, new, expected):
+              file = ROOT / path
+              text = file.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} occurrences, found {count}: {old!r}')
+              file.write_text(text.replace(old, new), encoding='utf-8')
+
+          client_path = 'app/assets/js/games/game-invites-v110.js'
+          replace_once(
+              client_path,
+              "const WATCH_URL = `${window.location.origin}/bot/invite-watch.php`;\n",
+              "const WATCH_URL = `${window.location.origin}/bot/invite-watch.php`;\nconst NOTIFICATIONS_URL = `${window.location.origin}/bot/notifications.php`;\n",
+          )
+          replace_once(
+              client_path,
+              "let playerPickerRequestGeneration = 0;\n",
+              "let playerPickerRequestGeneration = 0;\nconst consumedTerminalInviteTokens = new Set();\n",
+          )
+
+          old_terminal_block = """    if (action === 'decline' || action === 'cancel') {
+      const terminalInvite = terminalInviteResult(action, token, result?.invite || rollbackInvite);
+      const unreadCount = Number(result?.unread_count);
+
+      if (terminalContext.notificationSurface) {
+        document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
+          detail:{
+            item:terminalNotificationItem(terminalContext, terminalInvite),
+            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
+            announce:false,
+          },
+        }));
+      } else {
+        showTerminalInvite(terminalInvite);
+      }
+
+      if (Number.isFinite(unreadCount)) dispatchNotificationCount(Math.max(0, unreadCount));
+      currentInvite = null;
+      scheduleSync(0);
+      scheduleWatch(0);
+      return;
+    }
+"""
+          new_terminal_block = """    if (action === 'decline' || action === 'cancel') {
+      const terminalInvite = terminalInviteResult(action, token, result?.invite || rollbackInvite);
+      const unreadCount = Number(result?.unread_count);
+      const selfOwnedCancel = action === 'cancel'
+        && !terminalContext.notificationSurface
+        && Boolean(rollbackInvite?.is_owner);
+
+      if (selfOwnedCancel) {
+        consumeInviteNotification(token);
+        currentInvite = null;
+        closeSheet();
+        showScreen('home');
+      } else if (terminalContext.notificationSurface) {
+        document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
+          detail:{
+            item:terminalNotificationItem(terminalContext, terminalInvite),
+            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
+            announce:false,
+          },
+        }));
+      } else {
+        showTerminalInvite(terminalInvite);
+      }
+
+      if (Number.isFinite(unreadCount)) dispatchNotificationCount(Math.max(0, unreadCount));
+      currentInvite = null;
+      scheduleSync(0);
+      scheduleWatch(0);
+      return;
+    }
+"""
+          replace_once(client_path, old_terminal_block, new_terminal_block)
+
+          replace_once(
+              client_path,
+              "  if (isTerminal(status)) showTerminalInvite(currentInvite);\n",
+              "  if (isTerminal(status)) showTerminalInvite(currentInvite, { consumeNotification:true });\n",
+          )
+
+          old_show_terminal = """function showTerminalInvite(invite){
+  openSheet(`
+    ${inviteMarker(invite)}
+    <div class=\"sheet-head\">
+      <div><h2>${escapeHtml(invite.status_label || terminalTitle(invite.status))}</h2></div>
+      <button class=\"close\" data-close-sheet type=\"button\">×</button>
+    </div>
+    ${inviteSummary(invite)}
+    <div class=\"small-note\">Это приглашение больше нельзя использовать.</div>
+    <button class=\"btn primary full\" data-close-sheet type=\"button\">Понятно</button>
+  `);
+}
+"""
+          new_show_terminal = """function showTerminalInvite(invite, { consumeNotification = false } = {}){
+  const token = String(invite?.token || '');
+  openSheet(`
+    ${inviteMarker(invite)}
+    <div class=\"sheet-head\">
+      <div><h2>${escapeHtml(invite.status_label || terminalTitle(invite.status))}</h2></div>
+      <button class=\"close\" data-close-sheet type=\"button\">×</button>
+    </div>
+    ${inviteSummary(invite)}
+    <div class=\"small-note\">Это приглашение больше нельзя использовать.</div>
+    <button class=\"btn primary full\" data-terminal-invite-ack data-close-sheet type=\"button\">Понятно</button>
+  `);
+
+  if (!consumeNotification || !token) return;
+  consumeInviteNotification(token);
+  document.querySelector('[data-terminal-invite-ack]')?.addEventListener('click', () => {
+    consumeInviteNotification(token);
+  });
+}
+"""
+          replace_once(client_path, old_show_terminal, new_show_terminal)
+
+          old_dispatch = """function dispatchNotificationCount(unreadCount){
+  if (!Number.isFinite(Number(unreadCount))) return;
+  document.dispatchEvent(new CustomEvent('mgw:notification-count', {
+    detail:{ unreadCount:Number(unreadCount) },
+  }));
+}
+"""
+          new_dispatch = """function consumeInviteNotification(token){
+  const normalizedToken = String(token || '').trim();
+  if (!normalizedToken) return;
+
+  document.dispatchEvent(new CustomEvent('mgw:notification-remove', {
+    detail:{ inviteToken:normalizedToken },
+  }));
+
+  if (consumedTerminalInviteTokens.has(normalizedToken)) return;
+  consumedTerminalInviteTokens.add(normalizedToken);
+  void postJson(NOTIFICATIONS_URL, { hideInviteToken:normalizedToken })
+    .then(result => {
+      const unreadCount = Number(result?.unread_count);
+      if (Number.isFinite(unreadCount)) dispatchNotificationCount(Math.max(0, unreadCount));
+    })
+    .catch(() => {
+      consumedTerminalInviteTokens.delete(normalizedToken);
+    });
+}
+
+function dispatchNotificationCount(unreadCount){
+  if (!Number.isFinite(Number(unreadCount))) return;
+  document.dispatchEvent(new CustomEvent('mgw:notification-count', {
+    detail:{ unreadCount:Number(unreadCount) },
+  }));
+}
+"""
+          replace_once(client_path, old_dispatch, new_dispatch)
+
+          service_path = 'bot/services/NotificationService.php'
+          service_anchor = """    public function userNotifications(array $db, string $userId, int $limit = 30): array
+"""
+          service_method = """    public function hideInviteNotifications(array &$db, string $userId, string $inviteToken): int
+    {
+        $userId = trim($userId);
+        $inviteToken = trim($inviteToken);
+        if ($userId === '' || $inviteToken === '') return 0;
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) {
+            $db['notifications'] = [];
+            return 0;
+        }
+
+        $now = now_iso();
+        $hidden = 0;
+        foreach ($db['notifications'] as &$notification) {
+            if (!is_array($notification)) continue;
+            if ((string)($notification['user_id'] ?? '') !== $userId) continue;
+            if ((string)($notification['invite_token'] ?? '') !== $inviteToken) continue;
+            if (!empty($notification['hidden_at'])) continue;
+
+            $notification['hidden_at'] = $now;
+            if (empty($notification['read_at'])) $notification['read_at'] = $now;
+            $hidden++;
+        }
+        unset($notification);
+        return $hidden;
+    }
+
+"""
+          replace_once(service_path, service_anchor, service_method + service_anchor)
+
+          endpoint_path = 'bot/notifications.php'
+          replace_once(
+              endpoint_path,
+              "    $markRead = !empty($payload['markRead']);\n",
+              "    $markRead = !empty($payload['markRead']);\n    $hideInviteToken = strtolower(trim((string)($payload['hideInviteToken'] ?? '')));\n    if ($hideInviteToken !== '' && preg_match('/^[a-f0-9]{24}$/', $hideInviteToken) !== 1) {\n        api_error('Некорректный токен приглашения.');\n    }\n",
+          )
+
+          old_bridge_mutation = """        if ($markRead) {
+            $db->transaction(function (array &$data) use ($notifications, $userId): void {
+                $notifications->markAllRead($data, $userId);
+            });
+        }
+
+        $runtimeNotifications = new RuntimeNotificationBridgeCoordinator($config, $router);
+"""
+          new_bridge_mutation = """        $hiddenCount = 0;
+        if ($markRead || $hideInviteToken !== '') {
+            $hiddenCount = $db->transaction(function (array &$data) use (
+                $notifications,
+                $userId,
+                $markRead,
+                $hideInviteToken
+            ): int {
+                if ($markRead) $notifications->markAllRead($data, $userId);
+                return $hideInviteToken === ''
+                    ? 0
+                    : $notifications->hideInviteNotifications($data, $userId, $hideInviteToken);
+            });
+        }
+
+        $runtimeNotifications = new RuntimeNotificationBridgeCoordinator($config, $router);
+"""
+          replace_once(endpoint_path, old_bridge_mutation, new_bridge_mutation)
+
+          replace_once(
+              endpoint_path,
+              """                $markRead
+            ): array {
+""",
+              """                $markRead,
+                $hiddenCount
+            ): array {
+""",
+          )
+          replace_once(
+              endpoint_path,
+              """                    'unread_count' => $markRead ? 0 : mgw_visible_unread_count($snapshot, $userId),
+                ];
+""",
+              """                    'unread_count' => $markRead ? 0 : mgw_visible_unread_count($snapshot, $userId),
+                    'hidden_count' => $hiddenCount,
+                ];
+""",
+          )
+
+          old_json_mutation = """    } elseif ($markRead) {
+        $result = $db->transaction(function (array &$data) use ($notifications, $userId): array {
+            $items = mgw_visible_notifications($data, $notifications, $userId, 30);
+            $notifications->markAllRead($data, $userId);
+            foreach ($items as &$item) $item['read'] = true;
+            unset($item);
+            return ['items' => $items, 'unread_count' => 0];
+        });
+"""
+          new_json_mutation = """    } elseif ($markRead || $hideInviteToken !== '') {
+        $result = $db->transaction(function (array &$data) use (
+            $notifications,
+            $userId,
+            $markRead,
+            $hideInviteToken
+        ): array {
+            $hiddenCount = $hideInviteToken === ''
+                ? 0
+                : $notifications->hideInviteNotifications($data, $userId, $hideInviteToken);
+            if ($markRead) $notifications->markAllRead($data, $userId);
+            $items = mgw_visible_notifications($data, $notifications, $userId, 30);
+            if ($markRead) {
+                foreach ($items as &$item) $item['read'] = true;
+                unset($item);
+            }
+            return [
+                'items' => $items,
+                'unread_count' => $markRead ? 0 : mgw_visible_unread_count($data, $userId),
+                'hidden_count' => $hiddenCount,
+            ];
+        });
+"""
+          replace_once(endpoint_path, old_json_mutation, new_json_mutation)
+          replace_once(
+              endpoint_path,
+              """            return [
+                'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
+                'unread_count' => mgw_visible_unread_count($data, $userId),
+            ];
+""",
+              """            return [
+                'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
+                'unread_count' => mgw_visible_unread_count($data, $userId),
+                'hidden_count' => 0,
+            ];
+""",
+          )
+
+          build = 'v110-mvp14-d2-terminal-dedup-v1133'
+          replace_all_exact(
+              'app/assets/js/main-v110-handoff-shell.js',
+              'v110-mvp14r12-notification-publication-v1132',
+              build,
+              1,
+          )
+          replace_once(
+              'app/assets/js/main-v110-handoff-shell.js',
+              "./games/game-invites-v110.js?v=1130",
+              "./games/game-invites-v110.js?v=1133",
+          )
+          replace_all_exact(
+              'app/assets/js/main-v110.js',
+              'v110-mvp14r12-notification-publication-v1132',
+              build,
+              1,
+          )
+          replace_once(
+              'app/assets/js/main-v110.js',
+              "./main-v110-handoff-shell.js?v=1132",
+              "./main-v110-handoff-shell.js?v=1133",
+          )
+          replace_all_exact(
+              'app/assets/js/production-clean-entry-v110.js',
+              'v110-mvp14r12-notification-publication-v1132',
+              build,
+              1,
+          )
+          replace_once(
+              'app/v110.php',
+              "./assets/js/main-v110.js?v=1132",
+              "./assets/js/main-v110.js?v=1133",
+          )
+          replace_all_exact(
+              'app/v110.php',
+              'v110-mvp14r12-notification-publication-v1132',
+              build,
+              1,
+          )
+          replace_once(
+              'app/v110.php',
+              "header('X-MGW-Notification-Graph: v1132');",
+              "header('X-MGW-Notification-Graph: v1133');",
+          )
+
+          replace_once(
+              'e2e/staging/d1-bug-b-player-picker-v122.spec.mjs',
+              "url.searchParams.get('v') === '1130'",
+              "url.searchParams.get('v') === '1133'",
+          )
+          replace_all_exact(
+              'bot/tests/ProductionMvp14D1ActualStartPlayerPickerV1127Test.php',
+              '1130',
+              '1133',
+              5,
+          )
+          replace_once(
+              'bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php',
+              "./games/game-invites-v110.js?v=1130",
+              "./games/game-invites-v110.js?v=1133",
+          )
+          replace_once(
+              'bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php',
+              'A server-only storage optimization must not invent a new client graph or cache identity.',
+              'The accepted picker owner must remain single after the D2 terminal-flow publication.',
+          )
+
+          (ROOT / 'bot/tests/NotificationInviteConsumeTest.php').write_text(r'''<?php
+declare(strict_types=1);
+
+if (!function_exists('now_iso')) {
+    function now_iso(): string
+    {
+        return '2026-08-06T13:30:00+00:00';
+    }
+}
+
+require_once dirname(__DIR__) . '/services/NotificationService.php';
+
+$service = new NotificationService();
+$db = [
+    'notifications' => [
+        [
+            'id' => 'notification_owner_pending',
+            'event_key' => 'invite:token-a:pending',
+            'user_id' => 'player-a',
+            'type' => 'invite_accepted',
+            'title' => 'Соперник согласен',
+            'message' => '',
+            'tone' => 'success',
+            'invite_token' => 'aaaaaaaaaaaaaaaaaaaaaaaa',
+            'created_at' => '2026-08-06T13:00:00+00:00',
+            'read_at' => null,
+            'hidden_at' => null,
+        ],
+        [
+            'id' => 'notification_owner_terminal',
+            'event_key' => 'invite:token-a:declined',
+            'user_id' => 'player-a',
+            'type' => 'invite_declined',
+            'title' => 'Приглашение отклонено',
+            'message' => '',
+            'tone' => 'warning',
+            'invite_token' => 'aaaaaaaaaaaaaaaaaaaaaaaa',
+            'created_at' => '2026-08-06T13:01:00+00:00',
+            'read_at' => null,
+            'hidden_at' => null,
+        ],
+        [
+            'id' => 'notification_other_token',
+            'event_key' => 'invite:token-b:pending',
+            'user_id' => 'player-a',
+            'type' => 'invite_received',
+            'title' => 'Новое приглашение',
+            'message' => '',
+            'tone' => 'info',
+            'invite_token' => 'bbbbbbbbbbbbbbbbbbbbbbbb',
+            'created_at' => '2026-08-06T13:02:00+00:00',
+            'read_at' => null,
+            'hidden_at' => null,
+        ],
+        [
+            'id' => 'notification_other_user',
+            'event_key' => 'invite:token-a:other-user',
+            'user_id' => 'player-b',
+            'type' => 'invite_received',
+            'title' => 'Приглашение отменено',
+            'message' => '',
+            'tone' => 'warning',
+            'invite_token' => 'aaaaaaaaaaaaaaaaaaaaaaaa',
+            'created_at' => '2026-08-06T13:03:00+00:00',
+            'read_at' => null,
+            'hidden_at' => null,
+        ],
+    ],
+];
+
+$assertions = 0;
+$assert = static function (bool $condition, string $message) use (&$assertions): void {
+    $assertions++;
+    if (!$condition) throw new RuntimeException($message);
+};
+
+$hidden = $service->hideInviteNotifications($db, 'player-a', 'aaaaaaaaaaaaaaaaaaaaaaaa');
+$assert($hidden === 2, 'Both owner notifications for the exact invite token must be hidden.');
+$assert(!empty($db['notifications'][0]['hidden_at']) && !empty($db['notifications'][0]['read_at']), 'Hidden owner notification must also become read.');
+$assert(!empty($db['notifications'][1]['hidden_at']) && !empty($db['notifications'][1]['read_at']), 'Terminal owner notification must also become read.');
+$assert(empty($db['notifications'][2]['hidden_at']) && empty($db['notifications'][2]['read_at']), 'Another invite token for the same user must remain untouched.');
+$assert(empty($db['notifications'][3]['hidden_at']) && empty($db['notifications'][3]['read_at']), 'The other participant notification must remain untouched.');
+$assert(count($service->userNotifications($db, 'player-a')) === 1, 'Hidden duplicate invite notifications must disappear from the bell list.');
+$assert($service->unreadCount($db, 'player-a') === 1, 'Unread count must retain only the unrelated notification.');
+$assert($service->hideInviteNotifications($db, 'player-a', 'aaaaaaaaaaaaaaaaaaaaaaaa') === 0, 'Repeated consume must be idempotent.');
+
+fwrite(STDOUT, "NotificationInviteConsumeTest: {$assertions} assertions passed\n");
+''', encoding='utf-8')
+
+          (ROOT / 'bot/tests/ProductionMvp14D2TerminalDedupContractTest.php').write_text(r'''<?php
+declare(strict_types=1);
+
+$root = dirname(__DIR__, 2);
+$read = static function (string $path) use ($root): string {
+    $content = file_get_contents($root . '/' . $path);
+    if (!is_string($content)) throw new RuntimeException('Cannot read ' . $path);
+    return $content;
+};
+
+$client = $read('app/assets/js/games/game-invites-v110.js');
+$shell = $read('app/assets/js/main-v110-handoff-shell.js');
+$endpoint = $read('bot/notifications.php');
+$service = $read('bot/services/NotificationService.php');
+$e2e = $read('e2e/staging/d2-terminal-dedup.spec.mjs');
+
+$assertions = 0;
+$assert = static function (bool $condition, string $message) use (&$assertions): void {
+    $assertions++;
+    if (!$condition) throw new RuntimeException($message);
+};
+
+$assert(
+    str_contains($client, "showTerminalInvite(currentInvite, { consumeNotification:true });")
+        && str_contains($client, "data-terminal-invite-ack")
+        && str_contains($client, "consumeInviteNotification(token);"),
+    'A terminal status already painted in the open invite sheet must consume its duplicate notification.'
+);
+$assert(
+    str_contains($client, "const selfOwnedCancel = action === 'cancel'")
+        && str_contains($client, "Boolean(rollbackInvite?.is_owner)")
+        && str_contains($client, "closeSheet();")
+        && str_contains($client, "showScreen('home');"),
+    'A successful owner self-cancel outside the bell must return directly home without a terminal acknowledgement sheet.'
+);
+$assert(
+    str_contains($client, "new CustomEvent('mgw:notification-remove'")
+        && str_contains($client, "postJson(NOTIFICATIONS_URL, { hideInviteToken:normalizedToken })")
+        && str_contains($client, 'consumedTerminalInviteTokens'),
+    'Client-side removal and the authoritative server consume must remain one idempotent path.'
+);
+$assert(
+    str_contains($service, 'public function hideInviteNotifications(')
+        && str_contains($service, "$notification['hidden_at'] = $now;")
+        && str_contains($service, "$notification['read_at'] = $now;"),
+    'Notification storage must hide and read only the current user rows for the exact invite token.'
+);
+$assert(
+    str_contains($endpoint, "$payload['hideInviteToken']")
+        && str_contains($endpoint, "preg_match('/^[a-f0-9]{24}$/', $hideInviteToken)")
+        && str_contains($endpoint, 'hideInviteNotifications($data, $userId, $hideInviteToken)')
+        && str_contains($endpoint, "'hidden_count' => $hiddenCount"),
+    'The canonical notification endpoint must validate and synchronize the consume mutation through JSON and DB bridge paths.'
+);
+$assert(
+    str_contains($shell, './screens/notifications-screen-v110r12.js?v=1132')
+        && str_contains($shell, './games/game-invites-v110.js?v=1133'),
+    'D2 must publish the changed invite owner without inventing a second notification owner.'
+);
+$assert(
+    str_contains($e2e, 'declined invitation already shown in the owner sheet creates no duplicate toast or bell card')
+        && str_contains($e2e, 'owner self-cancel returns directly home without an acknowledgement sheet')
+        && substr_count($e2e, 'hideInviteToken') >= 2
+        && substr_count($e2e, 'data-notification-invite-token') >= 2,
+    'Live staging must prove both exact user scenarios and the absence of the duplicate token in the bell.'
+);
+
+fwrite(STDOUT, "ProductionMvp14D2TerminalDedupContractTest: {$assertions} assertions passed\n");
+''', encoding='utf-8')
+
+          (ROOT / 'e2e/staging/d2-terminal-dedup.spec.mjs').write_text(r'''import { test, expect } from '@playwright/test';
+import {
+  APP_ROUTE,
+  INVITES_ROUTE,
+  STAGING_ORIGIN,
+  isActionResponse,
+} from './support/d3-shared-config.mjs';
+import {
+  authorizeContext,
+  openPlayerPage,
+  cleanupPlayer,
+  revokeContext,
+} from './support/d3-shared-context.mjs';
+import {
+  expectPlayerRequest,
+} from './support/d3-shared-actions.mjs';
+
+const NOTIFICATIONS_ROUTE = `${STAGING_ORIGIN}/bot/notifications.php`;
+
+function isConsumeResponse(token) {
+  return response => {
+    if (response.url() !== NOTIFICATIONS_ROUTE || response.request().method() !== 'POST') return false;
+    try {
+      return String(response.request().postDataJSON()?.hideInviteToken || '') === token;
+    } catch {
+      return false;
+    }
+  };
+}
+
+async function openPlayers(browser, mobileA = false) {
+  const contextA = await browser.newContext({
+    locale: 'ru-RU',
+    timezoneId: 'Europe/Vilnius',
+    viewport: mobileA ? { width: 390, height: 844 } : { width: 1280, height: 900 },
+    deviceScaleFactor: 1,
+    isMobile: mobileA,
+    hasTouch: mobileA,
+  });
+  const contextB = await browser.newContext({
+    locale: 'ru-RU',
+    timezoneId: 'Europe/Vilnius',
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    isMobile: true,
+    hasTouch: true,
+  });
+  await authorizeContext(contextA, 'A');
+  await authorizeContext(contextB, 'B');
+  const playerA = await openPlayerPage(contextA, 'A', APP_ROUTE);
+  const playerB = await openPlayerPage(contextB, 'B', APP_ROUTE);
+  await cleanupPlayer(playerA.page);
+  await cleanupPlayer(playerB.page);
+  return { contextA, contextB, playerA, playerB };
+}
+
+async function closePlayers(players) {
+  await cleanupPlayer(players?.playerA?.page);
+  await cleanupPlayer(players?.playerB?.page);
+  if (players?.contextA) {
+    await revokeContext(players.contextA);
+    await players.contextA.close();
+  }
+  if (players?.contextB) {
+    await revokeContext(players.contextB);
+    await players.contextB.close();
+  }
+}
+
+async function createDirectInviteFromUi(playerA) {
+  const page = playerA.page;
+  await page.locator('[data-invite-friend="tictactoe"]').click();
+  await expect(page.locator('#sheet [data-invite-setup]')).toHaveCount(1);
+  await page.locator('[data-open-player-picker]').click();
+  const opponent = page.locator('[data-direct-opponent="stg_test_player_b"]');
+  await expect(opponent).toBeVisible({ timeout: 20_000 });
+
+  const createResponse = page.waitForResponse(
+    isActionResponse(INVITES_ROUTE, 'create_direct'),
+    { timeout: 35_000 },
+  );
+  await opponent.click();
+  const response = await createResponse;
+  const payload = await response.json().catch(() => null);
+  expect(response.status()).toBe(200);
+  expect(payload?.ok).toBe(true);
+  const token = String(payload?.invite?.token || '');
+  expect(token).toMatch(/^[a-f0-9]{24}$/);
+  await expect(page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено', {
+    timeout: 20_000,
+  });
+  return token;
+}
+
+async function expectNoTokenInBell(page, token) {
+  await page.locator('#notificationsOpen').click();
+  await expect(page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления', {
+    timeout: 20_000,
+  });
+  await expect(page.locator(`#sheet [data-notification-invite-token="${token}"]`)).toHaveCount(0);
+}
+
+test('declined invitation already shown in the owner sheet creates no duplicate toast or bell card', async ({ browser }) => {
+  test.setTimeout(150_000);
+  let players;
+  try {
+    players = await openPlayers(browser, false);
+    const token = await createDirectInviteFromUi(players.playerA);
+    const consumeResponse = players.playerA.page.waitForResponse(isConsumeResponse(token), {
+      timeout: 35_000,
+    });
+
+    const declined = await expectPlayerRequest(
+      players.playerB.page,
+      '/bot/invites.php',
+      { action: 'decline', token },
+      'Player B declines while Player A keeps the sent sheet open',
+    );
+    expect(String(declined?.invite?.status || '')).toBe('declined');
+
+    await expect(players.playerA.page.locator('#sheet .sheet-head h2')).toContainText('Отклон', {
+      timeout: 25_000,
+    });
+    await expect(players.playerA.page.locator('[data-terminal-invite-ack]')).toBeVisible();
+
+    const consumed = await consumeResponse;
+    const consumedPayload = await consumed.json().catch(() => null);
+    expect(consumed.status()).toBe(200);
+    expect(consumedPayload?.ok).toBe(true);
+    expect(Number(consumedPayload?.hidden_count || 0)).toBeGreaterThan(0);
+
+    await players.playerA.page.locator('[data-terminal-invite-ack]').click();
+    await expect(players.playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+    await players.playerA.page.waitForTimeout(1_500);
+    await expect(players.playerA.page.locator('#notificationToast')).not.toHaveClass(/show/);
+    await expectNoTokenInBell(players.playerA.page, token);
+
+    expect(players.playerA.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerB.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerA.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerB.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerA.diagnostics.serverErrors).toEqual([]);
+    expect(players.playerB.diagnostics.serverErrors).toEqual([]);
+  } finally {
+    await closePlayers(players);
+  }
+});
+
+test('owner self-cancel returns directly home without an acknowledgement sheet', async ({ browser }) => {
+  test.setTimeout(150_000);
+  let players;
+  try {
+    players = await openPlayers(browser, true);
+    const token = await createDirectInviteFromUi(players.playerA);
+    const cancel = players.playerA.page.locator(
+      `#sheet [data-invite-action="cancel"][data-invite-token="${token}"]`,
+    );
+    await expect(cancel).toBeVisible();
+    await expect(cancel).toBeEnabled();
+
+    const cancelResponse = players.playerA.page.waitForResponse(
+      isActionResponse(INVITES_ROUTE, 'cancel'),
+      { timeout: 35_000 },
+    );
+    const consumeResponse = players.playerA.page.waitForResponse(isConsumeResponse(token), {
+      timeout: 35_000,
+    });
+    await cancel.click();
+
+    const cancelled = await cancelResponse;
+    const cancelledPayload = await cancelled.json().catch(() => null);
+    expect(cancelled.status()).toBe(200);
+    expect(cancelledPayload?.ok).toBe(true);
+    expect(String(cancelledPayload?.invite?.status || '')).toMatch(/cancelled|canceled/);
+
+    const consumed = await consumeResponse;
+    const consumedPayload = await consumed.json().catch(() => null);
+    expect(consumed.status()).toBe(200);
+    expect(consumedPayload?.ok).toBe(true);
+
+    await expect(players.playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+    await expect(players.playerA.page.locator('.screen.active[data-screen="home"]')).toBeVisible();
+    await expect(players.playerA.page.locator('[data-terminal-invite-ack]')).toHaveCount(0);
+    await expect(players.playerA.page.locator('#notificationToast')).not.toHaveClass(/show/);
+    await expectNoTokenInBell(players.playerA.page, token);
+
+    expect(players.playerA.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerB.diagnostics.pageErrors).toEqual([]);
+    expect(players.playerA.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerB.diagnostics.failedRequests).toEqual([]);
+    expect(players.playerA.diagnostics.serverErrors).toEqual([]);
+    expect(players.playerB.diagnostics.serverErrors).toEqual([]);
+  } finally {
+    await closePlayers(players);
+  }
+});
+''', encoding='utf-8')
+          PY
+
+      - name: Commit exact focused change and remove technical workflow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f .github/workflows/tech-apply-d2-terminal-dedup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git diff --cached --quiet && { echo 'No changes produced'; exit 1; }
+          git commit -m "MVP-14 D2: remove duplicate terminal hints and return self-cancel home"
+          git push origin HEAD:agent/mvp14-d2-terminal-dedup-self-cancel-home
