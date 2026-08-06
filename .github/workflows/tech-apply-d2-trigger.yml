@@ -25,6 +25,7 @@ jobs:
           set -Eeuo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          import ast
 
           workflow = Path('.github/workflows/tech-apply-d2-terminal-dedup.yml').read_text(encoding='utf-8')
           start_marker = "          python3 - <<'PY'\n"
@@ -33,6 +34,26 @@ jobs:
           end = workflow.index(end_marker, start)
           lines = workflow[start:end].splitlines()
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines)
+
+          tree = ast.parse(script)
+          new_terminal_block = None
+          for node in tree.body:
+            if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'new_terminal_block' for target in node.targets):
+              new_terminal_block = ast.literal_eval(node.value)
+              break
+          if not isinstance(new_terminal_block, str):
+            raise SystemExit('Cannot resolve new terminal block from embedded patch.')
+
+          client_path = Path('app/assets/js/games/game-invites-v110.js')
+          client = client_path.read_text(encoding='utf-8')
+          terminal_start = client.index("    if (action === 'decline' || action === 'cancel') {")
+          terminal_end = client.index("    if (action === 'start') {", terminal_start)
+          client_path.write_text(client[:terminal_start] + new_terminal_block + client[terminal_end:], encoding='utf-8')
+
+          exact_call = "replace_once(client_path, old_terminal_block, new_terminal_block)\n"
+          if script.count(exact_call) != 1:
+            raise SystemExit('Embedded terminal replacement call is not unique.')
+          script = script.replace(exact_call, '', 1)
           exec(compile(script, '<embedded-d2-patch>', 'exec'), {'__name__':'__main__'})
           PY
 
