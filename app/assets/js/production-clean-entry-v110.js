@@ -16,7 +16,7 @@ import { initV110TargetedInteractions } from './production-v110-targeted-interac
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r12-invite-notification-presence-stability';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14r12-notification-publication-v1132';
 
 // The canonical v110 invitation module owns setup, player selection, link
 // creation, sharing and invite actions. Historical share/picker layers must not
