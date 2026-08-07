@@ -5,14 +5,17 @@ final class PaymentRuntimeBridge
 {
     private RuntimeStorageRouter $router;
     private ?RuntimePaymentRepository $repository;
+    private ?StorageAdapterInterface $storage;
 
     public function __construct(
         private array $config,
         ?RuntimeStorageRouter $router = null,
-        ?RuntimePaymentRepository $repository = null
+        ?RuntimePaymentRepository $repository = null,
+        ?StorageAdapterInterface $storage = null
     ) {
         $this->router = $router ?? new RuntimeStorageRouter($config);
         $this->repository = $repository;
+        $this->storage = $storage;
     }
 
     public function enabled(): bool
@@ -36,7 +39,19 @@ final class PaymentRuntimeBridge
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
-        return $this->repository()->synchronizeCurrentJson();
+
+        $storage = $this->storage ??= StorageFactory::create($this->config);
+        if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
+            throw new RuntimeException('Payment bridge requires JSON rollback storage.');
+        }
+        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
+            throw new RuntimeException('Payment bridge requires exclusive JSON snapshot support.');
+        }
+
+        $repository = $this->repository();
+        return $storage->exclusiveReadOnly(static function (array $_snapshot) use ($repository): array {
+            return $repository->synchronizeCurrentJson();
+        });
     }
 
     public function normalizeApiData(array $data, string $action): array
@@ -60,6 +75,7 @@ final class PaymentRuntimeBridge
 
     private function repository(): RuntimePaymentRepository
     {
-        return $this->repository ??= new RuntimePaymentRepository($this->config, $this->router);
+        $storage = $this->storage ??= StorageFactory::create($this->config);
+        return $this->repository ??= new RuntimePaymentRepository($this->config, $this->router, $storage);
     }
 }

@@ -5,14 +5,17 @@ final class ShopRuntimeBridge
 {
     private RuntimeStorageRouter $router;
     private ?RuntimeShopRepository $repository;
+    private ?StorageAdapterInterface $storage;
 
     public function __construct(
         private array $config,
         ?RuntimeStorageRouter $router = null,
-        ?RuntimeShopRepository $repository = null
+        ?RuntimeShopRepository $repository = null,
+        ?StorageAdapterInterface $storage = null
     ) {
         $this->router = $router ?? new RuntimeStorageRouter($config);
         $this->repository = $repository;
+        $this->storage = $storage;
     }
 
     public function enabled(): bool
@@ -36,7 +39,22 @@ final class ShopRuntimeBridge
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
-        $repository = $this->repository ??= new RuntimeShopRepository($this->config, $this->router);
-        return $repository->synchronizeCurrentJson();
+
+        $storage = $this->storage ??= StorageFactory::create($this->config);
+        if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
+            throw new RuntimeException('Shop bridge requires JSON rollback storage.');
+        }
+        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
+            throw new RuntimeException('Shop bridge requires exclusive JSON snapshot support.');
+        }
+
+        $repository = $this->repository ??= new RuntimeShopRepository(
+            $this->config,
+            $this->router,
+            $storage
+        );
+        return $storage->exclusiveReadOnly(static function (array $_snapshot) use ($repository): array {
+            return $repository->synchronizeCurrentJson();
+        });
     }
 }
