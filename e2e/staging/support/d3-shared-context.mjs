@@ -145,6 +145,17 @@ function isExpectedBackgroundShopHistoryAbort(request) {
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
 }
 
+function isInviteWatchRequest(request) {
+  return request.url().startsWith(STAGING_ORIGIN)
+    && request.method() === 'POST'
+    && new URL(request.url()).pathname === '/bot/invite-watch.php';
+}
+
+function isExpectedInviteWatchAbort(request) {
+  return isInviteWatchRequest(request)
+    && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+}
+
 export function collectDiagnostics(page, slot) {
   const report = {
     slot,
@@ -157,6 +168,8 @@ export function collectDiagnostics(page, slot) {
     ignoredBackgroundProfileAborts: 0,
     allowBackgroundShopHistoryAbort: false,
     ignoredBackgroundShopHistoryAborts: 0,
+    allowInviteWatchAbort: false,
+    ignoredInviteWatchAborts: 0,
   };
 
   // An allowed transition owns requests from the moment they start. A request
@@ -167,6 +180,7 @@ export function collectDiagnostics(page, slot) {
   const allowedInviteSyncAbortRequests = new WeakSet();
   const allowedBackgroundProfileAbortRequests = new WeakSet();
   const allowedBackgroundShopHistoryAbortRequests = new WeakSet();
+  const allowedInviteWatchAbortRequests = new WeakSet();
 
   page.on('pageerror', error => {
     report.pageErrors.push(String(error?.message || error).slice(0, 500));
@@ -182,6 +196,9 @@ export function collectDiagnostics(page, slot) {
     if (report.allowBackgroundShopHistoryAbort && isBackgroundShopHistoryRequest(request)) {
       allowedBackgroundShopHistoryAbortRequests.add(request);
     }
+    if (report.allowInviteWatchAbort && isInviteWatchRequest(request)) {
+      allowedInviteWatchAbortRequests.add(request);
+    }
   });
   page.on('requestfailed', request => {
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
@@ -196,6 +213,10 @@ export function collectDiagnostics(page, slot) {
     }
     if (allowedBackgroundShopHistoryAbortRequests.has(request) && isExpectedBackgroundShopHistoryAbort(request)) {
       report.ignoredBackgroundShopHistoryAborts += 1;
+      return;
+    }
+    if (allowedInviteWatchAbortRequests.has(request) && isExpectedInviteWatchAbort(request)) {
+      report.ignoredInviteWatchAborts += 1;
       return;
     }
     report.failedRequests.push({
