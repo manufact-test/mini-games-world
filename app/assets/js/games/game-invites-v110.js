@@ -941,11 +941,11 @@ function updateOpenInviteSheet(){
 function showDirectInvitePending(context, opponentName){
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Приглашение отправлено</h2><p>${escapeHtml(opponentName)} получит его в приложении.</p></div>
+      <div><h2>Приглашение отправлено</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${contextSummary(context)}
-    <div class="small-note invite-status-note">Доставляем приглашение игроку…</div>
+    <button class="btn primary full" type="button" aria-disabled="true" disabled style="opacity:1">Отменить приглашение</button>
   `);
 }
 
