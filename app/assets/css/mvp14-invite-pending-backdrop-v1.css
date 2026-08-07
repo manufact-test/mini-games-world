@@ -1,0 +1,6 @@
+/* MVP-14 direct invite pending frame: use the final invite backdrop from the first paint. */
+.overlay:has(#sheet > .btn.primary.full[aria-disabled="true"][disabled]:not([data-invite-action])){
+  background:rgba(3,6,12,.84);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
