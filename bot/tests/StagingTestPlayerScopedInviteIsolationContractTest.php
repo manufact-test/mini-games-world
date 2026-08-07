@@ -14,40 +14,69 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(str_contains($reset, "private const TEST_PLAYER_IDS = ['stg_test_player_a', 'stg_test_player_b'];"),
-    'Reset must remain scoped to the two staging test identities.');
-$assert(str_contains($reset, "throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');"),
-    'Reset must refuse mixed real/test invitations instead of deleting them.');
-$assert(str_contains($reset, "throw new RuntimeException('Staging test invite cleanup refuses a non-test participant.');"),
-    'DB cleanup must independently refuse non-test invite participants.');
-$assert(str_contains($reset, "throw new RuntimeException('Staging test invite cleanup refuses a non-test notification.');"),
-    'DB cleanup must independently refuse notifications belonging to real users.');
-$assert(str_contains($reset, "'open_invites_removed' => count(\$removedInvites)"),
-    'Reset must report exact open A/B invite removals.');
-$assert(str_contains($reset, "'invite_parity' => (\$inviteCleanup['parity'] ?? false) === true"),
-    'Reset must report scoped invite DB parity.');
-$assert(str_contains($reset, '->auditParity($snapshot)')
-    && str_contains($reset, '->auditParity($snapshot, $legacyUserId)'),
-    'Scoped cleanup must prove invite and notification parity with read-only audits.');
-$assert(!str_contains($reset, '->synchronizeAndList($snapshot, $legacyUserId)'),
-    'Scoped cleanup must not globally synchronize notification state.');
+$assert(
+    str_contains($reset, "private const TEST_PLAYER_IDS = ['stg_test_player_a', 'stg_test_player_b'];"),
+    'Reset must remain scoped to the two staging test identities.'
+);
+$assert(
+    str_contains($reset, "throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');"),
+    'Reset must refuse mixed real/test invitations instead of deleting them.'
+);
+$assert(
+    str_contains($reset, "return !isset(\$testIds[(string)(\$notification['user_id'] ?? '')]);"),
+    'The explicit pre-suite reset must remove all historical notifications for A/B only.'
+);
+$assert(
+    str_contains($reset, 'private function cleanupRuntimeTestNotificationRows(array $snapshot): array')
+        && str_contains($reset, 'WHERE legacy_user_id = :legacy_user_id')
+        && str_contains($reset, 'AND recipient_ref = :recipient_ref')
+        && str_contains($reset, 'AND mgw_id = :mgw_id'),
+    'DB notification cleanup must be exact-scoped to technical ownership.'
+);
+$assert(
+    str_contains($reset, "throw new RuntimeException('Staging test notification cleanup ownership mismatch.');"),
+    'DB cleanup must refuse rows whose ownership does not exactly match the A/B account.'
+);
+$assert(
+    str_contains($reset, '$notificationCleanup = $this->cleanupRuntimeTestNotificationRows($snapshot);')
+        && str_contains($reset, '$inviteCleanup = $this->cleanupRuntimeInviteRows($snapshot, $removedInvites);')
+        && strpos($reset, '$notificationCleanup = $this->cleanupRuntimeTestNotificationRows($snapshot);')
+            < strpos($reset, '$inviteCleanup = $this->cleanupRuntimeInviteRows($snapshot, $removedInvites);'),
+    'A/B notification DB cleanup must commit before invite parity cleanup runs.'
+);
+$deleteTransaction = strpos($reset, '$deleted = $database->transaction(function (DatabaseConnectionInterface $db) use ($ownership): int');
+$notificationAudit = strpos($reset, '->auditParity($snapshot, $legacyUserId);');
+$assert(
+    $deleteTransaction !== false && $notificationAudit !== false && $notificationAudit > $deleteTransaction,
+    'Notification parity audit must run only after the exact A/B delete transaction.'
+);
+$assert(
+    str_contains($reset, "'notification_parity' => (\$notificationCleanup['parity'] ?? false) === true"),
+    'Reset must report proven technical notification parity.'
+);
+$assert(
+    !str_contains($reset, '->synchronizeAndList($snapshot, $legacyUserId)'),
+    'Technical cleanup must use read-only parity audits rather than global notification synchronization.'
+);
 
-$deleteTransaction = strpos($reset, '$deleted = $database->transaction(');
-$inviteAudit = strpos($reset, '$inviteAudit = (new RuntimeInviteRepository');
-$assert($deleteTransaction !== false && $inviteAudit !== false && $inviteAudit > $deleteTransaction,
-    'Scoped DB delete and invite audit boundaries must exist in order.');
-$transactionEnd = strpos($reset, "        });\n\n        // The exact A/B delete transaction", (int)$deleteTransaction);
-$assert($transactionEnd !== false && $inviteAudit > $transactionEnd,
-    'Invite parity audit must run only after the exact A/B DB delete transaction has committed.');
-
+$resetActionStart = strpos($auth, "if (\$action === 'reset_test_players') {");
 $issueStart = strpos($auth, "if (\$action === 'issue') {");
 $revokeStart = strpos($auth, "if (\$action === 'revoke') {");
-$assert($issueStart !== false && $revokeStart !== false && $revokeStart > $issueStart,
-    'Issue action boundaries must exist.');
+$assert(
+    $resetActionStart !== false && $issueStart !== false && $revokeStart !== false
+        && $resetActionStart < $issueStart && $issueStart < $revokeStart,
+    'Staging auth action boundaries must exist in the expected order.'
+);
+$resetAction = substr($auth, (int)$resetActionStart, (int)$issueStart - (int)$resetActionStart);
 $issue = substr($auth, (int)$issueStart, (int)$revokeStart - (int)$issueStart);
-$assert(str_contains($issue, "if (\$slot === 'A')") && str_contains($issue, '$stateResetResult = $playerResetService()->reset($_SERVER);'),
-    'Every new Player A scenario must reset scoped A/B runtime state before issuing the session.');
-$assert(!str_contains($issue, '$residualService()->reconcile($_SERVER)'),
-    'Per-scenario test auth must not run broad real-user residual recovery.');
+$assert(
+    str_contains($resetAction, '$result = $playerResetService()->reset($_SERVER);'),
+    'GitHub-OIDC reset_test_players must remain the sole test-state reset owner.'
+);
+$assert(
+    !str_contains($issue, '$playerResetService()->reset($_SERVER)')
+        && !str_contains($issue, '$residualService()->reconcile($_SERVER)'),
+    'Per-session issue must never reset A/B state or run broad residual recovery.'
+);
 
 fwrite(STDOUT, "StagingTestPlayerScopedInviteIsolationContractTest: {$assertions} assertions passed\n");
