@@ -104,12 +104,14 @@ test('normal outgoing pending is passive after close/reopen and recipient may ac
     expect(freshSync?.invite ?? null).toBeNull();
     expect(freshSync?.tracked_invite ?? null).toBeNull();
 
-    // The invitation itself must still exist for B.
+    // Recipient pending is notification-only too, so a blank fresh sync must not
+    // turn it into blocking state. Tracking the exact token still proves the
+    // authoritative invitation exists and remains actionable for B.
     const inviteeSync = await expectPlayerRequest(
       playerB.page,
       '/bot/invites.php',
-      { action: 'sync', token: '' },
-      'Player B still sees the pending invitation',
+      { action: 'sync', token },
+      'Player B can track the exact pending invitation without making it blocking',
     );
     const received = inviteeSync?.opened_invite || inviteeSync?.invite || inviteeSync?.tracked_invite || null;
     expect(String(received?.token || '')).toBe(token);
