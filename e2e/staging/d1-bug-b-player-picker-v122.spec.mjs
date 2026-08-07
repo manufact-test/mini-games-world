@@ -7,6 +7,7 @@ const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
+const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const OPPONENTS_ROUTE = `${STAGING_ORIGIN}/bot/invite-opponents.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const PLAYER_B_VISIBLE_NAME = '@mgw_test_player_b';
@@ -49,6 +50,49 @@ async function openPlayer(browser, slot, isMobile) {
     label: `Player ${slot}`,
   });
   return { context, page };
+}
+
+async function postInviteFromPlayer(page, data) {
+  return page.evaluate(async ({ route, requestData }) => {
+    const response = await fetch(route, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', Accept:'application/json' },
+      body:JSON.stringify({
+        ...requestData,
+        initData:'',
+        sessionId:localStorage.getItem('mgw_device_session_id'),
+        deviceId:localStorage.getItem('mgw_device_id'),
+      }),
+      cache:'no-store',
+    });
+    return { status:response.status, payload:await response.json().catch(() => null) };
+  }, { route:INVITES_ROUTE, requestData:data });
+}
+
+async function cleanupOwnedInvite(player) {
+  if (!player?.page) return;
+  const sync = await postInviteFromPlayer(player.page, { action:'sync', token:'' });
+  if (sync.status !== 200) return;
+  const invite = sync.payload?.invite || sync.payload?.tracked_invite || null;
+  if (!invite?.token || invite?.is_owner !== true) return;
+
+  const status = String(invite.status || '');
+  if (status === 'draft') {
+    const discarded = await postInviteFromPlayer(player.page, {
+      action:'discard_draft',
+      token:String(invite.token),
+    });
+    expect(discarded.status, 'Player-picker warm draft cleanup status').toBe(200);
+    return;
+  }
+
+  if (['pending', 'accepted', 'awaiting_start'].includes(status)) {
+    const cancelled = await postInviteFromPlayer(player.page, {
+      action:'cancel',
+      token:String(invite.token),
+    });
+    expect(cancelled.status, 'Player-picker open invite cleanup status').toBe(200);
+  }
 }
 
 async function closePlayer(player) {
@@ -140,6 +184,7 @@ async function runActualStartPicker(browser, isMobile) {
     expect(String(pickerFrames[0].text)).toContain(PLAYER_B_VISIBLE_NAME);
     expect(requests).toBe(1);
   } finally {
+    await cleanupOwnedInvite(playerA);
     await playerA.page.unroute(OPPONENTS_ROUTE, delayLiveOpponentRequest);
     playerA.page.off('request', countRequest);
     await closePlayer(playerA);

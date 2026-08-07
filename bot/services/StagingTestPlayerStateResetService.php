@@ -133,27 +133,24 @@ final class StagingTestPlayerStateResetService
             }
             $data['invites'] = array_values(is_array($data['invites'] ?? null) ? $data['invites'] : []);
 
-            if ($removedInvites !== []) {
-                $removedTokens = [];
-                foreach ($removedInvites as $removedInvite) {
-                    $removedTokens[(string)$removedInvite['token']] = true;
+            // A/B are dedicated technical identities. Every suite starts with no
+            // historical notification state for them, while real-user rows are kept.
+            $notificationsBefore = count(is_array($data['notifications'] ?? null) ? $data['notifications'] : []);
+            $data['notifications'] = array_values(array_filter(
+                is_array($data['notifications'] ?? null) ? $data['notifications'] : [],
+                static function ($notification) use ($testIds): bool {
+                    if (!is_array($notification)) return true;
+                    return !isset($testIds[(string)($notification['user_id'] ?? '')]);
                 }
-                $notificationsBefore = count(is_array($data['notifications'] ?? null) ? $data['notifications'] : []);
-                $data['notifications'] = array_values(array_filter(
-                    is_array($data['notifications'] ?? null) ? $data['notifications'] : [],
-                    static function ($notification) use ($testIds, $removedTokens): bool {
-                        if (!is_array($notification)) return true;
-                        $userId = (string)($notification['user_id'] ?? '');
-                        $token = trim((string)($notification['invite_token'] ?? ''));
-                        return !isset($testIds[$userId]) || $token === '' || !isset($removedTokens[$token]);
-                    }
-                ));
-                $notificationsRemoved = $notificationsBefore - count($data['notifications']);
-            }
+            ));
+            $notificationsRemoved = $notificationsBefore - count($data['notifications']);
 
             return $data;
         });
 
+        // Notification cleanup must commit before invite parity audits. The JSON
+        // snapshot above contains no A/B notification history by contract.
+        $notificationCleanup = $this->cleanupRuntimeTestNotificationRows($snapshot);
         $inviteCleanup = $this->cleanupRuntimeInviteRows($snapshot, $removedInvites);
 
         $economy = new RuntimeEconomyRepository($this->config, $this->router);
@@ -184,17 +181,103 @@ final class StagingTestPlayerStateResetService
             'active_test_games_finished' => $gamesFinished,
             'invite_db_rows_removed' => (int)($inviteCleanup['invite_rows'] ?? 0),
             'invite_event_db_rows_removed' => (int)($inviteCleanup['invite_event_rows'] ?? 0),
-            'notification_db_rows_removed' => (int)($inviteCleanup['notification_rows'] ?? 0),
+            'notification_db_rows_removed' => (int)($notificationCleanup['notification_rows'] ?? 0)
+                + (int)($inviteCleanup['notification_rows'] ?? 0),
             'invite_parity' => ($inviteCleanup['parity'] ?? false) === true,
+            'notification_parity' => ($notificationCleanup['parity'] ?? false) === true,
             'economy_parity' => true,
             'production_changed' => false,
             'live_payments_used' => false,
         ];
     }
 
+    private function cleanupRuntimeTestNotificationRows(array $snapshot): array
+    {
+        if (!$this->router->enabled()
+            || $this->router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE
+            || $this->router->routeFor('notifications') !== RuntimeStorageRouter::DRIVER_DATABASE) {
+            return ['notification_rows' => 0, 'parity' => true];
+        }
+
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('Staging test notification cleanup requires an enabled database.');
+        }
+        $database = PdoConnectionFactory::create($databaseConfig);
+        $ownership = [];
+
+        foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+            $rows = $database->fetchAll(
+                'SELECT account_ref, mgw_id, ownership_status
+                 FROM mgw_account_ownership
+                 WHERE legacy_user_id = :legacy_user_id',
+                ['legacy_user_id' => $legacyUserId]
+            );
+            if (count($rows) !== 1 || (string)($rows[0]['ownership_status'] ?? '') !== 'active') {
+                throw new RuntimeException('Staging test notification cleanup ownership is unavailable.');
+            }
+            $accountRef = trim((string)($rows[0]['account_ref'] ?? ''));
+            $mgwId = trim((string)($rows[0]['mgw_id'] ?? ''));
+            if ($accountRef === '' || $mgwId === '') {
+                throw new RuntimeException('Staging test notification cleanup ownership is incomplete.');
+            }
+            $ownership[$legacyUserId] = ['account_ref' => $accountRef, 'mgw_id' => $mgwId];
+        }
+
+        $deleted = $database->transaction(function (DatabaseConnectionInterface $db) use ($ownership): int {
+            $count = 0;
+            foreach ($ownership as $legacyUserId => $identity) {
+                $rows = $db->fetchAll(
+                    'SELECT notification_id, recipient_ref, mgw_id, legacy_user_id
+                     FROM mgw_notifications
+                     WHERE legacy_user_id = :legacy_user_id
+                     ORDER BY notification_id',
+                    ['legacy_user_id' => $legacyUserId]
+                );
+                foreach ($rows as $row) {
+                    if (!hash_equals((string)$identity['account_ref'], trim((string)($row['recipient_ref'] ?? '')))
+                        || !hash_equals((string)$identity['mgw_id'], trim((string)($row['mgw_id'] ?? '')))
+                        || !hash_equals((string)$legacyUserId, trim((string)($row['legacy_user_id'] ?? '')))) {
+                        throw new RuntimeException('Staging test notification cleanup ownership mismatch.');
+                    }
+                    $affected = $db->execute(
+                        'DELETE FROM mgw_notifications
+                         WHERE notification_id = :notification_id
+                           AND legacy_user_id = :legacy_user_id
+                           AND recipient_ref = :recipient_ref
+                           AND mgw_id = :mgw_id',
+                        [
+                            'notification_id' => (string)($row['notification_id'] ?? ''),
+                            'legacy_user_id' => $legacyUserId,
+                            'recipient_ref' => (string)$identity['account_ref'],
+                            'mgw_id' => (string)$identity['mgw_id'],
+                        ]
+                    );
+                    if ($affected !== 1) {
+                        throw new RuntimeException('Staging test notification cleanup delete count is unexpected.');
+                    }
+                    $count += $affected;
+                }
+            }
+            return $count;
+        });
+
+        // Audit only after the exact technical-account delete transaction commits.
+        foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+            $notificationAudit = (new RuntimeNotificationRepository($this->config, $this->router, $database))
+                ->auditParity($snapshot, $legacyUserId);
+            if (($notificationAudit['ok'] ?? false) !== true) {
+                throw new RuntimeException('Staging test notification cleanup did not restore parity.');
+            }
+        }
+
+        return ['notification_rows' => $deleted, 'parity' => true];
+    }
+
     private function cleanupRuntimeInviteRows(array $snapshot, array $removedInvites): array
     {
         if ($removedInvites === []) {
+            $this->assertInviteParity($snapshot);
             return [
                 'invite_rows' => 0,
                 'invite_event_rows' => 0,
@@ -274,26 +357,18 @@ final class StagingTestPlayerStateResetService
                     throw new RuntimeException('Staging test invite cleanup refuses a match-referenced invite.');
                 }
 
-                $notifications = $db->fetchAll(
+                // All A/B notification rows were removed by the dedicated cleanup
+                // before this transaction. Any remaining row for the invite is unsafe.
+                $remainingNotifications = $db->fetchAll(
                     'SELECT notification_id, legacy_user_id FROM mgw_notifications WHERE invite_token = :invite_token',
                     ['invite_token' => $token]
                 );
-                foreach ($notifications as $notification) {
+                foreach ($remainingNotifications as $notification) {
                     $recipient = trim((string)($notification['legacy_user_id'] ?? ''));
                     if (!isset($testIds[$recipient])) {
                         throw new RuntimeException('Staging test invite cleanup refuses a non-test notification.');
                     }
-                    $count = $db->execute(
-                        'DELETE FROM mgw_notifications WHERE notification_id = :notification_id AND invite_token = :invite_token',
-                        [
-                            'notification_id' => (string)($notification['notification_id'] ?? ''),
-                            'invite_token' => $token,
-                        ]
-                    );
-                    if ($count !== 1) {
-                        throw new RuntimeException('Staging test invite notification delete count is unexpected.');
-                    }
-                    $deleted['notification_rows'] += $count;
+                    throw new RuntimeException('Staging test invite cleanup found unexpected test notification residue.');
                 }
 
                 $eventCount = $db->execute(
@@ -315,24 +390,26 @@ final class StagingTestPlayerStateResetService
             return $deleted;
         });
 
-        // The exact A/B delete transaction must be fully committed before the
-        // repositories open their own read-only parity transactions. Nesting the
-        // invite audit inside the delete transaction is what previously left JSON
-        // committed while DB cleanup rolled back on the next test scenario.
+        $this->assertInviteParity($snapshot);
+        return $deleted + ['parity' => true];
+    }
+
+    private function assertInviteParity(array $snapshot): void
+    {
+        if (!$this->router->enabled()
+            || $this->router->routeFor('invites') !== RuntimeStorageRouter::DRIVER_DATABASE) {
+            return;
+        }
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        if (!$databaseConfig->enabled()) {
+            throw new RuntimeException('Staging test invite parity requires an enabled database.');
+        }
+        $database = PdoConnectionFactory::create($databaseConfig);
         $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $database))
             ->auditParity($snapshot);
         if (($inviteAudit['ok'] ?? false) !== true) {
             throw new RuntimeException('Staging test invite cleanup did not restore invite parity.');
         }
-        foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
-            $notificationAudit = (new RuntimeNotificationRepository($this->config, $this->router, $database))
-                ->auditParity($snapshot, $legacyUserId);
-            if (($notificationAudit['ok'] ?? false) !== true) {
-                throw new RuntimeException('Staging test invite cleanup did not restore notification parity.');
-            }
-        }
-
-        return $deleted + ['parity' => true];
     }
 
     private function assertAvailable(array $server): void
