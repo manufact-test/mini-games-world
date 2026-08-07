@@ -99,6 +99,13 @@ try {
         }
         (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
         $result = $playerResetService()->reset($_SERVER);
+        $recovery = $residualService()->reconcile($_SERVER);
+        $result['invite_residual_recovery'] = [
+            'status' => (string)($recovery['status'] ?? ''),
+            'candidate_count' => (int)($recovery['candidate_count'] ?? 0),
+            'deleted' => is_array($recovery['deleted'] ?? null) ? $recovery['deleted'] : [],
+            'parity' => is_array($recovery['parity'] ?? null) ? $recovery['parity'] : [],
+        ];
 
         echo json_encode(
             $result + ['authorization_mode' => 'github_actions_oidc'],
@@ -111,6 +118,7 @@ try {
         $slot = strtoupper(trim((string)($payload['slot'] ?? '')));
         $providedSecret = $providedCredential;
         $recoveryResult = null;
+        $stateResetResult = null;
         if (substr_count($providedCredential, '.') === 2) {
             (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
             $providedSecret = trim((string)($config['staging_test_auth_secret'] ?? ''));
@@ -119,6 +127,7 @@ try {
             }
             $authorizationMode = 'github_actions_oidc';
             if ($slot === 'A') {
+                $stateResetResult = $playerResetService()->reset($_SERVER);
                 $recoveryResult = $residualService()->reconcile($_SERVER);
             }
         }
@@ -143,6 +152,14 @@ try {
                 'secure' => true,
                 'same_site' => 'Strict',
             ],
+            'test_player_state_reset' => is_array($stateResetResult) ? [
+                'status' => (string)($stateResetResult['status'] ?? ''),
+                'queue_removed' => (int)($stateResetResult['queue_removed'] ?? 0),
+                'open_invites_removed' => (int)($stateResetResult['open_invites_removed'] ?? 0),
+                'notifications_removed' => (int)($stateResetResult['notifications_removed'] ?? 0),
+                'active_test_games_finished' => (int)($stateResetResult['active_test_games_finished'] ?? 0),
+                'economy_parity' => ($stateResetResult['economy_parity'] ?? false) === true,
+            ] : null,
             'invite_residual_recovery' => is_array($recoveryResult) ? [
                 'status' => (string)($recoveryResult['status'] ?? ''),
                 'candidate_count' => (int)($recoveryResult['candidate_count'] ?? 0),
