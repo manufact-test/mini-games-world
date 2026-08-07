@@ -5,6 +5,11 @@ require_once __DIR__ . '/PresenceService.php';
 
 final class StatsService
 {
+    private const STAGING_TEST_ACCOUNT_IDS = [
+        'stg_test_player_a',
+        'stg_test_player_b',
+    ];
+
     private PresenceService $presence;
 
     public function __construct(?PresenceService $presence = null)
@@ -19,6 +24,7 @@ final class StatsService
             foreach ($this->presence->onlineAccountIds() as $accountId) {
                 $accountId = trim((string)$accountId);
                 if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
+                if ($this->hideStagingTestAccount($accountId)) continue;
                 $onlineAccounts[$accountId] = true;
             }
         } else {
@@ -32,6 +38,7 @@ final class StatsService
                 if ($last <= 0 || $now - $last > $this->presence->onlineWindowSec()) continue;
                 $accountId = trim((string)($user['telegram_id'] ?? $user['id'] ?? $storageKey));
                 if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
+                if ($this->hideStagingTestAccount($accountId)) continue;
                 $onlineAccounts[$accountId] = true;
             }
         }
@@ -59,5 +66,20 @@ final class StatsService
             'search_match' => $searchMatch,
             'search_gold' => $searchGold,
         ];
+    }
+
+    private function hideStagingTestAccount(string $accountId): bool
+    {
+        $environment = strtolower(trim((string)($GLOBALS['config']['environment'] ?? '')));
+        if ($environment !== 'staging') return false;
+
+        // GitHub Actions authenticates its isolated A/B browser contexts with this
+        // HTTP-only staging cookie. Those contexts must still see each other so the
+        // presence regression remains meaningful, while ordinary Telegram users must
+        // never see automation accounts in the public online-player number.
+        $testSession = trim((string)($_COOKIE['mgw_staging_test_session'] ?? ''));
+        if ($testSession !== '') return false;
+
+        return in_array($accountId, self::STAGING_TEST_ACCOUNT_IDS, true);
     }
 }
