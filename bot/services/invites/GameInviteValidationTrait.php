@@ -29,6 +29,13 @@ trait GameInviteValidationTrait
         $this->assertNoOpenInvite($db, $userId, $currentToken, $message);
     }
 
+    private function isBusyWithGameOrSearch(array $db, array $user): bool
+    {
+        $userId = $this->requireUserId($user);
+        if (in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) return true;
+        return (bool)$this->games->findActiveGameForUser($db, $userId);
+    }
+
     private function assertNoOpenInvite(array $db, string $userId, string $exceptToken, string $message): void
     {
         foreach ($db['invites'] ?? [] as $invite) {
