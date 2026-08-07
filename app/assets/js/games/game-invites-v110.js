@@ -835,9 +835,10 @@ async function syncNow({ announce = true } = {}){
   if (syncBusy || document.visibilityState !== 'visible') return null;
   if (String(state.activeGame?.status || '') === 'active') return null;
 
+  const requestedInviteToken = String(currentInvite?.token || '');
   syncBusy = true;
   try {
-    const result = await inviteRequest('sync', { token:String(currentInvite?.token || '') });
+    const result = await inviteRequest('sync', { token:requestedInviteToken });
     syncState(result);
     processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
@@ -853,7 +854,11 @@ async function syncNow({ announce = true } = {}){
       if (isTerminal(nextInvite.status) && openSheetInviteToken() !== String(nextInvite.token || '')) {
         currentInvite = null;
       }
-    } else if (currentInvite && !isDraft(currentInvite)) {
+    } else if (
+      currentInvite
+      && !isDraft(currentInvite)
+      && String(currentInvite?.token || '') === requestedInviteToken
+    ) {
       currentInvite = null;
     }
 
