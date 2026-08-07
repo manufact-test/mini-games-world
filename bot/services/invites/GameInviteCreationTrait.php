@@ -196,9 +196,16 @@ trait GameInviteCreationTrait
             if ($index !== null && $this->isParticipant($db['invites'][$index], $userId)) {
                 $candidate = $this->publicInvite($db['invites'][$index], $userId);
                 if ($this->isNotificationOnlyPendingInvite($candidate)) {
-                    // A pending invitation may be shown once by its explicit entry path,
-                    // but waiting for the other player must not become blocking client state.
-                    $openedInvite = $candidate;
+                    if (!empty($candidate['is_owner']) && (string)($candidate['source'] ?? '') !== 'rematch') {
+                        // Keep the just-sent owner sheet authoritative inside this
+                        // document so its fast Cancel action retains the full invite.
+                        // Once the sheet is closed the client releases this tracked token.
+                        $trackedInvite = $candidate;
+                    } else {
+                        // Telegram/open-link may show a recipient invitation once without
+                        // turning it into active state that blocks unrelated launches.
+                        $openedInvite = $candidate;
+                    }
                 } else {
                     $trackedInvite = $candidate;
                 }
