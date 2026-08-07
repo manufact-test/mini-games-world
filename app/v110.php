@@ -11,7 +11,6 @@ if (!is_string($html)) {
 }
 
 $telegramScript = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
-$invitePendingBackdropStyle = '<link rel="stylesheet" href="./assets/css/mvp14-invite-pending-backdrop-v1.css?v=1" />';
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -36,7 +35,7 @@ if (!str_contains($html, $telegramScript)) {
 
 $html = str_replace(
     $telegramScript,
-    $invitePendingBackdropStyle . "\n  " . $telegramScript . "\n  " . $importMap,
+    $telegramScript . "\n  " . $importMap,
     $html
 );
 $html = str_replace(
