@@ -22,7 +22,7 @@ function apiActionResponse(action) {
     && requestAction(response.request()) === action;
 }
 
-test('normal outgoing pending is passive immediately after close/reopen and recipient may accept while sender searches', async ({ browser }) => {
+test('normal outgoing pending is passive immediately after close/reopen and recipient may accept while sender keeps ordinary activity', async ({ browser }) => {
   test.setTimeout(150_000);
   let contextA;
   let contextB;
@@ -134,28 +134,37 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     expect(startedPayload?.ok).toBe(true);
     await expect(playerA.page.locator('#screen-search')).toHaveClass(/active/, { timeout: 15_000 });
 
-    // B accepting must not fail just because A is already searching, and must not auto-leave that search.
+    // B accepting must not fail because A is already busy and must not replace
+    // A's ordinary search or a game that search may naturally find in the meantime.
     const accepted = await expectPlayerRequest(
       playerB.page,
       '/bot/invites.php',
       { action: 'accept', token },
-      'Player B accepts while Player A is searching',
+      'Player B accepts while Player A has ordinary matchmaking activity',
     );
     expect(['accepted', 'awaiting_start']).toContain(String(accepted?.invite?.status || ''));
+    expect(accepted?.game ?? null).toBeNull();
+    expect(String(accepted?.invite?.game_id || '')).toBe('');
 
     const stateAfterAccept = await expectPlayerRequest(
       playerA.page,
       '/bot/api.php',
       { action: 'game_state' },
-      'Player A remains in ordinary search after invite acceptance',
+      'Player A keeps ordinary activity after invite acceptance',
     );
-    expect(String(stateAfterAccept?.user?.status || '')).toBe('searching');
+    const activityStatus = String(stateAfterAccept?.user?.status || '');
+    expect(['searching', 'playing']).toContain(activityStatus);
 
-    const leaveResponse = playerA.page.waitForResponse(apiActionResponse('leave_search'), { timeout: 35_000 });
-    await playerA.page.locator('#cancelSearch').click();
-    const left = await leaveResponse;
-    expect(left.status()).toBe(200);
-    await expect(playerA.page.locator('#screen-home')).toHaveClass(/active/, { timeout: 15_000 });
+    if (activityStatus === 'searching') {
+      const leaveResponse = playerA.page.waitForResponse(apiActionResponse('leave_search'), { timeout: 35_000 });
+      await playerA.page.locator('#cancelSearch').click();
+      const left = await leaveResponse;
+      expect(left.status()).toBe(200);
+      await expect(playerA.page.locator('#screen-home')).toHaveClass(/active/, { timeout: 15_000 });
+    } else {
+      expect(String(stateAfterAccept?.game?.id || '')).not.toBe('');
+      expect(String(stateAfterAccept?.game?.status || '')).toBe('active');
+    }
 
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
