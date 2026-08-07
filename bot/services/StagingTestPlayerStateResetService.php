@@ -37,6 +37,7 @@ final class StagingTestPlayerStateResetService
                 throw new RuntimeException('Staging test users are unavailable.');
             }
 
+            $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
             foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
                 if (!isset($data['users'][$legacyUserId]) || !is_array($data['users'][$legacyUserId])) {
                     throw new RuntimeException('Staging test player is not initialized.');
@@ -44,9 +45,7 @@ final class StagingTestPlayerStateResetService
                 $before[$legacyUserId] = (int)($data['users'][$legacyUserId]['balance_match'] ?? 0);
             }
 
-            $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
             $games = new GameService($this->config);
-
             foreach (($data['games'] ?? []) as $gameId => $game) {
                 if (!is_array($game) || (string)($game['status'] ?? '') !== 'active') continue;
                 $participants = array_values(array_filter(
@@ -100,19 +99,23 @@ final class StagingTestPlayerStateResetService
                 ], static fn(string $id): bool => $id !== '')));
                 if ($participants === []) continue;
 
-                $containsTestPlayer = false;
+                $hasTestParticipant = false;
                 foreach ($participants as $participantId) {
                     if (isset($testIds[$participantId])) {
-                        $containsTestPlayer = true;
+                        $hasTestParticipant = true;
                         continue;
                     }
-                    if ($containsTestPlayer
-                        || isset($testIds[(string)($invite['inviter_id'] ?? '')])
+                    if (isset($testIds[(string)($invite['inviter_id'] ?? '')])
                         || isset($testIds[(string)($invite['invitee_id'] ?? '')])) {
                         throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
                     }
                 }
-                if (!$containsTestPlayer) continue;
+                if (!$hasTestParticipant) continue;
+                foreach ($participants as $participantId) {
+                    if (!isset($testIds[$participantId])) {
+                        throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
+                    }
+                }
 
                 $inviteId = trim((string)($invite['id'] ?? ''));
                 $token = trim((string)($invite['token'] ?? ''));
@@ -219,8 +222,7 @@ final class StagingTestPlayerStateResetService
         $database = PdoConnectionFactory::create($databaseConfig);
         $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
 
-        return $database->transaction(function (DatabaseConnectionInterface $db) use (
-            $snapshot,
+        $deleted = $database->transaction(function (DatabaseConnectionInterface $db) use (
             $removedInvites,
             $testIds
         ): array {
@@ -249,6 +251,7 @@ final class StagingTestPlayerStateResetService
                     throw new RuntimeException('Staging test invite cleanup found duplicate DB identity.');
                 }
                 if ($rows === []) continue;
+
                 $row = $rows[0];
                 $dbParticipants = array_values(array_unique(array_filter([
                     trim((string)($row['inviter_legacy_user_id'] ?? '')),
@@ -309,20 +312,27 @@ final class StagingTestPlayerStateResetService
                 $deleted['invite_rows'] += $inviteCount;
             }
 
-            $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $db))->auditParity($snapshot);
-            if (($inviteAudit['ok'] ?? false) !== true) {
-                throw new RuntimeException('Staging test invite cleanup did not restore invite parity.');
-            }
-            foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
-                $notificationAudit = (new RuntimeNotificationRepository($this->config, $this->router, $db))
-                    ->auditParity($snapshot, $legacyUserId);
-                if (($notificationAudit['ok'] ?? false) !== true) {
-                    throw new RuntimeException('Staging test invite cleanup did not restore notification parity.');
-                }
-            }
-
-            return $deleted + ['parity' => true];
+            return $deleted;
         });
+
+        // The exact A/B delete transaction must be fully committed before the
+        // repositories open their own read-only parity transactions. Nesting the
+        // invite audit inside the delete transaction is what previously left JSON
+        // committed while DB cleanup rolled back on the next test scenario.
+        $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $database))
+            ->auditParity($snapshot);
+        if (($inviteAudit['ok'] ?? false) !== true) {
+            throw new RuntimeException('Staging test invite cleanup did not restore invite parity.');
+        }
+        foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+            $notificationAudit = (new RuntimeNotificationRepository($this->config, $this->router, $database))
+                ->auditParity($snapshot, $legacyUserId);
+            if (($notificationAudit['ok'] ?? false) !== true) {
+                throw new RuntimeException('Staging test invite cleanup did not restore notification parity.');
+            }
+        }
+
+        return $deleted + ['parity' => true];
     }
 
     private function assertAvailable(array $server): void
