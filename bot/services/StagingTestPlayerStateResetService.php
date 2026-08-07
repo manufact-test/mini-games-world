@@ -191,6 +191,15 @@ final class StagingTestPlayerStateResetService
 
     private function cleanupRuntimeInviteRows(array $snapshot, array $removedInvites): array
     {
+        if ($removedInvites === []) {
+            return [
+                'invite_rows' => 0,
+                'invite_event_rows' => 0,
+                'notification_rows' => 0,
+                'parity' => true,
+            ];
+        }
+
         if (!$this->router->enabled()
             || $this->router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE
             || $this->router->routeFor('notifications') !== RuntimeStorageRouter::DRIVER_DATABASE
@@ -300,15 +309,14 @@ final class StagingTestPlayerStateResetService
                 $deleted['invite_rows'] += $inviteCount;
             }
 
-            $inviteSync = (new RuntimeInviteRepository($this->config, $this->router, $db))->synchronize($snapshot);
-            if (($inviteSync['parity'] ?? false) !== true) {
+            $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $db))->auditParity($snapshot);
+            if (($inviteAudit['ok'] ?? false) !== true) {
                 throw new RuntimeException('Staging test invite cleanup did not restore invite parity.');
             }
             foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
-                $notificationSync = (new RuntimeNotificationRepository($this->config, $this->router, $db))
-                    ->synchronizeAndList($snapshot, $legacyUserId);
-                $summary = is_array($notificationSync['summary'] ?? null) ? $notificationSync['summary'] : [];
-                if (($summary['parity'] ?? false) !== true) {
+                $notificationAudit = (new RuntimeNotificationRepository($this->config, $this->router, $db))
+                    ->auditParity($snapshot, $legacyUserId);
+                if (($notificationAudit['ok'] ?? false) !== true) {
                     throw new RuntimeException('Staging test invite cleanup did not restore notification parity.');
                 }
             }
