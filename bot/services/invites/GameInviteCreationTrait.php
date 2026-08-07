@@ -141,11 +141,11 @@ trait GameInviteCreationTrait
         if (!isset($db['users'][$inviterId]) || !is_array($db['users'][$inviterId])) {
             throw new RuntimeException('Пригласивший игрок больше недоступен.');
         }
-        $this->assertAvailableForStart(
+        $this->assertNoOpenInvite(
             $db,
-            $db['users'][$inviterId],
+            $inviterId,
             (string)($invite['token'] ?? ''),
-            'Пригласивший игрок уже занят другим матчем или приглашением.'
+            'Пригласивший игрок уже занят другим приглашением.'
         );
 
         $now = now_iso();
@@ -196,9 +196,16 @@ trait GameInviteCreationTrait
             if ($index !== null && $this->isParticipant($db['invites'][$index], $userId)) {
                 $candidate = $this->publicInvite($db['invites'][$index], $userId);
                 if ($this->isNotificationOnlyPendingInvite($candidate)) {
-                    // Telegram/open-link may show this invitation once without making
-                    // it an active client state that blocks unrelated game launches.
-                    $openedInvite = $candidate;
+                    if (!empty($candidate['is_owner']) && (string)($candidate['source'] ?? '') !== 'rematch') {
+                        // Keep the just-sent owner sheet authoritative inside this
+                        // document so its fast Cancel action retains the full invite.
+                        // Once the sheet is closed the client releases this tracked token.
+                        $trackedInvite = $candidate;
+                    } else {
+                        // Telegram/open-link may show a recipient invitation once without
+                        // turning it into active state that blocks unrelated launches.
+                        $openedInvite = $candidate;
+                    }
                 } else {
                     $trackedInvite = $candidate;
                 }
@@ -218,9 +225,8 @@ trait GameInviteCreationTrait
 
     private function isNotificationOnlyPendingInvite(?array $invite): bool
     {
-        return is_array($invite)
-            && (string)($invite['status'] ?? '') === 'pending'
-            && !empty($invite['is_invitee'])
-            && empty($invite['is_owner']);
+        if (!is_array($invite) || (string)($invite['status'] ?? '') !== 'pending') return false;
+        if (!empty($invite['is_invitee']) && empty($invite['is_owner'])) return true;
+        return !empty($invite['is_owner']) && (string)($invite['source'] ?? '') !== 'rematch';
     }
 }
