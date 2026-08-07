@@ -34,14 +34,35 @@ trait GameInviteActionTrait
 
         $inviter =& $db['users'][$inviterId];
         $invitee =& $db['users'][$userId];
+        $isRematch = (string)($invite['source'] ?? '') === 'rematch';
         $this->assertAvailableForStart($db, $invitee, $token, 'Сначала завершите текущий поиск или игру.');
-        $this->assertAvailableForStart($db, $inviter, $token, 'Пригласивший игрок сейчас занят в другой игре.');
+
+        if ($isRematch) {
+            $this->assertAvailableForStart($db, $inviter, $token, 'Пригласивший игрок сейчас занят в другой игре.');
+        } else {
+            // A normal outgoing invitation may wait in the background while its owner
+            // searches or plays. Acceptance must therefore not fail only because the
+            // owner is busy. Stop an unrelated search immediately; an already running
+            // game is allowed to finish and gets a longer ready window below.
+            $this->assertNoOpenInvite(
+                $db,
+                $inviterId,
+                $token,
+                'Пригласивший игрок уже занят другим приглашением.'
+            );
+            if ((string)($inviter['status'] ?? '') === 'searching') {
+                $this->games->leaveSearch($db, $inviter);
+            }
+        }
+
+        $inviterBusy = !$isRematch && $this->isBusyWithGameOrSearch($db, $inviter);
         $this->assertBalances($inviter, $invitee, $invite);
 
         $now = now_iso();
         $invite['status'] = 'awaiting_start';
         $invite['accepted_at'] = $now;
-        $invite['ready_deadline_at'] = gmdate('c', time() + self::READY_TTL_SEC);
+        $readyTtl = $inviterBusy ? self::INVITE_TTL_SEC : self::READY_TTL_SEC;
+        $invite['ready_deadline_at'] = gmdate('c', time() + $readyTtl);
         $invite['start_deadline_at'] = $invite['ready_deadline_at'];
         $invite['updated_at'] = $now;
 
@@ -56,7 +77,7 @@ trait GameInviteActionTrait
             (string)($invite['token'] ?? '')
         );
 
-        if ((string)($invite['source'] ?? '') === 'rematch') {
+        if ($isRematch) {
             return $this->startInternal($db, $invite, $userId);
         }
 
