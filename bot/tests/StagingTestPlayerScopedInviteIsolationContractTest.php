@@ -26,6 +26,11 @@ $assert(str_contains($reset, "'open_invites_removed' => count(\$removedInvites)"
     'Reset must report exact open A/B invite removals.');
 $assert(str_contains($reset, "'invite_parity' => (\$inviteCleanup['parity'] ?? false) === true"),
     'Reset must report scoped invite DB parity.');
+$assert(str_contains($reset, '->auditParity($snapshot)')
+    && str_contains($reset, '->auditParity($snapshot, $legacyUserId)'),
+    'Scoped cleanup must prove invite and notification parity with read-only audits.');
+$assert(!str_contains($reset, '->synchronizeAndList($snapshot, $legacyUserId)'),
+    'Scoped cleanup must not globally synchronize notification state.');
 
 $issueStart = strpos($auth, "if (\$action === 'issue') {");
 $revokeStart = strpos($auth, "if (\$action === 'revoke') {");
