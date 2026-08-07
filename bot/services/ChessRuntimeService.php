@@ -418,10 +418,8 @@ final class ChessRuntimeService
             if (!$isOwner && !$isInvitee) continue;
 
             // Pending invitations are notification-only while either side is waiting
-            // for the other player's decision. Existing rematch-owner behavior stays
-            // binding because accepting a rematch still auto-starts it immediately.
-            if ($status === 'pending' && $isInvitee && !$isOwner) continue;
-            if ($status === 'pending' && $isOwner && (string)($invite['source'] ?? '') !== 'rematch') continue;
+            // for the owner's explicit start decision after acceptance.
+            if ($status === 'pending') continue;
 
             $deadlineField = $status === 'awaiting_start' ? 'ready_deadline_at' : 'expires_at';
             $deadline = strtotime((string)($invite[$deadlineField] ?? $invite['start_deadline_at'] ?? '')) ?: 0;
