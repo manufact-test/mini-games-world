@@ -24,7 +24,7 @@ import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initGameInvites } from './games/game-invites-v110.js?v=1135&pending=2';
+import { initGameInvites } from './games/game-invites-v110.js?v=1135&pending=4';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
