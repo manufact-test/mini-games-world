@@ -1,6 +1,7 @@
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
+const FRESH_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-fresh-invite-recovery.php`;
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 
 async function requestOidcToken(){
@@ -23,7 +24,40 @@ async function requestOidcToken(){
   return payload.value;
 }
 
+async function recoverFreshInviteReplacement(){
+  const oidcToken = await requestOidcToken();
+  const response = await fetch(FRESH_INVITE_RECOVERY_ROUTE, {
+    method:'POST',
+    headers:{
+      Authorization:`Bearer ${oidcToken}`,
+      Accept:'application/json',
+      'Content-Type':'application/json',
+    },
+    body:'{}',
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.ok !== true) {
+    throw new Error(`Staging fresh invite replacement recovery failed: ${response.status} ${payload?.error || 'unknown_error'}`);
+  }
+  if (!['recovered', 'already_clean'].includes(payload.status)) {
+    throw new Error('Staging fresh invite replacement recovery returned an unexpected status.');
+  }
+  if (payload.status === 'recovered') {
+    if (payload?.candidate_count !== 1 || payload?.deleted?.invite_rows !== 1 || payload?.parity?.invites !== true) {
+      throw new Error('Staging fresh invite replacement recovery did not prove one-row invite parity recovery.');
+    }
+  }
+  console.log('[MGW_STAGING_FRESH_INVITE_REPLACEMENT_RECOVERY]', JSON.stringify({
+    status:payload.status,
+    candidate_count:payload.candidate_count,
+    deleted:payload.deleted,
+    parity:payload.parity,
+  }));
+}
+
 export default async function stagingGlobalSetup(){
+  await recoverFreshInviteReplacement();
+
   const oidcToken = await requestOidcToken();
   const response = await fetch(AUTH_ROUTE, {
     method:'POST',
