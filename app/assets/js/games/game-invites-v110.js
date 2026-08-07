@@ -940,6 +940,7 @@ function updateOpenInviteSheet(){
 
 function showDirectInvitePending(context, opponentName){
   openSheet(`
+    <span data-invite-sheet hidden></span>
     <div class="sheet-head">
       <div><h2>Приглашение отправлено</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
