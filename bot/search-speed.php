@@ -22,12 +22,16 @@ try {
             if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
             if ((string)($item['room'] ?? 'match') !== 'match') break;
 
-            // The normal fallback is 15 seconds. At the explicit speed checkpoint
-            // we preserve a real-human window but make the existing bot allocator
-            // eligible on the next ordinary game-state poll.
-            $target = time() - 12;
-            $createdAt = strtotime((string)($item['created_at'] ?? '')) ?: time();
-            if ($createdAt > $target) $item['created_at'] = gmdate('c', $target);
+            // A queue creation timestamp is immutable realtime identity. The speed
+            // checkpoint therefore changes only the existing mutable queue status;
+            // the ordinary game-state owner still performs human matching and the
+            // eventual bot allocation.
+            $createdAt = strtotime((string)($item['created_at'] ?? '')) ?: 0;
+            $alreadyFastTracked = $createdAt > 0 && time() - $createdAt >= 10;
+            if (!$alreadyFastTracked && (string)($item['status'] ?? 'waiting') !== 'bot_fallback_5s') {
+                $item['status'] = 'bot_fallback_5s';
+                $item['updated_at'] = now_iso();
+            }
             $accelerated = true;
             break;
         }

@@ -53,8 +53,10 @@ final class ChessRuntimeService
     {
         $userId = (string)($user['id'] ?? '');
         $queuedGoSize = null;
+        $acceleratedBotFallback = false;
         foreach ($db['queue'] ?? [] as $queueItem) {
             if (!is_array($queueItem) || (string)($queueItem['user_id'] ?? '') !== $userId) continue;
+            $acceleratedBotFallback = (string)($queueItem['status'] ?? 'waiting') === 'bot_fallback_5s';
             if ((string)($queueItem['game_type'] ?? '') === 'go') {
                 $queuedGoSize = $this->catalog->normalizeBoardSize(
                     'go',
@@ -64,7 +66,18 @@ final class ChessRuntimeService
             break;
         }
 
-        $game = $this->base->maybeCreateBotGameForSearchingUser($db, $user);
+        $runtime = $this->base;
+        if ($acceleratedBotFallback) {
+            $runtimeConfig = $this->config;
+            $runtimeConfig['match_bot_after_sec'] = 5;
+            $runtime = new GameRuntimeService(
+                $runtimeConfig,
+                $this->catalog,
+                new GameService($runtimeConfig)
+            );
+        }
+
+        $game = $runtime->maybeCreateBotGameForSearchingUser($db, $user);
         if (!is_array($game)) return null;
 
         $gameId = (string)($game['id'] ?? '');
