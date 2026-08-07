@@ -51,6 +51,7 @@ let shareWarm = null;
 let shareWarmSerial = Promise.resolve();
 let shareAttempt = null;
 let playerPickerRequestGeneration = 0;
+let directInviteRequestGeneration = 0;
 
 export function initGameInvites(){
   if (initialized) return;
@@ -313,23 +314,31 @@ async function createDirectInvite(context, inviteeId, button){
   if (!inviteeId || button.disabled) return;
   haptic('light');
   const opponentName = String(button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
+  const requestGeneration = ++directInviteRequestGeneration;
 
-  // The existing invitation owner paints the owner surface immediately. Server
-  // authority still decides whether the invitation is actually created.
-  showDirectInvitePending(context, opponentName);
+  // Paint the sent state immediately, but keep ownership tied to this exact
+  // surface. If the user closes it before the server responds, the later
+  // response must not resurrect a blocking local invitation state.
+  showDirectInvitePending(context, opponentName, requestGeneration);
 
   try {
     const result = await inviteRequest('create_direct', { ...context, inviteeId });
     syncState(result);
     currentInvite = result.invite || null;
     if (!currentInvite?.token) throw new Error('Не удалось создать приглашение.');
-    showOwnerWaiting(currentInvite);
+
+    if (isDirectInvitePendingSurfaceOpen(requestGeneration)) {
+      showOwnerWaiting(currentInvite);
+    } else if (isPassiveOwnerPending(currentInvite)) {
+      currentInvite = null;
+    }
+
     dispatchNotificationCount(result.unread_count);
     scheduleSync(0);
     window.setTimeout(cancelWarmShareDraft, 180);
   } catch (error) {
     toast(error.message || 'Не удалось отправить приглашение.');
-    await openPlayerPicker(context);
+    if (isDirectInvitePendingSurfaceOpen(requestGeneration)) await openPlayerPicker(context);
   }
 }
 
@@ -674,7 +683,7 @@ async function performInviteAction(action, token, button){
   // Accept and the owner's own cancellation react immediately. The single
   // authoritative request still decides the result; failure restores the
   // captured sheet and invitation state without adding another action owner.
-  if (action === 'accept' && currentInvite?.source !== 'rematch') {
+  if (action === 'accept') {
     showInviteeWaiting({
       ...currentInvite,
       status:'accepted',
@@ -696,12 +705,8 @@ async function performInviteAction(action, token, button){
     currentInvite = result.invite || currentInvite;
 
     if (action === 'accept') {
-      if (currentInvite?.source === 'rematch') {
-        scheduleSync(0);
-      } else {
-        showInviteeWaiting(currentInvite);
-        scheduleSync(0);
-      }
+      showInviteeWaiting(currentInvite);
+      scheduleSync(0);
       return;
     }
     if (action === 'decline' || action === 'cancel') {
@@ -822,7 +827,7 @@ async function createRematch(gameId, button){
     if (!currentInvite?.token) throw new Error('Не удалось создать реванш.');
     state.activeGame = null;
     showScreen('home');
-    showOwnerWaiting(currentInvite, 'Предложение реванша отправлено.');
+    openCurrentInvite();
     scheduleSync(0);
   } catch (error) {
     toast(error.message || 'Не удалось предложить реванш.');
@@ -944,9 +949,9 @@ function updateOpenInviteSheet(){
   }
 }
 
-function showDirectInvitePending(context, opponentName){
+function showDirectInvitePending(context, opponentName, requestGeneration){
   openSheet(`
-    <span data-invite-sheet hidden></span>
+    <span data-invite-sheet data-direct-invite-pending="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
       <div><h2>Приглашение отправлено</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
@@ -954,6 +959,12 @@ function showDirectInvitePending(context, opponentName){
     ${contextSummary(context)}
     <button class="btn primary full" type="button" aria-disabled="true" disabled style="opacity:1">Отменить приглашение</button>
   `);
+}
+
+function isDirectInvitePendingSurfaceOpen(requestGeneration){
+  if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return false;
+  return String(document.querySelector('#sheet [data-direct-invite-pending]')?.dataset.directInvitePending || '')
+    === String(Number(requestGeneration || 0));
 }
 
 function showIncomingInvite(invite){
@@ -1194,13 +1205,14 @@ function actionText(action){
 }
 
 function hasActionableInvite(){
-  return ['pending', 'accepted'].includes(String(currentInvite?.status || ''));
+  const status = String(currentInvite?.status || '');
+  if (status === 'pending' && isPassiveOwnerPending(currentInvite)) return false;
+  return ['pending', 'accepted'].includes(status);
 }
 
 function isPassiveOwnerPending(invite){
   return String(invite?.status || '') === 'pending'
-    && Boolean(invite?.is_owner)
-    && String(invite?.source || '') !== 'rematch';
+    && Boolean(invite?.is_owner);
 }
 
 function isGameLaunchControl(target){

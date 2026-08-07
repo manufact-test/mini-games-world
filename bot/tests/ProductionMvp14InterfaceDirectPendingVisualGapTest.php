@@ -52,24 +52,31 @@ $assert(
     'The pending frame must reserve the final purple cancellation control without owning cancellation before a token exists.'
 );
 $assert(
+    str_contains($pendingOwner, 'data-direct-invite-pending=')
+        && str_contains($pendingOwner, 'function isDirectInvitePendingSurfaceOpen('),
+    'The optimistic pending frame must expose exact request ownership so a late create response cannot reopen a dismissed sheet.'
+);
+$assert(
     $waitingOwner !== ''
         && str_contains($waitingOwner, 'class="btn primary full"')
         && str_contains($waitingOwner, 'data-invite-action="cancel"')
         && str_contains($waitingOwner, '>Отменить приглашение</button>'),
-    'The authoritative post-response owner cancellation control must remain unchanged.'
+    'The authoritative post-response owner cancellation control must remain unchanged while the sheet is still open.'
 );
 $assert(
     $directOwner !== ''
         && substr_count($directOwner, "inviteRequest('create_direct'") === 1
-        && str_contains($directOwner, 'showDirectInvitePending(context, opponentName);')
-        && str_contains($directOwner, 'showOwnerWaiting(currentInvite);'),
-    'Direct invitation creation must retain one authoritative server request and the accepted final owner transition.'
+        && str_contains($directOwner, 'showDirectInvitePending(context, opponentName, requestGeneration);')
+        && str_contains($directOwner, 'if (isDirectInvitePendingSurfaceOpen(requestGeneration)) {')
+        && str_contains($directOwner, 'showOwnerWaiting(currentInvite);')
+        && str_contains($directOwner, 'currentInvite = null;'),
+    'Direct invitation creation must retain one authoritative request and release passive local state if the sent sheet was already closed.'
 );
 $assert(
-    str_contains($shell, './games/game-invites-v110.js?v=1135&pending=4')
-        && str_contains($main, './main-v110-handoff-shell.js?v=1135&pending=4')
-        && str_contains($entry, './assets/js/main-v110.js?v=1135&pending=4'),
-    'The passive owner-pending update must publish the canonical invite owner through fresh pending=4 browser paths.'
+    str_contains($shell, './games/game-invites-v110.js?v=1135&pending=6')
+        && str_contains($main, './main-v110-handoff-shell.js?v=1135&pending=6')
+        && str_contains($entry, './assets/js/main-v110.js?v=1135&pending=6'),
+    'The unified passive owner-pending update must publish the canonical invite owner through fresh pending=6 browser paths.'
 );
 
 fwrite(STDOUT, "ProductionMvp14InterfaceDirectPendingVisualGapTest: {$assertions} assertions passed\n");

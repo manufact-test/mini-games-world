@@ -18,9 +18,6 @@ trait GameInviteActionTrait
             return $this->resultWithGame($db, $invite, $userId);
         }
         if ($status === 'awaiting_start') {
-            if ((string)($invite['source'] ?? '') === 'rematch') {
-                return $this->startInternal($db, $invite, $userId);
-            }
             return ['invite' => $this->publicInvite($invite, $userId), 'game' => null];
         }
         if ($status !== 'pending') {
@@ -55,10 +52,6 @@ trait GameInviteActionTrait
             'success',
             (string)($invite['token'] ?? '')
         );
-
-        if ((string)($invite['source'] ?? '') === 'rematch') {
-            return $this->startInternal($db, $invite, $userId);
-        }
 
         return ['invite' => $this->publicInvite($invite, $userId), 'game' => null];
     }
@@ -181,7 +174,7 @@ trait GameInviteActionTrait
                 return $this->resultWithGame($db, $existing, $userId) + ['reused' => true];
             }
             if ($status === 'awaiting_start') {
-                return $this->startInternal($db, $existing, $userId) + ['reused' => true];
+                return ['invite' => $this->publicInvite($existing, $userId), 'game' => null, 'reused' => true];
             }
             if ($status === 'pending') {
                 if ((string)($existing['inviter_id'] ?? '') === $userId) {

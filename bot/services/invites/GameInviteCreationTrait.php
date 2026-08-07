@@ -196,8 +196,8 @@ trait GameInviteCreationTrait
             if ($index !== null && $this->isParticipant($db['invites'][$index], $userId)) {
                 $candidate = $this->publicInvite($db['invites'][$index], $userId);
                 if ($this->isNotificationOnlyPendingInvite($candidate)) {
-                    if (!empty($candidate['is_owner']) && (string)($candidate['source'] ?? '') !== 'rematch') {
-                        // Keep the just-sent owner sheet authoritative inside this
+                    if (!empty($candidate['is_owner'])) {
+                        // Keep the exact just-sent owner sheet authoritative inside this
                         // document so its fast Cancel action retains the full invite.
                         // Once the sheet is closed the client releases this tracked token.
                         $trackedInvite = $candidate;
@@ -227,6 +227,6 @@ trait GameInviteCreationTrait
     {
         if (!is_array($invite) || (string)($invite['status'] ?? '') !== 'pending') return false;
         if (!empty($invite['is_invitee']) && empty($invite['is_owner'])) return true;
-        return !empty($invite['is_owner']) && (string)($invite['source'] ?? '') !== 'rematch';
+        return !empty($invite['is_owner']);
     }
 }

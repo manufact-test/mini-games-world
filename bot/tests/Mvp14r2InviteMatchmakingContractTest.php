@@ -68,8 +68,12 @@ $assert(str_contains($creation, '$invite[\'opened_at\'] = (string)($invite[\'ope
 $assert(str_contains($actions, '$invite[\'status\'] = \'awaiting_start\'')
     && str_contains($actions, "gmdate('c', time() + self::READY_TTL_SEC)")
     && str_contains($actions, "'invite_accepted'"), 'Invite acceptance state, deadline or notification changed.');
-$assert(substr_count($actions, 'if ((string)($invite[\'source\'] ?? \'\') === \'rematch\')') >= 2
-    && str_contains($actions, 'return $this->startInternal($db, $invite, $userId);'), 'Rematch acceptance must auto-start.');
+$acceptStart = strpos($actions, 'public function accept(');
+$acceptEnd = $acceptStart === false ? false : strpos($actions, 'public function start(', $acceptStart);
+$acceptBlock = $acceptStart === false || $acceptEnd === false ? '' : substr($actions, $acceptStart, $acceptEnd - $acceptStart);
+$assert($acceptBlock !== ''
+    && !str_contains($acceptBlock, "(string)(\$invite['source'] ?? '') === 'rematch'")
+    && !str_contains($acceptBlock, '$this->startInternal('), 'Rematch acceptance must wait for the inviter explicit Start action.');
 $assert(str_contains($actions, 'Запустить матч может только пригласивший игрок.')
     && str_contains($actions, 'return $this->startInternal($db, $invite, $userId);'), 'Invite start ownership changed.');
 $assert(str_contains($actions, '$invite[\'status\'] = \'active\'')
@@ -119,7 +123,8 @@ $assert(str_contains($games, '$user[$balanceKey] = (int)($user[$balanceKey] ?? 0
 $assert(str_contains($runtime, '$gameType = $this->gameTypeFromRecord($queueItem)')
     && str_contains($runtime, '$this->withIsolatedQueue('), 'Runtime matcher game-type isolation changed.');
 $assert(str_contains($chessRuntime, '$this->assertNoOpenInviteBeforeSearch($db, $user);')
-    && str_contains($chessRuntime, 'in_array($status, [\'pending\', \'awaiting_start\'], true)'), 'Search must remain blocked by an open invite.');
+    && str_contains($chessRuntime, "if (\$status === 'pending') continue;")
+    && str_contains($chessRuntime, "'Сначала запустите или отмените подтверждённое приглашение.'"), 'Pending invites must be passive while accepted invites remain protected from unrelated search.');
 
 foreach (['create_direct', 'create_link_draft', 'confirm_shared', 'open_link', 'accept', 'start', 'cancel', 'rematch', 'start_search', 'leave_search', 'bot_fallback'] as $action) {
     $assert(str_contains($runner, "'{$action}' =>"), 'Baseline runner lost action: ' . $action . '.');
