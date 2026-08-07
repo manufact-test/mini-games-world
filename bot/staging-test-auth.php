@@ -20,7 +20,6 @@ try {
     require_once __DIR__ . '/services/StagingTestAuthService.php';
     require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
     require_once __DIR__ . '/services/StagingTestInviteResidualRecoveryService.php';
-    require_once __DIR__ . '/services/StagingStaleInviteOrphanRecoveryService.php';
     require_once __DIR__ . '/services/StagingTestPlayerStateResetService.php';
 
     $raw = file_get_contents('php://input');
@@ -55,12 +54,6 @@ try {
 
     $residualService = static function () use ($config, $runtimeStorageRouter): StagingTestInviteResidualRecoveryService {
         return new StagingTestInviteResidualRecoveryService(
-            $config,
-            $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
-        );
-    };
-    $staleOrphanService = static function () use ($config, $runtimeStorageRouter): StagingStaleInviteOrphanRecoveryService {
-        return new StagingStaleInviteOrphanRecoveryService(
             $config,
             $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
         );
@@ -105,14 +98,7 @@ try {
             throw new RuntimeException('Staging test-player reset requires GitHub OIDC.');
         }
         (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
-        $staleRecovery = $staleOrphanService()->reconcile($_SERVER);
         $result = $playerResetService()->reset($_SERVER);
-        $result['stale_invite_orphan_recovery'] = [
-            'status' => (string)($staleRecovery['status'] ?? ''),
-            'candidate_count' => (int)($staleRecovery['candidate_count'] ?? 0),
-            'deleted' => is_array($staleRecovery['deleted'] ?? null) ? $staleRecovery['deleted'] : [],
-            'parity' => is_array($staleRecovery['parity'] ?? null) ? $staleRecovery['parity'] : null,
-        ];
 
         echo json_encode(
             $result + ['authorization_mode' => 'github_actions_oidc'],
@@ -124,6 +110,7 @@ try {
     if ($action === 'issue') {
         $slot = strtoupper(trim((string)($payload['slot'] ?? '')));
         $providedSecret = $providedCredential;
+        $stateResetResult = null;
         if (substr_count($providedCredential, '.') === 2) {
             (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
             $providedSecret = trim((string)($config['staging_test_auth_secret'] ?? ''));
@@ -131,6 +118,9 @@ try {
                 $providedSecret = trim((string)($config['setup_secret'] ?? ''));
             }
             $authorizationMode = 'github_actions_oidc';
+            if ($slot === 'A') {
+                $stateResetResult = $playerResetService()->reset($_SERVER);
+            }
         }
 
         $issued = $service->issue($slot, $providedSecret, $_SERVER);
@@ -153,6 +143,16 @@ try {
                 'secure' => true,
                 'same_site' => 'Strict',
             ],
+            'test_player_state_reset' => is_array($stateResetResult) ? [
+                'status' => (string)($stateResetResult['status'] ?? ''),
+                'queue_removed' => (int)($stateResetResult['queue_removed'] ?? 0),
+                'open_invites_removed' => (int)($stateResetResult['open_invites_removed'] ?? 0),
+                'notifications_removed' => (int)($stateResetResult['notifications_removed'] ?? 0),
+                'active_test_games_finished' => (int)($stateResetResult['active_test_games_finished'] ?? 0),
+                'invite_db_rows_removed' => (int)($stateResetResult['invite_db_rows_removed'] ?? 0),
+                'invite_parity' => ($stateResetResult['invite_parity'] ?? false) === true,
+                'economy_parity' => ($stateResetResult['economy_parity'] ?? false) === true,
+            ] : null,
             'invite_residual_recovery' => null,
         ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL;
         exit;
@@ -169,7 +169,7 @@ try {
             'ok' => true,
             'service' => 'mini-games-world-staging-test-auth',
             'action' => 'revoked',
-        ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL;
+        ], JSON_UNESCAPED_SLASHES) . PHP_EOL;
         exit;
     }
 
