@@ -20,6 +20,7 @@ try {
     require_once __DIR__ . '/services/StagingTestAuthService.php';
     require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
     require_once __DIR__ . '/services/StagingTestInviteResidualRecoveryService.php';
+    require_once __DIR__ . '/services/StagingStaleInviteOrphanRecoveryService.php';
     require_once __DIR__ . '/services/StagingTestPlayerStateResetService.php';
 
     $raw = file_get_contents('php://input');
@@ -54,6 +55,12 @@ try {
 
     $residualService = static function () use ($config, $runtimeStorageRouter): StagingTestInviteResidualRecoveryService {
         return new StagingTestInviteResidualRecoveryService(
+            $config,
+            $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
+        );
+    };
+    $staleOrphanService = static function () use ($config, $runtimeStorageRouter): StagingStaleInviteOrphanRecoveryService {
+        return new StagingStaleInviteOrphanRecoveryService(
             $config,
             $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
         );
@@ -98,7 +105,14 @@ try {
             throw new RuntimeException('Staging test-player reset requires GitHub OIDC.');
         }
         (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
+        $staleRecovery = $staleOrphanService()->reconcile($_SERVER);
         $result = $playerResetService()->reset($_SERVER);
+        $result['stale_invite_orphan_recovery'] = [
+            'status' => (string)($staleRecovery['status'] ?? ''),
+            'candidate_count' => (int)($staleRecovery['candidate_count'] ?? 0),
+            'deleted' => is_array($staleRecovery['deleted'] ?? null) ? $staleRecovery['deleted'] : [],
+            'parity' => is_array($staleRecovery['parity'] ?? null) ? $staleRecovery['parity'] : null,
+        ];
 
         echo json_encode(
             $result + ['authorization_mode' => 'github_actions_oidc'],
