@@ -39,13 +39,13 @@ final class EconomyRuntimeBridge
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Economy bridge requires JSON rollback storage.');
         }
-
-        $snapshot = $storage->readOnly(static fn(array $data): array => $data);
-        if (!is_array($snapshot)) {
-            throw new RuntimeException('Economy bridge could not read the JSON rollback snapshot.');
+        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
+            throw new RuntimeException('Economy bridge requires exclusive JSON snapshot support.');
         }
 
         $repository = $this->repository ??= new RuntimeEconomyRepository($this->config, $this->router);
-        return $repository->synchronize($snapshot);
+        return $storage->exclusiveReadOnly(static function (array $snapshot) use ($repository): array {
+            return $repository->synchronize($snapshot);
+        });
     }
 }
