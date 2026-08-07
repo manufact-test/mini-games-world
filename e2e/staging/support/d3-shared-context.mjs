@@ -112,24 +112,36 @@ function isExpectedPresenceResumeAbort(request) {
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
 }
 
-function isExpectedInviteSyncAbort(request) {
+function isInviteSyncRequest(request) {
   return request.url() === INVITES_ROUTE
     && request.method() === 'POST'
-    && requestAction(request) === 'sync'
+    && requestAction(request) === 'sync';
+}
+
+function isExpectedInviteSyncAbort(request) {
+  return isInviteSyncRequest(request)
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+}
+
+function isBackgroundProfileRequest(request) {
+  return request.url() === API_ROUTE
+    && request.method() === 'POST'
+    && requestAction(request) === 'profile';
 }
 
 function isExpectedBackgroundProfileAbort(request) {
-  return request.url() === API_ROUTE
-    && request.method() === 'POST'
-    && requestAction(request) === 'profile'
+  return isBackgroundProfileRequest(request)
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
 }
 
-function isExpectedBackgroundShopHistoryAbort(request) {
+function isBackgroundShopHistoryRequest(request) {
   return request.url().startsWith(STAGING_ORIGIN)
     && request.method() === 'POST'
-    && new URL(request.url()).pathname === '/bot/shop-history.php'
+    && new URL(request.url()).pathname === '/bot/shop-history.php';
+}
+
+function isExpectedBackgroundShopHistoryAbort(request) {
+  return isBackgroundShopHistoryRequest(request)
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
 }
 
@@ -147,21 +159,42 @@ export function collectDiagnostics(page, slot) {
     ignoredBackgroundShopHistoryAborts: 0,
   };
 
+  // An allowed transition owns requests from the moment they start. A request
+  // that begins while navigation/start handoff explicitly permits a background
+  // abort must not become a false failure merely because requestfailed arrives
+  // after the transition has already finished and its boolean flag was reset.
+  // Conversely, requests that started outside the allowed window remain strict.
+  const allowedInviteSyncAbortRequests = new WeakSet();
+  const allowedBackgroundProfileAbortRequests = new WeakSet();
+  const allowedBackgroundShopHistoryAbortRequests = new WeakSet();
+
   page.on('pageerror', error => {
     report.pageErrors.push(String(error?.message || error).slice(0, 500));
+  });
+  page.on('request', request => {
+    if (!request.url().startsWith(STAGING_ORIGIN)) return;
+    if (report.allowInviteSyncAbort && isInviteSyncRequest(request)) {
+      allowedInviteSyncAbortRequests.add(request);
+    }
+    if (report.allowBackgroundProfileAbort && isBackgroundProfileRequest(request)) {
+      allowedBackgroundProfileAbortRequests.add(request);
+    }
+    if (report.allowBackgroundShopHistoryAbort && isBackgroundShopHistoryRequest(request)) {
+      allowedBackgroundShopHistoryAbortRequests.add(request);
+    }
   });
   page.on('requestfailed', request => {
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
     if (isExpectedPresenceResumeAbort(request)) return;
-    if (report.allowInviteSyncAbort && isExpectedInviteSyncAbort(request)) {
+    if (allowedInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
       report.ignoredInviteSyncAborts += 1;
       return;
     }
-    if (report.allowBackgroundProfileAbort && isExpectedBackgroundProfileAbort(request)) {
+    if (allowedBackgroundProfileAbortRequests.has(request) && isExpectedBackgroundProfileAbort(request)) {
       report.ignoredBackgroundProfileAborts += 1;
       return;
     }
-    if (report.allowBackgroundShopHistoryAbort && isExpectedBackgroundShopHistoryAbort(request)) {
+    if (allowedBackgroundShopHistoryAbortRequests.has(request) && isExpectedBackgroundShopHistoryAbort(request)) {
       report.ignoredBackgroundShopHistoryAborts += 1;
       return;
     }
