@@ -221,6 +221,16 @@ trait GameInviteStorageTrait
         return true;
     }
 
+    private function effectiveReadyDeadlineTs(array $invite): int
+    {
+        $deadline = strtotime((string)($invite['ready_deadline_at'] ?? '')) ?: 0;
+        if ((string)($invite['source'] ?? '') !== 'rematch') {
+            $inviteExpiry = strtotime((string)($invite['expires_at'] ?? '')) ?: 0;
+            if ($inviteExpiry > $deadline) $deadline = $inviteExpiry;
+        }
+        return $deadline;
+    }
+
     private function expireIfDue(array &$db, array &$invite, int $now): void
     {
         $status = (string)($invite['status'] ?? '');
@@ -234,7 +244,7 @@ trait GameInviteStorageTrait
         }
 
         if ($status !== 'awaiting_start') return;
-        $deadline = strtotime((string)($invite['ready_deadline_at'] ?? '')) ?: 0;
+        $deadline = $this->effectiveReadyDeadlineTs($invite);
         if ($deadline <= 0 || $deadline > $now) return;
 
         $invite['status'] = 'timed_out';
