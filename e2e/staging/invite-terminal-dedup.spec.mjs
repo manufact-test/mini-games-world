@@ -10,9 +10,9 @@ import {
   openPlayerPage,
   cleanupPlayer,
   revokeContext,
+  postFromPlayer,
 } from './support/d3-shared-context.mjs';
 import {
-  expectPlayerRequest,
   clickInviteAction,
 } from './support/d3-shared-actions.mjs';
 
@@ -63,43 +63,31 @@ async function disposePlayers(players) {
 }
 
 async function createDirectInvite(page) {
-  const created = await expectPlayerRequest(
-    page,
-    '/bot/invites.php',
-    {
-      action: 'create_direct',
-      inviteeId: 'stg_test_player_b',
-      gameType: 'tictactoe',
-      room: 'match',
-      bet: 10,
-      boardSize: 3,
-    },
-    'Player A creates terminal-dedup invitation',
+  await page.locator('[data-invite-friend="tictactoe"]').click();
+  const openPicker = page.locator('[data-open-player-picker]');
+  await expect(openPicker).toBeVisible({ timeout: 20_000 });
+  await openPicker.click();
+
+  const opponent = page.locator('[data-direct-opponent="stg_test_player_b"]');
+  await expect(opponent).toBeVisible({ timeout: 20_000 });
+
+  const createResponse = page.waitForResponse(
+    isActionResponse(INVITES_ROUTE, 'create_direct'),
+    { timeout: 35_000 },
   );
+  await opponent.click();
+  const response = await createResponse;
+  const created = await response.json().catch(() => null);
+  expect(response.status()).toBe(200);
+  expect(created?.ok).toBe(true);
+
   const token = String(created?.invite?.token || '');
   expect(token).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
-  return token;
-}
-
-async function syncOwnerInvite(page, token) {
-  let matched = false;
-  for (let attempt = 0; attempt < 4 && !matched; attempt += 1) {
-    const responsePromise = page.waitForResponse(
-      isActionResponse(INVITES_ROUTE, 'sync'),
-      { timeout: 8_000 },
-    ).catch(() => null);
-    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-    const response = await responsePromise;
-    if (!response || response.status() !== 200) continue;
-    const payload = await response.json().catch(() => null);
-    const invite = payload?.invite || payload?.tracked_invite || null;
-    matched = String(invite?.token || '') === token;
-  }
-  expect(matched, 'Owner module must synchronize the created invitation').toBe(true);
-  await page.waitForTimeout(120);
-  await page.locator('[data-invite-friend="tictactoe"]').click();
-  await expect(page.locator(`#sheet [data-invite-sheet][data-invite-token="${token}"]`)).toHaveCount(1);
+  await expect(page.locator(`#sheet [data-invite-sheet][data-invite-token="${token}"]`)).toHaveCount(1, {
+    timeout: 20_000,
+  });
   await expect(page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено');
+  return token;
 }
 
 async function expectTokenAbsentFromBell(page, token) {
@@ -113,20 +101,25 @@ async function expectTokenAbsentFromBell(page, token) {
 test('remote decline already visible in owner sheet is not repeated as toast or bell card', async ({ browser }) => {
   test.setTimeout(150_000);
   const players = await createPlayers(browser);
+  let token = '';
   try {
-    const token = await createDirectInvite(players.playerA.page);
-    await syncOwnerInvite(players.playerA.page, token);
+    token = await createDirectInvite(players.playerA.page);
 
     const consumeResponse = players.playerA.page.waitForResponse(
       isConsumeResponse(token),
       { timeout: 35_000 },
     );
-    const declined = await expectPlayerRequest(
+    const declinedResponse = await postFromPlayer(
       players.playerB.page,
       '/bot/invites.php',
       { action: 'decline', token },
-      'Player B declines while Player A watches the waiting sheet',
     );
+    expect(
+      declinedResponse.status,
+      `Player B declines while Player A watches the waiting sheet; public error: ${declinedResponse.publicError || 'no_public_error'}`,
+    ).toBe(200);
+    expect(declinedResponse.payload?.ok).toBe(true);
+    const declined = declinedResponse.payload;
     expect(String(declined?.invite?.status || '')).toBe('declined');
     const authoritativeDeclinedLabel = String(
       declined?.invite?.status_label || 'Отклонено',
@@ -152,6 +145,12 @@ test('remote decline already visible in owner sheet is not repeated as toast or 
     expect(players.playerA.diagnostics.serverErrors).toEqual([]);
     expect(players.playerB.diagnostics.serverErrors).toEqual([]);
   } finally {
+    if (token && players?.playerA?.page && !players.playerA.page.isClosed()) {
+      await postFromPlayer(players.playerA.page, '/bot/invites.php', {
+        action: 'cancel',
+        token,
+      }).catch(() => null);
+    }
     await disposePlayers(players);
   }
 });
@@ -159,9 +158,9 @@ test('remote decline already visible in owner sheet is not repeated as toast or 
 test('owner self-cancel returns directly home without terminal confirmation', async ({ browser }) => {
   test.setTimeout(150_000);
   const players = await createPlayers(browser);
+  let token = '';
   try {
-    const token = await createDirectInvite(players.playerA.page);
-    await syncOwnerInvite(players.playerA.page, token);
+    token = await createDirectInvite(players.playerA.page);
 
     const consumeResponse = players.playerA.page.waitForResponse(
       isConsumeResponse(token),
@@ -190,6 +189,12 @@ test('owner self-cancel returns directly home without terminal confirmation', as
     expect(players.playerA.diagnostics.serverErrors).toEqual([]);
     expect(players.playerB.diagnostics.serverErrors).toEqual([]);
   } finally {
+    if (token && players?.playerA?.page && !players.playerA.page.isClosed()) {
+      await postFromPlayer(players.playerA.page, '/bot/invites.php', {
+        action: 'cancel',
+        token,
+      }).catch(() => null);
+    }
     await disposePlayers(players);
   }
 });
