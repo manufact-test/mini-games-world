@@ -1,6 +1,7 @@
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
+const TEST_ONLY_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-only-invite-recovery.php`;
 const FRESH_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-fresh-invite-recovery.php`;
 const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
@@ -43,6 +44,35 @@ async function diagnoseInviteMismatch(){
   console.log('[MGW_STAGING_INVITE_MISMATCH_DIAGNOSTIC]', JSON.stringify(payload.report));
 }
 
+async function recoverTestOnlyInviteOrphans(){
+  const oidcToken = await requestOidcToken();
+  const response = await fetch(TEST_ONLY_INVITE_RECOVERY_ROUTE, {
+    method:'POST',
+    headers:{
+      Authorization:`Bearer ${oidcToken}`,
+      Accept:'application/json',
+      'Content-Type':'application/json',
+    },
+    body:'{}',
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.ok !== true || !['recovered', 'already_clean'].includes(payload?.status)) {
+    throw new Error(`Staging test-only invite recovery failed: ${response.status} ${payload?.error || 'unknown_error'}`);
+  }
+  if (payload.status === 'recovered') {
+    if ((payload?.candidate_count || 0) < 1 || (payload?.deleted?.invite_rows || 0) < 1
+        || payload?.parity?.invites !== true || payload?.parity?.test_notifications !== true) {
+      throw new Error('Staging test-only invite recovery did not prove parity.');
+    }
+  }
+  console.log('[MGW_STAGING_TEST_ONLY_INVITE_RECOVERY]', JSON.stringify({
+    status:payload.status,
+    candidate_count:payload.candidate_count,
+    deleted:payload.deleted,
+    parity:payload.parity,
+  }));
+}
+
 async function recoverFreshInviteReplacement(){
   const oidcToken = await requestOidcToken();
   const response = await fetch(FRESH_INVITE_RECOVERY_ROUTE, {
@@ -76,6 +106,7 @@ async function recoverFreshInviteReplacement(){
 
 export default async function stagingGlobalSetup(){
   await diagnoseInviteMismatch();
+  await recoverTestOnlyInviteOrphans();
   await recoverFreshInviteReplacement();
 
   const oidcToken = await requestOidcToken();
