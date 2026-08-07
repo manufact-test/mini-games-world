@@ -23,6 +23,10 @@ $assert(
     'A received pending invitation must not block unrelated matchmaking.'
 );
 $assert(
+    str_contains($runtime, "if (\$status === 'pending' && \$isOwner && (string)(\$invite['source'] ?? '') !== 'rematch') continue;"),
+    'A normal outgoing pending invitation must not block its owner from unrelated matchmaking.'
+);
+$assert(
     str_contains($runtime, 'if (!$isOwner && !$isInvitee) continue;'),
     'Users unrelated to the invitation must remain outside the guard.'
 );
@@ -30,7 +34,7 @@ $assert(
     str_contains($runtime, "if (!in_array(\$status, ['pending', 'awaiting_start'], true)) continue;")
         && str_contains($runtime, "'Сначала запустите или отмените подтверждённое приглашение.'")
         && str_contains($runtime, "'Сначала ответьте на текущее приглашение или отмените его.'"),
-    'Owner pending and accepted invitation states must remain protected.'
+    'Accepted invitations and pending owner rematches must remain protected.'
 );
 
 fwrite(STDOUT, "ProductionV110PendingInviteSearchNonBlockingContractTest: {$assertions} assertions passed\n");

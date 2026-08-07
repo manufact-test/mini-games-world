@@ -22,11 +22,29 @@ trait GameInviteValidationTrait
     private function assertAvailableForStart(array $db, array $user, string $currentToken, string $message): void
     {
         $userId = $this->requireUserId($user);
-        if (in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) {
+        $passivePendingOwner = $this->isPassivePendingOwner($db, $userId, $currentToken);
+
+        if (!$passivePendingOwner && in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) {
             throw new RuntimeException($message);
         }
-        if ($this->games->findActiveGameForUser($db, $userId)) throw new RuntimeException($message);
+        if (!$passivePendingOwner && $this->games->findActiveGameForUser($db, $userId)) {
+            throw new RuntimeException($message);
+        }
         $this->assertNoOpenInvite($db, $userId, $currentToken, $message);
+    }
+
+    private function isPassivePendingOwner(array $db, string $userId, string $currentToken): bool
+    {
+        if ($userId === '' || $currentToken === '') return false;
+        $index = $this->findIndex($db, $currentToken);
+        if ($index === null || !isset($db['invites'][$index]) || !is_array($db['invites'][$index])) return false;
+
+        $invite = $db['invites'][$index];
+        $status = (string)($invite['status'] ?? '');
+        if (!in_array($status, ['draft', 'pending'], true)) return false;
+
+        return (string)($invite['inviter_id'] ?? '') === $userId
+            && (string)($invite['source'] ?? '') !== 'rematch';
     }
 
     private function assertNoOpenInvite(array $db, string $userId, string $exceptToken, string $message): void
@@ -91,7 +109,12 @@ trait GameInviteValidationTrait
         $isOwner = $viewerId !== '' && $viewerId === $inviterId;
         $isInvitee = $viewerId !== '' && $viewerId === $inviteeId;
         $deadline = (string)($invite['ready_deadline_at'] ?? '');
-        $deadlineTs = strtotime($deadline) ?: 0;
+        $deadlineTs = $storedStatus === 'awaiting_start'
+            ? $this->effectiveReadyDeadlineTs($invite)
+            : (strtotime($deadline) ?: 0);
+        if ($storedStatus === 'awaiting_start' && $deadlineTs > 0) {
+            $deadline = gmdate('c', $deadlineTs);
+        }
         return [
             'token' => (string)($invite['token'] ?? ''),
             'status' => $status,
