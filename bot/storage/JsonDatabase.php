@@ -19,6 +19,7 @@ final class JsonDatabase
     private string $dataDir;
     private string $lockFile;
     private string $writeBlockFile;
+    private ?array $exclusiveSnapshot = null;
 
     public function __construct(string $dataDir)
     {
@@ -68,6 +69,9 @@ final class JsonDatabase
      */
     public function readOnlySections(array $sections, callable $callback): mixed
     {
+        if ($this->exclusiveSnapshot !== null) {
+            return $callback($this->snapshotSections($this->exclusiveSnapshot, $sections));
+        }
         return $this->readSectionsWithLock($sections, LOCK_SH, $callback);
     }
 
@@ -82,11 +86,26 @@ final class JsonDatabase
      * cannot mutate the JSON source. Writers remain blocked until the bridge
      * has completed, so no stale snapshot can race a newer JSON transaction.
      *
+     * Nested bridge reads on the same adapter reuse the already-frozen
+     * snapshot instead of trying to acquire app.lock a second time. A second
+     * flock() on another file handle would self-block while LOCK_EX is held.
+     *
      * @param list<string> $sections
      */
     public function exclusiveReadOnlySections(array $sections, callable $callback): mixed
     {
-        return $this->readSectionsWithLock($sections, LOCK_EX, $callback);
+        if ($this->exclusiveSnapshot !== null) {
+            return $callback($this->snapshotSections($this->exclusiveSnapshot, $sections));
+        }
+
+        return $this->readSectionsWithLock($sections, LOCK_EX, function (array $snapshot) use ($callback): mixed {
+            $this->exclusiveSnapshot = $snapshot;
+            try {
+                return $callback($snapshot);
+            } finally {
+                $this->exclusiveSnapshot = null;
+            }
+        });
     }
 
     /** @param list<string> $sections */
@@ -114,6 +133,28 @@ final class JsonDatabase
             fclose($lockHandle);
             throw $e;
         }
+    }
+
+    /**
+     * @param array<string,mixed> $snapshot
+     * @param list<string> $sections
+     * @return array<string,mixed>
+     */
+    private function snapshotSections(array $snapshot, array $sections): array
+    {
+        $result = [];
+        foreach ($sections as $section) {
+            $section = trim((string)$section);
+            if ($section === '' || !array_key_exists($section, self::FILES)) {
+                throw new InvalidArgumentException('Неизвестная секция JSON-хранилища: ' . $section);
+            }
+            if (array_key_exists($section, $result)) continue;
+            if (!array_key_exists($section, $snapshot)) {
+                throw new RuntimeException('Вложенное чтение запросило секцию вне активного JSON-снимка: ' . $section);
+            }
+            $result[$section] = $snapshot[$section];
+        }
+        return $result;
     }
 
     private function ensureFiles(): void
