@@ -43,8 +43,7 @@ trait GameInviteValidationTrait
         $status = (string)($invite['status'] ?? '');
         if (!in_array($status, ['draft', 'pending'], true)) return false;
 
-        return (string)($invite['inviter_id'] ?? '') === $userId
-            && (string)($invite['source'] ?? '') !== 'rematch';
+        return (string)($invite['inviter_id'] ?? '') === $userId;
     }
 
     private function assertNoOpenInvite(array $db, string $userId, string $exceptToken, string $message): void
