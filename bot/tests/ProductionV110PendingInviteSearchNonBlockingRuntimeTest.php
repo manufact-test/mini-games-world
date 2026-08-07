@@ -58,8 +58,8 @@ $rematchPending = ['invites' => [[
 ]]];
 $assert($invoke($rematchPending, 'recipient') === null,
     'Recipient of a pending rematch may still treat it as notification-only before accepting.');
-$assert($invoke($rematchPending, 'owner') instanceof RuntimeException,
-    'Owner of a pending rematch must remain blocked because rematch acceptance may auto-start.');
+$assert($invoke($rematchPending, 'owner') === null,
+    'Owner of a pending rematch must be allowed to start unrelated matchmaking before acceptance.');
 
 $accepted = ['invites' => [[
     'status' => 'awaiting_start',
@@ -69,9 +69,21 @@ $accepted = ['invites' => [[
     'ready_deadline_at' => $future,
 ]]];
 $assert($invoke($accepted, 'owner') instanceof RuntimeException,
-    'Owner of an accepted invitation must remain blocked.');
+    'Owner of an accepted invitation must remain blocked until Start or Cancel.');
 $assert($invoke($accepted, 'recipient') instanceof RuntimeException,
-    'Recipient of an accepted invitation must remain blocked.');
+    'Recipient of an accepted invitation must remain blocked until Start or Cancel.');
+
+$acceptedRematch = ['invites' => [[
+    'status' => 'awaiting_start',
+    'source' => 'rematch',
+    'inviter_id' => 'owner',
+    'invitee_id' => 'recipient',
+    'ready_deadline_at' => $future,
+]]];
+$assert($invoke($acceptedRematch, 'owner') instanceof RuntimeException,
+    'Owner of an accepted rematch must become blocked until explicit Start or Cancel.');
+$assert($invoke($acceptedRematch, 'recipient') instanceof RuntimeException,
+    'Recipient of an accepted rematch must become blocked until explicit Start or Cancel.');
 
 $expired = ['invites' => [[
     'status' => 'pending',
