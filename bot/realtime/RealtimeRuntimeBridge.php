@@ -39,13 +39,19 @@ final class RealtimeRuntimeBridge
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Realtime bridge requires JSON rollback storage.');
         }
-
-        $snapshot = $storage->readOnly(static fn(array $data): array => $data);
-        if (!is_array($snapshot)) {
-            throw new RuntimeException('Realtime bridge could not read the JSON rollback snapshot.');
+        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
+            throw new RuntimeException('Realtime bridge requires exclusive JSON snapshot support.');
         }
 
         $repository = $this->repository ??= new RuntimeRealtimeRepository($this->config, $this->router);
-        return $repository->synchronize($snapshot);
+
+        // Realtime projection is part of the JSON write publication boundary.
+        // Keep the same exclusive JSON lock from snapshot read until DB projection
+        // and its parity comparison finish. Otherwise a newer api.php transaction
+        // can mutate JSON while this bridge is still projecting the older snapshot,
+        // allowing concurrent success hooks to observe transient JSON↔DB mismatch.
+        return $storage->exclusiveReadOnly(static function (array $snapshot) use ($repository): array {
+            return $repository->synchronize($snapshot);
+        });
     }
 }
