@@ -76,6 +76,7 @@ export function initGameInvites(){
   });
   document.addEventListener('mgw:sheet-closed', () => {
     playerPickerRequestGeneration += 1;
+    if (isPassiveOwnerPending(currentInvite)) currentInvite = null;
     if (!shareAttempt?.nativePending) cancelWarmShareDraft();
   });
   document.addEventListener('mgw:before-game-launch', event => {
@@ -1188,6 +1189,12 @@ function actionText(action){
 
 function hasActionableInvite(){
   return ['pending', 'accepted'].includes(String(currentInvite?.status || ''));
+}
+
+function isPassiveOwnerPending(invite){
+  return String(invite?.status || '') === 'pending'
+    && Boolean(invite?.is_owner)
+    && String(invite?.source || '') !== 'rematch';
 }
 
 function isGameLaunchControl(target){
