@@ -147,9 +147,17 @@ test('normal outgoing pending is passive after close/reopen and recipient may ac
 
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
+    expect(playerA.diagnostics.failedRequests).toEqual([]);
+    expect(playerB.diagnostics.failedRequests).toEqual([]);
     expect(playerA.diagnostics.serverErrors).toEqual([]);
     expect(playerB.diagnostics.serverErrors).toEqual([]);
   } finally {
+    if (playerA?.page && !playerA.page.isClosed()) {
+      try { await postFromPlayer(playerA.page, '/bot/api.php', { action: 'leave_search' }); } catch {}
+    }
+    if (playerB?.page && !playerB.page.isClosed()) {
+      try { await postFromPlayer(playerB.page, '/bot/api.php', { action: 'leave_search' }); } catch {}
+    }
     if (token && playerA?.page && !playerA.page.isClosed()) {
       try {
         await postFromPlayer(playerA.page, '/bot/invites.php', { action: 'cancel', token });
