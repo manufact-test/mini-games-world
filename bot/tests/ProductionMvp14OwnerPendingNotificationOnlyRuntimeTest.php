@@ -23,7 +23,7 @@ $assert($invoke([
     'source' => 'direct',
     'is_owner' => true,
     'is_invitee' => false,
-]), 'A normal direct pending invitation must be notification-only for its owner.');
+]), 'A direct pending invitation must be notification-only for its owner.');
 
 $assert($invoke([
     'status' => 'pending',
@@ -32,19 +32,19 @@ $assert($invoke([
     'is_invitee' => false,
 ]), 'A shared-link pending invitation must be notification-only for its owner.');
 
-$assert(!$invoke([
+$assert($invoke([
     'status' => 'pending',
     'source' => 'rematch',
     'is_owner' => true,
     'is_invitee' => false,
-]), 'A pending rematch must remain binding for its owner.');
+]), 'A pending rematch must be notification-only for its owner until the opponent accepts.');
 
 $assert($invoke([
     'status' => 'pending',
     'source' => 'rematch',
     'is_owner' => false,
     'is_invitee' => true,
-]), 'The recipient-side pending invitation behavior must remain notification-only.');
+]), 'The recipient-side pending rematch must remain notification-only before acceptance.');
 
 $assert(!$invoke([
     'status' => 'accepted',
@@ -52,6 +52,13 @@ $assert(!$invoke([
     'is_owner' => true,
     'is_invitee' => false,
 ]), 'An accepted invitation must remain binding for the owner.');
+
+$assert(!$invoke([
+    'status' => 'accepted',
+    'source' => 'rematch',
+    'is_owner' => true,
+    'is_invitee' => false,
+]), 'An accepted rematch must become binding and wait for explicit Start or Cancel.');
 
 $assert(!$invoke(null), 'Missing invitation state must not be classified as notification-only.');
 
