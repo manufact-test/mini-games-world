@@ -878,18 +878,9 @@ function notificationMessage(item){
 function terminalNotificationFallback(item){
   const status = String(item?.invite_status || '');
   if (status === 'cancelled' || status === 'canceled') {
-    const inviterName = String(item?.inviter_name || '').trim();
-    const inviteeName = String(item?.invitee_name || '').trim();
-    const gameTitle = String(item?.game_title || '').trim();
-    if (!item?.invite_is_owner && inviterName && gameTitle) {
-      return `${inviterName} отменил приглашение сыграть в «${gameTitle}».`;
-    }
-    if (item?.invite_is_owner && inviteeName && gameTitle) {
-      return `${inviteeName} отменил участие в матче «${gameTitle}».`;
-    }
     return item?.invite_is_owner
       ? 'Вы отменили своё приглашение.'
-      : 'Приглашение отменено.';
+      : 'Вы отменили участие в матче.';
   }
   if (status === 'declined') return 'Вы отклонили приглашение.';
   return '';

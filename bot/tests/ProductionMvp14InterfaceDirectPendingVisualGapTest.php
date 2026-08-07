@@ -67,9 +67,9 @@ $assert(
 );
 $assert(
     str_contains($shell, './games/game-invites-v110.js?v=1135&pending=2')
-        && str_contains($main, './main-v110-handoff-shell.js?v=1135&pending=2')
-        && str_contains($entry, './assets/js/main-v110.js?v=1135&pending=2'),
-    'The visual-only hotfix must publish through a fresh cache-busted path while preserving the accepted v1135 graph identity.'
+        && str_contains($main, './main-v110-handoff-shell.js?v=1135&pending=3')
+        && str_contains($entry, './assets/js/main-v110.js?v=1135&pending=3'),
+    'The accepted invite owner must remain on pending=2 while the updated shell publishes through fresh pending=3 outer paths.'
 );
 
 fwrite(STDOUT, "ProductionMvp14InterfaceDirectPendingVisualGapTest: {$assertions} assertions passed\n");
