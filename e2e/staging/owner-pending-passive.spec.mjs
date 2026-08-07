@@ -22,7 +22,7 @@ function apiActionResponse(action) {
     && requestAction(response.request()) === action;
 }
 
-test('normal outgoing pending is passive after close/reopen and recipient may accept while sender searches', async ({ browser }) => {
+test('normal outgoing pending is passive immediately after close/reopen and recipient may accept while sender searches', async ({ browser }) => {
   test.setTimeout(150_000);
   let contextA;
   let contextB;
@@ -60,6 +60,15 @@ test('normal outgoing pending is passive after close/reopen and recipient may ac
       { timeout: 35_000 },
     );
     await opponent.click();
+
+    // Reproduce the real manual race: close the optimistic sent sheet before
+    // the authoritative create_direct response has to finish.
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено', {
+      timeout: 10_000,
+    });
+    await playerA.page.locator('#sheet [data-close-sheet]').click();
+    await expect(playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+
     const createdResponse = await createResponse;
     const created = await createdResponse.json().catch(() => null);
     expect(createdResponse.status()).toBe(200);
@@ -67,15 +76,12 @@ test('normal outgoing pending is passive after close/reopen and recipient may ac
     token = String(created?.invite?.token || '');
     expect(token).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
 
-    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено', {
-      timeout: 20_000,
-    });
-    await expect(playerA.page.locator(`#sheet [data-invite-action="cancel"][data-invite-token="${token}"]`)).toBeVisible();
-
-    await playerA.page.locator('#sheet [data-close-sheet]').click();
+    // The later server response must not resurrect the sent sheet or create a
+    // short local blocking window after the user has already dismissed it.
     await expect(playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+    await expect(playerA.page.locator('#sheet')).not.toContainText('Приглашение отправлено');
 
-    // The local pending owner must no longer intercept an unrelated game launch.
+    // The local pending owner must not intercept an unrelated game launch.
     await playerA.page.locator('#playTicTacToe').click();
     await expect(playerA.page.locator('#startSearchBtn')).toBeVisible({ timeout: 10_000 });
     await playerA.page.locator('#sheet [data-close-sheet]').click();
