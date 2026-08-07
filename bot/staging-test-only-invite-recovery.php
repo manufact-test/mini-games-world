@@ -43,11 +43,37 @@ try {
         JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
     ) . PHP_EOL;
 } catch (Throwable $error) {
-    error_log('[MiniGamesWorld staging test-only invite recovery] denied: ' . get_class($error));
+    $message = $error->getMessage();
+    $safeCode = $error instanceof ParseError ? 'parse_error' : 'unclassified_failure';
+    $safeMap = [
+        'unsafe A/B invite state' => 'unsafe_status_or_source',
+        'matched A/B invite' => 'matched_invite',
+        'match-referenced A/B invite' => 'match_referenced_invite',
+        'ownership is unavailable' => 'ownership_unavailable',
+        'ownership mismatch' => 'ownership_mismatch',
+        'non-test notification state' => 'non_test_notification',
+        'JSON-backed notification state' => 'json_backed_notification',
+        'excessive candidates' => 'candidate_limit',
+        'notification delete count is unexpected' => 'notification_delete_count',
+        'event delete count is unexpected' => 'event_delete_count',
+        'invite delete count is unexpected' => 'invite_delete_count',
+        'invite parity did not recover' => 'invite_parity',
+        'notification parity did not recover' => 'notification_parity',
+        'requires DB invite routing' => 'routing_guard',
+        'refuses live payments' => 'payment_guard',
+        'requires database' => 'database_unavailable',
+    ];
+    foreach ($safeMap as $needle => $code) {
+        if (str_contains($message, $needle)) {
+            $safeCode = $code;
+            break;
+        }
+    }
+    error_log('[MiniGamesWorld staging test-only invite recovery] denied: ' . get_class($error) . ' code=' . $safeCode);
     http_response_code(403);
     echo json_encode([
         'ok' => false,
         'service' => 'mini-games-world-staging-test-only-invite-orphan-recovery',
-        'error' => 'test_only_invite_recovery_unavailable',
+        'error' => $safeCode,
     ], JSON_UNESCAPED_SLASHES) . PHP_EOL;
 }
