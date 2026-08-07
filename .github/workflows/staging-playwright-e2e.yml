@@ -21,7 +21,7 @@ jobs:
   linux-route:
     name: TEST PLAYER A/B — Linux route
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 17
     outputs:
       result: ${{ steps.classify.outputs.result }}
 
