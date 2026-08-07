@@ -141,11 +141,11 @@ trait GameInviteCreationTrait
         if (!isset($db['users'][$inviterId]) || !is_array($db['users'][$inviterId])) {
             throw new RuntimeException('Пригласивший игрок больше недоступен.');
         }
-        $this->assertAvailableForStart(
+        $this->assertNoOpenInvite(
             $db,
-            $db['users'][$inviterId],
+            $inviterId,
             (string)($invite['token'] ?? ''),
-            'Пригласивший игрок уже занят другим матчем или приглашением.'
+            'Пригласивший игрок уже занят другим приглашением.'
         );
 
         $now = now_iso();
@@ -196,8 +196,8 @@ trait GameInviteCreationTrait
             if ($index !== null && $this->isParticipant($db['invites'][$index], $userId)) {
                 $candidate = $this->publicInvite($db['invites'][$index], $userId);
                 if ($this->isNotificationOnlyPendingInvite($candidate)) {
-                    // Telegram/open-link may show this invitation once without making
-                    // it an active client state that blocks unrelated game launches.
+                    // A pending invitation may be shown once by its explicit entry path,
+                    // but waiting for the other player must not become blocking client state.
                     $openedInvite = $candidate;
                 } else {
                     $trackedInvite = $candidate;
@@ -220,7 +220,6 @@ trait GameInviteCreationTrait
     {
         return is_array($invite)
             && (string)($invite['status'] ?? '') === 'pending'
-            && !empty($invite['is_invitee'])
-            && empty($invite['is_owner']);
+            && (!empty($invite['is_owner']) || !empty($invite['is_invitee']));
     }
 }
