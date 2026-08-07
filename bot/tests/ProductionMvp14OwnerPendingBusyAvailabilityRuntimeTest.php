@@ -32,9 +32,9 @@ $directPending = ['invites' => [[
     'invitee_id' => 'recipient',
 ]]];
 $assert($invoke($directPending, ['id' => 'owner', 'status' => 'playing'], $token) === null,
-    'Normal direct pending owner must remain valid while already playing.');
+    'Direct pending owner must remain valid while already playing.');
 $assert($invoke($directPending, ['id' => 'owner', 'status' => 'searching'], $token) === null,
-    'Normal direct pending owner must remain valid while already searching.');
+    'Direct pending owner must remain valid while already searching.');
 $assert($invoke($directPending, ['id' => 'recipient', 'status' => 'playing'], $token) instanceof RuntimeException,
     'Invitee must still be free when accepting a pending invitation.');
 
@@ -46,7 +46,7 @@ $linkDraft = ['invites' => [[
     'invitee_id' => null,
 ]]];
 $assert($invoke($linkDraft, ['id' => 'owner', 'status' => 'playing'], $token) === null,
-    'Normal link draft owner may remain busy while the already-created share is being opened/confirmed.');
+    'Link draft owner may remain busy while the already-created share is being opened or confirmed.');
 
 $rematchPending = ['invites' => [[
     'token' => $token,
@@ -55,8 +55,10 @@ $rematchPending = ['invites' => [[
     'inviter_id' => 'owner',
     'invitee_id' => 'recipient',
 ]]];
-$assert($invoke($rematchPending, ['id' => 'owner', 'status' => 'playing'], $token) instanceof RuntimeException,
-    'Pending rematch owner must remain strict because rematch acceptance may auto-start.');
+$assert($invoke($rematchPending, ['id' => 'owner', 'status' => 'playing'], $token) === null,
+    'Rematch pending owner must remain valid while already playing because acceptance no longer auto-starts.');
+$assert($invoke($rematchPending, ['id' => 'owner', 'status' => 'searching'], $token) === null,
+    'Rematch pending owner must remain valid while already searching because acceptance no longer auto-starts.');
 
 $accepted = ['invites' => [[
     'token' => $token,
@@ -66,6 +68,16 @@ $accepted = ['invites' => [[
     'invitee_id' => 'recipient',
 ]]];
 $assert($invoke($accepted, ['id' => 'owner', 'status' => 'playing'], $token) instanceof RuntimeException,
-    'Actual start after acceptance must still require a free owner.');
+    'Actual start after direct acceptance must still require a free owner.');
+
+$acceptedRematch = ['invites' => [[
+    'token' => $token,
+    'status' => 'awaiting_start',
+    'source' => 'rematch',
+    'inviter_id' => 'owner',
+    'invitee_id' => 'recipient',
+]]];
+$assert($invoke($acceptedRematch, ['id' => 'owner', 'status' => 'playing'], $token) instanceof RuntimeException,
+    'Actual start after rematch acceptance must still require a free owner.');
 
 fwrite(STDOUT, "ProductionMvp14OwnerPendingBusyAvailabilityRuntimeTest: {$assertions} assertions passed\n");
