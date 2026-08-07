@@ -404,6 +404,12 @@ test('D1 notification toast and bell show one fresh actionable invitation', asyn
       contentType: 'application/json',
     });
   } finally {
+    if (inviteToken && playerA?.page && !playerA.page.isClosed()) {
+      await postFromPlayer(playerA.page, '/bot/invites.php', {
+        action: 'cancel',
+        token: inviteToken,
+      }).catch(() => null);
+    }
     if (playerA) await cleanupPlayer(playerA);
     if (playerB) await cleanupPlayer(playerB);
     if (playerA?.context) {
