@@ -82,12 +82,16 @@ test('normal outgoing pending is passive after close/reopen and recipient may ac
 
     // A fresh document must not restore the old sent-pending sheet as active state.
     playerA.diagnostics.allowInviteSyncAbort = true;
+    playerA.diagnostics.allowBackgroundProfileAbort = true;
+    playerA.diagnostics.allowBackgroundShopHistoryAbort = true;
     await openOrdinaryStartReady(playerA.page, {
       appRoute: APP_ROUTE,
       apiRoute: API_ROUTE,
       label: 'Player A reopen with passive outgoing pending',
     });
     playerA.diagnostics.allowInviteSyncAbort = false;
+    playerA.diagnostics.allowBackgroundProfileAbort = false;
+    playerA.diagnostics.allowBackgroundShopHistoryAbort = false;
     await expect(playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
     await expect(playerA.page.locator('#sheet')).not.toContainText('Приглашение отправлено');
 
