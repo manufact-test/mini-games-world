@@ -32,6 +32,14 @@ $assert(str_contains($reset, '->auditParity($snapshot)')
 $assert(!str_contains($reset, '->synchronizeAndList($snapshot, $legacyUserId)'),
     'Scoped cleanup must not globally synchronize notification state.');
 
+$deleteTransaction = strpos($reset, '$deleted = $database->transaction(');
+$inviteAudit = strpos($reset, '$inviteAudit = (new RuntimeInviteRepository');
+$assert($deleteTransaction !== false && $inviteAudit !== false && $inviteAudit > $deleteTransaction,
+    'Scoped DB delete and invite audit boundaries must exist in order.');
+$transactionEnd = strpos($reset, "        });\n\n        // The exact A/B delete transaction", (int)$deleteTransaction);
+$assert($transactionEnd !== false && $inviteAudit > $transactionEnd,
+    'Invite parity audit must run only after the exact A/B DB delete transaction has committed.');
+
 $issueStart = strpos($auth, "if (\$action === 'issue') {");
 $revokeStart = strpos($auth, "if (\$action === 'revoke') {");
 $assert($issueStart !== false && $revokeStart !== false && $revokeStart > $issueStart,
