@@ -1,18 +1,16 @@
 import { test, expect } from '@playwright/test';
 import {
   APP_ROUTE,
-  INVITES_ROUTE,
-  isActionResponse,
 } from './support/d3-shared-config.mjs';
 import {
   authorizeContext,
   openPlayerPage,
   cleanupPlayer,
   revokeContext,
+  postFromPlayer,
 } from './support/d3-shared-context.mjs';
 import {
   expectPlayerRequest,
-  clickInviteAction,
 } from './support/d3-shared-actions.mjs';
 
 async function createPlayers(browser) {
@@ -67,27 +65,6 @@ async function createDirectInvite(page) {
   return token;
 }
 
-async function syncOwnerInvite(page, token) {
-  let matched = false;
-  for (let attempt = 0; attempt < 4 && !matched; attempt += 1) {
-    const responsePromise = page.waitForResponse(
-      isActionResponse(INVITES_ROUTE, 'sync'),
-      { timeout: 8_000 },
-    ).catch(() => null);
-    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-    const response = await responsePromise;
-    if (!response || response.status() !== 200) continue;
-    const payload = await response.json().catch(() => null);
-    const invite = payload?.invite || payload?.tracked_invite || null;
-    matched = String(invite?.token || '') === token;
-  }
-  expect(matched, 'Owner module must synchronize the created invitation').toBe(true);
-  await page.waitForTimeout(120);
-  await page.locator('[data-invite-friend="tictactoe"]').click();
-  await expect(page.locator(`#sheet [data-invite-sheet][data-invite-token="${token}"]`)).toHaveCount(1);
-  await expect(page.locator('#sheet .sheet-head h2')).toHaveText('Приглашение отправлено');
-}
-
 async function openNotifications(page) {
   if (await page.locator('#sheetOverlay').evaluate(element => element.classList.contains('active'))) {
     await page.locator('#sheet [data-close-sheet]').click();
@@ -104,8 +81,9 @@ async function openNotifications(page) {
 test('recipient bell replaces active invite with one contextual cancelled terminal card', async ({ browser }) => {
   test.setTimeout(180_000);
   const players = await createPlayers(browser);
+  let token = '';
   try {
-    const token = await createDirectInvite(players.playerA.page);
+    token = await createDirectInvite(players.playerA.page);
 
     await openNotifications(players.playerB.page);
     const activeCard = players.playerB.page.locator(
@@ -120,8 +98,15 @@ test('recipient bell replaces active invite with one contextual cancelled termin
     await players.playerB.page.locator('#sheet [data-close-sheet]').click();
     await expect(players.playerB.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
 
-    await syncOwnerInvite(players.playerA.page, token);
-    const cancelled = await clickInviteAction(players.playerA.page, 'cancel', token);
+    // A fresh owner sync deliberately no longer restores normal pending state.
+    // This regression only needs the authoritative server cancellation to prove
+    // that B's active notification is replaced by one contextual terminal card.
+    const cancelled = await expectPlayerRequest(
+      players.playerA.page,
+      '/bot/invites.php',
+      { action: 'cancel', token },
+      'Player A cancels recipient-terminal replacement invitation',
+    );
     expect(String(cancelled?.invite?.status || '')).toMatch(/cancelled|canceled/);
 
     await openNotifications(players.playerB.page);
@@ -145,6 +130,12 @@ test('recipient bell replaces active invite with one contextual cancelled termin
     expect(players.playerA.diagnostics.serverErrors).toEqual([]);
     expect(players.playerB.diagnostics.serverErrors).toEqual([]);
   } finally {
+    if (token && players?.playerA?.page && !players.playerA.page.isClosed()) {
+      await postFromPlayer(players.playerA.page, '/bot/invites.php', {
+        action: 'cancel',
+        token,
+      }).catch(() => null);
+    }
     await disposePlayers(players);
   }
 });
