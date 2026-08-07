@@ -22,6 +22,15 @@ function apiActionResponse(action) {
     && requestAction(response.request()) === action;
 }
 
+async function openTicTacToeDuringHomeTransition(player) {
+  player.diagnostics.allowInviteWatchAbort = true;
+  try {
+    await player.page.locator('#playTicTacToe').click();
+  } finally {
+    player.diagnostics.allowInviteWatchAbort = false;
+  }
+}
+
 test('normal outgoing pending is passive immediately after close/reopen and recipient may accept while sender keeps ordinary activity', async ({ browser }) => {
   test.setTimeout(150_000);
   let contextA;
@@ -82,7 +91,9 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     await expect(playerA.page.locator('#sheet')).not.toContainText('Приглашение отправлено');
 
     // The local pending owner must not intercept an unrelated game launch.
-    await playerA.page.locator('#playTicTacToe').click();
+    // invite-watch is home-only background polling; if a request starts during
+    // this exact home -> game transition, its result is obsolete by design.
+    await openTicTacToeDuringHomeTransition(playerA);
     await expect(playerA.page.locator('#startSearchBtn')).toBeVisible({ timeout: 10_000 });
     await playerA.page.locator('#sheet [data-close-sheet]').click();
 
@@ -124,7 +135,7 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     expect(String(received?.status || '')).toBe('pending');
 
     // A can really enter ordinary matchmaking while B has not answered yet.
-    await playerA.page.locator('#playTicTacToe').click();
+    await openTicTacToeDuringHomeTransition(playerA);
     await expect(playerA.page.locator('#startSearchBtn')).toBeVisible({ timeout: 10_000 });
     const startResponse = playerA.page.waitForResponse(apiActionResponse('start_search'), { timeout: 35_000 });
     await playerA.page.locator('#startSearchBtn').click();
@@ -166,6 +177,8 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
       expect(String(stateAfterAccept?.game?.status || '')).toBe('active');
     }
 
+    expect(playerA.diagnostics.ignoredInviteWatchAborts).toBeLessThanOrEqual(2);
+    expect(playerB.diagnostics.ignoredInviteWatchAborts).toBe(0);
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
     expect(playerA.diagnostics.failedRequests).toEqual([]);
