@@ -17,15 +17,15 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    !str_contains($searchSpeed, "$item['created_at'] ="),
+    !str_contains($searchSpeed, "\$item['created_at'] ="),
     'Search speed checkpoint must not rewrite immutable queue creation time.'
 );
 $assert(
-    str_contains($searchSpeed, "$item['status'] = 'bot_fallback_5s';"),
+    str_contains($searchSpeed, "\$item['status'] = 'bot_fallback_5s';"),
     'Search speed checkpoint must use the mutable queue status for acceleration.'
 );
 $assert(
-    str_contains($searchSpeed, "$item['updated_at'] = now_iso();"),
+    str_contains($searchSpeed, "\$item['updated_at'] = now_iso();"),
     'Search speed status transition must advance the mutable queue timestamp.'
 );
 $assert(
@@ -33,7 +33,7 @@ $assert(
     'Runtime must recognize the accelerated queue status.'
 );
 $assert(
-    str_contains($runtime, "$runtimeConfig['match_bot_after_sec'] = 5;"),
+    str_contains($runtime, "\$runtimeConfig['match_bot_after_sec'] = 5;"),
     'Accelerated queue status must use the existing bounded five-second bot threshold.'
 );
 $assert(
