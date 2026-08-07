@@ -2,6 +2,7 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const FRESH_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-fresh-invite-recovery.php`;
+const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 
 async function requestOidcToken(){
@@ -22,6 +23,24 @@ async function requestOidcToken(){
     throw new Error('GitHub Actions OIDC reset response did not contain a JWT.');
   }
   return payload.value;
+}
+
+async function diagnoseInviteMismatch(){
+  const oidcToken = await requestOidcToken();
+  const response = await fetch(INVITE_MISMATCH_DIAGNOSTIC_ROUTE, {
+    method:'POST',
+    headers:{
+      Authorization:`Bearer ${oidcToken}`,
+      Accept:'application/json',
+      'Content-Type':'application/json',
+    },
+    body:'{}',
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.ok !== true || payload?.read_only !== true || !payload?.report) {
+    throw new Error(`Staging invite mismatch diagnosis failed: ${response.status} ${payload?.error || 'unknown_error'}`);
+  }
+  console.log('[MGW_STAGING_INVITE_MISMATCH_DIAGNOSTIC]', JSON.stringify(payload.report));
 }
 
 async function recoverFreshInviteReplacement(){
@@ -56,6 +75,7 @@ async function recoverFreshInviteReplacement(){
 }
 
 export default async function stagingGlobalSetup(){
+  await diagnoseInviteMismatch();
   await recoverFreshInviteReplacement();
 
   const oidcToken = await requestOidcToken();
