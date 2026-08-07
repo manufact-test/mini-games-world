@@ -218,8 +218,8 @@ trait GameInviteCreationTrait
 
     private function isNotificationOnlyPendingInvite(?array $invite): bool
     {
-        return is_array($invite)
-            && (string)($invite['status'] ?? '') === 'pending'
-            && (!empty($invite['is_owner']) || !empty($invite['is_invitee']));
+        if (!is_array($invite) || (string)($invite['status'] ?? '') !== 'pending') return false;
+        if (!empty($invite['is_invitee']) && empty($invite['is_owner'])) return true;
+        return !empty($invite['is_owner']) && (string)($invite['source'] ?? '') !== 'rematch';
     }
 }
