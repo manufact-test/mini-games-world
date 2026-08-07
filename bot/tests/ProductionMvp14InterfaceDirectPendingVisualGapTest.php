@@ -66,10 +66,10 @@ $assert(
     'Direct invitation creation must retain one authoritative server request and the accepted final owner transition.'
 );
 $assert(
-    str_contains($shell, './games/game-invites-v110.js?v=1135&pending=2')
-        && str_contains($main, './main-v110-handoff-shell.js?v=1135&pending=3')
-        && str_contains($entry, './assets/js/main-v110.js?v=1135&pending=3'),
-    'The accepted invite owner must remain on pending=2 while the updated shell publishes through fresh pending=3 outer paths.'
+    str_contains($shell, './games/game-invites-v110.js?v=1135&pending=4')
+        && str_contains($main, './main-v110-handoff-shell.js?v=1135&pending=4')
+        && str_contains($entry, './assets/js/main-v110.js?v=1135&pending=4'),
+    'The passive owner-pending update must publish the canonical invite owner through fresh pending=4 browser paths.'
 );
 
 fwrite(STDOUT, "ProductionMvp14InterfaceDirectPendingVisualGapTest: {$assertions} assertions passed\n");
