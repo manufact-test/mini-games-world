@@ -126,30 +126,27 @@ function mgw_has_other_recent_human_in_room(array $data, string $userId, string 
     return false;
 }
 
-function mgw_make_search_ready_for_bot(array &$data, string $userId): ?string
+function mgw_prepare_match_bot_fallback(array &$data, string $userId, bool $otherRecentHuman): void
 {
-    if (!isset($data['queue']) || !is_array($data['queue'])) return null;
+    if (!isset($data['queue']) || !is_array($data['queue'])) return;
 
     foreach ($data['queue'] as &$item) {
         if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
-        $originalCreatedAt = (string)($item['created_at'] ?? '');
-        // Standard bot fallback is 15 seconds. Backdating by 12 seconds leaves
-        // an actual three-second window for a live player to join first.
-        $item['created_at'] = gmdate('c', time() - 12);
-        unset($item);
-        return $originalCreatedAt;
-    }
-    unset($item);
-    return null;
-}
 
-function mgw_restore_search_created_at(array &$data, string $userId, ?string $createdAt): void
-{
-    if ($createdAt === null || !isset($data['queue']) || !is_array($data['queue'])) return;
-
-    foreach ($data['queue'] as &$item) {
-        if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
-        $item['created_at'] = $createdAt !== '' ? $createdAt : now_iso();
+        // Queue creation time is immutable once realtime first projects the row.
+        // Prepare the complete fallback policy inside the original start_search
+        // transaction so every later request sees one stable queue identity.
+        if ($otherRecentHuman) {
+            // The bounded five-second policy starts two seconds in, preserving the
+            // existing real-world ~3 second window for a human match to win first.
+            $item['created_at'] = gmdate('c', time() - 2);
+            $item['status'] = 'bot_fallback_5s';
+            $item['updated_at'] = now_iso();
+        } else {
+            // Standard bot fallback is 15 seconds. Backdating by 12 seconds leaves
+            // the same actual three-second human window without a later mutation.
+            $item['created_at'] = gmdate('c', time() - 12);
+        }
         unset($item);
         return;
     }
@@ -326,10 +323,12 @@ try {
 
                 $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
 
-                if (empty($search['game'])
-                    && $room === 'match'
-                    && !mgw_has_other_recent_human_in_room($data, $userId, $room)) {
-                    mgw_make_search_ready_for_bot($data, $userId);
+                if (empty($search['game']) && $room === 'match') {
+                    mgw_prepare_match_bot_fallback(
+                        $data,
+                        $userId,
+                        mgw_has_other_recent_human_in_room($data, $userId, $room)
+                    );
                 }
 
                 if (!empty($search['game']['id'])) {
