@@ -27,22 +27,43 @@ $invoke = static function (array &$db, string $userId) use ($guard, $runtime): ?
 $future = gmdate('c', time() + 300);
 $past = gmdate('c', time() - 300);
 
-$receivedPending = ['invites' => [[
+$directPending = ['invites' => [[
     'status' => 'pending',
+    'source' => 'direct',
     'inviter_id' => 'owner',
     'invitee_id' => 'recipient',
     'expires_at' => $future,
 ]]];
-$assert($invoke($receivedPending, 'recipient') === null,
-    'Recipient of a pending invitation must be allowed to start unrelated matchmaking.');
+$assert($invoke($directPending, 'recipient') === null,
+    'Recipient of a pending direct invitation must be allowed to start unrelated matchmaking.');
+$assert($invoke($directPending, 'owner') === null,
+    'Owner of a pending direct invitation must be allowed to start unrelated matchmaking.');
 
-$ownerPending = $receivedPending;
-$ownerError = $invoke($ownerPending, 'owner');
-$assert($ownerError instanceof RuntimeException,
-    'Owner of a pending invitation must remain blocked from conflicting matchmaking.');
+$linkPending = ['invites' => [[
+    'status' => 'pending',
+    'source' => 'link',
+    'inviter_id' => 'owner',
+    'invitee_id' => 'recipient',
+    'expires_at' => $future,
+]]];
+$assert($invoke($linkPending, 'owner') === null,
+    'Owner of a pending link invitation must be allowed to start unrelated matchmaking.');
+
+$rematchPending = ['invites' => [[
+    'status' => 'pending',
+    'source' => 'rematch',
+    'inviter_id' => 'owner',
+    'invitee_id' => 'recipient',
+    'expires_at' => $future,
+]]];
+$assert($invoke($rematchPending, 'recipient') === null,
+    'Recipient of a pending rematch may still treat it as notification-only before accepting.');
+$assert($invoke($rematchPending, 'owner') instanceof RuntimeException,
+    'Owner of a pending rematch must remain blocked because rematch acceptance may auto-start.');
 
 $accepted = ['invites' => [[
     'status' => 'awaiting_start',
+    'source' => 'direct',
     'inviter_id' => 'owner',
     'invitee_id' => 'recipient',
     'ready_deadline_at' => $future,
@@ -54,6 +75,7 @@ $assert($invoke($accepted, 'recipient') instanceof RuntimeException,
 
 $expired = ['invites' => [[
     'status' => 'pending',
+    'source' => 'rematch',
     'inviter_id' => 'owner',
     'invitee_id' => 'recipient',
     'expires_at' => $past,
