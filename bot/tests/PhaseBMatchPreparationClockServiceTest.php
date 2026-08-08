@@ -40,13 +40,15 @@ try {
 }
 $assert($blocked, 'Moves must be blocked while players prepare.');
 
-$clock->markReady($game, 'player_a', 'raw-session-a');
+$clock->markReady($game, 'player_a', 'raw-session-a', 'raw-device-a');
 $assert(count($game['preparation_ready_devices'] ?? []) === 1, 'One ready player must not start countdown.');
-$assert(!str_contains(json_encode($game, JSON_UNESCAPED_UNICODE), 'raw-session-a'), 'Raw session IDs must never be persisted.');
+$encoded = json_encode($game, JSON_UNESCAPED_UNICODE);
+$assert(!str_contains((string)$encoded, 'raw-session-a'), 'Raw session IDs must never be persisted.');
+$assert(!str_contains((string)$encoded, 'raw-device-a'), 'Raw device IDs must never be persisted.');
 $clock->advance($game);
 $assert(($game['launch_phase'] ?? '') === 'preparing', 'Countdown must wait for both players.');
 
-$clock->markReady($game, 'player_b', 'raw-session-b');
+$clock->markReady($game, 'player_b', 'raw-session-b', 'raw-device-b');
 $clock->advance($game);
 $assert(($game['launch_phase'] ?? '') === 'countdown', 'Both ready players must create one shared countdown.');
 $assert((int)($game['clock_revision'] ?? 0) === 1, 'First turn must own clock revision one.');
@@ -101,7 +103,7 @@ $botGame = [
     'turn_started_at' => now_iso(),
 ];
 $clock->initializeNewGame($botGame);
-$clock->markReady($botGame, 'player_a', 'human-session');
+$clock->markReady($botGame, 'player_a', 'human-session', 'human-device');
 $assert(isset($botGame['preparation_ready_devices']['bot_test']), 'Bot readiness must be server-owned automatically.');
 $clock->advance($botGame);
 $assert(($botGame['launch_phase'] ?? '') === 'countdown', 'Bot match must use the same preparation state machine.');
