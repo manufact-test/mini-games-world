@@ -56,9 +56,10 @@ $assert(
     'Invite transport owner must wrap the accepted speed runtime rather than bypass it.'
 );
 $assert(
-    str_contains($route, "./assets/js/production-clean-entry-v110.js?v=1122")
-        && str_contains($route, "X-MGW-Invite-Graph: v1136"),
-    'V110 route must publish the new invite transport graph through a fresh cache boundary.'
+    str_contains($route, "./assets/js/production-clean-entry-v110.js?v=1121")
+        && str_contains($route, "X-MGW-Invite-Graph: v1135")
+        && str_contains($entry, "window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';"),
+    'The isolated transport owner must not rewrite the accepted outer v110 publication identity.'
 );
 
 fwrite(STDOUT, "ProductionV110InviteActionTransportOwnerContractTest: {$assertions} assertions passed\n");
