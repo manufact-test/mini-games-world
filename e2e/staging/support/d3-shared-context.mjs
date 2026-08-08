@@ -170,6 +170,9 @@ export function collectDiagnostics(page, slot) {
     ignoredBackgroundShopHistoryAborts: 0,
     allowInviteWatchAbort: false,
     ignoredInviteWatchAborts: 0,
+    allowStartSearchInviteBackgroundAbort: false,
+    ignoredStartSearchInviteSyncAborts: 0,
+    ignoredStartSearchInviteWatchAborts: 0,
   };
 
   // An allowed transition owns requests from the moment they start. A request
@@ -182,11 +185,44 @@ export function collectDiagnostics(page, slot) {
   const allowedBackgroundShopHistoryAbortRequests = new WeakSet();
   const allowedInviteWatchAbortRequests = new WeakSet();
 
+  // start_search is different from a navigation-only allowance: the accepted
+  // cache-safety owner intentionally aborts background reads already in flight
+  // when the state-changing pointer action begins. Keep those exact requests
+  // enumerable until completion so this transition can adopt only the reads it
+  // truly supersedes. The dedicated WeakSets keep this ownership separate from
+  // every existing navigation/reopen abort allowance and from their counters.
+  const inFlightInviteSyncRequests = new Set();
+  const inFlightInviteWatchRequests = new Set();
+  const startSearchInviteSyncAbortRequests = new WeakSet();
+  const startSearchInviteWatchAbortRequests = new WeakSet();
+
+  report.beginStartSearchInviteBackgroundAbortOwnership = () => {
+    report.allowStartSearchInviteBackgroundAbort = true;
+    for (const request of inFlightInviteSyncRequests) {
+      startSearchInviteSyncAbortRequests.add(request);
+    }
+    for (const request of inFlightInviteWatchRequests) {
+      startSearchInviteWatchAbortRequests.add(request);
+    }
+  };
+  report.endStartSearchInviteBackgroundAbortOwnership = () => {
+    report.allowStartSearchInviteBackgroundAbort = false;
+  };
+
+  const forgetInFlightInviteRequest = request => {
+    inFlightInviteSyncRequests.delete(request);
+    inFlightInviteWatchRequests.delete(request);
+  };
+
   page.on('pageerror', error => {
     report.pageErrors.push(String(error?.message || error).slice(0, 500));
   });
   page.on('request', request => {
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
+
+    if (isInviteSyncRequest(request)) inFlightInviteSyncRequests.add(request);
+    if (isInviteWatchRequest(request)) inFlightInviteWatchRequests.add(request);
+
     if (report.allowInviteSyncAbort && isInviteSyncRequest(request)) {
       allowedInviteSyncAbortRequests.add(request);
     }
@@ -199,10 +235,26 @@ export function collectDiagnostics(page, slot) {
     if (report.allowInviteWatchAbort && isInviteWatchRequest(request)) {
       allowedInviteWatchAbortRequests.add(request);
     }
+    if (report.allowStartSearchInviteBackgroundAbort && isInviteSyncRequest(request)) {
+      startSearchInviteSyncAbortRequests.add(request);
+    }
+    if (report.allowStartSearchInviteBackgroundAbort && isInviteWatchRequest(request)) {
+      startSearchInviteWatchAbortRequests.add(request);
+    }
   });
+  page.on('requestfinished', forgetInFlightInviteRequest);
   page.on('requestfailed', request => {
+    forgetInFlightInviteRequest(request);
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
     if (isExpectedPresenceResumeAbort(request)) return;
+    if (startSearchInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
+      report.ignoredStartSearchInviteSyncAborts += 1;
+      return;
+    }
+    if (startSearchInviteWatchAbortRequests.has(request) && isExpectedInviteWatchAbort(request)) {
+      report.ignoredStartSearchInviteWatchAborts += 1;
+      return;
+    }
     if (allowedInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
       report.ignoredInviteSyncAborts += 1;
       return;
