@@ -143,6 +143,14 @@ final class MatchPreparationClockService
         }
     }
 
+    public function assertSurrenderAllowed(array $game): void
+    {
+        if (!array_key_exists('launch_phase', $game)) return;
+        if ((string)($game['launch_phase'] ?? '') === 'active') return;
+
+        throw new RuntimeException('Матч ещё не начался.');
+    }
+
     public function synchronizeTurnHandoff(array &$game, string $previousTurn): void
     {
         if ((string)($game['status'] ?? '') !== 'active') return;

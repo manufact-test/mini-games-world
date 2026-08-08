@@ -183,6 +183,7 @@ final class ChessRuntimeService
     {
         $game = $db['games'][$gameId] ?? null;
         if (is_array($game)) {
+            $this->matchPreparationClock->assertSurrenderAllowed($game);
             $gameType = (string)($game['game_type'] ?? '');
             if ($gameType === 'chess') return $this->chess->surrender($db, $user, $gameId);
             if ($gameType === 'go') return $this->go->surrender($db, $user, $gameId);
