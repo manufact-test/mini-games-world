@@ -1,0 +1,74 @@
+name: Verify D3 Invite Mutation Ownership
+
+on:
+  push:
+    branches:
+      - agent/verify-d3-invite-mutation-ownership
+
+permissions:
+  contents: read
+  id-token: write
+  statuses: write
+
+jobs:
+  d3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc '{state:"pending",context:"d3-invite-mutation-ownership-focused",description:"Focused D3 ownership test is running"}')"
+
+      - name: Checkout exact verification commit
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+
+      - name: Syntax check ownership files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --check e2e/staging/support/d3-shared-context.mjs
+          node --check e2e/staging/d3-shared-invite.spec.mjs
+
+      - name: Run focused D3 shared invite test
+        shell: bash
+        run: npx --no-install playwright test e2e/staging/d3-shared-invite.spec.mjs --config=e2e/staging/playwright.config.mjs
+
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${JOB_STATUS}" == 'success' ]]; then state='success'; description='Focused D3 ownership test passed'; else state='failure'; description='Focused D3 ownership test failed'; fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc --arg state "${state}" --arg description "${description}" '{state:$state,context:"d3-invite-mutation-ownership-focused",description:$description}')"
+          test "${state}" = 'success'
