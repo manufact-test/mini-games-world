@@ -13,10 +13,11 @@ import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
 import { initV110AcceptanceRuntime } from './production-v110-acceptance-runtime.js?v=110';
 import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1104';
 import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
+import { initV110InviteActionTransportOwner } from './production-v110-invite-action-transport-owner.js?v=1105';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1136';
 
 // The canonical v110 invitation module owns setup, player selection, link
 // creation, sharing and invite actions. Historical share/picker layers must not
@@ -32,6 +33,7 @@ initV99ExplicitLockGuard();
 initV101PollTuning();
 initV104GamePollTuning();
 initV101SpeedRuntime();
+initV110InviteActionTransportOwner();
 initV101InviteSyncDedupe();
 initV101CacheSafety();
 initV102BattleshipBridge();
