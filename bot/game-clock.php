@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
-require_once __DIR__ . '/services/MatchPreparationClockService.php';
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -19,7 +18,6 @@ try {
     $sessions = new SessionService($config);
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));
-    $matchClock = new MatchPreparationClockService();
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
     $result = $db->transaction(function (array &$data) use (
@@ -27,7 +25,6 @@ try {
         $users,
         $sessions,
         $games,
-        $matchClock,
         $protocol,
         $sessionId,
         $gameId
@@ -48,41 +45,22 @@ try {
             throw new RuntimeException('Вы не участвуете в этой игре.');
         }
 
-        // The accepted client does not send this marker yet. Until Phase B is
-        // explicitly activated, every existing request stays on the proven
-        // bot-only first-turn arming path below.
+        // Phase B lifecycle writes belong exclusively to the primary api.php
+        // game_state transaction. Keep this compatibility protocol read-only for
+        // game state so it can never become a second readiness/clock owner.
         if ($protocol === 'mvp14r2') {
             if ($sessionId === '') {
                 throw new RuntimeException('Сессия устройства не найдена.');
             }
 
             $sessions->touch($user, $sessionId);
-            $matchClock->normalizeExisting($game);
-            if ((string)($game['launch_phase'] ?? '') === 'preparing') {
-                $matchClock->markReady($game, $userId, $sessionId);
-            }
-            $matchClock->advance($game);
-
-            // Active games keep using the existing engine cleanup owner. The
-            // synchronized clock only observes a turn change and publishes its
-            // shared handoff/deadline; it does not run a second game engine.
-            if ((string)($game['launch_phase'] ?? '') === 'active') {
-                $games->cleanup($data);
-                if (!isset($data['games'][$gameId]) || !is_array($data['games'][$gameId])) {
-                    throw new RuntimeException('Игра больше недоступна.');
-                }
-                $game =& $data['games'][$gameId];
-                $matchClock->normalizeExisting($game);
-                $matchClock->synchronizeObservedTurn($game);
-            }
-
             return [
                 'user' => $users->publicUser($user),
                 'me' => ['id' => $userId],
-                'game' => $matchClock->enrichPublicGame($game, $games->publicGame($game, $userId)),
+                'game' => $games->publicGame($game, $userId),
                 'session' => $sessions->publicState($user, $sessionId),
                 'clock_armed' => (int)($game['clock_revision'] ?? 0) > 0,
-                'preparation_protocol' => 'mvp14r2',
+                'preparation_protocol' => 'mvp14r2-readonly-primary-api-owner',
             ];
         }
 
