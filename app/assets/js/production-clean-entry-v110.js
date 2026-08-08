@@ -17,7 +17,7 @@ import { initV110InviteActionTransportOwner } from './production-v110-invite-act
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
-window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1136';
+window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
 
 // The canonical v110 invitation module owns setup, player selection, link
 // creation, sharing and invite actions. Historical share/picker layers must not
