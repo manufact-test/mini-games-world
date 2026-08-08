@@ -1,0 +1,73 @@
+name: Phase B PR665 focused
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp14r2-client-launch-ux-clock-fresh
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 5f5eadf6e4e318a246fee02e3b507e9eef076f81
+  STATUS_CONTEXT: phase-b-pr665-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Focused Phase B client launch verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - uses: actions/checkout@v4
+
+      - name: Syntax
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/screens/game-screen-v102-safe.js
+          node --check app/assets/js/production-v110-acceptance-runtime.js
+          php -l app/v110.php
+          php -l bot/tests/PhaseBClientLaunchUxContractTest.php
+          php -l bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+
+      - name: Focused client ownership contracts
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/PhaseBClientLaunchUxContractTest.php
+          php bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Focused Phase B client launch verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Focused Phase B client launch verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
