@@ -33,6 +33,7 @@ async function openTicTacToeDuringHomeTransition(player) {
 
 async function startOrdinarySearchDuringCacheSafetyTransition(player) {
   player.diagnostics.beginStartSearchInviteBackgroundAbortOwnership();
+  player.diagnostics.beginStartSearchShopHistoryAbortOwnership();
   try {
     await player.page.locator('#startSearchBtn').click();
   } finally {
@@ -149,9 +150,9 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     const startResponse = playerA.page.waitForResponse(apiActionResponse('start_search'), { timeout: 35_000 });
 
     // start_search is a real state mutation. The accepted cache-safety owner
-    // deliberately aborts invite background reads that were already in flight
-    // before this unpredictable user click. Adopt only those exact requests for
-    // this exact transition; every other failed request remains strict.
+    // deliberately aborts background reads that were already in flight before
+    // this unpredictable user click. Adopt only those exact requests for this
+    // exact transition; every other failed request remains strict.
     await startOrdinarySearchDuringCacheSafetyTransition(playerA);
 
     const started = await startResponse;
@@ -196,8 +197,10 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     expect(playerB.diagnostics.ignoredInviteWatchAborts).toBe(0);
     expect(playerA.diagnostics.ignoredStartSearchInviteSyncAborts).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredStartSearchInviteWatchAborts).toBeLessThanOrEqual(1);
+    expect(playerA.diagnostics.ignoredStartSearchShopHistoryAborts).toBeLessThanOrEqual(1);
     expect(playerB.diagnostics.ignoredStartSearchInviteSyncAborts).toBe(0);
     expect(playerB.diagnostics.ignoredStartSearchInviteWatchAborts).toBe(0);
+    expect(playerB.diagnostics.ignoredStartSearchShopHistoryAborts).toBe(0);
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
     expect(playerA.diagnostics.failedRequests).toEqual([]);
