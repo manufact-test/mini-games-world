@@ -1,0 +1,61 @@
+name: Verify PR646 Readonly Sync Chain
+
+on:
+  push:
+    branches:
+      - agent/verify-pr646-focused
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc '{state:"pending",context:"phase-b-pr646-focused",description:"Readonly sync hash-chain checks are running"}')"
+
+      - name: Checkout exact verification commit
+        uses: actions/checkout@v4
+
+      - name: Syntax and hash-chain checks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/production-v110-readonly-game-sync.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/main-v110.js
+          php -l app/v110.php
+          php -l bot/tests/PhaseBReadonlySyncPhaseGuardContractTest.php
+          php bot/tests/PhaseBReadonlySyncPhaseGuardContractTest.php
+
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${JOB_STATUS}" == 'success' ]]; then state='success'; description='Readonly sync hash-chain checks passed'; else state='failure'; description='Readonly sync hash-chain checks failed'; fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc --arg state "${state}" --arg description "${description}" '{state:$state,context:"phase-b-pr646-focused",description:$description}')"
+          test "${state}" = 'success'
