@@ -1,12 +1,18 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/MatchPreparationClockService.php';
+
 final class GameActionService
 {
+    private MatchPreparationClockService $matchPreparationClock;
+
     public function __construct(
         private GameCatalogService $catalog,
         private GameRuntimeService|ChessRuntimeService $runtime
-    ) {}
+    ) {
+        $this->matchPreparationClock = new MatchPreparationClockService();
+    }
 
     public function apply(array &$db, array &$user, string $gameId, array $action): array
     {
@@ -27,6 +33,16 @@ final class GameActionService
             return $game;
         }
 
+        $phaseManaged = array_key_exists('launch_phase', $game);
+        if ($phaseManaged) {
+            $storedGame =& $db['games'][$gameId];
+            $this->matchPreparationClock->advance($storedGame);
+            $this->matchPreparationClock->assertActionAllowed($storedGame);
+            $game = $storedGame;
+            unset($storedGame);
+        }
+        $previousTurn = (string)($game['turn'] ?? '');
+
         // Runtime flags block only creation of new games. An already active match
         // must keep resolving its engine and accepting legal actions safely.
         $gameType = trim((string)($game['game_type'] ?? ''));
@@ -36,7 +52,7 @@ final class GameActionService
         $expectedActionType = (string)($definition['action_type'] ?? '');
         $actionType = trim((string)($action['type'] ?? $expectedActionType));
 
-        return match ($engine) {
+        $result = match ($engine) {
             'tictactoe' => $this->applyTicTacToeAction($db, $user, $gameId, $actionType, $action),
             'four_in_a_row' => $this->applyFourInARowAction($db, $user, $gameId, $actionType, $action),
             'battleship' => $this->applyBattleshipAction($db, $user, $gameId, $action),
@@ -47,6 +63,17 @@ final class GameActionService
             'domino' => $this->runtime->applyDominoAction($db, $user, $gameId, $action),
             default => throw new RuntimeException('Движок этой игры пока не подключён.'),
         };
+
+        if (!$phaseManaged || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
+            return $result;
+        }
+
+        $storedGame =& $db['games'][$gameId];
+        $this->matchPreparationClock->synchronizeTurnHandoff($storedGame, $previousTurn);
+        $result = $storedGame;
+        unset($storedGame);
+
+        return $result;
     }
 
     private function applyBattleshipAction(
