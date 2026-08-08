@@ -399,7 +399,10 @@ function openResultSheet(game, me, options = {}){
   let title = 'Ничья';
   let text = chessDrawText(game) || 'Коины возвращены на баланс.';
 
-  if (game.winner_id) {
+  if (game.finish_reason === 'preparation_timeout') {
+    title = 'Матч не начался';
+    text = 'Соперник не подключился вовремя. Ставка возвращена на баланс.';
+  } else if (game.winner_id) {
     const isWin = String(game.winner_id) === String(me.id);
     title = isWin ? 'Победа!' : 'Поражение';
     if (game.finish_reason === 'timeout') {
