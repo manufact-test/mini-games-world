@@ -24,7 +24,7 @@ import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initGameInvites } from './games/game-invites-v110.js?v=1135&pending=6';
+import { initGameInvites } from './games/game-invites-v110.js?v=1135&pending=6&b=8c98ab6d8635';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
@@ -38,7 +38,7 @@ import { initGoEntry } from './games/go/entry.js?v=74';
 import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107';
-import { initV110Presence } from './production-v110-presence.js?v=1121';
+import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b030c69';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 
 let statsRefreshing = false;
