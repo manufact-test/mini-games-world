@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - agent/mvp14r2-ci-base-transition-abort-owner
   push:
     branches:
       - main
