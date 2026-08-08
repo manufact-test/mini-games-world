@@ -27,9 +27,6 @@ final class MatchPreparationClockService
         $game['turn_deadline_at'] = null;
         $game['clock_turn'] = '';
         $game['clock_revision'] = 0;
-
-        // Legacy cleanup still reads turn_started_at. Keep that owner safely in
-        // the future while the synchronized preparation phase is in progress.
         $game['turn_started_at'] = gmdate('c', $deadline);
         unset($game['bot_move_after_at']);
         $game['updated_at'] = now_iso();
@@ -64,9 +61,7 @@ final class MatchPreparationClockService
 
         $deviceHash = hash('sha256', $sessionId . '|' . $deviceId);
         $existing = $game['preparation_ready_devices'][$userId] ?? null;
-        if (is_array($existing) && hash_equals((string)($existing['device_hash'] ?? ''), $deviceHash)) {
-            return;
-        }
+        if (is_array($existing) && hash_equals((string)($existing['device_hash'] ?? ''), $deviceHash)) return;
 
         $game['preparation_ready_devices'][$userId] = [
             'device_hash' => $deviceHash,
@@ -123,24 +118,23 @@ final class MatchPreparationClockService
     public function assertActionAllowed(array $game): void
     {
         $phase = (string)($game['launch_phase'] ?? 'active');
-        if ($phase === 'preparing') {
-            throw new RuntimeException('Матч ещё синхронизирует игроков.');
-        }
-        if ($phase === 'preparation_timeout') {
-            throw new RuntimeException('Соперник не подключился. Матч отменяется.');
-        }
+        if ($phase === 'preparing') throw new RuntimeException('Матч ещё синхронизирует игроков.');
+        if ($phase === 'preparation_timeout') throw new RuntimeException('Соперник не подключился. Матч отменяется.');
         if ($phase === 'countdown') {
             $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
-            if ($startsAt <= 0 || $startsAt > time()) {
-                throw new RuntimeException('Матч начнётся после обратного отсчёта.');
-            }
+            if ($startsAt <= 0 || $startsAt > time()) throw new RuntimeException('Матч начнётся после обратного отсчёта.');
         }
         if ($phase === 'active') {
             $turnStartsAt = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
-            if ($turnStartsAt > time()) {
-                throw new RuntimeException('Ход ещё не начался.');
-            }
+            if ($turnStartsAt > time()) throw new RuntimeException('Ход ещё не начался.');
         }
+    }
+
+    public function assertSurrenderAllowed(array $game): void
+    {
+        if (!array_key_exists('launch_phase', $game)) return;
+        if ((string)($game['launch_phase'] ?? '') === 'active') return;
+        throw new RuntimeException('Матч ещё не начался.');
     }
 
     public function synchronizeTurnHandoff(array &$game, string $previousTurn): void
@@ -175,9 +169,7 @@ final class MatchPreparationClockService
         $phase = (string)($game['launch_phase'] ?? ((string)($game['status'] ?? '') === 'active' ? 'active' : 'finished'));
         $turnStartsAtMs = $this->epochMs((string)($game['turn_starts_at'] ?? $game['turn_started_at'] ?? ''));
         $turnDeadlineMs = $this->epochMs((string)($game['turn_deadline_at'] ?? ''));
-        if ($turnDeadlineMs === null && $turnStartsAtMs !== null) {
-            $turnDeadlineMs = $turnStartsAtMs + (self::MOVE_TIMEOUT_SEC * 1000);
-        }
+        if ($turnDeadlineMs === null && $turnStartsAtMs !== null) $turnDeadlineMs = $turnStartsAtMs + (self::MOVE_TIMEOUT_SEC * 1000);
 
         if (in_array($phase, ['preparing', 'countdown', 'preparation_timeout'], true)
             || ($turnStartsAtMs !== null && $serverNowMs < $turnStartsAtMs)) {
