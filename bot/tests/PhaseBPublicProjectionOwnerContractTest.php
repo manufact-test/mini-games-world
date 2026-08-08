@@ -32,24 +32,51 @@ $assert(
     'Legacy games without launch_phase must keep the accepted public projection unchanged.'
 );
 $assert(
-    str_contains($runtime, 'return $this->matchPreparationClock->enrichPublicGame($game, $public);'),
-    'Phase B public projection must be centralized in ChessRuntimeService::publicGame.'
+    substr_count($runtime, '$this->matchPreparationClock->enrichPublicGame($game, $public)') === 1,
+    'ChessRuntimeService::publicGame must contain exactly one Phase B enrichment handoff.'
 );
 $assert(
-    !str_contains($runtime, '$this->matchPreparationClock->normalizeExisting($game)'),
-    'Public projection must stay read-only and must never normalize stored state during a read.'
+    !str_contains($runtime, '->normalizeExisting('),
+    'Public runtime projection must never normalize stored state during a read.'
+);
+$assert(
+    !str_contains($runtime, '->initializeNewGame(')
+        && !str_contains($runtime, '->markReady(')
+        && !str_contains($runtime, '->advance('),
+    'Dormant projection wiring must not activate or advance the Phase B state machine.'
 );
 $assert(
     str_contains($clock, 'public function enrichPublicGame(array $game, array $public): array'),
     'MatchPreparationClockService must remain the timestamp/time-left projection implementation.'
 );
+foreach ([
+    "'launch_phase' => \$phase",
+    "'starts_at_ms' =>",
+    "'turn_starts_at_ms' =>",
+    "'turn_deadline_ms' =>",
+    "'server_now_ms' =>",
+    "'turn_revision' =>",
+    "'ready_count' =>",
+    "'ready_required' =>",
+    "'time_left' => \$timeLeft",
+] as $projectionField) {
+    $assert(
+        str_contains($clock, $projectionField),
+        'Phase B projection field is missing from MatchPreparationClockService: ' . $projectionField
+    );
+}
 
-foreach (['bot/api.php', 'bot/game-watch.php', 'bot/invites.php'] as $relativePath) {
+foreach ([
+    'bot/api.php',
+    'bot/game-watch.php',
+    'bot/invites.php',
+    'bot/services/GameRuntimeService.php',
+] as $relativePath) {
     $source = file_get_contents(dirname($root) . '/' . $relativePath);
     if (!is_string($source)) throw new RuntimeException('Projection caller source unavailable: ' . $relativePath);
     $assert(
         !str_contains($source, '->enrichPublicGame('),
-        'Endpoints must not create competing Phase B public projection owners: ' . $relativePath
+        'Runtime/endpoints must not create competing Phase B public projection owners: ' . $relativePath
     );
 }
 
