@@ -1,6 +1,7 @@
 # Paths are relative to the repository/deployment root.
 app/v110.php
 app/assets/js/production-clean-entry-v110.js
+app/assets/js/production-v110-readonly-game-sync.js
 app/assets/js/production-v101-speed-runtime-v102.js
 app/assets/js/main-v110.js
 app/assets/js/main-v110-handoff-shell.js
