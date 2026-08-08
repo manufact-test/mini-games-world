@@ -7,6 +7,7 @@ require_once dirname(__DIR__) . '/games/go/GoBotService.php';
 require_once dirname(__DIR__) . '/games/go/GoService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoBotService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoService.php';
+require_once __DIR__ . '/MatchPreparationClockService.php';
 
 /**
  * Adds the newest isolated engines without changing the stable runtime paths of
@@ -18,6 +19,7 @@ final class ChessRuntimeService
     private ChessService $chess;
     private GoService $go;
     private DominoService $domino;
+    private MatchPreparationClockService $matchPreparationClock;
 
     public function __construct(
         private array $config,
@@ -29,6 +31,7 @@ final class ChessRuntimeService
         $this->chess = new ChessService($config, $settlement);
         $this->go = new GoService($config, $settlement);
         $this->domino = new DominoService($config, $settlement);
+        $this->matchPreparationClock = new MatchPreparationClockService();
     }
 
     public function cleanup(array &$db): void
@@ -237,22 +240,31 @@ final class ChessRuntimeService
     {
         $gameType = (string)($game['game_type'] ?? '');
         if (!in_array($gameType, ['chess', 'go', 'domino'], true)) {
-            return $this->base->publicGame($game, $viewerId);
+            $public = $this->base->publicGame($game, $viewerId);
+        } else {
+            $definition = $this->catalog->publicGameDefinition($gameType);
+            $enginePublic = match ($gameType) {
+                'chess' => $this->chess->publicGame($game, $viewerId),
+                'go' => $this->go->publicGame($game, $viewerId),
+                'domino' => $this->domino->publicGame($game, $viewerId),
+            };
+
+            $public = [
+                'game_type' => $gameType,
+                'game_title' => (string)$definition['title'],
+                'renderer' => (string)$definition['renderer'],
+                'action_type' => (string)$definition['action_type'],
+            ] + $enginePublic;
         }
 
-        $definition = $this->catalog->publicGameDefinition($gameType);
-        $public = match ($gameType) {
-            'chess' => $this->chess->publicGame($game, $viewerId),
-            'go' => $this->go->publicGame($game, $viewerId),
-            'domino' => $this->domino->publicGame($game, $viewerId),
-        };
+        // Dormant until a stored game has explicitly entered the Phase B state
+        // machine. Legacy/current active games keep their accepted projection
+        // unchanged and this read path never normalizes or mutates stored state.
+        if (!array_key_exists('launch_phase', $game)) {
+            return $public;
+        }
 
-        return [
-            'game_type' => $gameType,
-            'game_title' => (string)$definition['title'],
-            'renderer' => (string)$definition['renderer'],
-            'action_type' => (string)$definition['action_type'],
-        ] + $public;
+        return $this->matchPreparationClock->enrichPublicGame($game, $public);
     }
 
     public function catalog(): array
