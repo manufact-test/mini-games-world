@@ -5,6 +5,95 @@ final class GameSettlementService
 {
     public function __construct(private array $config) {}
 
+    public function cancelPreparation(array &$db, array &$game): void
+    {
+        if (!empty($game['preparation_cancelled_at'])) {
+            return;
+        }
+        if (($game['status'] ?? '') === 'finished') {
+            return;
+        }
+        if ((string)($game['launch_phase'] ?? '') !== 'preparation_timeout') {
+            return;
+        }
+
+        $deadline = strtotime((string)($game['preparation_deadline_at'] ?? '')) ?: 0;
+        if ($deadline > 0 && $deadline > time()) {
+            return;
+        }
+
+        $room = (string)($game['room'] ?? 'match');
+        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $bet = max(0, (int)($game['bet'] ?? 0));
+        $playerCount = max(2, count($game['player_ids'] ?? []));
+        $bank = $bet * $playerCount;
+        $gameType = (string)($game['game_type'] ?? 'tictactoe');
+        $gameId = (string)($game['id'] ?? '');
+        $now = now_iso();
+
+        $game['status'] = 'finished';
+        $game['launch_phase'] = 'cancelled';
+        $game['winner_id'] = null;
+        $game['loser_id'] = null;
+        $game['finish_reason'] = 'preparation_timeout';
+        $game['bank'] = $bank;
+        $game['payout'] = 0;
+        $game['commission'] = 0;
+        $game['finished_at'] = $now;
+        $game['updated_at'] = $now;
+        $game['preparation_cancelled_at'] = $now;
+        $game['payout_done'] = true;
+        $game['payout_done_at'] = $now;
+        unset($game['bot_move_after_at']);
+
+        foreach ($game['player_ids'] ?? [] as $playerId) {
+            $pid = (string)$playerId;
+            if ($pid === '' || str_starts_with($pid, 'bot_') || !isset($db['users'][$pid])) {
+                continue;
+            }
+
+            $db['users'][$pid][$balanceKey] = (int)($db['users'][$pid][$balanceKey] ?? 0) + $bet;
+            $this->addBalanceChange(
+                $db,
+                $db['users'][$pid],
+                'game_refund',
+                $room,
+                $bet,
+                $gameId,
+                'Возврат: соперник не подключился',
+                [
+                    'finish_reason' => 'preparation_timeout',
+                    'match_started' => false,
+                    'is_bot_game' => !empty($game['is_bot_game']),
+                    'game_type' => $gameType,
+                ]
+            );
+        }
+
+        $this->releasePreparationPlayers($db, $game);
+
+        if (!isset($db['transactions']) || !is_array($db['transactions'])) {
+            $db['transactions'] = [];
+        }
+        $db['transactions'][] = [
+            'id' => make_id('tx'),
+            'type' => 'game_finish',
+            'game_id' => $gameId,
+            'game_type' => $gameType,
+            'room' => $room,
+            'winner_id' => null,
+            'loser_id' => null,
+            'finish_reason' => 'preparation_timeout',
+            'bank' => $bank,
+            'commission' => 0,
+            'payout' => 0,
+            'match_started' => false,
+            'is_bot_game' => !empty($game['is_bot_game']),
+            'bot_difficulty' => $game['bot_difficulty'] ?? null,
+            'created_at' => $now,
+        ];
+    }
+
     public function finish(
         array &$db,
         array &$game,
@@ -191,6 +280,27 @@ final class GameSettlementService
             'description' => $description,
             'created_at' => now_iso(),
         ], $extra);
+    }
+
+    private function releasePreparationPlayers(array &$db, array $game): void
+    {
+        $gameId = (string)($game['id'] ?? '');
+        if ($gameId === '') {
+            return;
+        }
+
+        foreach ($game['player_ids'] ?? [] as $playerId) {
+            $pid = (string)$playerId;
+            if ($pid === '' || str_starts_with($pid, 'bot_') || !isset($db['users'][$pid])) {
+                continue;
+            }
+            if ((string)($db['users'][$pid]['current_game_id'] ?? '') !== $gameId) {
+                continue;
+            }
+
+            $db['users'][$pid]['status'] = 'idle';
+            $db['users'][$pid]['current_game_id'] = null;
+        }
     }
 
     private function releaseGamePlayers(array &$db, array $game): void
