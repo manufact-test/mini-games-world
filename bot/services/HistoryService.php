@@ -165,7 +165,7 @@ final class HistoryService
                 $amount = (int)($game['bet'] ?? 0);
                 return [
                     'id' => (string)($tx['id'] ?? ''),
-                    'title' => 'Возврат при ничьей',
+                    'title' => $this->operationTitle('game_refund', $game, $userId),
                     'description' => $this->operationGameDescription($game, $userId, 'game_refund'),
                     'amount' => $amount,
                     'amount_label' => $this->amountLabel($amount),
@@ -189,6 +189,7 @@ final class HistoryService
         $opponentName = (string)($game['player_names'][$opponentId] ?? 'Соперник');
 
         if ($status !== 'finished') { $result = 'Игра активна'; $tone = 'zero'; }
+        elseif ($reason === 'preparation_timeout') { $result = 'Матч не начался'; $tone = 'zero'; }
         elseif ($winnerId === null || $winnerId === '') { $result = 'Ничья'; $tone = 'zero'; }
         elseif ($winnerId === $userId) { $result = $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа'); $tone = 'pos'; }
         else { $result = in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение'; $tone = 'neg'; }
@@ -221,7 +222,9 @@ final class HistoryService
     {
         $parts = [$this->roomLabel((string)($game['room'] ?? 'match')), $this->gameLabel($game)];
         if ($category === 'game_refund') {
-            $parts[] = 'ничья';
+            $parts[] = (string)($game['finish_reason'] ?? '') === 'preparation_timeout'
+                ? 'соперник не подключился'
+                : 'ничья';
             return implode(' · ', array_filter($parts));
         }
         $opponentId = $this->otherPlayerId($game, $userId);
@@ -236,6 +239,10 @@ final class HistoryService
 
         $winnerId = isset($game['winner_id']) ? (string)$game['winner_id'] : '';
         $reason = (string)($game['finish_reason'] ?? '');
+
+        if ($category === 'game_refund' && $reason === 'preparation_timeout') {
+            return 'Возврат: соперник не подключился';
+        }
 
         if ($category === 'game_win' && $winnerId === $userId) {
             return $reason === 'timeout'
