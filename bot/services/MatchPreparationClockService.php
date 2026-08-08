@@ -135,6 +135,12 @@ final class MatchPreparationClockService
                 throw new RuntimeException('Матч начнётся после обратного отсчёта.');
             }
         }
+        if ($phase === 'active') {
+            $turnStartsAt = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
+            if ($turnStartsAt > time()) {
+                throw new RuntimeException('Ход ещё не начался.');
+            }
+        }
     }
 
     public function synchronizeTurnHandoff(array &$game, string $previousTurn): void
