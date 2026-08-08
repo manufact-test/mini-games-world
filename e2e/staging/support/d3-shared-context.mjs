@@ -173,6 +173,7 @@ export function collectDiagnostics(page, slot) {
     allowStartSearchInviteBackgroundAbort: false,
     ignoredStartSearchInviteSyncAborts: 0,
     ignoredStartSearchInviteWatchAborts: 0,
+    ignoredStartSearchShopHistoryAborts: 0,
     ignoredAcceptInviteSyncAborts: 0,
   };
 
@@ -194,8 +195,10 @@ export function collectDiagnostics(page, slot) {
   // every existing navigation/reopen abort allowance and from their counters.
   const inFlightInviteSyncRequests = new Set();
   const inFlightInviteWatchRequests = new Set();
+  const inFlightBackgroundShopHistoryRequests = new Set();
   const startSearchInviteSyncAbortRequests = new WeakSet();
   const startSearchInviteWatchAbortRequests = new WeakSet();
+  const startSearchShopHistoryAbortRequests = new WeakSet();
   const acceptInviteSyncAbortRequests = new WeakSet();
 
   // Accept is a foreground state mutation. The production cache-safety owner
@@ -220,9 +223,20 @@ export function collectDiagnostics(page, slot) {
     report.allowStartSearchInviteBackgroundAbort = false;
   };
 
-  const forgetInFlightInviteRequest = request => {
+  // shop-history is passively prefetched under a background controller. The
+  // production start_search cache-safety transition aborts such a read if it is
+  // already in flight. Snapshot only those exact requests; do not open a time
+  // window in which later shop-history failures could be accepted.
+  report.beginStartSearchShopHistoryAbortOwnership = () => {
+    for (const request of inFlightBackgroundShopHistoryRequests) {
+      startSearchShopHistoryAbortRequests.add(request);
+    }
+  };
+
+  const forgetInFlightTransitionRequest = request => {
     inFlightInviteSyncRequests.delete(request);
     inFlightInviteWatchRequests.delete(request);
+    inFlightBackgroundShopHistoryRequests.delete(request);
   };
 
   page.on('pageerror', error => {
@@ -233,6 +247,7 @@ export function collectDiagnostics(page, slot) {
 
     if (isInviteSyncRequest(request)) inFlightInviteSyncRequests.add(request);
     if (isInviteWatchRequest(request)) inFlightInviteWatchRequests.add(request);
+    if (isBackgroundShopHistoryRequest(request)) inFlightBackgroundShopHistoryRequests.add(request);
 
     if (report.allowInviteSyncAbort && isInviteSyncRequest(request)) {
       allowedInviteSyncAbortRequests.add(request);
@@ -253,9 +268,9 @@ export function collectDiagnostics(page, slot) {
       startSearchInviteWatchAbortRequests.add(request);
     }
   });
-  page.on('requestfinished', forgetInFlightInviteRequest);
+  page.on('requestfinished', forgetInFlightTransitionRequest);
   page.on('requestfailed', request => {
-    forgetInFlightInviteRequest(request);
+    forgetInFlightTransitionRequest(request);
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
     if (isExpectedPresenceResumeAbort(request)) return;
     if (acceptInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
@@ -268,6 +283,10 @@ export function collectDiagnostics(page, slot) {
     }
     if (startSearchInviteWatchAbortRequests.has(request) && isExpectedInviteWatchAbort(request)) {
       report.ignoredStartSearchInviteWatchAborts += 1;
+      return;
+    }
+    if (startSearchShopHistoryAbortRequests.has(request) && isExpectedBackgroundShopHistoryAbort(request)) {
+      report.ignoredStartSearchShopHistoryAborts += 1;
       return;
     }
     if (allowedInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
