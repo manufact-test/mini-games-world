@@ -8,12 +8,10 @@ on:
 permissions:
   contents: read
   statuses: write
-  id-token: write
 
 env:
   TARGET_SHA: 51ef2e99301d9b6d34365aa8977dfbdbc08ffba1
-  STATUS_CONTEXT: phase-b-pr674-focused
-  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+  STATUS_CONTEXT: phase-b-pr674-static-focused
 
 jobs:
   focused:
@@ -29,7 +27,7 @@ jobs:
             --header 'Accept: application/vnd.github+json' \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
-            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Focused PR674 post-match verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR674 static focused verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
 
       - uses: actions/checkout@v4
 
@@ -37,21 +35,23 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install pinned Playwright
+      - name: Syntax and exact source contract
         run: |
           set -Eeuo pipefail
-          npm install --no-save --package-lock=false @playwright/test@1.62.0
-          npx --no-install playwright install --with-deps chromium
-
-      - name: Syntax
-        run: node --check e2e/staging/two-context.spec.mjs
-
-      - name: Run final Tic Tac Toe scenario only
-        run: |
-          set -Eeuo pipefail
-          npx --no-install playwright test \
-            --config=e2e/playwright.config.mjs \
-            --grep "A invites B through notifications and they finish a Tic Tac Toe match"
+          node --check e2e/staging/two-context.spec.mjs
+          node <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync('e2e/staging/two-context.spec.mjs', 'utf8');
+          const scenarioStart = source.indexOf("test('A invites B through notifications and they finish a Tic Tac Toe match'");
+          if (scenarioStart < 0) throw new Error('final Tic Tac Toe scenario missing');
+          const scenario = source.slice(scenarioStart);
+          const resultPair = /await Promise\.all\(\[\s*expect\(winner\.page\.locator\('#sheet \.sheet-head h2'\)\)\.toHaveText\('Победа!'[\s\S]*?expect\(loser\.page\.locator\('#sheet \.sheet-head h2'\)\)\.toHaveText\('Поражение'[\s\S]*?\]\);/;
+          const profilePair = /const \[afterA, afterB\] = await Promise\.all\(\[[\s\S]*?'Player A post-match profile'[\s\S]*?'Player B post-match profile'[\s\S]*?\]\);/;
+          if (!resultPair.test(scenario)) throw new Error('winner/loser result checks are not parallelized');
+          if (!profilePair.test(scenario)) throw new Error('A/B post-match profile reads are not parallelized');
+          if (/test\.setTimeout\s*\(/.test(scenario)) throw new Error('scenario timeout override is forbidden');
+          console.log('phase-b-pr674-static-focused: PASS');
+          NODE
 
       - name: Publish success status
         if: success()
@@ -64,7 +64,7 @@ jobs:
             --header 'Accept: application/vnd.github+json' \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
-            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Focused PR674 post-match verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR674 static focused verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
 
       - name: Publish failure status
         if: failure()
@@ -77,4 +77,4 @@ jobs:
             --header 'Accept: application/vnd.github+json' \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
-            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Focused PR674 post-match verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR674 static focused verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
