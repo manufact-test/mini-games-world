@@ -34,8 +34,8 @@ $assert(($searching['active_session_at'] ?? null) !== null, 'Searching session h
 
 $idle = $makeUser('idle');
 $service->releaseIfCurrent($idle, 'session-a');
-$assert(($idle['active_session_id'] ?? 'sentinel') === null, 'Idle current session must still release exactly as before.');
-$assert(($idle['active_session_at'] ?? 'sentinel') === null, 'Idle release must clear its heartbeat.');
+$assert(array_key_exists('active_session_id', $idle) && $idle['active_session_id'] === null, 'Idle current session must still release exactly as before.');
+$assert(array_key_exists('active_session_at', $idle) && $idle['active_session_at'] === null, 'Idle release must clear its heartbeat.');
 
 $other = $makeUser('idle');
 $service->releaseIfCurrent($other, 'session-b');
@@ -44,6 +44,6 @@ $assert(($other['active_session_at'] ?? null) !== null, 'Non-current release att
 
 $finished = $makeUser('finished');
 $service->releaseIfCurrent($finished, 'session-a');
-$assert(($finished['active_session_id'] ?? 'sentinel') === null, 'Non-active lifecycle statuses must remain releasable.');
+$assert(array_key_exists('active_session_id', $finished) && $finished['active_session_id'] === null, 'Non-active lifecycle statuses must remain releasable.');
 
 fwrite(STDOUT, "SessionReleaseActiveLifecycleGuardTest: {$assertions} assertions passed\n");
