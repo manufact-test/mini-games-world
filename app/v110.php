@@ -40,7 +40,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/production-clean-entry-v110.js?v=1122',
+    './assets/js/production-clean-entry-v110.js?v=1121',
     $html
 );
 $html = str_replace(
@@ -50,7 +50,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-interface-invite-speed-v1136"',
+    'data-hotfix-build="v110-mvp14-interface-invite-speed-v1135"',
     $html
 );
 
@@ -60,5 +60,5 @@ header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1134');
-header('X-MGW-Invite-Graph: v1136');
+header('X-MGW-Invite-Graph: v1135');
 echo $html;
