@@ -31,6 +31,15 @@ async function openTicTacToeDuringHomeTransition(player) {
   }
 }
 
+async function startOrdinarySearchDuringCacheSafetyTransition(player) {
+  player.diagnostics.beginStartSearchInviteBackgroundAbortOwnership();
+  try {
+    await player.page.locator('#startSearchBtn').click();
+  } finally {
+    player.diagnostics.endStartSearchInviteBackgroundAbortOwnership();
+  }
+}
+
 test('normal outgoing pending is passive immediately after close/reopen and recipient may accept while sender keeps ordinary activity', async ({ browser }) => {
   test.setTimeout(150_000);
   let contextA;
@@ -138,7 +147,13 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     await openTicTacToeDuringHomeTransition(playerA);
     await expect(playerA.page.locator('#startSearchBtn')).toBeVisible({ timeout: 10_000 });
     const startResponse = playerA.page.waitForResponse(apiActionResponse('start_search'), { timeout: 35_000 });
-    await playerA.page.locator('#startSearchBtn').click();
+
+    // start_search is a real state mutation. The accepted cache-safety owner
+    // deliberately aborts invite background reads that were already in flight
+    // before this unpredictable user click. Adopt only those exact requests for
+    // this exact transition; every other failed request remains strict.
+    await startOrdinarySearchDuringCacheSafetyTransition(playerA);
+
     const started = await startResponse;
     const startedPayload = await started.json().catch(() => null);
     expect(started.status()).toBe(200);
@@ -179,6 +194,10 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
 
     expect(playerA.diagnostics.ignoredInviteWatchAborts).toBeLessThanOrEqual(2);
     expect(playerB.diagnostics.ignoredInviteWatchAborts).toBe(0);
+    expect(playerA.diagnostics.ignoredStartSearchInviteSyncAborts).toBeLessThanOrEqual(1);
+    expect(playerA.diagnostics.ignoredStartSearchInviteWatchAborts).toBeLessThanOrEqual(1);
+    expect(playerB.diagnostics.ignoredStartSearchInviteSyncAborts).toBe(0);
+    expect(playerB.diagnostics.ignoredStartSearchInviteWatchAborts).toBe(0);
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
     expect(playerA.diagnostics.failedRequests).toEqual([]);
