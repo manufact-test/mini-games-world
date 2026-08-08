@@ -52,6 +52,7 @@ let shareWarmSerial = Promise.resolve();
 let shareAttempt = null;
 let playerPickerRequestGeneration = 0;
 let directInviteRequestGeneration = 0;
+let inviteStartPending = false;
 
 export function initGameInvites(){
   if (initialized) return;
@@ -679,6 +680,7 @@ async function performInviteAction(action, token, button){
     && !terminalContext.notificationSurface;
   setInviteButtonsDisabled(true);
   button.textContent = actionText(action);
+  if (action === 'start') beginInviteStartTransition();
 
   // Accept and the owner's own cancellation react immediately. The single
   // authoritative request still decides the result; failure restores the
@@ -699,6 +701,7 @@ async function performInviteAction(action, token, button){
     syncState(result);
     if (result?.game?.id && String(result.game.status || '') === 'active') {
       enterGame(result.game);
+      if (action === 'start') endInviteStartTransition(false);
       return;
     }
 
@@ -741,13 +744,14 @@ async function performInviteAction(action, token, button){
       return;
     }
     if (action === 'start') {
-      scheduleSync(0);
+      endInviteStartTransition(true);
       return;
     }
 
     setInviteButtonsDisabled(false);
     button.textContent = originalText;
   } catch (error) {
+    if (action === 'start') endInviteStartTransition(true);
     currentInvite = rollbackInvite;
     if (rollbackHtml) openSheet(rollbackHtml);
     toast(error.message || 'Не удалось выполнить действие.');
@@ -758,6 +762,17 @@ async function performInviteAction(action, token, button){
     );
     if (restored instanceof HTMLButtonElement) restored.textContent = originalText;
   }
+}
+
+function beginInviteStartTransition(){
+  inviteStartPending = true;
+  window.clearTimeout(syncTimer);
+  syncTimer = null;
+}
+
+function endInviteStartTransition(resumeSync){
+  inviteStartPending = false;
+  if (resumeSync) scheduleSync(0);
 }
 
 function terminalActionContext(button, action, token){
@@ -837,7 +852,7 @@ async function createRematch(gameId, button){
 }
 
 async function syncNow({ announce = true } = {}){
-  if (syncBusy || document.visibilityState !== 'visible') return null;
+  if (inviteStartPending || syncBusy || document.visibilityState !== 'visible') return null;
   if (String(state.activeGame?.status || '') === 'active') return null;
 
   const requestedInviteToken = String(currentInvite?.token || '');
@@ -1073,6 +1088,8 @@ function enterGame(game){
 
 function scheduleSync(delay = nextSyncInterval()){
   window.clearTimeout(syncTimer);
+  syncTimer = null;
+  if (inviteStartPending) return;
   if (!appReady && delay > 0) return;
   syncTimer = window.setTimeout(async () => {
     await syncNow({ announce:true });
