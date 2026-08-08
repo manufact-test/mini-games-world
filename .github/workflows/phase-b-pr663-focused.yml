@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/mvp14r2-pr663-focused-verifier
+  pull_request:
+    branches:
+      - agent/mvp14r2-primary-api-preparation-owner
 
 permissions:
   contents: read
