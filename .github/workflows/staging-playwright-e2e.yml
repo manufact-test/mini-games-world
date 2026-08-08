@@ -60,9 +60,9 @@ jobs:
           set -Eeuo pipefail
           expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
           test "${#expected_fingerprint}" = '64'
-          sleep 300
           ready=0
-          for attempt in $(seq 1 8); do
+          network_failures=0
+          for attempt in $(seq 1 24); do
             rm -f staging-e2e-readiness-linux.json
             if curl \
               --fail-with-body \
@@ -72,6 +72,7 @@ jobs:
               --header 'Accept: application/json' \
               "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
               --output staging-e2e-readiness-linux.json; then
+              network_failures=0
               if python3 - staging-e2e-readiness-linux.json "${expected_fingerprint}" <<'PY'
           import json
           import sys
@@ -94,8 +95,11 @@ jobs:
                 ready=1
                 break
               fi
+            else
+              network_failures=$((network_failures + 1))
+              if [[ "$network_failures" -ge 4 ]]; then break; fi
             fi
-            sleep 15
+            if [[ "$attempt" -lt 24 ]]; then sleep 15; fi
           done
           test "$ready" = '1'
 
