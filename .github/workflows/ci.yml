@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - agent/mvp14-ci-base-invite-owner
   push:
     branches:
       - main
