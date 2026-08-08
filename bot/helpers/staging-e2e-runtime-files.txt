@@ -6,6 +6,7 @@ app/assets/js/production-v110-acceptance-runtime.js
 app/assets/js/production-v101-speed-runtime-v102.js
 app/assets/js/main-v110.js
 app/assets/js/main-v110-handoff-shell.js
+app/assets/js/screens/game-screen-v102.js
 app/assets/js/screens/game-screen-v102-safe.js
 app/assets/js/games/game-invites-v110.js
 app/assets/js/screens/notifications-screen-v110r12.js
