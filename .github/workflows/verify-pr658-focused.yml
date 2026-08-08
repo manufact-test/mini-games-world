@@ -1,0 +1,60 @@
+name: Verify PR658 Readiness Identity
+
+on:
+  push:
+    branches:
+      - agent/verify-pr658-focused
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc '{state:"pending",context:"phase-b-pr658-focused",description:"Readiness identity focused tests are running"}')"
+
+      - name: Checkout exact verification commit
+        uses: actions/checkout@v4
+
+      - name: Run focused tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/MatchPreparationClockService.php
+          php -l bot/tests/PhaseBMatchPreparationClockServiceTest.php
+          php -l bot/tests/PhaseBReadinessSessionDeviceIdentityTest.php
+          php bot/tests/PhaseBReadinessSessionDeviceIdentityTest.php
+          php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${JOB_STATUS}" == 'success' ]]; then state='success'; description='Readiness identity focused tests passed'; else state='failure'; description='Readiness identity focused tests failed'; fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc --arg state "${state}" --arg description "${description}" '{state:$state,context:"phase-b-pr658-focused",description:$description}')"
+          test "${state}" = 'success'
