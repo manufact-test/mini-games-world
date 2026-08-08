@@ -395,7 +395,10 @@ try {
                 $sessions->touch($user, $sessionId);
 
                 $cell = (int)($payload['cell'] ?? -1);
-                $game = $games->makeMove($data, $user, $gameId, $cell);
+                $game = $gameActions->apply($data, $user, $gameId, [
+                    'type' => 'cell',
+                    'cell' => $cell,
+                ]);
 
                 if (($game['status'] ?? '') === 'finished') {
                     $sessions->releaseIfCurrent($user, $sessionId);
