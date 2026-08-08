@@ -375,6 +375,49 @@ async function playTicTacToeCell(player, cell) {
   return payload;
 }
 
+async function waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId) {
+  const readyA = await expectPlayerRequest(
+    playerA.page,
+    '/bot/api.php',
+    { action: 'game_state', gameId },
+    'Player A Phase B readiness',
+  );
+  expect(['preparing', 'countdown', 'active']).toContain(String(readyA.game?.launch_phase || ''));
+
+  const readyB = await expectPlayerRequest(
+    playerB.page,
+    '/bot/api.php',
+    { action: 'game_state', gameId },
+    'Player B Phase B readiness',
+  );
+  expect(['countdown', 'active']).toContain(String(readyB.game?.launch_phase || ''));
+
+  await expect.poll(async () => {
+    const result = await postFromPlayer(
+      playerA.page,
+      '/bot/api.php',
+      { action: 'game_state', gameId },
+    );
+    if (result.status !== 200 || result.payload?.ok !== true) {
+      return `http:${result.status}`;
+    }
+    const game = result.payload?.game || {};
+    const phase = String(game.launch_phase || '');
+    const serverNowMs = Number(game.server_now_ms || 0);
+    const turnStartsAtMs = Number(game.turn_starts_at_ms || 0);
+    return phase === 'active'
+      && serverNowMs > 0
+      && turnStartsAtMs > 0
+      && serverNowMs >= turnStartsAtMs
+      ? 'active'
+      : phase || 'missing';
+  }, {
+    message: 'Tic Tac Toe waits for server-authoritative Phase B start',
+    timeout: 15_000,
+    intervals: [100, 200, 400, 800],
+  }).toBe('active');
+}
+
 test('TEST PLAYER A and B run in isolated browser contexts', async ({ browser }, testInfo) => {
   let playerA;
   let playerB;
@@ -684,6 +727,8 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
     await expect(playerB.page.locator('#screen-game')).toHaveClass(/active/, { timeout: 30_000 });
     await expect(playerA.page.locator('#screen-game [data-game-cell]')).toHaveCount(9);
     await expect(playerB.page.locator('#screen-game [data-game-cell]')).toHaveCount(9);
+
+    await waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId);
 
     const playersById = {
       stg_test_player_a: playerA,
