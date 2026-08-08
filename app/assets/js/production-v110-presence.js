@@ -92,8 +92,12 @@ function cancelInFlightRequests(){
   runtime.statusBusy = false;
 }
 
+function presenceTransportBusy(){
+  return runtime.pingBusy || runtime.statusBusy;
+}
+
 async function pingPresence(){
-  if (runtime.pingBusy || document.visibilityState !== 'visible') return false;
+  if (presenceTransportBusy() || document.visibilityState !== 'visible') return false;
 
   const requestId = ++runtime.pingRequestId;
   const controller = new AbortController();
@@ -121,7 +125,7 @@ async function pingPresence(){
 }
 
 async function refreshStatus(){
-  if (runtime.statusBusy || !runtime.appReady || !canReadHomeStatus()) return false;
+  if (presenceTransportBusy() || !runtime.appReady || !canReadHomeStatus()) return false;
 
   const requestId = ++runtime.statusRequestId;
   const controller = new AbortController();
