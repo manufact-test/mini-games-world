@@ -52,23 +52,30 @@ final class MatchPreparationClockService
         }
     }
 
-    public function markReady(array &$game, string $userId, string $sessionId): void
+    public function markReady(array &$game, string $userId, string $sessionId, string $deviceId): void
     {
         if ((string)($game['launch_phase'] ?? '') !== 'preparing') return;
-        if ($userId === '' || $sessionId === '') return;
+        if ($userId === '' || $sessionId === '' || $deviceId === '') return;
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) return;
 
         if (!isset($game['preparation_ready_devices']) || !is_array($game['preparation_ready_devices'])) {
             $game['preparation_ready_devices'] = [];
         }
 
+        $deviceHash = hash('sha256', $sessionId . '|' . $deviceId);
+        $existing = $game['preparation_ready_devices'][$userId] ?? null;
+        if (is_array($existing) && hash_equals((string)($existing['device_hash'] ?? ''), $deviceHash)) {
+            return;
+        }
+
         $game['preparation_ready_devices'][$userId] = [
-            'device_hash' => hash('sha256', $sessionId),
+            'device_hash' => $deviceHash,
             'ready_at' => now_iso(),
         ];
 
         foreach (array_map('strval', $game['player_ids'] ?? []) as $playerId) {
-            if ($playerId !== '' && str_starts_with($playerId, 'bot_')) {
+            if ($playerId !== '' && str_starts_with($playerId, 'bot_')
+                && !isset($game['preparation_ready_devices'][$playerId])) {
                 $game['preparation_ready_devices'][$playerId] = [
                     'device_hash' => 'server-bot',
                     'ready_at' => now_iso(),
