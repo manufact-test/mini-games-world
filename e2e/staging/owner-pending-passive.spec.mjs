@@ -16,17 +16,14 @@ import {
 import { expectPlayerRequest } from './support/d3-shared-actions.mjs';
 import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';
 
-function apiActionResponse(action) {
-  return response => response.url() === API_ROUTE
-    && response.request().method() === 'POST'
-    && requestAction(response.request()) === action;
-}
-
 async function openTicTacToeDuringHomeTransition(player) {
+  player.diagnostics.allowInviteSyncAbort = true;
   player.diagnostics.allowInviteWatchAbort = true;
+  player.diagnostics.adoptActiveBackgroundAborts({ inviteSync: true, inviteWatch: true });
   try {
     await player.page.locator('#playTicTacToe').click();
   } finally {
+    player.diagnostics.allowInviteSyncAbort = false;
     player.diagnostics.allowInviteWatchAbort = false;
   }
 }
@@ -91,8 +88,9 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     await expect(playerA.page.locator('#sheet')).not.toContainText('Приглашение отправлено');
 
     // The local pending owner must not intercept an unrelated game launch.
-    // invite-watch is home-only background polling; if a request starts during
-    // this exact home -> game transition, its result is obsolete by design.
+    // invite sync/watch are home-only background reads; requests already in
+    // flight at this exact home -> game transition are explicitly adopted by
+    // that transition, and requests starting after acquisition are owned too.
     await openTicTacToeDuringHomeTransition(playerA);
     await expect(playerA.page.locator('#startSearchBtn')).toBeVisible({ timeout: 10_000 });
     await playerA.page.locator('#sheet [data-close-sheet]').click();
@@ -177,6 +175,8 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
       expect(String(stateAfterAccept?.game?.status || '')).toBe('active');
     }
 
+    expect(playerA.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(2);
+    expect(playerB.diagnostics.ignoredInviteSyncAborts).toBe(0);
     expect(playerA.diagnostics.ignoredInviteWatchAborts).toBeLessThanOrEqual(2);
     expect(playerB.diagnostics.ignoredInviteWatchAborts).toBe(0);
     expect(playerA.diagnostics.pageErrors).toEqual([]);
