@@ -134,6 +134,17 @@ function isExpectedBackgroundProfileAbort(request) {
     && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
 }
 
+function isBackgroundStatsRequest(request) {
+  return request.url() === API_ROUTE
+    && request.method() === 'POST'
+    && requestAction(request) === 'stats';
+}
+
+function isExpectedBackgroundStatsAbort(request) {
+  return isBackgroundStatsRequest(request)
+    && String(request.failure()?.errorText || '') === 'net::ERR_ABORTED';
+}
+
 function isBackgroundShopHistoryRequest(request) {
   return request.url().startsWith(STAGING_ORIGIN)
     && request.method() === 'POST'
@@ -174,6 +185,7 @@ export function collectDiagnostics(page, slot) {
     ignoredStartSearchInviteSyncAborts: 0,
     ignoredStartSearchInviteWatchAborts: 0,
     ignoredStartSearchShopHistoryAborts: 0,
+    ignoredStartSearchStatsAborts: 0,
     ignoredAcceptInviteSyncAborts: 0,
   };
 
@@ -196,9 +208,11 @@ export function collectDiagnostics(page, slot) {
   const inFlightInviteSyncRequests = new Set();
   const inFlightInviteWatchRequests = new Set();
   const inFlightBackgroundShopHistoryRequests = new Set();
+  const inFlightBackgroundStatsRequests = new Set();
   const startSearchInviteSyncAbortRequests = new WeakSet();
   const startSearchInviteWatchAbortRequests = new WeakSet();
   const startSearchShopHistoryAbortRequests = new WeakSet();
+  const startSearchStatsAbortRequests = new WeakSet();
   const acceptInviteSyncAbortRequests = new WeakSet();
 
   // Accept is a foreground state mutation. The production cache-safety owner
@@ -233,10 +247,20 @@ export function collectDiagnostics(page, slot) {
     }
   };
 
+  // stats is another passive API read owned by the same cache-safety boundary.
+  // Snapshot only the exact stats request already running at start_search; any
+  // request that begins later or fails for another reason stays strict.
+  report.beginStartSearchStatsAbortOwnership = () => {
+    for (const request of inFlightBackgroundStatsRequests) {
+      startSearchStatsAbortRequests.add(request);
+    }
+  };
+
   const forgetInFlightTransitionRequest = request => {
     inFlightInviteSyncRequests.delete(request);
     inFlightInviteWatchRequests.delete(request);
     inFlightBackgroundShopHistoryRequests.delete(request);
+    inFlightBackgroundStatsRequests.delete(request);
   };
 
   page.on('pageerror', error => {
@@ -248,6 +272,7 @@ export function collectDiagnostics(page, slot) {
     if (isInviteSyncRequest(request)) inFlightInviteSyncRequests.add(request);
     if (isInviteWatchRequest(request)) inFlightInviteWatchRequests.add(request);
     if (isBackgroundShopHistoryRequest(request)) inFlightBackgroundShopHistoryRequests.add(request);
+    if (isBackgroundStatsRequest(request)) inFlightBackgroundStatsRequests.add(request);
 
     if (report.allowInviteSyncAbort && isInviteSyncRequest(request)) {
       allowedInviteSyncAbortRequests.add(request);
@@ -287,6 +312,10 @@ export function collectDiagnostics(page, slot) {
     }
     if (startSearchShopHistoryAbortRequests.has(request) && isExpectedBackgroundShopHistoryAbort(request)) {
       report.ignoredStartSearchShopHistoryAborts += 1;
+      return;
+    }
+    if (startSearchStatsAbortRequests.has(request) && isExpectedBackgroundStatsAbort(request)) {
+      report.ignoredStartSearchStatsAborts += 1;
       return;
     }
     if (allowedInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
