@@ -24,8 +24,7 @@ $assert(
     'GameActionService must own one clock service instance.'
 );
 $assert(
-    str_contains($source, "$phaseManaged = array_key_exists('launch_phase', $game);")
-        || str_contains($source, "\$phaseManaged = array_key_exists('launch_phase', \$game);"),
+    str_contains($source, "\$phaseManaged = array_key_exists('launch_phase', \$game);"),
     'Phase B action behavior must be gated by stored launch_phase presence.'
 );
 $assert(
@@ -47,8 +46,7 @@ $assert(
     'Action service must not normalize, activate, or own readiness.'
 );
 
-$phaseGate = strpos($source, "$phaseManaged = array_key_exists('launch_phase', $game);");
-if ($phaseGate === false) $phaseGate = strpos($source, "\$phaseManaged = array_key_exists('launch_phase', \$game);");
+$phaseGate = strpos($source, "\$phaseManaged = array_key_exists('launch_phase', \$game);");
 $advance = strpos($source, '$this->matchPreparationClock->advance($storedGame);');
 $assertAllowed = strpos($source, '$this->matchPreparationClock->assertActionAllowed($storedGame);');
 $dispatch = strpos($source, '$result = match ($engine)');
