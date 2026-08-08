@@ -34,6 +34,7 @@ async function openTicTacToeDuringHomeTransition(player) {
 async function startOrdinarySearchDuringCacheSafetyTransition(player) {
   player.diagnostics.beginStartSearchInviteBackgroundAbortOwnership();
   player.diagnostics.beginStartSearchShopHistoryAbortOwnership();
+  player.diagnostics.beginStartSearchStatsAbortOwnership();
   try {
     await player.page.locator('#startSearchBtn').click();
   } finally {
@@ -198,9 +199,11 @@ test('normal outgoing pending is passive immediately after close/reopen and reci
     expect(playerA.diagnostics.ignoredStartSearchInviteSyncAborts).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredStartSearchInviteWatchAborts).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredStartSearchShopHistoryAborts).toBeLessThanOrEqual(1);
+    expect(playerA.diagnostics.ignoredStartSearchStatsAborts).toBeLessThanOrEqual(1);
     expect(playerB.diagnostics.ignoredStartSearchInviteSyncAborts).toBe(0);
     expect(playerB.diagnostics.ignoredStartSearchInviteWatchAborts).toBe(0);
     expect(playerB.diagnostics.ignoredStartSearchShopHistoryAborts).toBe(0);
+    expect(playerB.diagnostics.ignoredStartSearchStatsAborts).toBe(0);
     expect(playerA.diagnostics.pageErrors).toEqual([]);
     expect(playerB.diagnostics.pageErrors).toEqual([]);
     expect(playerA.diagnostics.failedRequests).toEqual([]);
