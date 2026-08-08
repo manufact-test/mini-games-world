@@ -1,0 +1,76 @@
+name: Verify PR642 Phase B Settlement
+
+on:
+  push:
+    branches:
+      - agent/verify-pr642-focused
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc '{state:"pending",context:"phase-b-pr642-focused",description:"Settlement focused tests are running"}')"
+
+      - name: Checkout exact verification commit
+        uses: actions/checkout@v4
+
+      - name: Verify PHP runtime
+        run: php -v
+
+      - name: Syntax check settlement files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/GameSettlementService.php
+          php -l bot/tests/PhaseBPreparationTimeoutSettlementTest.php
+          php -l bot/tests/PhaseBPreparationCancellationLateFinishSafetyTest.php
+          php -l bot/tests/PhaseBPreparationCancellationDeadlineGuardTest.php
+
+      - name: Run settlement focused tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/PhaseBPreparationTimeoutSettlementTest.php
+          php bot/tests/PhaseBPreparationCancellationLateFinishSafetyTest.php
+          php bot/tests/PhaseBPreparationCancellationDeadlineGuardTest.php
+
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${JOB_STATUS}" == 'success' ]]; then
+            state='success'
+            description='Settlement focused tests passed'
+          else
+            state='failure'
+            description='Settlement focused tests failed'
+          fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc --arg state "${state}" --arg description "${description}" '{state:$state,context:"phase-b-pr642-focused",description:$description}')"
+          test "${state}" = 'success'
