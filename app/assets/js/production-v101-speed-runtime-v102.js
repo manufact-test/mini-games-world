@@ -280,10 +280,14 @@ function isBootstrap(meta){
 }
 
 function isBackgroundSafe(meta){
+  // Invite polling is authoritative lifecycle state, not disposable cache work.
+  // Keep these requests outside the shared cache-abort controller; each invite
+  // owner already decides whether a completed snapshot is still applicable.
+  if (meta.pathname.endsWith('/bot/invite-watch.php')) return false;
+  if (meta.pathname.endsWith('/bot/invites.php') && meta.action === 'sync') return false;
   if (meta.prefetch) return true;
   if (meta.pathname.endsWith('/bot/api.php') && meta.action === 'stats') return true;
   if (meta.pathname.endsWith('/bot/notifications.php') && !meta.markRead) return true;
-  if (meta.pathname.endsWith('/bot/invites.php') && meta.action === 'sync') return true;
   return false;
 }
 
