@@ -172,36 +172,75 @@ export function collectDiagnostics(page, slot) {
     ignoredInviteWatchAborts: 0,
   };
 
-  // An allowed transition owns requests from the moment they start. A request
-  // that begins while navigation/start handoff explicitly permits a background
-  // abort must not become a false failure merely because requestfailed arrives
-  // after the transition has already finished and its boolean flag was reset.
-  // Conversely, requests that started outside the allowed window remain strict.
+  // A transition owns two precisely bounded request groups:
+  // 1) requests that start after its explicit allow flag is acquired;
+  // 2) requests already in flight when the transition explicitly adopts them.
+  // This preserves request-object ownership without reverting to failure-time
+  // booleans: a request that is neither started nor adopted by the transition
+  // remains strict even if requestfailed happens during that transition.
   const allowedInviteSyncAbortRequests = new WeakSet();
   const allowedBackgroundProfileAbortRequests = new WeakSet();
   const allowedBackgroundShopHistoryAbortRequests = new WeakSet();
   const allowedInviteWatchAbortRequests = new WeakSet();
+  const activeInviteSyncRequests = new Set();
+  const activeBackgroundProfileRequests = new Set();
+  const activeBackgroundShopHistoryRequests = new Set();
+  const activeInviteWatchRequests = new Set();
+
+  report.adoptActiveBackgroundAborts = ({
+    inviteSync = false,
+    backgroundProfile = false,
+    backgroundShopHistory = false,
+    inviteWatch = false,
+  } = {}) => {
+    if (inviteSync) {
+      for (const request of activeInviteSyncRequests) allowedInviteSyncAbortRequests.add(request);
+    }
+    if (backgroundProfile) {
+      for (const request of activeBackgroundProfileRequests) allowedBackgroundProfileAbortRequests.add(request);
+    }
+    if (backgroundShopHistory) {
+      for (const request of activeBackgroundShopHistoryRequests) allowedBackgroundShopHistoryAbortRequests.add(request);
+    }
+    if (inviteWatch) {
+      for (const request of activeInviteWatchRequests) allowedInviteWatchAbortRequests.add(request);
+    }
+  };
 
   page.on('pageerror', error => {
     report.pageErrors.push(String(error?.message || error).slice(0, 500));
   });
   page.on('request', request => {
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
-    if (report.allowInviteSyncAbort && isInviteSyncRequest(request)) {
-      allowedInviteSyncAbortRequests.add(request);
+    if (isInviteSyncRequest(request)) {
+      activeInviteSyncRequests.add(request);
+      if (report.allowInviteSyncAbort) allowedInviteSyncAbortRequests.add(request);
     }
-    if (report.allowBackgroundProfileAbort && isBackgroundProfileRequest(request)) {
-      allowedBackgroundProfileAbortRequests.add(request);
+    if (isBackgroundProfileRequest(request)) {
+      activeBackgroundProfileRequests.add(request);
+      if (report.allowBackgroundProfileAbort) allowedBackgroundProfileAbortRequests.add(request);
     }
-    if (report.allowBackgroundShopHistoryAbort && isBackgroundShopHistoryRequest(request)) {
-      allowedBackgroundShopHistoryAbortRequests.add(request);
+    if (isBackgroundShopHistoryRequest(request)) {
+      activeBackgroundShopHistoryRequests.add(request);
+      if (report.allowBackgroundShopHistoryAbort) allowedBackgroundShopHistoryAbortRequests.add(request);
     }
-    if (report.allowInviteWatchAbort && isInviteWatchRequest(request)) {
-      allowedInviteWatchAbortRequests.add(request);
+    if (isInviteWatchRequest(request)) {
+      activeInviteWatchRequests.add(request);
+      if (report.allowInviteWatchAbort) allowedInviteWatchAbortRequests.add(request);
     }
+  });
+  page.on('requestfinished', request => {
+    activeInviteSyncRequests.delete(request);
+    activeBackgroundProfileRequests.delete(request);
+    activeBackgroundShopHistoryRequests.delete(request);
+    activeInviteWatchRequests.delete(request);
   });
   page.on('requestfailed', request => {
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
+    activeInviteSyncRequests.delete(request);
+    activeBackgroundProfileRequests.delete(request);
+    activeBackgroundShopHistoryRequests.delete(request);
+    activeInviteWatchRequests.delete(request);
     if (isExpectedPresenceResumeAbort(request)) return;
     if (allowedInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
       report.ignoredInviteSyncAborts += 1;
