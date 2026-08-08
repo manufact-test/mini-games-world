@@ -762,25 +762,29 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
     const loser = winnerId === 'stg_test_player_a' ? playerB : playerA;
     expect(winner).toBeTruthy();
 
-    await expect(winner.page.locator('#sheet .sheet-head h2')).toHaveText('Победа!', {
-      timeout: 30_000,
-    });
-    await expect(loser.page.locator('#sheet .sheet-head h2')).toHaveText('Поражение', {
-      timeout: 30_000,
-    });
+    await Promise.all([
+      expect(winner.page.locator('#sheet .sheet-head h2')).toHaveText('Победа!', {
+        timeout: 30_000,
+      }),
+      expect(loser.page.locator('#sheet .sheet-head h2')).toHaveText('Поражение', {
+        timeout: 30_000,
+      }),
+    ]);
 
-    const afterA = await expectPlayerRequest(
-      playerA.page,
-      '/bot/api.php',
-      { action: 'profile' },
-      'Player A post-match profile',
-    );
-    const afterB = await expectPlayerRequest(
-      playerB.page,
-      '/bot/api.php',
-      { action: 'profile' },
-      'Player B post-match profile',
-    );
+    const [afterA, afterB] = await Promise.all([
+      expectPlayerRequest(
+        playerA.page,
+        '/bot/api.php',
+        { action: 'profile' },
+        'Player A post-match profile',
+      ),
+      expectPlayerRequest(
+        playerB.page,
+        '/bot/api.php',
+        { action: 'profile' },
+        'Player B post-match profile',
+      ),
+    ]);
 
     const beforeBalances = {
       stg_test_player_a: Number(beforeA.user?.balance_match || 0),
