@@ -173,6 +173,8 @@ export function collectDiagnostics(page, slot) {
     allowStartSearchInviteBackgroundAbort: false,
     ignoredStartSearchInviteSyncAborts: 0,
     ignoredStartSearchInviteWatchAborts: 0,
+    ignoredInviteMutationSyncAborts: Object.create(null),
+    ignoredInviteMutationWatchAborts: Object.create(null),
   };
 
   // An allowed transition owns requests from the moment they start. A request
@@ -185,14 +187,35 @@ export function collectDiagnostics(page, slot) {
   const allowedBackgroundShopHistoryAbortRequests = new WeakSet();
   const allowedInviteWatchAbortRequests = new WeakSet();
 
+  // State-changing cache safety aborts only passive invite reads that already
+  // exist when the mutation starts. Keep those requests enumerable until they
+  // complete so a specific invite mutation (for example accept/start) can adopt
+  // exactly the obsolete in-flight reads and nothing that begins afterwards.
+  const inFlightInviteSyncRequests = new Set();
+  const inFlightInviteWatchRequests = new Set();
+  const inviteMutationSyncAbortOwners = new WeakMap();
+  const inviteMutationWatchAbortOwners = new WeakMap();
+
+  report.adoptInFlightInviteBackgroundAbortOwnership = owner => {
+    const key = String(owner || 'invite_mutation');
+    for (const request of inFlightInviteSyncRequests) {
+      if (!inviteMutationSyncAbortOwners.has(request)) {
+        inviteMutationSyncAbortOwners.set(request, key);
+      }
+    }
+    for (const request of inFlightInviteWatchRequests) {
+      if (!inviteMutationWatchAbortOwners.has(request)) {
+        inviteMutationWatchAbortOwners.set(request, key);
+      }
+    }
+  };
+
   // start_search is different from a navigation-only allowance: the accepted
   // cache-safety owner intentionally aborts background reads already in flight
   // when the state-changing pointer action begins. Keep those exact requests
   // enumerable until completion so this transition can adopt only the reads it
   // truly supersedes. The dedicated WeakSets keep this ownership separate from
   // every existing navigation/reopen abort allowance and from their counters.
-  const inFlightInviteSyncRequests = new Set();
-  const inFlightInviteWatchRequests = new Set();
   const startSearchInviteSyncAbortRequests = new WeakSet();
   const startSearchInviteWatchAbortRequests = new WeakSet();
 
@@ -212,6 +235,9 @@ export function collectDiagnostics(page, slot) {
   const forgetInFlightInviteRequest = request => {
     inFlightInviteSyncRequests.delete(request);
     inFlightInviteWatchRequests.delete(request);
+  };
+  const incrementOwnedAbort = (bucket, owner) => {
+    bucket[owner] = Number(bucket[owner] || 0) + 1;
   };
 
   page.on('pageerror', error => {
@@ -247,6 +273,17 @@ export function collectDiagnostics(page, slot) {
     forgetInFlightInviteRequest(request);
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
     if (isExpectedPresenceResumeAbort(request)) return;
+
+    const inviteMutationSyncOwner = inviteMutationSyncAbortOwners.get(request);
+    if (inviteMutationSyncOwner && isExpectedInviteSyncAbort(request)) {
+      incrementOwnedAbort(report.ignoredInviteMutationSyncAborts, inviteMutationSyncOwner);
+      return;
+    }
+    const inviteMutationWatchOwner = inviteMutationWatchAbortOwners.get(request);
+    if (inviteMutationWatchOwner && isExpectedInviteWatchAbort(request)) {
+      incrementOwnedAbort(report.ignoredInviteMutationWatchAborts, inviteMutationWatchOwner);
+      return;
+    }
     if (startSearchInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
       report.ignoredStartSearchInviteSyncAborts += 1;
       return;
