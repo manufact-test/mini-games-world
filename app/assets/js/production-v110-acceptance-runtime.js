@@ -1,4 +1,5 @@
 import { state } from './state.js?v=27';
+import { restoreAcceptedGamePolling } from './screens/game-screen-v102-safe.js?v=102';
 
 const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
   initialized:false,
@@ -17,6 +18,7 @@ export function initV110AcceptanceRuntime(){
     runtime.observer.observe(timer, { childList:true, characterData:true, subtree:true });
   }
   installSearchStyle();
+  installLaunchStyle();
 }
 
 function stabilizeSearchSummary(event){
@@ -64,6 +66,22 @@ function installSearchStyle(){
   style.textContent = '#searchInfo{min-height:2.9em}#searchInfo.mgw-v110-search-summary{display:grid;gap:2px;align-content:start}#searchInfo.mgw-v110-search-summary>span{display:block}';
   document.head.appendChild(style);
 }
+function installLaunchStyle(){
+  if (document.getElementById('mgw-phase-b-launch-style')) return;
+  const style = document.createElement('style');
+  style.id = 'mgw-phase-b-launch-style';
+  style.textContent = `
+    #screen-game .board-wrap{position:relative}
+    .mgw-phase-b-launch-overlay{position:absolute;inset:0;z-index:8;display:grid;place-items:center;padding:24px;border-radius:18px;background:rgba(10,16,30,.88);backdrop-filter:blur(6px);text-align:center}
+    .mgw-phase-b-launch-overlay[hidden]{display:none!important}
+    .mgw-phase-b-launch-card{display:grid;gap:8px;justify-items:center;max-width:280px}
+    .mgw-phase-b-launch-title{font-size:18px;font-weight:700;line-height:1.2}
+    .mgw-phase-b-launch-note{font-size:13px;line-height:1.35;opacity:.78}
+    .mgw-phase-b-countdown{font-size:64px;font-weight:800;line-height:1}
+    #gameBoard.mgw-phase-b-turn-wait{pointer-events:none}
+  `;
+  document.head.appendChild(style);
+}
 
 function guardAndTrackTicTacToe(event){
   const button = event.target instanceof Element
@@ -86,6 +104,7 @@ function validTicTacToeMove(button){
   if (!id || String(game?.status || '') !== 'active') return null;
   const item = window.__MGW_V100_GAME_RUNTIME__?.games?.get?.(id);
   const authoritative = item?.authoritative || game;
+  if (!launchAllowsAction(authoritative)) return null;
   const viewerId = String(item?.viewer?.id || state.user?.id || '');
   const cell = Number(button.dataset.gameCell);
   const board = String(authoritative?.board || '');
@@ -99,7 +118,13 @@ function validTicTacToeMove(button){
   return { gameId:id, cell, symbol };
 }
 
-function tickGameUi(){ reconcilePendingMove(); syncClock(); paintClock(); }
+function tickGameUi(){
+  reconcilePendingMove();
+  syncClock();
+  paintClock();
+  paintLaunchState();
+  restoreAcceptedGamePolling(state.activeGame);
+}
 function reconcilePendingMove(){
   const pending = runtime.pending;
   if (!pending) return;
@@ -142,27 +167,161 @@ function syncClock(){
   const game = state.activeGame;
   if (!game?.id || String(game?.status || '') !== 'active') { runtime.clock = null; return; }
   const timeoutSec = Math.max(1, Number(game.move_timeout_sec || 60));
-  const signature = `${String(game.id)}|${String(game.turn || '')}|${String(game.turn_started_at || '')}`;
+  const revision = String(game.turn_revision ?? game.clock_revision ?? '');
+  const turnStartKey = String(game.turn_starts_at_ms ?? game.turn_started_at ?? '');
+  const signature = `${String(game.id)}|${String(game.turn || '')}|${revision}|${turnStartKey}`;
   const serverNowMs = finiteNumber(game.server_now_ms);
+  const turnStartsAtMs = finiteNumber(game.turn_starts_at_ms);
   const deadlineMs = finiteNumber(game.turn_deadline_ms);
-  const serverRemainingMs = deadlineMs !== null && serverNowMs !== null
+  const now = performance.now();
+  const startRemainingMs = turnStartsAtMs !== null && serverNowMs !== null
+    ? Math.max(0, turnStartsAtMs - serverNowMs)
+    : 0;
+  const deadlineRemainingMs = deadlineMs !== null && serverNowMs !== null
     ? Math.max(0, deadlineMs - serverNowMs)
     : Math.max(0, Number(game.time_left ?? timeoutSec) * 1000);
+  const candidateStart = now + startRemainingMs;
+  const candidateDeadline = now + deadlineRemainingMs;
+
   if (!runtime.clock || runtime.clock.signature !== signature) {
-    runtime.clock = { signature, gameId:String(game.id), deadline:performance.now() + serverRemainingMs };
+    runtime.clock = {
+      signature,
+      gameId:String(game.id),
+      start:candidateStart,
+      deadline:candidateDeadline,
+      timeoutSec,
+    };
     return;
   }
-  const localRemaining = Math.max(0, runtime.clock.deadline - performance.now());
-  // Never jump upward on a same-turn poll.
-  if (serverRemainingMs + 700 < localRemaining) runtime.clock.deadline = performance.now() + serverRemainingMs;
+
+  runtime.clock.timeoutSec = timeoutSec;
+  // Same-turn snapshots may tighten an anchor, but never extend countdown or clock.
+  if (candidateStart + 250 < runtime.clock.start) runtime.clock.start = candidateStart;
+  if (candidateDeadline + 700 < runtime.clock.deadline) runtime.clock.deadline = candidateDeadline;
 }
 function paintClock(){
   const clock = runtime.clock;
   const timer = document.getElementById('timerText');
-  if (!timer || !clock || String(state.activeGame?.id || '') !== clock.gameId) return;
-  const seconds = Math.max(0, Math.ceil((clock.deadline - performance.now()) / 1000));
+  const game = state.activeGame;
+  if (!timer || !clock || String(game?.id || '') !== clock.gameId) return;
+  const phase = String(game?.launch_phase || '');
+  const now = performance.now();
+  const beforeTurnStart = phase === 'preparing'
+    || phase === 'preparation_timeout'
+    || now < clock.start;
+  const seconds = beforeTurnStart
+    ? clock.timeoutSec
+    : Math.max(0, Math.ceil((clock.deadline - now) / 1000));
   const label = `${seconds} сек`;
   if (timer.textContent !== label) timer.textContent = label;
+}
+function launchAllowsAction(game){
+  const phase = String(game?.launch_phase || '');
+  if (phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled') return false;
+  if (phase === 'countdown' && !launchStartReached(game)) return false;
+  if (phase && phase !== 'active' && phase !== 'countdown') return false;
+  return turnStartReached(game);
+}
+function launchStartReached(game){
+  if (String(game?.launch_phase || '') !== 'countdown') return true;
+  const clock = runtime.clock;
+  if (clock && clock.gameId === String(game?.id || '')) return performance.now() >= clock.start;
+  const startsAtMs = finiteNumber(game?.starts_at_ms);
+  const serverNowMs = finiteNumber(game?.server_now_ms);
+  return startsAtMs !== null && serverNowMs !== null && startsAtMs <= serverNowMs;
+}
+function turnStartReached(game){
+  const clock = runtime.clock;
+  if (clock && clock.gameId === String(game?.id || '')) return performance.now() >= clock.start;
+  const turnStartsAtMs = finiteNumber(game?.turn_starts_at_ms);
+  const serverNowMs = finiteNumber(game?.server_now_ms);
+  return turnStartsAtMs === null || serverNowMs === null || turnStartsAtMs <= serverNowMs;
+}
+function paintLaunchState(){
+  const game = state.activeGame;
+  const board = document.getElementById('gameBoard');
+  const leave = document.getElementById('leaveGame');
+  const overlay = ensureLaunchOverlay();
+  const status = String(game?.status || '');
+  const phase = String(game?.launch_phase || '');
+  const countdownWaiting = phase === 'countdown' && !launchStartReached(game);
+  const blocking = status === 'active'
+    && (phase === 'preparing' || phase === 'preparation_timeout' || countdownWaiting);
+  const turnWaiting = status === 'active' && !blocking && !turnStartReached(game);
+
+  if (board) board.classList.toggle('mgw-phase-b-turn-wait', turnWaiting);
+  setPhaseLeaveDisabled(leave, blocking);
+  if (!overlay) return;
+
+  if (!blocking) {
+    overlay.hidden = true;
+    return;
+  }
+
+  overlay.hidden = false;
+  const title = overlay.querySelector('[data-phase-b-title]');
+  const note = overlay.querySelector('[data-phase-b-note]');
+  const countdown = overlay.querySelector('[data-phase-b-countdown]');
+
+  if (phase === 'countdown') {
+    const clock = runtime.clock;
+    const remaining = clock && clock.gameId === String(game?.id || '')
+      ? Math.max(0, clock.start - performance.now())
+      : 0;
+    const seconds = Math.max(1, Math.min(3, Math.ceil(remaining / 1000)));
+    if (title) title.textContent = 'Матч начинается';
+    if (note) note.textContent = 'Оба игрока готовы';
+    if (countdown) {
+      countdown.hidden = false;
+      countdown.textContent = String(seconds);
+    }
+    return;
+  }
+
+  if (countdown) countdown.hidden = true;
+  if (phase === 'preparation_timeout') {
+    if (title) title.textContent = 'Матч не начался';
+    if (note) note.textContent = 'Завершаем матч и возвращаем ставку';
+    return;
+  }
+
+  const ready = Math.max(0, Number(game?.ready_count || 0));
+  const required = Math.max(1, Number(game?.ready_required || 2));
+  if (title) title.textContent = 'Синхронизируем игроков';
+  if (note) note.textContent = `Готово устройств: ${Math.min(ready, required)} из ${required}`;
+}
+function ensureLaunchOverlay(){
+  const wrap = document.querySelector('#screen-game .board-wrap');
+  if (!(wrap instanceof Element)) return null;
+  let overlay = document.getElementById('mgwPhaseBLaunchOverlay');
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = 'mgwPhaseBLaunchOverlay';
+  overlay.className = 'mgw-phase-b-launch-overlay';
+  overlay.hidden = true;
+  overlay.innerHTML = `
+    <div class="mgw-phase-b-launch-card" role="status" aria-live="polite">
+      <div class="mgw-phase-b-countdown" data-phase-b-countdown hidden></div>
+      <strong class="mgw-phase-b-launch-title" data-phase-b-title></strong>
+      <span class="mgw-phase-b-launch-note" data-phase-b-note></span>
+    </div>
+  `;
+  wrap.appendChild(overlay);
+  return overlay;
+}
+function setPhaseLeaveDisabled(button, disabled){
+  if (!(button instanceof HTMLButtonElement)) return;
+  if (disabled) {
+    if (!button.disabled) {
+      button.disabled = true;
+      button.dataset.mgwPhaseBDisabled = '1';
+    }
+    return;
+  }
+  if (button.dataset.mgwPhaseBDisabled === '1') {
+    button.disabled = false;
+    delete button.dataset.mgwPhaseBDisabled;
+  }
 }
 function finiteNumber(value){
   if (value === null || value === undefined || value === '') return null;
