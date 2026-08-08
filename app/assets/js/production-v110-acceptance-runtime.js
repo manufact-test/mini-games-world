@@ -9,6 +9,7 @@ const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
 export function initV110AcceptanceRuntime(){
   if (runtime.initialized) return;
   runtime.initialized = true;
+  window.addEventListener('click', guardPhaseBPreStartControls, true);
   window.addEventListener('click', guardAndTrackTicTacToe, true);
   window.addEventListener('click', stabilizeSearchSummary, true);
   runtime.timer = window.setInterval(tickGameUi, 100);
@@ -81,6 +82,25 @@ function installLaunchStyle(){
     #gameBoard.mgw-phase-b-turn-wait{pointer-events:none}
   `;
   document.head.appendChild(style);
+}
+
+function guardPhaseBPreStartControls(event){
+  const origin = event.target;
+  if (!(origin instanceof Element)) return;
+  const boardControl = origin.closest('#gameBoard button');
+  const leaveControl = origin.closest('#leaveGame');
+  if (!boardControl && !leaveControl) return;
+
+  const game = state.activeGame;
+  if (!game?.id || String(game?.status || '') !== 'active') return;
+  const phase = String(game?.launch_phase || '');
+  if (!phase) return;
+
+  const allowed = boardControl ? launchAllowsAction(game) : launchAllowsLeave(game);
+  if (allowed) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
 }
 
 function guardAndTrackTicTacToe(event){
@@ -221,6 +241,12 @@ function launchAllowsAction(game){
   if (phase === 'countdown' && !launchStartReached(game)) return false;
   if (phase && phase !== 'active' && phase !== 'countdown') return false;
   return turnStartReached(game);
+}
+function launchAllowsLeave(game){
+  const phase = String(game?.launch_phase || '');
+  if (!phase || phase === 'active') return true;
+  if (phase === 'countdown') return launchStartReached(game);
+  return false;
 }
 function launchStartReached(game){
   if (String(game?.launch_phase || '') !== 'countdown') return true;
