@@ -116,6 +116,9 @@ final class SessionService
     public function releaseIfCurrent(array &$user, string $sessionId): void
     {
         $this->ensureSessionShape($user);
+        if (in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) {
+            return;
+        }
         if ($sessionId !== '' && ($user['active_session_id'] ?? null) === $sessionId) {
             $user['active_session_id'] = null;
             $user['active_session_at'] = null;
