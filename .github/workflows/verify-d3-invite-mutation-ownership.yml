@@ -53,7 +53,10 @@ jobs:
 
       - name: Run focused D3 shared invite test
         shell: bash
-        run: npx --no-install playwright test e2e/staging/d3-shared-invite.spec.mjs --config=e2e/playwright.config.mjs
+        run: >-
+          npx --no-install playwright test
+          --config=e2e/playwright.config.mjs
+          --grep "D3 native share cancellation is quiet and one shared link creates one match"
 
       - name: Publish final status
         if: always()
