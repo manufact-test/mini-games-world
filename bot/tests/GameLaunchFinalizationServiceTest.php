@@ -36,9 +36,9 @@ $assert(($first['symbols'][$first['turn']] ?? '') === 'X', 'The finalized turn o
 $assert(array_values($first['symbols']) === ['X', 'O'] || array_values($first['symbols']) === ['O', 'X'], 'Exactly one X and one O must be assigned.');
 $assert((string)($first['launch_phase'] ?? '') === 'preparing', 'A newly finalized TTT game must enter synchronized preparation.');
 $assert(($first['preparation_ready_devices'] ?? null) === [], 'New TTT preparation must start with no client readiness.');
-$assert(($first['starts_at'] ?? 'not-null') === null, 'Shared countdown start must not exist before both players are ready.');
-$assert(($first['turn_starts_at'] ?? 'not-null') === null, 'First turn start must not exist before readiness completes.');
-$assert(($first['turn_deadline_at'] ?? 'not-null') === null, 'First turn deadline must not run during preparation.');
+$assert(array_key_exists('starts_at', $first) && $first['starts_at'] === null, 'Shared countdown start must not exist before both players are ready.');
+$assert(array_key_exists('turn_starts_at', $first) && $first['turn_starts_at'] === null, 'First turn start must not exist before readiness completes.');
+$assert(array_key_exists('turn_deadline_at', $first) && $first['turn_deadline_at'] === null, 'First turn deadline must not run during preparation.');
 $assert((string)($first['clock_turn'] ?? 'missing') === '', 'Preparation must not expose an active clock owner yet.');
 $assert((int)($first['clock_revision'] ?? -1) === 0, 'Preparation clock revision must start at zero.');
 $deadline = strtotime((string)($first['preparation_deadline_at'] ?? '')) ?: 0;
