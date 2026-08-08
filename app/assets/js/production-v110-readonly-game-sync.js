@@ -94,6 +94,8 @@ function actionIsBusy(item){
 
 function canWatch(game, gameId){
   if (!gameId || String(game?.status || '') !== 'active') return false;
+  const launchPhase = String(game?.launch_phase || '');
+  if (launchPhase && launchPhase !== 'active') return false;
   if (game?.is_bot_game) return false;
   if (document.visibilityState !== 'visible') return false;
   const screen = document.querySelector('.screen.active');
