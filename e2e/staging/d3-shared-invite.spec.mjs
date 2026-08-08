@@ -129,7 +129,12 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     )).toHaveCount(1);
     await expect.poll(() => counterB.count('open_link')).toBe(1);
 
-    const accepted = await clickInviteAction(playerB.page, 'accept', token);
+    const accepted = await clickInviteAction(
+      playerB.page,
+      'accept',
+      token,
+      () => playerB.diagnostics.beginAcceptInviteSyncAbortOwnership(),
+    );
     expect(['accepted', 'awaiting_start'])
       .toContain(String(accepted?.invite?.status || ''));
     await expect(playerB.page.locator('#sheet .sheet-head h2'))
@@ -176,6 +181,8 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     expect(counterB.count('open_link')).toBe(1);
     expect(playerA.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
     expect(playerB.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
+    expect(playerA.diagnostics.ignoredAcceptInviteSyncAborts).toBe(0);
+    expect(playerB.diagnostics.ignoredAcceptInviteSyncAborts).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
     expect(playerB.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredBackgroundShopHistoryAborts).toBeLessThanOrEqual(1);
