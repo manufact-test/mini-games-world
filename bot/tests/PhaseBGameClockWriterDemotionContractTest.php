@@ -42,9 +42,13 @@ $assert(
     str_contains($source, "'game' => \$games->publicGame(\$game, \$userId)"),
     'Compatibility protocol must consume the centralized public projection owner.'
 );
+$assert(
+    str_contains($source, "&& !array_key_exists('launch_phase', \$game)"),
+    'Legacy v106 clock writer must never mutate a game owned by the Phase B launch state machine.'
+);
 
-// The proven accepted v106 default path remains until client migration is
-// intentionally activated in a later PR.
+// The proven accepted v106 default path remains for legacy games without a
+// launch_phase. Only its ownership boundary is narrowed away from Phase B.
 foreach ([
     "empty(\$game['v106_first_turn_clock_armed_at'])",
     "\$game['turn_started_at'] = \$now;",
@@ -53,7 +57,7 @@ foreach ([
 ] as $legacyInvariant) {
     $assert(
         str_contains($source, $legacyInvariant),
-        'Accepted v106 clock compatibility invariant changed unexpectedly: ' . $legacyInvariant
+        'Accepted v106 legacy clock invariant changed unexpectedly: ' . $legacyInvariant
     );
 }
 
