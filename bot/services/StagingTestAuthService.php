@@ -170,12 +170,11 @@ final class StagingTestAuthService
             return false;
         }
         $tokenHash = hash('sha256', $token);
-        $removed = false;
-        $this->withRegistry(function (array &$registry) use ($tokenHash, &$removed): void {
+        return $this->withRegistry(function (array &$registry) use ($tokenHash): bool {
             $removed = isset($registry['sessions'][$tokenHash]);
             unset($registry['sessions'][$tokenHash]);
-        });
-        return $removed;
+            return $removed;
+        }, true) === true;
     }
 
     public function cookieOptions(int $expiresAt): array
@@ -263,7 +262,7 @@ final class StagingTestAuthService
         return $dataDir . '/.runtime/staging-test-auth/' . self::REGISTRY_FILE;
     }
 
-    private function withRegistry(Closure $callback): mixed
+    private function withRegistry(Closure $callback, bool $nonBlocking = false): mixed
     {
         $path = $this->registryPath();
         $directory = dirname($path);
@@ -277,8 +276,14 @@ final class StagingTestAuthService
         }
         @chmod($path, 0600);
 
+        $locked = false;
         try {
-            if (!flock($handle, LOCK_EX)) {
+            $lockOperation = LOCK_EX | ($nonBlocking ? LOCK_NB : 0);
+            $locked = flock($handle, $lockOperation);
+            if (!$locked) {
+                if ($nonBlocking) {
+                    return false;
+                }
                 throw new RuntimeException('Staging test authorization registry is busy.');
             }
             rewind($handle);
@@ -301,7 +306,9 @@ final class StagingTestAuthService
             }
             return $result;
         } finally {
-            flock($handle, LOCK_UN);
+            if ($locked) {
+                flock($handle, LOCK_UN);
+            }
             fclose($handle);
         }
     }
