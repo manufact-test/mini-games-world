@@ -68,6 +68,7 @@ try {
         $size = max(1, (int)($game['board_size'] ?? 3));
         $emptyBoard = str_repeat('-', $size * $size);
         $eligible = ($game['status'] ?? '') === 'active'
+            && !array_key_exists('launch_phase', $game)
             && $gameType === 'tictactoe'
             && !empty($game['is_bot_game'])
             && (string)($game['board'] ?? '') === $emptyBoard;
