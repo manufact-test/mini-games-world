@@ -76,11 +76,24 @@ $assert($handoffStart > time(), 'Turn handoff must use one future server start.'
 $assert($handoffDeadline - $handoffStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Receiving player must receive a fresh full timeout.');
 $assert((int)($game['clock_revision'] ?? 0) === 2, 'Turn handoff must advance the authoritative clock revision once.');
 
+$handoffBlocked = false;
+try {
+    $clock->assertActionAllowed($game);
+} catch (RuntimeException $e) {
+    $handoffBlocked = str_contains($e->getMessage(), 'не начался');
+}
+$assert($handoffBlocked, 'The receiving player must not act before authoritative turn_starts_at.');
+
 $public = $clock->enrichPublicGame($game, ['time_left' => 17, 'move_timeout_sec' => 17]);
 $assert(($public['launch_phase'] ?? '') === 'active', 'Public state must expose launch phase.');
 $assert((int)($public['move_timeout_sec'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Public state must use the authoritative timeout.');
 $assert((int)($public['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Future handoff must display the full timeout, not legacy elapsed time.');
 $assert(isset($public['server_now_ms'], $public['turn_starts_at_ms'], $public['turn_deadline_ms']), 'Public state must expose one server time anchor and turn timestamps.');
+
+$game['turn_started_at'] = gmdate('c', time() - 1);
+$game['turn_starts_at'] = $game['turn_started_at'];
+$game['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$clock->assertActionAllowed($game);
 
 $legacy = [
     'status' => 'active',
