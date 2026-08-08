@@ -68,7 +68,7 @@ export async function expectPlayerRequest(page, pathname, data, label) {
   return result.payload;
 }
 
-export async function clickInviteAction(page, action, token) {
+export async function clickInviteAction(page, action, token, beforePointerDown = null) {
   const button = page.locator(
     `[data-invite-action="${action}"][data-invite-token="${token}"]`,
   );
@@ -78,6 +78,7 @@ export async function clickInviteAction(page, action, token) {
     isActionResponse(INVITES_ROUTE, action),
     { timeout: 35_000 },
   );
+  if (typeof beforePointerDown === 'function') beforePointerDown();
   await button.click();
   const response = await responsePromise;
   const payload = await response.json().catch(() => null);
