@@ -15,7 +15,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $functionStart = strpos($source, 'function isBackgroundSafe(meta){');
-$functionEnd = $functionStart === false ? false : strpos($source, '\n}\n\nfunction invalidateForMutation', $functionStart);
+$functionEnd = $functionStart === false ? false : strpos($source, 'function invalidateForMutation(meta){', $functionStart);
 $assert($functionStart !== false && $functionEnd !== false, 'Background ownership function must remain explicit.');
 $body = substr($source, (int)$functionStart, (int)$functionEnd - (int)$functionStart);
 
