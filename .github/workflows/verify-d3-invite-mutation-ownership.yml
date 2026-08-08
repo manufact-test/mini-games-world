@@ -53,7 +53,7 @@ jobs:
 
       - name: Run focused D3 shared invite test
         shell: bash
-        run: npx --no-install playwright test e2e/staging/d3-shared-invite.spec.mjs --config=e2e/staging/playwright.config.mjs
+        run: npx --no-install playwright test e2e/staging/d3-shared-invite.spec.mjs --config=e2e/playwright.config.mjs
 
       - name: Publish final status
         if: always()
