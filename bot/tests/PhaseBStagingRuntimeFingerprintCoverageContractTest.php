@@ -26,6 +26,7 @@ $required = [
     'bot/services/GameSettlementService.php',
     'bot/services/GameLaunchFinalizationService.php',
     'bot/services/MatchPreparationClockService.php',
+    'bot/services/MatchPreparationRuntimeService.php',
     'bot/services/HistoryService.php',
     'bot/services/SessionService.php',
     'bot/services/GameInviteService.php',
