@@ -27,7 +27,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $safePrefix = $blobPrefix($safe);
 $acceptancePrefix = $blobPrefix($acceptance);
 $assert($safePrefix === '76d5b9d8d659', 'Safe game-screen blob prefix must match the reviewed content-address value.');
-$assert($acceptancePrefix === 'afd6d9a46d1a', 'Acceptance runtime blob prefix must match the reviewed content-address value.');
+$assert($acceptancePrefix === '254aaa33a021', 'Acceptance runtime blob prefix must match the reviewed content-address value.');
 $assert(
     str_contains($v110, 'game-screen-v102-safe.js?v=102&b=' . $safePrefix),
     'v110 import map must content-address the active safe game-screen wrapper.'
@@ -51,6 +51,22 @@ $assert(
     'Safe wrapper must restore the accepted game polling cadence after launch.'
 );
 
+$assert(
+    str_contains($acceptance, "window.addEventListener('click', guardPhaseBPreStartControls, true);")
+        && strpos($acceptance, 'guardPhaseBPreStartControls') < strpos($acceptance, 'guardAndTrackTicTacToe'),
+    'Generic pre-start capture guard must register before the accepted TTT pending-click guard.'
+);
+$assert(
+    str_contains($acceptance, "const boardControl = origin.closest('#gameBoard button');")
+        && str_contains($acceptance, "const leaveControl = origin.closest('#leaveGame');"),
+    'Capture guard must cover all game-board buttons and the pre-start leave control.'
+);
+$assert(
+    str_contains($acceptance, 'event.preventDefault();') && str_contains($acceptance, 'event.stopImmediatePropagation();'),
+    'Capture guard must stop blocked controls before optimistic/game handlers run.'
+);
+$assert(str_contains($acceptance, 'function launchAllowsLeave(game)'), 'Leave gating must remain separate from turn-action gating.');
+$assert(str_contains($acceptance, "if (!phase || phase === 'active') return true;"), 'Active Phase B handoff must not block surrender once the match has actually started.');
 $assert(str_contains($acceptance, 'restoreAcceptedGamePolling(state.activeGame);'), 'Acceptance runtime must drive poll-cadence restoration from authoritative state.');
 $assert(str_contains($acceptance, 'candidateDeadline + 700 < runtime.clock.deadline'), 'Same-turn clock snapshots must never extend the local deadline.');
 $assert(str_contains($acceptance, 'candidateStart + 250 < runtime.clock.start'), 'Same launch/turn snapshots must never extend the local start anchor.');
