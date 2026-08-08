@@ -305,6 +305,12 @@ final class GameSettlementService
 
     private function releaseGamePlayers(array &$db, array $game): void
     {
+        if (!empty($game['preparation_cancelled_at'])
+            || (string)($game['finish_reason'] ?? '') === 'preparation_timeout') {
+            $this->releasePreparationPlayers($db, $game);
+            return;
+        }
+
         foreach ($game['player_ids'] ?? [] as $playerId) {
             $pid = (string)$playerId;
             if (!isset($db['users'][$pid])) {
