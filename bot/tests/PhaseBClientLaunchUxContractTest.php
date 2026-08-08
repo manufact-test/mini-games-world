@@ -58,7 +58,7 @@ $assert(str_contains($acceptance, "phase === 'preparing' || phase === 'preparati
 $assert(str_contains($acceptance, "phase === 'countdown' && !launchStartReached(game)"), 'Countdown actions must remain blocked until the shared start anchor is reached.');
 $assert(str_contains($acceptance, "phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled'"), 'Pre-start/cancelled Tic-Tac-Toe actions must be blocked before optimistic pending state is created.');
 $assert(str_contains($acceptance, "button.dataset.mgwPhaseBDisabled = '1'"), 'Leave control must be disabled only through an owned Phase B marker.');
-$assert(str_contains($acceptance, 'id="mgwPhaseBLaunchOverlay"'), 'Launch overlay must have one deterministic DOM owner.');
+$assert(str_contains($acceptance, "overlay.id = 'mgwPhaseBLaunchOverlay';"), 'Launch overlay must have one deterministic DOM owner.');
 $assert(str_contains($acceptance, "title.textContent = 'Синхронизируем игроков'"), 'Preparing overlay copy must be state-driven.');
 $assert(str_contains($acceptance, "title.textContent = 'Матч начинается'"), 'Countdown overlay copy must be state-driven.');
 
