@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/GameLaunchFinalizationService.php';
+
 trait GameInviteStorageTrait
 {
     private function newInvite(
@@ -88,8 +90,9 @@ trait GameInviteStorageTrait
             $db['games'][$gameId]['invite_id'] = (string)($invite['id'] ?? '');
             $db['games'][$gameId]['invite_token'] = (string)($invite['token'] ?? '');
             $db['games'][$gameId]['source_game_id'] = (string)($invite['source_game_id'] ?? '');
-            $this->randomizeTicTacToe($db['games'][$gameId]);
-            return $db['games'][$gameId];
+
+            $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($db, $gameId);
+            return is_array($finalizedGame) ? $finalizedGame : $db['games'][$gameId];
         } finally {
             $db['queue'] = array_values(array_filter($originalQueue, static function ($item) use ($inviterId, $inviteeId): bool {
                 if (!is_array($item)) return false;
@@ -97,21 +100,6 @@ trait GameInviteStorageTrait
                 return $queuedId !== $inviterId && $queuedId !== $inviteeId;
             }));
         }
-    }
-
-    private function randomizeTicTacToe(array &$game): void
-    {
-        if ((string)($game['game_type'] ?? '') !== 'tictactoe') return;
-        $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
-        if (count($playerIds) < 2) return;
-        if (random_int(0, 1) === 1) [$playerIds[0], $playerIds[1]] = [$playerIds[1], $playerIds[0]];
-        $now = now_iso();
-        $game['symbols'] = [$playerIds[0] => 'X', $playerIds[1] => 'O'];
-        $game['turn'] = $playerIds[0];
-        $game['turn_started_at'] = $now;
-        $game['last_move_at'] = $now;
-        $game['updated_at'] = $now;
-        $game['symbols_randomized'] = true;
     }
 
     private function addReceivedNotification(array &$db, array $invite): void
