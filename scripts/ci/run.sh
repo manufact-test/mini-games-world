@@ -45,6 +45,9 @@ node scripts/ci/check-json.mjs
 echo "== JavaScript syntax, imports and query versions =="
 node scripts/ci/check-js.mjs
 
+echo "== Active runtime content addresses =="
+node scripts/ci/check-active-runtime-addresses.mjs
+
 echo "== Secret and private-file scan =="
 node scripts/ci/check-secrets.mjs
 
