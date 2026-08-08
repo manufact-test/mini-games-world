@@ -762,6 +762,10 @@ final class GameService
                 continue;
             }
 
+            if (!$this->legacyTurnLifecycleAllowed($game)) {
+                continue;
+            }
+
             $botId = (string)($game['bot_id'] ?? '');
             if ($botId === '' || (string)($game['turn'] ?? '') !== $botId) {
                 continue;
@@ -1059,9 +1063,22 @@ final class GameService
         return $cells;
     }
 
+    private function legacyTurnLifecycleAllowed(array $game): bool
+    {
+        if (!array_key_exists('launch_phase', $game)) {
+            return true;
+        }
+
+        return (string)$game['launch_phase'] === 'active';
+    }
+
     private function isTurnExpired(array $game): bool
     {
         if (($game['status'] ?? '') !== 'active') {
+            return false;
+        }
+
+        if (!$this->legacyTurnLifecycleAllowed($game)) {
             return false;
         }
 
