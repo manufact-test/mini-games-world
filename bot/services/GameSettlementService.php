@@ -18,7 +18,7 @@ final class GameSettlementService
         }
 
         $deadline = strtotime((string)($game['preparation_deadline_at'] ?? '')) ?: 0;
-        if ($deadline > 0 && $deadline > time()) {
+        if ($deadline <= 0 || $deadline > time()) {
             return;
         }
 
