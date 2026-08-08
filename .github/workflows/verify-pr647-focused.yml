@@ -1,0 +1,70 @@
+name: Verify PR647 Phase B Future Turn Guard
+
+on:
+  push:
+    branches:
+      - agent/verify-pr647-focused
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc '{state:"pending",context:"phase-b-pr647-focused",description:"Future-turn guard test is running"}')"
+
+      - name: Checkout exact verification commit
+        uses: actions/checkout@v4
+
+      - name: Verify PHP runtime
+        run: php -v
+
+      - name: Syntax check clock files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/MatchPreparationClockService.php
+          php -l bot/tests/PhaseBMatchPreparationClockServiceTest.php
+
+      - name: Run future-turn guard focused test
+        shell: bash
+        run: php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${JOB_STATUS}" == 'success' ]]; then
+            state='success'
+            description='Future-turn guard focused test passed'
+          else
+            state='failure'
+            description='Future-turn guard focused test failed'
+          fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc --arg state "${state}" --arg description "${description}" '{state:$state,context:"phase-b-pr647-focused",description:$description}')"
+          test "${state}" = 'success'
