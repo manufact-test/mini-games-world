@@ -27,11 +27,11 @@ $assert(
     'GameService must own one explicit legacy turn-lifecycle predicate.'
 );
 $assert(
-    str_contains($source, "if (!array_key_exists('launch_phase', $game))"),
+    str_contains($source, "if (!array_key_exists('launch_phase', \$game))"),
     'Legacy games without launch_phase must remain on the accepted lifecycle.'
 );
 $assert(
-    str_contains($source, "return (string)$game['launch_phase'] === 'active';"),
+    str_contains($source, "return (string)\$game['launch_phase'] === 'active';"),
     'Only explicit Phase B active state may return to the legacy turn lifecycle.'
 );
 $assert(
