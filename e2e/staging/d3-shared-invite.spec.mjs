@@ -129,27 +129,29 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     )).toHaveCount(1);
     await expect.poll(() => counterB.count('open_link')).toBe(1);
 
+    // The accepted cache-safety owner aborts background reads already in flight
+    // when a state-changing invite action receives pointerdown. Adopt only the
+    // reads that exist before this exact accept mutation; requests that start
+    // afterwards remain strict diagnostics failures.
+    playerB.diagnostics.adoptInFlightInviteBackgroundAbortOwnership('accept');
     const accepted = await clickInviteAction(playerB.page, 'accept', token);
     expect(['accepted', 'awaiting_start'])
       .toContain(String(accepted?.invite?.status || ''));
     await expect(playerB.page.locator('#sheet .sheet-head h2'))
       .toHaveText('Приглашение принято');
 
-    playerA.diagnostics.allowInviteSyncAbort = true;
-    playerB.diagnostics.allowInviteSyncAbort = true;
-    let started;
-    try {
-      started = await clickInviteAction(playerA.page, 'start', token);
-      gameId = String(started?.game?.id || '');
-      expect(gameId).toMatch(/^[A-Za-z0-9_-]{8,120}$/);
-      expect(started?.game?.status).toBe('active');
-      expect(started?.game?.game_type).toBe('tictactoe');
-      await expect(playerA.page.locator('#screen-game')).toHaveClass(/active/);
-      await expect(playerB.page.locator('#screen-game')).toHaveClass(/active/);
-    } finally {
-      playerA.diagnostics.allowInviteSyncAbort = false;
-      playerB.diagnostics.allowInviteSyncAbort = false;
-    }
+    // Starting the shared match supersedes each participant's current passive
+    // invite read. Snapshot exact in-flight sync/watch ownership on both pages
+    // before the owner mutation; there is no broad ERR_ABORTED time window.
+    playerA.diagnostics.adoptInFlightInviteBackgroundAbortOwnership('start');
+    playerB.diagnostics.adoptInFlightInviteBackgroundAbortOwnership('start');
+    const started = await clickInviteAction(playerA.page, 'start', token);
+    gameId = String(started?.game?.id || '');
+    expect(gameId).toMatch(/^[A-Za-z0-9_-]{8,120}$/);
+    expect(started?.game?.status).toBe('active');
+    expect(started?.game?.game_type).toBe('tictactoe');
+    await expect(playerA.page.locator('#screen-game')).toHaveClass(/active/);
+    await expect(playerB.page.locator('#screen-game')).toHaveClass(/active/);
 
     const gameA = await expectPlayerRequest(
       playerA.page,
@@ -174,8 +176,17 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     expect(gameB?.game?.status).toBe('active');
     expect(counterA.count('start')).toBe(1);
     expect(counterB.count('open_link')).toBe(1);
-    expect(playerA.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
-    expect(playerB.diagnostics.ignoredInviteSyncAborts).toBeLessThanOrEqual(1);
+
+    // D3 no longer opens a broad invite-sync abort allowance. Only exact
+    // in-flight reads adopted by the named invite mutations may be ignored.
+    expect(playerA.diagnostics.ignoredInviteSyncAborts).toBe(0);
+    expect(playerB.diagnostics.ignoredInviteSyncAborts).toBe(0);
+    expect(Number(playerA.diagnostics.ignoredInviteMutationSyncAborts.start || 0)).toBeLessThanOrEqual(1);
+    expect(Number(playerB.diagnostics.ignoredInviteMutationSyncAborts.accept || 0)).toBeLessThanOrEqual(1);
+    expect(Number(playerB.diagnostics.ignoredInviteMutationSyncAborts.start || 0)).toBeLessThanOrEqual(1);
+    expect(Number(playerA.diagnostics.ignoredInviteMutationWatchAborts.start || 0)).toBeLessThanOrEqual(1);
+    expect(Number(playerB.diagnostics.ignoredInviteMutationWatchAborts.accept || 0)).toBeLessThanOrEqual(1);
+    expect(Number(playerB.diagnostics.ignoredInviteMutationWatchAborts.start || 0)).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
     expect(playerB.diagnostics.ignoredBackgroundProfileAborts).toBeLessThanOrEqual(1);
     expect(playerA.diagnostics.ignoredBackgroundShopHistoryAborts).toBeLessThanOrEqual(1);
@@ -198,9 +209,13 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
         preparedMessageSource: preparedHarness.evidence.serverPreparedIds[0]
           ? 'server'
           : 'staging_harness',
-        controlledInviteSyncAborts: {
-          playerA: playerA.diagnostics.ignoredInviteSyncAborts,
-          playerB: playerB.diagnostics.ignoredInviteSyncAborts,
+        controlledInviteMutationSyncAborts: {
+          playerA: playerA.diagnostics.ignoredInviteMutationSyncAborts,
+          playerB: playerB.diagnostics.ignoredInviteMutationSyncAborts,
+        },
+        controlledInviteMutationWatchAborts: {
+          playerA: playerA.diagnostics.ignoredInviteMutationWatchAborts,
+          playerB: playerB.diagnostics.ignoredInviteMutationWatchAborts,
         },
         controlledBackgroundProfileAborts: {
           playerA: playerA.diagnostics.ignoredBackgroundProfileAborts,
