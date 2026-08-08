@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameLaunchFinalizationService.php';
+require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
 
 function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
@@ -104,6 +105,7 @@ try {
 
     $action = (string)($payload['action'] ?? '');
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
+    $deviceId = clean_string($payload['deviceId'] ?? '', 120);
 
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $auth = new AuthService($config);
@@ -111,6 +113,7 @@ try {
     $gameCatalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $gameCatalog, new GameService($config));
     $gameActions = new GameActionService($gameCatalog, $games);
+    $matchPreparationRuntime = new MatchPreparationRuntimeService($config);
     $shop = new ShopService($config, $users);
     $payments = new PaymentService($config, $users);
     $telegram = new TelegramService($config);
@@ -129,7 +132,7 @@ try {
         }
     }
 
-    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId) {
+    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId, $deviceId) {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)$user['id'];
         $data['users'][$userId] = $user;
@@ -142,11 +145,13 @@ try {
         // благодаря cycle key на пользователе.
         $weeklyMatch->applyDueForUser($data, $user);
 
-        // Game polling already performs the bounded two-second cleanup cadence.
-        // Manual surrender must not force a full scan of every stored game before
-        // it can finish one known game and release the current session.
+        // game_state owns a new session-first ordering below: its polling may
+        // refresh search, create a bot game or advance Phase B lifecycle, so even
+        // the bounded cleanup must wait until active session ownership is checked.
         $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move'], true);
-        mgw_cleanup_games_if_due($data, $games, $forceCleanup);
+        if ($action !== 'game_state') {
+            mgw_cleanup_games_if_due($data, $games, $forceCleanup);
+        }
 
         switch ($action) {
             case 'bootstrap':
@@ -303,16 +308,24 @@ try {
                 ];
 
             case 'game_state':
+                $requestedGameId = clean_string($payload['gameId'] ?? '', 80);
+                $lifecycleSessionOwned = false;
+                if (in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) {
+                    $sessions->assertCanPlay($user, $sessionId);
+                    $sessions->touch($user, $sessionId);
+                    $lifecycleSessionOwned = true;
+                }
+
+                mgw_cleanup_games_if_due($data, $games, false);
+
                 $game = null;
                 if (($user['status'] ?? '') === 'searching') {
                     $games->refreshSearch($data, $user);
                     $game = $games->maybeCreateBotGameForSearchingUser($data, $user);
                 }
 
-                $gameId = clean_string($payload['gameId'] ?? '', 80);
-
-                if ($gameId !== '' && isset($data['games'][$gameId])) {
-                    $candidate = $data['games'][$gameId];
+                if ($requestedGameId !== '' && isset($data['games'][$requestedGameId])) {
+                    $candidate = $data['games'][$requestedGameId];
                     if (in_array($userId, array_map('strval', $candidate['player_ids'] ?? []), true)) {
                         $game = $candidate;
                     }
@@ -324,13 +337,30 @@ try {
 
                 if ($game) {
                     $storedGameId = (string)($game['id'] ?? '');
-                    $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($data, $storedGameId);
-                    if (is_array($finalizedGame)) $game = $finalizedGame;
-                }
+                    $isCurrentParticipant = $storedGameId !== ''
+                        && (string)($user['current_game_id'] ?? '') === $storedGameId
+                        && in_array($userId, array_map('strval', $game['player_ids'] ?? []), true);
 
-                if ($game && ($game['status'] ?? '') === 'active') {
-                    $sessions->assertCanPlay($user, $sessionId);
-                    $sessions->touch($user, $sessionId);
+                    if ($isCurrentParticipant && !$lifecycleSessionOwned) {
+                        $sessions->assertCanPlay($user, $sessionId);
+                        $sessions->touch($user, $sessionId);
+                        $lifecycleSessionOwned = true;
+                    }
+
+                    if ($isCurrentParticipant) {
+                        $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($data, $storedGameId);
+                        if (is_array($finalizedGame)) $game = $finalizedGame;
+
+                        $synchronizedGame = $matchPreparationRuntime->synchronizeCurrentGame(
+                            $data,
+                            $user,
+                            $storedGameId,
+                            $requestedGameId,
+                            $sessionId,
+                            $deviceId
+                        );
+                        if (is_array($synchronizedGame)) $game = $synchronizedGame;
+                    }
                 }
 
                 if ($game && ($game['status'] ?? '') === 'finished') {
