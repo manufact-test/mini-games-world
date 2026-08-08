@@ -1,0 +1,58 @@
+name: Verify PR644 Game Clock Isolation
+
+on:
+  push:
+    branches:
+      - agent/verify-pr644-focused-v2
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish pending status
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc '{state:"pending",context:"phase-b-pr644-focused",description:"Game-clock writer isolation checks are running"}')"
+
+      - name: Checkout exact verification commit
+        uses: actions/checkout@v4
+
+      - name: Run focused checks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/game-clock.php
+          php -l bot/tests/PhaseBGameClockWriterDemotionContractTest.php
+          php bot/tests/PhaseBGameClockWriterDemotionContractTest.php
+
+      - name: Publish final status
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "${JOB_STATUS}" == 'success' ]]; then state='success'; description='Game-clock writer isolation checks passed'; else state='failure'; description='Game-clock writer isolation checks failed'; fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            --data "$(jq -nc --arg state "${state}" --arg description "${description}" '{state:$state,context:"phase-b-pr644-focused",description:$description}')"
+          test "${state}" = 'success'
