@@ -173,6 +173,7 @@ export function collectDiagnostics(page, slot) {
     allowStartSearchInviteBackgroundAbort: false,
     ignoredStartSearchInviteSyncAborts: 0,
     ignoredStartSearchInviteWatchAborts: 0,
+    ignoredAcceptInviteSyncAborts: 0,
   };
 
   // An allowed transition owns requests from the moment they start. A request
@@ -195,6 +196,16 @@ export function collectDiagnostics(page, slot) {
   const inFlightInviteWatchRequests = new Set();
   const startSearchInviteSyncAbortRequests = new WeakSet();
   const startSearchInviteWatchAbortRequests = new WeakSet();
+  const acceptInviteSyncAbortRequests = new WeakSet();
+
+  // Accept is a foreground state mutation. The production cache-safety owner
+  // aborts invite sync reads that were already in flight at pointerdown. Adopt
+  // only those exact Request objects at that exact transition boundary.
+  report.beginAcceptInviteSyncAbortOwnership = () => {
+    for (const request of inFlightInviteSyncRequests) {
+      acceptInviteSyncAbortRequests.add(request);
+    }
+  };
 
   report.beginStartSearchInviteBackgroundAbortOwnership = () => {
     report.allowStartSearchInviteBackgroundAbort = true;
@@ -247,6 +258,10 @@ export function collectDiagnostics(page, slot) {
     forgetInFlightInviteRequest(request);
     if (!request.url().startsWith(STAGING_ORIGIN)) return;
     if (isExpectedPresenceResumeAbort(request)) return;
+    if (acceptInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
+      report.ignoredAcceptInviteSyncAborts += 1;
+      return;
+    }
     if (startSearchInviteSyncAbortRequests.has(request) && isExpectedInviteSyncAbort(request)) {
       report.ignoredStartSearchInviteSyncAborts += 1;
       return;
