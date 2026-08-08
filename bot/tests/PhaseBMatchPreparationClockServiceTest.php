@@ -69,13 +69,18 @@ $clock->assertActionAllowed($game);
 
 $previousTurn = 'player_a';
 $game['turn'] = 'player_b';
+$handoffRequestedAt = time();
 $clock->synchronizeTurnHandoff($game, $previousTurn);
 $handoffStart = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
 $handoffDeadline = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
-$assert($handoffStart > time(), 'Turn handoff must use one future server start.');
+$assert($handoffStart >= $handoffRequestedAt + MatchPreparationClockService::TURN_HANDOFF_SEC, 'Turn handoff must use one future server start.');
 $assert($handoffDeadline - $handoffStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Receiving player must receive a fresh full timeout.');
 $assert((int)($game['clock_revision'] ?? 0) === 2, 'Turn handoff must advance the authoritative clock revision once.');
 
+$guardStart = time() + 3;
+$game['turn_started_at'] = gmdate('c', $guardStart);
+$game['turn_starts_at'] = gmdate('c', $guardStart);
+$game['turn_deadline_at'] = gmdate('c', $guardStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
 $handoffBlocked = false;
 try {
     $clock->assertActionAllowed($game);
