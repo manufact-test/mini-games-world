@@ -1,0 +1,118 @@
+name: Temporary apply Phase B turn handoff E2E fix
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/e2e-phase-b-turn-handoff-owner
+          fetch-depth: 1
+
+      - name: Apply exact test-owner fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('e2e/staging/two-context.spec.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = '''async function playTicTacToeCell(player, cell) {
+            const locator = player.page.locator(`#screen-game.active [data-game-cell="${cell}"]`);
+            await expect(locator).toBeVisible({ timeout: 25_000 });
+            await expect(locator).toBeEnabled({ timeout: 25_000 });
+
+            const responsePromise = player.page.waitForResponse(isActionResponse(API_ROUTE, 'game_action'), {
+              timeout: 30_000,
+            });
+            await locator.click();
+            const response = await responsePromise;
+            const payload = await response.json().catch(() => null);
+            const publicError = typeof payload?.error === 'string' ? payload.error.slice(0, 300) : 'no_public_error';
+            expect(response.status(), `Tic Tac Toe cell ${cell}; public error: ${publicError}`).toBe(200);
+            expect(payload?.ok, `Tic Tac Toe cell ${cell} payload`).toBe(true);
+            expect(payload?.game, `Tic Tac Toe cell ${cell} game`).toBeTruthy();
+            return payload;
+          }
+          '''
+          new = '''async function waitForAuthoritativeTurnWindow(player) {
+            const expectedTurn = String(player?.snapshot?.user?.id || '');
+            expect(expectedTurn, 'Phase B turn actor must have a known staging player id').toMatch(/^stg_test_player_[ab]$/);
+
+            let authoritativeGame = null;
+            await expect.poll(async () => {
+              const result = await postFromPlayer(
+                player.page,
+                '/bot/api.php',
+                { action: 'game_state' },
+              );
+              if (result.status !== 200 || result.payload?.ok !== true) {
+                return `http:${result.status}`;
+              }
+
+              const game = result.payload?.game || {};
+              const phase = String(game.launch_phase || '');
+              const turn = String(game.turn || '');
+              const serverNowMs = Number(game.server_now_ms || 0);
+              const turnStartsAtMs = Number(game.turn_starts_at_ms || 0);
+              const ready = String(game.status || '') === 'active'
+                && phase === 'active'
+                && turn === expectedTurn
+                && serverNowMs > 0
+                && turnStartsAtMs > 0
+                && serverNowMs >= turnStartsAtMs;
+              if (ready) authoritativeGame = game;
+              return ready ? 'ready' : `${phase || 'missing'}:${turn || 'missing'}`;
+            }, {
+              message: `Phase B waits for authoritative turn window for ${expectedTurn}`,
+              timeout: 15_000,
+              intervals: [100, 200, 400, 800],
+            }).toBe('ready');
+
+            expect(authoritativeGame, 'Authoritative turn-window snapshot must be available').toBeTruthy();
+            return authoritativeGame;
+          }
+
+          async function playTicTacToeCell(player, cell) {
+            await waitForAuthoritativeTurnWindow(player);
+
+            const locator = player.page.locator(`#screen-game.active [data-game-cell="${cell}"]`);
+            await expect(locator).toBeVisible({ timeout: 25_000 });
+            await expect(locator).toBeEnabled({ timeout: 25_000 });
+
+            const responsePromise = player.page.waitForResponse(isActionResponse(API_ROUTE, 'game_action'), {
+              timeout: 30_000,
+            });
+            await locator.click();
+            const response = await responsePromise;
+            const payload = await response.json().catch(() => null);
+            const publicError = typeof payload?.error === 'string' ? payload.error.slice(0, 300) : 'no_public_error';
+            expect(response.status(), `Tic Tac Toe cell ${cell}; public error: ${publicError}`).toBe(200);
+            expect(payload?.ok, `Tic Tac Toe cell ${cell} payload`).toBe(true);
+            expect(payload?.game, `Tic Tac Toe cell ${cell} game`).toBeTruthy();
+            return payload;
+          }
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one helper owner, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+          node --check e2e/staging/two-context.spec.mjs
+          git diff --check
+          git diff -- e2e/staging/two-context.spec.mjs
+
+      - name: Commit exact test fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add e2e/staging/two-context.spec.mjs
+          git commit -m 'E2E: wait for authoritative Phase B turn handoff'
+          git push origin HEAD:agent/e2e-phase-b-turn-handoff-owner
