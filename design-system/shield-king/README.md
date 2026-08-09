@@ -5,7 +5,7 @@
 ```text
 DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
-DS-2 EXACT ICON SYSTEM — IN PROGRESS
+DS-2 EXACT ICON SYSTEM — AWAITING MANUAL VISUAL ACCEPTANCE
 DS-3 SCREEN SPECIFICATIONS — NOT STARTED
 DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
@@ -66,12 +66,24 @@ Metallic highlights on the mark itself are allowed. All ambient glow must remain
 - `COMPONENTS.md`
 - `COMPONENT_STATES.md`
 
-DS-0 and DS-1 exact-diff audits confirm all persistent changes remain under `design-system/shield-king/**`; no runtime file is changed.
+### DS-2 — implementation complete, acceptance pending
+
+- `ICONS.md`
+- `ICON_MANIFEST.md`
+- navigation SVG symbol sprite;
+- action SVG symbol sprite;
+- status SVG symbol sprite;
+- economy SVG symbol sprite;
+- 8/8 standalone game SVG icons.
+
+DS-0 and DS-1 are passed. DS-2 exact assets are present and its diff remains isolated, but DS-2 cannot be marked PASS until product-owner visual acceptance of the icon family.
 
 ## Ownership
 
 Persistent changes for this workstream belong only under:
 
 `design-system/shield-king/**`
+
+Current exact-diff audit confirms all branch changes remain under this directory; no runtime file is changed.
 
 Future integration into the real shared UI must happen through a separate main-roadmap compatibility/integration gate. This branch must never be blindly merged into future runtime code.
