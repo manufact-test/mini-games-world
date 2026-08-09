@@ -52,17 +52,17 @@ jobs:
         working-directory: android-app
         run: python3 tools/verify-foundation.py
 
-      - name: Test, lint and assemble debug APK
+      - name: Test, lint and assemble staging debug APK
         working-directory: android-app
         env:
-          MGW_BASE_URL: https://example.com/
+          MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/app/v110.php?v=1123
         run: gradle --no-daemon clean test lint assembleDebug
 
       - name: Upload debug APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-android-shell-foundation-debug
+          name: mgw-android-shell-foundation-staging-debug
           path: android-app/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -70,7 +70,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-android-shell-foundation-reports
+          name: mgw-android-shell-foundation-staging-reports
           path: |
             android-app/app/build/reports/**
             android-app/app/build/test-results/**
