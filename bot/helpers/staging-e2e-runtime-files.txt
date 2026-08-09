@@ -31,6 +31,7 @@ bot/staging-test-auth.php
 bot/services/StagingTestAuthService.php
 bot/services/GitHubActionsOidcVerifier.php
 bot/helpers/RsaJwkPublicKey.php
+bot/helpers/response.php
 bot/core/bootstrap.php
 bot/api.php
 bot/game-watch.php
@@ -61,6 +62,10 @@ bot/realtime/RealtimeRuntimeBridge.php
 bot/realtime/RuntimeRealtimeRepository.php
 bot/ledger/EconomyRuntimeBridge.php
 bot/ledger/RuntimeEconomyRepository.php
+bot/shop/ShopRuntimeBridge.php
+bot/payments/PaymentRuntimeBridge.php
+bot/weekly/WeeklyBonusRuntimeBridge.php
+bot/weekly/RuntimeWeeklyBonusRepository.php
 bot/storage/JsonDatabase.php
 bot/storage/JsonStorageAdapter.php
 bot/storage/contracts/ExclusiveSnapshotStorageInterface.php
