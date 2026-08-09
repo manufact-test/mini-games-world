@@ -52,7 +52,11 @@ try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
 
-    $tgUser = (new AuthService($config))->getUserFromRequest($payload);
+    // The watch endpoint still performs the same Telegram/staging/dev
+    // authentication, but it only needs the verified provider id to authorize a
+    // read of an existing participant game. Provider-neutral MGW identity/DB
+    // resolution is intentionally skipped on this high-frequency read-only path.
+    $tgUser = (new AuthService($config))->getUserFromRequest($payload, false);
     $userId = trim((string)($tgUser['id'] ?? ''));
     $gameId = clean_string($payload['gameId'] ?? '', 80);
     if ($userId === '' || $gameId === '') throw new RuntimeException('Игра не найдена.');

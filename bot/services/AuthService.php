@@ -7,13 +7,14 @@ final class AuthService
 {
     public function __construct(private array $config) {}
 
-    public function getUserFromRequest(array $payload): array
+    public function getUserFromRequest(array $payload, bool $attachIdentity = true): array
     {
+        $sessionId = (string)($payload['sessionId'] ?? '');
         $initData = (string)($payload['initData'] ?? '');
         if ($initData !== '') {
             $user = $this->validateTelegramInitData($initData);
             if ($user) {
-                return $this->attachMgwIdentity($user, (string)($payload['sessionId'] ?? ''));
+                return $this->finishAuthenticatedUser($user, $sessionId, $attachIdentity);
             }
         }
 
@@ -23,10 +24,7 @@ final class AuthService
             $_SERVER
         );
         if (is_array($stagingTestUser)) {
-            return $this->attachMgwIdentity(
-                $stagingTestUser,
-                (string)($payload['sessionId'] ?? '')
-            );
+            return $this->finishAuthenticatedUser($stagingTestUser, $sessionId, $attachIdentity);
         }
 
         if ($this->browserDevUserAllowed()) {
@@ -35,16 +33,26 @@ final class AuthService
                 $devId = 'dev_' . random_int(100000, 999999);
                 setcookie('mgw_dev_user_id', $devId, time() + 60 * 60 * 24 * 365, '/');
             }
-            return $this->attachMgwIdentity([
+            return $this->finishAuthenticatedUser([
                 'id' => $devId,
                 'first_name' => 'Тестовый игрок',
                 'username' => 'test_' . preg_replace('/\D+/', '', $devId),
                 'language_code' => 'ru',
                 'is_dev_user' => true,
-            ], (string)($payload['sessionId'] ?? ''));
+            ], $sessionId, $attachIdentity);
         }
 
         throw new RuntimeException('Откройте приложение через Telegram.');
+    }
+
+    private function finishAuthenticatedUser(array $user, string $sessionId, bool $attachIdentity): array
+    {
+        // Some high-frequency read-only endpoints only need the already verified
+        // provider user id to authorize access to an existing match. Keep the
+        // normal API default unchanged, while allowing those reads to avoid a
+        // redundant provider-neutral account/DB resolution on every refresh.
+        if (!$attachIdentity) return $user;
+        return $this->attachMgwIdentity($user, $sessionId);
     }
 
     private function attachMgwIdentity(array $user, string $sessionId): array
