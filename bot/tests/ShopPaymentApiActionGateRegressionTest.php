@@ -27,6 +27,7 @@ $config = [
             'enabled' => true,
             'modules' => [
                 'accounts' => true,
+                'realtime' => true,
                 'economy' => true,
                 'history' => true,
                 'shop' => true,
