@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../runtime/RuntimeBridgeProjectionCoordinator.php';
+
 final class WeeklyBonusRuntimeBridge
 {
     private RuntimeStorageRouter $router;
@@ -32,57 +34,66 @@ final class WeeklyBonusRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        return $this->enabled();
+        return $this->enabled() && $this->runtimeDomainChanged('weekly_bonus');
     }
 
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
+        if (!$this->runtimeDomainChanged('weekly_bonus')) {
+            return ['ok' => true, 'action' => 'unchanged', 'skipped' => true];
+        }
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Weekly bonus bridge requires JSON rollback storage.');
         }
-        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Weekly bonus bridge requires exclusive JSON snapshot support.');
-        }
 
-        return $storage->exclusiveReadOnly(function (array $snapshot) use ($storage): array {
-            $realtime = (new RealtimeRuntimeBridge($this->config, $this->router, $storage))->synchronizeCurrentJson();
-            $result = $this->repository()->synchronizeCurrentJson();
+        return RuntimeBridgeProjectionCoordinator::synchronize(
+            $this->config,
+            $storage,
+            function (array $snapshot, RuntimeBridgeSnapshotStorage $frozen): array {
+                $realtime = (new RealtimeRuntimeBridge($this->config, $this->router, $frozen))->synchronizeCurrentJson();
+                $repository = $this->repository ?? new RuntimeWeeklyBonusRepository(
+                    $this->config,
+                    $this->router,
+                    $frozen
+                );
+                $result = $repository->synchronizeCurrentJson();
 
-            $notificationRepository = new RuntimeNotificationRepository($this->config, $this->router);
-            $auditedUsers = 0;
-            $sourceCount = 0;
-            $databaseCount = 0;
-            foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $key => $user) {
-                if (!is_array($user) || !empty($user['is_dev_user'])) continue;
-                $legacyUserId = trim((string)($user['id'] ?? $key));
-                if ($legacyUserId === '') continue;
-                $sync = $notificationRepository->synchronizeAndList($snapshot, $legacyUserId);
-                $auditedUsers++;
-                $sourceCount += (int)($sync['summary']['source_count'] ?? 0);
-                $databaseCount += (int)($sync['summary']['database_count'] ?? 0);
+                $notificationRepository = new RuntimeNotificationRepository($this->config, $this->router);
+                $auditedUsers = 0;
+                $sourceCount = 0;
+                $databaseCount = 0;
+                foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $key => $user) {
+                    if (!is_array($user) || !empty($user['is_dev_user'])) continue;
+                    $legacyUserId = trim((string)($user['id'] ?? $key));
+                    if ($legacyUserId === '') continue;
+                    $sync = $notificationRepository->synchronizeAndList($snapshot, $legacyUserId);
+                    $auditedUsers++;
+                    $sourceCount += (int)($sync['summary']['source_count'] ?? 0);
+                    $databaseCount += (int)($sync['summary']['database_count'] ?? 0);
+                }
+
+                $result['runtime_realtime'] = is_array($realtime) ? [
+                    'game_source_count' => (int)($realtime['games']['source_count'] ?? 0),
+                    'game_database_count' => (int)($realtime['games']['database_count'] ?? 0),
+                    'queue_source_count' => (int)($realtime['queue']['source_count'] ?? 0),
+                    'queue_database_count' => (int)($realtime['queue']['database_count'] ?? 0),
+                    'parity' => !empty($realtime['parity']),
+                ] : null;
+                $result['notifications'] = [
+                    'ok' => $sourceCount === $databaseCount,
+                    'audited_user_count' => $auditedUsers,
+                    'source_count' => $sourceCount,
+                    'database_count' => $databaseCount,
+                ];
+                if ($sourceCount !== $databaseCount) {
+                    throw new RuntimeException('Weekly bonus notification runtime parity failed.');
+                }
+                return $result;
             }
-
-            $result['runtime_realtime'] = is_array($realtime) ? [
-                'game_source_count' => (int)($realtime['games']['source_count'] ?? 0),
-                'game_database_count' => (int)($realtime['games']['database_count'] ?? 0),
-                'queue_source_count' => (int)($realtime['queue']['source_count'] ?? 0),
-                'queue_database_count' => (int)($realtime['queue']['database_count'] ?? 0),
-                'parity' => !empty($realtime['parity']),
-            ] : null;
-            $result['notifications'] = [
-                'ok' => $sourceCount === $databaseCount,
-                'audited_user_count' => $auditedUsers,
-                'source_count' => $sourceCount,
-                'database_count' => $databaseCount,
-            ];
-            if ($sourceCount !== $databaseCount) {
-                throw new RuntimeException('Weekly bonus notification runtime parity failed.');
-            }
-            return $result;
-        });
+        );
     }
 
     public function normalizeApiData(array $data, string $action): array
@@ -135,11 +146,6 @@ final class WeeklyBonusRuntimeBridge
             return null;
         }
 
-        // The API success hook synchronizes and audits the weekly projection
-        // before response filters run. Development users are intentionally
-        // excluded by that projection. Reusing the already-created repository
-        // above avoids opening a second PDO connection solely to prove the same
-        // exclusion again; any stale/extra DB row has already failed parity.
         return (new WeeklyMatchEconomyService($this->config))->status($snapshot, $user);
     }
 
@@ -151,5 +157,15 @@ final class WeeklyBonusRuntimeBridge
             $this->router,
             $storage
         );
+    }
+
+    private function runtimeDomainChanged(string $domain): bool
+    {
+        $script = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
+        if ($script !== 'api.php') return true;
+
+        $dirty = $GLOBALS['mgw_runtime_bridge_dirty'] ?? null;
+        if (!is_array($dirty) || !array_key_exists($domain, $dirty)) return true;
+        return $dirty[$domain] === true;
     }
 }
