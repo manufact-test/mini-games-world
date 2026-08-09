@@ -42,6 +42,11 @@ bot/services/invites/GameInviteCreationTrait.php
 bot/services/invites/GameInviteStorageTrait.php
 bot/realtime/RealtimeRuntimeBridge.php
 bot/ledger/EconomyRuntimeBridge.php
+bot/shop/ShopRuntimeBridge.php
+bot/payments/PaymentRuntimeBridge.php
+bot/weekly/WeeklyBonusRuntimeBridge.php
+bot/runtime/RuntimeBridgeProjectionCoordinator.php
+bot/runtime/RuntimeBridgeSnapshotStorage.php
 bot/storage/JsonDatabase.php
 bot/storage/JsonStorageAdapter.php
 bot/storage/contracts/ExclusiveSnapshotStorageInterface.php
