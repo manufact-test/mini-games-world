@@ -102,7 +102,7 @@ final class TelegramService
                 'disable_web_page_preview' => true,
             ]);
         } catch (Throwable $e) {
-            error_log('Mini Games World user payment notification failed: ' . $e->getMessage());
+            error_log('Mini Games World user payment notification failed for ' . $chatId . ': ' . $e->getMessage());
         }
     }
 
