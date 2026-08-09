@@ -13,8 +13,14 @@ $blobPrefix = static function (string $content): string {
 
 $safePath = 'app/assets/js/screens/game-screen-v102-safe.js';
 $acceptancePath = 'app/assets/js/production-v110-acceptance-runtime.js';
+$readonlyPath = 'app/assets/js/production-v110-readonly-game-sync.js';
+$shellPath = 'app/assets/js/main-v110-handoff-shell.js';
+$mainPath = 'app/assets/js/main-v110.js';
 $safe = $read($safePath);
 $acceptance = $read($acceptancePath);
+$readonly = $read($readonlyPath);
+$shell = $read($shellPath);
+$main = $read($mainPath);
 $v110 = $read('app/v110.php');
 $manifest = $read('bot/helpers/staging-e2e-runtime-files.txt');
 
@@ -26,65 +32,52 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $safePrefix = $blobPrefix($safe);
 $acceptancePrefix = $blobPrefix($acceptance);
-$assert($safePrefix === '76d5b9d8d659', 'Safe game-screen blob prefix must match the reviewed content-address value.');
-$assert($acceptancePrefix === '9f8a0220afd2', 'Acceptance runtime blob prefix must match the reviewed content-address value.');
-$assert(
-    str_contains($v110, 'game-screen-v102-safe.js?v=102&b=' . $safePrefix),
-    'v110 import map must content-address the active safe game-screen wrapper.'
-);
-$assert(
-    str_contains($v110, 'production-v110-acceptance-runtime.js?v=110&b=' . $acceptancePrefix),
-    'v110 import map must content-address the active acceptance runtime.'
-);
-$assert(str_contains($manifest, $safePath), 'Safe game-screen wrapper must be included in exact staging fingerprint coverage.');
-$assert(str_contains($manifest, $acceptancePath), 'Acceptance runtime must be included in exact staging fingerprint coverage.');
+$readonlyPrefix = $blobPrefix($readonly);
+$shellPrefix = $blobPrefix($shell);
+$mainPrefix = $blobPrefix($main);
+$assert($safePrefix === '901c5c869703', 'Safe game-screen blob prefix must match the reviewed content-address value.');
+$assert($acceptancePrefix === 'c24c4e5611c8', 'Acceptance runtime blob prefix must match the reviewed content-address value.');
+$assert($readonlyPrefix === 'bc9d7b435f1a', 'Read-only sync blob prefix must match the reviewed content-address value.');
+$assert($shellPrefix === 'c723392fcac8', 'Handoff shell blob prefix must match the reviewed content-address value.');
+$assert($mainPrefix === '31fca0ad4bfb', 'Main v110 blob prefix must match the reviewed content-address value.');
 
-$assert(str_contains($safe, 'const PREACTIVE_POLL_MS = 400;'), 'Pre-active primary polling cadence must stay explicitly bounded at 400ms.');
+$assert(str_contains($v110, 'game-screen-v102-safe.js?v=102&b=' . $safePrefix), 'v110 import map must content-address the active safe wrapper.');
+$assert(str_contains($v110, 'production-v110-acceptance-runtime.js?v=110&b=' . $acceptancePrefix), 'v110 import map must content-address the active acceptance runtime.');
+$assert(str_contains($shell, 'production-v110-readonly-game-sync.js?v=1107&b=' . $readonlyPrefix), 'Handoff shell must content-address the read-only freshness owner.');
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1135&pending=6&b=' . $shellPrefix), 'Main v110 must content-address the handoff shell.');
+$assert(str_contains($v110, 'main-v110.js?v=1135&pending=6&b=' . $mainPrefix), 'v110 entrypoint must content-address main v110.');
+
+foreach ([$safePath, $acceptancePath, $readonlyPath, $shellPath, $mainPath] as $path) {
+    $assert(str_contains($manifest, $path), $path . ' must be included in exact staging fingerprint coverage.');
+}
+
+$assert(!str_contains($safe, 'PREACTIVE_POLL_MS'), 'Pre-start must not reintroduce a fast write-poll constant.');
+$assert(!str_contains($safe, 'APP_CONFIG.gameIntervalMs'), 'Safe wrapper must not mutate the authoritative game_state polling cadence.');
+$assert(str_contains($safe, "new CustomEvent('mgw:phase-b-game-entering'"), 'Safe wrapper must synchronously prime the global launch gate before rendering the game.');
+$assert(strpos($safe, "new CustomEvent('mgw:phase-b-game-entering'") < strpos($safe, 'enterBaseGame(game, me);'), 'Global launch gate must be primed before the game screen renders.');
+
+$assert(str_contains($readonly, "const WATCH_INTERVAL_MS = 250;"), 'Read-only cross-device freshness must remain bounded at 250ms.');
+$assert(str_contains($readonly, "['preparing', 'countdown', 'active'].includes(launchPhase)"), 'Read-only freshness must cover preparation, countdown and active phases.');
 $assert(
-    str_contains($safe, "phase === 'preparing' || phase === 'countdown'")
-        && str_contains($safe, 'APP_CONFIG.gameIntervalMs = Math.min(acceptedInterval, PREACTIVE_POLL_MS);'),
-    'Only preparing/countdown entry may temporarily tighten primary game polling.'
-);
-$assert(
-    str_contains($safe, 'export function restoreAcceptedGamePolling(game = null)')
-        && str_contains($safe, 'if (status === \'active\') startGamePolling(id);'),
-    'Safe wrapper must restore the accepted game polling cadence after launch.'
+    str_contains($readonly, 'Frequent cross-device freshness reads only games.json')
+        && str_contains($readonly, 'global write transaction lock'),
+    'Read-only owner must document the pre-start lock-isolation contract.'
 );
 
-$assert(
-    str_contains($acceptance, "window.addEventListener('click', guardPhaseBPreStartControls, true);")
-        && strpos($acceptance, 'guardPhaseBPreStartControls') < strpos($acceptance, 'guardAndTrackTicTacToe'),
-    'Generic pre-start capture guard must register before the accepted TTT pending-click guard.'
-);
-$assert(
-    str_contains($acceptance, "const boardControl = origin.closest('#gameBoard button');")
-        && str_contains($acceptance, "const leaveControl = origin.closest('#leaveGame');"),
-    'Capture guard must cover all game-board buttons and the pre-start leave control.'
-);
-$assert(
-    str_contains($acceptance, 'event.preventDefault();') && str_contains($acceptance, 'event.stopImmediatePropagation();'),
-    'Capture guard must stop blocked controls before optimistic/game handlers run.'
-);
-$assert(str_contains($acceptance, 'function launchAllowsLeave(game)'), 'Leave gating must remain separate from turn-action gating.');
-$assert(
-    str_contains($acceptance, "return !phase || phase === 'active';")
-        && !str_contains($acceptance, "if (phase === 'countdown') return launchStartReached(game);"),
-    'Explicit Phase B surrender must remain blocked until the server projects launch_phase=active.'
-);
-$assert(
-    str_contains($acceptance, "const leaveBlocked = status === 'active' && !!phase && !launchAllowsLeave(game);")
-        && str_contains($acceptance, 'setPhaseLeaveDisabled(leave, leaveBlocked);'),
-    'Visual leave ownership must follow the same server-phase surrender contract as the capture guard.'
-);
-$assert(str_contains($acceptance, 'restoreAcceptedGamePolling(state.activeGame);'), 'Acceptance runtime must drive poll-cadence restoration from authoritative state.');
-$assert(str_contains($acceptance, 'candidateDeadline + 700 < runtime.clock.deadline'), 'Same-turn clock snapshots must never extend the local deadline.');
-$assert(str_contains($acceptance, 'candidateStart + 250 < runtime.clock.start'), 'Same launch/turn snapshots must never extend the local start anchor.');
-$assert(str_contains($acceptance, "phase === 'preparing' || phase === 'preparation_timeout'"), 'Clock UI must preserve the full timeout before a turn starts.');
-$assert(str_contains($acceptance, "phase === 'countdown' && !launchStartReached(game)"), 'Countdown actions must remain blocked until the shared start anchor is reached.');
-$assert(str_contains($acceptance, "phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled'"), 'Pre-start/cancelled Tic-Tac-Toe actions must be blocked before optimistic pending state is created.');
-$assert(str_contains($acceptance, "button.dataset.mgwPhaseBDisabled = '1'"), 'Leave control must be disabled only through an owned Phase B marker.');
-$assert(str_contains($acceptance, "overlay.id = 'mgwPhaseBLaunchOverlay';"), 'Launch overlay must have one deterministic DOM owner.');
-$assert(str_contains($acceptance, "title.textContent = 'Синхронизируем игроков'"), 'Preparing overlay copy must be state-driven.');
-$assert(str_contains($acceptance, "title.textContent = 'Матч начинается'"), 'Countdown overlay copy must be state-driven.');
+$assert(str_contains($acceptance, "document.addEventListener('mgw:phase-b-game-entering', primeLaunchState);"), 'Acceptance runtime must own the synchronous global launch-gate event.');
+$assert(str_contains($acceptance, "owner = document.getElementById('app')"), 'Launch overlay must be owned by the application root, not the board.');
+$assert(!str_contains($acceptance, "querySelector('#screen-game .board-wrap')"), 'Launch overlay must never be mounted inside the game board wrapper.');
+$assert(str_contains($acceptance, 'z-index:140') && str_contains($acceptance, 'inset:0'), 'Launch overlay must cover the complete application above game UI.');
+$assert(str_contains($acceptance, "title.textContent = 'Готовим матч'"), 'Preparing state must use user-facing launch copy.');
+$assert(str_contains($acceptance, "title.textContent = 'Поехали!'"), 'Countdown state must use user-facing countdown copy.');
+$assert(!str_contains($acceptance, 'Синхронизируем игроков'), 'Technical synchronization wording must not be exposed to players.');
+$assert(!str_contains($acceptance, 'Готово устройств:'), 'Technical device readiness counters must not be exposed to players.');
+
+$assert(str_contains($acceptance, "window.addEventListener('click', guardPhaseBPreStartControls, true);"), 'Generic pre-start capture guard must remain active.');
+$assert(str_contains($acceptance, "return !phase || phase === 'active';"), 'Explicit surrender must remain blocked until authoritative active phase.');
+$assert(str_contains($acceptance, 'candidateDeadline + 700 < runtime.clock.deadline'), 'Same-turn snapshots must never extend the local deadline.');
+$assert(str_contains($acceptance, 'candidateStart + 250 < runtime.clock.start'), 'Same-turn snapshots must never extend the local start anchor.');
+$assert(str_contains($acceptance, "phase === 'countdown' && !launchStartReached(game)"), 'Countdown actions must remain blocked until the shared start anchor.');
+$assert(str_contains($acceptance, "phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled'"), 'Pre-start and cancelled actions must be blocked before optimistic state.');
 
 fwrite(STDOUT, "PhaseBClientLaunchUxContractTest: {$assertions} assertions passed\n");
