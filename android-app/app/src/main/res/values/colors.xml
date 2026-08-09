@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mgw_launcher_background">#15172A</color>
+    <color name="mgw_splash_background">#090D18</color>
+    <color name="mgw_brand_purple">#7548FF</color>
+    <color name="mgw_brand_white">#FFFFFF</color>
+</resources>
