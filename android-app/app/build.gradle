@@ -18,8 +18,8 @@ android {
         applicationId 'com.minigamesworld.app'
         minSdk 26
         targetSdk 36
-        versionCode 1
-        versionName '0.1.0-foundation'
+        versionCode 2
+        versionName '0.2.0-branding'
 
         buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
     }
@@ -30,7 +30,11 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix '.foundation'
+            // Manual branding acceptance is intentionally installable alongside the
+            // earlier Foundation debug APK. GitHub-hosted runners use ephemeral
+            // debug signing keys, so reusing the old .foundation package would be
+            // rejected by Android as a signature-mismatched update.
+            applicationIdSuffix '.brandingv1'
             versionNameSuffix '-debug'
         }
         release {
