@@ -1,0 +1,49 @@
+name: Phase B Weekly substep timing focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-weekly-substep-timing
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/weekly/WeeklyBonusRuntimeBridge.php
+      - name: Existing weekly runtime regression
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/WeeklyBonusRuntimeBridgeTest.php
+      - name: Weekly-owned projection contract
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/PhaseBWeeklyOwnedApiProjectionContractTest.php
+      - name: Writer barrier and request memo regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/JsonDatabaseBridgeWriterBarrierReadAvailabilityTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
+      - name: Diagnostic safety and fingerprint contract
+        run: |
+          set -Eeuo pipefail
+          grep -F "function_exists('mgw_append_staging_server_timing')" bot/weekly/WeeklyBonusRuntimeBridge.php
+          for metric in weekly_barrier_wait weekly_realtime weekly_repository weekly_notifications; do
+            grep -F "'$metric'" bot/weekly/WeeklyBonusRuntimeBridge.php
+          done
+          grep -Fx 'bot/ledger/RuntimeEconomySnapshotStorage.php' bot/helpers/staging-e2e-runtime-files.txt
+          grep -F "!== 'staging'" bot/helpers/response.php
+          grep -F "mgw_staging_test_session" bot/helpers/response.php
+      - name: No timing-policy weakening
+        run: |
+          set -Eeuo pipefail
+          grep -F "timeout: 90_000" e2e/playwright.config.mjs
+          grep -F "retries: 0" e2e/playwright.config.mjs
