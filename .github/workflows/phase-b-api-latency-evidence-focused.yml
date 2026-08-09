@@ -1,0 +1,26 @@
+name: Phase B API latency evidence focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-api-latency-evidence-official
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: node --check e2e/staging/phase-b-api-latency-evidence.spec.mjs
+      - name: Evidence safety contract
+        run: |
+          set -Eeuo pipefail
+          grep -F "phase_b_concurrent_api_latency_evidence" e2e/staging/phase-b-api-latency-evidence.spec.mjs
+          grep -F "sensitive_identifiers_exposed: false" e2e/staging/phase-b-api-latency-evidence.spec.mjs
+          grep -F "production_changed: false" e2e/staging/phase-b-api-latency-evidence.spec.mjs
+          grep -F "duration_ms" e2e/staging/phase-b-api-latency-evidence.spec.mjs
+          ! grep -E "waitForTimeout|setTimeout|retries|timeout: 9[1-9]_[0-9]{3}" e2e/staging/phase-b-api-latency-evidence.spec.mjs
