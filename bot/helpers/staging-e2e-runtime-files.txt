@@ -58,7 +58,9 @@ bot/services/invites/GameInviteActionTrait.php
 bot/services/invites/GameInviteCreationTrait.php
 bot/services/invites/GameInviteStorageTrait.php
 bot/realtime/RealtimeRuntimeBridge.php
+bot/realtime/RuntimeRealtimeRepository.php
 bot/ledger/EconomyRuntimeBridge.php
+bot/ledger/RuntimeEconomyRepository.php
 bot/storage/JsonDatabase.php
 bot/storage/JsonStorageAdapter.php
 bot/storage/contracts/ExclusiveSnapshotStorageInterface.php
