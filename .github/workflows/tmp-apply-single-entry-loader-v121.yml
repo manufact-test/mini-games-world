@@ -1,0 +1,307 @@
+name: Temporary apply single Telegram entry and loader v121
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]' && github.head_ref == 'agent/telegram-single-entry-loader-v121'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/telegram-single-entry-loader-v121
+          fetch-depth: 1
+
+      - name: Apply exact single-entry and loader changes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              Path(path).write_text(text, encoding='utf-8')
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one occurrence, got {count}')
+              return text.replace(old, new, 1)
+
+          # Telegram /start is the only Web App entry owner.
+          telegram_path = 'bot/services/TelegramService.php'
+          telegram = read(telegram_path)
+          telegram = replace_once(telegram, "/app/?v=120", "/app/?v=121", 'Telegram entry version')
+          write(telegram_path, telegram)
+
+          # Exact deployment fingerprint must include the webhook owner that removes
+          # the retired persistent Web App menu button.
+          manifest_path = 'bot/helpers/staging-e2e-runtime-files.txt'
+          manifest = read(manifest_path)
+          anchor = "bot/services/TelegramService.php\n"
+          insertion = (
+              "bot/services/TelegramService.php\n"
+              "bot/webhook.php\n"
+              "bot/helpers/StagingMenuButtonReconciler.php\n"
+          )
+          manifest = replace_once(manifest, anchor, insertion, 'runtime fingerprint menu owner')
+          write(manifest_path, manifest)
+
+          runtime_path = 'app/assets/js/phase-b-current-runtime.js'
+          runtime = read(runtime_path)
+
+          new_render = r'''function renderLaunchOverlay(overlay, game, phase){
+            const title = overlay.querySelector('[data-phase-b-title]');
+            const note = overlay.querySelector('[data-phase-b-note]');
+            const countdown = overlay.querySelector('[data-phase-b-countdown]');
+            const progress = overlay.querySelector('[data-phase-b-progress]');
+            const gameLabel = overlay.querySelector('[data-phase-b-game]');
+
+            if (gameLabel) gameLabel.textContent = gameTitleFromGame(game);
+            if (title) title.textContent = 'Подготовка матча';
+
+            if (phase === 'countdown') {
+              const remaining = sharedStartRemainingMs(game);
+              const readyForServer = remaining <= 0;
+              const seconds = Math.max(1, Math.min(3, Math.ceil(remaining / 1000)));
+              if (note) note.textContent = readyForServer ? 'Открываем игру' : 'Начинаем одновременно';
+              if (countdown) {
+                countdown.hidden = false;
+                countdown.dataset.loading = '0';
+                countdown.dataset.ready = readyForServer ? '1' : '0';
+                countdown.textContent = readyForServer ? 'СТАРТ' : String(seconds);
+              }
+              if (progress) {
+                progress.hidden = false;
+                progress.dataset.visible = '0';
+              }
+              return;
+            }
+
+            if (countdown) {
+              countdown.hidden = false;
+              countdown.dataset.loading = '1';
+              countdown.dataset.ready = '0';
+              countdown.textContent = 'VS';
+            }
+            if (note) note.textContent = 'Собираем матч';
+            if (progress) {
+              progress.hidden = false;
+              progress.dataset.visible = '1';
+            }
+          }'''
+
+          runtime, count = re.subn(
+              r"function renderLaunchOverlay\(overlay, game, phase\)\{.*?\n\}\n\nfunction guardPhaseBControls",
+              new_render + "\n\nfunction guardPhaseBControls",
+              runtime,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'renderLaunchOverlay replacement count={count}')
+
+          new_style_and_overlay = r'''function installLaunchStyle(){
+            if (document.getElementById('mgw-phase-b-current-style')) return;
+            const style = document.createElement('style');
+            style.id = 'mgw-phase-b-current-style';
+            style.textContent = `
+              .mgw-phase-b-launch-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 14px max(24px,env(safe-area-inset-bottom));overflow:hidden;background:#070910;text-align:center;isolation:isolate}
+              .mgw-phase-b-launch-overlay:before{content:'';position:absolute;z-index:0;top:0;bottom:0;left:50%;width:min(100%,460px);transform:translateX(-50%);background:radial-gradient(circle at 50% 42%,rgba(124,92,255,.20),transparent 34%),radial-gradient(circle at 50% 72%,rgba(46,230,166,.08),transparent 30%),#070910;box-shadow:0 0 90px rgba(124,92,255,.10);pointer-events:none}
+              .mgw-phase-b-launch-overlay[hidden]{display:none!important}
+              .mgw-phase-b-launch-card{position:relative;z-index:1;box-sizing:border-box;width:min(100%,400px);height:336px;display:grid;grid-template-rows:30px 136px 52px 46px 24px;align-content:start;justify-items:center;padding:22px 20px 20px;border:1px solid rgba(255,255,255,.10);border-radius:26px;background:linear-gradient(180deg,rgba(18,21,32,.98),rgba(9,11,18,.98));box-shadow:0 24px 70px rgba(0,0,0,.44);overflow:hidden;contain:layout paint}
+              .mgw-phase-b-launch-card:before{content:'';position:absolute;inset:0;background:linear-gradient(145deg,rgba(124,92,255,.07),transparent 42%,rgba(46,230,166,.035));pointer-events:none}
+              .mgw-phase-b-launch-game{position:relative;z-index:2;grid-row:1;display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.045);font-size:12px;font-weight:850;letter-spacing:.02em;color:rgba(255,255,255,.76)}
+              .mgw-phase-b-launch-visual{position:relative;z-index:2;grid-row:2;align-self:center;width:132px;height:132px;margin:0;display:grid;place-items:center}
+              .mgw-phase-b-launch-ring{position:absolute;inset:5px;border:2px solid rgba(255,255,255,.09);border-top-color:#7c5cff;border-right-color:#2ee6a6;border-radius:50%;animation:mgwPhaseBSpin .9s linear infinite;will-change:transform}
+              .mgw-phase-b-launch-ring:after{content:'';position:absolute;inset:8px;border:1px solid rgba(255,255,255,.055);border-radius:50%}
+              .mgw-phase-b-countdown{position:absolute;z-index:2;left:50%;top:50%;width:108px;height:108px;transform:translate(-50%,-50%);display:grid;place-items:center;box-sizing:border-box;border:1px solid rgba(255,255,255,.12);border-radius:50%;background:radial-gradient(circle at 50% 35%,rgba(124,92,255,.12),transparent 55%),rgba(6,8,13,.96);box-shadow:0 16px 38px rgba(0,0,0,.38),inset 0 0 24px rgba(255,255,255,.025);color:#fff;font-size:64px;font-weight:950;line-height:1;letter-spacing:-.05em;text-shadow:0 5px 18px rgba(0,0,0,.5)}
+              .mgw-phase-b-countdown[data-loading="1"]{font-size:24px;letter-spacing:.10em;color:rgba(255,255,255,.88)}
+              .mgw-phase-b-countdown[data-ready="1"]{font-size:25px;letter-spacing:.08em}
+              .mgw-phase-b-countdown[hidden]{display:none!important}
+              .mgw-phase-b-launch-title{position:relative;z-index:2;grid-row:3;align-self:center;display:flex;align-items:center;justify-content:center;width:100%;height:52px;margin:0;white-space:nowrap;font-size:25px;font-weight:950;line-height:1.08;letter-spacing:-.04em}
+              .mgw-phase-b-launch-note{position:relative;z-index:2;grid-row:4;align-self:center;display:flex;align-items:center;justify-content:center;width:100%;height:46px;margin:0;box-sizing:border-box;font-size:14px;line-height:1.35;color:rgba(255,255,255,.68)}
+              .mgw-phase-b-launch-progress{position:relative;z-index:2;grid-row:5;align-self:center;display:flex;gap:6px;margin:0}
+              .mgw-phase-b-launch-progress[data-visible="0"]{visibility:hidden}
+              .mgw-phase-b-launch-progress i{display:block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.30);animation:mgwPhaseBDots 1s ease-in-out infinite}
+              .mgw-phase-b-launch-progress i:nth-child(2){animation-delay:.12s}.mgw-phase-b-launch-progress i:nth-child(3){animation-delay:.24s}
+              #gameBoard.mgw-phase-b-turn-wait{pointer-events:none}
+              @keyframes mgwPhaseBSpin{to{transform:rotate(360deg)}}
+              @keyframes mgwPhaseBDots{0%,100%{opacity:.28;transform:translateY(0)}50%{opacity:.9;transform:translateY(-2px)}}
+              @media (prefers-reduced-motion:reduce){.mgw-phase-b-launch-ring,.mgw-phase-b-launch-progress i{animation:none}}
+            `;
+            document.head.appendChild(style);
+          }
+
+          function ensureLaunchOverlay(){
+            let overlay = document.getElementById('mgwPhaseBLaunchOverlay');
+            if (overlay) return overlay;
+            const owner = document.getElementById('app') || document.body;
+            if (!(owner instanceof Element)) return null;
+
+            overlay = document.createElement('div');
+            overlay.id = 'mgwPhaseBLaunchOverlay';
+            overlay.className = 'mgw-phase-b-launch-overlay';
+            overlay.hidden = true;
+            overlay.innerHTML = `
+              <div class="mgw-phase-b-launch-card" role="status" aria-live="polite">
+                <div class="mgw-phase-b-launch-game" data-phase-b-game>Игра</div>
+                <div class="mgw-phase-b-launch-visual" aria-hidden="true">
+                  <span class="mgw-phase-b-launch-ring"></span>
+                  <div class="mgw-phase-b-countdown" data-phase-b-countdown data-loading="1" data-ready="0">VS</div>
+                </div>
+                <strong class="mgw-phase-b-launch-title" data-phase-b-title>Подготовка матча</strong>
+                <span class="mgw-phase-b-launch-note" data-phase-b-note>Собираем матч</span>
+                <div class="mgw-phase-b-launch-progress" data-phase-b-progress data-visible="1" aria-hidden="true"><i></i><i></i><i></i></div>
+              </div>
+            `;
+            owner.appendChild(overlay);
+            return overlay;
+          }'''
+
+          runtime, count = re.subn(
+              r"function installLaunchStyle\(\)\{.*?\n\}\n\nfunction setPhaseLeaveDisabled",
+              new_style_and_overlay + "\n\nfunction setPhaseLeaveDisabled",
+              runtime,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'loader style/overlay replacement count={count}')
+          write(runtime_path, runtime)
+
+          runtime_blob = subprocess.check_output(['git', 'hash-object', runtime_path], text=True).strip()
+          runtime_short = runtime_blob[:12]
+
+          entry_path = 'app/assets/js/phase-b-current-entry.js'
+          entry = read(entry_path)
+          entry = replace_once(
+              entry,
+              "./phase-b-current-runtime.js?v=119&b=0ae294f61b94",
+              f"./phase-b-current-runtime.js?v=121&b={runtime_short}",
+              'Phase B runtime immutable URL',
+          )
+          entry = replace_once(entry, "phase-b-current-v119", "phase-b-current-v121", 'Phase B build')
+          write(entry_path, entry)
+          entry_blob = subprocess.check_output(['git', 'hash-object', entry_path], text=True).strip()
+          entry_short = entry_blob[:12]
+
+          v114_path = 'app/v114.php'
+          v114 = read(v114_path)
+          v114 = replace_once(v114, "$entryVersion = '120';", "$entryVersion = '121';", 'entry version owner')
+          v114 = replace_once(
+              v114,
+              './assets/js/phase-b-current-entry.js?v=119&b=f53179ed1bc7',
+              f'./assets/js/phase-b-current-entry.js?v=121&b={entry_short}',
+              'Phase B entry immutable URL',
+          )
+          v114 = v114.replace('phase-b-current-v119', 'phase-b-current-v121')
+          write(v114_path, v114)
+
+          contract_path = 'bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php'
+          contract = read(contract_path)
+          contract = replace_once(
+              contract,
+              "$telegram = $read('bot/services/TelegramService.php');\n",
+              "$telegram = $read('bot/services/TelegramService.php');\n$webhook = $read('bot/webhook.php');\n$menuButton = $read('bot/helpers/StagingMenuButtonReconciler.php');\n",
+              'contract menu owner reads',
+          )
+          contract = contract.replace('/app/?v=120', '/app/?v=121')
+          contract = contract.replace("$entryVersion = '120';", "$entryVersion = '121';")
+          contract = contract.replace(
+              './assets/js/phase-b-current-entry.js?v=119&b=f53179ed1bc7',
+              f'./assets/js/phase-b-current-entry.js?v=121&b={entry_short}',
+          )
+          contract = contract.replace('phase-b-current-v119', 'phase-b-current-v121')
+          contract = contract.replace(
+              './phase-b-current-runtime.js?v=119&b=0ae294f61b94',
+              f'./phase-b-current-runtime.js?v=121&b={runtime_short}',
+          )
+          old_geometry = "$assert(str_contains($runtime, 'width:min(100%,430px)'), 'Preparation background composition must use one centered phone-like canvas across viewport aspect ratios.');\n$assert(str_contains($runtime, 'width:min(100%,400px);height:380px;display:grid;grid-template-rows:30px 150px 54px 48px 28px'), 'Preparation card must keep one wider fixed geometry across all launch text stages.');\n$assert(str_contains($runtime, 'white-space:nowrap'), 'Preparation title must not reflow between launch stages.');\n$assert(str_contains($runtime, 'width:124px;height:88px') && str_contains($runtime, '.mgw-phase-b-countdown[data-ready=\"1\"]{font-size:28px;letter-spacing:.08em}'), 'Countdown and START must share one invariant contrast-surface geometry.');\n"
+          new_geometry = "$assert(str_contains($runtime, 'width:min(100%,460px)'), 'Preparation background composition must use one centered stable canvas across viewport aspect ratios.');\n$assert(str_contains($runtime, 'width:min(100%,400px);height:336px;display:grid;grid-template-rows:30px 136px 52px 46px 24px'), 'Preparation card must keep one fixed compact geometry across all launch stages.');\n$assert(str_contains($runtime, 'white-space:nowrap'), 'Preparation title must not reflow between launch stages.');\n$assert(str_contains($runtime, 'width:108px;height:108px') && str_contains($runtime, '.mgw-phase-b-countdown[data-ready=\"1\"]{font-size:25px;letter-spacing:.08em}'), 'Preparation, countdown and START must share one invariant circular surface geometry.');\n$assert(str_contains($runtime, '.mgw-phase-b-launch-ring') && str_contains($runtime, '@keyframes mgwPhaseBSpin'), 'Preparation visual must use one lightweight ring owner.');\n$assert(!str_contains($runtime, 'mgw-phase-b-launch-shape') && !str_contains($runtime, 'mgwPhaseBFloat'), 'Retired floating shape loader must not remain in the current Phase B surface.');\n"
+          contract = replace_once(contract, old_geometry, new_geometry, 'loader geometry contract')
+          menu_contract_anchor = "$assert(!str_contains($telegram, \"/app/?v=85\"), 'Telegram /start button must not keep the retired stale entry version.');\n"
+          menu_contract = menu_contract_anchor + (
+              "$assert(!str_contains($telegram, \"/app/?v=120\"), 'Telegram /start button must not publish the retired v120 entry.');\n"
+              "$assert(str_contains($webhook, 'StagingMenuButtonReconciler') && str_contains($webhook, '->reconcile();'), 'Staging webhook must reconcile the Telegram menu owner before handling /start.');\n"
+              "$assert(str_contains($menuButton, \"'type' => 'commands'\"), 'Staging menu reconciler must explicitly retire the persistent Web App button to commands.');\n"
+              "$assert(!str_contains($menuButton, \"'type' => 'web_app'\") && !str_contains($menuButton, \"/app/\"), 'Staging menu reconciler must not own any Web App entry URL.');\n"
+          )
+          contract = replace_once(contract, menu_contract_anchor, menu_contract, 'menu button contract')
+          contract = replace_once(
+              contract,
+              "    'bot/services/TelegramService.php',\n",
+              "    'bot/services/TelegramService.php',\n    'bot/webhook.php',\n    'bot/helpers/StagingMenuButtonReconciler.php',\n",
+              'fingerprint contract paths',
+          )
+          write(contract_path, contract)
+
+          e2e_path = 'e2e/staging/frontend-immutable-core.spec.mjs'
+          e2e = read(e2e_path)
+          e2e = e2e.replace("const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v119';", "const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v121';")
+          e2e = e2e.replace("const EXPECTED_ENTRY_VERSION = 'v120';", "const EXPECTED_ENTRY_VERSION = 'v121';")
+          e2e = e2e.replace("expect(staleEntry.headers().location).toBe('./?v=120');", "expect(staleEntry.headers().location).toBe('./?v=121');")
+          e2e = e2e.replace(
+              "      countdown.dataset.ready = '0';\n      progress.dataset.visible = '1';",
+              "      countdown.dataset.loading = '1';\n      countdown.dataset.ready = '0';\n      progress.dataset.visible = '1';",
+          )
+          e2e = e2e.replace(
+              "      countdown.dataset.ready = '1';\n      progress.dataset.visible = '0';",
+              "      countdown.dataset.loading = '0';\n      countdown.dataset.ready = '1';\n      progress.dataset.visible = '0';",
+          )
+          old_expected = "      cardHeight:380,\n      cardDisplay:'grid',\n      countdownBackground:'rgba(5, 7, 12, 0.9)',\n      titleWhiteSpace:'nowrap',\n      numbered:{ width:124, height:88 },\n      ready:{ width:124, height:88, progressVisibility:'hidden' },"
+          new_expected = "      cardHeight:336,\n      cardDisplay:'grid',\n      countdownBackground:'rgba(0, 0, 0, 0)',\n      titleWhiteSpace:'nowrap',\n      numbered:{ width:108, height:108 },\n      ready:{ width:108, height:108, progressVisibility:'hidden' },"
+          # Computed backgroundColor for a gradient-backed element is transparent.
+          e2e = replace_once(e2e, old_expected, new_expected, 'E2E loader geometry')
+          e2e = e2e.replace(
+              '/assets/js/phase-b-current-entry.js?v=119&b=f53179ed1bc7',
+              f'/assets/js/phase-b-current-entry.js?v=121&b={entry_short}',
+          )
+          e2e = e2e.replace(
+              '/assets/js/phase-b-current-runtime.js?v=119&b=0ae294f61b94',
+              f'/assets/js/phase-b-current-runtime.js?v=121&b={runtime_short}',
+          )
+          write(e2e_path, e2e)
+
+          print('runtime_blob=' + runtime_blob)
+          print('entry_blob=' + entry_blob)
+          PY
+
+          node --check app/assets/js/phase-b-current-runtime.js
+          node --check app/assets/js/phase-b-current-entry.js
+          node --check e2e/staging/frontend-immutable-core.spec.mjs
+          php -l app/v114.php
+          php -l bot/services/TelegramService.php
+          php -l bot/helpers/StagingMenuButtonReconciler.php
+          php -l bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
+          php bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
+          php bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+
+      - name: Commit exact product and contract changes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            app/v114.php \
+            app/assets/js/phase-b-current-entry.js \
+            app/assets/js/phase-b-current-runtime.js \
+            bot/services/TelegramService.php \
+            bot/helpers/StagingMenuButtonReconciler.php \
+            bot/helpers/staging-e2e-runtime-files.txt \
+            bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php \
+            e2e/staging/frontend-immutable-core.spec.mjs
+          git commit -m 'Telegram: unify entry and replace Phase B loader'
+          git push origin HEAD:agent/telegram-single-entry-loader-v121
