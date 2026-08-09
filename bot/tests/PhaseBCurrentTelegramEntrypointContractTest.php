@@ -47,7 +47,7 @@ $assert(str_contains($runtime, '/bot/game-watch.php'), 'Current Phase B runtime 
 $assert(!str_contains($runtime, 'api.gameState('), 'Current Phase B runtime must not create a second primary game_state owner.');
 $assert(str_contains($runtime, 'position:fixed;inset:0;z-index:10000'), 'Preparation UI must be a global fixed layer above the application.');
 $assert(str_contains($runtime, "title.textContent = 'Готовим матч'"), 'Preparation UI must use product-facing copy.');
-$assert(!str_contains(mb_strtolower($runtime), 'синхрониза'), 'Player-facing Phase B runtime must not contain technical synchronization wording.');
+$assert(!str_contains(strtolower($runtime), 'синхрониза'), 'Player-facing Phase B runtime must not contain technical synchronization wording.');
 $assert(str_contains($runtime, 'WATCH_INTERVAL_MS = 250'), 'Read-only Phase B freshness cadence must remain explicit and bounded.');
 $assert(str_contains($runtime, 'PRIMARY_GAME_POLL_FLOOR_MS = 1500'), 'Primary game_state polling must remain slower than read-only freshness.');
 
