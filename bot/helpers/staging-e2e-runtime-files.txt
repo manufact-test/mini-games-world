@@ -25,6 +25,7 @@ bot/invites/RuntimeInviteRepository.php
 bot/notifications.php
 bot/notifications/RuntimeNotificationBridgeCoordinator.php
 bot/notifications/RuntimeNotificationRepository.php
+bot/services/AuthService.php
 bot/services/GameService.php
 bot/services/GameRuntimeService.php
 bot/services/ChessRuntimeService.php
