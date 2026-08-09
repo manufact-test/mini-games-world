@@ -10,10 +10,13 @@ def escapedMgwBaseUrl = configuredMgwBaseUrl
         .replace('\\', '\\\\')
         .replace('"', '\\"')
 
-// Acceptance-only Android branding inputs are stored as text/base64 so the
+// Acceptance-only Android branding inputs are stored as text/base64 so this
 // isolated branch remains reproducible through the GitHub contents workflow.
-// They are decoded into build/ only; no generated binary is committed.
+// Binary inputs are generated under build/ by a real Gradle task, after clean
+// and before Android resource/signing work consumes them.
 def brandingInputDir = file("${rootDir}/branding")
+def launcherArtSource = file("${brandingInputDir}/shield_king_launcher_384.webp.b64")
+def acceptanceKeystoreSource = file("${brandingInputDir}/mgw-acceptance-stable.keystore.b64")
 def generatedBrandingResDir = file("${buildDir}/generated/branding/res")
 def generatedLauncherArt = file("${generatedBrandingResDir}/drawable-nodpi/ic_mgw_launcher_art.webp")
 def generatedAcceptanceKeystore = file("${buildDir}/generated/acceptance-signing/mgw-acceptance-stable.keystore")
@@ -26,12 +29,18 @@ def decodeBase64File = { File source, File target ->
     target.bytes = source.getText('UTF-8').replaceAll('\\s+', '').decodeBase64()
 }
 
-decodeBase64File(
-        file("${brandingInputDir}/shield_king_launcher_384.webp.b64"),
-        generatedLauncherArt)
-decodeBase64File(
-        file("${brandingInputDir}/mgw-acceptance-stable.keystore.b64"),
-        generatedAcceptanceKeystore)
+def prepareAcceptanceInputs = tasks.register('prepareAcceptanceInputs') {
+    description = 'Decode the approved Shield King raster and acceptance-only signing key.'
+    group = 'build setup'
+
+    inputs.files(launcherArtSource, acceptanceKeystoreSource)
+    outputs.files(generatedLauncherArt, generatedAcceptanceKeystore)
+
+    doLast {
+        decodeBase64File(launcherArtSource, generatedLauncherArt)
+        decodeBase64File(acceptanceKeystoreSource, generatedAcceptanceKeystore)
+    }
+}
 
 android {
     namespace 'com.minigamesworld.app'
@@ -92,6 +101,19 @@ android {
         abortOnError true
         checkReleaseBuilds true
     }
+}
+
+// `gradle clean test lint assembleDebug` must never delete generated inputs
+// after they are prepared. `clean` removes build/, then preBuild recreates the
+// exact approved inputs before Android resource linking and signing validation.
+tasks.named('preBuild').configure {
+    dependsOn prepareAcceptanceInputs
+}
+prepareAcceptanceInputs.configure {
+    mustRunAfter tasks.named('clean')
+}
+tasks.matching { it.name.startsWith('validateSigning') }.configureEach {
+    dependsOn prepareAcceptanceInputs
 }
 
 dependencies {
