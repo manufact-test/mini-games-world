@@ -1,5 +1,4 @@
 import { state } from './state.js?v=27';
-import { restoreAcceptedGamePolling } from './screens/game-screen-v102-safe.js?v=102';
 
 const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
   initialized:false,
@@ -9,6 +8,7 @@ const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
 export function initV110AcceptanceRuntime(){
   if (runtime.initialized) return;
   runtime.initialized = true;
+  document.addEventListener('mgw:phase-b-game-entering', primeLaunchState);
   window.addEventListener('click', guardPhaseBPreStartControls, true);
   window.addEventListener('click', guardAndTrackTicTacToe, true);
   window.addEventListener('click', stabilizeSearchSummary, true);
@@ -20,6 +20,7 @@ export function initV110AcceptanceRuntime(){
   }
   installSearchStyle();
   installLaunchStyle();
+  ensureLaunchOverlay();
 }
 
 function stabilizeSearchSummary(event){
@@ -60,6 +61,10 @@ function boardSize(type){
 function gameTitle(type){
   return ({ tictactoe:'Крестики-нолики', four_in_a_row:'4 в ряд', battleship:'Морской бой', checkers:'Шашки', reversi:'Реверси', chess:'Шахматы', go:'Го', domino:'Домино' })[type] || 'Игра';
 }
+function gameTitleFromGame(game){
+  const type = String(game?.game_type || game?.type || state.selectedGame || 'tictactoe');
+  return gameTitle(type);
+}
 function installSearchStyle(){
   if (document.getElementById('mgw-v110-search-style')) return;
   const style = document.createElement('style');
@@ -72,14 +77,29 @@ function installLaunchStyle(){
   const style = document.createElement('style');
   style.id = 'mgw-phase-b-launch-style';
   style.textContent = `
-    #screen-game .board-wrap{position:relative}
-    .mgw-phase-b-launch-overlay{position:absolute;inset:0;z-index:8;display:grid;place-items:center;padding:24px;border-radius:18px;background:rgba(10,16,30,.88);backdrop-filter:blur(6px);text-align:center}
+    .mgw-phase-b-launch-overlay{position:absolute;inset:0;z-index:140;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));overflow:hidden;background:radial-gradient(circle at 18% 18%,rgba(124,92,255,.28),transparent 34%),radial-gradient(circle at 82% 78%,rgba(46,230,166,.18),transparent 31%),linear-gradient(180deg,#0b0f1a 0%,#080b13 100%);text-align:center}
     .mgw-phase-b-launch-overlay[hidden]{display:none!important}
-    .mgw-phase-b-launch-card{display:grid;gap:8px;justify-items:center;max-width:280px}
-    .mgw-phase-b-launch-title{font-size:18px;font-weight:700;line-height:1.2}
-    .mgw-phase-b-launch-note{font-size:13px;line-height:1.35;opacity:.78}
-    .mgw-phase-b-countdown{font-size:64px;font-weight:800;line-height:1}
+    .mgw-phase-b-launch-card{position:relative;width:min(100%,360px);display:grid;justify-items:center;gap:0;padding:30px 22px 28px;border:1px solid rgba(255,255,255,.11);border-radius:32px;background:rgba(255,255,255,.055);box-shadow:0 26px 70px rgba(0,0,0,.34);overflow:hidden}
+    .mgw-phase-b-launch-card:before{content:'';position:absolute;width:180px;height:180px;left:-90px;top:-100px;border-radius:50%;background:rgba(124,92,255,.16);filter:blur(2px)}
+    .mgw-phase-b-launch-game{position:relative;z-index:1;display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:1px solid rgba(255,255,255,.10);border-radius:999px;background:rgba(255,255,255,.055);font-size:12px;font-weight:850;letter-spacing:.02em;color:rgba(255,255,255,.78)}
+    .mgw-phase-b-launch-visual{position:relative;width:132px;height:112px;margin:18px 0 12px}
+    .mgw-phase-b-launch-shape{position:absolute;border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 42px rgba(124,92,255,.18);animation:mgwPhaseBFloat 2.6s ease-in-out infinite}
+    .mgw-phase-b-launch-shape.one{width:58px;height:58px;left:12px;top:13px;border-radius:20px;transform:rotate(12deg);background:linear-gradient(135deg,rgba(124,92,255,.92),rgba(46,230,166,.48))}
+    .mgw-phase-b-launch-shape.two{width:44px;height:44px;right:12px;top:22px;border-radius:50%;animation-delay:.22s;background:linear-gradient(135deg,rgba(255,200,87,.95),rgba(124,92,255,.48))}
+    .mgw-phase-b-launch-shape.three{width:80px;height:31px;left:28px;bottom:9px;border-radius:999px;animation-delay:.44s;background:linear-gradient(135deg,rgba(46,230,166,.82),rgba(255,255,255,.22))}
+    .mgw-phase-b-launch-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;opacity:.72;animation:mgwPhaseBPulse 1.6s ease-in-out infinite}
+    .mgw-phase-b-launch-dot.one{left:4px;bottom:26px}.mgw-phase-b-launch-dot.two{right:4px;bottom:32px;animation-delay:.3s}.mgw-phase-b-launch-dot.three{left:62px;top:1px;animation-delay:.6s}
+    .mgw-phase-b-countdown{position:absolute;inset:0;display:grid;place-items:center;font-size:76px;font-weight:950;line-height:1;letter-spacing:-.06em;text-shadow:0 12px 34px rgba(124,92,255,.35)}
+    .mgw-phase-b-countdown[hidden]{display:none!important}
+    .mgw-phase-b-launch-title{position:relative;z-index:1;margin:0;font-size:26px;font-weight:950;line-height:1.08;letter-spacing:-.045em}
+    .mgw-phase-b-launch-note{position:relative;z-index:1;margin-top:9px;max-width:270px;font-size:14px;line-height:1.45;color:var(--muted)}
+    .mgw-phase-b-launch-progress{position:relative;z-index:1;display:flex;gap:7px;margin-top:18px}
+    .mgw-phase-b-launch-progress i{display:block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.26);animation:mgwPhaseBDots 1.15s ease-in-out infinite}
+    .mgw-phase-b-launch-progress i:nth-child(2){animation-delay:.15s}.mgw-phase-b-launch-progress i:nth-child(3){animation-delay:.3s}
     #gameBoard.mgw-phase-b-turn-wait{pointer-events:none}
+    @keyframes mgwPhaseBFloat{0%,100%{translate:0 0}50%{translate:0 -8px}}
+    @keyframes mgwPhaseBPulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.18)}}
+    @keyframes mgwPhaseBDots{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
   `;
   document.head.appendChild(style);
 }
@@ -143,7 +163,6 @@ function tickGameUi(){
   syncClock();
   paintClock();
   paintLaunchState();
-  restoreAcceptedGamePolling(state.activeGame);
 }
 function reconcilePendingMove(){
   const pending = runtime.pending;
@@ -261,6 +280,15 @@ function turnStartReached(game){
   const serverNowMs = finiteNumber(game?.server_now_ms);
   return turnStartsAtMs === null || serverNowMs === null || turnStartsAtMs <= serverNowMs;
 }
+function primeLaunchState(event){
+  const game = event?.detail?.game || null;
+  const phase = String(game?.launch_phase || '');
+  if (String(game?.status || '') !== 'active' || !['preparing', 'countdown', 'preparation_timeout'].includes(phase)) return;
+  const overlay = ensureLaunchOverlay();
+  if (!overlay) return;
+  overlay.hidden = false;
+  renderLaunchOverlay(overlay, game, phase);
+}
 function paintLaunchState(){
   const game = state.activeGame;
   const board = document.getElementById('gameBoard');
@@ -284,54 +312,73 @@ function paintLaunchState(){
   }
 
   overlay.hidden = false;
+  renderLaunchOverlay(overlay, game, phase);
+}
+function renderLaunchOverlay(overlay, game, phase){
   const title = overlay.querySelector('[data-phase-b-title]');
   const note = overlay.querySelector('[data-phase-b-note]');
   const countdown = overlay.querySelector('[data-phase-b-countdown]');
+  const progress = overlay.querySelector('[data-phase-b-progress]');
+  const gameLabel = overlay.querySelector('[data-phase-b-game]');
+  if (gameLabel) gameLabel.textContent = gameTitleFromGame(game);
 
   if (phase === 'countdown') {
     const clock = runtime.clock;
+    const fallbackRemaining = Math.max(0,
+      Number(game?.starts_at_ms || 0) - Number(game?.server_now_ms || 0));
     const remaining = clock && clock.gameId === String(game?.id || '')
       ? Math.max(0, clock.start - performance.now())
-      : 0;
+      : fallbackRemaining;
     const seconds = Math.max(1, Math.min(3, Math.ceil(remaining / 1000)));
-    if (title) title.textContent = 'Матч начинается';
-    if (note) note.textContent = 'Оба игрока готовы';
+    if (title) title.textContent = 'Поехали!';
+    if (note) note.textContent = 'Матч начинается';
     if (countdown) {
       countdown.hidden = false;
       countdown.textContent = String(seconds);
     }
+    if (progress) progress.hidden = true;
     return;
   }
 
   if (countdown) countdown.hidden = true;
   if (phase === 'preparation_timeout') {
-    if (title) title.textContent = 'Матч не начался';
-    if (note) note.textContent = 'Завершаем матч и возвращаем ставку';
+    if (title) title.textContent = 'Матч не состоялся';
+    if (note) note.textContent = 'Соперник не подключился вовремя';
+    if (progress) progress.hidden = true;
     return;
   }
 
-  const ready = Math.max(0, Number(game?.ready_count || 0));
-  const required = Math.max(1, Number(game?.ready_required || 2));
-  if (title) title.textContent = 'Синхронизируем игроков';
-  if (note) note.textContent = `Готово устройств: ${Math.min(ready, required)} из ${required}`;
+  if (title) title.textContent = 'Готовим матч';
+  if (note) note.textContent = 'Ещё мгновение — и начинаем';
+  if (progress) progress.hidden = false;
 }
 function ensureLaunchOverlay(){
-  const wrap = document.querySelector('#screen-game .board-wrap');
-  if (!(wrap instanceof Element)) return null;
   let overlay = document.getElementById('mgwPhaseBLaunchOverlay');
   if (overlay) return overlay;
+  const owner = document.getElementById('app');
+  if (!(owner instanceof Element)) return null;
   overlay = document.createElement('div');
   overlay.id = 'mgwPhaseBLaunchOverlay';
   overlay.className = 'mgw-phase-b-launch-overlay';
   overlay.hidden = true;
   overlay.innerHTML = `
     <div class="mgw-phase-b-launch-card" role="status" aria-live="polite">
-      <div class="mgw-phase-b-countdown" data-phase-b-countdown hidden></div>
-      <strong class="mgw-phase-b-launch-title" data-phase-b-title></strong>
-      <span class="mgw-phase-b-launch-note" data-phase-b-note></span>
+      <div class="mgw-phase-b-launch-game" data-phase-b-game>Игра</div>
+      <div class="mgw-phase-b-launch-visual" aria-hidden="true">
+        <span class="mgw-phase-b-launch-shape one"></span>
+        <span class="mgw-phase-b-launch-shape two"></span>
+        <span class="mgw-phase-b-launch-shape three"></span>
+        <span class="mgw-phase-b-launch-dot one"></span>
+        <span class="mgw-phase-b-launch-dot two"></span>
+        <span class="mgw-phase-b-launch-dot three"></span>
+        <div class="mgw-phase-b-countdown" data-phase-b-countdown hidden></div>
+      </div>
+      <strong class="mgw-phase-b-launch-title" data-phase-b-title>Готовим матч</strong>
+      <span class="mgw-phase-b-launch-note" data-phase-b-note>Ещё мгновение — и начинаем</span>
+      <div class="mgw-phase-b-launch-progress" data-phase-b-progress aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
   `;
-  wrap.appendChild(overlay);
+  owner.appendChild(overlay);
   return overlay;
 }
 function setPhaseLeaveDisabled(button, disabled){
