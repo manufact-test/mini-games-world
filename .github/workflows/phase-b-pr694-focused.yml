@@ -1,0 +1,83 @@
+name: Phase B PR694 focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-runtime-request-projection-memo-current
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      TARGET_SHA: ${{ github.event.pull_request.base.sha }}
+      STATUS_CONTEXT: phase-b-pr694-focused
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR694 request projection memo verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - uses: actions/checkout@v4
+
+      - name: PHP syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/ledger/RuntimeEconomyRepository.php
+          php -l bot/realtime/RuntimeRealtimeRepository.php
+          php -l bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
+          php -l bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
+
+      - name: Focused memo behavior and contracts
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
+          php bot/tests/ProductionPrimaryRollbackEconomyShadowReadViewTest.php
+          php bot/tests/RealtimeRuntimeBridgeTest.php
+          php bot/tests/RuntimeJsonBridgeExclusiveSnapshotContractTest.php
+
+      - name: Exact runtime fingerprint coverage
+        run: |
+          set -Eeuo pipefail
+          grep -Fx 'bot/ledger/RuntimeEconomyRepository.php' bot/helpers/staging-e2e-runtime-files.txt
+          grep -Fx 'bot/realtime/RuntimeRealtimeRepository.php' bot/helpers/staging-e2e-runtime-files.txt
+          grep -Fx 'app/v114.php' bot/helpers/staging-e2e-runtime-files.txt
+          grep -Fx 'app/assets/js/phase-b-current-runtime.js' bot/helpers/staging-e2e-runtime-files.txt
+
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR694 request projection memo verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR694 request projection memo verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
