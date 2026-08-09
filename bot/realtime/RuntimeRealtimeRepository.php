@@ -16,6 +16,10 @@ final class RuntimeRealtimeRepository
     private RuntimeStorageRouter $router;
     private ?DatabaseConnectionInterface $connection;
     private array $ownershipCache = [];
+    /** @var array<string,array<string,mixed>> */
+    private static array $requestSynchronizeCache = [];
+    /** @var array<string,array<string,mixed>> */
+    private static array $requestAuditCache = [];
 
     public function __construct(
         private array $config,
@@ -30,6 +34,11 @@ final class RuntimeRealtimeRepository
     {
         $this->assertDatabaseRoute();
         $database = $this->database();
+        $cacheKey = $this->requestCacheKey($database, $jsonData);
+        if (array_key_exists($cacheKey, self::$requestSynchronizeCache)) {
+            return self::$requestSynchronizeCache[$cacheKey];
+        }
+
         $source = $this->sourceState($jsonData, $database);
         $createdGames = 0;
         $updatedGames = 0;
@@ -122,7 +131,7 @@ final class RuntimeRealtimeRepository
             throw new RuntimeException(implode(' ', $comparison['blockers']));
         }
 
-        return [
+        $result = [
             'games' => [
                 'source_count' => $comparison['source_game_count'],
                 'database_count' => $comparison['database_game_count'],
@@ -144,18 +153,25 @@ final class RuntimeRealtimeRepository
             'database_fingerprint' => $comparison['database_fingerprint'],
             'parity' => true,
         ];
+        self::$requestSynchronizeCache[$cacheKey] = $result;
+        return $result;
     }
 
     public function auditParity(array $jsonData): array
     {
         $this->assertDatabaseRoute();
         $database = $this->database();
+        $cacheKey = $this->requestCacheKey($database, $jsonData);
+        if (array_key_exists($cacheKey, self::$requestAuditCache)) {
+            return self::$requestAuditCache[$cacheKey];
+        }
+
         $comparison = $this->compare(
             $this->sourceState($jsonData, $database),
             $this->databaseState($database)
         );
 
-        return [
+        $result = [
             'ok' => $comparison['ok'],
             'read_only' => true,
             'source_game_count' => $comparison['source_game_count'],
@@ -168,5 +184,16 @@ final class RuntimeRealtimeRepository
             'database_fingerprint' => $comparison['database_fingerprint'],
             'blockers' => $comparison['blockers'],
         ];
+        self::$requestAuditCache[$cacheKey] = $result;
+        return $result;
+    }
+
+    private function requestCacheKey(DatabaseConnectionInterface $database, array $jsonData): string
+    {
+        $source = [
+            'games' => is_array($jsonData['games'] ?? null) ? $jsonData['games'] : [],
+            'queue' => is_array($jsonData['queue'] ?? null) ? $jsonData['queue'] : [],
+        ];
+        return spl_object_id($database) . ':' . hash('sha256', $this->canonicalJson($source));
     }
 }
