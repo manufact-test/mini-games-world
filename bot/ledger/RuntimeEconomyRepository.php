@@ -60,6 +60,7 @@ final class RuntimeEconomyRepository
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
+        unset(self::$requestAuditCache[$cacheKey]);
         self::$requestSynchronizeCache[$cacheKey] = $result;
         return $result;
     }
