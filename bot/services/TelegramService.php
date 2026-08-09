@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../helpers/WebAppLaunchUrl.php';
+
 final class TelegramService
 {
     public function __construct(private array $config) {}
@@ -42,7 +44,10 @@ final class TelegramService
 
     public function sendStartMessage(int|string $chatId): void
     {
-        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=121';
+        $webAppUrl = WebAppLaunchUrl::base($this->config);
+        if ($webAppUrl === '') {
+            throw new RuntimeException('Mini Games World Web App URL is unavailable.');
+        }
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
@@ -102,7 +107,7 @@ final class TelegramService
                 'disable_web_page_preview' => true,
             ]);
         } catch (Throwable $e) {
-            error_log('Mini Games World user payment notification failed for ' . $chatId . ': ' . $e->getMessage());
+            error_log('Mini Games World user payment notification failed: ' . $e->getMessage());
         }
     }
 
@@ -258,67 +263,40 @@ final class TelegramService
         }
 
         return "💳 Новая заявка на пополнение\n\n"
-            . "Игрок: " . implode(' · ', $playerParts) . "\n"
-            . "Telegram ID: " . ($userId !== '' ? $userId : '—') . "\n"
-            . "Комната: {$roomLabel}\n"
-            . "Сумма: {$price} {$currency}\n"
-            . "К зачислению: {$coins} коинов\n"
-            . "Заявка: {$shortId}\n"
-            . "Создана: " . ($createdAt !== '' ? $createdAt : '—') . "\n\n"
-            . "Выберите действие кнопками ниже.";
+            . "🧾 № {$shortId}\n"
+            . "👤 " . implode(' · ', $playerParts) . "\n"
+            . "🆔 {$userId}\n"
+            . "🏠 {$roomLabel}\n"
+            . "🪙 {$coins} коинов\n"
+            . "💰 {$price} {$currency}\n"
+            . "🕒 {$createdAt}";
     }
 
     private function paymentAdminNotificationKeyboard(array $payment): array
     {
-        $shortId = $this->shortPaymentId((string)($payment['id'] ?? ''));
-
+        $paymentId = (string)($payment['id'] ?? '');
         return [
-            'inline_keyboard' => [
-                [
-                    ['text' => '👁 Открыть заявку', 'callback_data' => 'admin:payment_open:' . $shortId],
-                ],
-                [
-                    ['text' => '✅ Начислить', 'callback_data' => 'admin:payment_apply:' . $shortId],
-                    ['text' => '🚫 Отклонить', 'callback_data' => 'admin:payment_reject_prompt:' . $shortId],
-                ],
-            ],
+            'inline_keyboard' => [[
+                ['text' => 'Открыть заявку', 'callback_data' => 'admin:payment_open:' . $paymentId],
+            ]],
         ];
     }
 
     private function paymentUserDecisionText(array $payment, string $decision): string
     {
-        $shortId = $this->shortPaymentId((string)($payment['id'] ?? ''));
-        $room = (string)($payment['room'] ?? 'gold');
-        $roomLabel = $room === 'match' ? 'Match' : 'Gold';
-        $price = (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
-        $currency = (string)($payment['currency'] ?? 'RUB');
         $coins = (int)($payment['coins'] ?? 0);
-
         if ($decision === 'applied') {
-            return "✅ Пополнение подтверждено\n\n"
-                . "Заявка: {$shortId}\n"
-                . "Комната: {$roomLabel}\n"
-                . "Сумма: {$price} {$currency}\n"
-                . "Начислено: {$coins} коинов";
+            return "✅ Пополнение подтверждено.\n\nНа баланс зачислено {$coins} коинов.";
         }
 
         $reason = trim((string)($payment['reject_reason'] ?? ''));
-        if ($reason === '') {
-            $reason = 'отклонено администратором';
-        }
-
-        return "🚫 Заявка на пополнение отклонена\n\n"
-            . "Заявка: {$shortId}\n"
-            . "Комната: {$roomLabel}\n"
-            . "Сумма: {$price} {$currency}\n"
-            . "К зачислению было: {$coins} коинов\n"
-            . "Причина: {$reason}";
+        $suffix = $reason !== '' ? "\n\nПричина: {$reason}" : '';
+        return "❌ Пополнение отклонено." . $suffix;
     }
 
     private function shortPaymentId(string $id): string
     {
-        $id = preg_replace('/^(pay_)/', '', $id);
-        $id = strtoupper(substr((string)$id, 0, 8));
-        return $id !== '' ? $id : '-';
+        $normalized = preg_replace('/[^a-zA-Z0-9]/', '', $id) ?: '';
+        return $normalized !== '' ? strtoupper(substr($normalized, -8)) : '—';
     }
 }
