@@ -1,4 +1,19 @@
 # Paths are relative to the repository/deployment root.
+# Current Telegram /start entry graph (DirectoryIndex v114.php).
+app/.htaccess
+app/index.html
+app/v114.php
+app/assets/js/phase-b-current-entry.js
+app/assets/js/phase-b-current-runtime.js
+app/assets/js/main.js
+app/assets/js/interaction-latency-coordinator-v101.js
+app/assets/js/screens/game-screen-phase-b-current.js
+app/assets/js/games/game-invites.js
+app/assets/js/screens/notifications-screen-v99.js
+
+# Historical/current v110 graph remains fingerprinted because it is still an
+# explicit route and provides rollback/reference owners, but it is not the
+# Telegram /start source of truth.
 app/v110.php
 app/assets/js/production-clean-entry-v110.js
 app/assets/js/production-v110-readonly-game-sync.js
@@ -10,6 +25,7 @@ app/assets/js/screens/game-screen-v102-safe.js
 app/assets/js/screens/game-screen-v102.js
 app/assets/js/games/game-invites-v110.js
 app/assets/js/screens/notifications-screen-v110r12.js
+
 bot/staging-e2e-readiness.php
 bot/staging-test-auth.php
 bot/services/StagingTestAuthService.php
@@ -26,6 +42,7 @@ bot/notifications.php
 bot/notifications/RuntimeNotificationBridgeCoordinator.php
 bot/notifications/RuntimeNotificationRepository.php
 bot/services/AuthService.php
+bot/services/TelegramService.php
 bot/services/GameService.php
 bot/services/GameRuntimeService.php
 bot/services/ChessRuntimeService.php
