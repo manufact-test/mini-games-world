@@ -265,6 +265,7 @@ function renderLaunchOverlay(overlay, game, phase){
     if (note) note.textContent = readyForServer ? 'Открываем игру' : 'Начинаем одновременно';
     if (countdown) {
       countdown.hidden = false;
+      countdown.dataset.loading = '0';
       countdown.dataset.ready = readyForServer ? '1' : '0';
       countdown.textContent = readyForServer ? 'СТАРТ' : String(seconds);
     }
@@ -276,10 +277,12 @@ function renderLaunchOverlay(overlay, game, phase){
   }
 
   if (countdown) {
-    countdown.hidden = true;
+    countdown.hidden = false;
+    countdown.dataset.loading = '1';
     countdown.dataset.ready = '0';
+    countdown.textContent = 'VS';
   }
-  if (note) note.textContent = 'Подключаем игроков — ещё мгновение';
+  if (note) note.textContent = 'Собираем матч';
   if (progress) {
     progress.hidden = false;
     progress.dataset.visible = '1';
@@ -348,32 +351,29 @@ function installLaunchStyle(){
   const style = document.createElement('style');
   style.id = 'mgw-phase-b-current-style';
   style.textContent = `
-    .mgw-phase-b-launch-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 14px max(24px,env(safe-area-inset-bottom));overflow:hidden;background:#080a10;text-align:center;isolation:isolate}
-    .mgw-phase-b-launch-overlay:before{content:'';position:absolute;z-index:0;top:0;bottom:0;left:50%;width:min(100%,430px);transform:translateX(-50%);background-color:#080a10;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),radial-gradient(circle at 50% 46%,rgba(124,92,255,.18),transparent 44%);background-size:28px 28px,28px 28px,auto;box-shadow:0 0 90px rgba(124,92,255,.12);pointer-events:none}
+    .mgw-phase-b-launch-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 14px max(24px,env(safe-area-inset-bottom));overflow:hidden;background:#070910;text-align:center;isolation:isolate}
+    .mgw-phase-b-launch-overlay:before{content:'';position:absolute;z-index:0;top:0;bottom:0;left:50%;width:min(100%,460px);transform:translateX(-50%);background:radial-gradient(circle at 50% 42%,rgba(124,92,255,.20),transparent 34%),radial-gradient(circle at 50% 72%,rgba(46,230,166,.08),transparent 30%),#070910;box-shadow:0 0 90px rgba(124,92,255,.10);pointer-events:none}
     .mgw-phase-b-launch-overlay[hidden]{display:none!important}
-    .mgw-phase-b-launch-card{position:relative;z-index:1;box-sizing:border-box;width:min(100%,400px);height:380px;display:grid;grid-template-rows:30px 150px 54px 48px 28px;align-content:start;justify-items:center;padding:26px 22px 22px;border:1px solid rgba(255,255,255,.11);border-radius:28px;background:linear-gradient(180deg,rgba(20,24,37,.97),rgba(10,13,22,.97));box-shadow:0 24px 64px rgba(0,0,0,.42);overflow:hidden}
-    .mgw-phase-b-launch-card:before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,92,255,.08),transparent 38%,rgba(46,230,166,.045));pointer-events:none}
-    .mgw-phase-b-launch-game{position:relative;z-index:1;grid-row:1;display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.055);font-size:12px;font-weight:850;letter-spacing:.02em;color:rgba(255,255,255,.8)}
-    .mgw-phase-b-launch-visual{position:relative;z-index:1;grid-row:2;align-self:center;width:156px;height:108px;margin:0}
-    .mgw-phase-b-launch-shape{position:absolute;border:1px solid rgba(255,255,255,.16);box-shadow:0 14px 34px rgba(0,0,0,.24);animation:mgwPhaseBFloat 2.6s ease-in-out infinite}
-    .mgw-phase-b-launch-shape.one{width:54px;height:54px;left:13px;top:25px;border-radius:18px;transform:rotate(7deg);background:linear-gradient(135deg,rgba(124,92,255,.95),rgba(91,70,219,.62))}
-    .mgw-phase-b-launch-shape.two{width:54px;height:54px;right:13px;top:25px;border-radius:50%;animation-delay:.22s;background:linear-gradient(135deg,rgba(46,230,166,.92),rgba(27,154,124,.58))}
-    .mgw-phase-b-launch-shape.three{width:58px;height:3px;left:49px;top:51px;border:0;border-radius:999px;animation:none;background:linear-gradient(90deg,rgba(124,92,255,.5),rgba(255,255,255,.78),rgba(46,230,166,.5));box-shadow:none}
-    .mgw-phase-b-launch-dot{position:absolute;width:7px;height:7px;border-radius:50%;background:#fff;opacity:.72;animation:mgwPhaseBPulse 1.6s ease-in-out infinite}
-    .mgw-phase-b-launch-dot.one{left:72px;top:49px}.mgw-phase-b-launch-dot.two{left:58px;top:49px;animation-delay:.3s}.mgw-phase-b-launch-dot.three{right:58px;top:49px;animation-delay:.6s}
-    .mgw-phase-b-countdown{position:absolute;z-index:2;left:50%;top:50%;width:124px;height:88px;transform:translate(-50%,-50%);display:grid;place-items:center;box-sizing:border-box;border:1px solid rgba(255,255,255,.16);border-radius:24px;background:rgba(5,7,12,.9);box-shadow:0 14px 34px rgba(0,0,0,.4);color:#fff;font-size:70px;font-weight:950;line-height:1;letter-spacing:-.06em;text-shadow:0 5px 18px rgba(0,0,0,.55)}
-    .mgw-phase-b-countdown[data-ready="1"]{font-size:28px;letter-spacing:.08em}
+    .mgw-phase-b-launch-card{position:relative;z-index:1;box-sizing:border-box;width:min(100%,400px);height:336px;display:grid;grid-template-rows:30px 136px 52px 46px 24px;align-content:start;justify-items:center;padding:22px 20px 20px;border:1px solid rgba(255,255,255,.10);border-radius:26px;background:linear-gradient(180deg,rgba(18,21,32,.98),rgba(9,11,18,.98));box-shadow:0 24px 70px rgba(0,0,0,.44);overflow:hidden;contain:layout paint}
+    .mgw-phase-b-launch-card:before{content:'';position:absolute;inset:0;background:linear-gradient(145deg,rgba(124,92,255,.07),transparent 42%,rgba(46,230,166,.035));pointer-events:none}
+    .mgw-phase-b-launch-game{position:relative;z-index:2;grid-row:1;display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.045);font-size:12px;font-weight:850;letter-spacing:.02em;color:rgba(255,255,255,.76)}
+    .mgw-phase-b-launch-visual{position:relative;z-index:2;grid-row:2;align-self:center;width:132px;height:132px;margin:0;display:grid;place-items:center}
+    .mgw-phase-b-launch-ring{position:absolute;inset:5px;border:2px solid rgba(255,255,255,.09);border-top-color:#7c5cff;border-right-color:#2ee6a6;border-radius:50%;animation:mgwPhaseBSpin .9s linear infinite;will-change:transform}
+    .mgw-phase-b-launch-ring:after{content:'';position:absolute;inset:8px;border:1px solid rgba(255,255,255,.055);border-radius:50%}
+    .mgw-phase-b-countdown{position:absolute;z-index:2;left:50%;top:50%;width:108px;height:108px;transform:translate(-50%,-50%);display:grid;place-items:center;box-sizing:border-box;border:1px solid rgba(255,255,255,.12);border-radius:50%;background:radial-gradient(circle at 50% 35%,rgba(124,92,255,.12),transparent 55%),rgba(6,8,13,.96);box-shadow:0 16px 38px rgba(0,0,0,.38),inset 0 0 24px rgba(255,255,255,.025);color:#fff;font-size:64px;font-weight:950;line-height:1;letter-spacing:-.05em;text-shadow:0 5px 18px rgba(0,0,0,.5)}
+    .mgw-phase-b-countdown[data-loading="1"]{font-size:24px;letter-spacing:.10em;color:rgba(255,255,255,.88)}
+    .mgw-phase-b-countdown[data-ready="1"]{font-size:25px;letter-spacing:.08em}
     .mgw-phase-b-countdown[hidden]{display:none!important}
-    .mgw-phase-b-launch-title{position:relative;z-index:1;grid-row:3;align-self:center;display:flex;align-items:center;justify-content:center;width:100%;height:54px;margin:0;white-space:nowrap;font-size:26px;font-weight:950;line-height:1.08;letter-spacing:-.045em}
-    .mgw-phase-b-launch-note{position:relative;z-index:1;grid-row:4;align-self:start;display:flex;align-items:flex-start;justify-content:center;width:100%;height:48px;margin:0;padding-top:7px;box-sizing:border-box;max-width:320px;font-size:14px;line-height:1.45;color:rgba(255,255,255,.72)}
-    .mgw-phase-b-launch-progress{position:relative;z-index:1;grid-row:5;align-self:center;display:flex;gap:7px;margin:0}
+    .mgw-phase-b-launch-title{position:relative;z-index:2;grid-row:3;align-self:center;display:flex;align-items:center;justify-content:center;width:100%;height:52px;margin:0;white-space:nowrap;font-size:25px;font-weight:950;line-height:1.08;letter-spacing:-.04em}
+    .mgw-phase-b-launch-note{position:relative;z-index:2;grid-row:4;align-self:center;display:flex;align-items:center;justify-content:center;width:100%;height:46px;margin:0;box-sizing:border-box;font-size:14px;line-height:1.35;color:rgba(255,255,255,.68)}
+    .mgw-phase-b-launch-progress{position:relative;z-index:2;grid-row:5;align-self:center;display:flex;gap:6px;margin:0}
     .mgw-phase-b-launch-progress[data-visible="0"]{visibility:hidden}
-    .mgw-phase-b-launch-progress i{display:block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.28);animation:mgwPhaseBDots 1.15s ease-in-out infinite}
-    .mgw-phase-b-launch-progress i:nth-child(2){animation-delay:.15s}.mgw-phase-b-launch-progress i:nth-child(3){animation-delay:.3s}
+    .mgw-phase-b-launch-progress i{display:block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.30);animation:mgwPhaseBDots 1s ease-in-out infinite}
+    .mgw-phase-b-launch-progress i:nth-child(2){animation-delay:.12s}.mgw-phase-b-launch-progress i:nth-child(3){animation-delay:.24s}
     #gameBoard.mgw-phase-b-turn-wait{pointer-events:none}
-    @keyframes mgwPhaseBFloat{0%,100%{translate:0 0}50%{translate:0 -7px}}
-    @keyframes mgwPhaseBPulse{0%,100%{opacity:.28;transform:scale(.88)}50%{opacity:1;transform:scale(1.18)}}
-    @keyframes mgwPhaseBDots{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+    @keyframes mgwPhaseBSpin{to{transform:rotate(360deg)}}
+    @keyframes mgwPhaseBDots{0%,100%{opacity:.28;transform:translateY(0)}50%{opacity:.9;transform:translateY(-2px)}}
+    @media (prefers-reduced-motion:reduce){.mgw-phase-b-launch-ring,.mgw-phase-b-launch-progress i{animation:none}}
   `;
   document.head.appendChild(style);
 }
@@ -392,16 +392,11 @@ function ensureLaunchOverlay(){
     <div class="mgw-phase-b-launch-card" role="status" aria-live="polite">
       <div class="mgw-phase-b-launch-game" data-phase-b-game>Игра</div>
       <div class="mgw-phase-b-launch-visual" aria-hidden="true">
-        <span class="mgw-phase-b-launch-shape one"></span>
-        <span class="mgw-phase-b-launch-shape two"></span>
-        <span class="mgw-phase-b-launch-shape three"></span>
-        <span class="mgw-phase-b-launch-dot one"></span>
-        <span class="mgw-phase-b-launch-dot two"></span>
-        <span class="mgw-phase-b-launch-dot three"></span>
-        <div class="mgw-phase-b-countdown" data-phase-b-countdown data-ready="0" hidden></div>
+        <span class="mgw-phase-b-launch-ring"></span>
+        <div class="mgw-phase-b-countdown" data-phase-b-countdown data-loading="1" data-ready="0">VS</div>
       </div>
       <strong class="mgw-phase-b-launch-title" data-phase-b-title>Подготовка матча</strong>
-      <span class="mgw-phase-b-launch-note" data-phase-b-note>Подключаем игроков — ещё мгновение</span>
+      <span class="mgw-phase-b-launch-note" data-phase-b-note>Собираем матч</span>
       <div class="mgw-phase-b-launch-progress" data-phase-b-progress data-visible="1" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
   `;
