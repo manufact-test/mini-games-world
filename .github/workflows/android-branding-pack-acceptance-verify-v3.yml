@@ -94,6 +94,17 @@ jobs:
             -k 'system-images;android-35;google_apis;x86_64' \
             --force
 
+      - name: Enable emulator acceleration when available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -e /dev/kvm ]]; then
+            sudo chmod 666 /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo '/dev/kvm unavailable; emulator will use software acceleration'
+          fi
+
       - name: Boot emulator
         shell: bash
         run: |
@@ -103,16 +114,50 @@ jobs:
           ADB="$SDK_ROOT/platform-tools/adb"
           test -x "$EMULATOR"
           test -x "$ADB"
+
+          ACCEL_ARGS=()
+          if [[ ! -e /dev/kvm ]]; then
+            ACCEL_ARGS=(-accel off)
+          fi
+
           "$EMULATOR" -avd mgw_acceptance_api35 \
             -no-window -no-audio -no-boot-anim -no-snapshot \
-            -gpu swiftshader_indirect -no-metrics > /tmp/emulator.log 2>&1 &
-          "$ADB" wait-for-device
-          for i in $(seq 1 90); do
-            if [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
-              exit 0
+            -gpu swiftshader_indirect -no-metrics "${ACCEL_ARGS[@]}" \
+            > /tmp/emulator.log 2>&1 &
+          EMULATOR_PID=$!
+
+          DEVICE_READY=0
+          for i in $(seq 1 120); do
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              echo 'Emulator process exited before device became ready' >&2
+              cat /tmp/emulator.log
+              exit 1
+            fi
+            if "$ADB" get-state >/dev/null 2>&1; then
+              DEVICE_READY=1
+              break
             fi
             sleep 2
           done
+          if [[ "$DEVICE_READY" != "1" ]]; then
+            echo 'ADB device did not become ready in time' >&2
+            cat /tmp/emulator.log
+            exit 1
+          fi
+
+          for i in $(seq 1 120); do
+            if [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
+              "$ADB" shell input keyevent 82 || true
+              exit 0
+            fi
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              echo 'Emulator process exited during Android boot' >&2
+              cat /tmp/emulator.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo 'Android boot did not complete in time' >&2
           cat /tmp/emulator.log
           exit 1
 
