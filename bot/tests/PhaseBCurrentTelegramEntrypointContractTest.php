@@ -10,6 +10,9 @@ $read = static function (string $path) use ($root): string {
 
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $welcome = $read('bot/helpers/UserWelcomeGuard.php');
+$inviteStart = $read('bot/helpers/InviteStartGuard.php');
+$telegram = $read('bot/services/TelegramService.php');
+$handler = $read('bot/handlers/WebhookHandler.php');
 $webhook = $read('bot/webhook.php');
 $menuButton = $read('bot/helpers/StagingMenuButtonReconciler.php');
 $v110 = $read('app/v110.php');
@@ -43,6 +46,21 @@ $assert(
     !str_contains($welcome, "'text' => 'Играть'")
         && !str_contains($welcome, "'web_app' => ['url' => \$baseWebAppUrl]"),
     'UserWelcomeGuard must never recreate the retired per-chat Web App menu button.'
+);
+$assert(
+    str_contains($inviteStart, 'WebAppLaunchUrl::invitation($this->config, $token)')
+        && !str_contains($inviteStart, '/app/?v=87'),
+    'Invite /start deep links must use the same accepted v110 Web App URL builder and never the retired v87 graph.'
+);
+$assert(
+    str_contains($telegram, "require_once __DIR__ . '/../helpers/WebAppLaunchUrl.php';")
+        && str_contains($telegram, 'WebAppLaunchUrl::base($this->config)')
+        && !str_contains($telegram, '/app/?v=121'),
+    'WebhookHandler fallback /start responses must use the same accepted Web App URL builder and own no v121 URL.'
+);
+$assert(
+    str_contains($handler, '$this->telegram->sendStartMessage($chatId);'),
+    'The generic webhook fallback must remain routed through the covered TelegramService start method.'
 );
 $assert(
     str_contains($webhook, 'StagingMenuButtonReconciler') && str_contains($webhook, '->reconcile();'),
@@ -102,6 +120,9 @@ foreach ([
     'app/assets/js/production-v110-acceptance-runtime.js',
     'bot/helpers/WebAppLaunchUrl.php',
     'bot/helpers/UserWelcomeGuard.php',
+    'bot/helpers/InviteStartGuard.php',
+    'bot/handlers/WebhookHandler.php',
+    'bot/services/TelegramService.php',
     'bot/webhook.php',
     'bot/helpers/StagingMenuButtonReconciler.php',
     'app/v114.php',
