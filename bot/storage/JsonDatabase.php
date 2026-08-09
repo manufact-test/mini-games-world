@@ -18,6 +18,7 @@ final class JsonDatabase
 
     private string $dataDir;
     private string $lockFile;
+    private string $writeBarrierFile;
     private string $writeBlockFile;
     private ?array $exclusiveSnapshot = null;
 
@@ -28,17 +29,33 @@ final class JsonDatabase
             mkdir($this->dataDir, 0755, true);
         }
         $this->lockFile = $this->dataDir . '/app.lock';
+        $this->writeBarrierFile = $this->dataDir . '/app-write-barrier.lock';
         $this->writeBlockFile = $this->dataDir . '/.cutover-write-block';
         $this->ensureFiles();
     }
 
     public function transaction(callable $callback): mixed
     {
+        $writeBarrierHandle = fopen($this->writeBarrierFile, 'c+');
+        if (!$writeBarrierHandle) {
+            throw new RuntimeException('Не удалось открыть writer barrier-файл.');
+        }
+
         $lockHandle = fopen($this->lockFile, 'c+');
         if (!$lockHandle) {
+            fclose($writeBarrierHandle);
             throw new RuntimeException('Не удалось открыть lock-файл.');
         }
+
         try {
+            // API writers may run one at a time under app.lock, but every writer
+            // also joins the shared writer side of this barrier. JSON→DB bridges
+            // take the barrier exclusively so their frozen source cannot be
+            // overtaken by a newer writer while read-only clients remain free to
+            // observe the already-published JSON snapshot.
+            if (!flock($writeBarrierHandle, LOCK_SH)) {
+                throw new RuntimeException('Не удалось открыть writer barrier.');
+            }
             if (!flock($lockHandle, LOCK_EX)) {
                 throw new RuntimeException('Не удалось заблокировать хранилище.');
             }
@@ -50,11 +67,15 @@ final class JsonDatabase
             $result = $callback($db);
             $this->saveChanged($before, $db);
             flock($lockHandle, LOCK_UN);
+            flock($writeBarrierHandle, LOCK_UN);
             fclose($lockHandle);
+            fclose($writeBarrierHandle);
             return $result;
         } catch (Throwable $e) {
             flock($lockHandle, LOCK_UN);
+            flock($writeBarrierHandle, LOCK_UN);
             fclose($lockHandle);
+            fclose($writeBarrierHandle);
             throw $e;
         }
     }
@@ -81,14 +102,20 @@ final class JsonDatabase
     }
 
     /**
-     * Hold the JSON lock exclusively while a stable snapshot is consumed by
-     * an external bridge. The callback receives data by value and therefore
-     * cannot mutate the JSON source. Writers remain blocked until the bridge
-     * has completed, so no stale snapshot can race a newer JSON transaction.
+     * Freeze JSON writers while a stable source snapshot is consumed by an
+     * external DB bridge. The callback receives data by value and cannot mutate
+     * the JSON source.
      *
-     * Nested bridge reads on the same adapter reuse the already-frozen
-     * snapshot instead of trying to acquire app.lock a second time. A second
-     * flock() on another file handle would self-block while LOCK_EX is held.
+     * This exclusivity is intentionally against writers, not readers:
+     * - bridge takes app-write-barrier.lock with LOCK_EX;
+     * - transaction writers take the same barrier with LOCK_SH;
+     * - the bridge copies JSON under a short app.lock LOCK_SH and releases it
+     *   before projection/parity work begins;
+     * - ordinary readOnly/game-watch readers use only app.lock LOCK_SH and can
+     *   therefore observe the committed snapshot while DB projection runs.
+     *
+     * Nested bridge reads on the same adapter reuse the already-frozen snapshot
+     * instead of trying to reacquire either lock.
      *
      * @param list<string> $sections
      */
@@ -98,14 +125,46 @@ final class JsonDatabase
             return $callback($this->snapshotSections($this->exclusiveSnapshot, $sections));
         }
 
-        return $this->readSectionsWithLock($sections, LOCK_EX, function (array $snapshot) use ($callback): mixed {
+        $writeBarrierHandle = fopen($this->writeBarrierFile, 'c+');
+        if (!$writeBarrierHandle) {
+            throw new RuntimeException('Не удалось открыть writer barrier-файл.');
+        }
+
+        try {
+            if (!flock($writeBarrierHandle, LOCK_EX)) {
+                throw new RuntimeException('Не удалось заморозить JSON writers для внешней проекции.');
+            }
+
+            $snapshot = $this->snapshotSectionsWithSharedLock($sections);
             $this->exclusiveSnapshot = $snapshot;
             try {
                 return $callback($snapshot);
             } finally {
                 $this->exclusiveSnapshot = null;
             }
-        });
+        } finally {
+            flock($writeBarrierHandle, LOCK_UN);
+            fclose($writeBarrierHandle);
+        }
+    }
+
+    /** @param list<string> $sections */
+    private function snapshotSectionsWithSharedLock(array $sections): array
+    {
+        $lockHandle = fopen($this->lockFile, 'c+');
+        if (!$lockHandle) {
+            throw new RuntimeException('Не удалось открыть lock-файл.');
+        }
+
+        try {
+            if (!flock($lockHandle, LOCK_SH)) {
+                throw new RuntimeException('Не удалось прочитать стабильный снимок хранилища.');
+            }
+            return $this->loadSections($sections);
+        } finally {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+        }
     }
 
     /** @param list<string> $sections */
