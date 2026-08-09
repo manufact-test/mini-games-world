@@ -8,7 +8,7 @@ const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bell-single-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v116';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v117';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -77,8 +77,8 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=116&b=93f821aac133',
-      '/assets/js/phase-b-current-runtime.js?v=116&b=e32deaa6fe18',
+      '/assets/js/phase-b-current-entry.js?v=117&b=49fe56ba74d3',
+      '/assets/js/phase-b-current-runtime.js?v=117&b=10c43bc8aad6',
       '/assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
 

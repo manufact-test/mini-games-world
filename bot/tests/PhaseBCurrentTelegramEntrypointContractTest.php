@@ -26,7 +26,7 @@ $assert(str_contains($htaccess, 'DirectoryIndex v114.php index.html'), 'Default 
 $assert(str_contains($telegram, "/app/?v=85"), 'Telegram /start button must use the default /app/ route.');
 
 $assert(
-    str_contains($v114, './assets/js/phase-b-current-entry.js?v=116&b=93f821aac133'),
+    str_contains($v114, './assets/js/phase-b-current-entry.js?v=117&b=49fe56ba74d3'),
     'v114 must publish the current Phase B entry under a fresh immutable URL.'
 );
 $assert(
@@ -34,22 +34,28 @@ $assert(
     'v114 import map must route every current D1 game-screen import to the Phase B-aware current owner.'
 );
 $assert(
-    str_contains($v114, 'X-MGW-Phase-B-Build: phase-b-current-v116'),
-    'v114 must expose an explicit Phase B build identity.'
+    str_contains($v114, 'X-MGW-Phase-B-Build: phase-b-current-v117'),
+    'v114 must expose an explicit current Phase B build identity.'
 );
 $assert(
     str_contains($entry, "import './production-regression-fix-entry.js?v=102';")
+        && str_contains($entry, "./phase-b-current-runtime.js?v=117&b=10c43bc8aad6")
+        && str_contains($entry, "window.__MGW_PHASE_B_BUILD__ = 'phase-b-current-v117';")
         && str_contains($entry, 'initPhaseBCurrentRuntime();'),
-    'Phase B entry must preserve the accepted regression owner and initialize one Phase B runtime.'
+    'Phase B entry must preserve the accepted regression owner and initialize the fresh Phase B runtime.'
 );
 
 $assert(str_contains($runtime, '/bot/game-watch.php'), 'Current Phase B runtime must use the read-only game watch.');
 $assert(!str_contains($runtime, 'api.gameState('), 'Current Phase B runtime must not create a second primary game_state owner.');
 $assert(str_contains($runtime, 'position:fixed;inset:0;z-index:10000'), 'Preparation UI must be a global fixed layer above the application.');
-$assert(str_contains($runtime, "title.textContent = 'Готовим матч'"), 'Preparation UI must use product-facing copy.');
+$assert(str_contains($runtime, "title.textContent = 'Подготовка матча'"), 'Preparation UI must remain one continuous product-facing stage.');
+$assert(str_contains($runtime, "const blocking = phase === 'preparing' || phase === 'countdown';"), 'Preparation overlay must stay above the app through the entire authoritative countdown phase.');
+$assert(str_contains($runtime, "readyForServer ? 'Открываем игру' : 'Начинаем одновременно'"), 'Countdown completion must remain visibly inside preparation until authoritative active arrives.');
+$assert(str_contains($runtime, "readyForServer ? 'СТАРТ' : String(seconds)"), 'One continuous preparation surface must own countdown completion.');
 $assert(!str_contains(strtolower($runtime), 'синхрониза'), 'Player-facing Phase B runtime must not contain technical synchronization wording.');
 $assert(str_contains($runtime, 'WATCH_INTERVAL_MS = 250'), 'Read-only Phase B freshness cadence must remain explicit and bounded.');
 $assert(str_contains($runtime, 'PRIMARY_GAME_POLL_FLOOR_MS = 1500'), 'Primary game_state polling must remain slower than read-only freshness.');
+$assert(str_contains($runtime, 'background-size:28px 28px,28px 28px,auto'), 'Preparation background must use the distinct game-room grid treatment rather than the old splash-like surface.');
 
 $assert(str_contains($game, 'pollBusy:false'), 'Current game owner must track one primary poll in flight.');
 $assert(
