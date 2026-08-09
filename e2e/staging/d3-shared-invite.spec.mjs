@@ -5,6 +5,7 @@ import {
   installTelegramShareMock,
   openPlayerPage,
   cleanupPlayer,
+  postFromPlayer,
   revokeContext,
 } from './support/d3-shared-context.mjs';
 import {
@@ -13,6 +14,53 @@ import {
   expectPlayerRequest,
   clickInviteAction,
 } from './support/d3-shared-actions.mjs';
+
+async function cleanupStartedPhaseBGame(page, gameId) {
+  if (!page || page.isClosed() || !gameId) return;
+
+  // A shared-invite test may finish while the newly created Phase B game is
+  // still in preparing/countdown. Product rules correctly reject surrender in
+  // those phases, so cleanup must wait on the authoritative launch state rather
+  // than silently leaving a live game/session behind for the next scenario.
+  await expect.poll(async () => {
+    const state = await postFromPlayer(page, '/bot/api.php', {
+      action: 'game_state',
+      gameId,
+    });
+    if (state.status !== 200) return `http_${state.status}`;
+
+    const game = state.payload?.game || null;
+    if (!game || String(game.status || '') !== 'active') return 'terminal';
+    return String(game.launch_phase || 'active');
+  }, {
+    timeout: 15_000,
+    intervals: [250, 500, 1000],
+    message: 'D3 cleanup waits for authoritative Phase B launch or terminal state',
+  }).toMatch(/^(active|terminal)$/);
+
+  const state = await postFromPlayer(page, '/bot/api.php', {
+    action: 'game_state',
+    gameId,
+  });
+  expect(
+    state.status,
+    `D3 cleanup game_state; public error: ${state.publicError || 'no_public_error'}`,
+  ).toBe(200);
+
+  const game = state.payload?.game || null;
+  if (!game || String(game.status || '') !== 'active') return;
+  expect(String(game.launch_phase || 'active')).toBe('active');
+
+  const left = await postFromPlayer(page, '/bot/api.php', {
+    action: 'leave_game',
+    gameId,
+  });
+  expect(
+    left.status,
+    `D3 cleanup leave_game; public error: ${left.publicError || 'no_public_error'}`,
+  ).toBe(200);
+  expect(String(left.payload?.game?.status || '')).not.toBe('active');
+}
 
 test('D3 native share cancellation is quiet and one shared link creates one match', async ({ browser }, testInfo) => {
   test.setTimeout(180_000);
@@ -228,6 +276,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
       contentType: 'application/json',
     });
   } finally {
+    await cleanupStartedPhaseBGame(playerA?.page, gameId);
     await preparedHarness?.stop();
     counterA?.stop();
     counterB?.stop();
