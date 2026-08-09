@@ -1,0 +1,78 @@
+name: Phase B PR676 focused v2
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-manual-fail-launch-overlay-sync
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 1896b86507b76008c8f9bcf51cbc80212ba41b9c
+  STATUS_CONTEXT: phase-b-pr676-static-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR676 focused launch verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: JavaScript and PHP syntax
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/production-v110-acceptance-runtime.js
+          node --check app/assets/js/production-v110-readonly-game-sync.js
+          node --check app/assets/js/screens/game-screen-v102-safe.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/main-v110.js
+          php -l app/v110.php
+
+      - name: Phase B focused contracts
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/PhaseBClientLaunchUxContractTest.php
+          php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
+
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR676 focused launch verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"PR676 focused launch verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
