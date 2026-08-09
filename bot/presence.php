@@ -16,7 +16,11 @@ try {
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $presenceLeaseId = clean_string($payload['presenceLeaseId'] ?? '', 120);
     $auth = new AuthService($config);
-    $tgUser = $auth->getUserFromRequest($payload);
+    // Presence only needs the already verified provider user id to own a
+    // document/session lease. Keep Telegram/staging/dev authentication intact,
+    // but avoid redundant provider-neutral account/DB identity resolution on
+    // this high-frequency status/ping path.
+    $tgUser = $auth->getUserFromRequest($payload, false);
     $accountId = trim((string)($tgUser['id'] ?? ''));
     if ($accountId === '') throw new RuntimeException('Пользователь не найден.');
     if ($sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');
