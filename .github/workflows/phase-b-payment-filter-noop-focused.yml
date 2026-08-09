@@ -1,0 +1,22 @@
+name: Phase B payment filter no-op focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-payment-filter-read-noop
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax and behavior
+        run: |
+          set -Eeuo pipefail
+          php -l bot/payments/PaymentRuntimeBridge.php
+          php -l bot/tests/PaymentRuntimeBridgeResponseFilterNoopTest.php
+          php bot/tests/PaymentRuntimeBridgeResponseFilterNoopTest.php
