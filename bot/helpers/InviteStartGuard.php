@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/WebAppLaunchUrl.php';
+
 final class InviteStartGuard
 {
     public function __construct(
@@ -26,8 +28,10 @@ final class InviteStartGuard
         }
 
         $token = strtolower((string)$matches[1]);
-        $url = rtrim((string)($this->config['base_url'] ?? ''), '/')
-            . '/app/?v=87&invite=' . rawurlencode($token);
+        $url = WebAppLaunchUrl::invitation($this->config, $token);
+        if ($url === '') {
+            throw new RuntimeException('Mini Games World invite Web App URL is unavailable.');
+        }
 
         $response = $this->telegram->api('sendMessage', [
             'chat_id' => $chatId,
