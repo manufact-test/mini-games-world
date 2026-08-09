@@ -98,13 +98,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          EMULATOR="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}/emulator/emulator"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+          EMULATOR="$SDK_ROOT/emulator/emulator"
+          ADB="$SDK_ROOT/platform-tools/adb"
+          test -x "$EMULATOR"
+          test -x "$ADB"
           "$EMULATOR" -avd mgw_acceptance_api35 \
             -no-window -no-audio -no-boot-anim -no-snapshot \
             -gpu swiftshader_indirect -no-metrics > /tmp/emulator.log 2>&1 &
-          adb wait-for-device
+          "$ADB" wait-for-device
           for i in $(seq 1 90); do
-            if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
+            if [[ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
               exit 0
             fi
             sleep 2
@@ -116,13 +120,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          adb install -r "$APK" | tee /tmp/adb-install.txt
+          ADB="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}/platform-tools/adb"
+          test -x "$ADB"
+          "$ADB" install -r "$APK" | tee /tmp/adb-install.txt
           grep -F 'Success' /tmp/adb-install.txt
-          adb shell am start -W -n com.minigamesworld.app.acceptance/com.minigamesworld.app.MainActivity | tee /tmp/am-start.txt
+          "$ADB" shell am start -W -n com.minigamesworld.app.acceptance/com.minigamesworld.app.MainActivity | tee /tmp/am-start.txt
           sleep 4
-          PID="$(adb shell pidof com.minigamesworld.app.acceptance | tr -d '\r')"
+          PID="$("$ADB" shell pidof com.minigamesworld.app.acceptance | tr -d '\r')"
           test -n "$PID"
-          adb exec-out screencap -p > /tmp/mgw-acceptance-startup.png
+          "$ADB" exec-out screencap -p > /tmp/mgw-acceptance-startup.png
 
       - name: Upload verified APK and screenshot
         if: success()
