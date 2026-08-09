@@ -32,7 +32,9 @@ $assert(
     'Each move must select the actor from the latest authoritative game payload.'
 );
 $assert(
-    str_contains($spec, "expect(String(finalPayload.game?.id || ''), `Authoritative game id after cell ${cell}`).toBe(gameId);"),
+    str_contains($spec, "expect(String(finalPayload.game?.id || '')")
+        && str_contains($spec, 'Authoritative game id after cell ${cell}')
+        && str_contains($spec, ').toBe(gameId);'),
     'Each game_action response must be proven to belong to the expected match.'
 );
 $assert(
