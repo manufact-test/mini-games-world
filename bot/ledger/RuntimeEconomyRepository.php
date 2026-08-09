@@ -5,6 +5,10 @@ final class RuntimeEconomyRepository
 {
     private RuntimeStorageRouter $router;
     private ?DatabaseConnectionInterface $connection;
+    /** @var array<string,array<string,mixed>> */
+    private static array $requestSynchronizeCache = [];
+    /** @var array<string,array<string,mixed>> */
+    private static array $requestAuditCache = [];
 
     public function __construct(
         private array $config,
@@ -19,6 +23,11 @@ final class RuntimeEconomyRepository
     {
         $this->assertDatabaseRoute();
         $database = $this->database();
+        $cacheKey = $this->requestCacheKey($database, $jsonSnapshot);
+        if (array_key_exists($cacheKey, self::$requestSynchronizeCache)) {
+            return self::$requestSynchronizeCache[$cacheKey];
+        }
+
         $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
         $ledger = new LedgerWriteService($database);
         $integrity = new LedgerIntegrityVerifier($database);
@@ -40,7 +49,7 @@ final class RuntimeEconomyRepository
             );
         }
 
-        return [
+        $result = [
             'ok' => true,
             'action' => 'synchronize',
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
@@ -51,12 +60,20 @@ final class RuntimeEconomyRepository
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
+        unset(self::$requestAuditCache[$cacheKey]);
+        self::$requestSynchronizeCache[$cacheKey] = $result;
+        return $result;
     }
 
     public function auditParity(array $jsonSnapshot): array
     {
         $this->assertDatabaseRoute();
         $database = $this->database();
+        $cacheKey = $this->requestCacheKey($database, $jsonSnapshot);
+        if (array_key_exists($cacheKey, self::$requestAuditCache)) {
+            return self::$requestAuditCache[$cacheKey];
+        }
+
         $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
         $shadowReport = (new LegacyEconomyShadowSyncService($storage, $database))->preview();
         $ledger = new LedgerWriteService($database);
@@ -79,7 +96,7 @@ final class RuntimeEconomyRepository
         $blockers = array_values(array_unique(array_filter($blockers, static fn(string $value): bool => $value !== '')));
         $compactReconciliation = $this->compactReconciliation($reconciliation);
 
-        return [
+        $result = [
             'ok' => $blockers === [],
             'read_only' => true,
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
@@ -99,6 +116,20 @@ final class RuntimeEconomyRepository
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
+        self::$requestAuditCache[$cacheKey] = $result;
+        return $result;
+    }
+
+    private function requestCacheKey(DatabaseConnectionInterface $database, array $jsonSnapshot): string
+    {
+        // PdoConnectionFactory intentionally reuses one connection object inside
+        // a web request. The object id therefore scopes this memo to one real DB
+        // session, while CLI/forked workers keep their existing isolated sockets.
+        $source = [
+            'users' => is_array($jsonSnapshot['users'] ?? null) ? $jsonSnapshot['users'] : [],
+            'transactions' => is_array($jsonSnapshot['transactions'] ?? null) ? $jsonSnapshot['transactions'] : [],
+        ];
+        return spl_object_id($database) . ':' . hash('sha256', LedgerIntegrity::canonicalJson($source));
     }
 
     private function assertDatabaseRoute(): void
