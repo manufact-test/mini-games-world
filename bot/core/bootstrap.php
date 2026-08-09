@@ -187,7 +187,7 @@ if ($runtimeScript === 'api.php' && $runtimeWeeklyBonusBridge->shouldAttachToCur
         if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
         $action = (string)($GLOBALS['mgw_api_action'] ?? '');
         if ($runtimeWeeklyBonusBridge->shouldSynchronizeApiAction($action)) {
-            $runtimeWeeklyBonusBridge->synchronizeCurrentJson();
+            $runtimeWeeklyBonusBridge->synchronizeCurrentJsonIfDirty();
         }
     };
     $runtimeApiDataFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
