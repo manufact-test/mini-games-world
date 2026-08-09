@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 require_once $root . '/database/DatabaseConfig.php';
+require_once $root . '/storage/contracts/StorageTransactionInterface.php';
 require_once $root . '/storage/contracts/StorageAdapterInterface.php';
 require_once $root . '/storage/RuntimeStorageRouter.php';
 require_once $root . '/shop/ShopRuntimeBridge.php';
