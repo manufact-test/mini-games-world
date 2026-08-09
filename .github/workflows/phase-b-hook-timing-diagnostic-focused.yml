@@ -1,0 +1,41 @@
+name: Phase B hook timing diagnostic focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-hook-timing-diagnostic
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/helpers/response.php
+          node --check e2e/staging/phase-b-hook-timing-evidence.spec.mjs
+      - name: Diagnostic safety contract
+        run: |
+          set -Eeuo pipefail
+          grep -F "mgw_staging_test_session" bot/helpers/response.php
+          grep -F "!== 'staging'" bot/helpers/response.php
+          grep -F "Server-Timing:" bot/helpers/response.php
+          grep -F "production_changed: false" e2e/staging/phase-b-hook-timing-evidence.spec.mjs
+          grep -F "sensitive_identifiers_exposed: false" e2e/staging/phase-b-hook-timing-evidence.spec.mjs
+          ! grep -E "waitForTimeout|setTimeout|retries" e2e/staging/phase-b-hook-timing-evidence.spec.mjs
+      - name: Fingerprint coverage
+        run: |
+          set -Eeuo pipefail
+          for path in \
+            bot/helpers/response.php \
+            bot/shop/ShopRuntimeBridge.php \
+            bot/payments/PaymentRuntimeBridge.php \
+            bot/weekly/WeeklyBonusRuntimeBridge.php \
+            bot/weekly/RuntimeWeeklyBonusRepository.php; do
+            grep -Fx "$path" bot/helpers/staging-e2e-runtime-files.txt
+          done
