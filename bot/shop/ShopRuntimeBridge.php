@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../runtime/RuntimeBridgeProjectionCoordinator.php';
+
 final class ShopRuntimeBridge
 {
     private RuntimeStorageRouter $router;
@@ -33,28 +35,42 @@ final class ShopRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        return $this->enabled();
+        return $this->enabled() && $this->runtimeDomainChanged('shop');
     }
 
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
+        if (!$this->runtimeDomainChanged('shop')) {
+            return ['ok' => true, 'action' => 'unchanged', 'skipped' => true];
+        }
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Shop bridge requires JSON rollback storage.');
         }
-        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Shop bridge requires exclusive JSON snapshot support.');
-        }
 
-        $repository = $this->repository ??= new RuntimeShopRepository(
+        return RuntimeBridgeProjectionCoordinator::synchronize(
             $this->config,
-            $this->router,
-            $storage
+            $storage,
+            function (array $_snapshot, RuntimeBridgeSnapshotStorage $frozen): array {
+                $repository = $this->repository ?? new RuntimeShopRepository(
+                    $this->config,
+                    $this->router,
+                    $frozen
+                );
+                return $repository->synchronizeCurrentJson();
+            }
         );
-        return $storage->exclusiveReadOnly(static function (array $_snapshot) use ($repository): array {
-            return $repository->synchronizeCurrentJson();
-        });
+    }
+
+    private function runtimeDomainChanged(string $domain): bool
+    {
+        $script = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
+        if ($script !== 'api.php') return true;
+
+        $dirty = $GLOBALS['mgw_runtime_bridge_dirty'] ?? null;
+        if (!is_array($dirty) || !array_key_exists($domain, $dirty)) return true;
+        return $dirty[$domain] === true;
     }
 }
