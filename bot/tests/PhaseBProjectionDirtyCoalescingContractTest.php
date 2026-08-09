@@ -119,6 +119,7 @@ try {
                 'modules' => [
                     'accounts' => true,
                     'realtime' => true,
+                    'notifications' => true,
                     'economy' => true,
                     'history' => true,
                     'weekly_bonus' => true,
