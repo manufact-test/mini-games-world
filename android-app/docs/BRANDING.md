@@ -7,16 +7,41 @@ It does not redesign or duplicate the existing Mini Games World web UI.
 
 ## Selected identity
 
-**Shield King** is the approved Android brand direction.
+**Shield King / MGW** is the approved Android brand direction.
 
-The launcher/splash mark is a compact dark shield with a premium crown, deep violet inner field, gold crown accents and a small game-board motif. The old flat purple `MG` tile is deprecated and must not be treated as final branding.
+The FINAL approved launcher artwork is the centered square composition with:
 
-The mark intentionally avoids large lettering inside the icon so it remains readable through Android launcher masks and at small sizes. The application label continues to identify the product as Mini Games World.
+- near-black rounded-square base;
+- thin restrained violet perimeter accent;
+- centered premium shield;
+- centered violet/gold crown;
+- large centered metallic `MGW` lettering;
+- deep violet / black surfaces;
+- no separate plate, halo or offset shape behind the shield.
+
+The earlier flat purple `MG` tile and the earlier simplified shield-only Android variants are deprecated and MUST NOT be reused.
+
+## Critical composition rule
+
+The shield/crown/`MGW` composition must be optically centered on both axes.
+
+Forbidden behind the shield/mark:
+
+- white or silver offset shadow;
+- pale backplate;
+- duplicated shield silhouette;
+- asymmetric glow blob;
+- right/left shifted highlight used as a background object;
+- decorative object that makes the launcher mark appear off-center.
+
+Normal metallic highlights ON the shield/crown/letters are allowed. A separate visible light shape BEHIND the mark is not.
+
+The canonical raster source is `android-app/branding/shield_king_launcher_384.webp.b64` as updated after product-owner acceptance on 2026-08-09. Future icon builds must use this artwork rather than reconstructing it as a simplified VectorDrawable.
 
 ## Approved palette
 
 - launcher background: `#0C0F14`
-- splash background: `#080B12`
+- platform startup background: `#080B12`
 - dark brand surface: `#17121F`
 - inner violet surface: `#231942`
 - MGW purple: `#6A4CFF`
@@ -25,38 +50,47 @@ The mark intentionally avoids large lettering inside the icon so it remains read
 - silver highlight: `#E6E8EF`
 - white: `#FFFFFF`
 
-This palette deliberately replaces the earlier brighter `#7548FF` treatment, which did not match the approved darker MGW direction.
+This palette deliberately replaces the earlier brighter generic-purple treatment.
 
 ## Launcher
 
 - adaptive icon for API 26+;
 - round adaptive icon;
 - monochrome/themed icon for API 33+;
-- foreground keeps generous adaptive-mask safety margins;
-- Shield King is the canonical Android launcher mark;
-- no device-specific padding patch.
+- one symmetric inset owner on all four sides;
+- no device-specific left/right padding patch;
+- approved raster remains the visual source of truth;
+- launcher background around an adaptive crop must stay near-black and visually disappear into the artwork;
+- icon must remain visually centered under OEM masks.
 
-## Splash
+## Platform splash / startup
 
-- pre-Android-12 startup uses the Shield King mark on the approved dark background;
-- Android 12+ uses the platform splash attributes;
-- no artificial delay is added;
-- shell splash does not own or replace MGW in-app loading/match preparation.
+Android's required platform startup window must NOT display a second large Shield King/MGW logo before the real MGW loading surface.
 
-## Debug install identity
+Required behavior:
 
-Manual branding acceptance uses a dedicated debug application id suffix:
+- platform splash is only a short near-black transition surface;
+- central platform splash icon is transparent/non-visible where platform contracts allow;
+- no artificial delay;
+- no duplicate branded loading screen;
+- the existing/shared MGW loading/preparation UI remains the product loading owner.
 
-`com.minigamesworld.app.brandingv1`
+## Acceptance install identity
 
-Reason: the earlier Foundation and Branding APKs were produced by separate ephemeral GitHub-hosted debug signing keys. Reusing the same `.foundation` debug package makes Android reject the newer APK as a signature-mismatched update. The dedicated branding debug package is an acceptance-only isolation measure and does not define the future production application id.
+Manual Android acceptance uses the stable test-only package:
+
+`com.minigamesworld.app.acceptance`
+
+It uses a stable acceptance-only signing certificate so verified APKs can update one another reliably. This package/signing key is NOT the future production identity.
 
 ## Ownership
 
 All persistent branding changes live inside `android-app/**`.
-No backend, Telegram, DB, economy, matchmaking, shared CI, staging, main or production owner is modified by this pack.
+No backend, Telegram, DB, economy, matchmaking, shared production CI, staging, main or production owner is modified by this pack.
 
 ## Future product redesign
 
-The broader Shield King full-app visual direction is approved conceptually and is recorded separately in `FULL_APP_REDESIGN_HANDOFF.md`.
-It is intentionally not implemented by this isolated Android Branding Pack because the existing web/Telegram UI remains shared product surface and must be redesigned through the main MGW roadmap, not by creating an Android-only fork.
+The broader Shield King full-app visual direction is approved conceptually and recorded in `FULL_APP_REDESIGN_HANDOFF.md`.
+The same no-offset-backplate/no-white-shadow rule applies to all future uses of the primary mark.
+
+The shared web/Telegram UI must be redesigned through the main MGW roadmap, never by creating an Android-only visual fork.
