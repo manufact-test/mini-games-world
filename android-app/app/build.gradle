@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+}
+
+def configuredMgwBaseUrl = providers.gradleProperty('MGW_BASE_URL')
+        .orElse(providers.environmentVariable('MGW_BASE_URL'))
+        .getOrElse('')
+        .trim()
+def escapedMgwBaseUrl = configuredMgwBaseUrl
+        .replace('\\', '\\\\')
+        .replace('"', '\\"')
+
+android {
+    namespace 'com.minigamesworld.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.minigamesworld.app'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0-foundation'
+
+        buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.foundation'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
