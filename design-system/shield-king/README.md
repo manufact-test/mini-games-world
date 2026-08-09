@@ -4,8 +4,8 @@
 
 ```text
 DS-0 FOUNDATIONS / TOKENS — PASS
-DS-1 COMPONENT LIBRARY — IN PROGRESS
-DS-2 EXACT ICON SYSTEM — NOT STARTED
+DS-1 COMPONENT LIBRARY — PASS
+DS-2 EXACT ICON SYSTEM — IN PROGRESS
 DS-3 SCREEN SPECIFICATIONS — NOT STARTED
 DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
@@ -53,13 +53,20 @@ Metallic highlights on the mark itself are allowed. All ambient glow must remain
 5. `DS-4` — Eight-Game Visual System
 6. `DS-5` — Loading / System States / Final Handoff
 
-## DS-0 output
+## Completed output
+
+### DS-0
 
 - `FOUNDATIONS.md`
 - `TOKENS.md`
 - `tokens.json`
 
-DS-0 exact-diff audit confirms all persistent changes remain under `design-system/shield-king/**`; no runtime file is changed.
+### DS-1
+
+- `COMPONENTS.md`
+- `COMPONENT_STATES.md`
+
+DS-0 and DS-1 exact-diff audits confirm all persistent changes remain under `design-system/shield-king/**`; no runtime file is changed.
 
 ## Ownership
 
