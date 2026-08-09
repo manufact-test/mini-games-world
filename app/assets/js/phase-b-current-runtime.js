@@ -334,24 +334,25 @@ function installLaunchStyle(){
   const style = document.createElement('style');
   style.id = 'mgw-phase-b-current-style';
   style.textContent = `
-    .mgw-phase-b-launch-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));overflow:hidden;background-color:#080a10;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),radial-gradient(circle at 50% 46%,rgba(124,92,255,.18),transparent 44%);background-size:28px 28px,28px 28px,auto;text-align:center}
+    .mgw-phase-b-launch-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));overflow:hidden;background:#080a10;text-align:center;isolation:isolate}
+    .mgw-phase-b-launch-overlay:before{content:'';position:absolute;z-index:0;top:0;bottom:0;left:50%;width:min(100%,430px);transform:translateX(-50%);background-color:#080a10;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),radial-gradient(circle at 50% 46%,rgba(124,92,255,.18),transparent 44%);background-size:28px 28px,28px 28px,auto;box-shadow:0 0 90px rgba(124,92,255,.12);pointer-events:none}
     .mgw-phase-b-launch-overlay[hidden]{display:none!important}
-    .mgw-phase-b-launch-card{position:relative;width:min(100%,360px);display:grid;justify-items:center;padding:30px 22px 28px;border:1px solid rgba(255,255,255,.11);border-radius:28px;background:linear-gradient(180deg,rgba(20,24,37,.97),rgba(10,13,22,.97));box-shadow:0 24px 64px rgba(0,0,0,.42);overflow:hidden}
+    .mgw-phase-b-launch-card{position:relative;z-index:1;box-sizing:border-box;width:min(100%,360px);height:380px;display:grid;grid-template-rows:30px 150px 54px 48px 28px;align-content:start;justify-items:center;padding:26px 22px 22px;border:1px solid rgba(255,255,255,.11);border-radius:28px;background:linear-gradient(180deg,rgba(20,24,37,.97),rgba(10,13,22,.97));box-shadow:0 24px 64px rgba(0,0,0,.42);overflow:hidden}
     .mgw-phase-b-launch-card:before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,92,255,.08),transparent 38%,rgba(46,230,166,.045));pointer-events:none}
-    .mgw-phase-b-launch-game{position:relative;z-index:1;display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.055);font-size:12px;font-weight:850;letter-spacing:.02em;color:rgba(255,255,255,.8)}
-    .mgw-phase-b-launch-visual{position:relative;width:156px;height:108px;margin:18px 0 12px}
+    .mgw-phase-b-launch-game{position:relative;z-index:1;grid-row:1;display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.055);font-size:12px;font-weight:850;letter-spacing:.02em;color:rgba(255,255,255,.8)}
+    .mgw-phase-b-launch-visual{position:relative;z-index:1;grid-row:2;align-self:center;width:156px;height:108px;margin:0}
     .mgw-phase-b-launch-shape{position:absolute;border:1px solid rgba(255,255,255,.16);box-shadow:0 14px 34px rgba(0,0,0,.24);animation:mgwPhaseBFloat 2.6s ease-in-out infinite}
     .mgw-phase-b-launch-shape.one{width:54px;height:54px;left:13px;top:25px;border-radius:18px;transform:rotate(7deg);background:linear-gradient(135deg,rgba(124,92,255,.95),rgba(91,70,219,.62))}
     .mgw-phase-b-launch-shape.two{width:54px;height:54px;right:13px;top:25px;border-radius:50%;animation-delay:.22s;background:linear-gradient(135deg,rgba(46,230,166,.92),rgba(27,154,124,.58))}
     .mgw-phase-b-launch-shape.three{width:58px;height:3px;left:49px;top:51px;border:0;border-radius:999px;animation:none;background:linear-gradient(90deg,rgba(124,92,255,.5),rgba(255,255,255,.78),rgba(46,230,166,.5));box-shadow:none}
     .mgw-phase-b-launch-dot{position:absolute;width:7px;height:7px;border-radius:50%;background:#fff;opacity:.72;animation:mgwPhaseBPulse 1.6s ease-in-out infinite}
     .mgw-phase-b-launch-dot.one{left:72px;top:49px}.mgw-phase-b-launch-dot.two{left:58px;top:49px;animation-delay:.3s}.mgw-phase-b-launch-dot.three{right:58px;top:49px;animation-delay:.6s}
-    .mgw-phase-b-countdown{position:absolute;inset:0;display:grid;place-items:center;font-size:76px;font-weight:950;line-height:1;letter-spacing:-.06em;text-shadow:0 12px 34px rgba(124,92,255,.35)}
-    .mgw-phase-b-countdown[data-ready="1"]{font-size:30px;letter-spacing:.08em}
+    .mgw-phase-b-countdown{position:absolute;z-index:2;left:50%;top:50%;width:88px;height:88px;transform:translate(-50%,-50%);display:grid;place-items:center;box-sizing:border-box;border:1px solid rgba(255,255,255,.16);border-radius:24px;background:rgba(5,7,12,.9);box-shadow:0 14px 34px rgba(0,0,0,.4);color:#fff;font-size:70px;font-weight:950;line-height:1;letter-spacing:-.06em;text-shadow:0 5px 18px rgba(0,0,0,.55)}
+    .mgw-phase-b-countdown[data-ready="1"]{width:116px;height:58px;border-radius:18px;font-size:28px;letter-spacing:.08em}
     .mgw-phase-b-countdown[hidden]{display:none!important}
-    .mgw-phase-b-launch-title{position:relative;z-index:1;margin:0;font-size:26px;font-weight:950;line-height:1.08;letter-spacing:-.045em}
-    .mgw-phase-b-launch-note{position:relative;z-index:1;margin-top:9px;max-width:280px;font-size:14px;line-height:1.45;color:var(--muted)}
-    .mgw-phase-b-launch-progress{position:relative;z-index:1;display:flex;gap:7px;margin-top:18px}
+    .mgw-phase-b-launch-title{position:relative;z-index:1;grid-row:3;align-self:center;display:flex;align-items:center;justify-content:center;width:100%;height:54px;margin:0;font-size:26px;font-weight:950;line-height:1.08;letter-spacing:-.045em}
+    .mgw-phase-b-launch-note{position:relative;z-index:1;grid-row:4;align-self:start;display:flex;align-items:flex-start;justify-content:center;width:100%;height:48px;margin:0;padding-top:7px;box-sizing:border-box;max-width:280px;font-size:14px;line-height:1.45;color:rgba(255,255,255,.72)}
+    .mgw-phase-b-launch-progress{position:relative;z-index:1;grid-row:5;align-self:center;display:flex;gap:7px;margin:0}
     .mgw-phase-b-launch-progress i{display:block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.28);animation:mgwPhaseBDots 1.15s ease-in-out infinite}
     .mgw-phase-b-launch-progress i:nth-child(2){animation-delay:.15s}.mgw-phase-b-launch-progress i:nth-child(3){animation-delay:.3s}
     #gameBoard.mgw-phase-b-turn-wait{pointer-events:none}
