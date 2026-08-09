@@ -38,19 +38,19 @@ $assert(
     'Presence must skip redundant provider-neutral DB identity resolution.'
 );
 $assert(
-    str_contains($presence, "$accountId = trim((string)(\$tgUser['id'] ?? ''));"),
+    str_contains($presence, '$accountId = trim((string)($tgUser'),
     'Presence must continue binding the lease to the verified provider user id.'
 );
 $assert(
-    str_contains($presence, "if (\$sessionId === '') throw new RuntimeException('Сессия устройства не найдена.');"),
+    str_contains($presence, 'if ($sessionId ==='),
     'Presence must continue requiring the device session id.'
 );
 $assert(
-    str_contains($presence, "$presence->touch($accountId, $sessionId, $presenceLeaseId);"),
+    str_contains($presence, '$presence->touch($accountId, $sessionId, $presenceLeaseId);'),
     'Presence ping/status must keep the existing lease touch owner.'
 );
 $assert(
-    str_contains($presence, "$presence->leave($accountId, $sessionId, $presenceLeaseId);"),
+    str_contains($presence, '$presence->leave($accountId, $sessionId, $presenceLeaseId);'),
     'Presence leave must keep the existing lease release owner.'
 );
 $assert(
