@@ -1,0 +1,46 @@
+name: Phase B weekly-owned API projection focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-weekly-owned-api-projection
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/realtime/RealtimeRuntimeBridge.php
+          php -l bot/ledger/EconomyRuntimeBridge.php
+          php -l bot/tests/PhaseBWeeklyOwnedApiProjectionContractTest.php
+          node --check e2e/staging/phase-b-hook-timing-evidence.spec.mjs
+      - name: Weekly-owned API projection contract
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/PhaseBWeeklyOwnedApiProjectionContractTest.php
+      - name: Existing weekly runtime regression
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/WeeklyBonusRuntimeBridgeTest.php
+      - name: Writer barrier regression
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/JsonDatabaseBridgeWriterBarrierReadAvailabilityTest.php
+      - name: Request-local projection memo regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
+      - name: No timing-policy weakening
+        run: |
+          set -Eeuo pipefail
+          grep -F "timeout: 90_000" e2e/playwright.config.mjs
+          grep -F "retries: 0" e2e/playwright.config.mjs
+          ! grep -E "waitForTimeout|setTimeout|retries" e2e/staging/phase-b-hook-timing-evidence.spec.mjs
