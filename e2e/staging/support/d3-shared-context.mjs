@@ -386,13 +386,37 @@ export async function postFromPlayer(page, pathname, data) {
   }, { pathname, data });
 }
 
+function cleanupWaitMs(game) {
+  if (String(game?.launch_phase || '') !== 'countdown') return 0;
+  const startsAtMs = Number(game?.starts_at_ms || 0);
+  const serverNowMs = Number(game?.server_now_ms || 0);
+  if (!(startsAtMs > 0) || !(serverNowMs > 0)) return 0;
+  return Math.max(0, Math.min(3_500, startsAtMs - serverNowMs + 150));
+}
+
 export async function cleanupPlayer(page) {
   if (!page || page.isClosed()) return;
   try {
-    const state = await postFromPlayer(page, '/bot/api.php', { action: 'game_state' });
-    const game = state.payload?.game || null;
+    let state = await postFromPlayer(page, '/bot/api.php', { action: 'game_state' });
+    let game = state.payload?.game || null;
     if (state.status === 200 && game?.id && game.status === 'active') {
-      await postFromPlayer(page, '/bot/api.php', { action: 'leave_game', gameId: game.id });
+      const waitMs = cleanupWaitMs(game);
+      if (waitMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+        state = await postFromPlayer(page, '/bot/api.php', {
+          action: 'game_state',
+          gameId: game.id,
+        });
+        game = state.payload?.game || game;
+      }
+
+      const launchPhase = String(game?.launch_phase || '');
+      if (state.status === 200
+        && game?.id
+        && game.status === 'active'
+        && (launchPhase === '' || launchPhase === 'active')) {
+        await postFromPlayer(page, '/bot/api.php', { action: 'leave_game', gameId: game.id });
+      }
     }
   } catch {}
 
