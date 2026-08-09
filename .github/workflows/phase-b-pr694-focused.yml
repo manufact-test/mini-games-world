@@ -44,7 +44,7 @@ jobs:
           set -Eeuo pipefail
           php bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
           php bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
-          php bot/tests/LegacyEconomyShadowSyncServiceTest.php
+          php bot/tests/ProductionPrimaryRollbackEconomyShadowReadViewTest.php
           php bot/tests/RealtimeRuntimeBridgeTest.php
           php bot/tests/RuntimeJsonBridgeExclusiveSnapshotContractTest.php
 
