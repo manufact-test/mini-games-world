@@ -24,8 +24,9 @@ export function initV110ReadonlyGameSync(){
   if (runtime.initialized) return;
   runtime.initialized = true;
 
-  // Full game_state remains the authoritative session/cleanup fallback. The
-  // frequent PvP freshness path reads only games.json and never app.lock.
+  // Full game_state stays the authoritative readiness/session/cleanup fallback.
+  // Frequent cross-device freshness reads only games.json and never takes the
+  // global write transaction lock, including Phase B preparation/countdown.
   APP_CONFIG.gameIntervalMs = Math.max(Number(APP_CONFIG.gameIntervalMs || 0), FALLBACK_GAME_POLL_MS);
 
   document.addEventListener('mgw:app-ready', () => scheduleWatch(0), { once:true });
@@ -74,7 +75,9 @@ async function watchCurrentGame(){
     if (!canWatch(state.activeGame, gameId) || actionIsBusy(gameRuntimeItem(gameId))) return null;
     if (projectionKey(state.activeGame) === projectionKey(game)) return game;
 
-    // Existing game-screen-v102 stays the only board and result owner.
+    // Existing game-screen-v102 stays the only board/result owner. During
+    // preparation this call only projects the latest server state; readiness and
+    // phase advancement remain owned by authoritative game_state/action paths.
     enterGame(game, result.me || null);
     return game;
   } catch (error) {
@@ -95,7 +98,7 @@ function actionIsBusy(item){
 function canWatch(game, gameId){
   if (!gameId || String(game?.status || '') !== 'active') return false;
   const launchPhase = String(game?.launch_phase || '');
-  if (launchPhase && launchPhase !== 'active') return false;
+  if (launchPhase && !['preparing', 'countdown', 'active'].includes(launchPhase)) return false;
   if (game?.is_bot_game) return false;
   if (document.visibilityState !== 'visible') return false;
   const screen = document.querySelector('.screen.active');
