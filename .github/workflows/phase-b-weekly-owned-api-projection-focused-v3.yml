@@ -45,7 +45,7 @@ jobs:
           set -Eeuo pipefail
           grep -F "implements StorageAdapterInterface, ExclusiveSnapshotStorageInterface" bot/ledger/RuntimeEconomySnapshotStorage.php
           grep -F "Runtime economy snapshot storage is read-only." bot/ledger/RuntimeEconomySnapshotStorage.php
-          grep -F "if ($this->repository !== null) return $this->repository;" bot/weekly/WeeklyBonusRuntimeBridge.php
+          grep -F 'if ($this->repository !== null) return $this->repository;' bot/weekly/WeeklyBonusRuntimeBridge.php
       - name: No timing-policy weakening
         run: |
           set -Eeuo pipefail
