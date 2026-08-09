@@ -36,6 +36,12 @@ foreach (['economy' => $economy, 'realtime' => $realtime] as $name => $source) {
         ucfirst($name) . ' synchronize memo lookup must happen before expensive projection work.'
     );
     $assert(
+        str_contains($source, 'unset(self::$requestAuditCache[$cacheKey]);')
+            && strpos($source, 'unset(self::$requestAuditCache[$cacheKey]);')
+                < strpos($source, 'self::$requestSynchronizeCache[$cacheKey] = $result;'),
+        ucfirst($name) . ' synchronize must invalidate any older audit memo before publishing its result.'
+    );
+    $assert(
         !str_contains($source, 'sleep(')
             && !str_contains($source, 'usleep(')
             && !str_contains($source, 'retry')
