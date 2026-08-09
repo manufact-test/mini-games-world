@@ -37,7 +37,7 @@ import { initChessEntry } from './games/chess/entry.js?v=74';
 import { initGoEntry } from './games/go/entry.js?v=74';
 import { initDominoEntry } from './games/domino/entry.js?v=74';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
-import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107&b=27c59bb9d331';
+import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a';
 import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b030c69';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 
