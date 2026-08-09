@@ -1,0 +1,36 @@
+name: Phase B shop/payment action gates focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-restore-shop-payment-action-gates
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/shop/ShopRuntimeBridge.php
+          php -l bot/payments/PaymentRuntimeBridge.php
+          php -l bot/tests/ShopPaymentApiActionGateRegressionTest.php
+
+      - name: Restored action gate regression
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ShopPaymentApiActionGateRegressionTest.php
+
+      - name: Preserve frozen snapshot and request memo contracts
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/RuntimeJsonBridgeExclusiveSnapshotContractTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
+          php bot/tests/ProductionPrimaryRollbackEconomyShadowReadViewTest.php
