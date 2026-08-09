@@ -70,3 +70,4 @@ bot/weekly/RuntimeWeeklyBonusRepository.php
 bot/storage/JsonDatabase.php
 bot/storage/JsonStorageAdapter.php
 bot/storage/contracts/ExclusiveSnapshotStorageInterface.php
+bot/storage/contracts/ProjectionDirtyStorageInterface.php

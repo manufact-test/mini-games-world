@@ -35,25 +35,80 @@ final class WeeklyBonusRuntimeBridge
         return $this->enabled();
     }
 
+    /**
+     * Forced synchronization owner used by operations, audits and compatibility
+     * tooling. This method intentionally always performs the full frozen-snapshot
+     * projection and never consults the API dirty marker.
+     */
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
-        if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
-            throw new RuntimeException('Weekly bonus bridge requires JSON rollback storage.');
+        $this->assertProjectionStorage($storage);
+        return $this->synchronizeWithStorage($storage, false);
+    }
+
+    /**
+     * API-only synchronization owner. Ordinary polls that published no relevant
+     * JSON mutation return without taking the exclusive writer barrier. When a
+     * mutation is pending, concurrent requests coalesce behind one full parity
+     * projection; the marker is cleared only after that complete projection
+     * succeeds while the frozen-snapshot barrier is still held.
+     */
+    public function synchronizeCurrentJsonIfDirty(): ?array
+    {
+        if (!$this->enabled()) return null;
+
+        $storage = $this->storage ??= StorageFactory::create($this->config);
+        $this->assertProjectionStorage($storage);
+
+        // Non-JSON compatibility adapters used by narrow tools may not expose
+        // the durable marker. Preserve historical fail-closed behavior by doing
+        // a forced projection rather than silently skipping one.
+        if (!$storage instanceof ProjectionDirtyStorageInterface) {
+            return $this->synchronizeWithStorage($storage, false);
         }
+
+        $dirtyCheckStartedAtNs = hrtime(true);
+        $dirty = $storage->runtimeProjectionDirty();
+        $this->appendDiagnosticTiming('weekly_dirty_check', $dirtyCheckStartedAtNs);
+        if (!$dirty) {
+            return $this->cleanProjectionResult('skip_clean');
+        }
+
+        return $this->synchronizeWithStorage($storage, true);
+    }
+
+    private function synchronizeWithStorage(
+        StorageAdapterInterface $storage,
+        bool $onlyIfDirty
+    ): array {
         if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
             throw new RuntimeException('Weekly bonus bridge requires exclusive JSON snapshot support.');
         }
 
         $barrierStartedAtNs = hrtime(true);
-        return $storage->exclusiveReadOnly(function (array $snapshot) use ($storage, $barrierStartedAtNs): array {
+        return $storage->exclusiveReadOnly(function (array $snapshot) use (
+            $storage,
+            $onlyIfDirty,
+            $barrierStartedAtNs
+        ): array {
             $this->appendDiagnosticTiming('weekly_barrier_wait', $barrierStartedAtNs);
+
+            // A concurrent API request may have completed the projection while
+            // this request waited for the exclusive barrier. Re-check only after
+            // acquiring that barrier so one projection can satisfy both callers.
+            if ($onlyIfDirty
+                && $storage instanceof ProjectionDirtyStorageInterface
+                && !$storage->runtimeProjectionDirty()) {
+                return $this->cleanProjectionResult('skip_coalesced');
+            }
 
             $realtimeStartedAtNs = hrtime(true);
             try {
-                $realtime = (new RealtimeRuntimeBridge($this->config, $this->router, $storage))->synchronizeCurrentJson();
+                $realtime = (new RealtimeRuntimeBridge($this->config, $this->router, $storage))
+                    ->synchronizeCurrentJson();
             } finally {
                 $this->appendDiagnosticTiming('weekly_realtime', $realtimeStartedAtNs);
             }
@@ -100,6 +155,15 @@ final class WeeklyBonusRuntimeBridge
             if ($sourceCount !== $databaseCount) {
                 throw new RuntimeException('Weekly bonus notification runtime parity failed.');
             }
+
+            // Clearing is deliberately the final side effect and never lives in
+            // a finally block. Any realtime/economy/weekly/notification failure
+            // leaves the durable marker in place for the next API catch-up.
+            if ($onlyIfDirty && $storage instanceof ProjectionDirtyStorageInterface) {
+                $storage->clearRuntimeProjectionDirty();
+                $result['projection_dirty_cleared'] = true;
+            }
+
             return $result;
         });
     }
@@ -175,6 +239,28 @@ final class WeeklyBonusRuntimeBridge
             $this->router,
             $storage
         );
+    }
+
+    private function assertProjectionStorage(StorageAdapterInterface $storage): void
+    {
+        if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
+            throw new RuntimeException('Weekly bonus bridge requires JSON rollback storage.');
+        }
+        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
+            throw new RuntimeException('Weekly bonus bridge requires exclusive JSON snapshot support.');
+        }
+    }
+
+    private function cleanProjectionResult(string $action): array
+    {
+        return [
+            'ok' => true,
+            'action' => $action,
+            'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
+            'projection_dirty' => false,
+            'production_changed' => false,
+            'sensitive_identifiers_exposed' => false,
+        ];
     }
 
     private function appendDiagnosticTiming(string $metric, int $startedAtNs): void

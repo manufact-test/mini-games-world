@@ -16,10 +16,25 @@ final class JsonDatabase
         'system' => 'system.json',
     ];
 
+    /**
+     * Exact JSON sections consumed by the API compatibility projection bundle
+     * currently owned by Weekly: normalized realtime, economy, weekly state,
+     * legacy realtime shadow and notification parity.
+     */
+    private const RUNTIME_PROJECTION_SECTIONS = [
+        'users',
+        'games',
+        'queue',
+        'transactions',
+        'notifications',
+        'invites',
+    ];
+
     private string $dataDir;
     private string $lockFile;
     private string $writeBarrierFile;
     private string $writeBlockFile;
+    private string $runtimeProjectionDirtyFile;
     private ?array $exclusiveSnapshot = null;
 
     public function __construct(string $dataDir)
@@ -31,6 +46,7 @@ final class JsonDatabase
         $this->lockFile = $this->dataDir . '/app.lock';
         $this->writeBarrierFile = $this->dataDir . '/app-write-barrier.lock';
         $this->writeBlockFile = $this->dataDir . '/.cutover-write-block';
+        $this->runtimeProjectionDirtyFile = $this->dataDir . '/.runtime-projection-dirty';
         $this->ensureFiles();
     }
 
@@ -65,6 +81,16 @@ final class JsonDatabase
             $db = $this->loadAll();
             $before = $db;
             $result = $callback($db);
+
+            // Mark projection work before publishing changed JSON. If a later
+            // file write fails, the conservative dirty marker remains and the
+            // next successful API hook performs a harmless catch-up projection.
+            // If the callback itself throws, no JSON was published and no marker
+            // is created.
+            if ($this->runtimeProjectionSourceChanged($before, $db)) {
+                $this->markRuntimeProjectionDirty();
+            }
+
             $this->saveChanged($before, $db);
             flock($lockHandle, LOCK_UN);
             flock($writeBarrierHandle, LOCK_UN);
@@ -148,6 +174,24 @@ final class JsonDatabase
         }
     }
 
+    public function runtimeProjectionDirty(): bool
+    {
+        return is_file($this->runtimeProjectionDirtyFile);
+    }
+
+    public function clearRuntimeProjectionDirty(): void
+    {
+        if ($this->exclusiveSnapshot === null) {
+            throw new RuntimeException('Runtime projection dirty marker may only be cleared inside an exclusive JSON snapshot.');
+        }
+        if (!is_file($this->runtimeProjectionDirtyFile)) {
+            return;
+        }
+        if (!unlink($this->runtimeProjectionDirtyFile)) {
+            throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');
+        }
+    }
+
     /** @param list<string> $sections */
     private function snapshotSectionsWithSharedLock(array $sections): array
     {
@@ -214,6 +258,24 @@ final class JsonDatabase
             $result[$section] = $snapshot[$section];
         }
         return $result;
+    }
+
+    private function runtimeProjectionSourceChanged(array $before, array $after): bool
+    {
+        foreach (self::RUNTIME_PROJECTION_SECTIONS as $section) {
+            if (($before[$section] ?? []) !== ($after[$section] ?? [])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function markRuntimeProjectionDirty(): void
+    {
+        $written = file_put_contents($this->runtimeProjectionDirtyFile, "dirty\n", LOCK_EX);
+        if ($written === false) {
+            throw new RuntimeException('Не удалось записать runtime projection dirty marker.');
+        }
     }
 
     private function ensureFiles(): void
