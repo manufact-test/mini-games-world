@@ -42,7 +42,7 @@ final class TelegramService
 
     public function sendStartMessage(int|string $chatId): void
     {
-        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=85';
+        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=120';
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
@@ -102,7 +102,7 @@ final class TelegramService
                 'disable_web_page_preview' => true,
             ]);
         } catch (Throwable $e) {
-            error_log('Mini Games World user payment notification failed for ' . $chatId . ': ' . $e->getMessage());
+            error_log('Mini Games World user payment notification failed: ' . $e->getMessage());
         }
     }
 
