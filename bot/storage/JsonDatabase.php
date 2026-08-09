@@ -16,6 +16,22 @@ final class JsonDatabase
         'system' => 'system.json',
     ];
 
+    private const WEEKLY_USER_FIELDS = [
+        'weekly_match_welcome_grant_done',
+        'weekly_match_welcome_grant_at',
+        'weekly_match_welcome_grant_amount',
+        'weekly_match_welcome_grant_migrated_at',
+        'weekly_match_first_grant_done',
+        'weekly_match_bonus_checked_key',
+        'weekly_match_bonus_checked_at',
+        'weekly_match_bonus_checked_games',
+        'weekly_match_bonus_last_key',
+        'weekly_match_bonus_last_at',
+        'weekly_match_bonus_last_amount',
+        'weekly_match_bonus_last_qualification',
+        'weekly_bonus_last',
+    ];
+
     private string $dataDir;
     private string $lockFile;
     private string $writeBlockFile;
@@ -48,6 +64,7 @@ final class JsonDatabase
             $db = $this->loadAll();
             $before = $db;
             $result = $callback($db);
+            $this->publishRuntimeBridgeDirty($before, $db);
             $this->saveChanged($before, $db);
             flock($lockHandle, LOCK_UN);
             fclose($lockHandle);
@@ -133,6 +150,89 @@ final class JsonDatabase
             fclose($lockHandle);
             throw $e;
         }
+    }
+
+    /**
+     * Runtime DB bridges are publication mirrors, not the JSON state owner.
+     * Publish only domains whose authoritative JSON source actually changed in
+     * this transaction. This prevents passive profile/session/game reads from
+     * re-running full SQL projection/parity work on every request.
+     */
+    private function publishRuntimeBridgeDirty(array $before, array $after): void
+    {
+        $GLOBALS['mgw_runtime_bridge_dirty'] = [
+            'realtime' => ($before['games'] ?? []) !== ($after['games'] ?? [])
+                || ($before['queue'] ?? []) !== ($after['queue'] ?? []),
+            'economy' => $this->economyProjection($before) !== $this->economyProjection($after),
+            'shop' => ($before['shop_orders'] ?? []) !== ($after['shop_orders'] ?? []),
+            'payments' => ($before['payments'] ?? []) !== ($after['payments'] ?? []),
+            'weekly_bonus' => $this->weeklyProjection($before) !== $this->weeklyProjection($after),
+        ];
+    }
+
+    private function economyProjection(array $data): array
+    {
+        $users = [];
+        foreach (is_array($data['users'] ?? null) ? $data['users'] : [] as $key => $user) {
+            if (!is_array($user)) continue;
+            $userId = (string)($user['id'] ?? $key);
+            if ($userId === '') continue;
+            $users[$userId] = [
+                'telegram_id' => (string)($user['telegram_id'] ?? $userId),
+                'balance_match' => (int)($user['balance_match'] ?? 0),
+                'balance_gold' => (int)($user['balance_gold'] ?? 0),
+                'gold_deposited_total' => (int)($user['gold_deposited_total'] ?? 0),
+                'gold_wagered_total' => (int)($user['gold_wagered_total'] ?? 0),
+                'gold_shop_spent_total' => (int)($user['gold_shop_spent_total'] ?? 0),
+                'registered_at' => (string)($user['registered_at'] ?? ''),
+            ];
+        }
+        ksort($users, SORT_STRING);
+
+        return [
+            'users' => $users,
+            'transactions' => is_array($data['transactions'] ?? null) ? $data['transactions'] : [],
+        ];
+    }
+
+    private function weeklyProjection(array $data): array
+    {
+        $users = [];
+        foreach (is_array($data['users'] ?? null) ? $data['users'] : [] as $key => $user) {
+            if (!is_array($user)) continue;
+            $userId = (string)($user['id'] ?? $key);
+            if ($userId === '') continue;
+
+            $state = [
+                'id' => $userId,
+                'is_dev_user' => !empty($user['is_dev_user']),
+            ];
+            foreach (self::WEEKLY_USER_FIELDS as $field) {
+                if (array_key_exists($field, $user)) $state[$field] = $user[$field];
+            }
+            $users[$userId] = $state;
+        }
+        ksort($users, SORT_STRING);
+
+        $finishedGames = [];
+        foreach (is_array($data['games'] ?? null) ? $data['games'] : [] as $key => $game) {
+            if (!is_array($game) || (string)($game['status'] ?? '') !== 'finished') continue;
+            $gameId = (string)($game['id'] ?? $key);
+            if ($gameId === '') continue;
+            $players = array_values(array_map('strval', is_array($game['player_ids'] ?? null) ? $game['player_ids'] : []));
+            $finishedGames[$gameId] = [
+                'room' => (string)($game['room'] ?? 'match'),
+                'player_ids' => $players,
+                'finished_at' => (string)($game['finished_at'] ?? ''),
+            ];
+        }
+        ksort($finishedGames, SORT_STRING);
+
+        return [
+            'users' => $users,
+            'finished_games' => $finishedGames,
+            'notifications' => is_array($data['notifications'] ?? null) ? $data['notifications'] : [],
+        ];
     }
 
     /**
