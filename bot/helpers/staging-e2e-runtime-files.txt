@@ -45,6 +45,8 @@ bot/notifications/RuntimeNotificationBridgeCoordinator.php
 bot/notifications/RuntimeNotificationRepository.php
 bot/services/AuthService.php
 bot/services/TelegramService.php
+bot/webhook.php
+bot/helpers/StagingMenuButtonReconciler.php
 bot/services/GameService.php
 bot/services/GameRuntimeService.php
 bot/services/ChessRuntimeService.php

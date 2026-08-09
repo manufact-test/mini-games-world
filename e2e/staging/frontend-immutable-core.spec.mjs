@@ -9,8 +9,8 @@ const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bell-single-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v119';
-const EXPECTED_ENTRY_VERSION = 'v120';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v121';
+const EXPECTED_ENTRY_VERSION = 'v121';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -51,7 +51,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
 
     const staleEntry = await context.request.get(STALE_APP_ROUTE, { maxRedirects:0, timeout:35_000 });
     expect(staleEntry.status()).toBe(302);
-    expect(staleEntry.headers().location).toBe('./?v=120');
+    expect(staleEntry.headers().location).toBe('./?v=121');
     expect(staleEntry.headers()['cache-control']).toContain('no-store');
 
     const page = await context.newPage();
@@ -83,6 +83,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       if (!overlay || !card || !countdown || !title || !progress) return null;
       overlay.hidden = false;
       countdown.hidden = false;
+      countdown.dataset.loading = '1';
       countdown.dataset.ready = '0';
       progress.dataset.visible = '1';
       const cardStyle = getComputedStyle(card);
@@ -92,6 +93,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
         width: Math.round(countdown.getBoundingClientRect().width),
         height: Math.round(countdown.getBoundingClientRect().height),
       };
+      countdown.dataset.loading = '0';
       countdown.dataset.ready = '1';
       progress.dataset.visible = '0';
       const ready = {
@@ -113,12 +115,12 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       return result;
     });
     expect(presentation).toEqual({
-      cardHeight:380,
+      cardHeight:336,
       cardDisplay:'grid',
-      countdownBackground:'rgba(5, 7, 12, 0.9)',
+      countdownBackground:'rgba(6, 8, 13, 0.96)',
       titleWhiteSpace:'nowrap',
-      numbered:{ width:124, height:88 },
-      ready:{ width:124, height:88, progressVisibility:'hidden' },
+      numbered:{ width:108, height:108 },
+      ready:{ width:108, height:108, progressVisibility:'hidden' },
     });
 
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
@@ -133,8 +135,8 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=119&b=f53179ed1bc7',
-      '/assets/js/phase-b-current-runtime.js?v=119&b=0ae294f61b94',
+      '/assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe',
+      '/assets/js/phase-b-current-runtime.js?v=121&b=0e808fe731ab',
       '/assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
 

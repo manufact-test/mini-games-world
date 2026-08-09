@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class StagingMenuButtonReconciler
 {
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
-    private const MARKER_PREFIX = '.staging-menu-button-v2-';
+    private const MARKER_PREFIX = '.staging-menu-button-v3-commands-';
     private const MARKER_TTL_SECONDS = 3600;
 
     public function __construct(
@@ -31,48 +31,42 @@ final class StagingMenuButtonReconciler
             throw new RuntimeException('Staging bot username is unavailable.');
         }
 
-        $webAppUrl = $baseUrl . '/app/';
-        $identity = hash('sha256', $expectedUsername . "\n" . $webAppUrl);
+        $identity = hash('sha256', $expectedUsername . "\ncommands");
         $markerFile = $this->markerFile($identity);
 
         if ($this->markerIsFresh($markerFile)) {
             return;
         }
 
-        if ($this->menuButtonMatches($webAppUrl)) {
+        if ($this->menuButtonIsCommands()) {
             $this->writeMarker($markerFile, $identity);
             return;
         }
 
         $result = $this->telegram->api('setChatMenuButton', [
             'menu_button' => [
-                'type' => 'web_app',
-                'text' => 'Открыть игру',
-                'web_app' => ['url' => $webAppUrl],
+                'type' => 'commands',
             ],
         ]);
         if (($result['ok'] ?? null) !== true) {
-            throw new RuntimeException('Telegram rejected the staging Mini App menu button.');
+            throw new RuntimeException('Telegram rejected removal of the staging Mini App menu button.');
         }
 
-        if (!$this->menuButtonMatches($webAppUrl)) {
-            throw new RuntimeException('Telegram did not persist the staging Mini App menu button.');
+        if (!$this->menuButtonIsCommands()) {
+            throw new RuntimeException('Telegram did not remove the staging Mini App menu button.');
         }
 
         $this->writeMarker($markerFile, $identity);
     }
 
-    private function menuButtonMatches(string $webAppUrl): bool
+    private function menuButtonIsCommands(): bool
     {
         $response = $this->telegram->api('getChatMenuButton');
         if (($response['ok'] ?? null) !== true || !is_array($response['result'] ?? null)) {
             throw new RuntimeException('Telegram menu button state is unavailable.');
         }
 
-        $button = $response['result'];
-        return ($button['type'] ?? null) === 'web_app'
-            && is_array($button['web_app'] ?? null)
-            && (string)($button['web_app']['url'] ?? '') === $webAppUrl;
+        return ($response['result']['type'] ?? null) === 'commands';
     }
 
     private function markerIsFresh(string $markerFile): bool
