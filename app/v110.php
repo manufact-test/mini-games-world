@@ -21,9 +21,9 @@ $importMap = <<<'HTML'
     "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1131",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
-    "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=102&b=76d5b9d8d659",
+    "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=102&b=901c5c869703",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=102&b=342fd6cfbb7f",
-    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=110&b=9f8a0220afd2"
+    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=110&b=c24c4e5611c8"
   }
 }
 </script>
@@ -48,7 +48,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main-v110.js?v=1135&pending=6&b=e0fe64eeb704',
+    './assets/js/main-v110.js?v=1135&pending=6&b=31fca0ad4bfb',
     $html
 );
 $html = str_replace(
