@@ -8,7 +8,7 @@ const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bell-single-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v118';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v119';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -69,18 +69,37 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       const overlay = document.getElementById('mgwPhaseBLaunchOverlay');
       const card = overlay?.querySelector('.mgw-phase-b-launch-card');
       const countdown = overlay?.querySelector('[data-phase-b-countdown]');
-      if (!overlay || !card || !countdown) return null;
+      const title = overlay?.querySelector('[data-phase-b-title]');
+      const progress = overlay?.querySelector('[data-phase-b-progress]');
+      if (!overlay || !card || !countdown || !title || !progress) return null;
       overlay.hidden = false;
       countdown.hidden = false;
+      countdown.dataset.ready = '0';
+      progress.dataset.visible = '1';
       const cardStyle = getComputedStyle(card);
       const countdownStyle = getComputedStyle(countdown);
+      const titleStyle = getComputedStyle(title);
+      const numbered = {
+        width: Math.round(countdown.getBoundingClientRect().width),
+        height: Math.round(countdown.getBoundingClientRect().height),
+      };
+      countdown.dataset.ready = '1';
+      progress.dataset.visible = '0';
+      const ready = {
+        width: Math.round(countdown.getBoundingClientRect().width),
+        height: Math.round(countdown.getBoundingClientRect().height),
+        progressVisibility: getComputedStyle(progress).visibility,
+      };
       const result = {
         cardHeight: Math.round(card.getBoundingClientRect().height),
         cardDisplay: cardStyle.display,
         countdownBackground: countdownStyle.backgroundColor,
-        countdownWidth: Math.round(countdown.getBoundingClientRect().width),
+        titleWhiteSpace: titleStyle.whiteSpace,
+        numbered,
+        ready,
       };
       countdown.hidden = true;
+      progress.dataset.visible = '1';
       overlay.hidden = true;
       return result;
     });
@@ -88,7 +107,9 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       cardHeight:380,
       cardDisplay:'grid',
       countdownBackground:'rgba(5, 7, 12, 0.9)',
-      countdownWidth:88,
+      titleWhiteSpace:'nowrap',
+      numbered:{ width:124, height:88 },
+      ready:{ width:124, height:88, progressVisibility:'hidden' },
     });
 
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
@@ -103,8 +124,8 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=118&b=10290ac21228',
-      '/assets/js/phase-b-current-runtime.js?v=118&b=cbffb6339231',
+      '/assets/js/phase-b-current-entry.js?v=119&b=f53179ed1bc7',
+      '/assets/js/phase-b-current-runtime.js?v=119&b=0ae294f61b94',
       '/assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
 
