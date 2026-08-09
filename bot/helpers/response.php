@@ -8,6 +8,22 @@ function json_response(array $data, int $status = 200): void {
     exit;
 }
 
+function mgw_staging_test_server_timing_enabled(): bool {
+    $config = $GLOBALS['config'] ?? null;
+    if (!is_array($config) || strtolower(trim((string)($config['environment'] ?? ''))) !== 'staging') {
+        return false;
+    }
+    return trim((string)($_COOKIE['mgw_staging_test_session'] ?? '')) !== '';
+}
+
+function mgw_append_staging_server_timing(string $metric, int $startedAtNs): void {
+    if (!mgw_staging_test_server_timing_enabled() || headers_sent()) return;
+    $metric = preg_replace('/[^a-z0-9_\-]/i', '_', trim($metric)) ?? '';
+    if ($metric === '') return;
+    $durationMs = max(0.0, (hrtime(true) - $startedAtNs) / 1_000_000);
+    header('Server-Timing: ' . $metric . ';dur=' . number_format($durationMs, 3, '.', ''), false);
+}
+
 function mgw_payment_activity_at(array $payment): int {
     foreach (['applied_at', 'rejected_at', 'cancelled_at', 'updated_at', 'created_at'] as $field) {
         $timestamp = strtotime((string)($payment[$field] ?? '')) ?: 0;
@@ -29,13 +45,18 @@ function mgw_run_api_data_filters(array $data): array {
     unset($GLOBALS['mgw_api_data_filters']);
     if (!is_array($filters)) return $data;
 
-    foreach ($filters as $filter) {
+    foreach ($filters as $index => $filter) {
         if (!is_callable($filter)) continue;
-        $filtered = $filter($data);
-        if (!is_array($filtered)) {
-            throw new RuntimeException('API data filter must return an array.');
+        $startedAtNs = hrtime(true);
+        try {
+            $filtered = $filter($data);
+            if (!is_array($filtered)) {
+                throw new RuntimeException('API data filter must return an array.');
+            }
+            $data = $filtered;
+        } finally {
+            mgw_append_staging_server_timing('filter_' . (int)$index, $startedAtNs);
         }
-        $data = $filtered;
     }
     return $data;
 }
@@ -164,7 +185,14 @@ function mgw_run_api_success_hooks(): void {
     }
 
     unset($GLOBALS['mgw_api_success_hook'], $GLOBALS['mgw_api_success_hooks']);
-    foreach ($hooks as $hook) $hook();
+    foreach ($hooks as $index => $hook) {
+        $startedAtNs = hrtime(true);
+        try {
+            $hook();
+        } finally {
+            mgw_append_staging_server_timing('hook_' . (int)$index, $startedAtNs);
+        }
+    }
 }
 
 function mgw_public_api_error(string $message): string {
