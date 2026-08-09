@@ -28,7 +28,16 @@ final class EconomyRuntimeBridge
         if (!$this->enabled()) return false;
         $script = trim((string)($server['SCRIPT_FILENAME'] ?? $server['PHP_SELF'] ?? ''));
         if ($script === '') return false;
-        return in_array(basename($script), ['api.php', 'webhook.php'], true);
+
+        $basename = basename($script);
+        if ($basename === 'webhook.php') return true;
+        if ($basename !== 'api.php') return false;
+
+        // Weekly API synchronization already reconciles economy from the same
+        // frozen JSON snapshot before auditing weekly state. Keep webhook economy
+        // ownership unchanged, but avoid a duplicate top-level API projection
+        // when Weekly is active. Direct synchronizeCurrentJson() remains intact.
+        return $this->router->routeFor('weekly_bonus') !== RuntimeStorageRouter::DRIVER_DATABASE;
     }
 
     public function synchronizeCurrentJson(): ?array

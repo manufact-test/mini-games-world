@@ -28,7 +28,14 @@ final class RealtimeRuntimeBridge
         if (!$this->enabled()) return false;
 
         $script = trim((string)($server['SCRIPT_FILENAME'] ?? $server['PHP_SELF'] ?? ''));
-        return $script !== '' && basename($script) === 'api.php';
+        if ($script === '' || basename($script) !== 'api.php') return false;
+
+        // The weekly API bridge owns realtime as an explicit dependency of its
+        // frozen-snapshot synchronization cycle. Registering another top-level
+        // realtime hook before it repeats the same DB projection and holds the
+        // API response unnecessarily. Direct synchronizeCurrentJson() calls stay
+        // unchanged, so Weekly can still fail closed on realtime parity.
+        return $this->router->routeFor('weekly_bonus') !== RuntimeStorageRouter::DRIVER_DATABASE;
     }
 
     public function synchronizeCurrentJson(): ?array

@@ -145,8 +145,13 @@ final class WeeklyBonusRuntimeBridge
 
     private function repository(): RuntimeWeeklyBonusRepository
     {
+        // Dependency injection must remain self-contained: callers that provide
+        // an already-verified repository do not need StorageFactory or another
+        // storage selection pass merely to read through that repository.
+        if ($this->repository !== null) return $this->repository;
+
         $storage = $this->storage ??= StorageFactory::create($this->config);
-        return $this->repository ??= new RuntimeWeeklyBonusRepository(
+        return $this->repository = new RuntimeWeeklyBonusRepository(
             $this->config,
             $this->router,
             $storage
