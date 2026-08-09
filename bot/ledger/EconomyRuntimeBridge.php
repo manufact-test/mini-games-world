@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../runtime/RuntimeBridgeProjectionCoordinator.php';
+
 final class EconomyRuntimeBridge
 {
     private RuntimeStorageRouter $router;
@@ -34,18 +36,33 @@ final class EconomyRuntimeBridge
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
+        if (!$this->runtimeDomainChanged('economy')) {
+            return ['ok' => true, 'action' => 'unchanged', 'skipped' => true];
+        }
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Economy bridge requires JSON rollback storage.');
         }
-        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Economy bridge requires exclusive JSON snapshot support.');
-        }
 
         $repository = $this->repository ??= new RuntimeEconomyRepository($this->config, $this->router);
-        return $storage->exclusiveReadOnly(static function (array $snapshot) use ($repository): array {
-            return $repository->synchronize($snapshot);
-        });
+
+        return RuntimeBridgeProjectionCoordinator::synchronize(
+            $this->config,
+            $storage,
+            static function (array $snapshot, RuntimeBridgeSnapshotStorage $_frozen) use ($repository): array {
+                return $repository->synchronize($snapshot);
+            }
+        );
+    }
+
+    private function runtimeDomainChanged(string $domain): bool
+    {
+        $script = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
+        if ($script !== 'api.php') return true;
+
+        $dirty = $GLOBALS['mgw_runtime_bridge_dirty'] ?? null;
+        if (!is_array($dirty) || !array_key_exists($domain, $dirty)) return true;
+        return $dirty[$domain] === true;
     }
 }
