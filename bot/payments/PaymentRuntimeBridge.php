@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../runtime/RuntimeBridgeProjectionCoordinator.php';
+
 final class PaymentRuntimeBridge
 {
     private RuntimeStorageRouter $router;
@@ -33,25 +35,33 @@ final class PaymentRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        return $this->enabled();
+        return $this->enabled() && $this->runtimeDomainChanged('payments');
     }
 
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
+        if (!$this->runtimeDomainChanged('payments')) {
+            return ['ok' => true, 'action' => 'unchanged', 'skipped' => true];
+        }
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Payment bridge requires JSON rollback storage.');
         }
-        if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Payment bridge requires exclusive JSON snapshot support.');
-        }
 
-        $repository = $this->repository();
-        return $storage->exclusiveReadOnly(static function (array $_snapshot) use ($repository): array {
-            return $repository->synchronizeCurrentJson();
-        });
+        return RuntimeBridgeProjectionCoordinator::synchronize(
+            $this->config,
+            $storage,
+            function (array $_snapshot, RuntimeBridgeSnapshotStorage $frozen): array {
+                $repository = $this->repository ?? new RuntimePaymentRepository(
+                    $this->config,
+                    $this->router,
+                    $frozen
+                );
+                return $repository->synchronizeCurrentJson();
+            }
+        );
     }
 
     public function normalizeApiData(array $data, string $action): array
@@ -77,5 +87,15 @@ final class PaymentRuntimeBridge
     {
         $storage = $this->storage ??= StorageFactory::create($this->config);
         return $this->repository ??= new RuntimePaymentRepository($this->config, $this->router, $storage);
+    }
+
+    private function runtimeDomainChanged(string $domain): bool
+    {
+        $script = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
+        if ($script !== 'api.php') return true;
+
+        $dirty = $GLOBALS['mgw_runtime_bridge_dirty'] ?? null;
+        if (!is_array($dirty) || !array_key_exists($domain, $dirty)) return true;
+        return $dirty[$domain] === true;
     }
 }
