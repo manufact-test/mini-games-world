@@ -65,7 +65,7 @@ jobs:
           grep -F "package: name='com.minigamesworld.app.acceptance'" /tmp/badging.txt
           grep -F "MGW Acceptance" /tmp/apksigner.txt
           base64 -d android-app/branding/shield_king_launcher_384.webp.b64 > /tmp/approved-icon.webp
-          printf '%s  %s\n' 'bf900b910b2d3e598471bfb9b173fcf2fd46f9f97f67db0d7679124bb06f841c' '/tmp/approved-icon.webp' | sha256sum -c -
+          printf '%s  %s\n' 'f096f1f4821e514abf880e37e3346e46a60e00f97713170591991a0cfea5dc5e' '/tmp/approved-icon.webp' | sha256sum -c -
           ICON_ENTRY="$(unzip -Z1 "$APK" | grep -E 'res/drawable[^/]*/ic_mgw_launcher_art\.webp$' | head -n 1)"
           test -n "$ICON_ENTRY"
           unzip -p "$APK" "$ICON_ENTRY" > /tmp/apk-icon.webp
