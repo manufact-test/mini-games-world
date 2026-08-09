@@ -23,7 +23,8 @@ $importMap = <<<'HTML'
     "./assets/js/state.js?v=27": "./assets/js/state.js?v=114",
     "./assets/js/config.js?v=38": "./assets/js/config.js?v=114",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
-    "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114"
+    "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114",
+    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c"
   }
 }
 </script>
@@ -39,6 +40,11 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap,
+    $html
+);
+$html = str_replace(
+    './assets/js/production-regression-fix-entry.js?v=102',
+    './assets/js/phase-b-current-entry.js?v=116&b=93f821aac133',
     $html
 );
 $html = str_replace(
@@ -59,10 +65,17 @@ if (!str_contains($html, $mainScript)) {
     echo 'Mini Games World main-script anchor is unavailable.';
     exit;
 }
+if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=116&b=93f821aac133')) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Phase B entrypoint is unavailable.';
+    exit;
+}
 
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Frontend-Build: d1-bell-single-owner');
+header('X-MGW-Phase-B-Build: phase-b-current-v116');
 echo $html;
