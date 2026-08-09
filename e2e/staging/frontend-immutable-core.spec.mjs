@@ -8,6 +8,7 @@ const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bell-single-owner';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v116';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -38,7 +39,7 @@ function requestAction(response) {
   catch { return ''; }
 }
 
-test('staging app serves one canonical notification and player-picker graph', async ({ browser }) => {
+test('staging app serves one canonical notification, player-picker and Phase B launch graph', async ({ browser }) => {
   const context = await browser.newContext({
     locale:'ru-RU', timezoneId:'Europe/Vilnius', viewport:{ width:390, height:844 },
     deviceScaleFactor:1, isMobile:true, hasTouch:true,
@@ -57,9 +58,12 @@ test('staging app serves one canonical notification and player-picker graph', as
     const response = await page.goto(APP_ROUTE, { waitUntil:'domcontentloaded' });
     expect(response?.ok()).toBe(true);
     expect(response.headers()['x-mgw-frontend-build']).toBe(EXPECTED_BUILD);
+    expect(response.headers()['x-mgw-phase-b-build']).toBe(EXPECTED_PHASE_B_BUILD);
     await expect(page.locator('#app')).toHaveAttribute('data-hotfix-build', EXPECTED_BUILD);
     expect((await bootstrap).status()).toBe(200);
     await expect(page.locator('#preloader')).toBeHidden({ timeout:20_000 });
+    expect(await page.evaluate(() => window.__MGW_PHASE_B_BUILD__)).toBe(EXPECTED_PHASE_B_BUILD);
+    await expect(page.locator('#mgwPhaseBLaunchOverlay')).toBeHidden();
 
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     const has = suffix => resources.some(url => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix));
@@ -73,6 +77,9 @@ test('staging app serves one canonical notification and player-picker graph', as
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
+      '/assets/js/phase-b-current-entry.js?v=116&b=93f821aac133',
+      '/assets/js/phase-b-current-runtime.js?v=116&b=e32deaa6fe18',
+      '/assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
 
     for (const retired of [
@@ -85,6 +92,8 @@ test('staging app serves one canonical notification and player-picker graph', as
       '/assets/js/opponents-empty-cache-guard-v115.js',
       '/assets/js/opponents-authoritative-confirm-v122.js',
       '/assets/js/opponents-fresh-user-action-v128.js',
+      '/assets/js/main-v110.js',
+      '/assets/js/production-v110-readonly-game-sync.js',
     ]) expect(resources.some(url => new URL(url).pathname.endsWith(retired)), `Canonical graph must exclude ${retired}`).toBe(false);
 
     expect(pageErrors).toEqual([]);
