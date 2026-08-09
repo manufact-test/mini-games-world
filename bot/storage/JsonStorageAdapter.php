@@ -3,8 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/contracts/SelectiveReadStorageInterface.php';
 require_once __DIR__ . '/contracts/ExclusiveSnapshotStorageInterface.php';
+require_once __DIR__ . '/contracts/ProjectionDirtyStorageInterface.php';
 
-final class JsonStorageAdapter implements StorageAdapterInterface, SelectiveReadStorageInterface, ExclusiveSnapshotStorageInterface
+final class JsonStorageAdapter implements StorageAdapterInterface, SelectiveReadStorageInterface, ExclusiveSnapshotStorageInterface, ProjectionDirtyStorageInterface
 {
     private JsonDatabase $database;
 
@@ -36,6 +37,16 @@ final class JsonStorageAdapter implements StorageAdapterInterface, SelectiveRead
     public function exclusiveReadOnlySections(array $sections, callable $callback): mixed
     {
         return $this->database->exclusiveReadOnlySections($sections, $callback);
+    }
+
+    public function runtimeProjectionDirty(): bool
+    {
+        return $this->database->runtimeProjectionDirty();
+    }
+
+    public function clearRuntimeProjectionDirty(): void
+    {
+        $this->database->clearRuntimeProjectionDirty();
     }
 
     public function driver(): string
