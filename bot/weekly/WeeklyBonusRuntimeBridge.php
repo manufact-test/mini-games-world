@@ -47,22 +47,41 @@ final class WeeklyBonusRuntimeBridge
             throw new RuntimeException('Weekly bonus bridge requires exclusive JSON snapshot support.');
         }
 
-        return $storage->exclusiveReadOnly(function (array $snapshot) use ($storage): array {
-            $realtime = (new RealtimeRuntimeBridge($this->config, $this->router, $storage))->synchronizeCurrentJson();
-            $result = $this->repository()->synchronizeCurrentJson();
+        $barrierStartedAtNs = hrtime(true);
+        return $storage->exclusiveReadOnly(function (array $snapshot) use ($storage, $barrierStartedAtNs): array {
+            $this->appendDiagnosticTiming('weekly_barrier_wait', $barrierStartedAtNs);
 
-            $notificationRepository = new RuntimeNotificationRepository($this->config, $this->router);
-            $auditedUsers = 0;
-            $sourceCount = 0;
-            $databaseCount = 0;
-            foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $key => $user) {
-                if (!is_array($user) || !empty($user['is_dev_user'])) continue;
-                $legacyUserId = trim((string)($user['id'] ?? $key));
-                if ($legacyUserId === '') continue;
-                $sync = $notificationRepository->synchronizeAndList($snapshot, $legacyUserId);
-                $auditedUsers++;
-                $sourceCount += (int)($sync['summary']['source_count'] ?? 0);
-                $databaseCount += (int)($sync['summary']['database_count'] ?? 0);
+            $realtimeStartedAtNs = hrtime(true);
+            try {
+                $realtime = (new RealtimeRuntimeBridge($this->config, $this->router, $storage))->synchronizeCurrentJson();
+            } finally {
+                $this->appendDiagnosticTiming('weekly_realtime', $realtimeStartedAtNs);
+            }
+
+            $repositoryStartedAtNs = hrtime(true);
+            try {
+                $result = $this->repository()->synchronizeCurrentJson();
+            } finally {
+                $this->appendDiagnosticTiming('weekly_repository', $repositoryStartedAtNs);
+            }
+
+            $notificationsStartedAtNs = hrtime(true);
+            try {
+                $notificationRepository = new RuntimeNotificationRepository($this->config, $this->router);
+                $auditedUsers = 0;
+                $sourceCount = 0;
+                $databaseCount = 0;
+                foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $key => $user) {
+                    if (!is_array($user) || !empty($user['is_dev_user'])) continue;
+                    $legacyUserId = trim((string)($user['id'] ?? $key));
+                    if ($legacyUserId === '') continue;
+                    $sync = $notificationRepository->synchronizeAndList($snapshot, $legacyUserId);
+                    $auditedUsers++;
+                    $sourceCount += (int)($sync['summary']['source_count'] ?? 0);
+                    $databaseCount += (int)($sync['summary']['database_count'] ?? 0);
+                }
+            } finally {
+                $this->appendDiagnosticTiming('weekly_notifications', $notificationsStartedAtNs);
             }
 
             $result['runtime_realtime'] = is_array($realtime) ? [
@@ -156,5 +175,12 @@ final class WeeklyBonusRuntimeBridge
             $this->router,
             $storage
         );
+    }
+
+    private function appendDiagnosticTiming(string $metric, int $startedAtNs): void
+    {
+        if (function_exists('mgw_append_staging_server_timing')) {
+            mgw_append_staging_server_timing($metric, $startedAtNs);
+        }
     }
 }

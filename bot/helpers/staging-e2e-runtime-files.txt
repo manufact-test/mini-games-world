@@ -62,6 +62,7 @@ bot/realtime/RealtimeRuntimeBridge.php
 bot/realtime/RuntimeRealtimeRepository.php
 bot/ledger/EconomyRuntimeBridge.php
 bot/ledger/RuntimeEconomyRepository.php
+bot/ledger/RuntimeEconomySnapshotStorage.php
 bot/shop/ShopRuntimeBridge.php
 bot/payments/PaymentRuntimeBridge.php
 bot/weekly/WeeklyBonusRuntimeBridge.php
