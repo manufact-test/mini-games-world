@@ -2,7 +2,14 @@
 
 ## Status
 
-`DS-0 FOUNDATIONS / TOKENS — IN PROGRESS`
+```text
+DS-0 FOUNDATIONS / TOKENS — PASS
+DS-1 COMPONENT LIBRARY — IN PROGRESS
+DS-2 EXACT ICON SYSTEM — NOT STARTED
+DS-3 SCREEN SPECIFICATIONS — NOT STARTED
+DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
+DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
+```
 
 This directory is the isolated design-system owner for the approved **Shield King** shared-product visual direction.
 
@@ -45,6 +52,14 @@ Metallic highlights on the mark itself are allowed. All ambient glow must remain
 4. `DS-3` — Screen Specifications
 5. `DS-4` — Eight-Game Visual System
 6. `DS-5` — Loading / System States / Final Handoff
+
+## DS-0 output
+
+- `FOUNDATIONS.md`
+- `TOKENS.md`
+- `tokens.json`
+
+DS-0 exact-diff audit confirms all persistent changes remain under `design-system/shield-king/**`; no runtime file is changed.
 
 ## Ownership
 
