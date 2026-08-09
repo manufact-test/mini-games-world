@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../helpers/WebAppLaunchUrl.php';
+
 final class TelegramService
 {
     public function __construct(private array $config) {}
@@ -42,7 +44,10 @@ final class TelegramService
 
     public function sendStartMessage(int|string $chatId): void
     {
-        $webAppUrl = rtrim((string)$this->config['base_url'], '/') . '/app/?v=121';
+        $webAppUrl = WebAppLaunchUrl::base($this->config);
+        if ($webAppUrl === '') {
+            throw new RuntimeException('Mini Games World Web App URL is unavailable.');
+        }
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
