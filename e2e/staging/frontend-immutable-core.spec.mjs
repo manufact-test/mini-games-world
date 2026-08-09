@@ -8,7 +8,7 @@ const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bell-single-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v117';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v118';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -65,6 +65,32 @@ test('staging app serves one canonical notification, player-picker and Phase B l
     expect(await page.evaluate(() => window.__MGW_PHASE_B_BUILD__)).toBe(EXPECTED_PHASE_B_BUILD);
     await expect(page.locator('#mgwPhaseBLaunchOverlay')).toBeHidden();
 
+    const presentation = await page.evaluate(() => {
+      const overlay = document.getElementById('mgwPhaseBLaunchOverlay');
+      const card = overlay?.querySelector('.mgw-phase-b-launch-card');
+      const countdown = overlay?.querySelector('[data-phase-b-countdown]');
+      if (!overlay || !card || !countdown) return null;
+      overlay.hidden = false;
+      countdown.hidden = false;
+      const cardStyle = getComputedStyle(card);
+      const countdownStyle = getComputedStyle(countdown);
+      const result = {
+        cardHeight: Math.round(card.getBoundingClientRect().height),
+        cardDisplay: cardStyle.display,
+        countdownBackground: countdownStyle.backgroundColor,
+        countdownWidth: Math.round(countdown.getBoundingClientRect().width),
+      };
+      countdown.hidden = true;
+      overlay.hidden = true;
+      return result;
+    });
+    expect(presentation).toEqual({
+      cardHeight:380,
+      cardDisplay:'grid',
+      countdownBackground:'rgba(5, 7, 12, 0.9)',
+      countdownWidth:88,
+    });
+
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     const has = suffix => resources.some(url => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix));
     for (const required of [
@@ -77,8 +103,8 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=117&b=49fe56ba74d3',
-      '/assets/js/phase-b-current-runtime.js?v=117&b=10c43bc8aad6',
+      '/assets/js/phase-b-current-entry.js?v=118&b=10290ac21228',
+      '/assets/js/phase-b-current-runtime.js?v=118&b=cbffb6339231',
       '/assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
 
