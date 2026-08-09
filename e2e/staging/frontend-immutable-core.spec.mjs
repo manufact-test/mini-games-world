@@ -5,10 +5,12 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
+const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bell-single-owner';
 const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v119';
+const EXPECTED_ENTRY_VERSION = 'v120';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -46,6 +48,12 @@ test('staging app serves one canonical notification, player-picker and Phase B l
   });
   try {
     await authorizeContext(context);
+
+    const staleEntry = await context.request.get(STALE_APP_ROUTE, { maxRedirects:0, timeout:35_000 });
+    expect(staleEntry.status()).toBe(302);
+    expect(staleEntry.headers().location).toBe('./?v=120');
+    expect(staleEntry.headers()['cache-control']).toContain('no-store');
+
     const page = await context.newPage();
     const pageErrors = [];
     const failedRequests = [];
@@ -59,6 +67,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
     expect(response?.ok()).toBe(true);
     expect(response.headers()['x-mgw-frontend-build']).toBe(EXPECTED_BUILD);
     expect(response.headers()['x-mgw-phase-b-build']).toBe(EXPECTED_PHASE_B_BUILD);
+    expect(response.headers()['x-mgw-entry-version']).toBe(EXPECTED_ENTRY_VERSION);
     await expect(page.locator('#app')).toHaveAttribute('data-hotfix-build', EXPECTED_BUILD);
     expect((await bootstrap).status()).toBe(200);
     await expect(page.locator('#preloader')).toBeHidden({ timeout:20_000 });
