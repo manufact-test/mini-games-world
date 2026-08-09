@@ -1,5 +1,7 @@
 package com.minigamesworld.app;
 
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -283,9 +285,13 @@ public final class MainActivity extends Activity {
         }
     }
 
+    @SuppressLint("GestureBackNavigation")
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
+        // API 33+ is owned by OnBackInvokedDispatcher below. This legacy callback
+        // remains only for API 26-32 devices where predictive-back dispatch does
+        // not exist.
         handleBack();
     }
 
@@ -394,6 +400,7 @@ public final class MainActivity extends Activity {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.TIRAMISU)
     private static final class Api33Back {
         private Api33Back() {
         }
