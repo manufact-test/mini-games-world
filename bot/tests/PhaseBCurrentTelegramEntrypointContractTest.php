@@ -39,8 +39,8 @@ $assert(
 $assert(
     str_contains($welcome, "api('setChatMenuButton'")
         && str_contains($welcome, "'chat_id' => \$chatId")
-        && str_contains($welcome, "'type' => 'default'"),
-    'Every private-chat welcome must explicitly reset the historical chat-specific Web App menu override.'
+        && str_contains($welcome, "'type' => 'commands'"),
+    'Every private-chat welcome must deterministically replace the historical chat-specific Web App menu with commands.'
 );
 $assert(
     !str_contains($welcome, "'text' => 'Играть'")
