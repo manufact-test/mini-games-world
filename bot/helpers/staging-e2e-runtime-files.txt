@@ -35,6 +35,7 @@ bot/helpers/response.php
 bot/core/bootstrap.php
 bot/api.php
 bot/game-watch.php
+bot/presence.php
 bot/game-clock.php
 bot/invite-opponents.php
 bot/invites.php
