@@ -34,11 +34,11 @@ $assert(
     'High-frequency game-watch must explicitly skip provider-neutral identity resolution.'
 );
 $assert(
-    str_contains($watch, "in_array($userId, $participants, true)"),
+    str_contains($watch, 'in_array($userId, $participants, true)'),
     'Game-watch must still authorize the verified provider id as a game participant.'
 );
 $assert(
-    str_contains($watch, "flock($handle, LOCK_SH)"),
+    str_contains($watch, 'flock($handle, LOCK_SH)'),
     'JSON game-watch must remain read-only under the games file shared lock.'
 );
 $assert(
