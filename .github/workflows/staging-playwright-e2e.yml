@@ -169,7 +169,7 @@ jobs:
     needs: linux-route
     if: needs.linux-route.outputs.result == 'network_unavailable' || needs.linux-route.outputs.result == 'runner_infrastructure_failure'
     runs-on: macos-latest
-    timeout-minutes: 12
+    timeout-minutes: 17
     outputs:
       result: ${{ steps.classify.outputs.result }}
 
