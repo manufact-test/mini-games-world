@@ -357,7 +357,47 @@ async function clickInviteAction(page, button, action) {
   return payload;
 }
 
+async function waitForAuthoritativeTurnWindow(player) {
+  const expectedTurn = String(player?.snapshot?.user?.id || '');
+  expect(expectedTurn, 'Phase B turn actor must have a known staging player id').toMatch(/^stg_test_player_[ab]$/);
+
+  let authoritativeGame = null;
+  await expect.poll(async () => {
+    const result = await postFromPlayer(
+      player.page,
+      '/bot/api.php',
+      { action: 'game_state' },
+    );
+    if (result.status !== 200 || result.payload?.ok !== true) {
+      return `http:${result.status}`;
+    }
+
+    const game = result.payload?.game || {};
+    const phase = String(game.launch_phase || '');
+    const turn = String(game.turn || '');
+    const serverNowMs = Number(game.server_now_ms || 0);
+    const turnStartsAtMs = Number(game.turn_starts_at_ms || 0);
+    const ready = String(game.status || '') === 'active'
+      && phase === 'active'
+      && turn === expectedTurn
+      && serverNowMs > 0
+      && turnStartsAtMs > 0
+      && serverNowMs >= turnStartsAtMs;
+    if (ready) authoritativeGame = game;
+    return ready ? 'ready' : `${phase || 'missing'}:${turn || 'missing'}`;
+  }, {
+    message: `Phase B waits for authoritative turn window for ${expectedTurn}`,
+    timeout: 15_000,
+    intervals: [100, 200, 400, 800],
+  }).toBe('ready');
+
+  expect(authoritativeGame, 'Authoritative turn-window snapshot must be available').toBeTruthy();
+  return authoritativeGame;
+}
+
 async function playTicTacToeCell(player, cell) {
+  await waitForAuthoritativeTurnWindow(player);
+
   const locator = player.page.locator(`#screen-game.active [data-game-cell="${cell}"]`);
   await expect(locator).toBeVisible({ timeout: 25_000 });
   await expect(locator).toBeEnabled({ timeout: 25_000 });
