@@ -1,0 +1,74 @@
+name: Phase B ee20 latency evidence
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+jobs:
+  latency-evidence:
+    runs-on: macos-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify exact Hostinger runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --retry 2 --retry-delay 2 --retry-connrefused \
+            --header 'Accept: application/json' \
+            "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+            --output staging-e2e-readiness.json
+          python3 - staging-e2e-readiness.json "${expected_fingerprint}" <<'PY'
+          import json, sys
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('environment') == 'staging'
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Run final Tic Tac Toe with network trace always on
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --no-install playwright test \
+            e2e/staging/two-context.spec.mjs \
+            --config=e2e/playwright.config.mjs \
+            --grep 'A invites B through notifications and they finish a Tic Tac Toe match' \
+            --trace=on
+
+      - name: Upload latency evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-b-ee20-latency-evidence-${{ github.run_id }}
+          path: |
+            e2e/artifacts/playwright
+            staging-e2e-readiness.json
+          if-no-files-found: warn
+          retention-days: 7
