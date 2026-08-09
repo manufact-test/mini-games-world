@@ -1,6 +1,19 @@
 <?php
 declare(strict_types=1);
 
+$entryVersion = '120';
+$requestVersion = trim((string)($_GET['v'] ?? ''));
+if ($requestVersion !== '' && $requestVersion !== $entryVersion) {
+    $query = $_GET;
+    $query['v'] = $entryVersion;
+    $location = './?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('Location: ' . $location, true, 302);
+    exit;
+}
+
 $indexPath = __DIR__ . '/index.html';
 $html = file_get_contents($indexPath);
 if (!is_string($html)) {
@@ -78,4 +91,5 @@ header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Frontend-Build: d1-bell-single-owner');
 header('X-MGW-Phase-B-Build: phase-b-current-v119');
+header('X-MGW-Entry-Version: v' . $entryVersion);
 echo $html;
