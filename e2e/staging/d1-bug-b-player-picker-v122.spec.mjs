@@ -175,6 +175,11 @@ async function runActualStartPicker(browser, isMobile) {
     await expect(playerA.page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:10_000 });
     await expect(playerA.page.locator('#sheet')).toContainText(PLAYER_B_VISIBLE_NAME);
 
+    // Locator assertions can observe the DOM mutation between animation frames.
+    // Let the already-running frame tracer capture that same rendered picker
+    // before stopping it; this synchronizes to rendering rather than sleeping.
+    await playerA.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve())));
+
     const frames = await stopVisibleFrameTrace(playerA.page);
     expect(frames.length).toBeGreaterThan(0);
     expect(frames.filter(frame => /Загружаем соперников/i.test(String(frame.text)))).toEqual([]);
