@@ -392,6 +392,7 @@ async function waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId) {
   );
   expect(['countdown', 'active']).toContain(String(readyB.game?.launch_phase || ''));
 
+  let authoritativeGame = null;
   await expect.poll(async () => {
     const result = await postFromPlayer(
       playerA.page,
@@ -405,17 +406,20 @@ async function waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId) {
     const phase = String(game.launch_phase || '');
     const serverNowMs = Number(game.server_now_ms || 0);
     const turnStartsAtMs = Number(game.turn_starts_at_ms || 0);
-    return phase === 'active'
+    const started = phase === 'active'
       && serverNowMs > 0
       && turnStartsAtMs > 0
-      && serverNowMs >= turnStartsAtMs
-      ? 'active'
-      : phase || 'missing';
+      && serverNowMs >= turnStartsAtMs;
+    if (started) authoritativeGame = game;
+    return started ? 'active' : phase || 'missing';
   }, {
     message: 'Tic Tac Toe waits for server-authoritative Phase B start',
     timeout: 15_000,
     intervals: [100, 200, 400, 800],
   }).toBe('active');
+
+  expect(authoritativeGame, 'Authoritative launch snapshot must be available').toBeTruthy();
+  return authoritativeGame;
 }
 
 test('TEST PLAYER A and B run in isolated browser contexts', async ({ browser }, testInfo) => {
@@ -728,7 +732,7 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
     await expect(playerA.page.locator('#screen-game [data-game-cell]')).toHaveCount(9);
     await expect(playerB.page.locator('#screen-game [data-game-cell]')).toHaveCount(9);
 
-    await waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId);
+    let authoritativeGame = await waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId);
 
     const playersById = {
       stg_test_player_a: playerA,
@@ -738,16 +742,12 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
     let finalPayload = null;
 
     for (const cell of winningSequence) {
-      const statePayload = await expectPlayerRequest(
-        playerA.page,
-        '/bot/api.php',
-        { action: 'game_state', gameId },
-        `Game state before cell ${cell}`,
-      );
-      const turnId = String(statePayload.game?.turn || '');
+      const turnId = String(authoritativeGame?.turn || '');
       const actor = playersById[turnId];
       expect(actor, `Known player owns turn before cell ${cell}`).toBeTruthy();
       finalPayload = await playTicTacToeCell(actor, cell);
+      expect(String(finalPayload.game?.id || ''), `Authoritative game id after cell ${cell}`).toBe(gameId);
+      authoritativeGame = finalPayload.game;
     }
 
     expect(finalPayload?.game?.status).toBe('finished');
