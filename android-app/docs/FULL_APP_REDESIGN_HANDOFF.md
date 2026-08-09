@@ -16,7 +16,7 @@ Character:
 - deep violet rather than bright generic purple;
 - gold crown accents used selectively;
 - silver/neutral highlights for legibility;
-- shield/crown motif as the primary brand mark;
+- shield/crown/MGW motif as the primary brand mark;
 - subtle retro-neon/pixel/game references without turning the product into a noisy arcade skin;
 - rounded dark cards with controlled glow, not bright glassmorphism everywhere;
 - game identity should feel competitive, premium and coherent across all eight core games.
@@ -25,7 +25,7 @@ Character:
 
 ```text
 #0C0F14  launcher / deepest shell background
-#080B12  splash / near-black background
+#080B12  startup / near-black background
 #17121F  dark brand surface
 #231942  deep violet surface
 #6A4CFF  primary purple
@@ -37,13 +37,26 @@ Character:
 
 The old brighter flat-purple `MG` tile is not part of the approved final direction.
 
-## Approved brand mark
+## Approved brand mark — FINAL RULE
 
 Primary mark:
 
-`dark shield + premium crown + deep violet inner field + gold accents`
+`centered dark shield + centered premium crown + deep violet/gold details + large metallic MGW lettering on a near-black rounded-square base`
 
-Android launcher/splash implementation is already present in the isolated Branding Pack branch.
+The product owner approved the final centered raster after real-device launcher review on 2026-08-09.
+
+### Composition requirements
+
+- crown, shield and `MGW` must be optically centered on both axes;
+- all launcher/adaptive padding must be symmetric;
+- do not add a separate white/silver shadow behind the shield;
+- do not add a pale offset backplate behind the shield;
+- do not add a duplicated shifted shield silhouette;
+- do not add an asymmetric glow blob that makes the mark look shifted;
+- metallic silver highlights ON the shield/letters are allowed and are not a background shadow;
+- future implementations must use the approved raster/source rather than rebuilding a simplified shield-only VectorDrawable.
+
+This rule applies everywhere the primary mark is used in future shared UI, loading surfaces, marketing/store assets and Android resources.
 
 ## Full shared-product redesign scope for a future main-roadmap MVP
 
@@ -136,7 +149,8 @@ Requirements:
 
 - global layer above the whole application when product contract requires it;
 - dark MGW background;
-- Shield King mark / subtle crown-shield motion or restrained branded loader;
+- final centered Shield King/MGW mark or restrained branded animation derived from it;
+- never add the forbidden offset white/silver backplate behind the mark;
 - no technical wording such as synchronization/device counters;
 - same authoritative state for both participants;
 - shared 3→2→1 countdown remains server-authoritative;
@@ -153,14 +167,16 @@ Requirements:
 
 ### 10. Android-specific platform chrome
 
-Already handled by the isolated Branding Pack:
+Handled by the isolated Branding Pack:
 
 - launcher icon;
 - adaptive icon;
 - monochrome icon;
-- native splash/startup branding.
+- near-black native startup transition.
 
-Do not duplicate shared UI natively just to match these resources.
+Important: Android's mandatory platform splash must not show a second large logo before the real MGW loading window. The product loading/preparation window remains the shared MGW owner.
+
+Do not duplicate shared UI natively just to match Android resources.
 
 ## Implementation rule for the main roadmap
 
@@ -188,6 +204,9 @@ Do not let branding changes alter game/auth/economy lifecycle ownership.
 SHIELD KING FULL APP REDESIGN:
 DESIGN READY / APPROVED
 
+FINAL PRIMARY MARK:
+CENTERED SHIELD + CROWN + METALLIC MGW / NO OFFSET WHITE BACKPLATE
+
 IMPLEMENTATION:
 NOT STARTED
 
@@ -200,6 +219,6 @@ CURRENT RUNTIME-CRITICAL WORK MUST NOT BE DESTABILIZED
 
 ## Visual reference note
 
-The design direction was approved from concept boards created in the project chat on 2026-08-09. The durable source of truth for future implementation is this written specification plus the Android Shield King resources in `agent/android-branding-pack`.
+The design direction was approved from concept boards created in the project chat on 2026-08-09. The durable source of truth for the primary launcher mark is the final approved Android raster plus `BRANDING.md`. The written specification explicitly overrides any earlier concept-board artifact that appears off-center or shows a separate pale/white offset shape behind the shield.
 
 # END OF FULL APP REDESIGN HANDOFF
