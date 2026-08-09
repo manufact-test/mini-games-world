@@ -89,10 +89,16 @@ jobs:
           set -euo pipefail
           AVDMANAGER="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}/cmdline-tools/latest/bin/avdmanager"
           if [[ ! -x "$AVDMANAGER" ]]; then AVDMANAGER="$(command -v avdmanager)"; fi
+          AVD_HOME="$RUNNER_TEMP/mgw-avd"
+          mkdir -p "$AVD_HOME"
+          export ANDROID_AVD_HOME="$AVD_HOME"
           echo no | "$AVDMANAGER" create avd \
             -n mgw_acceptance_api35 \
             -k 'system-images;android-35;google_apis;x86_64' \
             --force
+          echo "ANDROID_AVD_HOME=$AVD_HOME" >> "$GITHUB_ENV"
+          echo "AVD contents:"
+          find "$AVD_HOME" -maxdepth 2 -type f -print
 
       - name: Enable emulator acceleration when available
         shell: bash
@@ -114,6 +120,9 @@ jobs:
           ADB="$SDK_ROOT/platform-tools/adb"
           test -x "$EMULATOR"
           test -x "$ADB"
+          test -n "${ANDROID_AVD_HOME:-}"
+          test -d "$ANDROID_AVD_HOME"
+          "$EMULATOR" -list-avds
 
           ACCEL_ARGS=()
           if [[ ! -e /dev/kvm ]]; then
