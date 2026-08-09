@@ -1,0 +1,54 @@
+name: Phase B durable projection dirty coalescing focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-durable-projection-dirty-coalescing
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/storage/contracts/ProjectionDirtyStorageInterface.php
+          php -l bot/storage/JsonDatabase.php
+          php -l bot/storage/JsonStorageAdapter.php
+          php -l bot/weekly/WeeklyBonusRuntimeBridge.php
+          php -l bot/core/bootstrap.php
+          php -l bot/tests/PhaseBProjectionDirtyCoalescingContractTest.php
+      - name: Durable dirty and coalescing contract
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/PhaseBProjectionDirtyCoalescingContractTest.php
+      - name: Weekly-owned projection regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/WeeklyBonusRuntimeBridgeTest.php
+          php bot/tests/PhaseBWeeklyOwnedApiProjectionContractTest.php
+      - name: Writer barrier regression
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/JsonDatabaseBridgeWriterBarrierReadAvailabilityTest.php
+      - name: Request-local projection memo regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
+      - name: Exact runtime fingerprint contract
+        run: |
+          set -Eeuo pipefail
+          grep -Fx 'bot/storage/contracts/ProjectionDirtyStorageInterface.php' bot/helpers/staging-e2e-runtime-files.txt
+          python3 scripts/ci/staging-runtime-fingerprint.py | grep -E '^[a-f0-9]{64}$'
+      - name: No acceptance-policy weakening
+        run: |
+          set -Eeuo pipefail
+          grep -F 'timeout: 90_000' e2e/playwright.config.mjs
+          grep -F 'retries: 0' e2e/playwright.config.mjs
+          ! grep -R -E 'waitForTimeout|setTimeout' bot/storage/contracts/ProjectionDirtyStorageInterface.php bot/storage/JsonDatabase.php bot/storage/JsonStorageAdapter.php bot/weekly/WeeklyBonusRuntimeBridge.php bot/tests/PhaseBProjectionDirtyCoalescingContractTest.php
