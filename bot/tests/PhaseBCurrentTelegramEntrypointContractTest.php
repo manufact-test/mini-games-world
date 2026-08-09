@@ -23,7 +23,11 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(str_contains($htaccess, 'DirectoryIndex v114.php index.html'), 'Default /app/ must resolve through v114.php.');
-$assert(str_contains($telegram, "/app/?v=85"), 'Telegram /start button must use the default /app/ route.');
+$assert(str_contains($telegram, "/app/?v=120"), 'Telegram /start button must publish the current versioned /app/ entry.');
+$assert(!str_contains($telegram, "/app/?v=85"), 'Telegram /start button must not keep the retired stale entry version.');
+$assert(str_contains($v114, "$entryVersion = '120';"), 'v114 must own the current Telegram entry version.');
+$assert(str_contains($v114, "header('Location: ' . $location, true, 302);"), 'v114 must redirect stale versioned entries to the current entry version.');
+$assert(str_contains($v114, "header('X-MGW-Entry-Version: v' . $entryVersion);"), 'v114 must expose an explicit entry-version response identity.');
 
 $assert(
     str_contains($v114, './assets/js/phase-b-current-entry.js?v=119&b=f53179ed1bc7'),
