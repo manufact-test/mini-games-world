@@ -26,7 +26,7 @@ $assert(str_contains($htaccess, 'DirectoryIndex v114.php index.html'), 'Default 
 $assert(str_contains($telegram, "/app/?v=85"), 'Telegram /start button must use the default /app/ route.');
 
 $assert(
-    str_contains($v114, './assets/js/phase-b-current-entry.js?v=117&b=49fe56ba74d3'),
+    str_contains($v114, './assets/js/phase-b-current-entry.js?v=118&b=10290ac21228'),
     'v114 must publish the current Phase B entry under a fresh immutable URL.'
 );
 $assert(
@@ -34,13 +34,13 @@ $assert(
     'v114 import map must route every current D1 game-screen import to the Phase B-aware current owner.'
 );
 $assert(
-    str_contains($v114, 'X-MGW-Phase-B-Build: phase-b-current-v117'),
+    str_contains($v114, 'X-MGW-Phase-B-Build: phase-b-current-v118'),
     'v114 must expose an explicit current Phase B build identity.'
 );
 $assert(
     str_contains($entry, "import './production-regression-fix-entry.js?v=102';")
-        && str_contains($entry, "./phase-b-current-runtime.js?v=117&b=10c43bc8aad6")
-        && str_contains($entry, "window.__MGW_PHASE_B_BUILD__ = 'phase-b-current-v117';")
+        && str_contains($entry, "./phase-b-current-runtime.js?v=118&b=cbffb6339231")
+        && str_contains($entry, "window.__MGW_PHASE_B_BUILD__ = 'phase-b-current-v118';")
         && str_contains($entry, 'initPhaseBCurrentRuntime();'),
     'Phase B entry must preserve the accepted regression owner and initialize the fresh Phase B runtime.'
 );
@@ -55,7 +55,10 @@ $assert(str_contains($runtime, "readyForServer ? 'СТАРТ' : String(seconds)"
 $assert(!str_contains(strtolower($runtime), 'синхрониза'), 'Player-facing Phase B runtime must not contain technical synchronization wording.');
 $assert(str_contains($runtime, 'WATCH_INTERVAL_MS = 250'), 'Read-only Phase B freshness cadence must remain explicit and bounded.');
 $assert(str_contains($runtime, 'PRIMARY_GAME_POLL_FLOOR_MS = 1500'), 'Primary game_state polling must remain slower than read-only freshness.');
-$assert(str_contains($runtime, 'background-size:28px 28px,28px 28px,auto'), 'Preparation background must use the distinct game-room grid treatment rather than the old splash-like surface.');
+$assert(str_contains($runtime, 'width:min(100%,430px)'), 'Preparation background composition must use one centered phone-like canvas across viewport aspect ratios.');
+$assert(str_contains($runtime, 'height:380px;display:grid;grid-template-rows:30px 150px 54px 48px 28px'), 'Preparation card must keep one fixed geometry across all launch text stages.');
+$assert(str_contains($runtime, 'grid-row:4') && str_contains($runtime, 'height:48px'), 'Preparation note must keep a reserved fixed-height text slot.');
+$assert(str_contains($runtime, 'background:rgba(5,7,12,.9)') && str_contains($runtime, 'width:88px;height:88px'), 'Countdown text must have a dedicated dark contrast surface above the bright game markers.');
 
 $assert(str_contains($game, 'pollBusy:false'), 'Current game owner must track one primary poll in flight.');
 $assert(
