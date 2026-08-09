@@ -26,7 +26,7 @@ $assert(str_contains($htaccess, 'DirectoryIndex v114.php index.html'), 'Default 
 $assert(str_contains($telegram, "/app/?v=85"), 'Telegram /start button must use the default /app/ route.');
 
 $assert(
-    str_contains($v114, './assets/js/phase-b-current-entry.js?v=118&b=10290ac21228'),
+    str_contains($v114, './assets/js/phase-b-current-entry.js?v=119&b=f53179ed1bc7'),
     'v114 must publish the current Phase B entry under a fresh immutable URL.'
 );
 $assert(
@@ -34,13 +34,13 @@ $assert(
     'v114 import map must route every current D1 game-screen import to the Phase B-aware current owner.'
 );
 $assert(
-    str_contains($v114, 'X-MGW-Phase-B-Build: phase-b-current-v118'),
+    str_contains($v114, 'X-MGW-Phase-B-Build: phase-b-current-v119'),
     'v114 must expose an explicit current Phase B build identity.'
 );
 $assert(
     str_contains($entry, "import './production-regression-fix-entry.js?v=102';")
-        && str_contains($entry, "./phase-b-current-runtime.js?v=118&b=cbffb6339231")
-        && str_contains($entry, "window.__MGW_PHASE_B_BUILD__ = 'phase-b-current-v118';")
+        && str_contains($entry, "./phase-b-current-runtime.js?v=119&b=0ae294f61b94")
+        && str_contains($entry, "window.__MGW_PHASE_B_BUILD__ = 'phase-b-current-v119';")
         && str_contains($entry, 'initPhaseBCurrentRuntime();'),
     'Phase B entry must preserve the accepted regression owner and initialize the fresh Phase B runtime.'
 );
@@ -56,9 +56,15 @@ $assert(!str_contains(strtolower($runtime), 'синхрониза'), 'Player-fac
 $assert(str_contains($runtime, 'WATCH_INTERVAL_MS = 250'), 'Read-only Phase B freshness cadence must remain explicit and bounded.');
 $assert(str_contains($runtime, 'PRIMARY_GAME_POLL_FLOOR_MS = 1500'), 'Primary game_state polling must remain slower than read-only freshness.');
 $assert(str_contains($runtime, 'width:min(100%,430px)'), 'Preparation background composition must use one centered phone-like canvas across viewport aspect ratios.');
-$assert(str_contains($runtime, 'height:380px;display:grid;grid-template-rows:30px 150px 54px 48px 28px'), 'Preparation card must keep one fixed geometry across all launch text stages.');
-$assert(str_contains($runtime, 'grid-row:4') && str_contains($runtime, 'height:48px'), 'Preparation note must keep a reserved fixed-height text slot.');
-$assert(str_contains($runtime, 'background:rgba(5,7,12,.9)') && str_contains($runtime, 'width:88px;height:88px'), 'Countdown text must have a dedicated dark contrast surface above the bright game markers.');
+$assert(str_contains($runtime, 'width:min(100%,400px);height:380px;display:grid;grid-template-rows:30px 150px 54px 48px 28px'), 'Preparation card must keep one wider fixed geometry across all launch text stages.');
+$assert(str_contains($runtime, 'white-space:nowrap'), 'Preparation title must not reflow between launch stages.');
+$assert(str_contains($runtime, 'width:124px;height:88px') && str_contains($runtime, '.mgw-phase-b-countdown[data-ready="1"]{font-size:28px;letter-spacing:.08em}'), 'Countdown and START must share one invariant contrast-surface geometry.');
+$assert(str_contains($runtime, "progress.dataset.visible = '0'") && str_contains($runtime, 'visibility:hidden'), 'Progress stage changes must preserve its reserved grid row without layout shift.');
+$assert(
+    str_contains($runtime, 'const accepted = applyReadonlyGameProjection(game, result.me || null);')
+        && str_contains($runtime, 'paintLaunchState(canonical);'),
+    'Read-only watch must never advance launch presentation beyond the canonical accepted game projection.'
+);
 
 $assert(str_contains($game, 'pollBusy:false'), 'Current game owner must track one primary poll in flight.');
 $assert(
