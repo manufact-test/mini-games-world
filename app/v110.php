@@ -23,7 +23,7 @@ $importMap = <<<'HTML'
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=102&b=901c5c869703",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=102&b=342fd6cfbb7f",
-    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=110&b=c24c4e5611c8"
+    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=122&b=e248a150239e"
   }
 }
 </script>
@@ -64,4 +64,5 @@ header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1134');
 header('X-MGW-Invite-Graph: v1135');
+header('X-MGW-Phase-B-Presentation: v122-v110-fixed-loader');
 echo $html;
