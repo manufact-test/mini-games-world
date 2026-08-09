@@ -33,7 +33,9 @@ final class PaymentRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        return $this->enabled();
+        if (!$this->enabled()) return false;
+        if (trim($action) === '') $action = (string)($GLOBALS['action'] ?? '');
+        return strtolower(trim($action)) === 'payment_create_draft';
     }
 
     public function synchronizeCurrentJson(): ?array
@@ -58,16 +60,20 @@ final class PaymentRuntimeBridge
     {
         if (!$this->enabled()) return $data;
 
+        $hasPayments = isset($data['payments']) && is_array($data['payments']);
+        $hasTopups = isset($data['topups']) && is_array($data['topups']);
+        if (!$hasPayments && !$hasTopups) return $data;
+
         $userId = trim((string)($data['user']['id'] ?? ''));
         if ($userId === '') return $data;
 
         $paymentDb = ['payments' => $this->repository()->paymentRecords()];
         $service = new PaymentService($this->config, new UserService($this->config));
-        if (isset($data['payments']) && is_array($data['payments'])) {
+        if ($hasPayments) {
             $status = $service->status($paymentDb, ['id' => $userId]);
             $data['payments']['recent_payments'] = $status['recent_payments'] ?? [];
         }
-        if (isset($data['topups']) && is_array($data['topups'])) {
+        if ($hasTopups) {
             $data['topups'] = $service->userTopupHistory($paymentDb, $userId, 20);
         }
         return $data;
