@@ -58,7 +58,11 @@ $assert(strpos($safe, "new CustomEvent('mgw:phase-b-game-entering'") < strpos($s
 
 $assert(str_contains($readonly, "const WATCH_INTERVAL_MS = 250;"), 'Read-only cross-device freshness must remain bounded at 250ms.');
 $assert(str_contains($readonly, "['preparing', 'countdown', 'active'].includes(launchPhase)"), 'Read-only freshness must cover preparation, countdown and active phases.');
-$assert(str_contains($readonly, 'never takes the global write transaction lock'), 'Read-only owner must document the pre-start lock-isolation contract.');
+$assert(
+    str_contains($readonly, 'Frequent cross-device freshness reads only games.json')
+        && str_contains($readonly, 'global write transaction lock'),
+    'Read-only owner must document the pre-start lock-isolation contract.'
+);
 
 $assert(str_contains($acceptance, "document.addEventListener('mgw:phase-b-game-entering', primeLaunchState);"), 'Acceptance runtime must own the synchronous global launch-gate event.');
 $assert(str_contains($acceptance, "owner = document.getElementById('app')"), 'Launch overlay must be owned by the application root, not the board.');
