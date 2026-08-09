@@ -1,7 +1,8 @@
 # Paths are relative to the repository/deployment root.
-# Real Telegram /start entry graph. UserWelcomeGuard owns the private-chat
-# /start/invite message button and WebAppLaunchUrl keeps that accepted graph on
-# v110; no Telegram menu button may own a second Web App URL.
+# Real Telegram /start entry graph. UserWelcomeGuard owns the normal private-chat
+# /start message, InviteStartGuard owns /start invite_* deep links, and the
+# WebhookHandler/TelegramService fallback uses the same WebAppLaunchUrl builder.
+# No Telegram menu button may own a second Web App URL.
 app/v110.php
 app/index.html
 app/assets/js/production-clean-entry-v110.js
@@ -16,6 +17,8 @@ app/assets/js/games/game-invites-v110.js
 app/assets/js/screens/notifications-screen-v110r12.js
 bot/helpers/WebAppLaunchUrl.php
 bot/helpers/UserWelcomeGuard.php
+bot/helpers/InviteStartGuard.php
+bot/handlers/WebhookHandler.php
 bot/webhook.php
 bot/helpers/StagingMenuButtonReconciler.php
 bot/services/TelegramService.php
