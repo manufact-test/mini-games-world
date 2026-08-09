@@ -153,6 +153,7 @@ final class RuntimeRealtimeRepository
             'database_fingerprint' => $comparison['database_fingerprint'],
             'parity' => true,
         ];
+        unset(self::$requestAuditCache[$cacheKey]);
         self::$requestSynchronizeCache[$cacheKey] = $result;
         return $result;
     }
