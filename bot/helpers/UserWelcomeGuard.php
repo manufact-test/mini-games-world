@@ -41,14 +41,13 @@ final class UserWelcomeGuard
             : $baseWebAppUrl;
 
         // Older staging code installed a chat-specific Web App menu button for
-        // each non-admin user. Reset that per-chat override explicitly so the
-        // global commands menu from StagingMenuButtonReconciler is inherited.
-        // This is the Bot API's canonical way to remove a private-chat override.
+        // each user. Replace that exact private-chat override with commands so
+        // removal is deterministic and does not depend on any inherited default.
         try {
             $this->telegram->api('setChatMenuButton', [
                 'chat_id' => $chatId,
                 'menu_button' => [
-                    'type' => 'default',
+                    'type' => 'commands',
                 ],
             ]);
         } catch (Throwable $e) {
