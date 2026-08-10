@@ -1,0 +1,48 @@
+name: TMP invite notification snapshot owner
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/invite-notification-snapshot-owner'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/invite-notification-snapshot-owner
+          fetch-depth: 0
+
+      - name: Apply exact snapshot-owner follow-up
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-invite-notification-snapshot-owner.py
+          python3 scripts/ci/tmp-invite-notification-snapshot-owner-correct.py
+          php -l bot/services/GameInviteService.php
+          php -l bot/notifications.php
+          php -l bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          node --check e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          node --check e2e/staging/invite-transition-ux-v1137.spec.mjs
+          php bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          php bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+          git diff --check
+
+      - name: Commit product and regression alignment
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            bot/services/GameInviteService.php \
+            bot/notifications.php \
+            bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php \
+            e2e/staging/d1-bug-b-player-picker-v122.spec.mjs \
+            e2e/staging/invite-transition-ux-v1137.spec.mjs
+          git commit -m 'Use one invite snapshot owner for notification first frames'
+          git push origin HEAD:agent/invite-notification-snapshot-owner
