@@ -1,0 +1,121 @@
+plugins {
+    id 'com.android.application'
+}
+
+def configuredMgwBaseUrl = providers.gradleProperty('MGW_BASE_URL')
+        .orElse(providers.environmentVariable('MGW_BASE_URL'))
+        .getOrElse('')
+        .trim()
+def escapedMgwBaseUrl = configuredMgwBaseUrl
+        .replace('\\', '\\\\')
+        .replace('"', '\\"')
+
+// Acceptance-only Android branding inputs are stored as text/base64 so this
+// isolated branch remains reproducible through the GitHub contents workflow.
+// Binary inputs are generated under build/ by a real Gradle task, after clean
+// and before Android resource/signing work consumes them.
+def brandingInputDir = file("${rootDir}/branding")
+def launcherArtSource = file("${brandingInputDir}/shield_king_launcher_384.webp.b64")
+def acceptanceKeystoreSource = file("${brandingInputDir}/mgw-acceptance-stable.keystore.b64")
+def generatedBrandingResDir = file("${buildDir}/generated/branding/res")
+def generatedLauncherArt = file("${generatedBrandingResDir}/drawable-nodpi/ic_mgw_launcher_art.webp")
+def generatedAcceptanceKeystore = file("${buildDir}/generated/acceptance-signing/mgw-acceptance-stable.keystore")
+
+def decodeBase64File = { File source, File target ->
+    if (!source.isFile()) {
+        throw new GradleException("Missing acceptance input: ${source}")
+    }
+    target.parentFile.mkdirs()
+    target.bytes = source.getText('UTF-8').replaceAll('\\s+', '').decodeBase64()
+}
+
+def prepareAcceptanceInputs = tasks.register('prepareAcceptanceInputs') {
+    description = 'Decode the approved Shield King raster and acceptance-only signing key.'
+    group = 'build setup'
+
+    inputs.files(launcherArtSource, acceptanceKeystoreSource)
+    outputs.files(generatedLauncherArt, generatedAcceptanceKeystore)
+
+    doLast {
+        decodeBase64File(launcherArtSource, generatedLauncherArt)
+        decodeBase64File(acceptanceKeystoreSource, generatedAcceptanceKeystore)
+    }
+}
+
+android {
+    namespace 'com.minigamesworld.app'
+    compileSdk 36
+
+    defaultConfig {
+        // Stable acceptance-only identity. This is NOT the future production id.
+        applicationId 'com.minigamesworld.app.acceptance'
+        minSdk 26
+        targetSdk 36
+        versionCode 4
+        versionName '0.4.0-acceptance'
+
+        buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
+    }
+
+    sourceSets {
+        main.res.srcDir generatedBrandingResDir
+    }
+
+    signingConfigs {
+        acceptanceDebug {
+            storeFile generatedAcceptanceKeystore
+            storePassword 'mgwacceptance2026'
+            keyAlias 'mgw-acceptance'
+            keyPassword 'mgwacceptance2026'
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        debug {
+            // A fixed test-only key means every future acceptance APK can update
+            // the previous acceptance build instead of inheriting a random hosted
+            // runner debug certificate.
+            signingConfig signingConfigs.acceptanceDebug
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+    }
+}
+
+// `gradle clean test lint assembleDebug` must never delete generated inputs
+// after they are prepared. `clean` removes build/, then preBuild recreates the
+// exact approved inputs before Android resource linking and signing validation.
+tasks.named('preBuild').configure {
+    dependsOn prepareAcceptanceInputs
+}
+prepareAcceptanceInputs.configure {
+    mustRunAfter tasks.named('clean')
+}
+tasks.matching { it.name.startsWith('validateSigning') }.configureEach {
+    dependsOn prepareAcceptanceInputs
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
