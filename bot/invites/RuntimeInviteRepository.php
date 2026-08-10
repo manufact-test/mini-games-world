@@ -6,14 +6,18 @@ final class RuntimeInviteRepository
     private RuntimeStorageRouter $router;
     private ?DatabaseConnectionInterface $connection;
     private array $ownershipCache = [];
+    private bool $reconcileDatabaseOnlyRows;
 
     public function __construct(
         private array $config,
         ?RuntimeStorageRouter $router = null,
-        ?DatabaseConnectionInterface $database = null
+        ?DatabaseConnectionInterface $database = null,
+        ?bool $reconcileDatabaseOnlyRows = null
     ) {
         $this->router = $router ?? new RuntimeStorageRouter($config);
         $this->connection = $database;
+        $this->reconcileDatabaseOnlyRows = $reconcileDatabaseOnlyRows
+            ?? (($config['environment'] ?? null) === 'staging' && $database === null);
     }
 
     public function synchronize(array $jsonData): array
@@ -26,6 +30,11 @@ final class RuntimeInviteRepository
             function (DatabaseConnectionInterface $database) use ($jsonData): array {
                 $store = new RealtimeDatabaseStore($database);
                 $source = $this->sourceRows($jsonData, $database);
+                $reconciliation = $this->reconcileDatabaseOnlyRows(
+                    $source,
+                    $database,
+                    true
+                );
                 $created = 0;
                 $updated = 0;
                 $unchanged = 0;
@@ -60,7 +69,10 @@ final class RuntimeInviteRepository
                     $updated++;
                 }
 
-                $comparison = $this->compare($source, $this->databaseRows($database));
+                $comparison = $this->compare(
+                    $source,
+                    $this->databaseRows($database, $reconciliation['historical_invite_ids'])
+                );
                 if (!$comparison['ok']) {
                     throw new RuntimeException(implode(' ', $comparison['blockers']));
                 }
@@ -71,6 +83,9 @@ final class RuntimeInviteRepository
                     'created_count' => $created,
                     'updated_count' => $updated,
                     'unchanged_count' => $unchanged,
+                    'pruned_invite_rows' => $reconciliation['pruned_invite_rows'],
+                    'pruned_invite_event_rows' => $reconciliation['pruned_invite_event_rows'],
+                    'preserved_historical_invite_rows' => count($reconciliation['historical_invite_ids']),
                     'source_fingerprint' => $comparison['source_fingerprint'],
                     'database_fingerprint' => $comparison['database_fingerprint'],
                     'parity' => true,
@@ -88,13 +103,22 @@ final class RuntimeInviteRepository
             $database,
             function (DatabaseConnectionInterface $database) use ($jsonData): array {
                 $source = $this->sourceRows($jsonData, $database);
-                $comparison = $this->compare($source, $this->databaseRows($database));
+                $reconciliation = $this->reconcileDatabaseOnlyRows(
+                    $source,
+                    $database,
+                    false
+                );
+                $comparison = $this->compare(
+                    $source,
+                    $this->databaseRows($database, $reconciliation['historical_invite_ids'])
+                );
 
                 return [
                     'ok' => $comparison['ok'],
                     'read_only' => true,
                     'source_count' => $comparison['source_count'],
                     'database_count' => $comparison['database_count'],
+                    'preserved_historical_invite_rows' => count($reconciliation['historical_invite_ids']),
                     'source_fingerprint' => $comparison['source_fingerprint'],
                     'database_fingerprint' => $comparison['database_fingerprint'],
                     'blockers' => $comparison['blockers'],
@@ -271,19 +295,90 @@ final class RuntimeInviteRepository
         ];
     }
 
-    private function databaseRows(DatabaseConnectionInterface $database): array
-    {
+    private function databaseRows(
+        DatabaseConnectionInterface $database,
+        array $ignoredInviteIds = []
+    ): array {
+        $ignored = [];
+        foreach ($ignoredInviteIds as $inviteId) {
+            $inviteId = trim((string)$inviteId);
+            if ($inviteId !== '') $ignored[$inviteId] = true;
+        }
+
         $rows = [];
         foreach ($database->fetchAll('SELECT * FROM mgw_invites ORDER BY invite_id') as $row) {
-            $normalized = $this->normalizeDatabaseRow($row);
-            $inviteId = $normalized['invite_id'];
+            $inviteId = trim((string)($row['invite_id'] ?? ''));
             if ($inviteId === '' || isset($rows[$inviteId])) {
                 throw new RuntimeException('Invite DB contains invalid or duplicate invite IDs.');
             }
+            if (isset($ignored[$inviteId])) continue;
+            $normalized = $this->normalizeDatabaseRow($row);
             $rows[$inviteId] = $normalized;
         }
         ksort($rows, SORT_STRING);
         return $rows;
+    }
+
+    private function reconcileDatabaseOnlyRows(
+        array $source,
+        DatabaseConnectionInterface $database,
+        bool $deleteUnreferenced
+    ): array {
+        if (!$this->reconcileDatabaseOnlyRows) {
+            return [
+                'pruned_invite_rows' => 0,
+                'pruned_invite_event_rows' => 0,
+                'historical_invite_ids' => [],
+            ];
+        }
+
+        $prunedInvites = 0;
+        $prunedEvents = 0;
+        $historicalInviteIds = [];
+
+        foreach ($database->fetchAll(
+            'SELECT invite_id FROM mgw_invites ORDER BY invite_id'
+        ) as $row) {
+            $inviteId = trim((string)($row['invite_id'] ?? ''));
+            if ($inviteId === '') {
+                throw new RuntimeException('Invite DB contains an invalid invite ID.');
+            }
+            if (isset($source[$inviteId])) continue;
+
+            $relatedMatches = (int)$database->fetchValue(
+                'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id',
+                ['invite_id' => $inviteId]
+            );
+            if ($relatedMatches > 0) {
+                $historicalInviteIds[] = $inviteId;
+                continue;
+            }
+
+            if (!$deleteUnreferenced) continue;
+
+            $prunedEvents += $database->execute(
+                'DELETE FROM mgw_invite_events WHERE invite_id = :invite_id',
+                ['invite_id' => $inviteId]
+            );
+            $deleted = $database->execute(
+                'DELETE FROM mgw_invites WHERE invite_id = :invite_id',
+                ['invite_id' => $inviteId]
+            );
+            if ($deleted !== 1) {
+                throw new RuntimeException(
+                    'Invite DB-only reconciliation did not delete exactly one row.'
+                );
+            }
+            $prunedInvites++;
+        }
+
+        sort($historicalInviteIds, SORT_STRING);
+
+        return [
+            'pruned_invite_rows' => $prunedInvites,
+            'pruned_invite_event_rows' => $prunedEvents,
+            'historical_invite_ids' => $historicalInviteIds,
+        ];
     }
 
     private function normalizeDatabaseRow(array $row): array
