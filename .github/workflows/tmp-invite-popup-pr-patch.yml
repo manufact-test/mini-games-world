@@ -1,0 +1,42 @@
+name: TMP invite popup PR patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/invite-popup-transition-stability'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/invite-popup-transition-stability
+          fetch-depth: 0
+      - name: Apply exact patch
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-invite-popup-patch.py
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/main-v110.js
+          node --check e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          php -l app/v110.php
+          git diff --check
+          git diff --stat
+      - name: Commit product files
+        run: |
+          set -Eeuo pipefail
+          if git diff --quiet -- app/assets/js/games/game-invites-v110.js app/assets/js/main-v110-handoff-shell.js app/assets/js/main-v110.js app/v110.php e2e/staging/d1-bug-b-player-picker-v122.spec.mjs; then
+            echo 'Product patch already applied.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/assets/js/games/game-invites-v110.js app/assets/js/main-v110-handoff-shell.js app/assets/js/main-v110.js app/v110.php e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          git commit -m 'MVP-14: stabilize invite popup transitions'
+          git push origin HEAD:agent/invite-popup-transition-stability
