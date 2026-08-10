@@ -74,6 +74,10 @@ $assert($startSearchPos !== false && $leaveSearchPos !== false && $startSearchPo
 $startSearchSource = substr($api, $startSearchPos, $leaveSearchPos - $startSearchPos);
 $assert(substr_count($startSearchSource, $call) === 1,
     'Human matchmaking creation must pass through the shared post-create finalizer exactly once.');
+$assert(str_contains($startSearchSource, '$existingGameIdBeforeSearch ='),
+    'start_search must remember any already-active game before matchmaking mutates user state.');
+$assert(str_contains($startSearchSource, "\$existingGameIdBeforeSearch === '' || \$existingGameIdBeforeSearch !== \$gameId"),
+    'start_search must grant Phase B activation only when the returned game id is new to that request.');
 
 $assert(str_contains($inviteStorage, "['match_source']") && strpos($inviteStorage, "['match_source']") < strpos($inviteStorage, $call),
     'Invite/rematch game-specific metadata must be stored before the shared post-create finalizer runs.');
