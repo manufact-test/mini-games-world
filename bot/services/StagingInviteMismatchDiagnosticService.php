@@ -102,7 +102,33 @@ final class StagingInviteMismatchDiagnosticService
         }
 
         $db = $this->database();
-        $report = $jsonOpenTestReport + $testGameReport + [
+        $inviteAuditReport = [
+            'invite_audit_available' => true,
+            'invite_audit_ok' => false,
+            'invite_audit_source_count' => null,
+            'invite_audit_database_count' => null,
+            'invite_audit_preserved_historical_count' => null,
+            'invite_audit_count_mismatch' => false,
+            'invite_audit_fingerprint_mismatch' => false,
+        ];
+        try {
+            $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $db))
+                ->auditParity($snapshot);
+            $blockers = is_array($inviteAudit['blockers'] ?? null) ? $inviteAudit['blockers'] : [];
+            $inviteAuditReport = [
+                'invite_audit_available' => true,
+                'invite_audit_ok' => ($inviteAudit['ok'] ?? false) === true,
+                'invite_audit_source_count' => (int)($inviteAudit['source_count'] ?? 0),
+                'invite_audit_database_count' => (int)($inviteAudit['database_count'] ?? 0),
+                'invite_audit_preserved_historical_count' => (int)($inviteAudit['preserved_historical_invite_rows'] ?? 0),
+                'invite_audit_count_mismatch' => in_array('Invite JSON and DB counts differ.', $blockers, true),
+                'invite_audit_fingerprint_mismatch' => in_array('Invite JSON and DB fingerprints differ.', $blockers, true),
+            ];
+        } catch (Throwable) {
+            $inviteAuditReport['invite_audit_available'] = false;
+        }
+
+        $report = $jsonOpenTestReport + $testGameReport + $inviteAuditReport + [
             'db_only_non_test_nonterminal_count' => 0,
             'status_counts' => [],
             'source_counts' => [],
