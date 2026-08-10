@@ -1,0 +1,53 @@
+name: TMP invite transition UX final
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/invite-transition-ux-final'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/invite-transition-ux-final
+          fetch-depth: 0
+      - name: Apply exact invite transition UX patch
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-invite-transition-ux-final.py
+          php -l bot/services/GameInviteService.php
+          node --check app/assets/js/screens/notifications-screen-v110r12.js
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/main-v110.js
+          php -l app/v110.php
+          php -l bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php -l bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+          php -l bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          php bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+          php bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          git diff --check
+      - name: Commit product and source contracts
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            bot/services/GameInviteService.php \
+            app/assets/js/screens/notifications-screen-v110r12.js \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/main-v110-handoff-shell.js \
+            app/assets/js/main-v110.js \
+            app/v110.php \
+            bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php \
+            bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php \
+            bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          git commit -m 'Stabilize invite transition first frames and self-cancel UX'
+          git push origin HEAD:agent/invite-transition-ux-final
