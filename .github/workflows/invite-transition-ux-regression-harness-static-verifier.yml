@@ -48,11 +48,11 @@ jobs:
         run: |
           set -Eeuo pipefail
           git diff --name-only de916ca8c2357a68fd7ec259c998a747c5b4cf4a..6de0e749c95152496aa86c731f94a5caa4847b6d \
-            | grep -Ev '^e2e/staging/invite-transition-ux-v1137\.spec\.mjs$' \
+            | awk '$0 != "e2e/staging/invite-transition-ux-v1137.spec.mjs" { print }' \
             | tee /tmp/unexpected.txt
           test ! -s /tmp/unexpected.txt
 
       - name: Verify exact verifier delta
         run: |
           set -Eeuo pipefail
-          test "$(git diff --name-only HEAD^..HEAD)" = '.github/workflows/invite-transition-ux-regression-harness-static-verifier.yml'
+          test "$(git diff --name-only 6de0e749c95152496aa86c731f94a5caa4847b6d..HEAD)" = '.github/workflows/invite-transition-ux-regression-harness-static-verifier.yml'
