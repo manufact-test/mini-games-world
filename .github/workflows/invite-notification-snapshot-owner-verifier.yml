@@ -1,0 +1,78 @@
+name: Invite notification snapshot owner focused
+
+on:
+  pull_request:
+    branches:
+      - agent/invite-notification-snapshot-owner
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    if: github.head_ref == 'agent/invite-notification-snapshot-owner-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact feature head
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.base.sha }}" = 'd65ecc94deb201c924f8257957f589c0692fd207'
+          test "$(git rev-parse HEAD^)" = 'd65ecc94deb201c924f8257957f589c0692fd207'
+
+      - name: Syntax and focused contracts
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/GameInviteService.php
+          php -l bot/notifications.php
+          php -l bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          node --check e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          node --check e2e/staging/invite-transition-ux-v1137.spec.mjs
+          php bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          php bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+
+      - name: Verify one public invite projection owner
+        run: |
+          set -Eeuo pipefail
+          grep -Fq 'public function notificationSnapshot(array $invite, string $viewerId): array' bot/services/GameInviteService.php
+          grep -Fq 'return $this->publicInvite($invite, $viewerId);' bot/services/GameInviteService.php
+          grep -Fq "\$item['invite_snapshot'] = \$inviteViews->notificationSnapshot(\$invite, \$userId);" bot/notifications.php
+          grep -Fq 'GameInviteService $inviteViews' bot/notifications.php
+          grep -Fq "url.searchParams.get('v') === '1137'" e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          ! grep -Fq "url.searchParams.get('v') === '1136'" e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+
+      - name: Verify no runtime timing workaround
+        run: |
+          set -Eeuo pipefail
+          git diff --unified=0 45c787bc020f1704f50f35a2202630151d7b9572..d65ecc94deb201c924f8257957f589c0692fd207 -- \
+            bot/services/GameInviteService.php bot/notifications.php \
+            | grep '^+' | grep -v '^+++' > /tmp/added-runtime-lines.txt || true
+          ! grep -Eiq '\b(retry|sleep)\b|setTimeout\(|setInterval\(' /tmp/added-runtime-lines.txt
+
+      - name: Verify exact feature diff
+        run: |
+          set -Eeuo pipefail
+          git diff --name-only 45c787bc020f1704f50f35a2202630151d7b9572..d65ecc94deb201c924f8257957f589c0692fd207 | sort > /tmp/actual.txt
+          cat > /tmp/expected.txt <<'EOF'
+          bot/notifications.php
+          bot/services/GameInviteService.php
+          bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          e2e/staging/invite-transition-ux-v1137.spec.mjs
+          EOF
+          sed -i 's/^          //' /tmp/expected.txt
+          sort -o /tmp/expected.txt /tmp/expected.txt
+          diff -u /tmp/expected.txt /tmp/actual.txt
+          ! grep -Eq '^\.github/workflows/tmp-|^scripts/ci/tmp-' /tmp/actual.txt
+          ! grep -Eq '(^|/)(android-app|design-system/shield-king)(/|$)' /tmp/actual.txt
+
+      - name: Verify exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only HEAD^..HEAD)" = '.github/workflows/invite-notification-snapshot-owner-verifier.yml'
+          git diff --check 45c787bc020f1704f50f35a2202630151d7b9572..HEAD
