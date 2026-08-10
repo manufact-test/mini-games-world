@@ -75,9 +75,9 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $assert(str_contains($setup, 'async function reconcileInviteResiduals(){')
     && str_contains($setup, "body:JSON.stringify({ action:'reconcile_invite_residuals' })"),
     'Global setup must call the existing residual reconciliation action.');
-$assert(str_contains($setup, "payload?.parity?.invites !== true")
-    && str_contains($setup, "payload?.parity?.scoped_notifications !== true")
-    && str_contains($setup, "payload?.parity?.test_player_notifications !== true"),
+$assert(str_contains($setup, 'payload?.parity?.invites !== true')
+    && str_contains($setup, 'payload?.parity?.scoped_notifications !== true')
+    && str_contains($setup, 'payload?.parity?.test_player_notifications !== true'),
     'Global setup must require authoritative residual parity before reset.');
 
 $fresh = strpos($setup, 'await recoverFreshInviteReplacement();');
@@ -87,7 +87,7 @@ $assert($fresh !== false && $residual !== false && $reset !== false
     && $fresh < $residual && $residual < $reset,
     'Residual reconciliation must run after narrow recovery and before test-player reset.');
 
-$action = strpos($endpoint, "if ($action === 'reconcile_invite_residuals')");
+$action = strpos($endpoint, "if (\$action === 'reconcile_invite_residuals')");
 $verify = strpos($endpoint, 'verifyAndConsume($providedCredential)', $action ?: 0);
 $run = strpos($endpoint, '$result = $residualService()->reconcile($_SERVER);', $action ?: 0);
 $assert($action !== false && $verify !== false && $run !== false
@@ -96,7 +96,7 @@ $assert($action !== false && $verify !== false && $run !== false
 
 $assert(str_contains($service, 'RuntimeInviteRepository($this->config, $this->router, $db)')
     && str_contains($service, '->synchronize($snapshot);')
-    && str_contains($service, "($inviteSync['parity'] ?? false) !== true"),
+    && str_contains($service, '(\$inviteSync[\'parity\'] ?? false) !== true'),
     'Existing residual owner must use RuntimeInviteRepository synchronization and prove parity.');
 $assert(str_contains($service, '$database->transaction(function (DatabaseConnectionInterface $db)')
     && str_contains($service, 'flock($handle, LOCK_EX)')
