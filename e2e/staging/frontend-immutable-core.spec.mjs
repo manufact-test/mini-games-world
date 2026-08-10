@@ -8,7 +8,7 @@ const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
 const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
-const EXPECTED_BUILD = 'd1-bell-single-owner';
+const EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner';
 const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v121';
 const EXPECTED_ENTRY_VERSION = 'v121';
 
@@ -126,7 +126,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     const has = suffix => resources.some(url => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix));
     for (const required of [
-      '/assets/js/main.js?v=d1-bell-single-owner',
+      '/assets/js/main.js?v=d1-bootstrap-authoritative-owner',
       '/assets/js/api/client.js?v=114',
       '/assets/js/session.js?v=114',
       '/assets/js/first-interaction-readiness.js?v=d1',
