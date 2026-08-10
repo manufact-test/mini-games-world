@@ -21,6 +21,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 scripts/ci/tmp-staging-invite-projection-repair-patch.py
+          python3 scripts/ci/tmp-fix-invite-projection-contract-literals.py
           php -l bot/services/StagingTestPlayerStateResetService.php
           php -l bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
           php -l bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
