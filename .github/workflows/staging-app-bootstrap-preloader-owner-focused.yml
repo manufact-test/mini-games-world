@@ -1,0 +1,84 @@
+name: Staging app bootstrap preloader owner focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-app-bootstrap-preloader-owner
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    if: github.head_ref == 'agent/staging-app-bootstrap-preloader-owner-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Exact feature head
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse agent/staging-app-bootstrap-preloader-owner)" = 'b153cd50091b7c9db383c39b1719607960dac7fc' || \
+            test "$(git rev-parse origin/agent/staging-app-bootstrap-preloader-owner)" = 'b153cd50091b7c9db383c39b1719607960dac7fc'
+
+      - name: Syntax and ownership contract
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/main.js
+          php -l app/v114.php
+          php -l bot/tests/ProductionV121BootstrapPreloaderOwnershipContractTest.php
+          php bot/tests/ProductionV121BootstrapPreloaderOwnershipContractTest.php
+
+      - name: Existing entry and invite contracts
+        run: |
+          set -Eeuo pipefail
+          for test_file in \
+            bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php \
+            bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php \
+            bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php \
+            bot/tests/ProductionV110InviteStartSyncOwnershipContractTest.php; do
+            if [[ -f "$test_file" ]]; then php "$test_file"; fi
+          done
+
+      - name: Accepted Telegram v110 graph unchanged
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet 5b2e5b5143c654b4168f535ba79b3e4e41e79eaa b153cd50091b7c9db383c39b1719607960dac7fc -- \
+            app/v110.php \
+            app/assets/js/main-v110.js \
+            app/assets/js/main-v110-handoff-shell.js \
+            app/assets/js/games/game-invites-v110.js
+
+      - name: No timing workaround in product diff
+        run: |
+          set -Eeuo pipefail
+          added="$(git diff --unified=0 5b2e5b5143c654b4168f535ba79b3e4e41e79eaa b153cd50091b7c9db383c39b1719607960dac7fc -- app/assets/js/main.js app/v114.php | grep '^+' | grep -v '^+++' || true)"
+          if printf '%s\n' "$added" | grep -E 'setTimeout|Promise\.race|AbortController|sleep\(|retry|timeout' >/dev/null; then
+            echo 'Timing/retry workaround detected in product additions.' >&2
+            exit 1
+          fi
+
+      - name: Exact product diff
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff --name-only 5b2e5b5143c654b4168f535ba79b3e4e41e79eaa b153cd50091b7c9db383c39b1719607960dac7fc | sort)
+          expected=(
+            'app/assets/js/main.js'
+            'app/v114.php'
+            'bot/tests/ProductionV121BootstrapPreloaderOwnershipContractTest.php'
+          )
+          mapfile -t expected_sorted < <(printf '%s\n' "${expected[@]}" | sort)
+          diff -u <(printf '%s\n' "${expected_sorted[@]}") <(printf '%s\n' "${files[@]}")
+
+      - name: Exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff --name-only b153cd50091b7c9db383c39b1719607960dac7fc HEAD | sort)
+          test "${#files[@]}" = '1'
+          test "${files[0]}" = '.github/workflows/staging-app-bootstrap-preloader-owner-focused.yml'
+
+      - name: Diff check
+        run: git diff --check 5b2e5b5143c654b4168f535ba79b3e4e41e79eaa HEAD
