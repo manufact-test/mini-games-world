@@ -57,15 +57,16 @@ final class StagingTestOnlyInviteOrphanRecoveryService
                 || !in_array($source, self::SAFE_SOURCES, true)) {
                 throw new RuntimeException('Staging test-only orphan recovery found unsafe A/B invite state.');
             }
-            if (trim((string)($invite['match_id'] ?? '')) !== '') {
-                throw new RuntimeException('Staging test-only orphan recovery refuses matched A/B invite.');
-            }
+            $matchId = trim((string)($invite['match_id'] ?? ''));
             $matchRefs = (int)$database->fetchValue(
                 'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
                 ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
             );
-            if ($matchRefs !== 0) {
-                throw new RuntimeException('Staging test-only orphan recovery refuses match-referenced A/B invite.');
+            // A DB-only invite tied to a normalized match is retained history,
+            // not an orphan candidate. Runtime invite parity intentionally
+            // preserves the same row and excludes it from active JSON parity.
+            if ($matchId !== '' || $matchRefs !== 0) {
+                continue;
             }
 
             $this->assertOwnership($database, $invite, $participants);
