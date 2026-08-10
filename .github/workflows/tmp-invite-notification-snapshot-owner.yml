@@ -22,7 +22,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 scripts/ci/tmp-invite-notification-snapshot-owner.py
-          python3 scripts/ci/tmp-invite-notification-snapshot-owner-correct.py
           php -l bot/services/GameInviteService.php
           php -l bot/notifications.php
           php -l bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
