@@ -29,6 +29,12 @@ final class StagingInviteMismatchDiagnosticService
             'json_open_test_status_counts' => [],
             'json_open_test_source_counts' => [],
         ];
+        $testGameReport = [
+            'active_test_game_count' => 0,
+            'active_test_game_non_test_participant_count' => 0,
+            'active_test_game_launch_phase_counts' => [],
+            'active_test_game_type_counts' => [],
+        ];
         $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
         foreach (is_array($snapshot['invites'] ?? null) ? $snapshot['invites'] : [] as $invite) {
             if (!is_array($invite)) continue;
@@ -60,6 +66,30 @@ final class StagingInviteMismatchDiagnosticService
             $jsonOpenTestReport['json_open_test_source_counts'][$source !== '' ? $source : 'empty'] =
                 ($jsonOpenTestReport['json_open_test_source_counts'][$source !== '' ? $source : 'empty'] ?? 0) + 1;
         }
+
+        foreach (is_array($snapshot['games'] ?? null) ? $snapshot['games'] : [] as $game) {
+            if (!is_array($game) || trim((string)($game['status'] ?? '')) !== 'active') continue;
+            $participants = array_values(array_filter(
+                array_map('strval', is_array($game['player_ids'] ?? null) ? $game['player_ids'] : []),
+                static fn(string $value): bool => $value !== ''
+            ));
+            if (count(array_intersect($participants, self::TEST_PLAYER_IDS)) === 0) continue;
+
+            $testGameReport['active_test_game_count']++;
+            foreach ($participants as $participantId) {
+                if (!isset($testIds[$participantId]) && !str_starts_with($participantId, 'bot_')) {
+                    $testGameReport['active_test_game_non_test_participant_count']++;
+                    break;
+                }
+            }
+            $phase = trim((string)($game['launch_phase'] ?? 'active'));
+            $testGameReport['active_test_game_launch_phase_counts'][$phase !== '' ? $phase : 'empty'] =
+                ($testGameReport['active_test_game_launch_phase_counts'][$phase !== '' ? $phase : 'empty'] ?? 0) + 1;
+            $gameType = trim((string)($game['game_type'] ?? ''));
+            $testGameReport['active_test_game_type_counts'][$gameType !== '' ? $gameType : 'empty'] =
+                ($testGameReport['active_test_game_type_counts'][$gameType !== '' ? $gameType : 'empty'] ?? 0) + 1;
+        }
+
         $sourceNotificationIds = [];
         $sourceNotificationEvents = [];
         foreach (is_array($snapshot['notifications'] ?? null) ? $snapshot['notifications'] : [] as $notification) {
@@ -72,7 +102,7 @@ final class StagingInviteMismatchDiagnosticService
         }
 
         $db = $this->database();
-        $report = $jsonOpenTestReport + [
+        $report = $jsonOpenTestReport + $testGameReport + [
             'db_only_non_test_nonterminal_count' => 0,
             'status_counts' => [],
             'source_counts' => [],
@@ -138,6 +168,8 @@ final class StagingInviteMismatchDiagnosticService
 
         ksort($report['json_open_test_status_counts'], SORT_STRING);
         ksort($report['json_open_test_source_counts'], SORT_STRING);
+        ksort($report['active_test_game_launch_phase_counts'], SORT_STRING);
+        ksort($report['active_test_game_type_counts'], SORT_STRING);
         ksort($report['status_counts'], SORT_STRING);
         ksort($report['source_counts'], SORT_STRING);
         return [
