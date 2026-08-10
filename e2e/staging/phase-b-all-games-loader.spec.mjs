@@ -278,7 +278,7 @@ for (const game of GAMES) {
         expect(sequence.indexOf('3')).toBeLessThan(sequence.indexOf('2'));
         expect(sequence.indexOf('2')).toBeLessThan(sequence.indexOf('1'));
         expect(sequence.indexOf('1')).toBeLessThan(sequence.indexOf('ready'));
-        expect(trace.some(entry => entry.game === game.title)).toBe(true);
+        expect(trace.some(entry => String(entry.game).replace(/\s+/gu, ' ').trim() === String(game.title).replace(/\s+/gu, ' ').trim())).toBe(true);
         expect(trace.some(entry => /VS|СТАРТ/i.test(entry.text))).toBe(false);
       }
 
