@@ -1,0 +1,43 @@
+name: TMP staging test reset stage diagnostic patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/staging-test-reset-stage-diagnostic'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-test-reset-stage-diagnostic
+          fetch-depth: 0
+      - name: Apply exact diagnostic patch
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-staging-test-reset-stage-diagnostic-patch.py
+          php -l bot/services/StagingTestPlayerStateResetService.php
+          php -l bot/staging-test-auth.php
+          php -l bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          php bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          git diff --check
+      - name: Commit diagnostic and contract only
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            bot/services/StagingTestPlayerStateResetService.php \
+            bot/staging-test-auth.php \
+            bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          if git diff --cached --quiet; then
+            echo 'Diagnostic patch already applied.'
+            exit 0
+          fi
+          git commit -m 'Staging diagnostics: classify reset failure stage'
+          git push origin HEAD:agent/staging-test-reset-stage-diagnostic
