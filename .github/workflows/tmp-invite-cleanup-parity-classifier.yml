@@ -1,0 +1,40 @@
+name: TMP invite cleanup parity classifier patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/staging-test-invite-cleanup-parity-classifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-test-invite-cleanup-parity-classifier
+          fetch-depth: 0
+      - name: Apply exact classifier patch
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-invite-cleanup-parity-classifier.py
+          php -l bot/services/StagingTestPlayerStateResetService.php
+          php -l bot/tests/StagingTestInviteCleanupParityClassifierContractTest.php
+          php bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          php bot/tests/StagingTestInviteCleanupParityClassifierContractTest.php
+          git diff --check
+      - name: Commit product and regression patch
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot/services/StagingTestPlayerStateResetService.php bot/tests/StagingTestInviteCleanupParityClassifierContractTest.php
+          if git diff --cached --quiet; then
+            echo 'Classifier already committed.'
+            exit 0
+          fi
+          git commit -m 'Staging tests: classify invite cleanup parity failure'
+          git push origin HEAD:agent/staging-test-invite-cleanup-parity-classifier
