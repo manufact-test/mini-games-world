@@ -7,7 +7,8 @@ DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
 DS-2 ICON VISUAL FAMILY — MANUALLY ACCEPTED
 DS-2 EXACT PRODUCTION ART EXPORT — CORRECTION REQUIRED
-DS-3 SCREEN SPECIFICATIONS — CURRENT-UI MIGRATION CONTRACT IN PROGRESS
+DS-3 EXISTING-UI MIGRATION SPEC — READY
+DS-3 VISUAL ACCEPTANCE — BLOCKED UNTIL EXACT ACCEPTED ICON ART IS EXPORTED
 DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
 ```
@@ -73,24 +74,29 @@ Accepted direction:
 
 The simplified geometric SVG files created earlier are **not visually equivalent to the manually accepted rich metallic icon artwork**.
 
-They are now classified as semantic/geometry references only until exact production art is exported.
+They are semantic/geometry references only until exact production art is exported.
 
 They must not be used as the visual source for approval mockups or future Home migration.
 
 The accepted rich Variant 1 visual direction controls the final finish.
 
-## DS-3 — preserve existing UI, do not redesign it
+## DS-3 — existing UI migration specification ready
 
-Authoritative migration rule:
+Authoritative files:
 
 - `CURRENT_UI_MIGRATION.md`
+- `CURRENT_UI_STYLE_MAP.md`
+- `EXISTING_SCREEN_MIGRATION.md`
+- `EXISTING_AUX_SURFACES_MIGRATION.md`
+- `SCREEN_STATE_MATRIX.md`
+- `SCREENS.md` only where it does not conflict with the preserve-existing-UI migration rule.
 
-The current accepted shared Mini Games World UI already owns the Home structure and product interactions.
+The current accepted shared Mini Games World UI already owns Home, Search, Gameplay, Profile, Store, Notifications, sheets, history and their functional interactions.
 
 Shield King is applied as a **skin/migration**:
 
 ```text
-existing accepted layout + existing actions + existing copy
+existing accepted layout + existing actions + existing copy + existing responsive rules
 → Shield King colors/tokens
 → accepted icons
 → Shield King component states
@@ -98,7 +104,32 @@ existing accepted layout + existing actions + existing copy
 
 It is NOT permission to rebuild Home, reorder sections, add new navigation, invent blocks or replace current product structure with a concept mockup.
 
-If older wording in `SCREENS.md` conflicts with `CURRENT_UI_MIGRATION.md`, the migration contract takes precedence.
+### Exact current Home structure preserved
+
+- current topbar/profile/online state;
+- current notification and more-menu actions;
+- current “Мировые мини-игры” hero;
+- current `Матч-комната / Gold-комната` selector;
+- current runtime room card and its buttons;
+- current two balance cards;
+- current live-activity block;
+- current eight vertically stacked game cards;
+- current rules / `Играть` / `Пригласить друга` actions.
+
+No bottom navigation, tournament section, new game grid or giant marketing hero is introduced.
+
+### Existing component geometry preserved
+
+- current button heights/radii/grid behavior;
+- current card spacing;
+- current Search radar/player layout;
+- current Gameplay shell/board clamp/responsive behavior;
+- current Profile wallet/stat layouts;
+- current Store grids/tabs/product cards;
+- current Notifications list/toast behavior;
+- current sheets/modals/history/economy flows.
+
+Only visual tokens/materials/icons are remapped.
 
 ## Ownership
 
