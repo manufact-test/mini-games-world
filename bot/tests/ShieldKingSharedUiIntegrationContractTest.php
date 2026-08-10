@@ -90,16 +90,16 @@ $assert(str_contains($phaseB, 'const LAUNCH_READY_HOLD_MS = 450;'), 'Phase B rea
 $assert(!str_contains($skin, 'LAUNCH_COUNTDOWN_STEP_MS') && !str_contains($skin, 'setInterval(') && !str_contains($skin, 'fetch('), 'The Shield King visual layer must own no lifecycle/timing/network logic.');
 
 foreach ([
-    'app/assets/css/games/tictactoe/rules.css',
-    'app/assets/css/games/four-in-a-row/game.css',
-    'app/assets/css/games/battleship/game.css',
-    'app/assets/css/games/checkers/game.css',
-    'app/assets/css/games/reversi/game.css',
-    'app/assets/css/games/chess/game.css',
-    'app/assets/css/games/go/game.css',
-    'app/assets/css/games/domino/game.css',
-] as $gameCss) {
-    $assert(str_contains($mainCss, $gameCss), 'Existing gameplay CSS owner must remain wired unchanged: ' . $gameCss);
+    './games/tictactoe/rules.css',
+    './games/four-in-a-row/game.css',
+    './games/battleship/game.css',
+    './games/checkers/game.css',
+    './games/reversi/game.css',
+    './games/chess/game.css',
+    './games/go/game.css',
+    './games/domino/game.css',
+] as $gameCssImport) {
+    $assert(str_contains($mainCss, $gameCssImport), 'Existing gameplay CSS owner must remain wired unchanged: ' . $gameCssImport);
 }
 
 fwrite(STDOUT, "ShieldKingSharedUiIntegrationContractTest: {$assertions} assertions passed\n");
