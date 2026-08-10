@@ -104,10 +104,41 @@ async function recoverFreshInviteReplacement(){
   }));
 }
 
+
+async function reconcileInviteResiduals(){
+  const oidcToken = await requestOidcToken();
+  const response = await fetch(AUTH_ROUTE, {
+    method:'POST',
+    headers:{
+      Authorization:`Bearer ${oidcToken}`,
+      Accept:'application/json',
+      'Content-Type':'application/json',
+    },
+    body:JSON.stringify({ action:'reconcile_invite_residuals' }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok
+      || payload?.ok !== true
+      || !['recovered', 'already_clean'].includes(payload?.status)
+      || payload?.parity?.invites !== true
+      || payload?.parity?.scoped_notifications !== true
+      || payload?.parity?.test_player_notifications !== true) {
+    throw new Error(`Staging invite residual reconciliation failed: ${response.status} ${payload?.error || 'unknown_error'}`);
+  }
+  console.log('[MGW_STAGING_INVITE_RESIDUAL_RECONCILIATION]', JSON.stringify({
+    status:payload.status,
+    candidate_count:payload.candidate_count,
+    deleted:payload.deleted,
+    parity:payload.parity,
+    notification_account_count:payload.notification_account_count,
+  }));
+}
+
 export default async function stagingGlobalSetup(){
   await diagnoseInviteMismatch();
   await recoverTestOnlyInviteOrphans();
   await recoverFreshInviteReplacement();
+  await reconcileInviteResiduals();
 
   const oidcToken = await requestOidcToken();
   const response = await fetch(AUTH_ROUTE, {
