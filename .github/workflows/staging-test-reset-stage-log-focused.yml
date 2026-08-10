@@ -1,0 +1,40 @@
+name: Staging reset stage log focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-test-reset-stage-log
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 5ea310bd28248ae1849827ea8011e076c84cfc33
+  STATUS_CONTEXT: staging-test-reset-stage-log-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-test-reset-stage-log-verifier
+          fetch-depth: 0
+      - name: Verify test-only log change
+        run: |
+          set -Eeuo pipefail
+          node --check e2e/staging-global-setup.mjs
+          grep -F 'stage=${payload.stage}' e2e/staging-global-setup.mjs
+          git diff --quiet 9ecf6e20b2ffb9ea6ce90a514e133164f6f7710d...5ea310bd28248ae1849827ea8011e076c84cfc33 -- app bot
+          git diff --check 9ecf6e20b2ffb9ea6ce90a514e133164f6f7710d...5ea310bd28248ae1849827ea8011e076c84cfc33
+          test "$(git diff --name-only 5ea310bd28248ae1849827ea8011e076c84cfc33...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only 5ea310bd28248ae1849827ea8011e076c84cfc33...HEAD)" = '.github/workflows/staging-test-reset-stage-log-focused.yml'
+      - name: Publish success status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Reset stage log verification passed\"}"
