@@ -52,6 +52,7 @@ let shareWarmSerial = Promise.resolve();
 let shareAttempt = null;
 let playerPickerRequestGeneration = 0;
 let directInviteRequestGeneration = 0;
+const directInviteCancelIntents = new Set();
 let inviteStartPending = false;
 let inviteUiTransitionGeneration = 0;
 
@@ -367,6 +368,11 @@ async function createDirectInvite(context, inviteeId, button){
     currentInvite = result.invite || null;
     if (!currentInvite?.token) throw new Error('Не удалось создать приглашение.');
 
+    if (directInviteCancelIntents.has(requestGeneration)) {
+      await settleQueuedDirectInviteCancel(currentInvite, requestGeneration);
+      return;
+    }
+
     if (isDirectInvitePendingSurfaceOpen(requestGeneration)) {
       finalizeDirectInvitePendingSurface(currentInvite, requestGeneration);
     } else if (isPassiveOwnerPending(currentInvite)) {
@@ -377,8 +383,36 @@ async function createDirectInvite(context, inviteeId, button){
     scheduleSync(0);
     window.setTimeout(cancelWarmShareDraft, 180);
   } catch (error) {
+    if (directInviteCancelIntents.has(requestGeneration)) {
+      directInviteCancelIntents.delete(requestGeneration);
+      currentInvite = null;
+      scheduleSync(0);
+      scheduleWatch(0);
+      return;
+    }
     toast(error.message || 'Не удалось отправить приглашение.');
     if (isDirectInvitePendingSurfaceOpen(requestGeneration)) await openPlayerPicker(context);
+  }
+}
+
+async function settleQueuedDirectInviteCancel(invite, requestGeneration){
+  const token = String(invite?.token || '');
+  if (!token) return;
+  try {
+    const result = await inviteRequest('cancel', { token });
+    syncState(result);
+    const unreadCount = Number(result?.unread_count);
+    consumeInviteNotification(token, Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : null);
+    if (Number.isFinite(unreadCount)) dispatchNotificationCount(Math.max(0, unreadCount));
+    currentInvite = null;
+    scheduleSync(0);
+    scheduleWatch(0);
+  } catch (error) {
+    currentInvite = invite;
+    showOwnerWaiting(invite, 'Не удалось отменить приглашение. Попробуйте ещё раз.');
+    toast(error.message || 'Не удалось отменить приглашение.');
+  } finally {
+    directInviteCancelIntents.delete(requestGeneration);
   }
 }
 
@@ -712,12 +746,14 @@ async function performInviteAction(action, token, button){
   inviteUiTransitionGeneration += 1;
   haptic('light');
   const originalText = button.textContent;
-  const rollbackInvite = cloneInvite(currentInvite);
+  const rollbackInvite = inviteForAction(token, button) || cloneInvite(currentInvite);
+  if (rollbackInvite?.token) currentInvite = cloneInvite(rollbackInvite);
   const rollbackHtml = String(document.getElementById('sheet')?.innerHTML || '');
   const terminalContext = terminalActionContext(button, action, token);
-  const optimisticOwnerCancel = action === 'cancel'
-    && Boolean(rollbackInvite?.is_owner)
-    && !terminalContext.notificationSurface;
+  const optimisticParticipantCancel = action === 'cancel'
+    && !terminalContext.notificationSurface
+    && String(rollbackInvite?.token || '') === token
+    && (Boolean(rollbackInvite?.is_owner) || Boolean(rollbackInvite?.is_invitee));
   setInviteButtonsDisabled(true);
   button.textContent = actionText(action);
   if (action === 'start') beginInviteStartTransition();
@@ -727,11 +763,14 @@ async function performInviteAction(action, token, button){
   // captured sheet and invitation state without adding another action owner.
   if (action === 'accept') {
     showInviteeWaiting({
-      ...currentInvite,
+      ...(rollbackInvite || {}),
+      token,
       status:'accepted',
-      ready_deadline_at:currentInvite?.ready_deadline_at || new Date(Date.now() + 90000).toISOString(),
+      is_owner:false,
+      is_invitee:true,
+      ready_deadline_at:String(rollbackInvite?.ready_deadline_at || ''),
     });
-  } else if (optimisticOwnerCancel) {
+  } else if (optimisticParticipantCancel) {
     closeSheet();
     showScreen('home');
   }
@@ -755,9 +794,10 @@ async function performInviteAction(action, token, button){
     if (action === 'decline' || action === 'cancel') {
       const terminalInvite = terminalInviteResult(action, token, result?.invite || rollbackInvite);
       const unreadCount = Number(result?.unread_count);
-      const selfCancelledOwner = action === 'cancel'
-        && Boolean(terminalInvite?.is_owner)
-        && !terminalContext.notificationSurface;
+      const selfCancelledParticipant = action === 'cancel'
+        && !terminalContext.notificationSurface
+        && String(terminalInvite?.token || '') === token
+        && (Boolean(terminalInvite?.is_owner) || Boolean(terminalInvite?.is_invitee));
 
       if (terminalContext.notificationSurface) {
         document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
@@ -767,9 +807,9 @@ async function performInviteAction(action, token, button){
             announce:false,
           },
         }));
-      } else if (selfCancelledOwner) {
+      } else if (selfCancelledParticipant) {
         consumeInviteNotification(token, unreadCount);
-        if (!optimisticOwnerCancel) {
+        if (!optimisticParticipantCancel) {
           closeSheet();
           showScreen('home');
         }
@@ -813,6 +853,19 @@ function beginInviteStartTransition(){
 function endInviteStartTransition(resumeSync){
   inviteStartPending = false;
   if (resumeSync) scheduleSync(0);
+}
+
+function inviteForAction(token, button){
+  const current = String(currentInvite?.token || '') === token ? cloneInvite(currentInvite) : null;
+  const raw = String(button?.dataset?.inviteSnapshot || '');
+  if (!raw) return current;
+  try {
+    const snapshot = JSON.parse(raw);
+    if (!snapshot || typeof snapshot !== 'object' || String(snapshot.token || '') !== token) return current;
+    return { ...(current || {}), ...snapshot, token };
+  } catch (error) {
+    return current;
+  }
 }
 
 function terminalActionContext(button, action, token){
@@ -1010,12 +1063,25 @@ function showDirectInvitePending(context, opponentName, requestGeneration){
   openSheet(`
     <span data-invite-sheet data-direct-invite-pending="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
-      <div><h2>Приглашение отправлено</h2></div>
+      <div><h2>Приглашение отправлено</h2><p>Для ${escapeHtml(opponentName || 'игрока')}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${contextSummary(context)}
-    <button class="btn primary full" data-direct-invite-cancel-reserved type="button" aria-disabled="true" disabled style="opacity:1">Отменить приглашение</button>
+    <button class="btn primary full" data-direct-invite-cancel-reserved="${Number(requestGeneration || 0)}" type="button">Отменить приглашение</button>
   `);
+  document.querySelector(`[data-direct-invite-cancel-reserved="${Number(requestGeneration || 0)}"]`)?.addEventListener('click', () => {
+    requestPendingDirectInviteCancel(requestGeneration);
+  });
+}
+
+function requestPendingDirectInviteCancel(requestGeneration){
+  if (!isDirectInvitePendingSurfaceOpen(requestGeneration)) return;
+  directInviteCancelIntents.add(Number(requestGeneration || 0));
+  inviteUiTransitionGeneration += 1;
+  haptic('light');
+  currentInvite = null;
+  closeSheet();
+  showScreen('home');
 }
 
 function isDirectInvitePendingSurfaceOpen(requestGeneration){
@@ -1038,8 +1104,6 @@ function finalizeDirectInvitePendingSurface(invite, requestGeneration){
   marker.dataset.inviteState = inviteSheetState(invite);
   marker.removeAttribute('data-direct-invite-pending');
   button.disabled = false;
-  button.removeAttribute('aria-disabled');
-  button.removeAttribute('style');
   button.removeAttribute('data-direct-invite-cancel-reserved');
   button.dataset.inviteAction = 'cancel';
   button.dataset.inviteToken = token;
@@ -1108,7 +1172,7 @@ function showInviteeWaiting(invite){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    <div class="small-note invite-status-note">Ожидание до ${escapeHtml(formatTime(invite.ready_deadline_at))}.</div>
+    <div class="small-note invite-status-note">${escapeHtml(inviteeWaitingNote(invite))}</div>
     <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить участие</button>
   `);
 }
@@ -1120,8 +1184,13 @@ function reconcileInviteeWaiting(invite){
   const note = document.querySelector('#sheet .invite-status-note');
   if (!marker || !note) return false;
   marker.dataset.inviteState = inviteSheetState(invite);
-  note.textContent = `Ожидание до ${formatTime(invite.ready_deadline_at)}.`;
+  note.textContent = inviteeWaitingNote(invite);
   return true;
+}
+
+function inviteeWaitingNote(invite){
+  const formatted = formatTime(invite?.ready_deadline_at);
+  return formatted === '—' ? 'Ожидаем запуск матча.' : `Ожидание до ${formatted}.`;
 }
 
 function showTerminalInvite(invite){

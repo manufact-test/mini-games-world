@@ -43,6 +43,7 @@ final class GameInviteService
             $token = (string)($notification['invite_token'] ?? '');
             $invite = $token !== '' ? ($invites[$token] ?? null) : null;
             $type = (string)($notification['type'] ?? '');
+            $inviteSnapshot = is_array($invite) ? $this->publicInvite($invite, $userId) : null;
             $events[] = [
                 'id' => (string)($notification['id'] ?? ''),
                 'type' => $type,
@@ -56,6 +57,7 @@ final class GameInviteService
                 'inviter_name' => is_array($invite) ? (string)($invite['inviter_name'] ?? '') : '',
                 'invitee_name' => is_array($invite) ? (string)($invite['invitee_name'] ?? '') : '',
                 'game_title' => is_array($invite) ? (string)($invite['game_title'] ?? '') : '',
+                'invite_snapshot' => $inviteSnapshot,
                 'actions' => $this->liveInviteActions($invite, $userId),
                 'created_at' => $type === 'invite_cancelled' && is_array($invite)
                     ? (string)($invite['cancelled_at'] ?? $invite['updated_at'] ?? $notification['created_at'] ?? '')

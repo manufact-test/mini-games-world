@@ -470,10 +470,22 @@ function renderInviteActions(item){
   const token = String(item.invite_token || '');
   const actions = Array.isArray(item.actions) ? item.actions : [];
   if (!token || !actions.length) return '';
+  const snapshot = inviteActionSnapshot(item);
+  const snapshotAttribute = snapshot
+    ? ` data-invite-snapshot="${escapeHtml(JSON.stringify(snapshot))}"`
+    : '';
   return `<div class="notification-actions invite-actions">${actions.map(action => {
     const primary = action === 'accept' || action === 'start';
-    return `<button class="btn ${primary ? 'primary' : 'ghost'} full" data-invite-action="${escapeHtml(action)}" data-invite-token="${escapeHtml(token)}" type="button">${escapeHtml(actionLabel(action))}</button>`;
+    return `<button class="btn ${primary ? 'primary' : 'ghost'} full" data-invite-action="${escapeHtml(action)}" data-invite-token="${escapeHtml(token)}"${snapshotAttribute} type="button">${escapeHtml(actionLabel(action))}</button>`;
   }).join('')}</div>`;
+}
+
+function inviteActionSnapshot(item){
+  const snapshot = item?.invite_snapshot && typeof item.invite_snapshot === 'object'
+    ? cloneItem(item.invite_snapshot)
+    : null;
+  if (!snapshot || String(snapshot.token || '') !== String(item?.invite_token || '')) return null;
+  return snapshot;
 }
 
 function actionLabel(action){
@@ -726,6 +738,9 @@ function normalizeItem(value){
     invite_token:String(value.invite_token || ''),
     invite_status:String(value.invite_status || ''),
     invite_is_owner:Boolean(value.invite_is_owner),
+    invite_snapshot:value.invite_snapshot && typeof value.invite_snapshot === 'object'
+      ? cloneItem(value.invite_snapshot)
+      : null,
     actions:Array.isArray(value.actions) ? value.actions.map(String) : [],
     created_at:String(value.created_at || ''),
     read:Boolean(value.read),
