@@ -1,0 +1,270 @@
+/*
+ * Shield King shared visual layer.
+ * Presentation only: no DOM flow, lifecycle, timer, polling or game-mechanics ownership.
+ */
+
+/* Core static icon treatment. */
+.shield-king-label-icon{
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  color:var(--sk-brand-silver);
+}
+.balance-card:last-child .shield-king-label-icon{color:var(--sk-brand-gold)}
+.game-rules-button svg{width:18px;height:18px;display:block}
+.turn-actions .game-rules-button svg{width:17px;height:17px}
+
+/* Existing sheets / overlays / toasts: same owners and geometry, new material language. */
+.overlay{background:var(--sk-overlay-scrim)}
+.sheet{
+  background:linear-gradient(180deg,var(--sk-bg-card-secondary),var(--sk-bg-elevated));
+  border-color:var(--sk-border-default);
+  box-shadow:var(--sk-shadow-modal);
+}
+.close{
+  background:var(--sk-bg-card) !important;
+  border-color:var(--sk-border-default) !important;
+}
+.close:hover{background:var(--sk-bg-card-secondary) !important}
+.close::before,.close::after{background:var(--sk-brand-silver)}
+.toast{
+  background:rgba(12,15,20,.96);
+  border-color:var(--sk-border-default);
+  box-shadow:var(--sk-shadow-modal);
+  color:var(--sk-text-primary);
+}
+.menu-item,.rules-block,.rules-content{
+  background:var(--sk-bg-card);
+  border-color:var(--sk-border-default);
+}
+.menu-item:hover{background:var(--sk-bg-card-secondary)}
+.menu-item.danger{
+  background:rgba(255,97,125,.11);
+  border-color:rgba(255,97,125,.26);
+  color:#FFD4DC;
+}
+.form-textarea{
+  background:var(--sk-bg-card);
+  border-color:var(--sk-border-default);
+}
+.form-textarea:focus{
+  border-color:var(--sk-brand-violet);
+  box-shadow:0 0 0 3px rgba(166,95,247,.12);
+}
+
+/* Existing rules UI: no question-mark glyphs, no decorative green branding. */
+.game-rules-button{
+  background:var(--sk-bg-card);
+  border-color:var(--sk-border-default);
+  color:var(--sk-brand-silver);
+  box-shadow:none;
+}
+.turn-actions .game-rules-button{background:var(--sk-bg-elevated)}
+.game-rule-card{background:var(--sk-bg-card);border-color:var(--sk-border-default)}
+.game-rule-tip{
+  background:rgba(106,76,255,.10);
+  border-color:rgba(166,95,247,.20);
+  color:var(--sk-text-secondary);
+}
+
+/* Store: keep catalogue/order geometry and ownership; only remap visual materials. */
+.store-loading,
+.store-empty,
+.store-note,
+.store-product-card,
+.store-denomination,
+.store-selection-summary{
+  background:var(--sk-bg-card);
+  border-color:var(--sk-border-default);
+}
+.store-loading-icon,
+.store-empty > div{
+  background:var(--sk-bg-card-secondary);
+  border-color:var(--sk-border-default);
+  color:var(--sk-brand-silver);
+}
+.store-balance-card{
+  border-color:rgba(255,212,92,.28);
+  background:linear-gradient(135deg,rgba(255,212,92,.13),var(--sk-bg-card));
+}
+.store-section-head > span{
+  background:rgba(106,76,255,.16);
+  border-color:rgba(166,95,247,.30);
+  color:var(--sk-brand-silver);
+}
+.store-country-tab{
+  background:var(--sk-bg-card);
+  border-color:var(--sk-border-default);
+}
+.store-country-tab.active{
+  color:var(--sk-text-primary);
+  background:rgba(106,76,255,.18);
+  border-color:rgba(166,95,247,.44);
+}
+.store-product-card.active,
+.store-denomination.active{
+  border-color:rgba(255,212,92,.46);
+  background:linear-gradient(135deg,rgba(255,212,92,.11),var(--sk-bg-card));
+  box-shadow:inset 0 0 0 1px rgba(255,212,92,.05);
+}
+.store-product-visual{
+  background:linear-gradient(145deg,rgba(106,76,255,.19),rgba(255,212,92,.12));
+  border-color:rgba(230,232,239,.10);
+}
+.store-product-bottom em.available,
+.store-denomination span{color:var(--sk-success)}
+.store-denomination.locked span{color:var(--sk-text-muted)}
+
+/* Notification Center: preserve event semantics, express them through shared semantic colors. */
+.notifications-loading,
+.notifications-empty,
+.notification-card{
+  background:var(--sk-bg-card);
+  border-color:var(--sk-border-default);
+}
+.notifications-loading > div,
+.notifications-empty > div,
+.notification-icon,
+.notification-toast-icon{
+  background:var(--sk-bg-card-secondary);
+  border-color:var(--sk-border-default);
+}
+.notification-card.success{border-color:rgba(72,214,165,.25);background:rgba(72,214,165,.07)}
+.notification-card.danger{border-color:rgba(255,97,125,.25);background:rgba(255,97,125,.07)}
+.notification-card.warning{border-color:rgba(242,184,75,.25);background:rgba(242,184,75,.07)}
+.notification-card.info{border-color:rgba(114,167,255,.25);background:rgba(114,167,255,.07)}
+.notification-card.success .notification-icon{color:#BFF5E3;background:rgba(72,214,165,.12);border-color:rgba(72,214,165,.25)}
+.notification-card.danger .notification-icon{color:#FFD4DC;background:rgba(255,97,125,.12);border-color:rgba(255,97,125,.25)}
+.notification-card.warning .notification-icon{color:#FFE0A3;background:rgba(242,184,75,.12);border-color:rgba(242,184,75,.25)}
+.notification-card.info .notification-icon{color:#C9DDFF;background:rgba(114,167,255,.12);border-color:rgba(114,167,255,.25)}
+.notification-toast{
+  background:rgba(12,15,20,.97);
+  border-color:var(--sk-border-default);
+  box-shadow:var(--sk-shadow-modal);
+}
+.notification-toast.success{border-color:rgba(72,214,165,.32);background:rgba(16,39,34,.97)}
+.notification-toast.danger{border-color:rgba(255,97,125,.34);background:rgba(43,23,31,.97)}
+.notification-toast.warning{border-color:rgba(242,184,75,.34);background:rgba(44,35,20,.97)}
+.notification-toast.info{border-color:rgba(114,167,255,.34);background:rgba(20,29,45,.97)}
+.notification-toast.success .notification-toast-icon{color:#BFF5E3;background:rgba(72,214,165,.13);border-color:rgba(72,214,165,.28)}
+.notification-toast.danger .notification-toast-icon{color:#FFD4DC;background:rgba(255,97,125,.13);border-color:rgba(255,97,125,.28)}
+.notification-toast.warning .notification-toast-icon{color:#FFE0A3;background:rgba(242,184,75,.13);border-color:rgba(242,184,75,.28)}
+.notification-toast.info .notification-toast-icon{color:#C9DDFF;background:rgba(114,167,255,.13);border-color:rgba(114,167,255,.28)}
+
+/* Invite/picker: no transition owner changes, no optimistic state changes. */
+.overlay:has([data-invite-sheet]),
+.overlay:has([data-invite-setup]){
+  background:var(--sk-overlay-scrim);
+}
+.invite-player-card{
+  border-color:var(--sk-border-default);
+  background:linear-gradient(145deg,var(--sk-bg-card-secondary),var(--sk-bg-card));
+  box-shadow:inset 0 1px 0 rgba(230,232,239,.03);
+}
+.invite-player-card.loading{
+  border-color:rgba(166,95,247,.54);
+  background:linear-gradient(145deg,rgba(106,76,255,.20),var(--sk-bg-card));
+}
+.invite-player-dot{background:var(--sk-disabled-fg);box-shadow:0 0 0 3px rgba(111,105,121,.12)}
+.invite-player-dot.online{background:var(--sk-success);box-shadow:0 0 0 3px rgba(72,214,165,.13),0 0 12px rgba(72,214,165,.25)}
+.invite-player-dot.busy{background:var(--sk-warning);box-shadow:0 0 0 3px rgba(242,184,75,.13),0 0 12px rgba(242,184,75,.22)}
+.invite-player-arrow{color:var(--sk-text-muted)}
+
+/* Gameplay shell only. Board geometry/cells/pieces stay owned by existing game CSS. */
+.turn-box{
+  background:linear-gradient(135deg,rgba(106,76,255,.17),rgba(35,25,66,.72));
+  border-color:rgba(166,95,247,.25);
+}
+.timer{
+  color:var(--sk-brand-silver);
+  background:var(--sk-bg-elevated);
+  border-color:rgba(166,95,247,.28);
+}
+.game-player{background:var(--sk-bg-card)}
+.game-player.active{
+  border-color:rgba(166,95,247,.48);
+  box-shadow:0 0 0 3px rgba(106,76,255,.10);
+}
+.board-wrap{
+  background:var(--sk-bg-elevated);
+  border-color:var(--sk-border-default);
+}
+.game-board-screen[data-game-type="battleship"] .game-header{
+  background:linear-gradient(180deg,rgba(8,11,18,.98) 0%,rgba(8,11,18,.95) 78%,rgba(8,11,18,0) 100%);
+}
+
+/*
+ * Phase B presentation skin.
+ * The runtime still owns prepare/countdown/wait/ready/reveal and all timings.
+ * !important is intentionally limited to visual properties because the runtime
+ * injects its accepted layout stylesheet after the static CSS bundle.
+ */
+.mgw-phase-b-launch-overlay{
+  background:var(--sk-bg-app) !important;
+}
+.mgw-phase-b-launch-overlay:before{
+  background:radial-gradient(circle at 50% 36%,rgba(106,76,255,.20),transparent 36%),radial-gradient(circle at 50% 72%,rgba(255,212,92,.05),transparent 30%),var(--sk-bg-app) !important;
+  box-shadow:0 0 90px rgba(106,76,255,.10) !important;
+}
+.mgw-phase-b-launch-card{
+  border-color:var(--sk-border-default) !important;
+  background:linear-gradient(180deg,rgba(35,25,66,.96),rgba(12,15,20,.99)) !important;
+  box-shadow:var(--sk-shadow-modal) !important;
+}
+.mgw-phase-b-launch-card:before{
+  background:linear-gradient(145deg,rgba(166,95,247,.07),transparent 42%,rgba(255,212,92,.035)) !important;
+}
+.mgw-phase-b-launch-game{
+  border-color:var(--sk-border-default) !important;
+  background:var(--sk-bg-card) !important;
+  color:var(--sk-text-secondary) !important;
+}
+.mgw-phase-b-launch-ring{
+  border-color:rgba(230,232,239,.10) !important;
+  border-top-color:var(--sk-brand-violet) !important;
+  border-right-color:var(--sk-brand-gold) !important;
+}
+.mgw-phase-b-launch-ring:after{border-color:rgba(230,232,239,.07) !important}
+.mgw-phase-b-countdown{
+  border-color:rgba(230,232,239,.14) !important;
+  background:radial-gradient(circle at 50% 35%,rgba(106,76,255,.16),transparent 58%),rgba(8,11,18,.98) !important;
+  color:var(--sk-brand-silver) !important;
+  box-shadow:0 16px 38px rgba(0,0,0,.38),inset 0 0 24px rgba(166,95,247,.04) !important;
+}
+.mgw-phase-b-countdown[data-stage="prepare"]:before{
+  width:64px !important;
+  height:64px !important;
+  border-radius:0 !important;
+  background:url('../icons/shield-king/mgw-mark.svg') center/contain no-repeat !important;
+  box-shadow:none !important;
+  animation:shieldKingPhaseBrandPulse 1.05s var(--sk-ease-emphasis) infinite !important;
+}
+.mgw-phase-b-countdown[data-stage="prepare"]:after{
+  border-color:rgba(166,95,247,.22) !important;
+}
+.mgw-phase-b-countdown[data-stage="sync"]:before{
+  background:var(--sk-brand-silver) !important;
+  box-shadow:-18px 0 var(--sk-brand-primary),18px 0 var(--sk-brand-violet) !important;
+}
+.mgw-phase-b-countdown[data-stage="ready"]:before{
+  border-right-color:var(--sk-success) !important;
+  border-bottom-color:var(--sk-success) !important;
+}
+.mgw-phase-b-countdown[data-stage="ready"]:after{
+  border-color:rgba(72,214,165,.42) !important;
+}
+.mgw-phase-b-launch-overlay[data-stage="ready"] .mgw-phase-b-launch-ring{
+  border-color:rgba(72,214,165,.22) !important;
+}
+.mgw-phase-b-launch-title{color:var(--sk-text-primary) !important}
+.mgw-phase-b-launch-note{color:var(--sk-text-secondary) !important}
+.mgw-phase-b-launch-progress i{background:rgba(230,232,239,.34) !important}
+
+@keyframes shieldKingPhaseBrandPulse{
+  0%,100%{opacity:.82;transform:scale(.92)}
+  50%{opacity:1;transform:scale(1.04)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mgw-phase-b-countdown[data-stage="prepare"]:before{animation:none !important}
+}

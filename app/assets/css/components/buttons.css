@@ -4,13 +4,14 @@
   border-radius:16px;
   padding:12px 14px;
   font-weight:900;
-  background:rgba(255,255,255,.075);
+  background:var(--sk-bg-card);
   border:1px solid var(--stroke);
+  color:var(--text);
   display:flex;
   align-items:center;
   justify-content:center;
   gap:8px;
-  transition:transform .14s ease,filter .14s ease,background .14s ease;
+  transition:transform var(--sk-motion-fast) var(--sk-ease-standard),filter var(--sk-motion-fast) var(--sk-ease-standard),background var(--sk-motion-standard) var(--sk-ease-standard),border-color var(--sk-motion-standard) var(--sk-ease-standard);
   text-align:center;
   line-height:1.22;
   white-space:normal;
@@ -19,18 +20,19 @@
   hyphens:none;
 }
 .btn:active{transform:scale(.975)}
-.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-dark));border-color:rgba(255,255,255,.08);box-shadow:0 12px 24px rgba(124,92,255,.18)}
-.btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#241700;border-color:rgba(255,255,255,.08);box-shadow:0 12px 24px rgba(255,200,87,.15)}
-.btn.green{background:linear-gradient(135deg,var(--accent2),var(--accent2-dark));color:#04140f}
-.btn.danger{background:rgba(255,95,109,.13);border-color:rgba(255,95,109,.25);color:#ffd8dc}
-.btn.ghost{background:rgba(255,255,255,.045)}
+.btn.primary{background:var(--sk-gradient-primary);border-color:rgba(255,255,255,.08);box-shadow:0 10px 24px rgba(106,76,255,.22)}
+.btn.gold{background:var(--sk-gradient-gold);color:#241A08;border-color:rgba(255,255,255,.08);box-shadow:0 10px 24px rgba(255,212,92,.16)}
+.btn.green{background:rgba(72,214,165,.14);border-color:rgba(72,214,165,.32);color:#BFF5E3}
+.btn.danger{background:rgba(255,97,125,.12);border-color:rgba(255,97,125,.28);color:#FFD4DC}
+.btn.ghost{background:var(--sk-bg-card);border-color:var(--sk-border-default);color:var(--sk-text-secondary)}
+.btn.ghost:active{background:var(--sk-bg-card-secondary)}
 .btn.full{width:100%}
-.btn.disabled,.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.disabled,.btn:disabled{opacity:1;background:var(--sk-disabled-bg);border-color:var(--sk-border-separator);color:var(--sk-disabled-fg);cursor:not-allowed;box-shadow:none}
 .choice{
   min-height:54px;
   min-width:0;
   border-radius:17px;
-  background:rgba(255,255,255,.055);
+  background:var(--sk-bg-card);
   border:1px solid var(--stroke);
   color:var(--soft);
   font-weight:900;
@@ -46,64 +48,21 @@
   overflow-wrap:normal;
   hyphens:none;
 }
-.choice.active{background:rgba(124,92,255,.22);border-color:rgba(124,92,255,.55);color:#fff}
-.choice.gold.active{background:rgba(255,200,87,.19);border-color:rgba(255,200,87,.55);color:#ffe3a3}
+.choice.active{background:rgba(106,76,255,.20);border-color:rgba(166,95,247,.62);color:#fff;box-shadow:inset 0 0 0 1px rgba(166,95,247,.10)}
+.choice.gold.active{background:rgba(255,212,92,.14);border-color:rgba(255,212,92,.56);color:#FFE9A6}
 .setup-start-btn{margin-top:12px}
 
-
-/* v11 button spacing consistency */
-.btn-row{
-  margin-top:12px;
-}
-
-.btn.full + .btn.full{
-  margin-top:10px;
-}
-
-
-/* v17 vertical button spacing fix */
-.stack{
-  gap:10px;
-}
-
-.stack .btn,
-.btn-row .btn{
-  margin-top:0 !important;
-  margin-bottom:0 !important;
-}
-
-.stack .btn + .btn,
-.btn.full + .btn.full,
-.sheet .btn.full + .btn.full,
-.sheet .stack .btn + .btn{
-  margin-top:0 !important;
-}
-
-.btn-row{
-  gap:10px;
-  margin-top:10px;
-}
-
-.btn-row > .btn,
-.room-actions > .btn,
-.store-order-actions > .btn,
-.sheet .btn-row > .btn{
-  width:100%;
-  height:100%;
-}
-
-.sheet .btn-row{
-  margin-top:0;
-}
-
-.menu-list{
-  gap:10px;
-}
+/* Existing spacing/geometry stays authoritative. */
+.btn-row{margin-top:12px}
+.btn.full + .btn.full{margin-top:10px}
+.stack{gap:10px}
+.stack .btn,.btn-row .btn{margin-top:0 !important;margin-bottom:0 !important}
+.stack .btn + .btn,.btn.full + .btn.full,.sheet .btn.full + .btn.full,.sheet .stack .btn + .btn{margin-top:0 !important}
+.btn-row{gap:10px;margin-top:10px}
+.btn-row > .btn,.room-actions > .btn,.store-order-actions > .btn,.sheet .btn-row > .btn{width:100%;height:100%}
+.sheet .btn-row{margin-top:0}
+.menu-list{gap:10px}
 
 @media (max-height:620px){
-  .stack,
-  .btn-row,
-  .menu-list{
-    gap:8px;
-  }
+  .stack,.btn-row,.menu-list{gap:8px}
 }

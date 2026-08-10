@@ -42,13 +42,18 @@ $html = str_replace(
     $html
 );
 $html = str_replace(
+    './assets/css/main.css?v=92',
+    './assets/css/main.css?v=124&sk=1',
+    $html
+);
+$html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
     './assets/js/production-clean-entry-v110.js?v=1121&b=3f6490b354f2',
     $html
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main-v110.js?v=1137&ux=1',
+    './assets/js/main-v110.js?v=1137&ux=1&sk=1',
     $html
 );
 $html = str_replace(
@@ -65,4 +70,5 @@ header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1137');
 header('X-MGW-Invite-Graph: v1137');
 header('X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader');
+header('X-MGW-Design-System: shield-king-v1');
 echo $html;
