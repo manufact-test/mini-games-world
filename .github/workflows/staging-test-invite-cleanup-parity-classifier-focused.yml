@@ -1,0 +1,85 @@
+name: Staging invite cleanup parity classifier focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-test-invite-cleanup-parity-classifier
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 504dd40c20f5c535f5f94cbcd37dd934426a800a
+  STATUS_CONTEXT: staging-invite-cleanup-parity-classifier-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Invite cleanup parity classifier verification running\"}"
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-test-invite-cleanup-parity-classifier-verifier
+          fetch-depth: 0
+      - name: Syntax and contracts
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/StagingTestPlayerStateResetService.php
+          php -l bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          php -l bot/tests/StagingTestInviteCleanupParityClassifierContractTest.php
+          php -l bot/tests/StagingTestPlayerScopedInviteIsolationContractTest.php
+          php bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          php bot/tests/StagingTestInviteCleanupParityClassifierContractTest.php
+          php bot/tests/StagingTestPlayerScopedInviteIsolationContractTest.php
+      - name: Safe classifier boundary
+        run: |
+          set -Eeuo pipefail
+          grep -F "invite_cleanup_parity_db_missing" bot/services/StagingTestPlayerStateResetService.php
+          grep -F "invite_cleanup_parity_db_extra" bot/services/StagingTestPlayerStateResetService.php
+          grep -F "invite_cleanup_parity_fingerprint" bot/services/StagingTestPlayerStateResetService.php
+          grep -F "invite_cleanup_parity_unknown" bot/services/StagingTestPlayerStateResetService.php
+          grep -F 'catch (StagingTestPlayerResetStageException $error)' bot/services/StagingTestPlayerStateResetService.php
+          git diff --quiet 0f919ef53894141af4074fe7b61fc2d1f502a3d5...504dd40c20f5c535f5f94cbcd37dd934426a800a -- \
+            bot/invites/RuntimeInviteRepository.php \
+            bot/staging-test-auth.php \
+            e2e/staging-global-setup.mjs \
+            app
+          ! git diff 0f919ef53894141af4074fe7b61fc2d1f502a3d5...504dd40c20f5c535f5f94cbcd37dd934426a800a | grep -E '^\+.*(DELETE FROM|UPDATE |INSERT INTO|TRUNCATE|DROP TABLE|retry|sleep\()'
+          git diff --check 0f919ef53894141af4074fe7b61fc2d1f502a3d5...504dd40c20f5c535f5f94cbcd37dd934426a800a
+      - name: Exact product diff
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only 0f919ef53894141af4074fe7b61fc2d1f502a3d5...504dd40c20f5c535f5f94cbcd37dd934426a800a | wc -l | tr -d ' ')" = '2'
+          git diff --name-only 0f919ef53894141af4074fe7b61fc2d1f502a3d5...504dd40c20f5c535f5f94cbcd37dd934426a800a | grep -Fx 'bot/services/StagingTestPlayerStateResetService.php'
+          git diff --name-only 0f919ef53894141af4074fe7b61fc2d1f502a3d5...504dd40c20f5c535f5f94cbcd37dd934426a800a | grep -Fx 'bot/tests/StagingTestInviteCleanupParityClassifierContractTest.php'
+      - name: Exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only 504dd40c20f5c535f5f94cbcd37dd934426a800a...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only 504dd40c20f5c535f5f94cbcd37dd934426a800a...HEAD)" = '.github/workflows/staging-test-invite-cleanup-parity-classifier-focused.yml'
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Invite cleanup parity classifier verification passed\"}"
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Invite cleanup parity classifier verification failed\"}" || true
