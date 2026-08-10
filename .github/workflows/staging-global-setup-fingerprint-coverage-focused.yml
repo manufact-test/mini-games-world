@@ -1,0 +1,52 @@
+name: Staging global-setup fingerprint coverage focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-global-setup-fingerprint-coverage
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 6322e957182c41c17862766ba837b80ae47bff7c
+  STATUS_CONTEXT: staging-global-setup-fingerprint-coverage-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-global-setup-fingerprint-coverage-verifier
+          fetch-depth: 0
+      - name: Verify manifest and coverage contracts
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/staging-runtime-fingerprint.py | grep -E '^[a-f0-9]{64}$'
+          php -l bot/tests/StagingGlobalSetupRuntimeFingerprintCoverageContractTest.php
+          php bot/tests/StagingGlobalSetupRuntimeFingerprintCoverageContractTest.php
+          php bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+          git diff --check 853e1fd7c055d14e1fb491f236acab75a00aad86...6322e957182c41c17862766ba837b80ae47bff7c
+          test "$(git diff --name-only 853e1fd7c055d14e1fb491f236acab75a00aad86...6322e957182c41c17862766ba837b80ae47bff7c | sort | tr '\n' ' ')" = 'bot/helpers/staging-e2e-runtime-files.txt bot/tests/StagingGlobalSetupRuntimeFingerprintCoverageContractTest.php '
+          test "$(git diff --name-only 6322e957182c41c17862766ba837b80ae47bff7c...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only 6322e957182c41c17862766ba837b80ae47bff7c...HEAD)" = '.github/workflows/staging-global-setup-fingerprint-coverage-focused.yml'
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Global-setup fingerprint coverage passed\"}"
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Global-setup fingerprint coverage failed\"}" || true
