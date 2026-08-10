@@ -1,0 +1,58 @@
+name: Invite transition UX regression static focused
+
+on:
+  pull_request:
+    branches:
+      - agent/invite-transition-ux-regression-harness
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    if: github.head_ref == 'agent/invite-transition-ux-regression-harness-static-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact feature head and one-file diff
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.base.sha }}" = '6de0e749c95152496aa86c731f94a5caa4847b6d'
+          test "$(git rev-parse HEAD^)" = '6de0e749c95152496aa86c731f94a5caa4847b6d'
+          test "$(git diff --name-only de916ca8c2357a68fd7ec259c998a747c5b4cf4a..6de0e749c95152496aa86c731f94a5caa4847b6d)" = 'e2e/staging/invite-transition-ux-v1137.spec.mjs'
+          node --check e2e/staging/invite-transition-ux-v1137.spec.mjs
+          git diff --check de916ca8c2357a68fd7ec259c998a747c5b4cf4a..HEAD
+
+      - name: Verify isolation ends before self-cancel phase
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('e2e/staging/invite-transition-ux-v1137.spec.mjs').read_text(encoding='utf-8')
+          stop = text.find('await notificationIsolation.stop();')
+          sync = text.find("isActionResponse(INVITES_ROUTE, 'sync')", stop)
+          cancel = text.find("cancelHold = await holdSingleAction(playerB.page, 'cancel');", sync)
+          assert stop >= 0
+          assert sync > stop
+          assert cancel > sync
+          assert "notificationIsolation.hold('cancel')" not in text
+          assert 'if (cancelHold) {' in text
+          assert 'cancelHold.release();' in text
+          assert 'await cancelHold.stop().catch(() => null);' in text
+          PY
+
+      - name: Verify no runtime or product changes
+        run: |
+          set -Eeuo pipefail
+          git diff --name-only de916ca8c2357a68fd7ec259c998a747c5b4cf4a..6de0e749c95152496aa86c731f94a5caa4847b6d \
+            | grep -Ev '^e2e/staging/invite-transition-ux-v1137\.spec\.mjs$' \
+            | tee /tmp/unexpected.txt
+          test ! -s /tmp/unexpected.txt
+
+      - name: Verify exact verifier delta
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only HEAD^..HEAD)" = '.github/workflows/invite-transition-ux-regression-harness-static-verifier.yml'
