@@ -1,0 +1,87 @@
+name: v110 loader deterministic polish focused
+
+on:
+  pull_request:
+    branches:
+      - agent/v110-loader-polish-deterministic-sequence
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 9a0b4a5dcf797bc5af11d33c20921dd56f66492e
+  STATUS_CONTEXT: v110-loader-deterministic-polish-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Deterministic v110 loader polish verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax and contracts
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/production-v110-acceptance-runtime.js
+          php -l app/v110.php
+          php -l bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
+          php bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
+          php bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+
+      - name: Presentation invariants
+        run: |
+          set -Eeuo pipefail
+          grep -Fq 'const LAUNCH_COUNTDOWN_STEP_MS = 600;' app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq 'const LAUNCH_READY_HOLD_MS = 450;' app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq "return { type:'number', value:'3' };" app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq "return { type:'number', value:'2' };" app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq "return { type:'number', value:'1' };" app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq "return { type:'ready' };" app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq '@keyframes mgwPhaseBCheckIn' app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq 'data-stage="prepare"' app/assets/js/production-v110-acceptance-runtime.js
+          ! grep -Fq "countdown.textContent = 'VS';" app/assets/js/production-v110-acceptance-runtime.js
+          ! grep -Fq "'СТАРТ'" app/assets/js/production-v110-acceptance-runtime.js
+          grep -Fq 'production-v110-acceptance-runtime.js?v=123&b=16abefbd4201' app/v110.php
+          grep -Fq 'X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader' app/v110.php
+
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Deterministic v110 loader polish verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Deterministic v110 loader polish verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
