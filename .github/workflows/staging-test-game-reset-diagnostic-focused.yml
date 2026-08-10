@@ -1,0 +1,64 @@
+name: Staging TEST active game reset diagnostic focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-test-game-reset-diagnostic
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: cdc03a72db06ade5bb0908ba738005b76bfa0686
+  STATUS_CONTEXT: staging-test-game-reset-diagnostic-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"TEST game reset diagnostic verification running\"}"
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-test-game-reset-diagnostic-verifier
+          fetch-depth: 0
+      - name: Verify read-only diagnostic
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'active_test_game_count' => 0" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'active_test_game_non_test_participant_count' => 0" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'active_test_game_launch_phase_counts' => []" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'read_only' => true" bot/services/StagingInviteMismatchDiagnosticService.php
+          ! git diff 80257200c32ea253213dbe8670ac57e3025693b0...cdc03a72db06ade5bb0908ba738005b76bfa0686 | grep -E '^\+.*(DELETE|UPDATE|INSERT|TRUNCATE|DROP|execute\(|transaction\()'
+          git diff --check 80257200c32ea253213dbe8670ac57e3025693b0...cdc03a72db06ade5bb0908ba738005b76bfa0686
+      - name: Exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only cdc03a72db06ade5bb0908ba738005b76bfa0686...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only cdc03a72db06ade5bb0908ba738005b76bfa0686...HEAD)" = '.github/workflows/staging-test-game-reset-diagnostic-focused.yml'
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"TEST game reset diagnostic verification passed\"}"
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"TEST game reset diagnostic verification failed\"}" || true
