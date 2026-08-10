@@ -12,17 +12,22 @@ require $root . '/invites/RuntimeInviteRepository.php';
 
 final class StagingInviteLifecycleFakeDatabase implements DatabaseConnectionInterface
 {
-    /** @var array<string, array{invite_id:string}> */
+    /** @var array<string, array{invite_id:string,match_id?:?string}> */
     private array $invites = [];
 
     /** @var array<string, int> */
     private array $relatedMatches = [];
 
-    public function __construct(array $inviteIds, array $relatedMatches = [], private int $eventDeletes = 0)
+    public function __construct(array $inviteRows, array $relatedMatches = [], private int $eventDeletes = 0)
     {
-        foreach ($inviteIds as $inviteId) {
-            $inviteId = (string)$inviteId;
-            $this->invites[$inviteId] = ['invite_id' => $inviteId];
+        foreach ($inviteRows as $value) {
+            $row = is_array($value) ? $value : ['invite_id' => (string)$value];
+            $inviteId = trim((string)($row['invite_id'] ?? ''));
+            if ($inviteId === '') throw new RuntimeException('Fake invite ID is required.');
+            $this->invites[$inviteId] = [
+                'invite_id' => $inviteId,
+                'match_id' => isset($row['match_id']) ? (string)$row['match_id'] : null,
+            ];
         }
         foreach ($relatedMatches as $inviteId => $count) {
             $this->relatedMatches[(string)$inviteId] = (int)$count;
@@ -50,7 +55,7 @@ final class StagingInviteLifecycleFakeDatabase implements DatabaseConnectionInte
 
     public function fetchAll(string $sql, array $parameters = []): array
     {
-        if (str_contains($sql, 'SELECT invite_id FROM mgw_invites')) {
+        if (str_contains($sql, 'SELECT invite_id, match_id FROM mgw_invites')) {
             return array_values($this->invites);
         }
         if (str_contains($sql, 'SELECT * FROM mgw_invites ORDER BY invite_id')) {
@@ -174,9 +179,22 @@ $assertSame(1, $historicalDatabase->inviteCount(), 'Historical invite row must r
 $assertSame(true, $historicalAudit['ok'], 'Read-only parity audit must ignore preserved match history');
 $assertSame(1, $historicalAudit['preserved_historical_invite_rows'], 'Audit must report preserved historical row');
 
+$matchFieldDatabase = new StagingInviteLifecycleFakeDatabase([
+    ['invite_id' => 'match-field-history', 'match_id' => 'game-history-1'],
+]);
+$matchFieldRepository = new RuntimeInviteRepository($config, $router, $matchFieldDatabase, true);
+$matchFieldReport = $matchFieldRepository->synchronize(['invites' => []]);
+$matchFieldAudit = $matchFieldRepository->auditParity(['invites' => []]);
+$assertSame(true, $matchFieldReport['parity'], 'A DB-only invite with an assigned match must be protected history');
+$assertSame(1, $matchFieldReport['preserved_historical_invite_rows'], 'Assigned-match history must be reported as preserved');
+$assertSame(0, $matchFieldReport['pruned_invite_rows'], 'Assigned-match history must never be pruned');
+$assertSame(1, $matchFieldDatabase->inviteCount(), 'Assigned-match history must remain in DB');
+$assertSame(true, $matchFieldAudit['ok'], 'Read-only parity must ignore assigned-match history');
+
 $source = file_get_contents($root . '/invites/RuntimeInviteRepository.php') ?: '';
 $assertContains("?? ((\$config['environment'] ?? null) === 'staging');", $source, 'Staging lifecycle semantics must be environment-scoped');
-$assertContains('SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id', $source, 'Match references must protect historical rows');
+$assertContains('SELECT invite_id, match_id FROM mgw_invites ORDER BY invite_id', $source, 'Assigned matches must protect historical rows');
+$assertContains('WHERE invite_id = :invite_id OR source_match_id = :source_match_id', $source, 'Direct and source-match references must protect historical rows');
 $assertContains('DELETE FROM mgw_invite_events WHERE invite_id = :invite_id', $source, 'Dependent invite events must be pruned first');
 $assertContains('DELETE FROM mgw_invites WHERE invite_id = :invite_id', $source, 'Only DB-only invite rows may be pruned');
 

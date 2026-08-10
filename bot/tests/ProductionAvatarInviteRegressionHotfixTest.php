@@ -23,7 +23,10 @@ final class InviteRegressionFakeDatabase implements DatabaseConnectionInterface
     ) {
         $this->invites = [];
         foreach ($inviteIds as $inviteId) {
-            $this->invites[(string)$inviteId] = ['invite_id' => (string)$inviteId];
+            $this->invites[(string)$inviteId] = [
+                'invite_id' => (string)$inviteId,
+                'match_id' => null,
+            ];
         }
     }
 
@@ -48,7 +51,8 @@ final class InviteRegressionFakeDatabase implements DatabaseConnectionInterface
 
     public function fetchAll(string $sql, array $parameters = []): array
     {
-        if (str_contains($sql, 'SELECT invite_id FROM mgw_invites')) {
+        if (str_contains($sql, 'SELECT invite_id FROM mgw_invites')
+            || str_contains($sql, 'SELECT invite_id, match_id FROM mgw_invites')) {
             return array_values($this->invites);
         }
         if (str_contains($sql, 'SELECT * FROM mgw_invites')) {
