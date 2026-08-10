@@ -1,0 +1,95 @@
+name: Invite popup transition stability focused
+
+on:
+  pull_request:
+    branches:
+      - agent/invite-popup-transition-stability
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: d297792ec36721b225763077a352dcc3e96e21a6
+  STATUS_CONTEXT: invite-popup-transition-stability-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Invite popup stability verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/invite-popup-transition-stability-verifier
+          fetch-depth: 0
+
+      - name: Syntax
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/main-v110.js
+          node --check e2e/staging/d1-bug-b-player-picker-v122.spec.mjs
+          node --check e2e/staging/d3-shared-invite.spec.mjs
+          php -l app/v110.php
+          php -l bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php -l bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+
+      - name: Focused contracts
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+          php bot/tests/ProductionV110InviteStartSyncOwnershipContractTest.php
+          php bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
+
+      - name: Policy guard
+        run: |
+          set -Eeuo pipefail
+          ! grep -E "setTimeout\(|setInterval\(|retry|sleep\(" app/assets/js/games/game-invites-v110.js | grep -E "openPlayerPicker|showPlayerPickerLoading|activePlayerPickerSurface|renderPlayerPicker" || true
+          ! git diff 8793d2a0f92cb22146b5ee983d8fb2ebd82cca3c...d297792ec36721b225763077a352dcc3e96e21a6 -- app/assets/js/games/game-invites-v110.js | grep -E "\+.*(fetch =|AbortController|setTimeout\(|setInterval\(|retry|sleep)"
+          git diff --check 8793d2a0f92cb22146b5ee983d8fb2ebd82cca3c...d297792ec36721b225763077a352dcc3e96e21a6
+
+      - name: Verifier exact diff guard
+        run: |
+          set -Eeuo pipefail
+          git diff --check d297792ec36721b225763077a352dcc3e96e21a6...HEAD
+          test "$(git diff --name-only d297792ec36721b225763077a352dcc3e96e21a6...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only d297792ec36721b225763077a352dcc3e96e21a6...HEAD)" = '.github/workflows/invite-popup-transition-stability-focused.yml'
+
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Invite popup stability verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error --connect-timeout 10 --max-time 25 \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Invite popup stability verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
