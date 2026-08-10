@@ -6,9 +6,10 @@
 DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
 DS-2 ICON VISUAL FAMILY — MANUALLY ACCEPTED
-DS-2 EXACT PRODUCTION ART EXPORT — CORRECTION REQUIRED
+DS-2 RICH GAME ART NORMALIZED EXPORT — READY / AWAITING FINAL MANUAL VISUAL ACCEPTANCE
+DS-2 CORE APP METALLIC ART EXPORT — PENDING AFTER GAME-ART FREEZE
 DS-3 EXISTING-UI MIGRATION SPEC — READY
-DS-3 VISUAL ACCEPTANCE — BLOCKED UNTIL EXACT ACCEPTED ICON ART IS EXPORTED
+DS-3 VISUAL ACCEPTANCE — BLOCKED UNTIL DS-2 ART FREEZE
 DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
 ```
@@ -70,15 +71,19 @@ Accepted direction:
 - Go uses black/white stones only;
 - Domino uses the same external frame width.
 
-### Important DS-2 correction
+### DS-2 rich game-art export
 
-The simplified geometric SVG files created earlier are **not visually equivalent to the manually accepted rich metallic icon artwork**.
+The accepted rich Variant 1 game renders have now been normalized without redrawing:
 
-They are semantic/geometry references only until exact production art is exported.
+- original artwork stays at original scale;
+- only concept-board heading contamination above the crown is removed;
+- crown/frame composition is centered onto one common transparent `192×256` canvas;
+- only extreme crop-boundary pixels outside the shared canvas safe edge are removed;
+- all eight resulting PNG byte hashes are frozen in `GAME_ART_EXPORT_MANIFEST.json` pending final manual visual acceptance.
 
-They must not be used as the visual source for approval mockups or future Home migration.
+The old simplified geometric SVG files remain **semantic/geometry references only** and are not valid approval artwork.
 
-The accepted rich Variant 1 visual direction controls the final finish.
+After manual acceptance of the normalized 8-icon contact sheet, those exact PNG hashes become the DS-2 game-art source of truth and the core application metallic artwork can be exported next.
 
 ## DS-3 — existing UI migration specification ready
 
