@@ -1,0 +1,70 @@
+name: Shield King shared UI static focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-shared-ui-integration
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    if: github.head_ref == 'agent/shield-king-shared-ui-integration-verifier-r3'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact feature head and verifier-only delta
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.base.sha }}" = 'efd09ffeb41dfadcc2420f762335519a99fb6e05'
+          test "$(git rev-parse HEAD^)" = 'efd09ffeb41dfadcc2420f762335519a99fb6e05'
+          test "$(git diff --name-only efd09ffeb41dfadcc2420f762335519a99fb6e05..HEAD)" = '.github/workflows/shield-king-shared-ui-static-verifier.yml'
+          git diff --check 0a143b987310a25e5175dbec5b2e13364ca9ad2e..HEAD
+
+      - name: Verify focused Shield King and retained Telegram contracts
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ShieldKingSharedUiIntegrationContractTest.php
+          php bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
+          node --check app/assets/js/components/shield-king-visuals.js
+          node --check app/assets/js/games/game-card-copy.js
+          node --check app/assets/js/main-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          php -l app/v110.php
+
+      - name: Verify gameplay owners are untouched
+        run: |
+          set -Eeuo pipefail
+          if git diff --name-only 0a143b987310a25e5175dbec5b2e13364ca9ad2e..efd09ffeb41dfadcc2420f762335519a99fb6e05 | grep -q '^app/assets/css/games/'; then
+            echo 'Gameplay CSS changed unexpectedly'
+            exit 1
+          fi
+          if git diff --name-only 0a143b987310a25e5175dbec5b2e13364ca9ad2e..efd09ffeb41dfadcc2420f762335519a99fb6e05 | grep -Eq '^bot/services/(Game|Chess|MatchPreparation)|^bot/(api|game-watch|game-clock)\.php$'; then
+            echo 'Runtime/game owner changed unexpectedly'
+            exit 1
+          fi
+
+      - name: Verify all eight equal-frame game assets and shared screen colors
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('app/assets/icons/shield-king/games')
+          names = [
+              'game-tic-tac-toe.svg', 'game-four-in-a-row.svg', 'game-battleship.svg',
+              'game-checkers.svg', 'game-reversi.svg', 'game-chess.svg',
+              'game-go.svg', 'game-domino.svg',
+          ]
+          for name in names:
+              text = (root / name).read_text(encoding='utf-8')
+              assert 'viewBox="0 0 96 112"' in text, name
+              assert '#FFD45C' in text, name
+              assert '#231942' in text or '#17121F' in text, name
+          skin = Path('app/assets/css/shield-king.css').read_text(encoding='utf-8')
+          for selector in ['.store-balance-card', '.notification-toast', '.invite-player-card', '.mgw-phase-b-launch-card']:
+              assert selector in skin, selector
+          PY
