@@ -8,6 +8,10 @@ final class StagingTestPlayerResetStageException extends RuntimeException
         'json_state',
         'notification_cleanup',
         'invite_cleanup',
+        'invite_cleanup_parity_db_missing',
+        'invite_cleanup_parity_db_extra',
+        'invite_cleanup_parity_fingerprint',
+        'invite_cleanup_parity_unknown',
         'economy',
     ];
 
@@ -189,6 +193,8 @@ final class StagingTestPlayerStateResetService
         }
         try {
             $inviteCleanup = $this->cleanupRuntimeInviteRows($snapshot, $removedInvites);
+        } catch (StagingTestPlayerResetStageException $error) {
+            throw $error;
         } catch (Throwable $error) {
             throw new StagingTestPlayerResetStageException('invite_cleanup', $error);
         }
@@ -452,7 +458,27 @@ final class StagingTestPlayerStateResetService
         $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $database))
             ->auditParity($snapshot);
         if (($inviteAudit['ok'] ?? false) !== true) {
-            throw new RuntimeException('Staging test invite cleanup did not restore invite parity.');
+            $sourceCount = (int)($inviteAudit['source_count'] ?? -1);
+            $databaseCount = (int)($inviteAudit['database_count'] ?? -1);
+            $sourceFingerprint = (string)($inviteAudit['source_fingerprint'] ?? '');
+            $databaseFingerprint = (string)($inviteAudit['database_fingerprint'] ?? '');
+
+            if ($sourceCount >= 0 && $databaseCount >= 0 && $sourceCount > $databaseCount) {
+                $stage = 'invite_cleanup_parity_db_missing';
+            } elseif ($sourceCount >= 0 && $databaseCount >= 0 && $databaseCount > $sourceCount) {
+                $stage = 'invite_cleanup_parity_db_extra';
+            } elseif ($sourceFingerprint !== ''
+                && $databaseFingerprint !== ''
+                && !hash_equals($sourceFingerprint, $databaseFingerprint)) {
+                $stage = 'invite_cleanup_parity_fingerprint';
+            } else {
+                $stage = 'invite_cleanup_parity_unknown';
+            }
+
+            throw new StagingTestPlayerResetStageException(
+                $stage,
+                new RuntimeException('Staging test invite cleanup did not restore invite parity.')
+            );
         }
     }
 
