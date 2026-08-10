@@ -69,70 +69,77 @@ initReversiEntry();
 initChessEntry();
 initGoEntry();
 initDominoEntry();
-
-initHomeScreen();
 initStoreScreen();
 initStoreOrder();
 initStoreOrders();
 initWeeklyMatchInfo();
+initHomeScreen();
+initAccountShortcuts();
 initProfileScreen();
 initGameRules();
 
-boot();
+document.addEventListener('mgw:v99-game-found', event => {
+  const game = event.detail?.game || null;
+  if (game?.id && !currentV99PassiveLock()?.locked) {
+    enterGame(game, event.detail?.me || null);
+  }
+});
 
 async function boot(){
   try {
-    const result = await api.me();
+    setRoom(APP_CONFIG.defaultRoom);
+    const statsTicket = beginStatsRequest('api');
+    const result = await api.bootstrap();
     state.user = result.user;
-    state.session = result.session || null;
+    state.session = result.session || state.session;
     renderUser(state.user);
     renderBalances(state.user);
-    setRoom(state.room || 'match');
-    await refreshStats();
-    syncWeeklyMatchButton();
+    applyStatsSnapshot(statsTicket, result.stats);
+    showHomeActivity();
+    renderRoomCard();
+    syncWeeklyMatchButton(result.weekly_match || null);
     dispatchAppReady();
+
+    if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
+      enterGame(result.active_game, result.me || null);
+    } else {
+      await openIncomingInviteFromTelegram();
+    }
+
+    startStatsPolling();
   } catch (error) {
-    showBootFailure(error);
+    showBootFailure();
+    toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
   } finally {
     hidePreloader();
   }
 }
 
-async function refreshStats(){
-  if (statsRefreshing) return;
+function startStatsPolling(){
+  state.timers.stats = clearTimer(state.timers.stats);
+  state.timers.stats = window.setInterval(refreshStatsIfVisible, APP_CONFIG.statsIntervalMs);
+}
+
+async function refreshStatsIfVisible(){
+  if (statsRefreshing || !canRefreshHomeStats()) return;
   statsRefreshing = true;
-  const request = beginStatsRequest();
+  const statsTicket = beginStatsRequest('api');
   try {
     const result = await api.stats();
-    applyStatsSnapshot(request, result);
-    showHomeActivity(result.stats || result);
+    if (result?.stats) applyStatsSnapshot(statsTicket, result.stats);
+    if (result?.session) state.session = result.session;
   } catch (error) {
-    // Stats are secondary: keep the app usable when this request fails.
+    // Background stats never interrupt the visible interface.
   } finally {
     statsRefreshing = false;
   }
 }
 
-window.addEventListener('mgw:session-update', event => {
-  state.session = event.detail || state.session;
-});
+function canRefreshHomeStats(){
+  if (document.visibilityState !== 'visible') return false;
+  const activeScreen = document.querySelector('.screen.active');
+  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
+  return !document.getElementById('sheetOverlay')?.classList.contains('active');
+}
 
-window.addEventListener('mgw:game-enter', event => {
-  const game = event.detail?.game || event.detail;
-  if (game) enterGame(game);
-});
-
-window.addEventListener('mgw:invite-link', event => {
-  openIncomingInviteFromTelegram(event.detail || {});
-});
-
-window.addEventListener('mgw:balance-refresh', () => {
-  if (state.user) renderBalances(state.user);
-});
-
-window.addEventListener('mgw:stats-refresh', refreshStats);
-
-window.addEventListener('beforeunload', () => {
-  clearTimer();
-  currentV99PassiveLock();
-});
+boot();
