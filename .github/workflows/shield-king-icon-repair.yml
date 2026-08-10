@@ -1,0 +1,110 @@
+name: Shield King accepted icon repair
+
+on:
+  pull_request_target:
+    branches:
+      - agent/shield-king-icon-repair-runner
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-icon-repair-payload'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair payload
+        uses: actions/checkout@v4
+        with:
+          ref: agent/shield-king-icon-repair-payload
+          path: payload
+
+      - name: Checkout final asset branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/shield-king-accepted-icon-export
+          path: target
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebuild exact accepted ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat payload/repair-payload/part-* > /tmp/icons.b64
+          base64 --decode /tmp/icons.b64 > /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
+          echo '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60  /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip' | sha256sum -c -
+          rm -rf /tmp/export
+          mkdir -p /tmp/export
+          unzip -q /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip -d /tmp/export
+
+      - name: Verify source bundle 44/44 against existing manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root=Path('/tmp/export')
+          manifest=json.loads((Path('target/accepted-assets/shield-king-icons/MANIFEST.json')).read_text())
+          assert len(manifest['files']) == 44, len(manifest['files'])
+          for entry in manifest['files']:
+              p=root/entry['path']
+              data=p.read_bytes()
+              assert len(data) == entry['bytes'], (entry['path'], len(data), entry['bytes'])
+              assert hashlib.sha256(data).hexdigest() == entry['sha256'], entry['path']
+          print('SOURCE_MANIFEST_VERIFY=44/44 PASS')
+          PY
+
+      - name: Materialize direct production files and replace ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          rm -rf accepted-assets/shield-king-icons/files
+          mkdir -p accepted-assets/shield-king-icons/files
+          cp -a /tmp/export/games accepted-assets/shield-king-icons/files/
+          cp -a /tmp/export/ui accepted-assets/shield-king-icons/files/
+          cp /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip accepted-assets/shield-king-icons/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
+
+      - name: Verify repository files 44/44 and write audit record
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          base=Path('accepted-assets/shield-king-icons')
+          manifest=json.loads((base/'MANIFEST.json').read_text())
+          results=[]
+          for entry in manifest['files']:
+              p=base/'files'/entry['path']
+              data=p.read_bytes()
+              sha=hashlib.sha256(data).hexdigest()
+              size=len(data)
+              ok=(sha == entry['sha256'] and size == entry['bytes'])
+              results.append({'path':entry['path'],'expected_sha256':entry['sha256'],'actual_sha256':sha,'expected_bytes':entry['bytes'],'actual_bytes':size,'pass':ok})
+              if not ok:
+                  raise SystemExit(f'FAIL {entry["path"]}')
+          zip_path=base/'MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'
+          zip_sha=hashlib.sha256(zip_path.read_bytes()).hexdigest()
+          if zip_sha != '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60':
+              raise SystemExit('ZIP SHA mismatch')
+          audit={'status':'PASS','verified':len(results),'total':44,'zip_sha256':zip_sha,'manifest_source':'accepted-assets/shield-king-icons/MANIFEST.json','files':results}
+          (base/'REPAIR_VERIFICATION.json').write_text(json.dumps(audit,indent=2)+'\n')
+          print('REPOSITORY_MANIFEST_VERIFY=44/44 PASS')
+          print('ZIP_SHA256=PASS')
+          PY
+
+      - name: Commit repair only to isolated asset branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add accepted-assets/shield-king-icons/files accepted-assets/shield-king-icons/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip accepted-assets/shield-king-icons/REPAIR_VERIFICATION.json
+          git diff --cached --quiet && { echo 'No changes'; exit 1; }
+          git commit -m 'assets(shield-king): repair accepted icon binaries 44 of 44'
+          git push origin HEAD:agent/shield-king-accepted-icon-export
