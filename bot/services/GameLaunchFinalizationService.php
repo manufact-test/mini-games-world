@@ -7,8 +7,8 @@ require_once __DIR__ . '/MatchPreparationClockService.php';
  * Owns post-create launch finalization that must happen exactly once after a
  * stored game exists. Tic-Tac-Toe keeps its one-time X/O finalization here,
  * while every explicitly new supported PvP game may enter the same shared
- * Phase B preparation lifecycle. Compatibility reads never activate legacy
- * games that were created before the shared launch lifecycle was enabled.
+ * Phase B preparation lifecycle. Compatibility reads must explicitly opt out
+ * so legacy games are never migrated by polling.
  */
 final class GameLaunchFinalizationService
 {
@@ -26,7 +26,7 @@ final class GameLaunchFinalizationService
     public static function finalizeStoredGame(
         array &$db,
         string $gameId,
-        bool $activatePreparationForNewGame = false
+        bool $activatePreparationForNewGame = true
     ): ?array {
         $gameId = trim($gameId);
         if ($gameId === '' || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
@@ -110,9 +110,9 @@ final class GameLaunchFinalizationService
         if (count(array_unique($playerIds)) < 2) return;
 
         // One shared activation owner for every supported game. Game-specific
-        // board/turn setup has already completed before callers explicitly mark
-        // this stored game as newly created. initializeNewGame() is idempotent
-        // and clears any legacy early bot schedule before readiness begins.
+        // board/turn setup has already completed before post-create callers reach
+        // this service. initializeNewGame() is idempotent and clears any legacy
+        // early bot schedule before readiness begins.
         (new MatchPreparationClockService())->initializeNewGame($game);
     }
 }
