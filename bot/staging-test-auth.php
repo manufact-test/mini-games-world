@@ -98,7 +98,19 @@ try {
             throw new RuntimeException('Staging test-player reset requires GitHub OIDC.');
         }
         (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
-        $result = $playerResetService()->reset($_SERVER);
+        try {
+            $result = $playerResetService()->reset($_SERVER);
+        } catch (StagingTestPlayerResetStageException $error) {
+            error_log('[MiniGamesWorld staging test reset] failed stage=' . $error->stage());
+            http_response_code(403);
+            echo json_encode([
+                'ok' => false,
+                'service' => 'mini-games-world-staging-test-auth',
+                'error' => 'test_player_reset_unavailable',
+                'stage' => $error->stage(),
+            ], JSON_UNESCAPED_SLASHES) . PHP_EOL;
+            exit;
+        }
 
         echo json_encode(
             $result + ['authorization_mode' => 'github_actions_oidc'],
