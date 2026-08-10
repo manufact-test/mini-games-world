@@ -18,6 +18,17 @@ const GAME_META = {
   [DOMINO_META.id]: DOMINO_META,
 };
 
+const GAME_ICON_ASSET = {
+  tictactoe:'./assets/icons/shield-king/games/game-tic-tac-toe.svg',
+  four_in_a_row:'./assets/icons/shield-king/games/game-four-in-a-row.svg',
+  battleship:'./assets/icons/shield-king/games/game-battleship.svg',
+  checkers:'./assets/icons/shield-king/games/game-checkers.svg',
+  reversi:'./assets/icons/shield-king/games/game-reversi.svg',
+  chess:'./assets/icons/shield-king/games/game-chess.svg',
+  go:'./assets/icons/shield-king/games/game-go.svg',
+  domino:'./assets/icons/shield-king/games/game-domino.svg',
+};
+
 export function initGameCardCopy(){
   document.querySelectorAll('[data-game-card]').forEach(card => {
     const meta = GAME_META[String(card.dataset.gameCard || '')];
@@ -36,15 +47,19 @@ export function initGameCardCopy(){
 }
 
 function renderGameIcon(icon, meta){
-  if (meta.id === 'four_in_a_row') {
-    icon.classList.add('game-icon-four');
-    icon.innerHTML = `
-      <span class="four-card-disc red" aria-hidden="true"></span>
-      <span class="four-card-disc yellow" aria-hidden="true"></span>
-    `;
+  const src = GAME_ICON_ASSET[meta.id];
+  icon.classList.remove('game-icon-four');
+  icon.replaceChildren();
+
+  if (!src) {
+    icon.textContent = meta.icon;
     return;
   }
 
-  icon.classList.remove('game-icon-four');
-  icon.textContent = meta.icon;
+  const image = document.createElement('img');
+  image.src = src;
+  image.alt = '';
+  image.setAttribute('aria-hidden', 'true');
+  image.decoding = 'async';
+  icon.appendChild(image);
 }
