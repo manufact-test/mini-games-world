@@ -65,13 +65,16 @@ async function installNotificationSnapshotIsolation(page) {
     const action = requestAction(request);
 
     if (action === 'sync') {
-      const response = await route.fetch();
-      const payload = await response.json().catch(() => null);
       await route.fulfill({
-        response,
-        json: payload && typeof payload === 'object'
-          ? { ...payload, invite: null, tracked_invite: null }
-          : payload,
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          invite: null,
+          tracked_invite: null,
+          events: [],
+          unread_count: 1,
+        }),
       });
       return;
     }

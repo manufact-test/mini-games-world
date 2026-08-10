@@ -9,6 +9,7 @@ $read = static function (string $path) use ($root): string {
 };
 
 $service = $read('bot/services/GameInviteService.php');
+$notificationEndpoint = $read('bot/notifications.php');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
@@ -31,6 +32,12 @@ $assert(
     str_contains($service, '$inviteSnapshot = is_array($invite) ? $this->publicInvite($invite, $userId) : null;')
         && str_contains($service, "'invite_snapshot' => \$inviteSnapshot"),
     'Live invite notifications must reuse publicInvite as the complete authoritative first-frame snapshot.'
+);
+$assert(
+    str_contains($service, 'public function notificationSnapshot(array $invite, string $viewerId): array')
+        && str_contains($service, 'return $this->publicInvite($invite, $viewerId);')
+        && str_contains($notificationEndpoint, "\$item['invite_snapshot'] = \$inviteViews->notificationSnapshot(\$invite, \$userId);"),
+    'Bell and toast payloads must reuse the same GameInviteService public invite projection.'
 );
 $assert(
     str_contains($notifications, 'data-invite-snapshot=')

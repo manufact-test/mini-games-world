@@ -23,6 +23,11 @@ final class GameInviteService
         private ChessRuntimeService $games
     ) {}
 
+    public function notificationSnapshot(array $invite, string $viewerId): array
+    {
+        return $this->publicInvite($invite, $viewerId);
+    }
+
     /**
      * The live invite event is the same authoritative object used by the toast.
      * It must already contain its legal actions and status so opening that toast
