@@ -1,0 +1,96 @@
+name: Invite transition UX final focused
+
+on:
+  pull_request:
+    branches:
+      - agent/invite-transition-ux-final
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  focused:
+    if: github.head_ref == 'agent/invite-transition-ux-final-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact feature head
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.base.sha }}" = '7c343d1db710f5c835f53ef94f5d6a01485bdfcf'
+          test "$(git rev-parse HEAD^)" = '7c343d1db710f5c835f53ef94f5d6a01485bdfcf'
+
+      - name: Syntax and focused source contracts
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/GameInviteService.php
+          php -l app/v110.php
+          php -l bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+          php -l bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php -l bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/main-v110.js
+          node --check app/assets/js/screens/notifications-screen-v110r12.js
+          node --check e2e/staging/invite-transition-ux-v1137.spec.mjs
+          php bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+          php bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          php bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+
+      - name: Verify root-cause ownership contracts
+        run: |
+          set -Eeuo pipefail
+          grep -Fq "'invite_snapshot' => \$inviteSnapshot" bot/services/GameInviteService.php
+          grep -Fq 'data-invite-snapshot=' app/assets/js/screens/notifications-screen-v110r12.js
+          grep -Fq 'const directInviteCancelIntents = new Set();' app/assets/js/games/game-invites-v110.js
+          grep -Fq 'settleQueuedDirectInviteCancel' app/assets/js/games/game-invites-v110.js
+          grep -Fq 'const optimisticParticipantCancel' app/assets/js/games/game-invites-v110.js
+          grep -Fq 'Boolean(terminalInvite?.is_invitee)' app/assets/js/games/game-invites-v110.js
+          ! grep -Fq 'new Date(Date.now() + 90000).toISOString()' app/assets/js/games/game-invites-v110.js
+          grep -Fq "X-MGW-Invite-Graph: v1137" app/v110.php
+          grep -Fq "X-MGW-Notification-Graph: v1137" app/v110.php
+
+      - name: Verify no product timing workaround
+        run: |
+          set -Eeuo pipefail
+          git diff --unified=0 09eecba0073807a7271bdfb8aa5af71b1195395b..7c343d1db710f5c835f53ef94f5d6a01485bdfcf -- \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/screens/notifications-screen-v110r12.js \
+            bot/services/GameInviteService.php \
+            app/v110.php \
+            app/assets/js/main-v110-handoff-shell.js \
+            app/assets/js/main-v110.js \
+            | grep '^+' | grep -v '^+++' > /tmp/added-product-lines.txt || true
+          ! grep -Eiq '\b(retry|sleep)\b|setTimeout\(|setInterval\(' /tmp/added-product-lines.txt
+
+      - name: Verify exact product diff
+        run: |
+          set -Eeuo pipefail
+          git diff --name-only 09eecba0073807a7271bdfb8aa5af71b1195395b..7c343d1db710f5c835f53ef94f5d6a01485bdfcf | sort > /tmp/actual-product.txt
+          cat > /tmp/expected-product.txt <<'EOF'
+          app/assets/js/games/game-invites-v110.js
+          app/assets/js/main-v110-handoff-shell.js
+          app/assets/js/main-v110.js
+          app/assets/js/screens/notifications-screen-v110r12.js
+          app/v110.php
+          bot/services/GameInviteService.php
+          bot/tests/ProductionMvp14D1PickerSelectiveJsonReadContractTest.php
+          bot/tests/ProductionMvp14InterfaceInviteEntrySpeedV1135Test.php
+          bot/tests/ProductionMvp14InviteTransitionUxV1137Test.php
+          e2e/staging/invite-transition-ux-v1137.spec.mjs
+          EOF
+          sed -i 's/^          //' /tmp/expected-product.txt
+          sort -o /tmp/expected-product.txt /tmp/expected-product.txt
+          diff -u /tmp/expected-product.txt /tmp/actual-product.txt
+          ! grep -Eq '(^|/)(android-app|design-system/shield-king)(/|$)' /tmp/actual-product.txt
+          ! grep -Eq '^\.github/workflows/tmp-|^scripts/ci/tmp-' /tmp/actual-product.txt
+
+      - name: Verify exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only HEAD^..HEAD)" = '.github/workflows/invite-transition-ux-final-verifier.yml'
+          git diff --check 09eecba0073807a7271bdfb8aa5af71b1195395b..HEAD
