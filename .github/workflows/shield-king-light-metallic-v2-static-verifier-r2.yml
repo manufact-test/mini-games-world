@@ -1,0 +1,111 @@
+name: Shield King V2 light metallic static focused r2
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-light-metallic-v2
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-light-metallic-v2-verifier-r2'
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: baabda3ded4c7882918aed3c19975971aff8758c
+      BASE_STAGING_SHA: d7be536a1391409dfad5a16efcb510a4f84d50b3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify verifier branch boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          changed="$(git diff --name-only "${FEATURE_SHA}" HEAD)"
+          test "${changed}" = '.github/workflows/shield-king-light-metallic-v2-static-verifier-r2.yml'
+
+      - name: Verify exact feature diff boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='d7be536a1391409dfad5a16efcb510a4f84d50b3'
+          head='baabda3ded4c7882918aed3c19975971aff8758c'
+          changed=set(subprocess.check_output(['git','diff','--name-only',base,head], text=True).splitlines())
+          expected={
+            'app/assets/css/base/tokens.css',
+            'app/assets/css/components/preloader.css',
+            'app/assets/css/main.css',
+            'app/assets/css/shield-king-v2.css',
+            'app/assets/design-backups/shield-king-v1/README.md',
+            'app/assets/design-backups/shield-king-v1/phase-b-presentation-v1.css',
+            'app/assets/design-backups/shield-king-v1/startup-preloader-v1.css',
+            'app/assets/design-backups/shield-king-v1/tokens-v1.css',
+            'app/assets/icons/shield-king/accepted/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip',
+            'app/assets/js/components/shield-king-visuals.js',
+            'app/assets/js/games/game-card-copy.js',
+            'app/assets/js/main-v110-handoff-shell.js',
+            'app/assets/js/main-v110.js',
+            'app/assets/shield-king-icon.php',
+            'app/v110.php',
+            'bot/helpers/staging-e2e-runtime-files.txt',
+            'bot/tests/ShieldKingSharedUiIntegrationContractTest.php',
+          }
+          assert changed == expected, f'unexpected diff: added={sorted(changed-expected)} missing={sorted(expected-changed)}'
+          assert not any(p.startswith('app/assets/css/games/') for p in changed)
+          assert not any(p.startswith('app/assets/js/games/') and p != 'app/assets/js/games/game-card-copy.js' for p in changed)
+          assert 'app/assets/js/production-v110-acceptance-runtime.js' not in changed
+          assert not any(p.startswith('bot/services/Game') for p in changed)
+          print(f'feature boundary verified: {len(changed)} files')
+          PY
+          git diff --quiet "${BASE_STAGING_SHA}" "${FEATURE_SHA}" -- app/assets/js/production-v110-acceptance-runtime.js
+
+      - name: Verify PHP and JS syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/assets/shield-king-icon.php
+          php -l bot/tests/ShieldKingSharedUiIntegrationContractTest.php
+          node --check app/assets/js/components/shield-king-visuals.js
+          node --check app/assets/js/games/game-card-copy.js
+          node --check app/assets/js/main-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+
+      - name: Run Shield King V2 contract including all 44 accepted art hashes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ShieldKingSharedUiIntegrationContractTest.php
+
+      - name: Exercise accepted icon endpoint with real WebP members
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bundle='app/assets/icons/shield-king/accepted/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'
+          test "$(unzip -Z1 "$bundle" | grep -E '^(games|ui)/.*\.webp$' | wc -l | tr -d ' ')" = '44'
+          printf 'repository ZIP container sha256=%s\n' "$(sha256sum "$bundle" | awk '{print $1}')"
+
+          php -r '$_GET["asset"]="games/tic-tac-toe.webp"; $_SERVER["REQUEST_METHOD"]="GET"; include "app/assets/shield-king-icon.php";' > /tmp/tic-tac-toe.webp
+          test "$(sha256sum /tmp/tic-tac-toe.webp | awk '{print $1}')" = 'de3f75837e2d03902512edf7963338a72201ee7bdb742a9cddbc2401cea2760f'
+          test "$(wc -c < /tmp/tic-tac-toe.webp | tr -d ' ')" = '81634'
+
+          php -r '$_GET["asset"]="ui/actions/more.webp"; $_SERVER["REQUEST_METHOD"]="GET"; include "app/assets/shield-king-icon.php";' > /tmp/more.webp
+          test "$(sha256sum /tmp/more.webp | awk '{print $1}')" = '26e5c2e3c72d059ac6cba61f1f9cd16cfcaff0cf525a12d8a7beb763a893d3a5'
+          test "$(wc -c < /tmp/more.webp | tr -d ' ')" = '4218'
+
+      - name: Verify V1 fallbacks are inert and V2 asset paths resolve
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -Fq "@import url('./shield-king-v2.css?v=125&sk=2');" app/assets/css/main.css
+          ! grep -Fq 'design-backups/shield-king-v1' app/assets/css/main.css
+          grep -Fq "background:url('../icons/shield-king/mgw-mark.svg')" app/assets/css/shield-king-v2.css
+          test -f app/assets/icons/shield-king/mgw-mark.svg
+          test -f app/assets/design-backups/shield-king-v1/startup-preloader-v1.css
+          test -f app/assets/design-backups/shield-king-v1/phase-b-presentation-v1.css
