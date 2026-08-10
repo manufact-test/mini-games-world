@@ -337,7 +337,7 @@ final class RuntimeInviteRepository
         $historicalInviteIds = [];
 
         foreach ($database->fetchAll(
-            'SELECT invite_id FROM mgw_invites ORDER BY invite_id'
+            'SELECT invite_id, match_id FROM mgw_invites ORDER BY invite_id'
         ) as $row) {
             $inviteId = trim((string)($row['invite_id'] ?? ''));
             if ($inviteId === '') {
@@ -345,11 +345,12 @@ final class RuntimeInviteRepository
             }
             if (isset($source[$inviteId])) continue;
 
+            $matchId = trim((string)($row['match_id'] ?? ''));
             $relatedMatches = (int)$database->fetchValue(
-                'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id',
-                ['invite_id' => $inviteId]
+                'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
+                ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
             );
-            if ($relatedMatches > 0) {
+            if ($matchId !== '' || $relatedMatches > 0) {
                 $historicalInviteIds[] = $inviteId;
                 continue;
             }
