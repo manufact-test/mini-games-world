@@ -1,0 +1,88 @@
+name: Phase B all-games activation focused
+
+on:
+  pull_request:
+    branches:
+      - agent/phase-b-all-games-activation
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 0fd8a10f3552ac93ee1ae4feb3fae4fa4718d8f2
+  STATUS_CONTEXT: phase-b-all-games-activation-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"All-games Phase B activation verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - uses: actions/checkout@v4
+
+      - name: Syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/api.php
+          php -l bot/services/GameLaunchFinalizationService.php
+          php -l bot/tests/GameLaunchFinalizationServiceTest.php
+          php -l bot/tests/GameLaunchFinalizationOwnerContractTest.php
+
+      - name: Focused behavior and ownership
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/GameLaunchFinalizationServiceTest.php
+          php bot/tests/GameLaunchFinalizationOwnerContractTest.php
+          php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+          php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
+          php bot/tests/PhaseBPrimaryApiPreparationOwnerContractTest.php
+          php bot/tests/PhaseBActionGuardHandoffContractTest.php
+          php bot/tests/PhaseBPreActiveLifecycleIsolationTest.php
+          php bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+
+      - name: Exact diff guard
+        run: |
+          set -Eeuo pipefail
+          git diff --check origin/agent/phase-b-all-games-activation...HEAD
+          test "$(git diff --name-only origin/agent/phase-b-all-games-activation...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only origin/agent/phase-b-all-games-activation...HEAD)" = '.github/workflows/phase-b-all-games-activation-focused.yml'
+
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"All-games Phase B activation verification passed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
+
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"All-games Phase B activation verification failed\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" || true
