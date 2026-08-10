@@ -1,0 +1,20 @@
+/* Exact visual fallback extracted from staging commit d7be536a1391409dfad5a16efcb510a4f84d50b3. Runtime ownership/timing remain in production-v110-acceptance-runtime.js. */
+.mgw-phase-b-launch-overlay{background:var(--sk-bg-app) !important}
+.mgw-phase-b-launch-overlay:before{background:radial-gradient(circle at 50% 36%,rgba(106,76,255,.20),transparent 36%),radial-gradient(circle at 50% 72%,rgba(255,212,92,.05),transparent 30%),var(--sk-bg-app) !important;box-shadow:0 0 90px rgba(106,76,255,.10) !important}
+.mgw-phase-b-launch-card{border-color:var(--sk-border-default) !important;background:linear-gradient(180deg,rgba(35,25,66,.96),rgba(12,15,20,.99)) !important;box-shadow:var(--sk-shadow-modal) !important}
+.mgw-phase-b-launch-card:before{background:linear-gradient(145deg,rgba(166,95,247,.07),transparent 42%,rgba(255,212,92,.035)) !important}
+.mgw-phase-b-launch-game{border-color:var(--sk-border-default) !important;background:var(--sk-bg-card) !important;color:var(--sk-text-secondary) !important}
+.mgw-phase-b-launch-ring{border-color:rgba(230,232,239,.10) !important;border-top-color:var(--sk-brand-violet) !important;border-right-color:var(--sk-brand-gold) !important}
+.mgw-phase-b-launch-ring:after{border-color:rgba(230,232,239,.07) !important}
+.mgw-phase-b-countdown{border-color:rgba(230,232,239,.14) !important;background:radial-gradient(circle at 50% 35%,rgba(106,76,255,.16),transparent 58%),rgba(8,11,18,.98) !important;color:var(--sk-brand-silver) !important;box-shadow:0 16px 38px rgba(0,0,0,.38),inset 0 0 24px rgba(166,95,247,.04) !important}
+.mgw-phase-b-countdown[data-stage="prepare"]:before{width:64px !important;height:64px !important;border-radius:0 !important;background:url('../../icons/shield-king/mgw-mark.svg') center/contain no-repeat !important;box-shadow:none !important;animation:shieldKingPhaseBrandPulse 1.05s var(--sk-ease-emphasis) infinite !important}
+.mgw-phase-b-countdown[data-stage="prepare"]:after{border-color:rgba(166,95,247,.22) !important}
+.mgw-phase-b-countdown[data-stage="sync"]:before{background:var(--sk-brand-silver) !important;box-shadow:-18px 0 var(--sk-brand-primary),18px 0 var(--sk-brand-violet) !important}
+.mgw-phase-b-countdown[data-stage="ready"]:before{border-right-color:var(--sk-success) !important;border-bottom-color:var(--sk-success) !important}
+.mgw-phase-b-countdown[data-stage="ready"]:after{border-color:rgba(72,214,165,.42) !important}
+.mgw-phase-b-launch-overlay[data-stage="ready"] .mgw-phase-b-launch-ring{border-color:rgba(72,214,165,.22) !important}
+.mgw-phase-b-launch-title{color:var(--sk-text-primary) !important}
+.mgw-phase-b-launch-note{color:var(--sk-text-secondary) !important}
+.mgw-phase-b-launch-progress i{background:rgba(230,232,239,.34) !important}
+@keyframes shieldKingPhaseBrandPulse{0%,100%{opacity:.82;transform:scale(.92)}50%{opacity:1;transform:scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.mgw-phase-b-countdown[data-stage="prepare"]:before{animation:none !important}}
