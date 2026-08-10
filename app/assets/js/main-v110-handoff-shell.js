@@ -10,6 +10,7 @@ import { initSheet } from './components/sheet.js?v=1109';
 import { toast } from './components/toast.js?v=1109';
 import { initAccountShortcuts } from './components/account-shortcuts.js?v=48';
 import { initUserCopy } from './components/user-copy.js?v=62';
+import { initShieldKingVisuals } from './components/shield-king-visuals.js?v=1';
 import { showHomeActivity, showBootFailure, dispatchAppReady } from './components/boot-state.js?v=87';
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
@@ -49,6 +50,7 @@ initRuntimeStatus();
 initTypography();
 initSheet();
 initUserCopy();
+initShieldKingVisuals();
 initGameCardCopy();
 initNotificationsScreen();
 
