@@ -1,6 +1,30 @@
 <?php
 declare(strict_types=1);
 
+final class StagingTestPlayerResetStageException extends RuntimeException
+{
+    private const ALLOWED_STAGES = [
+        'availability',
+        'json_state',
+        'notification_cleanup',
+        'invite_cleanup',
+        'economy',
+    ];
+
+    public function __construct(private string $stage, Throwable $previous)
+    {
+        if (!in_array($stage, self::ALLOWED_STAGES, true)) {
+            $stage = 'unknown';
+        }
+        parent::__construct('Staging test-player reset stage failed.', 0, $previous);
+    }
+
+    public function stage(): string
+    {
+        return $this->stage;
+    }
+}
+
 final class StagingTestPlayerStateResetService
 {
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
@@ -17,7 +41,11 @@ final class StagingTestPlayerStateResetService
 
     public function reset(array $server): array
     {
-        $this->assertAvailable($server);
+        try {
+            $this->assertAvailable($server);
+        } catch (Throwable $error) {
+            throw new StagingTestPlayerResetStageException('availability', $error);
+        }
 
         $storage = StorageFactory::createJson((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
         $before = [];
@@ -26,13 +54,14 @@ final class StagingTestPlayerStateResetService
         $notificationsRemoved = 0;
         $gamesFinished = 0;
 
-        $snapshot = $storage->transaction(function (array &$data) use (
-            &$before,
-            &$queueRemoved,
-            &$removedInvites,
-            &$notificationsRemoved,
-            &$gamesFinished
-        ): array {
+        try {
+            $snapshot = $storage->transaction(function (array &$data) use (
+                &$before,
+                &$queueRemoved,
+                &$removedInvites,
+                &$notificationsRemoved,
+                &$gamesFinished
+            ): array {
             if (!isset($data['users']) || !is_array($data['users'])) {
                 throw new RuntimeException('Staging test users are unavailable.');
             }
@@ -145,19 +174,34 @@ final class StagingTestPlayerStateResetService
             ));
             $notificationsRemoved = $notificationsBefore - count($data['notifications']);
 
-            return $data;
-        });
+                return $data;
+            });
+        } catch (Throwable $error) {
+            throw new StagingTestPlayerResetStageException('json_state', $error);
+        }
 
         // Notification cleanup must commit before invite parity audits. The JSON
         // snapshot above contains no A/B notification history by contract.
-        $notificationCleanup = $this->cleanupRuntimeTestNotificationRows($snapshot);
-        $inviteCleanup = $this->cleanupRuntimeInviteRows($snapshot, $removedInvites);
+        try {
+            $notificationCleanup = $this->cleanupRuntimeTestNotificationRows($snapshot);
+        } catch (Throwable $error) {
+            throw new StagingTestPlayerResetStageException('notification_cleanup', $error);
+        }
+        try {
+            $inviteCleanup = $this->cleanupRuntimeInviteRows($snapshot, $removedInvites);
+        } catch (Throwable $error) {
+            throw new StagingTestPlayerResetStageException('invite_cleanup', $error);
+        }
 
-        $economy = new RuntimeEconomyRepository($this->config, $this->router);
-        $synchronized = $economy->synchronize($snapshot);
-        $audit = $economy->auditParity($snapshot);
-        if (($synchronized['ok'] ?? false) !== true || ($audit['ok'] ?? false) !== true) {
-            throw new RuntimeException('Staging test-player economy reset did not reach parity.');
+        try {
+            $economy = new RuntimeEconomyRepository($this->config, $this->router);
+            $synchronized = $economy->synchronize($snapshot);
+            $audit = $economy->auditParity($snapshot);
+            if (($synchronized['ok'] ?? false) !== true || ($audit['ok'] ?? false) !== true) {
+                throw new RuntimeException('Staging test-player economy reset did not reach parity.');
+            }
+        } catch (Throwable $error) {
+            throw new StagingTestPlayerResetStageException('economy', $error);
         }
 
         $balances = [];
