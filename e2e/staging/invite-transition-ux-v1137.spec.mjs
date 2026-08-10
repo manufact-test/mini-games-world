@@ -152,6 +152,7 @@ test('v1137 direct invite, notification Accept and invitee self-cancel have comp
   let playerB;
   let earlyCreateHold;
   let notificationIsolation;
+  let cancelHold;
   let secondInviteToken = '';
 
   try {
@@ -272,9 +273,23 @@ test('v1137 direct invite, notification Accept and invitee self-cancel have comp
       timeout: 10_000,
     });
 
+    // Snapshot isolation has now served its only purpose: proving that Accept
+    // can paint a complete first frame from the notification payload alone.
+    // Restore the normal authoritative sync owner before exercising self-cancel.
+    await notificationIsolation.stop();
+    notificationIsolation = null;
+
+    const acceptedSyncResponse = playerB.page.waitForResponse(
+      isActionResponse(INVITES_ROUTE, 'sync'),
+      { timeout: 35_000 },
+    );
+    await playerB.page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    expect((await acceptedSyncResponse).status()).toBe(200);
+
     // Third reported symptom: the participant who cancels their own accepted
     // invite returns to ordinary activity immediately; no local terminal sheet.
-    const cancelHold = notificationIsolation.hold('cancel');
+    // Hold only the cancel response; passive sync/watch are normal again.
+    cancelHold = await holdSingleAction(playerB.page, 'cancel');
     const cancelParticipation = playerB.page.locator(
       `[data-invite-action="cancel"][data-invite-token="${secondInviteToken}"]`,
     );
@@ -293,9 +308,8 @@ test('v1137 direct invite, notification Accept and invitee self-cancel have comp
     cancelHold.release();
     expect((await cancelResponse).status()).toBe(200);
     await expect(playerB.page.locator('#sheetOverlay')).not.toHaveClass(/active/, { timeout: 2_000 });
-
-    await notificationIsolation.stop();
-    notificationIsolation = null;
+    await cancelHold.stop();
+    cancelHold = null;
 
     // The other participant still receives the authoritative remote terminal event.
     await playerA.page.evaluate(() => {
@@ -313,6 +327,10 @@ test('v1137 direct invite, notification Accept and invitee self-cancel have comp
       await earlyCreateHold.stop().catch(() => null);
     }
     if (notificationIsolation) await notificationIsolation.stop().catch(() => null);
+    if (cancelHold) {
+      cancelHold.release();
+      await cancelHold.stop().catch(() => null);
+    }
     if (secondInviteToken && playerB?.page && !playerB.page.isClosed()) {
       await postFromPlayer(playerB.page, '/bot/invites.php', {
         action: 'cancel',
