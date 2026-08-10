@@ -1,0 +1,48 @@
+name: TMP staging invite projection repair patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/staging-test-reset-invite-projection-repair'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-test-reset-invite-projection-repair
+          fetch-depth: 0
+      - name: Apply exact patch
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-staging-invite-projection-repair-patch.py
+          php -l bot/services/StagingTestPlayerStateResetService.php
+          php -l bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+          php -l bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
+          php -l bot/tests/StagingTestPlayerInviteProjectionRecoveryContractTest.php
+          php bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
+          php bot/tests/StagingTestPlayerInviteProjectionRecoveryContractTest.php
+          php bot/tests/RuntimeInviteRepositoryTest.php
+          php bot/tests/StagingInviteLifecycleParityReconciliationTest.php
+          git diff --check
+      - name: Commit product and regression files only
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            bot/services/StagingTestPlayerStateResetService.php \
+            bot/services/StagingTestOnlyInviteOrphanRecoveryService.php \
+            bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php \
+            bot/tests/StagingTestPlayerInviteProjectionRecoveryContractTest.php
+          if git diff --cached --quiet; then
+            echo 'Projection repair patch already applied.'
+            exit 0
+          fi
+          git commit -m 'Staging reset: repair invite DB projection from canonical JSON'
+          git push origin HEAD:agent/staging-test-reset-invite-projection-repair
