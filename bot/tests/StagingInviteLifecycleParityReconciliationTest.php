@@ -137,9 +137,18 @@ $assertSame(
 $injectedDatabase = new StagingInviteLifecycleFakeDatabase([]);
 $injectedRepository = new RuntimeInviteRepository($config, $router, $injectedDatabase);
 $assertSame(
-    false,
+    true,
     $property->getValue($injectedRepository),
-    'Injected repositories must preserve strict legacy behavior unless reconciliation is explicit'
+    'Every staging repository view must recognize the same DB-only lifecycle history semantics'
+);
+
+$productionConfig = $config;
+$productionConfig['environment'] = 'production';
+$productionRepository = new RuntimeInviteRepository($productionConfig, $router, $injectedDatabase);
+$assertSame(
+    false,
+    $property->getValue($productionRepository),
+    'Production repositories must not inherit staging lifecycle reconciliation implicitly'
 );
 
 $staleDatabase = new StagingInviteLifecycleFakeDatabase(['stale-invite'], [], 2);
@@ -166,7 +175,7 @@ $assertSame(true, $historicalAudit['ok'], 'Read-only parity audit must ignore pr
 $assertSame(1, $historicalAudit['preserved_historical_invite_rows'], 'Audit must report preserved historical row');
 
 $source = file_get_contents($root . '/invites/RuntimeInviteRepository.php') ?: '';
-$assertContains("?? ((\$config['environment'] ?? null) === 'staging' && \$database === null);", $source, 'Live staging default must be explicit');
+$assertContains("?? ((\$config['environment'] ?? null) === 'staging');", $source, 'Staging lifecycle semantics must be environment-scoped');
 $assertContains('SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id', $source, 'Match references must protect historical rows');
 $assertContains('DELETE FROM mgw_invite_events WHERE invite_id = :invite_id', $source, 'Dependent invite events must be pruned first');
 $assertContains('DELETE FROM mgw_invites WHERE invite_id = :invite_id', $source, 'Only DB-only invite rows may be pruned');

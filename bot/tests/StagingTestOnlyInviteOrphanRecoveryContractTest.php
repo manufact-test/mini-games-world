@@ -19,8 +19,10 @@ $assert(str_contains($service, "private const TEST_PLAYER_IDS = ['stg_test_playe
     'Recovery must remain hard-scoped to the two staging test identities.');
 $assert(str_contains($service, "private const SAFE_SOURCES = ['direct', 'link'];"),
     'Recovery must not clean rematch or unrelated invite sources.');
-$assert(str_contains($service, "throw new RuntimeException('Staging test-only orphan recovery refuses match-referenced A/B invite.');"),
-    'Recovery must refuse match-referenced invites.');
+$assert(str_contains($service, "if (\$matchId !== '' || \$matchRefs !== 0) {")
+    && str_contains($service, 'Runtime invite parity intentionally')
+    && !str_contains($service, "throw new RuntimeException('Staging test-only orphan recovery refuses match-referenced A/B invite.');"),
+    'Recovery must preserve match-referenced A/B history without treating it as an orphan candidate.');
 $assert(str_contains($service, "throw new RuntimeException('Staging test-only orphan recovery refuses non-test notification state.');"),
     'Recovery must refuse linked notifications outside A/B.');
 $assert(str_contains($service, '$deleted = $database->transaction(')

@@ -17,7 +17,7 @@ final class RuntimeInviteRepository
         $this->router = $router ?? new RuntimeStorageRouter($config);
         $this->connection = $database;
         $this->reconcileDatabaseOnlyRows = $reconcileDatabaseOnlyRows
-            ?? (($config['environment'] ?? null) === 'staging' && $database === null);
+            ?? (($config['environment'] ?? null) === 'staging');
     }
 
     public function synchronize(array $jsonData): array
