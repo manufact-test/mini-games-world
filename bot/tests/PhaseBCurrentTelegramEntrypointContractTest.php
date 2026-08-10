@@ -74,38 +74,53 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, '"./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=122&b=e248a150239e"'),
-    'The accepted v110 graph must publish the migrated Phase B presentation under a fresh immutable URL.'
+    str_contains($v110, '"./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=123&b=16abefbd4201"'),
+    'The accepted v110 graph must publish the polished loader under a fresh immutable URL.'
 );
 $assert(
-    str_contains($v110, 'X-MGW-Phase-B-Presentation: v122-v110-fixed-loader'),
-    'The accepted /start graph must expose an explicit migrated loader identity.'
+    str_contains($v110, 'X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader'),
+    'The accepted /start graph must expose the deterministic loader identity.'
 );
 $assert(
     str_contains($v110Runtime, 'position:fixed;inset:0;z-index:10000')
         && str_contains($v110Runtime, 'width:min(100%,400px);height:336px;display:grid;grid-template-rows:30px 136px 52px 46px 24px'),
-    'The accepted v110 graph must use the fixed global V121 preparation geometry.'
+    'The accepted v110 graph must keep the fixed preparation geometry.'
 );
 $assert(
     str_contains($v110Runtime, 'width:108px;height:108px')
         && str_contains($v110Runtime, '.mgw-phase-b-launch-ring')
         && str_contains($v110Runtime, '@keyframes mgwPhaseBSpin'),
-    'The accepted v110 graph must use one invariant 108x108 ring/countdown presentation.'
+    'The accepted v110 graph must keep one invariant 108x108 ring/countdown presentation.'
 );
 $assert(
-    str_contains($v110Runtime, "countdown.textContent = 'VS';")
-        && str_contains($v110Runtime, "readyForServer ? 'СТАРТ' : String(seconds)"),
-    'The accepted v110 preparation surface must own VS -> 3 -> 2 -> 1 -> START without changing application graph.'
+    str_contains($v110Runtime, 'const LAUNCH_COUNTDOWN_STEP_MS = 600;')
+        && str_contains($v110Runtime, 'const LAUNCH_READY_HOLD_MS = 450;')
+        && str_contains($v110Runtime, "return { type:'number', value:'3' };")
+        && str_contains($v110Runtime, "return { type:'number', value:'2' };")
+        && str_contains($v110Runtime, "return { type:'number', value:'1' };")
+        && str_contains($v110Runtime, "return { type:'ready' };")
+        && str_contains($v110Runtime, "return { type:'sync' };")
+        && !str_contains($v110Runtime, "countdown.textContent = 'VS';")
+        && !str_contains($v110Runtime, "'СТАРТ'"),
+    'The v110 loader must own one monotonic 3 -> 2 -> 1 -> ready presentation without VS or START text.'
 );
 $assert(
-    str_contains($v110Runtime, "const blocking = status === 'active'")
-        && str_contains($v110Runtime, "phase === 'preparing' || phase === 'countdown' || phase === 'preparation_timeout'"),
-    'The migrated loader must remain above the accepted app through the complete authoritative countdown phase.'
+    str_contains($v110Runtime, '.mgw-phase-b-countdown[data-stage="prepare"]:before')
+        && str_contains($v110Runtime, '.mgw-phase-b-countdown[data-stage="ready"]:before')
+        && str_contains($v110Runtime, '@keyframes mgwPhaseBCheckIn')
+        && str_contains($v110Runtime, "if (title) title.textContent = 'Готово';"),
+    'Preparation must use a neutral animated mark and completion must use a visual success check.'
+);
+$assert(
+    str_contains($v110Runtime, "const presentationBlocking = status === 'active'")
+        && str_contains($v110Runtime, '&& !presentation.complete')
+        && str_contains($v110Runtime, 'const blocking = serverBlocking || presentationBlocking;'),
+    'The loader presentation must finish even when the authoritative game becomes active first.'
 );
 $assert(
     !str_contains($v110Runtime, 'mgw-phase-b-launch-shape')
         && !str_contains($v110Runtime, 'mgwPhaseBFloat'),
-    'The old floating-shape loader must be removed from the accepted v110 application graph.'
+    'The old floating-shape loader must remain removed from the accepted v110 application graph.'
 );
 
 $assert(
