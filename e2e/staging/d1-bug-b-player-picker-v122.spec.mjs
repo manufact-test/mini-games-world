@@ -150,7 +150,7 @@ async function runActualStartPicker(browser, isMobile) {
     const resources = await playerA.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     expect(resources.some(rawUrl => {
       const url = new URL(rawUrl);
-      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1135';
+      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1136';
     }), 'Ordinary Start must execute the canonical v110 player-picker owner.').toBe(true);
     expect(requests).toBe(0);
 
@@ -162,6 +162,10 @@ async function runActualStartPicker(browser, isMobile) {
       response.url() === OPPONENTS_ROUTE && response.request().method() === 'POST',
     { timeout:15_000 });
     await playerA.page.locator('[data-open-player-picker]').click();
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Выберите игрока', { timeout:650 });
+    await expect(playerA.page.locator('[data-player-picker-results]')).toHaveAttribute('aria-busy', 'true', { timeout:650 });
+    await expect(playerA.page.locator('[data-player-picker-results]')).toContainText('Загружаем игроков', { timeout:650 });
+    await expect(playerA.page.locator('[data-player-picker-results]')).not.toContainText(PLAYER_B_VISIBLE_NAME, { timeout:650 });
 
     const response = await opponentResponse;
     expect(response.status()).toBe(200);
@@ -182,11 +186,11 @@ async function runActualStartPicker(browser, isMobile) {
 
     const frames = await stopVisibleFrameTrace(playerA.page);
     expect(frames.length).toBeGreaterThan(0);
-    expect(frames.filter(frame => /Загружаем соперников/i.test(String(frame.text)))).toEqual([]);
     expect(frames.filter(frame => FALSE_EMPTY_PATTERN.test(String(frame.text)))).toEqual([]);
     const pickerFrames = frames.filter(frame => String(frame.text).includes('Выберите игрока'));
     expect(pickerFrames.length).toBeGreaterThan(0);
-    expect(String(pickerFrames[0].text)).toContain(PLAYER_B_VISIBLE_NAME);
+    expect(String(pickerFrames[0].text)).toContain('Загружаем игроков');
+    expect(pickerFrames.some(frame => String(frame.text).includes(PLAYER_B_VISIBLE_NAME))).toBe(true);
     expect(requests).toBe(1);
   } finally {
     await cleanupOwnedInvite(playerA);

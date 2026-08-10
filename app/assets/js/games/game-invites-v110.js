@@ -53,6 +53,7 @@ let shareAttempt = null;
 let playerPickerRequestGeneration = 0;
 let directInviteRequestGeneration = 0;
 let inviteStartPending = false;
+let inviteUiTransitionGeneration = 0;
 
 export function initGameInvites(){
   if (initialized) return;
@@ -253,20 +254,18 @@ async function openPlayerPicker(context, sourceButton = null){
     trigger.setAttribute('aria-busy', 'true');
   }
 
+  haptic('light');
+  showPlayerPickerLoading(context, requestGeneration);
+
   try {
     const result = await postJson(OPPONENTS_URL, {});
     if (requestGeneration !== playerPickerRequestGeneration) return;
     const items = Array.isArray(result.items) ? result.items.slice(0, MAX_OPPONENTS) : [];
     items.sort((a, b) => Number(Boolean(b.online)) - Number(Boolean(a.online)));
-    renderPlayerPicker(items, context);
+    renderPlayerPicker(items, context, requestGeneration);
   } catch (error) {
     if (requestGeneration !== playerPickerRequestGeneration) return;
-    openSheet(`
-      <div class="sheet-head"><div><h2>Не удалось загрузить игроков</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-      <div class="small-note">${escapeHtml(error.message || 'Попробуйте ещё раз.')}</div>
-      <button class="btn ghost full" data-back-to-invite-setup type="button">Назад</button>
-    `);
-    document.querySelector('[data-back-to-invite-setup]')?.addEventListener('click', () => openInviteSetup(context.gameType, context));
+    renderPlayerPickerError(requestGeneration, error);
   } finally {
     if (trigger?.isConnected && requestGeneration === playerPickerRequestGeneration) {
       trigger.disabled = false;
@@ -275,24 +274,64 @@ async function openPlayerPicker(context, sourceButton = null){
   }
 }
 
-function renderPlayerPicker(items, context){
-  const list = items.length
-    ? `<div class="invite-player-list">${items.map(playerCard).join('')}</div>`
-    : `<div class="notifications-empty invite-empty-state"><div>👥</div><strong>Недавних соперников пока нет</strong><span>Вернитесь назад и отправьте ссылку.</span></div>`;
-
+function showPlayerPickerLoading(context, requestGeneration){
   openSheet(`
+    <span data-player-picker-generation="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
       <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    ${list}
+    <div class="invite-player-list" data-player-picker-results aria-busy="true">
+      <button class="invite-player-card loading" type="button" disabled aria-hidden="true" tabindex="-1">
+        <span class="invite-player-avatar" aria-hidden="true">…</span>
+        <span class="invite-player-copy"><strong>Загружаем игроков</strong><span>Проверяем доступность</span></span>
+        <span class="invite-player-arrow" aria-hidden="true">›</span>
+      </button>
+    </div>
     <button class="btn ghost full" data-back-to-invite-setup type="button">Назад к условиям</button>
   `);
+  bindPlayerPickerBack(context);
+}
 
-  document.querySelector('[data-back-to-invite-setup]')?.addEventListener('click', () => openInviteSetup(context.gameType, context));
+function activePlayerPickerSurface(requestGeneration){
+  if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return null;
+  const root = document.getElementById('sheet');
+  const marker = root?.querySelector('[data-player-picker-generation]');
+  const results = root?.querySelector('[data-player-picker-results]');
+  if (!root || !marker || !results) return null;
+  if (String(marker.dataset.playerPickerGeneration || '') !== String(Number(requestGeneration || 0))) return null;
+  return { results };
+}
+
+function renderPlayerPicker(items, context, requestGeneration){
+  const list = items.length
+    ? items.map(playerCard).join('')
+    : `<div class="notifications-empty invite-empty-state"><div>👥</div><strong>Недавних соперников пока нет</strong><span>Вернитесь назад и отправьте ссылку.</span></div>`;
+  const surface = activePlayerPickerSurface(requestGeneration);
+  if (!surface) return;
+  surface.results.innerHTML = list;
+  surface.results.setAttribute('aria-busy', 'false');
   document.querySelectorAll('[data-direct-opponent]').forEach(button => button.addEventListener('click', () => {
     createDirectInvite(context, String(button.dataset.directOpponent || ''), button);
   }));
+}
+
+function renderPlayerPickerError(requestGeneration, error){
+  const surface = activePlayerPickerSurface(requestGeneration);
+  if (!surface) return;
+  surface.results.innerHTML = `
+    <div class="notifications-empty invite-empty-state">
+      <div>⚠️</div><strong>Не удалось загрузить игроков</strong>
+      <span>${escapeHtml(error?.message || 'Попробуйте ещё раз.')}</span>
+    </div>`;
+  surface.results.setAttribute('aria-busy', 'false');
+}
+
+function bindPlayerPickerBack(context){
+  document.querySelector('[data-back-to-invite-setup]')?.addEventListener('click', () => {
+    playerPickerRequestGeneration += 1;
+    openInviteSetup(context.gameType, context);
+  });
 }
 
 function playerCard(item){
@@ -329,7 +368,7 @@ async function createDirectInvite(context, inviteeId, button){
     if (!currentInvite?.token) throw new Error('Не удалось создать приглашение.');
 
     if (isDirectInvitePendingSurfaceOpen(requestGeneration)) {
-      showOwnerWaiting(currentInvite);
+      finalizeDirectInvitePendingSurface(currentInvite, requestGeneration);
     } else if (isPassiveOwnerPending(currentInvite)) {
       currentInvite = null;
     }
@@ -670,6 +709,7 @@ async function copyInviteLink(url){
 
 async function performInviteAction(action, token, button){
   if (!action || !token || button.disabled) return;
+  inviteUiTransitionGeneration += 1;
   haptic('light');
   const originalText = button.textContent;
   const rollbackInvite = cloneInvite(currentInvite);
@@ -708,7 +748,7 @@ async function performInviteAction(action, token, button){
     currentInvite = result.invite || currentInvite;
 
     if (action === 'accept') {
-      showInviteeWaiting(currentInvite);
+      if (!reconcileInviteeWaiting(currentInvite)) showInviteeWaiting(currentInvite);
       scheduleSync(0);
       return;
     }
@@ -856,10 +896,12 @@ async function syncNow({ announce = true } = {}){
   if (String(state.activeGame?.status || '') === 'active') return null;
 
   const requestedInviteToken = String(currentInvite?.token || '');
+  const syncUiTransitionGeneration = inviteUiTransitionGeneration;
   syncBusy = true;
   try {
     const result = await inviteRequest('sync', { token:requestedInviteToken });
     syncState(result);
+    if (syncUiTransitionGeneration !== inviteUiTransitionGeneration) return result;
     processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
     if (result?.active_game?.id && String(result.active_game.status || '') === 'active') {
@@ -972,7 +1014,7 @@ function showDirectInvitePending(context, opponentName, requestGeneration){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${contextSummary(context)}
-    <button class="btn primary full" type="button" aria-disabled="true" disabled style="opacity:1">Отменить приглашение</button>
+    <button class="btn primary full" data-direct-invite-cancel-reserved type="button" aria-disabled="true" disabled style="opacity:1">Отменить приглашение</button>
   `);
 }
 
@@ -980,6 +1022,27 @@ function isDirectInvitePendingSurfaceOpen(requestGeneration){
   if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return false;
   return String(document.querySelector('#sheet [data-direct-invite-pending]')?.dataset.directInvitePending || '')
     === String(Number(requestGeneration || 0));
+}
+
+function finalizeDirectInvitePendingSurface(invite, requestGeneration){
+  const root = document.getElementById('sheet');
+  const marker = root?.querySelector('[data-direct-invite-pending]');
+  const button = root?.querySelector('[data-direct-invite-cancel-reserved]');
+  const token = String(invite?.token || '');
+  if (!root || !marker || !button || !token
+      || String(marker.dataset.directInvitePending || '') !== String(Number(requestGeneration || 0))) {
+    showOwnerWaiting(invite);
+    return;
+  }
+  marker.dataset.inviteToken = token;
+  marker.dataset.inviteState = inviteSheetState(invite);
+  marker.removeAttribute('data-direct-invite-pending');
+  button.disabled = false;
+  button.removeAttribute('aria-disabled');
+  button.removeAttribute('style');
+  button.removeAttribute('data-direct-invite-cancel-reserved');
+  button.dataset.inviteAction = 'cancel';
+  button.dataset.inviteToken = token;
 }
 
 function showIncomingInvite(invite){
@@ -1048,6 +1111,17 @@ function showInviteeWaiting(invite){
     <div class="small-note invite-status-note">Ожидание до ${escapeHtml(formatTime(invite.ready_deadline_at))}.</div>
     <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить участие</button>
   `);
+}
+
+function reconcileInviteeWaiting(invite){
+  const token = String(invite?.token || '');
+  if (!token || openSheetInviteToken() !== token || openSheetInviteState() !== 'accepted:invitee') return false;
+  const marker = document.querySelector('#sheet [data-invite-sheet][data-invite-token]');
+  const note = document.querySelector('#sheet .invite-status-note');
+  if (!marker || !note) return false;
+  marker.dataset.inviteState = inviteSheetState(invite);
+  note.textContent = `Ожидание до ${formatTime(invite.ready_deadline_at)}.`;
+  return true;
 }
 
 function showTerminalInvite(invite){

@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
+window.__MGW_BUILD__ = 'v110-mvp14-invite-popup-stability-v1136';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -24,7 +24,7 @@ import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initGameInvites } from './games/game-invites-v110.js?v=1135&pending=6&b=8c98ab6d8635';
+import { initGameInvites } from './games/game-invites-v110.js?v=1136&pending=7&b=033cc11c8ba4';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
