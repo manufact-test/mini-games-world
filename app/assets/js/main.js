@@ -1,5 +1,5 @@
-window.__MGW_BUILD__ = 'd1-bell-single-owner';
-import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=d1';
+window.__MGW_BUILD__ = 'd1-bootstrap-authoritative-owner';
+import { initFirstInteractionReadinessEarly } from './first-interaction-readiness.js?v=d1';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';
@@ -96,15 +96,6 @@ async function boot(){
     showHomeActivity();
     renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
-
-    const firstInteraction = await warmFirstInteractionData().catch(() => ({
-      profileReady:false,
-      historyReady:false,
-      notificationsReady:false,
-      ordersReady:false,
-      opponentsReady:false,
-    }));
-    window.__MGW_FIRST_INTERACTION_READY__ = firstInteraction;
     dispatchAppReady();
 
     if (isSessionLocked(state.session)) {
