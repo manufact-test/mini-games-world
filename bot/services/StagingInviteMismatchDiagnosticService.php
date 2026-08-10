@@ -21,12 +21,44 @@ final class StagingInviteMismatchDiagnosticService
         $snapshot = $this->snapshot();
         $sourceIds = [];
         $sourceTokens = [];
+        $jsonOpenTestReport = [
+            'json_open_test_mixed_count' => 0,
+            'json_open_test_only_count' => 0,
+            'json_open_test_inviter_count' => 0,
+            'json_open_test_invitee_count' => 0,
+            'json_open_test_status_counts' => [],
+            'json_open_test_source_counts' => [],
+        ];
+        $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
         foreach (is_array($snapshot['invites'] ?? null) ? $snapshot['invites'] : [] as $invite) {
             if (!is_array($invite)) continue;
             $id = trim((string)($invite['id'] ?? ''));
             $token = trim((string)($invite['token'] ?? ''));
             if ($id !== '') $sourceIds[$id] = true;
             if ($token !== '') $sourceTokens[$token] = true;
+
+            $status = trim((string)($invite['status'] ?? ''));
+            if (in_array($status, self::TERMINAL_STATUSES, true)) continue;
+            $inviter = trim((string)($invite['inviter_id'] ?? ''));
+            $invitee = trim((string)($invite['invitee_id'] ?? ''));
+            $inviterIsTest = isset($testIds[$inviter]);
+            $inviteeIsTest = isset($testIds[$invitee]);
+            if (!$inviterIsTest && !$inviteeIsTest) continue;
+
+            if ($inviterIsTest) $jsonOpenTestReport['json_open_test_inviter_count']++;
+            if ($inviteeIsTest) $jsonOpenTestReport['json_open_test_invitee_count']++;
+            if ($inviterIsTest && ($invitee === '' || $inviteeIsTest)) {
+                $jsonOpenTestReport['json_open_test_only_count']++;
+            } elseif ($inviteeIsTest && ($inviter === '' || $inviterIsTest)) {
+                $jsonOpenTestReport['json_open_test_only_count']++;
+            } else {
+                $jsonOpenTestReport['json_open_test_mixed_count']++;
+            }
+            $jsonOpenTestReport['json_open_test_status_counts'][$status !== '' ? $status : 'empty'] =
+                ($jsonOpenTestReport['json_open_test_status_counts'][$status !== '' ? $status : 'empty'] ?? 0) + 1;
+            $source = trim((string)($invite['source'] ?? ''));
+            $jsonOpenTestReport['json_open_test_source_counts'][$source !== '' ? $source : 'empty'] =
+                ($jsonOpenTestReport['json_open_test_source_counts'][$source !== '' ? $source : 'empty'] ?? 0) + 1;
         }
         $sourceNotificationIds = [];
         $sourceNotificationEvents = [];
@@ -40,7 +72,7 @@ final class StagingInviteMismatchDiagnosticService
         }
 
         $db = $this->database();
-        $report = [
+        $report = $jsonOpenTestReport + [
             'db_only_non_test_nonterminal_count' => 0,
             'status_counts' => [],
             'source_counts' => [],
@@ -104,6 +136,8 @@ final class StagingInviteMismatchDiagnosticService
             }
         }
 
+        ksort($report['json_open_test_status_counts'], SORT_STRING);
+        ksort($report['json_open_test_source_counts'], SORT_STRING);
         ksort($report['status_counts'], SORT_STRING);
         ksort($report['source_counts'], SORT_STRING);
         return [
