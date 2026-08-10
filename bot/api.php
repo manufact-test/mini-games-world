@@ -319,9 +319,13 @@ try {
                 mgw_cleanup_games_if_due($data, $games, false);
 
                 $game = null;
+                $createdFallbackGameId = '';
                 if (($user['status'] ?? '') === 'searching') {
                     $games->refreshSearch($data, $user);
                     $game = $games->maybeCreateBotGameForSearchingUser($data, $user);
+                    if (is_array($game)) {
+                        $createdFallbackGameId = (string)($game['id'] ?? '');
+                    }
                 }
 
                 if ($requestedGameId !== '' && isset($data['games'][$requestedGameId])) {
@@ -348,7 +352,11 @@ try {
                     }
 
                     if ($isCurrentParticipant) {
-                        $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($data, $storedGameId);
+                        $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame(
+                            $data,
+                            $storedGameId,
+                            $createdFallbackGameId !== '' && $createdFallbackGameId === $storedGameId
+                        );
                         if (is_array($finalizedGame)) $game = $finalizedGame;
 
                         $synchronizedGame = $matchPreparationRuntime->synchronizeCurrentGame(
