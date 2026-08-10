@@ -249,7 +249,7 @@
   width:68px !important;
   height:68px !important;
   border-radius:0 !important;
-  background:url('./icons/shield-king/mgw-mark.svg') center/contain no-repeat !important;
+  background:url('../icons/shield-king/mgw-mark.svg') center/contain no-repeat !important;
   filter:drop-shadow(0 0 12px rgba(233,236,244,.16)) !important;
   box-shadow:none !important;
   animation:shieldKingPhaseAssembleMark 1.15s var(--sk-ease-emphasis) infinite !important;
