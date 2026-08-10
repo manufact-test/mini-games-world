@@ -1,0 +1,66 @@
+name: Invite transition UX regression live focused
+
+on:
+  pull_request:
+    branches:
+      - agent/invite-transition-ux-regression-harness
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  focused-live:
+    if: github.head_ref == 'agent/invite-transition-ux-regression-harness-verifier'
+    runs-on: ubuntu-latest
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact test-only feature head
+        run: |
+          set -Eeuo pipefail
+          test "${{ github.event.pull_request.base.sha }}" = '6de0e749c95152496aa86c731f94a5caa4847b6d'
+          test "$(git rev-parse HEAD^)" = '6de0e749c95152496aa86c731f94a5caa4847b6d'
+          test "$(git diff --name-only de916ca8c2357a68fd7ec259c998a747c5b4cf4a..6de0e749c95152496aa86c731f94a5caa4847b6d)" = 'e2e/staging/invite-transition-ux-v1137.spec.mjs'
+          node --check e2e/staging/invite-transition-ux-v1137.spec.mjs
+          git diff --check de916ca8c2357a68fd7ec259c998a747c5b4cf4a..HEAD
+
+      - name: Verify exact live runtime fingerprint
+        run: |
+          set -Eeuo pipefail
+          expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          curl --fail-with-body --silent --show-error \
+            --header 'Accept: application/json' \
+            "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" > /tmp/readiness.json
+          python3 - /tmp/readiness.json "$expected" <<'PY'
+          import json, sys
+          payload=json.load(open(sys.argv[1], encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('environment') == 'staging'
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          assert payload.get('capabilities', {}).get('exact_runtime_fingerprint') is True
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pinned Playwright
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+
+      - name: Run exact v1137 UX regression only
+        run: |
+          set -Eeuo pipefail
+          npx --no-install playwright test e2e/staging/invite-transition-ux-v1137.spec.mjs --config=e2e/playwright.config.mjs
+
+      - name: Verify exact verifier delta
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only HEAD^..HEAD)" = '.github/workflows/invite-transition-ux-regression-harness-verifier.yml'
