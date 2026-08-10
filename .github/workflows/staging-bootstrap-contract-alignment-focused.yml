@@ -1,0 +1,51 @@
+name: Staging bootstrap contract alignment focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-bootstrap-contract-alignment
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    if: github.head_ref == 'agent/staging-bootstrap-contract-alignment-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Syntax and contract shape
+        run: |
+          set -Eeuo pipefail
+          node --check e2e/staging/deferred-notification-first-frame.spec.mjs
+          node --check e2e/staging/frontend-immutable-core.spec.mjs
+          ! grep -R '__MGW_FIRST_INTERACTION_READY__' e2e/staging
+          grep -q "EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner'" e2e/staging/frontend-immutable-core.spec.mjs
+          grep -q "page.locator('#preloader')" e2e/staging/deferred-notification-first-frame.spec.mjs
+          grep -q "mgw_device_session_id" e2e/staging/deferred-notification-first-frame.spec.mjs
+          git diff --check
+      - name: Product runtime unchanged
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet fff7f0d71acc1d68c0419671ef8af54b6133fbd1 85c1475f6ab57c2b1457cd501f5df3f54d3319f8 -- app bot scripts .github || {
+            echo 'Unexpected runtime/infrastructure product change in test-only alignment.' >&2
+            exit 1
+          }
+      - name: Exact product diff
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff --name-only fff7f0d71acc1d68c0419671ef8af54b6133fbd1 85c1475f6ab57c2b1457cd501f5df3f54d3319f8 | sort)
+          expected=(
+            'e2e/staging/deferred-notification-first-frame.spec.mjs'
+            'e2e/staging/frontend-immutable-core.spec.mjs'
+          )
+          mapfile -t expected_sorted < <(printf '%s\n' "${expected[@]}" | sort)
+          diff -u <(printf '%s\n' "${expected_sorted[@]}") <(printf '%s\n' "${files[@]}")
+      - name: Exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff --name-only 85c1475f6ab57c2b1457cd501f5df3f54d3319f8 HEAD | sort)
+          test "${#files[@]}" = '1'
+          test "${files[0]}" = '.github/workflows/staging-bootstrap-contract-alignment-focused.yml'
