@@ -96,7 +96,7 @@ $assert($action !== false && $verify !== false && $run !== false
 
 $assert(str_contains($service, 'RuntimeInviteRepository($this->config, $this->router, $db)')
     && str_contains($service, '->synchronize($snapshot);')
-    && str_contains($service, '(\$inviteSync[\'parity\'] ?? false) !== true'),
+    && str_contains($service, '($inviteSync[\'parity\'] ?? false) !== true'),
     'Existing residual owner must use RuntimeInviteRepository synchronization and prove parity.');
 $assert(str_contains($service, '$database->transaction(function (DatabaseConnectionInterface $db)')
     && str_contains($service, 'flock($handle, LOCK_EX)')
