@@ -6,7 +6,7 @@
 DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
 DS-2 EXACT ICON SYSTEM — PASS / MANUALLY ACCEPTED
-DS-3 SCREEN SPECIFICATIONS — IN PROGRESS
+DS-3 SCREEN SPECIFICATIONS — SPEC READY / AWAITING MANUAL VISUAL ACCEPTANCE
 DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
 ```
@@ -65,13 +65,13 @@ Metallic highlights on the mark itself are allowed. All ambient glow must remain
 - action SVG symbol sprite;
 - status SVG symbol sprite;
 - economy SVG symbol sprite;
-- 8/8 standalone royal game SVG icons.
+- 8/8 standalone equal-frame royal game SVG icons.
 
 Accepted DS-2 direction:
 
 - ordinary app icons remain lighter and do not use the large royal shield frame;
 - all eight game icons use one equal-width crowned royal frame template;
-- all eight game SVGs use `viewBox="0 0 96 112"`;
+- all game SVGs use `viewBox="0 0 96 112"`;
 - Tic Tac Toe has no redundant nested black panel;
 - Four in a Row uses two player colors only;
 - Checkers uses coherent board + solid black vs solid gold pieces;
@@ -80,11 +80,35 @@ Accepted DS-2 direction:
 - Go uses black/white stones only;
 - Domino uses the same external frame width as the rest.
 
-## Current work
+### DS-3 — specification ready / visual acceptance pending
 
-`DS-3 SCREEN SPECIFICATIONS` is now active.
+- `SCREENS.md`
+- `SCREEN_STATE_MATRIX.md`
 
-The screen system will define the shared product hierarchy first and use the accepted DS-0/DS-1/DS-2 rules rather than inventing screen-specific styling.
+Covered shared surfaces:
+
+- global app shell;
+- Home;
+- game catalogue;
+- Profile;
+- Notifications;
+- Friends/social entry;
+- Settings;
+- Store;
+- History;
+- Rules/game information;
+- Invite;
+- Rematch;
+- Search/matchmaking;
+- Match preparation;
+- Countdown;
+- Gameplay shell;
+- Result;
+- errors;
+- empty states;
+- offline/reconnect placeholder contract.
+
+DS-3 keeps future-only functionality explicitly dependency-gated and does not invent backend data.
 
 ## Ownership
 
@@ -92,6 +116,6 @@ Persistent changes for this workstream belong only under:
 
 `design-system/shield-king/**`
 
-Current exact-diff policy: no runtime file may be changed by this branch.
+Exact diff audit after DS-3 specification confirms all branch changes remain under this directory; runtime is untouched.
 
 Future integration into the real shared UI must happen through a separate main-roadmap compatibility/integration gate. This branch must never be blindly merged into future runtime code.
