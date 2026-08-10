@@ -1,52 +1,42 @@
-# Shield King — Exact Icon System
+# Shield King — Icon System
 
 ## 1. Status
 
-`DS-2 MANUALLY ACCEPTED / SOURCE ASSETS NORMALIZED`
+```text
+DS-2 VISUAL FAMILY — MANUALLY ACCEPTED
+DS-2 EXACT PRODUCTION ART EXPORT — CORRECTION REQUIRED
+```
 
-The product owner accepted the **Variant 1** family after iterative visual review on 2026-08-10 (+03:00).
+The product owner accepted the **rich metallic Variant 1** family after iterative visual review on 2026-08-10 (+03:00).
 
-This file is the durable written source of truth. Generated concept boards are visual references only; the exact SVG files and rules below control future implementation.
+Critical correction: the simplified geometric SVGs produced earlier in this branch are not visually equivalent to that accepted artwork. They are semantic/geometry references only until exact production art is exported.
 
----
-
-## 2. Core UI icon contract
-
-Core app icons deliberately **do not use the large royal shield frame**.
-
-They are the lighter layer of the Shield King system:
-
-- clean standalone metallic/silver glyph language;
-- restrained purple/gold semantic accents;
-- no bulky shield container around Home/Profile/Games/Store/etc.;
-- component surfaces may supply a subtle dark tile, tint, hover surface or active indicator;
-- the icon itself stays visually compact and readable.
-
-### Geometry
-
-- source viewBox: `0 0 24 24`;
-- default stroke: `1.75`;
-- line cap/join: `round`;
-- default source color: `currentColor` where applicable;
-- standard rendered size: `20–24px`;
-- compact metadata: `16–18px`;
-- touch target remains component-owned and at least `44×44px`.
-
-### State behavior
-
-Inactive: muted, no glow.
-
-Hover/focus: lighter semantic foreground plus component-level tint/focus ring.
-
-Active/selected: same artwork, primary violet/primary text plus component indicator.
-
-Disabled: disabled foreground, no glow.
-
-Gold is semantic/premium, not a universal selected color.
+Future approval mockups must not substitute those simplified SVGs for the accepted rich Variant 1 finish.
 
 ---
 
-## 3. Core SVG sprites
+## 2. Core application icon contract — accepted
+
+Ordinary application icons deliberately **do not use the large royal shield frame**.
+
+Accepted character:
+
+- standalone metallic/silver glyphs;
+- premium but compact depth;
+- restrained purple/gold accents only where useful;
+- no bulky shield around Home/Profile/Games/Store/Friends/Notifications/Settings/etc.;
+- icon background/container is owned by the existing UI component, not baked into every icon;
+- readable at small application-icon sizes.
+
+State rules:
+
+- inactive → muted/silver neutral;
+- hover/focus → lighter neutral + component focus treatment;
+- active/selected → same semantic icon with controlled violet emphasis;
+- disabled → disabled neutral;
+- gold remains semantic/premium, not a universal selected color.
+
+Required semantics remain mapped in:
 
 ```text
 icons/navigation/navigation-icons.svg
@@ -55,103 +45,92 @@ icons/status/status-icons.svg
 icons/economy/economy-icons.svg
 ```
 
-The same semantic artwork is reused between inactive/active states. Do not replace it with unrelated active icons.
-
-Unread/online badges remain separate component layers.
+Those SVG sprites currently preserve semantic IDs/geometry and may guide implementation, but their flat line-art finish is not the final accepted metallic art finish.
 
 ---
 
-## 4. Royal game-icon contract — accepted
+## 3. Royal game-icon contract — accepted
 
-The eight game icons are intentionally richer than ordinary UI icons.
+The eight game icons are intentionally richer than ordinary application icons.
 
-Every game asset uses the **same royal frame template**:
+Every game uses the **same external royal frame template**:
 
 ```text
-viewBox: 0 0 96 112
-outer visual width: identical for all eight
-crown: identical geometry, size and placement
-shield/frame silhouette: identical geometry and width
-bottom pedestal/banner: identical geometry and width
-interior art: game-specific only
+same outer width
+same outer height
+same crown geometry / size / placement
+same royal side-frame geometry
+same bottom-frame/pedestal geometry
+only the interior game artwork changes
 ```
 
-This equal-width rule is mandatory because the icons must align cleanly in Home/game-catalogue cards.
+A narrow central symbol such as Chess must never make the icon itself narrower.
 
-Do not narrow a frame because its central symbol is narrow (for example Chess). Add negative space / dark-violet field inside the standard frame instead.
+Shared finish:
 
-### Shared visual construction
-
-- crown: `#FFD45C` with controlled deep-gold edge;
-- frame: silver/neutral → restrained gold transition;
-- field: deep violet / dark brand surface;
-- no green board/background in this family;
-- no unrelated neon colors;
-- no extra nested black card inside the Tic Tac Toe field;
-- no baked noisy glow;
-- no text/font dependency inside the SVG asset;
-- game name is supplied by the surrounding UI component/localization layer.
+- metallic silver/neutral frame;
+- restrained gold crown/details;
+- dark-violet / near-black interior field;
+- premium dimensional material treatment;
+- no unrelated green/cyan decorative branding;
+- no inconsistent crown/frame widths between games.
 
 ---
 
-## 5. Exact eight-game semantics
+## 4. Frozen eight-game semantics
 
 ### Tic Tac Toe
 
-- X/O grid sits directly on the single dark-violet interior field;
-- no second black background panel behind the board;
-- silver X, controlled gold O allowed.
+- X/O board directly on one interior field;
+- no redundant black panel placed on top of another purple background;
+- silver X and controlled gold O are allowed.
 
 ### Four in a Row
 
-- exactly **two player disc colors**;
-- current V1 asset uses dark/black and silver/light discs;
-- no third-color player pieces.
+- exactly two player colors;
+- no third player/token color.
 
 ### Battleship
 
-- recognizable premium ship silhouette;
-- silver/neutral hull;
-- violet environmental accent and restrained gold mast/detail allowed.
+- recognizable premium ship composition;
+- dark-violet field;
+- silver/neutral ship with restrained gold detail.
 
 ### Checkers
 
-- recognizable checkerboard;
-- actual round checkers pieces only;
-- two teams are **solid black and solid gold** in the accepted family;
-- one physical piece must never be half-black/half-gold;
-- board may have a subtle controlled tilt, but must remain geometrically coherent and fill the available field;
-- no fake/unrelated center symbols.
+- coherent checkerboard that fills the available interior field;
+- real round checker pieces;
+- black team vs gold team;
+- one physical checker can never be half black / half gold;
+- slight board perspective/tilt is allowed only when the board remains clean and believable.
 
 ### Reversi
 
 - visually distinct from Checkers;
-- grid/board stays dark violet, never green;
-- discs are **black and silver/white only**;
-- classic/recognizable Reversi placement language;
-- no gold player discs.
+- black and white/silver discs only;
+- no green background;
+- dark-violet Shield King field/grid.
 
 ### Chess
 
-- central silver king;
-- **same external crown and same full-width frame** as every other game;
-- narrow chess piece does not make the asset/frame narrower.
+- central premium silver king;
+- exactly the same external crown/frame width and height as every other game.
 
 ### Go
 
-- board uses only **black and white/silver stones**;
-- no third-colored stone;
+- black and white/silver stones only;
+- no third stone color;
 - dark-violet Shield King board treatment.
 
 ### Domino
 
 - recognizable angled light domino tile;
 - restrained gold pips/details;
-- same external full-width frame as all games.
+- exactly the same external royal frame width as all other game icons.
 
 ---
 
-## 6. Exact game files
+## 5. Current geometry-reference files
 
 ```text
 icons/games/game-tic-tac-toe.svg
@@ -164,18 +143,34 @@ icons/games/game-go.svg
 icons/games/game-domino.svg
 ```
 
-Recommended rendered size in game cards: `56–80px` depending on card density. Scale all eight from the same bounding box; never hand-size Chess or Domino separately.
+These files encode the shared bounding-box intent and semantic content, but **must not be treated as the accepted final visual artwork**.
+
+They may remain temporarily so future implementation work does not lose semantic mappings, but exact production-art export must replace/supersede them before DS-2 is finally closed as an exact asset pack.
 
 ---
 
-## 7. Accessibility / semantic rules
+## 6. Existing UI usage rule
+
+For the future shared-UI migration:
+
+- keep the current application layout and icon slots;
+- replace ordinary emoji/generic icons with the accepted compact metallic application family;
+- replace game artwork/emoji/placeholder slots with the accepted rich royal game family;
+- do not resize/rebuild the surrounding Home/game-card layout simply to fit the icons;
+- scale all eight royal game icons from the same external bounding box.
+
+See `CURRENT_UI_MIGRATION.md`.
+
+---
+
+## 7. Accessibility / semantics
 
 - icon-only controls require accessible labels;
-- critical status cannot rely on color alone;
-- decorative artwork is hidden from accessibility APIs where appropriate;
+- critical state cannot rely on color alone;
 - status icons render authoritative product state only;
-- `win`, `loss`, `draw`, `error`, `timeout` remain distinct semantics;
-- `locked` and `disabled` remain distinct semantics.
+- `win`, `loss`, `draw`, `error`, `timeout` remain distinct;
+- `locked` and `disabled` remain distinct;
+- decorative artwork should be hidden from accessibility APIs where appropriate.
 
 ---
 
@@ -183,36 +178,37 @@ Recommended rendered size in game cards: `56–80px` depending on card density. 
 
 Do not:
 
-- put the royal game shield around every ordinary navigation/action icon;
-- mix unrelated icon packs/styles;
-- use emoji as production UI icons;
-- generate separate unrelated active artwork;
+- put the royal game shield around every ordinary application icon;
+- use emoji as the final production icon family;
+- use the simplified flat SVG game art as a substitute in future visual acceptance;
+- generate unrelated active icons;
 - use gold for every selected state;
-- change the width/crown/frame per game;
-- add a nested redundant black panel to Tic Tac Toe;
-- add green Reversi background;
+- vary royal frame width/crown per game;
+- add a second background panel inside Tic Tac Toe;
+- use green for Reversi;
 - add a third player/stone color to Four in a Row or Go;
 - use hybrid two-color individual checker pieces;
-- rebuild the approved primary Shield King mark as a generic nav glyph.
+- rebuild Home to accommodate an icon concept.
 
 ---
 
 ## 9. Acceptance record
 
-Manual review outcome:
-
 ```text
-CORE UI ICON DIRECTION:
-ACCEPTED — LIGHTER / NO LARGE SHIELD FRAME
+CORE APPLICATION ICON VISUAL DIRECTION:
+ACCEPTED — COMPACT METALLIC / NO LARGE SHIELD FRAME
 
-GAME ICON DIRECTION:
-ACCEPTED — ROYAL CROWNED SHIELD FRAME
+GAME ICON VISUAL DIRECTION:
+ACCEPTED — RICH METALLIC ROYAL CROWNED FRAME
 
 GAME FRAME GEOMETRY:
-ONE IDENTICAL WIDTH / CROWN / OUTER TEMPLATE FOR 8/8
+ONE IDENTICAL EXTERNAL WIDTH / HEIGHT / CROWN / FRAME FOR 8/8
 
-CHECKERS / REVERSI / GO / FOUR-IN-A-ROW RULES:
-CORRECTED AND FROZEN IN THIS CONTRACT
+SIMPLIFIED SVG VISUAL FINISH:
+NOT ACCEPTED AS FINAL ART
+
+EXACT PRODUCTION ART EXPORT:
+REQUIRED BEFORE FINAL DS-2 DONE
 ```
 
-Any later visual change must update this source-of-truth contract and all dependent assets consistently; do not patch one screen independently.
+Any later change must update the family rule and all dependent assets consistently; do not patch one screen independently.
