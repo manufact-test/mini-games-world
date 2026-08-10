@@ -106,8 +106,8 @@ marker = """$assert(str_contains($service, '$deleted = $database->transaction(')
     && str_contains($service, '$inviteAudit = (new RuntimeInviteRepository'),
     'Recovery must delete in one DB transaction and audit afterwards.');
 """
-insert = marker + """$assert(str_contains($service, "if ($candidates === [])")
-    && str_contains($service, "'invites' => ($inviteAudit['ok'] ?? false) === true")
+insert = marker + """$assert(str_contains($service, 'if ($candidates === [])')
+    && str_contains($service, "'invites' => (\$inviteAudit['ok'] ?? false) === true")
     && !str_contains($service, "'parity' => ['invites' => true, 'test_notifications' => true]"),
     'Already-clean recovery must report real invite parity instead of hard-coding success.');
 """
@@ -141,8 +141,8 @@ $syncPos = strpos($method, '$repository->synchronize($snapshot);');
 $auditPos = strpos($method, '$repository->auditParity($snapshot);');
 $assert($method !== '' && $syncPos !== false && $auditPos !== false && $syncPos < $auditPos,
     'Reset invite owner must synchronize canonical JSON into DB before the final read-only parity audit.');
-$assert(str_contains($method, "($synchronized['parity'] ?? false) !== true")
-    && str_contains($method, "($inviteAudit['ok'] ?? false) !== true"),
+$assert(str_contains($method, "(\$synchronized['parity'] ?? false) !== true")
+    && str_contains($method, "(\$inviteAudit['ok'] ?? false) !== true"),
     'Reset must require both synchronization and final audit success.');
 $assert(!str_contains($method, 'INSERT INTO') && !str_contains($method, 'UPDATE mgw_invites'),
     'Reset must delegate projection repair to RuntimeInviteRepository rather than owning SQL writes.');
