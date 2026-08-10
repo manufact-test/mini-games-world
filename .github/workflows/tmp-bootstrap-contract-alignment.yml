@@ -1,0 +1,36 @@
+name: TMP bootstrap contract alignment
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/staging-bootstrap-contract-alignment'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-bootstrap-contract-alignment
+          fetch-depth: 0
+      - name: Apply exact E2E alignment
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-bootstrap-contract-alignment.py
+          node --check e2e/staging/deferred-notification-first-frame.spec.mjs
+          node --check e2e/staging/frontend-immutable-core.spec.mjs
+          ! grep -R '__MGW_FIRST_INTERACTION_READY__' e2e/staging
+          grep -q "EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner'" e2e/staging/frontend-immutable-core.spec.mjs
+          git diff --check
+      - name: Commit aligned contracts
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add e2e/staging/deferred-notification-first-frame.spec.mjs e2e/staging/frontend-immutable-core.spec.mjs
+          git commit -m 'Align E2E with bootstrap-owned startup readiness'
+          git push origin HEAD:agent/staging-bootstrap-contract-alignment
