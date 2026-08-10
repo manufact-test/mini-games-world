@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/NotificationService.php';
+require_once __DIR__ . '/services/GameInviteService.php';
 require_once __DIR__ . '/notifications/RuntimeNotificationBridgeCoordinator.php';
 
 function mgw_notification_invites_by_token(array $data): array
@@ -108,6 +109,7 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
 function mgw_visible_notifications(
     array $data,
     NotificationService $notifications,
+    GameInviteService $inviteViews,
     string $userId,
     int $limit
 ): array {
@@ -128,6 +130,7 @@ function mgw_visible_notifications(
             $item['inviter_name'] = (string)($invite['inviter_name'] ?? '');
             $item['invitee_name'] = (string)($invite['invitee_name'] ?? '');
             $item['invite_is_owner'] = (string)($invite['inviter_id'] ?? '') === $userId;
+            $item['invite_snapshot'] = $inviteViews->notificationSnapshot($invite, $userId);
         }
         $visible[] = $item;
         if (count($visible) >= $limit) break;
@@ -186,6 +189,12 @@ try {
     $consumeInviteToken = trim((string)($payload['consumeInviteToken'] ?? ''));
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $notifications = new NotificationService();
+    $inviteCatalog = new GameCatalogService($config);
+    $inviteViews = new GameInviteService(
+        $config,
+        $inviteCatalog,
+        new ChessRuntimeService($config, $inviteCatalog, new GameService($config))
+    );
     $router = $runtimeStorageRouter instanceof RuntimeStorageRouter
         ? $runtimeStorageRouter
         : new RuntimeStorageRouter($config);
@@ -213,6 +222,7 @@ try {
             function (array $snapshot) use (
                 $runtimeNotifications,
                 $notifications,
+                $inviteViews,
                 $userId,
                 $tgUser,
                 $markRead
@@ -224,14 +234,14 @@ try {
                 );
                 $snapshot['notifications'] = $synchronized['items'];
                 return [
-                    'items' => mgw_visible_notifications($snapshot, $notifications, $userId, 30),
+                    'items' => mgw_visible_notifications($snapshot, $notifications, $inviteViews, $userId, 30),
                     'unread_count' => $markRead ? 0 : mgw_visible_unread_count($snapshot, $userId),
                 ];
             }
         );
     } elseif ($markRead) {
-        $result = $db->transaction(function (array &$data) use ($notifications, $userId): array {
-            $items = mgw_visible_notifications($data, $notifications, $userId, 30);
+        $result = $db->transaction(function (array &$data) use ($notifications, $inviteViews, $userId): array {
+            $items = mgw_visible_notifications($data, $notifications, $inviteViews, $userId, 30);
             $notifications->markAllRead($data, $userId);
             foreach ($items as &$item) $item['read'] = true;
             unset($item);
@@ -240,19 +250,20 @@ try {
     } elseif ($consumeInviteToken !== '') {
         $result = $db->transaction(function (array &$data) use (
             $notifications,
+            $inviteViews,
             $userId,
             $consumeInviteToken
         ): array {
             mgw_consume_invite_notifications($data, $userId, $consumeInviteToken);
             return [
-                'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
+                'items' => mgw_visible_notifications($data, $notifications, $inviteViews, $userId, 30),
                 'unread_count' => mgw_visible_unread_count($data, $userId),
             ];
         });
     } else {
-        $result = $db->readOnly(function (array $data) use ($notifications, $userId): array {
+        $result = $db->readOnly(function (array $data) use ($notifications, $inviteViews, $userId): array {
             return [
-                'items' => mgw_visible_notifications($data, $notifications, $userId, 30),
+                'items' => mgw_visible_notifications($data, $notifications, $inviteViews, $userId, 30),
                 'unread_count' => mgw_visible_unread_count($data, $userId),
             ];
         });
