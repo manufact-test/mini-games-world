@@ -10,6 +10,10 @@ permissions:
   id-token: write
   statuses: write
 
+concurrency:
+  group: phase-b-all-games-loader-smoke-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 env:
   MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
   TARGET_SHA: dc9b0bfc097349276ad4b2f388499312b8f0bf64
@@ -25,6 +29,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
             --request POST \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header 'Accept: application/vnd.github+json' \
@@ -39,6 +44,7 @@ jobs:
           set -Eeuo pipefail
           expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
           curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
             --header 'Accept: application/json' \
             "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
             --output staging-e2e-readiness-all-games.json
@@ -79,6 +85,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
             --request POST \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header 'Accept: application/vnd.github+json' \
@@ -92,6 +99,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           curl --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
             --request POST \
             --header "Authorization: Bearer ${GH_TOKEN}" \
             --header 'Accept: application/vnd.github+json' \
