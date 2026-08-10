@@ -1,90 +1,52 @@
 # Shield King — Exact Icon System
 
-## 1. Purpose
+## 1. Status
 
-This document defines the implementable icon contract for the shared Mini Games World UI.
+`DS-2 MANUALLY ACCEPTED / SOURCE ASSETS NORMALIZED`
 
-Core UI icons use a single vector language. They must not be replaced screen-by-screen with unrelated icon packs.
+The product owner accepted the **Variant 1** family after iterative visual review on 2026-08-10 (+03:00).
+
+This file is the durable written source of truth. Generated concept boards are visual references only; the exact SVG files and rules below control future implementation.
 
 ---
 
-## 2. Core geometry
+## 2. Core UI icon contract
 
-### UI icon grid
+Core app icons deliberately **do not use the large royal shield frame**.
+
+They are the lighter layer of the Shield King system:
+
+- clean standalone metallic/silver glyph language;
+- restrained purple/gold semantic accents;
+- no bulky shield container around Home/Profile/Games/Store/etc.;
+- component surfaces may supply a subtle dark tile, tint, hover surface or active indicator;
+- the icon itself stays visually compact and readable.
+
+### Geometry
 
 - source viewBox: `0 0 24 24`;
 - default stroke: `1.75`;
-- line cap: `round`;
-- line join: `round`;
-- optical safe area: normally keep essential strokes inside x/y `2–22`;
-- default fill: `none` unless a semantic dot/pip/solid indicator is required;
-- source color: `currentColor` so the design-system state controls active/inactive color without alternate artwork.
+- line cap/join: `round`;
+- default source color: `currentColor` where applicable;
+- standard rendered size: `20–24px`;
+- compact metadata: `16–18px`;
+- touch target remains component-owned and at least `44×44px`.
 
-### Default rendered sizes
+### State behavior
 
-```text
-16px — compact metadata/status
-18px — small actions/inputs
-20px — standard actions/list rows
-22px — compact navigation
-24px — primary navigation / emphasized actions
-```
+Inactive: muted, no glow.
 
-Hit target is owned by the component and remains at least 44×44px for touch controls.
+Hover/focus: lighter semantic foreground plus component-level tint/focus ring.
 
----
+Active/selected: same artwork, primary violet/primary text plus component indicator.
 
-## 3. Visual character
+Disabled: disabled foreground, no glow.
 
-Core icons are:
-
-- geometric;
-- clean;
-- slightly rounded;
-- medium-weight rather than hairline;
-- readable on near-black/dark-violet surfaces;
-- not skeuomorphic;
-- not filled neon glyphs by default.
-
-The premium/game identity comes from controlled purple/gold/silver state treatment and the eight game icons, not by making every UI icon ornate.
+Gold is semantic/premium, not a universal selected color.
 
 ---
 
-## 4. Active / inactive behavior
-
-The same semantic icon artwork is reused across states.
-
-### Inactive
-
-- color: `color.text.muted`;
-- no glow.
-
-### Hover
-
-- color: `color.text.secondary` or `color.text.primary`;
-- optional low violet-tint component background.
-
-### Active / selected
-
-- color: `color.brand.primary` or `color.text.primary` with an explicit purple component indicator;
-- optional contained violet tint/glow supplied by the component;
-- icon geometry does not change into unrelated artwork.
-
-### Disabled
-
-- color: `color.state.disabledFg`;
-- no glow/hover.
-
-### Premium semantic icon
-
-- may use `color.brand.gold` only when the semantic item itself is premium/gold currency/value;
-- gold is not a generic selected color.
-
----
-
-## 5. Sprite contract
-
-Core UI assets are stored as semantic SVG symbol sprites:
+## 3. Core SVG sprites
 
 ```text
 icons/navigation/navigation-icons.svg
@@ -93,108 +55,164 @@ icons/status/status-icons.svg
 icons/economy/economy-icons.svg
 ```
 
-Each `<symbol>` has its own `id` and `viewBox="0 0 24 24"`.
+The same semantic artwork is reused between inactive/active states. Do not replace it with unrelated active icons.
 
-Future implementation may:
-
-- extract individual SVGs during build;
-- consume the symbols directly where supported;
-- map them to native vector resources during a later integration gate.
-
-It must not redraw or substitute them without updating this source-of-truth design system.
+Unread/online badges remain separate component layers.
 
 ---
 
-## 6. Bottom navigation contract
+## 4. Royal game-icon contract — accepted
 
-Bottom-navigation destinations must use exact semantic icons from the navigation sprite.
+The eight game icons are intentionally richer than ordinary UI icons.
 
-Default icon size: `24px`.
+Every game asset uses the **same royal frame template**:
 
-Compact/narrow size: `22px` only when the navigation shell specification requires it.
+```text
+viewBox: 0 0 96 112
+outer visual width: identical for all eight
+crown: identical geometry, size and placement
+shield/frame silhouette: identical geometry and width
+bottom pedestal/banner: identical geometry and width
+interior art: game-specific only
+```
 
-Label:
+This equal-width rule is mandatory because the icons must align cleanly in Home/game-catalogue cards.
 
-- inactive: muted;
-- active: primary text;
-- active icon/accent: primary purple;
-- unread badge: component-level notification badge, positioned outside the core icon silhouette.
+Do not narrow a frame because its central symbol is narrow (for example Chess). Add negative space / dark-violet field inside the standard frame instead.
 
-The active state does not use a different drawing.
+### Shared visual construction
 
-Exact bottom-navigation destination set is owned by the later app-shell screen/navigation specification; this file supplies the approved icon choices for all required destinations.
-
----
-
-## 7. Eight-game icon family
-
-Game icons are separate exact SVG assets at `64×64` viewBox because they carry more identity than generic UI glyphs.
-
-Shared construction:
-
-- viewBox: `0 0 64 64`;
-- outer tile: rounded dark card surface;
-- outer border: Shield King border/violet treatment;
-- primary game glyph: silver/light neutral;
-- controlled purple and gold accents;
-- no text required for recognition;
-- no external font dependency;
-- no excessive glow inside the asset;
-- readable at `40–64px` rendered size in cards.
-
-Files:
-
-1. `game-tic-tac-toe.svg`
-2. `game-four-in-a-row.svg`
-3. `game-battleship.svg`
-4. `game-checkers.svg`
-5. `game-reversi.svg`
-6. `game-chess.svg`
-7. `game-go.svg`
-8. `game-domino.svg`
-
-Game-specific accent does not change the shared card/button/navigation language.
+- crown: `#FFD45C` with controlled deep-gold edge;
+- frame: silver/neutral → restrained gold transition;
+- field: deep violet / dark brand surface;
+- no green board/background in this family;
+- no unrelated neon colors;
+- no extra nested black card inside the Tic Tac Toe field;
+- no baked noisy glow;
+- no text/font dependency inside the SVG asset;
+- game name is supplied by the surrounding UI component/localization layer.
 
 ---
 
-## 8. Accessibility / semantic rules
+## 5. Exact eight-game semantics
 
-- Icon-only controls require an accessible semantic label.
-- Do not rely on icon color alone for critical states such as error, warning, online status, result or current turn.
-- Decorative icons should be hidden from accessibility APIs where appropriate.
-- A status icon never fabricates a product state; it only renders authoritative state.
-- `win`, `loss`, `draw` and `error` are separate semantics.
-- `locked` and `disabled` are separate semantics.
-- `notifications` and `unread badge` are separate layers.
+### Tic Tac Toe
+
+- X/O grid sits directly on the single dark-violet interior field;
+- no second black background panel behind the board;
+- silver X, controlled gold O allowed.
+
+### Four in a Row
+
+- exactly **two player disc colors**;
+- current V1 asset uses dark/black and silver/light discs;
+- no third-color player pieces.
+
+### Battleship
+
+- recognizable premium ship silhouette;
+- silver/neutral hull;
+- violet environmental accent and restrained gold mast/detail allowed.
+
+### Checkers
+
+- recognizable checkerboard;
+- actual round checkers pieces only;
+- two teams are **solid black and solid gold** in the accepted family;
+- one physical piece must never be half-black/half-gold;
+- board may have a subtle controlled tilt, but must remain geometrically coherent and fill the available field;
+- no fake/unrelated center symbols.
+
+### Reversi
+
+- visually distinct from Checkers;
+- grid/board stays dark violet, never green;
+- discs are **black and silver/white only**;
+- classic/recognizable Reversi placement language;
+- no gold player discs.
+
+### Chess
+
+- central silver king;
+- **same external crown and same full-width frame** as every other game;
+- narrow chess piece does not make the asset/frame narrower.
+
+### Go
+
+- board uses only **black and white/silver stones**;
+- no third-colored stone;
+- dark-violet Shield King board treatment.
+
+### Domino
+
+- recognizable angled light domino tile;
+- restrained gold pips/details;
+- same external full-width frame as all games.
 
 ---
 
-## 9. Forbidden patterns
+## 6. Exact game files
+
+```text
+icons/games/game-tic-tac-toe.svg
+icons/games/game-four-in-a-row.svg
+icons/games/game-battleship.svg
+icons/games/game-checkers.svg
+icons/games/game-reversi.svg
+icons/games/game-chess.svg
+icons/games/game-go.svg
+icons/games/game-domino.svg
+```
+
+Recommended rendered size in game cards: `56–80px` depending on card density. Scale all eight from the same bounding box; never hand-size Chess or Domino separately.
+
+---
+
+## 7. Accessibility / semantic rules
+
+- icon-only controls require accessible labels;
+- critical status cannot rely on color alone;
+- decorative artwork is hidden from accessibility APIs where appropriate;
+- status icons render authoritative product state only;
+- `win`, `loss`, `draw`, `error`, `timeout` remain distinct semantics;
+- `locked` and `disabled` remain distinct semantics.
+
+---
+
+## 8. Forbidden patterns
 
 Do not:
 
-- mix multiple unrelated stroke widths/styles;
+- put the royal game shield around every ordinary navigation/action icon;
+- mix unrelated icon packs/styles;
 - use emoji as production UI icons;
-- use random filled Material/SF glyphs alongside this set without mapping/redesign;
-- create separate active artwork that changes semantic shape;
-- add individual drop shadows to small UI glyphs;
-- use gold for every selected icon;
-- recreate the primary Shield King logo as a generic navigation icon;
-- place unread badges over the meaningful center of an icon.
+- generate separate unrelated active artwork;
+- use gold for every selected state;
+- change the width/crown/frame per game;
+- add a nested redundant black panel to Tic Tac Toe;
+- add green Reversi background;
+- add a third player/stone color to Four in a Row or Go;
+- use hybrid two-color individual checker pieces;
+- rebuild the approved primary Shield King mark as a generic nav glyph.
 
 ---
 
-## 10. DS-2 visual acceptance gate
+## 9. Acceptance record
 
-DS-2 is manually accepted as a family, not icon-by-icon.
+Manual review outcome:
 
-Review should judge:
+```text
+CORE UI ICON DIRECTION:
+ACCEPTED — LIGHTER / NO LARGE SHIELD FRAME
 
-- consistent geometry;
-- readability at small size;
-- active/inactive behavior;
-- bottom-navigation coherence;
-- eight game icons as one family;
-- whether the overall character still matches premium dark Shield King rather than generic mobile UI.
+GAME ICON DIRECTION:
+ACCEPTED — ROYAL CROWNED SHIELD FRAME
 
-If rejected, update the underlying family rule first, then update dependent assets consistently.
+GAME FRAME GEOMETRY:
+ONE IDENTICAL WIDTH / CROWN / OUTER TEMPLATE FOR 8/8
+
+CHECKERS / REVERSI / GO / FOUR-IN-A-ROW RULES:
+CORRECTED AND FROZEN IN THIS CONTRACT
+```
+
+Any later visual change must update this source-of-truth contract and all dependent assets consistently; do not patch one screen independently.
