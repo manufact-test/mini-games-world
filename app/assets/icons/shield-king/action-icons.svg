@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:none">
+  <symbol id="back" viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7M8 12h11" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.25" fill="currentColor"/><circle cx="12" cy="12" r="1.25" fill="currentColor"/><circle cx="19" cy="12" r="1.25" fill="currentColor"/></symbol>
+  <symbol id="edit" viewBox="0 0 24 24"><path d="m5 16.5-.75 3.25L7.5 19l10.65-10.65-2.5-2.5L5 16.5Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="m14.9 6.6 2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="invite" viewBox="0 0 24 24"><circle cx="8.5" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3.5 19c.55-3.35 2.3-5.25 5-5.25 2.15 0 3.7 1.2 4.5 3.4M17.5 8v7M14 11.5h7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="rematch" viewBox="0 0 24 24"><path d="M6.25 8.25A7 7 0 0 1 18.5 9.8M17.75 15.75A7 7 0 0 1 5.5 14.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M6.25 4.75v3.5h3.5M17.75 19.25v-3.5h-3.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="retry" viewBox="0 0 24 24"><path d="M19 8.5A7.5 7.5 0 1 0 19.4 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M19 4.5v4h-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="surrender" viewBox="0 0 24 24"><path d="M6 21V4M6 5h9.5l-1.4 3 1.4 3H6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="chevron-right" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="m5 12.5 4.25 4.25L19 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
