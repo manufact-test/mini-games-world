@@ -31,6 +31,9 @@ jobs:
             --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"All-games Phase B activation verification is running\",\"target_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}"
 
       - uses: actions/checkout@v4
+        with:
+          ref: agent/phase-b-all-games-activation-verifier
+          fetch-depth: 0
 
       - name: Syntax
         run: |
@@ -55,6 +58,8 @@ jobs:
       - name: Exact diff guard
         run: |
           set -Eeuo pipefail
+          git fetch --no-tags origin \
+            agent/phase-b-all-games-activation:refs/remotes/origin/agent/phase-b-all-games-activation
           git diff --check origin/agent/phase-b-all-games-activation...HEAD
           test "$(git diff --name-only origin/agent/phase-b-all-games-activation...HEAD | wc -l | tr -d ' ')" = '1'
           test "$(git diff --name-only origin/agent/phase-b-all-games-activation...HEAD)" = '.github/workflows/phase-b-all-games-activation-focused.yml'
