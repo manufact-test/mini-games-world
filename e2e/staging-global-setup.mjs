@@ -121,7 +121,10 @@ export default async function stagingGlobalSetup(){
   });
   const payload = await response.json().catch(() => null);
   if (!response.ok || payload?.ok !== true || payload?.economy_parity !== true) {
-    throw new Error(`Staging test-player reset failed: ${response.status} ${payload?.error || 'unknown_error'}`);
+    const stage = typeof payload?.stage === 'string' && payload.stage !== ''
+      ? ` stage=${payload.stage}`
+      : '';
+    throw new Error(`Staging test-player reset failed: ${response.status} ${payload?.error || 'unknown_error'}${stage}`);
   }
   if (payload?.match_balance !== 100 || !Array.isArray(payload?.players) || payload.players.length !== 2) {
     throw new Error('Staging test-player reset returned an unexpected projection.');
