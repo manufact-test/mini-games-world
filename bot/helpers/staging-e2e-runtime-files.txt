@@ -36,13 +36,27 @@ app/assets/js/screens/game-screen-phase-b-current.js
 app/assets/js/games/game-invites.js
 app/assets/js/screens/notifications-screen-v99.js
 
+# Canonical staging E2E readiness and global-setup graph. Every Hostinger file
+# that can affect diagnosis, recovery, test-player reset, or session issuance
+# must be fingerprinted so the browser suite cannot start against a partially
+# deployed setup graph.
 bot/staging-e2e-readiness.php
 bot/staging-test-auth.php
 bot/services/StagingTestAuthService.php
+bot/services/StagingTestInviteResidualRecoveryService.php
+bot/services/StagingTestPlayerStateResetService.php
+bot/staging-invite-mismatch-diagnostic.php
+bot/services/StagingInviteMismatchDiagnosticService.php
+bot/staging-test-only-invite-recovery.php
+bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+bot/staging-fresh-invite-recovery.php
+bot/services/StagingFreshInviteReplacementRecoveryService.php
 bot/services/GitHubActionsOidcVerifier.php
 bot/helpers/RsaJwkPublicKey.php
 bot/helpers/response.php
 bot/core/bootstrap.php
+
+# Application/runtime owners exercised after staging global setup succeeds.
 bot/api.php
 bot/game-watch.php
 bot/presence.php
