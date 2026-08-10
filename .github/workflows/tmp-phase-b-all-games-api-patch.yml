@@ -1,0 +1,60 @@
+name: TMP Phase B all-games API intent patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/phase-b-all-games-activation'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/phase-b-all-games-activation
+          fetch-depth: 0
+
+      - name: Apply exact narrow API patch
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('bot/api.php')
+          text = path.read_text(encoding='utf-8')
+
+          old_search = """                $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);\n"""
+          new_search = """                $existingGameIdBeforeSearch = ($user['status'] ?? '') === 'playing'\n                    ? trim((string)($user['current_game_id'] ?? ''))\n                    : '';\n                $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);\n"""
+          if text.count(old_search) != 1:
+              raise SystemExit(f'expected exactly one startSearch anchor, got {text.count(old_search)}')
+          text = text.replace(old_search, new_search, 1)
+
+          old_finalize = """                    $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($data, $gameId);\n"""
+          new_finalize = """                    $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame(\n                        $data,\n                        $gameId,\n                        $existingGameIdBeforeSearch === '' || $existingGameIdBeforeSearch !== $gameId\n                    );\n"""
+          if text.count(old_finalize) != 1:
+              raise SystemExit(f'expected exactly one post-search finalizer anchor, got {text.count(old_finalize)}')
+          text = text.replace(old_finalize, new_finalize, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          php -l bot/api.php
+          git diff --check
+          git diff -- bot/api.php
+
+      - name: Commit exact patch
+        run: |
+          set -Eeuo pipefail
+          if git diff --quiet -- bot/api.php; then
+            echo 'API patch already present.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot/api.php
+          git commit -m 'Phase B: preserve legacy game on repeated start search'
+          git push origin HEAD:agent/phase-b-all-games-activation
