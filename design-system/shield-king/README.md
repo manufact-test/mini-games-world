@@ -5,8 +5,8 @@
 ```text
 DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
-DS-2 EXACT ICON SYSTEM — AWAITING MANUAL VISUAL ACCEPTANCE
-DS-3 SCREEN SPECIFICATIONS — NOT STARTED
+DS-2 EXACT ICON SYSTEM — PASS / MANUALLY ACCEPTED
+DS-3 SCREEN SPECIFICATIONS — IN PROGRESS
 DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
 ```
@@ -44,29 +44,20 @@ Forbidden behind the mark:
 
 Metallic highlights on the mark itself are allowed. All ambient glow must remain visually centered.
 
-## Workstream
-
-1. `DS-0` — Foundations / Tokens
-2. `DS-1` — Component Library
-3. `DS-2` — Exact Icon System
-4. `DS-3` — Screen Specifications
-5. `DS-4` — Eight-Game Visual System
-6. `DS-5` — Loading / System States / Final Handoff
-
 ## Completed output
 
-### DS-0
+### DS-0 — PASS
 
 - `FOUNDATIONS.md`
 - `TOKENS.md`
 - `tokens.json`
 
-### DS-1
+### DS-1 — PASS
 
 - `COMPONENTS.md`
 - `COMPONENT_STATES.md`
 
-### DS-2 — implementation complete, acceptance pending
+### DS-2 — PASS / manual product-owner acceptance 2026-08-10
 
 - `ICONS.md`
 - `ICON_MANIFEST.md`
@@ -74,9 +65,26 @@ Metallic highlights on the mark itself are allowed. All ambient glow must remain
 - action SVG symbol sprite;
 - status SVG symbol sprite;
 - economy SVG symbol sprite;
-- 8/8 standalone game SVG icons.
+- 8/8 standalone royal game SVG icons.
 
-DS-0 and DS-1 are passed. DS-2 exact assets are present and its diff remains isolated, but DS-2 cannot be marked PASS until product-owner visual acceptance of the icon family.
+Accepted DS-2 direction:
+
+- ordinary app icons remain lighter and do not use the large royal shield frame;
+- all eight game icons use one equal-width crowned royal frame template;
+- all eight game SVGs use `viewBox="0 0 96 112"`;
+- Tic Tac Toe has no redundant nested black panel;
+- Four in a Row uses two player colors only;
+- Checkers uses coherent board + solid black vs solid gold pieces;
+- Reversi uses dark-violet board + black/white discs only, no green;
+- Chess uses the same crown/frame/width as all other games;
+- Go uses black/white stones only;
+- Domino uses the same external frame width as the rest.
+
+## Current work
+
+`DS-3 SCREEN SPECIFICATIONS` is now active.
+
+The screen system will define the shared product hierarchy first and use the accepted DS-0/DS-1/DS-2 rules rather than inventing screen-specific styling.
 
 ## Ownership
 
@@ -84,6 +92,6 @@ Persistent changes for this workstream belong only under:
 
 `design-system/shield-king/**`
 
-Current exact-diff audit confirms all branch changes remain under this directory; no runtime file is changed.
+Current exact-diff policy: no runtime file may be changed by this branch.
 
 Future integration into the real shared UI must happen through a separate main-roadmap compatibility/integration gate. This branch must never be blindly merged into future runtime code.
