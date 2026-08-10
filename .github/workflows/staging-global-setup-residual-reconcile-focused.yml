@@ -1,0 +1,98 @@
+name: Staging global setup residual reconcile focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-global-setup-residual-reconcile
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 3f6f0ef6fb48dff298f38972d29b5c18838c09b7
+  BASE_SHA: 18f1d0c98d731b08d32b5207c6ded18f066ce06d
+  STATUS_CONTEXT: staging-global-setup-residual-reconcile-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Residual reconcile wiring verification running\"}"
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-global-setup-residual-reconcile-verifier
+          fetch-depth: 0
+      - name: Syntax and focused contracts
+        run: |
+          set -Eeuo pipefail
+          node --check e2e/staging-global-setup.mjs
+          php -l bot/tests/StagingGlobalSetupResidualReconcileContractTest.php
+          php bot/tests/StagingGlobalSetupResidualReconcileContractTest.php
+          php bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          php bot/tests/StagingTestPlayerScopedInviteIsolationContractTest.php
+          php bot/tests/StagingGlobalSetupRuntimeFingerprintCoverageContractTest.php
+      - name: Existing owner and safety boundary
+        run: |
+          set -Eeuo pipefail
+          grep -F "if (\$action === 'reconcile_invite_residuals')" bot/staging-test-auth.php
+          grep -F 'verifyAndConsume($providedCredential)' bot/staging-test-auth.php
+          grep -F '$result = $residualService()->reconcile($_SERVER);' bot/staging-test-auth.php
+          grep -F 'RuntimeInviteRepository($this->config, $this->router, $db)' bot/services/StagingTestInviteResidualRecoveryService.php
+          grep -F -- '->synchronize($snapshot);' bot/services/StagingTestInviteResidualRecoveryService.php
+          grep -F '$database->transaction(function (DatabaseConnectionInterface $db)' bot/services/StagingTestInviteResidualRecoveryService.php
+          grep -F 'flock($handle, LOCK_EX)' bot/services/StagingTestInviteResidualRecoveryService.php
+          grep -F "'production_changed' => false" bot/services/StagingTestInviteResidualRecoveryService.php
+          grep -F "'live_payments_used' => false" bot/services/StagingTestInviteResidualRecoveryService.php
+      - name: Product owner files unchanged
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}...${TARGET_SHA}" -- \
+            bot/invites/RuntimeInviteRepository.php \
+            bot/services/StagingTestInviteResidualRecoveryService.php \
+            bot/services/StagingTestPlayerStateResetService.php \
+            bot/staging-test-auth.php \
+            app
+      - name: No new mutation or timing workaround
+        run: |
+          set -Eeuo pipefail
+          ! git diff "${BASE_SHA}...${TARGET_SHA}" -- e2e/staging-global-setup.mjs | grep -E '^\+.*(DELETE FROM|INSERT INTO|UPDATE |TRUNCATE|DROP TABLE|setTimeout|sleep\(|retry)'
+          ! git diff "${BASE_SHA}...${TARGET_SHA}" -- e2e/staging-global-setup.mjs | grep -E '^\+.*(private_candidates|blocker_codes|invite_id|invite_token|fingerprint)'
+          git diff --check "${BASE_SHA}...${TARGET_SHA}"
+      - name: Exact product diff
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff --name-only "${BASE_SHA}...${TARGET_SHA}")
+          test "${#files[@]}" = '2'
+          printf '%s\n' "${files[@]}" | grep -Fx 'e2e/staging-global-setup.mjs'
+          printf '%s\n' "${files[@]}" | grep -Fx 'bot/tests/StagingGlobalSetupResidualReconcileContractTest.php'
+      - name: Exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only "${TARGET_SHA}...HEAD" | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only "${TARGET_SHA}...HEAD")" = '.github/workflows/staging-global-setup-residual-reconcile-focused.yml'
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Residual reconcile wiring verification passed\"}"
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Residual reconcile wiring verification failed\"}" || true
