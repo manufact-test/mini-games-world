@@ -46,7 +46,7 @@
 }
 .history-tab{
   border:1px solid var(--stroke);
-  background:rgba(255,255,255,.055);
+  background:var(--sk-bg-card);
   color:var(--muted);
   border-radius:16px;
   min-height:42px;
@@ -57,8 +57,8 @@
 }
 .history-tab.active{
   color:var(--text);
-  border-color:rgba(124,92,255,.45);
-  background:rgba(124,92,255,.18);
+  border-color:rgba(166,95,247,.45);
+  background:rgba(106,76,255,.18);
 }
 .history-tab-panel{display:none}
 .history-tab-panel.active{display:block}
