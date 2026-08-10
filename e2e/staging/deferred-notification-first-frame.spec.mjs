@@ -147,9 +147,11 @@ async function openPlayer(browser, slot) {
   expect(response.ok(), `Player ${slot} app status`).toBe(true);
   await expect(page).toHaveTitle(/Mini Games World/i);
   await bootstrapPromise;
-  await page.waitForFunction(() => window.__MGW_FIRST_INTERACTION_READY__ !== undefined, null, {
-    timeout: 25_000,
-  });
+  await expect(page.locator('#preloader')).toBeHidden({ timeout: 20_000 });
+  await page.waitForFunction(() => (
+    String(localStorage.getItem('mgw_device_session_id') || '').length > 0
+      && String(localStorage.getItem('mgw_device_id') || '').length > 0
+  ), null, { timeout: 20_000 });
 
   return { context, page, diagnostics };
 }
