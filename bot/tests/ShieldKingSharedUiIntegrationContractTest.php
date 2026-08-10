@@ -53,6 +53,7 @@ $assert(str_contains($v2Skin, ':focus-visible'), 'V2 must provide a visible keyb
 $assert(str_contains($v2Skin, 'Search: stronger silver structure'), 'Search state must receive the sunlight/readability pass.');
 $assert(str_contains($v2Skin, 'Phase B V2:'), 'Phase B V2 styling must be explicitly presentation-only.');
 $assert(str_contains($v2Skin, 'shieldKingPhaseAssembleMark'), 'Phase B prepare presentation must use the new assembly motion.');
+$assert(str_contains($v2Skin, "background:url('../icons/shield-king/mgw-mark.svg')"), 'Phase B V2 MGW mark path must resolve from the CSS directory.');
 $assert(!str_contains($v2Skin, 'setInterval(') && !str_contains($v2Skin, 'fetch('), 'V2 CSS must own no timing/network lifecycle.');
 $assert(!str_contains($v2Skin, '#gameBoard') && !str_contains($v2Skin, '.board-cell'), 'V2 must not style gameplay board cells/pieces.');
 
@@ -61,15 +62,47 @@ $assert(str_contains($preloader, 'shieldKingPlateRight'), 'Startup loader V2 mus
 $assert(str_contains($preloader, 'shieldKingCrownDrop'), 'Startup loader V2 must assemble the crown.');
 $assert(str_contains($preloader, 'mgw-mark.svg'), 'Startup loader must keep the shared MGW crown/shield mark.');
 
-$assert(is_file($bundlePath), 'Exact accepted metallic icon bundle must be present in the active integration graph.');
-$assert(hash_file('sha256', $bundlePath) === '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60', 'Accepted metallic bundle SHA-256 must remain frozen.');
+$assert(is_file($bundlePath), 'Accepted metallic icon bundle must be present in the active integration graph.');
 $assert(str_contains($assetReader, "MGW_SK_ICON_EXPORT_SHA = 'bcb098b72333e5efa3247de82506550091710757'"), 'Asset reader must pin the exact accepted export SHA.');
 $assert(str_contains($assetReader, "header('Cache-Control: public, max-age=31536000, immutable')"), 'Accepted icons must be served with immutable caching.');
 $assert(str_contains($assetReader, 'gzinflate($compressed)'), 'Asset reader must support the frozen bundle deflate method without requiring a mutable extraction step.');
 
+/*
+ * Verify accepted ART bytes, not ZIP container metadata. The export handoff and
+ * repository archive can differ in ZIP packaging while the 44 production WebPs
+ * remain identical. Load the endpoint once in HEAD mode to reuse its read-only
+ * ZIP decoder, then validate every member against the embedded frozen manifest.
+ */
+$_GET['asset'] = 'ui/actions/more.webp';
+$_SERVER['REQUEST_METHOD'] = 'HEAD';
+ob_start();
+require $root . '/app/assets/shield-king-icon.php';
+ob_end_clean();
+
+$manifest = json_decode(readZipMember($bundlePath, 'MANIFEST.json'), true, 512, JSON_THROW_ON_ERROR);
+$manifestFiles = $manifest['files'] ?? [];
+$assert(count($manifestFiles) === 44, 'Frozen accepted manifest must contain exactly 44 production assets.');
+$assert(($manifest['base_frozen_design_sha'] ?? '') === '7918d249112bcbadde8c59d3015a16c39dc3d2e1', 'Accepted manifest must point to the frozen Shield King V1 design SHA.');
+$assert(($manifest['production_format'] ?? '') === 'WebP lossless RGBA', 'Accepted manifest must retain lossless RGBA production format.');
+
+$manifestNames = [];
+foreach ($manifestFiles as $file) {
+    $path = (string)($file['path'] ?? '');
+    $expectedHash = (string)($file['sha256'] ?? '');
+    $expectedBytes = (int)($file['bytes'] ?? -1);
+    $data = readZipMember($bundlePath, $path);
+    $assert(hash('sha256', $data) === $expectedHash, 'Accepted asset SHA-256 mismatch: ' . $path);
+    $assert(strlen($data) === $expectedBytes, 'Accepted asset byte-size mismatch: ' . $path);
+    $manifestNames[] = $path;
+}
+$manifestNames = array_values(array_unique($manifestNames));
+sort($manifestNames);
+
 preg_match_all("/'((?:games|ui)\\/[^']+\\.webp)'/", $assetReader, $assetMatches);
 $assetNames = array_values(array_unique($assetMatches[1] ?? []));
+sort($assetNames);
 $assert(count($assetNames) === 44, 'Asset reader must expose exactly the 44 recovered accepted metallic assets.');
+$assert($assetNames === $manifestNames, 'Asset reader whitelist must exactly match the frozen accepted manifest.');
 $assert(!in_array('ui/actions/surrender.webp', $assetNames, true), 'Missing surrender art must not be silently fabricated.');
 
 foreach ([
