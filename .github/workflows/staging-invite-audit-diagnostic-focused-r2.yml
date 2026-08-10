@@ -1,0 +1,54 @@
+name: Staging real invite parity diagnostic focused r2
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-invite-audit-diagnostic
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: 2fddaf3c9d7f22c031779d185b32fa601092aa8d
+  STATUS_CONTEXT: staging-invite-audit-diagnostic-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-invite-audit-diagnostic-verifier-r2
+          fetch-depth: 0
+      - name: Verify read-only audit diagnostic
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'invite_audit_ok' => false" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F -- "->auditParity(\$snapshot)" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'invite_audit_count_mismatch'" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'invite_audit_fingerprint_mismatch'" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'read_only' => true" bot/services/StagingInviteMismatchDiagnosticService.php
+          ! git diff 0f919ef53894141af4074fe7b61fc2d1f502a3d5...2fddaf3c9d7f22c031779d185b32fa601092aa8d | grep -E '^\+.*(DELETE|UPDATE|INSERT|TRUNCATE|DROP|execute\(|transaction\()'
+          git diff --check 0f919ef53894141af4074fe7b61fc2d1f502a3d5...2fddaf3c9d7f22c031779d185b32fa601092aa8d
+          test "$(git diff --name-only 2fddaf3c9d7f22c031779d185b32fa601092aa8d...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only 2fddaf3c9d7f22c031779d185b32fa601092aa8d...HEAD)" = '.github/workflows/staging-invite-audit-diagnostic-focused-r2.yml'
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Real invite parity diagnostic verification passed\"}"
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Real invite parity diagnostic verification failed\"}" || true
