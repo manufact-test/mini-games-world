@@ -21,6 +21,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 scripts/ci/tmp-staging-test-reset-stage-diagnostic-patch.py
+          python3 scripts/ci/tmp-fix-reset-stage-contract.py
           php -l bot/services/StagingTestPlayerStateResetService.php
           php -l bot/staging-test-auth.php
           php -l bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
