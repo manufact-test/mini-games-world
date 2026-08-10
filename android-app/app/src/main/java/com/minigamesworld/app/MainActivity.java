@@ -5,7 +5,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.graphics.Color;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
@@ -24,6 +24,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -34,6 +35,7 @@ public final class MainActivity extends Activity {
 
     private FrameLayout root;
     private WebView webView;
+    private LinearLayout loadingPanel;
     private ProgressBar loading;
     private LinearLayout errorPanel;
     private TextView errorTitle;
@@ -46,8 +48,8 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().setStatusBarColor(Color.BLACK);
-        getWindow().setNavigationBarColor(Color.BLACK);
+        getWindow().setStatusBarColor(getColor(R.color.mgw_splash_background));
+        getWindow().setNavigationBarColor(getColor(R.color.mgw_splash_background));
 
         buildShellUi();
         applySystemInsets();
@@ -73,26 +75,67 @@ public final class MainActivity extends Activity {
 
     private void buildShellUi() {
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.BLACK);
+        root.setBackgroundColor(getColor(R.color.mgw_splash_background));
         attachFreshWebView();
 
-        loading = new ProgressBar(this);
-        FrameLayout.LayoutParams loadingParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER
+        loadingPanel = new LinearLayout(this);
+        loadingPanel.setOrientation(LinearLayout.VERTICAL);
+        loadingPanel.setGravity(Gravity.CENTER);
+        loadingPanel.setPadding(dp(32), dp(32), dp(32), dp(32));
+        loadingPanel.setBackgroundColor(getColor(R.color.mgw_splash_background));
+
+        ImageView brandMark = new ImageView(this);
+        brandMark.setImageResource(R.drawable.ic_mgw_launcher_foreground);
+        brandMark.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        LinearLayout.LayoutParams markParams = new LinearLayout.LayoutParams(dp(112), dp(112));
+        loadingPanel.addView(brandMark, markParams);
+
+        TextView brandTitle = new TextView(this);
+        brandTitle.setText(R.string.app_name);
+        brandTitle.setTextColor(getColor(R.color.mgw_brand_white));
+        brandTitle.setTextSize(22f);
+        brandTitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        root.addView(loading, loadingParams);
+        titleParams.topMargin = dp(12);
+        loadingPanel.addView(brandTitle, titleParams);
+
+        TextView loadingText = new TextView(this);
+        loadingText.setText(R.string.loading);
+        loadingText.setTextColor(getColor(R.color.mgw_brand_silver));
+        loadingText.setAlpha(0.72f);
+        loadingText.setTextSize(14f);
+        loadingText.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams loadingTextParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        loadingTextParams.topMargin = dp(8);
+        loadingPanel.addView(loadingText, loadingTextParams);
+
+        loading = new ProgressBar(this);
+        loading.setIndeterminateTintList(ColorStateList.valueOf(getColor(R.color.mgw_brand_violet)));
+        LinearLayout.LayoutParams loadingParams = new LinearLayout.LayoutParams(dp(34), dp(34));
+        loadingParams.gravity = Gravity.CENTER_HORIZONTAL;
+        loadingParams.topMargin = dp(18);
+        loadingPanel.addView(loading, loadingParams);
+
+        root.addView(loadingPanel, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
 
         errorPanel = new LinearLayout(this);
         errorPanel.setOrientation(LinearLayout.VERTICAL);
         errorPanel.setGravity(Gravity.CENTER);
         errorPanel.setPadding(dp(32), dp(32), dp(32), dp(32));
-        errorPanel.setBackgroundColor(Color.BLACK);
+        errorPanel.setBackgroundColor(getColor(R.color.mgw_splash_background));
         errorPanel.setVisibility(View.GONE);
 
         errorTitle = new TextView(this);
-        errorTitle.setTextColor(Color.WHITE);
+        errorTitle.setTextColor(getColor(R.color.mgw_brand_white));
         errorTitle.setTextSize(20f);
         errorTitle.setGravity(Gravity.CENTER);
         errorPanel.addView(errorTitle, new LinearLayout.LayoutParams(
@@ -101,7 +144,8 @@ public final class MainActivity extends Activity {
         ));
 
         errorText = new TextView(this);
-        errorText.setTextColor(0xFFCCCCCC);
+        errorText.setTextColor(getColor(R.color.mgw_brand_silver));
+        errorText.setAlpha(0.82f);
         errorText.setTextSize(15f);
         errorText.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
@@ -113,6 +157,8 @@ public final class MainActivity extends Activity {
 
         Button retry = new Button(this);
         retry.setText(R.string.retry);
+        retry.setTextColor(getColor(R.color.mgw_brand_white));
+        retry.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.mgw_brand_purple)));
         retry.setOnClickListener(view -> retryCurrentPage());
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -131,7 +177,7 @@ public final class MainActivity extends Activity {
 
     private void attachFreshWebView() {
         WebView replacement = new WebView(this);
-        replacement.setBackgroundColor(Color.BLACK);
+        replacement.setBackgroundColor(getColor(R.color.mgw_splash_background));
         root.addView(replacement, 0, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -230,7 +276,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showLoading(boolean visible) {
-        loading.setVisibility(visible ? View.VISIBLE : View.GONE);
+        loadingPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
         if (visible) {
             errorPanel.setVisibility(View.GONE);
         }
@@ -238,7 +284,7 @@ public final class MainActivity extends Activity {
 
     private void showNetworkError(int textResource) {
         mainFrameFailed = true;
-        loading.setVisibility(View.GONE);
+        showLoading(false);
         errorTitle.setText(R.string.network_error_title);
         errorText.setText(textResource);
         errorPanel.setVisibility(View.VISIBLE);
@@ -246,7 +292,7 @@ public final class MainActivity extends Activity {
 
     private void showConfigurationError() {
         mainFrameFailed = true;
-        loading.setVisibility(View.GONE);
+        showLoading(false);
         errorTitle.setText(R.string.configuration_error_title);
         errorText.setText(R.string.configuration_error_text);
         errorPanel.setVisibility(View.VISIBLE);
