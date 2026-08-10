@@ -1,0 +1,66 @@
+name: Staging mixed TEST invite diagnostic focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-invite-mixed-test-diagnostic
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  TARGET_SHA: f782449a59c05850d74ef2266bd1c3ca09b8977b
+  STATUS_CONTEXT: staging-invite-mixed-test-diagnostic-focused
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish pending status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"pending\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Mixed TEST invite diagnostic verification running\"}"
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-invite-mixed-test-diagnostic-verifier
+          fetch-depth: 0
+      - name: Verify read-only diagnostic
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'json_open_test_mixed_count' => 0" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'json_open_test_only_count' => 0" bot/services/StagingInviteMismatchDiagnosticService.php
+          grep -F "'read_only' => true" bot/services/StagingInviteMismatchDiagnosticService.php
+          ! git diff 482b936a190bd10ea0647585db7aba2f36e45fd0...f782449a59c05850d74ef2266bd1c3ca09b8977b | grep -E '^\+.*(DELETE|UPDATE|INSERT|TRUNCATE|DROP|execute\(|transaction\()'
+          git diff --check 482b936a190bd10ea0647585db7aba2f36e45fd0...f782449a59c05850d74ef2266bd1c3ca09b8977b
+      - name: Exact verifier diff
+        run: |
+          set -Eeuo pipefail
+          test "$(git diff --name-only f782449a59c05850d74ef2266bd1c3ca09b8977b...HEAD | wc -l | tr -d ' ')" = '1'
+          test "$(git diff --name-only f782449a59c05850d74ef2266bd1c3ca09b8977b...HEAD)" = '.github/workflows/staging-invite-mixed-test-diagnostic-focused.yml'
+      - name: Publish success status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"success\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Mixed TEST invite diagnostic verification passed\"}"
+      - name: Publish failure status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --silent --show-error --request POST \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${TARGET_SHA}" \
+            --data "{\"state\":\"failure\",\"context\":\"${STATUS_CONTEXT}\",\"description\":\"Mixed TEST invite diagnostic verification failed\"}" || true
