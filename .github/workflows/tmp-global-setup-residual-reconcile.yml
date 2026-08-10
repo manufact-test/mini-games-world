@@ -1,0 +1,39 @@
+name: TMP global setup residual reconcile patch
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'agent/staging-global-setup-residual-reconcile'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/staging-global-setup-residual-reconcile
+          fetch-depth: 0
+      - name: Apply exact wiring patch
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci/tmp-global-setup-residual-reconcile.py
+          node --check e2e/staging-global-setup.mjs
+          php -l bot/tests/StagingGlobalSetupResidualReconcileContractTest.php
+          php bot/tests/StagingGlobalSetupResidualReconcileContractTest.php
+          git diff --check
+      - name: Commit product and regression patch
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add e2e/staging-global-setup.mjs bot/tests/StagingGlobalSetupResidualReconcileContractTest.php
+          if git diff --cached --quiet; then
+            echo 'Wiring already committed.'
+            exit 0
+          fi
+          git commit -m 'Staging E2E: reconcile invite residuals before reset'
+          git push origin HEAD:agent/staging-global-setup-residual-reconcile
