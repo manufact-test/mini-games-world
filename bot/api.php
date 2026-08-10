@@ -269,6 +269,9 @@ try {
                 $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
                 mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);
 
+                $existingGameIdBeforeSearch = ($user['status'] ?? '') === 'playing'
+                    ? trim((string)($user['current_game_id'] ?? ''))
+                    : '';
                 $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
 
                 if (empty($search['game']) && $room === 'match') {
@@ -281,7 +284,11 @@ try {
 
                 if (!empty($search['game']['id'])) {
                     $gameId = (string)$search['game']['id'];
-                    $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($data, $gameId);
+                    $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame(
+                        $data,
+                        $gameId,
+                        $existingGameIdBeforeSearch === '' || $existingGameIdBeforeSearch !== $gameId
+                    );
                     if (is_array($finalizedGame)) {
                         $search['game'] = $games->publicGame($finalizedGame, $userId);
                     }
@@ -319,9 +326,13 @@ try {
                 mgw_cleanup_games_if_due($data, $games, false);
 
                 $game = null;
+                $createdFallbackGameId = '';
                 if (($user['status'] ?? '') === 'searching') {
                     $games->refreshSearch($data, $user);
                     $game = $games->maybeCreateBotGameForSearchingUser($data, $user);
+                    if (is_array($game)) {
+                        $createdFallbackGameId = (string)($game['id'] ?? '');
+                    }
                 }
 
                 if ($requestedGameId !== '' && isset($data['games'][$requestedGameId])) {
@@ -348,7 +359,11 @@ try {
                     }
 
                     if ($isCurrentParticipant) {
-                        $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($data, $storedGameId);
+                        $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame(
+                            $data,
+                            $storedGameId,
+                            $createdFallbackGameId !== '' && $createdFallbackGameId === $storedGameId
+                        );
                         if (is_array($finalizedGame)) $game = $finalizedGame;
 
                         $synchronizedGame = $matchPreparationRuntime->synchronizeCurrentGame(
