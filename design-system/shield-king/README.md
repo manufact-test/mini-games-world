@@ -5,15 +5,16 @@
 ```text
 DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
-DS-2 EXACT ICON SYSTEM — PASS / MANUALLY ACCEPTED
-DS-3 SCREEN SPECIFICATIONS — SPEC READY / AWAITING MANUAL VISUAL ACCEPTANCE
+DS-2 ICON VISUAL FAMILY — MANUALLY ACCEPTED
+DS-2 EXACT PRODUCTION ART EXPORT — CORRECTION REQUIRED
+DS-3 SCREEN SPECIFICATIONS — CURRENT-UI MIGRATION CONTRACT IN PROGRESS
 DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
 ```
 
 This directory is the isolated design-system owner for the approved **Shield King** shared-product visual direction.
 
-It is design/specification work only. Nothing in this directory owns or changes runtime behavior, Telegram/Web application logic, Android shell behavior, backend/API contracts, database/storage, matchmaking, economy, game engines, readiness, timers, polling, staging, main, or production.
+It is design/specification work only. Nothing here owns or changes runtime behavior, Telegram/Web application logic, Android shell behavior, backend/API contracts, database/storage, matchmaking, economy, game engines, readiness, timers, polling, staging, main, or production.
 
 ## Source of truth
 
@@ -29,11 +30,9 @@ Durable inputs:
 - `android-app/docs/FULL_APP_REDESIGN_HANDOFF.md`
 - `android-app/docs/FINAL_BRANDING_ACCEPTANCE.md`
 
-The written accepted rules override accidental differences in earlier concept imagery.
-
 ## Non-negotiable brand rule
 
-The primary Shield King mark is a centered shield + centered crown + metallic `MGW` composition on a near-black base.
+The primary Shield King mark is centered shield + centered crown + metallic `MGW` on a near-black base.
 
 Forbidden behind the mark:
 
@@ -42,80 +41,69 @@ Forbidden behind the mark:
 - duplicated shifted shield silhouette;
 - asymmetric glow blob that visually moves the mark off-center.
 
-Metallic highlights on the mark itself are allowed. All ambient glow must remain visually centered.
-
-## Completed output
-
-### DS-0 — PASS
+## DS-0 — PASS
 
 - `FOUNDATIONS.md`
 - `TOKENS.md`
 - `tokens.json`
 
-### DS-1 — PASS
+## DS-1 — PASS
 
 - `COMPONENTS.md`
 - `COMPONENT_STATES.md`
 
-### DS-2 — PASS / manual product-owner acceptance 2026-08-10
+## DS-2 — visual family manually accepted
 
-- `ICONS.md`
-- `ICON_MANIFEST.md`
-- navigation SVG symbol sprite;
-- action SVG symbol sprite;
-- status SVG symbol sprite;
-- economy SVG symbol sprite;
-- 8/8 standalone equal-frame royal game SVG icons.
+The product owner accepted **Variant 1** after iterative review on 2026-08-10.
 
-Accepted DS-2 direction:
+Accepted direction:
 
-- ordinary app icons remain lighter and do not use the large royal shield frame;
-- all eight game icons use one equal-width crowned royal frame template;
-- all game SVGs use `viewBox="0 0 96 112"`;
+- ordinary application icons are compact standalone metallic/silver glyphs with restrained purple/gold detail and **no large shield frame**;
+- all eight game icons use one identical crowned royal frame, width and height;
+- game art uses the rich metallic/dark-violet/gold visual finish accepted in the final review board;
 - Tic Tac Toe has no redundant nested black panel;
 - Four in a Row uses two player colors only;
-- Checkers uses coherent board + solid black vs solid gold pieces;
-- Reversi uses dark-violet board + black/white discs only, no green;
+- Checkers uses a coherent board with black vs gold pieces;
+- Reversi uses black/white discs only and no green field;
 - Chess uses the same crown/frame/width as all other games;
 - Go uses black/white stones only;
-- Domino uses the same external frame width as the rest.
+- Domino uses the same external frame width.
 
-### DS-3 — specification ready / visual acceptance pending
+### Important DS-2 correction
 
-- `SCREENS.md`
-- `SCREEN_STATE_MATRIX.md`
+The simplified geometric SVG files created earlier are **not visually equivalent to the manually accepted rich metallic icon artwork**.
 
-Covered shared surfaces:
+They are now classified as semantic/geometry references only until exact production art is exported.
 
-- global app shell;
-- Home;
-- game catalogue;
-- Profile;
-- Notifications;
-- Friends/social entry;
-- Settings;
-- Store;
-- History;
-- Rules/game information;
-- Invite;
-- Rematch;
-- Search/matchmaking;
-- Match preparation;
-- Countdown;
-- Gameplay shell;
-- Result;
-- errors;
-- empty states;
-- offline/reconnect placeholder contract.
+They must not be used as the visual source for approval mockups or future Home migration.
 
-DS-3 keeps future-only functionality explicitly dependency-gated and does not invent backend data.
+The accepted rich Variant 1 visual direction controls the final finish.
+
+## DS-3 — preserve existing UI, do not redesign it
+
+Authoritative migration rule:
+
+- `CURRENT_UI_MIGRATION.md`
+
+The current accepted shared Mini Games World UI already owns the Home structure and product interactions.
+
+Shield King is applied as a **skin/migration**:
+
+```text
+existing accepted layout + existing actions + existing copy
+→ Shield King colors/tokens
+→ accepted icons
+→ Shield King component states
+```
+
+It is NOT permission to rebuild Home, reorder sections, add new navigation, invent blocks or replace current product structure with a concept mockup.
+
+If older wording in `SCREENS.md` conflicts with `CURRENT_UI_MIGRATION.md`, the migration contract takes precedence.
 
 ## Ownership
 
 Persistent changes for this workstream belong only under:
 
 `design-system/shield-king/**`
-
-Exact diff audit after DS-3 specification confirms all branch changes remain under this directory; runtime is untouched.
 
 Future integration into the real shared UI must happen through a separate main-roadmap compatibility/integration gate. This branch must never be blindly merged into future runtime code.
