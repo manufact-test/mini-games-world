@@ -27,14 +27,33 @@ jobs:
           path: target
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Rebuild exact accepted ZIP from payload
+      - name: Rebuild and byte-verify exact accepted ZIP from payload
+        shell: python
+        run: |
+          import base64, hashlib, pathlib, sys
+          parts=sorted(pathlib.Path('payload/repair-payload').glob('part-*'))
+          if len(parts) != 14:
+              raise SystemExit(f'Expected 14 parts, found {len(parts)}')
+          raw=''.join(p.read_text() for p in parts)
+          alphabet=set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')
+          clean=''.join(ch for ch in raw if ch in alphabet)
+          print(f'PARTS={len(parts)} RAW_CHARS={len(raw)} CLEAN_BASE64_CHARS={len(clean)}')
+          try:
+              data=base64.b64decode(clean, validate=True)
+          except Exception as exc:
+              raise SystemExit(f'BASE64_DECODE_FAIL: {exc}')
+          expected='83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
+          actual=hashlib.sha256(data).hexdigest()
+          print(f'DECODED_BYTES={len(data)} ZIP_SHA256={actual}')
+          if actual != expected:
+              raise SystemExit(f'ZIP_SHA_MISMATCH expected={expected} actual={actual}')
+          out=pathlib.Path('/tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip')
+          out.write_bytes(data)
+
+      - name: Extract exact accepted ZIP
         shell: bash
         run: |
           set -euo pipefail
-          test "$(find payload/repair-payload -maxdepth 1 -type f -name 'part-*' | wc -l)" -eq 14
-          cat payload/repair-payload/part-* > /tmp/icons.b64
-          base64 --decode /tmp/icons.b64 > /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
-          echo '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60  /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip' | sha256sum -c -
           rm -rf /tmp/export
           mkdir -p /tmp/export
           unzip -q /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip -d /tmp/export
