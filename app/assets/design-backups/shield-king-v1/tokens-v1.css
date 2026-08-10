@@ -1,0 +1,74 @@
+:root{
+  /* Shield King semantic source of truth. */
+  --sk-bg-app:#080B12;
+  --sk-bg-elevated:#0C0F14;
+  --sk-bg-card:#17121F;
+  --sk-bg-card-secondary:#231942;
+  --sk-border-default:#342A43;
+  --sk-border-separator:#282130;
+
+  --sk-brand-primary:#6A4CFF;
+  --sk-brand-violet:#A65FF7;
+  --sk-brand-deep-violet:#231942;
+  --sk-brand-gold:#FFD45C;
+  --sk-brand-gold-deep:#D69A32;
+  --sk-brand-silver:#E6E8EF;
+
+  --sk-text-primary:#FFFFFF;
+  --sk-text-secondary:#C7C3D1;
+  --sk-text-muted:#918A9E;
+
+  --sk-success:#48D6A5;
+  --sk-warning:#F2B84B;
+  --sk-error:#FF617D;
+  --sk-info:#72A7FF;
+  --sk-disabled-fg:#6F6979;
+  --sk-disabled-bg:#201C28;
+
+  --sk-overlay-scrim:rgba(4,5,9,.76);
+  --sk-overlay-violet:rgba(106,76,255,.12);
+  --sk-overlay-gold:rgba(255,212,92,.10);
+
+  --sk-gradient-primary:linear-gradient(135deg,#6A4CFF 0%,#A65FF7 100%);
+  --sk-gradient-gold:linear-gradient(135deg,#FFD45C 0%,#D69A32 100%);
+  --sk-gradient-active:radial-gradient(circle at 50% 50%,rgba(166,95,247,.30) 0%,rgba(106,76,255,0) 70%);
+  --sk-gradient-bg-accent:radial-gradient(circle at 50% 0%,rgba(106,76,255,.14) 0%,rgba(106,76,255,0) 62%);
+
+  --sk-shadow-card:0 8px 24px rgba(0,0,0,.28);
+  --sk-shadow-modal:0 20px 60px rgba(0,0,0,.46);
+  --sk-glow-violet:0 0 24px rgba(106,76,255,.30);
+  --sk-glow-gold:0 0 20px rgba(255,212,92,.20);
+
+  --sk-motion-fast:120ms;
+  --sk-motion-standard:200ms;
+  --sk-motion-emphasis:320ms;
+  --sk-motion-countdown:600ms;
+  --sk-ease-standard:cubic-bezier(.2,0,0,1);
+  --sk-ease-emphasis:cubic-bezier(.16,1,0.3,1);
+
+  /* Existing product aliases remain stable so layout/runtime owners do not move. */
+  --bg:var(--sk-bg-app);
+  --bg2:var(--sk-bg-elevated);
+  --card:var(--sk-bg-card);
+  --card2:var(--sk-bg-card-secondary);
+  --stroke:var(--sk-border-default);
+  --text:var(--sk-text-primary);
+  --muted:var(--sk-text-muted);
+  --soft:var(--sk-text-secondary);
+  --accent:var(--sk-brand-primary);
+  --accent-dark:var(--sk-brand-violet);
+  --accent2:var(--sk-success);
+  --accent2-dark:#36B98C;
+  --gold:var(--sk-brand-gold);
+  --gold-dark:var(--sk-brand-gold-deep);
+  --danger:var(--sk-error);
+  --warning:var(--sk-warning);
+  --shadow:var(--sk-shadow-card);
+
+  /* Existing geometry is intentionally preserved. */
+  --radius:24px;
+  --radius2:18px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --max:460px;
+  --font:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
