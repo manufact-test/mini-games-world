@@ -21,6 +21,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 scripts/ci/tmp-invite-transition-ux-final.py
+          python3 scripts/ci/tmp-invite-transition-ux-final-corrections.py
           php -l bot/services/GameInviteService.php
           node --check app/assets/js/screens/notifications-screen-v110r12.js
           node --check app/assets/js/games/game-invites-v110.js
