@@ -5,12 +5,9 @@
 ```text
 DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
-DS-2 ICON VISUAL FAMILY — MANUALLY ACCEPTED
-DS-2 RICH GAME ART NORMALIZED EXPORT — READY / AWAITING FINAL MANUAL VISUAL ACCEPTANCE
-DS-2 CORE APP METALLIC ART EXPORT — PENDING AFTER GAME-ART FREEZE
-DS-3 EXISTING-UI MIGRATION SPEC — READY
-DS-3 VISUAL ACCEPTANCE — BLOCKED UNTIL DS-2 ART FREEZE
-DS-4 EIGHT-GAME VISUAL SYSTEM — NOT STARTED
+DS-2 EXACT ICON SYSTEM — PASS / MANUALLY ACCEPTED
+DS-3 SCREEN SPECIFICATIONS / EXISTING-UI MIGRATION — PASS
+DS-4 EIGHT-GAME VISUAL SYSTEM — SPEC READY / AWAITING MANUAL BOARD-FAMILY ACCEPTANCE
 DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
 ```
 
@@ -54,15 +51,15 @@ Forbidden behind the mark:
 - `COMPONENTS.md`
 - `COMPONENT_STATES.md`
 
-## DS-2 — visual family manually accepted
+## DS-2 — PASS / manually accepted
 
-The product owner accepted **Variant 1** after iterative review on 2026-08-10.
+The product owner accepted the rich metallic **Variant 1** family after iterative review on 2026-08-10.
 
-Accepted direction:
+Frozen visual direction:
 
 - ordinary application icons are compact standalone metallic/silver glyphs with restrained purple/gold detail and **no large shield frame**;
 - all eight game icons use one identical crowned royal frame, width and height;
-- game art uses the rich metallic/dark-violet/gold visual finish accepted in the final review board;
+- game art uses the accepted metallic/dark-violet/gold finish;
 - Tic Tac Toe has no redundant nested black panel;
 - Four in a Row uses two player colors only;
 - Checkers uses a coherent board with black vs gold pieces;
@@ -71,21 +68,11 @@ Accepted direction:
 - Go uses black/white stones only;
 - Domino uses the same external frame width.
 
-### DS-2 rich game-art export
+The earlier simplified geometric SVGs are semantic/geometry references only and must not override the accepted rich visual family.
 
-The accepted rich Variant 1 game renders have now been normalized without redrawing:
+No further product-owner icon review is required unless a future integration reveals a real asset defect.
 
-- original artwork stays at original scale;
-- only concept-board heading contamination above the crown is removed;
-- crown/frame composition is centered onto one common transparent `192×256` canvas;
-- only extreme crop-boundary pixels outside the shared canvas safe edge are removed;
-- all eight resulting PNG byte hashes are frozen in `GAME_ART_EXPORT_MANIFEST.json` pending final manual visual acceptance.
-
-The old simplified geometric SVG files remain **semantic/geometry references only** and are not valid approval artwork.
-
-After manual acceptance of the normalized 8-icon contact sheet, those exact PNG hashes become the DS-2 game-art source of truth and the core application metallic artwork can be exported next.
-
-## DS-3 — existing UI migration specification ready
+## DS-3 — PASS
 
 Authoritative files:
 
@@ -96,7 +83,7 @@ Authoritative files:
 - `SCREEN_STATE_MATRIX.md`
 - `SCREENS.md` only where it does not conflict with the preserve-existing-UI migration rule.
 
-The current accepted shared Mini Games World UI already owns Home, Search, Gameplay, Profile, Store, Notifications, sheets, history and their functional interactions.
+The current accepted shared Mini Games World UI already owns Home, Search, Gameplay, Profile, Store, Notifications, sheets, history and their interactions.
 
 Shield King is applied as a **skin/migration**:
 
@@ -107,34 +94,52 @@ existing accepted layout + existing actions + existing copy + existing responsiv
 → Shield King component states
 ```
 
-It is NOT permission to rebuild Home, reorder sections, add new navigation, invent blocks or replace current product structure with a concept mockup.
+It is NOT permission to rebuild Home, reorder sections, add new navigation, invent blocks or replace the current product structure with a concept mockup.
 
-### Exact current Home structure preserved
+Exact existing Home structure remains preserved:
 
-- current topbar/profile/online state;
-- current notification and more-menu actions;
-- current “Мировые мини-игры” hero;
-- current `Матч-комната / Gold-комната` selector;
-- current runtime room card and its buttons;
-- current two balance cards;
-- current live-activity block;
-- current eight vertically stacked game cards;
-- current rules / `Играть` / `Пригласить друга` actions.
+- topbar/profile/online state;
+- notification and more-menu actions;
+- “Мировые мини-игры” hero;
+- `Матч-комната / Gold-комната` selector;
+- runtime room card and buttons;
+- two balance cards;
+- live-activity block;
+- eight existing game cards;
+- rules / `Играть` / `Пригласить друга` actions.
 
-No bottom navigation, tournament section, new game grid or giant marketing hero is introduced.
+No bottom navigation, tournament section, replacement game grid or giant marketing hero is introduced.
 
-### Existing component geometry preserved
+## DS-4 — specification ready / visual gate pending
 
-- current button heights/radii/grid behavior;
-- current card spacing;
-- current Search radar/player layout;
-- current Gameplay shell/board clamp/responsive behavior;
-- current Profile wallet/stat layouts;
-- current Store grids/tabs/product cards;
-- current Notifications list/toast behavior;
-- current sheets/modals/history/economy flows.
+Created:
 
-Only visual tokens/materials/icons are remapped.
+- `GAME_COMPONENTS.md`
+- `GAMES.md`
+
+Shared gameplay shell now defines:
+
+- common player cards;
+- turn states;
+- timer states;
+- board wrapper language;
+- selection/legal/capture/invalid/last-action states;
+- event banners;
+- shared result transition;
+- accessibility and reduced-motion rules.
+
+All eight games now have explicit visual contracts without mechanics changes:
+
+1. Tic Tac Toe — deep-violet board, silver X / gold O;
+2. Four in a Row — royal-violet frame, silver / gold discs;
+3. Battleship — dark naval violet, steel ships, silver miss / gold hit / red sunk;
+4. Checkers — silver-violet board, black / gold pieces;
+5. Reversi — dark-violet board, black / white discs, no green;
+6. Chess — silver-violet board, silver/ivory vs graphite pieces;
+7. Go — dark-violet board with metallic grid, black / white stones;
+8. Domino — dark-violet table, ivory tiles, no green felt.
+
+The current runtime geometry and mechanics remain authoritative.
 
 ## Ownership
 
