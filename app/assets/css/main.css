@@ -35,6 +35,7 @@
 @import url('./screens/profile.css?v=48');
 @import url('./animations.css?v=27');
 @import url('./responsive.css?v=37');
+@import url('./shield-king.css?v=1');
 
 /* MVP-7.1.2 history tabs */
 .history-tabs{
