@@ -269,6 +269,9 @@ try {
                 $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
                 mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);
 
+                $existingGameIdBeforeSearch = ($user['status'] ?? '') === 'playing'
+                    ? trim((string)($user['current_game_id'] ?? ''))
+                    : '';
                 $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
 
                 if (empty($search['game']) && $room === 'match') {
@@ -281,7 +284,11 @@ try {
 
                 if (!empty($search['game']['id'])) {
                     $gameId = (string)$search['game']['id'];
-                    $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame($data, $gameId);
+                    $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame(
+                        $data,
+                        $gameId,
+                        $existingGameIdBeforeSearch === '' || $existingGameIdBeforeSearch !== $gameId
+                    );
                     if (is_array($finalizedGame)) {
                         $search['game'] = $games->publicGame($finalizedGame, $userId);
                     }
