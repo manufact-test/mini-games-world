@@ -7,8 +7,9 @@ DS-0 FOUNDATIONS / TOKENS — PASS
 DS-1 COMPONENT LIBRARY — PASS
 DS-2 EXACT ICON SYSTEM — PASS / MANUALLY ACCEPTED
 DS-3 SCREEN SPECIFICATIONS / EXISTING-UI MIGRATION — PASS
-DS-4 EIGHT-GAME VISUAL SYSTEM — SPEC READY / AWAITING MANUAL BOARD-FAMILY ACCEPTANCE
-DS-5 LOADING / SYSTEM STATES / HANDOFF — NOT STARTED
+DS-4 EIGHT-GAME VISUAL SYSTEM — PASS / PRESERVE CURRENT BOARDS
+DS-5 LOADING / SYSTEM STATES — SPEC READY
+FINAL QUALITY AUDIT / HANDOFF — IN PROGRESS
 ```
 
 This directory is the isolated design-system owner for the approved **Shield King** shared-product visual direction.
@@ -17,17 +18,16 @@ It is design/specification work only. Nothing here owns or changes runtime behav
 
 ## Source of truth
 
-This workstream is based on the frozen Android Branding Pack:
+Base/frozen branding input:
 
+- repository: `manufact-test/mini-games-world`
 - branch: `agent/android-branding-pack`
 - exact accepted SHA: `4f110277c85df4c77d9a66b794ff620812c16d2d`
 - approved identity: **Shield King / MGW**
 
-Durable inputs:
+Persistent workstream branch:
 
-- `android-app/docs/BRANDING.md`
-- `android-app/docs/FULL_APP_REDESIGN_HANDOFF.md`
-- `android-app/docs/FINAL_BRANDING_ACCEPTANCE.md`
+- `agent/shield-king-design-system`
 
 ## Non-negotiable brand rule
 
@@ -53,93 +53,77 @@ Forbidden behind the mark:
 
 ## DS-2 — PASS / manually accepted
 
-The product owner accepted the rich metallic **Variant 1** family after iterative review on 2026-08-10.
+Accepted direction:
 
-Frozen visual direction:
+- ordinary application icons: compact metallic/silver, restrained purple/gold detail, **no large royal shield frame**;
+- eight game icons: rich metallic Variant 1 direction with one equal crowned royal family;
+- all manual corrections for Tic Tac Toe / Four in a Row / Checkers / Reversi / Chess / Go / Domino are frozen in `ICONS.md`;
+- broken crop previews are rejected and not design references.
 
-- ordinary application icons are compact standalone metallic/silver glyphs with restrained purple/gold detail and **no large shield frame**;
-- all eight game icons use one identical crowned royal frame, width and height;
-- game art uses the accepted metallic/dark-violet/gold finish;
-- Tic Tac Toe has no redundant nested black panel;
-- Four in a Row uses two player colors only;
-- Checkers uses a coherent board with black vs gold pieces;
-- Reversi uses black/white discs only and no green field;
-- Chess uses the same crown/frame/width as all other games;
-- Go uses black/white stones only;
-- Domino uses the same external frame width.
-
-The earlier simplified geometric SVGs are semantic/geometry references only and must not override the accepted rich visual family.
-
-No further product-owner icon review is required unless a future integration reveals a real asset defect.
+No further product-owner icon review is required unless future real-slot integration reveals an actual asset defect.
 
 ## DS-3 — PASS
 
-Authoritative files:
+The current accepted Mini Games World UI structure is preserved.
+
+Shield King is applied as a skin/migration only:
+
+```text
+existing layout + actions + copy + responsive rules
+→ Shield King colors/tokens
+→ accepted icons
+→ component states
+```
+
+It is not permission to rebuild Home, add a bottom navigation, invent product blocks, reorder screens or recreate the information architecture.
+
+Authoritative migration files:
 
 - `CURRENT_UI_MIGRATION.md`
 - `CURRENT_UI_STYLE_MAP.md`
 - `EXISTING_SCREEN_MIGRATION.md`
 - `EXISTING_AUX_SURFACES_MIGRATION.md`
 - `SCREEN_STATE_MATRIX.md`
-- `SCREENS.md` only where it does not conflict with the preserve-existing-UI migration rule.
+- `SCREENS.md` only where it does not conflict with the preserve-existing-UI rule.
 
-The current accepted shared Mini Games World UI already owns Home, Search, Gameplay, Profile, Store, Notifications, sheets, history and their interactions.
+## DS-4 — PASS / current gameplay boards preserved
 
-Shield King is applied as a **skin/migration**:
+The attempted broad gameplay-board redesign was explicitly rejected and discarded.
 
-```text
-existing accepted layout + existing actions + existing copy + existing responsive rules
-→ Shield King colors/tokens
-→ accepted icons
-→ Shield King component states
-```
+Final rule:
 
-It is NOT permission to rebuild Home, reorder sections, add new navigation, invent blocks or replace the current product structure with a concept mockup.
+- all eight current gameplay boards remain as currently accepted;
+- current geometry, pieces, interactions, responsive behavior and game-specific identity remain authoritative;
+- safe Shield King color substitutions may be applied only where they genuinely improve fit without harming readability;
+- if a game does not adapt cleanly, keep its current colors unchanged;
+- game-card icon art does not dictate live-board colors.
 
-Exact existing Home structure remains preserved:
+Authoritative files:
 
-- topbar/profile/online state;
-- notification and more-menu actions;
-- “Мировые мини-игры” hero;
-- `Матч-комната / Gold-комната` selector;
-- runtime room card and buttons;
-- two balance cards;
-- live-activity block;
-- eight existing game cards;
-- rules / `Играть` / `Пригласить друга` actions.
+- `GAMES.md`
+- `GAME_COMPONENTS.md`
 
-No bottom navigation, tournament section, replacement game grid or giant marketing hero is introduced.
-
-## DS-4 — specification ready / visual gate pending
+## DS-5 — specification ready
 
 Created:
 
-- `GAME_COMPONENTS.md`
-- `GAMES.md`
+- `LOADING_AND_SYSTEM_STATES.md`
+- `PHASE_B_VISUAL_CONTRACT.md`
+- `ASSET_MANIFEST.md`
 
-Shared gameplay shell now defines:
+The system-state contract preserves the authoritative lifecycle and specifically freezes:
 
-- common player cards;
-- turn states;
-- timer states;
-- board wrapper language;
-- selection/legal/capture/invalid/last-action states;
-- event banners;
-- shared result transition;
-- accessibility and reduced-motion rules.
+```text
+server-confirmed match
+→ preparation layer
+→ authoritative readiness
+→ shared deterministic 3 → 2 → 1
+→ neutral wait if server is slower
+→ short success check
+→ authoritative gameplay reveal
+```
 
-All eight games now have explicit visual contracts without mechanics changes:
-
-1. Tic Tac Toe — deep-violet board, silver X / gold O;
-2. Four in a Row — royal-violet frame, silver / gold discs;
-3. Battleship — dark naval violet, steel ships, silver miss / gold hit / red sunk;
-4. Checkers — silver-violet board, black / gold pieces;
-5. Reversi — dark-violet board, black / white discs, no green;
-6. Chess — silver-violet board, silver/ivory vs graphite pieces;
-7. Go — dark-violet board with metallic grid, black / white stones;
-8. Domino — dark-violet table, ivory tiles, no green felt.
-
-The current runtime geometry and mechanics remain authoritative.
+No `VS`, no `СТАРТ`, no fake progress, no local readiness/clock/polling owner.
 
 ## Ownership
 
