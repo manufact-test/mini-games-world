@@ -10,7 +10,7 @@ import { initSheet } from './components/sheet.js?v=1109';
 import { toast } from './components/toast.js?v=1109';
 import { initAccountShortcuts } from './components/account-shortcuts.js?v=48';
 import { initUserCopy } from './components/user-copy.js?v=62';
-import { initShieldKingVisuals } from './components/shield-king-visuals.js?v=124&sk=1';
+import { initShieldKingVisuals } from './components/shield-king-visuals.js?v=125&sk=2';
 import { showHomeActivity, showBootFailure, dispatchAppReady } from './components/boot-state.js?v=87';
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
@@ -24,7 +24,7 @@ import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { initGameRules } from './games/game-rules.js?v=75';
-import { initGameCardCopy } from './games/game-card-copy.js?v=80&sk=1';
+import { initGameCardCopy } from './games/game-card-copy.js?v=81&sk=2';
 import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
@@ -69,77 +69,70 @@ initReversiEntry();
 initChessEntry();
 initGoEntry();
 initDominoEntry();
+
+initHomeScreen();
 initStoreScreen();
 initStoreOrder();
 initStoreOrders();
 initWeeklyMatchInfo();
-initHomeScreen();
-initAccountShortcuts();
 initProfileScreen();
 initGameRules();
 
-document.addEventListener('mgw:v99-game-found', event => {
-  const game = event.detail?.game || null;
-  if (game?.id && !currentV99PassiveLock()?.locked) {
-    enterGame(game, event.detail?.me || null);
-  }
-});
+boot();
 
 async function boot(){
   try {
-    setRoom(APP_CONFIG.defaultRoom);
-    const statsTicket = beginStatsRequest('api');
-    const result = await api.bootstrap();
+    const result = await api.me();
     state.user = result.user;
-    state.session = result.session || state.session;
+    state.session = result.session || null;
     renderUser(state.user);
     renderBalances(state.user);
-    applyStatsSnapshot(statsTicket, result.stats);
-    showHomeActivity();
-    renderRoomCard();
-    syncWeeklyMatchButton(result.weekly_match || null);
+    setRoom(state.room || 'match');
+    await refreshStats();
+    syncWeeklyMatchButton();
     dispatchAppReady();
-
-    if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
-      enterGame(result.active_game, result.me || null);
-    } else {
-      await openIncomingInviteFromTelegram();
-    }
-
-    startStatsPolling();
   } catch (error) {
-    showBootFailure();
-    toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
+    showBootFailure(error);
   } finally {
     hidePreloader();
   }
 }
 
-function startStatsPolling(){
-  state.timers.stats = clearTimer(state.timers.stats);
-  state.timers.stats = window.setInterval(refreshStatsIfVisible, APP_CONFIG.statsIntervalMs);
-}
-
-async function refreshStatsIfVisible(){
-  if (statsRefreshing || !canRefreshHomeStats()) return;
+async function refreshStats(){
+  if (statsRefreshing) return;
   statsRefreshing = true;
-  const statsTicket = beginStatsRequest('api');
+  const request = beginStatsRequest();
   try {
     const result = await api.stats();
-    if (result?.stats) applyStatsSnapshot(statsTicket, result.stats);
-    if (result?.session) state.session = result.session;
+    applyStatsSnapshot(request, result);
+    showHomeActivity(result.stats || result);
   } catch (error) {
-    // Background stats never interrupt the visible interface.
+    // Stats are secondary: keep the app usable when this request fails.
   } finally {
     statsRefreshing = false;
   }
 }
 
-function canRefreshHomeStats(){
-  if (document.visibilityState !== 'visible') return false;
-  const activeScreen = document.querySelector('.screen.active');
-  if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
-  return !document.getElementById('sheetOverlay')?.classList.contains('active');
-}
+window.addEventListener('mgw:session-update', event => {
+  state.session = event.detail || state.session;
+});
 
-boot();
+window.addEventListener('mgw:game-enter', event => {
+  const game = event.detail?.game || event.detail;
+  if (game) enterGame(game);
+});
+
+window.addEventListener('mgw:invite-link', event => {
+  openIncomingInviteFromTelegram(event.detail || {});
+});
+
+window.addEventListener('mgw:balance-refresh', () => {
+  if (state.user) renderBalances(state.user);
+});
+
+window.addEventListener('mgw:stats-refresh', refreshStats);
+
+window.addEventListener('beforeunload', () => {
+  clearTimer();
+  currentV99PassiveLock();
+});
