@@ -57,13 +57,18 @@ $assert(
 $assert(
     str_contains($client, 'const result = await postJson(OPPONENTS_URL, {});')
         && substr_count($client, 'postJson(OPPONENTS_URL, {})') === 1
-        && !str_contains($client, 'Загружаем соперников')
+        && str_contains($client, 'showPlayerPickerLoading(context, requestGeneration);')
         && str_contains($client, 'playerPickerRequestGeneration'),
-    'Server acceleration must preserve the accepted one-request ready-first client owner.'
+    'Selective-read acceleration must preserve one authoritative request while allowing an immediate stable picker surface.'
 );
 $assert(
-    str_contains($shell, './games/game-invites-v110.js?v=1135'),
-    'The accepted picker owner must remain singular while its immutable publication advances to v1135.'
+    str_contains($client, 'data-player-picker-results aria-busy="true"')
+        && str_contains($client, 'Загружаем игроков'),
+    'The v1136 picker may paint before the read completes but must identify that frame as loading rather than false-empty.'
+);
+$assert(
+    str_contains($shell, './games/game-invites-v110.js?v=1136'),
+    'The accepted singular picker owner must be published through v1136.'
 );
 
 fwrite(STDOUT, "ProductionMvp14D1PickerSelectiveJsonReadContractTest: {$assertions} assertions passed\n");
