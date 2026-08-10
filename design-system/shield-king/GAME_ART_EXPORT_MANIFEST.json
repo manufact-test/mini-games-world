@@ -1,0 +1,63 @@
+{
+  "status": "normalized_from_manually_accepted_variant_1_awaiting_final_manual_visual_acceptance",
+  "source_family": "Shield King rich metallic Variant 1",
+  "export_contract": {
+    "format": "PNG RGBA",
+    "canvas_width": 192,
+    "canvas_height": 256,
+    "scale_change": false,
+    "redraw": false,
+    "normalization": [
+      "preserve accepted source pixels at original scale",
+      "remove only concept-board heading contamination above accepted crown artwork",
+      "center accepted crown/frame composition onto one shared 192x256 transparent canvas",
+      "remove only extreme crop-boundary pixels outside the normalized canvas safe edge"
+    ]
+  },
+  "preview": {
+    "sha256": "a9aba5405900afcd4ea1e020afb95cd09016d10ac838f9f596345eefca79ff73",
+    "note": "Local manual-acceptance contact sheet generated from the exact normalized exports; approval freezes the individual PNG hashes below."
+  },
+  "icons": {
+    "tic-tac-toe": {
+      "output": "game-tic-tac-toe.png",
+      "sha256": "c5a3ebdec8b8d969214c97ab7ed1cfcf47994c352feec74d55cdde219b3f24cd",
+      "bytes": 36325
+    },
+    "four-in-a-row": {
+      "output": "game-four-in-a-row.png",
+      "sha256": "1ef6574176ca6c71046f52d0f0cff1e5c2602229316cf70d16a58ee8cfdd9f8e",
+      "bytes": 37678
+    },
+    "battleship": {
+      "output": "game-battleship.png",
+      "sha256": "70908652f87a53fcefb725554b5c514f87413e5ebcde8ef249d5f8eb25fc1a83",
+      "bytes": 37695
+    },
+    "checkers": {
+      "output": "game-checkers.png",
+      "sha256": "668791fe1925f928f43233f66d518a2b071b7f50331b4b65d2b37ff9034cac2b",
+      "bytes": 58913
+    },
+    "reversi": {
+      "output": "game-reversi.png",
+      "sha256": "d243a658954b0bc898b4591ac67f8ad254e9cab8594e38d0e4457dd5d2455f0f",
+      "bytes": 40252
+    },
+    "chess": {
+      "output": "game-chess.png",
+      "sha256": "88d2f07e1814459978107d2bc0cae38156bb360bdd613aeda9de0dadb516b3e1",
+      "bytes": 33856
+    },
+    "go": {
+      "output": "game-go.png",
+      "sha256": "242a113e7def57c13557fadadda509ba56849234841b5a9bd9fc34215f41f479",
+      "bytes": 33788
+    },
+    "domino": {
+      "output": "game-domino.png",
+      "sha256": "096a6bf66d03de7205fe31a22a18f1d8108e632a503e0b3af08291faef6c400e",
+      "bytes": 41496
+    }
+  }
+}
