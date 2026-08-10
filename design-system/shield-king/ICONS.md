@@ -4,14 +4,15 @@
 
 ```text
 DS-2 VISUAL FAMILY — MANUALLY ACCEPTED
-DS-2 EXACT PRODUCTION ART EXPORT — CORRECTION REQUIRED
+DS-2 RICH GAME ART NORMALIZED EXPORT — READY / AWAITING FINAL MANUAL VISUAL ACCEPTANCE
+DS-2 CORE APP METALLIC ART EXPORT — PENDING
 ```
 
 The product owner accepted the **rich metallic Variant 1** family after iterative visual review on 2026-08-10 (+03:00).
 
-Critical correction: the simplified geometric SVGs produced earlier in this branch are not visually equivalent to that accepted artwork. They are semantic/geometry references only until exact production art is exported.
+Critical correction: the simplified geometric SVGs produced earlier in this branch are not visually equivalent to that accepted artwork. They are semantic/geometry references only and must not be substituted into approval mockups.
 
-Future approval mockups must not substitute those simplified SVGs for the accepted rich Variant 1 finish.
+The current rich game-art export hashes and normalization rules live in `GAME_ART_EXPORT_MANIFEST.json`.
 
 ---
 
@@ -45,7 +46,7 @@ icons/status/status-icons.svg
 icons/economy/economy-icons.svg
 ```
 
-Those SVG sprites currently preserve semantic IDs/geometry and may guide implementation, but their flat line-art finish is not the final accepted metallic art finish.
+Those SVG sprites preserve semantic IDs/geometry and may guide implementation, but their flat line-art finish is not the final accepted metallic art finish.
 
 ---
 
@@ -74,6 +75,12 @@ Shared finish:
 - premium dimensional material treatment;
 - no unrelated green/cyan decorative branding;
 - no inconsistent crown/frame widths between games.
+
+### Normalized rich export
+
+The currently staged rich Variant 1 exports use one `192×256` transparent canvas and preserve the original accepted artwork scale.
+
+Normalization is limited to crop cleanup and common centering; there is no redraw or replacement of the accepted art. Exact output SHA-256 values are frozen in `GAME_ART_EXPORT_MANIFEST.json` pending final manual review.
 
 ---
 
@@ -130,7 +137,7 @@ Shared finish:
 
 ---
 
-## 5. Current geometry-reference files
+## 5. Geometry-reference files
 
 ```text
 icons/games/game-tic-tac-toe.svg
@@ -143,9 +150,7 @@ icons/games/game-go.svg
 icons/games/game-domino.svg
 ```
 
-These files encode the shared bounding-box intent and semantic content, but **must not be treated as the accepted final visual artwork**.
-
-They may remain temporarily so future implementation work does not lose semantic mappings, but exact production-art export must replace/supersede them before DS-2 is finally closed as an exact asset pack.
+These files encode shared bounding-box intent and semantic content only. They must not be treated as the accepted final visual artwork.
 
 ---
 
@@ -207,8 +212,9 @@ ONE IDENTICAL EXTERNAL WIDTH / HEIGHT / CROWN / FRAME FOR 8/8
 SIMPLIFIED SVG VISUAL FINISH:
 NOT ACCEPTED AS FINAL ART
 
-EXACT PRODUCTION ART EXPORT:
-REQUIRED BEFORE FINAL DS-2 DONE
-```
+NORMALIZED RICH GAME EXPORT:
+READY / AWAITING FINAL MANUAL VISUAL ACCEPTANCE
 
-Any later change must update the family rule and all dependent assets consistently; do not patch one screen independently.
+CORE APPLICATION METALLIC EXPORT:
+PENDING
+```
