@@ -43,8 +43,10 @@ $assert(
     $directOwner !== ''
         && str_contains($directOwner, 'showDirectInvitePending(context, opponentName, requestGeneration);')
         && str_contains($directOwner, 'finalizeDirectInvitePendingSurface(currentInvite, requestGeneration);')
-        && str_contains($client, 'data-direct-invite-cancel-reserved'),
-    'Direct invite must paint immediately and upgrade its reserved Cancel control in place after token creation.'
+        && str_contains($client, 'data-direct-invite-cancel-reserved')
+        && str_contains($client, 'directInviteCancelIntents')
+        && str_contains($client, 'settleQueuedDirectInviteCancel'),
+    'Direct invite must paint an immediately actionable Cancel control and serialize an early cancel intent through the same authoritative invite owner.'
 );
 $assert(
     str_contains($client, 'let inviteUiTransitionGeneration = 0;')
@@ -63,11 +65,13 @@ $assert(
     'User-awaited invite requests must retain the accepted high browser priority.'
 );
 $assert(
-    str_contains($shell, './games/game-invites-v110.js?v=1136')
-        && str_contains($main, './main-v110-handoff-shell.js?v=1136')
-        && str_contains($entry, './assets/js/main-v110.js?v=1136')
-        && str_contains($entry, "header('X-MGW-Invite-Graph: v1136');"),
-    'The popup-stability owner must be published through one immutable v1136 graph.'
+    str_contains($shell, './games/game-invites-v110.js?v=1137')
+        && str_contains($shell, './screens/notifications-screen-v110r12.js?v=1137')
+        && str_contains($main, './main-v110-handoff-shell.js?v=1137')
+        && str_contains($entry, './assets/js/main-v110.js?v=1137')
+        && str_contains($entry, "header('X-MGW-Invite-Graph: v1137');")
+        && str_contains($entry, "header('X-MGW-Notification-Graph: v1137');"),
+    'The invite transition UX owner must be published through one immutable v1137 graph.'
 );
 $assert(
     !str_contains($client, 'retry')
@@ -76,4 +80,4 @@ $assert(
     'Popup stability must not be implemented with retries, sleeps, or picker timing patches.'
 );
 
-fwrite(STDOUT, "ProductionMvp14InterfaceInviteEntrySpeedV1135Test: {$assertions} assertions passed (v1136 successor contract)\n");
+fwrite(STDOUT, "ProductionMvp14InterfaceInviteEntrySpeedV1135Test: {$assertions} assertions passed (v1137 successor contract)\n");

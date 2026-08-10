@@ -64,11 +64,11 @@ $assert(
 $assert(
     str_contains($client, 'data-player-picker-results aria-busy="true"')
         && str_contains($client, 'Загружаем игроков'),
-    'The v1136 picker may paint before the read completes but must identify that frame as loading rather than false-empty.'
+    'The v1137 picker may paint before the read completes but must identify that frame as loading rather than false-empty.'
 );
 $assert(
-    str_contains($shell, './games/game-invites-v110.js?v=1136'),
-    'The accepted singular picker owner must be published through v1136.'
+    str_contains($shell, './games/game-invites-v110.js?v=1137'),
+    'The accepted singular picker owner must be published through v1137.'
 );
 
 fwrite(STDOUT, "ProductionMvp14D1PickerSelectiveJsonReadContractTest: {$assertions} assertions passed\n");

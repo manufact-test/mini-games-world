@@ -48,12 +48,12 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main-v110.js?v=1136&pending=7&b=ab56fb53c460',
+    './assets/js/main-v110.js?v=1137&ux=1',
     $html
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-invite-popup-stability-v1136"',
+    'data-hotfix-build="v110-mvp14-invite-transition-ux-v1137"',
     $html
 );
 
@@ -62,7 +62,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
-header('X-MGW-Notification-Graph: v1134');
-header('X-MGW-Invite-Graph: v1136');
+header('X-MGW-Notification-Graph: v1137');
+header('X-MGW-Invite-Graph: v1137');
 header('X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader');
 echo $html;
