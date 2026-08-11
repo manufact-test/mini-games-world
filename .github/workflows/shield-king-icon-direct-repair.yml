@@ -14,69 +14,97 @@ jobs:
     if: github.head_ref == 'agent/shield-king-icon-repair-payload'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout exact payload
+      - name: Checkout immutable verified accepted-bundle source
         uses: actions/checkout@v4
         with:
-          ref: agent/shield-king-icon-repair-payload
-          path: payload
-      - name: Checkout isolated accepted-asset branch
+          ref: 596eae04f7e16d221a90ba894a7708c8f220704c
+          path: source
+          fetch-depth: 1
+
+      - name: Checkout isolated accepted-asset target
         uses: actions/checkout@v4
         with:
           ref: agent/shield-king-accepted-icon-export
           path: target
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Rebuild exact accepted ZIP and verify bytes
+          fetch-depth: 1
+
+      - name: Verify immutable source ZIP exactly
         shell: bash
         run: |
           set -euo pipefail
-          COUNT="$(find payload/repair-payload -maxdepth 1 -type f -name 'exact-*' | wc -l)"
-          echo "PAYLOAD_PARTS=$COUNT"
-          test "$COUNT" -eq 77
-          cat $(find payload/repair-payload -maxdepth 1 -type f -name 'exact-*' | sort) > /tmp/icons.b64
-          base64 --decode /tmp/icons.b64 > /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
-          SIZE="$(stat -c%s /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip)"
-          SHA="$(sha256sum /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip | awk '{print $1}')"
-          echo "ZIP_BYTES=$SIZE"
-          echo "ZIP_SHA256=$SHA"
+          ZIP='source/app/assets/icons/shield-king/accepted/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'
+          SIZE="$(stat -c%s "$ZIP")"
+          SHA="$(sha256sum "$ZIP" | awk '{print $1}')"
+          echo "SOURCE_ZIP_BYTES=$SIZE"
+          echo "SOURCE_ZIP_SHA256=$SHA"
           test "$SIZE" -eq 923086
           test "$SHA" = '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
           rm -rf /tmp/export && mkdir -p /tmp/export
-          unzip -q /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip -d /tmp/export
-      - name: Verify source ZIP members 44/44 against frozen MANIFEST
+          unzip -q "$ZIP" -d /tmp/export
+          cp "$ZIP" /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
+
+      - name: Verify source members against frozen MANIFEST 44/44
         shell: python
         run: |
           import hashlib,json,pathlib
-          base=pathlib.Path('target/accepted-assets/shield-king-icons'); manifest=json.loads((base/'MANIFEST.json').read_text()); assert len(manifest['files'])==44
+          base=pathlib.Path('target/accepted-assets/shield-king-icons')
+          manifest=json.loads((base/'MANIFEST.json').read_text())
+          assert len(manifest['files']) == 44
           source=pathlib.Path('/tmp/export')
+          rows=[]
           for item in manifest['files']:
-              data=(source/item['path']).read_bytes(); assert len(data)==item['bytes'],item['path']; assert hashlib.sha256(data).hexdigest()==item['sha256'],item['path']
+              p=source/item['path']; data=p.read_bytes()
+              sha=hashlib.sha256(data).hexdigest(); size=len(data)
+              ok=(size==item['bytes'] and sha==item['sha256'])
+              rows.append({'path':item['path'],'expected_sha256':item['sha256'],'actual_sha256':sha,'expected_bytes':item['bytes'],'actual_bytes':size,'pass':ok})
+              assert ok,item['path']
+          assert len(rows)==44
+          pathlib.Path('/tmp/source_rows.json').write_text(json.dumps(rows,indent=2)+'\n')
           print('SOURCE_MANIFEST_VERIFY=44/44 PASS')
-      - name: Materialize direct files and replace ZIP
+
+      - name: Materialize direct accepted WebP files and replace ZIP
         shell: bash
         run: |
           set -euo pipefail
           cd target
-          rm -rf accepted-assets/shield-king-icons/files && mkdir -p accepted-assets/shield-king-icons/files
+          rm -rf accepted-assets/shield-king-icons/files
+          mkdir -p accepted-assets/shield-king-icons/files
           cp -a /tmp/export/games accepted-assets/shield-king-icons/files/
           cp -a /tmp/export/ui accepted-assets/shield-king-icons/files/
           cp /tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip accepted-assets/shield-king-icons/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
-      - name: Verify repository files 44/44 and write audit
+
+      - name: Verify repository bytes 44/44 and write audit
         shell: python
         run: |
           import hashlib,json,pathlib
-          base=pathlib.Path('target/accepted-assets/shield-king-icons'); manifest=json.loads((base/'MANIFEST.json').read_text()); rows=[]
+          base=pathlib.Path('target/accepted-assets/shield-king-icons')
+          manifest=json.loads((base/'MANIFEST.json').read_text())
+          rows=[]
           for item in manifest['files']:
-              p=base/'files'/item['path']; data=p.read_bytes(); sha=hashlib.sha256(data).hexdigest(); size=len(data); ok=(sha==item['sha256'] and size==item['bytes']); rows.append({'path':item['path'],'expected_sha256':item['sha256'],'actual_sha256':sha,'expected_bytes':item['bytes'],'actual_bytes':size,'pass':ok}); assert ok,item['path']
-          assert len(list((base/'files').rglob('*.webp')))==44
-          zip_path=base/'MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'; zip_data=zip_path.read_bytes(); zip_sha=hashlib.sha256(zip_data).hexdigest(); assert len(zip_data)==923086; assert zip_sha=='83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
-          (base/'REPAIR_VERIFICATION.json').write_text(json.dumps({'status':'PASS','verified':44,'total':44,'zip_sha256':zip_sha,'zip_bytes':len(zip_data),'manifest_source':str(base/'MANIFEST.json'),'files':rows},indent=2)+'\n')
-          print('REPOSITORY_MANIFEST_VERIFY=44/44 PASS'); print('ZIP_VERIFY=PASS')
+              p=base/'files'/item['path']; data=p.read_bytes()
+              sha=hashlib.sha256(data).hexdigest(); size=len(data)
+              ok=(size==item['bytes'] and sha==item['sha256'])
+              rows.append({'path':item['path'],'expected_sha256':item['sha256'],'actual_sha256':sha,'expected_bytes':item['bytes'],'actual_bytes':size,'pass':ok})
+              assert ok,item['path']
+          assert len(rows)==44
+          assert len(list((base/'files').rglob('*.webp'))) == 44
+          zip_path=base/'MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'
+          zip_data=zip_path.read_bytes(); zip_sha=hashlib.sha256(zip_data).hexdigest()
+          assert len(zip_data)==923086
+          assert zip_sha=='83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
+          audit={'status':'PASS','verified':'44/44','zip_sha256':zip_sha,'zip_bytes':len(zip_data),'source_commit':'596eae04f7e16d221a90ba894a7708c8f220704c','manifest_source':'accepted-assets/shield-king-icons/MANIFEST.json','files':rows}
+          (base/'REPAIR_VERIFICATION.json').write_text(json.dumps(audit,indent=2)+'\n')
+          print('REPOSITORY_MANIFEST_VERIFY=44/44 PASS')
+          print('ZIP_VERIFY=PASS')
+
       - name: Commit repair only to isolated asset branch
         shell: bash
         run: |
           set -euo pipefail
           cd target
-          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add accepted-assets/shield-king-icons/files accepted-assets/shield-king-icons/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip accepted-assets/shield-king-icons/REPAIR_VERIFICATION.json
           git diff --cached --quiet && { echo 'No changes'; exit 1; }
           git commit -m 'assets(shield-king): repair accepted icon binaries 44 of 44'
