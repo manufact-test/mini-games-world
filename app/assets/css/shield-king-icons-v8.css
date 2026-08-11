@@ -1,0 +1,366 @@
+/*
+ * Shield King V111 — consolidated user-review fixes.
+ * Visual-only override layer. The frozen Design System and accepted icon assets are untouched.
+ * Scope: eight Home game cards, rules/book optical centering, and app-entry preloader only.
+ * Game-entry / Phase B launch presentation is intentionally not selected here.
+ */
+
+/* --------------------------------------------------------------------------
+ * 1. Eight Home game cards: one coherent frame, larger rich emblem, no cut
+ *    transparent card corners. The emblem may escape only upward visually.
+ * -------------------------------------------------------------------------- */
+.game-card{
+  --sk-v111-emblem-w:152px;
+  --sk-v111-emblem-h:202px;
+  --sk-v111-emblem-rise:64px;
+  --sk-v111-emblem-optical-x:-21px;
+  --sk-v111-frame-top-start:133px;
+  --sk-v111-frame-left-start:145px;
+  --sk-v111-frame-gap:10px;
+
+  border:0 !important;
+  border-radius:18px !important;
+  overflow:visible !important;
+  background:
+    radial-gradient(circle at 8% 0%,rgba(214,154,50,.095),transparent 31%),
+    linear-gradient(150deg,rgba(43,32,58,.99) 0%,rgba(27,23,36,.995) 48%,rgba(18,19,27,.995) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 -1px 0 rgba(0,0,0,.34),
+    0 12px 30px rgba(0,0,0,.22) !important;
+  isolation:isolate;
+}
+
+/* The fill remains continuous into every rounded corner. */
+.game-card:before{
+  content:"" !important;
+  position:absolute !important;
+  inset:3px !important;
+  z-index:0 !important;
+  pointer-events:none !important;
+  border-radius:15px !important;
+  background:
+    linear-gradient(135deg,rgba(230,232,239,.032),transparent 34%,rgba(214,154,50,.025) 78%,transparent) !important;
+  box-shadow:inset 0 0 0 1px rgba(230,232,239,.025) !important;
+}
+
+/*
+ * Shared metallic frame for all eight cards.
+ * Top rail resumes ~10px to the right of the painted emblem; left rail resumes
+ * ~10px below it. Right/bottom stay continuous. No clip-path/mask is used, so
+ * the card itself never develops transparent corner cut-outs.
+ */
+.game-card:after{
+  content:"" !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:1 !important;
+  pointer-events:none !important;
+  border-radius:18px !important;
+  background:
+    linear-gradient(90deg,
+      transparent 0 var(--sk-v111-frame-top-start),
+      rgba(230,232,239,.70) var(--sk-v111-frame-top-start),
+      rgba(214,154,50,.72) 72%,
+      rgba(230,232,239,.50) 100%) top left / 100% 1px no-repeat,
+    linear-gradient(180deg,
+      transparent 0 var(--sk-v111-frame-left-start),
+      rgba(230,232,239,.62) var(--sk-v111-frame-left-start),
+      rgba(214,154,50,.48) 100%) top left / 1px 100% no-repeat,
+    linear-gradient(180deg,
+      rgba(230,232,239,.60),
+      rgba(214,154,50,.42) 46%,
+      rgba(230,232,239,.43)) top right / 1px 100% no-repeat,
+    linear-gradient(90deg,
+      rgba(230,232,239,.54),
+      rgba(214,154,50,.50) 55%,
+      rgba(230,232,239,.44)) bottom left / 100% 1px no-repeat !important;
+  filter:drop-shadow(0 0 5px rgba(214,154,50,.05));
+}
+
+.game-card .game-top{
+  min-height:112px !important;
+  overflow:visible !important;
+  position:relative;
+  z-index:2;
+}
+
+/* Keep the original 80px layout slot, so copy/buttons do not get pushed around. */
+.game-card .game-icon{
+  width:80px !important;
+  height:112px !important;
+  flex:0 0 80px !important;
+  margin-left:-15px !important;
+  margin-right:15px !important;
+  display:grid !important;
+  place-items:start !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  position:relative !important;
+  z-index:4 !important;
+}
+
+.game-card .game-icon .shield-king-game-art{
+  width:var(--sk-v111-emblem-w) !important;
+  height:var(--sk-v111-emblem-h) !important;
+  max-width:none !important;
+  margin:0 !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  position:relative !important;
+  z-index:5 !important;
+  transform:
+    translate(var(--sk-v111-emblem-optical-x),calc(var(--sk-v111-emblem-rise) * -1)) !important;
+  transform-origin:top left !important;
+  filter:none !important;
+  pointer-events:none;
+}
+
+.game-card .btn-row,
+.game-card > .btn,
+.game-card > button{
+  position:relative;
+  z-index:6;
+}
+
+/* Give the larger protruding emblems enough vertical air between cards. */
+.game-card + .game-card{
+  margin-top:34px !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 2. Accepted rules/book WebP: move only the painted image box, never the
+ *    button/wrapper. Applies to card-side rules buttons and in-game top rules.
+ * -------------------------------------------------------------------------- */
+.game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+  transform:translate(2px,-3px) !important;
+  transform-origin:center !important;
+}
+
+.turn-actions .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+  transform:translate(2px,-3px) !important;
+}
+
+/* --------------------------------------------------------------------------
+ * 3. App-entry preloader only: full-screen, borderless scattered assembly.
+ *    No .mgw-phase-b-* selectors are present, so game-entry animation remains
+ *    exactly on its existing implementation/timing.
+ * -------------------------------------------------------------------------- */
+.preloader{
+  overflow:hidden !important;
+  background:
+    radial-gradient(circle at 50% 38%,rgba(178,116,255,.24),transparent 28%),
+    radial-gradient(circle at 18% 18%,rgba(233,236,244,.055),transparent 22%),
+    radial-gradient(circle at 82% 76%,rgba(255,212,92,.08),transparent 24%),
+    linear-gradient(180deg,#10131B 0%,#090B11 100%) !important;
+}
+
+.preloader .load-card{
+  width:100% !important;
+  max-width:none !important;
+  min-height:70vh;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  isolation:isolate;
+}
+
+.preloader .load-card:before{
+  content:"" !important;
+  position:fixed !important;
+  inset:-35vmax !important;
+  z-index:-2;
+  pointer-events:none;
+  border:0 !important;
+  border-radius:50% !important;
+  background:
+    conic-gradient(from 10deg,
+      transparent 0 18%,
+      rgba(233,236,244,.05) 22%,
+      transparent 29% 52%,
+      rgba(178,116,255,.07) 59%,
+      transparent 68% 82%,
+      rgba(255,212,92,.045) 87%,
+      transparent 94%) !important;
+  transform:none;
+  animation:shieldKingV111FieldSpin 8s linear infinite !important;
+}
+
+.preloader .load-card:after{
+  content:"";
+  position:absolute;
+  width:min(74vw,320px);
+  aspect-ratio:1;
+  border-radius:50%;
+  z-index:-1;
+  pointer-events:none;
+  background:radial-gradient(circle,rgba(178,116,255,.13),rgba(115,91,255,.035) 42%,transparent 70%);
+  filter:blur(2px);
+  animation:shieldKingV111CorePulse 1.65s ease-in-out infinite;
+}
+
+.preloader .abstract-loader{
+  width:210px !important;
+  height:210px !important;
+  margin:0 auto 26px !important;
+  background:url('../../icons/shield-king/mgw-mark.svg') center/112px 112px no-repeat !important;
+  filter:drop-shadow(0 18px 34px rgba(0,0,0,.34)) drop-shadow(0 0 16px rgba(233,236,244,.08)) !important;
+  isolation:isolate;
+  animation:shieldKingV111MarkBreathe 1.6s cubic-bezier(.22,1,.36,1) infinite;
+}
+
+.preloader .abstract-loader:before{
+  inset:15px !important;
+  border:1px solid rgba(233,236,244,.25) !important;
+  border-top-color:rgba(247,248,252,.78) !important;
+  border-right-color:rgba(255,212,92,.58) !important;
+  animation:shieldKingLoaderOrbit 2.35s linear infinite !important;
+}
+
+.preloader .abstract-loader:after{
+  inset:34px !important;
+  border:1px solid rgba(178,116,255,.24) !important;
+  border-left-color:rgba(233,236,244,.55) !important;
+  animation:shieldKingLoaderOrbitReverse 1.75s linear infinite !important;
+}
+
+.preloader .abstract-loader .shape{
+  z-index:2 !important;
+  opacity:0;
+  will-change:transform,opacity;
+}
+
+.preloader .abstract-loader .s1{
+  left:20px !important;
+  top:78px !important;
+  animation:shieldKingV111ScatterLeft 1.55s cubic-bezier(.16,1,.3,1) infinite !important;
+}
+.preloader .abstract-loader .s2{
+  right:20px !important;
+  top:78px !important;
+  animation:shieldKingV111ScatterRight 1.55s cubic-bezier(.16,1,.3,1) infinite !important;
+}
+.preloader .abstract-loader .s3{
+  width:52px !important;
+  height:29px !important;
+  left:79px !important;
+  top:17px !important;
+  animation:shieldKingV111ScatterCrown 1.55s cubic-bezier(.16,1,.3,1) infinite !important;
+}
+
+.preloader .abstract-loader .node{
+  z-index:4 !important;
+  opacity:0;
+  will-change:transform,opacity;
+}
+.preloader .abstract-loader .n1{animation:shieldKingV111NodeOne 1.55s ease-out infinite !important}
+.preloader .abstract-loader .n2{animation:shieldKingV111NodeTwo 1.55s ease-out infinite !important}
+.preloader .abstract-loader .n3{animation:shieldKingV111NodeThree 1.55s ease-out infinite !important}
+
+.preloader .load-card h1{
+  margin:0 !important;
+  font-size:30px !important;
+  animation:shieldKingV111CopyIn 1.55s cubic-bezier(.22,1,.36,1) infinite;
+}
+.preloader .load-card p{
+  margin:8px 0 0 !important;
+  animation:shieldKingV111CopyIn 1.55s .06s cubic-bezier(.22,1,.36,1) infinite both;
+}
+
+@keyframes shieldKingV111ScatterLeft{
+  0%{opacity:0;transform:translate(-42vw,24vh) rotate(-120deg) scale(.55)}
+  42%,72%{opacity:1;transform:translate(9px,0) rotate(4deg) scale(1)}
+  100%{opacity:.48;transform:translate(-18px,5px) rotate(-10deg) scale(.92)}
+}
+@keyframes shieldKingV111ScatterRight{
+  0%{opacity:0;transform:translate(42vw,-22vh) rotate(118deg) scale(.55)}
+  42%,72%{opacity:1;transform:translate(-9px,0) rotate(-4deg) scale(1)}
+  100%{opacity:.48;transform:translate(18px,5px) rotate(10deg) scale(.92)}
+}
+@keyframes shieldKingV111ScatterCrown{
+  0%{opacity:0;transform:translate(0,-36vh) rotate(26deg) scale(.5)}
+  42%,72%{opacity:1;transform:translateY(8px) rotate(0) scale(1)}
+  100%{opacity:.52;transform:translateY(-9px) rotate(-4deg) scale(.9)}
+}
+@keyframes shieldKingV111NodeOne{
+  0%{opacity:0;transform:translate(-35vw,-30vh) scale(.3)}
+  45%,72%{opacity:1;transform:translate(14px,20px) scale(1.35)}
+  100%{opacity:.2;transform:translate(-12px,-10px) scale(.7)}
+}
+@keyframes shieldKingV111NodeTwo{
+  0%{opacity:0;transform:translate(34vw,30vh) scale(.3)}
+  45%,72%{opacity:1;transform:translate(-12px,18px) scale(1.35)}
+  100%{opacity:.2;transform:translate(12px,-9px) scale(.7)}
+}
+@keyframes shieldKingV111NodeThree{
+  0%{opacity:0;transform:translate(-28vw,32vh) scale(.3)}
+  45%,72%{opacity:1;transform:translateY(-18px) scale(1.35)}
+  100%{opacity:.2;transform:translateY(10px) scale(.7)}
+}
+@keyframes shieldKingV111MarkBreathe{
+  0%{transform:scale(.88);opacity:.76}
+  42%,72%{transform:scale(1.04);opacity:1}
+  100%{transform:scale(.94);opacity:.86}
+}
+@keyframes shieldKingV111CopyIn{
+  0%{opacity:0;transform:translateY(16px);filter:blur(3px)}
+  42%,78%{opacity:1;transform:translateY(0);filter:blur(0)}
+  100%{opacity:.72;transform:translateY(2px);filter:blur(0)}
+}
+@keyframes shieldKingV111FieldSpin{to{transform:rotate(360deg)}}
+@keyframes shieldKingV111CorePulse{
+  0%,100%{transform:scale(.82);opacity:.42}
+  50%{transform:scale(1.12);opacity:.9}
+}
+
+@media (max-width:380px){
+  .game-card{
+    --sk-v111-emblem-w:138px;
+    --sk-v111-emblem-h:184px;
+    --sk-v111-emblem-rise:58px;
+    --sk-v111-emblem-optical-x:-19px;
+    --sk-v111-frame-top-start:121px;
+    --sk-v111-frame-left-start:135px;
+  }
+  .game-card .game-top{min-height:104px !important}
+  .game-card .game-icon{
+    width:72px !important;
+    height:104px !important;
+    flex-basis:72px !important;
+  }
+  .game-card + .game-card{margin-top:31px !important}
+  .preloader .abstract-loader{width:184px !important;height:184px !important;background-size:98px 98px !important}
+  .preloader .abstract-loader .s1{left:14px !important;top:66px !important}
+  .preloader .abstract-loader .s2{right:14px !important;top:66px !important}
+  .preloader .abstract-loader .s3{left:66px !important;top:13px !important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .preloader .load-card:before,
+  .preloader .load-card:after,
+  .preloader .abstract-loader,
+  .preloader .abstract-loader:before,
+  .preloader .abstract-loader:after,
+  .preloader .abstract-loader .shape,
+  .preloader .abstract-loader .node,
+  .preloader .load-card h1,
+  .preloader .load-card p{
+    animation:none !important;
+  }
+  .preloader .abstract-loader .shape,
+  .preloader .abstract-loader .node{opacity:1 !important}
+  .preloader .abstract-loader .s1{transform:translate(9px,0) rotate(4deg) !important}
+  .preloader .abstract-loader .s2{transform:translate(-9px,0) rotate(-4deg) !important}
+  .preloader .abstract-loader .s3{transform:translateY(8px) !important}
+}
