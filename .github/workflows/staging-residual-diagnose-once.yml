@@ -1,0 +1,54 @@
+name: Staging residual diagnosis once
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'agent/staging-residual-diagnose-once'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - name: Wait for exact staging deployment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          for attempt in $(seq 1 24); do
+            current="$(curl --fail --silent --show-error 'https://seashell-okapi-889488.hostingersite.com/bot/staging-e2e-readiness.php' | jq -r '.source_fingerprint_sha256 // empty')"
+            if test "$current" = "$expected"; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+      - name: Run protected read-only residual diagnosis
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          oidc_url="${ACTIONS_ID_TOKEN_REQUEST_URL}"
+          separator='?'
+          if [[ "$oidc_url" == *'?'* ]]; then separator='&'; fi
+          token="$(curl --fail --silent --show-error \
+            --header "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${oidc_url}${separator}audience=mini-games-world-staging-e2e" | jq -r '.value')"
+          test "$(awk -F. '{print NF}' <<<"$token")" = '3'
+          response="$(curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${token}" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data '{"action":"diagnose_invite_residuals"}' \
+            'https://seashell-okapi-889488.hostingersite.com/bot/staging-test-auth.php')"
+          printf '%s\n' "$response" | jq '{ok,service,read_only,status,recovery_ready,candidate_count,test_player_candidate_count,terminal_staging_candidate_count,blocker_codes,production_changed,live_payments_used,authorization_mode}'
+          test "$(jq -r '.ok' <<<"$response")" = 'true'
+          test "$(jq -r '.read_only' <<<"$response")" = 'true'
+          test "$(jq -r '.production_changed' <<<"$response")" = 'false'
+          test "$(jq -r '.live_payments_used' <<<"$response")" = 'false'
