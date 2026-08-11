@@ -1,0 +1,55 @@
+name: Shield King V114.1 focused verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v1141-exact-polish
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v1141-focused-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 76fc6cd87d83b11aec464fbb2baf7d74d1717d73
+          fetch-depth: 1
+      - name: Verify V114.1 source contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          css=Path('app/assets/css/shield-king-icons-v11.css').read_text()
+          main=Path('app/assets/css/main.css').read_text()
+          pre=Path('app/assets/js/components/preloader.js').read_text()
+          entry=Path('app/v110.php').read_text()
+          checks={
+            'desktop copy gap owner':'padding:8px 49px 0 105px !important' in css,
+            'small copy gap owner':'padding-left:101px !important' in css,
+            'same icon size':'width:176px !important' in css and 'height:235px !important' in css,
+            'same left cover':'left:-57px !important' in css,
+            'same text/button gap':'margin-top:20px !important' in css,
+            'desktop book nudge':'translate(-1px,-1px)' in css,
+            'mobile book untouched':'transform:none !important' in css,
+            'min intro':'APP_ENTRY_MIN_VISIBLE_MS = 2100' in pre,
+            'animation-end gate':'getFiniteAnimationRemainingMs(el)' in pre and "getAnimations({ subtree:true })" in pre,
+            'finite only':'Number.isFinite(endTime)' in pre and 'Number.isFinite(currentTime)' in pre,
+            'settle':'APP_ENTRY_ANIMATION_SETTLE_MS = 90' in pre,
+            'css cache':"shield-king-icons-v11.css?v=135&icons=c1efd5af&review=visual-polish-exact" in main,
+            'preloader cache':'preloader.js?v=44&intro=v1141' in entry,
+            'entry header':'shield-king-v1141-animation-end-gated-assembly' in entry,
+            'phase B isolated':'.mgw-phase-b-' not in css,
+          }
+          failed=[k for k,v in checks.items() if not v]
+          if failed: raise SystemExit('FAILED: '+', '.join(failed))
+          print(f'V114.1 focused verifier: {len(checks)}/{len(checks)} PASS')
+          PY
+          git fetch --no-tags --depth=1 origin 8e777a8c562da42ed00566288bdd8b9c4cf1a27c
+          changed="$(git diff --name-only 8e777a8c562da42ed00566288bdd8b9c4cf1a27c HEAD)"
+          printf '%s\n' "$changed"
+          test "$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)" -eq 4
+          test "$(printf '%s\n' "$changed" | grep -Ec '^(app/assets/css/shield-king-icons-v11.css|app/assets/css/main.css|app/assets/js/components/preloader.js|app/v110.php)$')" -eq 4
