@@ -198,6 +198,18 @@ final class StagingTestInviteResidualRecoveryService
             }
             if ($idPresent) continue;
 
+            $matchId = trim((string)($invite['match_id'] ?? ''));
+            $matchCount = (int)$database->fetchValue(
+                'SELECT COUNT(*) FROM mgw_matches
+                 WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
+                ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
+            );
+            // DB-only rows already tied to normalized match history are retained
+            // lifecycle history. They are neither residual candidates nor blockers.
+            if ($matchId !== '' || $matchCount !== 0) {
+                continue;
+            }
+
             $inviterId = trim((string)($invite['inviter_legacy_user_id'] ?? ''));
             $inviteeId = trim((string)($invite['invitee_legacy_user_id'] ?? ''));
             $participantIds = array_values(array_unique(array_filter(
@@ -230,21 +242,6 @@ final class StagingTestInviteResidualRecoveryService
                 $blockers
             );
             if ($ownershipByLegacyId === null) continue;
-
-            if (trim((string)($invite['match_id'] ?? '')) !== '') {
-                $blockers[] = 'invite_attached_to_match';
-                continue;
-            }
-
-            $matchCount = (int)$database->fetchValue(
-                'SELECT COUNT(*) FROM mgw_matches
-                 WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
-                ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
-            );
-            if ($matchCount !== 0) {
-                $blockers[] = 'invite_referenced_by_match';
-                continue;
-            }
 
             $notifications = $database->fetchAll(
                 'SELECT * FROM mgw_notifications
