@@ -1,0 +1,80 @@
+name: Staging residual recovery retained history focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-residual-recovery-history-classification
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: df5b9e58098ce11b3ea0f55ce1ade71174d4b633
+      BASE_SHA: 237f8b4399b7df480cc6b25b29e089c23699ba91
+      SERVICE: bot/services/StagingTestInviteResidualRecoveryService.php
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact verifier and product boundaries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/staging-residual-recovery-history-classification-verifier.yml'
+          actual="$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")"
+          expected=$'bot/services/StagingTestInviteResidualRecoveryService.php\nbot/tests/ProductionMvp14R13StagingInviteResidualSafeDiagnosisTest.php'
+          test "${actual}" = "${expected}"
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app e2e bot/invites/RuntimeInviteRepository.php bot/notifications/RuntimeNotificationRepository.php bot/services/GitHubActionsOidcVerifier.php bot/services/GameService.php bot/services/GameRuntimeService.php
+
+      - name: Verify PHP syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l "${SERVICE}"
+          php -l bot/tests/ProductionMvp14R13StagingInviteResidualSafeDiagnosisTest.php
+
+      - name: Verify retained history precedes residual safety
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          history_line="$(grep -nF '$matchId = trim' "${SERVICE}" | head -1 | cut -d: -f1)"
+          participant_line="$(grep -nF '$inviterId = trim' "${SERVICE}" | head -1 | cut -d: -f1)"
+          safety_line="$(grep -nF '$status = trim' "${SERVICE}" | head -1 | cut -d: -f1)"
+          ownership_line="$(grep -nF '$ownershipByLegacyId = $this->validateInviteOwnership' "${SERVICE}" | head -1 | cut -d: -f1)"
+          test -n "$history_line" && test -n "$participant_line" && test -n "$safety_line" && test -n "$ownership_line"
+          test "$history_line" -lt "$participant_line"
+          test "$history_line" -lt "$safety_line"
+          test "$history_line" -lt "$ownership_line"
+          grep -Fq "WHERE invite_id = :invite_id OR source_match_id = :source_match_id" "${SERVICE}"
+          grep -Fq "if (\$matchId !== '' || \$matchCount !== 0)" "${SERVICE}"
+          ! grep -Fq "'invite_attached_to_match'" "${SERVICE}"
+          ! grep -Fq "'invite_referenced_by_match'" "${SERVICE}"
+
+      - name: Verify orphan safety and deletion surface remain strict
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          statuses="$(sed -n '/private const TEST_PLAYER_SAFE_STATUSES = \[/,/^    \];/p' "${SERVICE}")"
+          printf '%s\n' "$statuses" | grep -Fq "'draft', 'pending', 'awaiting_start', 'declined'"
+          printf '%s\n' "$statuses" | grep -Fq "'cancelled', 'expired', 'timed_out'"
+          if printf '%s\n' "$statuses" | grep -Fq "'active'"; then exit 1; fi
+          terminal="$(sed -n '/private const TERMINAL_SAFE_STATUSES = \[/,/^    \];/p' "${SERVICE}")"
+          printf '%s\n' "$terminal" | grep -Fq "'declined', 'cancelled', 'expired', 'timed_out'"
+          old_delete="$(git show "${BASE_SHA}:${SERVICE}" | grep -c 'DELETE FROM ')"
+          new_delete="$(git show "${FEATURE_SHA}:${SERVICE}" | grep -c 'DELETE FROM ')"
+          test "$old_delete" = "$new_delete"
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" --unified=0 -- "${SERVICE}" ':!bot/tests/**' || true
+
+      - name: Run current history and diagnosis contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ProductionMvp14R13StagingInviteResidualSafeDiagnosisTest.php
+          php bot/tests/StagingInviteLifecycleParityReconciliationTest.php
+          php bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
