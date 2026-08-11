@@ -39,6 +39,7 @@ app/assets/css/shield-king-icons-v6.css
 app/assets/css/shield-king-icons-v7.css
 app/assets/css/shield-king-icons-v8.css
 app/assets/css/shield-king-icons-v9.css
+app/assets/css/shield-king-icons-v10.css
 app/assets/shield-king-icon.php
 app/assets/icons/shield-king/accepted/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
 app/assets/icons/shield-king/accepted/files/games/tic-tac-toe.webp
