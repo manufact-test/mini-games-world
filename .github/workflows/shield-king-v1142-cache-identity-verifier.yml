@@ -1,0 +1,46 @@
+name: Shield King V114.2 cache identity verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v1142-cache-identity-fix
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v1142-cache-identity-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 3d0a45007fb82983ac126ad820e59d8d5538ff76
+          fetch-depth: 1
+      - name: Verify exact cache-only presentation scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          main=Path('app/assets/css/main.css').read_text()
+          v110=Path('app/v110.php').read_text()
+          v114=Path('app/v114.php').read_text()
+          checks={
+            'v11 fresh leaf cache':"shield-king-icons-v11.css?v=136&icons=c1efd5af&review=visual-polish-exact" in main,
+            'user fresh root cache':'main.css?v=135&sk=3&icons=c1efd5af&render=15&review=visual-polish-exact' in v110,
+            'canonical fresh root cache':'main.css?v=135&sk=3&icons=c1efd5af&render=15&review=visual-polish-exact' in v114,
+            'user intro owner unchanged':'preloader.js?v=44&intro=v1141' in v110,
+            'canonical intro owner unchanged':'preloader.js?v=44&intro=v1141' in v114,
+            'phase b build unchanged':'X-MGW-Phase-B-Build: phase-b-current-v121' in v114,
+            'phase b entry unchanged':'phase-b-current-entry.js?v=121&b=2cee1709e1fe' in v114,
+          }
+          failed=[k for k,v in checks.items() if not v]
+          if failed: raise SystemExit('FAILED: '+', '.join(failed))
+          print(f'V114.2 cache verifier: {len(checks)}/{len(checks)} PASS')
+          PY
+          git fetch --no-tags --depth=1 origin 407471aef87e82ef8304a570900474f318853ffe
+          changed="$(git diff --name-only 407471aef87e82ef8304a570900474f318853ffe HEAD)"
+          printf '%s\n' "$changed"
+          test "$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)" -eq 3
+          test "$(printf '%s\n' "$changed" | grep -Ec '^(app/assets/css/main.css|app/v110.php|app/v114.php)$')" -eq 3
