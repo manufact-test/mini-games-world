@@ -36,8 +36,6 @@ $allowedCodes = [
     'invite_non_test_nonterminal',
     'invite_participant_ownership_invalid',
     'invite_participant_ownership_mismatch',
-    'invite_attached_to_match',
-    'invite_referenced_by_match',
     'notification_not_invite_participant',
     'notification_ownership_mismatch',
     'notification_still_in_json',
@@ -46,6 +44,11 @@ $allowedCodes = [
 foreach ($allowedCodes as $code) {
     $assert(str_contains($service, "'{$code}'"), 'Missing safe blocker code: ' . $code);
 }
+$assert(!str_contains($service, "'invite_attached_to_match'")
+    && !str_contains($service, "'invite_referenced_by_match'")
+    && str_contains($service, "if (\$matchId !== '' || \$matchCount !== 0) {")
+    && str_contains($service, 'They are neither residual candidates nor blockers.'),
+    'Normalized match history must be retained before residual blocker classification.');
 $assert(!str_contains($service, "'invite_not_test_players'")
     && !str_contains($service, "'notification_not_test_players'"),
     'Non-test terminal staging rows must be classified by lifecycle and ownership rather than blanket identity rejection.');
