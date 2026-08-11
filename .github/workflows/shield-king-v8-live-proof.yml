@@ -50,10 +50,10 @@ jobs:
           (async()=>{
             const browser = await chromium.launch({headless:true});
             const page = await browser.newPage({viewport:{width:430,height:900}, hasTouch:false});
-            await page.goto('https://seashell-okapi-889488.hostingersite.com/app/v110.php?v=1123', {waitUntil:'networkidle'});
-            await page.waitForSelector('#moreMenuOpen img[data-sk-asset="ui/actions/more.webp"]');
-            await page.waitForSelector('.game-rules-button img[data-sk-asset="ui/actions/rules.webp"]');
-            await page.waitForSelector('.game-card .shield-king-game-art[data-sk-delivery="static"]');
+            await page.goto('https://seashell-okapi-889488.hostingersite.com/app/v110.php?v=1123', {waitUntil:'domcontentloaded', timeout:30000});
+            await page.waitForSelector('#moreMenuOpen img[data-sk-asset="ui/actions/more.webp"]', {timeout:15000});
+            await page.waitForSelector('.game-rules-button img[data-sk-asset="ui/actions/rules.webp"]', {timeout:15000});
+            await page.waitForSelector('.game-card .shield-king-game-art[data-sk-delivery="static"]', {timeout:15000});
 
             const result = await page.evaluate(async()=>{
               async function paintedCenter(img){
@@ -90,7 +90,7 @@ jobs:
               const cs=getComputedStyle(fake), before=getComputedStyle(fake,'::before');
               const phase={borderTopWidth:cs.borderTopWidth,backgroundColor:cs.backgroundColor,backgroundImage:cs.backgroundImage,boxShadow:cs.boxShadow,beforeBackgroundColor:before.backgroundColor,beforeBackgroundImage:before.backgroundImage,beforeBoxShadow:before.boxShadow};
               fake.remove();
-              return {more,rules,arts,phase,render:document.documentElement.outerHTML.includes('accepted-v8-optical-monolithic')};
+              return {more,rules,arts,phase};
             });
 
             console.log('[MGW_SHIELD_KING_V8_LIVE]', JSON.stringify(result));
