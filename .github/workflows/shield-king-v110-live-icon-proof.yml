@@ -1,0 +1,90 @@
+name: Shield King live Telegram v110 icon proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v110-live-icon-proof'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 3b96586c59b8e9d4489e1b27d124735198e0f379
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Prove real v110 accepted icon render
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > /tmp/prove.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const origin = 'https://seashell-okapi-889488.hostingersite.com';
+          const browser = await chromium.launch({ headless:true });
+          const context = await browser.newContext({ viewport:{ width:390, height:600 }, locale:'ru-RU' });
+          const page = await context.newPage();
+          const response = await page.goto(`${origin}/app/v110.php?v=1123&icon_proof=4`, { waitUntil:'domcontentloaded', timeout:35000 });
+          if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
+          if (response.headers()['x-mgw-icon-render'] !== 'accepted-v4-authoritative-v110') {
+            throw new Error('wrong v110 icon render header');
+          }
+          await page.waitForFunction(() => document.querySelectorAll('.game-card img.shield-king-game-art[data-sk-asset^="games/"]').length === 8, null, { timeout:15000 });
+          const games = await page.$$eval('.game-card img.shield-king-game-art[data-sk-asset^="games/"]', images => images.map(img => ({
+            asset:img.dataset.skAsset,
+            complete:img.complete,
+            width:img.naturalWidth,
+            height:img.naturalHeight,
+            src:img.currentSrc || img.src,
+          })));
+          if (games.length !== 8) throw new Error(`expected 8 game art images, got ${games.length}`);
+          for (const game of games) {
+            if (!game.complete || game.width !== 384 || game.height !== 512) throw new Error(`bad game art ${JSON.stringify(game)}`);
+            if (!game.src.includes('/app/assets/shield-king-icon.php') || !game.src.includes('v=c1efd5af')) throw new Error(`wrong game art endpoint ${game.src}`);
+          }
+          for (const selector of [
+            '#notificationsOpen img[data-sk-asset="ui/navigation/notifications.webp"]',
+            '#moreMenuOpen img[data-sk-asset="ui/actions/more.webp"]',
+            '.game-card .game-rules-button img[data-sk-asset="ui/actions/rules.webp"]',
+            '[data-invite-friend] img[data-sk-asset="ui/actions/invite.webp"]',
+            '.balance-label img[data-sk-asset="ui/economy/coins.webp"]',
+            '.balance-label img[data-sk-asset="ui/economy/premium-currency.webp"]',
+          ]) {
+            await page.waitForSelector(selector, { state:'attached', timeout:10000 });
+          }
+          await page.click('#moreMenuOpen');
+          await page.waitForSelector('#matchHistoryBtn', { state:'visible', timeout:5000 });
+          await page.waitForFunction(() => document.querySelectorAll('.menu-list .menu-item').length >= 7, null, { timeout:5000 });
+          const menu = await page.evaluate(() => {
+            const last = document.getElementById('matchHistoryBtn')?.getBoundingClientRect();
+            const sheet = document.getElementById('sheet')?.getBoundingClientRect();
+            const list = document.querySelector('.menu-list');
+            return {
+              count:document.querySelectorAll('.menu-list .menu-item').length,
+              lastTop:last?.top ?? -1,
+              lastBottom:last?.bottom ?? 9999,
+              sheetTop:sheet?.top ?? -1,
+              sheetBottom:sheet?.bottom ?? 9999,
+              viewport:window.innerHeight,
+              scrollHeight:list?.scrollHeight ?? 0,
+              clientHeight:list?.clientHeight ?? 0,
+            };
+          });
+          if (menu.count < 7) throw new Error(`menu count ${menu.count}`);
+          if (menu.lastTop < 0 || menu.lastBottom > menu.viewport) throw new Error(`last menu row clipped ${JSON.stringify(menu)}`);
+          console.log('[MGW_V110_ACCEPTED_ICON_PROOF]', JSON.stringify({games,menu}));
+          await browser.close();
+          JS
+          node /tmp/prove.mjs
