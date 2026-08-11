@@ -31,11 +31,12 @@ jobs:
         run: |
           set -Eeuo pipefail
           origin='https://seashell-okapi-889488.hostingersite.com'
-          curl --fail --silent --show-error "$origin/app/v110.php?v=1123&icon_proof=4" > /tmp/v110.html
-          curl --fail --silent --show-error "$origin/app/assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=4" > /tmp/main-v110.js
-          curl --fail --silent --show-error "$origin/app/assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=4" > /tmp/shell.js
-          curl --fail --silent --show-error "$origin/app/assets/js/games/game-card-copy.js?v=82&sk=4&icons=c1efd5af" > /tmp/game-card-copy.js
-          curl --fail --silent --show-error "$origin/app/assets/js/components/shield-king-visuals.js?v=126&sk=4&icons=c1efd5af" > /tmp/visuals.js
+          c='curl --fail --silent --show-error --connect-timeout 10 --max-time 25'
+          $c "$origin/app/v110.php?v=1123&icon_proof=4" > /tmp/v110.html
+          $c "$origin/app/assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=4" > /tmp/main-v110.js
+          $c "$origin/app/assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=4" > /tmp/shell.js
+          $c "$origin/app/assets/js/games/game-card-copy.js?v=82&sk=4&icons=c1efd5af" > /tmp/game-card-copy.js
+          $c "$origin/app/assets/js/components/shield-king-visuals.js?v=126&sk=4&icons=c1efd5af" > /tmp/visuals.js
           printf '%s\n' '--- deployed v110 anchors ---'
           grep -F './assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=4' /tmp/v110.html
           grep -F "main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=4" /tmp/main-v110.js
@@ -44,7 +45,8 @@ jobs:
           grep -F "games/tic-tac-toe.webp" /tmp/game-card-copy.js
           grep -F "ui/navigation/notifications.webp" /tmp/visuals.js
           printf '%s\n' '--- accepted endpoint headers ---'
-          curl --fail --silent --show-error --head "$origin/app/assets/shield-king-icon.php?v=c1efd5af&asset=games%2Ftic-tac-toe.webp" | grep -Ei 'HTTP/|content-type:|content-length:|x-mgw-shield-king-icon-export:'
+          $c --dump-header /tmp/icon.headers --output /dev/null "$origin/app/assets/shield-king-icon.php?v=c1efd5af&asset=games%2Ftic-tac-toe.webp"
+          grep -Ei 'HTTP/|content-type:|content-length:|x-mgw-shield-king-icon-export:' /tmp/icon.headers
       - name: Diagnose real v110 browser execution
         shell: bash
         run: |
