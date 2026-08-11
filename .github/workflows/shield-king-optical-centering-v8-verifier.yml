@@ -1,0 +1,66 @@
+name: Shield King optical centering V8 focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-optical-centering-v8
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: 79037e621ed62df32a3f8f582379067f7f1a00f8
+      BASE_SHA: 937a6ae3bc167b7e870d8635ab5d8c8df79583a5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact verifier and product boundaries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/shield-king-optical-centering-v8-verifier.yml'
+          actual="$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")"
+          expected=$'app/assets/css/main.css\napp/assets/css/shield-king-icons-v6.css\napp/v110.php\nbot/helpers/staging-e2e-runtime-files.txt\nbot/tests/ShieldKingOpticalCenteringV8ContractTest.php'
+          test "${actual}" = "${expected}"
+
+      - name: Verify product contract and PHP syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l bot/tests/ShieldKingOpticalCenteringV8ContractTest.php
+          php bot/tests/ShieldKingOpticalCenteringV8ContractTest.php
+
+      - name: Verify no runtime board or loader lifecycle owner changed
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/js app/assets/css/games app/assets/css/components/preloader.css app/assets/css/shield-king-v2.css bot/services/GameService.php bot/services/GameRuntimeService.php bot/services/MatchPreparationClockService.php bot/services/MatchPreparationRuntimeService.php
+          css=app/assets/css/shield-king-icons-v6.css
+          ! grep -Fq '.mgw-phase-b-countdown' "$css"
+          ! grep -Fq '.mgw-phase-b-launch-ring' "$css"
+          ! grep -Fq 'animation:' "$css"
+          ! grep -Fq 'transition:' "$css"
+
+      - name: Verify fine-pointer optical offsets and rich-art dimensions
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          css=app/assets/css/shield-king-icons-v6.css
+          grep -Fq '@media (pointer:fine)' "$css"
+          grep -Fq 'transform:translateY(-3px) !important;' "$css"
+          grep -Fq 'transform:translateY(3px) !important;' "$css"
+          grep -Fq 'width:92px !important;' "$css"
+          grep -Fq 'height:123px !important;' "$css"
+          grep -Fq 'transform:translateX(-10px) !important;' "$css"
+          grep -Fq '.mgw-phase-b-launch-card{' "$css"
+          grep -Fq 'border:0 !important;' "$css"
+          grep -Fq 'background:transparent !important;' "$css"
+          grep -Fq 'box-shadow:none !important;' "$css"
