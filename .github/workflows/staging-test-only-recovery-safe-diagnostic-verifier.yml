@@ -1,0 +1,50 @@
+name: Staging test-only recovery safe diagnostic focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-test-only-recovery-safe-diagnostic
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/staging-test-only-recovery-safe-diagnostic-verifier'
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: 427228077eba8cf8edf5302f860393e3aaa77381
+      BASE_SHA: 31b2e5b3fed5f8b2d348a5f8acc45865aefad12d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact diagnostic boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/staging-test-only-recovery-safe-diagnostic-verifier.yml'
+          test "$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")" = 'bot/staging-test-only-invite-recovery.php'
+
+      - name: Verify endpoint syntax and safe disclosure contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/staging-test-only-invite-recovery.php
+          grep -Fq "'reason_code' => \$reasonCode" bot/staging-test-only-invite-recovery.php
+          grep -Fq "'stage' => \$stage" bot/staging-test-only-invite-recovery.php
+          grep -Fq "'excessive_candidates'" bot/staging-test-only-invite-recovery.php
+          grep -Fq "'ownership_mismatch'" bot/staging-test-only-invite-recovery.php
+          ! grep -Eq "'message'[[:space:]]*=>[[:space:]]*\$error->getMessage|echo[[:space:]].*\$error->getMessage" bot/staging-test-only-invite-recovery.php
+
+      - name: Verify recovery and auth owners are unchanged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- bot/services/GitHubActionsOidcVerifier.php
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- e2e/staging-global-setup.mjs
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app bot/services/GameService.php bot/services/GameRuntimeService.php
