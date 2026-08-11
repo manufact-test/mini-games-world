@@ -1,0 +1,164 @@
+name: Shield King V7 live proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v7-live-proof'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 937a6ae3bc167b7e870d8635ab5d8c8df79583a5
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Wait for exact Hostinger V7 identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          for attempt in $(seq 1 30); do
+            header=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -D - -o /dev/null "$origin/app/v110.php?v=1123&v7_live_proof=1" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-mgw-icon-render"{print $2}' | tail -n1 || true)
+            if [ "$header" = 'accepted-v7-clean-optics' ]; then
+              echo "Hostinger has exact V7 render identity on attempt $attempt."
+              exit 0
+            fi
+            echo "Waiting for V7; got '${header:-none}' (attempt $attempt/30)."
+            sleep 10
+          done
+          exit 1
+      - name: Prove requested V7 visual ownership in live browser
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > .tmp-v7-proof.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const origin = 'https://seashell-okapi-889488.hostingersite.com';
+          const browser = await chromium.launch({ headless:true });
+          const context = await browser.newContext({ viewport:{ width:430, height:720 }, locale:'ru-RU' });
+          const page = await context.newPage();
+          const response = await page.goto(`${origin}/app/v110.php?v=1123&v7_live_proof=1`, { waitUntil:'domcontentloaded', timeout:35000 });
+          if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
+          if ((response.headers()['x-mgw-icon-render'] || '') !== 'accepted-v7-clean-optics') throw new Error('wrong V7 live identity');
+
+          const richSelector = '.game-card img.shield-king-game-art[data-sk-delivery="static"][data-sk-asset^="games/"]';
+          await page.waitForFunction(sel => document.querySelectorAll(sel).length === 8, richSelector, { timeout:15000 });
+          await page.waitForFunction(sel => [...document.querySelectorAll(sel)].every(img => img.complete && img.naturalWidth === 384 && img.naturalHeight === 512), richSelector, { timeout:15000 });
+          await page.waitForTimeout(1200);
+
+          const home = await page.evaluate((richSelector) => {
+            const style = el => getComputedStyle(el);
+            const rect = el => el.getBoundingClientRect();
+            const centered = (button, img) => {
+              const b = rect(button), i = rect(img);
+              return {
+                dx: Math.round(((i.left + i.width/2) - (b.left + b.width/2))*100)/100,
+                dy: Math.round(((i.top + i.height/2) - (b.top + b.height/2))*100)/100,
+              };
+            };
+            const bell = document.querySelector('#notificationsOpen');
+            const more = document.querySelector('#moreMenuOpen');
+            const bellImg = bell?.querySelector(':scope > img[data-sk-asset]');
+            const moreImg = more?.querySelector(':scope > img[data-sk-asset]');
+            const gameTiles = [...document.querySelectorAll('.game-card .game-icon')].map(el => ({
+              bg: style(el).backgroundColor,
+              bgImage: style(el).backgroundImage,
+              borderTop: style(el).borderTopWidth,
+              shadow: style(el).boxShadow,
+              radius: style(el).borderRadius,
+            }));
+            const rich = [...document.querySelectorAll(richSelector)].map(img => ({
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+              filter: style(img).filter,
+              src: img.currentSrc || img.src,
+            }));
+            const balanceCards = [...document.querySelectorAll('.balance-card')].map(card => ({paddingLeft:style(card).paddingLeft}));
+            const balanceIcons = [...document.querySelectorAll('.balance-label .shield-king-label-icon')].map(img => ({
+              blend:style(img).mixBlendMode,
+              filter:style(img).filter,
+              transform:style(img).transform,
+            }));
+            const invites = [...document.querySelectorAll('.btn[data-invite-friend] > .shield-king-button-icon')].map(img => ({
+              blend:style(img).mixBlendMode,
+              filter:style(img).filter,
+              transform:style(img).transform,
+            }));
+            const rules = [...document.querySelectorAll('.game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]')].map(img => ({
+              blend:style(img).mixBlendMode,
+              filter:style(img).filter,
+              transform:style(img).transform,
+            }));
+            return {
+              bell: bell && bellImg ? centered(bell,bellImg) : null,
+              more: more && moreImg ? centered(more,moreImg) : null,
+              bellFilter: bellImg ? style(bellImg).filter : null,
+              moreFilter: moreImg ? style(moreImg).filter : null,
+              bellBlend: bellImg ? style(bellImg).mixBlendMode : null,
+              moreBlend: moreImg ? style(moreImg).mixBlendMode : null,
+              gameTiles, rich, balanceCards, balanceIcons, invites, rules,
+            };
+          }, richSelector);
+
+          for (const name of ['bell','more']) {
+            const pos = home[name];
+            if (!pos || Math.abs(pos.dx) > 0.6 || Math.abs(pos.dy) > 0.6) throw new Error(`${name} not geometrically centered ${JSON.stringify(pos)}`);
+          }
+          if (home.bellBlend !== 'screen' || home.moreBlend !== 'screen') throw new Error('header dark-pixel blend is not active');
+          if ((home.bellFilter || '').includes('drop-shadow') || (home.moreFilter || '').includes('drop-shadow')) throw new Error('header black CSS shadow still active');
+          if (home.gameTiles.length !== 8) throw new Error(`wrong game tile count ${home.gameTiles.length}`);
+          for (const tile of home.gameTiles) {
+            if (tile.bg !== 'rgba(0, 0, 0, 0)' || tile.bgImage !== 'none' || tile.borderTop !== '0px' || tile.shadow !== 'none' || tile.radius !== '0px') {
+              throw new Error(`obsolete game tile remains ${JSON.stringify(tile)}`);
+            }
+          }
+          if (home.rich.length !== 8 || home.rich.some(x => x.width !== 384 || x.height !== 512 || x.filter !== 'none')) throw new Error(`rich art presentation mismatch ${JSON.stringify(home.rich)}`);
+          if (home.balanceCards.some(x => x.paddingLeft !== '10px')) throw new Error(`balance left alignment mismatch ${JSON.stringify(home.balanceCards)}`);
+          for (const group of [home.balanceIcons, home.invites, home.rules]) {
+            if (!group.length) throw new Error('expected accepted small icon group is missing');
+            if (group.some(x => x.blend !== 'screen' || (x.filter || '').includes('drop-shadow'))) throw new Error(`black shadow cleanup not active ${JSON.stringify(group)}`);
+          }
+
+          await page.click('#moreMenuOpen');
+          await page.waitForSelector('.sheet .menu-list', { state:'visible', timeout:8000 });
+          const menu = await page.evaluate(() => {
+            const shortcut = document.querySelector('[data-account-orders-shortcut] .account-menu-icon');
+            const shortcutImg = shortcut?.querySelector('img');
+            const menuIcons = [...document.querySelectorAll('.sheet .menu-item .shield-king-menu-icon')];
+            const s = el => getComputedStyle(el);
+            return {
+              shortcut: shortcut ? {
+                bg:s(shortcut).backgroundColor,
+                border:s(shortcut).borderTopWidth,
+                shadow:s(shortcut).boxShadow,
+                radius:s(shortcut).borderRadius,
+                imgBlend:shortcutImg ? s(shortcutImg).mixBlendMode : null,
+                imgFilter:shortcutImg ? s(shortcutImg).filter : null,
+              } : null,
+              menuIcons: menuIcons.map(img => ({blend:s(img).mixBlendMode,filter:s(img).filter,transform:s(img).transform})),
+            };
+          });
+          if (!menu.shortcut) throw new Error('My applications icon is missing');
+          if (menu.shortcut.bg !== 'rgba(0, 0, 0, 0)' || menu.shortcut.border !== '0px' || menu.shortcut.shadow !== 'none' || menu.shortcut.radius !== '0px') throw new Error(`My applications secondary tile remains ${JSON.stringify(menu.shortcut)}`);
+          if (menu.shortcut.imgBlend !== 'screen' || (menu.shortcut.imgFilter || '').includes('drop-shadow')) throw new Error('My applications icon still has black CSS shadow');
+          if (menu.menuIcons.length < 6) throw new Error(`menu icons missing ${menu.menuIcons.length}`);
+          if (menu.menuIcons.some(x => x.blend !== 'screen' || (x.filter || '').includes('drop-shadow'))) throw new Error(`menu icon black shadow remains ${JSON.stringify(menu.menuIcons)}`);
+
+          console.log('[MGW_SHIELD_KING_V7_LIVE_PASS]', JSON.stringify({home,menu}));
+          await browser.close();
+          JS
+          node .tmp-v7-proof.mjs
