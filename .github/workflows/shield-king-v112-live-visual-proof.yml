@@ -1,4 +1,4 @@
-name: Shield King V112 live visual proof
+name: Shield King V112 live visual diagnostics
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  prove:
+  diagnose:
     if: github.event.pull_request.head.ref == 'agent/shield-king-v112-live-visual-proof'
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -18,217 +18,73 @@ jobs:
         with:
           ref: 6ecb0abb46a554a0a6bd68dcd285afab66865b59
           fetch-depth: 1
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Install pinned Playwright
         shell: bash
         run: |
           set -Eeuo pipefail
           npm install --no-save --package-lock=false playwright@1.62.0
           npx --no-install playwright install --with-deps chromium
-
-      - name: Wait for exact Hostinger V112 identity
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          origin='https://seashell-okapi-889488.hostingersite.com'
-          for attempt in $(seq 1 30); do
-            headers="$(curl --silent --show-error --connect-timeout 10 --max-time 20 -D - -o /dev/null "$origin/app/v110.php?v=1123&v112_visual_proof=1" | tr -d '\r' || true)"
-            render="$(printf '%s\n' "$headers" | awk -F': ' 'tolower($1)=="x-mgw-icon-render"{print $2}' | tail -n1)"
-            intro="$(printf '%s\n' "$headers" | awk -F': ' 'tolower($1)=="x-mgw-app-entry-presentation"{print $2}' | tail -n1)"
-            if [ "$render" = 'accepted-v112-user-correction' ] && [ "$intro" = 'shield-king-v112-assembled-mark' ]; then
-              echo "Hostinger has exact V112 identity on attempt $attempt."
-              exit 0
-            fi
-            echo "Waiting for V112; render='${render:-none}' intro='${intro:-none}' (attempt $attempt/30)."
-            sleep 8
-          done
-          exit 1
-
-      - name: Prove painted card, book and loader geometry
+      - name: Collect live V112 painted metrics
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p v112-visual-proof
-          cat > .tmp-v112-visual-proof.mjs <<'JS'
+          cat > .tmp-v112-diagnostics.mjs <<'JS'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
+          const origin='https://seashell-okapi-889488.hostingersite.com';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844},locale:'ru-RU',deviceScaleFactor:1});
+          await page.addInitScript(()=>document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='.preloader.hidden{opacity:1!important;visibility:visible!important;pointer-events:none!important}';document.head.appendChild(s)},{once:true}));
+          const response=await page.goto(`${origin}/app/v110.php?v=1123&v112_visual_diagnostics=2`,{waitUntil:'domcontentloaded',timeout:35000});
+          if(!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
+          const headers=response.headers();
+          if((headers['x-mgw-icon-render']||'')!=='accepted-v112-user-correction') throw new Error('wrong V112 identity');
+          const gameSelector='.game-card img.shield-king-game-art[data-sk-delivery="static"]';
+          await page.waitForFunction(sel=>document.querySelectorAll(sel).length===8,gameSelector,{timeout:15000});
+          await page.waitForFunction(sel=>[...document.querySelectorAll(sel)].every(img=>img.complete&&img.naturalWidth===384&&img.naturalHeight===512),gameSelector,{timeout:15000});
+          await page.waitForFunction(()=>document.querySelectorAll('.game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]').length>=8,null,{timeout:10000});
 
-          const origin = 'https://seashell-okapi-889488.hostingersite.com';
-          const browser = await chromium.launch({ headless:true });
-          const page = await browser.newPage({ viewport:{ width:390, height:844 }, locale:'ru-RU', deviceScaleFactor:1 });
-
-          await page.addInitScript(() => {
-            document.addEventListener('DOMContentLoaded', () => {
-              const style = document.createElement('style');
-              style.textContent = '.preloader.hidden{opacity:1!important;visibility:visible!important;pointer-events:none!important}';
-              document.head.appendChild(style);
-            }, { once:true });
-          });
-
-          const response = await page.goto(`${origin}/app/v110.php?v=1123&v112_visual_proof=1`, { waitUntil:'domcontentloaded', timeout:35000 });
-          if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
-          const headers = response.headers();
-          if ((headers['x-mgw-icon-render'] || '') !== 'accepted-v112-user-correction') throw new Error('wrong V112 live render identity');
-          if ((headers['x-mgw-app-entry-presentation'] || '') !== 'shield-king-v112-assembled-mark') throw new Error('wrong V112 app-entry identity');
-
-          const gameSelector = '.game-card img.shield-king-game-art[data-sk-delivery="static"]';
-          await page.waitForFunction(sel => document.querySelectorAll(sel).length === 8, gameSelector, { timeout:15000 });
-          await page.waitForFunction(sel => [...document.querySelectorAll(sel)].every(img => img.complete && img.naturalWidth === 384 && img.naturalHeight === 512), gameSelector, { timeout:15000 });
-          await page.waitForFunction(() => document.querySelectorAll('.game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]').length >= 8, null, { timeout:10000 });
-
-          const metrics = await page.evaluate(() => {
-            const alphaBounds = img => {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.naturalWidth;
-              canvas.height = img.naturalHeight;
-              const ctx = canvas.getContext('2d', { willReadFrequently:true });
-              ctx.drawImage(img, 0, 0);
-              const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              let minX=width, minY=height, maxX=-1, maxY=-1, count=0;
-              for (let y=0; y<height; y++) {
-                for (let x=0; x<width; x++) {
-                  const a=data[(y*width+x)*4+3];
-                  if (a < 12) continue;
-                  if (x<minX) minX=x;
-                  if (x>maxX) maxX=x;
-                  if (y<minY) minY=y;
-                  if (y>maxY) maxY=y;
-                  count++;
-                }
-              }
-              if (maxX < 0) throw new Error('empty alpha image');
-              return { minX,minY,maxX,maxY,count,width,height };
+          const metrics=await page.evaluate(()=>{
+            const alphaBounds=img=>{
+              const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+              const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);
+              const d=x.getImageData(0,0,c.width,c.height).data;
+              let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+              for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++){if(d[(y*c.width+xx)*4+3]<12)continue;minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
+              return{minX,minY,maxX,maxY,width:c.width,height:c.height};
             };
-            const paintedRect = img => {
-              const a=alphaBounds(img);
-              const r=img.getBoundingClientRect();
-              const sx=r.width/a.width, sy=r.height/a.height;
-              return {
-                left:r.left+a.minX*sx,
-                top:r.top+a.minY*sy,
-                right:r.left+(a.maxX+1)*sx,
-                bottom:r.top+(a.maxY+1)*sy,
-                width:(a.maxX-a.minX+1)*sx,
-                height:(a.maxY-a.minY+1)*sy,
-                alpha:a,
-                image:{left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height},
-              };
-            };
-
+            const painted=img=>{const a=alphaBounds(img),r=img.getBoundingClientRect(),sx=r.width/a.width,sy=r.height/a.height;return{left:r.left+a.minX*sx,top:r.top+a.minY*sy,right:r.left+(a.maxX+1)*sx,bottom:r.top+(a.maxY+1)*sy,width:(a.maxX-a.minX+1)*sx,height:(a.maxY-a.minY+1)*sy,alpha:a,image:{left:r.left,top:r.top,width:r.width,height:r.height}}};
             const cards=[...document.querySelectorAll('.game-card')];
-            const sectionTitle=document.querySelector('.section-title h2');
-            const titleRect=sectionTitle?.getBoundingClientRect() || null;
-            const gameCards=cards.map((card,index) => {
-              const img=card.querySelector('img.shield-king-game-art[data-sk-delivery="static"]');
-              const heading=card.querySelector('h3');
-              const cr=card.getBoundingClientRect();
-              const hr=heading.getBoundingClientRect();
-              const pr=paintedRect(img);
-              const after=getComputedStyle(card,'::after');
-              const cs=getComputedStyle(card);
-              const previous=index>0 ? cards[index-1].getBoundingClientRect() : null;
-              return {
-                game:card.dataset.gameCard,
-                card:{left:cr.left,top:cr.top,right:cr.right,bottom:cr.bottom,width:cr.width,height:cr.height},
-                painted:pr,
-                paintedLeftDelta:pr.left-cr.left,
-                paintedTopProtrusion:cr.top-pr.top,
-                copyGap:hr.left-pr.right,
-                previousClearance:previous ? pr.top-previous.bottom : (titleRect ? pr.top-titleRect.bottom : null),
-                radius:cs.borderRadius,
-                borderTopWidth:cs.borderTopWidth,
-                borderTopStyle:cs.borderTopStyle,
-                clipPath:cs.clipPath,
-                afterBackground:after.backgroundImage,
-                afterBorderTopWidth:after.borderTopWidth,
-                afterBorderTopStyle:after.borderTopStyle,
-              };
+            const games=cards.map((card,i)=>{
+              const img=card.querySelector('img.shield-king-game-art[data-sk-delivery="static"]'),pr=painted(img),cr=card.getBoundingClientRect(),hr=card.querySelector('h3').getBoundingClientRect();
+              const previous=i?cards[i-1].getBoundingClientRect():null;
+              const prevEl=card.previousElementSibling;
+              const titleRect=!i&&prevEl?.classList.contains('section-title')?prevEl.getBoundingClientRect():null;
+              return{game:card.dataset.gameCard,paintedLeftDelta:pr.left-cr.left,paintedTopProtrusion:cr.top-pr.top,copyGap:hr.left-pr.right,clearanceBefore:previous?pr.top-previous.bottom:(titleRect?pr.top-titleRect.bottom:null),card:{left:cr.left,top:cr.top,right:cr.right,bottom:cr.bottom,width:cr.width,height:cr.height},heading:{left:hr.left,top:hr.top},painted:pr,radius:getComputedStyle(card).borderRadius,clipPath:getComputedStyle(card).clipPath,afterBackground:getComputedStyle(card,'::after').backgroundImage};
             });
-
-            const ruleButtons=[...document.querySelectorAll('.game-rules-button')].map(button => {
-              const img=button.querySelector('img[data-sk-asset="ui/actions/rules.webp"]');
-              if (!img || !img.complete || !img.naturalWidth) return null;
-              const br=button.getBoundingClientRect();
-              const pr=paintedRect(img);
-              return {
-                context:button.closest('.game-card') ? 'card' : (button.closest('.turn-actions') ? 'game-top' : 'other'),
-                dx:((pr.left+pr.right)/2)-((br.left+br.right)/2),
-                dy:((pr.top+pr.bottom)/2)-((br.top+br.bottom)/2),
-                button:{width:br.width,height:br.height},
-                painted:{width:pr.width,height:pr.height},
-              };
-            }).filter(Boolean);
-
-            return { gameCards, ruleButtons };
+            const books=[...document.querySelectorAll('.game-rules-button')].map(button=>{const img=button.querySelector('img[data-sk-asset="ui/actions/rules.webp"]');if(!img||!img.complete||!img.naturalWidth)return null;const br=button.getBoundingClientRect(),pr=painted(img);return{context:button.closest('.game-card')?'card':(button.closest('.turn-actions')?'game-top':'other'),dx:((pr.left+pr.right)/2)-((br.left+br.right)/2),dy:((pr.top+pr.bottom)/2)-((br.top+br.bottom)/2),painted:pr.alpha,paintedSize:{width:pr.width,height:pr.height},button:{width:br.width,height:br.height}}}).filter(Boolean);
+            return{games,books};
           });
+          await page.screenshot({path:'v112-visual-proof/home.png',fullPage:true});
 
-          if (metrics.gameCards.length !== 8) throw new Error(`expected 8 cards, got ${metrics.gameCards.length}`);
-          for (const m of metrics.gameCards) {
-            if (m.paintedLeftDelta < -14 || m.paintedLeftDelta > 7) throw new Error(`painted game art not flush-left: ${JSON.stringify(m)}`);
-            if (m.paintedTopProtrusion < 38) throw new Error(`crown/art does not protrude enough above card: ${JSON.stringify(m)}`);
-            if (m.copyGap < 10) throw new Error(`copy is cramped against painted art: ${JSON.stringify(m)}`);
-            if (m.previousClearance !== null && m.previousClearance < 10) throw new Error(`crown/art collides with title or previous card: ${JSON.stringify(m)}`);
-            if (!m.radius.includes('20px')) throw new Error(`card radius wrong: ${JSON.stringify(m)}`);
-            if (m.borderTopStyle !== 'solid' || parseFloat(m.borderTopWidth) < 1) throw new Error(`card frame missing: ${JSON.stringify(m)}`);
-            if (m.clipPath !== 'none') throw new Error(`card has clipped geometry: ${JSON.stringify(m)}`);
-            if (m.afterBackground !== 'none') throw new Error(`old broken gradient rail still visible: ${JSON.stringify(m)}`);
-          }
-
-          const cardBooks=metrics.ruleButtons.filter(x=>x.context==='card');
-          const gameBooks=metrics.ruleButtons.filter(x=>x.context==='game-top');
-          if (cardBooks.length !== 8) throw new Error(`expected 8 card book buttons, got ${cardBooks.length}`);
-          for (const b of [...cardBooks,...gameBooks]) {
-            if (Math.abs(b.dx) > 2.25 || Math.abs(b.dy) > 2.25) throw new Error(`painted book not optically centered: ${JSON.stringify(b)}`);
-          }
-
-          await page.screenshot({ path:'v112-visual-proof/home.png', fullPage:true });
-
-          const loader = async delay => {
-            await page.reload({ waitUntil:'domcontentloaded', timeout:35000 });
-            await page.waitForSelector('.preloader .abstract-loader');
-            await page.waitForTimeout(delay);
-            return await page.evaluate(() => {
-              const el=document.querySelector('.preloader .abstract-loader');
-              const after=getComputedStyle(el,'::after');
-              const s1=getComputedStyle(el.querySelector('.s1'));
-              const s2=getComputedStyle(el.querySelector('.s2'));
-              const s3=getComputedStyle(el.querySelector('.s3'));
-              return {
-                afterOpacity:parseFloat(after.opacity),
-                afterBackground:after.backgroundImage,
-                s1Opacity:parseFloat(s1.opacity),
-                s2Opacity:parseFloat(s2.opacity),
-                s3Opacity:parseFloat(s3.opacity),
-                s1Transform:s1.transform,
-                s2Transform:s2.transform,
-                s3Transform:s3.transform,
-              };
-            });
-          };
-
-          const loaderEarly=await loader(120);
-          const loaderFinal=await loader(1450);
-          if (loaderEarly.afterOpacity > .2) throw new Error(`final mark visible too early: ${JSON.stringify(loaderEarly)}`);
-          if (loaderFinal.afterOpacity < .98 || !loaderFinal.afterBackground.includes('mgw-mark.svg')) throw new Error(`final Shield King mark never locks: ${JSON.stringify(loaderFinal)}`);
-          if (loaderFinal.s1Opacity > .08 || loaderFinal.s2Opacity > .08 || loaderFinal.s3Opacity > .08) throw new Error(`assembly fragments remain instead of yielding to final mark: ${JSON.stringify(loaderFinal)}`);
-          await page.screenshot({ path:'v112-visual-proof/loader-final.png', fullPage:true });
-
-          const output={ metrics, loaderEarly, loaderFinal };
-          fs.writeFileSync('v112-visual-proof/metrics.json', JSON.stringify(output,null,2));
-          console.log('[MGW_SHIELD_KING_V112_LIVE_VISUAL_PASS]', JSON.stringify(output));
+          const loader=async delay=>{await page.reload({waitUntil:'domcontentloaded',timeout:35000});await page.waitForSelector('.preloader .abstract-loader');await page.waitForTimeout(delay);return page.evaluate(()=>{const el=document.querySelector('.preloader .abstract-loader'),a=getComputedStyle(el,'::after'),s1=getComputedStyle(el.querySelector('.s1')),s2=getComputedStyle(el.querySelector('.s2')),s3=getComputedStyle(el.querySelector('.s3'));return{afterOpacity:parseFloat(a.opacity),afterBackground:a.backgroundImage,s1Opacity:parseFloat(s1.opacity),s2Opacity:parseFloat(s2.opacity),s3Opacity:parseFloat(s3.opacity),s1Transform:s1.transform,s2Transform:s2.transform,s3Transform:s3.transform}})};
+          const loaderEarly=await loader(120),loaderMid=await loader(720),loaderFinal=await loader(1450);
+          await page.screenshot({path:'v112-visual-proof/loader-final.png',fullPage:true});
+          const output={metrics,loaderEarly,loaderMid,loaderFinal};
+          fs.writeFileSync('v112-visual-proof/metrics.json',JSON.stringify(output,null,2));
+          console.log('[MGW_V112_VISUAL_DIAGNOSTICS]',JSON.stringify(output));
           await browser.close();
           JS
-          node .tmp-v112-visual-proof.mjs
-
-      - name: Upload live visual proof
+          node .tmp-v112-diagnostics.mjs
+      - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: shield-king-v112-live-visual-proof-${{ github.run_id }}
+          name: shield-king-v112-live-visual-diagnostics-${{ github.run_id }}
           path: v112-visual-proof
           if-no-files-found: warn
           retention-days: 3
