@@ -1,0 +1,64 @@
+name: Shield King V9 game-card emblem frame focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v9-game-card-emblem-frame
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: f8dcf35c701544445f723749332caf00df73df7e
+      BASE_SHA: 4b0d8f4216654bc9a1f5e3f7267ee25bd855380a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact verifier and product boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/shield-king-v9-game-card-emblem-frame-verifier.yml'
+          actual="$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")"
+          expected=$'app/assets/css/main.css\napp/assets/css/shield-king-icons-v7.css\napp/v110.php\nbot/helpers/staging-e2e-runtime-files.txt\nbot/tests/ShieldKingGameCardEmblemFrameContractTest.php'
+          test "${actual}" = "${expected}"
+
+      - name: Verify visual-only ownership boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/games app/assets/js bot/services/GameService.php bot/services/GameRuntimeService.php bot/services/MatchPreparationRuntimeService.php bot/services/MatchPreparationClockService.php
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/components/preloader.css app/assets/css/shield-king-icons-v6.css
+
+      - name: Verify syntax and V9 contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l bot/tests/ShieldKingGameCardEmblemFrameContractTest.php
+          php bot/tests/ShieldKingGameCardEmblemFrameContractTest.php
+
+      - name: Verify frame geometry is isolated to game cards
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          css=app/assets/css/shield-king-icons-v7.css
+          grep -Fq -- '--sk-game-emblem-w:108px' "$css"
+          grep -Fq -- '--sk-game-emblem-gap:10px' "$css"
+          grep -Fq -- '--sk-game-frame-top-start:118px' "$css"
+          grep -Fq -- '--sk-game-frame-left-start:141px' "$css"
+          grep -Fq 'margin-left:-15px !important' "$css"
+          grep -Fq 'margin-right:15px !important' "$css"
+          grep -Fq 'transparent 0 var(--sk-game-frame-top-start)' "$css"
+          grep -Fq 'transparent 0 var(--sk-game-frame-left-start)' "$css"
+          ! grep -Fq '.mgw-phase-b-launch-card' "$css"
+          ! grep -Fq '.game-rules-button' "$css"
+          ! grep -Fq '#moreMenuOpen' "$css"
+          ! grep -Fq '#notificationsOpen' "$css"
