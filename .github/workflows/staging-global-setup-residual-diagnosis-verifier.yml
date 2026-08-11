@@ -1,0 +1,51 @@
+name: Staging global setup residual diagnosis focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-global-setup-residual-diagnosis
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Verify exact one-file boundary and syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FEATURE=3d7897e15bbf881e5d27a7057eecc99977f26bed
+          BASE=8d2d94cda9b6b314b43a8b390e223a2676cb186f
+          FILE=e2e/staging-global-setup.mjs
+          test "$(git rev-parse HEAD^)" = "$FEATURE"
+          test "$(git diff --name-only "$FEATURE" HEAD)" = '.github/workflows/staging-global-setup-residual-diagnosis-verifier.yml'
+          test "$(git diff --name-only "$BASE" "$FEATURE")" = "$FILE"
+          node --check "$FILE"
+      - name: Verify read-only diagnosis contract and ordering
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FILE=e2e/staging-global-setup.mjs
+          grep -Fq "action:'diagnose_invite_residuals'" "$FILE"
+          grep -Fq '[MGW_STAGING_INVITE_RESIDUAL_DIAGNOSIS]' "$FILE"
+          grep -Fq 'blocker_codes:Array.isArray(payload.blocker_codes)' "$FILE"
+          grep -Fq 'production_changed:payload.production_changed' "$FILE"
+          grep -Fq 'live_payments_used:payload.live_payments_used' "$FILE"
+          diag_line="$(grep -nF 'await diagnoseInviteResiduals();' "$FILE" | cut -d: -f1)"
+          reconcile_line="$(grep -nF 'await reconcileInviteResiduals();' "$FILE" | cut -d: -f1)"
+          test "$diag_line" -lt "$reconcile_line"
+          ! grep -Fq 'console.log(oidcToken)' "$FILE"
+          ! grep -Fq 'console.log(payload)' "$FILE"
+      - name: Verify application and recovery owners unchanged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE=8d2d94cda9b6b314b43a8b390e223a2676cb186f
+          FEATURE=3d7897e15bbf881e5d27a7057eecc99977f26bed
+          git diff --quiet "$BASE" "$FEATURE" -- app bot
