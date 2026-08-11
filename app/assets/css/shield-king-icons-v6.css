@@ -1,0 +1,78 @@
+/*
+ * Shield King optical centering V8.
+ * User-requested micro-corrections only: desktop optical centering, richer game-art presence,
+ * and one monolithic Phase B presentation surface. No lifecycle/runtime ownership changes.
+ */
+
+/*
+ * Accepted UI WebPs use a 128x128 transparent canvas. The image box can be mathematically
+ * centered while the painted glyph inside it is not optically centered. Keep the touch
+ * layout that was manually accepted and calibrate only the fine-pointer view reported by user.
+ */
+@media (pointer:fine){
+  .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+    transform:translateY(-3px) !important;
+  }
+
+  #moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]{
+    transform:translateY(3px) !important;
+  }
+
+  /* Bell is already visually accepted on desktop. */
+  #notificationsOpen > img[data-sk-asset="ui/navigation/notifications.webp"]{
+    transform:none !important;
+  }
+}
+
+/*
+ * Rich game artwork owns its frame. Increase its visible presence and let the painted frame
+ * sit closer to the card/button left edge despite transparent breathing room in the source.
+ */
+.game-card .game-top{
+  min-height:112px;
+}
+.game-card .game-icon{
+  width:80px !important;
+  height:112px !important;
+  flex:0 0 80px !important;
+  overflow:visible !important;
+}
+.game-card .game-icon .shield-king-game-art{
+  width:92px !important;
+  height:123px !important;
+  max-width:none !important;
+  margin:0 !important;
+  transform:translateX(-10px) !important;
+  transform-origin:center !important;
+  object-fit:contain !important;
+  filter:none !important;
+}
+
+/* Compact phones keep the same accepted art with a restrained size. */
+@media (max-width:380px){
+  .game-card .game-top{min-height:98px}
+  .game-card .game-icon{
+    width:72px !important;
+    height:98px !important;
+    flex-basis:72px !important;
+  }
+  .game-card .game-icon .shield-king-game-art{
+    width:82px !important;
+    height:110px !important;
+    transform:translateX(-8px) !important;
+  }
+}
+
+/*
+ * Phase B: keep the accepted animation and all timing/state behavior, but remove the bright
+ * outer card frame so the preparation animation reads as one continuous Shield King surface.
+ */
+.mgw-phase-b-launch-card{
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+.mgw-phase-b-launch-card:before{
+  background:transparent !important;
+  box-shadow:none !important;
+}
