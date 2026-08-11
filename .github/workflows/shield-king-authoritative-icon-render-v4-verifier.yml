@@ -1,0 +1,72 @@
+name: Shield King authoritative icon render V4 focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-authoritative-icon-render-fix
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: af47cd69f44dc91ebfd501486566b74abcbf1790
+      BASE_SHA: b174cdbc5bd6b4f366775f93922926670e0f345b
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact verifier and product boundaries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/shield-king-authoritative-icon-render-v4-verifier.yml'
+          actual="$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")"
+          expected=$'app/assets/css/main.css\napp/assets/css/shield-king-icons-v4.css\napp/assets/js/main-v110-handoff-shell.js\napp/assets/js/main-v110.js\napp/v110.php\nbot/helpers/staging-e2e-runtime-files.txt\nbot/tests/ShieldKingAuthoritativeIconRenderV4ContractTest.php'
+          test "${actual}" = "${expected}"
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/components/preloader.css app/assets/js/production-v110-acceptance-runtime.js app/assets/css/games app/assets/js/games/tictactoe app/assets/js/games/four-in-a-row app/assets/js/games/battleship app/assets/js/games/checkers app/assets/js/games/reversi app/assets/js/games/chess app/assets/js/games/go app/assets/js/games/domino bot/services/GameService.php bot/services/GameRuntimeService.php
+
+      - name: Verify syntax and focused contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l bot/tests/ShieldKingAuthoritativeIconRenderV4ContractTest.php
+          node --check app/assets/js/main-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/components/shield-king-visuals.js
+          node --check app/assets/js/games/game-card-copy.js
+          php bot/tests/ShieldKingSharedUiIntegrationContractTest.php
+          php bot/tests/ShieldKingAuthoritativeIconRenderV4ContractTest.php
+
+      - name: Prove real Telegram owner uses fresh accepted modules directly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -Fq "private const ENTRY_PATH = '/app/v110.php?v=1123';" bot/helpers/WebAppLaunchUrl.php
+          grep -Fq 'X-MGW-Icon-Render: accepted-v4-authoritative-v110' app/v110.php
+          grep -Fq "shield-king-visuals.js?v=126&sk=4&icons=c1efd5af" app/assets/js/main-v110-handoff-shell.js
+          grep -Fq "game-card-copy.js?v=82&sk=4&icons=c1efd5af" app/assets/js/main-v110-handoff-shell.js
+          test "$(grep -Fc 'initShieldKingVisuals();' app/assets/js/main-v110-handoff-shell.js)" = '1'
+          test "$(grep -Fc 'initGameCardCopy();' app/assets/js/main-v110-handoff-shell.js)" = '1'
+
+      - name: Verify V4 visibility corrections only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          css=app/assets/css/shield-king-icons-v4.css
+          grep -Fq '.shield-king-label-icon' "$css"
+          grep -Fq '.shield-king-button-icon' "$css"
+          grep -Fq 'ui/actions/rules.webp' "$css"
+          grep -Fq 'ui/actions/more.webp' "$css"
+          grep -Fq '.sheet:has(> .menu-list)' "$css"
+          grep -Fq 'overflow-y:auto' "$css"
+          ! grep -Fq '.preloader' "$css"
+          ! grep -Fq 'mgw-phase-b' "$css"
+          ! grep -Fq '#gameBoard' "$css"
+          ! grep -Fq '.board-cell' "$css"
