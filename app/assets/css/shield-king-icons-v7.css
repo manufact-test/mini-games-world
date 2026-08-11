@@ -1,0 +1,132 @@
+/*
+ * Shield King V9 — game-card emblem frame prototype.
+ * Visual-only experiment for the eight Home game cards.
+ * The accepted rich game artwork protrudes upward, stays flush with the card's left edge,
+ * and the metallic frame deliberately leaves ~10px of air to the artwork's right and bottom.
+ */
+
+.game-card{
+  --sk-game-emblem-w:108px;
+  --sk-game-emblem-h:144px;
+  --sk-game-emblem-rise:28px;
+  --sk-game-emblem-gap:10px;
+  --sk-game-frame-top-start:118px;
+  --sk-game-frame-left-start:141px;
+  border:0 !important;
+  border-radius:4px 20px 4px 14px !important;
+  overflow:visible !important;
+  background:
+    radial-gradient(circle at 8% -4%,rgba(214,154,50,.10),transparent 29%),
+    linear-gradient(150deg,rgba(43,32,58,.98) 0%,rgba(27,23,36,.99) 48%,rgba(18,19,27,.99) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.035),
+    inset 0 -1px 0 rgba(0,0,0,.35),
+    0 10px 28px rgba(0,0,0,.20) !important;
+}
+
+/* Subtle old-metal inner sheen. It stays below content and does not own geometry. */
+.game-card:before{
+  content:"" !important;
+  position:absolute !important;
+  inset:4px !important;
+  z-index:0 !important;
+  pointer-events:none !important;
+  border-radius:2px 16px 2px 10px !important;
+  background:
+    linear-gradient(135deg,rgba(230,232,239,.035),transparent 34%,rgba(214,154,50,.025) 78%,transparent) !important;
+  box-shadow:inset 0 0 0 1px rgba(230,232,239,.025) !important;
+}
+
+/*
+ * The frame is intentionally broken around the emblem:
+ * - top rail starts 10px after the emblem's right edge;
+ * - left rail starts 10px below the emblem's bottom edge;
+ * - right and bottom rails stay continuous.
+ */
+.game-card:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  border-radius:4px 20px 4px 14px;
+  background:
+    linear-gradient(90deg,
+      transparent 0 var(--sk-game-frame-top-start),
+      rgba(230,232,239,.68) var(--sk-game-frame-top-start),
+      rgba(214,154,50,.74) 72%,
+      rgba(230,232,239,.48) 100%) top left / 100% 1px no-repeat,
+    linear-gradient(180deg,
+      transparent 0 var(--sk-game-frame-left-start),
+      rgba(230,232,239,.60) var(--sk-game-frame-left-start),
+      rgba(214,154,50,.48) 100%) top left / 1px 100% no-repeat,
+    linear-gradient(180deg,
+      rgba(230,232,239,.58),
+      rgba(214,154,50,.40) 45%,
+      rgba(230,232,239,.40)) top right / 1px 100% no-repeat,
+    linear-gradient(90deg,
+      rgba(230,232,239,.52),
+      rgba(214,154,50,.48) 55%,
+      rgba(230,232,239,.42)) bottom left / 100% 1px no-repeat;
+  filter:drop-shadow(0 0 5px rgba(214,154,50,.045));
+}
+
+/* Keep all existing text/button coordinates. Only the emblem slot counterbalances its -15px left shift. */
+.game-card .game-top{
+  min-height:112px;
+  overflow:visible !important;
+}
+.game-card .game-icon{
+  width:80px !important;
+  height:112px !important;
+  flex:0 0 80px !important;
+  margin-left:-15px !important;
+  margin-right:15px !important;
+  place-items:start !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  position:relative !important;
+  z-index:3 !important;
+}
+.game-card .game-icon .shield-king-game-art{
+  width:var(--sk-game-emblem-w) !important;
+  height:var(--sk-game-emblem-h) !important;
+  max-width:none !important;
+  margin:0 !important;
+  transform:translateY(calc(var(--sk-game-emblem-rise) * -1)) !important;
+  transform-origin:top left !important;
+  object-fit:contain !important;
+  filter:none !important;
+  position:relative !important;
+  z-index:4 !important;
+}
+
+/* Buttons and copy remain where they were; only guarantee they paint over the decorative rails. */
+.game-card .game-top,
+.game-card .btn-row,
+.game-card > .btn,
+.game-card > button{
+  position:relative;
+  z-index:2;
+}
+
+@media (max-width:380px){
+  .game-card{
+    --sk-game-emblem-w:98px;
+    --sk-game-emblem-h:131px;
+    --sk-game-emblem-rise:24px;
+    --sk-game-frame-top-start:108px;
+    --sk-game-frame-left-start:132px;
+  }
+  .game-card .game-top{min-height:102px}
+  .game-card .game-icon{
+    width:72px !important;
+    height:102px !important;
+    flex-basis:72px !important;
+    margin-left:-15px !important;
+    margin-right:15px !important;
+  }
+}
