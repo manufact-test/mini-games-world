@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          cat > /tmp/prove.mjs <<'JS'
+          cat > .tmp-prove.mjs <<'JS'
           import { chromium } from 'playwright';
           const origin = 'https://seashell-okapi-889488.hostingersite.com';
           const browser = await chromium.launch({ headless:true });
@@ -87,4 +87,4 @@ jobs:
           console.log('[MGW_V110_ACCEPTED_ICON_PROOF]', JSON.stringify({games,menu}));
           await browser.close();
           JS
-          node /tmp/prove.mjs
+          node .tmp-prove.mjs
