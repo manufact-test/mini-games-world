@@ -26,7 +26,7 @@ jobs:
           set -Eeuo pipefail
           expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
           curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
-            "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php?v113_render_proof=2" > readiness.json
+            "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" > readiness.json
           python3 - readiness.json "$expected" <<'PY'
           import json,sys
           p=json.load(open(sys.argv[1],encoding='utf-8'))
