@@ -1,0 +1,161 @@
+/*
+ * Shield King icon cleanup V5.
+ * User-requested presentation-only corrections after accepted rich game art went live.
+ * No loaders, gameplay boards, game mechanics, polling, readiness or sync ownership.
+ */
+
+/*
+ * Small accepted UI art contains deliberate dark metallic pixels and earlier CSS also
+ * added black drop-shadows. Screen blending makes those dark pixels disappear into
+ * the existing control surface while keeping the silver/gold glyph itself readable.
+ * Rich game artwork is intentionally excluded from this treatment.
+ */
+.shield-king-metal-icon,
+.shield-king-button-icon,
+.shield-king-menu-icon,
+.shield-king-label-icon,
+.account-menu-icon > img{
+  mix-blend-mode:screen;
+  filter:brightness(1.18) contrast(1.06) !important;
+}
+
+/* Header actions: exact geometric centering; remove the old optical nudges/shadows. */
+#notificationsOpen,
+#moreMenuOpen{
+  display:grid;
+  place-items:center;
+  line-height:0;
+}
+#notificationsOpen > img[data-sk-asset="ui/navigation/notifications.webp"]{
+  width:34px !important;
+  height:34px !important;
+  margin:0 !important;
+  transform:none !important;
+  object-position:center !important;
+  filter:brightness(1.22) contrast(1.06) !important;
+}
+#moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]{
+  width:36px !important;
+  height:36px !important;
+  margin:0 !important;
+  transform:none !important;
+  object-position:center !important;
+  filter:brightness(1.24) contrast(1.05) !important;
+}
+
+/* "Мои заявки": use the accepted cart as an icon, not as an icon inside a second tile. */
+.account-menu-icon{
+  width:38px !important;
+  height:38px !important;
+  flex:0 0 38px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  padding:0 !important;
+}
+.account-menu-icon > img{
+  width:38px !important;
+  height:38px !important;
+  margin:0 !important;
+  transform:scale(1.08);
+  transform-origin:center;
+}
+
+/* Menu glyphs: no artificial dark drop-shadow/plate inside the row. */
+.menu-item .shield-king-menu-icon{
+  width:36px !important;
+  height:36px !important;
+  flex:0 0 36px !important;
+  margin:0 !important;
+  transform:none !important;
+}
+
+/* Balance labels: align the visible coin/gem closer to the value's left edge. */
+.balance-card{
+  padding-left:10px;
+}
+.balance-label{
+  gap:0 !important;
+}
+.balance-label .shield-king-label-icon{
+  width:32px !important;
+  height:32px !important;
+  flex:0 0 32px !important;
+  margin:0 -4px 0 0 !important;
+  transform:translateX(-5px) scale(1.16);
+  transform-origin:center;
+}
+
+/*
+ * Rich game artwork already has its own accepted royal frame/crown.
+ * Remove the obsolete square/tile that used to be the boundary of the old icon.
+ */
+.game-card .game-top{
+  align-items:center;
+  min-height:96px;
+}
+.game-card .game-icon{
+  width:72px !important;
+  height:96px !important;
+  flex:0 0 72px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  padding:0 !important;
+}
+.game-card .game-icon .shield-king-game-art{
+  display:block;
+  width:72px !important;
+  height:96px !important;
+  max-width:none;
+  margin:0 !important;
+  transform:none !important;
+  object-fit:contain;
+  filter:none !important;
+}
+
+/* Rules/book icon: keep the outer Shield King control, clean only the art inside it. */
+.game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+  margin:0 !important;
+  transform:none !important;
+  object-position:center !important;
+  filter:brightness(1.22) contrast(1.06) !important;
+}
+
+/* Invite envelope/person: larger clean glyph with no black CSS shadow. */
+.btn[data-invite-friend]{
+  gap:7px;
+}
+.btn[data-invite-friend] > .shield-king-button-icon{
+  width:32px !important;
+  height:32px !important;
+  flex:0 0 32px !important;
+  margin:0 !important;
+  transform:scale(1.15);
+  transform-origin:center;
+}
+
+/* Fine-pointer mode must use the same center as touch mode. */
+@media (pointer:fine){
+  #notificationsOpen > img[data-sk-asset="ui/navigation/notifications.webp"],
+  #moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"],
+  .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+    transform:none !important;
+  }
+}
+
+@media (max-width:380px){
+  .game-card .game-icon{
+    width:66px !important;
+    height:88px !important;
+    flex-basis:66px !important;
+  }
+  .game-card .game-icon .shield-king-game-art{
+    width:66px !important;
+    height:88px !important;
+  }
+  .game-card .game-top{min-height:88px}
+}
