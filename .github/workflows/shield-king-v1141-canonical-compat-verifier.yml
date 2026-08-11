@@ -1,0 +1,47 @@
+name: Shield King V114.1 canonical compat verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v1141-canonical-compat
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v1141-canonical-compat-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 38b9a5f8d829bf90a6220b449ce5984aa7523030
+          fetch-depth: 1
+      - name: Verify exact two-file compatibility scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          css=Path('app/assets/css/shield-king-icons-v11.css').read_text()
+          entry=Path('app/v114.php').read_text()
+          checks={
+            'canonical css cache':'main.css?v=134&sk=3&icons=c1efd5af&render=14&review=visual-polish-exact' in entry,
+            'canonical preloader cache':'preloader.js?v=44&intro=v1141' in entry,
+            'canonical presentation header':'shield-king-v1141-animation-end-gated-assembly' in entry,
+            'phase b build unchanged':"X-MGW-Phase-B-Build: phase-b-current-v121" in entry,
+            'phase b entry unchanged':'phase-b-current-entry.js?v=121&b=2cee1709e1fe' in entry,
+            'countdown fallback only':'background-color:rgba(6,8,13,.96) !important' in css,
+            'no phase b keyframe edit':'@keyframes mgwPhaseB' not in css,
+            'no phase b overlay edit':'.mgw-phase-b-launch-overlay' not in css,
+            'no phase b ring edit':'.mgw-phase-b-launch-ring' not in css,
+          }
+          failed=[k for k,v in checks.items() if not v]
+          if failed: raise SystemExit('FAILED: '+', '.join(failed))
+          print(f'canonical compat verifier: {len(checks)}/{len(checks)} PASS')
+          PY
+          git fetch --no-tags --depth=1 origin 8b4fdb6ee27731113deb167aeba77138f64d1c08
+          changed="$(git diff --name-only 8b4fdb6ee27731113deb167aeba77138f64d1c08 HEAD)"
+          printf '%s\n' "$changed"
+          test "$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)" -eq 2
+          test "$(printf '%s\n' "$changed" | grep -Ec '^(app/assets/css/shield-king-icons-v11.css|app/v114.php)$')" -eq 2
