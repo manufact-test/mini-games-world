@@ -85,6 +85,15 @@ function renderAllGameIcons(){
       const markup = ICONS[gameType];
       if (!icon || !markup) return;
 
+      // Shield King rich art is the accepted primary owner once present.
+      // This legacy deterministic layer remains only as a pre-init/failure fallback
+      // and must never overwrite the accepted static WebP inserted by game-card-copy.
+      const acceptedRichArt = icon.querySelector(':scope > img.shield-king-game-art[data-sk-delivery="static"][data-sk-asset^="games/"]');
+      if (acceptedRichArt) {
+        delete icon.dataset.mgwSvgIcon;
+        return;
+      }
+
       /* Legacy game-card rendering may clear innerHTML but leave the data marker.
        * Trust the actual SVG node, not the stale marker. */
       if (icon.dataset.mgwSvgIcon === gameType && icon.querySelector('svg')) return;
