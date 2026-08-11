@@ -1,0 +1,105 @@
+name: Shield King V8 live optical proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v8-live-proof'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+
+      - name: Wait for exact Hostinger deployment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          for attempt in $(seq 1 24); do
+            current="$(curl --fail --silent --show-error --connect-timeout 10 --max-time 25 'https://seashell-okapi-889488.hostingersite.com/bot/staging-e2e-readiness.php' | jq -r '.source_fingerprint_sha256 // empty')"
+            if test "$current" = "$expected"; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pinned Chromium
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false playwright@1.62.0
+          npx --no-install playwright install --with-deps chromium
+
+      - name: Prove painted glyph centers and V8 presentation on real staging
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async()=>{
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({viewport:{width:430,height:900}, hasTouch:false});
+            await page.goto('https://seashell-okapi-889488.hostingersite.com/app/v110.php?v=1123', {waitUntil:'networkidle'});
+            await page.waitForSelector('#moreMenuOpen img[data-sk-asset="ui/actions/more.webp"]');
+            await page.waitForSelector('.game-rules-button img[data-sk-asset="ui/actions/rules.webp"]');
+            await page.waitForSelector('.game-card .shield-king-game-art[data-sk-delivery="static"]');
+
+            const result = await page.evaluate(async()=>{
+              async function paintedCenter(img){
+                if (!img.complete) await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true});});
+                const c=document.createElement('canvas');
+                c.width=img.naturalWidth;c.height=img.naturalHeight;
+                const x=c.getContext('2d',{willReadFrequently:true});
+                x.drawImage(img,0,0);
+                const data=x.getImageData(0,0,c.width,c.height).data;
+                let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+                for(let yy=0;yy<c.height;yy++) for(let xx=0;xx<c.width;xx++){
+                  if(data[(yy*c.width+xx)*4+3]>10){minX=Math.min(minX,xx);minY=Math.min(minY,yy);maxX=Math.max(maxX,xx);maxY=Math.max(maxY,yy);}
+                }
+                if(maxX<0) throw new Error('no painted pixels');
+                const r=img.getBoundingClientRect();
+                return {
+                  x:r.left+(((minX+maxX+1)/2)/c.width)*r.width,
+                  y:r.top+(((minY+maxY+1)/2)/c.height)*r.height,
+                  bbox:{minX,minY,maxX,maxY}, box:{x:r.x,y:r.y,width:r.width,height:r.height}
+                };
+              }
+              async function delta(buttonSel,imgSel){
+                const button=document.querySelector(buttonSel), img=document.querySelector(imgSel);
+                const br=button.getBoundingClientRect();
+                const pc=await paintedCenter(img);
+                return {dx:+(pc.x-(br.left+br.width/2)).toFixed(2),dy:+(pc.y-(br.top+br.height/2)).toFixed(2),painted:pc};
+              }
+              const more=await delta('#moreMenuOpen','#moreMenuOpen img[data-sk-asset="ui/actions/more.webp"]');
+              const rules=await delta('.game-rules-button','.game-rules-button img[data-sk-asset="ui/actions/rules.webp"]');
+              const arts=[...document.querySelectorAll('.game-card .shield-king-game-art[data-sk-delivery="static"]')].map(img=>{
+                const r=img.getBoundingClientRect(); return {w:+r.width.toFixed(1),h:+r.height.toFixed(1),x:+r.x.toFixed(1),src:img.getAttribute('src')};
+              });
+              const fake=document.createElement('div'); fake.className='mgw-phase-b-launch-card'; document.body.appendChild(fake);
+              const cs=getComputedStyle(fake), before=getComputedStyle(fake,'::before');
+              const phase={borderTopWidth:cs.borderTopWidth,backgroundColor:cs.backgroundColor,backgroundImage:cs.backgroundImage,boxShadow:cs.boxShadow,beforeBackgroundColor:before.backgroundColor,beforeBackgroundImage:before.backgroundImage,beforeBoxShadow:before.boxShadow};
+              fake.remove();
+              return {more,rules,arts,phase,render:document.documentElement.outerHTML.includes('accepted-v8-optical-monolithic')};
+            });
+
+            console.log('[MGW_SHIELD_KING_V8_LIVE]', JSON.stringify(result));
+            if (Math.abs(result.more.dx)>2 || Math.abs(result.more.dy)>2) throw new Error(`more painted center off: ${JSON.stringify(result.more)}`);
+            if (Math.abs(result.rules.dx)>2 || Math.abs(result.rules.dy)>2) throw new Error(`rules painted center off: ${JSON.stringify(result.rules)}`);
+            if (result.arts.length !== 8) throw new Error(`expected 8 rich game arts, got ${result.arts.length}`);
+            if (!result.arts.every(a=>a.w>=90 && a.h>=120)) throw new Error(`game art not enlarged: ${JSON.stringify(result.arts)}`);
+            if (result.phase.borderTopWidth !== '0px' || result.phase.boxShadow !== 'none') throw new Error(`phase card frame remains: ${JSON.stringify(result.phase)}`);
+            if (result.phase.backgroundImage !== 'none' || result.phase.beforeBackgroundImage !== 'none') throw new Error(`phase card still has separate background: ${JSON.stringify(result.phase)}`);
+            await browser.close();
+          })().catch(err=>{console.error(err);process.exit(1);});
+          NODE
