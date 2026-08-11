@@ -45,7 +45,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=126&sk=3&icons=c1efd5af',
+    './assets/css/main.css?v=126&sk=3&icons=c1efd5af&render=4',
     $html
 );
 $html = str_replace(
@@ -55,7 +55,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af',
+    './assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=4',
     $html
 );
 $html = str_replace(
@@ -74,4 +74,5 @@ header('X-MGW-Invite-Graph: v1137');
 header('X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
 header('X-MGW-Icon-Pack: c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1');
+header('X-MGW-Icon-Render: accepted-v4-authoritative-v110');
 echo $html;
