@@ -51,12 +51,6 @@ final class StagingTestOnlyInviteOrphanRecoveryService
             }
             if (!$testOnly) continue;
 
-            $status = trim((string)($invite['status'] ?? ''));
-            $source = trim((string)($invite['source'] ?? ''));
-            if (!in_array($status, self::SAFE_STATUSES, true)
-                || !in_array($source, self::SAFE_SOURCES, true)) {
-                throw new RuntimeException('Staging test-only orphan recovery found unsafe A/B invite state.');
-            }
             $matchId = trim((string)($invite['match_id'] ?? ''));
             $matchRefs = (int)$database->fetchValue(
                 'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
@@ -67,6 +61,13 @@ final class StagingTestOnlyInviteOrphanRecoveryService
             // preserves the same row and excludes it from active JSON parity.
             if ($matchId !== '' || $matchRefs !== 0) {
                 continue;
+            }
+
+            $status = trim((string)($invite['status'] ?? ''));
+            $source = trim((string)($invite['source'] ?? ''));
+            if (!in_array($status, self::SAFE_STATUSES, true)
+                || !in_array($source, self::SAFE_SOURCES, true)) {
+                throw new RuntimeException('Staging test-only orphan recovery found unsafe A/B invite state.');
             }
 
             $this->assertOwnership($database, $invite, $participants);
