@@ -1,0 +1,38 @@
+name: Shield King deterministic icon owner focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-deterministic-icon-owner-fix
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-deterministic-icon-owner-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ad67c6fccf1bff61473a0c1d01a08940e8a05628
+          fetch-depth: 0
+      - name: Verify exact deterministic icon owner contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ShieldKingDeterministicIconOwnerContractTest.php
+      - name: Prove focused scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --name-only fe5384d3bcc3b5218e71a69bbc0ac2f50e538c67 ad67c6fccf1bff61473a0c1d01a08940e8a05628 | tee /tmp/changed.txt
+          allowed='^(app/assets/js/production-clean-entry-v110\.js|app/assets/js/production-deterministic-icons\.js|app/v110\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/ShieldKingDeterministicIconOwnerContractTest\.php)$'
+          if grep -Ev "$allowed" /tmp/changed.txt; then
+            echo 'Unexpected file outside focused owner fix.' >&2
+            exit 1
+          fi
+          if grep -E '^app/assets/css/(components/preloader\.css|games/)|^app/assets/js/games/.*/(entry|runtime|board)|^bot/services/(Game|MatchPreparation)' /tmp/changed.txt; then
+            echo 'Forbidden loader/gameplay owner changed.' >&2
+            exit 1
+          fi
