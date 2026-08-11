@@ -1,0 +1,65 @@
+name: Shield King V112 user-review correction focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v112-user-review-correction
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: a045bb0b0d25d7bab58a9e3f9465a3578b1480b0
+      BASE_SHA: 884feac427f63b04cc67a9fa028aaaad7fc0f00c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact verifier and product boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/shield-king-v112-user-review-correction-verifier.yml'
+          actual="$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")"
+          expected=$'app/assets/css/main.css\napp/assets/css/shield-king-icons-v9.css\napp/v110.php\nbot/helpers/staging-e2e-runtime-files.txt\nbot/tests/ShieldKingV112UserReviewCorrectionContractTest.php'
+          test "${actual}" = "${expected}"
+
+      - name: Verify no gameplay/runtime owner changes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/games app/assets/js bot/services bot/realtime bot/ledger bot/shop bot/payments bot/weekly
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/components/preloader.css app/assets/css/shield-king-icons-v3.css app/assets/css/shield-king-icons-v4.css app/assets/css/shield-king-icons-v5.css app/assets/css/shield-king-icons-v6.css app/assets/css/shield-king-icons-v7.css app/assets/css/shield-king-icons-v8.css
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/icons/shield-king/accepted app/assets/icons/shield-king/mgw-mark.svg
+
+      - name: Verify syntax and V112 contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l bot/tests/ShieldKingV112UserReviewCorrectionContractTest.php
+          php bot/tests/ShieldKingV112UserReviewCorrectionContractTest.php
+
+      - name: Verify requested visual geometry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          css=app/assets/css/shield-king-icons-v9.css
+          grep -Fq 'border-radius:20px !important' "$css"
+          grep -Fq 'left:-40px !important' "$css"
+          grep -Fq 'top:-92px !important' "$css"
+          grep -Fq 'width:190px !important' "$css"
+          grep -Fq 'height:253px !important' "$css"
+          grep -Fq '.section-title + .game-card{margin-top:54px !important}' "$css"
+          grep -Fq '.game-card + .game-card{margin-top:64px !important}' "$css"
+          grep -Fq 'transform:translate(-3px,-2px) !important' "$css"
+          grep -Fq 'skV112MarkLock' "$css"
+          grep -Fq 'forwards !important' "$css"
+          ! grep -Fq '.mgw-phase-b-' "$css"
+          ! grep -Fq 'clip-path:' "$css"
