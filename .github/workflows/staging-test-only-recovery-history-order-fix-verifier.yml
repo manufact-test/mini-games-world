@@ -1,0 +1,96 @@
+name: Staging test-only recovery history order focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-test-only-recovery-history-order-fix
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/staging-test-only-recovery-history-order-fix-verifier'
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: c955c11076e1f065d4aa43c36d41a26feeca8717
+      BASE_SHA: b02c4b175c9f05d4fc582c6faa571aee1dea9fbb
+      SERVICE: bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact verifier and product boundaries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/staging-test-only-recovery-history-order-fix-verifier.yml'
+          test "$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")" = "${SERVICE}"
+          test "$(git diff --numstat "${BASE_SHA}" "${FEATURE_SHA}" -- "${SERVICE}" | awk '{print $1":"$2}')" = '7:6'
+
+      - name: Verify PHP syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l "${SERVICE}"
+
+      - name: Prove retained history is classified before orphan safety gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import subprocess
+          base='b02c4b175c9f05d4fc582c6faa571aee1dea9fbb'
+          head='c955c11076e1f065d4aa43c36d41a26feeca8717'
+          path='bot/services/StagingTestOnlyInviteOrphanRecoveryService.php'
+          old=subprocess.check_output(['git','show',f'{base}:{path}'], text=True)
+          new=subprocess.check_output(['git','show',f'{head}:{path}'], text=True)
+
+          prefix="            if (!$testOnly) continue;\n"
+          suffix="            $this->assertOwnership($database, $invite, $participants);\n"
+          assert old.split(prefix,1)[0] == new.split(prefix,1)[0], 'unexpected change before classification block'
+          assert old.split(suffix,1)[1] == new.split(suffix,1)[1], 'unexpected change after classification block'
+
+          history="""            $matchId = trim((string)($invite['match_id'] ?? ''));
+            $matchRefs = (int)$database->fetchValue(
+                'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
+                ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
+            );
+            // A DB-only invite tied to a normalized match is retained history,
+            // not an orphan candidate. Runtime invite parity intentionally
+            // preserves the same row and excludes it from active JSON parity.
+            if ($matchId !== '' || $matchRefs !== 0) {
+                continue;
+            }
+"""
+          safety="""            $status = trim((string)($invite['status'] ?? ''));
+            $source = trim((string)($invite['source'] ?? ''));
+            if (!in_array($status, self::SAFE_STATUSES, true)
+                || !in_array($source, self::SAFE_SOURCES, true)) {
+                throw new RuntimeException('Staging test-only orphan recovery found unsafe A/B invite state.');
+            }
+"""
+          assert old.count(history) == 1 and new.count(history) == 1, 'history classification block changed'
+          assert old.count(safety) == 1 and new.count(safety) == 1, 'orphan safety block changed'
+          assert old.index(safety) < old.index(history), 'baseline ordering assumption changed'
+          assert new.index(history) < new.index(safety), 'retained history must be skipped before orphan safety'
+
+          statuses="""    private const SAFE_STATUSES = [
+        'draft', 'pending', 'accepted', 'awaiting_start',
+        'declined', 'cancelled', 'expired', 'timed_out',
+    ];
+"""
+          assert statuses in old and statuses in new, 'SAFE_STATUSES must remain exact'
+          assert "'active'" not in new[new.index('private const SAFE_STATUSES'):new.index('private const SAFE_SOURCES')], 'active must not become orphan-safe'
+          assert old.count('DELETE FROM ') == new.count('DELETE FROM '), 'delete surface changed'
+          print('history-before-orphan-safety ordering verified')
+          PY
+
+      - name: Verify runtime and visual owners are untouched
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app e2e bot/services/GitHubActionsOidcVerifier.php bot/invites/RuntimeInviteRepository.php bot/services/GameService.php bot/services/GameRuntimeService.php
