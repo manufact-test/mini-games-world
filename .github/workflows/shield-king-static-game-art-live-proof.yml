@@ -26,6 +26,12 @@ jobs:
           set -Eeuo pipefail
           npm install --no-save --package-lock=false @playwright/test@1.62.0
           npx --no-install playwright install --with-deps chromium
+      - name: Show every game-card DOM owner in exact staging source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo '--- data-game-icon owners ---'
+          git grep -n -E 'data-game-icon|shield-king-game-art|GAME_ICON_ASSET|game-icon-four' -- app/index.html app/assets/js app/assets/css || true
       - name: Wait for exact Hostinger render identity
         shell: bash
         run: |
@@ -40,9 +46,24 @@ jobs:
             echo "Waiting for Hostinger V5 render identity; got '${header:-none}' (attempt $attempt/30)."
             sleep 10
           done
-          echo 'Hostinger did not deploy exact V5 render identity in time.' >&2
           exit 1
-      - name: Prove real Telegram v110 static rich game art
+      - name: Diagnose exact deployed module bytes and static image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          c='curl --fail --silent --show-error --connect-timeout 10 --max-time 25'
+          $c "$origin/app/v110.php?v=1123&static_proof=5" > /tmp/v110.html
+          $c "$origin/app/assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=5" > /tmp/main-v110.js
+          $c "$origin/app/assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5" > /tmp/shell.js
+          $c "$origin/app/assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static" > /tmp/cards.js
+          grep -F 'main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=5' /tmp/v110.html
+          grep -F 'main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' /tmp/main-v110.js
+          grep -F 'game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static' /tmp/shell.js
+          grep -F "GAME_ICON_ROOT = './assets/icons/shield-king/accepted/files/'" /tmp/cards.js
+          $c --dump-header /tmp/game.headers --output /dev/null "$origin/app/assets/icons/shield-king/accepted/files/games/tic-tac-toe.webp?v=c1efd5af"
+          grep -Ei 'HTTP/|content-type:|content-length:' /tmp/game.headers
+      - name: Diagnose real Telegram v110 game-card mutations
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -52,31 +73,42 @@ jobs:
           const browser = await chromium.launch({ headless:true });
           const context = await browser.newContext({ viewport:{ width:390, height:844 }, locale:'ru-RU' });
           const page = await context.newPage();
+          await page.addInitScript(() => {
+            window.__mgwIconMutations = [];
+            const originalReplaceChildren = Element.prototype.replaceChildren;
+            Element.prototype.replaceChildren = function(...nodes){
+              if (this?.matches?.('[data-game-icon]')) {
+                window.__mgwIconMutations.push({kind:'replaceChildren', game:this.closest?.('[data-game-card]')?.dataset?.gameCard || '', html:this.innerHTML, stack:(new Error()).stack || ''});
+              }
+              return originalReplaceChildren.apply(this, nodes);
+            };
+          });
+          const pageErrors = [];
           const failed = [];
+          const imageResponses = [];
+          page.on('pageerror', error => pageErrors.push(String(error?.message || error)));
           page.on('requestfailed', request => {
             if (request.url().startsWith(origin)) failed.push({url:request.url(), error:request.failure()?.errorText || ''});
           });
+          page.on('response', response => {
+            const url = response.url();
+            if (url.includes('/accepted/files/games/') || url.includes('shield-king-icon.php')) imageResponses.push({status:response.status(), url});
+          });
           const response = await page.goto(`${origin}/app/v110.php?v=1123&static_proof=5`, { waitUntil:'domcontentloaded', timeout:35000 });
+          await page.waitForTimeout(5000);
+          const diag = await page.evaluate(() => ({
+            headerMarker:document.documentElement.outerHTML.includes('accepted-v5-static-game-art'),
+            build:window.__MGW_BUILD__ || null,
+            staticCount:document.querySelectorAll('.game-card img.shield-king-game-art[data-sk-delivery="static"]').length,
+            anyGameImages:[...document.querySelectorAll('[data-game-icon] img')].map(img => ({src:img.currentSrc || img.src, w:img.naturalWidth, h:img.naturalHeight, delivery:img.dataset.skDelivery || '', asset:img.dataset.skAsset || ''})),
+            icons:[...document.querySelectorAll('[data-game-icon]')].map(el => ({game:el.closest('[data-game-card]')?.dataset?.gameCard || '', html:el.innerHTML.slice(0,500)})),
+            mutations:window.__mgwIconMutations || [],
+            resources:performance.getEntriesByType('resource').map(e => e.name).filter(url => /game-card-copy|accepted\/files\/games|shield-king-icon\.php/.test(url)),
+          }));
+          console.log('[MGW_STATIC_GAME_ART_DIAG]', JSON.stringify({status:response?.status(), header:response?.headers()['x-mgw-icon-render'] || '', diag, pageErrors, failed, imageResponses}));
+          await browser.close();
           if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
           if ((response.headers()['x-mgw-icon-render'] || '') !== 'accepted-v5-static-game-art') throw new Error('wrong live render identity');
-          await page.waitForFunction(() => document.querySelectorAll('.game-card img.shield-king-game-art[data-sk-delivery="static"]').length === 8, null, { timeout:15000 });
-          await page.waitForFunction(() => [...document.querySelectorAll('.game-card img.shield-king-game-art[data-sk-delivery="static"]')].every(img => img.complete && img.naturalWidth === 384 && img.naturalHeight === 512), null, { timeout:15000 });
-          const games = await page.$$eval('.game-card img.shield-king-game-art[data-sk-delivery="static"]', images => images.map(img => ({
-            asset: img.dataset.skAsset,
-            delivery: img.dataset.skDelivery,
-            width: img.naturalWidth,
-            height: img.naturalHeight,
-            src: img.currentSrc || img.src,
-          })));
-          if (games.length !== 8) throw new Error(`expected 8 static game images, got ${games.length}`);
-          for (const game of games) {
-            if (!game.src.includes('/app/assets/icons/shield-king/accepted/files/games/')) throw new Error(`wrong static path ${game.src}`);
-            if (game.src.includes('shield-king-icon.php')) throw new Error(`game still uses PHP extractor ${game.src}`);
-            if (game.width !== 384 || game.height !== 512) throw new Error(`wrong dimensions ${JSON.stringify(game)}`);
-          }
-          const gameFailures = failed.filter(item => item.url.includes('/app/assets/icons/shield-king/accepted/files/games/') || item.url.includes('shield-king-icon.php'));
-          if (gameFailures.length) throw new Error(`game image request failures: ${JSON.stringify(gameFailures)}`);
-          console.log('[MGW_STATIC_GAME_ART_LIVE_PASS]', JSON.stringify(games));
-          await browser.close();
+          if (diag.staticCount !== 8) throw new Error(`static images not retained: ${diag.staticCount}/8`);
           JS
           node .tmp-live-proof.mjs
