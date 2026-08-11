@@ -1,0 +1,38 @@
+.preloader{
+  position:absolute;
+  inset:0;
+  z-index:100;
+  background:radial-gradient(circle at 50% 22%,rgba(106,76,255,.16),transparent 34%),radial-gradient(circle at 50% 78%,rgba(255,212,92,.06),transparent 28%),var(--sk-bg-app);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:max(28px,env(safe-area-inset-top)) 28px max(28px,env(safe-area-inset-bottom));
+  transition:opacity .35s var(--sk-ease-standard),visibility .35s var(--sk-ease-standard);
+}
+.preloader.hidden{opacity:0;visibility:hidden}
+.load-card{
+  width:100%;
+  border:1px solid var(--sk-border-default);
+  border-radius:34px;
+  background:linear-gradient(180deg,rgba(35,25,66,.78),rgba(12,15,20,.96));
+  padding:26px 20px;
+  text-align:center;
+  box-shadow:var(--sk-shadow-modal);
+  overflow:hidden;
+  position:relative;
+}
+.load-card:before{content:"";position:absolute;inset:0;background:linear-gradient(145deg,rgba(166,95,247,.07),transparent 42%,rgba(255,212,92,.035));pointer-events:none}
+.abstract-loader{
+  width:112px;
+  height:112px;
+  position:relative;
+  margin:0 auto 16px;
+  background:url('../../icons/shield-king/mgw-mark.svg') center/contain no-repeat;
+  filter:drop-shadow(0 14px 28px rgba(0,0,0,.34));
+  animation:shieldKingLoaderPulse 1.8s var(--sk-ease-emphasis) infinite;
+}
+.abstract-loader .shape,.abstract-loader .node{display:none}
+.load-card h1{position:relative;margin:0;font-size:28px;letter-spacing:-.045em;color:var(--sk-text-primary)}
+.load-card p{position:relative;margin:8px 0 0;color:var(--sk-text-secondary);font-size:14px}
+@keyframes shieldKingLoaderPulse{0%,100%{transform:scale(.98);opacity:.88}50%{transform:scale(1.025);opacity:1}}
+@media (prefers-reduced-motion:reduce){.abstract-loader{animation:none}}

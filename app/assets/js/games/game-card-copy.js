@@ -18,15 +18,16 @@ const GAME_META = {
   [DOMINO_META.id]: DOMINO_META,
 };
 
+const ICON_ENDPOINT = './assets/shield-king-icon.php?v=bcb098b7&asset=';
 const GAME_ICON_ASSET = {
-  tictactoe:'./assets/icons/shield-king/games/game-tic-tac-toe.svg',
-  four_in_a_row:'./assets/icons/shield-king/games/game-four-in-a-row.svg',
-  battleship:'./assets/icons/shield-king/games/game-battleship.svg',
-  checkers:'./assets/icons/shield-king/games/game-checkers.svg',
-  reversi:'./assets/icons/shield-king/games/game-reversi.svg',
-  chess:'./assets/icons/shield-king/games/game-chess.svg',
-  go:'./assets/icons/shield-king/games/game-go.svg',
-  domino:'./assets/icons/shield-king/games/game-domino.svg',
+  tictactoe:'games/tic-tac-toe.webp',
+  four_in_a_row:'games/four-in-a-row.webp',
+  battleship:'games/battleship.webp',
+  checkers:'games/checkers.webp',
+  reversi:'games/reversi.webp',
+  chess:'games/chess.webp',
+  go:'games/go.webp',
+  domino:'games/domino.webp',
 };
 
 export function initGameCardCopy(){
@@ -47,17 +48,17 @@ export function initGameCardCopy(){
 }
 
 function renderGameIcon(icon, meta){
-  const src = GAME_ICON_ASSET[meta.id];
+  const asset = GAME_ICON_ASSET[meta.id];
   icon.classList.remove('game-icon-four');
   icon.replaceChildren();
 
-  if (!src) {
+  if (!asset) {
     icon.textContent = meta.icon;
     return;
   }
 
   const image = document.createElement('img');
-  image.src = src;
+  image.src = `${ICON_ENDPOINT}${encodeURIComponent(asset)}`;
   image.alt = '';
   image.setAttribute('aria-hidden', 'true');
   image.decoding = 'async';

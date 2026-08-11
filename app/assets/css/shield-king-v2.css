@@ -1,0 +1,293 @@
+/*
+ * Shield King V2 visibility / metallic pass.
+ * Presentation only. No product flow, game mechanics, timers, polling or Phase B lifecycle ownership.
+ */
+
+/* Accepted metallic image family. */
+.shield-king-metal-icon,
+.shield-king-button-icon,
+.shield-king-menu-icon,
+.shield-king-label-icon{
+  display:block;
+  object-fit:contain;
+  flex:0 0 auto;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.38)) drop-shadow(0 0 5px rgba(233,236,244,.10));
+}
+.shield-king-metal-icon{width:24px;height:24px}
+.icon-btn .shield-king-metal-icon{width:23px;height:23px}
+.game-rules-button .shield-king-metal-icon{width:20px;height:20px}
+.turn-actions .game-rules-button .shield-king-metal-icon{width:18px;height:18px}
+.close .shield-king-metal-icon{width:20px;height:20px}
+.shield-king-label-icon{width:22px;height:22px;margin-right:1px}
+.shield-king-button-icon{width:21px;height:21px}
+.shield-king-menu-icon{width:25px;height:25px;margin-right:3px}
+.account-menu-icon .shield-king-metal-icon{width:24px;height:24px}
+
+/* Sunlight/readability pass: keep dark identity, lift interactive/readable planes. */
+.app{
+  background:
+    radial-gradient(circle at 50% -8%,rgba(178,116,255,.20),transparent 30%),
+    radial-gradient(circle at 95% 34%,rgba(255,212,92,.055),transparent 26%),
+    linear-gradient(180deg,#11141D,var(--sk-bg-app));
+}
+.hero,
+.card,
+.game-card,
+.balance-card,
+.activity-card,
+.profile-card,
+.player-card{
+  border-color:rgba(233,236,244,.23);
+  box-shadow:var(--sk-shadow-card);
+}
+.hero{
+  background:
+    radial-gradient(circle at 16% 0%,rgba(178,116,255,.30),transparent 38%),
+    radial-gradient(circle at 96% 105%,rgba(255,212,92,.10),transparent 36%),
+    linear-gradient(180deg,#30234A,#1B1722);
+}
+.hero:after{
+  border:1px solid rgba(233,236,244,.10);
+  background:linear-gradient(135deg,rgba(247,248,252,.14),rgba(178,116,255,.15) 45%,rgba(255,212,92,.12));
+  box-shadow:0 0 30px rgba(233,236,244,.05);
+}
+.hero-sub,.game-card p,.card p,.balance-note,.activity-card .label,.page-sub,.profile-note{color:var(--sk-text-secondary)}
+
+.game-card{
+  background:
+    linear-gradient(110deg,rgba(247,248,252,.045),transparent 30%),
+    linear-gradient(180deg,#211A2A,#11141B);
+}
+.game-card:before{
+  background:linear-gradient(135deg,rgba(178,116,255,.08),transparent 42%,rgba(255,212,92,.055));
+}
+.game-card:hover{border-color:rgba(233,236,244,.36)}
+.game-icon{
+  background:radial-gradient(circle at 50% 42%,rgba(178,116,255,.18),rgba(16,19,27,.76) 72%);
+  border:1px solid rgba(233,236,244,.16);
+  box-shadow:inset 0 1px 0 rgba(247,248,252,.07),0 8px 20px rgba(0,0,0,.24);
+}
+.game-icon img{
+  width:48px;
+  height:64px;
+  object-fit:contain;
+  filter:drop-shadow(0 7px 12px rgba(0,0,0,.35)) drop-shadow(0 0 7px rgba(233,236,244,.08));
+}
+
+.balance-card{
+  background:linear-gradient(180deg,#211C29,#11141B);
+}
+.balance-card:first-child{border-color:rgba(233,236,244,.27)}
+.balance-card:last-child{border-color:rgba(255,212,92,.27);background:linear-gradient(180deg,rgba(255,212,92,.075),#17151B)}
+.balance-card:last-child .shield-king-label-icon{filter:drop-shadow(0 0 7px rgba(255,212,92,.20))}
+
+/* Buttons and selectors need an obvious state even outdoors. */
+.btn,
+.choice,
+.icon-btn,
+.game-rules-button,
+.close,
+.menu-item{
+  border-color:rgba(233,236,244,.26);
+  box-shadow:inset 0 1px 0 rgba(247,248,252,.055);
+}
+.btn.ghost,
+.choice,
+.icon-btn,
+.game-rules-button,
+.close,
+.menu-item{
+  background:linear-gradient(180deg,#25202D,#171A22);
+  color:var(--sk-text-secondary);
+}
+.btn.primary{
+  background:linear-gradient(135deg,#6F58FF,#A969F0 72%,#C58BFF);
+  border-color:rgba(247,248,252,.23);
+  box-shadow:0 10px 25px rgba(115,91,255,.30),inset 0 1px 0 rgba(255,255,255,.22);
+}
+.btn.gold{
+  background:linear-gradient(135deg,#FFE684,#FFD45C 48%,#D69A32);
+  border-color:rgba(255,244,190,.38);
+  box-shadow:0 10px 24px rgba(255,212,92,.22),inset 0 1px 0 rgba(255,255,255,.30);
+}
+.btn.ghost:hover,.icon-btn:hover,.game-rules-button:hover,.close:hover,.menu-item:hover{
+  background:linear-gradient(180deg,#393043,#25202E) !important;
+  border-color:rgba(247,248,252,.48) !important;
+  color:var(--sk-silver-bright);
+  box-shadow:0 0 0 1px rgba(233,236,244,.08),0 0 20px rgba(233,236,244,.10),inset 0 1px 0 rgba(255,255,255,.10);
+}
+.btn.ghost:active,.icon-btn:active,.game-rules-button:active,.close:active,.menu-item:active{
+  background:#41364D !important;
+  border-color:rgba(255,212,92,.44) !important;
+}
+.choice.active,
+.seg button.active,
+.store-country-tab.active{
+  color:#fff;
+  background:linear-gradient(180deg,rgba(126,101,255,.38),rgba(67,48,94,.74));
+  border-color:rgba(233,236,244,.52);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 0 0 1px rgba(178,116,255,.15),0 0 18px rgba(115,91,255,.18);
+}
+.choice.gold.active{
+  background:linear-gradient(180deg,rgba(255,212,92,.24),rgba(74,57,28,.58));
+  border-color:rgba(255,226,122,.66);
+  color:#FFF1B8;
+  box-shadow:0 0 18px rgba(255,212,92,.12),inset 0 1px 0 rgba(255,255,255,.11);
+}
+:where(button,[role="button"],input,textarea,select):focus-visible{
+  outline:2px solid var(--sk-silver-bright) !important;
+  outline-offset:2px;
+  box-shadow:0 0 0 5px rgba(115,91,255,.28),0 0 22px rgba(233,236,244,.16) !important;
+}
+
+/* Sheets/menu: clearer separation and metallic highlights. */
+.overlay{background:rgba(3,4,8,.67)}
+.sheet{
+  background:
+    linear-gradient(115deg,rgba(247,248,252,.055),transparent 32%),
+    linear-gradient(180deg,#302641,#151820);
+  border-color:rgba(233,236,244,.30);
+  box-shadow:0 24px 70px rgba(0,0,0,.48),0 0 26px rgba(115,91,255,.10),inset 0 1px 0 rgba(255,255,255,.075);
+}
+.menu-item{
+  min-height:54px;
+  color:var(--sk-text-primary);
+  gap:10px;
+}
+.menu-item.danger{
+  background:linear-gradient(180deg,rgba(255,97,125,.16),rgba(45,25,32,.82));
+  border-color:rgba(255,147,165,.35);
+}
+.rules-block,.rules-content,.form-textarea{
+  background:linear-gradient(180deg,#211C29,#171A22);
+  border-color:rgba(233,236,244,.22);
+}
+
+/* Search: stronger silver structure + restrained gold light. */
+.search-wrap{padding-top:30px}
+.radar{
+  border:2px solid rgba(233,236,244,.48);
+  background:
+    radial-gradient(circle,rgba(255,212,92,.82) 0 3%,rgba(247,248,252,.38) 4% 7%,rgba(115,91,255,.28) 8%,transparent 12%),
+    radial-gradient(circle,transparent 0 31%,rgba(233,236,244,.17) 32% 33%,transparent 34% 48%,rgba(178,116,255,.26) 49% 50%,transparent 51% 67%,rgba(233,236,244,.18) 68% 69%,transparent 70%),
+    radial-gradient(circle at 50% 50%,#272038,#10131B 72%);
+  box-shadow:inset 0 0 42px rgba(115,91,255,.20),0 0 0 5px rgba(233,236,244,.045),0 0 34px rgba(115,91,255,.30),0 0 18px rgba(233,236,244,.12);
+}
+.radar:before{
+  background:linear-gradient(45deg,rgba(255,226,122,.18),rgba(233,236,244,.16) 28%,rgba(178,116,255,.54),transparent 64%);
+}
+.radar:after{
+  content:"";
+  position:absolute;
+  inset:14px;
+  border:1px solid rgba(233,236,244,.17);
+  border-radius:50%;
+  box-shadow:inset 0 0 18px rgba(233,236,244,.055);
+  pointer-events:none;
+}
+.player-card{background:linear-gradient(180deg,#25202D,#151820);border-color:rgba(233,236,244,.28)}
+.vs{color:var(--sk-silver-bright);opacity:.92;text-shadow:0 0 14px rgba(233,236,244,.16)}
+
+/* Gameplay shell only — board/cell/piece selectors are intentionally absent. */
+.turn-box{
+  background:linear-gradient(135deg,rgba(115,91,255,.27),rgba(43,33,65,.88));
+  border-color:rgba(233,236,244,.30);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.timer{
+  color:var(--sk-silver-bright);
+  background:linear-gradient(180deg,#25202D,#12151C);
+  border-color:rgba(233,236,244,.32);
+}
+.game-player{background:linear-gradient(180deg,#211C29,#14171E);border-color:rgba(233,236,244,.20)}
+.game-player.active{
+  border-color:rgba(247,248,252,.52);
+  box-shadow:0 0 0 2px rgba(115,91,255,.24),0 0 20px rgba(233,236,244,.10);
+}
+.board-wrap{border-color:rgba(233,236,244,.22);box-shadow:0 10px 28px rgba(0,0,0,.22)}
+
+/* Phase B V2: same runtime states/timing, stronger Shield King assembly presentation. */
+.mgw-phase-b-launch-overlay{
+  background:linear-gradient(180deg,#10131B,#080B12) !important;
+}
+.mgw-phase-b-launch-overlay:before{
+  background:
+    radial-gradient(circle at 50% 28%,rgba(178,116,255,.24),transparent 34%),
+    radial-gradient(circle at 50% 74%,rgba(255,212,92,.09),transparent 31%),
+    linear-gradient(180deg,#10131B,#080B12) !important;
+  box-shadow:0 0 96px rgba(115,91,255,.13) !important;
+}
+.mgw-phase-b-launch-card{
+  border-color:rgba(233,236,244,.34) !important;
+  background:linear-gradient(180deg,rgba(48,38,65,.98),rgba(16,19,27,.99)) !important;
+  box-shadow:0 24px 68px rgba(0,0,0,.45),0 0 30px rgba(115,91,255,.12),inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+.mgw-phase-b-launch-card:before{
+  background:linear-gradient(115deg,rgba(247,248,252,.07),transparent 34%,rgba(255,212,92,.055)) !important;
+}
+.mgw-phase-b-launch-game{
+  border-color:rgba(233,236,244,.28) !important;
+  background:linear-gradient(180deg,#28222F,#171A22) !important;
+  color:var(--sk-silver-soft) !important;
+}
+.mgw-phase-b-launch-ring{
+  border-color:rgba(233,236,244,.19) !important;
+  border-top-color:var(--sk-silver-bright) !important;
+  border-right-color:var(--sk-brand-gold) !important;
+  border-bottom-color:rgba(178,116,255,.62) !important;
+  box-shadow:0 0 24px rgba(233,236,244,.09),inset 0 0 20px rgba(115,91,255,.06) !important;
+}
+.mgw-phase-b-launch-ring:after{border-color:rgba(233,236,244,.15) !important}
+.mgw-phase-b-countdown{
+  border-color:rgba(233,236,244,.33) !important;
+  background:radial-gradient(circle at 50% 35%,rgba(178,116,255,.20),transparent 58%),linear-gradient(180deg,#151820,#080B12) !important;
+  color:var(--sk-silver-bright) !important;
+  text-shadow:0 0 18px rgba(233,236,244,.18),0 5px 18px rgba(0,0,0,.48) !important;
+  box-shadow:0 16px 38px rgba(0,0,0,.38),0 0 22px rgba(233,236,244,.08),inset 0 0 26px rgba(115,91,255,.08) !important;
+}
+.mgw-phase-b-countdown[data-stage="prepare"]:before{
+  width:68px !important;
+  height:68px !important;
+  border-radius:0 !important;
+  background:url('../icons/shield-king/mgw-mark.svg') center/contain no-repeat !important;
+  filter:drop-shadow(0 0 12px rgba(233,236,244,.16)) !important;
+  box-shadow:none !important;
+  animation:shieldKingPhaseAssembleMark 1.15s var(--sk-ease-emphasis) infinite !important;
+}
+.mgw-phase-b-countdown[data-stage="prepare"]:after{
+  width:82px !important;
+  height:82px !important;
+  border:1px solid rgba(233,236,244,.35) !important;
+  border-top-color:rgba(255,212,92,.74) !important;
+  border-bottom-color:rgba(178,116,255,.58) !important;
+  animation:shieldKingPhaseAssembleRing 1.15s var(--sk-ease-emphasis) infinite !important;
+}
+.mgw-phase-b-countdown[data-stage="sync"]:before{
+  background:var(--sk-silver-bright) !important;
+  box-shadow:-18px 0 var(--sk-brand-gold),18px 0 var(--sk-brand-violet),0 0 12px rgba(233,236,244,.55) !important;
+}
+.mgw-phase-b-countdown[data-stage="ready"]:before{border-right-color:var(--sk-success) !important;border-bottom-color:var(--sk-success) !important}
+.mgw-phase-b-countdown[data-stage="ready"]:after{border-color:rgba(72,214,165,.56) !important;box-shadow:0 0 18px rgba(72,214,165,.16) !important}
+.mgw-phase-b-launch-progress i{background:rgba(233,236,244,.62) !important;box-shadow:0 0 7px rgba(233,236,244,.16)}
+.mgw-phase-b-launch-note{color:var(--sk-text-secondary) !important}
+
+@keyframes shieldKingPhaseAssembleMark{
+  0%,100%{opacity:.58;transform:scale(.80) rotate(-3deg);filter:drop-shadow(0 0 4px rgba(233,236,244,.04))}
+  48%,62%{opacity:1;transform:scale(1.04) rotate(0);filter:drop-shadow(0 0 15px rgba(233,236,244,.22))}
+}
+@keyframes shieldKingPhaseAssembleRing{
+  0%,100%{opacity:.38;transform:scale(.72) rotate(-32deg)}
+  48%,62%{opacity:1;transform:scale(1) rotate(0)}
+}
+
+@media (hover:none){
+  .btn.ghost:active,.icon-btn:active,.game-rules-button:active,.close:active,.menu-item:active{
+    background:#41364D !important;
+    border-color:rgba(255,212,92,.48) !important;
+    box-shadow:0 0 18px rgba(233,236,244,.11),inset 0 1px 0 rgba(255,255,255,.10) !important;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .mgw-phase-b-countdown[data-stage="prepare"]:before,
+  .mgw-phase-b-countdown[data-stage="prepare"]:after{animation:none !important}
+}

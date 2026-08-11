@@ -1,38 +1,93 @@
-const NAV_SPRITE = './assets/icons/shield-king/navigation-icons.svg';
-const ECONOMY_SPRITE = './assets/icons/shield-king/economy-icons.svg';
+const ICON_ENDPOINT = './assets/shield-king-icon.php?v=bcb098b7&asset=';
+
+const MENU_ICONS = {
+  rulesBtn:'ui/actions/rules.webp',
+  feedbackBtn:'ui/status/info.webp',
+  ideaBtn:'ui/status/success.webp',
+  supportBtn:'ui/status/warning.webp',
+  balanceHistoryBtn:'ui/navigation/history.webp',
+  matchHistoryBtn:'ui/navigation/games.webp',
+};
 
 export function initShieldKingVisuals(){
-  setButtonIcon(document.getElementById('notificationsOpen'), NAV_SPRITE, 'notifications');
-  setButtonIcon(document.getElementById('moreMenuOpen'), './assets/icons/shield-king/action-icons.svg', 'more');
+  setIconOnly(document.getElementById('notificationsOpen'), 'ui/navigation/notifications.webp');
+  setIconOnly(document.getElementById('moreMenuOpen'), 'ui/actions/more.webp');
 
   document.querySelectorAll('.game-rules-button').forEach(button => {
-    setButtonIcon(button, NAV_SPRITE, 'rules');
+    setIconOnly(button, 'ui/actions/rules.webp');
   });
 
   const balances = document.querySelectorAll('.balance-card .balance-label');
-  setLabelIcon(balances[0], ECONOMY_SPRITE, 'coins', 'Матч-комната');
-  setLabelIcon(balances[1], ECONOMY_SPRITE, 'gold', 'Gold-комната');
+  setLabelIcon(balances[0], 'ui/economy/coins.webp', 'Матч-комната');
+  setLabelIcon(balances[1], 'ui/economy/premium-currency.webp', 'Gold-комната');
+
+  applyDynamicIcons(document);
+
+  const sheet = document.getElementById('sheet');
+  if (sheet && typeof MutationObserver === 'function') {
+    const observer = new MutationObserver(() => applyDynamicIcons(sheet));
+    observer.observe(sheet, { childList:true, subtree:true });
+  }
 }
 
-function setButtonIcon(button, sprite, symbol){
-  if (!(button instanceof HTMLElement)) return;
-  button.replaceChildren(createIcon(sprite, symbol));
+function applyDynamicIcons(root){
+  root.querySelectorAll?.('.game-rules-button').forEach(button => setIconOnly(button, 'ui/actions/rules.webp'));
+  root.querySelectorAll?.('.close').forEach(button => setIconOnly(button, 'ui/actions/close.webp'));
+  root.querySelectorAll?.('[data-invite-friend]').forEach(button => prependTextIcon(button, 'ui/actions/invite.webp'));
+
+  Object.entries(MENU_ICONS).forEach(([id, asset]) => {
+    const button = root.querySelector?.(`#${id}`);
+    if (button) replaceMenuIcon(button, asset);
+  });
+
+  root.querySelectorAll?.('[data-account-orders-shortcut]').forEach(button => {
+    const icon = button.querySelector('.account-menu-icon');
+    if (icon) setIconOnly(icon, 'ui/navigation/store.webp');
+  });
 }
 
-function setLabelIcon(label, sprite, symbol, text){
+function assetUrl(asset){
+  return `${ICON_ENDPOINT}${encodeURIComponent(asset)}`;
+}
+
+function createImage(asset, className = 'shield-king-metal-icon'){
+  const image = document.createElement('img');
+  image.src = assetUrl(asset);
+  image.alt = '';
+  image.decoding = 'async';
+  image.setAttribute('aria-hidden', 'true');
+  image.className = className;
+  return image;
+}
+
+function setIconOnly(target, asset){
+  if (!(target instanceof HTMLElement)) return;
+  const current = target.querySelector(':scope > img[data-sk-asset]');
+  if (current?.dataset.skAsset === asset) return;
+  const image = createImage(asset);
+  image.dataset.skAsset = asset;
+  target.replaceChildren(image);
+}
+
+function setLabelIcon(label, asset, text){
   if (!(label instanceof HTMLElement)) return;
-  const icon = createIcon(sprite, symbol);
-  icon.classList.add('shield-king-label-icon');
-  label.replaceChildren(icon, document.createTextNode(text));
+  const image = createImage(asset, 'shield-king-label-icon');
+  image.dataset.skAsset = asset;
+  label.replaceChildren(image, document.createTextNode(text));
 }
 
-function createIcon(sprite, symbol){
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
-  use.setAttribute('href', `${sprite}#${symbol}`);
-  svg.appendChild(use);
-  return svg;
+function prependTextIcon(button, asset){
+  if (!(button instanceof HTMLElement) || button.querySelector(':scope > .shield-king-button-icon')) return;
+  const image = createImage(asset, 'shield-king-button-icon');
+  image.dataset.skAsset = asset;
+  button.prepend(image);
+}
+
+function replaceMenuIcon(button, asset){
+  if (!(button instanceof HTMLElement) || button.dataset.skMenuIcon === asset) return;
+  const label = String(button.textContent || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  const image = createImage(asset, 'shield-king-menu-icon');
+  image.dataset.skAsset = asset;
+  button.replaceChildren(image, document.createTextNode(label));
+  button.dataset.skMenuIcon = asset;
 }
