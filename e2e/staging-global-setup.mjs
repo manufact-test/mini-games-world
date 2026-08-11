@@ -107,6 +107,32 @@ async function recoverFreshInviteReplacement(){
   }));
 }
 
+async function diagnoseInviteResiduals(){
+  const oidcToken = await requestOidcToken();
+  const response = await fetch(AUTH_ROUTE, {
+    method:'POST',
+    headers:{
+      Authorization:`Bearer ${oidcToken}`,
+      Accept:'application/json',
+      'Content-Type':'application/json',
+    },
+    body:JSON.stringify({ action:'diagnose_invite_residuals' }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.ok !== true || payload?.read_only !== true) {
+    throw new Error(`Staging invite residual diagnosis failed: ${response.status} ${payload?.error || 'unknown_error'}`);
+  }
+  console.log('[MGW_STAGING_INVITE_RESIDUAL_DIAGNOSIS]', JSON.stringify({
+    status:payload.status,
+    recovery_ready:payload.recovery_ready,
+    candidate_count:payload.candidate_count,
+    test_player_candidate_count:payload.test_player_candidate_count,
+    terminal_staging_candidate_count:payload.terminal_staging_candidate_count,
+    blocker_codes:Array.isArray(payload.blocker_codes) ? payload.blocker_codes : [],
+    production_changed:payload.production_changed,
+    live_payments_used:payload.live_payments_used,
+  }));
+}
 
 async function reconcileInviteResiduals(){
   const oidcToken = await requestOidcToken();
@@ -141,6 +167,7 @@ export default async function stagingGlobalSetup(){
   await diagnoseInviteMismatch();
   await recoverTestOnlyInviteOrphans();
   await recoverFreshInviteReplacement();
+  await diagnoseInviteResiduals();
   await reconcileInviteResiduals();
 
   const oidcToken = await requestOidcToken();
