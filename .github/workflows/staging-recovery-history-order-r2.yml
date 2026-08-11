@@ -1,0 +1,56 @@
+name: Staging recovery history order r2
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-test-only-recovery-history-order-fix
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Verify exact boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FEATURE=c955c11076e1f065d4aa43c36d41a26feeca8717
+          BASE=b02c4b175c9f05d4fc582c6faa571aee1dea9fbb
+          SERVICE=bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+          test "$(git rev-parse HEAD^)" = "$FEATURE"
+          test "$(git diff --name-only "$FEATURE" HEAD)" = '.github/workflows/staging-recovery-history-order-r2.yml'
+          test "$(git diff --name-only "$BASE" "$FEATURE")" = "$SERVICE"
+          test "$(git diff --numstat "$BASE" "$FEATURE" -- "$SERVICE" | awk '{print $1":"$2}')" = '7:6'
+          php -l "$SERVICE"
+      - name: Verify classification order and strict safety set
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SERVICE=bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+          history_line="$(grep -nF '$matchId = trim' "$SERVICE" | head -1 | cut -d: -f1)"
+          safety_line="$(grep -nF '$status = trim' "$SERVICE" | head -1 | cut -d: -f1)"
+          test -n "$history_line"
+          test -n "$safety_line"
+          test "$history_line" -lt "$safety_line"
+          grep -Fq "if (\$matchId !== '' || \$matchRefs !== 0)" "$SERVICE"
+          grep -Fq "Staging test-only orphan recovery found unsafe A/B invite state." "$SERVICE"
+          statuses="$(sed -n '/private const SAFE_STATUSES = \[/,/^    \];/p' "$SERVICE")"
+          printf '%s\n' "$statuses" | grep -Fq "'draft', 'pending', 'accepted', 'awaiting_start'"
+          printf '%s\n' "$statuses" | grep -Fq "'declined', 'cancelled', 'expired', 'timed_out'"
+          if printf '%s\n' "$statuses" | grep -Fq "'active'"; then exit 1; fi
+      - name: Verify deletion runtime and product UI are unchanged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE=b02c4b175c9f05d4fc582c6faa571aee1dea9fbb
+          FEATURE=c955c11076e1f065d4aa43c36d41a26feeca8717
+          git diff --quiet "$BASE" "$FEATURE" -- app e2e bot/invites/RuntimeInviteRepository.php bot/services/GitHubActionsOidcVerifier.php bot/services/GameService.php bot/services/GameRuntimeService.php
+          old_delete="$(git show "$BASE":bot/services/StagingTestOnlyInviteOrphanRecoveryService.php | grep -c 'DELETE FROM ')"
+          new_delete="$(git show "$FEATURE":bot/services/StagingTestOnlyInviteOrphanRecoveryService.php | grep -c 'DELETE FROM ')"
+          test "$old_delete" = "$new_delete"
