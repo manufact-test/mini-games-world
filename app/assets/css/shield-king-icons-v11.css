@@ -1,5 +1,5 @@
 /*
- * Shield King V114 — user visual polish.
+ * Shield King V114.1 — user visual polish.
  * Presentation only. Accepted rich game art and Phase B/game-entry runtime stay untouched.
  */
 
@@ -8,7 +8,7 @@
  * visually covers the card's left frame instead of exposing the rail beneath it. */
 .game-card .game-top{
   min-height:0 !important;
-  padding:8px 49px 0 102px !important;
+  padding:8px 49px 0 105px !important;
 }
 .game-card .game-icon{
   left:-57px !important;
@@ -119,7 +119,7 @@
 
 @media (max-width:380px){
   .game-card .game-top{
-    padding-left:98px !important;
+    padding-left:101px !important;
     padding-right:46px !important;
   }
   .game-card .game-icon{
