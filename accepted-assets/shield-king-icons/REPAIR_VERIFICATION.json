@@ -1,0 +1,361 @@
+{
+  "status": "PASS",
+  "verified": "44/44",
+  "zip_sha256": "83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60",
+  "zip_bytes": 923086,
+  "manifest_source": "accepted-assets/shield-king-icons/MANIFEST.json",
+  "files": [
+    {
+      "path": "games/battleship.webp",
+      "expected_sha256": "484f2ac4815684dc5c74d16b17b2160d1cc026fa41a392cba8dd06aad065089b",
+      "actual_sha256": "484f2ac4815684dc5c74d16b17b2160d1cc026fa41a392cba8dd06aad065089b",
+      "expected_bytes": 84286,
+      "actual_bytes": 84286,
+      "pass": true
+    },
+    {
+      "path": "games/checkers.webp",
+      "expected_sha256": "71c15148d9feb6c0f693fdd8bb3377d78eccb7098dcc71a5cb633c440a2fbde6",
+      "actual_sha256": "71c15148d9feb6c0f693fdd8bb3377d78eccb7098dcc71a5cb633c440a2fbde6",
+      "expected_bytes": 92690,
+      "actual_bytes": 92690,
+      "pass": true
+    },
+    {
+      "path": "games/chess.webp",
+      "expected_sha256": "7176978d75ba04639d8f6c022e582c13673010bdd68f9cec0aadc26e16320d3f",
+      "actual_sha256": "7176978d75ba04639d8f6c022e582c13673010bdd68f9cec0aadc26e16320d3f",
+      "expected_bytes": 73768,
+      "actual_bytes": 73768,
+      "pass": true
+    },
+    {
+      "path": "games/domino.webp",
+      "expected_sha256": "78290c0220515612558da81b8ee7e01393f6d9ccc6f732cfe8fbd7d8322be172",
+      "actual_sha256": "78290c0220515612558da81b8ee7e01393f6d9ccc6f732cfe8fbd7d8322be172",
+      "expected_bytes": 79296,
+      "actual_bytes": 79296,
+      "pass": true
+    },
+    {
+      "path": "games/four-in-a-row.webp",
+      "expected_sha256": "a04e6602157cf5a17a91901cc396186041293d6e64815035ab9ee9a83a5ff81d",
+      "actual_sha256": "a04e6602157cf5a17a91901cc396186041293d6e64815035ab9ee9a83a5ff81d",
+      "expected_bytes": 79690,
+      "actual_bytes": 79690,
+      "pass": true
+    },
+    {
+      "path": "games/go.webp",
+      "expected_sha256": "ad4f2b6269c67f60e78fc8062399aba4d1f6737ebe153f01abc9a180903ef744",
+      "actual_sha256": "ad4f2b6269c67f60e78fc8062399aba4d1f6737ebe153f01abc9a180903ef744",
+      "expected_bytes": 75398,
+      "actual_bytes": 75398,
+      "pass": true
+    },
+    {
+      "path": "games/reversi.webp",
+      "expected_sha256": "62ba615dd9eeee550c92427991670212344e357e2dd9a97cdc4f3fe0cf351fb7",
+      "actual_sha256": "62ba615dd9eeee550c92427991670212344e357e2dd9a97cdc4f3fe0cf351fb7",
+      "expected_bytes": 80418,
+      "actual_bytes": 80418,
+      "pass": true
+    },
+    {
+      "path": "games/tic-tac-toe.webp",
+      "expected_sha256": "de3f75837e2d03902512edf7963338a72201ee7bdb742a9cddbc2401cea2760f",
+      "actual_sha256": "de3f75837e2d03902512edf7963338a72201ee7bdb742a9cddbc2401cea2760f",
+      "expected_bytes": 81634,
+      "actual_bytes": 81634,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/back.webp",
+      "expected_sha256": "d6058d1514f98faf911f60e8cd998236b5c0378c3bd2e3d619ad05ad9175cadc",
+      "actual_sha256": "d6058d1514f98faf911f60e8cd998236b5c0378c3bd2e3d619ad05ad9175cadc",
+      "expected_bytes": 5866,
+      "actual_bytes": 5866,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/check.webp",
+      "expected_sha256": "073ec537a2e17ba7c08d922289035bb2c6b98942d38c18f760f233574c1c31d8",
+      "actual_sha256": "073ec537a2e17ba7c08d922289035bb2c6b98942d38c18f760f233574c1c31d8",
+      "expected_bytes": 5304,
+      "actual_bytes": 5304,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/close.webp",
+      "expected_sha256": "34615843bbf1e9fef35ead2999efb91a6f8f4bb52c24ccd30befef359be20b18",
+      "actual_sha256": "34615843bbf1e9fef35ead2999efb91a6f8f4bb52c24ccd30befef359be20b18",
+      "expected_bytes": 5900,
+      "actual_bytes": 5900,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/edit.webp",
+      "expected_sha256": "f1c0820cc196f557872d8b0e18c3c3910ec42c72abd363819cd6b1130d82e21c",
+      "actual_sha256": "f1c0820cc196f557872d8b0e18c3c3910ec42c72abd363819cd6b1130d82e21c",
+      "expected_bytes": 6460,
+      "actual_bytes": 6460,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/invite.webp",
+      "expected_sha256": "4cb198779ed0361131b5ee754a7354446129c2c64ec5d611e24dfc330ac3cd18",
+      "actual_sha256": "4cb198779ed0361131b5ee754a7354446129c2c64ec5d611e24dfc330ac3cd18",
+      "expected_bytes": 8792,
+      "actual_bytes": 8792,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/more.webp",
+      "expected_sha256": "26e5c2e3c72d059ac6cba61f1f9cd16cfcaff0cf525a12d8a7beb763a893d3a5",
+      "actual_sha256": "26e5c2e3c72d059ac6cba61f1f9cd16cfcaff0cf525a12d8a7beb763a893d3a5",
+      "expected_bytes": 4218,
+      "actual_bytes": 4218,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/refresh-retry.webp",
+      "expected_sha256": "dd770c718c693bd145375849a49578f0d0575a391aa5524caef8712c605a8d4e",
+      "actual_sha256": "dd770c718c693bd145375849a49578f0d0575a391aa5524caef8712c605a8d4e",
+      "expected_bytes": 7080,
+      "actual_bytes": 7080,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/rematch.webp",
+      "expected_sha256": "ce6ab6ee878e8672bfdff6b23734bd764e757088687e869f83b8eadfea3b77c5",
+      "actual_sha256": "ce6ab6ee878e8672bfdff6b23734bd764e757088687e869f83b8eadfea3b77c5",
+      "expected_bytes": 8438,
+      "actual_bytes": 8438,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/replay.webp",
+      "expected_sha256": "ce6ab6ee878e8672bfdff6b23734bd764e757088687e869f83b8eadfea3b77c5",
+      "actual_sha256": "ce6ab6ee878e8672bfdff6b23734bd764e757088687e869f83b8eadfea3b77c5",
+      "expected_bytes": 8438,
+      "actual_bytes": 8438,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/retry.webp",
+      "expected_sha256": "dd770c718c693bd145375849a49578f0d0575a391aa5524caef8712c605a8d4e",
+      "actual_sha256": "dd770c718c693bd145375849a49578f0d0575a391aa5524caef8712c605a8d4e",
+      "expected_bytes": 7080,
+      "actual_bytes": 7080,
+      "pass": true
+    },
+    {
+      "path": "ui/actions/rules.webp",
+      "expected_sha256": "ee51fc3605bcd67f4feb0fe8a77369fd2604847064656cc91edaca8f4ae12a2b",
+      "actual_sha256": "ee51fc3605bcd67f4feb0fe8a77369fd2604847064656cc91edaca8f4ae12a2b",
+      "expected_bytes": 8818,
+      "actual_bytes": 8818,
+      "pass": true
+    },
+    {
+      "path": "ui/economy/coins.webp",
+      "expected_sha256": "48251611f9690845e5bc3762518151fca139dac35337d7489e72ae538a64ba68",
+      "actual_sha256": "48251611f9690845e5bc3762518151fca139dac35337d7489e72ae538a64ba68",
+      "expected_bytes": 9678,
+      "actual_bytes": 9678,
+      "pass": true
+    },
+    {
+      "path": "ui/economy/premium-currency.webp",
+      "expected_sha256": "61a171c1e3304dbc7e8e36de9302ae5c6e88e1bccd679cc020dfce95e0e5e1fa",
+      "actual_sha256": "61a171c1e3304dbc7e8e36de9302ae5c6e88e1bccd679cc020dfce95e0e5e1fa",
+      "expected_bytes": 7794,
+      "actual_bytes": 7794,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/achievements.webp",
+      "expected_sha256": "b3f8cfc693054096c6819a8a228e09346b616e5c09b1103baf179b1ccfbdbe5a",
+      "actual_sha256": "b3f8cfc693054096c6819a8a228e09346b616e5c09b1103baf179b1ccfbdbe5a",
+      "expected_bytes": 8980,
+      "actual_bytes": 8980,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/friends.webp",
+      "expected_sha256": "82c4a73b12a7b2bf66cf02652f0ffa73040f7b0588c8221b915d3dae6c97f8ef",
+      "actual_sha256": "82c4a73b12a7b2bf66cf02652f0ffa73040f7b0588c8221b915d3dae6c97f8ef",
+      "expected_bytes": 8548,
+      "actual_bytes": 8548,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/games.webp",
+      "expected_sha256": "7a4a739292740f4b4681e8fe0a331374ef511e1fdfc2e96ae7439a3dda889051",
+      "actual_sha256": "7a4a739292740f4b4681e8fe0a331374ef511e1fdfc2e96ae7439a3dda889051",
+      "expected_bytes": 7486,
+      "actual_bytes": 7486,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/history.webp",
+      "expected_sha256": "ad72e02e206b4bdd5f7959065d3873faef358e72638b7ea3783b2bd343ad0850",
+      "actual_sha256": "ad72e02e206b4bdd5f7959065d3873faef358e72638b7ea3783b2bd343ad0850",
+      "expected_bytes": 6800,
+      "actual_bytes": 6800,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/home.webp",
+      "expected_sha256": "7844f1bab57ff6cf9a5077de0e54354d1f84c3dde879685fad5040d5382b9f40",
+      "actual_sha256": "7844f1bab57ff6cf9a5077de0e54354d1f84c3dde879685fad5040d5382b9f40",
+      "expected_bytes": 8112,
+      "actual_bytes": 8112,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/notifications.webp",
+      "expected_sha256": "e134427b3cccec14afb73c43724201abd98bce238e6bb4a1d6f82f703340fdf0",
+      "actual_sha256": "e134427b3cccec14afb73c43724201abd98bce238e6bb4a1d6f82f703340fdf0",
+      "expected_bytes": 7252,
+      "actual_bytes": 7252,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/profile.webp",
+      "expected_sha256": "2feb458134d5218b7fbd46a2e478162c9c02839ee67d7ff99e177ef5426ffd6f",
+      "actual_sha256": "2feb458134d5218b7fbd46a2e478162c9c02839ee67d7ff99e177ef5426ffd6f",
+      "expected_bytes": 6136,
+      "actual_bytes": 6136,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/ranking.webp",
+      "expected_sha256": "8cb542d066c21f9ca7f714dcb802288c72f8bfff63dd7adb1900c671874fbac6",
+      "actual_sha256": "8cb542d066c21f9ca7f714dcb802288c72f8bfff63dd7adb1900c671874fbac6",
+      "expected_bytes": 7040,
+      "actual_bytes": 7040,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/rules.webp",
+      "expected_sha256": "ee51fc3605bcd67f4feb0fe8a77369fd2604847064656cc91edaca8f4ae12a2b",
+      "actual_sha256": "ee51fc3605bcd67f4feb0fe8a77369fd2604847064656cc91edaca8f4ae12a2b",
+      "expected_bytes": 8818,
+      "actual_bytes": 8818,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/search.webp",
+      "expected_sha256": "ac88d65751c71437a69a89eb9a596432cc7099adf44d59545c99fb3277448996",
+      "actual_sha256": "ac88d65751c71437a69a89eb9a596432cc7099adf44d59545c99fb3277448996",
+      "expected_bytes": 6410,
+      "actual_bytes": 6410,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/settings.webp",
+      "expected_sha256": "f655e4ef1ab8c3c58f4b108ccc831e723b72872b1fade4ab3e8eb993e7fc9252",
+      "actual_sha256": "f655e4ef1ab8c3c58f4b108ccc831e723b72872b1fade4ab3e8eb993e7fc9252",
+      "expected_bytes": 7300,
+      "actual_bytes": 7300,
+      "pass": true
+    },
+    {
+      "path": "ui/navigation/store.webp",
+      "expected_sha256": "6189e08f31d595a067f0c31bb822711e68d50c14f26b1b7a5647dc9c9542f1b0",
+      "actual_sha256": "6189e08f31d595a067f0c31bb822711e68d50c14f26b1b7a5647dc9c9542f1b0",
+      "expected_bytes": 7890,
+      "actual_bytes": 7890,
+      "pass": true
+    },
+    {
+      "path": "ui/status/draw.webp",
+      "expected_sha256": "aff39f13621eeb72fcb7380cf375ac3a09b38685cd03dcc19ed6e644466a6a2b",
+      "actual_sha256": "aff39f13621eeb72fcb7380cf375ac3a09b38685cd03dcc19ed6e644466a6a2b",
+      "expected_bytes": 8306,
+      "actual_bytes": 8306,
+      "pass": true
+    },
+    {
+      "path": "ui/status/error.webp",
+      "expected_sha256": "e5021ec22e83e314f490986b8b240a246f82c394a06d0c23d41e92145d07b4b4",
+      "actual_sha256": "e5021ec22e83e314f490986b8b240a246f82c394a06d0c23d41e92145d07b4b4",
+      "expected_bytes": 7972,
+      "actual_bytes": 7972,
+      "pass": true
+    },
+    {
+      "path": "ui/status/info.webp",
+      "expected_sha256": "6524731525a0aabf34ea0c2016f77d6cc1963c0cc94c7a43bfd39841e5f56644",
+      "actual_sha256": "6524731525a0aabf34ea0c2016f77d6cc1963c0cc94c7a43bfd39841e5f56644",
+      "expected_bytes": 8326,
+      "actual_bytes": 8326,
+      "pass": true
+    },
+    {
+      "path": "ui/status/locked.webp",
+      "expected_sha256": "2a35090c83a2f0df109de7f493396c5ffbdc5fa125c07bfe7587e8e3f53f16d0",
+      "actual_sha256": "2a35090c83a2f0df109de7f493396c5ffbdc5fa125c07bfe7587e8e3f53f16d0",
+      "expected_bytes": 7194,
+      "actual_bytes": 7194,
+      "pass": true
+    },
+    {
+      "path": "ui/status/loss.webp",
+      "expected_sha256": "8e62e24343ac01fd869d3122a8d70418723a912a39afebd005e2348581b8c909",
+      "actual_sha256": "8e62e24343ac01fd869d3122a8d70418723a912a39afebd005e2348581b8c909",
+      "expected_bytes": 8906,
+      "actual_bytes": 8906,
+      "pass": true
+    },
+    {
+      "path": "ui/status/offline.webp",
+      "expected_sha256": "ef59ea850f6a62dd42cd940c98f1e694cf71762894e87435bfe2718001fa01da",
+      "actual_sha256": "ef59ea850f6a62dd42cd940c98f1e694cf71762894e87435bfe2718001fa01da",
+      "expected_bytes": 5504,
+      "actual_bytes": 5504,
+      "pass": true
+    },
+    {
+      "path": "ui/status/online.webp",
+      "expected_sha256": "fc58644a9be3e8ff87b0290921c3dee6fa724a39d547b668e73023e7b15f9f98",
+      "actual_sha256": "fc58644a9be3e8ff87b0290921c3dee6fa724a39d547b668e73023e7b15f9f98",
+      "expected_bytes": 5996,
+      "actual_bytes": 5996,
+      "pass": true
+    },
+    {
+      "path": "ui/status/success.webp",
+      "expected_sha256": "073ec537a2e17ba7c08d922289035bb2c6b98942d38c18f760f233574c1c31d8",
+      "actual_sha256": "073ec537a2e17ba7c08d922289035bb2c6b98942d38c18f760f233574c1c31d8",
+      "expected_bytes": 5304,
+      "actual_bytes": 5304,
+      "pass": true
+    },
+    {
+      "path": "ui/status/unlocked.webp",
+      "expected_sha256": "dd94421f58629c6e2869f62d5bbdf4c5c2a0b6a87ae4043a698246666f22dbde",
+      "actual_sha256": "dd94421f58629c6e2869f62d5bbdf4c5c2a0b6a87ae4043a698246666f22dbde",
+      "expected_bytes": 7184,
+      "actual_bytes": 7184,
+      "pass": true
+    },
+    {
+      "path": "ui/status/warning.webp",
+      "expected_sha256": "67de512a7566b144b6108a7343a431b1bd8102e537a515a6d07ace2dd0887d42",
+      "actual_sha256": "67de512a7566b144b6108a7343a431b1bd8102e537a515a6d07ace2dd0887d42",
+      "expected_bytes": 6828,
+      "actual_bytes": 6828,
+      "pass": true
+    },
+    {
+      "path": "ui/status/win.webp",
+      "expected_sha256": "75a4d6d7ca7f7ad09822f0a91293491bf025a9eaf00ccc8c9f5cffc8700098f0",
+      "actual_sha256": "75a4d6d7ca7f7ad09822f0a91293491bf025a9eaf00ccc8c9f5cffc8700098f0",
+      "expected_bytes": 9750,
+      "actual_bytes": 9750,
+      "pass": true
+    }
+  ]
+}
