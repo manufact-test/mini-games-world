@@ -40,7 +40,8 @@ foreach ([
     $assert(str_contains($css, $needle), 'Missing V113 measured visual contract: ' . $needle);
 }
 
-$assert(!str_contains($css, '.mgw-phase-b-'),
+$cssWithoutComments = preg_replace('~/\*.*?\*/~s', '', $css) ?? $css;
+$assert(!str_contains($cssWithoutComments, '.mgw-phase-b-'),
     'V113 must not modify game-entry Phase B.');
 $assert(!str_contains($css, 'clip-path:'),
     'V113 must not reintroduce clipped card geometry.');
