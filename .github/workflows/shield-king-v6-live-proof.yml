@@ -1,0 +1,96 @@
+name: Shield King V6 live proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v6-live-proof'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: d26d537733fcbcd13af54da7482ee4bc2217434a
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Wait for exact Hostinger V6 identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          for attempt in $(seq 1 30); do
+            header=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -D - -o /dev/null "$origin/app/v110.php?v=1123&v6_live_proof=1" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-mgw-icon-render"{print $2}' | tail -n1 || true)
+            if [ "$header" = 'accepted-v6-static-owner-fix' ]; then
+              echo "Hostinger has exact V6 render identity on attempt $attempt."
+              exit 0
+            fi
+            echo "Waiting for V6; got '${header:-none}' (attempt $attempt/30)."
+            sleep 10
+          done
+          echo 'Hostinger did not deploy exact V6 identity in time.' >&2
+          exit 1
+      - name: Prove real Telegram v110 retains all rich game art
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > .tmp-v6-proof.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const origin = 'https://seashell-okapi-889488.hostingersite.com';
+          const browser = await chromium.launch({ headless:true });
+          const context = await browser.newContext({ viewport:{ width:390, height:844 }, locale:'ru-RU' });
+          const page = await context.newPage();
+          const failed = [];
+          page.on('requestfailed', request => {
+            if (request.url().startsWith(origin)) failed.push({url:request.url(), error:request.failure()?.errorText || ''});
+          });
+          const response = await page.goto(`${origin}/app/v110.php?v=1123&v6_live_proof=1`, { waitUntil:'domcontentloaded', timeout:35000 });
+          if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
+          if ((response.headers()['x-mgw-icon-render'] || '') !== 'accepted-v6-static-owner-fix') throw new Error('wrong V6 live render identity');
+
+          const selector = '.game-card img.shield-king-game-art[data-sk-delivery="static"][data-sk-asset^="games/"]';
+          await page.waitForFunction(sel => document.querySelectorAll(sel).length === 8, selector, { timeout:15000 });
+          await page.waitForFunction(sel => [...document.querySelectorAll(sel)].every(img => img.complete && img.naturalWidth === 384 && img.naturalHeight === 512), selector, { timeout:15000 });
+
+          // The old deterministic MutationObserver used to rewrite the rich images
+          // shortly after they appeared. Hold long enough to prove they survive it.
+          await page.waitForTimeout(6000);
+
+          const result = await page.evaluate(sel => {
+            const images = [...document.querySelectorAll(sel)].map(img => ({
+              asset: img.dataset.skAsset,
+              delivery: img.dataset.skDelivery,
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+              src: img.currentSrc || img.src,
+            }));
+            const legacySvgs = [...document.querySelectorAll('[data-game-icon]')].filter(icon => icon.querySelector(':scope > svg')).map(icon => icon.closest('[data-game-card]')?.dataset?.gameCard || '');
+            return { images, legacySvgs };
+          }, selector);
+
+          if (result.images.length !== 8) throw new Error(`rich art not retained: ${result.images.length}/8`);
+          if (result.legacySvgs.length !== 0) throw new Error(`legacy SVG owner still overwrote cards: ${JSON.stringify(result.legacySvgs)}`);
+          for (const game of result.images) {
+            if (game.delivery !== 'static') throw new Error(`wrong delivery marker ${JSON.stringify(game)}`);
+            if (game.width !== 384 || game.height !== 512) throw new Error(`wrong dimensions ${JSON.stringify(game)}`);
+            if (!game.src.includes('/app/assets/icons/shield-king/accepted/files/games/')) throw new Error(`wrong static path ${game.src}`);
+            if (game.src.includes('shield-king-icon.php')) throw new Error(`PHP extractor still owns game art ${game.src}`);
+          }
+          const gameFailures = failed.filter(item => item.url.includes('/accepted/files/games/') || item.url.includes('shield-king-icon.php'));
+          if (gameFailures.length) throw new Error(`game art request failures ${JSON.stringify(gameFailures)}`);
+          console.log('[MGW_SHIELD_KING_V6_LIVE_PASS]', JSON.stringify(result));
+          await browser.close();
+          JS
+          node .tmp-v6-proof.mjs
