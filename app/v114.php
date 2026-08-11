@@ -35,6 +35,7 @@ $importMap = <<<'HTML'
     "./assets/js/telegram/telegram-app.js?v=27": "./assets/js/telegram/telegram-app.js?v=114",
     "./assets/js/state.js?v=27": "./assets/js/state.js?v=114",
     "./assets/js/config.js?v=38": "./assets/js/config.js?v=114",
+    "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
     "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114",
     "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c"
@@ -53,6 +54,11 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace(
     $telegramScript,
     $telegramScript . "\n  " . $importMap,
+    $html
+);
+$html = str_replace(
+    './assets/css/main.css?v=92',
+    './assets/css/main.css?v=134&sk=3&icons=c1efd5af&render=14&review=visual-polish-exact',
     $html
 );
 $html = str_replace(
@@ -84,6 +90,12 @@ if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e
     echo 'Mini Games World Phase B entrypoint is unavailable.';
     exit;
 }
+if (!str_contains($html, './assets/css/main.css?v=134&sk=3&icons=c1efd5af&render=14&review=visual-polish-exact')) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Shield King presentation is unavailable.';
+    exit;
+}
 
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -92,4 +104,5 @@ header('Expires: 0');
 header('X-MGW-Frontend-Build: d1-bootstrap-authoritative-owner');
 header('X-MGW-Phase-B-Build: phase-b-current-v121');
 header('X-MGW-Entry-Version: v' . $entryVersion);
+header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
 echo $html;
