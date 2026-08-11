@@ -1,0 +1,59 @@
+name: Shield King V114 focused verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v114-visual-polish
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v114-focused-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 1ee24ef5ec82cb25bf14a20411cdde00a33239a1
+          fetch-depth: 2
+      - name: Verify V114 source contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          css = Path('app/assets/css/shield-king-icons-v11.css').read_text()
+          main = Path('app/assets/css/main.css').read_text()
+          preloader = Path('app/assets/js/components/preloader.js').read_text()
+          entry = Path('app/v110.php').read_text()
+          runtime = Path('bot/helpers/staging-e2e-runtime-files.txt').read_text()
+
+          checks = {
+              'final CSS imported': "shield-king-icons-v11.css?v=134&icons=c1efd5af&review=visual-polish" in main,
+              'smaller desktop icon': 'width:176px !important' in css and 'height:235px !important' in css,
+              'icon shifted left': 'left:-57px !important' in css,
+              'text-owned height': 'min-height:0 !important' in css,
+              'fixed text/button gap': 'margin-top:20px !important' in css,
+              'desktop-only book nudge': '@media (pointer:fine)' in css and 'translate(-1px,-1px)' in css,
+              'mobile book baseline': 'transform:none !important' in css,
+              'assembled plates': 'translate(47px,-4px)' in css and 'translate(-47px,-4px)' in css,
+              'full-cycle minimum': 'APP_ENTRY_MIN_VISIBLE_MS = 2100' in preloader,
+              'navigation-timed minimum': 'performance.now()' in preloader,
+              'cache-busted preloader owner': 'preloader.js?v=43&intro=v114' in entry,
+              'v114 app-entry header': 'shield-king-v114-full-cycle-assembly' in entry,
+              'fingerprint preloader owner': 'app/assets/js/components/preloader.js' in runtime,
+              'fingerprint v11 CSS': 'app/assets/css/shield-king-icons-v11.css' in runtime,
+              'no Phase B selector': '.mgw-phase-b-' not in css,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit('FAILED: ' + ', '.join(failed))
+          print(f'Shield King V114 focused verifier: {len(checks)}/{len(checks)} PASS')
+          PY
+
+          changed="$(git diff --name-only d96232721159ea4c0f8c26844295e1874a7f21a0..HEAD)"
+          printf '%s\n' "$changed"
+          test "$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)" -eq 5
+          test "$(printf '%s\n' "$changed" | grep -Ec '^(app/assets/css/shield-king-icons-v11.css|app/assets/css/main.css|app/assets/js/components/preloader.js|app/v110.php|bot/helpers/staging-e2e-runtime-files.txt)$')" -eq 5
