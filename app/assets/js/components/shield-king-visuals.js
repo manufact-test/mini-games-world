@@ -1,4 +1,4 @@
-const ICON_ENDPOINT = './assets/shield-king-icon.php?v=bcb098b7&asset=';
+const ICON_ENDPOINT = './assets/shield-king-icon.php?v=c1efd5af&asset=';
 
 const MENU_ICONS = {
   rulesBtn:'ui/actions/rules.webp',
@@ -57,6 +57,7 @@ function createImage(asset, className = 'shield-king-metal-icon'){
   image.decoding = 'async';
   image.setAttribute('aria-hidden', 'true');
   image.className = className;
+  image.dataset.skAsset = asset;
   return image;
 }
 
@@ -64,30 +65,22 @@ function setIconOnly(target, asset){
   if (!(target instanceof HTMLElement)) return;
   const current = target.querySelector(':scope > img[data-sk-asset]');
   if (current?.dataset.skAsset === asset) return;
-  const image = createImage(asset);
-  image.dataset.skAsset = asset;
-  target.replaceChildren(image);
+  target.replaceChildren(createImage(asset));
 }
 
 function setLabelIcon(label, asset, text){
   if (!(label instanceof HTMLElement)) return;
-  const image = createImage(asset, 'shield-king-label-icon');
-  image.dataset.skAsset = asset;
-  label.replaceChildren(image, document.createTextNode(text));
+  label.replaceChildren(createImage(asset, 'shield-king-label-icon'), document.createTextNode(text));
 }
 
 function prependTextIcon(button, asset){
   if (!(button instanceof HTMLElement) || button.querySelector(':scope > .shield-king-button-icon')) return;
-  const image = createImage(asset, 'shield-king-button-icon');
-  image.dataset.skAsset = asset;
-  button.prepend(image);
+  button.prepend(createImage(asset, 'shield-king-button-icon'));
 }
 
 function replaceMenuIcon(button, asset){
   if (!(button instanceof HTMLElement) || button.dataset.skMenuIcon === asset) return;
   const label = String(button.textContent || '').replace(/^[^\p{L}\p{N}]+/u, '').trim();
-  const image = createImage(asset, 'shield-king-menu-icon');
-  image.dataset.skAsset = asset;
-  button.replaceChildren(image, document.createTextNode(label));
+  button.replaceChildren(createImage(asset, 'shield-king-menu-icon'), document.createTextNode(label));
   button.dataset.skMenuIcon = asset;
 }

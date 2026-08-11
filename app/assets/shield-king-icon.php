@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Read-only delivery endpoint for the frozen Shield King accepted metallic icon bundle.
  * It owns no product state and extracts only whitelisted WebP members from the exact bundle.
  */
-const MGW_SK_ICON_EXPORT_SHA = 'bcb098b72333e5efa3247de82506550091710757';
+const MGW_SK_ICON_EXPORT_SHA = 'c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1';
 const MGW_SK_ICON_BUNDLE = __DIR__ . '/icons/shield-king/accepted/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip';
 
 $allowed = [

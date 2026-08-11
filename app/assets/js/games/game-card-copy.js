@@ -18,7 +18,7 @@ const GAME_META = {
   [DOMINO_META.id]: DOMINO_META,
 };
 
-const ICON_ENDPOINT = './assets/shield-king-icon.php?v=bcb098b7&asset=';
+const ICON_ENDPOINT = './assets/shield-king-icon.php?v=c1efd5af&asset=';
 const GAME_ICON_ASSET = {
   tictactoe:'games/tic-tac-toe.webp',
   four_in_a_row:'games/four-in-a-row.webp',
@@ -62,5 +62,7 @@ function renderGameIcon(icon, meta){
   image.alt = '';
   image.setAttribute('aria-hidden', 'true');
   image.decoding = 'async';
+  image.className = 'shield-king-game-art';
+  image.dataset.skAsset = asset;
   icon.appendChild(image);
 }
