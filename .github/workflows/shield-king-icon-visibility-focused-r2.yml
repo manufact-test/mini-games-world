@@ -1,0 +1,79 @@
+name: Shield King accepted icon visibility focused r2
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-icon-visibility-pass
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: 6468be2793ca2ef6675dffb01f07fd214a8321be
+      BASE_SHA: 9127af84b56486900b5f430c1042e945673fc99d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Verify exact icon-only boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/shield-king-icon-visibility-focused-r2.yml'
+          actual="$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")"
+          expected=$'app/assets/css/main.css\napp/assets/css/shield-king-icons-v3.css\napp/assets/js/components/shield-king-visuals.js\napp/assets/js/games/game-card-copy.js\napp/assets/js/main-v110.js\napp/assets/shield-king-icon.php\napp/v110.php\nbot/helpers/staging-e2e-runtime-files.txt\nbot/tests/ShieldKingSharedUiIntegrationContractTest.php'
+          test "$actual" = "$expected"
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/games app/assets/css/components/preloader.css app/assets/css/shield-king-v2.css app/assets/js/production-v110-acceptance-runtime.js app/assets/js/screens/game-screen-v102-safe.js app/assets/js/screens/game-screen-v102.js bot/services/GameService.php bot/services/GameRuntimeService.php
+      - name: Syntax and exact repaired export
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l app/assets/shield-king-icon.php
+          php -l bot/tests/ShieldKingSharedUiIntegrationContractTest.php
+          node --check app/assets/js/components/shield-king-visuals.js
+          node --check app/assets/js/games/game-card-copy.js
+          node --check app/assets/js/main-v110.js
+          bundle='app/assets/icons/shield-king/accepted/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'
+          test "$(wc -c < "$bundle" | tr -d ' ')" = '923086'
+          test "$(sha256sum "$bundle" | awk '{print $1}')" = '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
+          unzip -t "$bundle" >/dev/null
+          grep -Fq "MGW_SK_ICON_EXPORT_SHA = 'c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1'" app/assets/shield-king-icon.php
+      - name: Exercise accepted endpoint bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -r '$_GET["asset"]="games/four-in-a-row.webp"; $_SERVER["REQUEST_METHOD"]="GET"; include "app/assets/shield-king-icon.php";' > /tmp/four.webp
+          test "$(wc -c < /tmp/four.webp | tr -d ' ')" = '79690'
+          test "$(sha256sum /tmp/four.webp | awk '{print $1}')" = 'a04e6602157cf5a17a91901cc396186041293d6e64815035ab9ee9a83a5ff81d'
+          php -r '$_GET["asset"]="ui/navigation/notifications.webp"; $_SERVER["REQUEST_METHOD"]="GET"; include "app/assets/shield-king-icon.php";' > /tmp/bell.webp
+          test "$(wc -c < /tmp/bell.webp | tr -d ' ')" = '7252'
+          test "$(sha256sum /tmp/bell.webp | awk '{print $1}')" = 'e134427b3cccec14afb73c43724201abd98bce238e6bb4a1d6f82f703340fdf0'
+      - name: Verify fresh live binding and visual treatment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -Fq "shield-king-icon.php?v=c1efd5af&asset=" app/assets/js/components/shield-king-visuals.js
+          grep -Fq "shield-king-icon.php?v=c1efd5af&asset=" app/assets/js/games/game-card-copy.js
+          grep -Fq "game-card-copy.js?v=82&sk=3&icons=c1efd5af" app/v110.php
+          grep -Fq "shield-king-visuals.js?v=126&sk=3&icons=c1efd5af" app/v110.php
+          grep -Fq "main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af" app/assets/js/main-v110.js
+          css=app/assets/css/shield-king-icons-v3.css
+          grep -Fq '.shield-king-game-art' "$css"
+          grep -Fq '#notificationsOpen .shield-king-metal-icon' "$css"
+          grep -Fq '#moreMenuOpen .shield-king-metal-icon' "$css"
+          grep -Fq '.game-card .game-rules-button .shield-king-metal-icon' "$css"
+          grep -Fq '.menu-item .shield-king-menu-icon' "$css"
+          ! grep -Fq '.preloader' "$css"
+          ! grep -Fq 'mgw-phase-b' "$css"
+          ! grep -Fq '#gameBoard' "$css"
+      - name: Run focused contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ShieldKingSharedUiIntegrationContractTest.php
