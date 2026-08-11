@@ -44,6 +44,10 @@ foreach ($games as $file) {
     $absolute = $root . '/' . $relative;
     $assert(is_file($absolute), 'Missing static accepted game art: ' . $file);
     $assert(filesize($absolute) > 50000, 'Accepted rich game art unexpectedly small: ' . $file);
+    $size = getimagesize($absolute);
+    $assert(is_array($size), 'Accepted rich game art must decode as an image: ' . $file);
+    $assert(($size[0] ?? 0) === 384 && ($size[1] ?? 0) === 512, 'Accepted rich game art must remain 384x512: ' . $file);
+    $assert(($size['mime'] ?? '') === 'image/webp', 'Accepted rich game art must remain WebP: ' . $file);
     $assert(str_contains($fingerprint, $relative), 'Hostinger exact fingerprint must include static game art: ' . $file);
 }
 
