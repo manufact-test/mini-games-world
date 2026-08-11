@@ -13,7 +13,7 @@ import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
 import { initV110AcceptanceRuntime } from './production-v110-acceptance-runtime.js?v=110';
 import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1104';
 import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
-import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
+import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=97&sk=6';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
