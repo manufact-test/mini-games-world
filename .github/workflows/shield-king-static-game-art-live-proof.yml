@@ -1,0 +1,82 @@
+name: Shield King static game-art live proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-static-game-art-live-proof'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fe5384d3bcc3b5218e71a69bbc0ac2f50e538c67
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Wait for exact Hostinger render identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          for attempt in $(seq 1 30); do
+            header=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -D - -o /dev/null "$origin/app/v110.php?v=1123&static_proof=5" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-mgw-icon-render"{print $2}' | tail -n1 || true)
+            if [ "$header" = 'accepted-v5-static-game-art' ]; then
+              echo "Hostinger has exact V5 render identity on attempt $attempt."
+              exit 0
+            fi
+            echo "Waiting for Hostinger V5 render identity; got '${header:-none}' (attempt $attempt/30)."
+            sleep 10
+          done
+          echo 'Hostinger did not deploy exact V5 render identity in time.' >&2
+          exit 1
+      - name: Prove real Telegram v110 static rich game art
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > .tmp-live-proof.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const origin = 'https://seashell-okapi-889488.hostingersite.com';
+          const browser = await chromium.launch({ headless:true });
+          const context = await browser.newContext({ viewport:{ width:390, height:844 }, locale:'ru-RU' });
+          const page = await context.newPage();
+          const failed = [];
+          page.on('requestfailed', request => {
+            if (request.url().startsWith(origin)) failed.push({url:request.url(), error:request.failure()?.errorText || ''});
+          });
+          const response = await page.goto(`${origin}/app/v110.php?v=1123&static_proof=5`, { waitUntil:'domcontentloaded', timeout:35000 });
+          if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
+          if ((response.headers()['x-mgw-icon-render'] || '') !== 'accepted-v5-static-game-art') throw new Error('wrong live render identity');
+          await page.waitForFunction(() => document.querySelectorAll('.game-card img.shield-king-game-art[data-sk-delivery="static"]').length === 8, null, { timeout:15000 });
+          await page.waitForFunction(() => [...document.querySelectorAll('.game-card img.shield-king-game-art[data-sk-delivery="static"]')].every(img => img.complete && img.naturalWidth === 384 && img.naturalHeight === 512), null, { timeout:15000 });
+          const games = await page.$$eval('.game-card img.shield-king-game-art[data-sk-delivery="static"]', images => images.map(img => ({
+            asset: img.dataset.skAsset,
+            delivery: img.dataset.skDelivery,
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+            src: img.currentSrc || img.src,
+          })));
+          if (games.length !== 8) throw new Error(`expected 8 static game images, got ${games.length}`);
+          for (const game of games) {
+            if (!game.src.includes('/app/assets/icons/shield-king/accepted/files/games/')) throw new Error(`wrong static path ${game.src}`);
+            if (game.src.includes('shield-king-icon.php')) throw new Error(`game still uses PHP extractor ${game.src}`);
+            if (game.width !== 384 || game.height !== 512) throw new Error(`wrong dimensions ${JSON.stringify(game)}`);
+          }
+          const gameFailures = failed.filter(item => item.url.includes('/app/assets/icons/shield-king/accepted/files/games/') || item.url.includes('shield-king-icon.php'));
+          if (gameFailures.length) throw new Error(`game image request failures: ${JSON.stringify(gameFailures)}`);
+          console.log('[MGW_STATIC_GAME_ART_LIVE_PASS]', JSON.stringify(games));
+          await browser.close();
+          JS
+          node .tmp-live-proof.mjs
