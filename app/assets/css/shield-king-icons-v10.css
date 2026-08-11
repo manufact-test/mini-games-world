@@ -1,0 +1,128 @@
+/*
+ * Shield King V113 — painted-geometry correction from live alpha diagnostics.
+ * Visual-only. No gameplay/runtime owner changes and no accepted asset changes.
+ */
+
+/* Live V112 alpha proof showed every accepted game WebP painted ~12px right of
+ * the card edge and only ~23–25px above it. Move the image canvas left/up by
+ * those measured amounts; copy then gains ~11px of real painted clearance. */
+.game-card .game-icon{
+  left:-52px !important;
+  top:-117px !important;
+}
+.section-title + .game-card{margin-top:80px !important}
+.game-card + .game-card{margin-top:80px !important}
+
+/* Live alpha proof of rules.webp showed the painted glyph itself is centered
+ * when the 128x128 image box has no translation. */
+.game-card .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"],
+.turn-actions .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"],
+.game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+  transform:none !important;
+}
+
+/* App-entry presentation only. No .mgw-phase-b-* selector is used here. */
+.preloader .abstract-loader:before{
+  inset:-42px !important;
+  border:0 !important;
+  border-radius:50% !important;
+  background:radial-gradient(circle,rgba(178,116,255,.12),rgba(115,91,255,.035) 42%,transparent 70%) !important;
+  box-shadow:none !important;
+  animation:skV113Energy 1.35s ease-in-out infinite !important;
+}
+
+/* v9.css lives directly in assets/css, so ../../icons resolved to /app/icons
+ * and the completed mark never loaded. Use the correct assets/icons path. */
+.preloader .abstract-loader:after{
+  inset:32px !important;
+  background:url('../icons/shield-king/mgw-mark.svg') center/contain no-repeat !important;
+  opacity:0;
+  transform:scale(.78) rotate(-4deg);
+  filter:drop-shadow(0 0 16px rgba(230,232,239,.12));
+  animation:skV113MarkLock .46s .88s cubic-bezier(.22,.61,.36,1) both !important;
+}
+
+/* Hold the fragments at genuinely remote screen positions for a beat, then
+ * converge once and yield to the complete central mark. */
+.preloader .abstract-loader .s1{
+  animation:skV113PlateLeft 1s .14s cubic-bezier(.22,.61,.36,1) both !important;
+}
+.preloader .abstract-loader .s2{
+  animation:skV113PlateRight 1s .14s cubic-bezier(.22,.61,.36,1) both !important;
+}
+.preloader .abstract-loader .s3{
+  animation:skV113Crown 1s .14s cubic-bezier(.22,.61,.36,1) both !important;
+}
+.preloader .abstract-loader .n1{animation:skV113SparkA 1s .14s ease-out both !important}
+.preloader .abstract-loader .n2{animation:skV113SparkB 1s .14s ease-out both !important}
+.preloader .abstract-loader .n3{animation:skV113SparkC 1s .14s ease-out both !important}
+.preloader .load-card h1{animation:skV113Copy .42s 1.05s cubic-bezier(.22,.61,.36,1) both !important}
+.preloader .load-card p{animation:skV113Copy .42s 1.12s cubic-bezier(.22,.61,.36,1) both !important}
+
+@keyframes skV113PlateLeft{
+  0%,12%{opacity:0;transform:translate(-56vw,34vh) rotate(-155deg) scale(.40)}
+  64%{opacity:1;transform:translate(24px,4px) rotate(9deg) scale(1.10)}
+  82%{opacity:1;transform:translate(12px,0) rotate(2deg) scale(1)}
+  100%{opacity:0;transform:translate(12px,0) rotate(0) scale(.90)}
+}
+@keyframes skV113PlateRight{
+  0%,12%{opacity:0;transform:translate(56vw,-34vh) rotate(155deg) scale(.40)}
+  64%{opacity:1;transform:translate(-24px,4px) rotate(-9deg) scale(1.10)}
+  82%{opacity:1;transform:translate(-12px,0) rotate(-2deg) scale(1)}
+  100%{opacity:0;transform:translate(-12px,0) rotate(0) scale(.90)}
+}
+@keyframes skV113Crown{
+  0%,12%{opacity:0;transform:translate(24vw,-48vh) rotate(52deg) scale(.36)}
+  64%{opacity:1;transform:translateY(14px) rotate(-5deg) scale(1.12)}
+  82%{opacity:1;transform:translateY(8px) rotate(0) scale(1)}
+  100%{opacity:0;transform:translateY(11px) scale(.90)}
+}
+@keyframes skV113SparkA{
+  0%,12%{opacity:0;transform:translate(-48vw,-40vh) scale(.18)}
+  66%{opacity:1;transform:translate(20px,24px) scale(1.55)}
+  100%{opacity:0;transform:translate(44px,58px) scale(.25)}
+}
+@keyframes skV113SparkB{
+  0%,12%{opacity:0;transform:translate(48vw,40vh) scale(.18)}
+  66%{opacity:1;transform:translate(-18px,21px) scale(1.55)}
+  100%{opacity:0;transform:translate(-42px,54px) scale(.25)}
+}
+@keyframes skV113SparkC{
+  0%,12%{opacity:0;transform:translate(-40vw,44vh) scale(.18)}
+  66%{opacity:1;transform:translateY(-23px) scale(1.55)}
+  100%{opacity:0;transform:translateY(-50px) scale(.25)}
+}
+@keyframes skV113MarkLock{
+  0%{opacity:0;transform:scale(.78) rotate(-4deg);filter:blur(2px) drop-shadow(0 0 5px rgba(230,232,239,.05))}
+  72%{opacity:1;transform:scale(1.38) rotate(0);filter:blur(0) drop-shadow(0 0 24px rgba(230,232,239,.18))}
+  100%{opacity:1;transform:scale(1.30);filter:blur(0) drop-shadow(0 0 16px rgba(230,232,239,.13))}
+}
+@keyframes skV113Copy{
+  0%{opacity:0;transform:translateY(12px);filter:blur(2px)}
+  100%{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+@keyframes skV113Energy{
+  0%,100%{transform:scale(.82);opacity:.35}
+  50%{transform:scale(1.15);opacity:.85}
+}
+
+@media (max-width:380px){
+  .game-card .game-icon{
+    left:-50px !important;
+    top:-110px !important;
+  }
+  .section-title + .game-card{margin-top:80px !important}
+  .game-card + .game-card{margin-top:80px !important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .preloader .abstract-loader:before,
+  .preloader .abstract-loader:after,
+  .preloader .abstract-loader .shape,
+  .preloader .abstract-loader .node,
+  .preloader .load-card h1,
+  .preloader .load-card p{animation:none !important}
+  .preloader .abstract-loader:after{opacity:1 !important;transform:scale(1.30) !important}
+  .preloader .abstract-loader .shape,.preloader .abstract-loader .node{display:none !important}
+  .preloader .load-card h1,.preloader .load-card p{opacity:1 !important;transform:none !important}
+}

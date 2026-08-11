@@ -38,14 +38,10 @@ if (!str_contains($html, $telegramScript)) {
     exit;
 }
 
-$html = str_replace(
-    $telegramScript,
-    $telegramScript . "\n  " . $importMap,
-    $html
-);
+$html = str_replace($telegramScript, $telegramScript . "\n  " . $importMap, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=131&sk=3&icons=c1efd5af&render=11&review=user-correction',
+    './assets/css/main.css?v=132&sk=3&icons=c1efd5af&render=12&proof=painted-geometry',
     $html
 );
 $html = str_replace(
@@ -72,8 +68,8 @@ header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1137');
 header('X-MGW-Invite-Graph: v1137');
 header('X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader');
-header('X-MGW-App-Entry-Presentation: shield-king-v112-assembled-mark');
+header('X-MGW-App-Entry-Presentation: shield-king-v113-fullscreen-assembly');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
 header('X-MGW-Icon-Pack: c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1');
-header('X-MGW-Icon-Render: accepted-v112-user-correction');
+header('X-MGW-Icon-Render: accepted-v113-painted-geometry');
 echo $html;
