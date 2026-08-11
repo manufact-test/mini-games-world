@@ -1,0 +1,350 @@
+/*
+ * Shield King V112 — user-review correction.
+ * Presentation only. Accepted art and game/runtime owners are untouched.
+ */
+
+/* ===== Home game cards =================================================== */
+.game-card{
+  border:1px solid rgba(230,232,239,.34) !important;
+  border-radius:20px !important;
+  padding:17px 14px 14px !important;
+  overflow:visible !important;
+  background:
+    radial-gradient(circle at 10% -5%,rgba(214,154,50,.10),transparent 30%),
+    linear-gradient(150deg,rgba(42,31,57,.995),rgba(27,23,36,.998) 48%,rgba(17,19,27,.998)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.055),
+    inset 0 -1px 0 rgba(0,0,0,.38),
+    0 12px 30px rgba(0,0,0,.23) !important;
+  isolation:isolate;
+}
+
+/* Kill the V9 broken-rail geometry. Keep a solid card and a normal rounded frame. */
+.game-card:before{
+  content:"" !important;
+  position:absolute !important;
+  inset:2px !important;
+  z-index:0 !important;
+  pointer-events:none !important;
+  border-radius:17px !important;
+  background:linear-gradient(135deg,rgba(247,248,252,.035),transparent 34%,rgba(214,154,50,.026) 80%,transparent) !important;
+  box-shadow:inset 0 0 0 1px rgba(230,232,239,.025) !important;
+}
+.game-card:after{
+  content:"" !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:1 !important;
+  pointer-events:none !important;
+  border:1px solid rgba(214,154,50,.18) !important;
+  border-radius:20px !important;
+  background:none !important;
+  filter:none !important;
+  box-shadow:inset 0 0 0 1px rgba(230,232,239,.025) !important;
+}
+
+/*
+ * The accepted 3:4 art is placed independently of copy. Its transparent canvas
+ * starts well outside the card so the painted shield is flush with the left edge,
+ * while the crown sits clearly above the card rather than over card fill.
+ */
+.game-card .game-top{
+  display:block !important;
+  min-height:140px !important;
+  padding:8px 49px 0 112px !important;
+  overflow:visible !important;
+  position:relative !important;
+  z-index:3 !important;
+}
+.game-card .game-top > div:not(.game-icon){
+  min-width:0 !important;
+  position:relative !important;
+  z-index:5 !important;
+}
+.game-card .game-icon{
+  position:absolute !important;
+  left:-40px !important;
+  top:-92px !important;
+  width:190px !important;
+  height:253px !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  display:block !important;
+  z-index:4 !important;
+  pointer-events:none !important;
+}
+.game-card .game-icon .shield-king-game-art{
+  display:block !important;
+  width:190px !important;
+  height:253px !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  transform:none !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  filter:none !important;
+  position:relative !important;
+  z-index:4 !important;
+  pointer-events:none !important;
+}
+.game-card h3{
+  margin:0 0 7px !important;
+  font-size:18px !important;
+  line-height:1.2 !important;
+}
+.game-card p{line-height:1.45 !important}
+.game-card .btn-row{
+  position:relative !important;
+  z-index:7 !important;
+  margin-top:13px !important;
+}
+.game-card > .game-rules-button{z-index:8 !important}
+
+/* Space is reserved for the crown before the first card and between every card. */
+.section-title + .game-card{margin-top:54px !important}
+.game-card + .game-card{margin-top:64px !important}
+
+/* ===== Rules/book optical centering ====================================== */
+/* The 128x128 accepted canvas paints the book slightly right/low. Correct the
+ * painted centre without moving the button itself. */
+.game-card .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+  width:37px !important;
+  height:37px !important;
+  margin:0 !important;
+  transform:translate(-3px,-2px) !important;
+  transform-origin:center !important;
+  object-position:center !important;
+}
+.turn-actions .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+  width:32px !important;
+  height:32px !important;
+  margin:0 !important;
+  transform:translate(-3px,-2px) !important;
+  transform-origin:center !important;
+  object-position:center !important;
+}
+@media (pointer:fine){
+  .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+    transform:translate(-3px,-2px) !important;
+  }
+}
+
+/* ===== App-entry loader only ============================================ */
+/* The game-entry/Phase-B loader is intentionally not selected here. */
+.preloader{
+  overflow:hidden !important;
+  background:
+    radial-gradient(circle at 50% 43%,rgba(114,75,198,.26),transparent 25%),
+    radial-gradient(circle at 14% 20%,rgba(230,232,239,.055),transparent 20%),
+    radial-gradient(circle at 86% 78%,rgba(214,154,50,.075),transparent 22%),
+    linear-gradient(180deg,#10131b,#080b12) !important;
+}
+.preloader .load-card{
+  width:100% !important;
+  max-width:none !important;
+  min-height:78vh !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  isolation:isolate !important;
+}
+.preloader .load-card:before{
+  content:"" !important;
+  position:fixed !important;
+  inset:-45vmax !important;
+  z-index:-3 !important;
+  pointer-events:none !important;
+  border:0 !important;
+  border-radius:50% !important;
+  background:conic-gradient(from 20deg,transparent 0 18%,rgba(230,232,239,.035) 22%,transparent 29% 54%,rgba(114,75,198,.06) 61%,transparent 69% 85%,rgba(214,154,50,.035) 90%,transparent 96%) !important;
+  animation:skV112Field 10s linear infinite !important;
+}
+.preloader .load-card:after{
+  content:"" !important;
+  position:absolute !important;
+  width:min(82vw,360px) !important;
+  aspect-ratio:1 !important;
+  z-index:-2 !important;
+  border-radius:50% !important;
+  background:radial-gradient(circle,rgba(114,75,198,.18),rgba(114,75,198,.035) 44%,transparent 72%) !important;
+  filter:blur(3px) !important;
+  animation:skV112Glow 2.2s ease-in-out infinite !important;
+}
+
+/* No permanent mark at frame 0. The final shield appears only after fragments converge. */
+.preloader .abstract-loader{
+  width:230px !important;
+  height:230px !important;
+  margin:0 auto 24px !important;
+  background:none !important;
+  filter:drop-shadow(0 18px 34px rgba(0,0,0,.34)) !important;
+  position:relative !important;
+  isolation:isolate !important;
+}
+
+/* Outer energy orbit remains after assembly. */
+.preloader .abstract-loader:before{
+  content:"" !important;
+  position:absolute !important;
+  inset:12px !important;
+  z-index:1 !important;
+  border:1px solid rgba(230,232,239,.22) !important;
+  border-top-color:rgba(247,248,252,.78) !important;
+  border-right-color:rgba(214,154,50,.62) !important;
+  border-bottom-color:rgba(114,75,198,.52) !important;
+  border-radius:50% !important;
+  background:none !important;
+  box-shadow:0 0 25px rgba(230,232,239,.08),inset 0 0 20px rgba(114,75,198,.06) !important;
+  animation:shieldKingLoaderOrbit 3.1s linear infinite !important;
+}
+
+/* Final complete Shield King mark: hidden first, then locks into the centre. */
+.preloader .abstract-loader:after{
+  content:"" !important;
+  position:absolute !important;
+  inset:42px !important;
+  z-index:4 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:url('../../icons/shield-king/mgw-mark.svg') center/contain no-repeat !important;
+  opacity:0;
+  transform:scale(.64) rotate(-4deg);
+  filter:drop-shadow(0 0 15px rgba(230,232,239,.13));
+  animation:skV112MarkLock .58s .72s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+
+/* Existing fragments now travel from genuinely separated screen regions once,
+ * converge on the shield, then disappear beneath the completed mark. */
+.preloader .abstract-loader .shape{
+  z-index:3 !important;
+  opacity:0;
+  will-change:transform,opacity;
+}
+.preloader .abstract-loader .s1{
+  left:25px !important;
+  top:88px !important;
+  animation:skV112PlateLeft 1.05s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+.preloader .abstract-loader .s2{
+  right:25px !important;
+  top:88px !important;
+  animation:skV112PlateRight 1.05s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+.preloader .abstract-loader .s3{
+  width:54px !important;
+  height:30px !important;
+  left:88px !important;
+  top:22px !important;
+  animation:skV112Crown 1.05s cubic-bezier(.16,1,.3,1) forwards !important;
+}
+.preloader .abstract-loader .node{
+  z-index:6 !important;
+  opacity:0;
+  will-change:transform,opacity;
+}
+.preloader .abstract-loader .n1{animation:skV112SparkA 1.05s ease-out forwards !important}
+.preloader .abstract-loader .n2{animation:skV112SparkB 1.05s ease-out forwards !important}
+.preloader .abstract-loader .n3{animation:skV112SparkC 1.05s ease-out forwards !important}
+
+.preloader .load-card h1{
+  margin:0 !important;
+  font-size:30px !important;
+  opacity:0;
+  transform:translateY(14px);
+  animation:skV112Copy .45s .88s cubic-bezier(.22,1,.36,1) forwards !important;
+}
+.preloader .load-card p{
+  margin:8px 0 0 !important;
+  opacity:0;
+  transform:translateY(10px);
+  animation:skV112Copy .45s .98s cubic-bezier(.22,1,.36,1) forwards !important;
+}
+
+@keyframes skV112PlateLeft{
+  0%{opacity:0;transform:translate(-48vw,30vh) rotate(-150deg) scale(.42)}
+  58%{opacity:1;transform:translate(14px,0) rotate(8deg) scale(1.08)}
+  78%{opacity:1;transform:translate(7px,0) rotate(3deg) scale(1)}
+  100%{opacity:0;transform:translate(12px,0) rotate(0) scale(.88)}
+}
+@keyframes skV112PlateRight{
+  0%{opacity:0;transform:translate(48vw,-28vh) rotate(150deg) scale(.42)}
+  58%{opacity:1;transform:translate(-14px,0) rotate(-8deg) scale(1.08)}
+  78%{opacity:1;transform:translate(-7px,0) rotate(-3deg) scale(1)}
+  100%{opacity:0;transform:translate(-12px,0) rotate(0) scale(.88)}
+}
+@keyframes skV112Crown{
+  0%{opacity:0;transform:translate(18vw,-42vh) rotate(46deg) scale(.38)}
+  58%{opacity:1;transform:translateY(12px) rotate(-4deg) scale(1.12)}
+  78%{opacity:1;transform:translateY(7px) rotate(0) scale(1)}
+  100%{opacity:0;transform:translateY(12px) scale(.88)}
+}
+@keyframes skV112SparkA{
+  0%{opacity:0;transform:translate(-42vw,-32vh) scale(.2)}
+  65%{opacity:1;transform:translate(20px,24px) scale(1.5)}
+  100%{opacity:0;transform:translate(44px,58px) scale(.3)}
+}
+@keyframes skV112SparkB{
+  0%{opacity:0;transform:translate(42vw,32vh) scale(.2)}
+  65%{opacity:1;transform:translate(-18px,21px) scale(1.5)}
+  100%{opacity:0;transform:translate(-42px,54px) scale(.3)}
+}
+@keyframes skV112SparkC{
+  0%{opacity:0;transform:translate(-34vw,38vh) scale(.2)}
+  65%{opacity:1;transform:translateY(-23px) scale(1.5)}
+  100%{opacity:0;transform:translateY(-50px) scale(.3)}
+}
+@keyframes skV112MarkLock{
+  0%{opacity:0;transform:scale(.64) rotate(-4deg);filter:blur(3px) drop-shadow(0 0 5px rgba(230,232,239,.05))}
+  72%{opacity:1;transform:scale(1.07) rotate(0);filter:blur(0) drop-shadow(0 0 22px rgba(230,232,239,.18))}
+  100%{opacity:1;transform:scale(1);filter:blur(0) drop-shadow(0 0 14px rgba(230,232,239,.13))}
+}
+@keyframes skV112Copy{to{opacity:1;transform:translateY(0)}}
+@keyframes skV112Field{to{transform:rotate(360deg)}}
+@keyframes skV112Glow{0%,100%{transform:scale(.86);opacity:.42}50%{transform:scale(1.12);opacity:.86}}
+
+@media (max-width:380px){
+  .game-card .game-top{
+    min-height:132px !important;
+    padding-left:104px !important;
+    padding-right:46px !important;
+  }
+  .game-card .game-icon{
+    left:-38px !important;
+    top:-85px !important;
+    width:176px !important;
+    height:235px !important;
+  }
+  .game-card .game-icon .shield-king-game-art{
+    width:176px !important;
+    height:235px !important;
+  }
+  .section-title + .game-card{margin-top:50px !important}
+  .game-card + .game-card{margin-top:59px !important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .preloader .load-card:before,
+  .preloader .load-card:after,
+  .preloader .abstract-loader:before,
+  .preloader .abstract-loader:after,
+  .preloader .abstract-loader .shape,
+  .preloader .abstract-loader .node,
+  .preloader .load-card h1,
+  .preloader .load-card p{animation:none !important}
+  .preloader .abstract-loader:after{opacity:1 !important;transform:scale(1) !important}
+  .preloader .abstract-loader .shape,.preloader .abstract-loader .node{display:none !important}
+  .preloader .load-card h1,.preloader .load-card p{opacity:1 !important;transform:none !important}
+}
