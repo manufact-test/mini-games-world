@@ -1,0 +1,132 @@
+name: Shield King V114 live proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v114-live-proof'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 8e777a8c562da42ed00566288bdd8b9c4cf1a27c
+          fetch-depth: 1
+      - name: Wait for exact V114 Hostinger identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          ready=0
+          for attempt in $(seq 1 24); do
+            if curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" > readiness.json; then
+              if python3 - readiness.json "$expected" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert p.get('ok') is True
+          assert p.get('source_fingerprint_sha256') == sys.argv[2]
+          assert p.get('capabilities',{}).get('exact_runtime_fingerprint') is True
+          PY
+              then ready=1; break; fi
+            fi
+            sleep 10
+          done
+          test "$ready" = 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false playwright@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Prove rendered V114 geometry and intro assembly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p v114-live-proof
+          cat > .tmp-v114-live-proof.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const origin=process.env.MGW_STAGING_ORIGIN;
+          const browser=await chromium.launch({headless:true});
+
+          const alphaBounds=async (page, selector)=>page.$eval(selector,img=>{
+            const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+            const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);
+            const d=x.getImageData(0,0,c.width,c.height).data;let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+            for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++){if(d[(y*c.width+xx)*4+3]<12)continue;minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
+            return{minX,minY,maxX,maxY,width:c.width,height:c.height};
+          });
+
+          const context=await browser.newContext({viewport:{width:390,height:844},locale:'ru-RU',deviceScaleFactor:1});
+          const page=await context.newPage();
+          await page.goto(`${origin}/app/v110.php?v=114_live_proof`,{waitUntil:'networkidle',timeout:35000});
+          const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(e=>e.name));
+          if(!resources.some(u=>u.includes('/assets/css/shield-king-icons-v11.css?v=134&icons=c1efd5af&review=visual-polish')))throw new Error('V114 CSS not rendered');
+          if(!resources.some(u=>u.includes('/assets/js/components/preloader.js?v=43&intro=v114')))throw new Error('V114 preloader owner not rendered');
+          const livePreloaderSource=await (await context.request.get(`${origin}/app/assets/js/components/preloader.js?v=43&intro=v114`)).text();
+          if(!livePreloaderSource.includes('APP_ENTRY_MIN_VISIBLE_MS = 2100'))throw new Error('live preloader does not enforce full cycle');
+
+          const gameSelector='.game-card img.shield-king-game-art[data-sk-delivery="static"]';
+          await page.waitForFunction(sel=>document.querySelectorAll(sel).length===8,gameSelector,{timeout:15000});
+          await page.waitForFunction(sel=>[...document.querySelectorAll(sel)].every(img=>img.complete&&img.naturalWidth===384&&img.naturalHeight===512),gameSelector,{timeout:15000});
+          const metrics=await page.evaluate(()=>{
+            const alpha=img=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height).data;let minX=c.width,minY=c.height,maxX=-1,maxY=-1;for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++){if(d[(y*c.width+xx)*4+3]<12)continue;minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}return{minX,minY,maxX,maxY,width:c.width,height:c.height}};
+            const painted=img=>{const a=alpha(img),r=img.getBoundingClientRect(),sx=r.width/a.width,sy=r.height/a.height;return{left:r.left+a.minX*sx,top:r.top+a.minY*sy,right:r.left+(a.maxX+1)*sx,bottom:r.top+(a.maxY+1)*sy}};
+            const games=[...document.querySelectorAll('.game-card')].map(card=>{const img=card.querySelector('img.shield-king-game-art[data-sk-delivery="static"]'),pr=painted(img),cr=card.getBoundingClientRect(),h=card.querySelector('h3').getBoundingClientRect(),p=card.querySelector('p').getBoundingClientRect(),buttons=card.querySelector('.btn-row').getBoundingClientRect();return{game:card.dataset.gameCard,leftDelta:pr.left-cr.left,topProtrusion:cr.top-pr.top,copyGap:h.left-pr.right,textButtonGap:buttons.top-p.bottom,iconButtonClearance:buttons.top-pr.bottom,iconCanvasWidth:img.getBoundingClientRect().width,iconCanvasHeight:img.getBoundingClientRect().height}});
+            const books=[...document.querySelectorAll('.game-rules-button')].map(b=>{const img=b.querySelector('img[data-sk-asset="ui/actions/rules.webp"]');if(!img||!img.complete||!img.naturalWidth)return null;const br=b.getBoundingClientRect(),pr=painted(img);return{context:b.closest('.game-card')?'card':(b.closest('.turn-actions')?'game-top':'other'),dx:((pr.left+pr.right)/2)-((br.left+br.right)/2),dy:((pr.top+pr.bottom)/2)-((br.top+br.bottom)/2)}}).filter(Boolean);
+            return{games,books};
+          });
+          for(const m of metrics.games){
+            if(m.iconCanvasWidth!==176||m.iconCanvasHeight!==235)throw new Error(`icon size ${JSON.stringify(m)}`);
+            if(m.leftDelta>-4||m.leftDelta<-14)throw new Error(`left cover ${JSON.stringify(m)}`);
+            if(m.topProtrusion<42||m.topProtrusion>58)throw new Error(`top protrusion ${JSON.stringify(m)}`);
+            if(m.copyGap<16||m.copyGap>26)throw new Error(`copy gap ${JSON.stringify(m)}`);
+            if(m.textButtonGap<19||m.textButtonGap>21)throw new Error(`text/button rhythm ${JSON.stringify(m)}`);
+            if(m.iconButtonClearance<2)throw new Error(`icon overlaps buttons ${JSON.stringify(m)}`);
+          }
+          const cardBooks=metrics.books.filter(b=>b.context==='card');if(cardBooks.length!==8)throw new Error(`card books ${cardBooks.length}`);
+          for(const b of metrics.books){if(b.dx>-.2||b.dx<-1.8||b.dy>-.2||b.dy<-1.8)throw new Error(`desktop book optical nudge ${JSON.stringify(b)}`)}
+          await page.addStyleTag({content:'.preloader{display:none!important}'});
+          await page.screenshot({path:'v114-live-proof/home-desktop.png',fullPage:true});
+
+          const mobile=await browser.newContext({viewport:{width:390,height:844},locale:'ru-RU',deviceScaleFactor:1,isMobile:true,hasTouch:true});
+          const mp=await mobile.newPage();await mp.goto(`${origin}/app/v110.php?v=114_mobile_book`,{waitUntil:'networkidle',timeout:35000});
+          await mp.waitForFunction(()=>document.querySelectorAll('.game-rules-button img[data-sk-asset="ui/actions/rules.webp"]').length>=8,null,{timeout:10000});
+          const mobileBooks=await mp.evaluate(()=>{const alpha=img=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height).data;let minX=c.width,minY=c.height,maxX=-1,maxY=-1;for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++){if(d[(y*c.width+xx)*4+3]<12)continue;minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}return{minX,minY,maxX,maxY,width:c.width,height:c.height}};const painted=img=>{const a=alpha(img),r=img.getBoundingClientRect(),sx=r.width/a.width,sy=r.height/a.height;return{left:r.left+a.minX*sx,top:r.top+a.minY*sy,right:r.left+(a.maxX+1)*sx,bottom:r.top+(a.maxY+1)*sy}};return[...document.querySelectorAll('.game-rules-button')].map(b=>{const img=b.querySelector('img[data-sk-asset="ui/actions/rules.webp"]');if(!img)return null;const br=b.getBoundingClientRect(),pr=painted(img);return{dx:((pr.left+pr.right)/2)-((br.left+br.right)/2),dy:((pr.top+pr.bottom)/2)-((br.top+br.bottom)/2)}}).filter(Boolean)});
+          for(const b of mobileBooks){if(Math.abs(b.dx)>.35||Math.abs(b.dy)>.35)throw new Error(`mobile book moved ${JSON.stringify(b)}`)}
+
+          const lp=await browser.newPage({viewport:{width:390,height:844},locale:'ru-RU',deviceScaleFactor:1});
+          await lp.addInitScript(()=>document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='.preloader.hidden{opacity:1!important;visibility:visible!important;pointer-events:none!important}';document.head.appendChild(s)},{once:true}));
+          await lp.goto(`${origin}/app/v110.php?v=114_loader_proof`,{waitUntil:'networkidle',timeout:35000});await lp.waitForSelector('.preloader .abstract-loader');
+          const loader=lp.locator('.preloader .load-card');
+          for(const [time,name] of [[900,'loader-flight.png'],[1350,'loader-assembly.png'],[1850,'loader-final.png']]){
+            await lp.evaluate(t=>{for(const a of document.querySelector('.preloader .load-card').getAnimations({subtree:true})){a.pause();a.currentTime=t;}},time);
+            await lp.screenshot({path:`v114-live-proof/${name}`,fullPage:true});
+          }
+          const assembled=await lp.evaluate(()=>{const el=document.querySelector('.preloader .abstract-loader');const r=el.getBoundingClientRect();const q=s=>{const x=el.querySelector(s).getBoundingClientRect();return{cx:(x.left+x.right)/2-r.left,cy:(x.top+x.bottom)/2-r.top,opacity:parseFloat(getComputedStyle(el.querySelector(s)).opacity)}};const after=getComputedStyle(el,'::after');return{s1:q('.s1'),s2:q('.s2'),s3:q('.s3'),markOpacity:parseFloat(after.opacity),markBackground:after.backgroundImage}});
+          if(assembled.markOpacity<.98||!assembled.markBackground.includes('/app/assets/icons/shield-king/mgw-mark.svg'))throw new Error(`final mark ${JSON.stringify(assembled)}`);
+          fs.writeFileSync('v114-live-proof/metrics.json',JSON.stringify({metrics,mobileBooks,assembled},null,2));
+          console.log('[MGW_V114_LIVE_PASS]',JSON.stringify({metrics,mobileBooks,assembled}));
+          await mobile.close();await context.close();await browser.close();
+          JS
+          node .tmp-v114-live-proof.mjs
+      - name: Upload proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shield-king-v114-live-proof-${{ github.run_id }}
+          path: v114-live-proof
+          if-no-files-found: warn
+          retention-days: 3
