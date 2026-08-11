@@ -1,0 +1,37 @@
+name: Staging recovery safe reason logging focused
+
+on:
+  pull_request:
+    branches:
+      - agent/staging-test-only-recovery-log-reason
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/staging-test-only-recovery-log-reason-verifier'
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: 94217436d4c083998dca67a49fa81ed9ac68cc10
+      BASE_SHA: 3863c813b88c6f4d7b4a6fb2b7d2edfb00543aba
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Verify one-file harness boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/staging-test-only-recovery-log-reason-verifier.yml'
+          test "$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")" = 'e2e/staging-global-setup.mjs'
+      - name: Verify syntax and safe reason logging
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --check e2e/staging-global-setup.mjs
+          grep -Fq 'payload?.reason_code' e2e/staging-global-setup.mjs
+          grep -Fq 'payload?.stage' e2e/staging-global-setup.mjs
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- bot app
