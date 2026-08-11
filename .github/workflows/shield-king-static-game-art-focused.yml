@@ -1,0 +1,34 @@
+name: Shield King static game-art focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-static-game-art-delivery
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-static-game-art-verifier'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 08580d04dd20d3d53b5c07bafce41f2640e7ef17
+          fetch-depth: 0
+      - name: Verify exact static rich game-art contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ShieldKingStaticGameArtDeliveryContractTest.php
+      - name: Prove focused scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --name-only 3b96586c59b8e9d4489e1b27d124735198e0f379 08580d04dd20d3d53b5c07bafce41f2640e7ef17 | tee /tmp/changed.txt
+          if grep -E '^app/assets/css/(components/preloader\.css|games/)|^app/assets/js/games/.*/(entry|runtime|board)|^bot/services/(Game|MatchPreparation)' /tmp/changed.txt; then
+            echo 'Forbidden loader/gameplay owner changed.' >&2
+            exit 1
+          fi
+          test "$(grep -c '^app/assets/icons/shield-king/accepted/files/games/.*\.webp$' /tmp/changed.txt)" -eq 8
