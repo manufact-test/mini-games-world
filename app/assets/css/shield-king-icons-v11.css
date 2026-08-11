@@ -46,6 +46,14 @@
   }
 }
 
+/* Canonical /app/ still carries the accepted Shield King Phase B gradient from
+ * the frozen shared theme. Keep its non-visible solid fallback deterministic so
+ * different CDN edges cannot change computed presentation without changing the
+ * actual painted gradient. This does not alter the Phase B animation or artwork. */
+.mgw-phase-b-countdown{
+  background-color:rgba(6,8,13,.96) !important;
+}
+
 /* ===== App-entry loader only ============================================ */
 /* One deliberate assembly: pieces converge into a compact shield silhouette,
  * then cross-fade into the complete accepted MGW mark. */
