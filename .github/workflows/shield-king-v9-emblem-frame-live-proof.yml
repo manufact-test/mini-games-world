@@ -1,0 +1,94 @@
+name: Shield King V9 emblem-frame live proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v9-emblem-frame-live-proof'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 14d819c382335840cb1d560e3950656f28c7dc1b
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Wait for exact Hostinger V9 identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          for attempt in $(seq 1 30); do
+            header=$(curl --silent --show-error --connect-timeout 10 --max-time 20 -D - -o /dev/null "$origin/app/v110.php?v=1123&v9_frame_proof=1" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-mgw-icon-render"{print $2}' | tail -n1 || true)
+            if [ "$header" = 'accepted-v9-emblem-cut-frame' ]; then
+              echo "Hostinger has exact V9 frame identity on attempt $attempt."
+              exit 0
+            fi
+            echo "Waiting for V9; got '${header:-none}' (attempt $attempt/30)."
+            sleep 10
+          done
+          exit 1
+      - name: Prove live emblem/frame geometry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > .tmp-v9-frame-proof.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const origin = 'https://seashell-okapi-889488.hostingersite.com';
+          const browser = await chromium.launch({ headless:true });
+          const page = await browser.newPage({ viewport:{ width:390, height:844 }, locale:'ru-RU' });
+          const response = await page.goto(`${origin}/app/v110.php?v=1123&v9_frame_proof=1`, { waitUntil:'domcontentloaded', timeout:35000 });
+          if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
+          if ((response.headers()['x-mgw-icon-render'] || '') !== 'accepted-v9-emblem-cut-frame') throw new Error('wrong V9 live render identity');
+
+          const selector = '.game-card img.shield-king-game-art[data-sk-delivery="static"]';
+          await page.waitForFunction(sel => document.querySelectorAll(sel).length === 8, selector, { timeout:15000 });
+          await page.waitForFunction(sel => [...document.querySelectorAll(sel)].every(img => img.complete && img.naturalWidth === 384 && img.naturalHeight === 512), selector, { timeout:15000 });
+
+          const result = await page.evaluate(sel => [...document.querySelectorAll(sel)].map(img => {
+            const card = img.closest('.game-card');
+            const cr = card.getBoundingClientRect();
+            const ir = img.getBoundingClientRect();
+            const cs = getComputedStyle(card);
+            const px = name => parseFloat(cs.getPropertyValue(name)) || 0;
+            return {
+              asset: img.dataset.skAsset,
+              leftDelta: ir.left - cr.left,
+              protrudeTop: cr.top - ir.top,
+              imageRight: ir.right - cr.left,
+              imageBottom: ir.bottom - cr.top,
+              topRailStart: px('--sk-game-frame-top-start'),
+              leftRailStart: px('--sk-game-frame-left-start'),
+              rightGap: px('--sk-game-frame-top-start') - (ir.right - cr.left),
+              bottomGap: px('--sk-game-frame-left-start') - (ir.bottom - cr.top),
+              width: ir.width,
+              height: ir.height,
+              radius: cs.borderRadius,
+            };
+          }), selector);
+
+          if (result.length !== 8) throw new Error(`expected 8 cards, got ${result.length}`);
+          for (const item of result) {
+            if (Math.abs(item.leftDelta) > 1.5) throw new Error(`emblem not flush left ${JSON.stringify(item)}`);
+            if (item.protrudeTop < 8 || item.protrudeTop > 18) throw new Error(`emblem must protrude upward only ${JSON.stringify(item)}`);
+            if (Math.abs(item.rightGap - 10) > 1.5) throw new Error(`right frame air is not ~10px ${JSON.stringify(item)}`);
+            if (Math.abs(item.bottomGap - 10) > 1.5) throw new Error(`bottom frame air is not ~10px ${JSON.stringify(item)}`);
+            if (item.width < 105 || item.height < 140) throw new Error(`emblem not large enough ${JSON.stringify(item)}`);
+          }
+          console.log('[MGW_SHIELD_KING_V9_FRAME_LIVE_PASS]', JSON.stringify(result));
+          await browser.close();
+          JS
+          node .tmp-v9-frame-proof.mjs
