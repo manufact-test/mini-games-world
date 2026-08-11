@@ -50,7 +50,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/production-clean-entry-v110.js?v=1121&b=3f6490b354f2',
+    './assets/js/production-clean-entry-v110.js?v=1122&sk=6',
     $html
 );
 $html = str_replace(
@@ -74,5 +74,5 @@ header('X-MGW-Invite-Graph: v1137');
 header('X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
 header('X-MGW-Icon-Pack: c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1');
-header('X-MGW-Icon-Render: accepted-v5-static-game-art');
+header('X-MGW-Icon-Render: accepted-v6-static-owner-fix');
 echo $html;
