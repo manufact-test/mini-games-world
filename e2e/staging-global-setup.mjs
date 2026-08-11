@@ -57,7 +57,10 @@ async function recoverTestOnlyInviteOrphans(){
   });
   const payload = await response.json().catch(() => null);
   if (!response.ok || payload?.ok !== true || !['recovered', 'already_clean'].includes(payload?.status)) {
-    throw new Error(`Staging test-only invite recovery failed: ${response.status} ${payload?.error || 'unknown_error'}`);
+    const safeDetail = [payload?.error, payload?.stage, payload?.reason_code]
+      .filter((value) => typeof value === 'string' && value !== '')
+      .join(' ');
+    throw new Error(`Staging test-only invite recovery failed: ${response.status} ${safeDetail || 'unknown_error'}`);
   }
   if (payload.status === 'recovered') {
     if ((payload?.candidate_count || 0) < 1 || (payload?.deleted?.invite_rows || 0) < 1
