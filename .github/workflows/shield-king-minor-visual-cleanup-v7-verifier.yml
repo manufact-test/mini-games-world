@@ -1,0 +1,59 @@
+name: Shield King V7 minor visual cleanup focused
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-minor-visual-cleanup-v7
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-minor-visual-cleanup-v7-verifier'
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_SHA: 8a1dc58c31a3d5ad23a1227a56ae92cf01af3f96
+      BASE_SHA: d26d537733fcbcd13af54da7482ee4bc2217434a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify exact verifier and product boundaries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD^)" = "${FEATURE_SHA}"
+          test "$(git diff --name-only "${FEATURE_SHA}" HEAD)" = '.github/workflows/shield-king-minor-visual-cleanup-v7-verifier.yml'
+          actual="$(git diff --name-only "${BASE_SHA}" "${FEATURE_SHA}")"
+          expected=$'app/assets/css/main.css\napp/assets/css/shield-king-icons-v5.css\napp/v110.php\nbot/helpers/staging-e2e-runtime-files.txt\nbot/tests/ShieldKingMinorVisualCleanupContractTest.php'
+          test "${actual}" = "${expected}"
+
+      - name: Run focused V7 contract and PHP syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l bot/tests/ShieldKingMinorVisualCleanupContractTest.php
+          php bot/tests/ShieldKingMinorVisualCleanupContractTest.php
+
+      - name: Prove visual-only scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/games
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/css/components/preloader.css app/assets/design-backups
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/js
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- bot/services bot/invites bot/notifications bot/api.php bot/game-watch.php bot/presence.php bot/game-clock.php
+
+      - name: Prove accepted art and fallback owner stay unchanged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/icons/shield-king/accepted
+          git diff --quiet "${BASE_SHA}" "${FEATURE_SHA}" -- app/assets/js/production-deterministic-icons.js app/assets/js/games/game-card-copy.js
+          grep -Fq "mix-blend-mode:screen" app/assets/css/shield-king-icons-v5.css
+          grep -Fq "background:transparent !important" app/assets/css/shield-king-icons-v5.css
+          grep -Fq "filter:none !important" app/assets/css/shield-king-icons-v5.css
