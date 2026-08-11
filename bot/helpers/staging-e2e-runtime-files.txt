@@ -35,6 +35,14 @@ app/assets/css/shield-king-icons-v3.css
 app/assets/css/shield-king-icons-v4.css
 app/assets/shield-king-icon.php
 app/assets/icons/shield-king/accepted/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip
+app/assets/icons/shield-king/accepted/files/games/tic-tac-toe.webp
+app/assets/icons/shield-king/accepted/files/games/four-in-a-row.webp
+app/assets/icons/shield-king/accepted/files/games/battleship.webp
+app/assets/icons/shield-king/accepted/files/games/checkers.webp
+app/assets/icons/shield-king/accepted/files/games/reversi.webp
+app/assets/icons/shield-king/accepted/files/games/chess.webp
+app/assets/icons/shield-king/accepted/files/games/go.webp
+app/assets/icons/shield-king/accepted/files/games/domino.webp
 app/assets/icons/shield-king/mgw-mark.svg
 app/assets/icons/shield-king/navigation-icons.svg
 app/assets/icons/shield-king/action-icons.svg

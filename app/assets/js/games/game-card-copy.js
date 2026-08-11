@@ -18,7 +18,10 @@ const GAME_META = {
   [DOMINO_META.id]: DOMINO_META,
 };
 
-const ICON_ENDPOINT = './assets/shield-king-icon.php?v=c1efd5af&asset=';
+// Production delivery is intentionally static. The accepted rich game WebPs are
+// copied byte-for-byte from the repaired frozen export into the active app so
+// Telegram never depends on PHP/ZIP extraction for visible game-card artwork.
+const GAME_ICON_ROOT = './assets/icons/shield-king/accepted/files/';
 const GAME_ICON_ASSET = {
   tictactoe:'games/tic-tac-toe.webp',
   four_in_a_row:'games/four-in-a-row.webp',
@@ -58,11 +61,12 @@ function renderGameIcon(icon, meta){
   }
 
   const image = document.createElement('img');
-  image.src = `${ICON_ENDPOINT}${encodeURIComponent(asset)}`;
+  image.src = `${GAME_ICON_ROOT}${asset}?v=c1efd5af`;
   image.alt = '';
   image.setAttribute('aria-hidden', 'true');
   image.decoding = 'async';
   image.className = 'shield-king-game-art';
   image.dataset.skAsset = asset;
+  image.dataset.skDelivery = 'static';
   icon.appendChild(image);
 }
