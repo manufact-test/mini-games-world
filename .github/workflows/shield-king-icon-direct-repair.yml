@@ -14,6 +14,13 @@ jobs:
     if: github.head_ref == 'agent/shield-king-icon-repair-payload'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout exact payload branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/shield-king-icon-repair-payload
+          path: payload
+          fetch-depth: 1
+
       - name: Checkout isolated accepted-asset target
         uses: actions/checkout@v4
         with:
@@ -22,49 +29,26 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
-      - name: Reconstruct exact accepted ZIP from verified Git blobs
+      - name: Reconstruct exact accepted ZIP from stored exact payload chunks
         shell: python
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
         run: |
-          import base64, hashlib, json, os, pathlib, urllib.request
-
-          chunks = [
-            ('8d52799ac452f239b6b241d57e632613f15c3172', 120000, '441fa8a9ae17463c22933949c02be75e334c988283013ec3b85333f97dbecccb'),
-            ('760b7f3d2844e8eaa227a7f24b311ce0c84bea3f', 120000, 'a1a5b3cd6710187dfaed9b063c92a4ccdc56479c52adc1055b97cbf199c75a22'),
-            ('5b2ef749a37b9bcb511366fe816212b0d9aeca2e', 180000, '598aeced305bd8775b94dd52abd3ea9112863a81d1c5aa9b884e8bb3ef2c8cc6'),
-            ('a15adf1184e495385a2ddb1dcaf25f1acb8ec2a1', 250000, 'f2bd7f0e589908c918b5e31bba0ba9810da1e2abd4750f4869848a576a372966'),
-            ('e9ed9843a3c62cea6dead80b1288352cf5b0ebc4', 130000, '6cae2b6ec334ac1d975915c7a53d6eca29996b7185824fc2b39f7c8f93a4c2c6'),
-            ('2038da52276af9aa55c11f86b4f47ecbaa474a68', 123086, '71833fe4f9565f2f165c5997b4e5dbee4b616a08611e34bfd96e8d9868fb2785'),
-          ]
-
-          token = os.environ['GH_TOKEN']
-          repo = os.environ['GH_REPO']
-          raw_chunks = []
-          for i, (blob_sha, expected_size, expected_sha256) in enumerate(chunks, 1):
-              req = urllib.request.Request(
-                  f'https://api.github.com/repos/{repo}/git/blobs/{blob_sha}',
-                  headers={
-                      'Authorization': f'Bearer {token}',
-                      'Accept': 'application/vnd.github+json',
-                      'User-Agent': 'MGW-Shield-King-Repair/1.0',
-                  },
-              )
-              with urllib.request.urlopen(req, timeout=30) as response:
-                  obj = json.loads(response.read())
-              data = base64.b64decode(obj['content'])
-              actual_sha256 = hashlib.sha256(data).hexdigest()
-              print(f'CHUNK_{i}_BYTES={len(data)}')
-              print(f'CHUNK_{i}_SHA256={actual_sha256}')
-              assert len(data) == expected_size, f'chunk {i} size mismatch'
-              assert actual_sha256 == expected_sha256, f'chunk {i} sha mismatch'
-              raw_chunks.append(data)
-
-          payload = b''.join(raw_chunks)
-          zip_sha = hashlib.sha256(payload).hexdigest()
-          print(f'ZIP_BYTES={len(payload)}')
-          print(f'ZIP_SHA256={zip_sha}')
+          import base64, hashlib, pathlib, re
+          parts = sorted(pathlib.Path('payload/repair-payload').glob('exact-*'))
+          assert parts, 'no exact payload chunks found'
+          chunks=[]
+          for p in parts:
+              s=p.read_text()
+              clean=re.sub(r'\s+','',s)
+              chunks.append(clean)
+              print(p.name, len(clean))
+          encoded=''.join(chunks)
+          print('PART_COUNT', len(parts))
+          print('TOTAL_BASE64_CHARS', len(encoded))
+          assert len(encoded) == 1230784, f'base64 length mismatch: {len(encoded)}'
+          payload=base64.b64decode(encoded, validate=True)
+          zip_sha=hashlib.sha256(payload).hexdigest()
+          print('ZIP_BYTES', len(payload))
+          print('ZIP_SHA256', zip_sha)
           assert len(payload) == 923086
           assert zip_sha == '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
           pathlib.Path('/tmp/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip').write_bytes(payload)
@@ -82,16 +66,11 @@ jobs:
           manifest = json.loads((base / 'MANIFEST.json').read_text())
           assert len(manifest['files']) == 44
           src = pathlib.Path('/tmp/export')
-          rows = []
           for item in manifest['files']:
               p = src / item['path']
               data = p.read_bytes()
-              actual_sha = hashlib.sha256(data).hexdigest()
-              actual_size = len(data)
-              ok = actual_sha == item['sha256'] and actual_size == item['bytes']
-              assert ok, f"source mismatch: {item['path']}"
-              rows.append(item['path'])
-          assert len(rows) == 44
+              assert hashlib.sha256(data).hexdigest() == item['sha256'], item['path']
+              assert len(data) == item['bytes'], item['path']
           assert len(list(src.rglob('*.webp'))) == 44
           print('SOURCE_MANIFEST_VERIFY=44/44 PASS')
           PY
@@ -113,41 +92,24 @@ jobs:
           import hashlib, json, pathlib
           base = pathlib.Path('target/accepted-assets/shield-king-icons')
           manifest = json.loads((base / 'MANIFEST.json').read_text())
-          rows = []
+          rows=[]
           for item in manifest['files']:
               p = base / 'files' / item['path']
               data = p.read_bytes()
-              actual_sha = hashlib.sha256(data).hexdigest()
-              actual_size = len(data)
-              ok = actual_sha == item['sha256'] and actual_size == item['bytes']
-              assert ok, f"repository mismatch: {item['path']}"
-              rows.append({
-                  'path': item['path'],
-                  'expected_sha256': item['sha256'],
-                  'actual_sha256': actual_sha,
-                  'expected_bytes': item['bytes'],
-                  'actual_bytes': actual_size,
-                  'pass': True,
-              })
+              actual_sha=hashlib.sha256(data).hexdigest()
+              actual_size=len(data)
+              assert actual_sha == item['sha256'], item['path']
+              assert actual_size == item['bytes'], item['path']
+              rows.append({'path':item['path'],'sha256':actual_sha,'bytes':actual_size,'pass':True})
           assert len(rows) == 44
           assert len(list((base / 'files').rglob('*.webp'))) == 44
-
-          zip_path = base / 'MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'
-          zip_data = zip_path.read_bytes()
-          zip_sha = hashlib.sha256(zip_data).hexdigest()
-          assert len(zip_data) == 923086
-          assert zip_sha == '83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
-
-          audit = {
-              'status': 'PASS',
-              'verified': '44/44',
-              'zip_sha256': zip_sha,
-              'zip_bytes': len(zip_data),
-              'manifest_source': 'accepted-assets/shield-king-icons/MANIFEST.json',
-              'direct_files_root': 'accepted-assets/shield-king-icons/files',
-              'files': rows,
-          }
-          (base / 'REPAIR_VERIFICATION.json').write_text(json.dumps(audit, indent=2) + '\n')
+          zip_path=base/'MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip'
+          z=zip_path.read_bytes()
+          zip_sha=hashlib.sha256(z).hexdigest()
+          assert len(z)==923086
+          assert zip_sha=='83e4bb23745fa3f0453d8bf22a7298030bec963942577c0bc20f1d1964d4df60'
+          audit={'status':'PASS','verified':'44/44','zip_sha256':zip_sha,'zip_bytes':len(z),'files':rows}
+          (base/'REPAIR_VERIFICATION.json').write_text(json.dumps(audit,indent=2)+'\n')
           print('REPOSITORY_MANIFEST_VERIFY=44/44 PASS')
           print('ZIP_VERIFY=PASS')
 
@@ -161,9 +123,6 @@ jobs:
           git add accepted-assets/shield-king-icons/files \
                   accepted-assets/shield-king-icons/MGW_SHIELD_KING_ACCEPTED_METALLIC_ICON_EXPORT_V1.zip \
                   accepted-assets/shield-king-icons/REPAIR_VERIFICATION.json
-          echo 'STAGED_PATHS_BEGIN'
-          git diff --cached --name-only
-          echo 'STAGED_PATHS_END'
           test "$(git diff --cached --name-only | wc -l)" -eq 46
           git commit -m 'assets(shield-king): repair accepted icon binaries 44 of 44'
           git push origin HEAD:agent/shield-king-accepted-icon-export
