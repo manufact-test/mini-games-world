@@ -9,7 +9,7 @@ const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v122-ttt-authoritative-clock';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v123-ttt-activation-clock';
 const EXPECTED_ENTRY_VERSION = 'v121';
 
 async function requestOidcToken() {
@@ -135,9 +135,9 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe',
-      '/assets/js/phase-b-current-runtime.js?v=121&b=0e808fe731ab',
-      '/assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c',
+      '/assets/js/phase-b-current-entry.js?v=123&ttt=activation-clock',
+      '/assets/js/phase-b-current-runtime.js?v=123&ttt=activation-clock',
+      '/assets/js/screens/game-screen-phase-b-current.js?v=117&ttt=single-owner',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
 
     for (const retired of [
