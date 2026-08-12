@@ -415,6 +415,45 @@ async function playTicTacToeCell(player, cell) {
   return payload;
 }
 
+async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label) {
+  const serverNowMs = Number(game?.server_now_ms || 0);
+  const turnStartsAtMs = Number(game?.turn_starts_at_ms || 0);
+  expect(Number(game?.time_left || 0), `${label} authoritative full timer`).toBe(60);
+  expect(turnStartsAtMs, `${label} turn start timestamp`).toBeGreaterThan(0);
+  expect(serverNowMs, `${label} server timestamp`).toBeGreaterThan(0);
+  expect(turnStartsAtMs, `${label} has no artificial future handoff`).toBeLessThanOrEqual(serverNowMs);
+
+  await expect.poll(async () => {
+    const values = await Promise.all([
+      playerA.page.locator('#timerText').textContent(),
+      playerB.page.locator('#timerText').textContent(),
+    ]);
+    return values.map(value => String(value || '').trim()).join('|');
+  }, {
+    message: `${label} timer must reset to 60 on both players`,
+    timeout: 1_200,
+    intervals: [30, 60, 100, 150],
+  }).toBe('60 сек|60 сек');
+
+  const presentations = await Promise.all([playerA.page, playerB.page].map(page => page.evaluate(() => {
+    const timer = document.getElementById('timerText');
+    const symbols = [...document.querySelectorAll('#playersRow .player-mark-symbol')];
+    return {
+      timerWidth:Number(timer?.getBoundingClientRect().width || 0),
+      symbolFontSizes:symbols.map(symbol => Number.parseFloat(getComputedStyle(symbol).fontSize || '0')),
+    };
+  })));
+
+  for (const [index, presentation] of presentations.entries()) {
+    expect(presentation.timerWidth, `${label} player ${index + 1} fixed timer width`).toBeCloseTo(76, 1);
+    expect(presentation.symbolFontSizes.length, `${label} player ${index + 1} player marks`).toBe(2);
+    expect(
+      presentation.symbolFontSizes.every(size => Math.abs(size - 18) < 0.1),
+      `${label} player ${index + 1} mobile mark size`,
+    ).toBe(true);
+  }
+}
+
 async function waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId) {
   const readyA = await expectPlayerRequest(
     playerA.page,
@@ -778,6 +817,8 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
       stg_test_player_a: playerA,
       stg_test_player_b: playerB,
     };
+    await expectSynchronizedTicTacToeTurn(playerA, playerB, authoritativeGame, 'Initial turn');
+
     const winningSequence = [0, 3, 1, 4, 2];
     let finalPayload = null;
 
@@ -788,6 +829,14 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
       finalPayload = await playTicTacToeCell(actor, cell);
       expect(String(finalPayload.game?.id || ''), `Authoritative game id after cell ${cell}`).toBe(gameId);
       authoritativeGame = finalPayload.game;
+      if (String(authoritativeGame?.status || '') === 'active') {
+        await expectSynchronizedTicTacToeTurn(
+          playerA,
+          playerB,
+          authoritativeGame,
+          `Turn after cell ${cell}`,
+        );
+      }
     }
 
     expect(finalPayload?.game?.status).toBe('finished');
