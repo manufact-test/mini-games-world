@@ -73,14 +73,13 @@ bot/webhook.php
 bot/helpers/StagingMenuButtonReconciler.php
 bot/services/TelegramService.php
 
-# The v114/v124 graph is fingerprinted as the canonical browser route and is
-# the single Telegram /start and invitation application owner.
+# Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
+# staging/reference route, but it is not a Telegram menu owner and is not the
+# accepted /start application graph.
 app/.htaccess
 app/v114.php
-app/assets/css/screens/game.css
 app/assets/js/phase-b-current-entry.js
 app/assets/js/phase-b-current-runtime.js
-app/assets/js/production-regression-fix-entry.js
 app/assets/js/main.js
 app/assets/js/interaction-latency-coordinator-v101.js
 app/assets/js/screens/game-screen-phase-b-current.js

@@ -1,12 +1,11 @@
 import { createHash } from 'node:crypto';
-import { telegramAppRoute } from './support/telegram-launch-route.mjs';
 import { test, expect } from '@playwright/test';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
+const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';

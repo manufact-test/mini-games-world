@@ -69,7 +69,28 @@ export function initNotificationsScreen(){
   });
 
   document.addEventListener('mgw:notification-sync', event => {
-    syncNotificationItem(event.detail || {});
+    const item = normalizeItem(event.detail?.item);
+    const unreadCount = Number(event.detail?.unreadCount || 0);
+    const announce = event.detail?.announce !== false;
+    if (!item.id) return;
+    const inviteToken = String(item.invite_token || '');
+    if (inviteToken && consumedInviteTokens.has(inviteToken)) return;
+    if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);
+
+    rememberLocalAuthority(item);
+    upsert(item);
+
+    if (isNotificationsSheetOpen()) {
+      pinItem(item);
+      renderNotifications(visibleSheetItems());
+      markVisibleReadLocally();
+      setUnreadCount(0);
+      rememberAnnouncedId(item.id);
+      return;
+    }
+
+    if (!announce || !appReady || announcedIds.has(item.id)) return;
+    if (showToast(item)) rememberAnnouncedId(item.id);
   });
 
   document.addEventListener('mgw:notification-remove', event => {
@@ -87,32 +108,6 @@ export function initNotificationsScreen(){
   pollTimer = window.setInterval(() => {
     if (document.visibilityState === 'visible') void refreshNotifications({ announce:true });
   }, POLL_MS);
-}
-
-export function syncNotificationItem(detail = {}){
-  const item = normalizeItem(detail.item);
-  const unreadCount = Number(detail.unreadCount || 0);
-  const announce = detail.announce !== false;
-  if (!item.id) return false;
-  const inviteToken = String(item.invite_token || '');
-  if (inviteToken && consumedInviteTokens.has(inviteToken)) return false;
-  if (Number.isFinite(unreadCount)) setUnreadCount(unreadCount);
-
-  rememberLocalAuthority(item);
-  upsert(item);
-
-  if (isNotificationsSheetOpen()) {
-    pinItem(item);
-    renderNotifications(visibleSheetItems());
-    markVisibleReadLocally();
-    setUnreadCount(0);
-    rememberAnnouncedId(item.id);
-    return true;
-  }
-
-  if (!announce || !appReady || announcedIds.has(item.id)) return true;
-  if (showToast(item)) rememberAnnouncedId(item.id);
-  return true;
 }
 
 function handlePointerDown(event){
@@ -381,25 +376,19 @@ function removeInviteNotification(detail){
   for (const [key, entry] of localAuthority.entries()) {
     if (String(entry?.item?.invite_token || '') === token) localAuthority.delete(key);
   }
-  let removedPinned = false;
   for (const [key, item] of sheetState.pinned.entries()) {
-    if (String(item?.invite_token || '') !== token) continue;
-    sheetState.pinned.delete(key);
-    removedPinned = true;
+    if (String(item?.invite_token || '') === token) sheetState.pinned.delete(key);
   }
 
   for (const id of removedIds) announcedIds.add(String(id));
   if (removedIds.length) persistAnnouncedIds();
 
-  const removedToast = String(toastItem?.invite_token || '') === token
-    || String(pressedToastItem?.invite_token || '') === token;
-  if (removedToast) dismissToast();
-
-  // A stale/repeated consume with nothing visible must not keep postponing
-  // unrelated incoming notification toasts forever.
-  if (removedIds.length || removedPinned || removedToast) {
-    announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
+  if (String(toastItem?.invite_token || '') === token
+      || String(pressedToastItem?.invite_token || '') === token) {
+    dismissToast();
   }
+
+  announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
   persistItems();
   const hasExactUnread = detail.unreadCount !== null && detail.unreadCount !== undefined;
   const exactUnread = hasExactUnread ? Number(detail.unreadCount) : Number.NaN;

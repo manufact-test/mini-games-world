@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { telegramAppRoute, telegramInvitationRoute } from './support/telegram-launch-route.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
+const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
@@ -136,9 +135,6 @@ async function expectPost(page, pathname, data, label) {
 async function cleanupPlayer(player) {
   if (!player?.page) return;
   try {
-    await postFromPlayer(player.page, '/bot/api.php', { action:'leave_search' });
-  } catch {}
-  try {
     const state = await postFromPlayer(player.page, '/bot/api.php', { action:'game_state' });
     if (state.status === 200 && state.payload?.game?.id && state.payload.game.status === 'active') {
       await postFromPlayer(player.page, '/bot/api.php', {
@@ -153,10 +149,7 @@ async function cleanupPlayer(player) {
     const invite = sync.payload?.invite || sync.payload?.tracked_invite || null;
     if (sync.status === 200 && invite?.token
       && ['pending', 'accepted', 'awaiting_start'].includes(String(invite.status || ''))) {
-      const action = String(invite.status || '') === 'pending' && !invite.is_owner
-        ? 'decline'
-        : 'cancel';
-      await postFromPlayer(player.page, '/bot/invites.php', { action, token:invite.token });
+      await postFromPlayer(player.page, '/bot/invites.php', { action:'cancel', token:invite.token });
     }
   } catch {}
   await player.page.keyboard.press('Escape').catch(() => null);
@@ -202,7 +195,7 @@ test('D1 feedback 1 and 6: invitation link opens one decision sheet and keeps bo
     expect(token).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
 
     playerB = await openPlayer(browser, 'B', {
-      route:telegramInvitationRoute(STAGING_ORIGIN, token),
+      route:`${APP_ROUTE}?invite=${encodeURIComponent(token)}`,
     });
 
     await expect(playerB.page.locator('#sheet .sheet-head h2')).toHaveText('Вас приглашают сыграть', {

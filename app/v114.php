@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$entryVersion = '124';
+$entryVersion = '121';
 $requestVersion = trim((string)($_GET['v'] ?? ''));
 if ($requestVersion !== '' && $requestVersion !== $entryVersion) {
     $query = $_GET;
@@ -37,8 +37,8 @@ $importMap = <<<'HTML'
     "./assets/js/config.js?v=38": "./assets/js/config.js?v=114",
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
-    "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=116&invite=no-duplicate-owner",
-    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer"
+    "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114",
+    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c"
   }
 }
 </script>
@@ -58,12 +58,12 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=140&sk=3&icons=c1efd5af&render=19&review=ttt-authoritative-clock',
+    './assets/css/main.css?v=138&sk=3&icons=c1efd5af&render=18&review=more-optical-center',
     $html
 );
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy',
+    './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe',
     $html
 );
 $html = str_replace(
@@ -73,24 +73,24 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main.js?v=d1-real-entry-invite-v1140',
+    './assets/js/main.js?v=d1-bootstrap-authoritative-owner',
     $html
 );
 
-$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-real-entry-invite-v1140"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-bootstrap-authoritative-owner"></script>';
 if (!str_contains($html, $mainScript)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World main-script anchor is unavailable.';
     exit;
 }
-if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy')) {
+if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World Phase B entrypoint is unavailable.';
     exit;
 }
-if (!str_contains($html, './assets/css/main.css?v=140&sk=3&icons=c1efd5af&render=19&review=ttt-authoritative-clock')) {
+if (!str_contains($html, './assets/css/main.css?v=138&sk=3&icons=c1efd5af&render=18&review=more-optical-center')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World Shield King presentation is unavailable.';
@@ -102,7 +102,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Frontend-Build: d1-bootstrap-authoritative-owner');
-header('X-MGW-Phase-B-Build: phase-b-current-v127-ttt-real-launch-no-copy');
+header('X-MGW-Phase-B-Build: phase-b-current-v121');
 header('X-MGW-Entry-Version: v' . $entryVersion);
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
 echo $html;

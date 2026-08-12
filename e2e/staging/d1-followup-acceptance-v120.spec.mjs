@@ -1,11 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { telegramAppRoute } from './support/telegram-launch-route.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
+const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const NOTIFICATIONS_ROUTE = `${STAGING_ORIGIN}/bot/notifications.php`;
@@ -132,9 +131,6 @@ async function expectPost(page, pathname, data, label) {
 async function cleanupPlayer(player) {
   if (!player?.page) return;
   try {
-    await postFromPlayer(player.page, '/bot/api.php', { action:'leave_search' });
-  } catch {}
-  try {
     const state = await postFromPlayer(player.page, '/bot/api.php', { action:'game_state' });
     if (state.status === 200 && state.payload?.game?.id && state.payload.game.status === 'active') {
       await postFromPlayer(player.page, '/bot/api.php', { action:'leave_game', gameId:state.payload.game.id });
@@ -145,10 +141,7 @@ async function cleanupPlayer(player) {
     const invite = sync.payload?.invite || sync.payload?.tracked_invite || null;
     if (sync.status === 200 && invite?.token
       && ['pending', 'accepted', 'awaiting_start'].includes(String(invite.status || ''))) {
-      const action = String(invite.status || '') === 'pending' && !invite.is_owner
-        ? 'decline'
-        : 'cancel';
-      await postFromPlayer(player.page, '/bot/invites.php', { action, token:invite.token });
+      await postFromPlayer(player.page, '/bot/invites.php', { action:'cancel', token:invite.token });
     }
   } catch {}
   await player.page.keyboard.press('Escape').catch(() => null);
@@ -289,13 +282,11 @@ test('D1 v120 acceptance: mobile notification toast paints cached invitation bef
     const accept = playerA.page.locator(`[data-invite-action="accept"][data-invite-token="${token}"]`);
     await expect(accept).toBeVisible({ timeout:1_200 });
     expect(Date.now() - openedAt, 'Cached mobile toast first-paint latency').toBeLessThan(650);
-    await expect.poll(() => markReadCalls, {
-      timeout:10_000,
-      message:'Opening the cached toast must start one authoritative markRead request',
-    }).toBeGreaterThanOrEqual(1);
+    await playerA.page.waitForTimeout(1_000);
 
     const trace = await takeSheetTrace(playerA.page, '__MGW_D1_V120_MOBILE_DELAY');
     expect(trace.some(frame => frame.includes('Пока уведомлений нет'))).toBe(false);
+    expect(markReadCalls).toBeGreaterThanOrEqual(1);
 
     const declineResponse = playerA.page.waitForResponse(isActionResponse(INVITES_ROUTE, 'decline'), { timeout:30_000 });
     await playerA.page.locator(`[data-invite-action="decline"][data-invite-token="${token}"]`).click();

@@ -16,13 +16,12 @@ function payload(item = null) {
   };
 }
 
-test('one notification request owner keeps the bell loading state honest', async ({ browser }) => {
+test('aged background notification read cannot paint false empty over a newer bell read', async ({ browser }) => {
   test.setTimeout(90_000);
   let context;
   let player;
   let mode = 'initial';
   let initialReads = 0;
-  let raceReads = 0;
   const pending = [];
   const item = {
     id: 'staging_notification_generation_item',
@@ -74,8 +73,7 @@ test('one notification request owner keeps the bell loading state honest', async
         return;
       }
 
-      raceReads += 1;
-      if (pending.length === 0) {
+      if (pending.length < 2) {
         pending.push(route);
         return;
       }
@@ -100,7 +98,7 @@ test('one notification request owner keeps the bell loading state honest', async
     });
     await expect.poll(() => pending.length, {
       timeout: 10_000,
-      message: 'The single notification owner must have one pending read',
+      message: 'The aged background notification read must be pending',
     }).toBe(1);
 
     await player.page.evaluate(() => {
@@ -122,11 +120,22 @@ test('one notification request owner keeps the bell loading state honest', async
 
     await player.page.locator('#notificationsOpen').click();
     await expect(player.page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления');
+    await expect.poll(() => pending.length, {
+      timeout: 10_000,
+      message: 'The newer bell notification read must be pending',
+    }).toBe(2);
     await expect(player.page.locator('#sheet .notifications-loading')).toBeVisible();
-    await player.page.waitForTimeout(500);
-    expect(raceReads).toBe(1);
 
     await pending[0].fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(payload()),
+    });
+    await player.page.waitForTimeout(250);
+    await expect(player.page.locator('#sheet .notifications-empty')).toHaveCount(0);
+    await expect(player.page.locator('#sheet .notifications-loading')).toBeVisible();
+
+    await pending[1].fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(payload(item)),

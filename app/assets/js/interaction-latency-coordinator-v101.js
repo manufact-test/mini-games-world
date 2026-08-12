@@ -1,15 +1,18 @@
 import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { api } from './api/client.js?v=47';
-import { closeSheet } from './components/sheet.js?v=1109';
+import { openSheet, closeSheet } from './components/sheet.js?v=68';
+import { toast } from './components/toast.js?v=41';
 import { showScreen } from './router.js?v=27';
 import { haptic } from './telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from './ui.js?v=89';
+import { startGamePolling } from './screens/game-screen.js?v=74';
 
 const HISTORY_CACHE_TTL_MS = 15000;
 
 let installed = false;
 let baseFetch = null;
+let gameActionBusy = false;
 let historyCache = null;
 
 export function initInteractionLatencyCoordinator(){
@@ -22,6 +25,7 @@ export function initInteractionLatencyCoordinator(){
   installZeroTransitionStyle();
   installResponseCache();
   installImmediateNavigation();
+  installOptimisticTicTacToe();
 
   document.addEventListener('mgw:app-ready', () => {
     prefetchHistory();
@@ -87,7 +91,90 @@ function installImmediateNavigation(){
       return;
     }
 
+    if (target.matches('[data-create-link-invite]')) {
+      queueMicrotask(() => {
+        openSheet(`
+          <div class="sheet-head">
+            <div><h2>Подготавливаем приглашение</h2><p>Создаём защищённую ссылку для Telegram.</p></div>
+            <button class="close" data-close-sheet type="button">×</button>
+          </div>
+          <div class="notifications-loading"><div>✈️</div><strong>Подготавливаем отправку…</strong></div>
+        `);
+      });
+    }
   }, true);
+}
+
+function installOptimisticTicTacToe(){
+  document.addEventListener('click', event => {
+    const origin = event.target;
+    if (!(origin instanceof Element)) return;
+    const button = origin.closest('[data-game-cell]');
+    if (!button || gameActionBusy) return;
+
+    const game = state.activeGame;
+    const userId = String(state.user?.id || '');
+    if (!game?.id || String(game.game_type || 'tictactoe') !== 'tictactoe') return;
+    if (String(game.turn || '') !== userId || button.disabled || button.textContent.trim() !== '') return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const cell = Number(button.dataset.gameCell);
+    const symbol = symbolForUser(game, userId);
+    if (!Number.isInteger(cell) || cell < 0 || !symbol) return;
+
+    submitOptimisticTicTacToe(game, cell, symbol, button);
+  }, true);
+}
+
+async function submitOptimisticTicTacToe(game, cell, symbol, button){
+  gameActionBusy = true;
+  haptic('light');
+
+  const board = document.getElementById('gameBoard');
+  const previousHtml = board?.innerHTML || '';
+  const previousClass = board?.className || '';
+
+  if (board) {
+    board.querySelectorAll('[data-game-cell]').forEach(item => {
+      item.disabled = true;
+      item.classList.add('locked');
+    });
+  }
+
+  button.textContent = symbol === 'X' ? '✕' : '○';
+  button.classList.remove('locked');
+  button.classList.add(symbol === 'X' ? 'x' : 'o', 'is-optimistic');
+
+  state.timers.game = clearTimer(state.timers.game);
+
+  try {
+    const result = await api.gameAction(game.id, { type:'cell', cell });
+    if (result.user) {
+      state.user = result.user;
+      state.session = result.session || state.session;
+      renderBalances(state.user);
+    }
+    if (result.game) state.activeGame = result.game;
+    startGamePolling(game.id);
+  } catch (error) {
+    if (board) {
+      board.className = previousClass;
+      board.innerHTML = previousHtml;
+    }
+    toast(error.message || 'Не удалось выполнить ход.');
+    startGamePolling(game.id);
+  } finally {
+    gameActionBusy = false;
+  }
+}
+
+function symbolForUser(game, userId){
+  const player = Array.isArray(game.players)
+    ? game.players.find(item => String(item?.id || '') === userId)
+    : null;
+  return String(player?.symbol || '');
 }
 
 function clearSearchTimers(){

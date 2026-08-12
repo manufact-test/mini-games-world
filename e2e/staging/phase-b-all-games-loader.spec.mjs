@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { telegramAppRoute } from './support/telegram-launch-route.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
@@ -7,7 +6,7 @@ const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
-const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
+const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 
 const GAMES = [
   { type:'tictactoe', title:'Крестики-нолики' },
@@ -94,11 +93,9 @@ async function openPlayer(browser, slot){
   const page = await context.newPage();
   const bootstrapPromise = page.waitForResponse(isActionResponse(API_ROUTE, 'bootstrap'), { timeout:35_000 });
   const response = await page.goto(APP_ROUTE, { waitUntil:'domcontentloaded' });
-  expect(response, `Player ${slot} Telegram launch response`).not.toBeNull();
-  expect(response.ok(), `Player ${slot} Telegram launch status`).toBe(true);
-  expect(response.url(), `Player ${slot} exact Telegram launch route`).toBe(APP_ROUTE);
-  expect(response.headers()['x-mgw-entry-version']).toBe('v124');
-  expect(response.headers()['x-mgw-phase-b-build']).toBe('phase-b-current-v127-ttt-real-launch-no-copy');
+  expect(response, `Player ${slot} v110 response`).not.toBeNull();
+  expect(response.ok(), `Player ${slot} v110 status`).toBe(true);
+  expect(response.headers()['x-mgw-phase-b-presentation']).toBe('v123-v110-deterministic-loader');
 
   const bootstrapResponse = await bootstrapPromise;
   expect(bootstrapResponse.status(), `Player ${slot} bootstrap status`).toBe(200);
@@ -166,29 +163,12 @@ async function installLaunchTrace(page){
 
     const capture = () => {
       const overlay = document.getElementById('mgwPhaseBLaunchOverlay');
-      if (!overlay) return;
-      if (overlay.hidden) {
-        const trace = window.__MGW_PHASE_B_ALL_GAME_TRACE__;
-        const previous = trace[trace.length - 1];
-        if (previous?.stage === 'number' && previous.text === '1') {
-          trace.push({
-            stage:'ready',
-            text:'',
-            game:previous.game,
-            at:performance.now(),
-          });
-        }
-        return;
-      }
+      if (!overlay || overlay.hidden) return;
       const countdown = overlay.querySelector('[data-phase-b-countdown]');
       const gameLabel = overlay.querySelector('[data-phase-b-game]');
-      const text = String(countdown?.textContent || '').trim();
-      const stage = countdown?.dataset.ready === '1'
-        ? 'ready'
-        : (/^[123]$/.test(text) ? 'number' : (countdown?.dataset.loading === '1' ? 'prepare' : ''));
       const entry = {
-        stage,
-        text,
+        stage:String(overlay.dataset.stage || ''),
+        text:String(countdown?.textContent || '').trim(),
         game:String(gameLabel?.textContent || '').trim(),
         at:performance.now(),
       };
@@ -208,7 +188,7 @@ async function installLaunchTrace(page){
       childList:true,
       characterData:true,
       attributes:true,
-      attributeFilter:['hidden', 'data-ready', 'data-loading', 'class'],
+      attributeFilter:['hidden', 'data-stage', 'class'],
     });
     window.__MGW_PHASE_B_ALL_GAME_TRACE_OBSERVER__ = observer;
     capture();

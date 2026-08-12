@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { telegramAppRoute } from './support/telegram-launch-route.mjs';
 import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
+const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const OPPONENTS_ROUTE = `${STAGING_ORIGIN}/bot/invite-opponents.php`;
@@ -151,8 +150,8 @@ async function runActualStartPicker(browser, isMobile) {
     const resources = await playerA.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     expect(resources.some(rawUrl => {
       const url = new URL(rawUrl);
-      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1139' && url.searchParams.get('ux') === 'single-owner-toast';
-    }), 'Real Telegram entry must execute the accepted v1139 single-owner player-picker graph.').toBe(true);
+      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1137';
+    }), 'Ordinary Start must execute the canonical v110 player-picker owner.').toBe(true);
     expect(requests).toBe(0);
 
     await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
