@@ -64,8 +64,29 @@ $game['starts_at'] = gmdate('c', time() - 1);
 $game['turn_started_at'] = $game['starts_at'];
 $game['turn_starts_at'] = $game['starts_at'];
 $game['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$activationRequestedAt = time();
 $clock->advance($game);
 $assert(($game['launch_phase'] ?? '') === 'active', 'Countdown must activate only after starts_at.');
+$activationStart = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
+$activationDeadline = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
+$assert(
+    $activationStart >= $activationRequestedAt
+        && $activationStart <= $activationRequestedAt + 1,
+    'First playable turn must start when the server authoritatively activates the match.'
+);
+$assert(
+    $activationStart > strtotime((string)$game['starts_at']),
+    'A delayed activation request must not consume the first player clock during the countdown boundary gap.'
+);
+$assert(
+    $activationDeadline - $activationStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
+    'Authoritative activation must restore the first player to the full move timeout.'
+);
+$activePublic = $clock->enrichPublicGame($game, []);
+$assert(
+    (int)($activePublic['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
+    'The first active response must expose the full timer.'
+);
 $clock->assertActionAllowed($game);
 
 $previousTurn = 'player_a';
