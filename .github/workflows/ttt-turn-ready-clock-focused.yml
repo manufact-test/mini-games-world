@@ -24,15 +24,21 @@ jobs:
           php -l bot/services/MatchPreparationRuntimeService.php
       - name: Focused architecture and clock contracts
         run: |
-          php bot/tests/PhaseBMatchPreparationClockServiceTest.php
-          php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
-          php bot/tests/PhaseBActionGuardHandoffContractTest.php
-          php bot/tests/PhaseBGameClockWriterDemotionContractTest.php
-          php bot/tests/PhaseBReadOnlyGameWatchContractTest.php
-          php bot/tests/PhaseBReadonlySyncPhaseGuardContractTest.php
-          php bot/tests/PhaseBPrimaryApiPreparationOwnerContractTest.php
-          php bot/tests/PhaseBClientLaunchUxContractTest.php
-          php bot/tests/PhaseBE2EAuthoritativeActionChainContractTest.php
-          php bot/tests/TicTacToeAuthoritativeClockUiContractTest.php
-          php bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
-          php bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+          status=0
+          for test_file in \
+            bot/tests/PhaseBMatchPreparationClockServiceTest.php \
+            bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php \
+            bot/tests/PhaseBActionGuardHandoffContractTest.php \
+            bot/tests/PhaseBGameClockWriterDemotionContractTest.php \
+            bot/tests/PhaseBReadOnlyGameWatchContractTest.php \
+            bot/tests/PhaseBReadonlySyncPhaseGuardContractTest.php \
+            bot/tests/PhaseBPrimaryApiPreparationOwnerContractTest.php \
+            bot/tests/PhaseBClientLaunchUxContractTest.php \
+            bot/tests/PhaseBE2EAuthoritativeActionChainContractTest.php \
+            bot/tests/TicTacToeAuthoritativeClockUiContractTest.php \
+            bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php \
+            bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
+          do
+            php "$test_file" || status=1
+          done
+          exit "$status"
