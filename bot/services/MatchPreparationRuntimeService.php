@@ -53,6 +53,10 @@ final class MatchPreparationRuntimeService
         }
 
         $this->clock->advance($game);
+        if ($readyIntent) {
+            $this->clock->markActivationReady($game, $userId, $sessionId, $deviceId);
+            $this->clock->advance($game);
+        }
         if ((string)($game['launch_phase'] ?? '') === 'preparation_timeout') {
             $this->settlement->cancelPreparation($db, $game);
             return $game;

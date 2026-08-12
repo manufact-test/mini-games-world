@@ -23,6 +23,7 @@ final class MatchPreparationClockService
         $game['preparing_started_at'] = gmdate('c', $now);
         $game['preparation_deadline_at'] = gmdate('c', $deadline);
         $game['preparation_ready_devices'] = [];
+        $game['activation_ready_devices'] = [];
         $game['starts_at'] = null;
         $game['turn_starts_at'] = null;
         $game['turn_deadline_at'] = null;
@@ -86,6 +87,35 @@ final class MatchPreparationClockService
         $game['updated_at'] = now_iso();
     }
 
+    public function markActivationReady(array &$game, string $userId, string $sessionId, string $deviceId): void
+    {
+        if ((string)($game['launch_phase'] ?? '') !== 'countdown') return;
+        $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
+        if ($startsAt <= 0 || $startsAt > time()) return;
+        if ($userId === '' || $sessionId === '' || $deviceId === '') return;
+        if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) return;
+
+        if (!isset($game['activation_ready_devices']) || !is_array($game['activation_ready_devices'])) {
+            $game['activation_ready_devices'] = [];
+        }
+
+        $game['activation_ready_devices'][$userId] = [
+            'device_hash' => hash('sha256', $sessionId . '|' . $deviceId),
+            'ready_at' => now_iso(),
+        ];
+
+        foreach (array_map('strval', $game['player_ids'] ?? []) as $playerId) {
+            if ($playerId !== '' && str_starts_with($playerId, 'bot_')
+                && !isset($game['activation_ready_devices'][$playerId])) {
+                $game['activation_ready_devices'][$playerId] = [
+                    'device_hash' => 'server-bot',
+                    'ready_at' => now_iso(),
+                ];
+            }
+        }
+        $game['updated_at'] = now_iso();
+    }
+
     public function advance(array &$game): void
     {
         $phase = (string)($game['launch_phase'] ?? '');
@@ -107,6 +137,7 @@ final class MatchPreparationClockService
                 $game['turn_deadline_at'] = gmdate('c', $startsAt + self::MOVE_TIMEOUT_SEC);
                 $game['clock_turn'] = (string)($game['turn'] ?? '');
                 $game['clock_revision'] = 1;
+                $game['activation_ready_devices'] = [];
                 $game['updated_at'] = now_iso();
                 return;
             }
@@ -114,11 +145,10 @@ final class MatchPreparationClockService
 
         if ((string)($game['launch_phase'] ?? '') !== 'countdown') return;
         $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
-        if ($startsAt > 0 && $startsAt <= time()) {
-            // The countdown boundary and the persisted active-state boundary are
-            // not necessarily the same request. Start the first playable turn
-            // when the server actually activates the match, so lazy polling can
-            // never consume part of a player's 60-second window.
+        if ($startsAt > 0 && $startsAt <= time() && $this->allActivationReady($game)) {
+            // Start the first playable turn only after both devices have observed
+            // the shared countdown boundary. This makes the authoritative clock
+            // and the first frame visible to both players one atomic lifecycle.
             $activatedAt = time();
             $game['launch_phase'] = 'active';
             $game['turn_started_at'] = gmdate('c', $activatedAt);
@@ -231,6 +261,17 @@ final class MatchPreparationClockService
     private function allReady(array $game): bool
     {
         $ready = is_array($game['preparation_ready_devices'] ?? null) ? $game['preparation_ready_devices'] : [];
+        $players = array_map('strval', $game['player_ids'] ?? []);
+        if (count($players) < 2) return false;
+        foreach ($players as $playerId) {
+            if ($playerId === '' || !isset($ready[$playerId])) return false;
+        }
+        return true;
+    }
+
+    private function allActivationReady(array $game): bool
+    {
+        $ready = is_array($game['activation_ready_devices'] ?? null) ? $game['activation_ready_devices'] : [];
         $players = array_map('strval', $game['player_ids'] ?? []);
         if (count($players) < 2) return false;
         foreach ($players as $playerId) {
