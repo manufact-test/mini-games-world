@@ -813,6 +813,8 @@ async function performInviteAction(action, token, button){
         // terminal item remains in notification history. The owner's cancel
         // stays visible in-place with its explanatory terminal copy.
         if (action === 'decline') closeSheet();
+      } else if (action === 'decline') {
+        closeSheet();
       } else if (selfCancelledParticipant) {
         consumeInviteNotification(token, unreadCount);
         if (!optimisticParticipantCancel) {
