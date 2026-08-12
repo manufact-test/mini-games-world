@@ -227,14 +227,16 @@ test('D1 v120 acceptance: declined invitation remains visible read history witho
     const declineResponse = playerA.page.waitForResponse(isActionResponse(INVITES_ROUTE, 'decline'), { timeout:30_000 });
     await decline.click();
     expect((await declineResponse).status()).toBe(200);
-    await expect(playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
+    await expect(playerA.page.locator('#sheetOverlay')).toHaveClass(/active/);
+    await expect(playerA.page.locator('#sheet .sheet-head h2')).toHaveText('Уведомления', { timeout:20_000 });
     await expect(playerA.page.locator('#toast')).not.toHaveClass(/show/);
 
-    await playerA.page.locator('#notificationsOpen').click();
-    const historyCard = playerA.page.locator('article.notification-card').filter({ hasText:'Приглашение отклонено' }).first();
+    const historyCard = playerA.page.locator(
+      `article.notification-card[data-notification-invite-token="${token}"]`,
+    ).first();
     await expect(historyCard).toBeVisible({ timeout:20_000 });
-    await expect(historyCard).toContainText('@mgw_test_player_b');
-    await expect(historyCard).toContainText('Крестики-нолики');
+    await expect(historyCard).toContainText('Отклонено');
+    await expect(historyCard).toContainText('Вы отклонили приглашение');
     await expect(historyCard.locator('[data-invite-action]')).toHaveCount(0);
     await expect(historyCard.locator('.notification-head span')).not.toHaveText('');
     await expect(playerA.page.locator('#toast')).not.toHaveClass(/show/);
