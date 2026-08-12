@@ -78,18 +78,17 @@ export function initSearchScreen(){
 }
 
 export async function beginSearch(rawContext){
-  const pendingStop = searchRuntime.stopPromise;
-  if (pendingStop) {
-    disableVisibleStartControls();
-    try { await pendingStop; } catch (error) {}
-  }
-
   if (state.activeGame?.id && String(state.activeGame.status || '') === 'active') {
     enableVisibleStartControls();
     return { game:state.activeGame };
   }
 
-  if (searchRuntime.active || searchRuntime.starting || searchRuntime.startPromise || searchRuntime.stopPromise) {
+  /* A startPromise that belongs to a cancelled epoch is allowed to drain only
+   * through the already-created stopPromise. It must not block the next user
+   * intent, otherwise the setup button stays disabled until that old request
+   * completes. A live start without a stop owner is still protected normally. */
+  if (searchRuntime.active || searchRuntime.starting || (searchRuntime.startPromise && !searchRuntime.stopPromise)) {
+    enableVisibleStartControls();
     return null;
   }
 
@@ -120,6 +119,35 @@ export async function beginSearch(rawContext){
   if (info) info.textContent = context.label;
   showScreen('search');
   haptic('light');
+
+  /* A repeated search is a new user intent immediately. The old authoritative
+   * cancellation may still be finishing, but it must never keep the setup
+   * button visibly stuck or commit this new intent after the user cancels it.
+   * We therefore enter the existing optimistic search screen first, await the
+   * single old stop owner, then re-check this epoch before starting anything. */
+  const pendingStop = searchRuntime.stopPromise;
+  if (pendingStop) {
+    try { await pendingStop; } catch (error) {}
+
+    if (epoch !== searchRuntime.epoch || !searchRuntime.active) {
+      if (epoch === searchRuntime.epoch) searchRuntime.starting = false;
+      enableVisibleStartControls();
+      return null;
+    }
+
+    if (state.activeGame?.id && String(state.activeGame.status || '') === 'active') {
+      searchRuntime.active = false;
+      searchRuntime.starting = false;
+      enableVisibleStartControls();
+      return { game:state.activeGame };
+    }
+  }
+
+  if (epoch !== searchRuntime.epoch || !searchRuntime.active) {
+    if (epoch === searchRuntime.epoch) searchRuntime.starting = false;
+    enableVisibleStartControls();
+    return null;
+  }
 
   const startPromise = api.startSearch(context.room, context.bet, context.size, context.gameType);
   searchRuntime.startPromise = startPromise;
@@ -224,6 +252,7 @@ function cancelLocalSearch(){
   closeSheet();
   clearGameView();
   showScreen('home');
+  enableVisibleStartControls();
 }
 
 async function pollSearch(epoch){
