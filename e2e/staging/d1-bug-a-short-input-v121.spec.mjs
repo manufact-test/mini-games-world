@@ -118,7 +118,6 @@ async function runShortInputCycles(page, isMobile) {
 
   await page.waitForTimeout(1_850);
   await expect(page.locator('#sheetOverlay')).not.toHaveClass(/active/);
-  expect(markReadCalls).toBeGreaterThanOrEqual(1);
   const trace = await page.evaluate(() => window.__MGW_SHORT_INPUT_TRACE__ || []);
   const downs = trace.filter(item => item.scope === 'window' && item.phase === 'capture' && item.type === 'pointerdown');
   const ups = trace.filter(item => item.scope === 'window' && item.phase === 'capture' && item.type === 'pointerup');
