@@ -64,11 +64,12 @@ $assert(
 $assert(
     str_contains($twoContext, 'expectSynchronizedTicTacToeTurn')
         && str_contains($twoContext, "fresh ? '60 сек|60 сек' : 'synchronized'")
-        && str_contains($twoContext, 'Math.abs(seconds[0] - authoritativeSeconds) <= 1')
+        && str_contains($twoContext, 'seconds[0] === seconds[1]')
+        && str_contains($twoContext, 'value >= 1 && value <= 60')
         && str_contains($twoContext, 'turnDeadlineMs - turnStartsAtMs')
         && str_contains($twoContext, 'toBeCloseTo(76, 1)')
         && str_contains($twoContext, 'Math.abs(size - 18) < 0.1'),
-    'Canonical E2E must prove full windows, strict fresh resets, synchronized initial clocks and stable mobile geometry.'
+    'Canonical E2E must prove full windows, strict fresh resets, same-frame synchronized initial clocks and stable mobile geometry.'
 );
 
 fwrite(STDOUT, "TicTacToeAuthoritativeClockUiContractTest: {$assertions} assertions passed\n");
