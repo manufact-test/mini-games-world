@@ -25,3 +25,5 @@ jobs:
           node --check e2e/staging/two-context.spec.mjs
           php bot/tests/TicTacToeAuthoritativeClockUiContractTest.php
           php bot/tests/StagingE2eSourceFingerprintTest.php
+
+# Registered E2E contract verifier trigger.
