@@ -227,11 +227,16 @@ test('D1 feedback 1 and 6: invitation link opens one decision sheet and keeps bo
     });
     await decline.click();
     expect((await declineResponse).status()).toBe(200);
-    await expect(playerB.page.locator('#sheetOverlay')).not.toHaveClass(/active/, { timeout:15_000 });
+    await expect(playerB.page.locator('#sheetOverlay')).toHaveClass(/active/);
+    await expect(playerB.page.locator('#sheet .sheet-head h2')).toHaveText('Отклонено', { timeout:15_000 });
+    const terminalClose = playerB.page.locator('#sheet .btn.primary[data-close-sheet]');
+    await expect(terminalClose).toBeVisible({ timeout:15_000 });
+    await expect(terminalClose).toHaveText('Понятно');
     await expect(playerB.page.locator('#toast')).not.toHaveClass(/show/);
     await playerB.page.waitForTimeout(900);
-    await expect(playerB.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
-    await expect(playerB.page.locator('body')).not.toContainText('Понятно');
+    await expect(playerB.page.locator('#sheet .sheet-head h2')).toHaveText('Отклонено');
+    await closeSheet(playerB.page);
+    await expect(playerB.page.locator('#toast')).not.toHaveClass(/show/);
 
     expectClean(playerA, 'Player A link/presence');
     expectClean(playerB, 'Player B link/presence');
