@@ -453,14 +453,26 @@ async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label, { 
     intervals: [30, 60, 100, 150],
   }).toBe(fresh ? '60 сек|60 сек' : 'synchronized');
 
-  const presentations = await Promise.all([playerA.page, playerB.page].map(page => page.evaluate(() => {
-    const timer = document.getElementById('timerText');
-    const symbols = [...document.querySelectorAll('#playersRow .player-mark-symbol')];
-    return {
-      timerWidth:Number(timer?.getBoundingClientRect().width || 0),
-      symbolFontSizes:symbols.map(symbol => Number.parseFloat(getComputedStyle(symbol).fontSize || '0')),
-    };
-  })));
+  let presentations = [];
+  await expect.poll(async () => {
+    presentations = await Promise.all([playerA.page, playerB.page].map(page => page.evaluate(() => {
+      const timer = document.getElementById('timerText');
+      const symbols = [...document.querySelectorAll('#playersRow .player-mark-symbol')];
+      return {
+        timerWidth:Number(timer?.getBoundingClientRect().width || 0),
+        symbolFontSizes:symbols.map(symbol => Number.parseFloat(getComputedStyle(symbol).fontSize || '0')),
+      };
+    })));
+    return presentations.every(presentation =>
+      Math.abs(presentation.timerWidth - 76) < 0.1
+      && presentation.symbolFontSizes.length === 2
+      && presentation.symbolFontSizes.every(size => Math.abs(size - 18) < 0.1)
+    );
+  }, {
+    message: `${label} stable timer and mobile mark geometry on both players`,
+    timeout: 1_200,
+    intervals: [30, 60, 100, 150],
+  }).toBe(true);
 
   for (const [index, presentation] of presentations.entries()) {
     expect(presentation.timerWidth, `${label} player ${index + 1} fixed timer width`).toBeCloseTo(76, 1);
