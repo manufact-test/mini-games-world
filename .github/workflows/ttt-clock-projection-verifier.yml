@@ -48,3 +48,5 @@ jobs:
           path: ttt-clock-projection-report.txt
           if-no-files-found: error
           retention-days: 3
+
+# Registered projection verifier trigger.
