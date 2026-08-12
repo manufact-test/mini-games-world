@@ -18,6 +18,7 @@ $menuButton = $read('bot/helpers/StagingMenuButtonReconciler.php');
 $v110 = $read('app/v110.php');
 $v110Runtime = $read('app/assets/js/production-v110-acceptance-runtime.js');
 $gameStyle = $read('app/assets/css/screens/game.css');
+$ticTacToeRenderer = $read('app/assets/js/games/tictactoe/renderer.js');
 $v114 = $read('app/v114.php');
 $currentRuntime = $read('app/assets/js/phase-b-current-runtime.js');
 $fingerprint = $read('bot/helpers/staging-e2e-runtime-files.txt');
@@ -79,8 +80,17 @@ $assert(
     'The accepted v110 graph must publish the player-facing pregame runtime under a fresh immutable URL.'
 );
 $assert(
-    str_contains($v110, './assets/css/main.css?v=141&sk=3&icons=c1efd5af&render=18&review=ttt-pregame-stable-frame'),
-    'The accepted v110 graph must publish the stable timer-frame CSS under a fresh immutable URL.'
+    str_contains($v110, './assets/css/main.css?v=142&sk=3&icons=c1efd5af&render=18&review=ttt-ui-polish'),
+    'The accepted v110 graph must publish the right-aligned stable timer CSS under a fresh immutable URL.'
+);
+$assert(
+    str_contains($v110, '"./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought"'),
+    'The accepted v110 graph must publish the full-size Tic Tac Toe nought under a fresh immutable URL.'
+);
+$assert(
+    str_contains($v110, '<p>Те самые игры. То самое чувство.</p>')
+        && str_contains($v110, 'X-MGW-App-Entry-Presentation: shield-king-v1141-nostalgic-entry-copy'),
+    'The real Telegram app entry must replace technical preload copy with the accepted nostalgic line.'
 );
 $assert(
     str_contains($v110, 'X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame'),
@@ -129,8 +139,13 @@ $assert(
     'The real Telegram pregame surface must contain player-facing copy and no synchronization implementation text.'
 );
 $assert(
-    str_contains($gameStyle, 'flex:0 0 80px;width:80px;min-width:80px'),
-    'The shared game timer badge must keep one fixed 80px frame across all timer values.'
+    str_contains($gameStyle, 'flex:0 0 80px;width:80px;min-width:80px')
+        && str_contains($gameStyle, 'border-radius:13px;text-align:right'),
+    'The shared game timer badge must keep one fixed 80px frame and anchor its label to the right edge.'
+);
+$assert(
+    str_contains($ticTacToeRenderer, "if (player?.symbol === 'O') return '◯';"),
+    'Tic Tac Toe player labels must use a full-size nought glyph that remains legible on mobile.'
 );
 $assert(
     str_contains($v110Runtime, "const presentationBlocking = status === 'active'")
@@ -155,6 +170,7 @@ foreach ([
     'app/assets/js/production-clean-entry-v110.js',
     'app/assets/js/production-v110-acceptance-runtime.js',
     'app/assets/css/screens/game.css',
+    'app/assets/js/games/tictactoe/renderer.js',
     'bot/helpers/WebAppLaunchUrl.php',
     'bot/helpers/UserWelcomeGuard.php',
     'bot/helpers/InviteStartGuard.php',
