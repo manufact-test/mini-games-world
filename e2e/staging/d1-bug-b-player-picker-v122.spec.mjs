@@ -152,7 +152,7 @@ async function runActualStartPicker(browser, isMobile) {
     expect(resources.some(rawUrl => {
       const url = new URL(rawUrl);
       return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1137';
-    }), 'Ordinary Start must execute the canonical v110 player-picker owner.').toBe(true);
+    }), 'Real Telegram entry must execute the accepted v1137 player-picker owner.').toBe(true);
     expect(requests).toBe(0);
 
     await playerA.page.locator('[data-invite-friend="tictactoe"]').click();
