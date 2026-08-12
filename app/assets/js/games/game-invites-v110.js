@@ -809,6 +809,10 @@ async function performInviteAction(action, token, button){
           unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
           announce:false,
         });
+        // A recipient's explicit decline returns to ordinary activity while the
+        // terminal item remains in notification history. The owner's cancel
+        // stays visible in-place with its explanatory terminal copy.
+        if (action === 'decline') closeSheet();
       } else if (selfCancelledParticipant) {
         consumeInviteNotification(token, unreadCount);
         if (!optimisticParticipantCancel) {
