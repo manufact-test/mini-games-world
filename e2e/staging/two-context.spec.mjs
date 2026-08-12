@@ -418,8 +418,14 @@ async function playTicTacToeCell(player, cell) {
 async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label) {
   const serverNowMs = Number(game?.server_now_ms || 0);
   const turnStartsAtMs = Number(game?.turn_starts_at_ms || 0);
+  const turnDeadlineMs = Number(game?.turn_deadline_ms || 0);
   expect(Number(game?.time_left || 0), `${label} authoritative full timer`).toBe(60);
   expect(turnStartsAtMs, `${label} turn start timestamp`).toBeGreaterThan(0);
+  expect(turnDeadlineMs, `${label} turn deadline timestamp`).toBeGreaterThan(turnStartsAtMs);
+  expect(
+    turnDeadlineMs - turnStartsAtMs,
+    `${label} authoritative 60-second window`,
+  ).toBe(60_000);
   expect(serverNowMs, `${label} server timestamp`).toBeGreaterThan(0);
   expect(turnStartsAtMs, `${label} has no artificial future handoff`).toBeLessThanOrEqual(serverNowMs);
 
