@@ -19,7 +19,6 @@ const runtime = window.__MGW_PHASE_B_CURRENT__ ||= {
   watchBusy:false,
   tickTimer:null,
   clock:null,
-  timerObserver:null,
 };
 
 export function initPhaseBCurrentRuntime(){
@@ -46,16 +45,15 @@ export function initPhaseBCurrentRuntime(){
   });
   document.addEventListener('mgw:game-finished', () => scheduleWatch(WATCH_INTERVAL_MS));
   document.addEventListener('mgw:game-dismissed', () => scheduleWatch(WATCH_INTERVAL_MS));
+  document.addEventListener('mgw:game-projected', event => {
+    const game = event.detail?.game || state.activeGame;
+    syncClock(game);
+    paintLaunchState(game);
+    paintClock();
+  });
   window.addEventListener('click', guardPhaseBControls, true);
 
   runtime.tickTimer = window.setInterval(tickPhaseB, 100);
-
-  const timer = document.getElementById('timerText');
-  if (timer && typeof MutationObserver === 'function') {
-    runtime.timerObserver = new MutationObserver(paintClock);
-    runtime.timerObserver.observe(timer, { childList:true, characterData:true, subtree:true });
-  }
-
   scheduleWatch(0);
 }
 
@@ -163,13 +161,26 @@ function syncClock(game){
   }
 
   const timeoutSec = Math.max(1, Number(game.move_timeout_sec || 60));
+  const pendingAuthority = game.clock_pending_authority === true;
   const revision = String(game.turn_revision ?? game.clock_revision ?? '');
   const turnStartKey = String(game.turn_starts_at_ms ?? game.turn_started_at ?? '');
-  const signature = `${String(game.id)}|${String(game.turn || '')}|${revision}|${turnStartKey}`;
+  const signature = `${String(game.id)}|${String(game.turn || '')}|${revision}|${turnStartKey}|${pendingAuthority ? 'pending' : 'authoritative'}`;
   const serverNowMs = finiteNumber(game.server_now_ms);
   const turnStartsAtMs = finiteNumber(game.turn_starts_at_ms);
   const deadlineMs = finiteNumber(game.turn_deadline_ms);
   const now = performance.now();
+
+  if (pendingAuthority) {
+    runtime.clock = {
+      signature,
+      gameId:String(game.id),
+      start:now,
+      deadline:now + (timeoutSec * 1000),
+      timeoutSec,
+      pendingAuthority:true,
+    };
+    return;
+  }
 
   const startRemainingMs = turnStartsAtMs !== null && serverNowMs !== null
     ? Math.max(0, turnStartsAtMs - serverNowMs)
@@ -187,6 +198,7 @@ function syncClock(game){
       start:candidateStart,
       deadline:candidateDeadline,
       timeoutSec,
+      pendingAuthority:false,
     };
     return;
   }
@@ -204,7 +216,7 @@ function paintClock(){
 
   const now = performance.now();
   const beforeTurnStart = now < clock.start;
-  const seconds = beforeTurnStart
+  const seconds = clock.pendingAuthority || beforeTurnStart
     ? clock.timeoutSec
     : Math.max(0, Math.min(clock.timeoutSec, Math.ceil((clock.deadline - now) / 1000)));
   const text = `${seconds} сек`;
