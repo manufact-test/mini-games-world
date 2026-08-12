@@ -107,6 +107,14 @@ function projectGame(game, me, { allowOlder = false } = {}){
     },
   }));
 
+  if (
+    String(game?.turn_clock_phase || '') === 'syncing'
+    && !gameScreenRuntime.actionBusy
+    && !gameScreenRuntime.pollBusy
+  ) {
+    queueMicrotask(() => void refreshGame(id));
+  }
+
   if (String(game.status || '') === 'finished') {
     state.timers.game = clearTimer(state.timers.game);
     if (viewer?.id) scheduleResultSheet(game, viewer);
@@ -204,6 +212,9 @@ async function applyGameAction(gameId, gameAction){
     toast(error.message);
   } finally {
     gameScreenRuntime.actionBusy = false;
+    if (String(state.activeGame?.turn_clock_phase || '') === 'syncing') {
+      void refreshGame(gameId);
+    }
   }
 }
 
