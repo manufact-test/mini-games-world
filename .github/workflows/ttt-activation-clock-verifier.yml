@@ -63,3 +63,5 @@ jobs:
           path: ttt-activation-clock-report.txt
           if-no-files-found: error
           retention-days: 3
+
+# Registered activation verifier trigger.
