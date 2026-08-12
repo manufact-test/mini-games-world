@@ -167,40 +167,32 @@ async function installLaunchTrace(page){
     const capture = () => {
       const overlay = document.getElementById('mgwPhaseBLaunchOverlay');
       if (!overlay) return;
-      const countdown = overlay.querySelector('[data-phase-b-countdown]');
-      const gameLabel = overlay.querySelector('[data-phase-b-game]');
-      const trace = window.__MGW_PHASE_B_ALL_GAME_TRACE__;
-
       if (overlay.hidden) {
-        let lastOneIndex = -1;
-        for (let index = trace.length - 1; index >= 0; index -= 1) {
-          if (trace[index]?.stage === 'number' && trace[index]?.text === '1') {
-            lastOneIndex = index;
-            break;
-          }
-        }
-        if (lastOneIndex >= 0 && !trace.slice(lastOneIndex + 1).some(entry => entry?.stage === 'ready')) {
+        const trace = window.__MGW_PHASE_B_ALL_GAME_TRACE__;
+        const previous = trace[trace.length - 1];
+        if (previous?.stage === 'number' && previous.text === '1') {
           trace.push({
             stage:'ready',
             text:'',
-            game:trace[lastOneIndex]?.game || String(gameLabel?.textContent || '').trim(),
+            game:previous.game,
             at:performance.now(),
           });
         }
         return;
       }
-
+      const countdown = overlay.querySelector('[data-phase-b-countdown]');
+      const gameLabel = overlay.querySelector('[data-phase-b-game]');
       const text = String(countdown?.textContent || '').trim();
       const stage = countdown?.dataset.ready === '1'
         ? 'ready'
         : (/^[123]$/.test(text) ? 'number' : (countdown?.dataset.loading === '1' ? 'prepare' : ''));
-      if (!stage) return;
       const entry = {
         stage,
         text,
         game:String(gameLabel?.textContent || '').trim(),
         at:performance.now(),
       };
+      const trace = window.__MGW_PHASE_B_ALL_GAME_TRACE__;
       const previous = trace[trace.length - 1];
       if (!previous
           || previous.stage !== entry.stage

@@ -38,8 +38,7 @@ $importMap = <<<'HTML'
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
     "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=116&invite=no-duplicate-owner",
-    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer",
-    "./assets/js/games/game-invites-v110.js?v=1141&ux=single-owner-terminal-semantics": "./assets/js/games/game-invites-v110.js?v=1142&ux=single-owner-recipient-decline"
+    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer"
   }
 }
 </script>
@@ -74,11 +73,11 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main.js?v=d1-real-entry-invite-v1141',
+    './assets/js/main.js?v=d1-real-entry-invite-v1140',
     $html
 );
 
-$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-real-entry-invite-v1141"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-real-entry-invite-v1140"></script>';
 if (!str_contains($html, $mainScript)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
