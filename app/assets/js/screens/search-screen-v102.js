@@ -78,16 +78,29 @@ export function initSearchScreen(){
 }
 
 export async function beginSearch(rawContext){
+  const pendingStop = searchRuntime.stopPromise;
+  if (pendingStop) {
+    disableVisibleStartControls();
+    try { await pendingStop; } catch (error) {}
+  }
+
+  if (state.activeGame?.id && String(state.activeGame.status || '') === 'active') {
+    enableVisibleStartControls();
+    return { game:state.activeGame };
+  }
+
   if (searchRuntime.active || searchRuntime.starting || searchRuntime.startPromise || searchRuntime.stopPromise) {
     return null;
   }
 
   const lock = currentV99PassiveLock();
   if (lock?.locked) {
+    enableVisibleStartControls();
     showExplicitLock();
     return null;
   }
 
+  disableVisibleStartControls();
   const context = normalizeContext(rawContext);
   const epoch = ++searchRuntime.epoch;
   searchRuntime.active = true;
@@ -172,6 +185,20 @@ function stopSearchAuthoritatively(pendingStart){
     try {
       const result = await api.leaveSearch();
       rememberUserAndSession(result);
+
+      if (String(result?.user?.status || '') === 'playing') {
+        try {
+          const authoritativeState = await api.gameState();
+          rememberUserAndSession(authoritativeState);
+          if (authoritativeState?.game?.id && String(authoritativeState.game.status || '') === 'active') {
+            searchRuntime.active = false;
+            state.timers.search = clearTimer(state.timers.search);
+            enterGame(authoritativeState.game, authoritativeState.me || null);
+            return authoritativeState;
+          }
+        } catch (error) {}
+      }
+
       return result;
     } catch (error) {
       return null;
@@ -227,6 +254,13 @@ async function pollSearch(epoch){
     // Search polling retries silently on the next interval.
   } finally {
     searchRuntime.pollBusy = false;
+  }
+}
+
+function disableVisibleStartControls(){
+  for (const id of START_IDS) {
+    const button = document.getElementById(id);
+    if (button instanceof HTMLButtonElement) button.disabled = true;
   }
 }
 
