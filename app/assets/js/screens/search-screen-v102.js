@@ -83,7 +83,12 @@ export async function beginSearch(rawContext){
     return { game:state.activeGame };
   }
 
-  if (searchRuntime.active || searchRuntime.starting || searchRuntime.startPromise) {
+  /* A startPromise that belongs to a cancelled epoch is allowed to drain only
+   * through the already-created stopPromise. It must not block the next user
+   * intent, otherwise the setup button stays disabled until that old request
+   * completes. A live start without a stop owner is still protected normally. */
+  if (searchRuntime.active || searchRuntime.starting || (searchRuntime.startPromise && !searchRuntime.stopPromise)) {
+    enableVisibleStartControls();
     return null;
   }
 
