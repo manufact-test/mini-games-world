@@ -135,6 +135,9 @@ async function expectPost(page, pathname, data, label) {
 async function cleanupPlayer(player) {
   if (!player?.page) return;
   try {
+    await postFromPlayer(player.page, '/bot/api.php', { action:'leave_search' });
+  } catch {}
+  try {
     const state = await postFromPlayer(player.page, '/bot/api.php', { action:'game_state' });
     if (state.status === 200 && state.payload?.game?.id && state.payload.game.status === 'active') {
       await postFromPlayer(player.page, '/bot/api.php', { action:'leave_game', gameId:state.payload.game.id });
