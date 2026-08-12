@@ -1,0 +1,49 @@
+name: Shield King V114.3 mobile More verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v1143-mobile-more-center
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated visual correction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          v12 = Path('app/assets/css/shield-king-icons-v12.css').read_text()
+          main = Path('app/assets/css/main.css').read_text()
+          user = Path('app/v110.php').read_text()
+          canonical = Path('app/v114.php').read_text()
+
+          assert '#moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]' in v12
+          assert 'transform:translate(-2px,5px) !important;' in v12
+          assert 'shield-king-icons-v12.css?v=137&icons=c1efd5af&review=mobile-more-center' in main
+
+          root = './assets/css/main.css?v=136&sk=3&icons=c1efd5af&render=16&review=mobile-more-center'
+          assert root in user
+          assert root in canonical
+          assert "X-MGW-Icon-Render: accepted-v1143-mobile-more-center" in user
+
+          # App-entry and game-entry ownership must remain unchanged.
+          assert './assets/js/components/preloader.js?v=44&intro=v1141' in user
+          assert 'shield-king-v1141-animation-end-gated-assembly' in user
+          assert 'v123-v110-deterministic-loader' in user
+          assert './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe' in canonical
+          assert 'phase-b-current-v121' in canonical
+
+          forbidden = ['.mgw-phase-b-countdown', '.game-card .game-icon', '.game-rules-button']
+          for selector in forbidden:
+              assert selector not in v12, selector
+
+          print('[MGW_V1143_FOCUSED_PASS] mobile More optical center only')
+          PY
