@@ -108,7 +108,6 @@ final class MatchPreparationClockService
                 $game['clock_turn'] = (string)($game['turn'] ?? '');
                 $game['clock_revision'] = 1;
                 $game['updated_at'] = now_iso();
-                $this->scheduleBotAfterStart($game, $startsAt);
                 return;
             }
         }
@@ -116,8 +115,19 @@ final class MatchPreparationClockService
         if ((string)($game['launch_phase'] ?? '') !== 'countdown') return;
         $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
         if ($startsAt > 0 && $startsAt <= time()) {
+            // The countdown boundary and the persisted active-state boundary are
+            // not necessarily the same request. Start the first playable turn
+            // when the server actually activates the match, so lazy polling can
+            // never consume part of a player's 60-second window.
+            $activatedAt = time();
             $game['launch_phase'] = 'active';
+            $game['turn_started_at'] = gmdate('c', $activatedAt);
+            $game['turn_starts_at'] = gmdate('c', $activatedAt);
+            $game['turn_deadline_at'] = gmdate('c', $activatedAt + self::MOVE_TIMEOUT_SEC);
+            $game['clock_turn'] = (string)($game['turn'] ?? '');
+            $game['clock_revision'] = max(1, (int)($game['clock_revision'] ?? 0));
             $game['updated_at'] = now_iso();
+            $this->scheduleBotAfterStart($game, $activatedAt);
         }
     }
 
