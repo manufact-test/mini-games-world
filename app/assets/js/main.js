@@ -28,7 +28,6 @@ import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74'
 import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initInviteTerminalActions } from './games/invite-terminal-actions-v115.js?v=115';
 import { initGameInvites } from './games/game-invites-v110.js?v=1139&ux=single-owner-toast';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
@@ -60,7 +59,6 @@ initSheet();
 initNotificationsScreen();
 initUserCopy();
 initGameCardCopy();
-initInviteTerminalActions();
 initGameInvites();
 initGameFinishStability();
 initDominoChainLayout();
