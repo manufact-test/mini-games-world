@@ -1,0 +1,56 @@
+name: Shield King V114.4 More true-center verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v1144-more-true-center
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated true-center correction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          v12 = Path('app/assets/css/shield-king-icons-v12.css').read_text()
+          main = Path('app/assets/css/main.css').read_text()
+          user = Path('app/v110.php').read_text()
+          canonical = Path('app/v114.php').read_text()
+
+          selector = '#moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]'
+          assert selector in v12
+          assert 'transform:none !important;' in v12
+          assert 'transform:translate' not in v12
+          assert 'shield-king-icons-v12.css?v=138&icons=c1efd5af&review=more-true-center' in main
+
+          root = './assets/css/main.css?v=137&sk=3&icons=c1efd5af&render=17&review=more-true-center'
+          assert root in user
+          assert canonical.count(root) == 2
+          assert 'X-MGW-Icon-Render: accepted-v1144-more-true-center' in user
+
+          # Accepted asset and 44x44 / 36x36 geometry remain owned by earlier frozen CSS.
+          assert 'width:' not in v12
+          assert 'height:' not in v12
+          assert '#notificationsOpen' not in v12
+
+          # App-entry and game-entry ownership must remain unchanged.
+          assert './assets/js/components/preloader.js?v=44&intro=v1141' in user
+          assert 'shield-king-v1141-animation-end-gated-assembly' in user
+          assert 'v123-v110-deterministic-loader' in user
+          assert './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe' in canonical
+          assert 'phase-b-current-v121' in canonical
+
+          forbidden = ['.mgw-phase-b-countdown', '.game-card .game-icon', '.game-rules-button']
+          for selector in forbidden:
+              assert selector not in v12, selector
+
+          print('[MGW_V1144_FOCUSED_PASS] top More true optical center only')
+          PY
