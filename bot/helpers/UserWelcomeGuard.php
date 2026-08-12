@@ -24,8 +24,8 @@ final class UserWelcomeGuard
         $isAdmin = (new AdminService($this->config))->isAdmin($fromId);
         if ($isAdmin && str_starts_with($text, '/mgw_private_admin_')) return false;
 
-        // The accepted v110 graph remains the single user-facing /start and invite
-        // application graph while Phase B presentation is migrated onto it. The
+        // The shared WebAppLaunchUrl is the single user-facing /start and invite
+        // application graph and is exercised by the canonical browser suite. The
         // Telegram chat menu must not own a second Mini App URL.
         $baseWebAppUrl = WebAppLaunchUrl::base($this->config);
         if ($baseWebAppUrl === '') return false;
