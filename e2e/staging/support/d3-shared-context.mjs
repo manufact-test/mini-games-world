@@ -402,7 +402,10 @@ export async function cleanupPlayer(page) {
     if (sync.status === 200
       && invite?.token
       && ['draft', 'pending', 'accepted', 'awaiting_start'].includes(String(invite.status || ''))) {
-      const action = String(invite.status || '') === 'draft' ? 'discard_draft' : 'cancel';
+      const status = String(invite.status || '');
+      const action = status === 'draft'
+        ? 'discard_draft'
+        : (status === 'pending' && !invite.is_owner ? 'decline' : 'cancel');
       await postFromPlayer(page, '/bot/invites.php', { action, token: invite.token });
     }
   } catch {}
