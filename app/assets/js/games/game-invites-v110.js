@@ -7,7 +7,7 @@ import { getSessionId } from '../session.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { startGamePolling } from '../screens/game-screen.js?v=74';
 import { renderBalances } from '../ui.js?v=27';
-import { syncNotificationItem } from '../screens/notifications-screen-v110r12.js?v=1138&ux=single-owner-terminal';
+import { syncNotificationItem } from '../screens/notifications-screen-v110r12.js?v=1139&ux=single-owner-toast';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
 const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;
