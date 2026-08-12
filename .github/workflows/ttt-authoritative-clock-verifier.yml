@@ -1,7 +1,7 @@
 name: Tic Tac Toe Authoritative Clock Verifier
 
 on:
-  pull_request:
+  push:
     branches:
       - agent/tictactoe-authoritative-clock-v1
 
@@ -60,7 +60,7 @@ jobs:
       - name: Checkout exact verifier head
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
 
       - name: Set up PHP 8.3
