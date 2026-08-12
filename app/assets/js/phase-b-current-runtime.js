@@ -164,7 +164,8 @@ function syncClock(game){
   const pendingAuthority = game.clock_pending_authority === true;
   const revision = String(game.turn_revision ?? game.clock_revision ?? '');
   const turnStartKey = String(game.turn_starts_at_ms ?? game.turn_started_at ?? '');
-  const signature = `${String(game.id)}|${String(game.turn || '')}|${revision}|${turnStartKey}|${pendingAuthority ? 'pending' : 'authoritative'}`;
+  const launchPhase = String(game.launch_phase || 'active');
+  const signature = `${String(game.id)}|${String(game.turn || '')}|${revision}|${launchPhase}|${turnStartKey}|${pendingAuthority ? 'pending' : 'authoritative'}`;
   const serverNowMs = finiteNumber(game.server_now_ms);
   const turnStartsAtMs = finiteNumber(game.turn_starts_at_ms);
   const deadlineMs = finiteNumber(game.turn_deadline_ms);
