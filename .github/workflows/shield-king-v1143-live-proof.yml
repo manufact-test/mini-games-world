@@ -1,0 +1,105 @@
+name: Shield King V114.3 live More proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 8c9b419b867e666a7c60c84bf7db5358c8ef5294
+          fetch-depth: 1
+      - name: Verify exact deployed fingerprint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          ready=0
+          for attempt in $(seq 1 24); do
+            if curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" > readiness.json; then
+              if python3 - readiness.json "$expected" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert p.get('ok') is True
+          assert p.get('source_fingerprint_sha256') == sys.argv[2]
+          assert p.get('capabilities',{}).get('exact_runtime_fingerprint') is True
+          PY
+              then ready=1; break; fi
+            fi
+            sleep 8
+          done
+          test "$ready" = 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false playwright@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Prove desktop/mobile More painted center parity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p v1143-live-proof
+          cat > .tmp-v1143-more.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+          const origin=process.env.MGW_STAGING_ORIGIN;
+          const browser=await chromium.launch({headless:true});
+          const selector='#moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]';
+          async function read(context,label){
+            const page=await context.newPage();
+            await page.goto(`${origin}/app/v110.php?v=1123&v1143_more_${label}=1`,{waitUntil:'domcontentloaded',timeout:35000});
+            await page.waitForFunction(()=>document.querySelector('#preloader')?.classList.contains('hidden'),null,{timeout:12000});
+            await page.waitForFunction(sel=>{const img=document.querySelector(sel);return !!img&&img.complete&&img.naturalWidth>0&&img.naturalHeight>0},selector,{timeout:12000});
+            const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(e=>e.name));
+            if(!resources.some(u=>u.includes('/assets/css/main.css?v=136&sk=3&icons=c1efd5af&render=16&review=mobile-more-center')))throw new Error('fresh root CSS missing');
+            if(!resources.some(u=>u.includes('/assets/css/shield-king-icons-v12.css?v=137&icons=c1efd5af&review=mobile-more-center')))throw new Error('V12 leaf missing');
+            const m=await page.evaluate(sel=>{
+              const img=document.querySelector(sel),button=document.querySelector('#moreMenuOpen');
+              const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+              const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);
+              const d=x.getImageData(0,0,c.width,c.height).data;
+              let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+              for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++)if(d[(y*c.width+xx)*4+3]>=12){minX=Math.min(minX,xx);maxX=Math.max(maxX,xx);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
+              if(maxX<0)throw new Error('empty alpha');
+              const ir=img.getBoundingClientRect(),br=button.getBoundingClientRect();
+              const sx=ir.width/c.width,sy=ir.height/c.height;
+              const left=ir.left+minX*sx,right=ir.left+(maxX+1)*sx,top=ir.top+minY*sy,bottom=ir.top+(maxY+1)*sy;
+              return{dx:(left+right-br.left-br.right)/2,dy:(top+bottom-br.top-br.bottom)/2,img:{w:ir.width,h:ir.height},button:{w:br.width,h:br.height},transform:getComputedStyle(img).transform};
+            },selector);
+            await page.screenshot({path:`v1143-live-proof/${label}.png`});
+            await page.close();
+            return m;
+          }
+          const desktop=await browser.newContext({viewport:{width:390,height:844},locale:'ru-RU',deviceScaleFactor:1});
+          const mobile=await browser.newContext({viewport:{width:390,height:844},locale:'ru-RU',isMobile:true,hasTouch:true});
+          const d=await read(desktop,'desktop');
+          const m=await read(mobile,'mobile');
+          if(Math.abs(d.dx-m.dx)>.35||Math.abs(d.dy-m.dy)>.35)throw new Error(`painted-center parity ${JSON.stringify({d,m})}`);
+          if(d.img.w!==38||d.img.h!==38||m.img.w!==38||m.img.h!==38)throw new Error(`icon box ${JSON.stringify({d,m})}`);
+          if(d.button.w!==44||d.button.h!==44||m.button.w!==44||m.button.h!==44)throw new Error(`button box ${JSON.stringify({d,m})}`);
+          fs.writeFileSync('v1143-live-proof/metrics.json',JSON.stringify({desktop:d,mobile:m},null,2));
+          console.log('[MGW_V1143_MORE_LIVE_PASS]',JSON.stringify({desktop:d,mobile:m}));
+          await desktop.close();await mobile.close();await browser.close();
+          JS
+          node .tmp-v1143-more.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shield-king-v1143-live-proof-${{ github.run_id }}
+          path: v1143-live-proof
+          retention-days: 3
