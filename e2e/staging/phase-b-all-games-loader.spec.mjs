@@ -195,7 +195,7 @@ async function installLaunchTrace(page){
       childList:true,
       characterData:true,
       attributes:true,
-      attributeFilter:['hidden', 'data-stage', 'class'],
+      attributeFilter:['hidden', 'data-ready', 'data-loading', 'class'],
     });
     window.__MGW_PHASE_B_ALL_GAME_TRACE_OBSERVER__ = observer;
     capture();

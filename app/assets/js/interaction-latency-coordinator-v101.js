@@ -1,8 +1,7 @@
 import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { api } from './api/client.js?v=47';
-import { openSheet, closeSheet } from './components/sheet.js?v=68';
-import { toast } from './components/toast.js?v=41';
+import { closeSheet } from './components/sheet.js?v=1109';
 import { showScreen } from './router.js?v=27';
 import { haptic } from './telegram/telegram-app.js?v=27';
 import { renderBalances, roomName } from './ui.js?v=89';
@@ -88,17 +87,6 @@ function installImmediateNavigation(){
       return;
     }
 
-    if (target.matches('[data-create-link-invite]')) {
-      queueMicrotask(() => {
-        openSheet(`
-          <div class="sheet-head">
-            <div><h2>Подготавливаем приглашение</h2><p>Создаём защищённую ссылку для Telegram.</p></div>
-            <button class="close" data-close-sheet type="button">×</button>
-          </div>
-          <div class="notifications-loading"><div>✈️</div><strong>Подготавливаем отправку…</strong></div>
-        `);
-      });
-    }
   }, true);
 }
 

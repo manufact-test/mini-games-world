@@ -37,7 +37,7 @@ $importMap = <<<'HTML'
     "./assets/js/config.js?v=38": "./assets/js/config.js?v=114",
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
-    "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=115&ttt=no-game-owner",
+    "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=116&invite=no-duplicate-owner",
     "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer"
   }
 }
