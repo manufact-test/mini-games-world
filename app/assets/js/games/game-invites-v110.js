@@ -7,6 +7,7 @@ import { getSessionId } from '../session.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { startGamePolling } from '../screens/game-screen.js?v=74';
 import { renderBalances } from '../ui.js?v=27';
+import { syncNotificationItem } from '../screens/notifications-screen-v110r12.js?v=1138&ux=single-owner-terminal';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
 const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;
@@ -792,7 +793,10 @@ async function performInviteAction(action, token, button){
       return;
     }
     if (action === 'decline' || action === 'cancel') {
-      const terminalInvite = terminalInviteResult(action, token, result?.invite || rollbackInvite);
+      const terminalInvite = terminalInviteResult(action, token, {
+        ...(rollbackInvite || {}),
+        ...(result?.invite || {}),
+      });
       const unreadCount = Number(result?.unread_count);
       const selfCancelledParticipant = action === 'cancel'
         && !terminalContext.notificationSurface
@@ -800,13 +804,11 @@ async function performInviteAction(action, token, button){
         && (Boolean(terminalInvite?.is_owner) || Boolean(terminalInvite?.is_invitee));
 
       if (terminalContext.notificationSurface) {
-        document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
-          detail:{
-            item:terminalNotificationItem(terminalContext, terminalInvite),
-            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
-            announce:false,
-          },
-        }));
+        syncNotificationItem({
+          item:terminalNotificationItem(terminalContext, terminalInvite),
+          unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
+          announce:false,
+        });
       } else if (selfCancelledParticipant) {
         consumeInviteNotification(token, unreadCount);
         if (!optimisticParticipantCancel) {

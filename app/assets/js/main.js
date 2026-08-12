@@ -21,7 +21,7 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1137&ux=1';
+import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1138&ux=single-owner-terminal';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
@@ -29,7 +29,7 @@ import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
 import { initInviteTerminalActions } from './games/invite-terminal-actions-v115.js?v=115';
-import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
+import { initGameInvites } from './games/game-invites-v110.js?v=1138&ux=single-owner-terminal';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
