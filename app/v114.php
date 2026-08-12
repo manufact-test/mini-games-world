@@ -58,7 +58,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=135&sk=3&icons=c1efd5af&render=15&review=visual-polish-exact',
+    './assets/css/main.css?v=136&sk=3&icons=c1efd5af&render=16&review=mobile-more-center',
     $html
 );
 $html = str_replace(
@@ -90,7 +90,7 @@ if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e
     echo 'Mini Games World Phase B entrypoint is unavailable.';
     exit;
 }
-if (!str_contains($html, './assets/css/main.css?v=135&sk=3&icons=c1efd5af&render=15&review=visual-polish-exact')) {
+if (!str_contains($html, './assets/css/main.css?v=136&sk=3&icons=c1efd5af&render=16&review=mobile-more-center')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World Shield King presentation is unavailable.';
