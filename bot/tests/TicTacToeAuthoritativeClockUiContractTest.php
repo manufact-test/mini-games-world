@@ -41,8 +41,10 @@ $assert(
 $assert(
     str_contains($clockRuntime, "document.addEventListener('mgw:game-projected'")
         && str_contains($clockRuntime, 'clock.pendingAuthority || beforeTurnStart')
+        && str_contains($clockRuntime, "const launchPhase = String(game.launch_phase || 'active');")
+        && str_contains($clockRuntime, '|${launchPhase}|${turnStartKey}|')
         && !str_contains($clockRuntime, 'new MutationObserver'),
-    'The Phase B clock must consume projections directly without observing another timer writer.'
+    'The Phase B clock must consume projections, reset at activation, and avoid observing another timer writer.'
 );
 $assert(
     str_contains($style, 'width:76px;min-width:76px;flex:0 0 76px')
