@@ -809,10 +809,16 @@ async function performInviteAction(action, token, button){
           unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
           announce:false,
         });
-        // A recipient's explicit decline returns to ordinary activity while the
-        // terminal item remains in notification history. The owner's cancel
-        // stays visible in-place with its explanatory terminal copy.
-        if (action === 'decline') closeSheet();
+      }
+
+      if (action === 'decline') {
+        // Decline belongs to the recipient regardless of whether the action was
+        // opened from Notifications or a Telegram deeplink. Preserve terminal
+        // history, but always return the recipient to ordinary activity.
+        closeSheet();
+      } else if (terminalContext.notificationSurface) {
+        // Owner cancellation from Notifications is rendered in-place by the
+        // single notification owner above.
       } else if (selfCancelledParticipant) {
         consumeInviteNotification(token, unreadCount);
         if (!optimisticParticipantCancel) {
