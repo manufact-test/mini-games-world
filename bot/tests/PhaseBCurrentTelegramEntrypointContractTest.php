@@ -124,9 +124,9 @@ $assert(
 );
 
 $assert(
-    str_contains($v114, "\$entryVersion = '121';")
+    str_contains($v114, "\$entryVersion = '122';")
         && str_contains($currentRuntime, '.mgw-phase-b-launch-ring'),
-    'The v121 staging/reference graph may remain available, but it must not be a Telegram menu owner.'
+    'The v122 staging/reference graph may remain available, but it must not be a Telegram menu owner.'
 );
 
 foreach ([
