@@ -159,6 +159,33 @@ $assert((int)($readyGame['clock_revision'] ?? 0) === 1,
     'The first synchronized turn must create exactly revision one.');
 unset($user);
 
+$db['games']['ready']['starts_at'] = gmdate('c', time() - 1);
+$db['games']['ready']['turn_started_at'] = $db['games']['ready']['starts_at'];
+$db['games']['ready']['turn_starts_at'] = $db['games']['ready']['starts_at'];
+$db['games']['ready']['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+
+$user =& $db['users']['u1'];
+$service->synchronizeCurrentGame($db, $user, 'ready', 'ready', 'sess-a', 'device-a');
+$assert(($db['games']['ready']['launch_phase'] ?? '') === 'countdown',
+    'The first post-countdown device acknowledgement must not start the clock alone.');
+unset($user);
+
+$user =& $db['users']['u2'];
+$activationRequestedAt = time();
+$service->synchronizeCurrentGame($db, $user, 'ready', 'ready', 'sess-b', 'device-b');
+$activatedGame = $db['games']['ready'];
+$activationStart = strtotime((string)($activatedGame['turn_starts_at'] ?? '')) ?: 0;
+$activationDeadline = strtotime((string)($activatedGame['turn_deadline_at'] ?? '')) ?: 0;
+$assert(($activatedGame['launch_phase'] ?? '') === 'active',
+    'The second post-countdown device acknowledgement must atomically activate the match.');
+$assert($activationStart >= $activationRequestedAt && $activationStart <= $activationRequestedAt + 1,
+    'The first playable clock must start at the two-device activation boundary.');
+$assert($activationDeadline - $activationStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
+    'The two-device activation boundary must create the full sixty-second first turn.');
+$assert(count($activatedGame['activation_ready_devices'] ?? []) === 2,
+    'Playable readiness must contain exactly one hashed device identity per participant.');
+unset($user);
+
 // Elapsed preparation is advanced and settled by this one owner, exactly once.
 $game = $makePreparingGame('timeout', -2);
 $db = [
