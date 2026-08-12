@@ -105,6 +105,10 @@ test('remote decline already visible in owner sheet is not repeated as toast or 
   try {
     token = await createDirectInvite(players.playerA.page);
 
+    const consumeResponse = players.playerA.page.waitForResponse(
+      isConsumeResponse(token),
+      { timeout: 35_000 },
+    );
     const declinedResponse = await postFromPlayer(
       players.playerB.page,
       '/bot/invites.php',
@@ -126,6 +130,10 @@ test('remote decline already visible in owner sheet is not repeated as toast or 
       authoritativeDeclinedLabel,
       { timeout: 30_000 },
     );
+    const consumed = await consumeResponse;
+    expect(consumed.status()).toBe(200);
+    expect((await consumed.json().catch(() => null))?.ok).toBe(true);
+
     await players.playerA.page.locator('#sheet .btn.primary[data-close-sheet]').click();
     await expect(players.playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
     await expectTokenAbsentFromBell(players.playerA.page, token);
