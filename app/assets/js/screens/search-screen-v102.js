@@ -84,6 +84,11 @@ export async function beginSearch(rawContext){
     try { await pendingStop; } catch (error) {}
   }
 
+  if (state.activeGame?.id && String(state.activeGame.status || '') === 'active') {
+    enableVisibleStartControls();
+    return { game:state.activeGame };
+  }
+
   if (searchRuntime.active || searchRuntime.starting || searchRuntime.startPromise || searchRuntime.stopPromise) {
     return null;
   }
