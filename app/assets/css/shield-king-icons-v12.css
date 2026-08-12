@@ -1,12 +1,15 @@
 /*
- * Shield King V114.3 — top More button optical centering.
+ * Shield King V114.4 — top More button true optical centering.
  * Presentation only. Accepted metallic asset and button geometry are unchanged.
  */
 
-/* V4 already proved +5px vertical compensation is optically centered on fine
- * pointers. Mobile/coarse pointers still inherited +4px and therefore painted
- * the three-dot glyph slightly high. Use the same accepted optical center on
- * every pointer type without moving the button itself. */
+/*
+ * V114.3 applied translate(-2px,5px), which its own live painted-alpha proof
+ * measured at dx=-2px / dy=+4.859375px relative to the button center.
+ * The accepted source artwork is already centered inside its 36px image box
+ * (raw painted-alpha offset: dx=0px / dy=-0.140625px), so remove the erroneous
+ * horizontal and vertical compensation on every pointer type.
+ */
 #moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]{
-  transform:translate(-2px,5px) !important;
+  transform:none !important;
 }

@@ -42,7 +42,7 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace($telegramScript, $telegramScript . "\n  " . $importMap, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=136&sk=3&icons=c1efd5af&render=16&review=mobile-more-center',
+    './assets/css/main.css?v=137&sk=3&icons=c1efd5af&render=17&review=more-true-center',
     $html
 );
 $html = str_replace(
@@ -72,5 +72,5 @@ header('X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader');
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
 header('X-MGW-Icon-Pack: c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1');
-header('X-MGW-Icon-Render: accepted-v1143-mobile-more-center');
+header('X-MGW-Icon-Render: accepted-v1144-more-true-center');
 echo $html;
