@@ -74,8 +74,15 @@ $assert(
 );
 
 $assert(
+    str_contains($v110, "header('Location: ./v114.php?'")
+        && str_contains($v110, "\$query = ['v' => '124'];")
+        && str_contains($v110, "header('Cache-Control: no-store")
+        && str_contains($v110, 'exit;'),
+    'Every historical Telegram v110 button must redirect to the canonical v124 graph.'
+);
+$assert(
     str_contains($v110, '"./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=123&b=16abefbd4201"'),
-    'The retained v110 reference graph must publish the polished loader under a fresh immutable URL.'
+    'The unreachable v110 source may remain as rollback reference after the mandatory redirect.'
 );
 $assert(
     str_contains($v110, 'X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader'),

@@ -13,6 +13,7 @@ const launchEntryPath = launchSource.match(/private const ENTRY_PATH = '([^']+)'
 if (!launchEntryPath) throw new Error('Telegram Web App launch entry is unavailable.');
 const APP_ROUTE = `${STAGING_ORIGIN}${launchEntryPath}`;
 const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
+const HISTORICAL_TELEGRAM_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner';
@@ -55,6 +56,11 @@ test('staging app serves one canonical notification, player-picker and Phase B l
   });
   try {
     await authorizeContext(context);
+
+    const historicalEntry = await context.request.get(HISTORICAL_TELEGRAM_ROUTE, { maxRedirects:0, timeout:35_000 });
+    expect(historicalEntry.status()).toBe(302);
+    expect(historicalEntry.headers().location).toBe('./v114.php?v=124');
+    expect(historicalEntry.headers()['cache-control']).toContain('no-store');
 
     const staleEntry = await context.request.get(STALE_APP_ROUTE, { maxRedirects:0, timeout:35_000 });
     expect(staleEntry.status()).toBe(302);
