@@ -8,6 +8,7 @@ $read = static function (string $path) use ($root): string {
     return $content;
 };
 
+$launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $screen = $read('app/assets/js/screens/game-screen-phase-b-current.js');
 $clockRuntime = $read('app/assets/js/phase-b-current-runtime.js');
 $legacyEntry = $read('app/assets/js/production-regression-fix-entry.js');
@@ -34,11 +35,19 @@ $assert(
     'The active graph must not retain a second Tic Tac Toe action owner.'
 );
 $assert(
-    str_contains($clockRuntime, "./screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer")
+    str_contains($launch, "private const ENTRY_PATH = '/app/v114.php?v=124';")
+        && str_contains($clockRuntime, "./screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer")
         && str_contains($v114, '"./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer"')
-        && str_contains($phaseEntry, "./phase-b-current-runtime.js?v=125&ttt=single-renderer")
-        && str_contains($phaseEntry, "phase-b-current-v126-ttt-single-renderer-clock"),
+        && str_contains($phaseEntry, "./phase-b-current-runtime.js?v=126&ttt=real-launch-no-copy")
+        && str_contains($phaseEntry, "phase-b-current-v127-ttt-real-launch-no-copy"),
     'The active immutable graph must load one shared game-screen module identity and publish one consistent build identity.'
+);
+$assert(
+    !str_contains($clockRuntime, 'data-phase-b-note')
+        && !str_contains($clockRuntime, 'Начинаем одновременно')
+        && !str_contains($clockRuntime, "'СТАРТ'")
+        && !str_contains($clockRuntime, "'VS'"),
+    'The canonical player animation must not expose synchronization implementation copy.'
 );
 $assert(
     str_contains($screen, 'createTicTacToeOptimisticProjection')
@@ -78,7 +87,9 @@ $assert(
     'Every changed nested runtime owner must remain in exact staging fingerprint coverage.'
 );
 $assert(
-    str_contains($twoContext, 'expectSynchronizedTicTacToeTurn')
+    str_contains($twoContext, "new URL('../../bot/helpers/WebAppLaunchUrl.php', import.meta.url)")
+        && str_contains($twoContext, 'exact Telegram launch route')
+        && str_contains($twoContext, 'expectSynchronizedTicTacToeTurn')
         && str_contains($twoContext, "fresh ? '60 сек|60 сек' : 'synchronized'")
         && str_contains($twoContext, 'seconds[0] === seconds[1]')
         && str_contains($twoContext, 'value >= 1 && value <= 60')
