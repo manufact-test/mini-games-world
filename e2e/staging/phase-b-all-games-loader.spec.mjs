@@ -162,6 +162,7 @@ async function clickInviteAction(page, button, action){
 async function installLaunchTrace(page){
   await page.evaluate(() => {
     window.__MGW_PHASE_B_ALL_GAME_TRACE_OBSERVER__?.disconnect?.();
+    window.clearInterval(window.__MGW_PHASE_B_ALL_GAME_TRACE_SAMPLER__);
     window.__MGW_PHASE_B_ALL_GAME_TRACE__ = [];
 
     const capture = () => {
@@ -211,6 +212,7 @@ async function installLaunchTrace(page){
       attributeFilter:['hidden', 'data-ready', 'data-loading', 'class'],
     });
     window.__MGW_PHASE_B_ALL_GAME_TRACE_OBSERVER__ = observer;
+    window.__MGW_PHASE_B_ALL_GAME_TRACE_SAMPLER__ = window.setInterval(capture, 50);
     capture();
   });
 }
