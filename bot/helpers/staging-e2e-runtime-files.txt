@@ -78,8 +78,10 @@ bot/services/TelegramService.php
 # accepted /start application graph.
 app/.htaccess
 app/v114.php
+app/assets/css/screens/game.css
 app/assets/js/phase-b-current-entry.js
 app/assets/js/phase-b-current-runtime.js
+app/assets/js/production-regression-fix-entry.js
 app/assets/js/main.js
 app/assets/js/interaction-latency-coordinator-v101.js
 app/assets/js/screens/game-screen-phase-b-current.js

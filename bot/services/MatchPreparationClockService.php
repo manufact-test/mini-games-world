@@ -6,6 +6,7 @@ final class MatchPreparationClockService
     public const PREPARATION_TIMEOUT_SEC = 10;
     public const COUNTDOWN_SEC = 3;
     public const TURN_HANDOFF_SEC = 1;
+    public const TICTACTOE_TURN_HANDOFF_SEC = 0;
     public const MOVE_TIMEOUT_SEC = 60;
 
     public function initializeNewGame(array &$game): void
@@ -230,7 +231,7 @@ final class MatchPreparationClockService
 
     private function assignTurnClock(array &$game, string $turn): void
     {
-        $startsAt = time() + self::TURN_HANDOFF_SEC;
+        $startsAt = time() + $this->turnHandoffSeconds($game);
         $game['turn_started_at'] = gmdate('c', $startsAt);
         $game['turn_starts_at'] = gmdate('c', $startsAt);
         $game['turn_deadline_at'] = gmdate('c', $startsAt + self::MOVE_TIMEOUT_SEC);
@@ -238,6 +239,14 @@ final class MatchPreparationClockService
         $game['clock_revision'] = (int)($game['clock_revision'] ?? 0) + 1;
         $game['updated_at'] = now_iso();
         $this->scheduleBotAfterStart($game, $startsAt);
+    }
+
+    /** @param array<string,mixed> $game */
+    private function turnHandoffSeconds(array $game): int
+    {
+        return (string)($game['game_type'] ?? '') === 'tictactoe'
+            ? self::TICTACTOE_TURN_HANDOFF_SEC
+            : self::TURN_HANDOFF_SEC;
     }
 
     private function scheduleBotAfterStart(array &$game, int $startsAt): void

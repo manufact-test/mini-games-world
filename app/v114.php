@@ -38,7 +38,7 @@ $importMap = <<<'HTML'
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
     "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=114",
-    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c"
+    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=117&ttt=single-owner"
   }
 }
 </script>
@@ -58,12 +58,12 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=138&sk=3&icons=c1efd5af&render=18&review=more-optical-center',
+    './assets/css/main.css?v=140&sk=3&icons=c1efd5af&render=19&review=ttt-authoritative-clock',
     $html
 );
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe',
+    './assets/js/phase-b-current-entry.js?v=122&ttt=authoritative-clock',
     $html
 );
 $html = str_replace(
@@ -84,13 +84,13 @@ if (!str_contains($html, $mainScript)) {
     echo 'Mini Games World main-script anchor is unavailable.';
     exit;
 }
-if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe')) {
+if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=122&ttt=authoritative-clock')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World Phase B entrypoint is unavailable.';
     exit;
 }
-if (!str_contains($html, './assets/css/main.css?v=138&sk=3&icons=c1efd5af&render=18&review=more-optical-center')) {
+if (!str_contains($html, './assets/css/main.css?v=140&sk=3&icons=c1efd5af&render=19&review=ttt-authoritative-clock')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World Shield King presentation is unavailable.';
@@ -102,7 +102,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Frontend-Build: d1-bootstrap-authoritative-owner');
-header('X-MGW-Phase-B-Build: phase-b-current-v121');
+header('X-MGW-Phase-B-Build: phase-b-current-v122-ttt-authoritative-clock');
 header('X-MGW-Entry-Version: v' . $entryVersion);
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
 echo $html;
