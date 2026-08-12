@@ -17,3 +17,9 @@ export const TELEGRAM_LAUNCH_PATH = entryPathMatch[1];
 export function telegramAppRoute(origin) {
   return new URL(TELEGRAM_LAUNCH_PATH, String(origin)).toString();
 }
+
+export function telegramInvitationRoute(origin, token) {
+  const url = new URL(TELEGRAM_LAUNCH_PATH, String(origin));
+  url.searchParams.set('invite', String(token));
+  return url.toString();
+}
