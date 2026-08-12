@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { telegramAppRoute } from './support/telegram-launch-route.mjs';
+import { telegramAppRoute, telegramInvitationRoute } from './support/telegram-launch-route.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
@@ -123,7 +123,7 @@ test('D1 v130: invitation link opens one decision sheet without a duplicate blue
     token = String(draft.payload?.invite?.token || '');
     expect(token).toMatch(/^[A-Za-z0-9_-]{12,80}$/);
 
-    playerB = await openPlayer(browser, 'B', `${APP_ROUTE}?invite=${encodeURIComponent(token)}`);
+    playerB = await openPlayer(browser, 'B', telegramInvitationRoute(STAGING_ORIGIN, token));
     await expect(playerB.page.locator('#sheet .sheet-head h2')).toHaveText('Вас приглашают сыграть', {
       timeout:25_000,
     });
