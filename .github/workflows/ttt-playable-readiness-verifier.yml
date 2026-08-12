@@ -1,0 +1,41 @@
+name: Tic Tac Toe Playable Readiness Verifier
+on:
+  push:
+    branches: [agent/tictactoe-playable-readiness-v4]
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Validate exact playable readiness contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            php -l bot/services/MatchPreparationClockService.php
+            php -l bot/services/MatchPreparationRuntimeService.php
+            php -l bot/tests/PhaseBMatchPreparationClockServiceTest.php
+            php -l bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
+            php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+            php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
+            php bot/tests/TicTacToeAuthoritativeClockUiContractTest.php
+            php bot/tests/StagingE2eSourceFingerprintTest.php
+            php bot/tests/StagingGlobalSetupRuntimeFingerprintCoverageContractTest.php
+          } 2>&1 | tee ttt-playable-readiness-report.txt
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ttt-playable-readiness-report
+          path: ttt-playable-readiness-report.txt
+          if-no-files-found: error
+          retention-days: 3
