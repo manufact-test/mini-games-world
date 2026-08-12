@@ -23,7 +23,7 @@ $importMap = <<<'HTML'
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=102&b=901c5c869703",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=102&b=342fd6cfbb7f",
-    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=123&b=16abefbd4201",
+    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=124&b=ef4ea6257fb9",
     "./assets/js/components/shield-king-visuals.js?v=125&sk=2": "./assets/js/components/shield-king-visuals.js?v=126&sk=3&icons=c1efd5af",
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/games/game-card-copy.js?v=81&sk=2": "./assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static"
@@ -42,7 +42,7 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace($telegramScript, $telegramScript . "\n  " . $importMap, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=138&sk=3&icons=c1efd5af&render=18&review=more-optical-center',
+    './assets/css/main.css?v=141&sk=3&icons=c1efd5af&render=18&review=ttt-pregame-stable-frame',
     $html
 );
 $html = str_replace(
@@ -68,7 +68,7 @@ header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1137');
 header('X-MGW-Invite-Graph: v1137');
-header('X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader');
+header('X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame');
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
 header('X-MGW-Icon-Pack: c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1');
