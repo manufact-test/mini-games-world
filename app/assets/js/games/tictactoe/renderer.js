@@ -30,6 +30,6 @@ export function ticTacToeMeta(game){
 
 export function ticTacToePlayerMark(player){
   if (player?.symbol === 'X') return '✕';
-  if (player?.symbol === 'O') return '○';
+  if (player?.symbol === 'O') return '◯';
   return '•';
 }

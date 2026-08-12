@@ -17,6 +17,7 @@ app/assets/js/components/shield-king-visuals.js
 app/assets/js/games/game-card-copy.js
 app/assets/js/screens/game-screen-v102-safe.js
 app/assets/js/screens/game-screen-v102.js
+app/assets/js/games/tictactoe/renderer.js
 app/assets/js/games/game-invites-v110.js
 app/assets/js/screens/notifications-screen-v110r12.js
 
