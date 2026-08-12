@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$entryVersion = '123';
+$entryVersion = '124';
 $requestVersion = trim((string)($_GET['v'] ?? ''));
 if ($requestVersion !== '' && $requestVersion !== $entryVersion) {
     $query = $_GET;
@@ -63,7 +63,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/phase-b-current-entry.js?v=126&ttt=single-renderer',
+    './assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy',
     $html
 );
 $html = str_replace(
@@ -84,7 +84,7 @@ if (!str_contains($html, $mainScript)) {
     echo 'Mini Games World main-script anchor is unavailable.';
     exit;
 }
-if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=126&ttt=single-renderer')) {
+if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World Phase B entrypoint is unavailable.';
@@ -102,7 +102,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Frontend-Build: d1-bootstrap-authoritative-owner');
-header('X-MGW-Phase-B-Build: phase-b-current-v126-ttt-single-renderer-clock');
+header('X-MGW-Phase-B-Build: phase-b-current-v127-ttt-real-launch-no-copy');
 header('X-MGW-Entry-Version: v' . $entryVersion);
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
 echo $html;
