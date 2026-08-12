@@ -1,0 +1,50 @@
+name: Tic Tac Toe staging focused E2E
+
+on:
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+jobs:
+  tictactoe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact deployed runtime
+        shell: bash
+        run: |
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error --connect-timeout 10 --max-time 25 \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" -o readiness.json \
+              && python3 - readiness.json "$expected_fingerprint" <<'PY'
+          import json, sys
+          payload = json.load(open(sys.argv[1], encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          PY
+            then exit 0; fi
+            sleep 10
+          done
+          exit 1
+      - name: Install pinned Playwright
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Run real two-context Tic Tac Toe match
+        run: |
+          npx playwright test --config=e2e/playwright.config.mjs \
+            e2e/staging/frontend-immutable-core.spec.mjs \
+            e2e/staging/two-context.spec.mjs \
+            --grep "staging app serves one canonical|A invites B through notifications"
