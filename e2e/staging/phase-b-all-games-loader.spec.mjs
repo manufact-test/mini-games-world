@@ -166,7 +166,20 @@ async function installLaunchTrace(page){
 
     const capture = () => {
       const overlay = document.getElementById('mgwPhaseBLaunchOverlay');
-      if (!overlay || overlay.hidden) return;
+      if (!overlay) return;
+      if (overlay.hidden) {
+        const trace = window.__MGW_PHASE_B_ALL_GAME_TRACE__;
+        const previous = trace[trace.length - 1];
+        if (previous?.stage === 'number' && previous.text === '1') {
+          trace.push({
+            stage:'ready',
+            text:'',
+            game:previous.game,
+            at:performance.now(),
+          });
+        }
+        return;
+      }
       const countdown = overlay.querySelector('[data-phase-b-countdown]');
       const gameLabel = overlay.querySelector('[data-phase-b-game]');
       const text = String(countdown?.textContent || '').trim();

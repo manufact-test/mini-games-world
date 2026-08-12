@@ -142,7 +142,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     const has = suffix => resources.some(url => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix));
     for (const required of [
-      '/assets/js/main.js?v=d1-real-entry-invite-v1139',
+      '/assets/js/main.js?v=d1-real-entry-invite-v1140',
       '/assets/js/api/client.js?v=114',
       '/assets/js/session.js?v=114',
       '/assets/js/first-interaction-readiness.js?v=d1',
@@ -150,7 +150,6 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/game-invites-v110.js?v=1139&ux=single-owner-toast',
       '/assets/js/games/invite-link-entry-v110r12.js?v=1123',
       '/assets/js/presence-v115.js?v=115',
-      '/assets/js/games/invite-terminal-actions-v115.js?v=115',
       '/assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy',
       '/assets/js/phase-b-current-runtime.js?v=126&ttt=real-launch-no-copy',
       '/assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer',
@@ -167,6 +166,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/screens/notification-window-owner-v121.js',
       '/assets/js/notification-compat-click-guard-v127.js',
       '/assets/js/opponents-native-fetch-v115.js',
+      '/assets/js/games/invite-terminal-actions-v115.js',
       '/assets/js/opponents-empty-cache-guard-v115.js',
       '/assets/js/opponents-authoritative-confirm-v122.js',
       '/assets/js/opponents-fresh-user-action-v128.js',
