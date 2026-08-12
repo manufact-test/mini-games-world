@@ -1,0 +1,12 @@
+/*
+ * Shield King V114.3 — top More button optical centering.
+ * Presentation only. Accepted metallic asset and button geometry are unchanged.
+ */
+
+/* V4 already proved +5px vertical compensation is optically centered on fine
+ * pointers. Mobile/coarse pointers still inherited +4px and therefore painted
+ * the three-dot glyph slightly high. Use the same accepted optical center on
+ * every pointer type without moving the button itself. */
+#moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]{
+  transform:translate(-2px,5px) !important;
+}
