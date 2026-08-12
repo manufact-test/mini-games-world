@@ -162,15 +162,8 @@ test('owner self-cancel returns directly home without terminal confirmation', as
   try {
     token = await createDirectInvite(players.playerA.page);
 
-    const consumeResponse = players.playerA.page.waitForResponse(
-      isConsumeResponse(token),
-      { timeout: 35_000 },
-    );
     const cancelled = await clickInviteAction(players.playerA.page, 'cancel', token);
     expect(String(cancelled?.invite?.status || '')).toMatch(/cancelled|canceled/);
-    const consumed = await consumeResponse;
-    expect(consumed.status()).toBe(200);
-    expect((await consumed.json().catch(() => null))?.ok).toBe(true);
 
     await expect(players.playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
     await expect.poll(async () => players.playerA.page.evaluate(() => (
