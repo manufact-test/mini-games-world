@@ -47,7 +47,6 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
-initNotificationsScreen();
 initFirstInteractionReadinessEarly();
 initRequestGuard();
 initResidualUiGameRaceFixEarly();
@@ -58,11 +57,11 @@ initV115Presence();
 initRuntimeStatus();
 initTypography();
 initSheet();
+initNotificationsScreen();
 initUserCopy();
 initGameCardCopy();
 initInviteTerminalActions();
 initGameInvites();
-initSearchInviteReconciliation();
 initGameFinishStability();
 initDominoChainLayout();
 
@@ -81,6 +80,7 @@ initWeeklyMatchInfo();
 initHomeScreen();
 initAccountShortcuts();
 initSearchScreen();
+initSearchInviteReconciliation();
 initGameScreen();
 initProfileScreen();
 initGameRules();
