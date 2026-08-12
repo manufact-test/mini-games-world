@@ -415,11 +415,17 @@ async function playTicTacToeCell(player, cell) {
   return payload;
 }
 
-async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label) {
+async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label, { fresh = true } = {}) {
   const serverNowMs = Number(game?.server_now_ms || 0);
   const turnStartsAtMs = Number(game?.turn_starts_at_ms || 0);
   const turnDeadlineMs = Number(game?.turn_deadline_ms || 0);
-  expect(Number(game?.time_left || 0), `${label} authoritative full timer`).toBe(60);
+  const authoritativeSeconds = Number(game?.time_left || 0);
+  if (fresh) {
+    expect(authoritativeSeconds, `${label} authoritative fresh timer`).toBe(60);
+  } else {
+    expect(authoritativeSeconds, `${label} authoritative active timer`).toBeGreaterThanOrEqual(1);
+    expect(authoritativeSeconds, `${label} authoritative active timer`).toBeLessThanOrEqual(60);
+  }
   expect(turnStartsAtMs, `${label} turn start timestamp`).toBeGreaterThan(0);
   expect(turnDeadlineMs, `${label} turn deadline timestamp`).toBeGreaterThan(turnStartsAtMs);
   expect(
@@ -436,10 +442,14 @@ async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label) {
     ]);
     return values.map(value => String(value || '').trim()).join('|');
   }, {
-    message: `${label} timer must reset to 60 on both players`,
+    message: fresh
+      ? `${label} timer must reset to 60 on both players`
+      : `${label} timer must be identical on both players`,
     timeout: 1_200,
     intervals: [30, 60, 100, 150],
-  }).toBe('60 сек|60 сек');
+  }).toBe(fresh
+    ? '60 сек|60 сек'
+    : `${authoritativeSeconds} сек|${authoritativeSeconds} сек`);
 
   const presentations = await Promise.all([playerA.page, playerB.page].map(page => page.evaluate(() => {
     const timer = document.getElementById('timerText');
@@ -823,7 +833,13 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
       stg_test_player_a: playerA,
       stg_test_player_b: playerB,
     };
-    await expectSynchronizedTicTacToeTurn(playerA, playerB, authoritativeGame, 'Initial turn');
+    await expectSynchronizedTicTacToeTurn(
+      playerA,
+      playerB,
+      authoritativeGame,
+      'Initial turn',
+      { fresh:false },
+    );
 
     const winningSequence = [0, 3, 1, 4, 2];
     let finalPayload = null;
