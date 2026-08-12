@@ -30,8 +30,11 @@ $assert(
 $assert(
     str_contains($screen, 'createTicTacToeOptimisticProjection')
         && str_contains($screen, 'clock_pending_authority:true')
-        && str_contains($screen, "new CustomEvent('mgw:game-projected'"),
-    'The authoritative game screen must own immediate TTT projection and clock handoff.'
+        && str_contains($screen, "new CustomEvent('mgw:game-projected'")
+        && str_contains($screen, "String(game?.turn_clock_phase || '') === 'syncing'")
+        && str_contains($screen, 'queueMicrotask(() => void refreshGame(id))')
+        && str_contains($screen, 'void refreshGame(gameId);'),
+    'The authoritative game screen must own immediate TTT projection and explicit turn readiness acknowledgement.'
 );
 $assert(
     !str_contains($screen, "timer.textContent = game.status === 'active'")
@@ -67,6 +70,8 @@ $assert(
         && str_contains($twoContext, 'seconds[0] === seconds[1]')
         && str_contains($twoContext, 'value >= 1 && value <= 60')
         && str_contains($twoContext, 'turnDeadlineMs - turnStartsAtMs')
+        && str_contains($twoContext, "turnClockPhase === 'syncing'")
+        && str_contains($twoContext, 'bounded synchronization deadline')
         && str_contains($twoContext, 'toBeCloseTo(76, 1)')
         && str_contains($twoContext, 'Math.abs(size - 18) < 0.1'),
     'Canonical E2E must prove full windows, strict fresh resets, same-frame synchronized initial clocks and stable mobile geometry.'
