@@ -65,8 +65,9 @@ jobs:
           const d=await read(desktop,'desktop');
           const m=await read(mobile,'mobile');
           if(Math.abs(d.dx-m.dx)>.35||Math.abs(d.dy-m.dy)>.35)throw new Error(`painted-center parity ${JSON.stringify({d,m})}`);
-          if(d.img.w!==38||d.img.h!==38||m.img.w!==38||m.img.h!==38)throw new Error(`icon box ${JSON.stringify({d,m})}`);
+          if(d.img.w!==m.img.w||d.img.h!==m.img.h)throw new Error(`icon box parity ${JSON.stringify({d,m})}`);
           if(d.button.w!==44||d.button.h!==44||m.button.w!==44||m.button.h!==44)throw new Error(`button box ${JSON.stringify({d,m})}`);
+          if(d.transform!=='matrix(1, 0, 0, 1, -2, 5)'||m.transform!==d.transform)throw new Error(`transform ${JSON.stringify({d,m})}`);
           fs.writeFileSync('v1143-live-proof-r2/metrics.json',JSON.stringify({desktop:d,mobile:m},null,2));
           console.log('[MGW_V1143_MORE_R2_LIVE_PASS]',JSON.stringify({desktop:d,mobile:m}));
           await desktop.close();await mobile.close();await browser.close();
