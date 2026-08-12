@@ -142,7 +142,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     const has = suffix => resources.some(url => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix));
     for (const required of [
-      '/assets/js/main.js?v=d1-real-entry-invite-v1139',
+      '/assets/js/main.js?v=d1-real-entry-invite-v1140',
       '/assets/js/api/client.js?v=114',
       '/assets/js/session.js?v=114',
       '/assets/js/first-interaction-readiness.js?v=d1',
