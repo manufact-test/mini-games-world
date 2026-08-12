@@ -420,6 +420,7 @@ async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label, { 
   const turnStartsAtMs = Number(game?.turn_starts_at_ms || 0);
   const turnDeadlineMs = Number(game?.turn_deadline_ms || 0);
   const authoritativeSeconds = Number(game?.time_left || 0);
+  const turnClockPhase = String(game?.turn_clock_phase || 'active');
   if (fresh) {
     expect(authoritativeSeconds, `${label} authoritative fresh timer`).toBe(60);
   } else {
@@ -433,7 +434,14 @@ async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label, { 
     `${label} authoritative 60-second window`,
   ).toBe(60_000);
   expect(serverNowMs, `${label} server timestamp`).toBeGreaterThan(0);
-  expect(turnStartsAtMs, `${label} has no artificial future handoff`).toBeLessThanOrEqual(serverNowMs);
+  if (turnClockPhase === 'syncing') {
+    expect(game?.clock_pending_authority, `${label} synchronizing handoff is explicit`).toBe(true);
+    expect(turnStartsAtMs, `${label} bounded synchronization deadline`).toBeGreaterThan(serverNowMs);
+    expect(turnStartsAtMs - serverNowMs, `${label} bounded synchronization deadline`)
+      .toBeLessThanOrEqual(5_000);
+  } else {
+    expect(turnStartsAtMs, `${label} active clock anchor`).toBeLessThanOrEqual(serverNowMs);
+  }
 
   await expect.poll(async () => {
     const texts = await Promise.all([

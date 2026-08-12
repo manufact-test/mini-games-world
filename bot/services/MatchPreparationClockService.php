@@ -7,6 +7,7 @@ final class MatchPreparationClockService
     public const COUNTDOWN_SEC = 3;
     public const TURN_HANDOFF_SEC = 1;
     public const TICTACTOE_TURN_HANDOFF_SEC = 0;
+    public const TURN_SYNC_TIMEOUT_SEC = 5;
     public const MOVE_TIMEOUT_SEC = 60;
 
     public function initializeNewGame(array &$game): void
@@ -24,6 +25,9 @@ final class MatchPreparationClockService
         $game['preparation_deadline_at'] = gmdate('c', $deadline);
         $game['preparation_ready_devices'] = [];
         $game['activation_ready_devices'] = [];
+        $game['turn_ready_devices'] = [];
+        $game['turn_clock_phase'] = 'pending_launch';
+        $game['turn_sync_deadline_at'] = null;
         $game['starts_at'] = null;
         $game['turn_starts_at'] = null;
         $game['turn_deadline_at'] = null;
@@ -45,6 +49,9 @@ final class MatchPreparationClockService
         $game['launch_phase'] = $status === 'active' ? 'active' : 'finished';
         $game['clock_turn'] = (string)($game['turn'] ?? '');
         $game['clock_revision'] = max(1, (int)($game['clock_revision'] ?? 0));
+        $game['turn_clock_phase'] = 'active';
+        $game['turn_ready_devices'] = [];
+        $game['turn_sync_deadline_at'] = null;
 
         $startedAt = (string)($game['turn_started_at'] ?? $game['last_move_at'] ?? $game['created_at'] ?? now_iso());
         if (empty($game['turn_starts_at'])) $game['turn_starts_at'] = $startedAt;
@@ -116,9 +123,42 @@ final class MatchPreparationClockService
         $game['updated_at'] = now_iso();
     }
 
+    public function markTurnReady(array &$game, string $userId, string $sessionId, string $deviceId): void
+    {
+        if ((string)($game['launch_phase'] ?? '') !== 'active') return;
+        if ((string)($game['turn_clock_phase'] ?? 'active') !== 'syncing') return;
+        if ($userId === '' || $sessionId === '' || $deviceId === '') return;
+        if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) return;
+
+        if (!isset($game['turn_ready_devices']) || !is_array($game['turn_ready_devices'])) {
+            $game['turn_ready_devices'] = [];
+        }
+
+        $game['turn_ready_devices'][$userId] = [
+            'device_hash' => hash('sha256', $sessionId . '|' . $deviceId),
+            'ready_at' => now_iso(),
+        ];
+
+        foreach (array_map('strval', $game['player_ids'] ?? []) as $playerId) {
+            if ($playerId !== '' && str_starts_with($playerId, 'bot_')
+                && !isset($game['turn_ready_devices'][$playerId])) {
+                $game['turn_ready_devices'][$playerId] = [
+                    'device_hash' => 'server-bot',
+                    'ready_at' => now_iso(),
+                ];
+            }
+        }
+        $game['updated_at'] = now_iso();
+    }
+
     public function advance(array &$game): void
     {
         $phase = (string)($game['launch_phase'] ?? '');
+
+        if ($phase === 'active') {
+            $this->advanceSynchronizedTurnClock($game);
+            return;
+        }
 
         if ($phase === 'preparing') {
             $deadline = strtotime((string)($game['preparation_deadline_at'] ?? '')) ?: 0;
@@ -156,6 +196,9 @@ final class MatchPreparationClockService
             $game['turn_deadline_at'] = gmdate('c', $activatedAt + self::MOVE_TIMEOUT_SEC);
             $game['clock_turn'] = (string)($game['turn'] ?? '');
             $game['clock_revision'] = max(1, (int)($game['clock_revision'] ?? 0));
+            $game['turn_clock_phase'] = 'active';
+            $game['turn_ready_devices'] = [];
+            $game['turn_sync_deadline_at'] = null;
             $game['updated_at'] = now_iso();
             $this->scheduleBotAfterStart($game, $activatedAt);
         }
@@ -177,6 +220,9 @@ final class MatchPreparationClockService
             }
         }
         if ($phase === 'active') {
+            if ((string)($game['turn_clock_phase'] ?? 'active') === 'syncing') {
+                throw new RuntimeException('Новый ход ещё синхронизируется между игроками.');
+            }
             $turnStartsAt = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
             if ($turnStartsAt > time()) {
                 throw new RuntimeException('Ход ещё не начался.');
@@ -199,7 +245,7 @@ final class MatchPreparationClockService
 
         $currentTurn = (string)($game['turn'] ?? '');
         if ($currentTurn === '' || $currentTurn === $previousTurn) return;
-        $this->assignTurnClock($game, $currentTurn);
+        $this->beginTurnClock($game, $currentTurn);
     }
 
     public function synchronizeObservedTurn(array &$game): void
@@ -215,13 +261,14 @@ final class MatchPreparationClockService
             $game['clock_revision'] = max(1, (int)($game['clock_revision'] ?? 0));
             return;
         }
-        if ($knownTurn !== $turn) $this->assignTurnClock($game, $turn);
+        if ($knownTurn !== $turn) $this->beginTurnClock($game, $turn);
     }
 
     public function enrichPublicGame(array $game, array $public): array
     {
         $serverNowMs = (int)round(microtime(true) * 1000);
         $phase = (string)($game['launch_phase'] ?? ((string)($game['status'] ?? '') === 'active' ? 'active' : 'finished'));
+        $turnClockPhase = (string)($game['turn_clock_phase'] ?? 'active');
         $turnStartsAtMs = $this->epochMs((string)($game['turn_starts_at'] ?? $game['turn_started_at'] ?? ''));
         $turnDeadlineMs = $this->epochMs((string)($game['turn_deadline_at'] ?? ''));
         if ($turnDeadlineMs === null && $turnStartsAtMs !== null) {
@@ -229,6 +276,7 @@ final class MatchPreparationClockService
         }
 
         if (in_array($phase, ['preparing', 'countdown', 'preparation_timeout'], true)
+            || $turnClockPhase === 'syncing'
             || ($turnStartsAtMs !== null && $serverNowMs < $turnStartsAtMs)) {
             $timeLeft = self::MOVE_TIMEOUT_SEC;
         } elseif ($turnDeadlineMs !== null) {
@@ -240,6 +288,9 @@ final class MatchPreparationClockService
         $ready = is_array($game['preparation_ready_devices'] ?? null) ? $game['preparation_ready_devices'] : [];
         return array_replace($public, [
             'launch_phase' => $phase,
+            'turn_clock_phase' => $turnClockPhase,
+            'clock_pending_authority' => $turnClockPhase === 'syncing',
+            'turn_sync_deadline_at' => $game['turn_sync_deadline_at'] ?? null,
             'preparing_started_at' => $game['preparing_started_at'] ?? null,
             'preparation_deadline_at' => $game['preparation_deadline_at'] ?? null,
             'preparation_deadline_ms' => $this->epochMs((string)($game['preparation_deadline_at'] ?? '')),
@@ -280,6 +331,51 @@ final class MatchPreparationClockService
         return true;
     }
 
+    private function beginTurnClock(array &$game, string $turn): void
+    {
+        if ((string)($game['game_type'] ?? '') !== 'tictactoe') {
+            $this->assignTurnClock($game, $turn);
+            return;
+        }
+
+        $startsAt = time() + self::TURN_SYNC_TIMEOUT_SEC;
+        $game['turn_started_at'] = gmdate('c', $startsAt);
+        $game['turn_starts_at'] = gmdate('c', $startsAt);
+        $game['turn_deadline_at'] = gmdate('c', $startsAt + self::MOVE_TIMEOUT_SEC);
+        $game['turn_sync_deadline_at'] = gmdate('c', $startsAt);
+        $game['turn_clock_phase'] = 'syncing';
+        $game['turn_ready_devices'] = [];
+        $game['clock_turn'] = $turn;
+        $game['clock_revision'] = (int)($game['clock_revision'] ?? 0) + 1;
+        $game['updated_at'] = now_iso();
+    }
+
+    private function advanceSynchronizedTurnClock(array &$game): void
+    {
+        if ((string)($game['turn_clock_phase'] ?? 'active') !== 'syncing') return;
+        $syncDeadline = strtotime((string)($game['turn_sync_deadline_at'] ?? '')) ?: 0;
+        if (!$this->allTurnReady($game) && ($syncDeadline <= 0 || $syncDeadline > time())) return;
+
+        $startsAt = time();
+        $game['turn_started_at'] = gmdate('c', $startsAt);
+        $game['turn_starts_at'] = gmdate('c', $startsAt);
+        $game['turn_deadline_at'] = gmdate('c', $startsAt + self::MOVE_TIMEOUT_SEC);
+        $game['turn_clock_phase'] = 'active';
+        $game['updated_at'] = now_iso();
+        $this->scheduleBotAfterStart($game, $startsAt);
+    }
+
+    private function allTurnReady(array $game): bool
+    {
+        $ready = is_array($game['turn_ready_devices'] ?? null) ? $game['turn_ready_devices'] : [];
+        $players = array_map('strval', $game['player_ids'] ?? []);
+        if (count($players) < 2) return false;
+        foreach ($players as $playerId) {
+            if ($playerId === '' || !isset($ready[$playerId])) return false;
+        }
+        return true;
+    }
+
     private function assignTurnClock(array &$game, string $turn): void
     {
         $startsAt = time() + $this->turnHandoffSeconds($game);
@@ -288,6 +384,9 @@ final class MatchPreparationClockService
         $game['turn_deadline_at'] = gmdate('c', $startsAt + self::MOVE_TIMEOUT_SEC);
         $game['clock_turn'] = $turn;
         $game['clock_revision'] = (int)($game['clock_revision'] ?? 0) + 1;
+        $game['turn_clock_phase'] = 'active';
+        $game['turn_ready_devices'] = [];
+        $game['turn_sync_deadline_at'] = null;
         $game['updated_at'] = now_iso();
         $this->scheduleBotAfterStart($game, $startsAt);
     }
