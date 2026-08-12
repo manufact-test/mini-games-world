@@ -21,6 +21,7 @@ $importMap = <<<'HTML'
     "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1131",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
+    "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=104&search=cancel-lifecycle",
     "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=102&b=901c5c869703",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=102&b=342fd6cfbb7f",
     "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
@@ -74,6 +75,7 @@ header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1137');
 header('X-MGW-Invite-Graph: v1137');
+header('X-MGW-Search-Graph: v104-cancel-lifecycle');
 header('X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame');
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-nostalgic-entry-copy');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
