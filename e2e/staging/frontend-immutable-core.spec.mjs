@@ -147,7 +147,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/session.js?v=114',
       '/assets/js/first-interaction-readiness.js?v=d1',
       '/assets/js/screens/notifications-screen-v110r12.js?v=1139&ux=single-owner-toast',
-      '/assets/js/games/game-invites-v110.js?v=1141&ux=single-owner-terminal-semantics',
+      '/assets/js/games/game-invites-v110.js?v=1142&ux=single-owner-recipient-decline',
       '/assets/js/games/invite-link-entry-v110r12.js?v=1123',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy',

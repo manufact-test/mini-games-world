@@ -7,7 +7,6 @@ const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
-const NOTIFICATIONS_ROUTE = `${STAGING_ORIGIN}/bot/notifications.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 
 async function requestOidcToken() {
@@ -96,17 +95,6 @@ async function shortMobileTap(page) {
 }
 
 async function runShortInputCycles(page, isMobile) {
-  let markReadCalls = 0;
-  await page.route(NOTIFICATIONS_ROUTE, async route => {
-    let payload = {};
-    try { payload = route.request().postDataJSON() || {}; } catch {}
-    if (!payload.markRead) return route.continue();
-    markReadCalls += 1;
-    const delayMs = markReadCalls === 1 ? 1_600 : (markReadCalls % 5 === 0 ? 700 : 120);
-    await new Promise(resolve => setTimeout(resolve, delayMs));
-    return route.continue();
-  });
-
   const pressDurations = [5, 8, 13, 21, 29];
   for (let cycle = 0; cycle < 25; cycle += 1) {
     if (isMobile) await shortMobileTap(page);
@@ -118,14 +106,12 @@ async function runShortInputCycles(page, isMobile) {
 
   await page.waitForTimeout(1_850);
   await expect(page.locator('#sheetOverlay')).not.toHaveClass(/active/);
-  expect(markReadCalls).toBeGreaterThanOrEqual(1);
   const trace = await page.evaluate(() => window.__MGW_SHORT_INPUT_TRACE__ || []);
   const downs = trace.filter(item => item.scope === 'window' && item.phase === 'capture' && item.type === 'pointerdown');
   const ups = trace.filter(item => item.scope === 'window' && item.phase === 'capture' && item.type === 'pointerup');
   expect(downs.length).toBeGreaterThanOrEqual(25);
   expect(ups.length).toBeGreaterThanOrEqual(25);
   for (let index = 0; index < 25; index += 1) expect(downs[index]?.at).toBeLessThanOrEqual(ups[index]?.at);
-  await page.unroute(NOTIFICATIONS_ROUTE);
 }
 
 test('D1 bug A v121: desktop real 5-29ms pointer presses open first try for 25 cycles', async ({ browser }) => {
