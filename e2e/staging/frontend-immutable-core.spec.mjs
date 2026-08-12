@@ -1,16 +1,23 @@
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
+const launchSource = readFileSync(
+  new URL('../../bot/helpers/WebAppLaunchUrl.php', import.meta.url),
+  'utf8',
+);
+const launchEntryPath = launchSource.match(/private const ENTRY_PATH = '([^']+)'/)?.[1] || '';
+if (!launchEntryPath) throw new Error('Telegram Web App launch entry is unavailable.');
+const APP_ROUTE = `${STAGING_ORIGIN}${launchEntryPath}`;
 const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v126-ttt-single-renderer-clock';
-const EXPECTED_ENTRY_VERSION = 'v123';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v127-ttt-real-launch-no-copy';
+const EXPECTED_ENTRY_VERSION = 'v124';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -51,7 +58,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
 
     const staleEntry = await context.request.get(STALE_APP_ROUTE, { maxRedirects:0, timeout:35_000 });
     expect(staleEntry.status()).toBe(302);
-    expect(staleEntry.headers().location).toBe('./?v=123');
+    expect(staleEntry.headers().location).toBe('./?v=124');
     expect(staleEntry.headers()['cache-control']).toContain('no-store');
 
     const page = await context.newPage();
@@ -79,6 +86,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       const card = overlay?.querySelector('.mgw-phase-b-launch-card');
       const countdown = overlay?.querySelector('[data-phase-b-countdown]');
       const title = overlay?.querySelector('[data-phase-b-title]');
+      const note = overlay?.querySelector('[data-phase-b-note]');
       const progress = overlay?.querySelector('[data-phase-b-progress]');
       if (!overlay || !card || !countdown || !title || !progress) return null;
       overlay.hidden = false;
@@ -106,6 +114,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
         cardDisplay: cardStyle.display,
         countdownBackground: countdownStyle.backgroundColor,
         titleWhiteSpace: titleStyle.whiteSpace,
+        hasSynchronizationCopy: Boolean(note),
         numbered,
         ready,
       };
@@ -115,10 +124,11 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       return result;
     });
     expect(presentation).toEqual({
-      cardHeight:336,
+      cardHeight:290,
       cardDisplay:'grid',
       countdownBackground:'rgba(6, 8, 13, 0.96)',
       titleWhiteSpace:'nowrap',
+      hasSynchronizationCopy:false,
       numbered:{ width:108, height:108 },
       ready:{ width:108, height:108, progressVisibility:'hidden' },
     });
@@ -135,8 +145,8 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=126&ttt=single-renderer',
-      '/assets/js/phase-b-current-runtime.js?v=125&ttt=single-renderer',
+      '/assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy',
+      '/assets/js/phase-b-current-runtime.js?v=126&ttt=real-launch-no-copy',
       '/assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
 
