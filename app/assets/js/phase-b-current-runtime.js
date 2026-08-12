@@ -2,7 +2,7 @@ import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { getInitData } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
-import { applyReadonlyGameProjection } from './screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c';
+import { applyReadonlyGameProjection } from './screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer';
 
 const WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const WATCH_INTERVAL_MS = 250;
