@@ -5,12 +5,13 @@
 .match-info span{color:var(--muted);font-size:12px;line-height:1.2;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .turn-box{border-radius:20px;background:linear-gradient(135deg,rgba(46,230,166,.18),rgba(124,92,255,.12));border:1px solid rgba(46,230,166,.16);padding:10px 11px;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
 .turn-text{font-weight:950;font-size:17px;line-height:1.12;letter-spacing:-.03em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.timer{font-weight:950;font-variant-numeric:tabular-nums;color:#e8fff8;background:rgba(46,230,166,.12);border:1px solid rgba(46,230,166,.22);padding:7px 9px;border-radius:13px;min-width:42px;text-align:center}
+.timer{box-sizing:border-box;width:76px;min-width:76px;flex:0 0 76px;font-weight:950;font-variant-numeric:tabular-nums;color:#e8fff8;background:rgba(46,230,166,.12);border:1px solid rgba(46,230,166,.22);padding:7px 9px;border-radius:13px;text-align:center}
 .players-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
 .game-player{border:1px solid var(--stroke);background:rgba(255,255,255,.045);border-radius:18px;padding:9px 10px;min-width:0}
 .game-player.active{border-color:rgba(46,230,166,.36);box-shadow:0 0 0 3px rgba(46,230,166,.08)}
 .game-player .name{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
-.game-player .mark{color:var(--muted);font-size:12px;margin-top:3px}
+.game-player .mark{color:var(--muted);font-size:12px;line-height:1.15;margin-top:3px}
+.game-player .player-mark-symbol{display:inline-block;min-width:1em;text-align:center}
 .board-wrap{width:100%;max-width:100%;border:1px solid var(--stroke);border-radius:24px;background:rgba(255,255,255,.045);padding:10px;margin:10px auto 12px;overflow:hidden}
 .board{display:grid;width:min(100%,clamp(236px,calc(100dvh - 315px),420px));max-width:100%;margin:0 auto;gap:6px;touch-action:manipulation}
 .board.size-3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -36,3 +37,11 @@
 @media (max-height:720px){.game-board-screen .content{padding-top:10px;padding-bottom:14px}.game-header{gap:7px;margin-bottom:8px}.match-info{padding:9px 10px;border-radius:18px}.match-info h2{font-size:16px}.turn-box{padding:9px 10px;border-radius:18px}.turn-text{font-size:16px}.timer{padding:6px 8px}.game-player{padding:8px 9px;border-radius:16px}.game-player .name{font-size:13px}.game-player .mark{font-size:11px}.board-wrap{padding:8px;border-radius:20px;margin:8px auto 10px}.board{width:min(100%,clamp(220px,calc(100dvh - 285px),370px))}.game-board-screen[data-game-type="battleship"] .content{padding-top:7px}.game-board-screen[data-game-type="battleship"] .game-header{gap:4px;margin-bottom:4px}.game-board-screen[data-game-type="battleship"] .turn-box{padding:6px 8px}.game-board-screen[data-game-type="battleship"] .game-player{padding:5px 7px}.game-board-screen[data-game-type="battleship"] .board-wrap{padding:5px;margin-top:3px}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
 @media (max-height:620px){.match-info span{display:none}.players-row{gap:6px}.game-player{padding:7px 8px}.board{width:min(100%,clamp(200px,calc(100dvh - 245px),330px))}.game-board-screen[data-game-type="battleship"] .game-player .mark{display:none}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
 @media (max-width:380px){.game-board-screen .content{padding-left:10px;padding-right:10px}.board-wrap{padding:7px;border-radius:20px}.board{width:min(100%,clamp(210px,calc(100dvh - 300px),340px))}.game-board-screen[data-game-type="battleship"] .content{padding-left:7px;padding-right:7px}.game-board-screen[data-game-type="battleship"] .board-wrap{padding:4px;border-radius:16px}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
+
+@media (max-width:639px){
+  .game-board-screen[data-game-type="tictactoe"] .game-player .player-mark-symbol{
+    font-size:18px;
+    line-height:.75;
+    vertical-align:-1px;
+  }
+}
