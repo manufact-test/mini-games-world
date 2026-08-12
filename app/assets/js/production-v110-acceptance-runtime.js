@@ -425,8 +425,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
   }
 
   if (stage.type === 'prepare') {
-    if (title) title.textContent = 'Подготовка матча';
-    if (note) note.textContent = 'Соединяем игроков';
+    if (title) title.textContent = 'Матч скоро начнётся';
+    if (note) note.textContent = 'Готовьтесь к игре';
     if (progress) {
       progress.hidden = false;
       progress.dataset.visible = '1';
@@ -435,8 +435,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
   }
 
   if (stage.type === 'number') {
-    if (title) title.textContent = 'Подготовка матча';
-    if (note) note.textContent = 'Начинаем одновременно';
+    if (title) title.textContent = 'Матч скоро начнётся';
+    if (note) note.textContent = 'Приготовьтесь к первому ходу';
     if (progress) {
       progress.hidden = false;
       progress.dataset.visible = '0';
@@ -446,7 +446,7 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
 
   if (stage.type === 'sync') {
     if (title) title.textContent = 'Почти готово';
-    if (note) note.textContent = 'Синхронизируем игроков';
+    if (note) note.textContent = 'Ещё мгновение';
     if (progress) {
       progress.hidden = false;
       progress.dataset.visible = '1';
@@ -454,8 +454,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
     return;
   }
 
-  if (title) title.textContent = 'Готово';
-  if (note) note.textContent = 'Открываем игру';
+  if (title) title.textContent = 'Всё готово';
+  if (note) note.textContent = 'Вперёд!';
   if (progress) {
     progress.hidden = false;
     progress.dataset.visible = '0';
@@ -478,8 +478,8 @@ function ensureLaunchOverlay(){
         <span class="mgw-phase-b-launch-ring"></span>
         <div class="mgw-phase-b-countdown" data-phase-b-countdown data-stage="prepare"></div>
       </div>
-      <strong class="mgw-phase-b-launch-title" data-phase-b-title>Подготовка матча</strong>
-      <span class="mgw-phase-b-launch-note" data-phase-b-note>Соединяем игроков</span>
+      <strong class="mgw-phase-b-launch-title" data-phase-b-title>Матч скоро начнётся</strong>
+      <span class="mgw-phase-b-launch-note" data-phase-b-note>Готовьтесь к игре</span>
       <div class="mgw-phase-b-launch-progress" data-phase-b-progress data-visible="1" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
   `;
