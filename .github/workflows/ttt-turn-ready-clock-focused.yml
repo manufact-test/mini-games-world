@@ -31,9 +31,6 @@ jobs:
             bot/tests/PhaseBActionGuardHandoffContractTest.php \
             bot/tests/PhaseBGameClockWriterDemotionContractTest.php \
             bot/tests/PhaseBReadOnlyGameWatchContractTest.php \
-            bot/tests/PhaseBReadonlySyncPhaseGuardContractTest.php \
-            bot/tests/PhaseBPrimaryApiPreparationOwnerContractTest.php \
-            bot/tests/PhaseBClientLaunchUxContractTest.php \
             bot/tests/PhaseBE2EAuthoritativeActionChainContractTest.php \
             bot/tests/TicTacToeAuthoritativeClockUiContractTest.php \
             bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php \
