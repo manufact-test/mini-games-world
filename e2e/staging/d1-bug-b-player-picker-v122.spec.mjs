@@ -151,8 +151,8 @@ async function runActualStartPicker(browser, isMobile) {
     const resources = await playerA.page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     expect(resources.some(rawUrl => {
       const url = new URL(rawUrl);
-      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1138' && url.searchParams.get('ux') === 'single-owner-terminal';
-    }), 'Real Telegram entry must execute the accepted v1138 single-owner player-picker graph.').toBe(true);
+      return url.pathname.endsWith('/assets/js/games/game-invites-v110.js') && url.searchParams.get('v') === '1139' && url.searchParams.get('ux') === 'single-owner-toast';
+    }), 'Real Telegram entry must execute the accepted v1139 single-owner player-picker graph.').toBe(true);
     expect(requests).toBe(0);
 
     await playerA.page.locator('[data-invite-friend="tictactoe"]').click();

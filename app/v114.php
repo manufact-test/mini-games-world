@@ -73,11 +73,11 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.3',
-    './assets/js/main.js?v=d1-real-entry-invite-v1138',
+    './assets/js/main.js?v=d1-real-entry-invite-v1139',
     $html
 );
 
-$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-real-entry-invite-v1138"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-real-entry-invite-v1139"></script>';
 if (!str_contains($html, $mainScript)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');

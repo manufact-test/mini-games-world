@@ -381,19 +381,25 @@ function removeInviteNotification(detail){
   for (const [key, entry] of localAuthority.entries()) {
     if (String(entry?.item?.invite_token || '') === token) localAuthority.delete(key);
   }
+  let removedPinned = false;
   for (const [key, item] of sheetState.pinned.entries()) {
-    if (String(item?.invite_token || '') === token) sheetState.pinned.delete(key);
+    if (String(item?.invite_token || '') !== token) continue;
+    sheetState.pinned.delete(key);
+    removedPinned = true;
   }
 
   for (const id of removedIds) announcedIds.add(String(id));
   if (removedIds.length) persistAnnouncedIds();
 
-  if (String(toastItem?.invite_token || '') === token
-      || String(pressedToastItem?.invite_token || '') === token) {
-    dismissToast();
-  }
+  const removedToast = String(toastItem?.invite_token || '') === token
+    || String(pressedToastItem?.invite_token || '') === token;
+  if (removedToast) dismissToast();
 
-  announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
+  // A stale/repeated consume with nothing visible must not keep postponing
+  // unrelated incoming notification toasts forever.
+  if (removedIds.length || removedPinned || removedToast) {
+    announcementGuardUntil = Math.max(announcementGuardUntil, Date.now() + CLOSE_GUARD_MS);
+  }
   persistItems();
   const hasExactUnread = detail.unreadCount !== null && detail.unreadCount !== undefined;
   const exactUnread = hasExactUnread ? Number(detail.unreadCount) : Number.NaN;
