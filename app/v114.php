@@ -38,7 +38,8 @@ $importMap = <<<'HTML'
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/residual-ui-game-race-fix.js?v=91": "./assets/js/residual-ui-game-race-fix-v114.js?v=114",
     "./assets/js/interaction-latency-coordinator-v101.js?v=101": "./assets/js/interaction-latency-coordinator-v101.js?v=116&invite=no-duplicate-owner",
-    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer"
+    "./assets/js/screens/game-screen.js?v=74": "./assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer",
+    "./assets/js/games/game-invites-v110.js?v=1141&ux=single-owner-terminal-semantics": "./assets/js/games/game-invites-v110.js?v=1142&ux=single-owner-recipient-decline"
   }
 }
 </script>
