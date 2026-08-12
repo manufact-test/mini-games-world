@@ -1,0 +1,58 @@
+name: Shield King V114.5 More optical-center verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/shield-king-v1145-more-optical-center
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify isolated optical-center correction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          v12 = Path('app/assets/css/shield-king-icons-v12.css').read_text()
+          main = Path('app/assets/css/main.css').read_text()
+          user = Path('app/v110.php').read_text()
+          canonical = Path('app/v114.php').read_text()
+
+          selector = '#moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]'
+          assert selector in v12
+          assert 'transform:translateY(2px) !important;' in v12
+          assert 'translateX' not in v12
+          assert 'translate(-' not in v12
+          assert 'shield-king-icons-v12.css?v=139&icons=c1efd5af&review=more-optical-center' in main
+
+          root = './assets/css/main.css?v=138&sk=3&icons=c1efd5af&render=18&review=more-optical-center'
+          assert root in user
+          assert canonical.count(root) == 2
+          assert 'X-MGW-Icon-Render: accepted-v1145-more-optical-center' in user
+
+          # Accepted asset and 44x44 / 36x36 geometry remain owned by earlier frozen CSS.
+          assert 'width:' not in v12
+          assert 'height:' not in v12
+          assert '#notificationsOpen' not in v12
+          assert '@media' not in v12
+
+          # App-entry and game-entry ownership must remain unchanged.
+          assert './assets/js/components/preloader.js?v=44&intro=v1141' in user
+          assert 'shield-king-v1141-animation-end-gated-assembly' in user
+          assert 'v123-v110-deterministic-loader' in user
+          assert './assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe' in canonical
+          assert 'phase-b-current-v121' in canonical
+
+          forbidden = ['.mgw-phase-b-countdown', '.game-card .game-icon', '.game-rules-button']
+          for item in forbidden:
+              assert item not in v12, item
+
+          print('[MGW_V1145_FOCUSED_PASS] top More shared +2px optical center only')
+          PY
