@@ -386,8 +386,8 @@ test('canonical desktop picker renders empty only after one authoritative respon
     await expect(playerA.page.locator('[data-open-player-picker]')).toBeVisible({ timeout:15_000 });
     await playerA.page.locator('[data-open-player-picker]').click();
 
-    await expect(playerA.page.locator('[data-player-picker-state="loading"]')).toBeVisible();
-    await expect(playerA.page.locator('[data-player-picker-state="empty"]')).toHaveCount(0);
+    await expect(playerA.page.locator('[data-player-picker-results][aria-busy="true"] .invite-player-card.loading')).toBeVisible();
+    await expect(playerA.page.locator('[data-player-picker-results][aria-busy="false"] .invite-empty-state')).toHaveCount(0);
     await expect(playerA.page.locator('[data-player-picker-state="empty"]')).toBeVisible({ timeout:5_000 });
     expect(opponentCalls).toBe(1);
 
