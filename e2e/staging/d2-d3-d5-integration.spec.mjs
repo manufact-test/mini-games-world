@@ -237,7 +237,10 @@ async function cleanupPlayer(player) {
     if (sync.status === 200
       && invite?.token
       && ['pending', 'accepted', 'awaiting_start'].includes(String(invite.status || ''))) {
-      await postFromPlayer(page, '/bot/invites.php', { action: 'cancel', token: invite.token });
+      const action = String(invite.status || '') === 'pending' && !invite.is_owner
+        ? 'decline'
+        : 'cancel';
+      await postFromPlayer(page, '/bot/invites.php', { action, token: invite.token });
     }
   } catch {
     // Server expiry is the final fallback.

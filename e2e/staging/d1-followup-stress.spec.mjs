@@ -135,6 +135,9 @@ async function expectPost(page, pathname, data, label) {
 async function cleanupPlayer(player) {
   if (!player?.page) return;
   try {
+    await postFromPlayer(player.page, '/bot/api.php', { action:'leave_search' });
+  } catch {}
+  try {
     const state = await postFromPlayer(player.page, '/bot/api.php', { action:'game_state' });
     if (state.status === 200 && state.payload?.game?.id && state.payload.game.status === 'active') {
       await postFromPlayer(player.page, '/bot/api.php', { action:'leave_game', gameId:state.payload.game.id });
@@ -145,7 +148,10 @@ async function cleanupPlayer(player) {
     const invite = sync.payload?.invite || sync.payload?.tracked_invite || null;
     if (sync.status === 200 && invite?.token
       && ['pending', 'accepted', 'awaiting_start'].includes(String(invite.status || ''))) {
-      await postFromPlayer(player.page, '/bot/invites.php', { action:'cancel', token:invite.token });
+      const action = String(invite.status || '') === 'pending' && !invite.is_owner
+        ? 'decline'
+        : 'cancel';
+      await postFromPlayer(player.page, '/bot/invites.php', { action, token:invite.token });
     }
   } catch {}
   await player.page.keyboard.press('Escape').catch(() => null);
