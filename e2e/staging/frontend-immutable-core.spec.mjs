@@ -9,8 +9,8 @@ const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v124-ttt-turn-ready-clock';
-const EXPECTED_ENTRY_VERSION = 'v122';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v126-ttt-single-renderer-clock';
+const EXPECTED_ENTRY_VERSION = 'v123';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -51,7 +51,7 @@ test('staging app serves one canonical notification, player-picker and Phase B l
 
     const staleEntry = await context.request.get(STALE_APP_ROUTE, { maxRedirects:0, timeout:35_000 });
     expect(staleEntry.status()).toBe(302);
-    expect(staleEntry.headers().location).toBe('./?v=122');
+    expect(staleEntry.headers().location).toBe('./?v=123');
     expect(staleEntry.headers()['cache-control']).toContain('no-store');
 
     const page = await context.newPage();
@@ -135,10 +135,14 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
       '/assets/js/games/invite-terminal-actions-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=124&ttt=turn-ready-clock',
-      '/assets/js/phase-b-current-runtime.js?v=124&ttt=turn-ready-clock',
-      '/assets/js/screens/game-screen-phase-b-current.js?v=118&ttt=turn-ready-clock',
+      '/assets/js/phase-b-current-entry.js?v=126&ttt=single-renderer',
+      '/assets/js/phase-b-current-runtime.js?v=125&ttt=single-renderer',
+      '/assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
+
+    const gameScreenResources = resources.filter(url => new URL(url).pathname.endsWith('/assets/js/screens/game-screen-phase-b-current.js'));
+    expect(gameScreenResources, 'Canonical graph must load exactly one game-screen module identity').toHaveLength(1);
+    expect(new URL(gameScreenResources[0]).search).toBe('?v=119&ttt=single-renderer');
 
     for (const retired of [
       '/assets/js/first-interaction-readiness-v103.js',
