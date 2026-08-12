@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { telegramAppRoute } from './support/telegram-launch-route.mjs';
 import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
+const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const NOTIFICATIONS_ROUTE = `${STAGING_ORIGIN}/bot/notifications.php`;
@@ -367,7 +368,7 @@ test('D2-D3-D5 integration: Share, picker and owner self-cancel return home whil
     await testInfo.attach('d2-d3-d5-integration-report', {
       body: Buffer.from(`${JSON.stringify({
         ok: true,
-        ordinaryStartRoute: '/app/v110.php?v=1123',
+        ordinaryStartRoute: new URL(APP_ROUTE).pathname + new URL(APP_ROUTE).search,
         shareDraftPreparedAndDiscarded: true,
         playerPickerUsed: true,
         ownerSelfCancelReturnedHome: true,
