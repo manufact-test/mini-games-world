@@ -228,7 +228,9 @@ test('v1137 direct invite, notification Accept and invitee self-cancel have comp
     const notificationToast = playerB.page.locator('#notificationToast.show');
     await expect.poll(async () => {
       await playerB.page.evaluate(() => {
-        document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
+        // Exercise the real foreground-resume notification path. The internal
+        // mgw:notifications-refresh event is intentionally silent.
+        document.dispatchEvent(new Event('visibilitychange'));
       });
       return notificationToast.isVisible();
     }, {
