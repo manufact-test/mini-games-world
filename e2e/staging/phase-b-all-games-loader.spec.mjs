@@ -169,9 +169,13 @@ async function installLaunchTrace(page){
       if (!overlay || overlay.hidden) return;
       const countdown = overlay.querySelector('[data-phase-b-countdown]');
       const gameLabel = overlay.querySelector('[data-phase-b-game]');
+      const text = String(countdown?.textContent || '').trim();
+      const stage = countdown?.dataset.ready === '1'
+        ? 'ready'
+        : (/^[123]$/.test(text) ? 'number' : (countdown?.dataset.loading === '1' ? 'prepare' : ''));
       const entry = {
-        stage:String(overlay.dataset.stage || ''),
-        text:String(countdown?.textContent || '').trim(),
+        stage,
+        text,
         game:String(gameLabel?.textContent || '').trim(),
         at:performance.now(),
       };
