@@ -1,15 +1,13 @@
 /*
- * Shield King V114.4 — top More button true optical centering.
+ * Shield King V114.5 — top More button visual optical centering.
  * Presentation only. Accepted metallic asset and button geometry are unchanged.
  */
 
 /*
- * V114.3 applied translate(-2px,5px), which its own live painted-alpha proof
- * measured at dx=-2px / dy=+4.859375px relative to the button center.
- * The accepted source artwork is already centered inside its 36px image box
- * (raw painted-alpha offset: dx=0px / dy=-0.140625px), so remove the erroneous
- * horizontal and vertical compensation on every pointer type.
+ * Manual desktop and mobile review of V114.4 confirmed the glyph renders
+ * consistently across both contexts, but appears slightly high. Preserve the
+ * shared rule and move only the artwork 2px down, with no horizontal offset.
  */
 #moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]{
-  transform:none !important;
+  transform:translateY(2px) !important;
 }
