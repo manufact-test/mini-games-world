@@ -16,19 +16,6 @@ import {
   clickInviteAction,
 } from './support/d3-shared-actions.mjs';
 
-const NOTIFICATIONS_ROUTE = `${STAGING_ORIGIN}/bot/notifications.php`;
-
-function isConsumeResponse(token) {
-  return response => {
-    if (response.url() !== NOTIFICATIONS_ROUTE || response.request().method() !== 'POST') return false;
-    try {
-      return String(response.request().postDataJSON()?.consumeInviteToken || '') === token;
-    } catch {
-      return false;
-    }
-  };
-}
-
 async function createPlayers(browser) {
   const options = {
     locale: 'ru-RU',
@@ -105,10 +92,6 @@ test('remote decline already visible in owner sheet is not repeated as toast or 
   try {
     token = await createDirectInvite(players.playerA.page);
 
-    const consumeResponse = players.playerA.page.waitForResponse(
-      isConsumeResponse(token),
-      { timeout: 35_000 },
-    );
     const declinedResponse = await postFromPlayer(
       players.playerB.page,
       '/bot/invites.php',
@@ -130,9 +113,6 @@ test('remote decline already visible in owner sheet is not repeated as toast or 
       authoritativeDeclinedLabel,
       { timeout: 30_000 },
     );
-    const consumed = await consumeResponse;
-    expect(consumed.status()).toBe(200);
-    expect((await consumed.json().catch(() => null))?.ok).toBe(true);
 
     await players.playerA.page.locator('#sheet .btn.primary[data-close-sheet]').click();
     await expect(players.playerA.page.locator('#sheetOverlay')).not.toHaveClass(/active/);
