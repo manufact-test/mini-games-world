@@ -73,7 +73,7 @@ bot/webhook.php
 bot/helpers/StagingMenuButtonReconciler.php
 bot/services/TelegramService.php
 
-# Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
+# Unversioned /app/ v114/v123 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.
 app/.htaccess
