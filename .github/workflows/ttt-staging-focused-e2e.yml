@@ -1,7 +1,7 @@
 name: Tic Tac Toe staging focused E2E
 
 on:
-  pull_request:
+  push:
     branches:
       - agent/mvp-13-2-staging
 
