@@ -1,11 +1,18 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
+const launchSource = readFileSync(
+  new URL('../../bot/helpers/WebAppLaunchUrl.php', import.meta.url),
+  'utf8',
+);
+const launchEntryPath = launchSource.match(/private const ENTRY_PATH = '([^']+)'/)?.[1] || '';
+if (!launchEntryPath) throw new Error('Telegram Web App launch entry is unavailable.');
+const APP_ROUTE = `${STAGING_ORIGIN}${launchEntryPath}`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
@@ -243,6 +250,10 @@ async function openPlayer(browser, slot, testInfo) {
   const response = await page.goto(APP_ROUTE, { waitUntil: 'domcontentloaded' });
   expect(response, `Player ${slot} app response`).not.toBeNull();
   expect(response.ok(), `Player ${slot} app status`).toBe(true);
+  expect(response.url(), `Player ${slot} exact Telegram launch route`).toBe(APP_ROUTE);
+  expect(response.headers()['x-mgw-entry-version'], `Player ${slot} entry version`).toBe('v124');
+  expect(response.headers()['x-mgw-phase-b-build'], `Player ${slot} Phase B build`)
+    .toBe('phase-b-current-v127-ttt-real-launch-no-copy');
   await expect(page).toHaveTitle(/Mini Games World/i);
   await expect(page.locator('body')).toBeVisible();
   const bootstrap = await bootstrapPromise;
