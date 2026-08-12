@@ -17,6 +17,7 @@ $webhook = $read('bot/webhook.php');
 $menuButton = $read('bot/helpers/StagingMenuButtonReconciler.php');
 $v110 = $read('app/v110.php');
 $v110Runtime = $read('app/assets/js/production-v110-acceptance-runtime.js');
+$gameStyle = $read('app/assets/css/screens/game.css');
 $v114 = $read('app/v114.php');
 $currentRuntime = $read('app/assets/js/phase-b-current-runtime.js');
 $fingerprint = $read('bot/helpers/staging-e2e-runtime-files.txt');
@@ -74,12 +75,16 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, '"./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=123&b=16abefbd4201"'),
-    'The accepted v110 graph must publish the polished loader under a fresh immutable URL.'
+    str_contains($v110, '"./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=124&b=ef4ea6257fb9"'),
+    'The accepted v110 graph must publish the player-facing pregame runtime under a fresh immutable URL.'
 );
 $assert(
-    str_contains($v110, 'X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader'),
-    'The accepted /start graph must expose the deterministic loader identity.'
+    str_contains($v110, './assets/css/main.css?v=141&sk=3&icons=c1efd5af&render=18&review=ttt-pregame-stable-frame'),
+    'The accepted v110 graph must publish the stable timer-frame CSS under a fresh immutable URL.'
+);
+$assert(
+    str_contains($v110, 'X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame'),
+    'The accepted /start graph must expose the player-copy and stable-frame presentation identity.'
 );
 $assert(
     str_contains($v110Runtime, 'position:fixed;inset:0;z-index:10000')
@@ -108,8 +113,24 @@ $assert(
     str_contains($v110Runtime, '.mgw-phase-b-countdown[data-stage="prepare"]:before')
         && str_contains($v110Runtime, '.mgw-phase-b-countdown[data-stage="ready"]:before')
         && str_contains($v110Runtime, '@keyframes mgwPhaseBCheckIn')
-        && str_contains($v110Runtime, "if (title) title.textContent = 'Готово';"),
+        && str_contains($v110Runtime, "if (title) title.textContent = 'Всё готово';"),
     'Preparation must use a neutral animated mark and completion must use a visual success check.'
+);
+$assert(
+    str_contains($v110Runtime, "if (title) title.textContent = 'Матч скоро начнётся';")
+        && str_contains($v110Runtime, "if (note) note.textContent = 'Готовьтесь к игре';")
+        && str_contains($v110Runtime, "if (note) note.textContent = 'Приготовьтесь к первому ходу';")
+        && str_contains($v110Runtime, "if (note) note.textContent = 'Ещё мгновение';")
+        && str_contains($v110Runtime, "if (note) note.textContent = 'Вперёд!';")
+        && !str_contains($v110Runtime, 'Соединяем игроков')
+        && !str_contains($v110Runtime, 'Начинаем одновременно')
+        && !str_contains($v110Runtime, 'Синхронизируем игроков')
+        && !str_contains($v110Runtime, 'Открываем игру'),
+    'The real Telegram pregame surface must contain player-facing copy and no synchronization implementation text.'
+);
+$assert(
+    str_contains($gameStyle, 'flex:0 0 80px;width:80px;min-width:80px'),
+    'The shared game timer badge must keep one fixed 80px frame across all timer values.'
 );
 $assert(
     str_contains($v110Runtime, "const presentationBlocking = status === 'active'")
@@ -133,6 +154,7 @@ foreach ([
     'app/v110.php',
     'app/assets/js/production-clean-entry-v110.js',
     'app/assets/js/production-v110-acceptance-runtime.js',
+    'app/assets/css/screens/game.css',
     'bot/helpers/WebAppLaunchUrl.php',
     'bot/helpers/UserWelcomeGuard.php',
     'bot/helpers/InviteStartGuard.php',
