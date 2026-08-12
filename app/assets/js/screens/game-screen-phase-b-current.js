@@ -99,6 +99,14 @@ function projectGame(game, me, { allowOlder = false } = {}){
   state.selectedGame = gameTypeOf(game);
   if (viewer?.id) renderGame(game, viewer);
 
+  document.dispatchEvent(new CustomEvent('mgw:game-projected', {
+    detail:{
+      game,
+      me:viewer,
+      authoritative:game?.clock_pending_authority !== true,
+    },
+  }));
+
   if (String(game.status || '') === 'finished') {
     state.timers.game = clearTimer(state.timers.game);
     if (viewer?.id) scheduleResultSheet(game, viewer);
@@ -144,12 +152,12 @@ function renderGame(game, me){
 
   meta.textContent = gameMetaText(game);
   turn.textContent = gameStatusText(game, me);
-  timer.textContent = game.status === 'active' ? `${game.time_left ?? 60} сек` : '—';
+  if (game.status !== 'active') timer.textContent = '—';
 
   players.innerHTML = (Array.isArray(game.players) ? game.players : []).map(player => `
     <div class="game-player ${String(game.turn) === String(player.id) && game.status === 'active' ? 'active' : ''}">
       <div class="name">${escapeHtml(player.name)}</div>
-      <div class="mark">${escapeHtml(playerMarkText(game, player))} · ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</div>
+      <div class="mark"><span class="player-mark-symbol">${escapeHtml(playerMarkText(game, player))}</span><span class="player-mark-role"> · ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</span></div>
     </div>
   `).join('');
 
@@ -163,7 +171,20 @@ function renderGame(game, me){
 
 async function applyGameAction(gameId, gameAction){
   if (gameScreenRuntime.actionBusy) return;
+
+  const previousGame = state.activeGame;
+  const viewer = gameScreenRuntime.viewerByGame.get(String(gameId || '')) || resolveViewer(previousGame);
+  const optimistic = createTicTacToeOptimisticProjection(previousGame, viewer, gameAction);
+
   gameScreenRuntime.actionBusy = true;
+  if (optimistic) {
+    projectGame(optimistic.game, viewer, { allowOlder:true });
+    const optimisticCell = document.querySelector(
+      `#gameBoard[data-game-type="tictactoe"] [data-game-cell="${optimistic.cell}"]`
+    );
+    optimisticCell?.classList.add('is-optimistic');
+  }
+
   try {
     haptic('light');
     const result = await api.gameAction(gameId, gameAction);
@@ -173,14 +194,47 @@ async function applyGameAction(gameId, gameAction){
       renderBalances(state.user);
     }
     if (result.game) {
-      projectGame(result.game, normalizeViewer(result.me) || resolveViewer(result.game), { allowOlder:false });
+      projectGame(result.game, normalizeViewer(result.me) || viewer || resolveViewer(result.game), { allowOlder:false });
     }
   } catch (error) {
+    if (optimistic && previousGame?.id) {
+      projectGame(previousGame, viewer || resolveViewer(previousGame), { allowOlder:true });
+    }
     document.getElementById('gameBoard')?.classList.remove('is-submitting');
     toast(error.message);
   } finally {
     gameScreenRuntime.actionBusy = false;
   }
+}
+
+function createTicTacToeOptimisticProjection(game, me, gameAction){
+  if (gameTypeOf(game) !== 'tictactoe' || String(game?.status || '') !== 'active') return null;
+  if (String(gameAction?.type || '') !== 'cell') return null;
+
+  const viewerId = String(me?.id || '');
+  if (!viewerId || String(game?.turn || '') !== viewerId) return null;
+
+  const cell = Number(gameAction?.cell);
+  const board = String(game?.board || '');
+  if (!Number.isInteger(cell) || cell < 0 || cell >= board.length || board[cell] !== '-') return null;
+
+  const players = Array.isArray(game?.players) ? game.players : [];
+  const viewer = players.find(player => String(player?.id || '') === viewerId);
+  const nextPlayer = players.find(player => String(player?.id || '') !== viewerId);
+  const symbol = String(viewer?.symbol || '');
+  const nextPlayerId = String(nextPlayer?.id || '');
+  if (!['X','O'].includes(symbol) || !nextPlayerId) return null;
+
+  return {
+    cell,
+    game:{
+      ...game,
+      board:`${board.slice(0, cell)}${symbol}${board.slice(cell + 1)}`,
+      turn:nextPlayerId,
+      time_left:Number(game?.move_timeout_sec || 60),
+      clock_pending_authority:true,
+    },
+  };
 }
 
 function requestLeaveGame(){
