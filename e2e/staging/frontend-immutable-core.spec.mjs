@@ -9,7 +9,7 @@ const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v121';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v122-ttt-authoritative-clock';
 const EXPECTED_ENTRY_VERSION = 'v121';
 
 async function requestOidcToken() {
