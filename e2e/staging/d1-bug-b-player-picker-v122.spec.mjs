@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { telegramAppRoute } from './support/telegram-launch-route.mjs';
 import { openOrdinaryStartReady } from './support/ordinary-start-readiness.mjs';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const APP_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
+const APP_ROUTE = telegramAppRoute(STAGING_ORIGIN);
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const OPPONENTS_ROUTE = `${STAGING_ORIGIN}/bot/invite-opponents.php`;
