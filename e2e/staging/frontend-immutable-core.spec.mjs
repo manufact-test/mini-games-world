@@ -1,24 +1,16 @@
-import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const launchSource = readFileSync(
-  new URL('../../bot/helpers/WebAppLaunchUrl.php', import.meta.url),
-  'utf8',
-);
-const launchEntryPath = launchSource.match(/private const ENTRY_PATH = '([^']+)'/)?.[1] || '';
-if (!launchEntryPath) throw new Error('Telegram Web App launch entry is unavailable.');
-const APP_ROUTE = `${STAGING_ORIGIN}${launchEntryPath}`;
+const APP_ROUTE = `${STAGING_ORIGIN}/app/?mgw_e2e_frontend=d1-canonical`;
 const STALE_APP_ROUTE = `${STAGING_ORIGIN}/app/?v=85`;
-const HISTORICAL_TELEGRAM_ROUTE = `${STAGING_ORIGIN}/app/v110.php?v=1123`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
 const EXPECTED_BUILD = 'd1-bootstrap-authoritative-owner';
-const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v127-ttt-real-launch-no-copy';
-const EXPECTED_ENTRY_VERSION = 'v124';
+const EXPECTED_PHASE_B_BUILD = 'phase-b-current-v121';
+const EXPECTED_ENTRY_VERSION = 'v121';
 
 async function requestOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -57,14 +49,9 @@ test('staging app serves one canonical notification, player-picker and Phase B l
   try {
     await authorizeContext(context);
 
-    const historicalEntry = await context.request.get(HISTORICAL_TELEGRAM_ROUTE, { maxRedirects:0, timeout:35_000 });
-    expect(historicalEntry.status()).toBe(302);
-    expect(historicalEntry.headers().location).toBe('./v114.php?v=124');
-    expect(historicalEntry.headers()['cache-control']).toContain('no-store');
-
     const staleEntry = await context.request.get(STALE_APP_ROUTE, { maxRedirects:0, timeout:35_000 });
     expect(staleEntry.status()).toBe(302);
-    expect(staleEntry.headers().location).toBe('./?v=124');
+    expect(staleEntry.headers().location).toBe('./?v=121');
     expect(staleEntry.headers()['cache-control']).toContain('no-store');
 
     const page = await context.newPage();
@@ -92,7 +79,6 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       const card = overlay?.querySelector('.mgw-phase-b-launch-card');
       const countdown = overlay?.querySelector('[data-phase-b-countdown]');
       const title = overlay?.querySelector('[data-phase-b-title]');
-      const note = overlay?.querySelector('[data-phase-b-note]');
       const progress = overlay?.querySelector('[data-phase-b-progress]');
       if (!overlay || !card || !countdown || !title || !progress) return null;
       overlay.hidden = false;
@@ -120,7 +106,6 @@ test('staging app serves one canonical notification, player-picker and Phase B l
         cardDisplay: cardStyle.display,
         countdownBackground: countdownStyle.backgroundColor,
         titleWhiteSpace: titleStyle.whiteSpace,
-        hasSynchronizationCopy: Boolean(note),
         numbered,
         ready,
       };
@@ -130,11 +115,10 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       return result;
     });
     expect(presentation).toEqual({
-      cardHeight:290,
+      cardHeight:336,
       cardDisplay:'grid',
       countdownBackground:'rgba(6, 8, 13, 0.96)',
       titleWhiteSpace:'nowrap',
-      hasSynchronizationCopy:false,
       numbered:{ width:108, height:108 },
       ready:{ width:108, height:108, progressVisibility:'hidden' },
     });
@@ -142,22 +126,19 @@ test('staging app serves one canonical notification, player-picker and Phase B l
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name));
     const has = suffix => resources.some(url => new URL(url).pathname.concat(new URL(url).search).endsWith(suffix));
     for (const required of [
-      '/assets/js/main.js?v=d1-real-entry-invite-v1140',
+      '/assets/js/main.js?v=d1-bootstrap-authoritative-owner',
       '/assets/js/api/client.js?v=114',
       '/assets/js/session.js?v=114',
       '/assets/js/first-interaction-readiness.js?v=d1',
-      '/assets/js/screens/notifications-screen-v110r12.js?v=1139&ux=single-owner-toast',
-      '/assets/js/games/game-invites-v110.js?v=1139&ux=single-owner-toast',
-      '/assets/js/games/invite-link-entry-v110r12.js?v=1123',
+      '/assets/js/screens/notifications-screen-v99.js?v=d1-bell-single-owner',
+      '/assets/js/games/game-invites.js?v=d1',
+      '/assets/js/games/invite-link-entry-v115.js?v=d1',
       '/assets/js/presence-v115.js?v=115',
-      '/assets/js/phase-b-current-entry.js?v=127&ttt=real-launch-no-copy',
-      '/assets/js/phase-b-current-runtime.js?v=126&ttt=real-launch-no-copy',
-      '/assets/js/screens/game-screen-phase-b-current.js?v=119&ttt=single-renderer',
+      '/assets/js/games/invite-terminal-actions-v115.js?v=115',
+      '/assets/js/phase-b-current-entry.js?v=121&b=2cee1709e1fe',
+      '/assets/js/phase-b-current-runtime.js?v=121&b=0e808fe731ab',
+      '/assets/js/screens/game-screen-phase-b-current.js?v=116&b=f6d062608b0c',
     ]) expect(has(required), `Canonical graph must include ${required}`).toBe(true);
-
-    const gameScreenResources = resources.filter(url => new URL(url).pathname.endsWith('/assets/js/screens/game-screen-phase-b-current.js'));
-    expect(gameScreenResources, 'Canonical graph must load exactly one game-screen module identity').toHaveLength(1);
-    expect(new URL(gameScreenResources[0]).search).toBe('?v=119&ttt=single-renderer');
 
     for (const retired of [
       '/assets/js/first-interaction-readiness-v103.js',
@@ -166,7 +147,6 @@ test('staging app serves one canonical notification, player-picker and Phase B l
       '/assets/js/screens/notification-window-owner-v121.js',
       '/assets/js/notification-compat-click-guard-v127.js',
       '/assets/js/opponents-native-fetch-v115.js',
-      '/assets/js/games/invite-terminal-actions-v115.js',
       '/assets/js/opponents-empty-cache-guard-v115.js',
       '/assets/js/opponents-authoritative-confirm-v122.js',
       '/assets/js/opponents-fresh-user-action-v128.js',

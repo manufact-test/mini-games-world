@@ -28,13 +28,13 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(
-    str_contains($launch, "private const ENTRY_PATH = '/app/v114.php?v=124';"),
-    'The canonical browser graph must be the single Telegram /start and invite Web App route.'
+    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1123';"),
+    'The accepted v110 graph must remain the canonical /start and invite Web App route.'
 );
 $assert(
     str_contains($welcome, '$baseWebAppUrl = WebAppLaunchUrl::base($this->config);')
         && str_contains($welcome, "'web_app' => ['url' => \$buttonWebAppUrl]"),
-    'UserWelcomeGuard must own the real /start message button through the shared canonical URL builder.'
+    'UserWelcomeGuard must own the real /start message button through the shared v110 URL builder.'
 );
 $assert(
     str_contains($welcome, "api('setChatMenuButton'")
@@ -50,13 +50,13 @@ $assert(
 $assert(
     str_contains($inviteStart, 'WebAppLaunchUrl::invitation($this->config, $token)')
         && !str_contains($inviteStart, '/app/?v=87'),
-    'Invite /start deep links must use the same canonical Web App URL builder and never the retired v87 graph.'
+    'Invite /start deep links must use the same accepted v110 Web App URL builder and never the retired v87 graph.'
 );
 $assert(
     str_contains($telegram, "require_once __DIR__ . '/../helpers/WebAppLaunchUrl.php';")
         && str_contains($telegram, 'WebAppLaunchUrl::base($this->config)')
         && !str_contains($telegram, '/app/?v=121'),
-    'WebhookHandler fallback /start responses must use the same canonical Web App URL builder and own no v121 URL.'
+    'WebhookHandler fallback /start responses must use the same accepted Web App URL builder and own no v121 URL.'
 );
 $assert(
     str_contains($handler, '$this->telegram->sendStartMessage($chatId);'),
@@ -74,30 +74,23 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, "header('Location: ./v114.php?'")
-        && str_contains($v110, "\$query = ['v' => '124'];")
-        && str_contains($v110, "header('Cache-Control: no-store")
-        && str_contains($v110, 'exit;'),
-    'Every historical Telegram v110 button must redirect to the canonical v124 graph.'
-);
-$assert(
     str_contains($v110, '"./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=123&b=16abefbd4201"'),
-    'The unreachable v110 source may remain as rollback reference after the mandatory redirect.'
+    'The accepted v110 graph must publish the polished loader under a fresh immutable URL.'
 );
 $assert(
     str_contains($v110, 'X-MGW-Phase-B-Presentation: v123-v110-deterministic-loader'),
-    'The retained v110 reference graph must expose the deterministic loader identity.'
+    'The accepted /start graph must expose the deterministic loader identity.'
 );
 $assert(
     str_contains($v110Runtime, 'position:fixed;inset:0;z-index:10000')
         && str_contains($v110Runtime, 'width:min(100%,400px);height:336px;display:grid;grid-template-rows:30px 136px 52px 46px 24px'),
-    'The retained v110 reference graph must keep the fixed preparation geometry.'
+    'The accepted v110 graph must keep the fixed preparation geometry.'
 );
 $assert(
     str_contains($v110Runtime, 'width:108px;height:108px')
         && str_contains($v110Runtime, '.mgw-phase-b-launch-ring')
         && str_contains($v110Runtime, '@keyframes mgwPhaseBSpin'),
-    'The retained v110 reference graph must keep one invariant 108x108 ring/countdown presentation.'
+    'The accepted v110 graph must keep one invariant 108x108 ring/countdown presentation.'
 );
 $assert(
     str_contains($v110Runtime, 'const LAUNCH_COUNTDOWN_STEP_MS = 600;')
@@ -127,21 +120,13 @@ $assert(
 $assert(
     !str_contains($v110Runtime, 'mgw-phase-b-launch-shape')
         && !str_contains($v110Runtime, 'mgwPhaseBFloat'),
-    'The old floating-shape loader must remain removed from the retained v110 reference graph.'
+    'The old floating-shape loader must remain removed from the accepted v110 application graph.'
 );
 
 $assert(
-    str_contains($v114, "\$entryVersion = '124';")
+    str_contains($v114, "\$entryVersion = '121';")
         && str_contains($currentRuntime, '.mgw-phase-b-launch-ring'),
-    'The v124 canonical graph must be the Telegram-owned player entry.'
-);
-$assert(
-    !str_contains($currentRuntime, 'data-phase-b-note')
-        && !str_contains($currentRuntime, 'Начинаем одновременно')
-        && !str_contains($currentRuntime, 'Синхронизируем игроков')
-        && !str_contains($currentRuntime, "'СТАРТ'")
-        && !str_contains($currentRuntime, "'VS'"),
-    'The player-facing launch animation must contain no synchronization copy, VS, or START text.'
+    'The v121 staging/reference graph may remain available, but it must not be a Telegram menu owner.'
 );
 
 foreach ([

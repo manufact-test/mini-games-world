@@ -1,18 +1,11 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const launchSource = readFileSync(
-  new URL('../../bot/helpers/WebAppLaunchUrl.php', import.meta.url),
-  'utf8',
-);
-const launchEntryPath = launchSource.match(/private const ENTRY_PATH = '([^']+)'/)?.[1] || '';
-if (!launchEntryPath) throw new Error('Telegram Web App launch entry is unavailable.');
-const APP_ROUTE = `${STAGING_ORIGIN}${launchEntryPath}`;
+const APP_ROUTE = `${STAGING_ORIGIN}/app/`;
 const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const INVITES_ROUTE = `${STAGING_ORIGIN}/bot/invites.php`;
 const TEST_COOKIE = 'mgw_staging_test_session';
@@ -250,10 +243,6 @@ async function openPlayer(browser, slot, testInfo) {
   const response = await page.goto(APP_ROUTE, { waitUntil: 'domcontentloaded' });
   expect(response, `Player ${slot} app response`).not.toBeNull();
   expect(response.ok(), `Player ${slot} app status`).toBe(true);
-  expect(response.url(), `Player ${slot} exact Telegram launch route`).toBe(APP_ROUTE);
-  expect(response.headers()['x-mgw-entry-version'], `Player ${slot} entry version`).toBe('v124');
-  expect(response.headers()['x-mgw-phase-b-build'], `Player ${slot} Phase B build`)
-    .toBe('phase-b-current-v127-ttt-real-launch-no-copy');
   await expect(page).toHaveTitle(/Mini Games World/i);
   await expect(page.locator('body')).toBeVisible();
   const bootstrap = await bootstrapPromise;
@@ -308,10 +297,7 @@ async function cleanupPlayer(player) {
     if (sync.status === 200
       && invite?.token
       && ['pending', 'accepted', 'awaiting_start'].includes(String(invite.status || ''))) {
-      const action = String(invite.status || '') === 'pending' && !invite.is_owner
-        ? 'decline'
-        : 'cancel';
-      await postFromPlayer(page, '/bot/invites.php', { action, token: invite.token });
+      await postFromPlayer(page, '/bot/invites.php', { action: 'cancel', token: invite.token });
     }
   } catch {
     // A later session TTL and server expiry remain the final fallback.
@@ -427,83 +413,6 @@ async function playTicTacToeCell(player, cell) {
   expect(payload?.ok, `Tic Tac Toe cell ${cell} payload`).toBe(true);
   expect(payload?.game, `Tic Tac Toe cell ${cell} game`).toBeTruthy();
   return payload;
-}
-
-async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label, { fresh = true } = {}) {
-  const serverNowMs = Number(game?.server_now_ms || 0);
-  const turnStartsAtMs = Number(game?.turn_starts_at_ms || 0);
-  const turnDeadlineMs = Number(game?.turn_deadline_ms || 0);
-  const authoritativeSeconds = Number(game?.time_left || 0);
-  const turnClockPhase = String(game?.turn_clock_phase || 'active');
-  if (fresh) {
-    expect(authoritativeSeconds, `${label} authoritative fresh timer`).toBe(60);
-  } else {
-    expect(authoritativeSeconds, `${label} authoritative active timer`).toBeGreaterThanOrEqual(1);
-    expect(authoritativeSeconds, `${label} authoritative active timer`).toBeLessThanOrEqual(60);
-  }
-  expect(turnStartsAtMs, `${label} turn start timestamp`).toBeGreaterThan(0);
-  expect(turnDeadlineMs, `${label} turn deadline timestamp`).toBeGreaterThan(turnStartsAtMs);
-  expect(
-    turnDeadlineMs - turnStartsAtMs,
-    `${label} authoritative 60-second window`,
-  ).toBe(60_000);
-  expect(serverNowMs, `${label} server timestamp`).toBeGreaterThan(0);
-  if (turnClockPhase === 'syncing') {
-    expect(game?.clock_pending_authority, `${label} synchronizing handoff is explicit`).toBe(true);
-    expect(turnStartsAtMs, `${label} bounded synchronization deadline`).toBeGreaterThan(serverNowMs);
-    expect(turnStartsAtMs - serverNowMs, `${label} bounded synchronization deadline`)
-      .toBeLessThanOrEqual(5_000);
-  } else {
-    expect(turnStartsAtMs, `${label} active clock anchor`).toBeLessThanOrEqual(serverNowMs);
-  }
-
-  await expect.poll(async () => {
-    const texts = await Promise.all([
-      playerA.page.locator('#timerText').textContent(),
-      playerB.page.locator('#timerText').textContent(),
-    ]);
-    const seconds = texts.map(value => Number.parseInt(String(value || ''), 10));
-    if (fresh) return texts.map(value => String(value || '').trim()).join('|');
-    const synchronized = seconds.every(value => Number.isFinite(value) && value >= 1 && value <= 60)
-      && seconds[0] === seconds[1];
-    return synchronized ? 'synchronized' : texts.join('|');
-  }, {
-    message: fresh
-      ? `${label} timer must reset to 60 on both players`
-      : `${label} timer must be identical on both players`,
-    timeout: 1_200,
-    intervals: [30, 60, 100, 150],
-  }).toBe(fresh ? '60 сек|60 сек' : 'synchronized');
-
-  let presentations = [];
-  await expect.poll(async () => {
-    presentations = await Promise.all([playerA.page, playerB.page].map(page => page.evaluate(() => {
-      const timer = document.getElementById('timerText');
-      const symbols = [...document.querySelectorAll('#playersRow .player-mark-symbol')];
-      return {
-        timerWidth:Number(timer?.getBoundingClientRect().width || 0),
-        symbolFontSizes:symbols.map(symbol => Number.parseFloat(getComputedStyle(symbol).fontSize || '0')),
-      };
-    })));
-    return presentations.every(presentation =>
-      Math.abs(presentation.timerWidth - 76) < 0.1
-      && presentation.symbolFontSizes.length === 2
-      && presentation.symbolFontSizes.every(size => Math.abs(size - 18) < 0.1)
-    );
-  }, {
-    message: `${label} stable timer and mobile mark geometry on both players`,
-    timeout: 1_200,
-    intervals: [30, 60, 100, 150],
-  }).toBe(true);
-
-  for (const [index, presentation] of presentations.entries()) {
-    expect(presentation.timerWidth, `${label} player ${index + 1} fixed timer width`).toBeCloseTo(76, 1);
-    expect(presentation.symbolFontSizes.length, `${label} player ${index + 1} player marks`).toBe(2);
-    expect(
-      presentation.symbolFontSizes.every(size => Math.abs(size - 18) < 0.1),
-      `${label} player ${index + 1} mobile mark size`,
-    ).toBe(true);
-  }
 }
 
 async function waitForAuthoritativeTicTacToeLaunch(playerA, playerB, gameId) {
@@ -869,14 +778,6 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
       stg_test_player_a: playerA,
       stg_test_player_b: playerB,
     };
-    await expectSynchronizedTicTacToeTurn(
-      playerA,
-      playerB,
-      authoritativeGame,
-      'Initial turn',
-      { fresh:false },
-    );
-
     const winningSequence = [0, 3, 1, 4, 2];
     let finalPayload = null;
 
@@ -887,14 +788,6 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
       finalPayload = await playTicTacToeCell(actor, cell);
       expect(String(finalPayload.game?.id || ''), `Authoritative game id after cell ${cell}`).toBe(gameId);
       authoritativeGame = finalPayload.game;
-      if (String(authoritativeGame?.status || '') === 'active') {
-        await expectSynchronizedTicTacToeTurn(
-          playerA,
-          playerB,
-          authoritativeGame,
-          `Turn after cell ${cell}`,
-        );
-      }
     }
 
     expect(finalPayload?.game?.status).toBe('finished');

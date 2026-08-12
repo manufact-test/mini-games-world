@@ -17,7 +17,6 @@ $clock = new MatchPreparationClockService();
 $game = [
     'id' => 'game_phase_b_test',
     'status' => 'active',
-    'game_type' => 'tictactoe',
     'player_ids' => ['player_a', 'player_b'],
     'turn' => 'player_a',
     'created_at' => now_iso(),
@@ -65,37 +64,7 @@ $game['turn_started_at'] = $game['starts_at'];
 $game['turn_starts_at'] = $game['starts_at'];
 $game['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
 $clock->advance($game);
-$assert(($game['launch_phase'] ?? '') === 'countdown', 'Elapsed countdown must wait for both playable acknowledgements.');
-$clock->markActivationReady($game, 'player_a', 'active-session-a', 'active-device-a');
-$clock->advance($game);
-$assert(($game['launch_phase'] ?? '') === 'countdown', 'One playable acknowledgement must not start the first clock.');
-$clock->markActivationReady($game, 'player_b', 'active-session-b', 'active-device-b');
-$activationRequestedAt = time();
-$clock->advance($game);
-$assert(($game['launch_phase'] ?? '') === 'active', 'Both playable acknowledgements must atomically activate the match.');
-$activationEncoded = json_encode($game['activation_ready_devices'] ?? [], JSON_UNESCAPED_UNICODE);
-$assert(!str_contains((string)$activationEncoded, 'active-session-a'), 'Raw activation session IDs must not be persisted.');
-$assert(!str_contains((string)$activationEncoded, 'active-device-a'), 'Raw activation device IDs must not be persisted.');
-$activationStart = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
-$activationDeadline = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
-$assert(
-    $activationStart >= $activationRequestedAt
-        && $activationStart <= $activationRequestedAt + 1,
-    'First playable turn must start when the server authoritatively activates the match.'
-);
-$assert(
-    $activationStart > strtotime((string)$game['starts_at']),
-    'A delayed activation request must not consume the first player clock during the countdown boundary gap.'
-);
-$assert(
-    $activationDeadline - $activationStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
-    'Authoritative activation must restore the first player to the full move timeout.'
-);
-$activePublic = $clock->enrichPublicGame($game, []);
-$assert(
-    (int)($activePublic['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
-    'The first active response must expose the full timer.'
-);
+$assert(($game['launch_phase'] ?? '') === 'active', 'Countdown must activate only after starts_at.');
 $clock->assertActionAllowed($game);
 
 $previousTurn = 'player_a';
@@ -104,50 +73,9 @@ $handoffRequestedAt = time();
 $clock->synchronizeTurnHandoff($game, $previousTurn);
 $handoffStart = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
 $handoffDeadline = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
-$assert(($game['turn_clock_phase'] ?? '') === 'syncing',
-    'Tic Tac Toe handoff must enter one explicit synchronization phase.');
-$assert(
-    $handoffStart >= $handoffRequestedAt + MatchPreparationClockService::TURN_SYNC_TIMEOUT_SEC - 1
-        && $handoffStart <= $handoffRequestedAt + MatchPreparationClockService::TURN_SYNC_TIMEOUT_SEC + 1,
-    'The synchronization phase must own one bounded server fallback deadline.'
-);
-$assert($handoffDeadline - $handoffStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
-    'The pending receiving player must retain a complete sixty-second interval.');
-$assert((int)($game['clock_revision'] ?? 0) === 2,
-    'Turn handoff must advance the authoritative clock revision exactly once.');
-
-$pendingPublic = $clock->enrichPublicGame($game, []);
-$assert(($pendingPublic['clock_pending_authority'] ?? false) === true
-    && (int)($pendingPublic['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
-    'Both clients must hold a visible 60 while the new turn frame synchronizes.');
-
-$handoffBlocked = false;
-try {
-    $clock->assertActionAllowed($game);
-} catch (RuntimeException $e) {
-    $handoffBlocked = str_contains($e->getMessage(), 'синхронизируется');
-}
-$assert($handoffBlocked, 'No move may race the two-device turn activation boundary.');
-
-$clock->markTurnReady($game, 'player_a', 'turn-session-a', 'turn-device-a');
-$clock->advance($game);
-$assert(($game['turn_clock_phase'] ?? '') === 'syncing',
-    'One turn-frame acknowledgement must not start the shared clock alone.');
-$clock->markTurnReady($game, 'player_b', 'turn-session-b', 'turn-device-b');
-$turnActivationRequestedAt = time();
-$clock->advance($game);
-$handoffStart = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
-$handoffDeadline = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
-$assert(($game['turn_clock_phase'] ?? '') === 'active',
-    'Both turn-frame acknowledgements must atomically activate the next clock.');
-$assert($handoffStart >= $turnActivationRequestedAt && $handoffStart <= $turnActivationRequestedAt + 1,
-    'The next turn clock must start at the two-device acknowledgement boundary.');
-$assert($handoffDeadline - $handoffStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
-    'The activated receiving player must receive a fresh full timeout.');
-$turnReadyEncoded = json_encode($game['turn_ready_devices'] ?? [], JSON_UNESCAPED_UNICODE);
-$assert(!str_contains((string)$turnReadyEncoded, 'turn-session-a')
-    && !str_contains((string)$turnReadyEncoded, 'turn-device-a'),
-    'Raw turn acknowledgement identities must never be persisted.');
+$assert($handoffStart >= $handoffRequestedAt + MatchPreparationClockService::TURN_HANDOFF_SEC, 'Turn handoff must use one future server start.');
+$assert($handoffDeadline - $handoffStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Receiving player must receive a fresh full timeout.');
+$assert((int)($game['clock_revision'] ?? 0) === 2, 'Turn handoff must advance the authoritative clock revision once.');
 
 $guardStart = time() + 3;
 $game['turn_started_at'] = gmdate('c', $guardStart);

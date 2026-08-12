@@ -355,7 +355,7 @@ test('D3 native share cancellation is quiet and one shared link creates one matc
     await testInfo.attach('d3-shared-invite-report', {
       body: Buffer.from(`${JSON.stringify({
         ok: true,
-        ordinaryStartRoute: new URL(APP_ROUTE).pathname + new URL(APP_ROUTE).search,
+        ordinaryStartRoute: '/app/v110.php?v=1123',
         nativeShareInvoked: true,
         nativeCancellationQuiet: true,
         cancelledDraftReused: true,

@@ -1,20 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// Historical Telegram messages contain this immutable URL. Retire it as a
-// renderer owner and preserve only supported invitation context.
-$query = ['v' => '124'];
-$invite = strtolower(trim((string)($_GET['invite'] ?? '')));
-if (preg_match('/^[a-f0-9]{24}$/', $invite) === 1) {
-    $query['invite'] = $invite;
-}
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-header('Pragma: no-cache');
-header('Expires: 0');
-header('Location: ./v114.php?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986), true, 302);
-exit;
-
-
 $indexPath = __DIR__ . '/index.html';
 $html = file_get_contents($indexPath);
 if (!is_string($html)) {
