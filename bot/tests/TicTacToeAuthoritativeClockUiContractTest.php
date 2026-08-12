@@ -14,6 +14,7 @@ $legacyEntry = $read('app/assets/js/production-regression-fix-entry.js');
 $style = $read('app/assets/css/screens/game.css');
 $mainStyle = $read('app/assets/css/main.css');
 $manifest = $read('bot/helpers/staging-e2e-runtime-files.txt');
+$twoContext = $read('e2e/staging/two-context.spec.mjs');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -57,6 +58,13 @@ $assert(
     str_contains($manifest, 'app/assets/css/screens/game.css')
         && str_contains($manifest, 'app/assets/js/production-regression-fix-entry.js'),
     'Every changed nested runtime owner must remain in exact staging fingerprint coverage.'
+);
+$assert(
+    str_contains($twoContext, 'expectSynchronizedTicTacToeTurn')
+        && str_contains($twoContext, "toBe('60 сек|60 сек')")
+        && str_contains($twoContext, 'toBeCloseTo(76, 1)')
+        && str_contains($twoContext, 'Math.abs(size - 18) < 0.1'),
+    'Canonical two-context E2E must prove synchronized full clocks and stable mobile geometry.'
 );
 
 fwrite(STDOUT, "TicTacToeAuthoritativeClockUiContractTest: {$assertions} assertions passed\n");
