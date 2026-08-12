@@ -1,0 +1,39 @@
+name: Tic Tac Toe turn-ready clock verifier
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: PHP syntax
+        run: |
+          php -l bot/services/MatchPreparationClockService.php
+          php -l bot/services/MatchPreparationRuntimeService.php
+      - name: Focused architecture and clock contracts
+        run: |
+          php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+          php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
+          php bot/tests/PhaseBActionGuardHandoffContractTest.php
+          php bot/tests/PhaseBGameClockWriterDemotionContractTest.php
+          php bot/tests/PhaseBPublicProjectionOwnerContractTest.php
+          php bot/tests/PhaseBReadOnlyGameWatchContractTest.php
+          php bot/tests/PhaseBReadonlySyncPhaseGuardContractTest.php
+          php bot/tests/PhaseBPrimaryApiPreparationOwnerContractTest.php
+          php bot/tests/PhaseBClientLaunchUxContractTest.php
+          php bot/tests/PhaseBE2EAuthoritativeActionChainContractTest.php
+          php bot/tests/TicTacToeAuthoritativeClockUiContractTest.php
+          php bot/tests/PhaseBCurrentTelegramEntrypointContractTest.php
+          php bot/tests/PhaseBStagingRuntimeFingerprintCoverageContractTest.php
