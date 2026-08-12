@@ -150,7 +150,10 @@ async function cleanupPlayer(player) {
     const invite = sync.payload?.invite || sync.payload?.tracked_invite || null;
     if (sync.status === 200 && invite?.token
       && ['pending', 'accepted', 'awaiting_start'].includes(String(invite.status || ''))) {
-      await postFromPlayer(player.page, '/bot/invites.php', { action:'cancel', token:invite.token });
+      const action = String(invite.status || '') === 'pending' && !invite.is_owner
+        ? 'decline'
+        : 'cancel';
+      await postFromPlayer(player.page, '/bot/invites.php', { action, token:invite.token });
     }
   } catch {}
   await player.page.keyboard.press('Escape').catch(() => null);
