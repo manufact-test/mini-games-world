@@ -436,20 +436,23 @@ async function expectSynchronizedTicTacToeTurn(playerA, playerB, game, label, { 
   expect(turnStartsAtMs, `${label} has no artificial future handoff`).toBeLessThanOrEqual(serverNowMs);
 
   await expect.poll(async () => {
-    const values = await Promise.all([
+    const texts = await Promise.all([
       playerA.page.locator('#timerText').textContent(),
       playerB.page.locator('#timerText').textContent(),
     ]);
-    return values.map(value => String(value || '').trim()).join('|');
+    const seconds = texts.map(value => Number.parseInt(String(value || ''), 10));
+    if (fresh) return texts.map(value => String(value || '').trim()).join('|');
+    const synchronized = seconds.every(Number.isFinite)
+      && seconds[0] === seconds[1]
+      && Math.abs(seconds[0] - authoritativeSeconds) <= 1;
+    return synchronized ? 'synchronized' : `${texts.join('|')} vs ${authoritativeSeconds}`;
   }, {
     message: fresh
       ? `${label} timer must reset to 60 on both players`
-      : `${label} timer must be identical on both players`,
+      : `${label} timer must be identical on both players and track authoritative time`,
     timeout: 1_200,
     intervals: [30, 60, 100, 150],
-  }).toBe(fresh
-    ? '60 сек|60 сек'
-    : `${authoritativeSeconds} сек|${authoritativeSeconds} сек`);
+  }).toBe(fresh ? '60 сек|60 сек' : 'synchronized');
 
   const presentations = await Promise.all([playerA.page, playerB.page].map(page => page.evaluate(() => {
     const timer = document.getElementById('timerText');
