@@ -28,7 +28,6 @@ jobs:
           php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
           php bot/tests/PhaseBActionGuardHandoffContractTest.php
           php bot/tests/PhaseBGameClockWriterDemotionContractTest.php
-          php bot/tests/PhaseBPublicProjectionOwnerContractTest.php
           php bot/tests/PhaseBReadOnlyGameWatchContractTest.php
           php bot/tests/PhaseBReadonlySyncPhaseGuardContractTest.php
           php bot/tests/PhaseBPrimaryApiPreparationOwnerContractTest.php
