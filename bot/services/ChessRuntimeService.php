@@ -176,6 +176,24 @@ final class ChessRuntimeService
 
     public function leaveSearch(array &$db, array &$user): void
     {
+        $userId = trim((string)($user['id'] ?? ''));
+        $gameId = trim((string)($user['current_game_id'] ?? ''));
+
+        if ($userId !== '' && $gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
+            $game =& $db['games'][$gameId];
+            $isParticipant = in_array($userId, array_map('strval', $game['player_ids'] ?? []), true);
+            if ($isParticipant && (string)($game['status'] ?? '') === 'active') {
+                $phase = (string)($game['launch_phase'] ?? 'active');
+                $settlement = new GameSettlementService($this->config);
+                if (in_array($phase, ['preparing', 'countdown'], true)) {
+                    $settlement->cancelPreparationBySearch($db, $game);
+                } elseif ($phase === 'preparation_timeout') {
+                    $settlement->cancelPreparation($db, $game);
+                }
+            }
+            unset($game);
+        }
+
         $this->base->leaveSearch($db, $user);
     }
 
