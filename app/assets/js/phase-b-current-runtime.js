@@ -256,13 +256,13 @@ function renderLaunchOverlay(overlay, game, phase){
   const gameLabel = overlay.querySelector('[data-phase-b-game]');
 
   if (gameLabel) gameLabel.textContent = gameTitleFromGame(game);
-  if (title) title.textContent = 'Подготовка матча';
+  if (title) title.textContent = 'Матч скоро начнётся';
 
   if (phase === 'countdown') {
     const remaining = sharedStartRemainingMs(game);
     const readyForServer = remaining <= 0;
     const seconds = Math.max(1, Math.min(3, Math.ceil(remaining / 1000)));
-    if (note) note.textContent = readyForServer ? 'Открываем игру' : 'Начинаем одновременно';
+    if (note) note.textContent = readyForServer ? 'Вперёд!' : 'Приготовьтесь к первому ходу';
     if (countdown) {
       countdown.hidden = false;
       countdown.dataset.loading = '0';
@@ -282,7 +282,7 @@ function renderLaunchOverlay(overlay, game, phase){
     countdown.dataset.ready = '0';
     countdown.textContent = 'VS';
   }
-  if (note) note.textContent = 'Собираем матч';
+  if (note) note.textContent = 'Готовьтесь к игре';
   if (progress) {
     progress.hidden = false;
     progress.dataset.visible = '1';
@@ -395,8 +395,8 @@ function ensureLaunchOverlay(){
         <span class="mgw-phase-b-launch-ring"></span>
         <div class="mgw-phase-b-countdown" data-phase-b-countdown data-loading="1" data-ready="0">VS</div>
       </div>
-      <strong class="mgw-phase-b-launch-title" data-phase-b-title>Подготовка матча</strong>
-      <span class="mgw-phase-b-launch-note" data-phase-b-note>Собираем матч</span>
+      <strong class="mgw-phase-b-launch-title" data-phase-b-title>Матч скоро начнётся</strong>
+      <span class="mgw-phase-b-launch-note" data-phase-b-note>Готовьтесь к игре</span>
       <div class="mgw-phase-b-launch-progress" data-phase-b-progress data-visible="1" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
   `;
