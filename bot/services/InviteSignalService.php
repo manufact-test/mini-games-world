@@ -32,8 +32,9 @@ final class InviteSignalService
     {
         $recipientId = trim($recipientId);
         $token = strtolower(trim((string)($invite['token'] ?? '')));
+        $status = (string)($invite['status'] ?? '');
         if ($recipientId === '' || !preg_match('/^[a-f0-9]{24}$/', $token)) return;
-        if ((string)($invite['status'] ?? '') !== 'pending') return;
+        if (!$this->signalStatusAllowed($status)) return;
 
         $directory = $this->accountDirectory($recipientId);
         if (!is_dir($directory) && !@mkdir($directory, 0700, true) && !is_dir($directory)) return;
@@ -42,7 +43,7 @@ final class InviteSignalService
             'recipient_id' => $recipientId,
             'published_at' => time(),
             'expires_at' => time() + self::TTL_SEC,
-            'invite' => $this->forInvitee($invite),
+            'invite' => $status === 'pending' ? $this->forInvitee($invite) : $invite,
         ];
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if (!is_string($json)) return;
@@ -83,7 +84,8 @@ final class InviteSignalService
             $expiresAt = (int)($payload['expires_at'] ?? 0);
             $publishedAt = (int)($payload['published_at'] ?? 0);
             $invite = $payload['invite'] ?? null;
-            if ($expiresAt <= $now || !is_array($invite) || (string)($invite['status'] ?? '') !== 'pending') {
+            $status = is_array($invite) ? (string)($invite['status'] ?? '') : '';
+            if ($expiresAt <= $now || !is_array($invite) || !$this->signalStatusAllowed($status)) {
                 @unlink($path);
                 continue;
             }
@@ -92,6 +94,11 @@ final class InviteSignalService
             $latestPublishedAt = $publishedAt;
         }
         return $latest;
+    }
+
+    private function signalStatusAllowed(string $status): bool
+    {
+        return in_array($status, ['pending', 'accepted', 'active', 'declined', 'cancelled'], true);
     }
 
     private function forInvitee(array $invite): array
