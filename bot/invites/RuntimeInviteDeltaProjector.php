@@ -43,8 +43,9 @@ final class RuntimeInviteDeltaProjector
         $database = $this->database();
         $source = $this->sourceRowsForTokens($jsonData, $tokens, $database);
 
-        return $this->withSynchronizationLock(
+        return $this->withSynchronizationLocks(
             $database,
+            array_keys($source),
             function (DatabaseConnectionInterface $db) use ($source): array {
                 $store = new RealtimeDatabaseStore($db);
                 $created = 0;
@@ -302,18 +303,35 @@ final class RuntimeInviteDeltaProjector
         return $this->connection = PdoConnectionFactory::create($databaseConfig);
     }
 
-    private function withSynchronizationLock(
+    /** @param list<string> $inviteIds */
+    private function withSynchronizationLocks(
         DatabaseConnectionInterface $database,
+        array $inviteIds,
         callable $callback
     ): mixed {
-        $lockName = null;
+        $lockNames = [];
         if ($database->driver() === 'mysql') {
             $scope = trim((string)($this->config['environment'] ?? ''))
                 . '|'
                 . trim((string)($this->config['database']['name'] ?? ''));
-            $lockName = 'mgw_invites_sync_' . substr(hash('sha256', $scope), 0, 40);
-            $acquired = $database->fetchValue('SELECT GET_LOCK(:lock_name, 10)', ['lock_name' => $lockName]);
-            if ((int)$acquired !== 1) throw new RuntimeException('Invite DB synchronization lock is unavailable.');
+            $inviteIds = array_values(array_unique(array_map('strval', $inviteIds)));
+            sort($inviteIds, SORT_STRING);
+
+            foreach ($inviteIds as $inviteId) {
+                $lockName = 'mgw_invite_' . substr(hash('sha256', $scope . '|' . $inviteId), 0, 48);
+                $acquired = $database->fetchValue('SELECT GET_LOCK(:lock_name, 10)', ['lock_name' => $lockName]);
+                if ((int)$acquired !== 1) {
+                    foreach (array_reverse($lockNames) as $ownedLock) {
+                        try {
+                            $database->fetchValue('SELECT RELEASE_LOCK(:lock_name)', ['lock_name' => $ownedLock]);
+                        } catch (Throwable) {
+                            // The original acquisition error remains authoritative.
+                        }
+                    }
+                    throw new RuntimeException('Invite DB synchronization lock is unavailable.');
+                }
+                $lockNames[] = $lockName;
+            }
         }
 
         try {
@@ -321,7 +339,7 @@ final class RuntimeInviteDeltaProjector
                 static fn(DatabaseConnectionInterface $transaction): mixed => $callback($transaction)
             );
         } finally {
-            if ($lockName !== null) {
+            foreach (array_reverse($lockNames) as $lockName) {
                 try {
                     $database->fetchValue('SELECT RELEASE_LOCK(:lock_name)', ['lock_name' => $lockName]);
                 } catch (Throwable $error) {

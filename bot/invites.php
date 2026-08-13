@@ -12,10 +12,6 @@ function mgw_invite_bot_username(array $config): string
     $username = ltrim(trim((string)($config['bot_username'] ?? '')), '@');
     if ($username !== '') return $username;
 
-    // The shared invite must always enter through Telegram's bot /start flow.
-    // Some existing private configs predate bot_username, so resolve it from
-    // Telegram while the client proactively warms the draft. Never fall back to
-    // the raw Web App URL: that turns a peer-to-peer invite into a browser link.
     try {
         $response = (new TelegramService($config))->api('getMe');
         if (!empty($response['ok']) && is_array($response['result'] ?? null)) {
@@ -182,9 +178,10 @@ try {
 
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
-    // The accepted share UX is Telegram PreparedInlineMessage. Draft creation is
-    // proactively warmed by the client before the actual share click.
-    $prepareMessage = $action === 'create_link_draft';
+    // Warm draft creation explicitly opts out of Telegram PreparedInlineMessage.
+    // A normal caller that omits the flag retains the historical prepared path.
+    $prepareMessage = $action === 'create_link_draft'
+        && (!array_key_exists('prepareMessage', $payload) || filter_var($payload['prepareMessage'], FILTER_VALIDATE_BOOL));
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $users = new UserService($config);
@@ -363,6 +360,13 @@ try {
         && is_array($result['invite'] ?? null)
         && (string)($result['invite']['status'] ?? '') === 'pending') {
         $inviteSignals->publish((string)($result['recipient_id'] ?? ''), $result['invite']);
+    } elseif ($action === 'rematch'
+        && is_array($result['invite'] ?? null)
+        && (string)($result['invite']['status'] ?? '') === 'pending') {
+        // Canonical JSON is already committed. Wake the active opponent before
+        // DB projection or Telegram delivery; invite-watch only triggers a
+        // canonical sync and never becomes a second state owner.
+        $inviteSignals->publish((string)($result['opponent_id'] ?? ''), $result['invite']);
     } elseif (in_array($action, ['accept', 'start', 'decline', 'cancel'], true) && $signalToken !== '') {
         $inviteSignals->clear($actorId, $signalToken);
         if ($signalRecipientId !== '' && is_array($result['invite'] ?? null)) {
@@ -375,13 +379,19 @@ try {
         && $runtimeInviteProjector instanceof RuntimeInviteDeltaProjector
         && $runtimeInviteProjector->enabled()
         && $bridgeInviteTokens !== []) {
-        if (!($db instanceof ExclusiveSnapshotStorageInterface)) {
-            throw new RuntimeException('Invite DB bridge requires an exclusive JSON snapshot capability.');
+        if ($db instanceof ProjectionSnapshotStorageInterface) {
+            $db->projectionReadOnlySections(
+                ['invites'],
+                static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
+            );
+        } elseif ($db instanceof ExclusiveSnapshotStorageInterface) {
+            $db->exclusiveReadOnlySections(
+                ['invites'],
+                static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
+            );
+        } else {
+            throw new RuntimeException('Invite DB bridge requires a stable JSON snapshot capability.');
         }
-        $db->exclusiveReadOnlySections(
-            ['invites'],
-            static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
-        );
     }
 
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
