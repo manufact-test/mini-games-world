@@ -49,10 +49,9 @@ function scheduleWatch(delay = WATCH_INTERVAL_MS){
 async function watchCurrentGame(){
   const local = state.activeGame;
   const gameId = String(local?.id || '');
-  if (!canWatch(local, gameId) || runtime.busy) return null;
-
   const item = gameRuntimeItem(gameId);
   const pendingClockOnly = canWatchPendingTicTacToeClock(local, item, gameId);
+  if (!canWatch(local, gameId, pendingClockOnly) || runtime.busy) return null;
   if (actionIsBusy(item) && !pendingClockOnly) return null;
 
   runtime.busy = true;
@@ -73,17 +72,20 @@ async function watchCurrentGame(){
 
     const game = result.game || null;
     if (!game?.id || String(game.id) !== gameId) return null;
-    if (!canWatch(state.activeGame, gameId)) return null;
 
     const currentItem = gameRuntimeItem(gameId);
+    const currentPendingClockOnly = canWatchPendingTicTacToeClock(state.activeGame, currentItem, gameId);
+    if (!canWatch(state.activeGame, gameId, currentPendingClockOnly)) return null;
+
     if (actionIsBusy(currentItem)) {
-      if (canWatchPendingTicTacToeClock(state.activeGame, currentItem, gameId)) {
+      if (currentPendingClockOnly) {
         document.dispatchEvent(new CustomEvent('mgw:v110-ttt-clock-snapshot', {
           detail:{ game },
         }));
       }
-      // A pending local action may consume only the read-only clock projection.
-      // Board/result ownership remains with game-screen-v102 and its action queue.
+      // A pending local TTT action, including a bot match, may consume only the
+      // read-only clock projection. Board/result ownership remains with the
+      // existing game-screen-v102 action queue.
       return game;
     }
 
@@ -118,11 +120,14 @@ function canWatchPendingTicTacToeClock(game, item, gameId){
   return String(pending?.gameId || '') === gameId;
 }
 
-function canWatch(game, gameId){
+function canWatch(game, gameId, allowBotClockOnly = false){
   if (!gameId || String(game?.status || '') !== 'active') return false;
   const launchPhase = String(game?.launch_phase || '');
   if (launchPhase && !['preparing', 'countdown', 'active'].includes(launchPhase)) return false;
-  if (game?.is_bot_game) return false;
+  // Bot games do not need the normal high-frequency board watcher, but a local
+  // pending Tic-Tac-Toe move still needs the same authoritative clock snapshot
+  // as a human-vs-human match so its handoff cannot start seconds late.
+  if (game?.is_bot_game && !allowBotClockOnly) return false;
   if (document.visibilityState !== 'visible') return false;
   const screen = document.querySelector('.screen.active');
   return String(screen?.dataset.screen || '') === 'game';
