@@ -31,11 +31,16 @@ final class PresenceService
         );
     }
 
-    public function touch(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
-    {
+    public function touch(
+        string $accountId,
+        string $sessionId,
+        string $presenceLeaseId = '',
+        string $room = ''
+    ): void {
         $accountId = trim($accountId);
         $sessionId = trim($sessionId);
         $presenceLeaseId = trim($presenceLeaseId);
+        $room = $this->normalizeRoom($room);
         if ($accountId === '' || $sessionId === '' || str_starts_with($accountId, 'bot_')) return;
 
         $this->ensureDirectory();
@@ -51,6 +56,7 @@ final class PresenceService
         $payload = json_encode([
             'touched_at' => time(),
             'leave_after' => 0,
+            'room' => $room,
         ], JSON_UNESCAPED_SLASHES);
         if (!is_string($payload) || @file_put_contents($temporary, $payload, LOCK_EX) === false) {
             @unlink($temporary);
@@ -81,6 +87,7 @@ final class PresenceService
         $payload = json_encode([
             'touched_at' => max(1, (int)($state['touched_at'] ?? time())),
             'leave_after' => time() + self::LEAVE_GRACE_SEC,
+            'room' => $this->normalizeRoom((string)($state['room'] ?? '')),
         ], JSON_UNESCAPED_SLASHES);
         if (is_string($payload)) @file_put_contents($path, $payload, LOCK_EX);
         $this->pruneAccountDirectory($this->accountDirectory($accountId));
@@ -89,20 +96,34 @@ final class PresenceService
     /** @return list<string> */
     public function onlineAccountIds(): array
     {
+        return array_keys($this->onlineAccountRooms());
+    }
+
+    /**
+     * One current room per online account. Multiple live Telegram documents are
+     * collapsed to the most recently touched known room. A legacy lease without
+     * room metadata may keep the account online but never overwrites a newer or
+     * still-live room-aware lease.
+     *
+     * @return array<string,string>
+     */
+    public function onlineAccountRooms(): array
+    {
         if (!is_dir($this->directory)) return [];
 
         $online = [];
         foreach (glob($this->directory . DIRECTORY_SEPARATOR . 'account-*') ?: [] as $accountDirectory) {
             if (!is_dir($accountDirectory)) continue;
             $this->pruneAccountDirectory($accountDirectory);
-            if (!$this->directoryHasLiveSession($accountDirectory)) continue;
+            $presence = $this->liveAccountPresence($accountDirectory);
+            if ($presence === null) continue;
 
             $idFile = $accountDirectory . DIRECTORY_SEPARATOR . '.account';
             $accountId = trim((string)@file_get_contents($idFile));
             if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
-            $online[$accountId] = true;
+            $online[$accountId] = (string)($presence['room'] ?? '');
         }
-        return array_keys($online);
+        return $online;
     }
 
     public function isEnabled(): bool
@@ -165,7 +186,7 @@ final class PresenceService
             }
         }
 
-        if (!$this->directoryHasLiveSession($accountDirectory)) {
+        if ($this->liveAccountPresence($accountDirectory) === null) {
             @unlink($accountDirectory . DIRECTORY_SEPARATOR . '.account');
             @rmdir($accountDirectory);
         }
@@ -173,30 +194,56 @@ final class PresenceService
 
     private function directoryHasLiveSession(string $accountDirectory): bool
     {
+        return $this->liveAccountPresence($accountDirectory) !== null;
+    }
+
+    /** @return array{touched_at:int,room:string}|null */
+    private function liveAccountPresence(string $accountDirectory): ?array
+    {
         $now = time();
         $cutoff = $now - self::ONLINE_WINDOW_SEC;
+        $latestTouchedAt = 0;
+        $latestKnownRoomTouchedAt = 0;
+        $latestKnownRoom = '';
+
         foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
             $state = $this->readSessionState($path);
             $touchedAt = (int)($state['touched_at'] ?? 0);
             $leaveAfter = (int)($state['leave_after'] ?? 0);
-            if ($touchedAt >= $cutoff && ($leaveAfter <= 0 || $leaveAfter > $now)) return true;
+            if ($touchedAt < $cutoff || ($leaveAfter > 0 && $leaveAfter <= $now)) continue;
+
+            $latestTouchedAt = max($latestTouchedAt, $touchedAt);
+            $room = $this->normalizeRoom((string)($state['room'] ?? ''));
+            if ($room !== '' && $touchedAt >= $latestKnownRoomTouchedAt) {
+                $latestKnownRoomTouchedAt = $touchedAt;
+                $latestKnownRoom = $room;
+            }
         }
-        return false;
+
+        if ($latestTouchedAt <= 0) return null;
+        return ['touched_at' => $latestTouchedAt, 'room' => $latestKnownRoom];
     }
 
     private function readSessionState(string $path): array
     {
         $raw = trim((string)@file_get_contents($path));
-        if ($raw === '') return ['touched_at' => 0, 'leave_after' => 0];
+        if ($raw === '') return ['touched_at' => 0, 'leave_after' => 0, 'room' => ''];
 
         $decoded = json_decode($raw, true);
         if (is_array($decoded)) {
             return [
                 'touched_at' => (int)($decoded['touched_at'] ?? 0),
                 'leave_after' => (int)($decoded['leave_after'] ?? 0),
+                'room' => $this->normalizeRoom((string)($decoded['room'] ?? '')),
             ];
         }
 
-        return ['touched_at' => (int)$raw, 'leave_after' => 0];
+        return ['touched_at' => (int)$raw, 'leave_after' => 0, 'room' => ''];
+    }
+
+    private function normalizeRoom(string $room): string
+    {
+        $room = strtolower(trim($room));
+        return in_array($room, ['match', 'gold'], true) ? $room : '';
     }
 }

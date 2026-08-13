@@ -1,5 +1,6 @@
 import { getInitData, getTelegram } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
+import { state } from './state.js?v=27';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 
 const PRESENCE_URL = `${window.location.origin}/bot/presence.php`;
@@ -208,10 +209,12 @@ function sendLeaveBeacon(){
 }
 
 function payload(action){
+  const room = String(state.room || '') === 'gold' ? 'gold' : 'match';
   return {
     initData:getInitData(),
     sessionId:getSessionId(),
     presenceLeaseId,
+    room,
     action,
   };
 }
