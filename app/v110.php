@@ -44,7 +44,7 @@ if (!str_contains($html, $telegramScript)) {
 $html = str_replace($telegramScript, $telegramScript . "\n  " . $importMap, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=144&sk=3&icons=c1efd5af&render=20&review=timer-optical-center',
+    './assets/css/main.css?v=145&sk=3&icons=c1efd5af&render=21&review=timer-optical-center-13',
     $html
 );
 $html = str_replace(
