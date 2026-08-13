@@ -51,7 +51,13 @@ trait GameInviteValidationTrait
         foreach ($db['invites'] ?? [] as $invite) {
             if (!is_array($invite) || !$this->isParticipant($invite, $userId)) continue;
             if ((string)($invite['token'] ?? '') === $exceptToken) continue;
-            if (in_array((string)($invite['status'] ?? ''), ['pending', 'awaiting_start'], true)) {
+
+            // Drafts and pending invitations are passive offers: a player may
+            // send or receive many of them. Exclusivity begins only after one
+            // invitation is actually accepted and committed to launch. The
+            // surrounding JSON transaction serializes competing accepts, so
+            // the first awaiting_start transition remains the single owner.
+            if (in_array((string)($invite['status'] ?? ''), ['awaiting_start', 'starting'], true)) {
                 throw new RuntimeException($message);
             }
         }
