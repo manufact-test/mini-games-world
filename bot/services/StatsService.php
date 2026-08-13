@@ -45,14 +45,18 @@ final class StatsService
 
         $activeGames = 0;
         foreach ($db['games'] ?? [] as $game) {
-            if (($game['status'] ?? '') === 'active') {
-                $activeGames++;
-            }
+            if (!is_array($game) || ($game['status'] ?? '') !== 'active') continue;
+            if ($this->hideStagingTestGame($game)) continue;
+            $activeGames++;
         }
 
         $searchMatch = 0;
         $searchGold = 0;
         foreach ($db['queue'] ?? [] as $item) {
+            if (!is_array($item)) continue;
+            $queueUserId = trim((string)($item['user_id'] ?? ''));
+            if ($queueUserId !== '' && $this->hideStagingTestAccount($queueUserId)) continue;
+
             if (($item['room'] ?? '') === 'gold') {
                 $searchGold++;
             } else {
@@ -68,15 +72,23 @@ final class StatsService
         ];
     }
 
+    private function hideStagingTestGame(array $game): bool
+    {
+        foreach ($game['player_ids'] ?? [] as $playerId) {
+            if ($this->hideStagingTestAccount((string)$playerId)) return true;
+        }
+        return false;
+    }
+
     private function hideStagingTestAccount(string $accountId): bool
     {
         $environment = strtolower(trim((string)($GLOBALS['config']['environment'] ?? '')));
         if ($environment !== 'staging') return false;
 
         // GitHub Actions authenticates its isolated A/B browser contexts with this
-        // HTTP-only staging cookie. Those contexts must still see each other so the
-        // presence regression remains meaningful, while ordinary Telegram users must
-        // never see automation accounts in the public online-player number.
+        // HTTP-only staging cookie. Those contexts must still see their own public
+        // counters while ordinary Telegram users must never see automation users,
+        // queues or matches mixed into the product statistics.
         $testSession = trim((string)($_COOKIE['mgw_staging_test_session'] ?? ''));
         if ($testSession !== '') return false;
 
