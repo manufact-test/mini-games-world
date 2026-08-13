@@ -252,7 +252,10 @@ function renderGame(game, me, forceSurface){
   }
   meta.textContent = gameMetaText(game);
   turn.textContent = gameStatusText(game, me);
-  timer.textContent = String(game.status || '') === 'active' ? `${game.time_left ?? 60} сек` : '—';
+  const phaseClockOwned = type === 'tictactoe'
+    && Object.prototype.hasOwnProperty.call(game || {}, 'launch_phase');
+  if (String(game.status || '') !== 'active') timer.textContent = '—';
+  else if (!phaseClockOwned) timer.textContent = `${game.time_left ?? 60} сек`;
 
   const playersMarkup = (game.players || []).map(player => `
     <div class="game-player ${String(game.turn) === String(player.id) && game.status === 'active' ? 'active' : ''}">

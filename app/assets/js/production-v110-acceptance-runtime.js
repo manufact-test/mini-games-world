@@ -248,9 +248,8 @@ function syncClock(){
   }
 
   runtime.clock.timeoutSec = timeoutSec;
-  // Same-turn snapshots may tighten an anchor, but never extend countdown or clock.
-  if (candidateStart + 250 < runtime.clock.start) runtime.clock.start = candidateStart;
-  if (candidateDeadline + 700 < runtime.clock.deadline) runtime.clock.deadline = candidateDeadline;
+  // One turn owns one immutable local projection of the authoritative server
+  // deadline. Poll latency must never retarget the visible clock mid-turn.
 }
 function paintClock(){
   const clock = runtime.clock;
@@ -262,7 +261,8 @@ function paintClock(){
   const beforeTurnStart = phase === 'preparing'
     || phase === 'preparation_timeout'
     || now < clock.start;
-  const seconds = beforeTurnStart
+  const pendingMove = runtime.pending?.gameId === clock.gameId;
+  const seconds = pendingMove || beforeTurnStart
     ? clock.timeoutSec
     : Math.max(0, Math.ceil((clock.deadline - now) / 1000));
   const label = `${seconds} сек`;

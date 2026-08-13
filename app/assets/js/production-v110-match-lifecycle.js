@@ -8,23 +8,13 @@ import { haptic } from './telegram/telegram-app.js?v=27';
 import { clearV99PassiveLock } from './production-v99-session-transport.js?v=99';
 import { enterGame, clearGameView } from './screens/game-screen-v102-safe.js?v=102';
 
-const SEARCH_START_IDS = new Set([
-  'startSearchBtn',
-  'startFourSearchBtn',
-  'startBattleshipSearchBtn',
-  'startCheckersSearchBtn',
-  'startReversiSearchBtn',
-  'startChessSearchBtn',
-  'startGoSearchBtn',
-  'startDominoSearchBtn',
-]);
-
 const runtime = window.__MGW_V110_MATCH_LIFECYCLE__ ||= {
   initialized:false,
   leavePending:false,
   gameId:'',
-  queuedStart:null,
+  releaseBarrier:null,
 };
+runtime.releaseBarrier ||= null;
 
 export function initV110MatchLifecycle(){
   if (runtime.initialized) return;
@@ -37,14 +27,6 @@ function ownMatchLifecycleClick(event){
   if (!(origin instanceof Element)) return;
 
   if (runtime.leavePending) {
-    const startButton = origin.closest('button, [role="button"]');
-    if (startButton instanceof HTMLButtonElement && SEARCH_START_IDS.has(startButton.id)) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      queueSearchAfterRelease(startButton);
-      return;
-    }
-
     const blocked = origin.closest('#confirmLeaveGame, #newOpponent, #goHome, [data-create-rematch], [data-invite-action]');
     if (blocked) {
       event.preventDefault();
@@ -64,11 +46,10 @@ function ownMatchLifecycleClick(event){
   void surrenderToHome(game);
 }
 
-async function surrenderToHome(game){
-  if (runtime.leavePending) return;
+function surrenderToHome(game){
+  if (runtime.leavePending) return runtime.releaseBarrier;
   runtime.leavePending = true;
   runtime.gameId = String(game.id || '');
-  runtime.queuedStart = null;
 
   abortCompetingReads();
   haptic('medium');
@@ -82,67 +63,34 @@ async function surrenderToHome(game){
   clearGameView();
   showScreen('home');
 
-  try {
-    const result = await api.leaveGame(String(snapshot.id));
-    rememberState(result);
+  const completion = (async () => {
+    try {
+      const result = await api.leaveGame(String(snapshot.id));
+      rememberState(result);
 
-    const authoritative = result?.game || snapshot;
-    state.activeGame = null;
-    clearV99PassiveLock();
+      const authoritative = result?.game || snapshot;
+      state.activeGame = null;
+      clearV99PassiveLock();
 
-    runtime.leavePending = false;
-    runtime.gameId = '';
-    const queuedButton = releaseQueuedSearchButton();
-
-    document.dispatchEvent(new CustomEvent('mgw:game-finished', {
-      detail:{ game:authoritative, gameId:String(authoritative?.id || snapshot.id), source:'v110-surrender-home' },
-    }));
-    document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
-
-    if (queuedButton?.isConnected) {
-      window.queueMicrotask(() => queuedButton.click());
+      document.dispatchEvent(new CustomEvent('mgw:game-finished', {
+        detail:{ game:authoritative, gameId:String(authoritative?.id || snapshot.id), source:'v110-surrender-home' },
+      }));
+      document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
+      return { released:true, game:authoritative };
+    } catch (error) {
+      closeSheet();
+      enterGame(snapshot, viewer);
+      toast(error?.message || 'Не удалось завершить матч. Игра восстановлена.');
+      return { released:false, game:snapshot };
+    } finally {
+      runtime.leavePending = false;
+      runtime.gameId = '';
+      if (runtime.releaseBarrier === completion) runtime.releaseBarrier = null;
     }
-  } catch (error) {
-    runtime.leavePending = false;
-    runtime.gameId = '';
-    releaseQueuedSearchButton();
-    closeSheet();
-    enterGame(snapshot, viewer);
-    toast(error?.message || 'Не удалось завершить матч. Игра восстановлена.');
-  }
-}
+  })();
 
-function queueSearchAfterRelease(button){
-  if (runtime.queuedStart?.button === button) return;
-  restoreQueuedSearchButton();
-
-  runtime.queuedStart = {
-    button,
-    label:String(button.textContent || 'Начать поиск'),
-  };
-  button.disabled = true;
-  button.setAttribute('aria-busy', 'true');
-  button.textContent = 'Запускаем поиск…';
-}
-
-function releaseQueuedSearchButton(){
-  const queued = runtime.queuedStart;
-  runtime.queuedStart = null;
-  if (!queued?.button) return null;
-
-  const button = queued.button;
-  button.disabled = false;
-  button.removeAttribute('aria-busy');
-  button.textContent = queued.label;
-  return button;
-}
-
-function restoreQueuedSearchButton(){
-  const queued = runtime.queuedStart;
-  if (!queued?.button) return;
-  queued.button.disabled = false;
-  queued.button.removeAttribute('aria-busy');
-  queued.button.textContent = queued.label;
+  runtime.releaseBarrier = completion;
+  return completion;
 }
 
 function rememberState(result){

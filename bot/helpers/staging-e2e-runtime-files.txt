@@ -9,6 +9,7 @@ app/assets/js/production-clean-entry-v110.js
 app/assets/js/production-deterministic-icons.js
 app/assets/js/production-v110-readonly-game-sync.js
 app/assets/js/production-v110-acceptance-runtime.js
+app/assets/js/production-v110-match-lifecycle.js
 app/assets/js/production-v101-speed-runtime-v102.js
 app/assets/js/production-v100-optimistic-models.js
 app/assets/js/production-v97-models.js

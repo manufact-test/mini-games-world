@@ -103,22 +103,24 @@ final class MatchPreparationClockService
             if ($this->allReady($game)) {
                 if ($this->isTicTacToe($game)) {
                     $startsAtMs = $this->nowMs() + (self::COUNTDOWN_SEC * 1000);
-                    $deadlineMs = $startsAtMs + (self::MOVE_TIMEOUT_SEC * 1000);
                     $startsAtSec = intdiv($startsAtMs, 1000);
-                    $legacyTurnStartedSec = (int)ceil($startsAtMs / 1000);
 
+                    // The countdown owns only launch synchronization. The first
+                    // playable Tic-Tac-Toe turn must not spend its 60 seconds
+                    // behind the overlay, so its authoritative clock is assigned
+                    // only when advance() actually promotes the match to active.
                     $game['launch_phase'] = 'countdown';
                     $game['starts_at'] = gmdate('c', $startsAtSec);
                     $game['starts_epoch_ms'] = $startsAtMs;
-                    $game['turn_started_at'] = gmdate('c', $legacyTurnStartedSec);
-                    $game['turn_starts_at'] = gmdate('c', $startsAtSec);
-                    $game['turn_starts_epoch_ms'] = $startsAtMs;
-                    $game['turn_deadline_at'] = gmdate('c', intdiv($deadlineMs, 1000));
-                    $game['turn_deadline_epoch_ms'] = $deadlineMs;
-                    $game['clock_turn'] = (string)($game['turn'] ?? '');
-                    $game['clock_revision'] = 1;
+                    $game['turn_started_at'] = gmdate('c', (int)ceil($startsAtMs / 1000));
+                    $game['turn_starts_at'] = null;
+                    $game['turn_starts_epoch_ms'] = null;
+                    $game['turn_deadline_at'] = null;
+                    $game['turn_deadline_epoch_ms'] = null;
+                    $game['clock_turn'] = '';
+                    $game['clock_revision'] = 0;
                     $game['updated_at'] = now_iso();
-                    $this->scheduleBotAfterStart($game, (int)ceil($startsAtMs / 1000));
+                    unset($game['bot_move_after_at']);
                     return;
                 }
 
@@ -140,6 +142,13 @@ final class MatchPreparationClockService
         $startsAtMs = $this->storedEpochMs($game, 'starts_epoch_ms', 'starts_at');
         if ($startsAtMs !== null && $startsAtMs <= $this->nowMs()) {
             $game['launch_phase'] = 'active';
+            if ($this->isTicTacToe($game)) {
+                $turn = (string)($game['turn'] ?? '');
+                if ($turn !== '') {
+                    $this->assignTurnClock($game, $turn);
+                    return;
+                }
+            }
             $game['updated_at'] = now_iso();
         }
     }
@@ -194,6 +203,12 @@ final class MatchPreparationClockService
         if ($turn === '') return;
         $knownTurn = (string)($game['clock_turn'] ?? '');
         if ($knownTurn === '') {
+            if ($this->isTicTacToe($game)
+                && empty($game['turn_deadline_epoch_ms'])
+                && empty($game['turn_deadline_at'])) {
+                $this->assignTurnClock($game, $turn);
+                return;
+            }
             $game['clock_turn'] = $turn;
             $game['clock_revision'] = max(1, (int)($game['clock_revision'] ?? 0));
             return;
