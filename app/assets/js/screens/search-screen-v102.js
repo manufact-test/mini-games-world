@@ -120,6 +120,37 @@ export async function beginSearch(rawContext){
   showScreen('search');
   haptic('light');
 
+  /* Leaving an active match and starting the next search are two authoritative
+   * mutations that must stay ordered. The v110 match lifecycle exposes its one
+   * release barrier, while this search owner establishes the new visible intent
+   * immediately. This removes the frozen setup button without ever racing a new
+   * start_search against the old leave_game transaction. */
+  const matchRelease = currentMatchReleaseBarrier();
+  if (matchRelease) {
+    let releaseResult = null;
+    try { releaseResult = await matchRelease; } catch (error) {}
+
+    if (epoch !== searchRuntime.epoch || !searchRuntime.active) {
+      if (epoch === searchRuntime.epoch) searchRuntime.starting = false;
+      enableVisibleStartControls();
+      return null;
+    }
+
+    if (!releaseResult?.released) {
+      searchRuntime.active = false;
+      searchRuntime.starting = false;
+      enableVisibleStartControls();
+      return null;
+    }
+
+    if (state.activeGame?.id && String(state.activeGame.status || '') === 'active') {
+      searchRuntime.active = false;
+      searchRuntime.starting = false;
+      enableVisibleStartControls();
+      return { game:state.activeGame };
+    }
+  }
+
   /* A repeated search is a new user intent immediately. The old authoritative
    * cancellation may still be finishing, but it must never keep the setup
    * button visibly stuck or commit this new intent after the user cancels it.
@@ -306,6 +337,11 @@ function showExplicitLock(){
   if (now - searchRuntime.lastLockToastAt < 1800) return;
   searchRuntime.lastLockToastAt = now;
   toast(String(lock?.message || 'У вас уже идёт активная игра на другом устройстве.'));
+}
+
+function currentMatchReleaseBarrier(){
+  const barrier = window.__MGW_V110_MATCH_LIFECYCLE__?.releaseBarrier || null;
+  return barrier && typeof barrier.then === 'function' ? barrier : null;
 }
 
 function searchContext(buttonId){
