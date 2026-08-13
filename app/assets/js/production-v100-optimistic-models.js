@@ -1,5 +1,5 @@
 import { buildOptimisticGame } from './production-cross-game-optimistic.js?v=96';
-import { buildTicTacToeOptimistic } from './production-v97-models.js?v=97';
+import { buildTicTacToeOptimistic } from './production-v97-models.js?v=98&clock=ttt-fresh60';
 import { buildBattleshipSetupOptimistic } from './production-v99-models.js?v=99';
 
 export function buildV100OptimisticGame(game, action, viewerId, gameType){
