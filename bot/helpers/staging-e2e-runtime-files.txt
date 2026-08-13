@@ -122,6 +122,7 @@ bot/invite-opponents.php
 bot/invite-watch.php
 bot/invites.php
 bot/invites/RuntimeInviteRepository.php
+bot/invites/RuntimeInviteDeltaProjector.php
 bot/notifications.php
 bot/notifications/RuntimeNotificationBridgeCoordinator.php
 bot/notifications/RuntimeNotificationRepository.php
