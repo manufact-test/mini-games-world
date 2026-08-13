@@ -348,6 +348,7 @@ function syncLaunchPresentation(game, phase){
   const now = performance.now();
   if (phase === 'countdown' && presentation.countdownStartedAt === null) {
     const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * 3;
+    const presentationDuration = numbersDuration + LAUNCH_READY_HOLD_MS;
     const startsAtMs = finiteNumber(game?.starts_at_ms);
     const serverNowMs = finiteNumber(game?.server_now_ms);
     const remainingToStart = startsAtMs !== null && serverNowMs !== null
@@ -355,11 +356,10 @@ function syncLaunchPresentation(game, phase){
       : null;
     const elapsedAtReceipt = remainingToStart === null
       ? 0
-      : Math.max(0, Math.min(numbersDuration, numbersDuration - remainingToStart));
+      : Math.max(0, Math.min(presentationDuration, presentationDuration - remainingToStart));
 
-    // Both clients render toward the same server-owned starts_at. A late invite
-    // sync therefore joins the already-running presentation instead of starting
-    // a fresh local 3-2-1 sequence several seconds after its opponent.
+    // Both clients render the complete 3-2-1 + ready sequence toward the same
+    // server start, so the first 60-second turn never runs behind the overlay.
     presentation.countdownStartedAt = now - elapsedAtReceipt;
   }
 
@@ -371,13 +371,15 @@ function syncLaunchPresentation(game, phase){
 
   if (presentation.countdownStartedAt === null) return presentation;
 
-  const numbersComplete = now - presentation.countdownStartedAt >= LAUNCH_COUNTDOWN_STEP_MS * 3;
+  const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * 3;
+  const numbersComplete = now - presentation.countdownStartedAt >= numbersDuration;
   const serverReady = phase === 'active' || (phase === 'countdown' && launchStartReached(game));
-  if (numbersComplete && serverReady && presentation.readyStartedAt === null) {
-    presentation.readyStartedAt = now;
+  if (numbersComplete && presentation.readyStartedAt === null) {
+    presentation.readyStartedAt = presentation.countdownStartedAt + numbersDuration;
   }
   if (presentation.readyStartedAt !== null
-      && now - presentation.readyStartedAt >= LAUNCH_READY_HOLD_MS) {
+      && now - presentation.readyStartedAt >= LAUNCH_READY_HOLD_MS
+      && serverReady) {
     presentation.complete = true;
   }
   return presentation;
