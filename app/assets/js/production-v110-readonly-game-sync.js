@@ -52,7 +52,8 @@ async function watchCurrentGame(){
   if (!canWatch(local, gameId) || runtime.busy) return null;
 
   const item = gameRuntimeItem(gameId);
-  if (actionIsBusy(item)) return null;
+  const pendingClockOnly = canWatchPendingTicTacToeClock(local, item, gameId);
+  if (actionIsBusy(item) && !pendingClockOnly) return null;
 
   runtime.busy = true;
   try {
@@ -72,7 +73,20 @@ async function watchCurrentGame(){
 
     const game = result.game || null;
     if (!game?.id || String(game.id) !== gameId) return null;
-    if (!canWatch(state.activeGame, gameId) || actionIsBusy(gameRuntimeItem(gameId))) return null;
+    if (!canWatch(state.activeGame, gameId)) return null;
+
+    const currentItem = gameRuntimeItem(gameId);
+    if (actionIsBusy(currentItem)) {
+      if (canWatchPendingTicTacToeClock(state.activeGame, currentItem, gameId)) {
+        document.dispatchEvent(new CustomEvent('mgw:v110-ttt-clock-snapshot', {
+          detail:{ game },
+        }));
+      }
+      // A pending local action may consume only the read-only clock projection.
+      // Board/result ownership remains with game-screen-v102 and its action queue.
+      return game;
+    }
+
     if (projectionKey(state.activeGame) === projectionKey(game)) return game;
 
     // Existing game-screen-v102 stays the only board/result owner. During
@@ -93,6 +107,15 @@ function gameRuntimeItem(gameId){
 
 function actionIsBusy(item){
   return Boolean(item?.running || item?.surrenderPending || Number(item?.queue?.length || 0) > 0);
+}
+
+function canWatchPendingTicTacToeClock(game, item, gameId){
+  if (!gameId || !item || item.surrenderPending) return false;
+  if (!item.running && Number(item?.queue?.length || 0) === 0) return false;
+  const type = String(game?.game_type || game?.type || state.selectedGame || '');
+  if (type !== 'tictactoe') return false;
+  const pending = window.__MGW_V110_ACCEPTANCE__?.pending || null;
+  return String(pending?.gameId || '') === gameId;
 }
 
 function canWatch(game, gameId){

@@ -25,8 +25,9 @@ $importMap = <<<'HTML'
     "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=102&b=901c5c869703",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=103&clock=phase-b-single-writer",
     "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=103&clock=ttt-fresh60",
+    "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1108&clock=pending-watch-sync",
     "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
-    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=125&clock=pending-authority-hold",
+    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=126&clock=pending-watch-sync",
     "./assets/js/components/shield-king-visuals.js?v=125&sk=2": "./assets/js/components/shield-king-visuals.js?v=126&sk=3&icons=c1efd5af",
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/games/game-card-copy.js?v=81&sk=2": "./assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static"
@@ -77,7 +78,7 @@ header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1137');
 header('X-MGW-Invite-Graph: v1137');
 header('X-MGW-Search-Graph: v106-post-game-release-barrier');
-header('X-MGW-TTT-Clock: authoritative-turn-clock-v4-single-writer-pending-hold');
+header('X-MGW-TTT-Clock: authoritative-turn-clock-v5-pending-watch-sync');
 header('X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame');
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-nostalgic-entry-copy');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
