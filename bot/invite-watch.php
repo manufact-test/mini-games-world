@@ -12,15 +12,13 @@ try {
     $userId = trim((string)($tgUser['id'] ?? ''));
     if ($userId === '') throw new RuntimeException('Пользователь не найден.');
 
+    // This endpoint is only a low-latency wake-up signal. The client must still
+    // reconcile through canonical /bot/invites.php sync before mutating invite
+    // UI/state, so the runtime-file signal never becomes a second state owner.
     $invite = (new InviteSignalService($config))->latest($userId);
-    $pending = is_array($invite) && (string)($invite['status'] ?? '') === 'pending';
 
-    // Pending received invitations are notification-only. The canonical sync
-    // response still carries their invite_events and unread count, but they must
-    // not become currentInvite and intercept unrelated game launches.
     api_ok([
-        'invite' => null,
-        'notification_pending' => $pending,
+        'invite' => is_array($invite) ? $invite : null,
     ]);
 } catch (Throwable $e) {
     api_error($e->getMessage());
