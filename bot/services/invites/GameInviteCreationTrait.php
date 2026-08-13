@@ -14,8 +14,11 @@ trait GameInviteCreationTrait
         $this->cleanup($db);
         $userId = $this->requireUserId($user);
         $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');
-        $this->discardOwnerDrafts($db, $userId);
 
+        // Every shared link is an independent passive offer. Do not invalidate
+        // older drafts just because the owner asks for another link: recipients
+        // may still have those already-sent URLs. Expiry/cancel remain the only
+        // lifecycle owners for unused drafts.
         $invite = $this->newInvite($db, $user, $gameType, $room, $bet, $boardSize, 'link', 'draft');
         $db['invites'][] = $invite;
         return $this->publicInvite($invite, $userId);
@@ -114,8 +117,7 @@ trait GameInviteCreationTrait
         string $token,
         bool $requestOpen = true,
         bool $suppressReceivedNotification = false
-    ): array
-    {
+    ): array {
         $this->cleanup($db);
         $index = $this->requireIndex($db, $token);
         $invite =& $db['invites'][$index];
