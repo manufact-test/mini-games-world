@@ -45,6 +45,16 @@ function interceptClick(event){
   const button = origin.closest('button, [role="button"]');
   if (!(button instanceof Element)) return;
 
+  if (button.matches('[data-create-rematch]')) {
+    queueMicrotask(() => {
+      if (!(button instanceof HTMLButtonElement) || !button.isConnected || !button.disabled) return;
+      if (String(button.textContent || '').includes('Предлагаем реванш')) {
+        button.textContent = 'Реванш предложен ✓';
+      }
+    });
+    return;
+  }
+
   if (button.matches('[data-room]')) {
     window.setTimeout(ensureWeeklyDetailsButton, 0);
     return;
