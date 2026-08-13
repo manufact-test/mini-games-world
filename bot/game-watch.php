@@ -36,8 +36,13 @@ function mgw_game_watch_read_json_games(array $config): array
 
     $locked = false;
     try {
-        $locked = flock($handle, LOCK_SH);
-        if (!$locked) throw new RuntimeException('Не удалось прочитать состояние игры.');
+        // The browser already retries this read-only watcher every 250 ms. Never
+        // let one request sit behind a game_action writer lock for seconds,
+        // because the serial watcher cannot schedule its next freshness read
+        // until the blocked request returns. Skip the busy snapshot instead and
+        // let the existing cadence read the just-committed state immediately.
+        $locked = flock($handle, LOCK_SH | LOCK_NB);
+        if (!$locked) throw new RuntimeException('Состояние игры обновляется.');
 
         $raw = stream_get_contents($handle);
         $decoded = json_decode(is_string($raw) && $raw !== '' ? $raw : '[]', true);
