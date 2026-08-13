@@ -143,11 +143,10 @@ try {
 
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
-    // PreparedInlineMessage is an optional enhancement, never a prerequisite for
-    // generating a valid invite link. Callers must explicitly opt in so an
-    // external Telegram API request cannot stall the normal first share click.
-    $prepareMessage = array_key_exists('prepareMessage', $payload)
-        && !empty($payload['prepareMessage']);
+    // The accepted share UX is Telegram PreparedInlineMessage. Draft creation is
+    // already proactively warmed by the client, so prepare it before the click
+    // while keeping invite sync itself read-only and non-blocking.
+    $prepareMessage = $action === 'create_link_draft';
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $users = new UserService($config);
@@ -164,11 +163,6 @@ try {
         : null;
 
     if ($action === 'sync') {
-        // Polling invitation state is a read operation. Running it through the
-        // global JSON writer lock every 500 ms per client (and then freezing the
-        // writer barrier again for the DB bridge) made real invite actions wait
-        // behind their own readers. Cleanup is intentionally applied to this
-        // snapshot only; every mutation still performs/persists canonical cleanup.
         $result = $db->readOnlySections(
             ['users', 'games', 'invites', 'notifications'],
             function (array $data) use (
@@ -326,9 +320,6 @@ try {
     }
     unset($result['signal_recipient_id']);
 
-    // The bridge projects mutations. A read-only sync has no new JSON state to
-    // project, and freezing writers again on every poll is both redundant and a
-    // direct source of action latency under two active clients.
     if ($action !== 'sync' && $runtimeInvites instanceof RuntimeInviteRepository) {
         if (!($db instanceof ExclusiveSnapshotStorageInterface)) {
             throw new RuntimeException(
