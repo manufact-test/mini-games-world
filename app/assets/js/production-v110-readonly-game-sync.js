@@ -62,8 +62,10 @@ async function watchCurrentGame(){
   const gameId = String(local?.id || '');
   const item = gameRuntimeItem(gameId);
   const pendingClockOnly = canWatchPendingTicTacToeClock(local, item, gameId);
-  if (!canWatch(local, gameId, pendingClockOnly) || runtime.busy) return null;
-  if (actionIsBusy(item) && !pendingClockOnly) return null;
+  const busyTerminalOnly = canWatchBusyTicTacToeTerminal(local, item, gameId);
+  const allowBusyRead = pendingClockOnly || busyTerminalOnly;
+  if (!canWatch(local, gameId, allowBusyRead) || runtime.busy) return null;
+  if (actionIsBusy(item) && !allowBusyRead) return null;
 
   runtime.busy = true;
   try {
@@ -86,7 +88,17 @@ async function watchCurrentGame(){
 
     const currentItem = gameRuntimeItem(gameId);
     const currentPendingClockOnly = canWatchPendingTicTacToeClock(state.activeGame, currentItem, gameId);
-    if (!canWatch(state.activeGame, gameId, currentPendingClockOnly)) return null;
+    const currentBusyTerminalOnly = canWatchBusyTicTacToeTerminal(state.activeGame, currentItem, gameId);
+    const currentAllowBusyRead = currentPendingClockOnly || currentBusyTerminalOnly;
+    if (!canWatch(state.activeGame, gameId, currentAllowBusyRead)) return null;
+
+    // A server-committed terminal state outranks a local in-flight action. The
+    // existing game screen remains the only result owner; this read-only watcher
+    // merely delivers the already-published finished snapshot immediately.
+    if (String(game.status || '') === 'finished') {
+      enterGame(game, result.me || null);
+      return game;
+    }
 
     if (actionIsBusy(currentItem)) {
       if (currentPendingClockOnly) {
@@ -101,9 +113,9 @@ async function watchCurrentGame(){
           detail:{ game },
         }));
       }
-      // A pending local TTT action, including a bot match, may consume only the
-      // read-only clock projection. Board/result ownership remains with the
-      // existing game-screen-v102 action queue.
+      // During a local TTT action the same watcher may either carry the clock
+      // handoff or observe a terminal server snapshot. It never projects an
+      // intermediate board while the action owner is still busy.
       return game;
     }
 
@@ -146,14 +158,19 @@ function canWatchPendingTicTacToeClock(game, item, gameId){
   return String(pending?.gameId || '') === gameId;
 }
 
-function canWatch(game, gameId, allowBotClockOnly = false){
+function canWatchBusyTicTacToeTerminal(game, item, gameId){
+  if (!gameId || !item || item.surrenderPending || !actionIsBusy(item)) return false;
+  const type = String(game?.game_type || game?.type || state.selectedGame || '');
+  return type === 'tictactoe';
+}
+
+function canWatch(game, gameId, allowBusyRead = false){
   if (!gameId || String(game?.status || '') !== 'active') return false;
   const launchPhase = String(game?.launch_phase || '');
   if (launchPhase && !['preparing', 'countdown', 'active'].includes(launchPhase)) return false;
   // Bot games do not need the normal high-frequency board watcher, but a local
-  // pending Tic-Tac-Toe move still needs the same authoritative clock snapshot
-  // as a human-vs-human match so its handoff cannot start seconds late.
-  if (game?.is_bot_game && !allowBotClockOnly) return false;
+  // pending Tic-Tac-Toe action may still need a clock handoff or terminal state.
+  if (game?.is_bot_game && !allowBusyRead) return false;
   if (document.visibilityState !== 'visible') return false;
   const screen = document.querySelector('.screen.active');
   return String(screen?.dataset.screen || '') === 'game';
