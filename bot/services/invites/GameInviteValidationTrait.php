@@ -3,34 +3,73 @@ declare(strict_types=1);
 
 trait GameInviteValidationTrait
 {
-    private function assertAvailableForInvite(array $db, array $user, string $message): void
+    private function assertAvailableForInvite(array &$db, array &$user, string $message): void
     {
         $userId = $this->requireUserId($user);
-        if (in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) {
+        $activeGame = $this->games->findActiveGameForUser($db, $userId);
+        $queued = $this->hasQueueOwner($db, $userId);
+        $this->reconcileAvailabilityState($user, $activeGame, $queued);
+
+        if ($activeGame !== null || $queued) {
             throw new RuntimeException($message);
         }
-        if ($this->games->findActiveGameForUser($db, $userId)) throw new RuntimeException($message);
         $this->assertNoOpenInvite($db, $userId, '', $message);
     }
 
-    private function assertCanReceiveInvite(array $db, array $user, string $message): void
+    private function assertCanReceiveInvite(array &$db, array &$user, string $message): void
     {
         $userId = $this->requireUserId($user);
+        $activeGame = $this->games->findActiveGameForUser($db, $userId);
+        $queued = $this->hasQueueOwner($db, $userId);
+        $this->reconcileAvailabilityState($user, $activeGame, $queued);
+        if ($activeGame !== null || $queued) {
+            throw new RuntimeException($message);
+        }
         $this->assertNoOpenInvite($db, $userId, '', $message);
     }
 
-    private function assertAvailableForStart(array $db, array $user, string $currentToken, string $message): void
+    private function assertAvailableForStart(array &$db, array &$user, string $currentToken, string $message): void
     {
         $userId = $this->requireUserId($user);
         $passivePendingOwner = $this->isPassivePendingOwner($db, $userId, $currentToken);
+        $activeGame = $this->games->findActiveGameForUser($db, $userId);
+        $queued = $this->hasQueueOwner($db, $userId);
+        $this->reconcileAvailabilityState($user, $activeGame, $queued);
 
-        if (!$passivePendingOwner && in_array((string)($user['status'] ?? 'idle'), ['searching', 'playing'], true)) {
-            throw new RuntimeException($message);
-        }
-        if (!$passivePendingOwner && $this->games->findActiveGameForUser($db, $userId)) {
+        if (!$passivePendingOwner && ($activeGame !== null || $queued)) {
             throw new RuntimeException($message);
         }
         $this->assertNoOpenInvite($db, $userId, $currentToken, $message);
+    }
+
+    private function hasQueueOwner(array $db, string $userId): bool
+    {
+        foreach ($db['queue'] ?? [] as $item) {
+            if (is_array($item) && (string)($item['user_id'] ?? '') === $userId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function reconcileAvailabilityState(array &$user, ?array $activeGame, bool $queued): void
+    {
+        if ($activeGame !== null) {
+            $user['status'] = 'playing';
+            $user['current_game_id'] = (string)($activeGame['id'] ?? $user['current_game_id'] ?? '');
+            return;
+        }
+        if ($queued) {
+            $user['status'] = 'searching';
+            $user['current_game_id'] = null;
+            return;
+        }
+
+        if (in_array((string)($user['status'] ?? 'idle'), ['playing', 'searching'], true)
+            || !empty($user['current_game_id'])) {
+            $user['status'] = 'idle';
+            $user['current_game_id'] = null;
+        }
     }
 
     private function isPassivePendingOwner(array $db, string $userId, string $currentToken): bool
