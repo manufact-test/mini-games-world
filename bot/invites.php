@@ -191,6 +191,16 @@ try {
         $token = clean_string($payload['token'] ?? '', 80);
         $core = [];
 
+        if ($token !== '' && in_array($action, ['accept', 'start', 'decline', 'cancel'], true)) {
+            foreach ($data['invites'] ?? [] as $storedInvite) {
+                if (!is_array($storedInvite) || (string)($storedInvite['token'] ?? '') !== $token) continue;
+                $inviterId = (string)($storedInvite['inviter_id'] ?? '');
+                $inviteeId = (string)($storedInvite['invitee_id'] ?? '');
+                $core['signal_recipient_id'] = $userId === $inviterId ? $inviteeId : $inviterId;
+                break;
+            }
+        }
+
         switch ($action) {
             case 'create_link_draft':
                 $sessions->assertCanPlay($user, $sessionId);
@@ -233,13 +243,13 @@ try {
             case 'accept':
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
-                $core = $invites->accept($data, $user, $token);
+                $core += $invites->accept($data, $user, $token);
                 break;
 
             case 'start':
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
-                $core = $invites->start($data, $user, $token);
+                $core += $invites->start($data, $user, $token);
                 break;
 
             case 'decline':
@@ -247,13 +257,6 @@ try {
                 break;
 
             case 'cancel':
-                foreach ($data['invites'] ?? [] as $storedInvite) {
-                    if (!is_array($storedInvite) || (string)($storedInvite['token'] ?? '') !== $token) continue;
-                    $inviterId = (string)($storedInvite['inviter_id'] ?? '');
-                    $inviteeId = (string)($storedInvite['invitee_id'] ?? '');
-                    $core['signal_recipient_id'] = $userId === $inviterId ? $inviteeId : $inviterId;
-                    break;
-                }
                 $core['invite'] = $invites->cancel($data, $user, $token);
                 break;
 
@@ -288,13 +291,19 @@ try {
 
     $actorId = (string)($tgUser['id'] ?? '');
     $signalToken = (string)($result['invite']['token'] ?? $payload['token'] ?? '');
+    $signalRecipientId = (string)($result['signal_recipient_id'] ?? '');
     if ($action === 'create_direct'
         && is_array($result['invite'] ?? null)
         && (string)($result['invite']['status'] ?? '') === 'pending') {
         $inviteSignals->publish((string)($result['recipient_id'] ?? ''), $result['invite']);
-    } elseif (in_array($action, ['accept', 'decline', 'cancel', 'start'], true) && $signalToken !== '') {
+    } elseif (in_array($action, ['accept', 'start', 'decline', 'cancel'], true) && $signalToken !== '') {
+        // The signal only wakes the other document; canonical invite sync still
+        // owns state. Clear this actor's stale signal, then publish the committed
+        // transition to the other participant instead of deleting both sides.
         $inviteSignals->clear($actorId, $signalToken);
-        $inviteSignals->clear((string)($result['signal_recipient_id'] ?? ''), $signalToken);
+        if ($signalRecipientId !== '' && is_array($result['invite'] ?? null)) {
+            $inviteSignals->publish($signalRecipientId, $result['invite']);
+        }
     }
     unset($result['signal_recipient_id']);
 
