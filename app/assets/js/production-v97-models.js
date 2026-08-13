@@ -19,6 +19,18 @@ export function buildTicTacToeOptimistic(game, action, viewerId){
   next.last_move = { cell, player_id:String(viewerId), symbol };
   next.move_count = Number(game?.move_count || 0) + 1;
   next.time_left = Number(game?.move_timeout_sec || 60);
+
+  // This snapshot is presentation-only while the action request is in flight.
+  // Never carry the previous player's authoritative deadline into the new turn:
+  // the existing v110 clock owner must show a fresh 60 immediately and then
+  // replace these empty anchors with the server revision returned by game_action.
+  next.turn_revision = Number(game?.turn_revision ?? game?.clock_revision ?? 0) + 1;
+  next.turn_started_at = null;
+  next.turn_starts_at = null;
+  next.turn_starts_at_ms = null;
+  next.turn_deadline_at = null;
+  next.turn_deadline_ms = null;
+  next.server_now_ms = null;
   return next;
 }
 
