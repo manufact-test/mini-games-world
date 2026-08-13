@@ -9,11 +9,23 @@ require_once __DIR__ . '/invites/RuntimeInviteDeltaProjector.php';
 
 function mgw_invite_bot_username(array $config): string
 {
-    // Link creation is a local operation. Never put Telegram Bot API getMe on
-    // the first-share critical path; deployments that know the bot username use
-    // the compact bot deep-link, otherwise the canonical WebApp invite URL is
-    // already a complete shareable fallback.
-    return ltrim(trim((string)($config['bot_username'] ?? '')), '@');
+    $username = ltrim(trim((string)($config['bot_username'] ?? '')), '@');
+    if ($username !== '') return $username;
+
+    // The shared invite must always enter through Telegram's bot /start flow.
+    // Some existing private configs predate bot_username, so resolve it from
+    // Telegram while the client proactively warms the draft. Never fall back to
+    // the raw Web App URL: that turns a peer-to-peer invite into a browser link.
+    try {
+        $response = (new TelegramService($config))->api('getMe');
+        if (!empty($response['ok']) && is_array($response['result'] ?? null)) {
+            return ltrim(trim((string)($response['result']['username'] ?? '')), '@');
+        }
+    } catch (Throwable $e) {
+        error_log('Mini Games World invite getMe failed: ' . $e->getMessage());
+    }
+
+    return '';
 }
 
 function mgw_invite_webapp_url(array $config, string $token): string
@@ -24,10 +36,8 @@ function mgw_invite_webapp_url(array $config, string $token): string
 function mgw_invite_share_url(array $config, string $token): string
 {
     $username = mgw_invite_bot_username($config);
-    if ($username !== '') {
-        return 'https://t.me/' . rawurlencode($username) . '?start=invite_' . rawurlencode($token);
-    }
-    return mgw_invite_webapp_url($config, $token);
+    if ($username === '') return '';
+    return 'https://t.me/' . rawurlencode($username) . '?start=invite_' . rawurlencode($token);
 }
 
 function mgw_invite_board_label(array $invite): string
@@ -377,6 +387,9 @@ try {
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
         $token = (string)($result['invite']['token'] ?? '');
         $shareUrl = mgw_invite_share_url($config, $token);
+        if ($shareUrl === '') {
+            throw new RuntimeException('Не удалось подготовить Telegram-приглашение.');
+        }
         $shareText = mgw_invite_share_text($result['invite'], $shareUrl);
         $result['invite']['share_url'] = $shareUrl;
         $result['invite']['share_text'] = $shareText;
