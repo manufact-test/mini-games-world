@@ -7,13 +7,16 @@ const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
   initialized:false,
   pending:null, pendingFrame:0, clock:null, timer:null, observer:null,
   launchPresentation:null,
+  pendingClockSnapshot:null,
 };
 if (!('launchPresentation' in runtime)) runtime.launchPresentation = null;
+if (!('pendingClockSnapshot' in runtime)) runtime.pendingClockSnapshot = null;
 
 export function initV110AcceptanceRuntime(){
   if (runtime.initialized) return;
   runtime.initialized = true;
   document.addEventListener('mgw:phase-b-game-entering', primeLaunchState);
+  document.addEventListener('mgw:v110-ttt-clock-snapshot', acceptPendingClockSnapshot);
   window.addEventListener('click', guardPhaseBPreStartControls, true);
   window.addEventListener('click', guardAndTrackTicTacToe, true);
   window.addEventListener('click', stabilizeSearchSummary, true);
@@ -149,6 +152,7 @@ function guardAndTrackTicTacToe(event){
     event.stopImmediatePropagation();
     return;
   }
+  runtime.pendingClockSnapshot = null;
   runtime.pending = { ...descriptor, startedAt:Date.now(), sawRequest:false };
   queuePendingPaint();
 }
@@ -212,13 +216,36 @@ function paintPendingMove(){
 }
 function clearPendingMove(){
   runtime.pending = null;
+  runtime.pendingClockSnapshot = null;
   if (runtime.pendingFrame) window.cancelAnimationFrame(runtime.pendingFrame);
   runtime.pendingFrame = 0;
 }
 
+function acceptPendingClockSnapshot(event){
+  const pending = runtime.pending;
+  const game = event?.detail?.game || null;
+  if (!pending || !game?.id || String(game.id) !== pending.gameId) return;
+  if (String(game.status || '') !== 'active') return;
+  if (String(game.game_type || game.type || '') !== 'tictactoe') return;
+  const board = String(game.board || '');
+  if (board[pending.cell] !== pending.symbol) return;
+  if (finiteNumber(game.server_now_ms) === null || finiteNumber(game.turn_deadline_ms) === null) return;
+  runtime.pendingClockSnapshot = game;
+}
+
 function syncClock(){
-  const game = state.activeGame;
-  if (!game?.id || String(game?.status || '') !== 'active') { runtime.clock = null; return; }
+  const activeGame = state.activeGame;
+  if (!activeGame?.id || String(activeGame?.status || '') !== 'active') {
+    runtime.clock = null;
+    runtime.pendingClockSnapshot = null;
+    return;
+  }
+  const pendingSnapshot = runtime.pending
+    && String(runtime.pending.gameId || '') === String(activeGame.id)
+    && String(runtime.pendingClockSnapshot?.id || '') === String(activeGame.id)
+      ? runtime.pendingClockSnapshot
+      : null;
+  const game = pendingSnapshot || activeGame;
   const timeoutSec = Math.max(1, Number(game.move_timeout_sec || 60));
   const revision = String(game.turn_revision ?? game.clock_revision ?? '');
   const turnStartKey = String(game.turn_starts_at_ms ?? game.turn_started_at ?? '');
@@ -261,8 +288,9 @@ function paintClock(){
   const beforeTurnStart = phase === 'preparing'
     || phase === 'preparation_timeout'
     || now < clock.start;
-  const pendingMove = runtime.pending?.gameId === clock.gameId;
-  const seconds = pendingMove || beforeTurnStart
+  const pendingWithoutServerClock = runtime.pending?.gameId === clock.gameId
+    && String(runtime.pendingClockSnapshot?.id || '') !== clock.gameId;
+  const seconds = pendingWithoutServerClock || beforeTurnStart
     ? clock.timeoutSec
     : Math.max(0, Math.ceil((clock.deadline - now) / 1000));
   const label = `${seconds} сек`;
