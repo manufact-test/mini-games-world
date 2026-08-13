@@ -50,9 +50,11 @@ let shareWarmExpiryTimer = null;
 let shareWarm = null;
 let shareWarmSerial = Promise.resolve();
 let shareAttempt = null;
+let shareClickPending = false;
 let playerPickerRequestGeneration = 0;
 let directInviteRequestGeneration = 0;
 const directInviteCancelIntents = new Set();
+const rematchPendingGameIds = new Set();
 let inviteStartPending = false;
 let inviteUiTransitionGeneration = 0;
 
@@ -413,10 +415,11 @@ async function settleQueuedDirectInviteCancel(invite, requestGeneration){
 }
 
 async function createLinkDraft(context, button){
-  if (button.disabled || shareAttempt?.nativePending) return;
+  if (shareClickPending || shareAttempt?.nativePending) return;
+  shareClickPending = true;
   haptic('light');
   const originalText = String(button.textContent || 'Поделиться ссылкой');
-  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
   button.textContent = 'Готовим ссылку…';
 
   try {
@@ -426,8 +429,6 @@ async function createLinkDraft(context, button){
     const draftToken = String(draftInvite?.token || '');
     if (!draftToken) throw new Error('Не удалось подготовить ссылку.');
 
-    button.disabled = false;
-    button.textContent = originalText;
     const tg = getTelegram();
     const preparedId = String(draftInvite.prepared_message_id || '');
     if (preparedId && typeof tg?.shareMessage === 'function') {
@@ -442,10 +443,14 @@ async function createLinkDraft(context, button){
     currentInvite = null;
     openFallbackShare(draftInvite);
   } catch (error) {
-    button.disabled = false;
-    button.textContent = originalText;
     if (String(error?.name || '') !== 'AbortError') {
       toast(error.message || 'Не удалось подготовить приглашение.');
+    }
+  } finally {
+    shareClickPending = false;
+    if (button?.isConnected) {
+      button.removeAttribute('aria-busy');
+      button.textContent = originalText;
     }
   }
 }
@@ -777,7 +782,6 @@ async function performInviteAction(action, token, button){
       if (action === 'start') endInviteStartTransition(false);
       return;
     }
-
     currentInvite = result.invite || currentInvite;
 
     if (action === 'accept') {
@@ -912,9 +916,11 @@ function terminalNotificationItem(context, invite){
 }
 
 async function createRematch(gameId, button){
-  if (!gameId || button.disabled) return;
+  if (!gameId || rematchPendingGameIds.has(gameId)) return;
+  rematchPendingGameIds.add(gameId);
   haptic('light');
-  button.disabled = true;
+  const originalText = String(button.textContent || 'Предложить реванш');
+  button.setAttribute('aria-busy', 'true');
   button.textContent = 'Предлагаем реванш…';
 
   try {
@@ -933,8 +939,10 @@ async function createRematch(gameId, button){
     scheduleSync(0);
   } catch (error) {
     toast(error.message || 'Не удалось предложить реванш.');
-    button.disabled = false;
-    button.textContent = 'Предложить реванш';
+    if (button?.isConnected) button.textContent = originalText;
+  } finally {
+    rematchPendingGameIds.delete(gameId);
+    if (button?.isConnected) button.removeAttribute('aria-busy');
   }
 }
 
