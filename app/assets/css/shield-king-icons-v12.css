@@ -1,6 +1,6 @@
 /*
- * Shield King V114.6 — final micro-polish for accepted top More and game-card frame.
- * Presentation only. Accepted metallic assets, card geometry and button hit areas are unchanged.
+ * Shield King V114.5 — top More button visual optical centering.
+ * Presentation only. Accepted metallic asset and button geometry are unchanged.
  */
 
 /*
@@ -10,12 +10,4 @@
  */
 #moreMenuOpen > img[data-sk-asset="ui/actions/more.webp"]{
   transform:translateY(2px) !important;
-}
-
-/*
- * Keep the physical game-card border exactly where it is. Move only the
- * decorative inner metallic frame 1px away from the card's right edge.
- */
-.game-card:after{
-  right:1px !important;
 }
