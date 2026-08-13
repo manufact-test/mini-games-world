@@ -5,6 +5,7 @@ require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';
 require_once __DIR__ . '/services/GameInviteService.php';
 require_once __DIR__ . '/services/InviteSignalService.php';
+require_once __DIR__ . '/invites/RuntimeInviteDeltaProjector.php';
 
 function mgw_invite_bot_username(array $config): string
 {
@@ -137,6 +138,34 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
     }
 }
 
+/** @return array<string,string> */
+function mgw_invite_row_fingerprints(array $invites): array
+{
+    $result = [];
+    foreach ($invites as $invite) {
+        if (!is_array($invite)) continue;
+        $token = strtolower(trim((string)($invite['token'] ?? '')));
+        if ($token === '') continue;
+        $encoded = json_encode($invite, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $result[$token] = hash('sha256', $encoded);
+    }
+    return $result;
+}
+
+/** @return list<string> */
+function mgw_changed_invite_tokens(array $before, array $afterInvites): array
+{
+    $after = mgw_invite_row_fingerprints($afterInvites);
+    $changed = [];
+    foreach ($after as $token => $fingerprint) {
+        if (!isset($before[$token]) || !hash_equals((string)$before[$token], $fingerprint)) {
+            $changed[] = $token;
+        }
+    }
+    sort($changed, SORT_STRING);
+    return $changed;
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
@@ -144,8 +173,7 @@ try {
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     // The accepted share UX is Telegram PreparedInlineMessage. Draft creation is
-    // already proactively warmed by the client, so prepare it before the click
-    // while keeping invite sync itself read-only and non-blocking.
+    // proactively warmed by the client before the actual share click.
     $prepareMessage = $action === 'create_link_draft';
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
@@ -157,9 +185,8 @@ try {
     $inviteSignals = new InviteSignalService($config);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
-    $runtimeInvites = $legacyBridgeAllowed
-        && $runtimeStorageRouter->routeFor('invites') === RuntimeStorageRouter::DRIVER_DATABASE
-        ? new RuntimeInviteRepository($config, $runtimeStorageRouter)
+    $runtimeInviteProjector = $legacyBridgeAllowed
+        ? new RuntimeInviteDeltaProjector($config, $runtimeStorageRouter)
         : null;
 
     if ($action === 'sync') {
@@ -196,6 +223,10 @@ try {
             $sessions,
             $invites
         ): array {
+            $inviteFingerprintsBefore = mgw_invite_row_fingerprints(
+                is_array($data['invites'] ?? null) ? $data['invites'] : []
+            );
+
             $user = $users->ensureUser($data, $tgUser);
             $userId = (string)($user['id'] ?? '');
             if ($userId === '') throw new RuntimeException('Пользователь не найден.');
@@ -299,11 +330,21 @@ try {
                     throw new RuntimeException('Неизвестное действие приглашения.');
             }
 
+            $core['_bridge_invite_tokens'] = mgw_changed_invite_tokens(
+                $inviteFingerprintsBefore,
+                is_array($data['invites'] ?? null) ? $data['invites'] : []
+            );
             $core['user'] = $users->publicUser($user);
             $core['session'] = $sessions->publicState($user, $sessionId);
             return $core;
         });
     }
+
+    $bridgeInviteTokens = array_values(array_filter(
+        is_array($result['_bridge_invite_tokens'] ?? null) ? $result['_bridge_invite_tokens'] : [],
+        static fn($token): bool => is_string($token) && $token !== ''
+    ));
+    unset($result['_bridge_invite_tokens']);
 
     $actorId = (string)($tgUser['id'] ?? '');
     $signalToken = (string)($result['invite']['token'] ?? $payload['token'] ?? '');
@@ -320,15 +361,16 @@ try {
     }
     unset($result['signal_recipient_id']);
 
-    if ($action !== 'sync' && $runtimeInvites instanceof RuntimeInviteRepository) {
+    if ($action !== 'sync'
+        && $runtimeInviteProjector instanceof RuntimeInviteDeltaProjector
+        && $runtimeInviteProjector->enabled()
+        && $bridgeInviteTokens !== []) {
         if (!($db instanceof ExclusiveSnapshotStorageInterface)) {
-            throw new RuntimeException(
-                'Invite DB bridge requires an exclusive JSON snapshot capability.'
-            );
+            throw new RuntimeException('Invite DB bridge requires an exclusive JSON snapshot capability.');
         }
         $db->exclusiveReadOnlySections(
             ['invites'],
-            static fn(array $data): array => $runtimeInvites->synchronize($data)
+            static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
         );
     }
 
