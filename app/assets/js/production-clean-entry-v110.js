@@ -11,7 +11,7 @@ import { initV102HistoryController } from './production-v102-history-controller.
 import { initV104GamePollTuning } from './production-v104-game-poll-tuning.js?v=104';
 import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
 import { initV110AcceptanceRuntime } from './production-v110-acceptance-runtime.js?v=110';
-import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1104';
+import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1105&release=search-barrier';
 import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=97&sk=6';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
