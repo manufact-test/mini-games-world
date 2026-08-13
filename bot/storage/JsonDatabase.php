@@ -241,19 +241,38 @@ final class JsonDatabase
             return;
         }
 
-        // Exclusive snapshots freeze writers and may always acknowledge the
-        // current marker. Projection snapshots must compare-and-clear so a newer
-        // writer cannot have its pending DB work erased by an older projector.
-        if ($this->exclusiveSnapshot === null) {
-            $captured = $this->projectionDirtyToken;
-            $current = $this->readRuntimeProjectionDirtyToken();
-            if ($captured === null || $current === null || !hash_equals($captured, $current)) {
-                return;
+        if ($this->exclusiveSnapshot !== null) {
+            if (!unlink($this->runtimeProjectionDirtyFile)) {
+                throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');
             }
+            return;
         }
 
-        if (!unlink($this->runtimeProjectionDirtyFile)) {
-            throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');
+        // Compare-and-clear must be atomic with JSON writers. Taking app.lock
+        // only for this tiny acknowledgement window prevents a writer from
+        // publishing a newer generation between the comparison and unlink.
+        $captured = $this->projectionDirtyToken;
+        if ($captured === null) return;
+
+        $lockHandle = fopen($this->lockFile, 'c+');
+        if (!$lockHandle) {
+            throw new RuntimeException('Не удалось открыть lock-файл.');
+        }
+        try {
+            if (!flock($lockHandle, LOCK_EX)) {
+                throw new RuntimeException('Не удалось зафиксировать runtime projection generation.');
+            }
+            $current = $this->readRuntimeProjectionDirtyToken();
+            if ($current === null || !hash_equals($captured, $current)) {
+                return;
+            }
+            if (is_file($this->runtimeProjectionDirtyFile)
+                && !unlink($this->runtimeProjectionDirtyFile)) {
+                throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');
+            }
+        } finally {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
         }
     }
 
