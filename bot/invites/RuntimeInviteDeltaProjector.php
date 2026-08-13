@@ -43,56 +43,56 @@ final class RuntimeInviteDeltaProjector
         $database = $this->database();
         $source = $this->sourceRowsForTokens($jsonData, $tokens, $database);
 
-        return $this->withSynchronizationLocks(
-            $database,
-            array_keys($source),
-            function (DatabaseConnectionInterface $db) use ($source): array {
-                $store = new RealtimeDatabaseStore($db);
-                $created = 0;
-                $updated = 0;
-                $unchanged = 0;
+        // JsonDatabase::projectionReadOnly* is the single runtime projection
+        // serializer. A second MySQL named lock here only duplicated ownership
+        // and could stall a committed invite for up to ten seconds. The DB
+        // transaction remains the atomic persistence boundary for this delta.
+        return $database->transaction(function (DatabaseConnectionInterface $db) use ($source): array {
+            $store = new RealtimeDatabaseStore($db);
+            $created = 0;
+            $updated = 0;
+            $unchanged = 0;
 
-                foreach ($source as $inviteId => $expected) {
-                    $existingRows = $db->fetchAll(
-                        'SELECT * FROM mgw_invites WHERE invite_id = :invite_id',
-                        ['invite_id' => $inviteId]
-                    );
-                    if (count($existingRows) > 1) {
-                        throw new RuntimeException('Invite DB contains duplicate invite IDs.');
-                    }
-
-                    if ($existingRows === []) {
-                        $stored = $store->upsertInvite($expected);
-                        $this->assertRowMatches($expected, $stored);
-                        $created++;
-                        continue;
-                    }
-
-                    $existing = $this->normalizeDatabaseRow($existingRows[0]);
-                    $this->assertImmutableIdentity($expected, $existing);
-                    if ($existing === $expected) {
-                        $unchanged++;
-                        continue;
-                    }
-                    if ($this->timestampSortValue($existing['updated_at_utc'])
-                        > $this->timestampSortValue($expected['updated_at_utc'])) {
-                        throw new RuntimeException('Invite DB state is ahead of the JSON rollback source.');
-                    }
-
-                    $stored = $store->upsertInvite($expected);
-                    $this->assertRowMatches($expected, $stored);
-                    $updated++;
+            foreach ($source as $inviteId => $expected) {
+                $existingRows = $db->fetchAll(
+                    'SELECT * FROM mgw_invites WHERE invite_id = :invite_id',
+                    ['invite_id' => $inviteId]
+                );
+                if (count($existingRows) > 1) {
+                    throw new RuntimeException('Invite DB contains duplicate invite IDs.');
                 }
 
-                return [
-                    'projected_count' => count($source),
-                    'created_count' => $created,
-                    'updated_count' => $updated,
-                    'unchanged_count' => $unchanged,
-                    'parity' => true,
-                ];
+                if ($existingRows === []) {
+                    $stored = $store->upsertInvite($expected);
+                    $this->assertRowMatches($expected, $stored);
+                    $created++;
+                    continue;
+                }
+
+                $existing = $this->normalizeDatabaseRow($existingRows[0]);
+                $this->assertImmutableIdentity($expected, $existing);
+                if ($existing === $expected) {
+                    $unchanged++;
+                    continue;
+                }
+                if ($this->timestampSortValue($existing['updated_at_utc'])
+                    > $this->timestampSortValue($expected['updated_at_utc'])) {
+                    throw new RuntimeException('Invite DB state is ahead of the JSON rollback source.');
+                }
+
+                $stored = $store->upsertInvite($expected);
+                $this->assertRowMatches($expected, $stored);
+                $updated++;
             }
-        );
+
+            return [
+                'projected_count' => count($source),
+                'created_count' => $created,
+                'updated_count' => $updated,
+                'unchanged_count' => $unchanged,
+                'parity' => true,
+            ];
+        });
     }
 
     /** @param list<string> $tokens */
@@ -301,51 +301,5 @@ final class RuntimeInviteDeltaProjector
         $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
         if (!$databaseConfig->enabled()) throw new RuntimeException('Invite DB runtime requires an enabled database.');
         return $this->connection = PdoConnectionFactory::create($databaseConfig);
-    }
-
-    /** @param list<string> $inviteIds */
-    private function withSynchronizationLocks(
-        DatabaseConnectionInterface $database,
-        array $inviteIds,
-        callable $callback
-    ): mixed {
-        $lockNames = [];
-        if ($database->driver() === 'mysql') {
-            $scope = trim((string)($this->config['environment'] ?? ''))
-                . '|'
-                . trim((string)($this->config['database']['name'] ?? ''));
-            $inviteIds = array_values(array_unique(array_map('strval', $inviteIds)));
-            sort($inviteIds, SORT_STRING);
-
-            foreach ($inviteIds as $inviteId) {
-                $lockName = 'mgw_invite_' . substr(hash('sha256', $scope . '|' . $inviteId), 0, 48);
-                $acquired = $database->fetchValue('SELECT GET_LOCK(:lock_name, 10)', ['lock_name' => $lockName]);
-                if ((int)$acquired !== 1) {
-                    foreach (array_reverse($lockNames) as $ownedLock) {
-                        try {
-                            $database->fetchValue('SELECT RELEASE_LOCK(:lock_name)', ['lock_name' => $ownedLock]);
-                        } catch (Throwable) {
-                            // The original acquisition error remains authoritative.
-                        }
-                    }
-                    throw new RuntimeException('Invite DB synchronization lock is unavailable.');
-                }
-                $lockNames[] = $lockName;
-            }
-        }
-
-        try {
-            return $database->transaction(
-                static fn(DatabaseConnectionInterface $transaction): mixed => $callback($transaction)
-            );
-        } finally {
-            foreach (array_reverse($lockNames) as $lockName) {
-                try {
-                    $database->fetchValue('SELECT RELEASE_LOCK(:lock_name)', ['lock_name' => $lockName]);
-                } catch (Throwable $error) {
-                    error_log('Mini Games World invite DB lock release failed: ' . $error->getMessage());
-                }
-            }
-        }
     }
 }
