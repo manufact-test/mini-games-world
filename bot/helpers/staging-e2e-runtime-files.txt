@@ -119,6 +119,7 @@ bot/game-watch.php
 bot/presence.php
 bot/game-clock.php
 bot/invite-opponents.php
+bot/invite-watch.php
 bot/invites.php
 bot/invites/RuntimeInviteRepository.php
 bot/notifications.php
@@ -131,6 +132,7 @@ bot/services/ChessRuntimeService.php
 bot/services/GameActionService.php
 bot/services/StatsService.php
 bot/services/PresenceService.php
+bot/services/InviteSignalService.php
 bot/services/GameSettlementService.php
 bot/services/GameLaunchFinalizationService.php
 bot/services/MatchPreparationClockService.php
@@ -141,6 +143,7 @@ bot/services/GameInviteService.php
 bot/services/invites/GameInviteActionTrait.php
 bot/services/invites/GameInviteCreationTrait.php
 bot/services/invites/GameInviteStorageTrait.php
+bot/services/invites/GameInviteValidationTrait.php
 bot/realtime/RealtimeRuntimeBridge.php
 bot/realtime/RuntimeRealtimeRepository.php
 bot/ledger/EconomyRuntimeBridge.php

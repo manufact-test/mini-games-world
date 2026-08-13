@@ -36,7 +36,7 @@ let syncBusy = false;
 let syncTimer = null;
 let watchTimer = null;
 let watchBusy = false;
-let seenWatchTokens = new Set();
+let seenWatchSignals = new Set();
 let currentInvite = null;
 let deepLinkHandled = false;
 let eventBaselineReady = false;
@@ -170,7 +170,6 @@ function handleDocumentClick(event){
     openCurrentInvite();
     return;
   }
-
 
   const inviteButton = event.target.closest('[data-invite-friend]');
   if (!inviteButton) return;
@@ -357,9 +356,6 @@ async function createDirectInvite(context, inviteeId, button){
   const opponentName = String(button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
   const requestGeneration = ++directInviteRequestGeneration;
 
-  // Paint the sent state immediately, but keep ownership tied to this exact
-  // surface. If the user closes it before the server responds, the later
-  // response must not resurrect a blocking local invitation state.
   showDirectInvitePending(context, opponentName, requestGeneration);
 
   try {
@@ -439,8 +435,12 @@ async function createLinkDraft(context, button){
       return;
     }
 
-    currentInvite = draftInvite;
-    showPreparedLink(draftInvite, context);
+    // A valid invite link is already complete at this point. Do not make the
+    // first user click wait for Telegram's PreparedInlineMessage service and do
+    // not add a second local confirmation sheet: open Telegram's ordinary share
+    // surface immediately. The draft stays passive until a recipient opens it.
+    currentInvite = null;
+    openFallbackShare(draftInvite);
   } catch (error) {
     button.disabled = false;
     button.textContent = originalText;
@@ -485,7 +485,7 @@ function warmShareDraft(context){
     .then(async () => {
       if (shareWarm?.id !== entry.id) return null;
       entry.status = 'loading';
-      const result = await inviteRequest('create_link_draft', normalized, { prefetch:true });
+      const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:false }, { prefetch:true });
       if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
       if (shareWarm?.id !== entry.id) {
         void discardDraft(result.invite);
@@ -550,8 +550,6 @@ function restoreWarmShareDraft(attempt){
   shareWarm = entry;
   armWarmShareExpiry(entry);
 }
-
-
 
 async function obtainPreparedShareResult(context){
   const normalized = normalizeInviteContext(context);
@@ -643,7 +641,6 @@ async function confirmSharedInvite(attempt){
     showOwnerWaiting(currentInvite);
     scheduleSync(0);
   } catch (error) {
-    // The shared link remains valid: opening it binds the draft authoritatively.
     scheduleSync(0);
   }
 }
@@ -758,9 +755,6 @@ async function performInviteAction(action, token, button){
   button.textContent = actionText(action);
   if (action === 'start') beginInviteStartTransition();
 
-  // Accept and the owner's own cancellation react immediately. The single
-  // authoritative request still decides the result; failure restores the
-  // captured sheet and invitation state without adding another action owner.
   if (action === 'accept') {
     showInviteeWaiting({
       ...(rollbackInvite || {}),
@@ -988,7 +982,6 @@ async function syncNow({ announce = true } = {}){
 function chooseSyncInvite(result){
   const active = result?.invite || null;
   const tracked = result?.tracked_invite || null;
-  /* A new actionable invitation must always outrank an old tracked terminal token. */
   if (active?.token) return active;
   if (tracked?.token) return tracked;
   return null;
@@ -1254,27 +1247,35 @@ function scheduleWatch(delay = WATCH_INTERVAL_MS){
 }
 
 async function watchIncomingInvite(){
-  if (watchBusy || currentInvite?.token || !canWatchIncomingInvite()) return null;
+  if (watchBusy || !canWatchInviteSignal()) return null;
   watchBusy = true;
   try {
-    const response = await fetch(WATCH_URL, {
+    const speed = window.__MGW_V101_SPEED__;
+    const fetcher = typeof speed?.rawFetch === 'function'
+      ? speed.rawFetch
+      : window.fetch.bind(window);
+    const response = await fetcher(WATCH_URL, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId() }),
       priority:'low',
       cache:'no-store',
-      mgwPrefetch:true,
     });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || result.ok === false) return null;
 
     const invite = result.invite || null;
     const token = String(invite?.token || '');
-    if (!token || seenWatchTokens.has(token) || !canWatchIncomingInvite()) return null;
+    const status = String(invite?.status || '');
+    const updatedAt = String(invite?.updated_at || '');
+    const signalKey = `${token}|${status}|${updatedAt}`;
+    if (!token || seenWatchSignals.has(signalKey) || !canWatchInviteSignal()) return null;
 
-    seenWatchTokens.add(token);
-    currentInvite = invite;
-    dispatchNotificationCount(result.unread_count);
+    if (seenWatchSignals.size > 100) seenWatchSignals.clear();
+    seenWatchSignals.add(signalKey);
+    // Runtime-file signal is only a low-latency wake-up. Canonical invite sync
+    // remains the single state/UI owner, including while an invite sheet is
+    // already open and the same token moves pending -> accepted -> active.
     scheduleSync(0);
     return invite;
   } catch (error) {
@@ -1284,12 +1285,14 @@ async function watchIncomingInvite(){
   }
 }
 
-function canWatchIncomingInvite(){
+function canWatchInviteSignal(){
   if (document.visibilityState !== 'visible') return false;
   if (String(state.activeGame?.status || '') === 'active') return false;
   const activeScreen = document.querySelector('.screen.active');
   if (String(activeScreen?.dataset.screen || '') !== 'home') return false;
-  return !document.getElementById('sheetOverlay')?.classList.contains('active');
+  const overlayOpen = document.getElementById('sheetOverlay')?.classList.contains('active');
+  if (!overlayOpen) return true;
+  return Boolean(document.querySelector('#sheet [data-invite-sheet]'));
 }
 
 function scheduleResultEnhancement(){
@@ -1336,7 +1339,6 @@ function consumeInviteNotification(inviteToken, unreadCount = null){
 }
 
 function dispatchNotificationCount(unreadCount){
-
   if (!Number.isFinite(Number(unreadCount))) return;
   document.dispatchEvent(new CustomEvent('mgw:notification-count', {
     detail:{ unreadCount:Number(unreadCount) },

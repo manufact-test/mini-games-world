@@ -347,7 +347,20 @@ function syncLaunchPresentation(game, phase){
 
   const now = performance.now();
   if (phase === 'countdown' && presentation.countdownStartedAt === null) {
-    presentation.countdownStartedAt = now;
+    const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * 3;
+    const startsAtMs = finiteNumber(game?.starts_at_ms);
+    const serverNowMs = finiteNumber(game?.server_now_ms);
+    const remainingToStart = startsAtMs !== null && serverNowMs !== null
+      ? Math.max(0, startsAtMs - serverNowMs)
+      : null;
+    const elapsedAtReceipt = remainingToStart === null
+      ? 0
+      : Math.max(0, Math.min(numbersDuration, numbersDuration - remainingToStart));
+
+    // Both clients render toward the same server-owned starts_at. A late invite
+    // sync therefore joins the already-running presentation instead of starting
+    // a fresh local 3-2-1 sequence several seconds after its opponent.
+    presentation.countdownStartedAt = now - elapsedAtReceipt;
   }
 
   if (phase === 'preparation_timeout') {

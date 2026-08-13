@@ -8,19 +8,11 @@ require_once __DIR__ . '/services/InviteSignalService.php';
 
 function mgw_invite_bot_username(array $config): string
 {
-    $username = ltrim(trim((string)($config['bot_username'] ?? '')), '@');
-    if ($username !== '') return $username;
-
-    try {
-        $response = (new TelegramService($config))->api('getMe');
-        if (!empty($response['ok']) && is_array($response['result'] ?? null)) {
-            return ltrim(trim((string)($response['result']['username'] ?? '')), '@');
-        }
-    } catch (Throwable $e) {
-        error_log('Mini Games World invite getMe failed: ' . $e->getMessage());
-    }
-
-    return '';
+    // Link creation is a local operation. Never put Telegram Bot API getMe on
+    // the first-share critical path; deployments that know the bot username use
+    // the compact bot deep-link, otherwise the canonical WebApp invite URL is
+    // already a complete shareable fallback.
+    return ltrim(trim((string)($config['bot_username'] ?? '')), '@');
 }
 
 function mgw_invite_webapp_url(array $config, string $token): string
@@ -151,8 +143,11 @@ try {
 
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
-    $prepareMessage = !array_key_exists('prepareMessage', $payload)
-        || !empty($payload['prepareMessage']);
+    // PreparedInlineMessage is an optional enhancement, never a prerequisite for
+    // generating a valid invite link. Callers must explicitly opt in so an
+    // external Telegram API request cannot stall the normal first share click.
+    $prepareMessage = array_key_exists('prepareMessage', $payload)
+        && !empty($payload['prepareMessage']);
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $users = new UserService($config);
@@ -168,85 +163,60 @@ try {
         ? new RuntimeInviteRepository($config, $runtimeStorageRouter)
         : null;
 
-    $result = $db->transaction(function (array &$data) use (
-        $action,
-        $payload,
-        $sessionId,
-        $tgUser,
-        $users,
-        $sessions,
-        $invites
-    ): array {
-        $user = $users->ensureUser($data, $tgUser);
-        $userId = (string)($user['id'] ?? '');
-        if ($userId === '') throw new RuntimeException('Пользователь не найден.');
-        $data['users'][$userId] = $user;
-        $user =& $data['users'][$userId];
-        $sessions->ensureSessionShape($user);
-
-        $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
-        $room = clean_string($payload['room'] ?? 'match', 20);
-        $bet = (int)($payload['bet'] ?? 10);
-        $boardSize = (int)($payload['boardSize'] ?? 3);
-        $token = clean_string($payload['token'] ?? '', 80);
-        $core = [];
-
-        switch ($action) {
-            case 'create_link_draft':
-                $sessions->assertCanPlay($user, $sessionId);
-                $sessions->touch($user, $sessionId);
-                $core['invite'] = $invites->createLinkDraft($data, $user, $gameType, $room, $bet, $boardSize);
-                break;
-
-            case 'confirm_shared':
-                $core['invite'] = $invites->confirmShared($data, $user, $token);
-                break;
-
-            case 'discard_draft':
-                $core['invite'] = $invites->discardDraft($data, $user, $token);
-                break;
-
-            case 'create_direct':
-                $sessions->assertCanPlay($user, $sessionId);
-                $sessions->touch($user, $sessionId);
-                $inviteeId = clean_string($payload['inviteeId'] ?? '', 40);
-                if ($inviteeId === '' || !isset($data['users'][$inviteeId]) || !is_array($data['users'][$inviteeId])) {
-                    throw new RuntimeException('Игрок больше недоступен.');
+    if ($action === 'sync') {
+        // Polling invitation state is a read operation. Running it through the
+        // global JSON writer lock every 500 ms per client (and then freezing the
+        // writer barrier again for the DB bridge) made real invite actions wait
+        // behind their own readers. Cleanup is intentionally applied to this
+        // snapshot only; every mutation still performs/persists canonical cleanup.
+        $result = $db->readOnlySections(
+            ['users', 'games', 'invites', 'notifications'],
+            function (array $data) use (
+                $payload,
+                $sessionId,
+                $tgUser,
+                $users,
+                $sessions,
+                $invites
+            ): array {
+                $userId = trim((string)($tgUser['id'] ?? ''));
+                if ($userId === '' || !isset($data['users'][$userId]) || !is_array($data['users'][$userId])) {
+                    throw new RuntimeException('Пользователь не найден.');
                 }
-                $invitee =& $data['users'][$inviteeId];
-                $core['invite'] = $invites->createDirect($data, $user, $invitee, $gameType, $room, $bet, $boardSize);
-                $core['recipient_id'] = $inviteeId;
-                $core['recipient_name'] = (string)($core['invite']['invitee_name'] ?? 'Игрок');
-                $lastSeen = strtotime((string)($invitee['last_seen_at'] ?? '')) ?: 0;
-                $core['recipient_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
-                break;
-
-            case 'open_link':
-                $invites->bindFromLink($data, $user, $token, true, false);
+                $user = $data['users'][$userId];
+                $sessions->ensureSessionShape($user);
+                $token = clean_string($payload['token'] ?? '', 80);
                 $core = $invites->sync($data, $user, $token);
-                break;
+                $core['user'] = $users->publicUser($user);
+                $core['session'] = $sessions->publicState($user, $sessionId);
+                return $core;
+            }
+        );
+    } else {
+        $result = $db->transaction(function (array &$data) use (
+            $action,
+            $payload,
+            $sessionId,
+            $tgUser,
+            $users,
+            $sessions,
+            $invites
+        ): array {
+            $user = $users->ensureUser($data, $tgUser);
+            $userId = (string)($user['id'] ?? '');
+            if ($userId === '') throw new RuntimeException('Пользователь не найден.');
+            $data['users'][$userId] = $user;
+            $user =& $data['users'][$userId];
+            $sessions->ensureSessionShape($user);
 
-            case 'sync':
-                $core = $invites->sync($data, $user, $token);
-                break;
+            $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
+            $room = clean_string($payload['room'] ?? 'match', 20);
+            $bet = (int)($payload['bet'] ?? 10);
+            $boardSize = (int)($payload['boardSize'] ?? 3);
+            $token = clean_string($payload['token'] ?? '', 80);
+            $core = [];
 
-            case 'accept':
-                $sessions->assertCanPlay($user, $sessionId);
-                $sessions->touch($user, $sessionId);
-                $core = $invites->accept($data, $user, $token);
-                break;
-
-            case 'start':
-                $sessions->assertCanPlay($user, $sessionId);
-                $sessions->touch($user, $sessionId);
-                $core = $invites->start($data, $user, $token);
-                break;
-
-            case 'decline':
-                $core['invite'] = $invites->decline($data, $user, $token);
-                break;
-
-            case 'cancel':
+            if ($token !== '' && in_array($action, ['accept', 'start', 'decline', 'cancel'], true)) {
                 foreach ($data['invites'] ?? [] as $storedInvite) {
                     if (!is_array($storedInvite) || (string)($storedInvite['token'] ?? '') !== $token) continue;
                     $inviterId = (string)($storedInvite['inviter_id'] ?? '');
@@ -254,51 +224,112 @@ try {
                     $core['signal_recipient_id'] = $userId === $inviterId ? $inviteeId : $inviterId;
                     break;
                 }
-                $core['invite'] = $invites->cancel($data, $user, $token);
-                break;
+            }
 
-            case 'rematch':
-                $sessions->assertCanPlay($user, $sessionId);
-                $sessions->touch($user, $sessionId);
-                $core = $invites->createRematch(
-                    $data,
-                    $user,
-                    clean_string($payload['gameId'] ?? '', 120)
-                );
-                $opponentId = (string)($core['opponent_id'] ?? '');
-                if ($opponentId !== '' && isset($data['users'][$opponentId]) && is_array($data['users'][$opponentId])) {
-                    $lastSeen = strtotime((string)($data['users'][$opponentId]['last_seen_at'] ?? '')) ?: 0;
-                    $core['opponent_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
-                }
-                break;
+            switch ($action) {
+                case 'create_link_draft':
+                    $sessions->assertCanPlay($user, $sessionId);
+                    $sessions->touch($user, $sessionId);
+                    $core['invite'] = $invites->createLinkDraft($data, $user, $gameType, $room, $bet, $boardSize);
+                    break;
 
-            case 'seen':
-                $invites->markSeen($data, $userId, $token);
-                $core['seen'] = true;
-                break;
+                case 'confirm_shared':
+                    $core['invite'] = $invites->confirmShared($data, $user, $token);
+                    break;
 
-            default:
-                throw new RuntimeException('Неизвестное действие приглашения.');
-        }
+                case 'discard_draft':
+                    $core['invite'] = $invites->discardDraft($data, $user, $token);
+                    break;
 
-        $core['user'] = $users->publicUser($user);
-        $core['session'] = $sessions->publicState($user, $sessionId);
-        return $core;
-    });
+                case 'create_direct':
+                    $sessions->assertCanPlay($user, $sessionId);
+                    $sessions->touch($user, $sessionId);
+                    $inviteeId = clean_string($payload['inviteeId'] ?? '', 40);
+                    if ($inviteeId === '' || !isset($data['users'][$inviteeId]) || !is_array($data['users'][$inviteeId])) {
+                        throw new RuntimeException('Игрок больше недоступен.');
+                    }
+                    $invitee =& $data['users'][$inviteeId];
+                    $core['invite'] = $invites->createDirect($data, $user, $invitee, $gameType, $room, $bet, $boardSize);
+                    $core['recipient_id'] = $inviteeId;
+                    $core['recipient_name'] = (string)($core['invite']['invitee_name'] ?? 'Игрок');
+                    $lastSeen = strtotime((string)($invitee['last_seen_at'] ?? '')) ?: 0;
+                    $core['recipient_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
+                    break;
+
+                case 'open_link':
+                    $invites->bindFromLink($data, $user, $token, true, false);
+                    $core = $invites->sync($data, $user, $token);
+                    break;
+
+                case 'accept':
+                    $sessions->assertCanPlay($user, $sessionId);
+                    $sessions->touch($user, $sessionId);
+                    $core += $invites->accept($data, $user, $token);
+                    break;
+
+                case 'start':
+                    $sessions->assertCanPlay($user, $sessionId);
+                    $sessions->touch($user, $sessionId);
+                    $core += $invites->start($data, $user, $token);
+                    break;
+
+                case 'decline':
+                    $core['invite'] = $invites->decline($data, $user, $token);
+                    break;
+
+                case 'cancel':
+                    $core['invite'] = $invites->cancel($data, $user, $token);
+                    break;
+
+                case 'rematch':
+                    $sessions->assertCanPlay($user, $sessionId);
+                    $sessions->touch($user, $sessionId);
+                    $core = $invites->createRematch(
+                        $data,
+                        $user,
+                        clean_string($payload['gameId'] ?? '', 120)
+                    );
+                    $opponentId = (string)($core['opponent_id'] ?? '');
+                    if ($opponentId !== '' && isset($data['users'][$opponentId]) && is_array($data['users'][$opponentId])) {
+                        $lastSeen = strtotime((string)($data['users'][$opponentId]['last_seen_at'] ?? '')) ?: 0;
+                        $core['opponent_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
+                    }
+                    break;
+
+                case 'seen':
+                    $invites->markSeen($data, $userId, $token);
+                    $core['seen'] = true;
+                    break;
+
+                default:
+                    throw new RuntimeException('Неизвестное действие приглашения.');
+            }
+
+            $core['user'] = $users->publicUser($user);
+            $core['session'] = $sessions->publicState($user, $sessionId);
+            return $core;
+        });
+    }
 
     $actorId = (string)($tgUser['id'] ?? '');
     $signalToken = (string)($result['invite']['token'] ?? $payload['token'] ?? '');
+    $signalRecipientId = (string)($result['signal_recipient_id'] ?? '');
     if ($action === 'create_direct'
         && is_array($result['invite'] ?? null)
         && (string)($result['invite']['status'] ?? '') === 'pending') {
         $inviteSignals->publish((string)($result['recipient_id'] ?? ''), $result['invite']);
-    } elseif (in_array($action, ['accept', 'decline', 'cancel', 'start'], true) && $signalToken !== '') {
+    } elseif (in_array($action, ['accept', 'start', 'decline', 'cancel'], true) && $signalToken !== '') {
         $inviteSignals->clear($actorId, $signalToken);
-        $inviteSignals->clear((string)($result['signal_recipient_id'] ?? ''), $signalToken);
+        if ($signalRecipientId !== '' && is_array($result['invite'] ?? null)) {
+            $inviteSignals->publish($signalRecipientId, $result['invite']);
+        }
     }
     unset($result['signal_recipient_id']);
 
-    if ($runtimeInvites instanceof RuntimeInviteRepository) {
+    // The bridge projects mutations. A read-only sync has no new JSON state to
+    // project, and freezing writers again on every poll is both redundant and a
+    // direct source of action latency under two active clients.
+    if ($action !== 'sync' && $runtimeInvites instanceof RuntimeInviteRepository) {
         if (!($db instanceof ExclusiveSnapshotStorageInterface)) {
             throw new RuntimeException(
                 'Invite DB bridge requires an exclusive JSON snapshot capability.'

@@ -13,6 +13,17 @@ const VOLATILE_KEYS = new Set([
   'turn_deadline_ms',
   '__mgw_v100_pending_action',
 ]);
+const CLOCK_PROJECTION_KEYS = [
+  'turn',
+  'turn_revision',
+  'clock_revision',
+  'turn_started_at',
+  'turn_starts_at_ms',
+  'turn_deadline_ms',
+  'server_now_ms',
+  'time_left',
+  'move_timeout_sec',
+];
 
 const runtime = window.__MGW_V110_READONLY_GAME_SYNC__ ||= {
   initialized:false,
@@ -79,6 +90,13 @@ async function watchCurrentGame(){
 
     if (actionIsBusy(currentItem)) {
       if (currentPendingClockOnly) {
+        // Preserve only the authoritative handoff clock in the shared active
+        // state before the local pending action is cleared. This closes the
+        // rare race where the acceptance runtime correctly received the new
+        // 60-second deadline, then fell back to the previous turn because the
+        // main action response had not projected the same clock yet. Board and
+        // result fields remain exclusively owned by game-screen-v102.
+        adoptClockProjection(game);
         document.dispatchEvent(new CustomEvent('mgw:v110-ttt-clock-snapshot', {
           detail:{ game },
         }));
@@ -100,6 +118,14 @@ async function watchCurrentGame(){
     return null;
   } finally {
     runtime.busy = false;
+  }
+}
+
+function adoptClockProjection(game){
+  const active = state.activeGame;
+  if (!active?.id || String(active.id) !== String(game?.id || '')) return;
+  for (const key of CLOCK_PROJECTION_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(game, key)) active[key] = game[key];
   }
 }
 
