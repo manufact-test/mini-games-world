@@ -22,7 +22,7 @@ $importMap = <<<'HTML'
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
-    "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=102&b=901c5c869703",
+    "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=103&result=terminal-watch-priority",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=103&clock=phase-b-single-writer",
     "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=103&clock=ttt-fresh60",
     "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1110&clock=handoff-state-retained",
@@ -68,7 +68,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-invite-realtime-v1138"',
+    'data-hotfix-build="v110-mvp14-terminal-share-v1139"',
     $html
 );
 
@@ -78,9 +78,10 @@ header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1137');
-header('X-MGW-Invite-Graph: v1138-signal-sync-share-fast');
+header('X-MGW-Invite-Graph: v1139-prepared-share-restored');
 header('X-MGW-Search-Graph: v106-post-game-release-barrier');
 header('X-MGW-TTT-Clock: authoritative-turn-clock-v7-handoff-state-retained');
+header('X-MGW-TTT-Terminal: v1-readonly-watch-priority');
 header('X-MGW-Launch-Presentation: v127-server-start-anchor');
 header('X-MGW-Presence: v1122-room-occupancy-owner');
 header('X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame');
