@@ -203,7 +203,14 @@ final class MatchPreparationClockService
         if ($turn === '') return;
         $knownTurn = (string)($game['clock_turn'] ?? '');
         if ($knownTurn === '') {
-            $this->assignTurnClock($game, $turn);
+            if ($this->isTicTacToe($game)
+                && empty($game['turn_deadline_epoch_ms'])
+                && empty($game['turn_deadline_at'])) {
+                $this->assignTurnClock($game, $turn);
+                return;
+            }
+            $game['clock_turn'] = $turn;
+            $game['clock_revision'] = max(1, (int)($game['clock_revision'] ?? 0));
             return;
         }
         if ($knownTurn !== $turn) $this->assignTurnClock($game, $turn);
