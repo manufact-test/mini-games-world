@@ -18,12 +18,15 @@ export function renderUser(user){
   const explicitPhotoUrl = String(user?.photo_url || '').trim();
   const telegramPhotoUrl = currentTelegramPhotoUrl(ownerId);
 
-  ['topName','profileName','searchMeName'].forEach(id => {
+  // MVP-15.2: the profile screen is deliberately excluded. Its visible
+  // identity (name, MGW id, avatar and registration date) has one owner:
+  // screens/profile-screen-v110.js backed by /bot/profile.php.
+  ['topName','searchMeName'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = name;
   });
 
-  ['topAvatar','profileAvatar','searchMeAvatar'].forEach(id => {
+  ['topAvatar','searchMeAvatar'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
 
@@ -54,9 +57,6 @@ export function renderUser(user){
     el.style.backgroundRepeat = '';
     el.classList.remove('has-photo');
   });
-
-  const date = document.getElementById('profileDate');
-  if (date) date.textContent = user?.registered_at ? `В игре с ${formatDate(user.registered_at)}` : 'Дата регистрации появится после входа';
 }
 export function renderBalances(user){
   const match = document.getElementById('balanceMatch');
