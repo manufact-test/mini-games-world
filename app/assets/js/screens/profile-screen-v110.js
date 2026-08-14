@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
-import { renderUser, renderBalances, formatDate, initials } from '../ui.js?v=89';
+import { renderBalances, formatDate, initials } from '../ui.js?v=89';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1';
 let profileLoading = false;
@@ -38,6 +38,8 @@ export async function openProfile(){
       throw new Error('Канонический профиль MGW недоступен.');
     }
 
+    // The legacy profile call remains only for pre-15.3 stats/economy/session
+    // compatibility. It never renders visible profile identity in MVP-15.2.
     state.user = mergeUserState(state.user, result.user);
     state.profileStats = result.stats || state.profileStats || null;
     state.session = result.session || state.session;
@@ -46,7 +48,6 @@ export async function openProfile(){
       : (Array.isArray(state.profileOrders) ? state.profileOrders : []);
 
     if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
-    renderUser(state.user);
     renderBalances(state.user);
     renderCanonicalProfile(canonicalProfile);
     renderProfileStats(state.profileStats || null);
@@ -60,10 +61,7 @@ export async function openProfile(){
 }
 
 function showProfileImmediately(){
-  if (state.user) {
-    renderUser(state.user);
-    renderBalances(state.user);
-  }
+  if (state.user) renderBalances(state.user);
   if (canonicalProfile) renderCanonicalProfile(canonicalProfile);
   renderProfileStats(state.profileStats || loadCachedProfileStats());
   renderProfileOverview(
