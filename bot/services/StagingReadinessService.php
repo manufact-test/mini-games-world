@@ -15,6 +15,7 @@ final class StagingReadinessService
         'bot/invites.php',
         'bot/notifications.php',
         'bot/core/ConfigValidator.php',
+        'bot/core/RuntimeConfigLoader.php',
         'bot/invites/RuntimeInviteDeltaProjector.php',
         'bot/realtime/RealtimeRuntimeBridge.php',
         'bot/ledger/EconomyRuntimeBridge.php',
