@@ -57,7 +57,7 @@ $assert(
 
 $assert(
     str_contains($storageFactory, "'api.php', 'admin-read.php' => 'api'")
-        && str_contains($entrypoints, "if ($relative === 'bot/admin-read.php')")
+        && str_contains($entrypoints, 'if ($relative === \'bot/admin-read.php\')')
         && str_contains($entrypoints, "return 'api';"),
     'Staging and production admin reads must reuse the existing API DB-primary storage context.'
 );
@@ -71,10 +71,10 @@ $assert(
 $assert(
     str_contains($telegram, "'text' => '🌐 Web Admin'")
         && str_contains($telegram, 'WebAppLaunchUrl::admin($this->config)')
-        && str_contains($telegram, "$mainAdminCallbacks['admin:dashboard']")
-        && str_contains($telegram, "$mainAdminCallbacks['admin:orders']")
-        && str_contains($telegram, "$mainAdminCallbacks['admin:support']")
-        && str_contains($telegram, "$mainAdminCallbacks['admin:users']"),
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:dashboard\']')
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:orders\']')
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:support\']')
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:users\']'),
     'Only the existing full Telegram admin keyboard should gain the Web Admin launch button.'
 );
 
