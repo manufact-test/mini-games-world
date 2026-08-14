@@ -14,7 +14,7 @@
 @import url('./games/four-in-a-row/game.css?v=53');
 @import url('./games/battleship/rules.css?v=54');
 @import url('./games/battleship/game.css?v=56');
-@import url('./games/battleship/shot-feedback.css?v=58&ack=2&motion=smooth');
+@import url('./games/battleship/shot-feedback.css?v=59&ack=3&motion=original-duration');
 @import url('./games/checkers/rules.css?v=58');
 @import url('./games/checkers/game.css?v=59');
 @import url('./games/reversi/rules.css?v=66');
