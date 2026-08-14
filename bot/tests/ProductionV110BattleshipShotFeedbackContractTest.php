@@ -35,8 +35,19 @@ $assert(
 
 $assert(
     str_contains($gameCss, '.battleship-cell.shot-impact.hit{animation:battleship-hit-impact .55s ease-out}')
-        && str_contains($gameCss, '.battleship-cell.shot-impact.sunk{animation:battleship-sunk-impact .7s ease-out}'),
-    'My shots and opponent shots must share the canonical authoritative result animation layer.'
+        && str_contains($gameCss, '.battleship-cell.shot-impact.sunk{animation:battleship-sunk-impact .7s ease-out}')
+        && !str_contains($gameCss, '.battleship-cell.shot-impact.miss'),
+    'Only authoritative hit and sunk results may own Battleship impact animation.'
+);
+
+$assert(
+    str_contains($renderer, "const animateFreshShot = freshShot && ['hit','sunk'].includes(String(game?.last_result || ''));"),
+    'Battleship renderer must classify miss as a non-animated authoritative result.'
+);
+
+$assert(
+    str_contains($renderer, 'freshShot:animateFreshShot,'),
+    'Battleship board must receive impact state only for hit or sunk results.'
 );
 
 $fireHandler = <<<'JS'
@@ -56,10 +67,10 @@ $assert(
 
 $assert(
     str_contains($v110, 'main.css?v=152&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only')
-        && str_contains($v110, 'games/battleship/renderer.js?v=59&shot=pending-ack-no-stale-repaint')
-        && str_contains($v110, 'v110-mvp14-battleship-authoritative-shot-only-v1154')
-        && str_contains($v110, 'X-MGW-Battleship-Shot-Feedback: authoritative-result-only'),
-    'Canonical Telegram v110 must publish the authoritative-only Battleship shot presentation graph.'
+        && str_contains($v110, 'games/battleship/renderer.js?v=60&shot=miss-no-impact')
+        && str_contains($v110, 'v110-mvp14-battleship-miss-no-impact-v1155')
+        && str_contains($v110, 'X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static'),
+    'Canonical Telegram v110 must publish static miss plus retained hit/sunk impact rendering.'
 );
 
 fwrite(STDOUT, "ProductionV110BattleshipShotFeedbackContractTest: {$assertions} assertions passed\n");
