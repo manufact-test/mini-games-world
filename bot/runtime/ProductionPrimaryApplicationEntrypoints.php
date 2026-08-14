@@ -28,6 +28,11 @@ final class ProductionPrimaryApplicationEntrypoints
         if (!str_starts_with($normalizedScript, $rootPrefix)) return '';
 
         $relative = substr($normalizedScript, strlen($rootPrefix));
+        if ($relative === 'bot/admin-read.php') {
+            // The read-only web-admin surface is not a new storage/runtime owner.
+            // It deliberately reuses the already accepted API DB-primary context.
+            return 'api';
+        }
         return self::PATH_TO_ID[$relative] ?? '';
     }
 
