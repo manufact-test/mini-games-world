@@ -1,0 +1,23 @@
+/* Battleship pending-shot acknowledgement.
+ * State ownership stays in the existing pending_fire_cell -> mgw-pending-shot path.
+ * This file only makes that already-owned state visible in the same frame as the tap.
+ */
+.battleship-cell.mgw-pending-shot{
+  outline:2px solid rgba(190,172,255,.92);
+  outline-offset:-2px;
+  box-shadow:0 0 0 2px rgba(124,92,255,.18),0 0 14px rgba(124,92,255,.28);
+}
+.battleship-cell.mgw-pending-shot i{
+  inset:34%;
+  background:rgba(220,213,255,.98);
+  box-shadow:0 0 10px rgba(176,157,255,.78);
+  opacity:1;
+  animation:battleship-shot-ack .22s ease-out;
+}
+@keyframes battleship-shot-ack{
+  from{transform:scale(.45);opacity:.45}
+  to{transform:scale(1);opacity:1}
+}
+@media (prefers-reduced-motion:reduce){
+  .battleship-cell.mgw-pending-shot i{animation:none}
+}
