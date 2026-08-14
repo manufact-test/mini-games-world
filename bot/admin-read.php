@@ -24,6 +24,12 @@ function mgw_admin_init_data_is_fresh(string $initData, ?int $now = null): bool
         && $now - $authDate <= $maxAgeSec;
 }
 
+function mgw_admin_read_only_text(string $text, string $commandMarker): string
+{
+    $position = strpos($text, $commandMarker);
+    return $position === false ? trim($text) : rtrim(substr($text, 0, $position));
+}
+
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
         json_response(['ok' => false, 'error' => 'Method not allowed.'], 405);
@@ -51,8 +57,8 @@ try {
     $storage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $snapshot = $storage->readOnly(static function (array $data) use ($admin): array {
         return [
-            'dashboard' => $admin->dashboard($data),
-            'system_check' => $admin->systemCheck($data),
+            'dashboard' => mgw_admin_read_only_text($admin->dashboard($data), "\nКоманды:\n"),
+            'system_check' => mgw_admin_read_only_text($admin->systemCheck($data), "\nКоманда:\n"),
         ];
     });
 
