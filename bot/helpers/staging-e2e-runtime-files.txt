@@ -92,6 +92,11 @@ bot/runtime/ProductionPrimaryApplicationEntrypoints.php
 bot/storage/StorageFactory.php
 bot/services/StagingReadinessService.php
 
+# MVP-15.1 provider-neutral MGW profile API. AuthService resolves provider
+# identity to mgw_id; the profile service reads only the canonical account DB.
+bot/profile.php
+bot/accounts/MgwProfileService.php
+
 # Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.
