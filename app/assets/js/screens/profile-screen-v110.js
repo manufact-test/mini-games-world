@@ -3,6 +3,7 @@ import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
 import { renderUser, renderBalances } from '../ui.js?v=89';
+import { applyCanonicalMgwProfile } from '../profile/mgw-profile-model.js?v=1';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1';
 let profileLoading = false;
@@ -24,12 +25,18 @@ export async function openProfile(){
   setProfileBusy(true);
 
   try {
+    const canonicalResult = await api.mgwProfile();
     const [result, ordersResult] = await Promise.all([
       api.profile(),
       api.shopOrders().catch(() => null),
     ]);
 
-    state.user = mergeUserState(state.user, result.user);
+    state.mgwProfile = canonicalResult.profile || null;
+    const runtimeUser = {
+      ...(state.user && typeof state.user === 'object' ? state.user : {}),
+      ...(result.user && typeof result.user === 'object' ? result.user : {}),
+    };
+    state.user = applyCanonicalMgwProfile(runtimeUser, state.mgwProfile);
     state.profileStats = result.stats || state.profileStats || null;
     state.session = result.session || state.session;
     state.profileOrders = Array.isArray(ordersResult?.orders)
@@ -60,18 +67,6 @@ function showProfileImmediately(){
     Array.isArray(state.profileOrders) ? state.profileOrders : []
   );
   showScreen('profile');
-}
-
-function mergeUserState(currentUser, incomingUser){
-  const current = currentUser && typeof currentUser === 'object' ? currentUser : {};
-  const incoming = incomingUser && typeof incomingUser === 'object' ? incomingUser : {};
-  const merged = { ...current, ...incoming };
-
-  const incomingPhoto = String(incoming.photo_url || '').trim();
-  const currentPhoto = String(current.photo_url || '').trim();
-  if (!incomingPhoto && currentPhoto) merged.photo_url = currentPhoto;
-
-  return merged;
 }
 
 function setProfileBusy(busy){
