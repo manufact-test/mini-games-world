@@ -235,7 +235,7 @@ function acceptPendingClockSnapshot(event){
 
 function syncClock(){
   const activeGame = state.activeGame;
-  if (!activeGame?.id || String(activeGame?.status || '') !== 'active') {
+  if (!activeGame?.id || String(activeGame?.status || '') !== 'active' || !headerClockOwnsGame(activeGame)) {
     runtime.clock = null;
     runtime.pendingClockSnapshot = null;
     return;
@@ -287,6 +287,7 @@ function paintClock(){
     if (timer.textContent !== '—') timer.textContent = '—';
     return;
   }
+  if (!headerClockOwnsGame(game)) return;
   if (!clock || String(game?.id || '') !== clock.gameId) return;
   const phase = String(game?.launch_phase || '');
   const now = performance.now();
@@ -300,6 +301,10 @@ function paintClock(){
     : Math.max(0, Math.ceil((clock.deadline - now) / 1000));
   const label = `${seconds} сек`;
   if (timer.textContent !== label) timer.textContent = label;
+}
+function headerClockOwnsGame(game){
+  const type = String(game?.game_type || game?.type || state.selectedGame || '');
+  return !(type === 'battleship' && String(game?.phase || '') === 'setup');
 }
 function launchAllowsAction(game){
   const phase = String(game?.launch_phase || '');
