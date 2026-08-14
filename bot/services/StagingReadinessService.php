@@ -9,10 +9,23 @@ final class StagingReadinessService
         'app/v110.php',
         'app/assets/js/main-v110.js',
         'app/assets/js/main-v110-handoff-shell.js',
+        'app/assets/js/games/game-invites-v110.js',
+        'app/assets/js/production-v110-targeted-interactions.js',
         'bot/api.php',
         'bot/invites.php',
         'bot/notifications.php',
         'bot/core/ConfigValidator.php',
+        'bot/invites/RuntimeInviteDeltaProjector.php',
+        'bot/realtime/RealtimeRuntimeBridge.php',
+        'bot/ledger/EconomyRuntimeBridge.php',
+        'bot/shop/ShopRuntimeBridge.php',
+        'bot/payments/PaymentRuntimeBridge.php',
+        'bot/weekly/WeeklyBonusRuntimeBridge.php',
+        'bot/services/invites/GameInviteValidationTrait.php',
+        'bot/storage/JsonDatabase.php',
+        'bot/storage/JsonStorageAdapter.php',
+        'bot/storage/contracts/ProjectionSnapshotStorageInterface.php',
+        'bot/services/StagingReadinessService.php',
     ];
 
     public function __construct(
