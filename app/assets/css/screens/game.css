@@ -21,17 +21,18 @@
 .board.size-9 .cell{font-size:clamp(10px,3.2vw,14px);border-radius:6px}
 .cell:active{transform:scale(.96)}.cell.x{color:#d8d0ff;background:rgba(124,92,255,.15)}.cell.o{color:#9effdc;background:rgba(46,230,166,.12)}.cell.locked{cursor:default}
 
-.game-board-screen[data-game-type="battleship"] .content{padding:8px 10px 14px}
+.game-board-screen[data-game-type="battleship"] .content{padding:8px 8px 14px}
 .game-board-screen[data-game-type="battleship"] .game-header{position:sticky;top:0;z-index:20;gap:5px;margin:0 0 5px;padding:0 0 5px;background:linear-gradient(180deg,rgba(9,12,20,.98) 0%,rgba(9,12,20,.95) 78%,rgba(9,12,20,0) 100%);backdrop-filter:blur(10px)}
 .game-board-screen[data-game-type="battleship"] .turn-box{padding:7px 9px;border-radius:16px}
 .game-board-screen[data-game-type="battleship"] .turn-text{font-size:15px}
-.game-board-screen[data-game-type="battleship"] .players-row{gap:5px}
-.game-board-screen[data-game-type="battleship"] .game-player{padding:6px 8px;border-radius:14px}
+.game-board-screen[data-game-type="battleship"][data-game-phase="setup"] .timer{display:none}
+.game-board-screen[data-game-type="battleship"] .players-row{gap:4px}
+.game-board-screen[data-game-type="battleship"] .game-player{padding:7px 8px;border-radius:14px;min-height:40px}
 .game-board-screen[data-game-type="battleship"] .game-player .name{font-size:12px}
-.game-board-screen[data-game-type="battleship"] .game-player .mark{font-size:9px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.game-board-screen[data-game-type="battleship"] .game-player .mark{font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .game-board-screen[data-game-type="battleship"] .board-wrap{padding:6px;border-radius:18px;margin:4px auto 8px}
 .game-board-screen[data-game-type="battleship"] .board{width:100%;max-width:100%}
 
-@media (max-height:720px){.game-board-screen .content{padding-top:10px;padding-bottom:14px}.game-header{gap:7px;margin-bottom:8px}.match-info{padding:9px 10px;border-radius:18px}.match-info h2{font-size:16px}.turn-box{padding:9px 10px;border-radius:18px}.turn-text{font-size:16px}.timer{padding:6px 13px 6px 8px}.game-player{padding:8px 9px;border-radius:16px}.game-player .name{font-size:13px}.game-player .mark{font-size:11px}.board-wrap{padding:8px;border-radius:20px;margin:8px auto 10px}.board{width:min(100%,clamp(220px,calc(100dvh - 285px),370px))}.game-board-screen[data-game-type="battleship"] .content{padding-top:7px}.game-board-screen[data-game-type="battleship"] .game-header{gap:4px;margin-bottom:4px}.game-board-screen[data-game-type="battleship"] .turn-box{padding:6px 8px}.game-board-screen[data-game-type="battleship"] .game-player{padding:5px 7px}.game-board-screen[data-game-type="battleship"] .board-wrap{padding:5px;margin-top:3px}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
-@media (max-height:620px){.match-info span{display:none}.players-row{gap:6px}.game-player{padding:7px 8px}.board{width:min(100%,clamp(200px,calc(100dvh - 245px),330px))}.game-board-screen[data-game-type="battleship"] .game-player .mark{display:none}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
+@media (max-height:720px){.game-board-screen .content{padding-top:10px;padding-bottom:14px}.game-header{gap:7px;margin-bottom:8px}.match-info{padding:9px 10px;border-radius:18px}.match-info h2{font-size:16px}.turn-box{padding:9px 10px;border-radius:18px}.turn-text{font-size:16px}.timer{padding:6px 13px 6px 8px}.game-player{padding:8px 9px;border-radius:16px}.game-player .name{font-size:13px}.game-player .mark{font-size:11px}.board-wrap{padding:8px;border-radius:20px;margin:8px auto 10px}.board{width:min(100%,clamp(220px,calc(100dvh - 285px),370px))}.game-board-screen[data-game-type="battleship"] .content{padding-top:7px}.game-board-screen[data-game-type="battleship"] .game-header{gap:4px;margin-bottom:4px}.game-board-screen[data-game-type="battleship"] .turn-box{padding:6px 8px}.game-board-screen[data-game-type="battleship"] .game-player{padding:6px 7px}.game-board-screen[data-game-type="battleship"] .board-wrap{padding:5px;margin-top:3px}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
+@media (max-height:620px){.match-info span{display:none}.players-row{gap:6px}.game-player{padding:7px 8px}.board{width:min(100%,clamp(200px,calc(100dvh - 245px),330px))}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
 @media (max-width:380px){.game-board-screen .content{padding-left:10px;padding-right:10px}.board-wrap{padding:7px;border-radius:20px}.board{width:min(100%,clamp(210px,calc(100dvh - 300px),340px))}.game-board-screen[data-game-type="battleship"] .content{padding-left:7px;padding-right:7px}.game-board-screen[data-game-type="battleship"] .board-wrap{padding:4px;border-radius:16px}.game-board-screen[data-game-type="battleship"] .board{width:100%}}
