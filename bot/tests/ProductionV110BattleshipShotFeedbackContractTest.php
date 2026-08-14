@@ -3,11 +3,12 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $model = file_get_contents($root . '/app/assets/js/production-v100-optimistic-models.js');
+$router = file_get_contents($root . '/app/assets/js/games/game-router-v102.js');
 $renderer = file_get_contents($root . '/app/assets/js/games/battleship/renderer.js');
 $mainCss = file_get_contents($root . '/app/assets/css/main.css');
 $feedbackCss = file_get_contents($root . '/app/assets/css/games/battleship/shot-feedback.css');
 $v110 = file_get_contents($root . '/app/v110.php');
-if (!is_string($model) || !is_string($renderer) || !is_string($mainCss) || !is_string($feedbackCss) || !is_string($v110)) {
+if (!is_string($model) || !is_string($router) || !is_string($renderer) || !is_string($mainCss) || !is_string($feedbackCss) || !is_string($v110)) {
     throw new RuntimeException('Cannot read Battleship shot feedback sources.');
 }
 
@@ -21,6 +22,14 @@ $assert(
     str_contains($model, 'optimistic.pending_fire_cell = cell;')
         && str_contains($model, "className:'mgw-pending-shot'"),
     'Battleship shot acknowledgement must reuse the existing pending_fire_cell owner.'
+);
+
+$assert(
+    str_contains($router, "const pendingFireCell = Number(game?.pending_fire_cell);")
+        && str_contains($router, "String(game?.phase || '') !== 'setup'")
+        && str_contains($router, "container?.querySelector?.('.battleship-coordinate-board')")
+        && str_contains($router, 'if (preservePendingBattleDom) return;'),
+    'Pending Battleship fire must preserve the existing battle-board DOM until the authoritative result.'
 );
 
 $assert(
@@ -76,11 +85,13 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'main.css?v=151&sk=3&icons=c1efd5af&render=27&palette=notification-semantic&battleship=shot-smooth-original-duration')
+    str_contains($v110, '"./assets/js/games/game-router-v102.js?v=102": "./assets/js/games/game-router-v102.js?v=103&battleship=stable-pending-dom"')
+        && str_contains($v110, 'main.css?v=151&sk=3&icons=c1efd5af&render=27&palette=notification-semantic&battleship=shot-smooth-original-duration')
         && str_contains($v110, 'games/battleship/renderer.js?v=59&shot=pending-ack-no-stale-repaint')
-        && str_contains($v110, 'v110-mvp14-battleship-shot-smooth-original-duration-v1153')
-        && str_contains($v110, 'X-MGW-Battleship-Shot-Feedback: immediate-single-marker-original-result-duration'),
-    'Canonical Telegram v110 must publish the fresh original-duration shot feedback graph.'
+        && str_contains($v110, 'v110-mvp14-battleship-stable-pending-dom-v1154')
+        && str_contains($v110, 'X-MGW-Battleship-Shot-Feedback: immediate-single-marker-stable-pending-dom-original-result-duration')
+        && str_contains($v110, 'X-MGW-Battleship-Shot-DOM: preserve-board-until-authoritative-result'),
+    'Canonical Telegram v110 must publish the stable pending-DOM Battleship shot graph.'
 );
 
 fwrite(STDOUT, "ProductionV110BattleshipShotFeedbackContractTest: {$assertions} assertions passed\n");
