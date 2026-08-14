@@ -145,11 +145,22 @@ trait GameInviteStorageTrait
             'type' => $type,
             'title' => $title,
             'message' => $message,
-            'tone' => $tone,
+            'tone' => $this->canonicalInviteNotificationTone($type, $tone),
             'invite_token' => $token,
             'created_at' => now_iso(),
             'read_at' => null,
         ];
+    }
+
+    private function canonicalInviteNotificationTone(string $type, string $fallback): string
+    {
+        if (in_array($type, ['invite_received', 'invite_rematch_received', 'invite_accepted', 'invite_started'], true)) {
+            return 'info';
+        }
+        if (in_array($type, ['invite_declined', 'invite_cancelled', 'invite_expired', 'invite_timed_out'], true)) {
+            return 'warning';
+        }
+        return in_array($fallback, ['info', 'success', 'warning', 'danger'], true) ? $fallback : 'info';
     }
 
     private function hideReceivedNotification(array &$db, string $userId, string $token): void
