@@ -31,7 +31,7 @@ $importMap = <<<'HTML'
     "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1122&room=presence-owner",
     "./assets/js/games/game-invites-v110.js?v=1137&ux=1": "./assets/js/games/game-invites-v110.js?v=1139&share=prepared-owner-rematch-clean",
     "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
-    "./assets/js/games/battleship/renderer.js?v=56": "./assets/js/games/battleship/renderer.js?v=58&miss=900ms",
+    "./assets/js/games/battleship/renderer.js?v=56": "./assets/js/games/battleship/renderer.js?v=59&shot=pending-ack-no-stale-repaint",
     "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner",
     "./assets/js/components/shield-king-visuals.js?v=125&sk=2": "./assets/js/components/shield-king-visuals.js?v=126&sk=3&icons=c1efd5af",
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
@@ -51,7 +51,7 @@ if (!str_contains($html, $headClose)) {
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=148&sk=3&icons=c1efd5af&render=24&palette=notification-semantic',
+    './assets/css/main.css?v=149&sk=3&icons=c1efd5af&render=25&palette=notification-semantic&battleship=shot-ack',
     $html
 );
 $html = str_replace(
@@ -71,7 +71,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-miss-handoff-v1150"',
+    'data-hotfix-build="v110-mvp14-battleship-shot-feedback-v1151"',
     $html
 );
 
@@ -101,4 +101,5 @@ header('X-MGW-Battleship-Setup-Clock: dedicated-setup-timer-single-owner');
 header('X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible');
 header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
+header('X-MGW-Battleship-Shot-Feedback: immediate-pending-dot-no-stale-repaint');
 echo $html;
