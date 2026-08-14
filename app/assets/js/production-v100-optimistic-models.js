@@ -12,7 +12,7 @@ export function buildV100OptimisticGame(game, action, viewerId, gameType){
   }
 
   if (type === 'battleship' && String(game?.phase || '') === 'setup') {
-    const v102Builder = v102BattleshipBuilder();
+    const v102Builder = registeredBattleshipSetupBuilder();
     return v102Builder
       ? v102Builder(game, action)
       : buildBattleshipSetupOptimistic(game, action);
@@ -79,9 +79,8 @@ export function invalidateInFlightPoll(runtime, gameId){
   return true;
 }
 
-function v102BattleshipBuilder(){
+function registeredBattleshipSetupBuilder(){
   if (typeof window === 'undefined') return null;
-  if (String(window.__MGW_REGRESSION_BUILD__ || '') !== 'v102-mvp14-targeted-regression-repair') return null;
   const builder = window.__MGW_V102_BUILD_BATTLESHIP_SETUP__;
   return typeof builder === 'function' ? builder : null;
 }
