@@ -73,7 +73,7 @@ $assert(
         && str_contains($game, 'setResultActionsDisabled(false);')
         && str_contains($game, 'restoreAuthoritative(item);')
         && str_contains($game, 'startGamePolling(id);'),
-    'Voluntary surrender must react before the server wait and safely restore the game on failure.'
+    'Retained pre-v110 surrender fallback must react before the server wait and safely restore the game on failure.'
 );
 
 $assert(
@@ -86,11 +86,12 @@ $assert(
 
 $assert(
     !str_contains($gateway, 'production-v102-battleship-models.js')
-        && str_contains($gateway, "String(window.__MGW_REGRESSION_BUILD__ || '') !== 'v102-mvp14-targeted-regression-repair'")
+        && !str_contains($gateway, '__MGW_REGRESSION_BUILD__')
+        && str_contains($gateway, 'registeredBattleshipSetupBuilder()')
         && str_contains($gateway, 'window.__MGW_V102_BUILD_BATTLESHIP_SETUP__')
         && str_contains($bridge, "from './production-v102-battleship-models.js?v=102'")
         && str_contains($bridge, 'window.__MGW_V102_BUILD_BATTLESHIP_SETUP__ = buildV102BattleshipSetupOptimistic;'),
-    'Retained v100/v101 dependency graphs must not import v102; only the v102 entry may register the new fleet builder.'
+    'The Battleship setup gateway must use the explicitly registered bridge owner rather than a historical build-name gate.'
 );
 
 $assert(

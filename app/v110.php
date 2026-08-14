@@ -23,8 +23,8 @@ $importMap = <<<'HTML'
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
     "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=103&result=terminal-watch-priority",
-    "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=103&clock=phase-b-single-writer",
-    "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=103&clock=ttt-fresh60",
+    "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=104&clock=phase-b-single-writer&battleship=leave-guard",
+    "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner",
     "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch",
     "./assets/js/production-v110-targeted-interactions.js?v=1102": "./assets/js/production-v110-targeted-interactions.js?v=1104&rematch=single-owner",
     "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1122&room=presence-owner",
@@ -49,7 +49,7 @@ if (!str_contains($html, $headClose)) {
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=146&sk=3&icons=c1efd5af&render=22&palette=notification-semantic',
+    './assets/css/main.css?v=147&sk=3&icons=c1efd5af&render=23&palette=notification-semantic',
     $html
 );
 $html = str_replace(
@@ -59,7 +59,7 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/production-clean-entry-v110.js?v=1123&clock=single-writer&release=search-barrier',
+    './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
     $html
 );
 $html = str_replace(
@@ -69,7 +69,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-notification-palette-v1146"',
+    'data-hotfix-build="v110-mvp14-battleship-root-cause-v1147"',
     $html
 );
 
@@ -92,4 +92,7 @@ header('X-MGW-App-Entry-Presentation: shield-king-v1141-nostalgic-entry-copy');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
 header('X-MGW-Icon-Pack: c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1');
 header('X-MGW-Icon-Render: accepted-v1145-more-optical-center');
+header('X-MGW-Battleship-Setup: v102-registered-optimistic-owner');
+header('X-MGW-Battleship-Leave: v110-action-quarantine');
+header('X-MGW-Game-Timer-Frame: shared-80px-13px');
 echo $html;
