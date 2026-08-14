@@ -47,7 +47,7 @@ final class ShopRuntimeBridge
             throw new RuntimeException('Shop bridge requires JSON rollback storage.');
         }
         if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Shop bridge requires exclusive JSON snapshot support.');
+            throw new RuntimeException('Shop bridge requires stable JSON snapshot support.');
         }
 
         $repository = $this->repository ??= new RuntimeShopRepository(
@@ -55,8 +55,13 @@ final class ShopRuntimeBridge
             $this->router,
             $storage
         );
-        return $storage->exclusiveReadOnly(static function (array $_snapshot) use ($repository): array {
+        $callback = static function (array $_snapshot) use ($repository): array {
             return $repository->synchronizeCurrentJson();
-        });
+        };
+
+        if ($storage instanceof ProjectionSnapshotStorageInterface) {
+            return $storage->projectionReadOnly($callback);
+        }
+        return $storage->exclusiveReadOnly($callback);
     }
 }
