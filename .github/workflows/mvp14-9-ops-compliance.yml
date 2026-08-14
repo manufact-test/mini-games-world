@@ -1,0 +1,32 @@
+name: MVP-14.9 ops compliance
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'ops/runtime/verify-mvp14-9-ops-compliance.sh'
+      - 'ops/checks/mvp14-9-ops-compliance-local.sh'
+      - 'ops/runtime/MVP14_9_DATABASE_OPERATIONS_CLOSURE.md'
+      - 'ops/runtime/MVP14_9_DATABASE_OPERATIONS_RUNBOOK.md'
+      - '.github/workflows/mvp14-9-ops-compliance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-ops-compliance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: |
+          bash -n ops/runtime/verify-mvp14-9-ops-compliance.sh
+          bash -n ops/checks/mvp14-9-ops-compliance-local.sh
+
+      - name: Fail-closed evidence-gate self-test
+        run: bash ops/checks/mvp14-9-ops-compliance-local.sh
