@@ -418,9 +418,6 @@ async function createLinkDraft(context, button){
   if (shareClickPending || shareAttempt?.nativePending) return;
   shareClickPending = true;
   haptic('light');
-  const originalText = String(button.textContent || 'Поделиться ссылкой');
-  button.setAttribute('aria-busy', 'true');
-  button.textContent = 'Готовим ссылку…';
 
   try {
     const result = await obtainPreparedShareResult(context);
@@ -436,22 +433,16 @@ async function createLinkDraft(context, button){
       return;
     }
 
-    // A valid invite link is already complete at this point. Do not make the
-    // first user click wait for Telegram's PreparedInlineMessage service and do
-    // not add a second local confirmation sheet: open Telegram's ordinary share
-    // surface immediately. The draft stays passive until a recipient opens it.
-    currentInvite = null;
-    openFallbackShare(draftInvite);
+    // Keep the accepted in-app fallback owner. A missing/unsupported native
+    // prepared-share surface must never auto-jump the user into t.me/share/url.
+    currentInvite = draftInvite;
+    showPreparedLink(draftInvite, context);
   } catch (error) {
     if (String(error?.name || '') !== 'AbortError') {
       toast(error.message || 'Не удалось подготовить приглашение.');
     }
   } finally {
     shareClickPending = false;
-    if (button?.isConnected) {
-      button.removeAttribute('aria-busy');
-      button.textContent = originalText;
-    }
   }
 }
 
@@ -490,7 +481,9 @@ function warmShareDraft(context){
     .then(async () => {
       if (shareWarm?.id !== entry.id) return null;
       entry.status = 'loading';
-      const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:false }, { prefetch:true });
+      // PreparedInlineMessage is warmed before the user taps Share so the
+      // accepted Telegram shareMessage surface remains the visible owner.
+      const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true });
       if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
       if (shareWarm?.id !== entry.id) {
         void discardDraft(result.invite);
@@ -920,7 +913,8 @@ async function createRematch(gameId, button){
   rematchPendingGameIds.add(gameId);
   haptic('light');
   const originalText = String(button.textContent || 'Предложить реванш');
-  button.setAttribute('aria-busy', 'true');
+  // The Set above is the single duplicate-request owner. Do not expose an
+  // artificial disabled/busy control state while the fast rematch is in flight.
   button.textContent = 'Предлагаем реванш…';
 
   try {
@@ -942,7 +936,6 @@ async function createRematch(gameId, button){
     if (button?.isConnected) button.textContent = originalText;
   } finally {
     rematchPendingGameIds.delete(gameId);
-    if (button?.isConnected) button.removeAttribute('aria-busy');
   }
 }
 

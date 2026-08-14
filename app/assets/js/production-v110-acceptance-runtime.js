@@ -282,7 +282,12 @@ function paintClock(){
   const clock = runtime.clock;
   const timer = document.getElementById('timerText');
   const game = state.activeGame;
-  if (!timer || !clock || String(game?.id || '') !== clock.gameId) return;
+  if (!timer) return;
+  if (String(game?.status || '') !== 'active') {
+    if (timer.textContent !== '—') timer.textContent = '—';
+    return;
+  }
+  if (!clock || String(game?.id || '') !== clock.gameId) return;
   const phase = String(game?.launch_phase || '');
   const now = performance.now();
   const beforeTurnStart = phase === 'preparing'
