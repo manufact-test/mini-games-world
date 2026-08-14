@@ -99,6 +99,12 @@ bot/profile.php
 bot/accounts/MgwProfileService.php
 bot/accounts/AccountIdentityService.php
 
+# MVP-15.2 unified visible profile. The profile screen owns canonical MGW
+# identity/avatar while the legacy profile call remains stats/economy-only.
+app/assets/js/api/client.js
+app/assets/js/screens/profile-screen-v110.js
+app/assets/js/ui.js
+
 # Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.
