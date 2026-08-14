@@ -157,11 +157,14 @@ function submitAction(gameId, action){
   if (!viewer?.id) return;
   item.viewer = viewer;
 
+  const type = gameTypeOf(base);
+  const optimistic = buildV100OptimisticGame(base, action, viewer.id, type);
+  const localBattleshipSetup = type === 'battleship' && String(base?.phase || '') === 'setup';
+  if (localBattleshipSetup && !optimistic) return;
+
   haptic('light');
   item.generation++;
 
-  const type = gameTypeOf(base);
-  const optimistic = buildV100OptimisticGame(base, action, viewer.id, type);
   if (optimistic) {
     item.optimistic = optimistic;
     state.activeGame = optimistic;
@@ -203,8 +206,14 @@ async function drainActions(gameId, item){
         result = await api.gameAction(gameId, queued.action);
       } catch (error) {
         item.queue.length = 0;
+        if (item.surrenderPending) break;
         restoreAuthoritative(item);
         toast(error?.message || 'Не удалось выполнить действие. Поле восстановлено.');
+        break;
+      }
+
+      if (item.surrenderPending) {
+        item.queue.length = 0;
         break;
       }
 
@@ -330,7 +339,10 @@ function requestLeaveGame(){
       <button class="btn danger full" id="confirmLeaveGame" type="button">Выйти и завершить матч</button>
     </div>
   `);
-  document.getElementById('confirmLeaveGame')?.addEventListener('click', confirmLeaveGame);
+
+  if (!window.__MGW_V110_MATCH_LIFECYCLE__?.initialized) {
+    document.getElementById('confirmLeaveGame')?.addEventListener('click', confirmLeaveGame);
+  }
 }
 
 async function confirmLeaveGame(){
@@ -585,8 +597,8 @@ function notifyWeeklyProgress(game){
 }
 
 function escapeHtml(value){
-  return String(value ?? '').replace(/[&<>'"]/g, char => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;',
+  return String(value ?? '').replace(/[&<>'\"]/g, char => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '\"':'&quot;',
   }[char]));
 }
 
