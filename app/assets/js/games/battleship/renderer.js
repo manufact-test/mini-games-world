@@ -296,6 +296,7 @@ function renderBattle({ game, me, container, onAction }){
   const board = showingEnemy ? (game?.enemy_board || []) : (game?.my_board || []);
   const shotKey = shotSignature(game);
   const freshShot = Boolean(shotKey && shotKey !== lastAnimatedShotKey);
+  const animateFreshShot = freshShot && ['hit','sunk'].includes(String(game?.last_result || ''));
 
   container.innerHTML = `
     <div class="battleship-panel battleship-battle-panel">
@@ -318,7 +319,7 @@ function renderBattle({ game, me, container, onAction }){
         lastShot: game?.last_shot,
         lastShooterId: game?.last_shooter_id,
         meId: me?.id,
-        freshShot,
+        freshShot:animateFreshShot,
       })}
 
       <div class="battleship-legend">
