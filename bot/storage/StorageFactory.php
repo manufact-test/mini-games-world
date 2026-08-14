@@ -77,7 +77,7 @@ final class StorageFactory
             ?? ''
         )));
         $stagingEntrypoint = match ($script) {
-            'api.php' => 'api',
+            'api.php', 'admin-read.php' => 'api',
             'webhook.php' => 'webhook',
             default => '',
         };

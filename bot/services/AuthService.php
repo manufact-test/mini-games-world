@@ -7,6 +7,16 @@ final class AuthService
 {
     public function __construct(private array $config) {}
 
+    public function getTelegramUserFromInitData(string $initData, bool $attachIdentity = true): array
+    {
+        $user = $this->validateTelegramInitData($initData);
+        if (!is_array($user)) {
+            throw new RuntimeException('Откройте панель через Telegram.');
+        }
+
+        return $this->finishAuthenticatedUser($user, '', $attachIdentity);
+    }
+
     public function getUserFromRequest(array $payload, bool $attachIdentity = true): array
     {
         $sessionId = (string)($payload['sessionId'] ?? '');

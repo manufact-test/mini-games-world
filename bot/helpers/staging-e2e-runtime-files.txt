@@ -81,6 +81,17 @@ bot/webhook.php
 bot/helpers/StagingMenuButtonReconciler.php
 bot/services/TelegramService.php
 
+# MVP-14.10 minimal secure Web Admin. This surface reuses Telegram initData,
+# admin_ids and the canonical API DB-primary storage context. Fingerprint every
+# runtime file so manual acceptance cannot run against a partial admin deploy.
+app/admin.php
+app/assets/css/admin-shell.css
+app/assets/js/admin-shell.js
+bot/admin-read.php
+bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+bot/storage/StorageFactory.php
+bot/services/StagingReadinessService.php
+
 # Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.
