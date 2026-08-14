@@ -38,6 +38,7 @@ final class RealtimeRuntimeBridge
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
+        if ($this->currentApiActionIsLatencyCritical()) return null;
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
@@ -61,5 +62,21 @@ final class RealtimeRuntimeBridge
         // Compatibility fallback for narrow adapters that predate the runtime
         // projection snapshot contract keeps the historical fail-closed freeze.
         return $storage->exclusiveReadOnly($callback);
+    }
+
+    private function currentApiActionIsLatencyCritical(): bool
+    {
+        $script = trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+        if ($script === '' || basename($script) !== 'api.php') return false;
+
+        $action = strtolower(trim((string)($GLOBALS['mgw_api_action'] ?? $GLOBALS['action'] ?? '')));
+        return in_array($action, [
+            'start_search',
+            'leave_search',
+            'game_state',
+            'game_action',
+            'make_move',
+            'leave_game',
+        ], true);
     }
 }
