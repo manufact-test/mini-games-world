@@ -56,6 +56,7 @@ function surrenderToHome(game){
 
   const snapshot = clone(game);
   const viewer = resolveViewer(snapshot);
+  quarantineGameActions(snapshot.id);
 
   state.timers.game = clearTimer(state.timers.game);
   state.activeGame = null;
@@ -71,6 +72,9 @@ function surrenderToHome(game){
       const authoritative = result?.game || snapshot;
       state.activeGame = null;
       clearV99PassiveLock();
+      retireGameRuntime(snapshot.id);
+      clearGameView();
+      showScreen('home');
 
       document.dispatchEvent(new CustomEvent('mgw:game-finished', {
         detail:{ game:authoritative, gameId:String(authoritative?.id || snapshot.id), source:'v110-surrender-home' },
@@ -78,6 +82,7 @@ function surrenderToHome(game){
       document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
       return { released:true, game:authoritative };
     } catch (error) {
+      releaseGameActionQuarantine(snapshot.id);
       closeSheet();
       enterGame(snapshot, viewer);
       toast(error?.message || 'Не удалось завершить матч. Игра восстановлена.');
@@ -91,6 +96,35 @@ function surrenderToHome(game){
 
   runtime.releaseBarrier = completion;
   return completion;
+}
+
+function quarantineGameActions(gameId){
+  const id = String(gameId || '');
+  const item = window.__MGW_V100_GAME_RUNTIME__?.games?.get?.(id);
+  if (!item) return;
+  item.surrenderPending = true;
+  if (Array.isArray(item.queue)) item.queue.length = 0;
+  item.generation = Number(item.generation || 0) + 1;
+}
+
+function releaseGameActionQuarantine(gameId){
+  const id = String(gameId || '');
+  const item = window.__MGW_V100_GAME_RUNTIME__?.games?.get?.(id);
+  if (!item) return;
+  item.surrenderPending = false;
+  item.generation = Number(item.generation || 0) + 1;
+}
+
+function retireGameRuntime(gameId){
+  const id = String(gameId || '');
+  const games = window.__MGW_V100_GAME_RUNTIME__?.games;
+  const item = games?.get?.(id);
+  if (item) {
+    item.surrenderPending = true;
+    if (Array.isArray(item.queue)) item.queue.length = 0;
+    item.generation = Number(item.generation || 0) + 1;
+  }
+  games?.delete?.(id);
 }
 
 function rememberState(result){
