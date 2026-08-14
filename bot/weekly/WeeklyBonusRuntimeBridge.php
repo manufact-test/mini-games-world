@@ -32,7 +32,21 @@ final class WeeklyBonusRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        return $this->enabled();
+        if (!$this->enabled()) return false;
+        if (trim($action) === '') $action = (string)($GLOBALS['action'] ?? '');
+
+        // Gameplay/search responses are the realtime product boundary. Their JSON
+        // mutation is already durable and marks the projection generation dirty;
+        // DB parity catches up on the next non-latency-critical API action instead
+        // of keeping the player's HTTP response behind external DB I/O.
+        return !in_array(strtolower(trim($action)), [
+            'start_search',
+            'leave_search',
+            'game_state',
+            'game_action',
+            'make_move',
+            'leave_game',
+        ], true);
     }
 
     /**
