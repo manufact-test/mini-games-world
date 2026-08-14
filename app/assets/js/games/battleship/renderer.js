@@ -340,6 +340,7 @@ function renderBattle({ game, me, container, onAction }){
 
   if (showingEnemy && myTurn) {
     container.querySelectorAll('[data-battleship-cell][data-cell-state="unknown"]').forEach(button => button.addEventListener('click', () => {
+      clearBattleTransitionTimer();
       onAction?.({ type:'fire', cell:Number(button.dataset.battleshipCell) });
     }));
   }
