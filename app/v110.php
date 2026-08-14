@@ -55,6 +55,11 @@ $html = str_replace(
     $html
 );
 $html = str_replace(
+    './assets/css/production-v95-consistency.css?v=95',
+    './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
+    $html
+);
+$html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
     $html
@@ -71,7 +76,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-authoritative-shot-only-v1154"',
+    'data-hotfix-build="v110-mvp14-battleship-miss-no-legacy-pending-paint-v1155"',
     $html
 );
 
@@ -93,7 +98,7 @@ header('X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame');
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-nostalgic-entry-copy');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');
 header('X-MGW-Icon-Pack: c1efd5afbf0125a090b1755fed2b40cb2cc6f2e1');
-header('X-MGW-Icon-Render: accepted-v1145-more-optical-center');
+header('X-MGW-Icon-Render: accepted-v1145-more-optical-center-restored');
 header('X-MGW-Battleship-Setup: v102-registered-optimistic-owner');
 header('X-MGW-Battleship-Leave: v110-action-quarantine');
 header('X-MGW-Game-Timer-Frame: shared-80px-13px');
@@ -102,4 +107,5 @@ header('X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible');
 header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: authoritative-result-only');
+header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 echo $html;
