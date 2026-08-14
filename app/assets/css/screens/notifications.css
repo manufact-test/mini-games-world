@@ -72,10 +72,12 @@
   border:1px solid var(--stroke);
   background:rgba(255,255,255,.045);
 }
-.notification-card.success{border-color:rgba(83,201,125,.25);background:rgba(83,201,125,.07)}
-.notification-card.danger{border-color:rgba(255,95,109,.25);background:rgba(255,95,109,.07)}
-.notification-card.warning{border-color:rgba(255,176,32,.25);background:rgba(255,176,32,.07)}
-.notification-card.info{border-color:rgba(124,92,255,.24);background:rgba(124,92,255,.07)}
+/* Shield King semantic palette: violet=social/game, green=economy gain,
+   bronze=non-fatal negative state, muted red=hard failure. */
+.notification-card.info{border-color:rgba(155,113,255,.32);background:rgba(155,113,255,.075)}
+.notification-card.success{border-color:rgba(46,230,166,.28);background:rgba(46,230,166,.07)}
+.notification-card.warning{border-color:rgba(210,164,88,.32);background:rgba(210,164,88,.075)}
+.notification-card.danger{border-color:rgba(169,117,112,.34);background:rgba(169,117,112,.08)}
 
 .notification-icon{
   width:42px;
@@ -90,10 +92,10 @@
   font-weight:950;
   text-align:center;
 }
-.notification-card.success .notification-icon{color:#9fe5b3;background:rgba(83,201,125,.12);border-color:rgba(83,201,125,.25)}
-.notification-card.danger .notification-icon{color:#ffb2b2;background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.25)}
-.notification-card.warning .notification-icon{color:#ffd18a;background:rgba(255,176,32,.12);border-color:rgba(255,176,32,.25)}
-.notification-card.info .notification-icon{color:#c9bcff;background:rgba(124,92,255,.12);border-color:rgba(124,92,255,.25)}
+.notification-card.info .notification-icon{color:var(--violet);background:rgba(155,113,255,.13);border-color:rgba(155,113,255,.3)}
+.notification-card.success .notification-icon{color:var(--success);background:rgba(46,230,166,.13);border-color:rgba(46,230,166,.28)}
+.notification-card.warning .notification-icon{color:#e7bd78;background:rgba(210,164,88,.13);border-color:rgba(210,164,88,.3)}
+.notification-card.danger .notification-icon{color:#d7a19c;background:rgba(169,117,112,.14);border-color:rgba(169,117,112,.32)}
 
 .notification-copy{min-width:0;display:flex;flex-direction:column;gap:6px}
 .notification-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -136,10 +138,10 @@
   pointer-events:auto;
 }
 .notification-toast.dragging{transition:none}
-.notification-toast.success{border-color:rgba(83,201,125,.32);background:rgba(22,42,38,.97)}
-.notification-toast.danger{border-color:rgba(255,95,109,.34);background:rgba(47,28,39,.97)}
-.notification-toast.warning{border-color:rgba(255,176,32,.34);background:rgba(48,39,24,.97)}
-.notification-toast.info{border-color:rgba(124,92,255,.34);background:rgba(29,27,52,.97)}
+.notification-toast.info{border-color:rgba(155,113,255,.46);background:rgba(32,25,54,.975)}
+.notification-toast.success{border-color:rgba(46,230,166,.38);background:rgba(19,45,39,.975)}
+.notification-toast.warning{border-color:rgba(210,164,88,.42);background:rgba(51,39,25,.975)}
+.notification-toast.danger{border-color:rgba(169,117,112,.44);background:rgba(48,30,33,.975)}
 
 .notification-toast-icon{
   width:42px;
@@ -154,10 +156,10 @@
   font-weight:950;
   text-align:center;
 }
-.notification-toast.success .notification-toast-icon{color:#9fe5b3;background:rgba(83,201,125,.13);border-color:rgba(83,201,125,.28)}
-.notification-toast.danger .notification-toast-icon{color:#ffb2b2;background:rgba(255,95,109,.13);border-color:rgba(255,95,109,.28)}
-.notification-toast.warning .notification-toast-icon{color:#ffd18a;background:rgba(255,176,32,.13);border-color:rgba(255,176,32,.28)}
-.notification-toast.info .notification-toast-icon{color:#c9bcff;background:rgba(124,92,255,.13);border-color:rgba(124,92,255,.28)}
+.notification-toast.info .notification-toast-icon{color:var(--violet);background:rgba(155,113,255,.16);border-color:rgba(155,113,255,.36)}
+.notification-toast.success .notification-toast-icon{color:var(--success);background:rgba(46,230,166,.15);border-color:rgba(46,230,166,.34)}
+.notification-toast.warning .notification-toast-icon{color:#e7bd78;background:rgba(210,164,88,.15);border-color:rgba(210,164,88,.34)}
+.notification-toast.danger .notification-toast-icon{color:#d7a19c;background:rgba(169,117,112,.16);border-color:rgba(169,117,112,.36)}
 
 .notification-toast-copy{min-width:0;display:flex;flex-direction:column;gap:4px}
 .notification-toast-copy strong{font-size:14px;line-height:1.25}

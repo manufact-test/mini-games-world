@@ -26,6 +26,17 @@ function mgw_notification_is_received_type(string $type): bool
     return in_array($type, ['invite_received', 'invite_rematch_received'], true);
 }
 
+function mgw_notification_canonical_tone(array $item): array
+{
+    $type = (string)($item['type'] ?? '');
+    if (in_array($type, ['invite_received', 'invite_rematch_received', 'invite_accepted', 'invite_started'], true)) {
+        $item['tone'] = 'info';
+    } elseif (in_array($type, ['invite_declined', 'invite_cancelled', 'invite_expired', 'invite_timed_out'], true)) {
+        $item['tone'] = 'warning';
+    }
+    return $item;
+}
+
 function mgw_notification_is_visible(array $item, ?array $invite, string $userId = ''): bool
 {
     $type = (string)($item['type'] ?? '');
@@ -58,6 +69,7 @@ function mgw_notification_actions(array $item, ?array $invite, string $userId): 
 
 function mgw_notification_decorate(array $item, ?array $invite, string $userId): array
 {
+    $item = mgw_notification_canonical_tone($item);
     if (!is_array($invite)) return $item;
     $type = (string)($item['type'] ?? '');
     $status = (string)($invite['status'] ?? '');
@@ -87,7 +99,7 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
     if ($status === 'accepted') {
         $item['title'] = 'Приглашение принято';
         $item['message'] = 'Ждём запуска матча от пригласившего игрока.';
-        $item['tone'] = 'success';
+        $item['tone'] = 'info';
         $item['read'] = true;
         return $item;
     }

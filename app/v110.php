@@ -49,7 +49,7 @@ if (!str_contains($html, $headClose)) {
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=145&sk=3&icons=c1efd5af&render=21&review=timer-optical-center-13',
+    './assets/css/main.css?v=146&sk=3&icons=c1efd5af&render=22&palette=notification-semantic',
     $html
 );
 $html = str_replace(
@@ -69,7 +69,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-terminal-share-ux-v1145"',
+    'data-hotfix-build="v110-mvp14-notification-palette-v1146"',
     $html
 );
 
@@ -78,7 +78,8 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
-header('X-MGW-Notification-Graph: v1137');
+header('X-MGW-Notification-Graph: v1138-shield-semantic-tone');
+header('X-MGW-Notification-Palette: shield-king-v1-semantic');
 header('X-MGW-Invite-Graph: v1143-prepared-share-owner');
 header('X-MGW-Search-Graph: v106-post-game-release-barrier');
 header('X-MGW-TTT-Clock: authoritative-turn-clock-v7-handoff-state-retained');
