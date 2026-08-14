@@ -55,6 +55,11 @@ $html = str_replace(
     $html
 );
 $html = str_replace(
+    './assets/css/production-v95-consistency.css?v=95',
+    './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
+    $html
+);
+$html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
     $html
@@ -71,7 +76,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-miss-no-impact-v1155"',
+    'data-hotfix-build="v110-mvp14-battleship-miss-clean-v1156"',
     $html
 );
 
@@ -102,4 +107,5 @@ header('X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible');
 header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
+header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 echo $html;
