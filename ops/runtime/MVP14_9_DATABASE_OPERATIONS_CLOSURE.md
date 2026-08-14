@@ -1,8 +1,10 @@
 # MVP-14.9 — Database operations closure
 
-Status: **CLOSURE GATE**
+Status: **IMPLEMENTATION EXISTS / ORIGINAL-SPEC OPS EVIDENCE PENDING**
 
 This checkpoint consolidates existing, already-separated operational owners. It does not add a second backup service, health poller, monitor, retry loop, Cron job, production switch, or database writer.
+
+The previous closure rule in this file was too narrow: presence of the canonical owners plus a focused repository test proves implementation boundaries, but does not prove the complete original MVP-14.9 operational acceptance (off-host copy, measured RPO/RTO, slow-query visibility, real bounded Hostinger load evidence, and recurring operational ownership). The original acceptance scope is restored by `MVP14_9_DATABASE_OPERATIONS_RUNBOOK.md` and the fail-closed verifier `verify-mvp14-9-ops-compliance.sh`.
 
 ## Canonical owners
 
@@ -29,27 +31,53 @@ For runtime recovery, the existing guarded DB-primary → JSON rollback path rem
 
 Those components provide the tested fail-closed recovery route without creating a competing primary-storage owner.
 
-### 3. Database monitoring
+### 3. Database readiness / health
 
 `bot/health.php`
 
-This is the canonical health owner. When the database is enabled it checks connectivity with `SELECT 1`, inspects migration status, publishes `connected`, `schema_current`, applied/pending migration counts, and returns HTTP 503 when storage/database readiness is not satisfied.
+This is the canonical readiness owner. When the database is enabled it checks connectivity with `SELECT 1`, inspects migration status, publishes `connected`, `schema_current`, applied/pending migration counts, and returns HTTP 503 when storage/database readiness is not satisfied.
 
-MVP-14.9 does not add another health endpoint or polling daemon.
+It is not slow-query telemetry. Slow-query visibility must be proven separately through the accepted environment/provider evidence described in the runbook.
 
-### 4. Load / latency acceptance
+### 4. Local latency regression
 
 `ops/checks/mvp14r2-latency-acceptance-local.sh`
 
-This remains the bounded latency acceptance owner. In addition, the official two-context staging suite and the Phase B concurrent API evidence historically exercised simultaneous clients across DB projection/runtime paths. No new stress loop or artificial retry/sleep owner is introduced here.
+This remains the bounded local latency regression owner. It explicitly does not contact production/network/DB and therefore cannot, by itself, establish the real Hostinger load envelope. The official two-context staging suite and historical Phase B concurrency evidence remain useful complementary evidence, but original-spec load acceptance still requires bounded target-environment evidence.
 
-## Closure rule
+## Correct closure rule
 
-MVP-14.9 is considered closed when the focused `Mvp14DatabaseOperationsClosureTest` is green on the exact candidate and the branch contains all canonical owners above unchanged in their safety boundaries.
+Repository implementation is green when the canonical owners remain intact and:
 
-A future operational change to DB backup, recovery, health, or load acceptance must modify the corresponding canonical owner rather than adding a parallel implementation.
+```bash
+bash ops/checks/mvp14-9-ops-compliance-local.sh
+```
 
-## Explicit non-actions
+passes.
+
+Original-spec MVP-14.9 operations compliance is closed only when, in addition, the following command passes against a **real private evidence bundle**:
+
+```bash
+bash ops/runtime/verify-mvp14-9-ops-compliance.sh --evidence-root /private/path/mvp14-9-evidence
+```
+
+That bundle must prove:
+
+- exact candidate/environment;
+- current canonical DB checkpoint verification;
+- independent/off-host copy with matching SHA-256;
+- actual restore rehearsal;
+- defined and met RPO;
+- defined, measured and met RTO;
+- slow-query visibility/review;
+- bounded target-environment load evidence;
+- real ownership/scheduling for daily backup, monthly restore rehearsal, and quarterly load verification.
+
+Until this evidence passes, the status must remain **IMPLEMENTATION EXISTS / ORIGINAL-SPEC OPS EVIDENCE PENDING**. A green source-level test must never be used again as a substitute for operational evidence.
+
+See `ops/runtime/MVP14_9_DATABASE_OPERATIONS_RUNBOOK.md` for the evidence contract and safety boundaries.
+
+## Explicit non-actions in this remediation
 
 - no production database contact;
 - no production database write;
