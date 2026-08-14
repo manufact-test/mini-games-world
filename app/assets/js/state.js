@@ -1,5 +1,6 @@
 export const state = {
   user: null,
+  mgwProfile: null,
   stats: null,
   room: 'match',
   selectedGame: 'tictactoe',

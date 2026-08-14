@@ -15,10 +15,14 @@ $importMap = <<<'HTML'
 <script type="importmap">
 {
   "imports": {
-    "./assets/js/api/client.js?v=34": "./assets/js/api/client.js?v=1131",
-    "./assets/js/api/client.js?v=38": "./assets/js/api/client.js?v=1131",
-    "./assets/js/api/client.js?v=46": "./assets/js/api/client.js?v=1131",
-    "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1131",
+    "./assets/js/api/client.js?v=34": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
+    "./assets/js/api/client.js?v=38": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
+    "./assets/js/api/client.js?v=46": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
+    "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
+    "./assets/js/state.js?v=27": "./assets/js/state.js?v=28&mvp15=unified-profile",
+    "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=90&mvp15=unified-profile",
+    "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1109&mvp15=unified-profile",
+    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1138&mvp15=unified-profile",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
@@ -76,7 +80,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-miss-clean-v1156"',
+    'data-hotfix-build="v110-mvp15-unified-profile-avatar-v1157"',
     $html
 );
 
@@ -84,7 +88,9 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Api-Session-Graph: v1131');
+header('X-MGW-Api-Session-Graph: v1132-canonical-profile');
+header('X-MGW-Profile-API: provider-neutral-mgw-v1');
+header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');
 header('X-MGW-Notification-Graph: v1138-shield-semantic-tone');
 header('X-MGW-Notification-Palette: shield-king-v1-semantic');
 header('X-MGW-Invite-Graph: v1143-prepared-share-owner');
