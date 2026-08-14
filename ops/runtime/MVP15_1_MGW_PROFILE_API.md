@@ -28,7 +28,7 @@ New single owner:
 
 - `bot/accounts/MgwProfileService.php`
 
-The service reads `mgw_users` by authenticated `mgw_id` and exposes linked providers only as metadata. Provider subjects are deliberately not returned.
+The service reads `mgw_users` by authenticated `mgw_id`. Linked identities are exposed only as provider names plus link timestamps; provider subjects and provider usernames stay private.
 
 ### Canonical profile endpoint
 
@@ -46,9 +46,7 @@ profile.display_name
 profile.username
 profile.avatar.*
 profile.identities[].provider
-profile.identities[].username
 profile.identities[].linked_at
-profile.identities[].last_authenticated_at
 profile.created_at
 profile.updated_at
 profile.last_seen_at
@@ -60,6 +58,7 @@ Not exposed:
 
 - Telegram user id as canonical account id;
 - any `provider_subject`;
+- provider-specific username/email from linked identities;
 - session hashes/device hashes;
 - private account ownership source refs;
 - balance/economy state (owned by later MVP-15 stages).
