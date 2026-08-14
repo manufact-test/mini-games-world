@@ -69,7 +69,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-realtime-ownership-v1143"',
+    'data-hotfix-build="v110-mvp14-realtime-ownership-v1144"',
     $html
 );
 
@@ -82,7 +82,7 @@ header('X-MGW-Notification-Graph: v1137');
 header('X-MGW-Invite-Graph: v1142-realtime-owner');
 header('X-MGW-Search-Graph: v106-post-game-release-barrier');
 header('X-MGW-TTT-Clock: authoritative-turn-clock-v7-handoff-state-retained');
-header('X-MGW-TTT-Terminal: v4-writer-unblocked-projection');
+header('X-MGW-TTT-Terminal: v5-latency-critical-projection-detached');
 header('X-MGW-Rematch-UX: v2-single-owner-fast-signal');
 header('X-MGW-Launch-Presentation: v128-ready-before-first-turn');
 header('X-MGW-Presence: v1122-room-occupancy-owner');
