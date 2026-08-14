@@ -161,10 +161,6 @@ body.mgw-player-picker-transition #sheet .notifications-loading{
   visibility:hidden !important;
 }
 
-#gameBoard .mgw-pending-shot{
-  box-shadow:inset 0 0 0 3px rgba(255,216,91,.8),0 0 18px rgba(255,216,91,.35) !important;
-}
-
 .mgw-player-picker-hold{
   position:absolute !important;
   left:12px;
