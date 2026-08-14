@@ -235,6 +235,7 @@ final class BattleshipService
     {
         $this->assertSetupEditable($game, $userId);
         $game['battleship_fleets'][$userId]['ships'] = $this->generateFullFleet();
+        $this->reopenSetupAfterEdit($game, $userId);
         $game['updated_at'] = now_iso();
         return $game;
     }
@@ -243,6 +244,7 @@ final class BattleshipService
     {
         $this->assertSetupEditable($game, $userId);
         $game['battleship_fleets'][$userId]['ships'] = [];
+        $this->reopenSetupAfterEdit($game, $userId);
         $game['updated_at'] = now_iso();
         return $game;
     }
@@ -267,6 +269,7 @@ final class BattleshipService
 
         $ships[] = $this->newShip($size, $cells);
         $game['battleship_fleets'][$userId]['ships'] = $ships;
+        $this->reopenSetupAfterEdit($game, $userId);
         $game['updated_at'] = now_iso();
         return $game;
     }
@@ -290,6 +293,7 @@ final class BattleshipService
 
         if (!$removed) throw new RuntimeException('Корабль не найден.');
         $game['battleship_fleets'][$userId]['ships'] = $ships;
+        $this->reopenSetupAfterEdit($game, $userId);
         $game['updated_at'] = now_iso();
         return $game;
     }
@@ -439,7 +443,12 @@ final class BattleshipService
     private function assertSetupEditable(array $game, string $userId): void
     {
         if (($game['phase'] ?? '') !== 'setup') throw new RuntimeException('Расстановка уже завершена.');
-        if (!empty($game['battleship_fleets'][$userId]['ready'])) throw new RuntimeException('Флот уже подтверждён.');
+    }
+
+    private function reopenSetupAfterEdit(array &$game, string $userId): void
+    {
+        $game['battleship_fleets'][$userId]['ready'] = false;
+        $game['battleship_fleets'][$userId]['ready_at'] = null;
     }
 
     private function generateFullFleet(): array
