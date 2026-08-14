@@ -4,6 +4,7 @@ declare(strict_types=1);
 final class AccountIdentityService
 {
     private const MAX_CREATE_ATTEMPTS = 4;
+    private const PROVIDER_PATTERN = '/^[a-z0-9][a-z0-9_.-]{0,31}$/';
 
     public function __construct(
         private DatabaseConnectionInterface $database,
@@ -12,6 +13,10 @@ final class AccountIdentityService
         $this->sessionTtlSec = max(300, $this->sessionTtlSec);
     }
 
+    /**
+     * Current Telegram adapter. Telegram-specific field extraction stays here,
+     * while account resolution itself is provider-neutral below.
+     */
     public function resolveTelegramUser(array $telegramUser, string $sessionId): array
     {
         $subject = trim((string)($telegramUser['id'] ?? ''));
@@ -21,10 +26,41 @@ final class AccountIdentityService
 
         $provider = !empty($telegramUser['is_dev_user']) ? 'development' : 'telegram';
         $platform = $provider === 'telegram' ? 'telegram_web' : 'browser_dev';
+
+        return $this->resolveProviderIdentity(
+            $provider,
+            $subject,
+            $platform,
+            [
+                'display_name' => $telegramUser['first_name'] ?? 'Игрок',
+                'username' => $telegramUser['username'] ?? null,
+                'avatar_ref' => $telegramUser['photo_url'] ?? null,
+            ],
+            $sessionId
+        );
+    }
+
+    /**
+     * Canonical provider-neutral provider -> MGW account resolver.
+     *
+     * Provider adapters authenticate externally, then pass only their verified
+     * provider identifier/subject plus normalized public profile metadata here.
+     * This method never verifies provider credentials itself.
+     */
+    public function resolveProviderIdentity(
+        string $provider,
+        string $subject,
+        string $platform,
+        array $profile,
+        string $sessionId
+    ): array {
+        $provider = $this->normalizeProvider($provider);
+        $subject = $this->normalizeSubject($subject);
+        $platform = $this->normalizePlatform($platform);
         $profile = [
-            'display_name' => $this->normalizeText($telegramUser['first_name'] ?? 'Игрок', 80, 'Игрок'),
-            'username' => $this->normalizeNullableText($telegramUser['username'] ?? null, 80),
-            'avatar_ref' => $this->normalizeNullableText($telegramUser['photo_url'] ?? null, 2048),
+            'display_name' => $this->normalizeText($profile['display_name'] ?? 'Игрок', 80, 'Игрок'),
+            'username' => $this->normalizeNullableText($profile['username'] ?? null, 80),
+            'avatar_ref' => $this->normalizeNullableText($profile['avatar_ref'] ?? null, 2048),
         ];
 
         for ($attempt = 1; $attempt <= self::MAX_CREATE_ATTEMPTS; $attempt++) {
@@ -75,9 +111,10 @@ final class AccountIdentityService
 
     public function findByIdentity(string $provider, string $subject): ?array
     {
-        $provider = strtolower(trim($provider));
-        $subject = trim($subject);
-        if ($provider === '' || $subject === '') {
+        try {
+            $provider = $this->normalizeProvider($provider);
+            $subject = $this->normalizeSubject($subject);
+        } catch (RuntimeException) {
             return null;
         }
 
@@ -328,6 +365,34 @@ final class AccountIdentityService
         );
 
         return $rows[0] ?? null;
+    }
+
+    private function normalizeProvider(string $provider): string
+    {
+        $provider = strtolower(trim($provider));
+        if (preg_match(self::PROVIDER_PATTERN, $provider) !== 1) {
+            throw new RuntimeException('Identity provider is invalid.');
+        }
+        return $provider;
+    }
+
+    private function normalizePlatform(string $platform): string
+    {
+        $platform = strtolower(trim($platform));
+        if (preg_match(self::PROVIDER_PATTERN, $platform) !== 1) {
+            throw new RuntimeException('Identity platform is invalid.');
+        }
+        return $platform;
+    }
+
+    private function normalizeSubject(string $subject): string
+    {
+        $subject = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', $subject) ?? '');
+        $length = function_exists('mb_strlen') ? mb_strlen($subject) : strlen($subject);
+        if ($subject === '' || $length > 191) {
+            throw new RuntimeException('Identity subject is invalid.');
+        }
+        return $subject;
     }
 
     private function isUniqueViolation(PDOException $error): bool
