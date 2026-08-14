@@ -364,7 +364,7 @@ function syncBattleExperience({ game, me, myTurn, container, onAction }){
     const nextView = result === 'miss'
       ? (shooterIsMe ? 'own' : 'enemy')
       : battleView;
-    const delay = result === 'miss' ? 1450 : 1250;
+    const delay = result === 'miss' ? 900 : 1250;
 
     battleTransitionTimer = setTimeout(() => {
       battleNotice = null;
