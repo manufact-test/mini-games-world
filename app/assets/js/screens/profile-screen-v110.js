@@ -2,10 +2,11 @@ import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
-import { renderUser, renderBalances } from '../ui.js?v=89';
+import { renderUser, renderBalances, formatDate, initials } from '../ui.js?v=89';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1';
 let profileLoading = false;
+let canonicalProfile = null;
 
 export function initProfileScreen(){
   if (!hasProfileStats(state.profileStats)) {
@@ -24,10 +25,18 @@ export async function openProfile(){
   setProfileBusy(true);
 
   try {
-    const [result, ordersResult] = await Promise.all([
+    const [identityResult, result, ordersResult] = await Promise.all([
+      api.mgwProfile(),
       api.profile(),
       api.shopOrders().catch(() => null),
     ]);
+
+    canonicalProfile = identityResult?.profile && typeof identityResult.profile === 'object'
+      ? identityResult.profile
+      : null;
+    if (!canonicalProfile?.mgw_id) {
+      throw new Error('Канонический профиль MGW недоступен.');
+    }
 
     state.user = mergeUserState(state.user, result.user);
     state.profileStats = result.stats || state.profileStats || null;
@@ -39,6 +48,7 @@ export async function openProfile(){
     if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
     renderUser(state.user);
     renderBalances(state.user);
+    renderCanonicalProfile(canonicalProfile);
     renderProfileStats(state.profileStats || null);
     renderProfileOverview(state.user || {}, state.profileOrders);
   } catch (error) {
@@ -54,12 +64,92 @@ function showProfileImmediately(){
     renderUser(state.user);
     renderBalances(state.user);
   }
+  if (canonicalProfile) renderCanonicalProfile(canonicalProfile);
   renderProfileStats(state.profileStats || loadCachedProfileStats());
   renderProfileOverview(
     state.user || {},
     Array.isArray(state.profileOrders) ? state.profileOrders : []
   );
   showScreen('profile');
+}
+
+function renderCanonicalProfile(profile){
+  if (!profile || typeof profile !== 'object') return;
+
+  const displayName = String(profile.display_name || profile.username || 'Игрок').trim() || 'Игрок';
+  const handle = String(profile.username || '').trim();
+  const mgwId = String(profile.mgw_id || '').trim();
+
+  const name = document.getElementById('profileName');
+  if (name) name.textContent = displayName;
+
+  const identity = ensureProfileIdentityLine();
+  if (identity) {
+    identity.textContent = [handle ? `@${handle.replace(/^@+/, '')}` : '', mgwId]
+      .filter(Boolean)
+      .join(' · ');
+  }
+
+  const date = document.getElementById('profileDate');
+  if (date) {
+    date.textContent = profile.created_at
+      ? `В игре с ${formatDate(profile.created_at)}`
+      : 'Дата регистрации появится после входа';
+  }
+
+  renderCanonicalAvatar(document.getElementById('profileAvatar'), profile, displayName);
+}
+
+function ensureProfileIdentityLine(){
+  let el = document.getElementById('profileIdentity');
+  if (el) return el;
+
+  const date = document.getElementById('profileDate');
+  if (!date?.parentElement) return null;
+
+  el = document.createElement('div');
+  el.id = 'profileIdentity';
+  el.className = 'profile-note profile-identity-note';
+  date.insertAdjacentElement('beforebegin', el);
+  return el;
+}
+
+function renderCanonicalAvatar(el, profile, displayName){
+  if (!el) return;
+
+  const mgwId = String(profile?.mgw_id || '').trim();
+  const photoUrl = safeAvatarUrl(profile?.avatar?.external_ref);
+  el.dataset.photoOwner = mgwId;
+
+  if (photoUrl) {
+    el.dataset.photoUrl = photoUrl;
+    el.textContent = '';
+    el.style.backgroundImage = `url("${photoUrl.replace(/["\\]/g, '\\$&')}")`;
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+    el.style.backgroundRepeat = 'no-repeat';
+    el.classList.add('has-photo');
+    return;
+  }
+
+  delete el.dataset.photoUrl;
+  el.textContent = initials(displayName);
+  el.style.backgroundImage = '';
+  el.style.backgroundSize = '';
+  el.style.backgroundPosition = '';
+  el.style.backgroundRepeat = '';
+  el.classList.remove('has-photo');
+}
+
+function safeAvatarUrl(value){
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+  } catch (error) {
+    return '';
+  }
 }
 
 function mergeUserState(currentUser, incomingUser){
