@@ -25,11 +25,13 @@ $importMap = <<<'HTML'
     "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=103&result=terminal-watch-priority",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=104&clock=phase-b-single-writer&battleship=leave-guard",
     "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner",
+    "./assets/js/production-v102-battleship-models.js?v=102": "./assets/js/production-v102-battleship-models.js?v=103&ready=authoritative-reset",
     "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch",
     "./assets/js/production-v110-targeted-interactions.js?v=1102": "./assets/js/production-v110-targeted-interactions.js?v=1104&rematch=single-owner",
     "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1122&room=presence-owner",
     "./assets/js/games/game-invites-v110.js?v=1137&ux=1": "./assets/js/games/game-invites-v110.js?v=1139&share=prepared-owner-rematch-clean",
     "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
+    "./assets/js/games/battleship/renderer.js?v=56": "./assets/js/games/battleship/renderer.js?v=57&ready=authoritative-reset",
     "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner",
     "./assets/js/components/shield-king-visuals.js?v=125&sk=2": "./assets/js/components/shield-king-visuals.js?v=126&sk=3&icons=c1efd5af",
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
@@ -69,7 +71,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-setup-presentation-v1148"',
+    'data-hotfix-build="v110-mvp14-battleship-ready-reset-v1149"',
     $html
 );
 
@@ -97,4 +99,5 @@ header('X-MGW-Battleship-Leave: v110-action-quarantine');
 header('X-MGW-Game-Timer-Frame: shared-80px-13px');
 header('X-MGW-Battleship-Setup-Clock: dedicated-setup-timer-single-owner');
 header('X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible');
+header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 echo $html;

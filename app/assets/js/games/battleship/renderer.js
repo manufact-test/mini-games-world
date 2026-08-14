@@ -92,7 +92,7 @@ function renderSetup({ game, container, onAction }){
         <span class="battleship-setup-time">${formatTime(game?.setup_time_left ?? game?.time_left ?? 120)}</span>
       </div>
 
-      ${complete ? `
+      ${complete && !game?.my_ready ? `
         <div class="battleship-ready-callout">
           <div>
             <strong>Флот готов к бою</strong>

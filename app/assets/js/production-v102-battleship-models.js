@@ -34,8 +34,9 @@ export function buildV102BattleshipSetupOptimistic(game, action){
 
   if (type === 'ready') {
     if (!isCompleteFleet(fleet)) return null;
-    next.my_ready = true;
-    return applyFleet(next, fleet);
+    const readyGame = applyFleet(next, fleet);
+    readyGame.my_ready = true;
+    return readyGame;
   }
 
   return null;
@@ -135,6 +136,7 @@ function fleetAllowsSize(fleet, size){
 function applyFleet(game, fleet){
   const clean = sanitizeFleet(fleet);
   const counts = countBySize(clean);
+  game.my_ready = false;
   game.my_fleet = clean;
   game.my_board = buildBoard(clean);
   game.fleet_placed = [4,3,2,1].map(size => ({
