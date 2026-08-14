@@ -1,65 +1,75 @@
 /* Battleship pending-shot acknowledgement.
  * State ownership stays in the existing pending_fire_cell -> mgw-pending-shot path.
- * Pending feedback is intentionally stable: authoritative miss/hit/sunk owns the only motion.
+ * Field handoff timing stays owned by the renderer (900ms miss / 1250ms hit+sunk).
+ * Pending feedback is one stable center marker; only the authoritative result moves.
  */
 .battleship-cell.mgw-pending-shot{
-  outline:2px solid rgba(190,172,255,.92);
-  outline-offset:-2px;
-  box-shadow:0 0 0 2px rgba(124,92,255,.18),0 0 14px rgba(124,92,255,.28);
+  outline:none;
+  box-shadow:none;
+  transition:none;
 }
 .battleship-cell.mgw-pending-shot i{
   inset:34%;
   background:rgba(220,213,255,.98);
-  box-shadow:0 0 10px rgba(176,157,255,.78);
+  box-shadow:0 0 10px rgba(176,157,255,.72);
   opacity:1;
   transform:scale(1);
   animation:none;
 }
 
-/* The authoritative result begins from the same visual point as pending.
- * This avoids a second scale-in when the server snapshot replaces the pending cell.
+/* Preserve the original result durations so the board does not feel faster.
+ * The new keyframes only remove the large scale jump that made pending -> result
+ * look like two separate jerks after the authoritative DOM repaint.
  */
+.battleship-cell.shot-impact.miss{
+  animation:battleship-miss-resolve-continuous .24s cubic-bezier(.22,1,.36,1);
+}
 .battleship-cell.shot-impact.miss i{
-  animation:battleship-shot-resolve-miss .18s cubic-bezier(.22,1,.36,1);
+  animation:battleship-miss-dot-continuous .24s cubic-bezier(.22,1,.36,1);
 }
 .battleship-cell.shot-impact.hit{
-  animation:battleship-hit-impact-smooth .22s cubic-bezier(.22,1,.36,1);
+  animation:battleship-hit-impact-continuous .55s cubic-bezier(.22,1,.36,1);
 }
 .battleship-cell.shot-impact.hit i{
-  animation:battleship-shot-resolve-hit .22s cubic-bezier(.22,1,.36,1);
+  animation:battleship-hit-dot-continuous .55s cubic-bezier(.22,1,.36,1);
 }
 .battleship-cell.shot-impact.sunk{
-  animation:battleship-sunk-impact-smooth .28s cubic-bezier(.22,1,.36,1);
+  animation:battleship-sunk-impact-continuous .7s cubic-bezier(.22,1,.36,1);
 }
 .battleship-cell.shot-impact.sunk::after{
-  animation:battleship-sunk-symbol-smooth .28s cubic-bezier(.22,1,.36,1);
+  animation:battleship-sunk-symbol-continuous .7s cubic-bezier(.22,1,.36,1);
 }
 
-@keyframes battleship-shot-resolve-miss{
-  from{inset:34%;background:rgba(220,213,255,.98);box-shadow:0 0 10px rgba(176,157,255,.78)}
-  to{inset:35%;background:rgba(219,240,255,.98);box-shadow:0 0 9px rgba(176,219,255,.58)}
+@keyframes battleship-miss-resolve-continuous{
+  0%{outline-color:rgba(255,255,255,0);filter:brightness(1.04)}
+  100%{outline-color:rgba(255,255,255,.95);filter:brightness(1)}
 }
-@keyframes battleship-hit-impact-smooth{
-  0%{transform:scale(.97);filter:brightness(1.04)}
-  60%{transform:scale(1.015);filter:brightness(1.02)}
-  100%{transform:scale(1);filter:brightness(1)}
+@keyframes battleship-miss-dot-continuous{
+  0%{inset:34%;background:rgba(220,213,255,.98);box-shadow:0 0 10px rgba(176,157,255,.72)}
+  100%{inset:35%;background:rgba(219,240,255,.98);box-shadow:0 0 9px rgba(176,219,255,.58)}
 }
-@keyframes battleship-shot-resolve-hit{
-  from{inset:34%;background:rgba(220,213,255,.98);box-shadow:0 0 10px rgba(176,157,255,.78)}
-  to{inset:27%;background:#fff1a8;box-shadow:0 0 12px rgba(255,218,77,.9)}
+@keyframes battleship-hit-impact-continuous{
+  0%{transform:scale(.985);filter:brightness(1.10);outline-color:rgba(255,255,255,0)}
+  52%{transform:scale(1.025);filter:brightness(1.04)}
+  100%{transform:scale(1);filter:brightness(1);outline-color:rgba(255,255,255,.95)}
 }
-@keyframes battleship-sunk-impact-smooth{
-  0%{transform:scale(.97);filter:brightness(1.08)}
-  60%{transform:scale(1.02);filter:brightness(1.03)}
-  100%{transform:scale(1);filter:brightness(1)}
+@keyframes battleship-hit-dot-continuous{
+  0%{inset:34%;background:rgba(220,213,255,.98);box-shadow:0 0 10px rgba(176,157,255,.72)}
+  100%{inset:27%;background:#fff1a8;box-shadow:0 0 12px rgba(255,218,77,.9)}
 }
-@keyframes battleship-sunk-symbol-smooth{
-  from{opacity:.72;transform:scale(.88)}
-  to{opacity:1;transform:scale(1)}
+@keyframes battleship-sunk-impact-continuous{
+  0%{transform:scale(.985);filter:brightness(1.12);outline-color:rgba(255,255,255,0)}
+  50%{transform:scale(1.03);filter:brightness(1.05)}
+  100%{transform:scale(1);filter:brightness(1);outline-color:rgba(255,255,255,.95)}
+}
+@keyframes battleship-sunk-symbol-continuous{
+  0%{opacity:.35;transform:scale(.84)}
+  55%{opacity:1;transform:scale(1.04)}
+  100%{opacity:1;transform:scale(1)}
 }
 
 @media (prefers-reduced-motion:reduce){
-  .battleship-cell.mgw-pending-shot i,
+  .battleship-cell.shot-impact.miss,
   .battleship-cell.shot-impact.miss i,
   .battleship-cell.shot-impact.hit,
   .battleship-cell.shot-impact.hit i,
