@@ -191,6 +191,7 @@ final class TelegramService
             return $replyMarkup;
         }
 
+        $mainAdminCallbacks = [];
         foreach ($replyMarkup['inline_keyboard'] as $rowIndex => $row) {
             if (!is_array($row)) {
                 continue;
@@ -202,6 +203,9 @@ final class TelegramService
                 }
 
                 $callbackData = (string)($button['callback_data'] ?? '');
+                if ($callbackData !== '') {
+                    $mainAdminCallbacks[$callbackData] = true;
+                }
                 if ($callbackData === 'admin:orders') {
                     $replyMarkup['inline_keyboard'][$rowIndex][$buttonIndex]['text'] = '🎁 Заказы призов';
                 }
@@ -212,6 +216,22 @@ final class TelegramService
                         ? '💳 Все пополнения'
                         : '💳 Пополнения';
                 }
+            }
+        }
+
+        $isMainAdminKeyboard = isset(
+            $mainAdminCallbacks['admin:dashboard'],
+            $mainAdminCallbacks['admin:orders'],
+            $mainAdminCallbacks['admin:support'],
+            $mainAdminCallbacks['admin:users']
+        );
+        if ($isMainAdminKeyboard) {
+            $adminUrl = WebAppLaunchUrl::admin($this->config);
+            if ($adminUrl !== '') {
+                $replyMarkup['inline_keyboard'][] = [[
+                    'text' => '🌐 Web Admin',
+                    'web_app' => ['url' => $adminUrl],
+                ]];
             }
         }
 
