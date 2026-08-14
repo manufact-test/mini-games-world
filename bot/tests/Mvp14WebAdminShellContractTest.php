@@ -9,6 +9,8 @@ $storageFactory = file_get_contents($root . '/bot/storage/StorageFactory.php');
 $entrypoints = file_get_contents($root . '/bot/runtime/ProductionPrimaryApplicationEntrypoints.php');
 $launchUrl = file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 $telegram = file_get_contents($root . '/bot/services/TelegramService.php');
+$readiness = file_get_contents($root . '/bot/services/StagingReadinessService.php');
+$runtimeManifest = file_get_contents($root . '/bot/helpers/staging-e2e-runtime-files.txt');
 $page = file_get_contents($root . '/app/admin.php');
 $client = file_get_contents($root . '/app/assets/js/admin-shell.js');
 
@@ -19,6 +21,8 @@ foreach ([
     'production entrypoints' => $entrypoints,
     'launch URL' => $launchUrl,
     'telegram service' => $telegram,
+    'staging readiness' => $readiness,
+    'runtime fingerprint manifest' => $runtimeManifest,
     'admin page' => $page,
     'admin client' => $client,
 ] as $label => $source) {
@@ -53,6 +57,13 @@ $assert(
         && !str_contains($endpoint, '$storage->transaction')
         && !str_contains($endpoint, 'api_ok('),
     'The first web-admin surface must stay read-only and must not trigger API success-hook projections.'
+);
+
+$assert(
+    str_contains($endpoint, 'mgw_admin_read_only_text')
+        && str_contains($endpoint, '"\\nКоманды:\\n"')
+        && str_contains($endpoint, '"\\nКоманда:\\n"'),
+    'Web admin must strip legacy Telegram mutation-command help from the read-only browser output.'
 );
 
 $assert(
@@ -99,6 +110,32 @@ $assert(
 $assert(
     !preg_match('/payment_apply|gold_add|order_done|delete_user|runtime_switch/i', $endpoint),
     'MVP-14.10 web endpoint must not expose financial, destructive or runtime mutation actions.'
+);
+
+$runtimePaths = [
+    'app/admin.php',
+    'app/assets/css/admin-shell.css',
+    'app/assets/js/admin-shell.js',
+    'bot/admin-read.php',
+    'bot/helpers/WebAppLaunchUrl.php',
+    'bot/runtime/ProductionPrimaryApplicationEntrypoints.php',
+    'bot/services/AuthService.php',
+    'bot/services/StagingReadinessService.php',
+    'bot/services/TelegramService.php',
+    'bot/storage/StorageFactory.php',
+];
+foreach ($runtimePaths as $relativePath) {
+    $assert(
+        preg_match('/^' . preg_quote($relativePath, '/') . '$/m', $runtimeManifest) === 1,
+        'Exact Hostinger staging fingerprint must cover MVP-14.10 runtime file: ' . $relativePath
+    );
+}
+
+$assert(
+    str_contains($readiness, "'app/admin.php'")
+        && str_contains($readiness, "'bot/admin-read.php'")
+        && str_contains($readiness, "'bot/storage/StorageFactory.php'"),
+    'The staging readiness source fingerprint must also include the admin shell and its storage owner.'
 );
 
 fwrite(STDOUT, "Mvp14WebAdminShellContractTest: {$assertions} assertions passed\n");
