@@ -26,7 +26,7 @@ final class MgwProfileService
         }
 
         $identities = $this->database->fetchAll(
-            'SELECT provider, provider_username, linked_at_utc, last_authenticated_at_utc
+            'SELECT provider, linked_at_utc
              FROM mgw_identities
              WHERE mgw_id = :mgw_id
              ORDER BY linked_at_utc ASC, provider ASC',
@@ -41,9 +41,7 @@ final class MgwProfileService
             if ($provider === '') continue;
             $publicIdentities[] = [
                 'provider' => $provider,
-                'username' => $this->nullableString($identity['provider_username'] ?? null),
                 'linked_at' => $this->nullableString($identity['linked_at_utc'] ?? null),
-                'last_authenticated_at' => $this->nullableString($identity['last_authenticated_at_utc'] ?? null),
             ];
         }
 
