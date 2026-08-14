@@ -597,8 +597,8 @@ function notifyWeeklyProgress(game){
 }
 
 function escapeHtml(value){
-  return String(value ?? '').replace(/[&<>'\"]/g, char => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '\"':'&quot;',
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#039;', '"':'&quot;',
   }[char]));
 }
 
