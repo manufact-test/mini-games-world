@@ -24,6 +24,7 @@ $importMap = <<<'HTML'
     "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
     "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=103&result=terminal-watch-priority",
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=104&clock=phase-b-single-writer&battleship=leave-guard",
+    "./assets/js/games/game-router-v102.js?v=102": "./assets/js/games/game-router-v102.js?v=103&battleship=stable-pending-dom",
     "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner",
     "./assets/js/production-v102-battleship-models.js?v=102": "./assets/js/production-v102-battleship-models.js?v=103&ready=authoritative-reset",
     "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch",
@@ -71,7 +72,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-shot-smooth-original-duration-v1153"',
+    'data-hotfix-build="v110-mvp14-battleship-stable-pending-dom-v1154"',
     $html
 );
 
@@ -101,5 +102,6 @@ header('X-MGW-Battleship-Setup-Clock: dedicated-setup-timer-single-owner');
 header('X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible');
 header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
-header('X-MGW-Battleship-Shot-Feedback: immediate-single-marker-original-result-duration');
+header('X-MGW-Battleship-Shot-Feedback: immediate-single-marker-stable-pending-dom-original-result-duration');
+header('X-MGW-Battleship-Shot-DOM: preserve-board-until-authoritative-result');
 echo $html;
