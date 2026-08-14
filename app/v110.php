@@ -30,7 +30,7 @@ $importMap = <<<'HTML'
     "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1122&room=presence-owner",
     "./assets/js/games/game-invites-v110.js?v=1137&ux=1": "./assets/js/games/game-invites-v110.js?v=1139&share=prepared-owner-rematch-clean",
     "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
-    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=129&clock=terminal-no-repaint",
+    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner",
     "./assets/js/components/shield-king-visuals.js?v=125&sk=2": "./assets/js/components/shield-king-visuals.js?v=126&sk=3&icons=c1efd5af",
     "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
     "./assets/js/games/game-card-copy.js?v=81&sk=2": "./assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static"
@@ -49,7 +49,7 @@ if (!str_contains($html, $headClose)) {
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=147&sk=3&icons=c1efd5af&render=23&palette=notification-semantic',
+    './assets/css/main.css?v=148&sk=3&icons=c1efd5af&render=24&palette=notification-semantic',
     $html
 );
 $html = str_replace(
@@ -69,7 +69,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-root-cause-v1147"',
+    'data-hotfix-build="v110-mvp14-battleship-setup-presentation-v1148"',
     $html
 );
 
@@ -95,4 +95,6 @@ header('X-MGW-Icon-Render: accepted-v1145-more-optical-center');
 header('X-MGW-Battleship-Setup: v102-registered-optimistic-owner');
 header('X-MGW-Battleship-Leave: v110-action-quarantine');
 header('X-MGW-Game-Timer-Frame: shared-80px-13px');
+header('X-MGW-Battleship-Setup-Clock: dedicated-setup-timer-single-owner');
+header('X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible');
 echo $html;
