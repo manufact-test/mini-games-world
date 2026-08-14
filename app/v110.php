@@ -51,7 +51,7 @@ if (!str_contains($html, $headClose)) {
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 $html = str_replace(
     './assets/css/main.css?v=92',
-    './assets/css/main.css?v=151&sk=3&icons=c1efd5af&render=27&palette=notification-semantic&battleship=shot-smooth-original-duration',
+    './assets/css/main.css?v=152&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only',
     $html
 );
 $html = str_replace(
@@ -71,7 +71,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-battleship-shot-smooth-original-duration-v1153"',
+    'data-hotfix-build="v110-mvp14-battleship-authoritative-shot-only-v1154"',
     $html
 );
 
@@ -101,5 +101,5 @@ header('X-MGW-Battleship-Setup-Clock: dedicated-setup-timer-single-owner');
 header('X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible');
 header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
-header('X-MGW-Battleship-Shot-Feedback: immediate-single-marker-original-result-duration');
+header('X-MGW-Battleship-Shot-Feedback: authoritative-result-only');
 echo $html;
