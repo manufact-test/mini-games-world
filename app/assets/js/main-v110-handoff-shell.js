@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp14-invite-transition-ux-v1137';
+window.__MGW_BUILD__ = 'v110-mvp15-unified-profile-avatar-v1138';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -23,6 +23,7 @@ import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-mat
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
+import { applyCanonicalMgwProfile } from './profile/mgw-profile-model.js?v=1';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static';
 import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
@@ -90,7 +91,9 @@ async function boot(){
     setRoom(APP_CONFIG.defaultRoom);
     const statsTicket = beginStatsRequest('api');
     const result = await api.bootstrap();
-    state.user = result.user;
+    const mgwProfileResult = await api.mgwProfile();
+    state.mgwProfile = mgwProfileResult.profile || null;
+    state.user = applyCanonicalMgwProfile(result.user || {}, state.mgwProfile);
     state.session = result.session || state.session;
     renderUser(state.user);
     renderBalances(state.user);
