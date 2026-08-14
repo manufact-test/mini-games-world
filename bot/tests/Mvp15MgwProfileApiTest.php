@@ -97,6 +97,7 @@ $assert(array_column($profile['identities'], 'provider') === ['telegram', 'googl
 $encoded = json_encode($profile, JSON_THROW_ON_ERROR);
 $assert(!str_contains($encoded, '972585905'), 'Provider subject must never leak through the public profile contract.');
 $assert(!str_contains($encoded, 'google-subject-private'), 'Google/provider subject must never leak through the public profile contract.');
+$assert(!str_contains($encoded, 'player@example.test'), 'Linked provider usernames/emails must remain private.');
 
 $endpoint = file_get_contents($root . '/bot/profile.php');
 $assert(is_string($endpoint) && str_contains($endpoint, 'getUserFromRequest($payload)'), 'Canonical AuthService must remain the provider authentication owner.');
