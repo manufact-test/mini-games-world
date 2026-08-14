@@ -33,9 +33,12 @@ final class JsonDatabase
     private string $dataDir;
     private string $lockFile;
     private string $writeBarrierFile;
+    private string $projectionLockFile;
     private string $writeBlockFile;
     private string $runtimeProjectionDirtyFile;
     private ?array $exclusiveSnapshot = null;
+    private ?array $projectionSnapshot = null;
+    private ?string $projectionDirtyToken = null;
 
     public function __construct(string $dataDir)
     {
@@ -45,6 +48,7 @@ final class JsonDatabase
         }
         $this->lockFile = $this->dataDir . '/app.lock';
         $this->writeBarrierFile = $this->dataDir . '/app-write-barrier.lock';
+        $this->projectionLockFile = $this->dataDir . '/app-projection.lock';
         $this->writeBlockFile = $this->dataDir . '/.cutover-write-block';
         $this->runtimeProjectionDirtyFile = $this->dataDir . '/.runtime-projection-dirty';
         $this->ensureFiles();
@@ -64,11 +68,9 @@ final class JsonDatabase
         }
 
         try {
-            // API writers may run one at a time under app.lock, but every writer
-            // also joins the shared writer side of this barrier. JSON→DB bridges
-            // take the barrier exclusively so their frozen source cannot be
-            // overtaken by a newer writer while read-only clients remain free to
-            // observe the already-published JSON snapshot.
+            // Operational cutover/audit snapshots still own the exclusive side
+            // of this barrier. Runtime DB projection uses its own projection lock
+            // and therefore never keeps gameplay writers behind external I/O.
             if (!flock($writeBarrierHandle, LOCK_SH)) {
                 throw new RuntimeException('Не удалось открыть writer barrier.');
             }
@@ -82,11 +84,9 @@ final class JsonDatabase
             $before = $db;
             $result = $callback($db);
 
-            // Mark projection work before publishing changed JSON. If a later
-            // file write fails, the conservative dirty marker remains and the
-            // next successful API hook performs a harmless catch-up projection.
-            // If the callback itself throws, no JSON was published and no marker
-            // is created.
+            // Each published projection-relevant mutation owns a unique marker.
+            // A projector may clear only the exact generation it snapped; a
+            // writer that commits during projection leaves its newer token intact.
             if ($this->runtimeProjectionSourceChanged($before, $db)) {
                 $this->markRuntimeProjectionDirty();
             }
@@ -111,13 +111,14 @@ final class JsonDatabase
         return $this->readOnlySections(array_keys(self::FILES), $callback);
     }
 
-    /**
-     * @param list<string> $sections
-     */
+    /** @param list<string> $sections */
     public function readOnlySections(array $sections, callable $callback): mixed
     {
         if ($this->exclusiveSnapshot !== null) {
             return $callback($this->snapshotSections($this->exclusiveSnapshot, $sections));
+        }
+        if ($this->projectionSnapshot !== null) {
+            return $callback($this->snapshotSections($this->projectionSnapshot, $sections));
         }
         return $this->readSectionsWithLock($sections, LOCK_SH, $callback);
     }
@@ -128,20 +129,9 @@ final class JsonDatabase
     }
 
     /**
-     * Freeze JSON writers while a stable source snapshot is consumed by an
-     * external DB bridge. The callback receives data by value and cannot mutate
-     * the JSON source.
-     *
-     * This exclusivity is intentionally against writers, not readers:
-     * - bridge takes app-write-barrier.lock with LOCK_EX;
-     * - transaction writers take the same barrier with LOCK_SH;
-     * - the bridge copies JSON under a short app.lock LOCK_SH and releases it
-     *   before projection/parity work begins;
-     * - ordinary readOnly/game-watch readers use only app.lock LOCK_SH and can
-     *   therefore observe the committed snapshot while DB projection runs.
-     *
-     * Nested bridge reads on the same adapter reuse the already-frozen snapshot
-     * instead of trying to reacquire either lock.
+     * True operational freeze. Keep this contract unchanged for cutover, audits
+     * and compatibility tools that explicitly require writers not to advance.
+     * Runtime DB projections must use projectionReadOnly* instead.
      *
      * @param list<string> $sections
      */
@@ -149,6 +139,9 @@ final class JsonDatabase
     {
         if ($this->exclusiveSnapshot !== null) {
             return $callback($this->snapshotSections($this->exclusiveSnapshot, $sections));
+        }
+        if ($this->projectionSnapshot !== null) {
+            return $callback($this->snapshotSections($this->projectionSnapshot, $sections));
         }
 
         $writeBarrierHandle = fopen($this->writeBarrierFile, 'c+');
@@ -174,6 +167,66 @@ final class JsonDatabase
         }
     }
 
+    public function projectionReadOnly(callable $callback): mixed
+    {
+        return $this->projectionReadOnlySections(array_keys(self::FILES), $callback);
+    }
+
+    /**
+     * Runtime projection owner. Projectors serialize with each other but only
+     * hold app.lock long enough to copy a stable JSON snapshot. External DB I/O
+     * then runs without holding the gameplay writer barrier.
+     *
+     * @param list<string> $sections
+     */
+    public function projectionReadOnlySections(array $sections, callable $callback): mixed
+    {
+        if ($this->exclusiveSnapshot !== null) {
+            return $callback($this->snapshotSections($this->exclusiveSnapshot, $sections));
+        }
+        if ($this->projectionSnapshot !== null) {
+            return $callback($this->snapshotSections($this->projectionSnapshot, $sections));
+        }
+
+        $projectionHandle = fopen($this->projectionLockFile, 'c+');
+        if (!$projectionHandle) {
+            throw new RuntimeException('Не удалось открыть runtime projection lock-файл.');
+        }
+
+        try {
+            if (!flock($projectionHandle, LOCK_EX)) {
+                throw new RuntimeException('Не удалось сериализовать runtime projection.');
+            }
+
+            $lockHandle = fopen($this->lockFile, 'c+');
+            if (!$lockHandle) {
+                throw new RuntimeException('Не удалось открыть lock-файл.');
+            }
+            try {
+                if (!flock($lockHandle, LOCK_SH)) {
+                    throw new RuntimeException('Не удалось прочитать runtime projection snapshot.');
+                }
+                $snapshot = $this->loadSections($sections);
+                $dirtyToken = $this->readRuntimeProjectionDirtyToken();
+            } finally {
+                flock($lockHandle, LOCK_UN);
+                fclose($lockHandle);
+            }
+
+            $this->projectionSnapshot = $snapshot;
+            $this->projectionDirtyToken = $dirtyToken;
+            try {
+                return $callback($snapshot);
+            } finally {
+                $this->projectionSnapshot = null;
+                $this->projectionDirtyToken = null;
+            }
+        } finally {
+            flock($projectionHandle, LOCK_UN);
+            fclose($projectionHandle);
+        }
+    }
+
     public function runtimeProjectionDirty(): bool
     {
         return is_file($this->runtimeProjectionDirtyFile);
@@ -181,14 +234,45 @@ final class JsonDatabase
 
     public function clearRuntimeProjectionDirty(): void
     {
-        if ($this->exclusiveSnapshot === null) {
-            throw new RuntimeException('Runtime projection dirty marker may only be cleared inside an exclusive JSON snapshot.');
+        if ($this->exclusiveSnapshot === null && $this->projectionSnapshot === null) {
+            throw new RuntimeException('Runtime projection dirty marker may only be cleared inside a stable JSON snapshot.');
         }
         if (!is_file($this->runtimeProjectionDirtyFile)) {
             return;
         }
-        if (!unlink($this->runtimeProjectionDirtyFile)) {
-            throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');
+
+        if ($this->exclusiveSnapshot !== null) {
+            if (!unlink($this->runtimeProjectionDirtyFile)) {
+                throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');
+            }
+            return;
+        }
+
+        // Compare-and-clear must be atomic with JSON writers. Taking app.lock
+        // only for this tiny acknowledgement window prevents a writer from
+        // publishing a newer generation between the comparison and unlink.
+        $captured = $this->projectionDirtyToken;
+        if ($captured === null) return;
+
+        $lockHandle = fopen($this->lockFile, 'c+');
+        if (!$lockHandle) {
+            throw new RuntimeException('Не удалось открыть lock-файл.');
+        }
+        try {
+            if (!flock($lockHandle, LOCK_EX)) {
+                throw new RuntimeException('Не удалось зафиксировать runtime projection generation.');
+            }
+            $current = $this->readRuntimeProjectionDirtyToken();
+            if ($current === null || !hash_equals($captured, $current)) {
+                return;
+            }
+            if (is_file($this->runtimeProjectionDirtyFile)
+                && !unlink($this->runtimeProjectionDirtyFile)) {
+                throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');
+            }
+        } finally {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
         }
     }
 
@@ -217,7 +301,6 @@ final class JsonDatabase
         if (!in_array($lockMode, [LOCK_SH, LOCK_EX], true)) {
             throw new InvalidArgumentException('Некорректный режим блокировки JSON-хранилища.');
         }
-
         $lockHandle = fopen($this->lockFile, 'c+');
         if (!$lockHandle) {
             throw new RuntimeException('Не удалось открыть lock-файл.');
@@ -272,10 +355,22 @@ final class JsonDatabase
 
     private function markRuntimeProjectionDirty(): void
     {
-        $written = file_put_contents($this->runtimeProjectionDirtyFile, "dirty\n", LOCK_EX);
+        $token = bin2hex(random_bytes(16));
+        $written = file_put_contents($this->runtimeProjectionDirtyFile, $token . "\n", LOCK_EX);
         if ($written === false) {
             throw new RuntimeException('Не удалось записать runtime projection dirty marker.');
         }
+    }
+
+    private function readRuntimeProjectionDirtyToken(): ?string
+    {
+        if (!is_file($this->runtimeProjectionDirtyFile)) return null;
+        $raw = file_get_contents($this->runtimeProjectionDirtyFile);
+        if ($raw === false) {
+            throw new RuntimeException('Не удалось прочитать runtime projection dirty marker.');
+        }
+        $token = trim($raw);
+        return $token !== '' ? $token : null;
     }
 
     private function ensureFiles(): void

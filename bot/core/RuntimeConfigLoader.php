@@ -5,6 +5,17 @@ final class RuntimeConfigLoader
 {
     public static function merge(array $config, string $primaryConfigFile): array
     {
+        // Staging already requires a declared expected Telegram username. Reuse
+        // that deterministic identity for ordinary bot links when the legacy
+        // bot_username key is absent, so invite drafting never needs a live getMe
+        // request just to build a t.me URL.
+        if (trim((string)($config['bot_username'] ?? '')) === '') {
+            $stagingUsername = trim((string)($config['staging_bot_username'] ?? ''));
+            if ($stagingUsername !== '') {
+                $config['bot_username'] = ltrim($stagingUsername, '@');
+            }
+        }
+
         $primaryConfigFile = trim($primaryConfigFile);
         if ($primaryConfigFile === '') return $config;
 

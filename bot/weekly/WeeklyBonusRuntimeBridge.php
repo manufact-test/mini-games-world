@@ -32,7 +32,21 @@ final class WeeklyBonusRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        return $this->enabled();
+        if (!$this->enabled()) return false;
+        if (trim($action) === '') $action = (string)($GLOBALS['action'] ?? '');
+
+        // Gameplay/search responses are the realtime product boundary. Their JSON
+        // mutation is already durable and marks the projection generation dirty;
+        // DB parity catches up on the next non-latency-critical API action instead
+        // of keeping the player's HTTP response behind external DB I/O.
+        return !in_array(strtolower(trim($action)), [
+            'start_search',
+            'leave_search',
+            'game_state',
+            'game_action',
+            'make_move',
+            'leave_game',
+        ], true);
     }
 
     /**
@@ -50,11 +64,10 @@ final class WeeklyBonusRuntimeBridge
     }
 
     /**
-     * API-only synchronization owner. Ordinary polls that published no relevant
-     * JSON mutation return without taking the exclusive writer barrier. When a
-     * mutation is pending, concurrent requests coalesce behind one full parity
-     * projection; the marker is cleared only after that complete projection
-     * succeeds while the frozen-snapshot barrier is still held.
+     * API-only synchronization owner. Runtime projection serializes with other
+     * projectors but no longer owns the gameplay writer barrier while external
+     * DB I/O/parity runs. The dirty generation is acknowledged only if no newer
+     * JSON writer published after the captured projection snapshot.
      */
     public function synchronizeCurrentJsonIfDirty(): ?array
     {
@@ -86,13 +99,19 @@ final class WeeklyBonusRuntimeBridge
             throw new RuntimeException('Weekly bonus bridge requires exclusive JSON snapshot support.');
         }
 
-        return $storage->exclusiveReadOnly(function (array $snapshot) use (
+        $project = function (callable $callback) use ($storage, $onlyIfDirty): mixed {
+            if ($onlyIfDirty && $storage instanceof ProjectionSnapshotStorageInterface) {
+                return $storage->projectionReadOnly($callback);
+            }
+            return $storage->exclusiveReadOnly($callback);
+        };
+
+        return $project(function (array $snapshot) use (
             $storage,
             $onlyIfDirty
         ): array {
-            // A concurrent API request may have completed the projection while
-            // this request waited for the exclusive barrier. Re-check only after
-            // acquiring that barrier so one projection can satisfy both callers.
+            // A previous serialized projector may already have satisfied this
+            // dirty generation. Re-check after acquiring the projection owner.
             if ($onlyIfDirty
                 && $storage instanceof ProjectionDirtyStorageInterface
                 && !$storage->runtimeProjectionDirty()) {
@@ -134,12 +153,14 @@ final class WeeklyBonusRuntimeBridge
                 throw new RuntimeException('Weekly bonus notification runtime parity failed.');
             }
 
-            // Clearing is deliberately the final side effect and never lives in
-            // a finally block. Any realtime/economy/weekly/notification failure
-            // leaves the durable marker in place for the next API catch-up.
+            // Clearing remains the final side effect. ProjectionSnapshot storage
+            // performs compare-and-clear against the generation captured with
+            // this snapshot, so a concurrent newer JSON writer keeps dirty=true.
             if ($onlyIfDirty && $storage instanceof ProjectionDirtyStorageInterface) {
                 $storage->clearRuntimeProjectionDirty();
-                $result['projection_dirty_cleared'] = true;
+                $pending = $storage->runtimeProjectionDirty();
+                $result['projection_dirty_cleared'] = !$pending;
+                $result['projection_dirty_pending_newer_write'] = $pending;
             }
 
             return $result;
@@ -196,19 +217,11 @@ final class WeeklyBonusRuntimeBridge
             return null;
         }
 
-        // The API success hook synchronizes and audits the weekly projection
-        // before response filters run. Development users are intentionally
-        // excluded by that projection. Reusing the already-created repository
-        // above avoids opening a second PDO connection solely to prove the same
-        // exclusion again; any stale/extra DB row has already failed parity.
         return (new WeeklyMatchEconomyService($this->config))->status($snapshot, $user);
     }
 
     private function repository(): RuntimeWeeklyBonusRepository
     {
-        // Dependency injection must remain self-contained: callers that provide
-        // an already-verified repository do not need StorageFactory or another
-        // storage selection pass merely to read through that repository.
         if ($this->repository !== null) return $this->repository;
 
         $storage = $this->storage ??= StorageFactory::create($this->config);

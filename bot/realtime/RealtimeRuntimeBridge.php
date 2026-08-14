@@ -31,34 +31,52 @@ final class RealtimeRuntimeBridge
         if ($script === '' || basename($script) !== 'api.php') return false;
 
         // The weekly API bridge owns realtime as an explicit dependency of its
-        // frozen-snapshot synchronization cycle. Registering another top-level
-        // realtime hook before it repeats the same DB projection and holds the
-        // API response unnecessarily. Direct synchronizeCurrentJson() calls stay
-        // unchanged, so Weekly can still fail closed on realtime parity.
+        // projection cycle when weekly DB routing is enabled.
         return $this->router->routeFor('weekly_bonus') !== RuntimeStorageRouter::DRIVER_DATABASE;
     }
 
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
+        if ($this->currentApiActionIsLatencyCritical()) return null;
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Realtime bridge requires JSON rollback storage.');
         }
         if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Realtime bridge requires exclusive JSON snapshot support.');
+            throw new RuntimeException('Realtime bridge requires stable JSON snapshot support.');
         }
 
         $repository = $this->repository ??= new RuntimeRealtimeRepository($this->config, $this->router);
-
-        // Realtime projection is part of the JSON write publication boundary.
-        // Keep the same exclusive JSON lock from snapshot read until DB projection
-        // and its parity comparison finish. Otherwise a newer api.php transaction
-        // can mutate JSON while this bridge is still projecting the older snapshot,
-        // allowing concurrent success hooks to observe transient JSON↔DB mismatch.
-        return $storage->exclusiveReadOnly(static function (array $snapshot) use ($repository): array {
+        $callback = static function (array $snapshot) use ($repository): array {
             return $repository->synchronize($snapshot);
-        });
+        };
+
+        // Runtime projection must serialize with other projectors, not with
+        // gameplay writers. Nested calls reuse the current projection snapshot.
+        if ($storage instanceof ProjectionSnapshotStorageInterface) {
+            return $storage->projectionReadOnly($callback);
+        }
+
+        // Compatibility fallback for narrow adapters that predate the runtime
+        // projection snapshot contract keeps the historical fail-closed freeze.
+        return $storage->exclusiveReadOnly($callback);
+    }
+
+    private function currentApiActionIsLatencyCritical(): bool
+    {
+        $script = trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+        if ($script === '' || basename($script) !== 'api.php') return false;
+
+        $action = strtolower(trim((string)($GLOBALS['mgw_api_action'] ?? $GLOBALS['action'] ?? '')));
+        return in_array($action, [
+            'start_search',
+            'leave_search',
+            'game_state',
+            'game_action',
+            'make_move',
+            'leave_game',
+        ], true);
     }
 }

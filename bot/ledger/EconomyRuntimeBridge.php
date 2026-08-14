@@ -34,7 +34,7 @@ final class EconomyRuntimeBridge
         if ($basename !== 'api.php') return false;
 
         // Weekly API synchronization already reconciles economy from the same
-        // frozen JSON snapshot before auditing weekly state. Keep webhook economy
+        // projection snapshot before auditing weekly state. Keep webhook economy
         // ownership unchanged, but avoid a duplicate top-level API projection
         // when Weekly is active. Direct synchronizeCurrentJson() remains intact.
         return $this->router->routeFor('weekly_bonus') !== RuntimeStorageRouter::DRIVER_DATABASE;
@@ -43,18 +43,40 @@ final class EconomyRuntimeBridge
     public function synchronizeCurrentJson(): ?array
     {
         if (!$this->enabled()) return null;
+        if ($this->currentApiActionIsLatencyCritical()) return null;
 
         $storage = $this->storage ??= StorageFactory::create($this->config);
         if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
             throw new RuntimeException('Economy bridge requires JSON rollback storage.');
         }
         if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Economy bridge requires exclusive JSON snapshot support.');
+            throw new RuntimeException('Economy bridge requires stable JSON snapshot support.');
         }
 
         $repository = $this->repository ??= new RuntimeEconomyRepository($this->config, $this->router);
-        return $storage->exclusiveReadOnly(static function (array $snapshot) use ($repository): array {
+        $callback = static function (array $snapshot) use ($repository): array {
             return $repository->synchronize($snapshot);
-        });
+        };
+
+        if ($storage instanceof ProjectionSnapshotStorageInterface) {
+            return $storage->projectionReadOnly($callback);
+        }
+        return $storage->exclusiveReadOnly($callback);
+    }
+
+    private function currentApiActionIsLatencyCritical(): bool
+    {
+        $script = trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
+        if ($script === '' || basename($script) !== 'api.php') return false;
+
+        $action = strtolower(trim((string)($GLOBALS['mgw_api_action'] ?? $GLOBALS['action'] ?? '')));
+        return in_array($action, [
+            'start_search',
+            'leave_search',
+            'game_state',
+            'game_action',
+            'make_move',
+            'leave_game',
+        ], true);
     }
 }

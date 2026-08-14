@@ -26,7 +26,7 @@ $importMap = <<<'HTML'
     "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=103&clock=phase-b-single-writer",
     "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=103&clock=ttt-fresh60",
     "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch",
-    "./assets/js/production-v110-targeted-interactions.js?v=1102": "./assets/js/production-v110-targeted-interactions.js?v=1103&rematch=instant-intent",
+    "./assets/js/production-v110-targeted-interactions.js?v=1102": "./assets/js/production-v110-targeted-interactions.js?v=1104&rematch=single-owner",
     "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1122&room=presence-owner",
     "./assets/js/games/game-invites-v110.js?v=1137&ux=1": "./assets/js/games/game-invites-v110.js?v=1138&realtime=signal-sync-share-fast",
     "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
@@ -69,7 +69,7 @@ $html = str_replace(
 );
 $html = str_replace(
     'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp14-terminal-rematch-v1142"',
+    'data-hotfix-build="v110-mvp14-realtime-ownership-v1144"',
     $html
 );
 
@@ -79,11 +79,11 @@ header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1131');
 header('X-MGW-Notification-Graph: v1137');
-header('X-MGW-Invite-Graph: v1141-telegram-invite-entry');
+header('X-MGW-Invite-Graph: v1142-realtime-owner');
 header('X-MGW-Search-Graph: v106-post-game-release-barrier');
 header('X-MGW-TTT-Clock: authoritative-turn-clock-v7-handoff-state-retained');
-header('X-MGW-TTT-Terminal: v3-nonblocking-watch');
-header('X-MGW-Rematch-UX: v1-instant-intent');
+header('X-MGW-TTT-Terminal: v5-latency-critical-projection-detached');
+header('X-MGW-Rematch-UX: v2-single-owner-fast-signal');
 header('X-MGW-Launch-Presentation: v128-ready-before-first-turn');
 header('X-MGW-Presence: v1122-room-occupancy-owner');
 header('X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame');

@@ -47,13 +47,18 @@ final class PaymentRuntimeBridge
             throw new RuntimeException('Payment bridge requires JSON rollback storage.');
         }
         if (!$storage instanceof ExclusiveSnapshotStorageInterface) {
-            throw new RuntimeException('Payment bridge requires exclusive JSON snapshot support.');
+            throw new RuntimeException('Payment bridge requires stable JSON snapshot support.');
         }
 
         $repository = $this->repository();
-        return $storage->exclusiveReadOnly(static function (array $_snapshot) use ($repository): array {
+        $callback = static function (array $_snapshot) use ($repository): array {
             return $repository->synchronizeCurrentJson();
-        });
+        };
+
+        if ($storage instanceof ProjectionSnapshotStorageInterface) {
+            return $storage->projectionReadOnly($callback);
+        }
+        return $storage->exclusiveReadOnly($callback);
     }
 
     public function normalizeApiData(array $data, string $action): array
