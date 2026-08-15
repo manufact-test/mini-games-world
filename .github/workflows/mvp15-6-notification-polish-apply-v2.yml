@@ -1,0 +1,101 @@
+name: MVP-15.6 notification polish apply v2
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-notification-semantic-scroll-fix
+    paths:
+      - '.github/workflows/mvp15-6-notification-polish-apply-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-notification-semantic-scroll-fix
+          fetch-depth: 1
+      - name: Apply exact owner transforms
+        run: python3 scripts/ci/mvp15-6-notification-polish-apply.py
+      - name: Add focused regression
+        shell: bash
+        run: |
+          cat > bot/tests/Mvp156NotificationSemanticScrollTest.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+          $root = dirname(__DIR__);
+          require_once $root . '/helpers/validators.php';
+          require_once $root . '/services/NotificationService.php';
+          $assertions = 0;
+          $assertTrue = static function (bool $actual, string $message) use (&$assertions): void {
+              $assertions++;
+              if (!$actual) throw new RuntimeException($message);
+          };
+          $assertSame = static function (mixed $expected, mixed $actual, string $message) use (&$assertions): void {
+              $assertions++;
+              if ($expected !== $actual) throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+          };
+          $read = static fn(string $path): string => file_get_contents($path) ?: throw new RuntimeException('Cannot read ' . $path);
+          $notificationsPhp = $read($root . '/notifications.php');
+          $client = $read(dirname($root) . '/app/assets/js/screens/notifications-screen-v110r12.js');
+          $css = $read(dirname($root) . '/app/assets/css/screens/notifications.css');
+          $weekly = $read(dirname($root) . '/app/assets/js/screens/weekly-match-info.js');
+          $v110 = $read(dirname($root) . '/app/v110.php');
+          $manifest = $read($root . '/helpers/staging-e2e-runtime-files.txt');
+
+          $assertTrue(!str_contains($css, '.notification-card.warning'), 'Notification cards must not expose a fourth warning semantic color');
+          $assertTrue(!str_contains($css, '.notification-toast.warning'), 'Notification toasts must not expose a fourth warning semantic color');
+          $assertTrue(str_contains($css, 'var(--sk-info)') && str_contains($css, 'var(--sk-success)') && str_contains($css, 'var(--sk-error)'), 'Notification palette must use canonical blue/green/red tokens');
+          $assertTrue(str_contains($notificationsPhp, "$item['tone'] = 'success';") && str_contains($notificationsPhp, "$item['tone'] = 'danger';") && str_contains($notificationsPhp, "$item['tone'] = 'info';"), 'Backend notification decorator must emit the three canonical tones');
+          $assertTrue(!str_contains($notificationsPhp, "$item['tone'] = 'warning';"), 'Backend notification presentation must not emit warning tone');
+          $assertTrue(str_contains($client, 'function semanticTone(value)') && !str_contains($client, "['success','danger','info','warning']"), 'Client must canonicalize notifications to exactly three semantic tones');
+          $assertTrue(str_contains($client, 'const existingList = isNotificationsSheetOpen()') && str_contains($client, 'const scrollTop = existingList.scrollTop;') && str_contains($client, 'existingList.scrollTop = scrollTop;'), 'Open notification refresh must reuse the list owner and preserve scroll position');
+          $assertTrue(str_contains($client, 'const POLL_MS = 30000;'), 'Background refresh remains active; scroll fix must not disable polling');
+          $assertTrue(str_contains($weekly, 'color:var(--sk-success)'), 'Completed 3/3 and 8/8 progress must use success green');
+          $assertTrue(str_contains($v110, 'green-red-blue-v1') && str_contains($v110, 'v=1146&mvp15=notification-polish'), 'Accepted /start graph must advertise and cache-bust the notification successor');
+          $assertTrue(str_contains($manifest, 'app/assets/css/screens/notifications.css'), 'Exact runtime fingerprint must include notification palette CSS');
+
+          $service = new NotificationService();
+          $legacyDb = ['notifications' => [[
+              'id' => 'legacy-first-game-no-payload-game-type',
+              'event_key' => 'first_game_bonus:12345:battleship',
+              'user_id' => '12345',
+              'type' => 'first_game_bonus',
+              'title' => 'Бонус за новую игру',
+              'message' => 'Первая завершённая партия засчитана. Начислено +50 коинов.',
+              'tone' => 'success',
+              'created_at' => '2026-08-15T22:25:00+00:00',
+              'read_at' => null,
+          ]]];
+          $items = $service->userNotifications($legacyDb, '12345');
+          $assertSame('Первая завершённая партия в «Морской бой». Начислено +50 коинов.', $items[0]['message'] ?? null, 'Historical first-game copy must recover game title from immutable event key');
+          $assertSame('Первая завершённая партия засчитана. Начислено +50 коинов.', $legacyDb['notifications'][0]['message'], 'Historical notification storage must remain untouched');
+          fwrite(STDOUT, "Mvp156NotificationSemanticScrollTest passed: {$assertions} assertions.\n");
+          PHP
+      - name: Focused verification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/notifications.php
+          php -l bot/services/NotificationService.php
+          php -l bot/tests/Mvp156NotificationSemanticScrollTest.php
+          node --check app/assets/js/screens/notifications-screen-v110r12.js
+          node --check app/assets/js/screens/weekly-match-info.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          php bot/tests/Mvp156BonusUxPolishTest.php
+          php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php bot/tests/Mvp156NotificationSemanticScrollTest.php
+          python3 scripts/ci/staging-runtime-fingerprint.py
+      - name: Commit verified product changes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add app bot
+          git commit -m 'MVP-15.6: unify notification semantics and preserve scroll'
+          git push origin HEAD:agent/mvp-15-6-notification-semantic-scroll-fix
