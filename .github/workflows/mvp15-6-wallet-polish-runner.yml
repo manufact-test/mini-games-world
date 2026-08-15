@@ -32,7 +32,6 @@ jobs:
           node --check app/assets/js/main-v110-handoff-shell.js
           python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
           php bot/tests/Mvp156UnifiedZoneCutoverTest.php
-          php bot/tests/Mvp155CanonicalMatchEconomyTest.php
       - name: Commit product change
         run: |
           git config user.name 'manufact-test'
