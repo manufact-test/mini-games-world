@@ -33,8 +33,8 @@ export function syncWeeklyMatchButton(status = null){
   if (status && typeof status === 'object') cachedStatus = status;
   const button = document.getElementById('weeklyMatchInfo');
   if (!button) return;
-  button.textContent = 'Подробнее';
-  button.setAttribute('aria-label', 'Подробнее о еженедельных бесплатных коинах');
+  button.textContent = 'Еженедельный бонус';
+  button.setAttribute('aria-label', 'Открыть информацию о еженедельном бонусе');
 }
 
 export async function refreshWeeklyMatchProgress(){
@@ -57,7 +57,7 @@ async function openWeeklyMatchInfo(){
   haptic('light');
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бесплатные коины</h2><p>Еженедельный бонус за игровую активность.</p></div>
+      <div><h2>Еженедельный бонус</h2><p>Бесплатные коины за игровую активность.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="notifications-loading">
@@ -91,7 +91,7 @@ function renderWeeklyMatchInfo(status){
 
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бесплатные коины</h2><p>Еженедельный бонус за игровую активность.</p></div>
+      <div><h2>Еженедельный бонус</h2><p>Бесплатные коины за игровую активность.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
