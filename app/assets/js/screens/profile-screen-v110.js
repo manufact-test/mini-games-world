@@ -130,15 +130,14 @@ function renderProfileOverview(user = {}, orders = []){
       <div class="profile-section-head">
         <div>
           <h2>Мои средства</h2>
-          <p>Ваш баланс коинов.</p>
         </div>
       </div>
 
       <div class="profile-wallet-grid">
         <div class="profile-wallet-card match">
-          <span><img src="./assets/shield-king-icon.php?v=c1efd5af&asset=ui%2Feconomy%2Fcoins.webp" class="shield-king-label-icon" data-sk-asset="ui/economy/coins.webp" alt="" aria-hidden="true"> MGW Coins</span>
+          <span><img src="./assets/shield-king-icon.php?v=c1efd5af&asset=ui%2Feconomy%2Fcoins.webp" width="36" height="36" data-sk-asset="ui/economy/coins.webp" alt="" aria-hidden="true"></span>
           <strong>${formatNumber(balance)}</strong>
-          <small>Для игр, наград и магазина</small>
+          <small>Ваш баланс коинов.</small>
         </div>
       </div>
     </section>
