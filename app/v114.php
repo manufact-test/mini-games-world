@@ -57,8 +57,8 @@ $html = str_replace(
     $html
 );
 $html = str_replace(
-    './assets/css/main.css?v=92',
-    './assets/css/main.css?v=145&sk=3&icons=c1efd5af&render=21&review=timer-optical-center-13',
+    './assets/css/main.css?v=93-wallet-15-3',
+    './assets/css/main.css?v=146&sk=3&icons=c1efd5af&render=21&review=timer-optical-center-13&wallet=15-3',
     $html
 );
 $html = str_replace(
@@ -72,12 +72,12 @@ $html = str_replace(
     $html
 );
 $html = str_replace(
-    './assets/js/main.js?v=98.3',
-    './assets/js/main.js?v=d1-bootstrap-authoritative-owner',
+    './assets/js/main.js?v=98.4-wallet-15-3',
+    './assets/js/main.js?v=d2-unified-wallet-15-3',
     $html
 );
 
-$mainScript = '<script type="module" src="./assets/js/main.js?v=d1-bootstrap-authoritative-owner"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=d2-unified-wallet-15-3"></script>';
 if (!str_contains($html, $mainScript)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
@@ -90,7 +90,7 @@ if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=122&b=da0ce0747
     echo 'Mini Games World Phase B entrypoint is unavailable.';
     exit;
 }
-if (!str_contains($html, './assets/css/main.css?v=145&sk=3&icons=c1efd5af&render=21&review=timer-optical-center-13')) {
+if (!str_contains($html, './assets/css/main.css?v=146&sk=3&icons=c1efd5af&render=21&review=timer-optical-center-13&wallet=15-3')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World Shield King presentation is unavailable.';
@@ -101,7 +101,7 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: d1-bootstrap-authoritative-owner');
+header('X-MGW-Frontend-Build: d2-unified-wallet-15-3');
 header('X-MGW-Phase-B-Build: phase-b-current-v122');
 header('X-MGW-Entry-Version: v' . $entryVersion);
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
