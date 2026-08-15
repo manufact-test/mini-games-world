@@ -81,8 +81,7 @@ function renderWeeklyMatchInfo(status){
     minGames,
     Math.max(0, Number(status.completed_games ?? status.completed_match_games ?? 0))
   );
-  const remaining = Math.max(0, Number(status.remaining_games ?? status.remaining_match_games ?? 0));
-  const weeklyComplete = completed >= minGames || remaining === 0;
+  const weeklyComplete = completed >= minGames;
   const nextDate = formatScheduleDate(status.next_bonus_at, status.timezone);
 
   const firstGameAmount = Math.max(0, Number(status.first_game_amount ?? 50));
@@ -91,12 +90,11 @@ function renderWeeklyMatchInfo(status){
     firstGameMax,
     Math.max(0, Number(status.first_game_grant_count ?? 0))
   );
+  const firstGameComplete = firstGameCount >= firstGameMax;
 
-  const progressText = weeklyComplete
-    ? 'Условие на эту неделю выполнено.'
-    : `До бонуса осталось завершить ${remaining} ${pluralizeGames(remaining)}.`;
-
-  const weeklyProgressStyle = weeklyComplete ? ' style="color:var(--green)"' : '';
+  const completedProgressStyle = ' style="color:var(--gold);text-shadow:0 0 18px rgba(255,212,92,.20)"';
+  const weeklyProgressStyle = weeklyComplete ? completedProgressStyle : '';
+  const firstGameProgressStyle = firstGameComplete ? completedProgressStyle : '';
 
   openSheet(`
     <div class="sheet-head">
@@ -104,33 +102,36 @@ function renderWeeklyMatchInfo(status){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
-    <div class="section-title"><h2>Еженедельный бонус</h2></div>
-    <div class="topup-success">
-      <div>
-        <span>Следующее начисление</span>
-        <strong>${escapeHtml(nextDate)}</strong>
+    <div data-bonus-scroll style="min-height:0;flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex;flex-direction:column;gap:14px;padding-right:1px;">
+      <div><h2 style="margin:0">Еженедельный бонус</h2></div>
+      <div class="topup-success">
+        <div>
+          <span>Следующее начисление</span>
+          <strong>${escapeHtml(nextDate)}</strong>
+        </div>
+        <div>
+          <span>Размер бонуса</span>
+          <strong>+${amount.toLocaleString('ru-RU')} коинов</strong>
+        </div>
+        <div>
+          <span>Игры за неделю</span>
+          <strong${weeklyProgressStyle}>${completed} из ${minGames}</strong>
+        </div>
       </div>
-      <div>
-        <span>Размер бонуса</span>
-        <strong>+${amount.toLocaleString('ru-RU')} коинов</strong>
-      </div>
-      <div>
-        <span>Игры за неделю</span>
-        <strong${weeklyProgressStyle}>${completed} из ${minGames}</strong>
-      </div>
-    </div>
-    <div class="small-note">${escapeHtml(progressText)}</div>
 
-    <div class="section-title"><h2>Бонусы за новые игры</h2></div>
-    <div class="small-note">+${firstGameAmount.toLocaleString('ru-RU')} коинов за первую завершённую партию в каждой новой игре.</div>
-    <div class="topup-success">
       <div>
-        <span>Освоено игр</span>
-        <strong>${firstGameCount} из ${firstGameMax}</strong>
+        <h2 style="margin:0 0 5px">Бонусы за новые игры</h2>
+        <p>+${firstGameAmount.toLocaleString('ru-RU')} коинов за первую завершённую партию в каждой новой игре.</p>
       </div>
-    </div>
+      <div class="topup-success">
+        <div>
+          <span>Освоено игр</span>
+          <strong${firstGameProgressStyle}>${firstGameCount} из ${firstGameMax}</strong>
+        </div>
+      </div>
 
-    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+      <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+    </div>
   `);
 }
 
@@ -159,15 +160,6 @@ function formatScheduleDate(value, timezone){
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
-}
-
-function pluralizeGames(value){
-  const n = Math.abs(Number(value || 0)) % 100;
-  const n1 = n % 10;
-  if (n > 10 && n < 20) return 'игр';
-  if (n1 > 1 && n1 < 5) return 'игры';
-  if (n1 === 1) return 'игру';
-  return 'игр';
 }
 
 function escapeHtml(value){
