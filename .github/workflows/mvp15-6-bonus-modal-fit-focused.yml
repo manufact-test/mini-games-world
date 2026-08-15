@@ -1,0 +1,35 @@
+name: MVP-15.6 bonus modal fit focused
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-bonus-modal-fit-polish
+    paths:
+      - 'app/assets/js/screens/weekly-match-info.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/v110.php'
+      - 'bot/tests/Mvp156UnifiedZoneCutoverTest.php'
+      - '.github/workflows/mvp15-6-bonus-modal-fit-focused.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          php -l app/v110.php
+          php -l bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          node --check app/assets/js/screens/weekly-match-info.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+      - name: Bonus modal and unified-zone regression
+        run: php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+      - name: Existing first-game notification regression
+        run: php bot/tests/Mvp156BonusUxPolishTest.php
+      - name: Canonical Telegram successor verifier
+        run: python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
