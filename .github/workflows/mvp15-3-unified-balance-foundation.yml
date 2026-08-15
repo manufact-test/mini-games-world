@@ -5,6 +5,7 @@ on:
     branches:
       - agent/mvp-15-3-unified-balance-foundation
       - agent/mvp-15-3-profile-load-regression
+      - agent/mvp-15-3-legacy-identity-reconciliation
     paths:
       - 'bot/economy/**'
       - 'bot/ledger/RuntimeEconomyRepository.php'
@@ -35,6 +36,7 @@ on:
       - 'app/index.html'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
+      - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
       - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
       - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
       - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
@@ -55,6 +57,7 @@ on:
       - 'app/**'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
+      - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
       - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
       - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
       - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
@@ -87,6 +90,7 @@ jobs:
           php -l bot/staging-e2e-readiness.php
           php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
           php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
+          php -l bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
           php -l bot/tests/UnifiedEconomyRuntimeSyncTest.php
           python3 -m py_compile ops/checks/verify-mvp15-3-unified-balance-owner.py
           python3 -m py_compile scripts/ci/staging-runtime-fingerprint.py
@@ -130,6 +134,9 @@ jobs:
 
       - name: Run atomic migration execution test
         run: php bot/tests/UnifiedBalanceMigrationExecutionTest.php
+
+      - name: Run legacy identity reconciliation regression
+        run: php bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
 
       - name: Run post-cutover runtime sync test
         run: php bot/tests/UnifiedEconomyRuntimeSyncTest.php
