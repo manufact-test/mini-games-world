@@ -56,7 +56,7 @@ export function renderRoomCard(){
   } else {
     el.innerHTML = `
       <h3>Матч-комната</h3>
-      <p>Обычная комната для быстрых матчей. Участие всегда стоит 10 коинов.</p>
+      <p>Обычная комната для быстрых матчей. Участие всегда стоит ${APP_CONFIG.matchBet} коинов.</p>
       <div class="room-actions single">
         <button class="btn primary" id="topUpMatch" type="button">Пополнить</button>
       </div>
@@ -93,7 +93,7 @@ function openGameSetup(){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="setup-scroll">
-      <div class="small-note">${isGold ? 'Матч начнётся только с соперником, который выбрал такие же условия.' : 'В Match-комнате участие всегда стоит 10 коинов.'}</div>
+      <div class="small-note">${isGold ? 'Матч начнётся только с соперником, который выбрал такие же условия.' : `В Match-комнате участие всегда стоит ${APP_CONFIG.matchBet} коинов.`}</div>
       <div class="section-title"><h2>Поле</h2></div>
       <div class="choice-grid field-size-grid" id="boardChoices">
         ${APP_CONFIG.boardSizes.map(size => `<button class="choice ${size === state.selectedBoardSize ? 'active' : ''}" data-board-size="${size}" type="button">${size}×${size}</button>`).join('')}

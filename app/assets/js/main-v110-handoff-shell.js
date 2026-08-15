@@ -88,9 +88,15 @@ document.addEventListener('mgw:v99-game-found', event => {
 
 async function boot(){
   try {
-    setRoom(APP_CONFIG.defaultRoom);
     const statsTicket = beginStatsRequest('api');
     const result = await api.bootstrap();
+    const matchEntryCost = Number(result.match_economy?.entry_cost);
+    if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {
+      throw new Error('Серверная стоимость участия недоступна.');
+    }
+    APP_CONFIG.matchBet = matchEntryCost;
+    state.selectedBet = matchEntryCost;
+    setRoom(APP_CONFIG.defaultRoom);
     const mgwProfileResult = await api.mgwProfile();
     state.mgwProfile = mgwProfileResult.profile || null;
     state.user = applyCanonicalMgwProfile(result.user || {}, state.mgwProfile);

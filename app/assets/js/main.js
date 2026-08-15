@@ -85,8 +85,14 @@ initGameRules();
 
 async function boot(){
   try {
-    setRoom(APP_CONFIG.defaultRoom);
     const result = await api.bootstrap();
+    const matchEntryCost = Number(result.match_economy?.entry_cost);
+    if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {
+      throw new Error('Серверная стоимость участия недоступна.');
+    }
+    APP_CONFIG.matchBet = matchEntryCost;
+    state.selectedBet = matchEntryCost;
+    setRoom(APP_CONFIG.defaultRoom);
     state.user = result.user;
     state.stats = mergePresenceOnline(result.stats);
     state.session = result.session || state.session;

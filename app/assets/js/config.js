@@ -6,7 +6,7 @@ export const APP_CONFIG = {
   searchIntervalMs: 2500,
   gameIntervalMs: 1500,
   defaultRoom: 'match',
-  matchBet: 10,
+  matchBet: null,
   goldBets: [10, 20, 30, 50, 100],
   boardSizes: [3, 5, 9],
   shopMinOrder: 1000
