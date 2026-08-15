@@ -1,0 +1,272 @@
+name: MVP-15.6 room-neutral UI cutover
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-unified-zone-cutover
+    paths:
+      - '.github/workflows/mvp15-6-ui-cutover.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-unified-zone-cutover
+          fetch-depth: 1
+      - name: Apply visible unified-zone cutover
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path): return Path(path).read_text(encoding='utf-8')
+          def write(path, value): Path(path).write_text(value, encoding='utf-8')
+          def exact(path, old, new):
+              s = read(path); n = s.count(old)
+              if n != 1: raise SystemExit(f'{path}: exact count={n}: {old[:100]!r}')
+              write(path, s.replace(old, new, 1))
+          def sub1(path, pattern, replacement, flags=re.S|re.M):
+              s = read(path); out, n = re.subn(pattern, replacement, s, count=1, flags=flags)
+              if n != 1: raise SystemExit(f'{path}: regex count={n}: {pattern[:120]!r}')
+              write(path, out)
+
+          # Home: one game zone, no Match/Gold selector and no legacy top-up/store creation surfaces.
+          p = 'app/index.html'
+          sub1(p,
+              r'\n\s*<div class="seg" aria-label="Выбор комнаты">.*?</div>\s*\n\s*(<section class="card" id="roomCard")',
+              r'\n          \1')
+
+          p = 'app/assets/js/screens/home-screen.js'
+          sub1(p, r'export function initHomeScreen\(\)\{.*?(?=\nfunction openProfileFromTop)', '''export function initHomeScreen(){
+            document.addEventListener('click', event => {
+              const target = event.target.closest('button, [role="button"]');
+              if (!target) return;
+              if (target.id === 'inviteFriend') return toast('Приглашения друзей появятся позже.');
+              if (target.id === 'moreMenuOpen' || target.id === 'gameMenuOpen') return openMoreMenuSheet();
+              if (target.id === 'profileOpen') return openProfileFromTop();
+              if (target.matches('[data-back-home]')) return showScreen('home');
+            });
+
+            document.addEventListener('keydown', event => {
+              if (event.key === 'Enter' && event.target?.id === 'profileOpen') openProfileFromTop();
+            });
+          }
+          '''.replace('          ', ''))
+          sub1(p, r'export function setRoom\(room\)\{.*?(?=\nexport function renderRoomCard)', '''export function setRoom(){
+            state.room = 'match';
+            state.selectedBet = APP_CONFIG.matchBet;
+            renderRoomCard();
+          }
+          '''.replace('          ', ''))
+          sub1(p, r'export function renderRoomCard\(\)\{.*?(?=\nexport function renderStats)', '''export function renderRoomCard(){
+            const el = document.getElementById('roomCard');
+            if (!el) return;
+            el.innerHTML = `
+              <h3>Обычные матчи</h3>
+              <p>Быстрые матчи с единым балансом. Участие стоит ${APP_CONFIG.matchBet} коинов.</p>
+              <div class="room-actions single">
+                <button class="btn ghost" id="weeklyMatchInfo" type="button" aria-label="Подробнее о еженедельных бесплатных коинах">Подробнее</button>
+              </div>
+            `;
+          }
+          '''.replace('          ', ''))
+          sub1(p, r'export function renderStats\(stats\)\{.*?(?=\nfunction openGameSetup)', '''export function renderStats(stats){
+            const el = document.getElementById('activityGrid');
+            if (!el) return;
+            const safe = stats || {};
+            el.innerHTML = `
+              <div class="activity-card"><div class="label">Игроков онлайн</div><div class="num">${safe.online_players ?? '—'}</div></div>
+              <div class="activity-card"><div class="label">Активных матчей</div><div class="num">${safe.active_games ?? '—'}</div></div>
+            `;
+          }
+          '''.replace('          ', ''))
+          sub1(p, r'\nfunction openGameSetup\(\)\{.*?(?=\nfunction openMoreMenuSheet)', '\n')
+          exact(p, "import { renderBalances, roomName } from '../ui.js?v=90-wallet-15-3';", "import { renderBalances } from '../ui.js?v=90-wallet-15-3';")
+          exact(p, "import { startSearchPolling } from './search-screen.js?v=74';\n", '')
+          exact(p, "import { startGamePolling } from './game-screen.js?v=74';\n", '')
+          exact(p, "import { isSessionLocked, sessionMessage } from '../session.js?v=27';\n", '')
+
+          # Shared label is now room-neutral for every accepted game setup without touching game rules.
+          p = 'app/assets/js/ui.js'
+          sub1(p, r"export function roomName\(room\)\{.*?\n\}", "export function roomName(){ return 'Обычный матч';\n}")
+
+          # Weekly bonus remains directly reachable from the neutral Home card.
+          p = 'app/assets/js/screens/weekly-match-info.js'
+          sub1(p, r"\n    if \(target\.matches\('\[data-room\]'\)\) \{.*?\n    \}\n", '\n')
+          sub1(p, r'export function syncWeeklyMatchButton\(status = null\)\{.*?(?=\nexport async function refreshWeeklyMatchProgress)', '''export function syncWeeklyMatchButton(status = null){
+            if (status && typeof status === 'object') cachedStatus = status;
+            const button = document.getElementById('weeklyMatchInfo');
+            if (!button) return;
+            button.textContent = 'Подробнее';
+            button.setAttribute('aria-label', 'Подробнее о еженедельных бесплатных коинах');
+          }
+          '''.replace('          ', ''))
+          exact(p,
+              "      Каждый понедельник в 12:00 по московскому времени начисляем +${amount.toLocaleString('ru-RU')} коинов в Матч-комнату, если за неделю завершены ${minGames} матча в Матч-комнате. ${escapeHtml(progressText)}",
+              "      Каждый понедельник в 12:00 по московскому времени начисляем +${amount.toLocaleString('ru-RU')} коинов, если за неделю завершены ${minGames} обычных матча. ${escapeHtml(progressText)}")
+          exact(p, "  const amount = Number(status.bonus_amount || 50);", "  const amount = Number(status.bonus_amount ?? 0);")
+
+          # The accepted targeted-interaction owner no longer depends on room tabs/top-up controls.
+          p = 'app/assets/js/production-v110-targeted-interactions.js'
+          sub1(p, r"\n  if \(button\.matches\('\[data-room\]'\)\) \{.*?\n  \}\n", '\n')
+          sub1(p, r'function ensureWeeklyDetailsButton\(\)\{.*?(?=\nfunction ticTacToeActionIsCurrent)', '''function ensureWeeklyDetailsButton(){
+            const actions = document.querySelector('#roomCard .room-actions');
+            if (!actions) return;
+            if (!document.getElementById('weeklyMatchInfo')) {
+              actions.insertAdjacentHTML('beforeend', '<button class="btn ghost" id="weeklyMatchInfo" type="button" aria-label="Подробнее о еженедельных бесплатных коинах">Подробнее</button>');
+            }
+          }
+          '''.replace('          ', ''))
+
+          # Invite UX keeps the accepted lifecycle but removes room as a choice/label.
+          p = 'app/assets/js/games/game-invites-v110.js'
+          sub1(p, r'function openInviteSetup\(gameType, preserved = null\)\{.*?(?=\nasync function openPlayerPicker)', '''function openInviteSetup(gameType, preserved = null){
+            if (hasActionableInvite()) return openCurrentInvite();
+
+            const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
+            let boardSize = Number(preserved?.boardSize || option.defaultSize);
+            const bet = Number(APP_CONFIG.matchBet);
+
+            haptic('light');
+            openSheet(`
+              <span data-invite-setup hidden></span>
+              <div class="sheet-head">
+                <div>
+                  <h2>Пригласить в «${escapeHtml(option.title)}»</h2>
+                  <p>Выберите вариант игры.</p>
+                </div>
+                <button class="close" data-close-sheet type="button">×</button>
+              </div>
+
+              <div class="setup-scroll">
+                <div class="small-note">Коины спишутся только после запуска матча.</div>
+                <div class="section-title"><h2>Вариант игры</h2></div>
+                <div class="choice-grid field-size-grid" data-invite-sizes>
+                  ${option.sizes.map(size => `
+                    <button class="choice ${size === boardSize ? 'active' : ''}" data-invite-size="${size}" type="button">
+                      ${escapeHtml(boardLabel(gameType, size))}
+                    </button>
+                  `).join('')}
+                </div>
+                <div class="section-title"><h2>Стоимость участия</h2></div>
+                <div class="choice-grid single-choice" data-invite-bets>
+                  <button class="choice active" data-invite-bet="${bet}" type="button">${bet} коинов</button>
+                </div>
+              </div>
+
+              <div class="stack invite-actions">
+                <button class="btn primary full" data-open-player-picker type="button">Пригласить игрока</button>
+                <button class="btn ghost full" data-create-link-invite type="button">Поделиться ссылкой</button>
+              </div>
+              <div class="invite-method-note">Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.</div>
+            `);
+
+            const currentContext = () => normalizeInviteContext({ gameType, boardSize, bet });
+            document.querySelectorAll('[data-invite-size]').forEach(button => button.addEventListener('click', () => {
+              boardSize = Number(button.dataset.inviteSize || option.defaultSize);
+              document.querySelectorAll('[data-invite-size]').forEach(item => item.classList.toggle('active', item === button));
+              scheduleWarmShareDraft(currentContext());
+            }));
+            document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
+              openPlayerPicker(currentContext(), event.currentTarget);
+            });
+            document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
+            scheduleWarmShareDraft(currentContext(), 0);
+          }
+          '''.replace('          ', ''))
+          exact(p,
+              "      <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p></div>",
+              "      <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))}</p></div>")
+          sub1(p, r'function normalizeInviteContext\(value\)\{.*?(?=\nfunction defaultInviteContext)', '''function normalizeInviteContext(value){
+            const gameType = String(value?.gameType || 'tictactoe');
+            const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
+            return {
+              gameType,
+              room:'match',
+              boardSize:Number(value?.boardSize || option.defaultSize),
+              bet:Number(APP_CONFIG.matchBet),
+            };
+          }
+          '''.replace('          ', ''))
+          sub1(p, r'function defaultInviteContext\(gameType\)\{.*?(?=\nfunction inviteContextKey)', '''function defaultInviteContext(gameType){
+            const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
+            return normalizeInviteContext({ gameType, boardSize:option.defaultSize, bet:APP_CONFIG.matchBet });
+          }
+          '''.replace('          ', ''))
+          sub1(p, r'function inviteContextKey\(context\)\{.*?\n\}', '''function inviteContextKey(context){
+            const normalized = normalizeInviteContext(context);
+            return `${normalized.gameType}|${normalized.boardSize}|${normalized.bet}`;
+          }'''.replace('          ', ''))
+          exact(p,
+              "      <div><span>Комната</span><strong>${escapeHtml(roomLabel(context?.room))}</strong></div>\n",
+              '')
+          exact(p,
+              "      <div><span>Комната</span><strong>${escapeHtml(invite?.room_label || roomLabel(invite?.room))}</strong></div>\n",
+              '')
+          sub1(p, r"function roomLabel\(room\)\{\n  return .*?\n\}", "function roomLabel(){\n  return 'Обычный матч';\n}")
+
+          # Public history projection stops exposing old room labels while raw archive rows remain untouched.
+          p = 'bot/services/HistoryService.php'
+          exact(p, "            $items[] = $item;", "            unset($item['room'], $item['room_label']);\n            $items[] = $item;")
+          exact(p, "            $items[] = $this->matchItem($game, $userId);", "            $item = $this->matchItem($game, $userId);\n            unset($item['room'], $item['room_label']);\n            $items[] = $item;")
+          exact(p,
+              "        $parts = [$this->roomLabel((string)($game['room'] ?? 'match')), $this->gameLabel($game)];",
+              "        $parts = [$this->gameLabel($game)];")
+          exact(p,
+              "'description' => $game ? $this->operationGameDescription($game, $userId, 'game_entry') : $this->roomLabel($room),",
+              "'description' => $game ? $this->operationGameDescription($game, $userId, 'game_entry') : 'Обычный матч',")
+          exact(p,
+              "            'admin_gold_topup' => 'Начисление Gold',",
+              "            'admin_gold_topup' => 'Начисление',")
+          exact(p,
+              "    private function balanceDescription(array $tx): string { return $this->roomLabel((string)($tx['room'] ?? '')); }",
+              "    private function balanceDescription(array $tx): string { return ''; }")
+
+          # Cache the actual accepted /start graph and mark the new owner explicitly.
+          p = 'app/assets/js/main-v110-handoff-shell.js'
+          exact(p,
+              "import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';",
+              "import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=75';")
+
+          p = 'app/v110.php'
+          replacements = [
+              ("\"./assets/js/ui.js?v=89\": \"./assets/js/ui.js?v=91&mvp15=unified-balance\"", "\"./assets/js/ui.js?v=89\": \"./assets/js/ui.js?v=92&mvp15=unified-zone\""),
+              ("\"./assets/js/screens/home-screen.js?v=74\": \"./assets/js/screens/home-screen.js?v=76&mvp15=match-economy\"", "\"./assets/js/screens/home-screen.js?v=74\": \"./assets/js/screens/home-screen.js?v=77&mvp15=unified-zone\""),
+              ("\"./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5\": \"./assets/js/main-v110-handoff-shell.js?v=1141&mvp15=ttt-setup-copy\"", "\"./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5\": \"./assets/js/main-v110-handoff-shell.js?v=1142&mvp15=unified-zone\""),
+              ("\"./assets/js/production-v110-targeted-interactions.js?v=1102\": \"./assets/js/production-v110-targeted-interactions.js?v=1104&rematch=single-owner\"", "\"./assets/js/production-v110-targeted-interactions.js?v=1102\": \"./assets/js/production-v110-targeted-interactions.js?v=1105&zone=unified\""),
+              ("\"./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69\": \"./assets/js/production-v110-presence.js?v=1122&room=presence-owner\"", "\"./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69\": \"./assets/js/production-v110-presence.js?v=1123&zone=unified\""),
+              ("\"./assets/js/games/game-invites-v110.js?v=1137&ux=1\": \"./assets/js/games/game-invites-v110.js?v=1139&share=prepared-owner-rematch-clean\"", "\"./assets/js/games/game-invites-v110.js?v=1137&ux=1\": \"./assets/js/games/game-invites-v110.js?v=1140&zone=unified\""),
+              ("'unified_ui_cache' => './assets/js/ui.js?v=91&mvp15=unified-balance'", "'unified_ui_cache' => './assets/js/ui.js?v=92&mvp15=unified-zone'"),
+              ("'unified_home_cache' => './assets/js/screens/home-screen.js?v=76&mvp15=match-economy'", "'unified_home_cache' => './assets/js/screens/home-screen.js?v=77&mvp15=unified-zone'"),
+              ("'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1141&mvp15=ttt-setup-copy'", "'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1142&mvp15=unified-zone'"),
+              ("header('X-MGW-Presence: v1122-room-occupancy-owner');", "header('X-MGW-Presence: v1123-account-presence-only');\nheader('X-MGW-Game-Zone: unified-v1');"),
+          ]
+          s = read(p)
+          for old, new in replacements:
+              if s.count(old) != 1: raise SystemExit(f'v110 target not found exactly: {old}')
+              s = s.replace(old, new, 1)
+          write(p, s)
+          PY
+
+          php -l bot/services/HistoryService.php
+          php -l app/v110.php
+          for f in \
+            app/assets/js/screens/home-screen.js app/assets/js/ui.js app/assets/js/screens/weekly-match-info.js \
+            app/assets/js/production-v110-targeted-interactions.js app/assets/js/production-v110-presence.js \
+            app/assets/js/games/game-invites-v110.js app/assets/js/main-v110-handoff-shell.js; do
+            node --check "$f"
+          done
+
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add app bot/services/HistoryService.php
+          git commit -m 'MVP-15.6: remove legacy room presentation and creation UI'
+          git push origin HEAD:agent/mvp-15-6-unified-zone-cutover
