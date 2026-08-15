@@ -4,7 +4,7 @@ export const state = {
   stats: null,
   room: 'match',
   selectedGame: 'tictactoe',
-  selectedBet: 10,
+  selectedBet: 0,
   selectedBoardSize: 3,
   activeGame: null,
   session: null,

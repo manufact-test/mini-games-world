@@ -162,6 +162,7 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                     'shop' => $shop->status($user),
                     'weekly_match' => $weeklyMatch->status($data, $user),
+                    'match_economy' => MatchEconomyRuntimeConfig::publicStatus($config),
                     'games' => $games->catalog(),
                     'stats' => $statsService->build($data),
                     'active_game' => $active ? $games->publicGame($active, $userId) : null,
