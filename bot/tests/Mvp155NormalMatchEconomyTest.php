@@ -68,18 +68,19 @@ $assertSame(900, $db['users']['b']['balance'], 'Player B must pay canonical 100 
 $assertSame(100, (int)$db['games'][$gameId]['bet'], 'Stored Match entry must be canonical 100');
 $assertSame(200, (int)$db['games'][$gameId]['bank'], 'Normal Match bank must be 200');
 
-$service->makeMove($db, $db['users']['a'], $gameId, 0);
-$service->makeMove($db, $db['users']['b'], $gameId, 3);
-$service->makeMove($db, $db['users']['a'], $gameId, 1);
-$service->makeMove($db, $db['users']['b'], $gameId, 4);
-$service->makeMove($db, $db['users']['a'], $gameId, 2);
+// The requester who finds the queued opponent is the stored first-turn owner.
+$service->makeMove($db, $db['users']['b'], $gameId, 0);
+$service->makeMove($db, $db['users']['a'], $gameId, 3);
+$service->makeMove($db, $db['users']['b'], $gameId, 1);
+$service->makeMove($db, $db['users']['a'], $gameId, 4);
+$service->makeMove($db, $db['users']['b'], $gameId, 2);
 
 $assertSame('finished', $db['games'][$gameId]['status'], 'Winning game must settle');
-$assertSame('a', $db['games'][$gameId]['winner_id'], 'Player A must be winner');
+$assertSame('b', $db['games'][$gameId]['winner_id'], 'Player B must be winner');
 $assertSame(180, (int)$db['games'][$gameId]['payout'], 'Winner reward must be canonical 180');
 $assertSame(20, (int)$db['games'][$gameId]['commission'], 'System sink must be canonical 20');
-$assertSame(1080, $db['users']['a']['balance'], 'Winner net result must be +80 from 1000');
-$assertSame(900, $db['users']['b']['balance'], 'Loser net result must be -100 from 1000');
+$assertSame(900, $db['users']['a']['balance'], 'Loser net result must be -100 from 1000');
+$assertSame(1080, $db['users']['b']['balance'], 'Winner net result must be +80 from 1000');
 $assertSame(20, (int)($db['system']['fees_match'] ?? 0), 'System must retain exactly 20');
 
 $entryTransactions = array_values(array_filter(
@@ -108,7 +109,7 @@ $drawMatched = $service->startSearch($drawDb, $d, 'match', 9999, 3);
 $drawId = (string)($drawMatched['game']['id'] ?? '');
 if ($drawId === '') throw new RuntimeException('Draw Match game was not created.');
 
-foreach ([['c',0],['d',1],['c',2],['d',4],['c',3],['d',5],['c',7],['d',6],['c',8]] as [$playerId, $cell]) {
+foreach ([['d',0],['c',1],['d',2],['c',4],['d',3],['c',5],['d',7],['c',6],['d',8]] as [$playerId, $cell]) {
     $service->makeMove($drawDb, $drawDb['users'][$playerId], $drawId, $cell);
 }
 
