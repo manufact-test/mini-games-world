@@ -127,7 +127,7 @@ $assertNotContains('Матч-комнату', $weekly, 'Weekly bonus copy must n
 $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy must be room-neutral');
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, "X-MGW-Game-Zone: unified-v1"), 'Accepted /start entry must advertise unified game zone');
-$assertTrue(str_contains($v110, 'v1142&mvp15=unified-zone'), 'Accepted /start graph must cache-bust the unified-zone shell');
+$assertTrue(str_contains($v110, 'v=1142&mvp15=unified-zone'), 'Accepted /start graph must cache-bust the unified-zone shell');
 
 $startSearchPos = strpos($api, "case 'start_search':");
 $nextCasePos = strpos($api, "case '", $startSearchPos + 20);
