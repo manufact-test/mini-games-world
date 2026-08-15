@@ -1,0 +1,53 @@
+name: MVP-15.5 bootstrap config scope fix
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-5-bootstrap-config-scope
+    paths:
+      - '.github/workflows/mvp15-5-bootstrap-config-scope-fix.yml'
+      - 'bot/tests/Mvp155BootstrapConfigScopeTest.php'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-5-bootstrap-config-scope
+          fetch-depth: 1
+      - name: Apply exact closure capture fix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('bot/api.php')
+          text = p.read_text(encoding='utf-8')
+          old = "$result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId, $deviceId) {"
+          new = "$result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId, $deviceId, $config) {"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one closure capture anchor, got {text.count(old)}')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Focused syntax and regression
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/api.php
+          php -l bot/tests/Mvp155BootstrapConfigScopeTest.php
+          php bot/tests/Mvp155BootstrapConfigScopeTest.php
+      - name: Commit root-cause fix
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name manufact-test
+          git config user.email manufact.test@gmail.com
+          git add bot/api.php bot/tests/Mvp155BootstrapConfigScopeTest.php
+          git diff --cached --check
+          git commit -m 'MVP-15.5: capture canonical config in API transaction'
+          git push origin HEAD:agent/mvp-15-5-bootstrap-config-scope
