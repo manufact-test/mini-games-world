@@ -14,12 +14,12 @@ import { initShieldKingVisuals } from './components/shield-king-visuals.js?v=126
 import { showHomeActivity, showBootFailure, dispatchAppReady } from './components/boot-state.js?v=87';
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
-import { renderRoomCard, initHomeScreen, setRoom } from './screens/home-screen.js?v=74';
+import { initHomeScreen, setRoom } from './screens/home-screen.js?v=74';
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1137&ux=1';
-import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=75';
+import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=76';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
@@ -105,7 +105,6 @@ async function boot(){
     renderBalances(state.user);
     applyStatsSnapshot(statsTicket, result.stats);
     showHomeActivity();
-    renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
     dispatchAppReady();
 

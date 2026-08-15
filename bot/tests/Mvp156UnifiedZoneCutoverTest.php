@@ -119,7 +119,11 @@ $assertNotContains('В Матч-комнате', $home, 'Removed Match room coun
 $assertNotContains('В Gold-комнате', $home, 'Removed Gold room counter must not remain in Home');
 $assertNotContains('topUpGold', $home, 'Gold top-up creation UI must be gone');
 $assertNotContains('topUpMatch', $home, 'Legacy Match top-up creation UI must be gone');
-$assertTrue(str_contains($home, 'Обычные матчи'), 'Home must expose the neutral game-zone card');
+$assertNotContains('id="roomCard"', $index, 'Redundant room summary card must be removed from Home');
+$assertTrue(str_contains($index, 'id="weeklyMatchInfo"') && str_contains($index, '>Еженедельный бонус</button>'), 'Weekly bonus CTA must live in the unified wallet card');
+$assertNotContains('Правила Gold-комнаты', $home, 'Active rules must not expose the removed Gold room');
+$assertNotContains('10 коинов', $home, 'Active rules must not expose the removed legacy entry price');
+$assertTrue(str_contains($weekly, "button.textContent = 'Еженедельный бонус';"), 'Weekly runtime owner must preserve the final CTA copy');
 $assertTrue(str_contains($home, 'Игроков онлайн') && str_contains($home, 'Активных матчей'), 'Home must retain the two accepted counters');
 $assertTrue(str_contains($ui, 'export function renderUser(user)'), 'Accepted user renderer must survive the room-label cutover');
 $assertTrue(str_contains($ui, "roomName(){ return 'Обычный матч'; }"), 'Shared room copy must be neutral');
@@ -127,7 +131,7 @@ $assertNotContains('Матч-комнату', $weekly, 'Weekly bonus copy must n
 $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy must be room-neutral');
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, "X-MGW-Game-Zone: unified-v1"), 'Accepted /start entry must advertise unified game zone');
-$assertTrue(str_contains($v110, 'v=1142&mvp15=unified-zone'), 'Accepted /start graph must cache-bust the unified-zone shell');
+$assertTrue(str_contains($v110, 'v=1143&mvp15=weekly-bonus-wallet'), 'Accepted /start graph must cache-bust the weekly-bonus wallet shell');
 
 $startSearchPos = strpos($api, "case 'start_search':");
 $nextCasePos = strpos($api, "case '", $startSearchPos + 20);

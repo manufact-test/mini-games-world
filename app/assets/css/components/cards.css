@@ -77,3 +77,6 @@
 .balances.unified-balance .balance-label{grid-area:label;color:var(--soft);font-weight:850}
 .balances.unified-balance .balance-value{grid-area:value;margin:0;font-size:27px;text-align:right}
 .balances.unified-balance .balance-note{grid-area:note}
+
+.balances.unified-balance .balance-card{grid-template-areas:"label value" "note value" "action action"}
+.balances.unified-balance .balance-bonus-action{grid-area:action;width:100%;min-height:42px;margin-top:8px}
