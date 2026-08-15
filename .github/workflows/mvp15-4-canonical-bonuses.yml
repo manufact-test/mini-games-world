@@ -7,7 +7,10 @@ on:
     paths:
       - 'bot/services/WeeklyMatchEconomyService.php'
       - 'bot/services/NotificationService.php'
+      - 'bot/services/UserService.php'
+      - 'bot/weekly/RuntimeWeeklyBonusRepository.php'
       - 'bot/tests/Mvp154CanonicalBonusesTest.php'
+      - 'bot/tests/Mvp154AccountIdentityTest.php'
       - 'bot/tests/WeeklyBonusRuntimeBridgeTest.php'
       - '.github/workflows/mvp15-4-canonical-bonuses.yml'
   workflow_dispatch:
@@ -25,10 +28,15 @@ jobs:
         run: |
           php -l bot/services/WeeklyMatchEconomyService.php
           php -l bot/services/NotificationService.php
+          php -l bot/services/UserService.php
+          php -l bot/weekly/RuntimeWeeklyBonusRepository.php
           php -l bot/tests/Mvp154CanonicalBonusesTest.php
+          php -l bot/tests/Mvp154AccountIdentityTest.php
           php -l bot/tests/WeeklyBonusRuntimeBridgeTest.php
       - name: MVP-15.4 canonical bonus regression
         run: php bot/tests/Mvp154CanonicalBonusesTest.php
+      - name: Provider-neutral account identity regression
+        run: php bot/tests/Mvp154AccountIdentityTest.php
       - name: Weekly DB runtime bridge regression
         id: weekly_bridge
         shell: bash
