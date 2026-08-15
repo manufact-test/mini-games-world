@@ -160,8 +160,8 @@ required_entry_fragments = (
     './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
     './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
     './assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3',
-    './assets/js/ui.js?v=91&mvp15=unified-balance',
-    './assets/js/screens/home-screen.js?v=76&mvp15=match-economy',
+    './assets/js/ui.js?v=92&mvp15=unified-zone',
+    './assets/js/screens/home-screen.js?v=77&mvp15=unified-zone',
     './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
 )
 for fragment in required_entry_fragments:
