@@ -123,7 +123,6 @@ function renderProfileOverview(user = {}, orders = []){
   if (!el) return;
 
   const balance = Number(user.balance || 0);
-  const shopAvailable = Number(user.gold_shop_available || 0);
   const orderItems = Array.isArray(orders) ? orders : [];
 
   el.innerHTML = `
@@ -137,16 +136,9 @@ function renderProfileOverview(user = {}, orders = []){
 
       <div class="profile-wallet-grid">
         <div class="profile-wallet-card match">
-          <span>🪙 MGW Coins</span>
+          <span><img src="./assets/shield-king-icon.php?asset=ui%2Feconomy%2Fcoins.webp" data-sk-asset="ui/economy/coins.webp" width="18" height="18" alt="" aria-hidden="true"> MGW Coins</span>
           <strong>${formatNumber(balance)}</strong>
           <small>единый баланс для игр и магазина</small>
-        </div>
-        <div class="profile-wallet-card shop-available">
-          <div>
-            <span>🎁 Доступно для старого магазина</span>
-            <small>временное правило совместимости до удаления Gold-механики</small>
-          </div>
-          <strong>${formatNumber(shopAvailable)}</strong>
         </div>
       </div>
     </section>
