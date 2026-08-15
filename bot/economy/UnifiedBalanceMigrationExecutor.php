@@ -114,8 +114,11 @@ final class UnifiedBalanceMigrationExecutor
                 continue;
             }
 
-            $mgwId = $this->nullable($row['mgw_id'] ?? null);
-            $legacyUserId = $this->nullable($row['legacy_user_id'] ?? null);
+            [$mgwId, $legacyUserId] = $this->canonicalIdentity(
+                $accountRef,
+                $this->nullable($row['mgw_id'] ?? null),
+                $this->nullable($row['legacy_user_id'] ?? null)
+            );
             if (!isset($accounts[$accountRef])) {
                 $accounts[$accountRef] = [
                     'mgw_id' => $mgwId,
@@ -224,6 +227,32 @@ final class UnifiedBalanceMigrationExecutor
         if ($targets !== []) {
             throw new RuntimeException('Unexpected mgw_coin balances exist outside the approved legacy source set.');
         }
+    }
+
+    private function canonicalIdentity(string $accountRef, ?string $mgwId, ?string $legacyUserId): array
+    {
+        if (preg_match('/^(mgw|legacy):(.+)$/u', $accountRef, $matches) !== 1) {
+            throw new RuntimeException('Legacy source balance has an invalid account reference.');
+        }
+        $prefix = (string)$matches[1];
+        $subject = trim((string)$matches[2]);
+        if ($subject === '') {
+            throw new RuntimeException('Legacy source balance has an empty account subject.');
+        }
+
+        if ($prefix === 'mgw') {
+            if ($mgwId !== null && $mgwId !== $subject) {
+                throw new RuntimeException('Legacy source mgw identity conflicts with account reference.');
+            }
+            $mgwId = $subject;
+        } else {
+            if ($legacyUserId !== null && $legacyUserId !== $subject) {
+                throw new RuntimeException('Legacy source user identity conflicts with account reference.');
+            }
+            $legacyUserId = $subject;
+        }
+
+        return [$mgwId, $legacyUserId];
     }
 
     private function operationKey(string $accountRef, string $sourceAsset, int $sourceAmount): string
