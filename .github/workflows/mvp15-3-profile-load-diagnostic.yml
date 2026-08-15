@@ -1,0 +1,42 @@
+name: MVP-15.3 profile load diagnostic
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-3-profile-load-regression
+    paths:
+      - '.github/workflows/mvp15-3-profile-load-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  profile-bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify MVP-15.3 bootstrap files exist
+        run: |
+          test -f bot/economy/UnifiedBalanceMigrationRule.php
+          test -f bot/economy/UnifiedBalanceMigrationPlanner.php
+          test -f bot/economy/UnifiedBalanceMigrationExecutor.php
+          test -f bot/economy/UnifiedBalanceRuntimeState.php
+          test -f bot/economy/UnifiedBalanceMigrationCoordinator.php
+          test -f bot/economy/UnifiedEconomyRuntimeSyncService.php
+          test -f bot/ledger/LegacyEconomyDeltaImportService.php
+      - name: Include the exact profile bootstrap under local-safe config
+        env:
+          MGW_ENV: local
+          MGW_CONFIG_FILE: ${{ github.workspace }}/bot/config/config.environment.example.php
+        run: |
+          php -d display_errors=1 -d error_reporting=E_ALL -r '
+            $_SERVER["SCRIPT_FILENAME"] = __DIR__ . "/bot/profile.php";
+            $_SERVER["PHP_SELF"] = "/bot/profile.php";
+            $_SERVER["HTTP_HOST"] = "localhost";
+            require __DIR__ . "/bot/core/bootstrap.php";
+            if (!isset($config) || !is_array($config)) { throw new RuntimeException("Bootstrap config missing"); }
+            if (!class_exists("MgwProfileService")) { require __DIR__ . "/bot/accounts/MgwProfileService.php"; }
+            echo "MVP-15.3 profile bootstrap diagnostic: PASS\n";
+          '
