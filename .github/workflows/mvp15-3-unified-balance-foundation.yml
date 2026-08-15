@@ -6,6 +6,7 @@ on:
       - agent/mvp-15-3-unified-balance-foundation
       - agent/mvp-15-3-profile-load-regression
       - agent/mvp-15-3-legacy-identity-reconciliation
+      - agent/mvp-15-3-dev-user-unified-sync
     paths:
       - 'bot/economy/**'
       - 'bot/ledger/RuntimeEconomyRepository.php'
@@ -38,6 +39,7 @@ on:
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
       - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - 'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php'
       - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
       - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
   pull_request:
@@ -59,6 +61,7 @@ on:
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
       - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - 'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php'
       - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
       - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
   workflow_dispatch:
@@ -92,6 +95,7 @@ jobs:
           php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
           php -l bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
           php -l bot/tests/UnifiedEconomyRuntimeSyncTest.php
+          php -l bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
           python3 -m py_compile ops/checks/verify-mvp15-3-unified-balance-owner.py
           python3 -m py_compile scripts/ci/staging-runtime-fingerprint.py
 
@@ -140,3 +144,6 @@ jobs:
 
       - name: Run post-cutover runtime sync test
         run: php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+
+      - name: Run development-user unified sync regression
+        run: php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
