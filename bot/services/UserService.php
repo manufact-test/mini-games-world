@@ -22,10 +22,9 @@ final class UserService
                 'first_name' => clean_string($tgUser['first_name'] ?? 'Игрок', 80),
                 'username' => clean_string($tgUser['username'] ?? ($tgUser['first_name'] ?? 'Игрок'), 80),
                 'photo_url' => clean_string($tgUser['photo_url'] ?? '', 2048),
-                // Real Telegram users receive their single +50 grant through
-                // WeeklyMatchEconomyService so it has its own history and notice.
-                // Browser dev users keep the configured test balance because the
-                // welcome-grant service intentionally skips development accounts.
+                // Real Telegram users receive their starter grant through the
+                // canonical bonus owner. Browser dev users keep the configured
+                // test balance because bonus grants intentionally skip them.
                 'balance_match' => $isDevUser ? (int)$this->config['initial_match_coins'] : 0,
                 'balance_gold' => (int)$this->config['initial_gold_coins'],
                 'gold_deposited_total' => 0,
@@ -68,6 +67,13 @@ final class UserService
             $this->ensureEconomyShape($db['users'][$id]);
             $this->rotateWeeklyStats($db['users'][$id]);
         }
+
+        // AuthService attaches these values only after the provider identity has
+        // passed the canonical account resolver. Persist them so downstream
+        // economy idempotency can remain provider-neutral instead of keying a
+        // one-time reward only by the current Telegram/legacy user id.
+        $this->attachVerifiedAccountIdentity($db['users'][$id], $tgUser);
+
         UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);
         return $db['users'][$id];
     }
@@ -188,6 +194,36 @@ final class UserService
         }
 
         return false;
+    }
+
+    private function attachVerifiedAccountIdentity(array &$user, array $authenticatedUser): void
+    {
+        $incomingMgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
+        $incomingAccountRef = trim((string)($authenticatedUser['mgw_account_ref'] ?? ''));
+        $incomingProvider = trim((string)($authenticatedUser['mgw_identity_provider'] ?? ''));
+
+        if ($incomingMgwId === '' && $incomingAccountRef === '' && $incomingProvider === '') {
+            return;
+        }
+        if ($incomingMgwId === '' || $incomingAccountRef === '') {
+            throw new RuntimeException('Verified account identity is incomplete.');
+        }
+
+        $currentMgwId = trim((string)($user['mgw_id'] ?? ''));
+        if ($currentMgwId !== '' && $currentMgwId !== $incomingMgwId) {
+            throw new RuntimeException('Verified MGW identity conflicts with the persisted user owner.');
+        }
+
+        $currentAccountRef = trim((string)($user['mgw_account_ref'] ?? ''));
+        if ($currentAccountRef !== '' && $currentAccountRef !== $incomingAccountRef) {
+            throw new RuntimeException('Verified account reference conflicts with the persisted user owner.');
+        }
+
+        $user['mgw_id'] = $incomingMgwId;
+        $user['mgw_account_ref'] = $incomingAccountRef;
+        if ($incomingProvider !== '') {
+            $user['mgw_identity_provider'] = $incomingProvider;
+        }
     }
 
     private function ensureStatsShape(array &$user): void
