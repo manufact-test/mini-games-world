@@ -5,6 +5,20 @@ import re
 ROOTS = (Path('bot'), Path('app'))
 TOKENS = ('balance_match', 'balance_gold')
 
+# Construction-only patch tooling must never survive into a staging PR.
+TEMPORARY_PATHS = (
+    '.github/workflows/mvp15-3-apply-runtime-owner.yml',
+    '.github/workflows/mvp15-3-run-runtime-patch.yml',
+    '.github/workflows/mvp15-3-run-runtime-patch-v2.yml',
+    '.github/workflows/mvp15-3-runtime-owner-patch-v3.yml',
+    '.github/workflows/mvp15-3-runtime-owner-patch-v4.yml',
+    '.github/workflows/mvp15-3-runtime-owner-runner.yml',
+    'ops/checks/mvp15_3_apply_runtime_owner_v4.py',
+    'ops/checks/mvp15_3_apply_runtime_owner_v5.py',
+    'ops/checks/mvp15_3_apply_runtime_owner_v6.py',
+    'ops/checks/mvp15_3_apply_runtime_owner_v7.py',
+)
+
 # These directories intentionally preserve migration, rollback, audit fixtures,
 # or tests for the removed legacy currencies. They must not become live owners.
 ALLOWED_PREFIXES = (
@@ -30,6 +44,10 @@ ALLOWED_FILES = {
 TEXT_SUFFIXES = {'.php', '.js', '.html', '.md', '.sh', '.py'}
 violations = []
 references = []
+
+for temporary_path in TEMPORARY_PATHS:
+    if Path(temporary_path).exists():
+        violations.append(f'{temporary_path}: construction-only MVP-15.3 patch tooling must be removed')
 
 for root in ROOTS:
     for path in root.rglob('*'):
@@ -114,3 +132,4 @@ if violations:
 
 print('MVP-15.3 unified balance owner check: PASS')
 print(f'Legacy token references are confined to {len(set(references))} explicit audit/compatibility files or directories.')
+print('Temporary patch tooling: absent.')
