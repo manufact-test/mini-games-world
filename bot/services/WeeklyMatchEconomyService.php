@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 require_once __DIR__ . '/../economy/EconomyConfigDefinition.php';
+require_once __DIR__ . '/../economy/EconomyConfigSimulator.php';
 require_once __DIR__ . '/../economy/EconomyConfigService.php';
 
 final class WeeklyMatchEconomyService
