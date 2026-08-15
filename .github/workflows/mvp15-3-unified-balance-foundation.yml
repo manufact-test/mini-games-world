@@ -5,9 +5,9 @@ on:
     branches:
       - agent/mvp-15-3-unified-balance-foundation
     paths:
-      - 'bot/economy/UnifiedBalanceMigrationRule.php'
-      - 'bot/economy/UnifiedBalanceMigrationPlanner.php'
+      - 'bot/economy/**'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
   workflow_dispatch:
 
@@ -24,6 +24,12 @@ jobs:
         run: |
           php -l bot/economy/UnifiedBalanceMigrationRule.php
           php -l bot/economy/UnifiedBalanceMigrationPlanner.php
+          php -l bot/economy/UnifiedBalanceMigrationExecutor.php
+          php -l bot/economy/UnifiedBalanceRuntimeState.php
+          php -l bot/economy/unified_balance_mapping.php
           php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
+          php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
       - name: Run focused migration foundation test
         run: php bot/tests/UnifiedBalanceMigrationFoundationTest.php
+      - name: Run focused migration execution test
+        run: php bot/tests/UnifiedBalanceMigrationExecutionTest.php
