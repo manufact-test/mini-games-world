@@ -1,0 +1,57 @@
+name: MVP-15.6 admin archive copy v2
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-unified-zone-cutover
+    paths:
+      - '.github/workflows/mvp15-6-admin-archive-copy-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-unified-zone-cutover
+          fetch-depth: 1
+      - name: Remove active legacy room and mutation copy
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(grep -c 'Match-комната:.*feesMatch' bot/services/AdminService.php)" = '1'
+          test "$(grep -c 'Gold-комната:.*feesGold' bot/services/AdminService.php)" = '1'
+          test "$(grep -c 'Gold-тест' bot/services/AdminService.php)" = '1'
+          sed -i '/Match-комната:.*feesMatch/d' bot/services/AdminService.php
+          sed -i '/Gold-комната:.*feesGold/d' bot/services/AdminService.php
+          sed -i 's/Всего комиссий:/Комиссии всего:/' bot/services/AdminService.php
+          sed -i '/admin_order_done_command/d' bot/services/AdminService.php
+          sed -i '/admin_order_reject_command/d' bot/services/AdminService.php
+          sed -i '/admin_gold_tools_command/d' bot/services/AdminService.php
+          sed -i '/admin_gold_add_command/d' bot/services/AdminService.php
+          sed -i 's/ — заявки\\n/ — архив заявок\\n/' bot/services/AdminService.php
+          sed -i 's/ — карточка заявки\\n/ — карточка архивной заявки\\n/' bot/services/AdminService.php
+          sed -i 's/ — платежи\\n/ — архив платежей\\n/' bot/services/AdminService.php
+
+          test "$(grep -c 'payment_apply ID' bot/services/PaymentService.php)" = '1'
+          test "$(grep -c 'payment_reject ID' bot/services/PaymentService.php)" = '1'
+          sed -i '/payment_apply ID/d' bot/services/PaymentService.php
+          sed -i '/payment_reject ID/d' bot/services/PaymentService.php
+          sed -i 's/Команды:/Архив доступен только для просмотра./' bot/services/PaymentService.php
+          sed -i 's/ID — открыть заявку/ID — открыть архивную заявку/' bot/services/PaymentService.php
+
+          php -l bot/services/AdminService.php
+          php -l bot/services/PaymentService.php
+          ! grep -q 'Gold-тест' bot/services/AdminService.php
+          ! grep -q 'Gold-комната:' bot/services/AdminService.php
+          ! grep -q 'Match-комната:' bot/services/AdminService.php
+
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add bot/services/AdminService.php bot/services/PaymentService.php
+          git commit -m 'MVP-15.6: make legacy admin archive room-neutral'
+          git push origin HEAD:agent/mvp-15-6-unified-zone-cutover
