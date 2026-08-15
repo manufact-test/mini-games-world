@@ -1,0 +1,75 @@
+name: MVP-15.6 admin archive copy
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-unified-zone-cutover
+    paths:
+      - '.github/workflows/mvp15-6-admin-archive-copy.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-unified-zone-cutover
+          fetch-depth: 1
+      - name: Remove legacy room and mutation copy from admin archive UI
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def exact(path, old, new):
+              p = Path(path)
+              s = p.read_text(encoding='utf-8')
+              if s.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one exact match, got {s.count(old)}')
+              p.write_text(s.replace(old, new, 1), encoding='utf-8')
+
+          exact(
+              'bot/services/AdminService.php',
+              '''        $text .= "💰 Казна клуба\\n";
+        $text .= "Match-комната: {$feesMatch} коинов\\n";
+        $text .= "Gold-комната: {$feesGold} коинов\\n";
+        $text .= "Всего комиссий: {$feesTotal} коинов\\n\\n";''',
+              '''        $text .= "💰 Казна клуба\\n";
+        $text .= "Комиссии всего: {$feesTotal} коинов\\n\\n";'''
+          )
+          exact(
+              'bot/services/AdminService.php',
+              '''        $text .= ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders') . " — заявки\\n";
+        $text .= ($this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order') . " ABC123 — карточка заявки\\n";
+        $text .= ($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done') . " ABC123 — отметить выполненной\\n";
+        $text .= ($this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject') . " ABC123 причина — отклонить и вернуть коины\\n";
+        $text .= ($this->config['admin_payments_command'] ?? '/mgw_private_admin_7291_payments') . " — платежи\\n";
+        $text .= ($this->config['admin_gold_tools_command'] ?? '/mgw_private_admin_7291_gold') . " — Gold-тест\\n";
+        $text .= ($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add') . " @username 100 причина — начислить Gold\\n";''',
+              '''        $text .= ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders') . " — архив заявок\\n";
+        $text .= ($this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order') . " ABC123 — карточка архивной заявки\\n";
+        $text .= ($this->config['admin_payments_command'] ?? '/mgw_private_admin_7291_payments') . " — архив платежей\\n";'''
+          )
+
+          exact(
+              'bot/services/PaymentService.php',
+              '''        $lines[] = "\nКоманды:";
+        $lines[] = "/mgw_private_admin_7291_payment ID — открыть заявку";
+        $lines[] = "/mgw_private_admin_7291_payment_apply ID — подтвердить и начислить";
+        $lines[] = "/mgw_private_admin_7291_payment_reject ID причина — отклонить";''',
+              '''        $lines[] = "\nАрхив доступен только для просмотра.";
+        $lines[] = "/mgw_private_admin_7291_payment ID — открыть архивную заявку";'''
+          )
+          PY
+          php -l bot/services/AdminService.php
+          php -l bot/services/PaymentService.php
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add bot/services/AdminService.php bot/services/PaymentService.php
+          git commit -m 'MVP-15.6: make legacy admin archive room-neutral'
+          git push origin HEAD:agent/mvp-15-6-unified-zone-cutover
