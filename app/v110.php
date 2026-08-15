@@ -11,6 +11,26 @@ if (!is_string($html)) {
 }
 
 $headClose = '</head>';
+$cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
+$mainAnchor = './assets/js/main.js?v=98.4-wallet-15-3';
+$cleanEntryAnchor = './assets/js/production-regression-fix-entry.js?v=102';
+$hotfixAnchor = 'data-hotfix-build="v98-mvp14-notification-canonical-owner"';
+
+foreach ([
+    'head' => $headClose,
+    'css' => $cssAnchor,
+    'main' => $mainAnchor,
+    'clean_entry' => $cleanEntryAnchor,
+    'hotfix_build' => $hotfixAnchor,
+] as $anchorName => $anchor) {
+    if (!str_contains($html, $anchor)) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Mini Games World v110 source anchor is unavailable: ' . $anchorName . '.';
+        exit;
+    }
+}
+
 $importMap = <<<'HTML'
 <script type="importmap">
 {
@@ -20,9 +40,11 @@ $importMap = <<<'HTML'
     "./assets/js/api/client.js?v=46": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
     "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
     "./assets/js/state.js?v=27": "./assets/js/state.js?v=28&mvp15=unified-profile",
-    "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=90&mvp15=unified-profile",
-    "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1109&mvp15=unified-profile",
-    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1138&mvp15=unified-profile",
+    "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=91&mvp15=unified-balance",
+    "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=75&mvp15=unified-balance",
+    "./assets/js/screens/store-screen.js?v=34": "./assets/js/screens/store-screen.js?v=35&mvp15=unified-balance",
+    "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1110&mvp15=unified-balance",
+    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1139&mvp15=unified-balance",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
@@ -45,19 +67,13 @@ $importMap = <<<'HTML'
 </script>
 HTML;
 
-if (!str_contains($html, $headClose)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World import-map anchor is unavailable.';
-    exit;
-}
-
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
-$html = str_replace(
-    './assets/css/main.css?v=92',
-    './assets/css/main.css?v=152&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only',
-    $html
-);
+
+$cssTarget = './assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3';
+$mainTarget = './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance';
+$cleanEntryTarget = './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine';
+
+$html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace(
     './assets/css/production-v95-consistency.css?v=95',
     './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
@@ -68,21 +84,29 @@ $html = str_replace(
     '<p>Те самые игры. То самое чувство.</p>',
     $html
 );
+$html = str_replace($cleanEntryAnchor, $cleanEntryTarget, $html);
+$html = str_replace($mainAnchor, $mainTarget, $html);
 $html = str_replace(
-    './assets/js/production-regression-fix-entry.js?v=102',
-    './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
+    $hotfixAnchor,
+    'data-hotfix-build="v110-mvp15-unified-balance-v1158"',
     $html
 );
-$html = str_replace(
-    './assets/js/main.js?v=98.3',
-    './assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=5',
-    $html
-);
-$html = str_replace(
-    'data-hotfix-build="v98-mvp14-notification-canonical-owner"',
-    'data-hotfix-build="v110-mvp15-unified-profile-avatar-v1157"',
-    $html
-);
+
+foreach ([
+    'main_v110' => $mainTarget,
+    'clean_entry_v110' => $cleanEntryTarget,
+    'shield_king_css' => $cssTarget,
+    'unified_ui_cache' => './assets/js/ui.js?v=91&mvp15=unified-balance',
+    'unified_home_cache' => './assets/js/screens/home-screen.js?v=75&mvp15=unified-balance',
+    'unified_profile_cache' => './assets/js/screens/profile-screen-v110.js?v=1110&mvp15=unified-balance',
+] as $targetName => $target) {
+    if (!str_contains($html, $target)) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Mini Games World v110 transformed target is unavailable: ' . $targetName . '.';
+        exit;
+    }
+}
 
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -91,6 +115,7 @@ header('Expires: 0');
 header('X-MGW-Api-Session-Graph: v1132-canonical-profile');
 header('X-MGW-Profile-API: provider-neutral-mgw-v1');
 header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');
+header('X-MGW-Balance-UI: unified-balance-v1');
 header('X-MGW-Notification-Graph: v1138-shield-semantic-tone');
 header('X-MGW-Notification-Palette: shield-king-v1-semantic');
 header('X-MGW-Invite-Graph: v1143-prepared-share-owner');

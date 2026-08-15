@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import re
+import subprocess
 
 ROOTS = (Path('bot'), Path('app'))
 TOKENS = ('balance_match', 'balance_gold')
@@ -13,6 +14,7 @@ TEMPORARY_PATHS = (
     '.github/workflows/mvp15-3-runtime-owner-patch-v3.yml',
     '.github/workflows/mvp15-3-runtime-owner-patch-v4.yml',
     '.github/workflows/mvp15-3-runtime-owner-runner.yml',
+    '.github/workflows/mvp15-3-real-telegram-entry-patch.yml',
     'ops/checks/mvp15_3_apply_runtime_owner_v4.py',
     'ops/checks/mvp15_3_apply_runtime_owner_v5.py',
     'ops/checks/mvp15_3_apply_runtime_owner_v6.py',
@@ -124,6 +126,45 @@ for name in (
         if token in body:
             violations.append(f'{name}: visible UI still references {token}')
 
+# The real Telegram /start owner is v110.php, not the unversioned /app/ route.
+# Render it against the current index.html and fail if it ever silently falls
+# back to the generic main.js graph again.
+expected_launch = "private const ENTRY_PATH = '/app/v110.php?v=1124';"
+launch_owner = Path('bot/helpers/WebAppLaunchUrl.php').read_text()
+if expected_launch not in launch_owner:
+    violations.append('WebAppLaunchUrl.php: canonical Telegram entry cache key is not v110.php?v=1124')
+
+try:
+    rendered = subprocess.run(
+        ['php', 'app/v110.php'],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    ).stdout
+except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as exc:
+    violations.append(f'app/v110.php: canonical Telegram entry render failed: {exc}')
+    rendered = ''
+
+required_entry_fragments = (
+    './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
+    './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
+    './assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3',
+    './assets/js/ui.js?v=91&mvp15=unified-balance',
+    './assets/js/screens/home-screen.js?v=75&mvp15=unified-balance',
+    './assets/js/screens/profile-screen-v110.js?v=1110&mvp15=unified-balance',
+)
+for fragment in required_entry_fragments:
+    if fragment not in rendered:
+        violations.append(f'app/v110.php: transformed Telegram entry is missing {fragment}')
+
+if './assets/js/main.js?v=98.4-wallet-15-3' in rendered:
+    violations.append('app/v110.php: generic main.js survived the canonical Telegram transform')
+if 'Mini Games World v110 source anchor is unavailable:' in rendered:
+    violations.append('app/v110.php: source-anchor fail-closed response leaked into rendered entry')
+if 'Mini Games World v110 transformed target is unavailable:' in rendered:
+    violations.append('app/v110.php: transformed-target fail-closed response leaked into rendered entry')
+
 if violations:
     print('MVP-15.3 unified balance owner check FAILED')
     for violation in violations:
@@ -132,4 +173,5 @@ if violations:
 
 print('MVP-15.3 unified balance owner check: PASS')
 print(f'Legacy token references are confined to {len(set(references))} explicit audit/compatibility files or directories.')
+print('Canonical Telegram /start entry: v110 unified-balance graph PASS.')
 print('Temporary patch tooling: absent.')
