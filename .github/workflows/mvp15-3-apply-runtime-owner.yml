@@ -1,0 +1,200 @@
+name: MVP-15.3 apply runtime owner patch
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-3-unified-balance-foundation
+    paths:
+      - '.github/workflows/mvp15-3-apply-runtime-owner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-runtime-owner:
+    if: github.event.head_commit.message == 'MVP-15.3: apply runtime owner patch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-3-unified-balance-foundation
+          fetch-depth: 1
+      - name: Patch shared economy writers to canonical balance
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def text(path):
+              return Path(path).read_text()
+
+          def write(path, value):
+              Path(path).write_text(value)
+
+          def once(value, old, new, label):
+              count = value.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly 1 occurrence, found {count}')
+              return value.replace(old, new, 1)
+
+          require = "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n"
+
+          # UserService: migrate the current user at its canonical creation/load owner;
+          # expose one current balance while preserving legacy source fields as audit.
+          p = 'bot/services/UserService.php'
+          s = text(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\n" + require, p + ' require')
+          s = once(s,
+              "        return $db['users'][$id];\n",
+              "        UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);\n        return $db['users'][$id];\n",
+              p + ' ensureUser')
+          s = once(s,
+              "            'photo_url' => clean_string($user['photo_url'] ?? '', 2048),\n",
+              "            'photo_url' => clean_string($user['photo_url'] ?? '', 2048),\n            'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),\n",
+              p + ' public balance')
+          s = once(s,
+              "        $balance = max(0, (int)($user['balance_gold'] ?? 0));\n",
+              "        $balance = max(0, (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0));\n",
+              p + ' shop available')
+          write(p, s)
+
+          # GameService: migrate all loaded users before shared gameplay economy work;
+          # every room temporarily spends/credits the same canonical balance.
+          p = 'bot/services/GameService.php'
+          s = text(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\n" + require, p + ' require')
+          s = once(s,
+              "    public function cleanup(array &$db): void\n    {\n",
+              "    public function cleanup(array &$db): void\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n",
+              p + ' cleanup migrate')
+          s = s.replace("$balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';", "$balanceKey = UnifiedBalanceRuntimeState::FIELD;")
+          s = s.replace("$balanceKey = 'balance_match';", "$balanceKey = UnifiedBalanceRuntimeState::FIELD;")
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': active legacy balance field remains after patch')
+          write(p, s)
+
+          # GameSettlementService: same canonical owner for the newer shared settlement path.
+          p = 'bot/services/GameSettlementService.php'
+          s = text(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\n" + require, p + ' require')
+          s = once(s,
+              "    public function cancelPreparation(array &$db, array &$game): void\n    {\n",
+              "    public function cancelPreparation(array &$db, array &$game): void\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n",
+              p + ' cancel migrate')
+          s = once(s,
+              "    public function cancelPreparationBySearch(array &$db, array &$game): void\n    {\n",
+              "    public function cancelPreparationBySearch(array &$db, array &$game): void\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n",
+              p + ' cancel search migrate')
+          marker = "    ): void {\n        if (!empty($game['payout_done'])) {\n"
+          s = once(s, marker, "    ): void {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n        if (!empty($game['payout_done'])) {\n", p + ' finish migrate')
+          s = s.replace("$balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';", "$balanceKey = UnifiedBalanceRuntimeState::FIELD;")
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': active legacy balance field remains after patch')
+          write(p, s)
+
+          # Weekly Match grants now credit the canonical balance. Historical labels stay unchanged.
+          p = 'bot/services/WeeklyMatchEconomyService.php'
+          s = text(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\n" + require, p + ' require')
+          s = once(s,
+              "    public function ensureWelcomeGrant(array &$db, array &$user): array\n    {\n",
+              "    public function ensureWelcomeGrant(array &$db, array &$user): array\n    {\n        UnifiedBalanceRuntimeState::ensureUser($user);\n",
+              p + ' welcome migrate')
+          s = once(s,
+              "    public function applyDueForUser(\n        array &$db,\n        array &$user,\n        ?DateTimeImmutable $now = null,\n        bool $allowWelcomeGrant = true\n    ): array {\n",
+              "    public function applyDueForUser(\n        array &$db,\n        array &$user,\n        ?DateTimeImmutable $now = null,\n        bool $allowWelcomeGrant = true\n    ): array {\n        UnifiedBalanceRuntimeState::ensureUser($user);\n",
+              p + ' apply migrate')
+          s = once(s,
+              "    public function runDue(array &$db, ?DateTimeImmutable $now = null): array\n    {\n",
+              "    public function runDue(array &$db, ?DateTimeImmutable $now = null): array\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n",
+              p + ' cron migrate')
+          s = s.replace("$user['balance_match']", "$user[UnifiedBalanceRuntimeState::FIELD]")
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': active legacy balance field remains after patch')
+          write(p, s)
+
+          # Legacy certificate shop is temporary until MVP-15.6 but now spends the one balance.
+          p = 'bot/services/ShopService.php'
+          s = text(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\n" + require, p + ' require')
+          s = once(s,
+              "    public function createCatalogOrder(\n        array &$db,\n        array &$user,\n        string $itemId,\n        string $denominationId,\n        string $requestId,\n        int $expectedAmount\n    ): array {\n",
+              "    public function createCatalogOrder(\n        array &$db,\n        array &$user,\n        string $itemId,\n        string $denominationId,\n        string $requestId,\n        int $expectedAmount\n    ): array {\n        UnifiedBalanceRuntimeState::ensureUser($user);\n",
+              p + ' order migrate')
+          s = s.replace("(int)($user['balance_gold'] ?? 0)", "(int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0)")
+          s = s.replace("$user['balance_gold'] =", "$user[UnifiedBalanceRuntimeState::FIELD] =")
+          # Compatibility response key may remain named balance_gold, but its value must be canonical.
+          if "['balance_gold']" in s:
+              raise SystemExit(p + ': writable/read legacy balance access remains after patch')
+          write(p, s)
+
+          # Draft/manual payment admin path is staging-only; any applied credit now lands in one balance.
+          p = 'bot/services/PaymentService.php'
+          s = text(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\n" + require, p + ' require')
+          s = once(s,
+              "        $balanceField = $room === 'match' ? 'balance_match' : 'balance_gold';\n        $before = (int)($db['users'][$userId][$balanceField] ?? 0);\n",
+              "        UnifiedBalanceRuntimeState::ensureUser($db['users'][$userId]);\n        $balanceField = UnifiedBalanceRuntimeState::FIELD;\n        $before = (int)($db['users'][$userId][$balanceField] ?? 0);\n",
+              p + ' admin apply owner')
+          write(p, s)
+
+          # Visible current app: one balance card; room selector itself is removed later in MVP-15.6.
+          p = 'app/index.html'
+          s = text(p)
+          old = '''        <section class="balances">\n          <div class="balance-card">\n            <div class="balance-label">🎲 Матч-комната</div>\n            <div class="balance-value" id="balanceMatch">—</div>\n            <div class="balance-note">коины для обычных матчей</div>\n          </div>\n          <div class="balance-card">\n            <div class="balance-label">✨ Gold-комната</div>\n            <div class="balance-value" id="balanceGold">—</div>\n            <div class="balance-note">для магазина доступно: <span id="shopAvailable">—</span></div>\n          </div>\n        </section>'''
+          new = '''        <section class="balances unified-balance">\n          <div class="balance-card">\n            <div class="balance-label">🪙 Баланс</div>\n            <div class="balance-value" id="balanceUnified">—</div>\n            <div class="balance-note">единые MGW Coins</div>\n          </div>\n        </section>'''
+          s = once(s, old, new, p + ' unified card')
+          write(p, s)
+
+          # UI renderer reads only the new canonical field, with no silent Match/Gold fallback.
+          p = 'app/assets/js/ui.js'
+          s = text(p)
+          old = '''export function renderBalances(user){\n  const match = document.getElementById('balanceMatch');\n  const gold = document.getElementById('balanceGold');\n  const shopAvailable = document.getElementById('shopAvailable');\n  if (match) match.textContent = user?.balance_match ?? '—';\n  if (gold) gold.textContent = user?.balance_gold ?? '—';\n  if (shopAvailable) shopAvailable.textContent = user?.gold_shop_available ?? '—';\n}'''
+          new = '''export function renderBalances(user){\n  const unified = document.getElementById('balanceUnified');\n  if (unified) unified.textContent = user?.balance ?? '—';\n}'''
+          s = once(s, old, new, p + ' renderer')
+          write(p, s)
+
+          # Report remaining legacy field references. They are permitted only in
+          # explicit migration/audit/archive/tests or compatibility response data.
+          active_forbidden = []
+          allowed_parts = (
+              '/economy/', '/ledger/', '/migration/', '/cutover/', '/tests/',
+              '/baseline/', '/ops/',
+          )
+          for root in ('bot', 'app'):
+              for path in Path(root).rglob('*'):
+                  if not path.is_file() or path.suffix not in {'.php','.js','.html','.md','.sh'}:
+                      continue
+                  body = path.read_text(errors='ignore')
+                  if 'balance_match' not in body and 'balance_gold' not in body:
+                      continue
+                  name = '/' + str(path).replace('\\','/')
+                  if any(part in name for part in allowed_parts):
+                      continue
+                  # UserService intentionally exposes frozen legacy values for
+                  # compatibility/admin audit, and PaymentService keeps historical
+                  # room/deposit labels while its balanceField is canonical.
+                  if str(path) in {'bot/services/UserService.php','bot/services/PaymentService.php'}:
+                      continue
+                  active_forbidden.append(str(path))
+          if active_forbidden:
+              raise SystemExit('Unexpected active legacy balance references remain: ' + ', '.join(sorted(active_forbidden)))
+          PY
+
+          php -l bot/services/UserService.php
+          php -l bot/services/GameService.php
+          php -l bot/services/GameSettlementService.php
+          php -l bot/services/WeeklyMatchEconomyService.php
+          php -l bot/services/ShopService.php
+          php -l bot/services/PaymentService.php
+          node --check app/assets/js/ui.js
+
+          git diff --check
+      - name: Commit patched runtime owner
+        run: |
+          git config user.name "manufact-test"
+          git config user.email "manufact.test@gmail.com"
+          git add bot/services/UserService.php bot/services/GameService.php bot/services/GameSettlementService.php bot/services/WeeklyMatchEconomyService.php bot/services/ShopService.php bot/services/PaymentService.php app/index.html app/assets/js/ui.js
+          git diff --cached --quiet && { echo 'No runtime patch changes produced'; exit 1; }
+          git commit -m "MVP-15.3: switch shared runtime writers to one balance"
+          git push origin HEAD:agent/mvp-15-3-unified-balance-foundation
