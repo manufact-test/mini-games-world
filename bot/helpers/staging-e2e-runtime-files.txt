@@ -114,6 +114,7 @@ app/assets/js/profile/mgw-profile-model.js
 # touched by the one-balance transition is fingerprinted so a partial Hostinger
 # deployment cannot be mistaken for an accepted staging build.
 app/assets/js/screens/home-screen.js
+app/assets/js/screens/weekly-match-info.js
 app/assets/js/screens/profile-screen.js
 app/assets/js/screens/store-screen.js
 app/runtime/server/match/RuntimeMatchService.php
