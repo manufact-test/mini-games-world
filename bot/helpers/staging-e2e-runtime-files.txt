@@ -108,6 +108,28 @@ app/assets/js/ui.js
 app/assets/js/screens/profile-screen-v110.js
 app/assets/js/profile/mgw-profile-model.js
 
+# MVP-15.3 unified balance cutover. Every runtime owner and visible consumer
+# touched by the one-balance transition is fingerprinted so a partial Hostinger
+# deployment cannot be mistaken for an accepted staging build.
+app/assets/js/screens/home-screen.js
+app/assets/js/screens/profile-screen.js
+app/assets/js/screens/store-screen.js
+app/runtime/server/match/RuntimeMatchService.php
+app/runtime/server/session/RuntimeSessionService.php
+bot/economy/UnifiedBalanceMigrationRule.php
+bot/economy/UnifiedBalanceMigrationPlanner.php
+bot/economy/UnifiedBalanceMigrationExecutor.php
+bot/economy/UnifiedBalanceRuntimeState.php
+bot/economy/UnifiedBalanceMigrationCoordinator.php
+bot/economy/UnifiedEconomyRuntimeSyncService.php
+bot/economy/unified_balance_mapping.php
+bot/ledger/LegacyEconomyDeltaImportService.php
+bot/services/AdminService.php
+bot/services/PaymentService.php
+bot/services/ShopService.php
+bot/services/UserService.php
+bot/services/WeeklyMatchEconomyService.php
+
 # Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.
