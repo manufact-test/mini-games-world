@@ -129,6 +129,7 @@ bot/services/PaymentService.php
 bot/services/ShopService.php
 bot/services/UserService.php
 bot/services/WeeklyMatchEconomyService.php
+bot/services/NotificationService.php
 
 # MVP-15.8 single server-side economy configuration owner. The schema, strict
 # definition, deterministic simulation, version/audit service and narrow Telegram
