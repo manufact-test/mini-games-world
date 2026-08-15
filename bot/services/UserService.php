@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class UserService
 {
     private const LAST_SEEN_WRITE_INTERVAL_SEC = 30;
@@ -66,6 +68,7 @@ final class UserService
             $this->ensureEconomyShape($db['users'][$id]);
             $this->rotateWeeklyStats($db['users'][$id]);
         }
+        UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);
         return $db['users'][$id];
     }
 
@@ -76,6 +79,7 @@ final class UserService
             'first_name' => $user['first_name'] ?? 'Игрок',
             'username' => $user['username'] ?? ($user['first_name'] ?? 'Игрок'),
             'photo_url' => clean_string($user['photo_url'] ?? '', 2048),
+            'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),
             'balance_match' => (int)($user['balance_match'] ?? 0),
             'balance_gold' => (int)($user['balance_gold'] ?? 0),
             'gold_deposited_total' => (int)($user['gold_deposited_total'] ?? 0),
@@ -157,7 +161,7 @@ final class UserService
 
     public function goldShopAvailable(array $user): int
     {
-        $balance = max(0, (int)($user['balance_gold'] ?? 0));
+        $balance = max(0, (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0));
 
         // Администраторы могут проверять магазин на текущем тестовом Gold без
         // искусственного отыгрыша сотен матчей. Для обычных игроков правило

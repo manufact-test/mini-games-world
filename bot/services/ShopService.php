@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class ShopService
 {
     private const ORDER_TOKEN_BASE = 1000000000;
@@ -21,7 +23,8 @@ final class ShopService
         $testMode = $this->users->shopTestMode($user);
 
         return [
-            'balance_gold' => (int)($user['balance_gold'] ?? 0),
+            'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),
+            'balance_gold' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0), // temporary response alias until MVP-15.6
             'available' => $available,
             'min_order' => $min,
             'wagered_total' => (int)($user['gold_wagered_total'] ?? 0),
@@ -77,6 +80,7 @@ final class ShopService
         string $requestId,
         int $expectedAmount
     ): array {
+        UnifiedBalanceRuntimeState::ensureUser($user);
         $userId = (string)($user['id'] ?? '');
         if ($userId === '') {
             throw new RuntimeException('Пользователь не найден.');
@@ -127,12 +131,12 @@ final class ShopService
         if ($available < $amount) {
             throw new RuntimeException('Недостаточно Gold, доступных для магазина.');
         }
-        if ((int)($user['balance_gold'] ?? 0) < $amount) {
+        if ((int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) < $amount) {
             throw new RuntimeException('Недостаточно Gold на балансе.');
         }
 
         $now = now_iso();
-        $user['balance_gold'] = (int)$user['balance_gold'] - $amount;
+        $user[UnifiedBalanceRuntimeState::FIELD] = (int)$user[UnifiedBalanceRuntimeState::FIELD] - $amount;
         $user['gold_shop_spent_total'] = (int)($user['gold_shop_spent_total'] ?? 0) + $amount;
 
         $snapshot = [
@@ -199,7 +203,7 @@ final class ShopService
             'denomination_id' => $snapshot['denomination_id'],
             'provider' => $snapshot['provider'],
             'amount' => -$amount,
-            'balance_after' => (int)($user['balance_gold'] ?? 0),
+            'balance_after' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),
             'description' => 'Заказ приза: ' . $snapshot['title'] . ' · ' . $snapshot['denomination_label'],
             'created_at' => $now,
         ];

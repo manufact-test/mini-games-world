@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class WeeklyMatchEconomyService
 {
     private const DEFAULT_TIMEZONE = 'Europe/Warsaw';
@@ -15,6 +17,7 @@ final class WeeklyMatchEconomyService
 
     public function ensureWelcomeGrant(array &$db, array &$user): array
     {
+        UnifiedBalanceRuntimeState::ensureUser($user);
         $userId = trim((string)($user['id'] ?? ''));
         if ($userId === '' || !empty($user['is_dev_user'])) {
             return [
@@ -46,11 +49,11 @@ final class WeeklyMatchEconomyService
         }
 
         $amount = $this->bonusAmount();
-        $before = (int)($user['balance_match'] ?? 0);
+        $before = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
         $after = $before + $amount;
         $createdAt = now_iso();
 
-        $user['balance_match'] = $after;
+        $user[UnifiedBalanceRuntimeState::FIELD] = $after;
         $user['weekly_match_welcome_grant_done'] = true;
         $user['weekly_match_welcome_grant_at'] = $createdAt;
         $user['weekly_match_welcome_grant_amount'] = $amount;
@@ -97,6 +100,7 @@ final class WeeklyMatchEconomyService
         ?DateTimeImmutable $now = null,
         bool $allowWelcomeGrant = true
     ): array {
+        UnifiedBalanceRuntimeState::ensureUser($user);
         $userId = trim((string)($user['id'] ?? ''));
         if ($userId === '' || !empty($user['is_dev_user'])) {
             return [
@@ -165,11 +169,11 @@ final class WeeklyMatchEconomyService
         }
 
         $amount = $this->bonusAmount();
-        $before = (int)($user['balance_match'] ?? 0);
+        $before = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
         $after = $before + $amount;
         $awardedAt = now_iso();
 
-        $user['balance_match'] = $after;
+        $user[UnifiedBalanceRuntimeState::FIELD] = $after;
         $user['weekly_match_bonus_last_key'] = $cycleKey;
         $user['weekly_match_bonus_last_at'] = $awardedAt;
         $user['weekly_match_bonus_last_amount'] = $amount;
@@ -223,6 +227,7 @@ final class WeeklyMatchEconomyService
 
     public function runDue(array &$db, ?DateTimeImmutable $now = null): array
     {
+        UnifiedBalanceRuntimeState::migrateAll($db);
         $now = $this->localNow($now);
         $cycleAt = $this->latestDueCycle($now);
 

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class PaymentService
 {
     public function __construct(private array $config, private UserService $users) {}
@@ -139,7 +141,8 @@ final class PaymentService
             return "⚠️ В заявке некорректная сумма или количество коинов. Начисление остановлено.";
         }
 
-        $balanceField = $room === 'match' ? 'balance_match' : 'balance_gold';
+        UnifiedBalanceRuntimeState::ensureUser($db['users'][$userId]);
+        $balanceField = UnifiedBalanceRuntimeState::FIELD;
         $before = (int)($db['users'][$userId][$balanceField] ?? 0);
         $after = $before + $coins;
         $now = now_iso();

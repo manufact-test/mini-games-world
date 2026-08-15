@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class StagingTestPlayerResetStageException extends RuntimeException
 {
     private const ALLOWED_STAGES = [
@@ -62,6 +64,7 @@ final class StagingTestPlayerStateResetService
                 &$notificationsRemoved,
                 &$gamesFinished
             ): array {
+            UnifiedBalanceRuntimeState::migrateAll($data);
             if (!isset($data['users']) || !is_array($data['users'])) {
                 throw new RuntimeException('Staging test users are unavailable.');
             }
@@ -71,7 +74,7 @@ final class StagingTestPlayerStateResetService
                 if (!isset($data['users'][$legacyUserId]) || !is_array($data['users'][$legacyUserId])) {
                     throw new RuntimeException('Staging test player is not initialized.');
                 }
-                $before[$legacyUserId] = (int)($data['users'][$legacyUserId]['balance_match'] ?? 0);
+                $before[$legacyUserId] = (int)($data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] ?? 0);
             }
 
             $games = new GameService($this->config);
@@ -113,7 +116,7 @@ final class StagingTestPlayerStateResetService
             foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
                 $data['users'][$legacyUserId]['status'] = 'idle';
                 $data['users'][$legacyUserId]['current_game_id'] = null;
-                $data['users'][$legacyUserId]['balance_match'] = self::MATCH_BALANCE;
+                $data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] = self::MATCH_BALANCE;
             }
 
             foreach ((is_array($data['invites'] ?? null) ? $data['invites'] : []) as $index => $invite) {
@@ -217,7 +220,8 @@ final class StagingTestPlayerStateResetService
             'ok' => true,
             'service' => 'mini-games-world-staging-test-player-state-reset',
             'status' => 'reset',
-            'match_balance' => self::MATCH_BALANCE,
+            'balance' => self::MATCH_BALANCE,
+            'match_balance' => self::MATCH_BALANCE, // temporary response alias for old staging tooling
             'players' => $balances,
             'queue_removed' => $queueRemoved,
             'open_invites_removed' => count($removedInvites),

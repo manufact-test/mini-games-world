@@ -1,12 +1,15 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class GameSettlementService
 {
     public function __construct(private array $config) {}
 
     public function cancelPreparation(array &$db, array &$game): void
     {
+        UnifiedBalanceRuntimeState::migrateAll($db);
         if (!empty($game['preparation_cancelled_at'])) {
             return;
         }
@@ -32,6 +35,7 @@ final class GameSettlementService
 
     public function cancelPreparationBySearch(array &$db, array &$game): void
     {
+        UnifiedBalanceRuntimeState::migrateAll($db);
         if (!empty($game['preparation_cancelled_at'])) {
             return;
         }
@@ -57,6 +61,7 @@ final class GameSettlementService
         ?string $reason = null,
         ?string $loserId = null
     ): void {
+        UnifiedBalanceRuntimeState::migrateAll($db);
         if (!empty($game['payout_done'])) {
             $game['status'] = 'finished';
             $game['updated_at'] = now_iso();
@@ -69,7 +74,7 @@ final class GameSettlementService
         }
 
         $room = (string)($game['room'] ?? 'match');
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         $bet = (int)($game['bet'] ?? 0);
         $playerCount = max(2, count($game['player_ids'] ?? []));
         $bank = $bet * $playerCount;
@@ -215,7 +220,7 @@ final class GameSettlementService
         string $description
     ): void {
         $room = (string)($game['room'] ?? 'match');
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         $bet = max(0, (int)($game['bet'] ?? 0));
         $playerCount = max(2, count($game['player_ids'] ?? []));
         $bank = $bet * $playerCount;
@@ -296,7 +301,7 @@ final class GameSettlementService
         string $description = '',
         array $extra = []
     ): void {
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if (!isset($db['transactions']) || !is_array($db['transactions'])) {
             $db['transactions'] = [];
         }

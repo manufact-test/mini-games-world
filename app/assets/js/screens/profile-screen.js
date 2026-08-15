@@ -96,8 +96,7 @@ function renderProfileOverview(user = {}, orders = []){
   const el = ensureProfileOverview();
   if (!el) return;
 
-  const match = Number(user.balance_match || 0);
-  const gold = Number(user.balance_gold || 0);
+  const balance = Number(user.balance || 0);
   const shopAvailable = Number(user.gold_shop_available || 0);
   const orderItems = Array.isArray(orders) ? orders : [];
 
@@ -106,25 +105,20 @@ function renderProfileOverview(user = {}, orders = []){
       <div class="profile-section-head">
         <div>
           <h2>Мои средства</h2>
-          <p>Текущие балансы и доступный Gold.</p>
+          <p>Единый баланс Mini Games World.</p>
         </div>
       </div>
 
       <div class="profile-wallet-grid">
         <div class="profile-wallet-card match">
-          <span>🎲 Match</span>
-          <strong>${formatNumber(match)}</strong>
-          <small>для обычных матчей</small>
-        </div>
-        <div class="profile-wallet-card gold">
-          <span>✨ Gold</span>
-          <strong>${formatNumber(gold)}</strong>
-          <small>баланс Gold-комнаты</small>
+          <span>🪙 MGW Coins</span>
+          <strong>${formatNumber(balance)}</strong>
+          <small>единый баланс для игр и магазина</small>
         </div>
         <div class="profile-wallet-card shop-available">
           <div>
-            <span>🎁 Доступно для магазина</span>
-            <small>Gold, который можно использовать для заказа призов</small>
+            <span>🎁 Доступно для старого магазина</span>
+            <small>временное правило совместимости до удаления Gold-механики</small>
           </div>
           <strong>${formatNumber(shopAvailable)}</strong>
         </div>
@@ -142,7 +136,6 @@ function renderProfileOverview(user = {}, orders = []){
     </section>
   `;
 }
-
 function ensureProfileOverview(){
   let el = document.getElementById('profileOverview');
   if (el) return el;

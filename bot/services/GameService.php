@@ -1,12 +1,15 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class GameService
 {
     public function __construct(private array $config) {}
 
     public function cleanup(array &$db): void
     {
+        UnifiedBalanceRuntimeState::migrateAll($db);
         $this->cleanupQueue($db);
         $this->processBotTurns($db);
         $this->cleanupActiveGames($db);
@@ -169,7 +172,7 @@ final class GameService
             throw new RuntimeException('Выберите доступную стоимость участия.');
         }
 
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($user[$balanceKey] ?? 0) < $bet) {
             throw new RuntimeException('Недостаточно коинов для участия.');
         }
@@ -410,7 +413,7 @@ final class GameService
 
     private function createGame(array &$db, array &$a, array &$b, string $room, int $bet, int $boardSize): array
     {
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
 
         $a[$balanceKey] = (int)($a[$balanceKey] ?? 0) - $bet;
         $b[$balanceKey] = (int)($b[$balanceKey] ?? 0) - $bet;
@@ -483,7 +486,7 @@ final class GameService
 
     private function createBotGame(array &$db, array &$user, int $bet, int $boardSize): array
     {
-        $balanceKey = 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($user[$balanceKey] ?? 0) < $bet) {
             $user['status'] = 'idle';
             $user['current_game_id'] = null;
@@ -572,7 +575,7 @@ final class GameService
         }
 
         $room = $game['room'];
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         $bet = (int)$game['bet'];
         $playerCount = max(2, count($game['player_ids'] ?? []));
         $bank = $bet * $playerCount;
@@ -708,7 +711,7 @@ final class GameService
         string $description = '',
         array $extra = []
     ): void {
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
 
         $tx = array_merge([
             'id' => make_id('tx'),

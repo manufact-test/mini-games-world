@@ -152,7 +152,7 @@ final readonly class RuntimeSessionService
             'active_session_at' => $existing['active_session_at'] ?? null,
             'current_game_id' => $existing['current_game_id'] ?? null,
             'last_result_game_id' => $existing['last_result_game_id'] ?? null,
-            'balance_match' => max(0, (int)($existing['balance_match'] ?? $this->config->initialMatchBalance)),
+            'balance' => max(0, (int)($existing['balance'] ?? $existing['balance_match'] ?? $this->config->initialMatchBalance)),
             'created_at' => (string)($existing['created_at'] ?? $now),
             'updated_at' => $now,
         ]);
@@ -256,7 +256,7 @@ final readonly class RuntimeSessionService
                 'expires_at' => $presence['expires_at'],
             ],
             'balances' => [
-                'match' => (int)$account['balance_match'],
+                'match' => (int)$account['balance'], // compatibility response key; one canonical owner
             ],
         ];
     }

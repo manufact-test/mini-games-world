@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';
+
 trait GameInviteValidationTrait
 {
     private function assertAvailableForInvite(array &$db, array &$user, string $message): void
@@ -104,9 +106,11 @@ trait GameInviteValidationTrait
 
     private function assertBalances(array $inviter, array $invitee, array $invite): void
     {
+        UnifiedBalanceRuntimeState::ensureUser($inviter);
+        UnifiedBalanceRuntimeState::ensureUser($invitee);
         $room = (string)($invite['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
         $bet = (int)($invite['bet'] ?? 0);
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($invitee[$balanceKey] ?? 0) < $bet) {
             throw new RuntimeException('Недостаточно коинов для принятия приглашения.');
         }

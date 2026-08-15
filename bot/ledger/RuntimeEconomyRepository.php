@@ -28,6 +28,9 @@ final class RuntimeEconomyRepository
             return self::$requestSynchronizeCache[$cacheKey];
         }
 
+        // Phase A remains the immutable legacy audit owner. Match/Gold are first
+        // reconciled exactly as they existed before MVP-15.3 and are never
+        // rewritten from the new unified runtime field afterwards.
         $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
         $ledger = new LedgerWriteService($database);
         $integrity = new LedgerIntegrityVerifier($database);
@@ -36,16 +39,45 @@ final class RuntimeEconomyRepository
         $bootstrapReport = (new RuntimeEconomyBalanceBootstrapService($database, $ledger))->ensureFromShadow();
         $delta = new LegacyEconomyDeltaImportService($database, $ledger, $integrity);
         $deltaReport = $delta->run();
-        $reconciliation = (new LegacyEconomyRuntimeReconciliationService(
+        $legacyReconciliation = (new LegacyEconomyRuntimeReconciliationService(
             $database,
             $delta,
             $integrity
         ))->preview();
 
-        if (empty($reconciliation['ready'])) {
+        if (empty($legacyReconciliation['ready'])) {
             throw new RuntimeException(
-                'Economy DB runtime reconciliation failed: '
-                . implode('; ', array_map('strval', (array)($reconciliation['blocking_reasons'] ?? [])))
+                'Legacy economy reconciliation failed before unified cutover: '
+                . implode('; ', array_map('strval', (array)($legacyReconciliation['blocking_reasons'] ?? [])))
+            );
+        }
+
+        // Phase B owns the one-time conversion. The durable marker makes this a
+        // true cutover: future users/balance changes are not reinterpreted as
+        // legacy Match/Gold migration input.
+        $rule = $this->unifiedRule();
+        $coordinator = new UnifiedBalanceMigrationCoordinator(
+            $database,
+            $rule,
+            $ledger,
+            $integrity
+        );
+        $migrationReport = $coordinator->ensureMigrated();
+
+        // Phase C is the only live balance owner after cutover. Runtime `balance`
+        // converges to DB asset `mgw_coin`; legacy source rows remain history.
+        $unified = new UnifiedEconomyRuntimeSyncService($database, $ledger, $integrity);
+        $unifiedReport = $unified->run($jsonSnapshot);
+
+        $finalReconciliation = (new LegacyEconomyRuntimeReconciliationService(
+            $database,
+            $delta,
+            $integrity
+        ))->preview();
+        if (empty($finalReconciliation['ready'])) {
+            throw new RuntimeException(
+                'Economy ledger integrity failed after unified runtime sync: '
+                . implode('; ', array_map('strval', (array)($finalReconciliation['blocking_reasons'] ?? [])))
             );
         }
 
@@ -55,8 +87,10 @@ final class RuntimeEconomyRepository
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
             'shadow' => $this->compactShadow($shadowReport),
             'balance_bootstrap' => $this->compactBootstrap($bootstrapReport),
-            'delta' => $this->compactDelta($deltaReport),
-            'reconciliation' => $this->compactReconciliation($reconciliation),
+            'legacy_delta' => $this->compactDelta($deltaReport),
+            'migration' => $this->compactMigration($migrationReport),
+            'unified' => $this->compactUnified($unifiedReport),
+            'reconciliation' => $this->compactReconciliation($finalReconciliation),
             'production_changed' => false,
             'sensitive_identifiers_exposed' => false,
         ];
@@ -85,6 +119,15 @@ final class RuntimeEconomyRepository
             $integrity
         ))->preview();
 
+        $rule = $this->unifiedRule();
+        $migration = (new UnifiedBalanceMigrationCoordinator(
+            $database,
+            $rule,
+            $ledger,
+            $integrity
+        ))->preview();
+        $unified = (new UnifiedEconomyRuntimeSyncService($database, $ledger, $integrity))->preview($jsonSnapshot);
+
         $shadowDeltaCount = $this->shadowDeltaCount($shadowReport);
         $blockers = [];
         if ($shadowDeltaCount > 0) {
@@ -92,6 +135,15 @@ final class RuntimeEconomyRepository
         }
         foreach ((array)($reconciliation['blocking_reasons'] ?? []) as $reason) {
             $blockers[] = (string)$reason;
+        }
+        foreach ((array)($migration['blockers'] ?? []) as $reason) {
+            $blockers[] = (string)$reason;
+        }
+        foreach ((array)($unified['blocking_reasons'] ?? []) as $reason) {
+            $blockers[] = (string)$reason;
+        }
+        if ((int)($unified['planned_delta_count'] ?? 0) > 0) {
+            $blockers[] = 'Canonical runtime balance differs from mgw_coin and requires synchronization.';
         }
         $blockers = array_values(array_unique(array_filter($blockers, static fn(string $value): bool => $value !== '')));
         $compactReconciliation = $this->compactReconciliation($reconciliation);
@@ -111,6 +163,12 @@ final class RuntimeEconomyRepository
             'active_reservation_count' => (int)($compactReconciliation['active_reservation_count'] ?? 0),
             'shadow_delta_count' => $shadowDeltaCount,
             'shadow' => $this->compactShadow($shadowReport),
+            'migration' => [
+                'completed' => !empty($migration['completed']),
+                'migration_version' => (string)($migration['migration_version'] ?? $rule->version()),
+                'verified_migration_account_count' => (int)($migration['verified_migration_account_count'] ?? 0),
+            ],
+            'unified' => $this->compactUnified($unified),
             'reconciliation' => $compactReconciliation,
             'blockers' => $blockers,
             'production_changed' => false,
@@ -118,6 +176,19 @@ final class RuntimeEconomyRepository
         ];
         self::$requestAuditCache[$cacheKey] = $result;
         return $result;
+    }
+
+    private function unifiedRule(): UnifiedBalanceMigrationRule
+    {
+        $file = dirname(__DIR__) . '/economy/unified_balance_mapping.php';
+        if (!is_file($file)) {
+            throw new RuntimeException('Approved unified balance mapping file is missing.');
+        }
+        $config = require $file;
+        if (!is_array($config)) {
+            throw new RuntimeException('Approved unified balance mapping must return an array.');
+        }
+        return UnifiedBalanceMigrationRule::fromApprovedConfig($config);
     }
 
     private function requestCacheKey(DatabaseConnectionInterface $database, array $jsonSnapshot): string
@@ -201,6 +272,39 @@ final class RuntimeEconomyRepository
             'source_totals' => $report['source_totals'] ?? [],
             'database_totals' => $report['database_totals'] ?? [],
             'reconciled' => !empty($report['reconciled']),
+        ];
+    }
+
+    private function compactMigration(array $report): array
+    {
+        return [
+            'migration_version' => (string)($report['migration_version'] ?? ''),
+            'rule_fingerprint' => (string)($report['rule_fingerprint'] ?? ''),
+            'source_account_count' => (int)($report['source_account_count'] ?? 0),
+            'source_totals' => $report['source_totals'] ?? [],
+            'target_total' => (int)($report['target_total'] ?? 0),
+            'applied_ledger_entry_count' => (int)($report['applied_ledger_entry_count'] ?? 0),
+            'replayed' => !empty($report['replayed']),
+            'source_balances_preserved' => !empty($report['source_balances_preserved']),
+        ];
+    }
+
+    private function compactUnified(array $report): array
+    {
+        return [
+            'ready' => ($report['ready'] ?? $report['ok'] ?? false) === true,
+            'read_only' => !empty($report['read_only']),
+            'source_fingerprint' => (string)($report['source_fingerprint'] ?? ''),
+            'source_user_count' => (int)($report['source_user_count'] ?? 0),
+            'source_total' => (int)($report['source_total'] ?? 0),
+            'database_total' => (int)($report['database_total'] ?? 0),
+            'planned_delta_count' => (int)($report['planned_delta_count'] ?? 0),
+            'applied_delta_count' => (int)($report['applied_delta_count'] ?? 0),
+            'replayed_delta_count' => (int)($report['replayed_delta_count'] ?? 0),
+            'credited_total' => (int)($report['credited_total'] ?? 0),
+            'debited_total' => (int)($report['debited_total'] ?? 0),
+            'reconciled' => !empty($report['reconciled']),
+            'blocking_reasons' => array_values((array)($report['blocking_reasons'] ?? [])),
         ];
     }
 

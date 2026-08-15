@@ -61,12 +61,8 @@ export function renderUser(user){
   if (date) date.textContent = user?.registered_at ? `В игре с ${formatDate(user.registered_at)}` : 'Дата регистрации появится после входа';
 }
 export function renderBalances(user){
-  const match = document.getElementById('balanceMatch');
-  const gold = document.getElementById('balanceGold');
-  const shopAvailable = document.getElementById('shopAvailable');
-  if (match) match.textContent = user?.balance_match ?? '—';
-  if (gold) gold.textContent = user?.balance_gold ?? '—';
-  if (shopAvailable) shopAvailable.textContent = user?.gold_shop_available ?? '—';
+  const unified = document.getElementById('balanceUnified');
+  if (unified) unified.textContent = user?.balance ?? '—';
 }
 export function clearTimer(timer){ if (timer) clearInterval(timer); return null; }
 
