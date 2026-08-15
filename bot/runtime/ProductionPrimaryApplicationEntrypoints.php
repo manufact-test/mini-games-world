@@ -28,9 +28,10 @@ final class ProductionPrimaryApplicationEntrypoints
         if (!str_starts_with($normalizedScript, $rootPrefix)) return '';
 
         $relative = substr($normalizedScript, strlen($rootPrefix));
-        if ($relative === 'bot/admin-read.php') {
-            // The read-only web-admin surface is not a new storage/runtime owner.
-            // It deliberately reuses the already accepted API DB-primary context.
+        if (in_array($relative, ['bot/admin-read.php', 'bot/admin-economy.php'], true)) {
+            // Web Admin surfaces are not separate storage/runtime owners. The
+            // accepted read-only snapshot and the narrow MVP-15.8 economy
+            // mutation endpoint both reuse the existing API DB-primary context.
             return 'api';
         }
         return self::PATH_TO_ID[$relative] ?? '';
