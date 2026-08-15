@@ -112,7 +112,13 @@ final class UnifiedEconomyRuntimeSyncService
         $sourceUsers = 0;
 
         foreach ($users as $key => $user) {
-            if (!is_array($user) || !empty($user['is_dev_user'])) continue;
+            // Development/staging test identities are real runtime economy
+            // subjects in the staging snapshot. They pass the same canonical
+            // account-ownership resolver as Telegram users and were already
+            // included by the legacy shadow/import phases. Excluding them here
+            // creates mgw_coin rows that this service then misclassifies as
+            // unmanaged. Process every materialized user with active ownership.
+            if (!is_array($user)) continue;
             $legacyUserId = trim((string)($user['id'] ?? $key));
             if ($legacyUserId === '') {
                 $blocking[] = 'Unified runtime balance contains an empty legacy user id.';
