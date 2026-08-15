@@ -1,0 +1,29 @@
+name: MVP-15.5 bootstrap config scope verify
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-5-bootstrap-config-scope
+    paths:
+      - '.github/workflows/mvp15-5-bootstrap-config-scope-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-5-bootstrap-config-scope
+          fetch-depth: 1
+      - name: Focused syntax and scope regression
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l bot/api.php
+          php -l bot/tests/Mvp155BootstrapConfigScopeTest.php
+          php bot/tests/Mvp155BootstrapConfigScopeTest.php
+          php bot/tests/Mvp155NormalMatchEconomyTest.php
