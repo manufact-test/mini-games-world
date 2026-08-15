@@ -241,7 +241,8 @@ final class EconomyConfigService
     private function reason(string $reason): string
     {
         $reason = trim($reason);
-        if (mb_strlen($reason) < 3 || mb_strlen($reason) > 500) {
+        $length = function_exists('mb_strlen') ? mb_strlen($reason) : strlen($reason);
+        if ($length < 3 || $length > 500) {
             throw new InvalidArgumentException('Economy config change reason must contain 3 to 500 characters.');
         }
         return $reason;
