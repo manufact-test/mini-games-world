@@ -30,4 +30,18 @@ jobs:
       - name: MVP-15.4 canonical bonus regression
         run: php bot/tests/Mvp154CanonicalBonusesTest.php
       - name: Weekly DB runtime bridge regression
-        run: php bot/tests/WeeklyBonusRuntimeBridgeTest.php
+        shell: bash
+        run: |
+          set +e
+          php bot/tests/WeeklyBonusRuntimeBridgeTest.php > /tmp/weekly-bridge.log 2>&1
+          status=$?
+          cat /tmp/weekly-bridge.log
+          if [ "$status" -ne 0 ]; then
+            {
+              echo '## Weekly DB runtime bridge regression failed'
+              echo '```text'
+              cat /tmp/weekly-bridge.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
