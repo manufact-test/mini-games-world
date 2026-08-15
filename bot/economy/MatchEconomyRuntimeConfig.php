@@ -77,10 +77,20 @@ final class MatchEconomyRuntimeConfig
             throw new RuntimeException('Canonical economy database dependencies are unavailable.');
         }
         $databaseConfig = DatabaseConfig::fromApplicationConfig($applicationConfig);
-        if (!$databaseConfig->enabled()) {
-            throw new RuntimeException('Canonical normal-match economy requires an enabled database.');
+        if ($databaseConfig->enabled()) {
+            return (new EconomyConfigService(PdoConnectionFactory::create($databaseConfig)))->current();
         }
 
-        return (new EconomyConfigService(PdoConnectionFactory::create($databaseConfig)))->current();
+        $environment = strtolower(trim((string)($applicationConfig['environment'] ?? 'production')));
+        if ($environment === 'local' || !empty($applicationConfig['allow_economy_defaults_for_tests'])) {
+            $defaults = EconomyConfigDefinition::defaults();
+            return [
+                'version' => 0,
+                'config_sha256' => EconomyConfigDefinition::sha256($defaults),
+                'config' => $defaults,
+            ];
+        }
+
+        throw new RuntimeException('Canonical normal-match economy requires an enabled database.');
     }
 }
