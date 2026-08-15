@@ -21,7 +21,7 @@ $assert(
     'bootstrap must publish the canonical Match economy projection into application config'
 );
 $assert(
-    str_contains($api, "'match_economy' => MatchEconomyRuntimeConfig::publicStatus($config)"),
+    str_contains($api, "'match_economy' => MatchEconomyRuntimeConfig::publicStatus(\$config)"),
     'bootstrap response must expose canonical Match economy status'
 );
 $assert(
