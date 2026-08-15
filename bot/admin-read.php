@@ -7,22 +7,7 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
-
-function mgw_admin_init_data_is_fresh(string $initData, ?int $now = null): bool
-{
-    if ($initData === '') return false;
-
-    parse_str($initData, $data);
-    $authDate = filter_var($data['auth_date'] ?? null, FILTER_VALIDATE_INT);
-    if ($authDate === false || $authDate <= 0) return false;
-
-    $now ??= time();
-    $clockSkewSec = 60;
-    $maxAgeSec = 15 * 60;
-
-    return $authDate <= $now + $clockSkewSec
-        && $now - $authDate <= $maxAgeSec;
-}
+require_once __DIR__ . '/helpers/AdminWebAuth.php';
 
 function mgw_admin_read_only_text(string $text, string $commandMarker): string
 {
@@ -41,16 +26,8 @@ try {
     }
 
     $initData = (string)($payload['initData'] ?? '');
-    if (!mgw_admin_init_data_is_fresh($initData)) {
-        json_response(['ok' => false, 'error' => 'Сессия панели устарела. Откройте её заново из Telegram.'], 401);
-    }
-
-    $auth = new AuthService($config);
-    $telegramUser = $auth->getTelegramUserFromInitData($initData, false);
+    AdminWebAuth::authorize($config, $initData);
     $admin = new AdminService($config);
-    if (!$admin->isAdmin((string)($telegramUser['id'] ?? ''))) {
-        json_response(['ok' => false, 'error' => 'Недостаточно прав.'], 403);
-    }
 
     // admin-read.php is mapped to the existing API DB-primary entrypoint context.
     // No separate storage selector or admin database owner is introduced here.
@@ -72,6 +49,8 @@ try {
         'dashboard' => (string)($snapshot['dashboard'] ?? ''),
         'system_check' => (string)($snapshot['system_check'] ?? ''),
     ]);
+} catch (AdminWebAuthException $error) {
+    json_response(['ok' => false, 'error' => $error->publicMessage()], $error->httpStatus());
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld web admin] ' . $error->getMessage());
     json_response(['ok' => false, 'error' => 'Не удалось загрузить панель. Откройте её заново из Telegram.'], 500);
