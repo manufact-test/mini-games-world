@@ -1,0 +1,40 @@
+name: MVP-15.6 bonus UX focused
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-bonus-ux-polish
+    paths:
+      - 'app/index.html'
+      - 'app/v110.php'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/screens/weekly-match-info.js'
+      - 'bot/services/NotificationService.php'
+      - 'bot/tests/Mvp156UnifiedZoneCutoverTest.php'
+      - 'bot/tests/Mvp156BonusUxPolishTest.php'
+      - '.github/workflows/mvp15-6-bonus-ux-focused.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          php -l app/v110.php
+          php -l bot/services/NotificationService.php
+          php -l bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php -l bot/tests/Mvp156BonusUxPolishTest.php
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/screens/weekly-match-info.js
+      - name: Bonus UX regression
+        run: php bot/tests/Mvp156BonusUxPolishTest.php
+      - name: Unified-zone regression
+        run: php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+      - name: Canonical Telegram successor verifier
+        run: python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
