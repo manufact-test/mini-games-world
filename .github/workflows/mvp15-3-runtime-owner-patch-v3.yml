@@ -1,0 +1,283 @@
+name: MVP-15.3 runtime owner patch v3
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-3-unified-balance-foundation
+    paths:
+      - '.github/workflows/mvp15-3-runtime-owner-patch-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-3-unified-balance-foundation
+          fetch-depth: 1
+      - name: Apply fail-closed canonical balance patch
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def read(path):
+              return Path(path).read_text()
+
+          def write(path, value):
+              Path(path).write_text(value)
+
+          def once(value, old, new, label):
+              count = value.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly 1 occurrence, found {count}')
+              return value.replace(old, new, 1)
+
+          # ---- bot/services/UserService.php ----
+          p = 'bot/services/UserService.php'
+          s = read(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "        return $db['users'][$id];\n", "        UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);\n        return $db['users'][$id];\n", p + ' ensure')
+          s = once(s, "            'photo_url' => clean_string($user['photo_url'] ?? '', 2048),\n", "            'photo_url' => clean_string($user['photo_url'] ?? '', 2048),\n            'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),\n", p + ' public canonical')
+          s = once(s, "        $balance = max(0, (int)($user['balance_gold'] ?? 0));\n", "        $balance = max(0, (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0));\n", p + ' shop available')
+          write(p, s)
+
+          # ---- shared gameplay settlement owner ----
+          for p in ['bot/services/GameService.php', 'bot/services/GameSettlementService.php']:
+              s = read(p)
+              s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+              if p.endswith('GameService.php'):
+                  s = once(s, "    public function cleanup(array &$db): void\n    {\n", "    public function cleanup(array &$db): void\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n", p + ' migrateAll')
+              else:
+                  s = once(s, "    public function cancelPreparation(array &$db, array &$game): void\n    {\n", "    public function cancelPreparation(array &$db, array &$game): void\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n", p + ' cancel migrate')
+                  s = once(s, "    public function cancelPreparationBySearch(array &$db, array &$game): void\n    {\n", "    public function cancelPreparationBySearch(array &$db, array &$game): void\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n", p + ' search migrate')
+                  marker = "    ): void {\n        if (!empty($game['payout_done'])) {\n"
+                  s = once(s, marker, "    ): void {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n        if (!empty($game['payout_done'])) {\n", p + ' finish migrate')
+              s = s.replace("$balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';", "$balanceKey = UnifiedBalanceRuntimeState::FIELD;")
+              s = s.replace("$balanceKey = 'balance_match';", "$balanceKey = UnifiedBalanceRuntimeState::FIELD;")
+              if "balance_match" in s or "balance_gold" in s:
+                  raise SystemExit(p + ': active legacy balance field remains')
+              write(p, s)
+
+          # ---- weekly grants ----
+          p = 'bot/services/WeeklyMatchEconomyService.php'
+          s = read(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "    public function ensureWelcomeGrant(array &$db, array &$user): array\n    {\n", "    public function ensureWelcomeGrant(array &$db, array &$user): array\n    {\n        UnifiedBalanceRuntimeState::ensureUser($user);\n", p + ' welcome')
+          s = once(s, "    ): array {\n        $userId = trim((string)($user['id'] ?? ''));\n", "    ): array {\n        UnifiedBalanceRuntimeState::ensureUser($user);\n        $userId = trim((string)($user['id'] ?? ''));\n", p + ' apply')
+          s = once(s, "    public function runDue(array &$db, ?DateTimeImmutable $now = null): array\n    {\n", "    public function runDue(array &$db, ?DateTimeImmutable $now = null): array\n    {\n        UnifiedBalanceRuntimeState::migrateAll($db);\n", p + ' run')
+          s = s.replace("$user['balance_match']", "$user[UnifiedBalanceRuntimeState::FIELD]")
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': active legacy balance field remains')
+          write(p, s)
+
+          # ---- legacy prize shop uses the one balance until later cleanup ----
+          p = 'bot/services/ShopService.php'
+          s = read(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "    ): array {\n        $userId = (string)($user['id'] ?? '');\n", "    ): array {\n        UnifiedBalanceRuntimeState::ensureUser($user);\n        $userId = (string)($user['id'] ?? '');\n", p + ' order ensure')
+          s = s.replace("(int)($user['balance_gold'] ?? 0)", "(int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0)")
+          s = s.replace("$user['balance_gold']", "$user[UnifiedBalanceRuntimeState::FIELD]")
+          s = once(s, "            'balance_gold' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),\n", "            'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),\n            'balance_gold' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0), // temporary response alias until MVP-15.6\n", p + ' status canonical')
+          if "$user['balance_gold']" in s or "$user['balance_match']" in s:
+              raise SystemExit(p + ': writable legacy user balance remains')
+          write(p, s)
+
+          # ---- draft/manual payment credits one balance ----
+          p = 'bot/services/PaymentService.php'
+          s = read(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "        $balanceField = $room === 'match' ? 'balance_match' : 'balance_gold';\n        $before = (int)($db['users'][$userId][$balanceField] ?? 0);\n", "        UnifiedBalanceRuntimeState::ensureUser($db['users'][$userId]);\n        $balanceField = UnifiedBalanceRuntimeState::FIELD;\n        $before = (int)($db['users'][$userId][$balanceField] ?? 0);\n", p + ' owner')
+          write(p, s)
+
+          # ---- invite validation uses one balance while room semantics remain transitional ----
+          p = 'bot/services/invites/GameInviteStorageTrait.php'
+          s = read(p)
+          s = once(s, "require_once dirname(__DIR__) . '/GameLaunchFinalizationService.php';\n", "require_once dirname(__DIR__) . '/GameLaunchFinalizationService.php';\nrequire_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "    ): array {\n        if (!isset($db['invites']) || !is_array($db['invites'])) $db['invites'] = [];\n", "    ): array {\n        UnifiedBalanceRuntimeState::ensureUser($user);\n        if (!isset($db['invites']) || !is_array($db['invites'])) $db['invites'] = [];\n", p + ' ensure')
+          s = once(s, "$balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';", "$balanceKey = UnifiedBalanceRuntimeState::FIELD;", p + ' key')
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': active legacy invite balance remains')
+          write(p, s)
+
+          p = 'bot/services/invites/GameInviteValidationTrait.php'
+          s = read(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "    private function assertBalances(array $inviter, array $invitee, array $invite): void\n    {\n", "    private function assertBalances(array $inviter, array $invitee, array $invite): void\n    {\n        UnifiedBalanceRuntimeState::ensureUser($inviter);\n        UnifiedBalanceRuntimeState::ensureUser($invitee);\n", p + ' ensure')
+          s = once(s, "$balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';", "$balanceKey = UnifiedBalanceRuntimeState::FIELD;", p + ' key')
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': active legacy invite balance remains')
+          write(p, s)
+
+          # ---- staging technical A/B reset resets canonical balance only ----
+          p = 'bot/services/StagingTestPlayerStateResetService.php'
+          s = read(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "            if (!isset($data['users']) || !is_array($data['users'])) {\n", "            UnifiedBalanceRuntimeState::migrateAll($data);\n            if (!isset($data['users']) || !is_array($data['users'])) {\n", p + ' migrateAll')
+          s = s.replace("['balance_match']", "[UnifiedBalanceRuntimeState::FIELD]")
+          s = once(s, "            'match_balance' => self::MATCH_BALANCE,\n", "            'balance' => self::MATCH_BALANCE,\n            'match_balance' => self::MATCH_BALANCE, // temporary response alias for old staging tooling\n", p + ' response')
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': active legacy reset balance remains')
+          write(p, s)
+
+          # ---- admin current balance + explicit legacy audit snapshot ----
+          p = 'bot/services/AdminService.php'
+          s = read(p)
+          s = once(s, "declare(strict_types=1);\n", "declare(strict_types=1);\n\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\n", p + ' require')
+          s = once(s, "        $goldBalanceTotal = 0;\n        $goldDepositedTotal = 0;\n", "        $unifiedBalanceTotal = 0;\n        $legacyGoldBalanceTotal = 0;\n        $goldDepositedTotal = 0;\n", p + ' totals')
+          old = """            $goldBalanceTotal += (int)($user['balance_gold'] ?? 0);\n            $goldDepositedTotal += (int)($user['gold_deposited_total'] ?? 0);\n\n            if ((int)($user['balance_match'] ?? 0) < 0 || (int)($user['balance_gold'] ?? 0) < 0) $negativeBalances++;\n"""
+          new = """            UnifiedBalanceRuntimeState::ensureUser($user);\n            $unifiedBalanceTotal += (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);\n            $legacy = UnifiedBalanceRuntimeState::legacyBreakdown($user);\n            $legacyGoldBalanceTotal += (int)($legacy['source_balance_gold'] ?? 0);\n            $goldDepositedTotal += (int)($user['gold_deposited_total'] ?? 0);\n\n            if ((int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) < 0) $negativeBalances++;\n"""
+          s = once(s, old, new, p + ' audit loop')
+          s = once(s, "        $lines[] = \"Gold на балансах игроков: {$goldBalanceTotal} коинов\";\n", "        $lines[] = \"MGW Coins на текущих балансах: {$unifiedBalanceTotal} коинов\";\n        $lines[] = \"Legacy Gold snapshot: {$legacyGoldBalanceTotal} коинов\";\n", p + ' output')
+          if "['balance_match']" in s or "['balance_gold']" in s:
+              raise SystemExit(p + ': direct legacy balance access remains; use audit helper instead')
+          write(p, s)
+
+          # ---- current visible app: one balance card ----
+          p = 'app/index.html'
+          s = read(p)
+          old = '''        <section class="balances">\n          <div class="balance-card">\n            <div class="balance-label">🎲 Матч-комната</div>\n            <div class="balance-value" id="balanceMatch">—</div>\n            <div class="balance-note">коины для обычных матчей</div>\n          </div>\n          <div class="balance-card">\n            <div class="balance-label">✨ Gold-комната</div>\n            <div class="balance-value" id="balanceGold">—</div>\n            <div class="balance-note">для магазина доступно: <span id="shopAvailable">—</span></div>\n          </div>\n        </section>'''
+          new = '''        <section class="balances unified-balance">\n          <div class="balance-card">\n            <div class="balance-label">🪙 Баланс</div>\n            <div class="balance-value" id="balanceUnified">—</div>\n            <div class="balance-note">единые MGW Coins</div>\n          </div>\n        </section>'''
+          s = once(s, old, new, p + ' balance cards')
+          write(p, s)
+
+          p = 'app/assets/js/ui.js'
+          s = read(p)
+          old = '''export function renderBalances(user){\n  const match = document.getElementById('balanceMatch');\n  const gold = document.getElementById('balanceGold');\n  const shopAvailable = document.getElementById('shopAvailable');\n  if (match) match.textContent = user?.balance_match ?? '—';\n  if (gold) gold.textContent = user?.balance_gold ?? '—';\n  if (shopAvailable) shopAvailable.textContent = user?.gold_shop_available ?? '—';\n}'''
+          new = '''export function renderBalances(user){\n  const unified = document.getElementById('balanceUnified');\n  if (unified) unified.textContent = user?.balance ?? '—';\n}'''
+          s = once(s, old, new, p + ' render')
+          write(p, s)
+
+          p = 'app/assets/js/screens/home-screen.js'
+          s = read(p)
+          s = once(s, "  const balance = isGold ? (state.user?.balance_gold ?? 0) : (state.user?.balance_match ?? 0);\n", "  const balance = Number(state.user?.balance ?? 0);\n", p + ' topup balance')
+          s = s.replace("shop.balance_gold ?? 0", "shop.balance ?? 0")
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': visible legacy balance field remains')
+          write(p, s)
+
+          def replace_profile_overview(path):
+              s = read(path)
+              start_marker = 'function renderProfileOverview(user = {}, orders = []){'
+              end_marker = '\nfunction ensureProfileOverview(){'
+              start = s.find(start_marker)
+              end = s.find(end_marker, start)
+              if start < 0 or end < 0:
+                  raise SystemExit(path + ': profile overview markers not found')
+              new_fn = '''function renderProfileOverview(user = {}, orders = []){\n  const el = ensureProfileOverview();\n  if (!el) return;\n\n  const balance = Number(user.balance || 0);\n  const shopAvailable = Number(user.gold_shop_available || 0);\n  const orderItems = Array.isArray(orders) ? orders : [];\n\n  el.innerHTML = `\n    <section class="profile-overview-section">\n      <div class="profile-section-head">\n        <div>\n          <h2>Мои средства</h2>\n          <p>Единый баланс Mini Games World.</p>\n        </div>\n      </div>\n\n      <div class="profile-wallet-grid">\n        <div class="profile-wallet-card match">\n          <span>🪙 MGW Coins</span>\n          <strong>${formatNumber(balance)}</strong>\n          <small>единый баланс для игр и магазина</small>\n        </div>\n        <div class="profile-wallet-card shop-available">\n          <div>\n            <span>🎁 Доступно для старого магазина</span>\n            <small>временное правило совместимости до удаления Gold-механики</small>\n          </div>\n          <strong>${formatNumber(shopAvailable)}</strong>\n        </div>\n      </div>\n    </section>\n\n    <section class="profile-overview-section">\n      <button class="profile-orders-action" data-open-store-orders type="button">\n        <span class="profile-orders-icon" aria-hidden="true">🎁</span>\n        <span class="profile-orders-copy">\n          <strong>Мои заявки</strong>\n        </span>\n        ${orderItems.length > 0 ? `<b class="profile-orders-badge">${orderItems.length > 99 ? '99+' : orderItems.length}</b>` : ''}\n      </button>\n    </section>\n  `;\n}\n'''
+              s = s[:start] + new_fn + s[end+1:]
+              if 'balance_match' in s or 'balance_gold' in s:
+                  raise SystemExit(path + ': profile still reads legacy balances')
+              write(path, s)
+
+          replace_profile_overview('app/assets/js/screens/profile-screen-v110.js')
+          replace_profile_overview('app/assets/js/screens/profile-screen.js')
+
+          p = 'app/assets/js/screens/store-screen.js'
+          s = read(p)
+          s = s.replace("shop.balance_gold || 0", "shop.balance || 0")
+          if "balance_match" in s or "balance_gold" in s:
+              raise SystemExit(p + ': store still reads legacy balances')
+          write(p, s)
+
+          # ---- clean runtime uses canonical state field; response key `match`
+          # stays temporarily compatible with its existing client contract. ----
+          p = 'app/runtime/server/session/RuntimeSessionService.php'
+          s = read(p)
+          s = once(s,
+              "            'balance_match' => max(0, (int)($existing['balance_match'] ?? $this->config->initialMatchBalance)),\n",
+              "            'balance' => max(0, (int)($existing['balance'] ?? $existing['balance_match'] ?? $this->config->initialMatchBalance)),\n",
+              p + ' migrate field')
+          s = once(s, "                'match' => (int)$account['balance_match'],\n", "                'match' => (int)$account['balance'], // compatibility response key; one canonical owner\n", p + ' projection')
+          if s.count('balance_match') != 1: # one migration fallback is intentional
+              raise SystemExit(p + ': unexpected clean-session legacy reference count')
+          write(p, s)
+
+          p = 'app/runtime/server/match/RuntimeMatchService.php'
+          s = read(p)
+          s = s.replace("['balance_match']", "['balance']")
+          s = s.replace("Недостаточно тестовых Match-коинов для поиска.", "Недостаточно MGW Coins для поиска.")
+          if 'balance_match' in s:
+              raise SystemExit(p + ': clean match runtime still owns legacy balance')
+          write(p, s)
+
+          # ---- normalized DB legacy audit allows only the new target asset as extra ----
+          p = 'bot/ledger/LegacyEconomyDeltaImportService.php'
+          s = read(p)
+          old = """        foreach ($this->database->fetchAll('SELECT account_ref, asset_code FROM mgw_balances') as $row) {\n            $scope = (string)($row['account_ref'] ?? '') . \"\\0\" . (string)($row['asset_code'] ?? '');\n            if (!isset($expectedScopes[$scope])) {\n                $blocking[] = 'Database contains a balance outside the frozen economy source.';\n                break;\n            }\n        }\n"""
+          new = """        foreach ($this->database->fetchAll('SELECT account_ref, asset_code FROM mgw_balances') as $row) {\n            $assetCode = (string)($row['asset_code'] ?? '');\n            // MVP-15.3 target is a separate authoritative asset. Legacy Match/Gold\n            // reconciliation must preserve/audit its own scopes without treating\n            // the canonical mgw_coin row as an unmanaged legacy balance.\n            if ($assetCode === 'mgw_coin') continue;\n            $scope = (string)($row['account_ref'] ?? '') . \"\\0\" . $assetCode;\n            if (!isset($expectedScopes[$scope])) {\n                $blocking[] = 'Database contains a balance outside the frozen economy source.';\n                break;\n            }\n        }\n"""
+          s = once(s, old, new, p + ' target allowance')
+          write(p, s)
+
+          # ---- runtime bootstrap loads new economy owners explicitly ----
+          p = 'bot/core/bootstrap.php'
+          s = read(p)
+          marker = "require_once __DIR__ . '/../ledger/LegacyEconomyRuntimeReconciliationService.php';\n"
+          addition = marker + "require_once __DIR__ . '/../economy/UnifiedBalanceMigrationRule.php';\nrequire_once __DIR__ . '/../economy/UnifiedBalanceMigrationPlanner.php';\nrequire_once __DIR__ . '/../economy/UnifiedBalanceMigrationExecutor.php';\nrequire_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\nrequire_once __DIR__ . '/../economy/UnifiedBalanceMigrationCoordinator.php';\nrequire_once __DIR__ . '/../economy/UnifiedEconomyRuntimeSyncService.php';\n"
+          s = once(s, marker, addition, p + ' economy requires')
+          write(p, s)
+
+          # Final active-owner audit. These exact files are intentionally allowed
+          # because they are migration/rollback/synthetic-history owners, not live
+          # currency writers. UserService retains frozen source snapshots only.
+          allowed = {
+              'bot/services/UserService.php',
+              'bot/accounts/LegacyAccountOwnershipLinkService.php',
+              'bot/runtime/ProductionPrimaryRollbackMaterializedStateConnection.php',
+              'bot/runtime/RuntimePrimaryStagingSyntheticSuite.php',
+          }
+          allowed_prefixes = (
+              'bot/ledger/', 'bot/economy/', 'bot/migration/', 'bot/cutover/',
+              'bot/tests/', 'bot/baseline/', 'ops/', '.github/'
+          )
+          unexpected = []
+          for root in ('bot', 'app'):
+              for path in Path(root).rglob('*'):
+                  if not path.is_file() or path.suffix not in {'.php','.js','.html','.md','.sh'}:
+                      continue
+                  body = path.read_text(errors='ignore')
+                  if 'balance_match' not in body and 'balance_gold' not in body:
+                      continue
+                  name = str(path).replace('\\','/')
+                  if name in allowed or name.startswith(allowed_prefixes):
+                      continue
+                  # clean session keeps exactly one source-field fallback so old
+                  # clean-runtime state is converted without value loss.
+                  if name == 'app/runtime/server/session/RuntimeSessionService.php' and body.count('balance_match') == 1 and 'balance_gold' not in body:
+                      continue
+                  unexpected.append(name)
+          if unexpected:
+              raise SystemExit('Unexpected active legacy balance references remain: ' + ', '.join(sorted(unexpected)))
+          PY
+
+          php -l bot/services/UserService.php
+          php -l bot/services/GameService.php
+          php -l bot/services/GameSettlementService.php
+          php -l bot/services/WeeklyMatchEconomyService.php
+          php -l bot/services/ShopService.php
+          php -l bot/services/PaymentService.php
+          php -l bot/services/AdminService.php
+          php -l bot/services/StagingTestPlayerStateResetService.php
+          php -l bot/services/invites/GameInviteStorageTrait.php
+          php -l bot/services/invites/GameInviteValidationTrait.php
+          php -l bot/ledger/LegacyEconomyDeltaImportService.php
+          php -l bot/core/bootstrap.php
+          php -l app/runtime/server/session/RuntimeSessionService.php
+          php -l app/runtime/server/match/RuntimeMatchService.php
+          node --check app/assets/js/ui.js
+          node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/screens/profile-screen.js
+          node --check app/assets/js/screens/store-screen.js
+          git diff --check
+      - name: Commit canonical owner patch
+        run: |
+          git config user.name "manufact-test"
+          git config user.email "manufact.test@gmail.com"
+          git add bot app
+          git diff --cached --quiet && { echo 'No canonical owner changes produced'; exit 1; }
+          git commit -m "MVP-15.3: switch active runtime to one canonical balance"
+          git push origin HEAD:agent/mvp-15-3-unified-balance-foundation
