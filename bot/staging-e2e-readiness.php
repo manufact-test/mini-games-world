@@ -24,7 +24,6 @@ try {
     require __DIR__ . '/core/bootstrap.php';
     require_once __DIR__ . '/helpers/StagingE2eSourceFingerprint.php';
 
-    $expectedHost = 'seashell-okapi-889488.hostingersite.com';
     $environment = strtolower(trim((string)($config['environment'] ?? '')));
     $baseUrl = rtrim(trim((string)($config['base_url'] ?? '')), '/');
     $baseHost = strtolower((string)(parse_url($baseUrl, PHP_URL_HOST) ?: ''));
@@ -46,6 +45,11 @@ try {
         'test_auth_broker' => __DIR__ . '/staging-test-auth.php',
         'runtime_fingerprint_helper' => __DIR__ . '/helpers/StagingE2eSourceFingerprint.php',
         'runtime_fingerprint_manifest' => __DIR__ . '/helpers/staging-e2e-runtime-files.txt',
+        'canonical_profile_endpoint' => __DIR__ . '/profile.php',
+        'canonical_profile_service' => __DIR__ . '/accounts/MgwProfileService.php',
+        'unified_balance_rule' => __DIR__ . '/economy/UnifiedBalanceMigrationRule.php',
+        'unified_balance_coordinator' => __DIR__ . '/economy/UnifiedBalanceMigrationCoordinator.php',
+        'unified_balance_runtime_sync' => __DIR__ . '/economy/UnifiedEconomyRuntimeSyncService.php',
     ];
     $capabilities = [];
     foreach ($required as $name => $path) {
@@ -62,9 +66,13 @@ try {
     ))->calculate();
     $capabilities['exact_runtime_fingerprint'] = true;
 
+    // The staging host is owned by the private environment config rather than
+    // hardcoded in repository code. This keeps host migrations from leaving CI
+    // pointed at a dead historical domain while still requiring request/base
+    // host identity, explicit staging mode and disabled live payments.
     if ($environment !== 'staging'
-        || $baseHost !== $expectedHost
-        || $requestHost !== $expectedHost
+        || $baseHost === ''
+        || $requestHost !== $baseHost
         || $livePayments) {
         throw new RuntimeException('Staging E2E environment is not isolated.');
     }
@@ -72,14 +80,14 @@ try {
     echo json_encode([
         'ok' => true,
         'service' => 'mini-games-world-staging-e2e-readiness',
-        'build' => 'mgw-staging-playwright-r13.4-v1',
+        'build' => 'mgw-staging-playwright-r15.3-v1',
         'environment' => 'staging',
-        'base_host' => $expectedHost,
+        'base_host' => $baseHost,
         'source_fingerprint_sha256' => $fingerprint['sha256'],
         'runtime_file_count' => $fingerprint['file_count'],
         'capabilities' => $capabilities,
         'isolation' => [
-            'exact_staging_host' => true,
+            'request_matches_configured_staging_host' => true,
             'live_payments_disabled' => true,
             'production_changed' => false,
         ],
