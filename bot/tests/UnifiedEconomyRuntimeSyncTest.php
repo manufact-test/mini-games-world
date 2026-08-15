@@ -42,7 +42,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(7, $runner->migrate(false)['executed_count'], 'Runtime sync test must apply all migrations');
+$assertSame(8, $runner->migrate(false)['executed_count'], 'Runtime sync test must apply all migrations');
 
 $accounts = new AccountIdentityService($database, 3600);
 $firstIdentity = $accounts->resolveTelegramUser([
