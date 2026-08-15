@@ -171,11 +171,25 @@ final class UnifiedBalanceMigrationExecutor
                 throw new RuntimeException('Unified balance migration is incomplete for a legacy account.');
             }
             $target = $targets[$accountRef];
-            if ((int)($target['available_amount'] ?? -1) !== $expectedAmount
-                || (int)($target['reserved_amount'] ?? -1) !== 0
-                || $this->nullable($target['mgw_id'] ?? null) !== $account['mgw_id']
-                || $this->nullable($target['legacy_user_id'] ?? null) !== $account['legacy_user_id']) {
-                throw new RuntimeException('Existing unified target balance does not match the approved migration.');
+            $actualAmount = (int)($target['available_amount'] ?? -1);
+            $actualReserved = (int)($target['reserved_amount'] ?? -1);
+            $targetMgwId = $this->nullable($target['mgw_id'] ?? null);
+            $targetLegacyId = $this->nullable($target['legacy_user_id'] ?? null);
+            $mgwMatches = $targetMgwId === $account['mgw_id'];
+            $legacyMatches = $targetLegacyId === $account['legacy_user_id'];
+            if ($actualAmount !== $expectedAmount
+                || $actualReserved !== 0
+                || !$mgwMatches
+                || !$legacyMatches) {
+                throw new RuntimeException(sprintf(
+                    'Existing unified target balance does not match the approved migration '
+                    . '(expected_amount=%d, actual_amount=%d, reserved=%d, mgw_identity_match=%s, legacy_identity_match=%s).',
+                    $expectedAmount,
+                    $actualAmount,
+                    $actualReserved,
+                    $mgwMatches ? 'yes' : 'no',
+                    $legacyMatches ? 'yes' : 'no'
+                ));
             }
 
             $integrity = $this->integrity->verifyAccountAsset($accountRef, $this->rule->targetAsset());
