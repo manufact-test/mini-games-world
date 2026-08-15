@@ -57,3 +57,23 @@
 .game-card + .game-card{margin-top:10px}
 .section-title + .activity-grid,.section-title + .game-card{margin-top:0}
 .balances + .section-title,.activity-grid + .section-title,.card + .balances{margin-top:18px}
+
+
+/* MVP-15.3 unified wallet geometry */
+.balances.unified-balance{grid-template-columns:1fr}
+.balances.unified-balance .balance-card{
+  width:100%;
+  min-height:82px;
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"label value" "note value";
+  align-items:center;
+  column-gap:18px;
+  row-gap:3px;
+  background:linear-gradient(135deg,rgba(106,76,255,.16),var(--sk-bg-card) 58%,rgba(255,212,92,.07));
+  border-color:rgba(166,95,247,.30);
+}
+.balances.unified-balance .balance-label{grid-area:label;color:var(--soft);font-weight:850}
+.balances.unified-balance .balance-value{grid-area:value;margin:0;font-size:27px;text-align:right}
+.balances.unified-balance .balance-note{grid-area:note}

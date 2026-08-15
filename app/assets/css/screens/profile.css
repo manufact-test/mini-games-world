@@ -35,3 +35,22 @@
 .profile-orders-copy strong{font-size:14px;line-height:1.2}
 .profile-orders-badge{flex:0 0 auto;min-width:28px;height:28px;padding:0 8px;border-radius:999px;display:grid;place-items:center;background:var(--gold);color:#211607;font-size:11px;font-weight:950}
 @media (max-width:360px){.profile-wallet-grid{grid-template-columns:1fr}.profile-wallet-card.shop-available{grid-column:auto}.profile-wallet-card.shop-available{align-items:flex-start;flex-direction:column}.profile-wallet-card{min-height:96px}}
+
+
+/* MVP-15.3 single profile wallet */
+.profile-wallet-card.match{
+  grid-column:1 / -1;
+  min-height:86px;
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"label value" "note value";
+  align-items:center;
+  column-gap:16px;
+  row-gap:4px;
+  background:linear-gradient(135deg,rgba(106,76,255,.17),var(--sk-bg-card) 60%,rgba(255,212,92,.06));
+  border-color:rgba(166,95,247,.32);
+}
+.profile-wallet-card.match > span{grid-area:label}
+.profile-wallet-card.match > strong{grid-area:value;text-align:right}
+.profile-wallet-card.match > small{grid-area:note}

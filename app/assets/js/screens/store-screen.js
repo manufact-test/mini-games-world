@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=34';
 import { state } from '../state.js?v=27';
 import { openSheet } from '../components/sheet.js?v=27';
 import { toast } from '../components/toast.js?v=27';
-import { renderBalances } from '../ui.js?v=27';
+import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
 let storeState = null;
