@@ -1,0 +1,39 @@
+name: MVP-15.6 wallet polish runner
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-weekly-bonus-wallet-cta
+    paths:
+      - '.github/workflows/mvp15-6-wallet-polish-runner.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-weekly-bonus-wallet-cta
+          fetch-depth: 1
+      - name: Apply wallet polish
+        run: python3 ops/checks/mvp15_6_apply_wallet_polish.py
+      - name: Focused checks
+        run: |
+          php -l app/v110.php
+          node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/screens/weekly-match-info.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
+          php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php bot/tests/Mvp155CanonicalMatchEconomyTest.php
+      - name: Commit product change
+        run: |
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add app/index.html app/assets/js/screens/home-screen.js app/assets/js/screens/weekly-match-info.js app/assets/css/components/cards.css app/assets/css/main.css app/assets/js/main-v110-handoff-shell.js app/v110.php ops/checks/verify-mvp15-3-unified-balance-owner.py
+          git commit -m 'MVP-15.6: move weekly bonus action into wallet'
+          git push origin HEAD:agent/mvp-15-6-weekly-bonus-wallet-cta
