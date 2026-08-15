@@ -1,0 +1,82 @@
+name: MVP-15.3 unified wallet UI patch
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-3-unified-wallet-ui-cache
+    paths:
+      - '.github/workflows/mvp15-3-unified-wallet-ui-patch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-3-unified-wallet-ui-cache
+          fetch-depth: 0
+      - name: Apply canonical cache ownership and compact wallet layout
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing expected text in {path}: {old}')
+              p.write_text(text.replace(old, new, 1))
+
+          replace('app/index.html', './assets/css/main.css?v=92', './assets/css/main.css?v=93-wallet-15-3')
+          replace('app/index.html', './assets/js/main.js?v=98.3', './assets/js/main.js?v=98.4-wallet-15-3')
+          replace('app/index.html', '<div class="balance-label">🪙 Баланс</div>', '<div class="balance-label">🪙 MGW Coins</div>')
+          replace('app/index.html', '<div class="balance-note">единые MGW Coins</div>', '<div class="balance-note">единый баланс</div>')
+
+          replace('app/assets/css/main.css', "@import url('./components/cards.css?v=124&sk=1');", "@import url('./components/cards.css?v=125&sk=1&wallet=unified');")
+          replace('app/assets/css/main.css', "@import url('./screens/profile.css?v=124&sk=1');", "@import url('./screens/profile.css?v=125&sk=1&wallet=unified');")
+
+          replace('app/assets/js/main.js', "from './ui.js?v=89';", "from './ui.js?v=90-wallet-15-3';")
+          replace('app/assets/js/main.js', "from './screens/home-screen.js?v=74';", "from './screens/home-screen.js?v=75-wallet-15-3';")
+          replace('app/assets/js/main.js', "from './screens/store-screen.js?v=34';", "from './screens/store-screen.js?v=35-wallet-15-3';")
+          replace('app/assets/js/main.js', "from './screens/profile-screen.js?v=92';", "from './screens/profile-screen.js?v=93-wallet-15-3';")
+
+          replace('app/assets/js/screens/home-screen.js', "from '../ui.js?v=27';", "from '../ui.js?v=90-wallet-15-3';")
+          replace('app/assets/js/screens/profile-screen.js', "from '../ui.js?v=89';", "from '../ui.js?v=90-wallet-15-3';")
+          replace('app/assets/js/screens/store-screen.js', "from '../ui.js?v=27';", "from '../ui.js?v=90-wallet-15-3';")
+
+          cards = Path('app/assets/css/components/cards.css')
+          cards_text = cards.read_text()
+          marker = '/* MVP-15.3 unified wallet geometry */'
+          if marker not in cards_text:
+              cards_text += '''\n\n/* MVP-15.3 unified wallet geometry */\n.balances.unified-balance{grid-template-columns:1fr}\n.balances.unified-balance .balance-card{\n  width:100%;\n  min-height:82px;\n  padding:14px 16px;\n  display:grid;\n  grid-template-columns:minmax(0,1fr) auto;\n  grid-template-areas:\"label value\" \"note value\";\n  align-items:center;\n  column-gap:18px;\n  row-gap:3px;\n  background:linear-gradient(135deg,rgba(106,76,255,.16),var(--sk-bg-card) 58%,rgba(255,212,92,.07));\n  border-color:rgba(166,95,247,.30);\n}\n.balances.unified-balance .balance-label{grid-area:label;color:var(--soft);font-weight:850}\n.balances.unified-balance .balance-value{grid-area:value;margin:0;font-size:27px;text-align:right}\n.balances.unified-balance .balance-note{grid-area:note}\n'''
+              cards.write_text(cards_text)
+
+          profile = Path('app/assets/css/screens/profile.css')
+          profile_text = profile.read_text()
+          marker = '/* MVP-15.3 single profile wallet */'
+          if marker not in profile_text:
+              profile_text += '''\n\n/* MVP-15.3 single profile wallet */\n.profile-wallet-card.match{\n  grid-column:1 / -1;\n  min-height:86px;\n  padding:14px 16px;\n  display:grid;\n  grid-template-columns:minmax(0,1fr) auto;\n  grid-template-areas:\"label value\" \"note value\";\n  align-items:center;\n  column-gap:16px;\n  row-gap:4px;\n  background:linear-gradient(135deg,rgba(106,76,255,.17),var(--sk-bg-card) 60%,rgba(255,212,92,.06));\n  border-color:rgba(166,95,247,.32);\n}\n.profile-wallet-card.match > span{grid-area:label}\n.profile-wallet-card.match > strong{grid-area:value;text-align:right}\n.profile-wallet-card.match > small{grid-area:note}\n'''
+              profile.write_text(profile_text)
+          PY
+
+          node --check app/assets/js/main.js
+          node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/screens/profile-screen.js
+          node --check app/assets/js/screens/store-screen.js
+          grep -F 'main.js?v=98.4-wallet-15-3' app/index.html
+          grep -F "profile-screen.js?v=93-wallet-15-3" app/assets/js/main.js
+          grep -F 'MVP-15.3 unified wallet geometry' app/assets/css/components/cards.css
+          grep -F 'MVP-15.3 single profile wallet' app/assets/css/screens/profile.css
+          git diff --check
+
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add app/index.html app/assets/css/main.css app/assets/css/components/cards.css app/assets/css/screens/profile.css app/assets/js/main.js app/assets/js/screens/home-screen.js app/assets/js/screens/profile-screen.js app/assets/js/screens/store-screen.js
+          git commit -m 'MVP-15.3: make unified wallet authoritative in cached UI'
+          git push origin HEAD:agent/mvp-15-3-unified-wallet-ui-cache
