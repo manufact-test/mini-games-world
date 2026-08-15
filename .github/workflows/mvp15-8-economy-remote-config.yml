@@ -1,0 +1,117 @@
+name: MVP-15.8 economy remote config
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-8-economy-remote-config
+    paths:
+      - 'bot/economy/EconomyConfig*.php'
+      - 'bot/database/migrations/20260815_0008_create_economy_config.php'
+      - 'bot/helpers/AdminWebAuth.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/admin-read.php'
+      - 'bot/admin-economy.php'
+      - 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php'
+      - 'app/admin.php'
+      - 'app/assets/css/admin-shell.css'
+      - 'app/assets/js/admin-shell.js'
+      - 'bot/tests/Mvp15EconomyRemoteConfigTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
+      - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
+      - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - 'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php'
+      - 'scripts/ci/staging-runtime-fingerprint.py'
+      - '.github/workflows/mvp15-8-economy-remote-config.yml'
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/economy/EconomyConfig*.php'
+      - 'bot/database/migrations/20260815_0008_create_economy_config.php'
+      - 'bot/helpers/AdminWebAuth.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/admin-read.php'
+      - 'bot/admin-economy.php'
+      - 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php'
+      - 'app/admin.php'
+      - 'app/assets/css/admin-shell.css'
+      - 'app/assets/js/admin-shell.js'
+      - 'bot/tests/Mvp15EconomyRemoteConfigTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
+      - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
+      - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - 'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php'
+      - 'scripts/ci/staging-runtime-fingerprint.py'
+      - '.github/workflows/mvp15-8-economy-remote-config.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-economy-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Verify focused syntax
+        run: |
+          set -Eeuo pipefail
+          php -l bot/economy/EconomyConfigSimulator.php
+          php -l bot/economy/EconomyConfigDefinition.php
+          php -l bot/economy/EconomyConfigService.php
+          php -l bot/database/migrations/20260815_0008_create_economy_config.php
+          php -l bot/helpers/AdminWebAuth.php
+          php -l bot/admin-read.php
+          php -l bot/admin-economy.php
+          php -l bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+          php -l app/admin.php
+          php -l bot/tests/Mvp15EconomyRemoteConfigTest.php
+          node --check app/assets/js/admin-shell.js
+
+      - name: Run economy config foundation regression
+        run: php bot/tests/Mvp15EconomyRemoteConfigTest.php
+
+      - name: Verify migration 8 keeps accepted unified balance fixtures green
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/UnifiedBalanceMigrationFoundationTest.php
+          php bot/tests/UnifiedBalanceMigrationExecutionTest.php
+          php bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
+          php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+          php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+
+      - name: Verify exact staging fingerprint coverage
+        run: |
+          set -Eeuo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          grep -Fx 'bot/admin-economy.php' "$manifest"
+          grep -Fx 'bot/helpers/AdminWebAuth.php' "$manifest"
+          grep -Fx 'bot/economy/EconomyConfigSimulator.php' "$manifest"
+          grep -Fx 'bot/economy/EconomyConfigDefinition.php' "$manifest"
+          grep -Fx 'bot/economy/EconomyConfigService.php' "$manifest"
+          grep -Fx 'bot/database/migrations/20260815_0008_create_economy_config.php' "$manifest"
+          python3 scripts/ci/staging-runtime-fingerprint.py | grep -E '^[a-f0-9]{64}$'
+
+      - name: Verify narrow admin and no browser auth owner
+        run: |
+          set -Eeuo pipefail
+          grep -F "['snapshot', 'update', 'rollback']" bot/admin-economy.php
+          grep -F 'AdminWebAuth::authorize' bot/admin-read.php
+          grep -F 'AdminWebAuth::authorize' bot/admin-economy.php
+          grep -F "['bot/admin-read.php', 'bot/admin-economy.php']" bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+          grep -F 'data-economy-api="../bot/admin-economy.php"' app/admin.php
+          if grep -Eq 'localStorage|sessionStorage|document\.cookie' app/assets/js/admin-shell.js; then
+            echo 'Browser auth/state owner is forbidden in Web Admin.' >&2
+            exit 1
+          fi
