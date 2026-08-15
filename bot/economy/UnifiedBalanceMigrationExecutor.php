@@ -100,6 +100,7 @@ final class UnifiedBalanceMigrationExecutor
             throw new RuntimeException('Active Match/Gold reservations block unified balance migration.');
         }
 
+        $ownerships = $this->ownershipMap();
         $accounts = [];
         foreach ($rows as $row) {
             if (!is_array($row)) continue;
@@ -117,7 +118,8 @@ final class UnifiedBalanceMigrationExecutor
             [$mgwId, $legacyUserId] = $this->canonicalIdentity(
                 $accountRef,
                 $this->nullable($row['mgw_id'] ?? null),
-                $this->nullable($row['legacy_user_id'] ?? null)
+                $this->nullable($row['legacy_user_id'] ?? null),
+                $ownerships
             );
             if (!isset($accounts[$accountRef])) {
                 $accounts[$accountRef] = [
@@ -229,8 +231,40 @@ final class UnifiedBalanceMigrationExecutor
         }
     }
 
-    private function canonicalIdentity(string $accountRef, ?string $mgwId, ?string $legacyUserId): array
+    /** @return array<string,array{mgw_id:string,legacy_user_id:string}> */
+    private function ownershipMap(): array
     {
+        $map = [];
+        foreach ($this->database->fetchAll(
+            "SELECT account_ref, mgw_id, legacy_user_id
+             FROM mgw_account_ownership
+             WHERE ownership_status = 'active'
+             ORDER BY account_ref"
+        ) as $row) {
+            if (!is_array($row)) continue;
+            $accountRef = trim((string)($row['account_ref'] ?? ''));
+            $mgwId = trim((string)($row['mgw_id'] ?? ''));
+            $legacyUserId = trim((string)($row['legacy_user_id'] ?? ''));
+            if ($accountRef === '' || $mgwId === '' || $legacyUserId === '') {
+                throw new RuntimeException('Active account ownership row is incomplete.');
+            }
+            if (isset($map[$accountRef])) {
+                throw new RuntimeException('Active account ownership is ambiguous for a legacy balance account.');
+            }
+            $map[$accountRef] = [
+                'mgw_id' => $mgwId,
+                'legacy_user_id' => $legacyUserId,
+            ];
+        }
+        return $map;
+    }
+
+    private function canonicalIdentity(
+        string $accountRef,
+        ?string $mgwId,
+        ?string $legacyUserId,
+        array $ownerships
+    ): array {
         if (preg_match('/^(mgw|legacy):(.+)$/u', $accountRef, $matches) !== 1) {
             throw new RuntimeException('Legacy source balance has an invalid account reference.');
         }
@@ -240,16 +274,41 @@ final class UnifiedBalanceMigrationExecutor
             throw new RuntimeException('Legacy source balance has an empty account subject.');
         }
 
+        $ownership = $ownerships[$accountRef] ?? null;
         if ($prefix === 'mgw') {
             if ($mgwId !== null && $mgwId !== $subject) {
                 throw new RuntimeException('Legacy source mgw identity conflicts with account reference.');
             }
             $mgwId = $subject;
-        } else {
-            if ($legacyUserId !== null && $legacyUserId !== $subject) {
-                throw new RuntimeException('Legacy source user identity conflicts with account reference.');
+            if (is_array($ownership)) {
+                if ($ownership['mgw_id'] !== $subject) {
+                    throw new RuntimeException('Canonical account ownership conflicts with MGW account reference.');
+                }
+                if ($legacyUserId !== null && $legacyUserId !== $ownership['legacy_user_id']) {
+                    throw new RuntimeException('Legacy source user identity conflicts with canonical account ownership.');
+                }
+                $legacyUserId = $ownership['legacy_user_id'];
             }
-            $legacyUserId = $subject;
+            return [$mgwId, $legacyUserId];
+        }
+
+        if ($legacyUserId !== null && $legacyUserId !== $subject) {
+            throw new RuntimeException('Legacy source user identity conflicts with account reference.');
+        }
+        $legacyUserId = $subject;
+
+        if (is_array($ownership)) {
+            if ($ownership['legacy_user_id'] !== $subject) {
+                throw new RuntimeException('Canonical account ownership conflicts with legacy account reference.');
+            }
+            $canonicalMgwId = $ownership['mgw_id'];
+            if ($mgwId !== null && $mgwId !== $canonicalMgwId) {
+                throw new RuntimeException('Legacy source mgw identity conflicts with canonical account ownership.');
+            }
+            // Historical opening-balance rows may legitimately be either NULL
+            // or already backfilled with the same canonical MGW ID. Normalize
+            // both read-only forms to the immutable ownership map for cutover.
+            $mgwId = $canonicalMgwId;
         }
 
         return [$mgwId, $legacyUserId];
