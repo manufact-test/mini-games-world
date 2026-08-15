@@ -1,0 +1,49 @@
+name: MVP-15.3 run runtime owner patch
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-3-unified-balance-foundation
+    paths:
+      - '.github/workflows/mvp15-3-run-runtime-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-3-unified-balance-foundation
+          fetch-depth: 1
+      - name: Apply guarded patch script
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import textwrap
+          source = Path('.github/workflows/mvp15-3-apply-runtime-owner.yml').read_text()
+          marker = "          python3 <<'PY'\n"
+          start = source.index(marker) + len(marker)
+          end = source.index("\n          PY\n", start)
+          script = textwrap.dedent(source[start:end])
+          exec(compile(script, 'mvp15-3-runtime-patch.py', 'exec'))
+          PY
+          php -l bot/services/UserService.php
+          php -l bot/services/GameService.php
+          php -l bot/services/GameSettlementService.php
+          php -l bot/services/WeeklyMatchEconomyService.php
+          php -l bot/services/ShopService.php
+          php -l bot/services/PaymentService.php
+          node --check app/assets/js/ui.js
+          git diff --check
+      - name: Commit patched runtime owner
+        run: |
+          git config user.name "manufact-test"
+          git config user.email "manufact.test@gmail.com"
+          git add bot/services/UserService.php bot/services/GameService.php bot/services/GameSettlementService.php bot/services/WeeklyMatchEconomyService.php bot/services/ShopService.php bot/services/PaymentService.php app/index.html app/assets/js/ui.js
+          git diff --cached --quiet && { echo 'No runtime patch changes produced'; exit 1; }
+          git commit -m "MVP-15.3: switch shared runtime writers to one balance"
+          git push origin HEAD:agent/mvp-15-3-unified-balance-foundation
