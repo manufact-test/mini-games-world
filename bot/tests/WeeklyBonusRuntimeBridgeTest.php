@@ -24,6 +24,14 @@ require $root . '/ledger/LegacyEconomyShadowSyncService.php';
 require $root . '/ledger/LegacyOpeningBalanceImportService.php';
 require $root . '/ledger/LegacyEconomyDeltaImportService.php';
 require $root . '/ledger/LegacyEconomyRuntimeReconciliationService.php';
+require $root . '/economy/UnifiedBalanceMigrationRule.php';
+require $root . '/economy/UnifiedBalanceMigrationPlanner.php';
+require $root . '/economy/UnifiedBalanceMigrationExecutor.php';
+require $root . '/economy/UnifiedBalanceMigrationCoordinator.php';
+require $root . '/economy/UnifiedEconomyRuntimeSyncService.php';
+require $root . '/economy/EconomyConfigDefinition.php';
+require $root . '/economy/EconomyConfigSimulator.php';
+require $root . '/economy/EconomyConfigService.php';
 require $root . '/ledger/RuntimeEconomySnapshotStorage.php';
 require $root . '/ledger/RuntimeEconomyBalanceBootstrapService.php';
 require $root . '/ledger/RuntimeEconomyRepository.php';
@@ -52,7 +60,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(7, $runner->migrate(false)['executed_count'], 'Weekly bridge test must apply every managed migration');
+$assertSame(8, $runner->migrate(false)['executed_count'], 'Weekly bridge test must apply every managed migration');
 
 $legacyUserId = '6201';
 $mgwId = 'MGW-WEEKBRIDGE01';
@@ -95,6 +103,15 @@ $snapshot = [
             'weekly_match_welcome_grant_at' => '2026-07-13T09:00:00+00:00',
             'weekly_match_welcome_grant_amount' => 50,
             'weekly_match_first_grant_done' => true,
+            'weekly_match_first_game_grants' => [
+                'chess' => [
+                    'amount' => 50,
+                    'granted_at' => '2026-07-18T12:00:00+00:00',
+                    'source_game_id' => 'weekly_bridge_game_1',
+                ],
+            ],
+            'weekly_match_first_game_total' => 1,
+            'weekly_match_first_game_last_at' => '2026-07-18T12:00:00+00:00',
             'registered_at' => '2026-07-13T09:00:00+00:00',
             'last_seen_at' => '2026-07-19T17:30:00+00:00',
         ],
@@ -135,10 +152,7 @@ $integrity = new LedgerIntegrityVerifier($database);
 $config = [
     'environment' => 'staging',
     'storage_driver' => 'json',
-    'weekly_match_timezone' => 'Europe/Moscow',
     'weekly_match_start_at' => '2026-07-13 12:00:00',
-    'weekly_match_bonus_amount' => 50,
-    'weekly_match_min_completed' => 3,
     'database' => [
         'enabled' => true,
         'driver' => 'mysql',
@@ -175,13 +189,26 @@ $realtimeBridge->synchronizeCurrentJson();
 $repository->synchronizeCurrentJson();
 $notificationRepository->synchronizeAndList($snapshot, $legacyUserId);
 
+$stateRows = $database->fetchAll(
+    'SELECT state_json FROM mgw_runtime_weekly_bonus_state WHERE account_ref = :account_ref',
+    ['account_ref' => $accountRef]
+);
+$assertSame(1, count($stateRows), 'Weekly state projection must contain exactly one canonical account row');
+$projectedState = json_decode((string)$stateRows[0]['state_json'], true, 512, JSON_THROW_ON_ERROR);
+$assertSame(1, (int)($projectedState['weekly_match_first_game_total'] ?? 0), 'DB weekly state must preserve first-game grant count');
+$assertSame(true, isset($projectedState['weekly_match_first_game_grants']['chess']), 'DB weekly state must preserve per-game grant identity');
+
 $data = [
     'user' => ['id' => $legacyUserId],
     'weekly_match' => ['enabled' => false],
 ];
 $normalized = $bridge->normalizeApiData($data, '');
 $assertSame(true, $normalized['weekly_match']['enabled'], 'Weekly bridge must replace JSON response with verified DB status');
-$assertSame(50, $normalized['weekly_match']['bonus_amount'], 'Weekly bridge must preserve configured bonus amount');
+$assertSame(500, $normalized['weekly_match']['bonus_amount'], 'Weekly bridge must read weekly amount from versioned DB economy config');
+$assertSame(1000, $normalized['weekly_match']['starter_amount'], 'Weekly bridge must read starter amount from versioned DB economy config');
+$assertSame(50, $normalized['weekly_match']['first_game_amount'], 'Weekly bridge must read first-game amount from versioned DB economy config');
+$assertSame(1, $normalized['weekly_match']['first_game_grant_count'], 'Weekly bridge must expose projected first-game grant state');
+$assertSame('Europe/Moscow', $normalized['weekly_match']['timezone'], 'Weekly bridge must expose canonical Moscow cycle');
 $assertSame(true, $bridge->shouldSynchronizeApiAction('anything'), 'Weekly bridge synchronization must not depend on a hidden action global');
 
 fwrite(STDOUT, "WeeklyBonusRuntimeBridgeTest passed: {$assertions} assertions.\n");

@@ -17,6 +17,11 @@ final class RuntimeWeeklyBonusRepository
         'weekly_match_bonus_last_amount',
         'weekly_match_bonus_last_qualification',
         'weekly_bonus_last',
+        'weekly_match_first_game_grants',
+        'weekly_match_first_game_total',
+        'weekly_match_first_game_last_at',
+        'weekly_match_all_games_reward_triggered_at',
+        'weekly_match_all_games_reward_pending',
     ];
 
     private RuntimeStorageRouter $router;
@@ -322,7 +327,7 @@ final class RuntimeWeeklyBonusRepository
     {
         $states = [];
         $invalid = 0;
-        $service = new WeeklyMatchEconomyService($this->config);
+        $service = new WeeklyMatchEconomyService($this->config, null, $this->canonicalBonuses());
         foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $key => $user) {
             if (!is_array($user) || !empty($user['is_dev_user'])) continue;
             $legacyUserId = trim((string)($user['id'] ?? $key));
@@ -384,6 +389,8 @@ final class RuntimeWeeklyBonusRepository
     private function sourceUpdatedAt(array $user): ?string
     {
         foreach ([
+            'weekly_match_first_game_last_at',
+            'weekly_match_all_games_reward_triggered_at',
             'weekly_match_bonus_last_at',
             'weekly_match_bonus_checked_at',
             'weekly_match_welcome_grant_at',
@@ -395,6 +402,16 @@ final class RuntimeWeeklyBonusRepository
             if ($timestamp !== null) return $timestamp;
         }
         return null;
+    }
+
+    private function canonicalBonuses(): array
+    {
+        $snapshot = (new EconomyConfigService($this->database))->current();
+        $bonuses = $snapshot['config']['bonuses'] ?? null;
+        if (!is_array($bonuses)) {
+            throw new RuntimeException('Canonical economy bonus config is unavailable for weekly runtime projection.');
+        }
+        return $bonuses;
     }
 
     private function snapshot(): array
