@@ -19,54 +19,23 @@ function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool
     $data['system']['game_cleanup_at'] = now_iso();
 }
 
-function mgw_mark_matchmaking_presence(array &$user, string $room, string $gameType, int $boardSize): void
+function mgw_mark_matchmaking_presence(array &$user, string $gameType, int $boardSize): void
 {
-    $user['last_matchmaking_room'] = $room === 'gold' ? 'gold' : 'match';
+    unset($user['last_matchmaking_room']);
     $user['last_matchmaking_game_type'] = $gameType;
     $user['last_matchmaking_board_size'] = $boardSize;
     $user['last_matchmaking_at'] = now_iso();
 }
 
-function mgw_room_for_recent_user(array $data, string $userId): ?string
-{
-    foreach ($data['queue'] ?? [] as $item) {
-        if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
-        return ($item['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
-    }
-
-    $currentGameId = trim((string)($data['users'][$userId]['current_game_id'] ?? ''));
-    if ($currentGameId !== '' && isset($data['games'][$currentGameId]) && is_array($data['games'][$currentGameId])) {
-        return ($data['games'][$currentGameId]['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
-    }
-
-    $lastRoom = (string)($data['users'][$userId]['last_matchmaking_room'] ?? '');
-    return in_array($lastRoom, ['match', 'gold'], true) ? $lastRoom : null;
-}
-
-function mgw_has_other_recent_human_in_room(array $data, string $userId, string $room): bool
+function mgw_has_other_recent_human(array $data, string $userId): bool
 {
     $now = time();
-    $presenceWindowSec = 90;
-
     foreach ($data['users'] ?? [] as $otherId => $other) {
         $otherId = (string)$otherId;
-        if ($otherId === '' || $otherId === $userId || str_starts_with($otherId, 'bot_') || !is_array($other)) {
-            continue;
-        }
-
+        if ($otherId === '' || $otherId === $userId || str_starts_with($otherId, 'bot_') || !is_array($other)) continue;
         $lastSeen = strtotime((string)($other['last_seen_at'] ?? '')) ?: 0;
-        if ($lastSeen <= 0 || $now - $lastSeen > $presenceWindowSec) {
-            continue;
-        }
-
-        $knownRoom = mgw_room_for_recent_user($data, $otherId);
-        if ($knownRoom !== null && $knownRoom !== $room) {
-            continue;
-        }
-
-        return true;
+        if ($lastSeen > 0 && $now - $lastSeen <= 90) return true;
     }
-
     return false;
 }
 
@@ -225,61 +194,31 @@ try {
                 ];
 
             case 'payment_create_draft':
-                $sessions->assertCanPlay($user, $sessionId);
-                $sessions->touch($user, $sessionId);
-
-                $room = (string)($payload['room'] ?? 'gold');
-                $amount = (int)($payload['amount'] ?? $payload['amountRub'] ?? 0);
-                $provider = clean_string($payload['provider'] ?? 'manual_test', 60);
-                $payment = $payments->createDraftFromAmount($data, $user, $room, $amount, $provider);
-
-                return [
-                    'saved' => true,
-                    'payment' => $payment,
-                    'user' => $users->publicUser($user),
-                    'payments' => $payments->status($data, $user),
-                    'session' => $sessions->publicState($user, $sessionId),
-                    'message' => 'Заявка на пополнение создана. Баланс не изменён.',
-                ];
+                UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
 
             case 'shop_order':
-                $sessions->assertCanPlay($user, $sessionId);
-                $sessions->touch($user, $sessionId);
-
-                $itemId = clean_string($payload['itemId'] ?? '', 80);
-                $denominationId = clean_string($payload['denominationId'] ?? '', 80);
-                $requestToken = (int)($payload['requestToken'] ?? 0);
-                $order = $shop->createOrder($data, $user, $itemId, $denominationId, $requestToken);
-
-                return [
-                    'saved' => true,
-                    'order' => $order,
-                    'user' => $users->publicUser($user),
-                    'shop' => $shop->status($user),
-                    'session' => $sessions->publicState($user, $sessionId),
-                ];
+                UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
 
             case 'start_search':
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
 
-                $room = (string)($payload['room'] ?? 'match');
-                $room = $room === 'gold' ? 'gold' : 'match';
-                $bet = (int)($payload['bet'] ?? 10);
+                $room = UnifiedGameZonePolicy::storageRoom();
+                $bet = UnifiedGameZonePolicy::entryCost($config);
                 $boardSize = (int)($payload['boardSize'] ?? 3);
                 $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
-                mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);
+                mgw_mark_matchmaking_presence($user, $gameType, $boardSize);
 
                 $existingGameIdBeforeSearch = ($user['status'] ?? '') === 'playing'
                     ? trim((string)($user['current_game_id'] ?? ''))
                     : '';
                 $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
 
-                if (empty($search['game']) && $room === 'match') {
+                if (empty($search['game'])) {
                     mgw_prepare_match_bot_fallback(
                         $data,
                         $userId,
-                        mgw_has_other_recent_human_in_room($data, $userId, $room)
+                        mgw_has_other_recent_human($data, $userId)
                     );
                 }
 

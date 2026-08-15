@@ -2,275 +2,41 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';
 
 final class PaymentService
 {
     public function __construct(private array $config, private UserService $users) {}
 
     public function status(array $db, array $user): array
-    {
-        return [
-            'enabled' => false,
-            'mode' => 'draft',
-            'message' => 'Заявку на пополнение можно создать. Реальная оплата подключается отдельно.',
-            'rates' => $this->rates(),
-            'limits' => [
-                'min_amount' => 1,
-                'max_amount' => 100000,
-                'currency' => 'RUB',
-            ],
-            'recent_payments' => $this->recentPaymentsForUser($db, (string)($user['id'] ?? ''), 5),
-        ];
-    }
+{
+    return [
+        'enabled' => false,
+        'mode' => 'archive_read_only',
+        'message' => UnifiedGameZonePolicy::legacyArchiveMessage(),
+        'recent_payments' => $this->recentPaymentsForUser($db, (string)($user['id'] ?? ''), 5),
+    ];
+}
 
     public function createDraftFromAmount(array &$db, array $user, string $room, int $amountRub, string $provider = 'manual_test'): array
-    {
-        $room = $this->normalizeRoom($room);
-        $amountRub = $this->normalizeAmount($amountRub);
-        $rate = $this->rateForRoom($room);
-        $coins = $amountRub * $rate;
-        $now = now_iso();
-
-        $payment = [
-            'id' => make_id('pay'),
-            'user_id' => (string)($user['id'] ?? ''),
-            'username' => (string)($user['username'] ?? ''),
-            'first_name' => (string)($user['first_name'] ?? ''),
-            'last_name' => (string)($user['last_name'] ?? ''),
-            'provider' => clean_string($provider, 60),
-            'status' => 'draft',
-            'room' => $room,
-            'coins' => $coins,
-            'price' => $amountRub,
-            'amount_rub' => $amountRub,
-            'currency' => 'RUB',
-            'rate' => $rate,
-            'balance_applied' => false,
-            'created_at' => $now,
-            'updated_at' => $now,
-            'note' => 'Draft only. No real payment, no balance changes.',
-        ];
-
-        $db['payments'][] = $payment;
-
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'payment_draft',
-            'category' => 'payment_draft',
-            'payment_id' => $payment['id'],
-            'user_id' => (string)($user['id'] ?? ''),
-            'username' => (string)($user['username'] ?? ''),
-            'room' => $room,
-            'amount' => 0,
-            'coins' => $coins,
-            'amount_rub' => $amountRub,
-            'currency' => 'RUB',
-            'description' => 'Создана заявка на пополнение',
-            'created_at' => $now,
-        ];
-
-        return $payment;
-    }
+{
+    UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
+}
 
     public function createDraft(array &$db, array $user, int $coins, string $provider = 'manual_test'): array
-    {
-        // Обратная совместимость со старым MVP-5.4: если где-то ещё передают coins,
-        // считаем это Gold-пополнением 1:1.
-        return $this->createDraftFromAmount($db, $user, 'gold', $coins, $provider);
-    }
+{
+    UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
+}
 
     public function adminApply(array &$db, string $query, string $adminId): string
-    {
-        $query = trim($query);
-        if ($query === '') {
-            return "💳 Подтверждение пополнения\n\nФормат:\n"
-                . "/mgw_private_admin_7291_payment_apply ID_ЗАЯВКИ\n\n"
-                . "ID можно взять из /mgw_private_admin_7291_payments";
-        }
-
-        $index = $this->findPaymentIndex($db, $query);
-        if ($index === null) {
-            return "💳 Заявка не найдена: {$query}\n\nИспользуйте полный ID или точный короткий ID из списка платежей.";
-        }
-
-        if (!isset($db['payments'][$index]) || !is_array($db['payments'][$index])) {
-            return "⚠️ Заявка найдена, но имеет некорректный формат.";
-        }
-
-        $payment =& $db['payments'][$index];
-        $status = (string)($payment['status'] ?? 'draft');
-        $applied = !empty($payment['balance_applied']);
-
-        if ($applied) {
-            if ($status === 'paid') {
-                return "✅ Эта заявка уже была начислена ранее. Повторное начисление заблокировано.\n\n"
-                    . $this->adminDetailsFromPayment($payment);
-            }
-
-            return "⚠️ У заявки уже стоит признак начисления, но её статус не равен paid. "
-                . "Повторное начисление заблокировано до ручной проверки.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        if (in_array($status, ['rejected', 'cancelled'], true)) {
-            return "⚠️ Нельзя начислить отклонённую или отменённую заявку.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        if ($status === 'paid') {
-            return "⚠️ У заявки уже стоит статус paid, но нет признака начисления на баланс. "
-                . "Автоматическое начисление остановлено до ручной проверки.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        if (!$this->isWaitingStatus($status)) {
-            return "⚠️ Неизвестный статус заявки: {$status}. Начисление остановлено.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        $userId = (string)($payment['user_id'] ?? '');
-        if ($userId === '' || !isset($db['users'][$userId]) || !is_array($db['users'][$userId])) {
-            return "⚠️ Пользователь заявки не найден в users.json. Начисление остановлено.";
-        }
-
-        $room = $this->normalizeRoom((string)($payment['room'] ?? 'gold'));
-        $coins = (int)($payment['coins'] ?? 0);
-        $amountRub = (int)($payment['price'] ?? $payment['amount_rub'] ?? 0);
-
-        if ($coins <= 0 || $amountRub <= 0) {
-            return "⚠️ В заявке некорректная сумма или количество коинов. Начисление остановлено.";
-        }
-
-        UnifiedBalanceRuntimeState::ensureUser($db['users'][$userId]);
-        $balanceField = UnifiedBalanceRuntimeState::FIELD;
-        $before = (int)($db['users'][$userId][$balanceField] ?? 0);
-        $after = $before + $coins;
-        $now = now_iso();
-
-        $db['users'][$userId][$balanceField] = $after;
-        $db['users'][$userId]['last_payment_apply_at'] = $now;
-
-        if ($room === 'gold') {
-            $depositedBefore = (int)($db['users'][$userId]['gold_deposited_total'] ?? 0);
-            $db['users'][$userId]['gold_deposited_total'] = $depositedBefore + $coins;
-            $db['users'][$userId]['last_gold_topup_at'] = $now;
-        } else {
-            $matchDepositedBefore = (int)($db['users'][$userId]['match_deposited_total'] ?? 0);
-            $db['users'][$userId]['match_deposited_total'] = $matchDepositedBefore + $coins;
-            $db['users'][$userId]['last_match_topup_at'] = $now;
-        }
-
-        $payment['status'] = 'paid';
-        $payment['balance_applied'] = true;
-        $payment['paid_at'] = $payment['paid_at'] ?? $now;
-        $payment['applied_at'] = $now;
-        $payment['applied_by'] = $adminId;
-        $payment['updated_at'] = $now;
-
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'balance_change',
-            'category' => 'payment_apply',
-            'payment_id' => (string)($payment['id'] ?? ''),
-            'user_id' => $userId,
-            'username' => (string)($db['users'][$userId]['username'] ?? ''),
-            'room' => $room,
-            'amount' => $coins,
-            'amount_rub' => $amountRub,
-            'currency' => (string)($payment['currency'] ?? 'RUB'),
-            'balance_before' => $before,
-            'balance_after' => $after,
-            'description' => $room === 'gold' ? 'Пополнение Gold по заявке' : 'Пополнение Match по заявке',
-            'admin_id' => $adminId,
-            'created_at' => $now,
-        ];
-
-        $roomLabel = $room === 'gold' ? 'Gold' : 'Match';
-
-        return "✅ Пополнение подтверждено\n\n"
-            . "Заявка: " . $this->shortPaymentId((string)($payment['id'] ?? '')) . "\n"
-            . "Игрок: " . $this->userLabel($db['users'][$userId]) . "\n"
-            . "Комната: {$roomLabel}\n"
-            . "Сумма: {$amountRub} RUB\n"
-            . "Начислено: {$coins} коинов\n"
-            . "Баланс: {$before} → {$after}\n\n"
-            . "Повторное начисление этой заявки заблокировано.";
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function adminReject(array &$db, string $argument, string $adminId): string
-    {
-        [$query, $reason] = $this->splitQueryAndReason($argument);
-
-        if ($query === '') {
-            return "💳 Отклонение заявки\n\nФормат:\n"
-                . "/mgw_private_admin_7291_payment_reject ID_ЗАЯВКИ причина";
-        }
-
-        if (mb_strlen($reason) < 3) {
-            return "⚠️ Укажите причину отклонения длиной не менее трёх символов.\n\n"
-                . "/mgw_private_admin_7291_payment_reject {$query} причина";
-        }
-
-        $index = $this->findPaymentIndex($db, $query);
-        if ($index === null) {
-            return "💳 Заявка не найдена: {$query}\n\nИспользуйте полный ID или точный короткий ID из списка платежей.";
-        }
-
-        if (!isset($db['payments'][$index]) || !is_array($db['payments'][$index])) {
-            return "⚠️ Заявка найдена, но имеет некорректный формат.";
-        }
-
-        $payment =& $db['payments'][$index];
-        $status = (string)($payment['status'] ?? 'draft');
-
-        if (!empty($payment['balance_applied'])) {
-            return "⚠️ Нельзя отклонить заявку, которая уже начислена.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        if ($status === 'rejected') {
-            return "🚫 Эта заявка уже была отклонена ранее. Повторное отклонение не записано.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        if ($status === 'cancelled') {
-            return "⚠️ Заявка уже отменена. Отклонение не выполнено.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        if ($status === 'paid') {
-            return "⚠️ У заявки уже стоит статус paid. Отклонение заблокировано.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        if (!$this->isWaitingStatus($status)) {
-            return "⚠️ Неизвестный статус заявки: {$status}. Отклонение остановлено.\n\n"
-                . $this->adminDetailsFromPayment($payment);
-        }
-
-        $now = now_iso();
-        $payment['status'] = 'rejected';
-        $payment['rejected_at'] = $now;
-        $payment['rejected_by'] = $adminId;
-        $payment['reject_reason'] = clean_string($reason, 300);
-        $payment['updated_at'] = $now;
-
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'payment_reject',
-            'category' => 'payment_reject',
-            'payment_id' => (string)($payment['id'] ?? ''),
-            'user_id' => (string)($payment['user_id'] ?? ''),
-            'username' => (string)($payment['username'] ?? ''),
-            'room' => (string)($payment['room'] ?? 'gold'),
-            'amount' => 0,
-            'reason' => (string)$payment['reject_reason'],
-            'admin_id' => $adminId,
-            'created_at' => $now,
-        ];
-
-        return "🚫 Заявка отклонена\n\n" . $this->adminDetailsFromPayment($payment);
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function adminDetails(array $db, string $query): string
     {
@@ -377,10 +143,8 @@ final class PaymentService
         }
 
         $lines[] = "
-Команды:";
-        $lines[] = "/mgw_private_admin_7291_payment ID — открыть заявку";
-        $lines[] = "/mgw_private_admin_7291_payment_apply ID — подтвердить и начислить";
-        $lines[] = "/mgw_private_admin_7291_payment_reject ID причина — отклонить";
+Архив доступен только для просмотра.";
+        $lines[] = "/mgw_private_admin_7291_payment ID — открыть архивную заявку";
 
         return implode("
 ", $lines);
@@ -586,7 +350,7 @@ final class PaymentService
             $lines[] = "Причина отклонения: " . (string)$payment['reject_reason'];
         }
 
-        $lines[] = "\nКоманды:";
+        $lines[] = "\nАрхив доступен только для просмотра.";
         if ($this->isActionablePayment($payment)) {
             $lines[] = "/mgw_private_admin_7291_payment_apply {$short} — подтвердить и начислить";
             $lines[] = "/mgw_private_admin_7291_payment_reject {$short} причина — отклонить";

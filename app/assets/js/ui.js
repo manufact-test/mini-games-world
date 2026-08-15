@@ -10,7 +10,7 @@ export function username(user){
   if (user?.username) return '@' + user.username;
   return user?.display_name || user?.first_name || 'Игрок';
 }
-export function roomName(room){ return room === 'gold' ? 'Gold-комната' : 'Матч-комната'; }
+export function roomName(){ return 'Обычный матч'; }
 export function renderUser(user){
   const name = username(user);
   const letter = initials(name);

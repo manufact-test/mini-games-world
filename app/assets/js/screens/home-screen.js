@@ -5,18 +5,12 @@ import { toast } from '../components/toast.js?v=41';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
-import { renderBalances, roomName } from '../ui.js?v=90-wallet-15-3';
-import { startSearchPolling } from './search-screen.js?v=74';
-import { startGamePolling } from './game-screen.js?v=74';
-import { isSessionLocked, sessionMessage } from '../session.js?v=27';
+import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 
 export function initHomeScreen(){
   document.addEventListener('click', event => {
     const target = event.target.closest('button, [role="button"]');
     if (!target) return;
-
-    if (target.matches('[data-room]')) return setRoom(target.dataset.room);
-    if (target.id === 'playTicTacToe') return openGameSetup();
     if (target.id === 'inviteFriend') return toast('Приглашения друзей появятся позже.');
     if (target.id === 'moreMenuOpen' || target.id === 'gameMenuOpen') return openMoreMenuSheet();
     if (target.id === 'profileOpen') return openProfileFromTop();
@@ -32,37 +26,22 @@ function openProfileFromTop(){
   document.dispatchEvent(new CustomEvent('mgw:open-profile'));
 }
 
-export function setRoom(room){
-  state.room = room;
-  state.selectedBet = room === 'match' ? APP_CONFIG.matchBet : APP_CONFIG.goldBets[0];
-  document.querySelectorAll('[data-room]').forEach(btn => btn.classList.toggle('active', btn.dataset.room === room));
+export function setRoom(){
+  state.room = 'match';
+  state.selectedBet = APP_CONFIG.matchBet;
   renderRoomCard();
 }
 
 export function renderRoomCard(){
   const el = document.getElementById('roomCard');
   if (!el) return;
-  if (state.room === 'gold') {
-    el.innerHTML = `
-      <h3>Gold-комната</h3>
-      <p>Игра на Gold-коины. Выигрыши можно использовать в магазине призов.</p>
-      <div class="room-actions">
-        <button class="btn gold" id="topUpGold" type="button">Пополнить Gold</button>
-        <button class="btn ghost" id="storeOpen" type="button">Магазин</button>
-      </div>
-    `;
-    document.getElementById('topUpGold')?.addEventListener('click', () => openTopUpSheet('gold'));
-    document.getElementById('storeOpen')?.addEventListener('click', openStoreSheet);
-  } else {
-    el.innerHTML = `
-      <h3>Матч-комната</h3>
-      <p>Обычная комната для быстрых матчей. Участие всегда стоит ${APP_CONFIG.matchBet} коинов.</p>
-      <div class="room-actions single">
-        <button class="btn primary" id="topUpMatch" type="button">Пополнить</button>
-      </div>
-    `;
-    document.getElementById('topUpMatch')?.addEventListener('click', () => openTopUpSheet('match'));
-  }
+  el.innerHTML = `
+    <h3>Обычные матчи</h3>
+    <p>Быстрые матчи с единым балансом. Участие стоит ${APP_CONFIG.matchBet} коинов.</p>
+    <div class="room-actions single">
+      <button class="btn ghost" id="weeklyMatchInfo" type="button" aria-label="Подробнее о еженедельных бесплатных коинах">Подробнее</button>
+    </div>
+  `;
 }
 
 export function renderStats(stats){
@@ -72,206 +51,9 @@ export function renderStats(stats){
   el.innerHTML = `
     <div class="activity-card"><div class="label">Игроков онлайн</div><div class="num">${safe.online_players ?? '—'}</div></div>
     <div class="activity-card"><div class="label">Активных матчей</div><div class="num">${safe.active_games ?? '—'}</div></div>
-    <div class="activity-card"><div class="label">В Матч-комнате</div><div class="num">${safe.search_match ?? '—'}</div></div>
-    <div class="activity-card"><div class="label">В Gold-комнате</div><div class="num">${safe.search_gold ?? '—'}</div></div>
   `;
 }
 
-function openGameSetup(){
-  const inviteGuard = new CustomEvent('mgw:before-game-launch', { cancelable:true });
-  if (!document.dispatchEvent(inviteGuard)) return;
-  if (isSessionLocked(state.session)) return toast(sessionMessage(state.session));
-  haptic('light');
-  const isGold = state.room === 'gold';
-  const betChoices = isGold
-    ? APP_CONFIG.goldBets.map(bet => `<button class="choice gold ${bet === state.selectedBet ? 'active' : ''}" data-bet="${bet}" type="button">${bet} коинов</button>`).join('')
-    : `<button class="choice active" data-bet="${APP_CONFIG.matchBet}" type="button">${APP_CONFIG.matchBet} коинов</button>`;
-
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>Крестики-нолики</h2><p>${roomName(state.room)}. Выберите поле${isGold ? ' и стоимость участия' : ''}.</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-    <div class="setup-scroll">
-      <div class="small-note">${isGold ? 'Матч начнётся только с соперником, который выбрал такие же условия.' : `В Match-комнате участие всегда стоит ${APP_CONFIG.matchBet} коинов.`}</div>
-      <div class="section-title"><h2>Поле</h2></div>
-      <div class="choice-grid field-size-grid" id="boardChoices">
-        ${APP_CONFIG.boardSizes.map(size => `<button class="choice ${size === state.selectedBoardSize ? 'active' : ''}" data-board-size="${size}" type="button">${size}×${size}</button>`).join('')}
-      </div>
-      <div class="section-title"><h2>Стоимость участия</h2></div>
-      <div class="choice-grid ${isGold ? '' : 'single-choice'}" id="betChoices">${betChoices}</div>
-    </div>
-    <button class="btn ${isGold ? 'gold' : 'primary'} full setup-start-btn" id="startSearchBtn" type="button">Начать поиск</button>
-  `);
-
-  document.querySelectorAll('[data-board-size]').forEach(btn => btn.addEventListener('click', () => {
-    state.selectedBoardSize = Number(btn.dataset.boardSize);
-    document.querySelectorAll('[data-board-size]').forEach(item => item.classList.toggle('active', item === btn));
-  }));
-  document.querySelectorAll('[data-bet]').forEach(btn => btn.addEventListener('click', () => {
-    state.selectedBet = Number(btn.dataset.bet);
-    document.querySelectorAll('[data-bet]').forEach(item => item.classList.toggle('active', item === btn));
-  }));
-  document.getElementById('startSearchBtn')?.addEventListener('click', startSearch);
-}
-
-async function startSearch(){
-  if (isSessionLocked(state.session)) return toast(sessionMessage(state.session));
-  try {
-    closeSheet();
-    const result = await api.startSearch(state.room, state.selectedBet, state.selectedBoardSize);
-    state.user = result.user || state.user;
-    renderBalances(state.user);
-    if (result.game) {
-      state.activeGame = result.game;
-      showScreen('game');
-      startGamePolling(result.game.id);
-      return;
-    }
-    document.getElementById('searchInfo').textContent = `${roomName(state.room)} · участие ${state.selectedBet} коинов · поле ${state.selectedBoardSize}×${state.selectedBoardSize}`;
-    showScreen('search');
-    startSearchPolling();
-  } catch (error) {
-    toast(error.message);
-  }
-}
-
-function openTopUpSheet(room){
-  const isGold = room === 'gold';
-  const title = isGold ? 'Пополнить Gold' : 'Пополнить Match';
-  const coinName = isGold ? 'Gold' : 'Match';
-  const rate = isGold ? 1 : 2;
-  const balance = Number(state.user?.balance ?? 0);
-
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>${title}</h2><p>Введите сумму пополнения.</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-
-    <div class="topup-calc" data-topup-room="${room}">
-      <div class="topup-balance">
-        <span>Баланс сейчас</span>
-        <strong>${balance} коинов</strong>
-      </div>
-
-      <div class="topup-calc-grid">
-        <label class="topup-input-card">
-          <span>Сумма, ₽</span>
-          <input id="topupAmount" type="number" inputmode="numeric" min="1" max="100000" placeholder="0" autocomplete="off">
-          <em>Максимум 100 000 ₽</em>
-        </label>
-
-        <div class="topup-result-card">
-          <span>Вы получите</span>
-          <strong id="topupCoins">0 ${coinName}</strong>
-          <em id="topupRate">${isGold ? '1 ₽ = 1 Gold' : '1 ₽ = 2 Match'}</em>
-        </div>
-      </div>
-
-      <button class="btn ${isGold ? 'gold' : 'primary'} full sheet-bottom-btn" id="topupContinue" type="button">
-        Продолжить
-      </button>
-    </div>
-  `);
-
-  const input = document.getElementById('topupAmount');
-  const coinsEl = document.getElementById('topupCoins');
-  const continueBtn = document.getElementById('topupContinue');
-
-  const update = () => {
-    let amount = Number(input?.value || 0);
-    if (amount < 0) amount = 0;
-    if (amount > 100000) {
-      amount = 100000;
-      input.value = '100000';
-      toast('Максимальная сумма пополнения — 100 000 ₽.');
-    }
-
-    const coins = Math.floor(amount * rate);
-    if (coinsEl) coinsEl.textContent = `${coins.toLocaleString('ru-RU')} ${coinName}`;
-  };
-
-  input?.addEventListener('input', update);
-  input?.focus();
-
-  continueBtn?.addEventListener('click', async () => {
-    const amount = Number(input?.value || 0);
-    if (!amount || amount <= 0) {
-      toast('Введите сумму пополнения.');
-      return;
-    }
-
-    if (amount > 100000) {
-      toast('Максимальная сумма пополнения — 100 000 ₽.');
-      return;
-    }
-
-    const coins = Math.floor(amount * rate);
-
-    try {
-      continueBtn.disabled = true;
-      continueBtn.textContent = 'Создаём заявку...';
-
-      const result = await api.paymentCreateDraft(room, amount);
-      const payment = result.payment || {};
-
-      openSheet(`
-        <div class="sheet-head">
-          <div><h2>Заявка создана</h2><p>Пополнение зафиксировано.</p></div>
-          <button class="close" data-close-sheet type="button">×</button>
-        </div>
-
-        <div class="topup-success">
-          <div>
-            <span>Комната</span>
-            <strong>${isGold ? 'Gold' : 'Match'}</strong>
-          </div>
-          <div>
-            <span>Сумма</span>
-            <strong>${amount.toLocaleString('ru-RU')} ₽</strong>
-          </div>
-          <div>
-            <span>К зачислению</span>
-            <strong>${coins.toLocaleString('ru-RU')} ${coinName}</strong>
-          </div>
-          <div>
-            <span>Номер заявки</span>
-            <strong>${String(payment.id || '').replace('pay_', '').slice(0, 8).toUpperCase() || '—'}</strong>
-          </div>
-        </div>
-
-        <div class="small-note">
-          Сейчас это заявка на пополнение. Баланс изменится после подтверждения оплаты.
-        </div>
-
-        <button class="btn ${isGold ? 'gold' : 'primary'} full sheet-bottom-btn" data-close-sheet type="button">Готово</button>
-      `);
-    } catch (error) {
-      toast(error.message || 'Не удалось создать заявку.');
-      continueBtn.disabled = false;
-      continueBtn.textContent = 'Продолжить';
-    }
-  });
-}
-
-async function openStoreSheet(){
-  try {
-    const result = await api.shopStatus();
-    if (result.user) { state.user = result.user; renderBalances(state.user); }
-    const shop = result.shop || {};
-    openSheet(`
-      <div class="sheet-head">
-        <div><h2>Магазин призов</h2><p>Заказывайте сертификаты за коины из Gold-комнаты.</p></div>
-        <button class="close" data-close-sheet type="button">×</button>
-      </div>
-      <div class="stack">
-        <div class="card"><h3>Доступно для магазина</h3><p>Баланс Gold-комнаты: ${shop.balance ?? 0} коинов.<br>Доступно для заказа: ${shop.available ?? 0} коинов.<br>Минимальный заказ: ${shop.min_order ?? 1000} коинов.</p></div>
-        <div class="small-note">Купленные коины нельзя сразу тратить в магазине. Они становятся доступными после участия в Gold-матчах.</div>
-      </div>
-    `);
-  } catch (error) { toast(error.message); }
-}
 
 function openMoreMenuSheet(){
   openSheet(`

@@ -10,10 +10,6 @@ export function initWeeklyMatchInfo(){
     const target = event.target.closest('button, [role="button"]');
     if (!target) return;
 
-    if (target.matches('[data-room]')) {
-      queueMicrotask(() => syncWeeklyMatchButton());
-      return;
-    }
 
     if (target.id !== 'weeklyMatchInfo') return;
 
@@ -35,27 +31,10 @@ export function initWeeklyMatchInfo(){
 
 export function syncWeeklyMatchButton(status = null){
   if (status && typeof status === 'object') cachedStatus = status;
-
-  const topUpButton = document.getElementById('topUpMatch');
-  if (!topUpButton) return;
-
-  const actions = topUpButton.closest('.room-actions');
-  if (!actions) return;
-
-  actions.classList.remove('single');
-
-  let button = document.getElementById('weeklyMatchInfo');
-  if (!button) {
-    actions.insertAdjacentHTML('beforeend', `
-      <button class="btn ghost" id="weeklyMatchInfo" type="button">Подробнее</button>
-    `);
-    button = document.getElementById('weeklyMatchInfo');
-  }
-
-  if (button) {
-    button.textContent = 'Подробнее';
-    button.setAttribute('aria-label', 'Подробнее о еженедельных бесплатных коинах');
-  }
+  const button = document.getElementById('weeklyMatchInfo');
+  if (!button) return;
+  button.textContent = 'Подробнее';
+  button.setAttribute('aria-label', 'Подробнее о еженедельных бесплатных коинах');
 }
 
 export async function refreshWeeklyMatchProgress(){
@@ -97,7 +76,7 @@ async function openWeeklyMatchInfo(){
 }
 
 function renderWeeklyMatchInfo(status){
-  const amount = Number(status.bonus_amount || 50);
+  const amount = Number(status.bonus_amount ?? 0);
   const minGames = Number(status.min_completed_games ?? status.min_completed_matches ?? 3);
   const completed = Math.min(
     minGames,
@@ -132,7 +111,7 @@ function renderWeeklyMatchInfo(status){
     </div>
 
     <div class="small-note">
-      Каждый понедельник в 12:00 по московскому времени начисляем +${amount.toLocaleString('ru-RU')} коинов в Матч-комнату, если за неделю завершены ${minGames} матча в Матч-комнате. ${escapeHtml(progressText)}
+      Каждый понедельник в 12:00 по московскому времени начисляем +${amount.toLocaleString('ru-RU')} коинов, если за неделю завершены ${minGames} обычных матча. ${escapeHtml(progressText)}
     </div>
 
     <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>

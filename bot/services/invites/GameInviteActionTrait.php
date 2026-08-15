@@ -17,6 +17,7 @@ trait GameInviteActionTrait
         if ($status === 'active') {
             return $this->resultWithGame($db, $invite, $userId);
         }
+        UnifiedGameZonePolicy::assertInviteWritable($invite);
         if ($status === 'awaiting_start') {
             return ['invite' => $this->publicInvite($invite, $userId), 'game' => null];
         }
@@ -194,8 +195,8 @@ trait GameInviteActionTrait
         $this->assertAvailableForInvite($db, $opponent, 'Соперник сейчас занят поиском, матчем или другим приглашением.');
 
         $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? 'tictactoe'));
-        $room = (string)($game['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
-        $bet = (int)($game['bet'] ?? ($room === 'match' ? 10 : 0));
+        $room = UnifiedGameZonePolicy::storageRoom();
+        $bet = UnifiedGameZonePolicy::entryCost($this->config);
         $boardSize = (int)($game['board_size'] ?? 3);
 
         $invite = $this->newInvite($db, $user, $gameType, $room, $bet, $boardSize, 'rematch', 'pending');
@@ -251,6 +252,7 @@ trait GameInviteActionTrait
     {
         $status = (string)($invite['status'] ?? '');
         if ($status === 'active') return $this->resultWithGame($db, $invite, $viewerId);
+        UnifiedGameZonePolicy::assertInviteWritable($invite);
         if ($status !== 'awaiting_start') {
             throw new RuntimeException('Соперник ещё не подтвердил приглашение.');
         }

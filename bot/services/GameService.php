@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';
 
 final class GameService
 {
@@ -164,13 +165,9 @@ final class GameService
     {
         $this->cleanup($db);
 
-        $room = $room === 'gold' ? 'gold' : 'match';
+        $room = UnifiedGameZonePolicy::storageRoom();
         $boardSize = in_array($boardSize, $this->config['board_sizes'] ?? [3, 5, 9], true) ? $boardSize : 3;
-        $bet = $room === 'match' ? (int)($this->config['match_bet'] ?? 10) : $bet;
-
-        if ($room === 'gold' && !in_array($bet, $this->config['gold_bets'] ?? [10, 20, 30, 50, 100], true)) {
-            throw new RuntimeException('Выберите доступную стоимость участия.');
-        }
+        $bet = UnifiedGameZonePolicy::entryCost($this->config);
 
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($user[$balanceKey] ?? 0) < $bet) {

@@ -41,11 +41,11 @@ $importMap = <<<'HTML'
     "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
     "./assets/js/config.js?v=38": "./assets/js/config.js?v=39&mvp15=match-economy",
     "./assets/js/state.js?v=27": "./assets/js/state.js?v=29&mvp15=match-economy",
-    "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=91&mvp15=unified-balance",
-    "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=76&mvp15=match-economy",
+    "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=92&mvp15=unified-zone",
+    "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=77&mvp15=unified-zone",
     "./assets/js/screens/store-screen.js?v=34": "./assets/js/screens/store-screen.js?v=35&mvp15=unified-balance",
     "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup",
-    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1141&mvp15=ttt-setup-copy",
+    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1142&mvp15=unified-zone",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
@@ -54,9 +54,9 @@ $importMap = <<<'HTML'
     "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner",
     "./assets/js/production-v102-battleship-models.js?v=102": "./assets/js/production-v102-battleship-models.js?v=103&ready=authoritative-reset",
     "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch",
-    "./assets/js/production-v110-targeted-interactions.js?v=1102": "./assets/js/production-v110-targeted-interactions.js?v=1104&rematch=single-owner",
-    "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1122&room=presence-owner",
-    "./assets/js/games/game-invites-v110.js?v=1137&ux=1": "./assets/js/games/game-invites-v110.js?v=1139&share=prepared-owner-rematch-clean",
+    "./assets/js/production-v110-targeted-interactions.js?v=1102": "./assets/js/production-v110-targeted-interactions.js?v=1105&zone=unified",
+    "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1123&zone=unified",
+    "./assets/js/games/game-invites-v110.js?v=1137&ux=1": "./assets/js/games/game-invites-v110.js?v=1140&zone=unified",
     "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
     "./assets/js/games/battleship/renderer.js?v=56": "./assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact",
     "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner",
@@ -97,11 +97,11 @@ foreach ([
     'main_v110' => $mainTarget,
     'clean_entry_v110' => $cleanEntryTarget,
     'shield_king_css' => $cssTarget,
-    'unified_ui_cache' => './assets/js/ui.js?v=91&mvp15=unified-balance',
+    'unified_ui_cache' => './assets/js/ui.js?v=92&mvp15=unified-zone',
     'match_config_cache' => './assets/js/config.js?v=39&mvp15=match-economy',
     'match_state_cache' => './assets/js/state.js?v=29&mvp15=match-economy',
-    'unified_home_cache' => './assets/js/screens/home-screen.js?v=76&mvp15=match-economy',
-    'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1141&mvp15=ttt-setup-copy',
+    'unified_home_cache' => './assets/js/screens/home-screen.js?v=77&mvp15=unified-zone',
+    'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1142&mvp15=unified-zone',
     'unified_profile_cache' => './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
 ] as $targetName => $target) {
     if (!str_contains($html, $target)) {
@@ -129,7 +129,8 @@ header('X-MGW-TTT-Clock: authoritative-turn-clock-v7-handoff-state-retained');
 header('X-MGW-TTT-Terminal: v6-terminal-clock-stops-on-finish');
 header('X-MGW-Rematch-UX: v3-single-owner-no-busy-state');
 header('X-MGW-Launch-Presentation: v128-ready-before-first-turn');
-header('X-MGW-Presence: v1122-room-occupancy-owner');
+header('X-MGW-Presence: v1123-account-presence-only');
+header('X-MGW-Game-Zone: unified-v1');
 header('X-MGW-Phase-B-Presentation: v124-v110-player-copy-stable-frame');
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-nostalgic-entry-copy');
 header('X-MGW-Design-System: shield-king-v2-light-metallic');

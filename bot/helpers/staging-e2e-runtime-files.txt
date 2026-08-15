@@ -114,6 +114,7 @@ app/assets/js/profile/mgw-profile-model.js
 # touched by the one-balance transition is fingerprinted so a partial Hostinger
 # deployment cannot be mistaken for an accepted staging build.
 app/assets/js/screens/home-screen.js
+app/assets/js/screens/weekly-match-info.js
 app/assets/js/screens/profile-screen.js
 app/assets/js/screens/store-screen.js
 app/runtime/server/match/RuntimeMatchService.php
@@ -137,6 +138,7 @@ bot/services/NotificationService.php
 # versioned server economy config into the accepted legacy executors; the real
 # Telegram v110 shell and client config must deploy in the same exact tree.
 bot/economy/MatchEconomyRuntimeConfig.php
+bot/runtime/UnifiedGameZonePolicy.php
 
 # MVP-15.8 single server-side economy configuration owner. The schema, strict
 # definition, deterministic simulation, version/audit service and narrow Telegram

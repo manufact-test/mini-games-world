@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';
+require_once dirname(__DIR__, 2) . '/runtime/UnifiedGameZonePolicy.php';
 
 trait GameInviteValidationTrait
 {
@@ -108,8 +109,8 @@ trait GameInviteValidationTrait
     {
         UnifiedBalanceRuntimeState::ensureUser($inviter);
         UnifiedBalanceRuntimeState::ensureUser($invitee);
-        $room = (string)($invite['room'] ?? 'match') === 'gold' ? 'gold' : 'match';
-        $bet = (int)($invite['bet'] ?? 0);
+        UnifiedGameZonePolicy::assertInviteWritable($invite);
+        $bet = (int)($invite['bet'] ?? UnifiedGameZonePolicy::entryCost($this->config));
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($invitee[$balanceKey] ?? 0) < $bet) {
             throw new RuntimeException('Недостаточно коинов для принятия приглашения.');
@@ -180,8 +181,6 @@ trait GameInviteValidationTrait
             'invitee_name' => (string)($invite['invitee_name'] ?? ''),
             'game_type' => (string)($invite['game_type'] ?? 'tictactoe'),
             'game_title' => (string)($invite['game_title'] ?? 'Игра'),
-            'room' => (string)($invite['room'] ?? 'match'),
-            'room_label' => (string)($invite['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
             'bet' => (int)($invite['bet'] ?? 0),
             'board_size' => (int)($invite['board_size'] ?? 0),
             'board_columns' => (int)($invite['board_columns'] ?? 0),
@@ -241,10 +240,7 @@ trait GameInviteValidationTrait
 
     private function normalizeBet(string $room, int $bet): int
     {
-        if ($room === 'match') return (int)($this->config['match_bet'] ?? 10);
-        $allowed = array_values(array_map('intval', $this->config['gold_bets'] ?? [10, 20, 30, 50, 100]));
-        if (!in_array($bet, $allowed, true)) throw new RuntimeException('Выберите доступную стоимость участия.');
-        return $bet;
+        return UnifiedGameZonePolicy::entryCost($this->config);
     }
 
     private function dimensions(string $gameType, int $boardSize): array

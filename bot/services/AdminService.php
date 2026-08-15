@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';
 
 final class AdminService
 {
@@ -33,9 +34,6 @@ final class AdminService
                 [
                     ['text' => '🔎 Найти игрока', 'callback_data' => 'admin:user_search_help'],
                     ['text' => '💳 Платежи', 'callback_data' => 'admin:payments'],
-                ],
-                [
-                    ['text' => '🪙 Gold-тест', 'callback_data' => 'admin:gold_tools'],
                 ],
                 [
                     ['text' => '🧹 Убрать payout_done warning', 'callback_data' => 'admin:fix_payout_done'],
@@ -89,9 +87,7 @@ final class AdminService
         $text .= "В очереди: {$queueCount}\n\n";
 
         $text .= "💰 Казна клуба\n";
-        $text .= "Match-комната: {$feesMatch} коинов\n";
-        $text .= "Gold-комната: {$feesGold} коинов\n";
-        $text .= "Всего комиссий: {$feesTotal} коинов\n\n";
+        $text .= "Комиссии всего: {$feesTotal} коинов\n\n";
 
         $text .= "🎁 Магазин\n";
         $text .= "Заявки ожидают: {$pendingOrders}\n\n";
@@ -107,13 +103,9 @@ final class AdminService
 
         $text .= "Команды:\n";
         $text .= ($this->config['admin_command'] ?? '/mgw_private_admin_7291') . " — открыть панель\n";
-        $text .= ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders') . " — заявки\n";
-        $text .= ($this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order') . " ABC123 — карточка заявки\n";
-        $text .= ($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done') . " ABC123 — отметить выполненной\n";
-        $text .= ($this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject') . " ABC123 причина — отклонить и вернуть коины\n";
-        $text .= ($this->config['admin_payments_command'] ?? '/mgw_private_admin_7291_payments') . " — платежи\n";
-        $text .= ($this->config['admin_gold_tools_command'] ?? '/mgw_private_admin_7291_gold') . " — Gold-тест\n";
-        $text .= ($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add') . " @username 100 причина — начислить Gold\n";
+        $text .= ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders') . " — архив заявок\n";
+        $text .= ($this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order') . " ABC123 — карточка архивной заявки\n";
+        $text .= ($this->config['admin_payments_command'] ?? '/mgw_private_admin_7291_payments') . " — архив платежей\n";
         $text .= ($this->config['admin_support_command'] ?? '/mgw_private_admin_7291_support') . " — обращения\n";
         $text .= ($this->config['admin_users_command'] ?? '/mgw_private_admin_7291_users') . " — обзор пользователей\n";
         $text .= ($this->config['admin_user_command'] ?? '/mgw_private_admin_7291_user') . " @username — карточка игрока\n";
@@ -413,8 +405,6 @@ final class AdminService
         }
 
         $orderCmd = $this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order';
-        $doneCmd = $this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done';
-        $rejectCmd = $this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject';
 
         $lines[] = "\nКоманды:";
         $lines[] = "{$orderCmd} ABC123 — открыть заявку";
@@ -439,124 +429,14 @@ final class AdminService
     }
 
     public function completeOrder(array &$db, string $argument, string $adminId): string
-    {
-        [$query, $note] = $this->parseOrderActionArgument($argument);
-        if ($query === '') {
-            return "✅ Выполнить заявку\n\nУкажите ID заявки.\n\nПример:\n"
-                . ($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done') . " ABC123";
-        }
-
-        $index = $this->findOrderIndex($db, $query);
-        if ($index === null) return "✅ Выполнить заявку\n\nЗаявка не найдена: {$query}";
-
-        $order =& $db['shop_orders'][$index];
-        $status = (string)($order['status'] ?? 'pending');
-
-        if ($status === 'done') return "✅ Заявка уже была отмечена выполненной.\n\n" . $this->orderDetailsText($db, $order);
-        if ($status === 'rejected') return "⚠️ Заявка уже отклонена. Выполненной её отметить нельзя.\n\n" . $this->orderDetailsText($db, $order);
-        if ($status !== 'pending') return "⚠️ Заявка имеет статус: " . $this->orderStatusLabel($status) . ". Действие остановлено.";
-
-        $now = now_iso();
-        $order['status'] = 'done';
-        $order['updated_at'] = $now;
-        $order['completed_at'] = $now;
-        $order['completed_by'] = $adminId;
-        if ($note !== '') $order['admin_note'] = $note;
-
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'shop_order_done',
-            'category' => 'shop_order_done',
-            'order_id' => (string)($order['id'] ?? ''),
-            'user_id' => (string)($order['user_id'] ?? ''),
-            'username' => (string)($order['username'] ?? ''),
-            'room' => 'gold',
-            'provider' => (string)($order['provider'] ?? ''),
-            'amount' => 0,
-            'description' => 'Заявка магазина выполнена',
-            'admin_id' => $adminId,
-            'created_at' => $now,
-        ];
-
-        return "✅ Заявка отмечена выполненной.\n\n" . $this->orderDetailsText($db, $order);
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function rejectOrder(array &$db, string $argument, string $adminId): string
-    {
-        [$query, $note] = $this->parseOrderActionArgument($argument);
-        if ($query === '') {
-            return "🚫 Отклонить заявку\n\nУкажите ID заявки.\n\nПример:\n"
-                . ($this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject') . " ABC123 причина";
-        }
-
-        $index = $this->findOrderIndex($db, $query);
-        if ($index === null) return "🚫 Отклонить заявку\n\nЗаявка не найдена: {$query}";
-
-        $order =& $db['shop_orders'][$index];
-        $status = (string)($order['status'] ?? 'pending');
-
-        if ($status === 'rejected') return "🚫 Заявка уже отклонена.\n\n" . $this->orderDetailsText($db, $order);
-        if ($status === 'done') return "⚠️ Заявка уже выполнена. Отклонить её нельзя, чтобы случайно не сделать неверный возврат.\n\n" . $this->orderDetailsText($db, $order);
-        if ($status !== 'pending') return "⚠️ Заявка имеет статус: " . $this->orderStatusLabel($status) . ". Действие остановлено.";
-
-        $userId = (string)($order['user_id'] ?? '');
-        if ($userId === '' || !isset($db['users'][$userId])) {
-            return "⚠️ Пользователь заявки не найден. Возврат невозможен, статус не изменён.";
-        }
-
-        $amount = abs((int)($order['amount'] ?? 0));
-        $now = now_iso();
-        $user =& $db['users'][$userId];
-        UnifiedBalanceRuntimeState::ensureUser($user);
-
-        if (empty($order['refund_done'])) {
-            $user[UnifiedBalanceRuntimeState::FIELD] = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) + $amount;
-            $user['gold_shop_spent_total'] = max(0, (int)($user['gold_shop_spent_total'] ?? 0) - $amount);
-
-            $order['refund_done'] = true;
-            $order['refund_amount'] = $amount;
-            $order['refunded_at'] = $now;
-
-            $db['transactions'][] = [
-                'id' => make_id('tx'),
-                'type' => 'balance_change',
-                'category' => 'shop_refund',
-                'order_id' => (string)($order['id'] ?? ''),
-                'user_id' => $userId,
-                'username' => (string)($user['username'] ?? ''),
-                'room' => 'gold',
-                'provider' => (string)($order['provider'] ?? ''),
-                'amount' => $amount,
-                'balance_after' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),
-                'description' => 'Возврат за отклонённую заявку магазина',
-                'admin_id' => $adminId,
-                'created_at' => $now,
-            ];
-        }
-
-        $order['status'] = 'rejected';
-        $order['updated_at'] = $now;
-        $order['rejected_at'] = $now;
-        $order['rejected_by'] = $adminId;
-        if ($note !== '') $order['admin_note'] = $note;
-
-        $db['transactions'][] = [
-            'id' => make_id('tx'),
-            'type' => 'shop_order_reject',
-            'category' => 'shop_order_reject',
-            'order_id' => (string)($order['id'] ?? ''),
-            'user_id' => $userId,
-            'username' => (string)($user['username'] ?? ''),
-            'room' => 'gold',
-            'provider' => (string)($order['provider'] ?? ''),
-            'amount' => 0,
-            'description' => 'Заявка магазина отклонена',
-            'admin_id' => $adminId,
-            'created_at' => $now,
-        ];
-
-        return "🚫 Заявка отклонена. Коины возвращены игроку.\n\n" . $this->orderDetailsText($db, $order);
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function payments(array $db): string
     {
@@ -571,121 +451,24 @@ final class AdminService
     }
 
     public function applyPayment(array &$db, string $argument, string $adminId): string
-    {
-        $paymentService = new PaymentService($this->config, new UserService($this->config));
-        return $paymentService->adminApply($db, $argument, $adminId);
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function rejectPayment(array &$db, string $argument, string $adminId): string
-    {
-        $paymentService = new PaymentService($this->config, new UserService($this->config));
-        return $paymentService->adminReject($db, $argument, $adminId);
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function goldTools(array $db): string
-    {
-        $users = array_values(array_filter($db['users'] ?? [], fn($user) => !$this->isDevUser($user)));
-        foreach ($users as &$candidate) UnifiedBalanceRuntimeState::ensureUser($candidate);
-        unset($candidate);
-        usort($users, fn($a, $b) => (int)($b[UnifiedBalanceRuntimeState::FIELD] ?? 0) <=> (int)($a[UnifiedBalanceRuntimeState::FIELD] ?? 0));
-
-        $addCommand = $this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add';
-
-        $lines = ["🪙 Gold-тест"];
-        $lines[] = "\nЭто тестовое админское начисление Gold-коинов.";
-        $lines[] = "Реальная оплата не подключена.";
-        $lines[] = "Каждое начисление записывается в историю операций.";
-        $lines[] = "\nКоманда:";
-        $lines[] = "{$addCommand} @username 100 причина";
-        $lines[] = "{$addCommand} 123456789 100 причина";
-        $lines[] = "\nПример:";
-        $lines[] = "{$addCommand} @SlojniyTip 100 тестовое пополнение";
-
-        if ($users) {
-            $lines[] = "\nИгроки с MGW Coins (legacy Gold tool):";
-            $shown = 0;
-            foreach ($users as $user) {
-                $coins = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
-                $deposited = (int)($user['gold_deposited_total'] ?? 0);
-                if ($coins <= 0 && $deposited <= 0 && $shown >= 5) continue;
-
-                $lines[] = $this->userLabel($user)
-                    . " · ID " . (string)($user['id'] ?? '-')
-                    . " · MGW Coins " . $coins
-                    . " · начислено/куплено всего " . $deposited;
-                $shown++;
-
-                if ($shown >= 8) break;
-            }
-        }
-
-        return implode("\n", $lines);
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function addGoldToUser(array &$db, string $argument, string $adminId): string
-    {
-        [$query, $amount, $reason] = $this->parseGoldAddArgument($argument);
-
-        if ($query === '' || $amount <= 0) {
-            return "🪙 Начислить Gold\n\nФормат команды:\n"
-                . ($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add')
-                . " @username 100 причина\n\n"
-                . "Пример:\n"
-                . ($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add')
-                . " @SlojniyTip 100 тестовое пополнение";
-        }
-
-        if ($amount > 100000) {
-            return "⚠️ Слишком большая сумма. Максимум для одного тестового начисления: 100000 коинов.";
-        }
-
-        $user = $this->findUser($db, $query);
-        if (!$user) return "🪙 Начислить Gold\n\nПользователь не найден: {$query}";
-
-        $userId = (string)($user['id'] ?? '');
-        if ($userId === '' || !isset($db['users'][$userId])) {
-            return "⚠️ Пользователь найден, но его ID отсутствует в users.json. Начисление остановлено.";
-        }
-
-        $reason = $reason !== '' ? $reason : 'тестовое админское начисление';
-
-        UnifiedBalanceRuntimeState::ensureUser($db['users'][$userId]);
-        $before = (int)($db['users'][$userId][UnifiedBalanceRuntimeState::FIELD] ?? 0);
-        $depositedBefore = (int)($db['users'][$userId]['gold_deposited_total'] ?? 0);
-
-        $db['users'][$userId][UnifiedBalanceRuntimeState::FIELD] = $before + $amount;
-        $db['users'][$userId]['gold_deposited_total'] = $depositedBefore + $amount;
-        $db['users'][$userId]['last_gold_topup_at'] = now_iso();
-
-        $txId = make_id('tx');
-        $db['transactions'][] = [
-            'id' => $txId,
-            'type' => 'balance_change',
-            'category' => 'admin_gold_topup',
-            'user_id' => $userId,
-            'username' => (string)($db['users'][$userId]['username'] ?? ''),
-            'room' => 'gold',
-            'amount' => $amount,
-            'balance_before' => $before,
-            'balance_after' => $before + $amount,
-            'gold_deposited_before' => $depositedBefore,
-            'gold_deposited_after' => $depositedBefore + $amount,
-            'description' => 'Тестовое начисление Gold администратором',
-            'reason' => clean_string($reason, 300),
-            'admin_id' => $adminId,
-            'created_at' => now_iso(),
-        ];
-
-        return "✅ MGW Coins начислены (legacy Gold tool)\n\n"
-            . "Игрок: " . $this->userLabel($db['users'][$userId]) . "\n"
-            . "ID: {$userId}\n"
-            . "Начислено: {$amount} коинов\n"
-            . "Баланс до: {$before}\n"
-            . "Баланс после: " . ($before + $amount) . "\n"
-            . "Gold начислено/куплено всего: " . ($depositedBefore + $amount) . "\n"
-            . "Операция: " . $this->prettyId($txId) . "\n"
-            . "Причина: {$reason}";
-    }
+{
+    return UnifiedGameZonePolicy::legacyArchiveMessage();
+}
 
     public function support(array $db): string
     {
@@ -926,8 +709,6 @@ final class AdminService
         if (!empty($order['admin_note'])) $lines[] = "Заметка: " . (string)$order['admin_note'];
 
         if ($status === 'pending') {
-            $done = $this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done';
-            $reject = $this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject';
             $lines[] = "\nДействия:";
             $lines[] = "{$done} {$short}";
             $lines[] = "{$reject} {$short} причина";

@@ -15,8 +15,6 @@ try {
 
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $presenceLeaseId = clean_string($payload['presenceLeaseId'] ?? '', 120);
-    $room = clean_string($payload['room'] ?? '', 16);
-    $room = in_array($room, ['match', 'gold'], true) ? $room : '';
     $auth = new AuthService($config);
     // Presence only needs the already verified provider user id to own a
     // document/session lease. Keep Telegram/staging/dev authentication intact,
@@ -37,7 +35,7 @@ try {
     // Room is document presence metadata, not matchmaking state: queue/game data
     // remains authoritative once the account starts searching or playing.
     if ($action === 'ping' || $action === 'status') {
-        $presence->touch($accountId, $sessionId, $presenceLeaseId, $room);
+        $presence->touch($accountId, $sessionId, $presenceLeaseId);
     } elseif ($action === 'leave') {
         $presence->leave($accountId, $sessionId, $presenceLeaseId);
     }
