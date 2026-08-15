@@ -43,7 +43,7 @@ function openGameSetup(){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="setup-scroll">
-      <div class="small-note">${isGold ? 'Матч начнётся только с соперником, который выбрал такие же условия.' : 'В Match-комнате участие всегда стоит 10 коинов.'}</div>
+      <div class="small-note">Соберите линию из своих знаков раньше соперника.</div>
       <div class="section-title"><h2>Поле</h2></div>
       <div class="choice-grid field-size-grid" id="boardChoices">
         ${APP_CONFIG.boardSizes.map(size => `<button class="choice ${size === state.selectedBoardSize ? 'active' : ''}" data-board-size="${size}" type="button">${size}×${size}</button>`).join('')}
