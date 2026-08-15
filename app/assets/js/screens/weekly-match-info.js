@@ -10,7 +10,6 @@ export function initWeeklyMatchInfo(){
     const target = event.target.closest('button, [role="button"]');
     if (!target) return;
 
-
     if (target.id !== 'weeklyMatchInfo') return;
 
     event.preventDefault();
@@ -33,8 +32,8 @@ export function syncWeeklyMatchButton(status = null){
   if (status && typeof status === 'object') cachedStatus = status;
   const button = document.getElementById('weeklyMatchInfo');
   if (!button) return;
-  button.textContent = 'Еженедельный бонус';
-  button.setAttribute('aria-label', 'Открыть информацию о еженедельном бонусе');
+  button.textContent = 'Бонусы';
+  button.setAttribute('aria-label', 'Открыть бонусы Mini Games World');
 }
 
 export async function refreshWeeklyMatchProgress(){
@@ -57,12 +56,12 @@ async function openWeeklyMatchInfo(){
   haptic('light');
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Еженедельный бонус</h2><p>Бесплатные коины за игровую активность.</p></div>
+      <div><h2>Бонусы</h2><p>Бесплатные коины за игровую активность.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="notifications-loading">
       <div>🎲</div>
-      <strong>Загружаем прогресс</strong>
+      <strong>Загружаем бонусы</strong>
       <span>Считаем завершённые игры.</span>
     </div>
   `);
@@ -77,24 +76,35 @@ async function openWeeklyMatchInfo(){
 
 function renderWeeklyMatchInfo(status){
   const amount = Number(status.bonus_amount ?? 0);
-  const minGames = Number(status.min_completed_games ?? status.min_completed_matches ?? 3);
+  const minGames = Math.max(1, Number(status.min_completed_games ?? status.min_completed_matches ?? 3));
   const completed = Math.min(
     minGames,
     Math.max(0, Number(status.completed_games ?? status.completed_match_games ?? 0))
   );
   const remaining = Math.max(0, Number(status.remaining_games ?? status.remaining_match_games ?? 0));
+  const weeklyComplete = completed >= minGames || remaining === 0;
   const nextDate = formatScheduleDate(status.next_bonus_at, status.timezone);
 
-  const progressText = remaining === 0
+  const firstGameAmount = Math.max(0, Number(status.first_game_amount ?? 50));
+  const firstGameMax = Math.max(1, Number(status.first_game_grant_max ?? 8));
+  const firstGameCount = Math.min(
+    firstGameMax,
+    Math.max(0, Number(status.first_game_grant_count ?? 0))
+  );
+
+  const progressText = weeklyComplete
     ? 'Условие на эту неделю выполнено.'
     : `До бонуса осталось завершить ${remaining} ${pluralizeGames(remaining)}.`;
 
+  const weeklyProgressStyle = weeklyComplete ? ' style="color:var(--green)"' : '';
+
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Еженедельный бонус</h2><p>Бесплатные коины за игровую активность.</p></div>
+      <div><h2>Бонусы</h2><p>Бесплатные коины за игровую активность.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
+    <div class="section-title"><h2>Еженедельный бонус</h2></div>
     <div class="topup-success">
       <div>
         <span>Следующее начисление</span>
@@ -106,12 +116,18 @@ function renderWeeklyMatchInfo(status){
       </div>
       <div>
         <span>Игры за неделю</span>
-        <strong>${completed} из ${minGames}</strong>
+        <strong${weeklyProgressStyle}>${completed} из ${minGames}</strong>
       </div>
     </div>
+    <div class="small-note">${escapeHtml(progressText)}</div>
 
-    <div class="small-note">
-      Каждый понедельник в 12:00 по московскому времени начисляем +${amount.toLocaleString('ru-RU')} коинов, если за неделю завершены ${minGames} обычных матча. ${escapeHtml(progressText)}
+    <div class="section-title"><h2>Бонусы за новые игры</h2></div>
+    <div class="small-note">+${firstGameAmount.toLocaleString('ru-RU')} коинов за первую завершённую партию в каждой новой игре.</div>
+    <div class="topup-success">
+      <div>
+        <span>Освоено игр</span>
+        <strong>${firstGameCount} из ${firstGameMax}</strong>
+      </div>
     </div>
 
     <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
@@ -121,7 +137,7 @@ function renderWeeklyMatchInfo(status){
 function renderWeeklyMatchError(error){
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бесплатные коины</h2><p>Не удалось загрузить прогресс.</p></div>
+      <div><h2>Бонусы</h2><p>Не удалось загрузить прогресс.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="small-note">${escapeHtml(error?.message || 'Попробуйте открыть раздел ещё раз.')}</div>
