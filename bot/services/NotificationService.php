@@ -198,15 +198,17 @@ final class NotificationService
             if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) return $existing;
         }
 
+        $gameTitle = $this->gameTitle($gameType);
         $notification = [
             'id' => make_id('notification'),
             'event_key' => $eventKey,
             'user_id' => $userId,
             'type' => 'first_game_bonus',
             'title' => 'Бонус за новую игру',
-            'message' => "Первая завершённая партия засчитана. Начислено +{$amount} коинов.",
+            'message' => "Первая завершённая партия в «{$gameTitle}». Начислено +{$amount} коинов.",
             'tone' => 'success',
             'game_type' => $gameType,
+            'amount' => $amount,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
             'read_at' => null,
         ];
@@ -235,7 +237,7 @@ final class NotificationService
                 'id' => (string)($notification['id'] ?? ''),
                 'type' => (string)($notification['type'] ?? ''),
                 'title' => (string)($notification['title'] ?? 'Уведомление'),
-                'message' => (string)($notification['message'] ?? ''),
+                'message' => $this->displayMessage($notification),
                 'tone' => (string)($notification['tone'] ?? 'info'),
                 'order_id' => (string)($notification['order_id'] ?? ''),
                 'payment_id' => (string)($notification['payment_id'] ?? ''),
@@ -276,6 +278,39 @@ final class NotificationService
             }
         }
         unset($notification);
+    }
+
+    private function displayMessage(array $notification): string
+    {
+        if ((string)($notification['type'] ?? '') !== 'first_game_bonus') {
+            return (string)($notification['message'] ?? '');
+        }
+
+        $gameType = trim((string)($notification['game_type'] ?? ''));
+        if ($gameType === '') return (string)($notification['message'] ?? '');
+
+        $amount = max(0, (int)($notification['amount'] ?? 0));
+        if ($amount <= 0 && preg_match('/\+(\d+)/u', (string)($notification['message'] ?? ''), $matches) === 1) {
+            $amount = (int)$matches[1];
+        }
+        if ($amount <= 0) $amount = 50;
+
+        return 'Первая завершённая партия в «' . $this->gameTitle($gameType) . '». Начислено +' . $amount . ' коинов.';
+    }
+
+    private function gameTitle(string $gameType): string
+    {
+        return match ($gameType) {
+            'tictactoe' => 'Крестики-нолики',
+            'four_in_a_row' => 'Четыре в ряд',
+            'battleship' => 'Морской бой',
+            'checkers' => 'Шашки',
+            'reversi' => 'Реверси',
+            'chess' => 'Шахматы',
+            'go' => 'Го',
+            'domino' => 'Домино',
+            default => 'Новая игра',
+        };
     }
 
     private function shortOrderId(string $id): string
