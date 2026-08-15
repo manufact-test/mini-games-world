@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import re
+
+
+def replace_once(path: str, old: str, new: str) -> None:
+    p = Path(path)
+    body = p.read_text(encoding='utf-8')
+    count = body.count(old)
+    assert count == 1, f'{path}: expected one replacement, found {count}'
+    p.write_text(body.replace(old, new, 1), encoding='utf-8')
+
+
+# Remove the redundant room card and move the weekly CTA into the wallet.
+replace_once('app/index.html', '          <section class="card" id="roomCard"></section>\n\n', '')
+replace_once(
+    'app/index.html',
+    '            <div class="balance-note">Ваш баланс коинов.</div>\n',
+    '            <div class="balance-note">Ваш баланс коинов.</div>\n'
+    '            <button class="btn ghost full balance-bonus-action" id="weeklyMatchInfo" type="button" aria-label="Открыть информацию о еженедельном бонусе">Еженедельный бонус</button>\n',
+)
+
+# Room renderer survives only as compatibility no-op for callers that may still import it.
+p = Path('app/assets/js/screens/home-screen.js')
+body = p.read_text(encoding='utf-8')
+pattern = re.compile(r"export function renderRoomCard\(\)\{.*?\n\}\n\nexport function renderStats", re.S)
+body, count = pattern.subn(
+    "export function renderRoomCard(){\n  // Compatibility no-op: MVP-15.6 removed the separate room summary card.\n}\n\nexport function renderStats",
+    body,
+    count=1,
+)
+assert count == 1, f'renderRoomCard replacement count={count}'
+
+# Replace still-active legacy Match/Gold rules with unified-zone rules.
+rules_pattern = re.compile(r"function openRulesSheet\(\)\{.*?\n\}\n\nasync function openBalanceHistorySheet", re.S)
+rules_replacement = '''function openRulesSheet(){
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Правила обычных матчей</h2></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+
+    <div class="rules-content">
+      <p><strong>Обычные матчи</strong> используют единый баланс Mini Games World.</p>
+      <p>Стоимость участия в обычном матче — <strong>${APP_CONFIG.matchBet} коинов</strong>.</p>
+      <p>Матч начинается после подбора соперника с подходящими условиями игры.</p>
+      <p>При победе награда начисляется по действующим серверным правилам экономики. При ничьей стоимость участия возвращается обоим игрокам.</p>
+      <p>Все списания, начисления и результаты сохраняются в истории баланса и матчей.</p>
+      <p>Условия бесплатного еженедельного начисления всегда доступны по кнопке <strong>«Еженедельный бонус»</strong> в карточке баланса.</p>
+      <p>Если вы заметили ошибку в балансе или результате матча, отправьте обращение через меню помощи.</p>
+    </div>
+
+    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+  `);
+}
+
+async function openBalanceHistorySheet'''
+body, count = rules_pattern.subn(lambda _: rules_replacement, body, count=1)
+assert count == 1, f'rules replacement count={count}'
+p.write_text(body, encoding='utf-8')
+
+# Weekly owner preserves final CTA copy even after status sync.
+replace_once(
+    'app/assets/js/screens/weekly-match-info.js',
+    "  button.textContent = 'Подробнее';\n  button.setAttribute('aria-label', 'Подробнее о еженедельных бесплатных коинах');",
+    "  button.textContent = 'Еженедельный бонус';\n  button.setAttribute('aria-label', 'Открыть информацию о еженедельном бонусе');",
+)
+p = Path('app/assets/js/screens/weekly-match-info.js')
+body = p.read_text(encoding='utf-8')
+old = '<div><h2>Бесплатные коины</h2><p>Еженедельный бонус за игровую активность.</p></div>'
+new = '<div><h2>Еженедельный бонус</h2><p>Бесплатные коины за игровую активность.</p></div>'
+assert body.count(old) == 2, f'weekly modal heading count={body.count(old)}'
+p.write_text(body.replace(old, new), encoding='utf-8')
+
+# Give the CTA a full-width third row inside the unified wallet card.
+p = Path('app/assets/css/components/cards.css')
+css = p.read_text(encoding='utf-8')
+marker = '.balances.unified-balance .balance-note{grid-area:note}'
+assert css.count(marker) == 1
+css += '\n.balances.unified-balance .balance-card{grid-template-areas:"label value" "note value" "action action"}\n'
+css += '.balances.unified-balance .balance-bonus-action{grid-area:action;width:100%;min-height:42px;margin-top:8px}\n'
+p.write_text(css, encoding='utf-8')
+
+# Cache graph.
+replace_once(
+    'app/assets/css/main.css',
+    "@import url('./components/cards.css?v=125&sk=1&wallet=unified');",
+    "@import url('./components/cards.css?v=126&sk=1&wallet=weekly-bonus-cta');",
+)
+replace_once(
+    'app/assets/js/main-v110-handoff-shell.js',
+    "import { renderRoomCard, initHomeScreen, setRoom } from './screens/home-screen.js?v=74';",
+    "import { initHomeScreen, setRoom } from './screens/home-screen.js?v=74';",
+)
+replace_once(
+    'app/assets/js/main-v110-handoff-shell.js',
+    "import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=75';",
+    "import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=76';",
+)
+replace_once(
+    'app/assets/js/main-v110-handoff-shell.js',
+    "    renderRoomCard();\n    syncWeeklyMatchButton(result.weekly_match || null);",
+    "    syncWeeklyMatchButton(result.weekly_match || null);",
+)
+
+p = Path('app/v110.php')
+body = p.read_text(encoding='utf-8')
+replacements = [
+    ('"./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=77&mvp15=unified-zone",', '"./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet",'),
+    ('"./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1142&mvp15=unified-zone",', '"./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1143&mvp15=weekly-bonus-wallet",'),
+    ("$cssTarget = './assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3';", "$cssTarget = './assets/css/main.css?v=154&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=weekly-bonus-cta';"),
+    ("'unified_home_cache' => './assets/js/screens/home-screen.js?v=77&mvp15=unified-zone',", "'unified_home_cache' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',"),
+    ("'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1142&mvp15=unified-zone',", "'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1143&mvp15=weekly-bonus-wallet',"),
+]
+for old, new in replacements:
+    assert body.count(old) == 1, f'v110 cache anchor missing: {old}'
+    body = body.replace(old, new, 1)
+p.write_text(body, encoding='utf-8')
+
+# Update older accepted 15.3 verifier to the successor entry graph.
+p = Path('ops/checks/verify-mvp15-3-unified-balance-owner.py')
+body = p.read_text(encoding='utf-8')
+updates = [
+    ("'./assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3',", "'./assets/css/main.css?v=154&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=weekly-bonus-cta',"),
+    ("'./assets/js/screens/home-screen.js?v=77&mvp15=unified-zone',", "'./assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',"),
+]
+for old, new in updates:
+    assert body.count(old) == 1, f'verifier anchor missing: {old}'
+    body = body.replace(old, new, 1)
+p.write_text(body, encoding='utf-8')
