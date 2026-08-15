@@ -1,0 +1,41 @@
+name: MVP-15.6 focused gate v2
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-unified-zone-cutover
+    paths:
+      - '.github/workflows/mvp15-6-focused-gate-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for f in \
+            bot/runtime/UnifiedGameZonePolicy.php bot/api.php bot/presence.php bot/invites.php \
+            bot/services/GameService.php bot/services/GameRuntimeService.php bot/services/ChessRuntimeService.php \
+            bot/services/PresenceService.php bot/services/StatsService.php bot/services/HistoryService.php \
+            bot/services/PaymentService.php bot/services/ShopService.php bot/services/AdminService.php \
+            bot/services/invites/GameInviteStorageTrait.php bot/services/invites/GameInviteValidationTrait.php bot/services/invites/GameInviteActionTrait.php \
+            app/v110.php bot/tests/Mvp156UnifiedZoneCutoverTest.php; do
+            php -l "$f"
+          done
+          for f in \
+            app/assets/js/ui.js app/assets/js/screens/home-screen.js app/assets/js/screens/weekly-match-info.js \
+            app/assets/js/production-v110-presence.js app/assets/js/production-v110-targeted-interactions.js \
+            app/assets/js/games/game-invites-v110.js app/assets/js/main-v110-handoff-shell.js; do
+            node --check "$f"
+          done
+      - name: Keep accepted MVP-15.5 economy green
+        run: php bot/tests/Mvp155NormalMatchEconomyTest.php
+      - name: MVP-15.6 unified-zone regression
+        run: php bot/tests/Mvp156UnifiedZoneCutoverTest.php
