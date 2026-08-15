@@ -48,8 +48,8 @@ jobs:
           assert database.get('enabled') is True, database
           assert database.get('connected') is True, database
           assert database.get('schema_current') is True, database
-          assert int(database.get('applied_migrations') or 0) == 8, database
-          assert int(database.get('pending_migrations') or -1) == 0, database
+          assert int(database.get('applied_migrations', 0)) == 8, database
+          assert int(database.get('pending_migrations', -1)) == 0, database
 
           print('LIVE_DB_MIGRATION_PROOF=PASS')
           print('applied_migrations=8')
