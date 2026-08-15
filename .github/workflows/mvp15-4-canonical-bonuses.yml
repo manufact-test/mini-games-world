@@ -1,0 +1,33 @@
+name: MVP-15.4 canonical bonuses
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-4-canonical-bonuses
+    paths:
+      - 'bot/services/WeeklyMatchEconomyService.php'
+      - 'bot/services/NotificationService.php'
+      - 'bot/tests/Mvp154CanonicalBonusesTest.php'
+      - 'bot/tests/WeeklyBonusRuntimeBridgeTest.php'
+      - '.github/workflows/mvp15-4-canonical-bonuses.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-bonus-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          php -l bot/services/WeeklyMatchEconomyService.php
+          php -l bot/services/NotificationService.php
+          php -l bot/tests/Mvp154CanonicalBonusesTest.php
+          php -l bot/tests/WeeklyBonusRuntimeBridgeTest.php
+      - name: MVP-15.4 canonical bonus regression
+        run: php bot/tests/Mvp154CanonicalBonusesTest.php
+      - name: Weekly DB runtime bridge regression
+        run: php bot/tests/WeeklyBonusRuntimeBridgeTest.php
