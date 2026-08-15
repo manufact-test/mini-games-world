@@ -126,13 +126,23 @@ for name in (
         if token in body:
             violations.append(f'{name}: visible UI still references {token}')
 
+# Final user-facing 15.3 copy must describe one coin balance without duplicate labels.
+index_ui = Path('app/index.html').read_text()
+profile_ui = Path('app/assets/js/screens/profile-screen-v110.js').read_text()
+if '<div class="balance-note">Ваш баланс коинов.</div>' not in index_ui:
+    violations.append('app/index.html: Home unified balance note must say "Ваш баланс коинов."')
+if '<small>Ваш баланс коинов.</small>' not in profile_ui:
+    violations.append('profile-screen-v110.js: profile wallet note must say "Ваш баланс коинов."')
+if 'MGW Coins</span>' in profile_ui:
+    violations.append('profile-screen-v110.js: duplicate MGW Coins label must not be visible in profile wallet')
+
 # The real Telegram /start owner is v110.php, not the unversioned /app/ route.
 # Render it against the current index.html and fail if it ever silently falls
 # back to the generic main.js graph again.
-expected_launch = "private const ENTRY_PATH = '/app/v110.php?v=1126';"
+expected_launch = "private const ENTRY_PATH = '/app/v110.php?v=1127';"
 launch_owner = Path('bot/helpers/WebAppLaunchUrl.php').read_text()
 if expected_launch not in launch_owner:
-    violations.append('WebAppLaunchUrl.php: canonical Telegram entry cache key is not v110.php?v=1126')
+    violations.append('WebAppLaunchUrl.php: canonical Telegram entry cache key is not v110.php?v=1127')
 
 try:
     rendered = subprocess.run(
@@ -152,7 +162,7 @@ required_entry_fragments = (
     './assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3',
     './assets/js/ui.js?v=91&mvp15=unified-balance',
     './assets/js/screens/home-screen.js?v=75&mvp15=unified-balance',
-    './assets/js/screens/profile-screen-v110.js?v=1112&mvp15=unified-balance-profile-copy-icon',
+    './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
 )
 for fragment in required_entry_fragments:
     if fragment not in rendered:
@@ -174,4 +184,5 @@ if violations:
 print('MVP-15.3 unified balance owner check: PASS')
 print(f'Legacy token references are confined to {len(set(references))} explicit audit/compatibility files or directories.')
 print('Canonical Telegram /start entry: v110 unified-balance graph PASS.')
+print('Final Home/Profile unified balance copy: PASS.')
 print('Temporary patch tooling: absent.')
