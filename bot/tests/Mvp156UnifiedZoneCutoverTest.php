@@ -120,10 +120,15 @@ $assertNotContains('В Gold-комнате', $home, 'Removed Gold room counter m
 $assertNotContains('topUpGold', $home, 'Gold top-up creation UI must be gone');
 $assertNotContains('topUpMatch', $home, 'Legacy Match top-up creation UI must be gone');
 $assertNotContains('id="roomCard"', $index, 'Redundant room summary card must be removed from Home');
-$assertTrue(str_contains($index, 'id="weeklyMatchInfo"') && str_contains($index, '>Еженедельный бонус</button>'), 'Weekly bonus CTA must live in the unified wallet card');
+$assertTrue(str_contains($index, 'id="weeklyMatchInfo"') && str_contains($index, '>Бонусы</button>'), 'Bonus CTA must live in the unified wallet card');
 $assertNotContains('Правила Gold-комнаты', $home, 'Active rules must not expose the removed Gold room');
 $assertNotContains('10 коинов', $home, 'Active rules must not expose the removed legacy entry price');
-$assertTrue(str_contains($weekly, "button.textContent = 'Еженедельный бонус';"), 'Weekly runtime owner must preserve the final CTA copy');
+$assertTrue(str_contains($weekly, "button.textContent = 'Бонусы';"), 'Bonus runtime owner must preserve the final CTA copy');
+$assertTrue(str_contains($weekly, 'Бонусы за новые игры'), 'Bonus sheet must expose the new-games section');
+$assertTrue(str_contains($weekly, '+${firstGameAmount.toLocaleString(\'ru-RU\')} коинов за первую завершённую партию в каждой новой игре.'), 'New-games section must use the accepted subtitle');
+$assertTrue(str_contains($weekly, 'Освоено игр'), 'Bonus sheet must expose learned-games progress');
+$assertTrue(str_contains($weekly, 'first_game_grant_count'), 'Bonus sheet must read server-owned first-game progress');
+$assertTrue(str_contains($weekly, 'style="color:var(--green)"'), 'Completed weekly progress must have accepted green state');
 $assertTrue(str_contains($home, 'Игроков онлайн') && str_contains($home, 'Активных матчей'), 'Home must retain the two accepted counters');
 $assertTrue(str_contains($ui, 'export function renderUser(user)'), 'Accepted user renderer must survive the room-label cutover');
 $assertTrue(str_contains($ui, "roomName(){ return 'Обычный матч'; }"), 'Shared room copy must be neutral');
@@ -131,7 +136,7 @@ $assertNotContains('Матч-комнату', $weekly, 'Weekly bonus copy must n
 $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy must be room-neutral');
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, "X-MGW-Game-Zone: unified-v1"), 'Accepted /start entry must advertise unified game zone');
-$assertTrue(str_contains($v110, 'v=1143&mvp15=weekly-bonus-wallet'), 'Accepted /start graph must cache-bust the weekly-bonus wallet shell');
+$assertTrue(str_contains($v110, 'v=1144&mvp15=bonus-ux'), 'Accepted /start graph must cache-bust the bonus UX successor shell');
 
 $startSearchPos = strpos($api, "case 'start_search':");
 $nextCasePos = strpos($api, "case '", $startSearchPos + 20);
