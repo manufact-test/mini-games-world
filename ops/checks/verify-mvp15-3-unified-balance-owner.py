@@ -129,10 +129,10 @@ for name in (
 # The real Telegram /start owner is v110.php, not the unversioned /app/ route.
 # Render it against the current index.html and fail if it ever silently falls
 # back to the generic main.js graph again.
-expected_launch = "private const ENTRY_PATH = '/app/v110.php?v=1124';"
+expected_launch = "private const ENTRY_PATH = '/app/v110.php?v=1125';"
 launch_owner = Path('bot/helpers/WebAppLaunchUrl.php').read_text()
 if expected_launch not in launch_owner:
-    violations.append('WebAppLaunchUrl.php: canonical Telegram entry cache key is not v110.php?v=1124')
+    violations.append('WebAppLaunchUrl.php: canonical Telegram entry cache key is not v110.php?v=1125')
 
 try:
     rendered = subprocess.run(
@@ -152,7 +152,7 @@ required_entry_fragments = (
     './assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3',
     './assets/js/ui.js?v=91&mvp15=unified-balance',
     './assets/js/screens/home-screen.js?v=75&mvp15=unified-balance',
-    './assets/js/screens/profile-screen-v110.js?v=1110&mvp15=unified-balance',
+    './assets/js/screens/profile-screen-v110.js?v=1111&mvp15=unified-balance-profile-cleanup',
 )
 for fragment in required_entry_fragments:
     if fragment not in rendered:
