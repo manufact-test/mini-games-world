@@ -13,9 +13,18 @@
   const generated = root.querySelector('[data-admin-generated]');
   const dashboard = root.querySelector('[data-admin-dashboard]');
   const systemCheck = root.querySelector('[data-admin-system-check]');
+  const economyVersion = root.querySelector('[data-economy-version]');
+  const economySha = root.querySelector('[data-economy-sha]');
+  const economyConfig = root.querySelector('[data-economy-config]');
+  const economyReason = root.querySelector('[data-economy-reason]');
+  const economySave = root.querySelector('[data-economy-save]');
+  const economySimulation = root.querySelector('[data-economy-simulation]');
+  const economyHistory = root.querySelector('[data-economy-history]');
   const endpoint = String(root.dataset.adminApi || '');
+  const economyEndpoint = String(root.dataset.economyApi || '');
   const telegram = window.Telegram?.WebApp || null;
   let requestInFlight = false;
+  let currentEconomyVersion = 0;
 
   const setStatus = (message, state = '') => {
     status.textContent = message;
@@ -23,7 +32,31 @@
     else delete status.dataset.state;
   };
 
-  const render = (data) => {
+  const setBusy = (busy) => {
+    requestInFlight = busy;
+    refresh.disabled = busy;
+    economySave.disabled = busy;
+    economyHistory.querySelectorAll('button').forEach(button => {
+      button.disabled = busy;
+    });
+  };
+
+  const post = async (url, payload) => {
+    const response = await fetch(url, {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({...payload, initData: telegram.initData})
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.ok !== true) {
+      throw new Error(String(data.error || 'Не удалось выполнить запрос панели.'));
+    }
+    return data;
+  };
+
+  const renderBase = (data) => {
     environment.textContent = String(data.environment || '—');
     build.textContent = String(data.build || '—');
     generated.textContent = data.generated_at
@@ -35,6 +68,59 @@
     content.hidden = false;
   };
 
+  const historyLabel = (entry) => {
+    const type = entry.change_type === 'rollback'
+      ? `rollback к v${entry.source_version}`
+      : entry.change_type === 'seed' ? 'начальная версия' : 'изменение';
+    return `v${entry.version} · ${type}`;
+  };
+
+  const renderEconomyHistory = (history) => {
+    economyHistory.replaceChildren();
+    if (!Array.isArray(history) || history.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__history-empty';
+      empty.textContent = 'История пока пуста.';
+      economyHistory.append(empty);
+      return;
+    }
+
+    history.forEach(entry => {
+      const item = document.createElement('div');
+      item.className = 'mgw-admin__history-item';
+
+      const copy = document.createElement('div');
+      copy.className = 'mgw-admin__history-copy';
+      const title = document.createElement('strong');
+      title.textContent = historyLabel(entry);
+      const details = document.createElement('span');
+      const when = entry.created_at_utc ? `${entry.created_at_utc} UTC` : 'время неизвестно';
+      details.textContent = `${when} · ${entry.actor_ref || '—'} · ${entry.reason || '—'}`;
+      copy.append(title, details);
+      item.append(copy);
+
+      if (Number(entry.version) !== currentEconomyVersion) {
+        const rollback = document.createElement('button');
+        rollback.type = 'button';
+        rollback.textContent = `Вернуть v${entry.version}`;
+        rollback.addEventListener('click', () => rollbackEconomy(Number(entry.version)));
+        item.append(rollback);
+      }
+
+      economyHistory.append(item);
+    });
+  };
+
+  const renderEconomy = (data) => {
+    const current = data.current || {};
+    currentEconomyVersion = Number(current.version || 0);
+    economyVersion.textContent = currentEconomyVersion > 0 ? `v${currentEconomyVersion}` : '—';
+    economySha.textContent = String(current.config_sha256 || '—');
+    economyConfig.value = JSON.stringify(current.config || {}, null, 2);
+    economySimulation.textContent = JSON.stringify(current.simulation || {}, null, 2);
+    renderEconomyHistory(data.history || []);
+  };
+
   const load = async () => {
     if (requestInFlight) return;
     if (!telegram || !telegram.initData) {
@@ -42,33 +128,77 @@
       return;
     }
 
-    requestInFlight = true;
-    refresh.disabled = true;
+    setBusy(true);
     setStatus('Загружаю актуальное состояние…');
 
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          action: 'snapshot',
-          initData: telegram.initData
-        })
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.ok !== true) {
-        throw new Error(String(data.error || 'Не удалось загрузить панель.'));
-      }
-
-      render(data);
+      const [baseData, economyData] = await Promise.all([
+        post(endpoint, {action: 'snapshot'}),
+        post(economyEndpoint, {action: 'snapshot'})
+      ]);
+      renderBase(baseData);
+      renderEconomy(economyData);
       setStatus('Данные загружены. Обновление выполняется только вручную.', 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось загрузить панель.', 'error');
     } finally {
-      requestInFlight = false;
-      refresh.disabled = false;
+      setBusy(false);
+    }
+  };
+
+  const saveEconomy = async () => {
+    if (requestInFlight) return;
+    const reason = economyReason.value.trim();
+    if (reason.length < 3) {
+      setStatus('Укажите причину изменения экономики.', 'error');
+      economyReason.focus();
+      return;
+    }
+
+    let config;
+    try {
+      config = JSON.parse(economyConfig.value);
+    } catch (error) {
+      setStatus('Конфигурация экономики содержит некорректный JSON.', 'error');
+      economyConfig.focus();
+      return;
+    }
+
+    setBusy(true);
+    setStatus('Сохраняю новую версию экономики…');
+    try {
+      const data = await post(economyEndpoint, {action: 'update', config, reason});
+      renderEconomy(data);
+      economyReason.value = '';
+      setStatus(`Конфигурация сохранена как v${data.current.version}. Балансы пользователей не изменялись.`, 'ok');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Не удалось сохранить конфигурацию.', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const rollbackEconomy = async (version) => {
+    if (requestInFlight) return;
+    const reason = economyReason.value.trim();
+    if (reason.length < 3) {
+      setStatus('Для rollback укажите причину изменения.', 'error');
+      economyReason.focus();
+      return;
+    }
+    if (!window.confirm(`Создать новую версию экономики на основе v${version}?`)) return;
+
+    setBusy(true);
+    setStatus(`Создаю rollback-версию из v${version}…`);
+    try {
+      const data = await post(economyEndpoint, {action: 'rollback', version, reason});
+      renderEconomy(data);
+      economyReason.value = '';
+      setStatus(`Rollback сохранён как новая v${data.current.version}. История не переписывалась.`, 'ok');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Не удалось выполнить rollback.', 'error');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -78,5 +208,6 @@
   }
 
   refresh.addEventListener('click', load);
+  economySave.addEventListener('click', saveEconomy);
   load();
 })();
