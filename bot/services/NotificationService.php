@@ -146,7 +146,7 @@ final class NotificationService
             'user_id' => $userId,
             'type' => 'welcome_match_grant',
             'title' => 'Добро пожаловать!',
-            'message' => "Спасибо, что заглянули в Mini Games World. Мы начислили вам первые +{$amount} коинов в Матч-комнату.",
+            'message' => "Спасибо, что заглянули в Mini Games World. Мы начислили вам +{$amount} коинов.",
             'tone' => 'success',
             'created_at' => (string)($grant['created_at'] ?? now_iso()),
             'read_at' => null,
@@ -175,9 +175,38 @@ final class NotificationService
             'user_id' => $userId,
             'type' => 'weekly_match_bonus',
             'title' => 'Еженедельные коины начислены',
-            'message' => "Завершено Match-матчей: {$games}. Начислено +{$amount} коинов.",
+            'message' => "Завершено матчей: {$games}. Начислено +{$amount} коинов.",
             'tone' => 'success',
             'cycle_key' => $cycleKey,
+            'created_at' => (string)($bonus['created_at'] ?? now_iso()),
+            'read_at' => null,
+        ];
+        $db['notifications'][] = $notification;
+        return $notification;
+    }
+
+    public function addFirstGameBonus(array &$db, array $user, array $bonus): ?array
+    {
+        $userId = trim((string)($user['id'] ?? ''));
+        $gameType = trim((string)($bonus['game_type'] ?? ''));
+        $amount = max(0, (int)($bonus['amount'] ?? 0));
+        if ($userId === '' || $gameType === '' || $amount <= 0) return null;
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) $db['notifications'] = [];
+
+        $eventKey = 'first_game_bonus:' . $userId . ':' . $gameType;
+        foreach ($db['notifications'] as $existing) {
+            if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) return $existing;
+        }
+
+        $notification = [
+            'id' => make_id('notification'),
+            'event_key' => $eventKey,
+            'user_id' => $userId,
+            'type' => 'first_game_bonus',
+            'title' => 'Бонус за новую игру',
+            'message' => "Первая завершённая партия засчитана. Начислено +{$amount} коинов.",
+            'tone' => 'success',
+            'game_type' => $gameType,
             'created_at' => (string)($bonus['created_at'] ?? now_iso()),
             'read_at' => null,
         ];
