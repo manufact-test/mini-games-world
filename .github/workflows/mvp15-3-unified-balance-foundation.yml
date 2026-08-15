@@ -1,0 +1,29 @@
+name: MVP-15.3 unified balance foundation
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-3-unified-balance-foundation
+    paths:
+      - 'bot/economy/UnifiedBalanceMigrationRule.php'
+      - 'bot/economy/UnifiedBalanceMigrationPlanner.php'
+      - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify PHP syntax
+        run: |
+          php -l bot/economy/UnifiedBalanceMigrationRule.php
+          php -l bot/economy/UnifiedBalanceMigrationPlanner.php
+          php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
+      - name: Run focused migration foundation test
+        run: php bot/tests/UnifiedBalanceMigrationFoundationTest.php
