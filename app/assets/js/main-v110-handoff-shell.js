@@ -30,7 +30,7 @@ import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
-import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
+import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=75';
 import { initFourInARowEntry } from './games/four-in-a-row/entry.js?v=74';
 import { initBattleshipEntry } from './games/battleship/entry.js?v=74';
 import { initCheckersEntry } from './games/checkers/entry.js?v=74';
