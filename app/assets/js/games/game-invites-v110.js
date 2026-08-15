@@ -184,13 +184,8 @@ function openInviteSetup(gameType, preserved = null){
   if (hasActionableInvite()) return openCurrentInvite();
 
   const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
-  const room = preserved?.room || (state.room === 'gold' ? 'gold' : 'match');
   let boardSize = Number(preserved?.boardSize || option.defaultSize);
-  let bet = Number(preserved?.bet || (
-    room === 'gold' && APP_CONFIG.goldBets.includes(Number(state.selectedBet))
-      ? Number(state.selectedBet)
-      : (room === 'gold' ? APP_CONFIG.goldBets[0] : APP_CONFIG.matchBet)
-  ));
+  const bet = Number(APP_CONFIG.matchBet);
 
   haptic('light');
   openSheet(`
@@ -198,7 +193,7 @@ function openInviteSetup(gameType, preserved = null){
     <div class="sheet-head">
       <div>
         <h2>Пригласить в «${escapeHtml(option.title)}»</h2>
-        <p>${escapeHtml(roomLabel(room))}. Выберите условия.</p>
+        <p>Выберите вариант игры.</p>
       </div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
@@ -208,37 +203,28 @@ function openInviteSetup(gameType, preserved = null){
       <div class="section-title"><h2>Вариант игры</h2></div>
       <div class="choice-grid field-size-grid" data-invite-sizes>
         ${option.sizes.map(size => `
-          <button class="choice ${size === boardSize ? 'active' : ''}" data-invite-size="${size}" type="button">
-            ${escapeHtml(boardLabel(gameType, size))}
-          </button>
+<button class="choice ${size === boardSize ? 'active' : ''}" data-invite-size="${size}" type="button">
+  ${escapeHtml(boardLabel(gameType, size))}
+</button>
         `).join('')}
       </div>
       <div class="section-title"><h2>Стоимость участия</h2></div>
-      <div class="choice-grid ${room === 'gold' ? '' : 'single-choice'}" data-invite-bets>
-        ${(room === 'gold' ? APP_CONFIG.goldBets : [APP_CONFIG.matchBet]).map(value => `
-          <button class="choice ${value === bet ? 'active' : ''} ${room === 'gold' ? 'gold' : ''}" data-invite-bet="${value}" type="button">
-            ${value} коинов
-          </button>
-        `).join('')}
+      <div class="choice-grid single-choice" data-invite-bets>
+        <button class="choice active" data-invite-bet="${bet}" type="button">${bet} коинов</button>
       </div>
     </div>
 
     <div class="stack invite-actions">
-      <button class="btn ${room === 'gold' ? 'gold' : 'primary'} full" data-open-player-picker type="button">Пригласить игрока</button>
+      <button class="btn primary full" data-open-player-picker type="button">Пригласить игрока</button>
       <button class="btn ghost full" data-create-link-invite type="button">Поделиться ссылкой</button>
     </div>
     <div class="invite-method-note">Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.</div>
   `);
 
-  const currentContext = () => normalizeInviteContext({ gameType, room, boardSize, bet });
+  const currentContext = () => normalizeInviteContext({ gameType, boardSize, bet });
   document.querySelectorAll('[data-invite-size]').forEach(button => button.addEventListener('click', () => {
     boardSize = Number(button.dataset.inviteSize || option.defaultSize);
     document.querySelectorAll('[data-invite-size]').forEach(item => item.classList.toggle('active', item === button));
-    scheduleWarmShareDraft(currentContext());
-  }));
-  document.querySelectorAll('[data-invite-bet]').forEach(button => button.addEventListener('click', () => {
-    bet = Number(button.dataset.inviteBet || APP_CONFIG.matchBet);
-    document.querySelectorAll('[data-invite-bet]').forEach(item => item.classList.toggle('active', item === button));
     scheduleWarmShareDraft(currentContext());
   }));
   document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
@@ -280,7 +266,7 @@ function showPlayerPickerLoading(context, requestGeneration){
   openSheet(`
     <span data-player-picker-generation="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
-      <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))} · ${escapeHtml(roomLabel(context.room))}</p></div>
+      <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="invite-player-list" data-player-picker-results aria-busy="true">
@@ -658,32 +644,23 @@ function isInviteSetupOpen(){
 
 function normalizeInviteContext(value){
   const gameType = String(value?.gameType || 'tictactoe');
-  const room = String(value?.room || '') === 'gold' ? 'gold' : 'match';
   const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
   return {
     gameType,
-    room,
+    room:'match',
     boardSize:Number(value?.boardSize || option.defaultSize),
-    bet:Number(value?.bet || (room === 'gold' ? APP_CONFIG.goldBets[0] : APP_CONFIG.matchBet)),
+    bet:Number(APP_CONFIG.matchBet),
   };
 }
 
 function defaultInviteContext(gameType){
-  const room = state.room === 'gold' ? 'gold' : 'match';
   const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
-  return normalizeInviteContext({
-    gameType,
-    room,
-    boardSize:option.defaultSize,
-    bet:room === 'gold'
-      ? Number(APP_CONFIG.goldBets.includes(Number(state.selectedBet)) ? state.selectedBet : APP_CONFIG.goldBets[0])
-      : Number(APP_CONFIG.matchBet),
-  });
+  return normalizeInviteContext({ gameType, boardSize:option.defaultSize, bet:APP_CONFIG.matchBet });
 }
 
 function inviteContextKey(context){
   const normalized = normalizeInviteContext(context);
-  return `${normalized.gameType}|${normalized.room}|${normalized.boardSize}|${normalized.bet}`;
+  return `${normalized.gameType}|${normalized.boardSize}|${normalized.bet}`;
 }
 
 function showPreparedLink(invite, context){
@@ -1122,7 +1099,6 @@ function contextSummary(context){
   return `
     <div class="topup-success">
       <div><span>Игра</span><strong>${escapeHtml(gameTitle(context?.gameType))}</strong></div>
-      <div><span>Комната</span><strong>${escapeHtml(roomLabel(context?.room))}</strong></div>
       <div><span>Вариант</span><strong>${escapeHtml(boardLabel(String(context?.gameType || ''), Number(context?.boardSize || 0)))}</strong></div>
       <div><span>Ставка</span><strong>${Number(context?.bet || 0)} коинов</strong></div>
     </div>
@@ -1406,7 +1382,6 @@ function inviteSummary(invite){
   return `
     <div class="topup-success">
       <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || 'Игра')}</strong></div>
-      <div><span>Комната</span><strong>${escapeHtml(invite?.room_label || roomLabel(invite?.room))}</strong></div>
       <div><span>Вариант</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
       <div><span>Ставка</span><strong>${Number(invite?.bet || 0)} коинов</strong></div>
     </div>
@@ -1486,8 +1461,8 @@ function inviteBoardLabel(invite){
   return boardLabel(String(invite?.game_type || ''), Number(invite?.board_size || 0));
 }
 
-function roomLabel(room){
-  return String(room || '') === 'gold' ? 'Gold-комната' : 'Матч-комната';
+function roomLabel(){
+  return 'Обычный матч';
 }
 
 function formatTime(value){

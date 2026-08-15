@@ -55,6 +55,7 @@ final class HistoryService
                 $seen[$key] = true;
             }
 
+            unset($item['room'], $item['room_label']);
             $items[] = $item;
             if (count($items) >= $limit) break;
         }
@@ -68,7 +69,9 @@ final class HistoryService
         foreach (array_reverse($db['games'] ?? []) as $game) {
             $players = array_map('strval', $game['player_ids'] ?? []);
             if (!in_array($userId, $players, true)) continue;
-            $items[] = $this->matchItem($game, $userId);
+            $item = $this->matchItem($game, $userId);
+            unset($item['room'], $item['room_label']);
+            $items[] = $item;
             if (count($items) >= $limit) break;
         }
         return $items;
@@ -127,7 +130,7 @@ final class HistoryService
             return [
                 'id' => (string)($tx['id'] ?? ''),
                 'title' => $this->operationTitle('game_entry', is_array($game) ? $game : null, $userId),
-                'description' => $game ? $this->operationGameDescription($game, $userId, 'game_entry') : $this->roomLabel($room),
+                'description' => $game ? $this->operationGameDescription($game, $userId, 'game_entry') : 'Обычный матч',
                 'amount' => $amount,
                 'amount_label' => $this->amountLabel($amount),
                 'tone' => 'neg',
@@ -220,7 +223,7 @@ final class HistoryService
 
     private function operationGameDescription(array $game, string $userId, string $category): string
     {
-        $parts = [$this->roomLabel((string)($game['room'] ?? 'match')), $this->gameLabel($game)];
+        $parts = [$this->gameLabel($game)];
         if ($category === 'game_refund') {
             $parts[] = (string)($game['finish_reason'] ?? '') === 'preparation_timeout'
                 ? 'соперник не подключился'
@@ -295,12 +298,12 @@ final class HistoryService
             'system_migration' => 'Системная миграция',
             'welcome_bonus' => 'Стартовые коины',
             'weekly_bonus' => 'Еженедельное начисление',
-            'admin_gold_topup' => 'Начисление Gold',
+            'admin_gold_topup' => 'Начисление',
             default => 'Операция баланса',
         };
     }
 
-    private function balanceDescription(array $tx): string { return $this->roomLabel((string)($tx['room'] ?? '')); }
+    private function balanceDescription(array $tx): string { return ''; }
     private function amountLabel(int $amount): string { if ($amount > 0) return '+' . $amount . ' коинов'; if ($amount < 0) return (string)$amount . ' коинов'; return '0 коинов'; }
     private function roomLabel(string $room): string { return $room === 'gold' ? 'Gold-комната' : ($room === 'match' ? 'Match-комната' : ''); }
     private function prettyMatchId(string $id): string { $id = preg_replace('/^(game_|tx_|support_|queue_)/', '', $id); $id = strtoupper(substr((string)$id, 0, 6)); return $id !== '' ? $id : '-'; }

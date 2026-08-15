@@ -45,10 +45,6 @@ function interceptClick(event){
   const button = origin.closest('button, [role="button"]');
   if (!(button instanceof Element)) return;
 
-  if (button.matches('[data-room]')) {
-    window.setTimeout(ensureWeeklyDetailsButton, 0);
-    return;
-  }
 
   if (PLAY_IDS.has(String(button.id || '')) && currentLock()) {
     event.preventDefault();
@@ -88,14 +84,8 @@ function updatePlayButtons(){
 }
 
 function ensureWeeklyDetailsButton(){
-  const matchActive = document.querySelector('[data-room="match"].active');
-  if (!matchActive) return;
-
-  const topUpButton = document.getElementById('topUpMatch');
-  const actions = topUpButton?.closest('.room-actions');
+  const actions = document.querySelector('#roomCard .room-actions');
   if (!actions) return;
-
-  actions.classList.remove('single');
   if (!document.getElementById('weeklyMatchInfo')) {
     actions.insertAdjacentHTML('beforeend', '<button class="btn ghost" id="weeklyMatchInfo" type="button" aria-label="Подробнее о еженедельных бесплатных коинах">Подробнее</button>');
   }
