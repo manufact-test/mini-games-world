@@ -55,10 +55,13 @@ final class MatchEconomyRuntimeConfig
 
     private static function snapshot(array $applicationConfig): array
     {
+        $environment = strtolower(trim((string)($applicationConfig['environment'] ?? 'production')));
+        $testDefaultsAllowed = $environment === 'local'
+            || !empty($applicationConfig['allow_economy_defaults_for_tests']);
+
         $injected = $applicationConfig['canonical_economy_snapshot'] ?? null;
         if (is_array($injected)) {
-            $environment = strtolower(trim((string)($applicationConfig['environment'] ?? 'local')));
-            if ($environment !== 'local' && empty($applicationConfig['allow_economy_defaults_for_tests'])) {
+            if (!$testDefaultsAllowed) {
                 throw new RuntimeException('Injected economy snapshot is test-only.');
             }
             $candidate = $injected['config'] ?? null;
@@ -74,23 +77,34 @@ final class MatchEconomyRuntimeConfig
         }
 
         if (!class_exists('DatabaseConfig') || !class_exists('PdoConnectionFactory')) {
+            if ($testDefaultsAllowed) return self::defaultSnapshot();
             throw new RuntimeException('Canonical economy database dependencies are unavailable.');
         }
+
         $databaseConfig = DatabaseConfig::fromApplicationConfig($applicationConfig);
         if ($databaseConfig->enabled()) {
-            return (new EconomyConfigService(PdoConnectionFactory::create($databaseConfig)))->current();
+            try {
+                return (new EconomyConfigService(PdoConnectionFactory::create($databaseConfig)))->current();
+            } catch (Throwable $error) {
+                // Local/unit fixtures may enable a lightweight DB without running
+                // the production economy-config migration. Never mask this in
+                // staging/production: those environments must fail closed.
+                if ($testDefaultsAllowed) return self::defaultSnapshot();
+                throw new RuntimeException('Canonical normal-match economy config is unavailable.', 0, $error);
+            }
         }
 
-        $environment = strtolower(trim((string)($applicationConfig['environment'] ?? 'production')));
-        if ($environment === 'local' || !empty($applicationConfig['allow_economy_defaults_for_tests'])) {
-            $defaults = EconomyConfigDefinition::defaults();
-            return [
-                'version' => 0,
-                'config_sha256' => EconomyConfigDefinition::sha256($defaults),
-                'config' => $defaults,
-            ];
-        }
-
+        if ($testDefaultsAllowed) return self::defaultSnapshot();
         throw new RuntimeException('Canonical normal-match economy requires an enabled database.');
+    }
+
+    private static function defaultSnapshot(): array
+    {
+        $defaults = EconomyConfigDefinition::defaults();
+        return [
+            'version' => 0,
+            'config_sha256' => EconomyConfigDefinition::sha256($defaults),
+            'config' => $defaults,
+        ];
     }
 }
