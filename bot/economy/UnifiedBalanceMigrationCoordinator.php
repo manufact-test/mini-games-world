@@ -17,15 +17,61 @@ final class UnifiedBalanceMigrationCoordinator
         private LedgerIntegrityVerifier $integrity
     ) {}
 
+    /** Read-only marker/integrity status. Never starts migration. */
+    public function preview(): array
+    {
+        $rows = $this->markerRows();
+        if ($rows === []) {
+            return [
+                'ok' => false,
+                'read_only' => true,
+                'completed' => false,
+                'migration_version' => $this->rule->version(),
+                'blockers' => ['Unified balance cutover marker is not completed.'],
+                'sensitive_identifiers_exposed' => false,
+            ];
+        }
+        if (count($rows) !== 1 || !is_array($rows[0])) {
+            return [
+                'ok' => false,
+                'read_only' => true,
+                'completed' => false,
+                'migration_version' => $this->rule->version(),
+                'blockers' => ['Unified balance migration marker is ambiguous.'],
+                'sensitive_identifiers_exposed' => false,
+            ];
+        }
+
+        try {
+            $verified = $this->verifyCompletedMarker($rows[0]);
+        } catch (Throwable $error) {
+            return [
+                'ok' => false,
+                'read_only' => true,
+                'completed' => false,
+                'migration_version' => $this->rule->version(),
+                'blockers' => [$error->getMessage()],
+                'sensitive_identifiers_exposed' => false,
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'read_only' => true,
+            'completed' => true,
+            'migration_version' => $this->rule->version(),
+            'rule_fingerprint' => $this->rule->fingerprint(),
+            'verified_migration_account_count' => (int)($verified['verified_migration_account_count'] ?? 0),
+            'blockers' => [],
+            'sensitive_identifiers_exposed' => false,
+        ];
+    }
+
     public function ensureMigrated(): array
     {
         return $this->database->transaction(function (DatabaseConnectionInterface $db): array {
-            $operationKey = self::MARKER_PREFIX . $this->rule->version();
-            $rows = $db->fetchAll(
-                'SELECT operation_key, request_sha256, status, result_json
-                 FROM mgw_idempotency_keys WHERE operation_key = :operation_key',
-                ['operation_key' => $operationKey]
-            );
+            $operationKey = $this->markerOperationKey();
+            $rows = $this->markerRows($db);
 
             if ($rows !== []) {
                 if (count($rows) !== 1 || !is_array($rows[0])) {
@@ -71,6 +117,21 @@ final class UnifiedBalanceMigrationCoordinator
 
             return $result;
         });
+    }
+
+    private function markerRows(?DatabaseConnectionInterface $database = null): array
+    {
+        $database ??= $this->database;
+        return $database->fetchAll(
+            'SELECT operation_key, request_sha256, status, result_json
+             FROM mgw_idempotency_keys WHERE operation_key = :operation_key',
+            ['operation_key' => $this->markerOperationKey()]
+        );
+    }
+
+    private function markerOperationKey(): string
+    {
+        return self::MARKER_PREFIX . $this->rule->version();
     }
 
     private function verifyCompletedMarker(array $row): array
