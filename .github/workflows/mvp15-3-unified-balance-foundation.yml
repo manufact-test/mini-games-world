@@ -7,6 +7,7 @@ on:
       - agent/mvp-15-3-profile-load-regression
       - agent/mvp-15-3-legacy-identity-reconciliation
       - agent/mvp-15-3-dev-user-unified-sync
+      - agent/mvp-15-3-entrypoint-fix
     paths:
       - 'bot/economy/**'
       - 'bot/ledger/RuntimeEconomyRepository.php'
@@ -35,6 +36,7 @@ on:
       - 'app/assets/js/screens/profile-screen.js'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/index.html'
+      - 'app/v114.php'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
@@ -91,6 +93,7 @@ jobs:
           php -l bot/profile.php
           php -l bot/health.php
           php -l bot/staging-e2e-readiness.php
+          php -l app/v114.php
           php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
           php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
           php -l bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
@@ -111,11 +114,22 @@ jobs:
           grep -Fx 'bot/economy/UnifiedBalanceMigrationCoordinator.php' "$manifest"
           grep -Fx 'bot/economy/UnifiedEconomyRuntimeSyncService.php' "$manifest"
           grep -Fx 'bot/economy/unified_balance_mapping.php' "$manifest"
+          grep -Fx 'app/v114.php' "$manifest"
           grep -Fx 'app/assets/js/screens/home-screen.js' "$manifest"
           grep -Fx 'app/assets/js/screens/store-screen.js' "$manifest"
           python3 scripts/ci/staging-runtime-fingerprint.py | grep -E '^[a-f0-9]{64}$'
           grep -F "__DIR__ . '/profile.php'" bot/health.php
           grep -F "'canonical_profile_endpoint'" bot/staging-e2e-readiness.php
+
+      - name: Verify canonical app entry transform
+        run: |
+          set -Eeuo pipefail
+          php app/v114.php > /tmp/mgw-app-entry.html
+          grep -F './assets/js/main.js?v=d2-unified-wallet-15-3' /tmp/mgw-app-entry.html
+          grep -F './assets/css/main.css?v=146&sk=3&icons=c1efd5af&render=21&review=timer-optical-center-13&wallet=15-3' /tmp/mgw-app-entry.html
+          grep -F './assets/js/phase-b-current-entry.js?v=122&b=da0ce0747073' /tmp/mgw-app-entry.html
+          if grep -Fq 'Mini Games World main-script anchor is unavailable.' /tmp/mgw-app-entry.html; then exit 1; fi
+          if grep -Fq 'Mini Games World Shield King presentation is unavailable.' /tmp/mgw-app-entry.html; then exit 1; fi
 
       - name: Include exact profile bootstrap under local-safe config
         env:
