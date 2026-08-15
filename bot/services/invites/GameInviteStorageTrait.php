@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/GameLaunchFinalizationService.php';
 require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';
+require_once dirname(__DIR__, 2) . '/runtime/UnifiedGameZonePolicy.php';
 
 trait GameInviteStorageTrait
 {
@@ -19,12 +20,12 @@ trait GameInviteStorageTrait
         UnifiedBalanceRuntimeState::ensureUser($user);
         if (!isset($db['invites']) || !is_array($db['invites'])) $db['invites'] = [];
         $gameType = $this->catalog->normalizeGameType($gameType);
-        $room = $room === 'gold' ? 'gold' : 'match';
+        $room = UnifiedGameZonePolicy::storageRoom();
         if (!$this->catalog->supportsRoom($gameType, $room)) {
-            throw new RuntimeException('Эта игра недоступна в выбранной комнате.');
+            throw new RuntimeException('Эта игра пока недоступна.');
         }
         $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
-        $bet = $this->normalizeBet($room, $bet);
+        $bet = UnifiedGameZonePolicy::entryCost($this->config);
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($user[$balanceKey] ?? 0) < $bet) {
             throw new RuntimeException('Недостаточно коинов для выбранной ставки.');
@@ -75,8 +76,9 @@ trait GameInviteStorageTrait
         $db['queue'] = [];
 
         try {
-            $room = (string)($invite['room'] ?? 'match');
-            $bet = (int)($invite['bet'] ?? 10);
+            UnifiedGameZonePolicy::assertInviteWritable($invite);
+            $room = UnifiedGameZonePolicy::storageRoom();
+            $bet = UnifiedGameZonePolicy::entryCost($this->config);
             $boardSize = (int)($invite['board_size'] ?? 3);
             $gameType = (string)($invite['game_type'] ?? 'tictactoe');
 

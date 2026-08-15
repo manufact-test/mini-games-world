@@ -52,7 +52,6 @@ function mgw_invite_share_text(array $invite, string $shareUrl): string
     return "🎮 Приглашение в Mini Games World\n\n"
         . (string)($invite['inviter_name'] ?? 'Игрок') . " приглашает вас сыграть!\n\n"
         . '🎲 Игра: ' . (string)($invite['game_title'] ?? 'Игра') . "\n"
-        . '🏠 Комната: ' . (string)($invite['room_label'] ?? 'Матч-комната') . "\n"
         . '📐 Вариант: ' . mgw_invite_board_label($invite) . "\n"
         . '🪙 Ставка: ' . (int)($invite['bet'] ?? 0) . " коинов\n\n"
         . "Откройте приглашение и примите вызов 👇\n"
@@ -76,7 +75,6 @@ function mgw_prepare_invite_message(
                 'id' => 'invite_' . (string)($invite['token'] ?? ''),
                 'title' => 'Приглашение в Mini Games World',
                 'description' => (string)($invite['game_title'] ?? 'Игра')
-                    . ' · ' . (string)($invite['room_label'] ?? 'Матч-комната')
                     . ' · ' . mgw_invite_board_label($invite),
                 'input_message_content' => [
                     'message_text' => $shareText,
@@ -119,7 +117,6 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
             . (string)($invite['game_title'] ?? 'игру') . '».';
 
     $text .= "\n\n"
-        . (string)($invite['room_label'] ?? 'Матч-комната') . ' · '
         . mgw_invite_board_label($invite) . ' · '
         . (int)($invite['bet'] ?? 0) . ' коинов';
 
@@ -242,8 +239,8 @@ try {
             $sessions->ensureSessionShape($user);
 
             $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
-            $room = clean_string($payload['room'] ?? 'match', 20);
-            $bet = (int)($payload['bet'] ?? 10);
+            $room = UnifiedGameZonePolicy::storageRoom();
+            $bet = UnifiedGameZonePolicy::entryCost($config);
             $boardSize = (int)($payload['boardSize'] ?? 3);
             $token = clean_string($payload['token'] ?? '', 80);
             $core = [];

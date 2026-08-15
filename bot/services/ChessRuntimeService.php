@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/games/go/GoService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoBotService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoService.php';
 require_once __DIR__ . '/MatchPreparationClockService.php';
+require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
 
 /**
  * Adds the newest isolated engines without changing the stable runtime paths of
@@ -119,7 +120,8 @@ final class ChessRuntimeService
             return $this->base->startSearch($db, $user, $room, $bet, $boardSize, $gameType);
         }
 
-        $room = $room === 'gold' ? 'gold' : 'match';
+        $room = UnifiedGameZonePolicy::storageRoom();
+        $bet = UnifiedGameZonePolicy::entryCost($this->config);
         if (!$this->catalog->supportsRoom($gameType, $room)) {
             throw new RuntimeException('Эта игра недоступна в выбранной комнате.');
         }

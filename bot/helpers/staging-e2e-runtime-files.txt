@@ -137,6 +137,7 @@ bot/services/NotificationService.php
 # versioned server economy config into the accepted legacy executors; the real
 # Telegram v110 shell and client config must deploy in the same exact tree.
 bot/economy/MatchEconomyRuntimeConfig.php
+bot/runtime/UnifiedGameZonePolicy.php
 
 # MVP-15.8 single server-side economy configuration owner. The schema, strict
 # definition, deterministic simulation, version/audit service and narrow Telegram

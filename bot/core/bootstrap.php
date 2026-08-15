@@ -68,6 +68,7 @@ require_once __DIR__ . '/../economy/EconomyConfigSimulator.php';
 require_once __DIR__ . '/../economy/EconomyConfigDefinition.php';
 require_once __DIR__ . '/../economy/EconomyConfigService.php';
 require_once __DIR__ . '/../economy/MatchEconomyRuntimeConfig.php';
+require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';
 $config = MatchEconomyRuntimeConfig::apply($config);
 require_once __DIR__ . '/../runtime/RuntimePrimaryStateSchemaInstaller.php';
 require_once __DIR__ . '/../runtime/DatabasePrimaryStateStorageAdapter.php';

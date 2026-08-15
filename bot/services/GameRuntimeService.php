@@ -7,6 +7,7 @@ require_once dirname(__DIR__) . '/games/checkers/CheckersBotService.php';
 require_once dirname(__DIR__) . '/games/checkers/CheckersService.php';
 require_once dirname(__DIR__) . '/games/reversi/ReversiBotService.php';
 require_once dirname(__DIR__) . '/games/reversi/ReversiService.php';
+require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
 
 final class GameRuntimeService
 {
@@ -107,7 +108,8 @@ final class GameRuntimeService
     ): array {
         $this->normalizeDatabaseGameTypes($db);
         $gameType = $this->catalog->normalizeGameType($gameType);
-        $room = $room === 'gold' ? 'gold' : 'match';
+        $room = UnifiedGameZonePolicy::storageRoom();
+        $bet = UnifiedGameZonePolicy::entryCost($this->config);
 
         if (!$this->catalog->supportsRoom($gameType, $room)) {
             throw new RuntimeException('Эта игра недоступна в выбранной комнате.');
