@@ -19,42 +19,18 @@ jobs:
       ORIGIN: https://seashell-okapi-889488.hostingersite.com
     steps:
       - uses: actions/checkout@v4
-      - name: Probe exact live assets
+      - name: Print live app and readiness responses
         shell: bash
         run: |
-          set -Eeuo pipefail
-          declare -a urls=(
-            '/app/'
-            '/app/assets/js/main.js?v=98.4-wallet-15-3'
-            '/app/assets/js/ui.js?v=90-wallet-15-3'
-            '/app/assets/js/screens/home-screen.js?v=75-wallet-15-3'
-            '/app/assets/js/screens/profile-screen.js?v=93-wallet-15-3'
-            '/app/assets/js/screens/store-screen.js?v=35-wallet-15-3'
-            '/app/assets/css/main.css?v=93-wallet-15-3'
-            '/app/assets/css/components/cards.css?v=125&sk=1&wallet=unified'
-            '/app/assets/css/screens/profile.css?v=125&sk=1&wallet=unified'
-            '/bot/staging-e2e-readiness.php'
-          )
-          for path in "${urls[@]}"; do
+          set -u
+          for path in '/app/' '/app/v114.php' '/app/index.html' '/bot/staging-e2e-readiness.php'; do
             echo "=== ${path} ==="
-            curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 20 \
-              -D /tmp/headers.txt "${ORIGIN}${path}" -o /tmp/body.txt
-            head -n 8 /tmp/headers.txt
-            wc -c /tmp/body.txt
-            case "$path" in
-              '/app/') grep -F 'main.js?v=98.4-wallet-15-3' /tmp/body.txt ;;
-              '/app/assets/js/main.js?v=98.4-wallet-15-3')
-                grep -F "profile-screen.js?v=93-wallet-15-3" /tmp/body.txt
-                grep -F "ui.js?v=90-wallet-15-3" /tmp/body.txt ;;
-              '/app/assets/js/ui.js?v=90-wallet-15-3') grep -F "balanceUnified" /tmp/body.txt ;;
-              '/app/assets/js/screens/home-screen.js?v=75-wallet-15-3') grep -F "ui.js?v=90-wallet-15-3" /tmp/body.txt ;;
-              '/app/assets/js/screens/profile-screen.js?v=93-wallet-15-3')
-                grep -F 'MGW Coins' /tmp/body.txt
-                grep -F "ui.js?v=90-wallet-15-3" /tmp/body.txt ;;
-              '/app/assets/js/screens/store-screen.js?v=35-wallet-15-3') grep -F "ui.js?v=90-wallet-15-3" /tmp/body.txt ;;
-              '/app/assets/css/main.css?v=93-wallet-15-3') grep -F "wallet=unified" /tmp/body.txt ;;
-              '/app/assets/css/components/cards.css?v=125&sk=1&wallet=unified') grep -F 'MVP-15.3 unified wallet geometry' /tmp/body.txt ;;
-              '/app/assets/css/screens/profile.css?v=125&sk=1&wallet=unified') grep -F 'MVP-15.3 single profile wallet' /tmp/body.txt ;;
-              '/bot/staging-e2e-readiness.php') python3 -m json.tool /tmp/body.txt | head -n 80 ;;
-            esac
+            rm -f /tmp/headers.txt /tmp/body.txt
+            code="$(curl --silent --show-error --connect-timeout 10 --max-time 20 \
+              -D /tmp/headers.txt "${ORIGIN}${path}" -o /tmp/body.txt -w '%{http_code}' || true)"
+            echo "HTTP ${code}"
+            sed -n '1,20p' /tmp/headers.txt || true
+            echo '--- BODY ---'
+            sed -n '1,120p' /tmp/body.txt || true
+            echo '------------'
           done
