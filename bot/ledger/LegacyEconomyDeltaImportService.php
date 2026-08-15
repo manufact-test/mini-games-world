@@ -211,7 +211,12 @@ final class LegacyEconomyDeltaImportService
         }
 
         foreach ($this->database->fetchAll('SELECT account_ref, asset_code FROM mgw_balances') as $row) {
-            $scope = (string)($row['account_ref'] ?? '') . "\0" . (string)($row['asset_code'] ?? '');
+            $assetCode = (string)($row['asset_code'] ?? '');
+            // MVP-15.3 target is a separate authoritative asset. Legacy Match/Gold
+            // reconciliation must preserve/audit its own scopes without treating
+            // the canonical mgw_coin row as an unmanaged legacy balance.
+            if ($assetCode === 'mgw_coin') continue;
+            $scope = (string)($row['account_ref'] ?? '') . "\0" . $assetCode;
             if (!isset($expectedScopes[$scope])) {
                 $blocking[] = 'Database contains a balance outside the frozen economy source.';
                 break;

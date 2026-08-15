@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/GameLaunchFinalizationService.php';
+require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';
 
 trait GameInviteStorageTrait
 {
@@ -15,6 +16,7 @@ trait GameInviteStorageTrait
         string $source,
         string $status
     ): array {
+        UnifiedBalanceRuntimeState::ensureUser($user);
         if (!isset($db['invites']) || !is_array($db['invites'])) $db['invites'] = [];
         $gameType = $this->catalog->normalizeGameType($gameType);
         $room = $room === 'gold' ? 'gold' : 'match';
@@ -23,7 +25,7 @@ trait GameInviteStorageTrait
         }
         $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
         $bet = $this->normalizeBet($room, $bet);
-        $balanceKey = $room === 'gold' ? 'balance_gold' : 'balance_match';
+        $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($user[$balanceKey] ?? 0) < $bet) {
             throw new RuntimeException('Недостаточно коинов для выбранной ставки.');
         }

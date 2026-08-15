@@ -141,7 +141,7 @@ function openTopUpSheet(room){
   const title = isGold ? 'Пополнить Gold' : 'Пополнить Match';
   const coinName = isGold ? 'Gold' : 'Match';
   const rate = isGold ? 1 : 2;
-  const balance = isGold ? (state.user?.balance_gold ?? 0) : (state.user?.balance_match ?? 0);
+  const balance = Number(state.user?.balance ?? 0);
 
   openSheet(`
     <div class="sheet-head">
@@ -266,7 +266,7 @@ async function openStoreSheet(){
         <button class="close" data-close-sheet type="button">×</button>
       </div>
       <div class="stack">
-        <div class="card"><h3>Доступно для магазина</h3><p>Баланс Gold-комнаты: ${shop.balance_gold ?? 0} коинов.<br>Доступно для заказа: ${shop.available ?? 0} коинов.<br>Минимальный заказ: ${shop.min_order ?? 1000} коинов.</p></div>
+        <div class="card"><h3>Доступно для магазина</h3><p>Баланс Gold-комнаты: ${shop.balance ?? 0} коинов.<br>Доступно для заказа: ${shop.available ?? 0} коинов.<br>Минимальный заказ: ${shop.min_order ?? 1000} коинов.</p></div>
         <div class="small-note">Купленные коины нельзя сразу тратить в магазине. Они становятся доступными после участия в Gold-матчах.</div>
       </div>
     `);

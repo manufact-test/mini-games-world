@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
+
 final class AdminService
 {
     public function __construct(private array $config) {}
@@ -150,7 +152,8 @@ final class AdminService
 
         $realUsers = 0;
         $devUsers = 0;
-        $goldBalanceTotal = 0;
+        $unifiedBalanceTotal = 0;
+        $legacyGoldBalanceTotal = 0;
         $goldDepositedTotal = 0;
         $negativeBalances = 0;
         $playingWithoutGame = 0;
@@ -165,10 +168,13 @@ final class AdminService
             if ($this->isDevUser($user)) $devUsers++;
             else $realUsers++;
 
-            $goldBalanceTotal += (int)($user['balance_gold'] ?? 0);
+            UnifiedBalanceRuntimeState::ensureUser($user);
+            $unifiedBalanceTotal += (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
+            $legacy = UnifiedBalanceRuntimeState::legacyBreakdown($user);
+            $legacyGoldBalanceTotal += (int)($legacy['source_balance_gold'] ?? 0);
             $goldDepositedTotal += (int)($user['gold_deposited_total'] ?? 0);
 
-            if ((int)($user['balance_match'] ?? 0) < 0 || (int)($user['balance_gold'] ?? 0) < 0) $negativeBalances++;
+            if ((int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) < 0) $negativeBalances++;
 
             $status = (string)($user['status'] ?? 'idle');
             if ($status === 'playing') {
@@ -237,7 +243,8 @@ final class AdminService
         $lines[] = "Платежных записей: " . count($payments);
         $lines[] = "Казна Match: {$feesMatch} коинов";
         $lines[] = "Казна Gold: {$feesGold} коинов";
-        $lines[] = "Gold на балансах игроков: {$goldBalanceTotal} коинов";
+        $lines[] = "MGW Coins на текущих балансах: {$unifiedBalanceTotal} коинов";
+        $lines[] = "Legacy Gold snapshot: {$legacyGoldBalanceTotal} коинов";
         $lines[] = "Gold начислено/куплено всего: {$goldDepositedTotal} коинов";
 
         $lines[] = "\nОшибки:";
@@ -500,9 +507,10 @@ final class AdminService
         $amount = abs((int)($order['amount'] ?? 0));
         $now = now_iso();
         $user =& $db['users'][$userId];
+        UnifiedBalanceRuntimeState::ensureUser($user);
 
         if (empty($order['refund_done'])) {
-            $user['balance_gold'] = (int)($user['balance_gold'] ?? 0) + $amount;
+            $user[UnifiedBalanceRuntimeState::FIELD] = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) + $amount;
             $user['gold_shop_spent_total'] = max(0, (int)($user['gold_shop_spent_total'] ?? 0) - $amount);
 
             $order['refund_done'] = true;
@@ -519,7 +527,7 @@ final class AdminService
                 'room' => 'gold',
                 'provider' => (string)($order['provider'] ?? ''),
                 'amount' => $amount,
-                'balance_after' => (int)($user['balance_gold'] ?? 0),
+                'balance_after' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),
                 'description' => 'Возврат за отклонённую заявку магазина',
                 'admin_id' => $adminId,
                 'created_at' => $now,
@@ -577,7 +585,9 @@ final class AdminService
     public function goldTools(array $db): string
     {
         $users = array_values(array_filter($db['users'] ?? [], fn($user) => !$this->isDevUser($user)));
-        usort($users, fn($a, $b) => (int)($b['balance_gold'] ?? 0) <=> (int)($a['balance_gold'] ?? 0));
+        foreach ($users as &$candidate) UnifiedBalanceRuntimeState::ensureUser($candidate);
+        unset($candidate);
+        usort($users, fn($a, $b) => (int)($b[UnifiedBalanceRuntimeState::FIELD] ?? 0) <=> (int)($a[UnifiedBalanceRuntimeState::FIELD] ?? 0));
 
         $addCommand = $this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add';
 
@@ -592,16 +602,16 @@ final class AdminService
         $lines[] = "{$addCommand} @SlojniyTip 100 тестовое пополнение";
 
         if ($users) {
-            $lines[] = "\nИгроки с Gold-балансом:";
+            $lines[] = "\nИгроки с MGW Coins (legacy Gold tool):";
             $shown = 0;
             foreach ($users as $user) {
-                $gold = (int)($user['balance_gold'] ?? 0);
+                $coins = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
                 $deposited = (int)($user['gold_deposited_total'] ?? 0);
-                if ($gold <= 0 && $deposited <= 0 && $shown >= 5) continue;
+                if ($coins <= 0 && $deposited <= 0 && $shown >= 5) continue;
 
                 $lines[] = $this->userLabel($user)
                     . " · ID " . (string)($user['id'] ?? '-')
-                    . " · Gold " . $gold
+                    . " · MGW Coins " . $coins
                     . " · начислено/куплено всего " . $deposited;
                 $shown++;
 
@@ -639,10 +649,11 @@ final class AdminService
 
         $reason = $reason !== '' ? $reason : 'тестовое админское начисление';
 
-        $before = (int)($db['users'][$userId]['balance_gold'] ?? 0);
+        UnifiedBalanceRuntimeState::ensureUser($db['users'][$userId]);
+        $before = (int)($db['users'][$userId][UnifiedBalanceRuntimeState::FIELD] ?? 0);
         $depositedBefore = (int)($db['users'][$userId]['gold_deposited_total'] ?? 0);
 
-        $db['users'][$userId]['balance_gold'] = $before + $amount;
+        $db['users'][$userId][UnifiedBalanceRuntimeState::FIELD] = $before + $amount;
         $db['users'][$userId]['gold_deposited_total'] = $depositedBefore + $amount;
         $db['users'][$userId]['last_gold_topup_at'] = now_iso();
 
@@ -665,7 +676,7 @@ final class AdminService
             'created_at' => now_iso(),
         ];
 
-        return "✅ Gold начислен\n\n"
+        return "✅ MGW Coins начислены (legacy Gold tool)\n\n"
             . "Игрок: " . $this->userLabel($db['users'][$userId]) . "\n"
             . "ID: {$userId}\n"
             . "Начислено: {$amount} коинов\n"
@@ -717,7 +728,7 @@ final class AdminService
         $lines[] = "\nТакже работает старый вариант:";
         $lines[] = "{$usersCommand} @username";
         $lines[] = "\nЧто будет в карточке:";
-        $lines[] = "• балансы Match и Gold";
+        $lines[] = "• единый баланс MGW Coins + legacy breakdown";
         $lines[] = "• статус игрока";
         $lines[] = "• реальная статистика по завершённым матчам";
         $lines[] = "• последние матчи";
@@ -743,6 +754,8 @@ final class AdminService
         if ($query !== '') return $this->userDetails($db, $query);
 
         $users = array_values(array_filter($db['users'] ?? [], fn($user) => !$this->isDevUser($user)));
+        foreach ($users as &$candidate) UnifiedBalanceRuntimeState::ensureUser($candidate);
+        unset($candidate);
         if (!$users) {
             return "👥 Пользователи\n\nПользователей пока нет.\n\nКоманда: "
                 . ($this->config['admin_users_command'] ?? '/mgw_private_admin_7291_users');
@@ -767,7 +780,7 @@ final class AdminService
                 }
             }
             if ($status === 'searching') $searching++;
-            if ((int)($user['balance_match'] ?? 0) < 0 || (int)($user['balance_gold'] ?? 0) < 0) {
+            if ((int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) < 0) {
                 $problems[] = $this->userLabel($user) . " — отрицательный баланс";
             }
         }
@@ -799,7 +812,7 @@ final class AdminService
                 . " — " . (int)$stats['games_played'] . " завершённых матчей"
                 . ", побед: " . (int)$stats['wins']
                 . ", ничьих: " . (int)$stats['draws']
-                . "\nБаланс: Match " . (int)($user['balance_match'] ?? 0) . " коинов · Gold " . (int)($user['balance_gold'] ?? 0) . " коинов";
+                . "\nБаланс: MGW Coins " . (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) . " коинов";
         }
 
         $lines[] = "\n🆕 Последние новые";
@@ -827,6 +840,8 @@ final class AdminService
             return "👤 Карточка игрока\n\nПользователь не найден: {$query}\n\nИскать можно по:\n• @username\n• Telegram ID\n• имени\n\nПример:\n{$command} @username";
         }
 
+        UnifiedBalanceRuntimeState::ensureUser($user);
+        $legacy = UnifiedBalanceRuntimeState::legacyBreakdown($user);
         $id = (string)($user['id'] ?? '');
         $stats = $this->calculatedStatsForUser($db, $id);
         $available = $this->shopAvailableForAdmin($user);
@@ -851,9 +866,10 @@ final class AdminService
         $lines[] = "Создан: " . $this->formatDate((string)($user['registered_at'] ?? ''));
         $lines[] = "Был в игре: " . $this->formatDate((string)($user['last_seen_at'] ?? ''));
 
-        $lines[] = "\n💰 Балансы";
-        $lines[] = "Match-комната: " . (int)($user['balance_match'] ?? 0) . " коинов";
-        $lines[] = "Gold-комната: " . (int)($user['balance_gold'] ?? 0) . " коинов";
+        $lines[] = "\n💰 Баланс";
+        $lines[] = "MGW Coins: " . (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) . " коинов";
+        $lines[] = "Legacy Match snapshot: " . (int)($legacy['source_balance_match'] ?? 0) . " коинов";
+        $lines[] = "Legacy Gold snapshot: " . (int)($legacy['source_balance_gold'] ?? 0) . " коинов";
         $lines[] = "Gold-оборот: " . (int)($user['gold_wagered_total'] ?? 0) . " коинов";
         $lines[] = "Gold начислено/куплено всего: " . (int)($user['gold_deposited_total'] ?? 0) . " коинов";
         $lines[] = "Потрачено в магазине: " . (int)($user['gold_shop_spent_total'] ?? 0) . " коинов";
@@ -1252,7 +1268,8 @@ final class AdminService
 
     private function shopAvailableForAdmin(array $user): int
     {
-        $balance = (int)($user['balance_gold'] ?? 0);
+        UnifiedBalanceRuntimeState::ensureUser($user);
+        $balance = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
         $wagered = (int)($user['gold_wagered_total'] ?? 0);
         $spent = (int)($user['gold_shop_spent_total'] ?? 0);
         return max(0, min($balance, $wagered - $spent));

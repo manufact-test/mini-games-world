@@ -76,7 +76,7 @@ function renderStore(){
 
   const { shop, countries, items } = storeState;
   const available = Number(shop.available || 0);
-  const balance = Number(shop.balance_gold || 0);
+  const balance = Number(shop.balance || 0);
   const filteredItems = items.filter(item => String(item.country_code || '') === storeState.selectedCountry);
   const selectedItem = items.find(item => String(item.id || '') === storeState.selectedItemId) || filteredItems[0] || null;
 

@@ -27,8 +27,8 @@ final readonly class RuntimeMatchService
             $this->rememberCommand($state, $accountId, $commandId, 'start_search', $nowEpoch);
             return $this->projection($state, $accountId, $nowEpoch);
         }
-        if ((int)($account['balance_match'] ?? 0) < $this->config->matchBet) {
-            throw new \RuntimeException('Недостаточно тестовых Match-коинов для поиска.');
+        if ((int)($account['balance'] ?? 0) < $this->config->matchBet) {
+            throw new \RuntimeException('Недостаточно MGW Coins для поиска.');
         }
 
         unset($state['queue'][$accountId]);
@@ -250,7 +250,7 @@ final readonly class RuntimeMatchService
                 ? $this->publicResult($resultGame, $accountId)
                 : null,
             'balances' => [
-                'match' => max(0, (int)($account['balance_match'] ?? 0)),
+                'match' => max(0, (int)($account['balance'] ?? 0)),
             ],
         ];
     }
@@ -302,7 +302,7 @@ final readonly class RuntimeMatchService
         $first =& $this->account($state, $firstId);
         $second =& $this->account($state, $secondId);
         foreach ([$firstId => &$first, $secondId => &$second] as $id => &$account) {
-            if ((int)($account['balance_match'] ?? 0) < $this->config->matchBet) {
+            if ((int)($account['balance'] ?? 0) < $this->config->matchBet) {
                 unset($state['queue'][$id]);
                 $account['status'] = 'idle';
                 throw new \RuntimeException('Один из игроков больше не может участвовать в матче.');
@@ -316,7 +316,7 @@ final readonly class RuntimeMatchService
         $now = gmdate('c', $nowEpoch);
 
         foreach ([$firstId, $secondId] as $playerId) {
-            $state['accounts'][$playerId]['balance_match'] = (int)$state['accounts'][$playerId]['balance_match'] - $this->config->matchBet;
+            $state['accounts'][$playerId]['balance'] = (int)$state['accounts'][$playerId]['balance'] - $this->config->matchBet;
             $state['accounts'][$playerId]['status'] = 'playing';
             $state['accounts'][$playerId]['current_game_id'] = $gameId;
             $state['accounts'][$playerId]['last_result_game_id'] = null;
@@ -328,7 +328,7 @@ final readonly class RuntimeMatchService
                 'account_id' => $playerId,
                 'game_id' => $gameId,
                 'amount' => -$this->config->matchBet,
-                'balance_after' => (int)$state['accounts'][$playerId]['balance_match'],
+                'balance_after' => (int)$state['accounts'][$playerId]['balance'],
                 'created_at' => $now,
             ];
         }
@@ -389,14 +389,14 @@ final readonly class RuntimeMatchService
         if ($winnerId === null) {
             foreach ($players as $playerId) {
                 if (!isset($state['accounts'][$playerId])) continue;
-                $state['accounts'][$playerId]['balance_match'] = (int)$state['accounts'][$playerId]['balance_match'] + $this->config->matchBet;
+                $state['accounts'][$playerId]['balance'] = (int)$state['accounts'][$playerId]['balance'] + $this->config->matchBet;
                 $state['ledger'][] = [
                     'id' => $this->id('ledger'),
                     'type' => 'match_draw_refund',
                     'account_id' => $playerId,
                     'game_id' => $game['id'],
                     'amount' => $this->config->matchBet,
-                    'balance_after' => (int)$state['accounts'][$playerId]['balance_match'],
+                    'balance_after' => (int)$state['accounts'][$playerId]['balance'],
                     'created_at' => $now,
                 ];
             }
@@ -405,14 +405,14 @@ final readonly class RuntimeMatchService
             $commission = (int)ceil($bank * $this->config->commissionRate);
             $payout = max(0, $bank - $commission);
             if (isset($state['accounts'][$winnerId])) {
-                $state['accounts'][$winnerId]['balance_match'] = (int)$state['accounts'][$winnerId]['balance_match'] + $payout;
+                $state['accounts'][$winnerId]['balance'] = (int)$state['accounts'][$winnerId]['balance'] + $payout;
                 $state['ledger'][] = [
                     'id' => $this->id('ledger'),
                     'type' => 'match_win',
                     'account_id' => $winnerId,
                     'game_id' => $game['id'],
                     'amount' => $payout,
-                    'balance_after' => (int)$state['accounts'][$winnerId]['balance_match'],
+                    'balance_after' => (int)$state['accounts'][$winnerId]['balance'],
                     'created_at' => $now,
                 ];
             }
