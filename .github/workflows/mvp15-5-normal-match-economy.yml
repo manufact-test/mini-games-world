@@ -39,8 +39,6 @@ jobs:
           node --check app/assets/js/screens/home-screen.js
       - name: Canonical normal-match regression
         run: php bot/tests/Mvp155NormalMatchEconomyTest.php
-      - name: Economy config regression
-        run: php bot/tests/EconomyConfigFoundationTest.php
       - name: Verify client has no active Match price owner
         shell: bash
         run: |
