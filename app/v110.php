@@ -43,7 +43,7 @@ $importMap = <<<'HTML'
     "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=91&mvp15=unified-balance",
     "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=75&mvp15=unified-balance",
     "./assets/js/screens/store-screen.js?v=34": "./assets/js/screens/store-screen.js?v=35&mvp15=unified-balance",
-    "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1111&mvp15=unified-balance-profile-cleanup",
+    "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1112&mvp15=unified-balance-profile-copy-icon",
     "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1139&mvp15=unified-balance",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
@@ -88,7 +88,7 @@ $html = str_replace($cleanEntryAnchor, $cleanEntryTarget, $html);
 $html = str_replace($mainAnchor, $mainTarget, $html);
 $html = str_replace(
     $hotfixAnchor,
-    'data-hotfix-build="v110-mvp15-unified-balance-profile-cleanup-v1159"',
+    'data-hotfix-build="v110-mvp15-unified-balance-profile-copy-icon-v1160"',
     $html
 );
 
@@ -98,7 +98,7 @@ foreach ([
     'shield_king_css' => $cssTarget,
     'unified_ui_cache' => './assets/js/ui.js?v=91&mvp15=unified-balance',
     'unified_home_cache' => './assets/js/screens/home-screen.js?v=75&mvp15=unified-balance',
-    'unified_profile_cache' => './assets/js/screens/profile-screen-v110.js?v=1111&mvp15=unified-balance-profile-cleanup',
+    'unified_profile_cache' => './assets/js/screens/profile-screen-v110.js?v=1112&mvp15=unified-balance-profile-copy-icon',
 ] as $targetName => $target) {
     if (!str_contains($html, $target)) {
         http_response_code(500);
