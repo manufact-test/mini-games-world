@@ -130,15 +130,15 @@ function renderProfileOverview(user = {}, orders = []){
       <div class="profile-section-head">
         <div>
           <h2>Мои средства</h2>
-          <p>Единый баланс Mini Games World.</p>
+          <p>Ваш баланс коинов.</p>
         </div>
       </div>
 
       <div class="profile-wallet-grid">
         <div class="profile-wallet-card match">
-          <span><img src="./assets/shield-king-icon.php?asset=ui%2Feconomy%2Fcoins.webp" data-sk-asset="ui/economy/coins.webp" width="18" height="18" alt="" aria-hidden="true"> MGW Coins</span>
+          <span><img src="./assets/shield-king-icon.php?v=c1efd5af&asset=ui%2Feconomy%2Fcoins.webp" class="shield-king-label-icon" data-sk-asset="ui/economy/coins.webp" alt="" aria-hidden="true"> MGW Coins</span>
           <strong>${formatNumber(balance)}</strong>
-          <small>единый баланс для игр и магазина</small>
+          <small>Для игр, наград и магазина</small>
         </div>
       </div>
     </section>
