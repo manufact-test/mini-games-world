@@ -57,8 +57,8 @@ s = once(s,
     "        $id = (string)($user['id'] ?? '');\n        $stats = $this->calculatedStatsForUser($db, $id);\n",
     "        UnifiedBalanceRuntimeState::ensureUser($user);\n        $legacy = UnifiedBalanceRuntimeState::legacyBreakdown($user);\n        $id = (string)($user['id'] ?? '');\n        $stats = $this->calculatedStatsForUser($db, $id);\n",
     p + ' user details canonicalize')
-old_balances = '''        $lines[] = "\\n💰 Балансы";\n        $lines[] = "Match-комната: " . (int)($user['balance_match'] ?? 0) . " коинов";\n        $lines[] = "Gold-комната: " . (int)($user['balance_gold'] ?? 0) . " коинов";'''
-new_balances = '''        $lines[] = "\\n💰 Баланс";\n        $lines[] = "MGW Coins: " . (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) . " коинов";\n        $lines[] = "Legacy Match snapshot: " . (int)($legacy['source_balance_match'] ?? 0) . " коинов";\n        $lines[] = "Legacy Gold snapshot: " . (int)($legacy['source_balance_gold'] ?? 0) . " коинов";'''
+old_balances = """        $lines[] = "\\n💰 Балансы";\n        $lines[] = "Match-комната: " . (int)($user['balance_match'] ?? 0) . " коинов";\n        $lines[] = "Gold-комната: " . (int)($user['balance_gold'] ?? 0) . " коинов";"""
+new_balances = """        $lines[] = "\\n💰 Баланс";\n        $lines[] = "MGW Coins: " . (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0) . " коинов";\n        $lines[] = "Legacy Match snapshot: " . (int)($legacy['source_balance_match'] ?? 0) . " коинов";\n        $lines[] = "Legacy Gold snapshot: " . (int)($legacy['source_balance_gold'] ?? 0) . " коинов";"""
 s = once(s, old_balances, new_balances, p + ' user detail balances')
 
 s = once(s,
