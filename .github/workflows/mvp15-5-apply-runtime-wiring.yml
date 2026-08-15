@@ -19,7 +19,7 @@ jobs:
         with:
           ref: agent/mvp-15-5-normal-match-economy
           fetch-depth: 1
-      - name: Apply exact replacements
+      - name: Apply accepted v110 ownership wiring
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -35,27 +35,9 @@ jobs:
               p.write_text(text.replace(old, new, 1), encoding='utf-8')
 
           replace_once(
-              'bot/core/bootstrap.php',
-              "require_once __DIR__ . '/../database/PdoConnectionFactory.php';\n",
-              "require_once __DIR__ . '/../database/PdoConnectionFactory.php';\n"
-              "require_once __DIR__ . '/../economy/EconomyConfigSimulator.php';\n"
-              "require_once __DIR__ . '/../economy/EconomyConfigDefinition.php';\n"
-              "require_once __DIR__ . '/../economy/EconomyConfigService.php';\n"
-              "require_once __DIR__ . '/../economy/MatchEconomyRuntimeConfig.php';\n"
-              "$config = MatchEconomyRuntimeConfig::apply($config);\n"
-          )
-
-          replace_once(
-              'bot/api.php',
-              "                    'weekly_match' => $weeklyMatch->status($data, $user),\n                    'games' => $games->catalog(),\n",
-              "                    'weekly_match' => $weeklyMatch->status($data, $user),\n"
-              "                    'match_economy' => MatchEconomyRuntimeConfig::publicStatus($config),\n"
-              "                    'games' => $games->catalog(),\n"
-          )
-
-          replace_once(
-              'app/assets/js/main.js',
-              "    setRoom(APP_CONFIG.defaultRoom);\n    const result = await api.bootstrap();\n    state.user = result.user;\n",
+              'app/assets/js/main-v110-handoff-shell.js',
+              "    setRoom(APP_CONFIG.defaultRoom);\n    const statsTicket = beginStatsRequest('api');\n    const result = await api.bootstrap();\n    const mgwProfileResult = await api.mgwProfile();\n",
+              "    const statsTicket = beginStatsRequest('api');\n"
               "    const result = await api.bootstrap();\n"
               "    const matchEntryCost = Number(result.match_economy?.entry_cost);\n"
               "    if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {\n"
@@ -64,40 +46,64 @@ jobs:
               "    APP_CONFIG.matchBet = matchEntryCost;\n"
               "    state.selectedBet = matchEntryCost;\n"
               "    setRoom(APP_CONFIG.defaultRoom);\n"
-              "    state.user = result.user;\n"
+              "    const mgwProfileResult = await api.mgwProfile();\n"
           )
 
           replace_once(
-              'app/assets/js/config.js',
-              "  matchBet: 10,\n",
-              "  matchBet: null,\n"
+              'app/v110.php',
+              '    "./assets/js/state.js?v=27": "./assets/js/state.js?v=28&mvp15=unified-profile",\n',
+              '    "./assets/js/config.js?v=38": "./assets/js/config.js?v=39&mvp15=match-economy",\n'
+              '    "./assets/js/state.js?v=27": "./assets/js/state.js?v=29&mvp15=match-economy",\n'
+          )
+          replace_once(
+              'app/v110.php',
+              '    "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=75&mvp15=unified-balance",\n',
+              '    "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=76&mvp15=match-economy",\n'
+          )
+          replace_once(
+              'app/v110.php',
+              '    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1139&mvp15=unified-balance",\n',
+              '    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1140&mvp15=match-economy",\n'
+          )
+          replace_once(
+              'app/v110.php',
+              "    'unified_home_cache' => './assets/js/screens/home-screen.js?v=75&mvp15=unified-balance',\n",
+              "    'match_config_cache' => './assets/js/config.js?v=39&mvp15=match-economy',\n"
+              "    'match_state_cache' => './assets/js/state.js?v=29&mvp15=match-economy',\n"
+              "    'unified_home_cache' => './assets/js/screens/home-screen.js?v=76&mvp15=match-economy',\n"
+              "    'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1140&mvp15=match-economy',\n"
+          )
+          replace_once(
+              'app/v110.php',
+              "header('X-MGW-Balance-UI: unified-balance-v1');\n",
+              "header('X-MGW-Balance-UI: unified-balance-v1');\n"
+              "header('X-MGW-Match-Economy: server-config-v1');\n"
           )
 
           replace_once(
-              'app/assets/js/state.js',
-              "  selectedBet: 10,\n",
-              "  selectedBet: 0,\n"
+              'bot/helpers/staging-e2e-runtime-files.txt',
+              'app/assets/js/state.js\napp/assets/js/ui.js\n',
+              'app/assets/js/state.js\napp/assets/js/config.js\napp/assets/js/ui.js\n'
           )
-
-          p = Path('app/assets/js/screens/home-screen.js')
-          text = p.read_text(encoding='utf-8')
-          old1 = 'Обычная комната для быстрых матчей. Участие всегда стоит 10 коинов.'
-          new1 = 'Обычная комната для быстрых матчей. Участие всегда стоит ${APP_CONFIG.matchBet} коинов.'
-          old2 = "'В Match-комнате участие всегда стоит 10 коинов.'"
-          new2 = "`В Match-комнате участие всегда стоит ${APP_CONFIG.matchBet} коинов.`"
-          if text.count(old1) != 1 or text.count(old2) != 1:
-              raise SystemExit('home-screen.js: canonical Match copy anchors changed')
-          text = text.replace(old1, new1, 1).replace(old2, new2, 1)
-          p.write_text(text, encoding='utf-8')
+          replace_once(
+              'bot/helpers/staging-e2e-runtime-files.txt',
+              'bot/services/NotificationService.php\n\n# MVP-15.8 single server-side economy configuration owner.',
+              'bot/services/NotificationService.php\n\n'
+              '# MVP-15.5 canonical normal-match activation. The adapter projects the current\n'
+              '# versioned server economy config into the accepted legacy executors; the real\n'
+              '# Telegram v110 shell and client config must deploy in the same exact tree.\n'
+              'bot/economy/MatchEconomyRuntimeConfig.php\n\n'
+              '# MVP-15.8 single server-side economy configuration owner.'
+          )
           PY
 
-      - name: Commit focused runtime wiring
+      - name: Commit accepted-route wiring
         shell: bash
         run: |
           set -Eeuo pipefail
           git config user.name manufact-test
           git config user.email manufact.test@gmail.com
-          git add bot/core/bootstrap.php bot/api.php app/assets/js/main.js app/assets/js/config.js app/assets/js/state.js app/assets/js/screens/home-screen.js
+          git add app/v110.php app/assets/js/main-v110-handoff-shell.js bot/helpers/staging-e2e-runtime-files.txt
           git diff --cached --check
-          git commit -m 'MVP-15.5: wire canonical match economy into runtime'
+          git commit -m 'MVP-15.5: wire canonical Match price into v110 entry'
           git push origin HEAD:agent/mvp-15-5-normal-match-economy
