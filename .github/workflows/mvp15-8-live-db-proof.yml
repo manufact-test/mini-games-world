@@ -1,0 +1,66 @@
+name: MVP-15.8 live DB proof
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-8-live-db-proof
+    paths:
+      - '.github/workflows/mvp15-8-live-db-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove-live-staging-schema:
+    name: Prove live staging migration 0008
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Fetch live staging health
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl \
+            --fail-with-body \
+            --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 25 \
+            --header 'Accept: application/json' \
+            'https://seashell-okapi-889488.hostingersite.com/bot/health.php' \
+            --output live-staging-health.json
+          cat live-staging-health.json
+
+      - name: Assert current migration set is fully applied
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('live-staging-health.json').read_text(encoding='utf-8'))
+          database = payload.get('checks', {}).get('database', {})
+
+          assert payload.get('ok') is True, payload
+          assert payload.get('environment') == 'staging', payload
+          assert database.get('enabled') is True, database
+          assert database.get('connected') is True, database
+          assert database.get('schema_current') is True, database
+          assert int(database.get('applied_migrations') or 0) == 8, database
+          assert int(database.get('pending_migrations') or -1) == 0, database
+
+          print('LIVE_DB_MIGRATION_PROOF=PASS')
+          print('applied_migrations=8')
+          print('pending_migrations=0')
+          print('schema_current=true')
+          PY
+
+      - name: Upload exact live health evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp15-8-live-db-proof-${{ github.run_id }}
+          path: live-staging-health.json
+          if-no-files-found: error
+          retention-days: 7
