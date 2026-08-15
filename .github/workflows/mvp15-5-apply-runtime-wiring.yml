@@ -1,0 +1,103 @@
+name: MVP-15.5 apply runtime wiring
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-5-normal-match-economy
+    paths:
+      - '.github/workflows/mvp15-5-apply-runtime-wiring.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-focused-wiring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-5-normal-match-economy
+          fetch-depth: 1
+      - name: Apply exact replacements
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, got {count}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'bot/core/bootstrap.php',
+              "require_once __DIR__ . '/../database/PdoConnectionFactory.php';\n",
+              "require_once __DIR__ . '/../database/PdoConnectionFactory.php';\n"
+              "require_once __DIR__ . '/../economy/EconomyConfigSimulator.php';\n"
+              "require_once __DIR__ . '/../economy/EconomyConfigDefinition.php';\n"
+              "require_once __DIR__ . '/../economy/EconomyConfigService.php';\n"
+              "require_once __DIR__ . '/../economy/MatchEconomyRuntimeConfig.php';\n"
+              "$config = MatchEconomyRuntimeConfig::apply($config);\n"
+          )
+
+          replace_once(
+              'bot/api.php',
+              "                    'weekly_match' => $weeklyMatch->status($data, $user),\n                    'games' => $games->catalog(),\n",
+              "                    'weekly_match' => $weeklyMatch->status($data, $user),\n"
+              "                    'match_economy' => MatchEconomyRuntimeConfig::publicStatus($config),\n"
+              "                    'games' => $games->catalog(),\n"
+          )
+
+          replace_once(
+              'app/assets/js/main.js',
+              "    setRoom(APP_CONFIG.defaultRoom);\n    const result = await api.bootstrap();\n    state.user = result.user;\n",
+              "    const result = await api.bootstrap();\n"
+              "    const matchEntryCost = Number(result.match_economy?.entry_cost);\n"
+              "    if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {\n"
+              "      throw new Error('Серверная стоимость участия недоступна.');\n"
+              "    }\n"
+              "    APP_CONFIG.matchBet = matchEntryCost;\n"
+              "    state.selectedBet = matchEntryCost;\n"
+              "    setRoom(APP_CONFIG.defaultRoom);\n"
+              "    state.user = result.user;\n"
+          )
+
+          replace_once(
+              'app/assets/js/config.js',
+              "  matchBet: 10,\n",
+              "  matchBet: null,\n"
+          )
+
+          replace_once(
+              'app/assets/js/state.js',
+              "  selectedBet: 10,\n",
+              "  selectedBet: 0,\n"
+          )
+
+          p = Path('app/assets/js/screens/home-screen.js')
+          text = p.read_text(encoding='utf-8')
+          old1 = 'Обычная комната для быстрых матчей. Участие всегда стоит 10 коинов.'
+          new1 = 'Обычная комната для быстрых матчей. Участие всегда стоит ${APP_CONFIG.matchBet} коинов.'
+          old2 = "'В Match-комнате участие всегда стоит 10 коинов.'"
+          new2 = "`В Match-комнате участие всегда стоит ${APP_CONFIG.matchBet} коинов.`"
+          if text.count(old1) != 1 or text.count(old2) != 1:
+              raise SystemExit('home-screen.js: canonical Match copy anchors changed')
+          text = text.replace(old1, new1, 1).replace(old2, new2, 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit focused runtime wiring
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name manufact-test
+          git config user.email manufact.test@gmail.com
+          git add bot/core/bootstrap.php bot/api.php app/assets/js/main.js app/assets/js/config.js app/assets/js/state.js app/assets/js/screens/home-screen.js
+          git diff --cached --check
+          git commit -m 'MVP-15.5: wire canonical match economy into runtime'
+          git push origin HEAD:agent/mvp-15-5-normal-match-economy
