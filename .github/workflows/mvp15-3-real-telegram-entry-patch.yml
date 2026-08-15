@@ -1,0 +1,67 @@
+name: MVP-15.3 real Telegram entry patch
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-3-real-telegram-entry-fix
+    paths:
+      - '.github/workflows/mvp15-3-real-telegram-entry-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-3-real-telegram-entry-fix
+          fetch-depth: 0
+      - name: Patch permanent entry regression gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          focused = Path('.github/workflows/mvp15-3-unified-balance-foundation.yml')
+          text = focused.read_text()
+          replacements = [
+              ("      - agent/mvp-15-3-entrypoint-fix\n", "      - agent/mvp-15-3-entrypoint-fix\n      - agent/mvp-15-3-real-telegram-entry-fix\n"),
+              ("      - 'app/v114.php'\n", "      - 'app/v114.php'\n      - 'app/v110.php'\n      - 'bot/helpers/WebAppLaunchUrl.php'\n      - '.github/workflows/staging-playwright-e2e.yml'\n"),
+              ("          php -l app/v114.php\n", "          php -l app/v114.php\n          php -l app/v110.php\n          php -l bot/helpers/WebAppLaunchUrl.php\n"),
+              ("          grep -Fx 'app/v114.php' \"$manifest\"\n", "          grep -Fx 'app/v114.php' \"$manifest\"\n          grep -Fx 'app/v110.php' \"$manifest\"\n          grep -Fx 'bot/helpers/WebAppLaunchUrl.php' \"$manifest\"\n"),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'missing focused workflow anchor: {old!r}')
+              text = text.replace(old, new, 1)
+
+          marker = "      - name: Include exact profile bootstrap under local-safe config\n"
+          step = """      - name: Verify canonical Telegram start entry transform\n        run: |\n          set -Eeuo pipefail\n          php app/v110.php > /tmp/mgw-v110-entry.html\n          grep -F './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance' /tmp/mgw-v110-entry.html\n          grep -F './assets/css/main.css?v=153&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=15-3' /tmp/mgw-v110-entry.html\n          grep -F './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine' /tmp/mgw-v110-entry.html\n          grep -F './assets/js/ui.js?v=91&mvp15=unified-balance' /tmp/mgw-v110-entry.html\n          grep -F './assets/js/screens/home-screen.js?v=75&mvp15=unified-balance' /tmp/mgw-v110-entry.html\n          grep -F './assets/js/screens/profile-screen-v110.js?v=1110&mvp15=unified-balance' /tmp/mgw-v110-entry.html\n          if grep -Fq './assets/js/main.js?v=98.4-wallet-15-3' /tmp/mgw-v110-entry.html; then exit 1; fi\n          php -r \"require 'bot/helpers/WebAppLaunchUrl.php'; echo WebAppLaunchUrl::base(['base_url' => 'https://example.test']), PHP_EOL;\" | grep -Fx 'https://example.test/app/v110.php?v=1124'\n\n"""
+          if marker not in text:
+              raise SystemExit('missing profile bootstrap step anchor')
+          text = text.replace(marker, step + marker, 1)
+          focused.write_text(text)
+
+          e2e = Path('.github/workflows/staging-playwright-e2e.yml')
+          e2e_text = e2e.read_text()
+          old = "mgw-staging-playwright-r13.4-v1"
+          count = e2e_text.count(old)
+          if count != 2:
+              raise SystemExit(f'expected exactly 2 stale readiness build strings, found {count}')
+          e2e.write_text(e2e_text.replace(old, 'mgw-staging-playwright-r15.3-v1'))
+          PY
+
+          git diff --check
+          grep -F 'Verify canonical Telegram start entry transform' .github/workflows/mvp15-3-unified-balance-foundation.yml
+          test "$(grep -Fc 'mgw-staging-playwright-r15.3-v1' .github/workflows/staging-playwright-e2e.yml)" = '2'
+          test "$(grep -Fc 'mgw-staging-playwright-r13.4-v1' .github/workflows/staging-playwright-e2e.yml)" = '0'
+
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add .github/workflows/mvp15-3-unified-balance-foundation.yml .github/workflows/staging-playwright-e2e.yml
+          git commit -m 'MVP-15.3: gate real Telegram entry graph'
+          git push origin HEAD:agent/mvp-15-3-real-telegram-entry-fix
