@@ -104,6 +104,7 @@ bot/accounts/AccountIdentityService.php
 # balance compatibility until later MVP-15 economy migration stages.
 app/assets/js/api/client.js
 app/assets/js/state.js
+app/assets/js/config.js
 app/assets/js/ui.js
 app/assets/js/screens/profile-screen-v110.js
 app/assets/js/profile/mgw-profile-model.js
@@ -130,6 +131,11 @@ bot/services/ShopService.php
 bot/services/UserService.php
 bot/services/WeeklyMatchEconomyService.php
 bot/services/NotificationService.php
+
+# MVP-15.5 canonical normal-match activation. The adapter projects the current
+# versioned server economy config into the accepted legacy executors; the real
+# Telegram v110 shell and client config must deploy in the same exact tree.
+bot/economy/MatchEconomyRuntimeConfig.php
 
 # MVP-15.8 single server-side economy configuration owner. The schema, strict
 # definition, deterministic simulation, version/audit service and narrow Telegram
