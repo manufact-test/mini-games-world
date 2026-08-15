@@ -68,7 +68,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(7, $runner->migrate(false)['executed_count'], 'Execution test must apply all current migrations');
+$assertSame(8, $runner->migrate(false)['executed_count'], 'Execution test must apply all current migrations');
 
 $now = '2026-08-15 08:55:00.000000';
 $insert = static function (DatabaseConnectionInterface $db, string $account, string $asset, int $amount) use ($now): void {
