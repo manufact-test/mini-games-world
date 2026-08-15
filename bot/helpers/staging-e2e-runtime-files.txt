@@ -130,6 +130,17 @@ bot/services/ShopService.php
 bot/services/UserService.php
 bot/services/WeeklyMatchEconomyService.php
 
+# MVP-15.8 single server-side economy configuration owner. The schema, strict
+# definition, deterministic simulation, version/audit service and narrow Telegram
+# admin endpoint must deploy as one exact tree. The existing Web Admin files above
+# remain fingerprinted and provide the only UI for this config surface.
+bot/admin-economy.php
+bot/helpers/AdminWebAuth.php
+bot/economy/EconomyConfigSimulator.php
+bot/economy/EconomyConfigDefinition.php
+bot/economy/EconomyConfigService.php
+bot/database/migrations/20260815_0008_create_economy_config.php
+
 # Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.
