@@ -19,7 +19,7 @@ import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1137&ux=1';
-import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=76';
+import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=77';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
