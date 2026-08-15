@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
-import { renderUser, renderBalances } from '../ui.js?v=89';
+import { renderUser, renderBalances } from '../ui.js?v=90-wallet-15-3';
 
 let profileLoading = false;
 
