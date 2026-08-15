@@ -214,11 +214,9 @@ final class UserService
             throw new RuntimeException('Verified MGW identity conflicts with the persisted user owner.');
         }
 
-        $currentAccountRef = trim((string)($user['mgw_account_ref'] ?? ''));
-        if ($currentAccountRef !== '' && $currentAccountRef !== $incomingAccountRef) {
-            throw new RuntimeException('Verified account reference conflicts with the persisted user owner.');
-        }
-
+        // mgw_id is the immutable provider-neutral owner. account_ref is a
+        // runtime ownership locator and may legitimately rotate during a future
+        // link/merge while the same verified MGW owner remains unchanged.
         $user['mgw_id'] = $incomingMgwId;
         $user['mgw_account_ref'] = $incomingAccountRef;
         if ($incomingProvider !== '') {
