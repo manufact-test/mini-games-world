@@ -1,0 +1,74 @@
+name: MVP-15.6 fix apply script
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-unified-zone-cutover
+    paths:
+      - '.github/workflows/mvp15-6-fix-apply-script.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-unified-zone-cutover
+          fetch-depth: 1
+      - name: Align exact API source patterns
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/mvp15-6-apply-backend-cutover.yml')
+          s = p.read_text(encoding='utf-8')
+          pairs = [
+            (
+              "            $room = clean_string($payload['room'] ?? 'match', 20);\\n            $room = $room === 'gold' ? 'gold' : 'match';\\n            $bet = (int)($payload['bet'] ?? 0);",
+              "                $room = (string)($payload['room'] ?? 'match');\\n                $room = $room === 'gold' ? 'gold' : 'match';\\n                $bet = (int)($payload['bet'] ?? 10);"
+            ),
+            (
+              "            $room = UnifiedGameZonePolicy::storageRoom();\\n            $bet = UnifiedGameZonePolicy::entryCost($config);",
+              "                $room = UnifiedGameZonePolicy::storageRoom();\\n                $bet = UnifiedGameZonePolicy::entryCost($config);"
+            ),
+            (
+              "            mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);",
+              "                mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);"
+            ),
+            (
+              "            mgw_mark_matchmaking_presence($user, $gameType, $boardSize);",
+              "                mgw_mark_matchmaking_presence($user, $gameType, $boardSize);"
+            ),
+            (
+              "            if ($room === 'match'\\n                && empty($result['game'])\\n                && ($user['status'] ?? '') === 'searching') {",
+              "                if (empty($search['game']) && $room === 'match') {"
+            ),
+            (
+              "            if (empty($result['game'])\\n                && ($user['status'] ?? '') === 'searching') {",
+              "                if (empty($search['game'])) {"
+            ),
+            (
+              "                $recentHumanPresent = mgw_has_other_recent_human_in_room($data, (string)($user['id'] ?? ''), $room);",
+              "                        mgw_has_other_recent_human_in_room($data, $userId, $room)"
+            ),
+            (
+              "                $recentHumanPresent = mgw_has_other_recent_human($data, (string)($user['id'] ?? ''));",
+              "                        mgw_has_other_recent_human($data, $userId)"
+            ),
+          ]
+          for old, new in pairs:
+              if old not in s:
+                  raise SystemExit(f'missing apply-script source pattern: {old!r}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add .github/workflows/mvp15-6-apply-backend-cutover.yml
+          git commit -m 'ci: align MVP-15.6 backend cutover patterns'
+          git push origin HEAD:agent/mvp-15-6-unified-zone-cutover
