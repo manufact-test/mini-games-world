@@ -87,9 +87,7 @@ final class AdminService
         $text .= "В очереди: {$queueCount}\n\n";
 
         $text .= "💰 Казна клуба\n";
-        $text .= "Match-комната: {$feesMatch} коинов\n";
-        $text .= "Gold-комната: {$feesGold} коинов\n";
-        $text .= "Всего комиссий: {$feesTotal} коинов\n\n";
+        $text .= "Комиссии всего: {$feesTotal} коинов\n\n";
 
         $text .= "🎁 Магазин\n";
         $text .= "Заявки ожидают: {$pendingOrders}\n\n";
@@ -105,13 +103,9 @@ final class AdminService
 
         $text .= "Команды:\n";
         $text .= ($this->config['admin_command'] ?? '/mgw_private_admin_7291') . " — открыть панель\n";
-        $text .= ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders') . " — заявки\n";
-        $text .= ($this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order') . " ABC123 — карточка заявки\n";
-        $text .= ($this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done') . " ABC123 — отметить выполненной\n";
-        $text .= ($this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject') . " ABC123 причина — отклонить и вернуть коины\n";
-        $text .= ($this->config['admin_payments_command'] ?? '/mgw_private_admin_7291_payments') . " — платежи\n";
-        $text .= ($this->config['admin_gold_tools_command'] ?? '/mgw_private_admin_7291_gold') . " — Gold-тест\n";
-        $text .= ($this->config['admin_gold_add_command'] ?? '/mgw_private_admin_7291_gold_add') . " @username 100 причина — начислить Gold\n";
+        $text .= ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders') . " — архив заявок\n";
+        $text .= ($this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order') . " ABC123 — карточка архивной заявки\n";
+        $text .= ($this->config['admin_payments_command'] ?? '/mgw_private_admin_7291_payments') . " — архив платежей\n";
         $text .= ($this->config['admin_support_command'] ?? '/mgw_private_admin_7291_support') . " — обращения\n";
         $text .= ($this->config['admin_users_command'] ?? '/mgw_private_admin_7291_users') . " — обзор пользователей\n";
         $text .= ($this->config['admin_user_command'] ?? '/mgw_private_admin_7291_user') . " @username — карточка игрока\n";
@@ -411,8 +405,6 @@ final class AdminService
         }
 
         $orderCmd = $this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order';
-        $doneCmd = $this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done';
-        $rejectCmd = $this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject';
 
         $lines[] = "\nКоманды:";
         $lines[] = "{$orderCmd} ABC123 — открыть заявку";
@@ -717,8 +709,6 @@ final class AdminService
         if (!empty($order['admin_note'])) $lines[] = "Заметка: " . (string)$order['admin_note'];
 
         if ($status === 'pending') {
-            $done = $this->config['admin_order_done_command'] ?? '/mgw_private_admin_7291_order_done';
-            $reject = $this->config['admin_order_reject_command'] ?? '/mgw_private_admin_7291_order_reject';
             $lines[] = "\nДействия:";
             $lines[] = "{$done} {$short}";
             $lines[] = "{$reject} {$short} причина";

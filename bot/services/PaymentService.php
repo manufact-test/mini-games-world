@@ -143,10 +143,8 @@ final class PaymentService
         }
 
         $lines[] = "
-Команды:";
-        $lines[] = "/mgw_private_admin_7291_payment ID — открыть заявку";
-        $lines[] = "/mgw_private_admin_7291_payment_apply ID — подтвердить и начислить";
-        $lines[] = "/mgw_private_admin_7291_payment_reject ID причина — отклонить";
+Архив доступен только для просмотра.";
+        $lines[] = "/mgw_private_admin_7291_payment ID — открыть архивную заявку";
 
         return implode("
 ", $lines);
@@ -352,7 +350,7 @@ final class PaymentService
             $lines[] = "Причина отклонения: " . (string)$payment['reject_reason'];
         }
 
-        $lines[] = "\nКоманды:";
+        $lines[] = "\nАрхив доступен только для просмотра.";
         if ($this->isActionablePayment($payment)) {
             $lines[] = "/mgw_private_admin_7291_payment_apply {$short} — подтвердить и начислить";
             $lines[] = "/mgw_private_admin_7291_payment_reject {$short} причина — отклонить";
