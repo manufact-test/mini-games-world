@@ -128,7 +128,7 @@ $assertTrue(str_contains($weekly, 'Бонусы за новые игры'), 'Bon
 $assertTrue(str_contains($weekly, '+${firstGameAmount.toLocaleString(\'ru-RU\')} коинов за первую завершённую партию в каждой новой игре.'), 'New-games section must use the accepted subtitle');
 $assertTrue(str_contains($weekly, 'Освоено игр'), 'Bonus sheet must expose learned-games progress');
 $assertTrue(str_contains($weekly, 'first_game_grant_count'), 'Bonus sheet must read server-owned first-game progress');
-$assertTrue(str_contains($weekly, 'color:var(--gold)'), 'Completed 3/3 and 8/8 progress must use Shield King gold accent');
+$assertTrue(str_contains($weekly, 'color:var(--sk-success)'), 'Completed 3/3 and 8/8 progress must use the canonical success green');
 $assertNotContains('Условие на эту неделю выполнено.', $weekly, 'Completed weekly state must not add a redundant note card');
 $assertNotContains('class="small-note">+${firstGameAmount', $weekly, 'New-games reward explanation must be plain subtitle copy, not a framed note');
 $assertTrue(str_contains($weekly, 'data-bonus-scroll') && str_contains($weekly, 'overflow:auto'), 'Bonus modal content must scroll inside the bounded sheet');
@@ -139,7 +139,7 @@ $assertNotContains('Матч-комнату', $weekly, 'Weekly bonus copy must n
 $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy must be room-neutral');
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, "X-MGW-Game-Zone: unified-v1"), 'Accepted /start entry must advertise unified game zone');
-$assertTrue(str_contains($v110, 'v=1145&mvp15=bonus-modal-fit'), 'Accepted /start graph must cache-bust the bonus modal fit successor shell');
+$assertTrue(str_contains($v110, 'v=1146&mvp15=notification-polish'), 'Accepted /start graph must cache-bust the bonus modal fit successor shell');
 
 $startSearchPos = strpos($api, "case 'start_search':");
 $nextCasePos = strpos($api, "case '", $startSearchPos + 20);

@@ -287,6 +287,13 @@ final class NotificationService
         }
 
         $gameType = trim((string)($notification['game_type'] ?? ''));
+        if ($gameType === '') {
+            $eventKey = trim((string)($notification['event_key'] ?? ''));
+            if (str_starts_with($eventKey, 'first_game_bonus:')) {
+                $separator = strrpos($eventKey, ':');
+                if ($separator !== false) $gameType = trim(substr($eventKey, $separator + 1));
+            }
+        }
         if ($gameType === '') return (string)($notification['message'] ?? '');
 
         $amount = max(0, (int)($notification['amount'] ?? 0));

@@ -64,7 +64,6 @@ $legacyDb = [
         'title' => 'Бонус за новую игру',
         'message' => 'Первая завершённая партия засчитана. Начислено +50 коинов.',
         'tone' => 'success',
-        'game_type' => 'battleship',
         'created_at' => '2026-08-15T22:25:00+00:00',
         'read_at' => null,
     ]],

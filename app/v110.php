@@ -45,7 +45,7 @@ $importMap = <<<'HTML'
     "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet",
     "./assets/js/screens/store-screen.js?v=34": "./assets/js/screens/store-screen.js?v=35&mvp15=unified-balance",
     "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup",
-    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1145&mvp15=bonus-modal-fit",
+    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish",
     "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
     "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
     "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
@@ -70,7 +70,7 @@ HTML;
 
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 
-$cssTarget = './assets/css/main.css?v=154&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only&wallet=weekly-bonus-cta';
+$cssTarget = './assets/css/main.css?v=155&sk=3&icons=c1efd5af&render=29&palette=three-state-notifications&battleship=authoritative-shot-only&wallet=weekly-bonus-cta';
 $mainTarget = './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance';
 $cleanEntryTarget = './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine';
 
@@ -89,7 +89,7 @@ $html = str_replace($cleanEntryAnchor, $cleanEntryTarget, $html);
 $html = str_replace($mainAnchor, $mainTarget, $html);
 $html = str_replace(
     $hotfixAnchor,
-    'data-hotfix-build="v110-mvp15-unified-balance-copy-cleanup-v1163"',
+    'data-hotfix-build="v110-mvp15-unified-balance-copy-cleanup-v1164"',
     $html
 );
 
@@ -101,7 +101,7 @@ foreach ([
     'match_config_cache' => './assets/js/config.js?v=39&mvp15=match-economy',
     'match_state_cache' => './assets/js/state.js?v=29&mvp15=match-economy',
     'unified_home_cache' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
-    'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1145&mvp15=bonus-modal-fit',
+    'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
     'unified_profile_cache' => './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
 ] as $targetName => $target) {
     if (!str_contains($html, $target)) {
@@ -121,8 +121,8 @@ header('X-MGW-Profile-API: provider-neutral-mgw-v1');
 header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');
 header('X-MGW-Balance-UI: unified-balance-v1');
 header('X-MGW-Match-Economy: server-config-v1');
-header('X-MGW-Notification-Graph: v1138-shield-semantic-tone');
-header('X-MGW-Notification-Palette: shield-king-v1-semantic');
+header('X-MGW-Notification-Graph: v1139-three-state-scroll-stable');
+header('X-MGW-Notification-Palette: green-red-blue-v1');
 header('X-MGW-Invite-Graph: v1143-prepared-share-owner');
 header('X-MGW-Search-Graph: v106-post-game-release-barrier');
 header('X-MGW-TTT-Clock: authoritative-turn-clock-v7-handoff-state-retained');
