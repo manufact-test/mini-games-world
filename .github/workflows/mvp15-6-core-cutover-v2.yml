@@ -1,0 +1,306 @@
+name: MVP-15.6 core cutover v2
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-unified-zone-cutover
+    paths:
+      - '.github/workflows/mvp15-6-core-cutover-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-unified-zone-cutover
+          fetch-depth: 1
+      - name: Apply room-neutral write cutover
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path): return Path(path).read_text(encoding='utf-8')
+          def write(path, value): Path(path).write_text(value, encoding='utf-8')
+          def exact(path, old, new):
+              s = read(path)
+              n = s.count(old)
+              if n != 1: raise SystemExit(f'{path}: exact count={n}: {old[:100]!r}')
+              write(path, s.replace(old, new, 1))
+          def sub1(path, pattern, replacement, flags=re.S|re.M):
+              s = read(path)
+              out, n = re.subn(pattern, replacement, s, count=1, flags=flags)
+              if n != 1: raise SystemExit(f'{path}: regex count={n}: {pattern[:120]!r}')
+              write(path, out)
+          def method(path, name, replacement):
+              pattern = rf'^    public function {re.escape(name)}\(.*?(?=^    (?:public|private|protected) function |\Z)'
+              sub1(path, pattern, replacement.rstrip() + '\n\n')
+
+          policy = r'''<?php
+          declare(strict_types=1);
+
+          final class UnifiedGameZonePolicy
+          {
+              private const STORAGE_ROOM = 'match';
+
+              public static function storageRoom(): string
+              {
+                  return self::STORAGE_ROOM;
+              }
+
+              public static function entryCost(array $config): int
+              {
+                  $runtime = $config['canonical_match_economy'] ?? null;
+                  $entry = is_array($runtime) ? (int)($runtime['entry_cost'] ?? 0) : 0;
+                  if ($entry <= 0) $entry = (int)($config['match_bet'] ?? 0);
+                  if ($entry <= 0) throw new RuntimeException('Canonical unified-zone entry cost is unavailable.');
+                  return $entry;
+              }
+
+              public static function assertInviteWritable(array $invite): void
+              {
+                  if (strtolower(trim((string)($invite['room'] ?? self::STORAGE_ROOM))) === 'gold') {
+                      throw new RuntimeException('Старое Gold-приглашение доступно только в архиве. Создайте новое приглашение.');
+                  }
+              }
+
+              public static function legacyArchiveMessage(): string
+              {
+                  return 'Legacy Match/Gold операции доступны только для просмотра. Новые операции отключены.';
+              }
+
+              public static function rejectLegacyCommerceWrite(): never
+              {
+                  throw new RuntimeException(self::legacyArchiveMessage());
+              }
+          }
+          '''.replace('          ', '')
+          write('bot/runtime/UnifiedGameZonePolicy.php', policy)
+
+          exact('bot/core/bootstrap.php',
+              "require_once __DIR__ . '/../economy/MatchEconomyRuntimeConfig.php';\n$config = MatchEconomyRuntimeConfig::apply($config);",
+              "require_once __DIR__ . '/../economy/MatchEconomyRuntimeConfig.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';\n$config = MatchEconomyRuntimeConfig::apply($config);")
+
+          # Authoritative public API: room and bet supplied by retained clients are ignored.
+          sub1('bot/api.php',
+              r'function mgw_mark_matchmaking_presence\(.*?\n\}\n\nfunction mgw_prepare_match_bot_fallback',
+              '''function mgw_mark_matchmaking_presence(array &$user, string $gameType, int $boardSize): void
+          {
+              unset($user['last_matchmaking_room']);
+              $user['last_matchmaking_game_type'] = $gameType;
+              $user['last_matchmaking_board_size'] = $boardSize;
+              $user['last_matchmaking_at'] = now_iso();
+          }
+
+          function mgw_has_other_recent_human(array $data, string $userId): bool
+          {
+              $now = time();
+              foreach ($data['users'] ?? [] as $otherId => $other) {
+                  $otherId = (string)$otherId;
+                  if ($otherId === '' || $otherId === $userId || str_starts_with($otherId, 'bot_') || !is_array($other)) continue;
+                  $lastSeen = strtotime((string)($other['last_seen_at'] ?? '')) ?: 0;
+                  if ($lastSeen > 0 && $now - $lastSeen <= 90) return true;
+              }
+              return false;
+          }
+
+          function mgw_prepare_match_bot_fallback'''.replace('          ', ''))
+
+          exact('bot/api.php',
+              "                $room = (string)($payload['room'] ?? 'match');\n                $room = $room === 'gold' ? 'gold' : 'match';\n                $bet = (int)($payload['bet'] ?? 10);",
+              "                $room = UnifiedGameZonePolicy::storageRoom();\n                $bet = UnifiedGameZonePolicy::entryCost($config);")
+          exact('bot/api.php',
+              "                mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);",
+              "                mgw_mark_matchmaking_presence($user, $gameType, $boardSize);")
+          exact('bot/api.php',
+              "                if (empty($search['game']) && $room === 'match') {\n                    mgw_prepare_match_bot_fallback(\n                        $data,\n                        $userId,\n                        mgw_has_other_recent_human_in_room($data, $userId, $room)\n                    );\n                }",
+              "                if (empty($search['game'])) {\n                    mgw_prepare_match_bot_fallback(\n                        $data,\n                        $userId,\n                        mgw_has_other_recent_human($data, $userId)\n                    );\n                }")
+
+          sub1('bot/api.php',
+              r"            case 'payment_create_draft':.*?(?=            case 'shop_order':)",
+              "            case 'payment_create_draft':\n                UnifiedGameZonePolicy::rejectLegacyCommerceWrite();\n\n")
+          sub1('bot/api.php',
+              r"            case 'shop_order':.*?(?=            case 'start_search':)",
+              "            case 'shop_order':\n                UnifiedGameZonePolicy::rejectLegacyCommerceWrite();\n\n")
+
+          # Internal matchmaking owners also fail closed to the one current zone.
+          exact('bot/services/GameService.php',
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';",
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';")
+          exact('bot/services/GameService.php',
+              "        $room = $room === 'gold' ? 'gold' : 'match';\n        $boardSize = in_array($boardSize, $this->config['board_sizes'] ?? [3, 5, 9], true) ? $boardSize : 3;\n        $bet = $room === 'match' ? (int)($this->config['match_bet'] ?? 10) : $bet;\n\n        if ($room === 'gold' && !in_array($bet, $this->config['gold_bets'] ?? [10, 20, 30, 50, 100], true)) {\n            throw new RuntimeException('Выберите доступную стоимость участия.');\n        }",
+              "        $room = UnifiedGameZonePolicy::storageRoom();\n        $boardSize = in_array($boardSize, $this->config['board_sizes'] ?? [3, 5, 9], true) ? $boardSize : 3;\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);")
+
+          exact('bot/services/GameRuntimeService.php',
+              "require_once dirname(__DIR__) . '/games/reversi/ReversiService.php';",
+              "require_once dirname(__DIR__) . '/games/reversi/ReversiService.php';\nrequire_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';")
+          exact('bot/services/GameRuntimeService.php',
+              "        $gameType = $this->catalog->normalizeGameType($gameType);\n        $room = $room === 'gold' ? 'gold' : 'match';",
+              "        $gameType = $this->catalog->normalizeGameType($gameType);\n        $room = UnifiedGameZonePolicy::storageRoom();\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);")
+
+          exact('bot/services/ChessRuntimeService.php',
+              "require_once __DIR__ . '/MatchPreparationClockService.php';",
+              "require_once __DIR__ . '/MatchPreparationClockService.php';\nrequire_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';")
+          exact('bot/services/ChessRuntimeService.php',
+              "        $room = $room === 'gold' ? 'gold' : 'match';\n        if (!$this->catalog->supportsRoom($gameType, $room)) {",
+              "        $room = UnifiedGameZonePolicy::storageRoom();\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);\n        if (!$this->catalog->supportsRoom($gameType, $room)) {")
+
+          # Invites: new writes normalize to current zone; already-active old games remain readable,
+          # but an archived Gold invite cannot create a fresh game.
+          exact('bot/services/invites/GameInviteStorageTrait.php',
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';",
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';\nrequire_once dirname(__DIR__, 2) . '/runtime/UnifiedGameZonePolicy.php';")
+          exact('bot/services/invites/GameInviteStorageTrait.php',
+              "        $room = $room === 'gold' ? 'gold' : 'match';\n        if (!$this->catalog->supportsRoom($gameType, $room)) {\n            throw new RuntimeException('Эта игра недоступна в выбранной комнате.');\n        }\n        $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);\n        $bet = $this->normalizeBet($room, $bet);",
+              "        $room = UnifiedGameZonePolicy::storageRoom();\n        if (!$this->catalog->supportsRoom($gameType, $room)) {\n            throw new RuntimeException('Эта игра пока недоступна.');\n        }\n        $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);")
+          exact('bot/services/invites/GameInviteStorageTrait.php',
+              "            $room = (string)($invite['room'] ?? 'match');\n            $bet = (int)($invite['bet'] ?? 10);",
+              "            UnifiedGameZonePolicy::assertInviteWritable($invite);\n            $room = UnifiedGameZonePolicy::storageRoom();\n            $bet = UnifiedGameZonePolicy::entryCost($this->config);")
+
+          exact('bot/services/invites/GameInviteValidationTrait.php',
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';",
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';\nrequire_once dirname(__DIR__, 2) . '/runtime/UnifiedGameZonePolicy.php';")
+          exact('bot/services/invites/GameInviteValidationTrait.php',
+              "        $room = (string)($invite['room'] ?? 'match') === 'gold' ? 'gold' : 'match';\n        $bet = (int)($invite['bet'] ?? 0);",
+              "        UnifiedGameZonePolicy::assertInviteWritable($invite);\n        $bet = (int)($invite['bet'] ?? UnifiedGameZonePolicy::entryCost($this->config));")
+          exact('bot/services/invites/GameInviteValidationTrait.php',
+              "            'room' => (string)($invite['room'] ?? 'match'),\n            'room_label' => (string)($invite['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',\n",
+              '')
+          sub1('bot/services/invites/GameInviteValidationTrait.php',
+              r'    private function normalizeBet\(string \$room, int \$bet\): int\n    \{.*?\n    \}',
+              "    private function normalizeBet(string $room, int $bet): int\n    {\n        return UnifiedGameZonePolicy::entryCost($this->config);\n    }")
+
+          # accept(): keep already active invite readable; archive-only guard before any pending transition.
+          exact('bot/services/invites/GameInviteActionTrait.php',
+              "        if ($status === 'active') {\n            return $this->resultWithGame($db, $invite, $userId);\n        }\n        if ($status === 'awaiting_start') {",
+              "        if ($status === 'active') {\n            return $this->resultWithGame($db, $invite, $userId);\n        }\n        UnifiedGameZonePolicy::assertInviteWritable($invite);\n        if ($status === 'awaiting_start') {")
+          exact('bot/services/invites/GameInviteActionTrait.php',
+              "        $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? 'tictactoe'));\n        $room = (string)($game['room'] ?? 'match') === 'gold' ? 'gold' : 'match';\n        $bet = (int)($game['bet'] ?? ($room === 'match' ? 10 : 0));",
+              "        $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? 'tictactoe'));\n        $room = UnifiedGameZonePolicy::storageRoom();\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);")
+          exact('bot/services/invites/GameInviteActionTrait.php',
+              "        if ($status === 'active') return $this->resultWithGame($db, $invite, $viewerId);\n        if ($status !== 'awaiting_start') {",
+              "        if ($status === 'active') return $this->resultWithGame($db, $invite, $viewerId);\n        UnifiedGameZonePolicy::assertInviteWritable($invite);\n        if ($status !== 'awaiting_start') {")
+
+          exact('bot/invites.php',
+              "            $room = clean_string($payload['room'] ?? 'match', 20);\n            $bet = (int)($payload['bet'] ?? 10);",
+              "            $room = UnifiedGameZonePolicy::storageRoom();\n            $bet = UnifiedGameZonePolicy::entryCost($config);")
+          exact('bot/invites.php',
+              "        . '🏠 Комната: ' . (string)($invite['room_label'] ?? 'Матч-комната') . \"\\n\"\n        . '📐 Вариант: ' . mgw_invite_board_label($invite) . \"\\n\"",
+              "        . '📐 Вариант: ' . mgw_invite_board_label($invite) . \"\\n\"")
+          exact('bot/invites.php',
+              "                'description' => (string)($invite['game_title'] ?? 'Игра')\n                    . ' · ' . (string)($invite['room_label'] ?? 'Матч-комната')\n                    . ' · ' . mgw_invite_board_label($invite),",
+              "                'description' => (string)($invite['game_title'] ?? 'Игра')\n                    . ' · ' . mgw_invite_board_label($invite),")
+          exact('bot/invites.php',
+              "    $text .= \"\\n\\n\"\n        . (string)($invite['room_label'] ?? 'Матч-комната') . ' · '\n        . mgw_invite_board_label($invite) . ' · '",
+              "    $text .= \"\\n\\n\"\n        . mgw_invite_board_label($invite) . ' · '")
+
+          # Legacy commerce: archive remains readable; every mutation boundary is replaced, not masked.
+          exact('bot/services/PaymentService.php',
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';",
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';")
+          method('bot/services/PaymentService.php', 'status', '''    public function status(array $db, array $user): array
+          {
+              return [
+                  'enabled' => false,
+                  'mode' => 'archive_read_only',
+                  'message' => UnifiedGameZonePolicy::legacyArchiveMessage(),
+                  'recent_payments' => $this->recentPaymentsForUser($db, (string)($user['id'] ?? ''), 5),
+              ];
+          }'''.replace('          ', ''))
+          method('bot/services/PaymentService.php', 'createDraftFromAmount', '''    public function createDraftFromAmount(array &$db, array $user, string $room, int $amountRub, string $provider = 'manual_test'): array
+          {
+              UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
+          }'''.replace('          ', ''))
+          method('bot/services/PaymentService.php', 'createDraft', '''    public function createDraft(array &$db, array $user, int $coins, string $provider = 'manual_test'): array
+          {
+              UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
+          }'''.replace('          ', ''))
+          method('bot/services/PaymentService.php', 'adminApply', '''    public function adminApply(array &$db, string $query, string $adminId): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+          method('bot/services/PaymentService.php', 'adminReject', '''    public function adminReject(array &$db, string $argument, string $adminId): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+
+          exact('bot/services/ShopService.php',
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';",
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';")
+          method('bot/services/ShopService.php', 'status', '''    public function status(array $user): array
+          {
+              return [
+                  'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),
+                  'available' => 0,
+                  'can_order' => false,
+                  'mode' => 'archive_read_only',
+                  'message' => UnifiedGameZonePolicy::legacyArchiveMessage(),
+              ];
+          }'''.replace('          ', ''))
+          method('bot/services/ShopService.php', 'createOrder', '''    public function createOrder(array &$db, array &$user, string $itemId, string $denominationId, int $requestToken): array
+          {
+              UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
+          }'''.replace('          ', ''))
+          method('bot/services/ShopService.php', 'createCatalogOrder', '''    public function createCatalogOrder(
+              array &$db,
+              array &$user,
+              string $itemId,
+              string $denominationId,
+              string $requestId,
+              int $expectedAmount
+          ): array {
+              UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
+          }'''.replace('          ', ''))
+
+          # Admin keeps read-only archive tools, but old mutation commands stop here.
+          method('bot/services/AdminService.php', 'completeOrder', '''    public function completeOrder(array &$db, string $argument, string $adminId): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+          method('bot/services/AdminService.php', 'rejectOrder', '''    public function rejectOrder(array &$db, string $argument, string $adminId): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+          method('bot/services/AdminService.php', 'applyPayment', '''    public function applyPayment(array &$db, string $argument, string $adminId): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+          method('bot/services/AdminService.php', 'rejectPayment', '''    public function rejectPayment(array &$db, string $argument, string $adminId): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+          method('bot/services/AdminService.php', 'goldTools', '''    public function goldTools(array $db): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+          method('bot/services/AdminService.php', 'addGoldToUser', '''    public function addGoldToUser(array &$db, string $argument, string $adminId): string
+          {
+              return UnifiedGameZonePolicy::legacyArchiveMessage();
+          }'''.replace('          ', ''))
+
+          exact('bot/helpers/staging-e2e-runtime-files.txt',
+              "bot/economy/MatchEconomyRuntimeConfig.php\n",
+              "bot/economy/MatchEconomyRuntimeConfig.php\nbot/runtime/UnifiedGameZonePolicy.php\n")
+          PY
+
+          for f in \
+            bot/runtime/UnifiedGameZonePolicy.php \
+            bot/core/bootstrap.php bot/api.php bot/invites.php \
+            bot/services/GameService.php bot/services/GameRuntimeService.php bot/services/ChessRuntimeService.php \
+            bot/services/invites/GameInviteStorageTrait.php bot/services/invites/GameInviteValidationTrait.php bot/services/invites/GameInviteActionTrait.php \
+            bot/services/PaymentService.php bot/services/ShopService.php bot/services/AdminService.php; do
+            php -l "$f"
+          done
+
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add bot
+          git commit -m 'MVP-15.6: cut writes over to unified game zone'
+          git push origin HEAD:agent/mvp-15-6-unified-zone-cutover
