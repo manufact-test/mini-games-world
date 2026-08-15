@@ -434,6 +434,17 @@ function renderLoading(){
 
 function renderNotifications(values){
   const safe = normalizeItems(values);
+  const existingList = isNotificationsSheetOpen()
+    ? document.querySelector('#sheet .notifications-list')
+    : null;
+
+  if (existingList && safe.length) {
+    const scrollTop = existingList.scrollTop;
+    existingList.innerHTML = safe.map(renderNotification).join('');
+    existingList.scrollTop = scrollTop;
+    return;
+  }
+
   const body = safe.length
     ? `<div class="notifications-list">${safe.map(renderNotification).join('')}</div>`
     : '<div class="notifications-empty"><div>🔔</div><strong>Пока уведомлений нет</strong></div>';
@@ -449,7 +460,7 @@ function renderNotifications(values){
 }
 
 function renderNotification(item){
-  const tone = ['success','danger','info','warning'].includes(item.tone) ? item.tone : 'info';
+  const tone = semanticTone(item);
   const message = notificationMessage(item);
   return `
     <article class="notification-card ${tone}" data-notification-id="${escapeHtml(item.id)}" data-notification-type="${escapeHtml(item.type)}" data-notification-invite-token="${escapeHtml(item.invite_token)}">
@@ -584,7 +595,7 @@ function showToast(value){
   const item = normalizeItem(value);
   if (!item.id) return false;
   const element = ensureToast();
-  const tone = ['success','danger','warning','info'].includes(item.tone) ? item.tone : 'info';
+  const tone = semanticTone(item);
   const message = notificationMessage(item);
 
   rememberLocalAuthority(item);
@@ -723,6 +734,15 @@ function normalizeItems(values){
   return (Array.isArray(values) ? values : []).map(normalizeItem).filter(item => item.id);
 }
 
+function semanticTone(value){
+  const type = String(value?.type || '');
+  if (['invite_accepted','invite_started'].includes(type)) return 'success';
+  if (type === 'invite_declined') return 'danger';
+  if (['invite_received','invite_rematch_received','invite_cancelled','invite_expired','invite_timed_out'].includes(type)) return 'info';
+  const tone = String(value?.tone || 'info');
+  return ['success','danger','info'].includes(tone) ? tone : 'info';
+}
+
 function normalizeItem(value){
   if (!value || typeof value !== 'object') return {
     id:'', type:'', title:'', message:'', tone:'info', invite_token:'', invite_status:'', invite_is_owner:false,
@@ -734,7 +754,7 @@ function normalizeItem(value){
     type:String(value.type || ''),
     title:String(value.title || ''),
     message:String(value.message || ''),
-    tone:String(value.tone || 'info'),
+    tone:semanticTone(value),
     invite_token:String(value.invite_token || ''),
     invite_status:String(value.invite_status || ''),
     invite_is_owner:Boolean(value.invite_is_owner),
@@ -870,7 +890,7 @@ function cacheKey(){
 function notificationIcon(tone, type){
   if (String(type || '').startsWith('invite_')) return '🎮';
   if (tone === 'success') return '✓';
-  return tone === 'danger' || tone === 'warning' ? '!' : 'i';
+  return tone === 'danger' ? '!' : 'i';
 }
 
 function notificationMessage(item){

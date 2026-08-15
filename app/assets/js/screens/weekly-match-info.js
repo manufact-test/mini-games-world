@@ -92,7 +92,7 @@ function renderWeeklyMatchInfo(status){
   );
   const firstGameComplete = firstGameCount >= firstGameMax;
 
-  const completedProgressStyle = ' style="color:var(--gold);text-shadow:0 0 18px rgba(255,212,92,.20)"';
+  const completedProgressStyle = ' style="color:var(--sk-success);text-shadow:0 0 18px rgba(72,214,165,.20)"';
   const weeklyProgressStyle = weeklyComplete ? completedProgressStyle : '';
   const firstGameProgressStyle = firstGameComplete ? completedProgressStyle : '';
 

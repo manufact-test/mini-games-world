@@ -29,10 +29,15 @@ function mgw_notification_is_received_type(string $type): bool
 function mgw_notification_canonical_tone(array $item): array
 {
     $type = (string)($item['type'] ?? '');
-    if (in_array($type, ['invite_received', 'invite_rematch_received', 'invite_accepted', 'invite_started'], true)) {
+    if (in_array($type, ['invite_accepted', 'invite_started'], true)) {
+        $item['tone'] = 'success';
+    } elseif ($type === 'invite_declined') {
+        $item['tone'] = 'danger';
+    } elseif (in_array($type, ['invite_received', 'invite_rematch_received', 'invite_cancelled', 'invite_expired', 'invite_timed_out'], true)) {
         $item['tone'] = 'info';
-    } elseif (in_array($type, ['invite_declined', 'invite_cancelled', 'invite_expired', 'invite_timed_out'], true)) {
-        $item['tone'] = 'warning';
+    } else {
+        $tone = (string)($item['tone'] ?? 'info');
+        $item['tone'] = in_array($tone, ['success', 'danger', 'info'], true) ? $tone : 'info';
     }
     return $item;
 }
@@ -89,7 +94,7 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
         $item['message'] = $inviterCancelled
             ? $inviterName . ' отменил приглашение сыграть в «' . $gameTitle . '».'
             : $inviteeName . ' отменил участие в матче «' . $gameTitle . '».';
-        $item['tone'] = 'warning';
+        $item['tone'] = 'info';
         $item['created_at'] = (string)($invite['cancelled_at'] ?? $invite['updated_at'] ?? $item['created_at'] ?? '');
         return $item;
     }
@@ -99,7 +104,7 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
     if ($status === 'accepted') {
         $item['title'] = 'Приглашение принято';
         $item['message'] = 'Ждём запуска матча от пригласившего игрока.';
-        $item['tone'] = 'info';
+        $item['tone'] = 'success';
         $item['read'] = true;
         return $item;
     }
@@ -111,7 +116,7 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
         $item['title'] = 'Приглашение отклонено';
         $item['message'] = 'Вы отклонили приглашение от ' . $inviterName
             . ' сыграть в «' . $gameTitle . '».';
-        $item['tone'] = 'warning';
+        $item['tone'] = 'danger';
         $item['read'] = true;
         $item['created_at'] = (string)($invite['declined_at'] ?? $invite['updated_at'] ?? $item['created_at'] ?? '');
     }
