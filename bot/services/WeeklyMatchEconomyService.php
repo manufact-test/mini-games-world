@@ -20,13 +20,17 @@ final class WeeklyMatchEconomyService
         'domino',
     ];
 
-    private ?array $resolvedBonuses = null;
+    private array $resolvedBonuses;
 
     public function __construct(
         private array $config,
         private ?NotificationService $notifications = null,
-        private ?array $canonicalBonuses = null
-    ) {}
+        ?array $canonicalBonuses = null
+    ) {
+        // Resolve before any JSON write transaction begins. Staging/production
+        // fail closed if the versioned MVP-15.8 DB config cannot be read.
+        $this->resolvedBonuses = $this->resolveBonusConfig($canonicalBonuses);
+    }
 
     public function ensureWelcomeGrant(array &$db, array &$user): array
     {
@@ -48,8 +52,8 @@ final class WeeklyMatchEconomyService
             ];
         }
 
-        // Compatibility with the historical v45 starter grant. Never pay a
-        // second starter grant when an account already owns that legacy marker.
+        // Compatibility with the historical starter implementation: an account
+        // that already owns the legacy marker must never receive a second starter.
         if (!empty($user['weekly_match_first_grant_done'])
             || (string)($user['weekly_match_bonus_last_qualification'] ?? '') === 'first_grant') {
             $user['weekly_match_welcome_grant_done'] = true;
@@ -61,10 +65,26 @@ final class WeeklyMatchEconomyService
             ];
         }
 
+        // Provider-neutral transaction ownership protects a linked/merged MGW
+        // account even if its current legacy user state lost the local marker.
+        $existing = $this->findBonusTransaction($db, $user, 'welcome_bonus');
+        if ($existing !== null) {
+            $user['weekly_match_welcome_grant_done'] = true;
+            $user['weekly_match_welcome_grant_migrated_at'] = now_iso();
+            $user['weekly_match_welcome_grant_amount'] = max(0, (int)($existing['amount'] ?? 0));
+            $user['weekly_match_first_grant_done'] = true;
+            return [
+                'processed' => true,
+                'awarded' => false,
+                'reason' => 'recovered_existing_transaction',
+            ];
+        }
+
         $amount = $this->starterAmount();
         $before = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
         $after = $before + $amount;
         $createdAt = now_iso();
+        $grantIdentity = $this->grantIdentity($user);
 
         $user[UnifiedBalanceRuntimeState::FIELD] = $after;
         $user['weekly_match_welcome_grant_done'] = true;
@@ -76,7 +96,10 @@ final class WeeklyMatchEconomyService
             'id' => make_id('tx'),
             'type' => 'balance_change',
             'category' => 'welcome_bonus',
+            'event_key' => 'welcome_bonus:' . $grantIdentity,
+            'grant_identity' => $grantIdentity,
             'user_id' => $userId,
+            'mgw_id' => $this->mgwId($user),
             'account_ref' => $this->accountRef($user),
             'username' => (string)($user['username'] ?? ''),
             'room' => 'match',
@@ -118,43 +141,41 @@ final class WeeklyMatchEconomyService
             ];
         }
 
-        $completed = $this->completedGameTypes($db, $userId);
-        if ($completed === []) {
-            return [
-                'processed' => true,
-                'awarded' => false,
-                'reason' => 'no_completed_games',
-                'awarded_games' => [],
+        $amount = $this->firstGameAmount();
+        $grants = $this->normalizedFirstGameGrants($user);
+        $recoveredGames = [];
+        $latestGrantAt = trim((string)($user['weekly_match_first_game_last_at'] ?? ''));
+
+        // Rehydrate provider-neutral grant history before looking at the current
+        // legacy user's games. This is what makes a future account link/merge
+        // unable to mint the same per-game reward again.
+        foreach (self::GAME_TYPES as $gameType) {
+            if (isset($grants[$gameType])) continue;
+            $existing = $this->existingFirstGameTransaction($db, $user, $gameType);
+            if ($existing === null) continue;
+
+            $grantedAt = (string)($existing['created_at'] ?? now_iso());
+            $grants[$gameType] = [
+                'amount' => max(0, (int)($existing['amount'] ?? $amount)),
+                'granted_at' => $grantedAt,
+                'source_game_id' => (string)($existing['source_game_id'] ?? ''),
+                'recovered_from_transaction' => true,
             ];
+            $latestGrantAt = $this->latestTimestampText($latestGrantAt, $grantedAt);
+            $recoveredGames[] = $gameType;
         }
 
-        $grants = is_array($user['weekly_match_first_game_grants'] ?? null)
-            ? $user['weekly_match_first_game_grants']
-            : [];
-        $amount = $this->firstGameAmount();
+        $completed = $this->completedGameTypes($db, $userId);
         $awardedGames = [];
-        $recoveredGames = [];
 
         foreach (self::GAME_TYPES as $gameType) {
-            if (!isset($completed[$gameType])) continue;
-            if (isset($grants[$gameType]) && is_array($grants[$gameType])) continue;
-
-            $existing = $this->existingFirstGameTransaction($db, $user, $gameType);
-            if ($existing !== null) {
-                $grants[$gameType] = [
-                    'amount' => max(0, (int)($existing['amount'] ?? $amount)),
-                    'granted_at' => (string)($existing['created_at'] ?? now_iso()),
-                    'source_game_id' => (string)($existing['source_game_id'] ?? $completed[$gameType]['id'] ?? ''),
-                    'recovered_from_transaction' => true,
-                ];
-                $recoveredGames[] = $gameType;
-                continue;
-            }
+            if (!isset($completed[$gameType]) || isset($grants[$gameType])) continue;
 
             $before = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
             $after = $before + $amount;
             $createdAt = now_iso();
             $sourceGameId = (string)($completed[$gameType]['id'] ?? '');
+            $grantIdentity = $this->grantIdentity($user);
 
             $user[UnifiedBalanceRuntimeState::FIELD] = $after;
             $grants[$gameType] = [
@@ -162,13 +183,16 @@ final class WeeklyMatchEconomyService
                 'granted_at' => $createdAt,
                 'source_game_id' => $sourceGameId,
             ];
+            $latestGrantAt = $this->latestTimestampText($latestGrantAt, $createdAt);
 
             $this->appendTransaction($db, [
                 'id' => make_id('tx'),
                 'type' => 'balance_change',
                 'category' => 'first_game_bonus',
-                'event_key' => 'first_game_bonus:' . $this->grantIdentity($user) . ':' . $gameType,
+                'event_key' => 'first_game_bonus:' . $grantIdentity . ':' . $gameType,
+                'grant_identity' => $grantIdentity,
                 'user_id' => $userId,
+                'mgw_id' => $this->mgwId($user),
                 'account_ref' => $this->accountRef($user),
                 'username' => (string)($user['username'] ?? ''),
                 'room' => 'match',
@@ -194,17 +218,25 @@ final class WeeklyMatchEconomyService
 
         $user['weekly_match_first_game_grants'] = $grants;
         $user['weekly_match_first_game_total'] = count($grants);
+        if ($latestGrantAt !== '') {
+            $user['weekly_match_first_game_last_at'] = $latestGrantAt;
+        }
 
-        if (count($grants) >= count(self::GAME_TYPES)
+        if (count($grants) === count(self::GAME_TYPES)
             && empty($user['weekly_match_all_games_reward_triggered_at'])) {
             $user['weekly_match_all_games_reward_triggered_at'] = now_iso();
             $user['weekly_match_all_games_reward_pending'] = true;
         }
 
+        $reason = 'already_awarded';
+        if ($awardedGames !== []) $reason = 'awarded';
+        elseif ($recoveredGames !== []) $reason = 'recovered';
+        elseif ($completed === []) $reason = 'no_completed_games';
+
         return [
             'processed' => true,
             'awarded' => $awardedGames !== [],
-            'reason' => $awardedGames !== [] ? 'awarded' : ($recoveredGames !== [] ? 'recovered' : 'already_awarded'),
+            'reason' => $reason,
             'awarded_games' => $awardedGames,
             'recovered_games' => $recoveredGames,
             'completed_game_types' => array_keys($completed),
@@ -294,10 +326,29 @@ final class WeeklyMatchEconomyService
             ];
         }
 
+        $existingWeekly = $this->findBonusTransaction($db, $user, 'weekly_bonus', $cycleKey);
+        if ($existingWeekly !== null) {
+            $user['weekly_match_bonus_last_key'] = $cycleKey;
+            $user['weekly_match_bonus_last_at'] = (string)($existingWeekly['created_at'] ?? now_iso());
+            $user['weekly_match_bonus_last_amount'] = max(0, (int)($existingWeekly['amount'] ?? 0));
+            $user['weekly_match_bonus_last_qualification'] = 'activity';
+            $user['weekly_bonus_last'] = $cycleKey;
+            return [
+                'processed' => true,
+                'awarded' => $otherAwarded,
+                'reason' => $otherAwarded ? 'bonus_awarded' : 'recovered_existing_transaction',
+                'cycle_key' => $cycleKey,
+                'qualifying_games' => $games,
+                'welcome' => $welcomeResult,
+                'first_games' => $firstGameResult,
+            ];
+        }
+
         $amount = $this->weeklyAmount();
         $before = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0);
         $after = $before + $amount;
         $awardedAt = now_iso();
+        $grantIdentity = $this->grantIdentity($user);
 
         $user[UnifiedBalanceRuntimeState::FIELD] = $after;
         $user['weekly_match_bonus_last_key'] = $cycleKey;
@@ -310,7 +361,10 @@ final class WeeklyMatchEconomyService
             'id' => make_id('tx'),
             'type' => 'balance_change',
             'category' => 'weekly_bonus',
+            'event_key' => 'weekly_bonus:' . $grantIdentity . ':' . $cycleKey,
+            'grant_identity' => $grantIdentity,
             'user_id' => $userId,
+            'mgw_id' => $this->mgwId($user),
             'account_ref' => $this->accountRef($user),
             'username' => (string)($user['username'] ?? ''),
             'room' => 'match',
@@ -430,9 +484,7 @@ final class WeeklyMatchEconomyService
         $games = $this->countCompletedGames($db, (string)($user['id'] ?? ''), $from, $countTo);
         $min = $this->minGames();
         $lastKey = (string)($user['weekly_match_bonus_last_key'] ?? '');
-        $firstGameGrants = is_array($user['weekly_match_first_game_grants'] ?? null)
-            ? $user['weekly_match_first_game_grants']
-            : [];
+        $firstGameGrants = $this->normalizedFirstGameGrants($user);
 
         return [
             'enabled' => true,
@@ -505,8 +557,8 @@ final class WeeklyMatchEconomyService
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) return false;
         if ($this->finishedTimestamp($game) <= 0) return false;
 
-        // A preparation cancellation is a terminal storage record, not a played
-        // normal match. This predicate is shared by weekly and first-game grants.
+        // Preparation cancellation is a terminal storage record, not a played
+        // match. Tutorial sessions are also never eligible for economy rewards.
         if (trim((string)($game['preparation_cancelled_at'] ?? '')) !== '') return false;
         if (strtolower(trim((string)($game['launch_phase'] ?? ''))) === 'cancelled') return false;
         if (in_array(strtolower(trim((string)($game['finish_reason'] ?? ''))), [
@@ -514,6 +566,9 @@ final class WeeklyMatchEconomyService
             'search_cancelled',
         ], true)) return false;
         if (array_key_exists('match_started', $game) && $game['match_started'] === false) return false;
+        if (!empty($game['is_tutorial']) || !empty($game['tutorial'])) return false;
+        if (strtolower(trim((string)($game['mode'] ?? ''))) === 'tutorial') return false;
+        if (strtolower(trim((string)($game['match_type'] ?? ''))) === 'tutorial') return false;
 
         return true;
     }
@@ -524,20 +579,61 @@ final class WeeklyMatchEconomyService
         return $finishedAt === '' ? 0 : (strtotime($finishedAt) ?: 0);
     }
 
+    private function normalizedFirstGameGrants(array $user): array
+    {
+        $source = is_array($user['weekly_match_first_game_grants'] ?? null)
+            ? $user['weekly_match_first_game_grants']
+            : [];
+        $normalized = [];
+        foreach (self::GAME_TYPES as $gameType) {
+            if (isset($source[$gameType]) && is_array($source[$gameType])) {
+                $normalized[$gameType] = $source[$gameType];
+            }
+        }
+        return $normalized;
+    }
+
     private function existingFirstGameTransaction(array $db, array $user, string $gameType): ?array
     {
-        $userId = trim((string)($user['id'] ?? ''));
-        $accountRef = $this->accountRef($user);
         foreach (($db['transactions'] ?? []) as $transaction) {
             if (!is_array($transaction) || (string)($transaction['category'] ?? '') !== 'first_game_bonus') continue;
             if ((string)($transaction['game_type'] ?? '') !== $gameType) continue;
-            $txAccount = trim((string)($transaction['account_ref'] ?? ''));
-            $txUser = trim((string)($transaction['user_id'] ?? ''));
-            if (($accountRef !== '' && $txAccount === $accountRef) || ($txUser !== '' && $txUser === $userId)) {
-                return $transaction;
-            }
+            if ($this->transactionMatchesOwner($transaction, $user)) return $transaction;
         }
         return null;
+    }
+
+    private function findBonusTransaction(
+        array $db,
+        array $user,
+        string $category,
+        ?string $cycleKey = null
+    ): ?array {
+        foreach (($db['transactions'] ?? []) as $transaction) {
+            if (!is_array($transaction) || (string)($transaction['category'] ?? '') !== $category) continue;
+            if ($cycleKey !== null && (string)($transaction['cycle_key'] ?? '') !== $cycleKey) continue;
+            if ($this->transactionMatchesOwner($transaction, $user)) return $transaction;
+        }
+        return null;
+    }
+
+    private function transactionMatchesOwner(array $transaction, array $user): bool
+    {
+        $identity = $this->grantIdentity($user);
+        $txIdentity = trim((string)($transaction['grant_identity'] ?? ''));
+        if ($txIdentity !== '' && $txIdentity === $identity) return true;
+
+        $mgwId = $this->mgwId($user);
+        $txMgwId = trim((string)($transaction['mgw_id'] ?? ''));
+        if ($mgwId !== '' && $txMgwId !== '' && $txMgwId === $mgwId) return true;
+
+        $accountRef = $this->accountRef($user);
+        $txAccount = trim((string)($transaction['account_ref'] ?? ''));
+        if ($accountRef !== '' && $txAccount !== '' && $txAccount === $accountRef) return true;
+
+        $userId = trim((string)($user['id'] ?? ''));
+        $txUser = trim((string)($transaction['user_id'] ?? ''));
+        return $userId !== '' && $txUser !== '' && $txUser === $userId;
     }
 
     private function appendTransaction(array &$db, array $transaction): void
@@ -546,21 +642,36 @@ final class WeeklyMatchEconomyService
         $db['transactions'][] = $transaction;
     }
 
+    private function mgwId(array $user): string
+    {
+        return trim((string)($user['mgw_id'] ?? ''));
+    }
+
     private function accountRef(array $user): string
     {
         foreach (['mgw_account_ref', 'account_ref'] as $field) {
             $value = trim((string)($user[$field] ?? ''));
             if ($value !== '') return $value;
         }
-        $mgwId = trim((string)($user['mgw_id'] ?? ''));
-        return $mgwId !== '' ? 'mgw:' . $mgwId : '';
+        return '';
     }
 
     private function grantIdentity(array $user): string
     {
+        $mgwId = $this->mgwId($user);
+        if ($mgwId !== '') return 'mgw:' . $mgwId;
         $accountRef = $this->accountRef($user);
         if ($accountRef !== '') return $accountRef;
         return 'legacy:' . trim((string)($user['id'] ?? 'unknown'));
+    }
+
+    private function latestTimestampText(string $left, string $right): string
+    {
+        if ($left === '') return $right;
+        if ($right === '') return $left;
+        $leftTs = strtotime($left) ?: 0;
+        $rightTs = strtotime($right) ?: 0;
+        return $rightTs > $leftTs ? $right : $left;
     }
 
     private function latestDueCycle(DateTimeImmutable $now): ?DateTimeImmutable
@@ -610,34 +721,28 @@ final class WeeklyMatchEconomyService
 
     private function starterAmount(): int
     {
-        return $this->bonusConfig()['starter'];
+        return $this->resolvedBonuses['starter'];
     }
 
     private function weeklyAmount(): int
     {
-        return $this->bonusConfig()['weekly'];
+        return $this->resolvedBonuses['weekly'];
     }
 
     private function minGames(): int
     {
-        return $this->bonusConfig()['weekly_match_threshold'];
+        return $this->resolvedBonuses['weekly_match_threshold'];
     }
 
     private function firstGameAmount(): int
     {
-        return $this->bonusConfig()['first_game'];
+        return $this->resolvedBonuses['first_game'];
     }
 
-    private function bonusConfig(): array
+    private function resolveBonusConfig(?array $injected): array
     {
-        if ($this->resolvedBonuses !== null) return $this->resolvedBonuses;
-
-        $candidate = $this->canonicalBonuses;
-        if (!is_array($candidate)) {
-            $candidate = $this->config['canonical_economy_bonuses'] ?? null;
-        }
-        if (is_array($candidate)) {
-            return $this->resolvedBonuses = $this->normalizeBonusConfig($candidate);
+        if (is_array($injected)) {
+            return $this->normalizeBonusConfig($injected);
         }
 
         try {
@@ -654,13 +759,11 @@ final class WeeklyMatchEconomyService
             if (!is_array($candidate)) {
                 throw new RuntimeException('Canonical economy bonus config is missing.');
             }
-            return $this->resolvedBonuses = $this->normalizeBonusConfig($candidate);
+            return $this->normalizeBonusConfig($candidate);
         } catch (Throwable $error) {
             $environment = strtolower(trim((string)($this->config['environment'] ?? 'production')));
-            if ($environment === 'local' || !empty($this->config['allow_economy_defaults_for_tests'])) {
-                return $this->resolvedBonuses = $this->normalizeBonusConfig(
-                    EconomyConfigDefinition::defaults()['bonuses']
-                );
+            if ($environment === 'local') {
+                return $this->normalizeBonusConfig(EconomyConfigDefinition::defaults()['bonuses']);
             }
             throw new RuntimeException('Canonical economy bonus config is unavailable.', 0, $error);
         }
