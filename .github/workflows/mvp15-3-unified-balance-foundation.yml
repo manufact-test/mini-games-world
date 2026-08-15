@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - agent/mvp-15-3-unified-balance-foundation
+      - agent/mvp-15-3-profile-load-regression
     paths:
       - 'bot/economy/**'
       - 'bot/ledger/RuntimeEconomyRepository.php'
@@ -19,6 +20,11 @@ on:
       - 'bot/services/invites/GameInviteStorageTrait.php'
       - 'bot/services/invites/GameInviteValidationTrait.php'
       - 'bot/core/bootstrap.php'
+      - 'bot/profile.php'
+      - 'bot/health.php'
+      - 'bot/staging-e2e-readiness.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'scripts/ci/staging-runtime-fingerprint.py'
       - 'app/runtime/server/session/RuntimeSessionService.php'
       - 'app/runtime/server/match/RuntimeMatchService.php'
       - 'app/assets/js/ui.js'
@@ -41,6 +47,11 @@ on:
       - 'bot/ledger/LegacyEconomyDeltaImportService.php'
       - 'bot/services/**'
       - 'bot/core/bootstrap.php'
+      - 'bot/profile.php'
+      - 'bot/health.php'
+      - 'bot/staging-e2e-readiness.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'scripts/ci/staging-runtime-fingerprint.py'
       - 'app/**'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
@@ -58,8 +69,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+
       - name: Verify PHP and Python syntax
         run: |
+          set -Eeuo pipefail
           php -l bot/economy/UnifiedBalanceMigrationRule.php
           php -l bot/economy/UnifiedBalanceMigrationPlanner.php
           php -l bot/economy/UnifiedBalanceMigrationExecutor.php
@@ -69,15 +82,54 @@ jobs:
           php -l bot/economy/unified_balance_mapping.php
           php -l bot/ledger/RuntimeEconomyRepository.php
           php -l bot/ledger/LegacyEconomyDeltaImportService.php
+          php -l bot/profile.php
+          php -l bot/health.php
+          php -l bot/staging-e2e-readiness.php
           php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
           php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
           php -l bot/tests/UnifiedEconomyRuntimeSyncTest.php
           python3 -m py_compile ops/checks/verify-mvp15-3-unified-balance-owner.py
+          python3 -m py_compile scripts/ci/staging-runtime-fingerprint.py
+
       - name: Verify active single balance owner
         run: python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
+
+      - name: Verify complete deployment fingerprint
+        run: |
+          set -Eeuo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          grep -Fx 'bot/profile.php' "$manifest"
+          grep -Fx 'bot/economy/UnifiedBalanceMigrationRule.php' "$manifest"
+          grep -Fx 'bot/economy/UnifiedBalanceMigrationCoordinator.php' "$manifest"
+          grep -Fx 'bot/economy/UnifiedEconomyRuntimeSyncService.php' "$manifest"
+          grep -Fx 'bot/economy/unified_balance_mapping.php' "$manifest"
+          grep -Fx 'app/assets/js/screens/home-screen.js' "$manifest"
+          grep -Fx 'app/assets/js/screens/store-screen.js' "$manifest"
+          python3 scripts/ci/staging-runtime-fingerprint.py | grep -E '^[a-f0-9]{64}$'
+          grep -F "__DIR__ . '/profile.php'" bot/health.php
+          grep -F "'canonical_profile_endpoint'" bot/staging-e2e-readiness.php
+
+      - name: Include exact profile bootstrap under local-safe config
+        env:
+          MGW_ENV: local
+          MGW_CONFIG_FILE: ${{ github.workspace }}/bot/config/config.environment.example.php
+        run: |
+          set -Eeuo pipefail
+          php -d display_errors=1 -d error_reporting=E_ALL -r '
+            $_SERVER["SCRIPT_FILENAME"] = __DIR__ . "/bot/profile.php";
+            $_SERVER["PHP_SELF"] = "/bot/profile.php";
+            $_SERVER["HTTP_HOST"] = "localhost";
+            require __DIR__ . "/bot/core/bootstrap.php";
+            if (!isset($config) || !is_array($config)) { throw new RuntimeException("Bootstrap config missing"); }
+            if (!class_exists("MgwProfileService")) { require __DIR__ . "/bot/accounts/MgwProfileService.php"; }
+            echo "MVP-15.3 profile bootstrap: PASS\n";
+          '
+
       - name: Run migration foundation test
         run: php bot/tests/UnifiedBalanceMigrationFoundationTest.php
+
       - name: Run atomic migration execution test
         run: php bot/tests/UnifiedBalanceMigrationExecutionTest.php
+
       - name: Run post-cutover runtime sync test
         run: php bot/tests/UnifiedEconomyRuntimeSyncTest.php
