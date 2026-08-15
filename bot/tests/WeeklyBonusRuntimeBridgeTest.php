@@ -52,7 +52,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(7, $runner->migrate(false)['executed_count'], 'Weekly bridge test must apply every managed migration');
+$assertSame(8, $runner->migrate(false)['executed_count'], 'Weekly bridge test must apply every managed migration');
 
 $legacyUserId = '6201';
 $mgwId = 'MGW-WEEKBRIDGE01';
@@ -135,10 +135,13 @@ $integrity = new LedgerIntegrityVerifier($database);
 $config = [
     'environment' => 'staging',
     'storage_driver' => 'json',
-    'weekly_match_timezone' => 'Europe/Moscow',
     'weekly_match_start_at' => '2026-07-13 12:00:00',
-    'weekly_match_bonus_amount' => 50,
-    'weekly_match_min_completed' => 3,
+    'canonical_economy_bonuses' => [
+        'starter' => 1000,
+        'weekly' => 500,
+        'weekly_match_threshold' => 3,
+        'first_game' => 50,
+    ],
     'database' => [
         'enabled' => true,
         'driver' => 'mysql',
@@ -181,7 +184,10 @@ $data = [
 ];
 $normalized = $bridge->normalizeApiData($data, '');
 $assertSame(true, $normalized['weekly_match']['enabled'], 'Weekly bridge must replace JSON response with verified DB status');
-$assertSame(50, $normalized['weekly_match']['bonus_amount'], 'Weekly bridge must preserve configured bonus amount');
+$assertSame(500, $normalized['weekly_match']['bonus_amount'], 'Weekly bridge must expose canonical remote-config bonus amount');
+$assertSame(1000, $normalized['weekly_match']['starter_amount'], 'Weekly bridge must expose canonical starter amount');
+$assertSame(50, $normalized['weekly_match']['first_game_amount'], 'Weekly bridge must expose canonical first-game amount');
+$assertSame('Europe/Moscow', $normalized['weekly_match']['timezone'], 'Weekly bridge must expose canonical Moscow cycle');
 $assertSame(true, $bridge->shouldSynchronizeApiAction('anything'), 'Weekly bridge synchronization must not depend on a hidden action global');
 
 fwrite(STDOUT, "WeeklyBonusRuntimeBridgeTest passed: {$assertions} assertions.\n");
