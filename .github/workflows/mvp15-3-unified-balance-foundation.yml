@@ -6,8 +6,46 @@ on:
       - agent/mvp-15-3-unified-balance-foundation
     paths:
       - 'bot/economy/**'
+      - 'bot/ledger/RuntimeEconomyRepository.php'
+      - 'bot/ledger/LegacyEconomyDeltaImportService.php'
+      - 'bot/services/UserService.php'
+      - 'bot/services/GameService.php'
+      - 'bot/services/GameSettlementService.php'
+      - 'bot/services/WeeklyMatchEconomyService.php'
+      - 'bot/services/ShopService.php'
+      - 'bot/services/PaymentService.php'
+      - 'bot/services/AdminService.php'
+      - 'bot/services/StagingTestPlayerStateResetService.php'
+      - 'bot/services/invites/GameInviteStorageTrait.php'
+      - 'bot/services/invites/GameInviteValidationTrait.php'
+      - 'bot/core/bootstrap.php'
+      - 'app/runtime/server/session/RuntimeSessionService.php'
+      - 'app/runtime/server/match/RuntimeMatchService.php'
+      - 'app/assets/js/ui.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/screens/profile-screen.js'
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/index.html'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
+      - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
+      - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/economy/**'
+      - 'bot/ledger/RuntimeEconomyRepository.php'
+      - 'bot/ledger/LegacyEconomyDeltaImportService.php'
+      - 'bot/services/**'
+      - 'bot/core/bootstrap.php'
+      - 'app/**'
+      - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
+      - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
       - '.github/workflows/mvp15-3-unified-balance-foundation.yml'
   workflow_dispatch:
 
@@ -15,21 +53,31 @@ permissions:
   contents: read
 
 jobs:
-  focused-foundation:
+  focused-unified-balance:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Verify PHP syntax
+      - name: Verify PHP and Python syntax
         run: |
           php -l bot/economy/UnifiedBalanceMigrationRule.php
           php -l bot/economy/UnifiedBalanceMigrationPlanner.php
           php -l bot/economy/UnifiedBalanceMigrationExecutor.php
           php -l bot/economy/UnifiedBalanceRuntimeState.php
+          php -l bot/economy/UnifiedBalanceMigrationCoordinator.php
+          php -l bot/economy/UnifiedEconomyRuntimeSyncService.php
           php -l bot/economy/unified_balance_mapping.php
+          php -l bot/ledger/RuntimeEconomyRepository.php
+          php -l bot/ledger/LegacyEconomyDeltaImportService.php
           php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
           php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
-      - name: Run focused migration foundation test
+          php -l bot/tests/UnifiedEconomyRuntimeSyncTest.php
+          python3 -m py_compile ops/checks/verify-mvp15-3-unified-balance-owner.py
+      - name: Verify active single balance owner
+        run: python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
+      - name: Run migration foundation test
         run: php bot/tests/UnifiedBalanceMigrationFoundationTest.php
-      - name: Run focused migration execution test
+      - name: Run atomic migration execution test
         run: php bot/tests/UnifiedBalanceMigrationExecutionTest.php
+      - name: Run post-cutover runtime sync test
+        run: php bot/tests/UnifiedEconomyRuntimeSyncTest.php
