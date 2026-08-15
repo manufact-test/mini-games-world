@@ -1,0 +1,616 @@
+name: MVP-15.6 apply backend unified-zone cutover
+
+on:
+  push:
+    branches:
+      - agent/mvp-15-6-unified-zone-cutover
+    paths:
+      - '.github/workflows/mvp15-6-apply-backend-cutover.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-15-6-unified-zone-cutover
+          fetch-depth: 1
+      - name: Apply exact backend cutover
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, value):
+              Path(path).write_text(value, encoding='utf-8')
+
+          def replace_once(path, old, new):
+              value = read(path)
+              count = value.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one exact occurrence, got {count}: {old[:80]!r}')
+              write(path, value.replace(old, new, 1))
+
+          def regex_once(path, pattern, replacement, flags=re.S):
+              value = read(path)
+              updated, count = re.subn(pattern, replacement, value, count=1, flags=flags)
+              if count != 1:
+                  raise SystemExit(f'{path}: regex expected one occurrence, got {count}: {pattern[:100]!r}')
+              write(path, updated)
+
+          policy = '''<?php
+          declare(strict_types=1);
+
+          final class UnifiedGameZonePolicy
+          {
+              private const STORAGE_ROOM = 'match';
+
+              public static function storageRoom(): string
+              {
+                  return self::STORAGE_ROOM;
+              }
+
+              public static function entryCost(array $config): int
+              {
+                  $runtime = $config['canonical_match_economy'] ?? null;
+                  $entry = is_array($runtime) ? (int)($runtime['entry_cost'] ?? 0) : 0;
+                  if ($entry <= 0) $entry = (int)($config['match_bet'] ?? 0);
+                  if ($entry <= 0) throw new RuntimeException('Canonical unified-zone entry cost is unavailable.');
+                  return $entry;
+              }
+
+              public static function normalizeRequestedRoom(?string $room = null): string
+              {
+                  return self::STORAGE_ROOM;
+              }
+
+              public static function assertInviteWritable(array $invite): void
+              {
+                  if (strtolower(trim((string)($invite['room'] ?? self::STORAGE_ROOM))) === 'gold') {
+                      throw new RuntimeException('Старое Gold-приглашение доступно только в архиве. Создайте новое приглашение.');
+                  }
+              }
+
+              public static function legacyArchiveMessage(): string
+              {
+                  return 'Legacy Match/Gold операции переведены в режим только для чтения. Новые операции отключены.';
+              }
+
+              public static function rejectLegacyCommerceWrite(): never
+              {
+                  throw new RuntimeException(self::legacyArchiveMessage());
+              }
+          }
+          '''.replace('          ', '')
+          write('bot/runtime/UnifiedGameZonePolicy.php', policy)
+
+          replace_once(
+              'bot/core/bootstrap.php',
+              "require_once __DIR__ . '/../economy/MatchEconomyRuntimeConfig.php';\n$config = MatchEconomyRuntimeConfig::apply($config);",
+              "require_once __DIR__ . '/../economy/MatchEconomyRuntimeConfig.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';\n$config = MatchEconomyRuntimeConfig::apply($config);"
+          )
+
+          # GameService remains the match lifecycle owner, but every new search is
+          # normalized to the single current zone and canonical server entry cost.
+          replace_once(
+              'bot/services/GameService.php',
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';",
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';"
+          )
+          replace_once(
+              'bot/services/GameService.php',
+              "        $room = $room === 'gold' ? 'gold' : 'match';\n        $boardSize = in_array($boardSize, $this->config['board_sizes'] ?? [3, 5, 9], true) ? $boardSize : 3;\n        $bet = $room === 'match' ? (int)($this->config['match_bet'] ?? 10) : $bet;\n\n        if ($room === 'gold' && !in_array($bet, $this->config['gold_bets'] ?? [10, 20, 30, 50, 100], true)) {\n            throw new RuntimeException('Выберите доступную стоимость участия.');\n        }",
+              "        $room = UnifiedGameZonePolicy::storageRoom();\n        $boardSize = in_array($boardSize, $this->config['board_sizes'] ?? [3, 5, 9], true) ? $boardSize : 3;\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);"
+          )
+
+          # API no longer creates room identity. Old cached clients may still send
+          # room/bet, but the server ignores those fields and owns the unified zone.
+          regex_once(
+              'bot/api.php',
+              r"function mgw_mark_matchmaking_presence\(.*?\n\}\n\nfunction mgw_prepare_match_bot_fallback",
+              '''function mgw_mark_matchmaking_presence(
+              array &$user,
+              string $gameType,
+              int $boardSize
+          ): void {
+              unset($user['last_matchmaking_room']);
+              $user['last_matchmaking_game_type'] = $gameType;
+              $user['last_matchmaking_board_size'] = $boardSize;
+              $user['last_matchmaking_at'] = now_iso();
+          }
+
+          function mgw_has_other_recent_human(array $data, string $userId): bool
+          {
+              $now = time();
+              foreach ($data['users'] ?? [] as $candidateId => $candidate) {
+                  if (!is_array($candidate)) continue;
+                  $candidateId = (string)($candidate['id'] ?? $candidateId);
+                  if ($candidateId === '' || $candidateId === $userId || str_starts_with($candidateId, 'bot_')) continue;
+                  $lastSeen = strtotime((string)($candidate['last_seen_at'] ?? '')) ?: 0;
+                  if ($lastSeen > 0 && $now - $lastSeen <= 12) return true;
+              }
+              return false;
+          }
+
+          function mgw_prepare_match_bot_fallback'''.replace('          ', '')
+          )
+
+          replace_once(
+              'bot/api.php',
+              "            $room = clean_string($payload['room'] ?? 'match', 20);\n            $room = $room === 'gold' ? 'gold' : 'match';\n            $bet = (int)($payload['bet'] ?? 0);",
+              "            $room = UnifiedGameZonePolicy::storageRoom();\n            $bet = UnifiedGameZonePolicy::entryCost($config);"
+          )
+          replace_once(
+              'bot/api.php',
+              "            mgw_mark_matchmaking_presence($user, $room, $gameType, $boardSize);",
+              "            mgw_mark_matchmaking_presence($user, $gameType, $boardSize);"
+          )
+          replace_once(
+              'bot/api.php',
+              "            if ($room === 'match'\n                && empty($result['game'])\n                && ($user['status'] ?? '') === 'searching') {",
+              "            if (empty($result['game'])\n                && ($user['status'] ?? '') === 'searching') {"
+          )
+          replace_once(
+              'bot/api.php',
+              "                $recentHumanPresent = mgw_has_other_recent_human_in_room($data, (string)($user['id'] ?? ''), $room);",
+              "                $recentHumanPresent = mgw_has_other_recent_human($data, (string)($user['id'] ?? ''));"
+          )
+
+          # Block every public legacy commerce creation boundary before mutation.
+          regex_once(
+              'bot/api.php',
+              r"        case 'payment_create_draft':\n.*?\n            break;\n\n        case 'shop_order':",
+              "        case 'payment_create_draft':\n            UnifiedGameZonePolicy::rejectLegacyCommerceWrite();\n            break;\n\n        case 'shop_order':"
+          )
+          regex_once(
+              'bot/api.php',
+              r"        case 'shop_order':\n.*?\n            break;\n\n        case 'support_create':",
+              "        case 'shop_order':\n            UnifiedGameZonePolicy::rejectLegacyCommerceWrite();\n            break;\n\n        case 'support_create':"
+          )
+
+          # Presence now owns online/offline only. Room metadata existed solely for
+          # the two counters removed by MVP-15.6.
+          presence = '''<?php
+          declare(strict_types=1);
+
+          final class PresenceService
+          {
+              private const ONLINE_WINDOW_SEC = 75;
+              private const LEAVE_GRACE_SEC = 12;
+              private const MARKER_FILE = '.enabled';
+
+              private string $directory;
+
+              public function __construct(?string $directory = null)
+              {
+                  $configuredDataDirectory = trim((string)($GLOBALS['config']['data_dir'] ?? ''));
+                  $dataDirectory = $configuredDataDirectory !== '' ? $configuredDataDirectory : dirname(__DIR__) . '/data';
+                  $defaultDirectory = rtrim($dataDirectory, DIRECTORY_SEPARATOR)
+                      . DIRECTORY_SEPARATOR . '.runtime' . DIRECTORY_SEPARATOR . 'presence';
+                  $this->directory = rtrim($directory ?: $defaultDirectory, DIRECTORY_SEPARATOR);
+              }
+
+              public function touch(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
+              {
+                  $accountId = trim($accountId);
+                  $sessionId = trim($sessionId);
+                  $presenceLeaseId = trim($presenceLeaseId);
+                  if ($accountId === '' || $sessionId === '' || str_starts_with($accountId, 'bot_')) return;
+
+                  $this->ensureDirectory();
+                  @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
+                  $accountDirectory = $this->accountDirectory($accountId);
+                  if (!is_dir($accountDirectory) && !@mkdir($accountDirectory, 0700, true) && !is_dir($accountDirectory)) {
+                      throw new RuntimeException('Не удалось обновить присутствие игрока.');
+                  }
+
+                  $path = $this->sessionPath($accountId, $sessionId, $presenceLeaseId);
+                  $temporary = $path . '.tmp.' . bin2hex(random_bytes(4));
+                  $payload = json_encode(['touched_at' => time(), 'leave_after' => 0], JSON_UNESCAPED_SLASHES);
+                  if (!is_string($payload) || @file_put_contents($temporary, $payload, LOCK_EX) === false) {
+                      @unlink($temporary);
+                      throw new RuntimeException('Не удалось обновить присутствие игрока.');
+                  }
+                  @chmod($temporary, 0600);
+                  if (!@rename($temporary, $path)) {
+                      @unlink($temporary);
+                      throw new RuntimeException('Не удалось обновить присутствие игрока.');
+                  }
+                  $this->pruneAccountDirectory($accountDirectory);
+              }
+
+              public function leave(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
+              {
+                  $accountId = trim($accountId);
+                  $sessionId = trim($sessionId);
+                  $presenceLeaseId = trim($presenceLeaseId);
+                  if ($accountId === '' || $sessionId === '') return;
+
+                  $this->ensureDirectory();
+                  @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
+                  $path = $this->sessionPath($accountId, $sessionId, $presenceLeaseId);
+                  if (!is_file($path)) return;
+                  $state = $this->readSessionState($path);
+                  $payload = json_encode([
+                      'touched_at' => max(1, (int)($state['touched_at'] ?? time())),
+                      'leave_after' => time() + self::LEAVE_GRACE_SEC,
+                  ], JSON_UNESCAPED_SLASHES);
+                  if (is_string($payload)) @file_put_contents($path, $payload, LOCK_EX);
+                  $this->pruneAccountDirectory($this->accountDirectory($accountId));
+              }
+
+              /** @return list<string> */
+              public function onlineAccountIds(): array
+              {
+                  if (!is_dir($this->directory)) return [];
+                  $online = [];
+                  foreach (glob($this->directory . DIRECTORY_SEPARATOR . 'account-*') ?: [] as $accountDirectory) {
+                      if (!is_dir($accountDirectory)) continue;
+                      $this->pruneAccountDirectory($accountDirectory);
+                      if (!$this->directoryHasLiveSession($accountDirectory)) continue;
+                      $accountId = trim((string)@file_get_contents($accountDirectory . DIRECTORY_SEPARATOR . '.account'));
+                      if ($accountId === '' || str_starts_with($accountId, 'bot_')) continue;
+                      $online[] = $accountId;
+                  }
+                  return array_values(array_unique($online));
+              }
+
+              public function isEnabled(): bool { return is_file($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE); }
+              public function onlineWindowSec(): int { return self::ONLINE_WINDOW_SEC; }
+
+              private function ensureDirectory(): void
+              {
+                  if (!is_dir($this->directory) && !@mkdir($this->directory, 0700, true) && !is_dir($this->directory)) {
+                      throw new RuntimeException('Не удалось подготовить присутствие игроков.');
+                  }
+              }
+
+              private function accountDirectory(string $accountId): string
+              {
+                  $directory = $this->directory . DIRECTORY_SEPARATOR . 'account-' . hash('sha256', $accountId);
+                  if (!is_dir($directory) && is_dir($this->directory)) @mkdir($directory, 0700, true);
+                  if (is_dir($directory)) {
+                      $idFile = $directory . DIRECTORY_SEPARATOR . '.account';
+                      if (!is_file($idFile)) {
+                          @file_put_contents($idFile, $accountId, LOCK_EX);
+                          @chmod($idFile, 0600);
+                      }
+                  }
+                  return $directory;
+              }
+
+              private function sessionPath(string $accountId, string $sessionId, string $presenceLeaseId = ''): string
+              {
+                  $leaseKey = $presenceLeaseId === '' ? $sessionId : $sessionId . "\\0presence:" . $presenceLeaseId;
+                  return $this->accountDirectory($accountId) . DIRECTORY_SEPARATOR
+                      . 'session-' . hash('sha256', $leaseKey) . '.presence';
+              }
+
+              private function pruneAccountDirectory(string $accountDirectory): void
+              {
+                  if (!is_dir($accountDirectory)) return;
+                  $now = time();
+                  $cutoff = $now - self::ONLINE_WINDOW_SEC;
+                  foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
+                      $state = $this->readSessionState($path);
+                      $touchedAt = (int)($state['touched_at'] ?? 0);
+                      $leaveAfter = (int)($state['leave_after'] ?? 0);
+                      if ($touchedAt <= 0 || $touchedAt < $cutoff || ($leaveAfter > 0 && $leaveAfter <= $now)) @unlink($path);
+                  }
+                  if (!$this->directoryHasLiveSession($accountDirectory)) {
+                      @unlink($accountDirectory . DIRECTORY_SEPARATOR . '.account');
+                      @rmdir($accountDirectory);
+                  }
+              }
+
+              private function directoryHasLiveSession(string $accountDirectory): bool
+              {
+                  $now = time();
+                  $cutoff = $now - self::ONLINE_WINDOW_SEC;
+                  foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
+                      $state = $this->readSessionState($path);
+                      $touchedAt = (int)($state['touched_at'] ?? 0);
+                      $leaveAfter = (int)($state['leave_after'] ?? 0);
+                      if ($touchedAt >= $cutoff && ($leaveAfter <= 0 || $leaveAfter > $now)) return true;
+                  }
+                  return false;
+              }
+
+              private function readSessionState(string $path): array
+              {
+                  $raw = trim((string)@file_get_contents($path));
+                  if ($raw === '') return ['touched_at' => 0, 'leave_after' => 0];
+                  $decoded = json_decode($raw, true);
+                  if (is_array($decoded)) {
+                      return [
+                          'touched_at' => (int)($decoded['touched_at'] ?? 0),
+                          'leave_after' => (int)($decoded['leave_after'] ?? 0),
+                      ];
+                  }
+                  return ['touched_at' => (int)$raw, 'leave_after' => 0];
+              }
+          }
+          '''.replace('          ', '')
+          write('bot/services/PresenceService.php', presence)
+
+          replace_once(
+              'bot/presence.php',
+              "    $room = clean_string($payload['room'] ?? '', 16);\n    $room = in_array($room, ['match', 'gold'], true) ? $room : '';\n",
+              ''
+          )
+          replace_once(
+              'bot/presence.php',
+              "        $presence->touch($accountId, $sessionId, $presenceLeaseId, $room);",
+              "        $presence->touch($accountId, $sessionId, $presenceLeaseId);"
+          )
+          replace_once(
+              'bot/presence.php',
+              "    // Room is document presence metadata, not matchmaking state: queue/game data\n    // remains authoritative once the account starts searching or playing.\n",
+              ''
+          )
+
+          stats = '''<?php
+          declare(strict_types=1);
+
+          require_once __DIR__ . '/PresenceService.php';
+
+          final class StatsService
+          {
+              private const STAGING_TEST_ACCOUNT_IDS = ['stg_test_player_a', 'stg_test_player_b'];
+              private PresenceService $presence;
+
+              public function __construct(?PresenceService $presence = null)
+              {
+                  $this->presence = $presence ?? new PresenceService();
+              }
+
+              public function build(array $db): array
+              {
+                  $onlineAccounts = [];
+                  if ($this->presence->isEnabled()) {
+                      foreach ($this->presence->onlineAccountIds() as $accountId) {
+                          $accountId = trim((string)$accountId);
+                          if ($accountId === '' || str_starts_with($accountId, 'bot_') || $this->hideStagingTestAccount($accountId)) continue;
+                          $onlineAccounts[$accountId] = true;
+                      }
+                  } else {
+                      $now = time();
+                      foreach ($db['users'] ?? [] as $storageKey => $user) {
+                          if (!is_array($user)) continue;
+                          $last = strtotime((string)($user['last_seen_at'] ?? '')) ?: 0;
+                          if ($last <= 0 || $now - $last > $this->presence->onlineWindowSec()) continue;
+                          $accountId = $this->accountIdForUser($user, (string)$storageKey);
+                          if ($accountId === '' || str_starts_with($accountId, 'bot_') || $this->hideStagingTestAccount($accountId)) continue;
+                          $onlineAccounts[$accountId] = true;
+                      }
+                  }
+
+                  $activeGames = 0;
+                  foreach ($db['games'] ?? [] as $game) {
+                      if (!is_array($game) || ($game['status'] ?? '') !== 'active') continue;
+                      if ($this->hideStagingTestGame($game)) continue;
+                      $activeGames++;
+                  }
+
+                  return [
+                      'online_players' => count($onlineAccounts),
+                      'active_games' => $activeGames,
+                  ];
+              }
+
+              private function accountIdForUser(array $user, string $storageKey): string
+              {
+                  return trim((string)($user['telegram_id'] ?? $user['id'] ?? $storageKey));
+              }
+
+              private function hideStagingTestGame(array $game): bool
+              {
+                  foreach ($game['player_ids'] ?? [] as $playerId) {
+                      if ($this->hideStagingTestAccount((string)$playerId)) return true;
+                  }
+                  return false;
+              }
+
+              private function hideStagingTestAccount(string $accountId): bool
+              {
+                  $environment = strtolower(trim((string)($GLOBALS['config']['environment'] ?? '')));
+                  if ($environment !== 'staging') return false;
+                  if (trim((string)($_COOKIE['mgw_staging_test_session'] ?? '')) !== '') return false;
+                  return in_array($accountId, self::STAGING_TEST_ACCOUNT_IDS, true);
+              }
+          }
+          '''.replace('          ', '')
+          write('bot/services/StatsService.php', stats)
+
+          # Remove room metadata from high-frequency client presence payload.
+          replace_once('app/assets/js/production-v110-presence.js', "import { state } from './state.js?v=27';\n", '')
+          regex_once(
+              'app/assets/js/production-v110-presence.js',
+              r"function payload\(action\)\{\n  const room = .*?\n  return \{\n(.*?)\n    room,\n    action,\n  \};\n\}",
+              "function payload(action){\n  return {\n\\1\n    action,\n  };\n}",
+              flags=re.S
+          )
+
+          # Invite storage remains backward-readable, but every new invite is a
+          # unified-zone invite at the canonical entry cost.
+          replace_once(
+              'bot/services/invites/GameInviteStorageTrait.php',
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';",
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';\nrequire_once dirname(__DIR__, 2) . '/runtime/UnifiedGameZonePolicy.php';"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteStorageTrait.php',
+              "        $room = $room === 'gold' ? 'gold' : 'match';\n        if (!$this->catalog->supportsRoom($gameType, $room)) {\n            throw new RuntimeException('Эта игра недоступна в выбранной комнате.');\n        }\n        $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);\n        $bet = $this->normalizeBet($room, $bet);",
+              "        $room = UnifiedGameZonePolicy::storageRoom();\n        if (!$this->catalog->supportsRoom($gameType, $room)) {\n            throw new RuntimeException('Эта игра пока недоступна.');\n        }\n        $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteStorageTrait.php',
+              "            $room = (string)($invite['room'] ?? 'match');\n            $bet = (int)($invite['bet'] ?? 10);",
+              "            UnifiedGameZonePolicy::assertInviteWritable($invite);\n            $room = UnifiedGameZonePolicy::storageRoom();\n            $bet = UnifiedGameZonePolicy::entryCost($this->config);"
+          )
+
+          replace_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';",
+              "require_once dirname(__DIR__, 2) . '/economy/UnifiedBalanceRuntimeState.php';\nrequire_once dirname(__DIR__, 2) . '/runtime/UnifiedGameZonePolicy.php';"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              "        $room = (string)($invite['room'] ?? 'match') === 'gold' ? 'gold' : 'match';\n        $bet = (int)($invite['bet'] ?? 0);",
+              "        UnifiedGameZonePolicy::assertInviteWritable($invite);\n        $bet = (int)($invite['bet'] ?? UnifiedGameZonePolicy::entryCost($this->config));"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              "            'room' => (string)($invite['room'] ?? 'match'),\n            'room_label' => (string)($invite['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',\n",
+              ''
+          )
+          regex_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              r"    private function normalizeBet\(string \$room, int \$bet\): int\n    \{.*?\n    \}",
+              "    private function normalizeBet(string $room, int $bet): int\n    {\n        return UnifiedGameZonePolicy::entryCost($this->config);\n    }"
+          )
+
+          replace_once(
+              'bot/services/invites/GameInviteActionTrait.php',
+              "        $invite =& $db['invites'][$index];\n        $userId = $this->requireUserId($user);\n        if ((string)($invite['invitee_id'] ?? '') !== $userId) {",
+              "        $invite =& $db['invites'][$index];\n        UnifiedGameZonePolicy::assertInviteWritable($invite);\n        $userId = $this->requireUserId($user);\n        if ((string)($invite['invitee_id'] ?? '') !== $userId) {"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteActionTrait.php',
+              "        $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? 'tictactoe'));\n        $room = (string)($game['room'] ?? 'match') === 'gold' ? 'gold' : 'match';\n        $bet = (int)($game['bet'] ?? ($room === 'match' ? 10 : 0));",
+              "        $gameType = $this->catalog->normalizeGameType((string)($game['game_type'] ?? 'tictactoe'));\n        $room = UnifiedGameZonePolicy::storageRoom();\n        $bet = UnifiedGameZonePolicy::entryCost($this->config);"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteActionTrait.php',
+              "        if ($status === 'active') return $this->resultWithGame($db, $invite, $viewerId);\n        if ($status !== 'awaiting_start') {",
+              "        if ($status === 'active') return $this->resultWithGame($db, $invite, $viewerId);\n        UnifiedGameZonePolicy::assertInviteWritable($invite);\n        if ($status !== 'awaiting_start') {"
+          )
+
+          # Server invite entry ignores stale room/bet payloads; share copy is room-neutral.
+          replace_once(
+              'bot/invites.php',
+              "        . '🏠 Комната: ' . (string)($invite['room_label'] ?? 'Матч-комната') . \"\\n\"\n        . '📐 Вариант: ' . mgw_invite_board_label($invite) . \"\\n\"",
+              "        . '📐 Вариант: ' . mgw_invite_board_label($invite) . \"\\n\""
+          )
+          replace_once(
+              'bot/invites.php',
+              "                'description' => (string)($invite['game_title'] ?? 'Игра')\n                    . ' · ' . (string)($invite['room_label'] ?? 'Матч-комната')\n                    . ' · ' . mgw_invite_board_label($invite),",
+              "                'description' => (string)($invite['game_title'] ?? 'Игра')\n                    . ' · ' . mgw_invite_board_label($invite),"
+          )
+          replace_once(
+              'bot/invites.php',
+              "    $text .= \"\\n\\n\"\n        . (string)($invite['room_label'] ?? 'Матч-комната') . ' · '\n        . mgw_invite_board_label($invite) . ' · '",
+              "    $text .= \"\\n\\n\"\n        . mgw_invite_board_label($invite) . ' · '"
+          )
+          replace_once(
+              'bot/invites.php',
+              "            $room = clean_string($payload['room'] ?? 'match', 20);\n            $bet = (int)($payload['bet'] ?? 10);",
+              "            $room = UnifiedGameZonePolicy::storageRoom();\n            $bet = UnifiedGameZonePolicy::entryCost($config);"
+          )
+
+          # Legacy payment/shop writes are read-only at service level too, so
+          # admin/webhook/internal callers cannot bypass the API cutover.
+          replace_once(
+              'bot/services/PaymentService.php',
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';",
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';"
+          )
+          replace_once(
+              'bot/services/PaymentService.php',
+              "    public function createDraftFromAmount(array &$db, array $user, string $room, int $amountRub, string $provider = 'manual_test'): array\n    {\n        $room = $this->normalizeRoom($room);",
+              "    public function createDraftFromAmount(array &$db, array $user, string $room, int $amountRub, string $provider = 'manual_test'): array\n    {\n        UnifiedGameZonePolicy::rejectLegacyCommerceWrite();\n        $room = $this->normalizeRoom($room);"
+          )
+          replace_once(
+              'bot/services/PaymentService.php',
+              "    public function adminApply(array &$db, string $query, string $adminId): string\n    {\n        $query = trim($query);",
+              "    public function adminApply(array &$db, string $query, string $adminId): string\n    {\n        return UnifiedGameZonePolicy::legacyArchiveMessage();\n        $query = trim($query);"
+          )
+          replace_once(
+              'bot/services/PaymentService.php',
+              "    public function adminReject(array &$db, string $argument, string $adminId): string\n    {\n        [$query, $reason] = $this->splitQueryAndReason($argument);",
+              "    public function adminReject(array &$db, string $argument, string $adminId): string\n    {\n        return UnifiedGameZonePolicy::legacyArchiveMessage();\n        [$query, $reason] = $this->splitQueryAndReason($argument);"
+          )
+
+          replace_once(
+              'bot/services/ShopService.php',
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';",
+              "require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';\nrequire_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';"
+          )
+          replace_once(
+              'bot/services/ShopService.php',
+              "            'balance_gold' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0), // temporary response alias until MVP-15.6\n",
+              ''
+          )
+          replace_once(
+              'bot/services/ShopService.php',
+              "            'can_order' => $available >= $min && !empty($catalog['items']),",
+              "            'can_order' => false,\n            'mode' => 'archive_read_only',"
+          )
+          replace_once(
+              'bot/services/ShopService.php',
+              "    public function createOrder(array &$db, array &$user, string $itemId, string $denominationId, int $requestToken): array\n    {\n        $expectedAmount = intdiv($requestToken, self::ORDER_TOKEN_BASE);",
+              "    public function createOrder(array &$db, array &$user, string $itemId, string $denominationId, int $requestToken): array\n    {\n        UnifiedGameZonePolicy::rejectLegacyCommerceWrite();\n        $expectedAmount = intdiv($requestToken, self::ORDER_TOKEN_BASE);"
+          )
+          replace_once(
+              'bot/services/ShopService.php',
+              "    ): array {\n        UnifiedBalanceRuntimeState::ensureUser($user);",
+              "    ): array {\n        UnifiedGameZonePolicy::rejectLegacyCommerceWrite();\n        UnifiedBalanceRuntimeState::ensureUser($user);"
+          )
+
+          # Admin may inspect legacy orders/payments, but no legacy write may mutate
+          # them after 15.6.
+          replace_once(
+              'bot/services/AdminService.php',
+              "    public function completeOrder(array &$db, string $argument, string $adminId): string\n    {\n        [$query, $note] = $this->parseOrderActionArgument($argument);",
+              "    public function completeOrder(array &$db, string $argument, string $adminId): string\n    {\n        return UnifiedGameZonePolicy::legacyArchiveMessage();\n        [$query, $note] = $this->parseOrderActionArgument($argument);"
+          )
+          replace_once(
+              'bot/services/AdminService.php',
+              "    public function rejectOrder(array &$db, string $argument, string $adminId): string\n    {\n        [$query, $note] = $this->parseOrderActionArgument($argument);",
+              "    public function rejectOrder(array &$db, string $argument, string $adminId): string\n    {\n        return UnifiedGameZonePolicy::legacyArchiveMessage();\n        [$query, $note] = $this->parseOrderActionArgument($argument);"
+          )
+          replace_once(
+              'bot/services/AdminService.php',
+              "    public function addGoldToUser(array &$db, string $argument, string $adminId): string\n    {\n        [$query, $amount, $reason] = $this->parseGoldAddArgument($argument);",
+              "    public function addGoldToUser(array &$db, string $argument, string $adminId): string\n    {\n        return UnifiedGameZonePolicy::legacyArchiveMessage();\n        [$query, $amount, $reason] = $this->parseGoldAddArgument($argument);"
+          )
+
+          # Fingerprint the new cutover owner.
+          replace_once(
+              'bot/helpers/staging-e2e-runtime-files.txt',
+              "bot/economy/MatchEconomyRuntimeConfig.php\n",
+              "bot/economy/MatchEconomyRuntimeConfig.php\nbot/runtime/UnifiedGameZonePolicy.php\n"
+          )
+
+          # Fast syntax gate before writing the commit.
+          PY
+          php -l bot/runtime/UnifiedGameZonePolicy.php
+          php -l bot/core/bootstrap.php
+          php -l bot/api.php
+          php -l bot/presence.php
+          php -l bot/services/GameService.php
+          php -l bot/services/PresenceService.php
+          php -l bot/services/StatsService.php
+          php -l bot/invites.php
+          php -l bot/services/invites/GameInviteStorageTrait.php
+          php -l bot/services/invites/GameInviteValidationTrait.php
+          php -l bot/services/invites/GameInviteActionTrait.php
+          php -l bot/services/PaymentService.php
+          php -l bot/services/ShopService.php
+          php -l bot/services/AdminService.php
+          node --check app/assets/js/production-v110-presence.js
+
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add bot app/assets/js/production-v110-presence.js
+          git commit -m 'MVP-15.6: cut backend over to unified game zone'
+          git push origin HEAD:agent/mvp-15-6-unified-zone-cutover
