@@ -6,6 +6,7 @@ import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
 let storeState = null;
+let storeSurface = 'tab';
 
 export function initStoreScreen(){
   document.addEventListener('click', event => {
@@ -14,24 +15,25 @@ export function initStoreScreen(){
 
     event.preventDefault();
     event.stopImmediatePropagation();
-    openStoreSheet();
+    openStoreTab();
   }, true);
 }
 
-export async function openStoreSheet(){
+export async function openStoreTab(){
+  storeSurface = 'tab';
   haptic('light');
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>Магазин призов</h2><p>Загружаем доступные сертификаты.</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-    <div class="store-loading" aria-live="polite">
-      <div class="store-loading-icon">🎁</div>
-      <strong>Готовим витрину</strong>
-      <span>Проверяем каталог и доступный Gold.</span>
-    </div>
-  `);
+  renderStoreLoading();
+  await loadStore();
+}
 
+export async function openStoreSheet(){
+  storeSurface = 'sheet';
+  haptic('light');
+  renderStoreLoading();
+  await loadStore();
+}
+
+async function loadStore(){
   try {
     const result = await api.shopStatus();
     if (result.user) {
@@ -44,6 +46,17 @@ export async function openStoreSheet(){
   } catch (error) {
     renderStoreError(error);
   }
+}
+
+function renderStoreLoading(){
+  renderStoreSurface(`
+    ${renderStoreHead('Загружаем доступные сертификаты.')}
+    <div class="store-loading" aria-live="polite">
+      <div class="store-loading-icon">🎁</div>
+      <strong>Готовим витрину</strong>
+      <span>Проверяем каталог и доступный Gold.</span>
+    </div>
+  `);
 }
 
 function createStoreState(shop){
@@ -97,11 +110,8 @@ function renderStore(){
     ? 'Тестовый режим администратора: весь текущий Gold доступен для проверки магазина. Для обычных игроков действует правило отыгрыша Gold в завершённых матчах.'
     : 'В магазине доступен только Gold, который уже участвовал в завершённых Gold-матчах.';
 
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>Магазин призов</h2><p>Выберите страну, сертификат и номинал.</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
+  renderStoreSurface(`
+    ${renderStoreHead('Выберите страну, сертификат и номинал.')}
 
     <div class="store-scroll">
       <section class="store-balance-card">
@@ -134,6 +144,34 @@ function renderStore(){
   `);
 
   bindStoreEvents();
+}
+
+function renderStoreHead(subtitle){
+  if (storeSurface === 'tab') {
+    return `
+      <div class="page-head app-shell-page-head store-tab-head">
+        <div><h1 class="page-title">Магазин</h1><p class="page-sub">${escapeHtml(subtitle)}</p></div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="sheet-head">
+      <div><h2>Магазин призов</h2><p>${escapeHtml(subtitle)}</p></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+  `;
+}
+
+function renderStoreSurface(markup){
+  if (storeSurface === 'tab') {
+    const host = document.getElementById('storeTabSurface');
+    if (!host) return;
+    host.innerHTML = markup;
+    return;
+  }
+
+  openSheet(markup);
 }
 
 function renderCatalog(countries, filteredItems, selectedItem, selectedDenomination, available){
@@ -264,7 +302,10 @@ function renderEmptyCatalog(){
 }
 
 function bindStoreEvents(){
-  document.querySelectorAll('[data-store-country]').forEach(button => {
+  const root = storeSurface === 'tab' ? document.getElementById('storeTabSurface') : document.getElementById('sheet');
+  if (!root) return;
+
+  root.querySelectorAll('[data-store-country]').forEach(button => {
     button.addEventListener('click', () => {
       const countryCode = String(button.dataset.storeCountry || '');
       if (!countryCode || !storeState) return;
@@ -278,7 +319,7 @@ function bindStoreEvents(){
     });
   });
 
-  document.querySelectorAll('[data-store-item]').forEach(button => {
+  root.querySelectorAll('[data-store-item]').forEach(button => {
     button.addEventListener('click', () => {
       if (!storeState) return;
       const item = storeState.items.find(entry => String(entry.id || '') === String(button.dataset.storeItem || '')) || null;
@@ -291,7 +332,7 @@ function bindStoreEvents(){
     });
   });
 
-  document.querySelectorAll('[data-store-denomination]').forEach(button => {
+  root.querySelectorAll('[data-store-denomination]').forEach(button => {
     button.addEventListener('click', () => {
       if (!storeState) return;
       storeState.selectedDenominationId = String(button.dataset.storeDenomination || '');
@@ -300,7 +341,7 @@ function bindStoreEvents(){
     });
   });
 
-  document.getElementById('storeContinue')?.addEventListener('click', () => {
+  root.querySelector('#storeContinue')?.addEventListener('click', () => {
     if (!storeState) return;
     const item = storeState.items.find(entry => String(entry.id || '') === storeState.selectedItemId);
     const denomination = (item?.denominations || []).find(option => String(option.id || '') === storeState.selectedDenominationId);
@@ -319,11 +360,8 @@ function bindStoreEvents(){
 }
 
 function renderStoreError(error){
-  openSheet(`
-    <div class="sheet-head">
-      <div><h2>Магазин призов</h2><p>Не удалось загрузить витрину.</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
+  renderStoreSurface(`
+    ${renderStoreHead('Не удалось загрузить витрину.')}
     <div class="store-empty error">
       <div>⚠️</div>
       <strong>Магазин временно недоступен</strong>
@@ -332,7 +370,13 @@ function renderStoreError(error){
     <button class="btn ghost full" id="storeRetry" type="button">Попробовать снова</button>
   `);
 
-  document.getElementById('storeRetry')?.addEventListener('click', openStoreSheet);
+  const root = storeSurface === 'tab' ? document.getElementById('storeTabSurface') : document.getElementById('sheet');
+  root?.querySelector('#storeRetry')?.addEventListener('click', retryStore);
+}
+
+function retryStore(){
+  if (storeSurface === 'tab') return openStoreTab();
+  return openStoreSheet();
 }
 
 function providerInitials(value){
