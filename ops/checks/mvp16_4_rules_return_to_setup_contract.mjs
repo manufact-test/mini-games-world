@@ -38,7 +38,7 @@ if (!rulesOwner.includes('returnToPrevious:context.returnToPrevious === true')) 
   throw new Error('Shared rules owner must pass nested return intent into the sheet owner.');
 }
 if (!launcher.includes('data-game-rules-variant="${Number(activeSize)}"')) {
-  throw new Error('TTT setup must still bind Rules to the currently selected variant.');
+  throw new Error('Unified setup must still bind Rules to the currently selected variant.');
 }
 
 const sheetTarget = './assets/js/components/sheet.js?v=1110&mvp16=nested-return';
@@ -50,8 +50,8 @@ for (const source of [
     throw new Error(`Active sheet alias must resolve to one fresh singleton target: ${source}`);
   }
 }
-if (!clientManifest.includes("game-rules.js?v=77&mvp16=rules-return-to-setup")) {
-  throw new Error('Rules owner must use fresh Telegram cache bytes for return-to-setup behavior.');
+if (!/game-rules\.js\?v=\d+&mvp16=(?:rules-return-to-setup|all-variant-rules)/u.test(clientManifest)) {
+  throw new Error('Rules owner must stay on fresh Telegram cache bytes while preserving return-to-setup behavior.');
 }
 if (!runtimeManifest.includes('app/assets/js/components/sheet.js')) {
   throw new Error('Shared sheet owner must be covered by exact Hostinger fingerprint.');
