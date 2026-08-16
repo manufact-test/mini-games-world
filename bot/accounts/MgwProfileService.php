@@ -106,7 +106,7 @@ final class MgwProfileService
                 $this->database->execute(
                     'UPDATE mgw_users
                      SET nickname = CASE WHEN nickname IS NULL OR nickname = \'\' THEN :nickname ELSE nickname END,
-                         display_name = CASE WHEN nickname IS NULL OR nickname = \'\' THEN :display_name ELSE display_name END,
+                         display_name = :display_name,
                          username = NULL,
                          avatar_provider = NULL,
                          avatar_external_ref = NULL,
