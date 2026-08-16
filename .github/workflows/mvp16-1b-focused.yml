@@ -39,3 +39,5 @@ jobs:
           python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
           python3 scripts/ci/staging-runtime-fingerprint.py
           echo 'MVP16_1B_FOCUSED=PASS'
+
+# retry 2
