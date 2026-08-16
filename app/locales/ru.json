@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "ru",
-    "version": 2
+    "version": 3
   },
   "common": {
     "back": "Назад",
@@ -26,6 +26,19 @@
     "store_title": "Магазин",
     "store_note": "Откройте текущую витрину Mini Games World.",
     "store_open": "Открыть магазин"
+  },
+  "setup": {
+    "subtitle": "Выберите условия матча и подтвердите участие.",
+    "variant_label": "Размер / вариант",
+    "entry_label": "Стоимость участия",
+    "entry_value": "{count} коинов",
+    "confirm": "Начать поиск",
+    "invite": "Пригласить друга",
+    "one_on_one": "1 на 1",
+    "search_label": "{game} · участие {count} коинов · {variant}",
+    "insufficient_title": "Недостаточно коинов",
+    "insufficient_note": "Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.",
+    "economy_unavailable": "Стоимость участия временно недоступна."
   },
   "games": {
     "tictactoe": {"name": "Крестики-нолики"},
