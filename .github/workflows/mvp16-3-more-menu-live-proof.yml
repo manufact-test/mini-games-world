@@ -12,13 +12,14 @@ env:
 jobs:
   prove:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 2
     steps:
       - name: Read authoritative Hostinger readiness fingerprint
         run: |
-          set -Eeuo pipefail
-          curl -fsS "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" -o readiness.json
-          python3 - <<'PY'
+          set -u
+          for attempt in 1 2 3; do
+            echo "ATTEMPT=${attempt}"
+            if curl --connect-timeout 5 --max-time 15 -fsS "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" -o readiness.json && python3 - <<'PY'
           import json, os
           data=json.load(open('readiness.json', encoding='utf-8'))
           actual=str(data.get('source_fingerprint_sha256',''))
@@ -30,3 +31,9 @@ jobs:
           assert actual == expected
           assert files == expected_files
           PY
+            then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
