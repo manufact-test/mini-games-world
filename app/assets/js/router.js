@@ -1,10 +1,12 @@
 import { state } from './state.js?v=27';
 
 const ROUTES = Object.freeze({
-  home:Object.freeze({ screen:'home' }),
-  search:Object.freeze({ screen:'search' }),
-  game:Object.freeze({ screen:'game' }),
-  profile:Object.freeze({ screen:'profile' }),
+  home:Object.freeze({ screen:'home', shell:true }),
+  tournaments:Object.freeze({ screen:'tournaments', shell:true }),
+  store:Object.freeze({ screen:'store', shell:true }),
+  profile:Object.freeze({ screen:'profile', shell:true }),
+  search:Object.freeze({ screen:'search', shell:false }),
+  game:Object.freeze({ screen:'game', shell:false }),
 });
 const KNOWN_SCREENS = new Set(Object.keys(ROUTES));
 const cleanupOwners = new Map();
