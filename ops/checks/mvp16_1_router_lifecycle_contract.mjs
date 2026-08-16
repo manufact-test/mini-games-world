@@ -1,5 +1,5 @@
 const listeners = new Map();
-const screens = ['home', 'search', 'game', 'profile'].map((name, index) => ({
+const screens = ['home', 'search', 'game', 'profile', 'tournaments', 'store'].map((name, index) => ({
   dataset:{ screen:name },
   active:index === 0,
   classList:{
@@ -32,7 +32,10 @@ globalThis.document = {
 
 const router = await import('../../app/assets/js/router.js?mvp16-lifecycle-contract');
 
-if (Object.keys(router.routeRegistry()).join(',') !== 'home,search,game,profile') throw new Error('route registry mismatch');
+const routes = Object.keys(router.routeRegistry());
+for (const route of ['home','search','game','profile']) {
+  if (!routes.includes(route)) throw new Error(`MVP-16.1 core route missing: ${route}`);
+}
 if (router.currentScreen() !== 'home') throw new Error('initial screen mismatch');
 if (router.showScreen('unknown') !== 'home') throw new Error('unknown route must fail closed');
 
