@@ -139,7 +139,7 @@
   left:14px;
   right:14px;
   bottom:6px;
-  padding:4px 5px max(4px,env(safe-area-inset-bottom));
+  padding:2px 5px max(2px,env(safe-area-inset-bottom));
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
   gap:4px;
@@ -152,8 +152,8 @@
 }
 .app-bottom-nav-item{
   min-width:0;
-  min-height:54px;
-  padding:5px 3px;
+  min-height:48px;
+  padding:3px 3px;
   border:0;
   border-radius:15px;
   background:transparent;
@@ -181,11 +181,11 @@
   outline-offset:2px;
 }
 /*
- * Metallic navigation WebPs have transparent canvas below the painted glyph.
- * Keep the accepted 32px image, but make its layout slot shorter so the label
- * rises toward the painted icon and the active item gains real bottom air.
+ * Metallic navigation WebPs have transparent canvas around the painted glyph.
+ * Keep the accepted 32px image, use a 29px layout slot for +3px icon/label air,
+ * and compact the outer panel symmetrically so the nav consumes less height.
  */
-.app-bottom-nav-icon{width:34px;height:26px;display:grid;place-items:start center;flex:0 0 26px;overflow:visible}
+.app-bottom-nav-icon{width:34px;height:29px;display:grid;place-items:start center;flex:0 0 29px;overflow:visible}
 .app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px;display:block;object-fit:contain;filter:brightness(1.13) contrast(1.05) drop-shadow(0 3px 5px rgba(0,0,0,.28))}
 .app-bottom-nav-item.active .shield-king-metal-icon{filter:brightness(1.24) contrast(1.08) drop-shadow(0 3px 6px rgba(0,0,0,.30)) drop-shadow(0 0 7px rgba(178,116,255,.14))}
 .app-bottom-nav-label{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;flex:0 0 10px}
@@ -195,7 +195,7 @@
 .has-shell-chrome .screen[data-screen="store"] .content,
 .has-shell-chrome .screen[data-screen="profile"] .content{
   padding-top:calc(68px + max(10px,env(safe-area-inset-top)));
-  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+  padding-bottom:calc(62px + env(safe-area-inset-bottom));
 }
 .app-shell-primary-screen .content{width:100%}
 .app-shell-page-head{margin-bottom:14px}
