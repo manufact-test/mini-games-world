@@ -73,6 +73,6 @@ for (const key of [
 if (!manifest.includes("'version' => 'v3-unified-game-setup'")) throw new Error('Client manifest version was not advanced for MVP-16.4.');
 if (!manifest.includes("main-v110-handoff-shell.js?v=1151&mvp16=unified-game-setup")) throw new Error('Shell cache target was not advanced for MVP-16.4.');
 if (!manifest.includes("unified-game-launcher.js?v=2&mvp16=unified-game-setup")) throw new Error('Unified launcher cache target is missing.');
-if (!manifest.includes("'version' => 'keys-v2'")) throw new Error('Localization manifest version was not advanced.');
+if (!manifest.includes("'version' => 'keys-v1'")) throw new Error('Accepted localization keys-v1 contract must remain stable.');
 
 console.log('MVP16_4_UNIFIED_GAME_SETUP_CONTRACT=PASS');
