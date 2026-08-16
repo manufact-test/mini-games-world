@@ -110,7 +110,7 @@
   -webkit-backdrop-filter:blur(14px);
 }
 .app-shell-topbar[hidden],.app-bottom-nav[hidden]{display:none!important}
-.app-shell-topbar .user-mini{max-width:calc(100% - 154px)}
+.app-shell-topbar .user-mini{max-width:calc(100% - 193px)}
 .app-shell-topbar .user-name{max-width:145px}
 .app-shell-topbar .icon-row{align-items:center}
 .app-shell-balance{
@@ -189,7 +189,7 @@
 .has-shell-chrome .screen[data-screen="tournaments"] .content,
 .has-shell-chrome .screen[data-screen="store"] .content,
 .has-shell-chrome .screen[data-screen="profile"] .content{
-  padding-top:calc(78px + max(10px,env(safe-area-inset-top)));
+  padding-top:calc(68px + max(10px,env(safe-area-inset-top)));
   padding-bottom:calc(88px + env(safe-area-inset-bottom));
 }
 .app-shell-placeholder-screen .content{display:flex;align-items:flex-start}
@@ -206,7 +206,7 @@
 
 @media (max-width:380px){
   .app-shell-topbar{padding-left:12px;padding-right:12px;gap:8px}
-  .app-shell-topbar .user-mini{max-width:calc(100% - 146px);gap:8px}
+  .app-shell-topbar .user-mini{max-width:calc(100% - 183px);gap:8px}
   .app-shell-topbar .user-name{max-width:112px;font-size:13px}
   .app-shell-balance{min-width:66px;padding-left:5px;padding-right:8px}
   .app-bottom-nav{left:7px;right:7px;gap:2px}
