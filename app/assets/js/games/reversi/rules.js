@@ -1,77 +1,133 @@
-export function reversiRules(){
+import { t } from '@mgw/i18n';
+
+const REVERSI_RULE_SIZES = Object.freeze([6, 8, 10]);
+
+export function reversiRules({ variant } = {}){
+  const size = reversiRuleVariant(variant);
+  const values = { size };
+
   return `
     <div class="sheet-head game-rules-head">
-      <div><h2>Реверси</h2><p>Переворачивайте фишки соперника и соберите большинство.</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
+      <div>
+        <h2>${escapeHtml(t('rules.reversi.title', values))}</h2>
+        <p>${escapeHtml(t('rules.reversi.subtitle', values))}</p>
+      </div>
+      <button class="close" data-close-sheet type="button" aria-label="${escapeHtml(t('common.close'))}">×</button>
     </div>
 
-    <div class="game-rules-content">
+    <div class="game-rules-content reversi-rules" data-rule-variant="${size}">
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Три размера поля</strong><span>Доступны 6×6, классическое 8×8 и большое 10×10. По умолчанию выбрано 8×8. Правила на всех полях одинаковые.</span></div>
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.size_title', values))}</strong>
+          <span>${escapeHtml(t('rules.reversi.size_text', values))}</span>
+        </div>
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Старт партии</strong><span>В центре стоят четыре фишки по диагонали. Стороны распределяются случайно, первыми всегда ходят чёрные.</span></div>
-        ${ruleBoard('start')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.start_title'))}</strong>
+          <span>${escapeHtml(t('rules.reversi.start_text', values))}</span>
+        </div>
+        ${ruleBoard('start', size)}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Допустимый ход</strong><span>Поставьте фишку так, чтобы между новой и уже стоящей вашей фишкой оказалась непрерывная линия фишек соперника. Доступные клетки подсвечиваются.</span></div>
-        ${ruleBoard('legal')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.legal_title'))}</strong>
+          <span>${escapeHtml(t('rules.reversi.legal_text'))}</span>
+        </div>
+        ${ruleBoard('legal', size)}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Переворот линии</strong><span>Все зажатые фишки соперника переворачиваются в ваш цвет. Проверяются горизонтали, вертикали и диагонали.</span></div>
-        ${ruleBoard('flip')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.flip_title'))}</strong>
+          <span>${escapeHtml(t('rules.reversi.flip_text'))}</span>
+        </div>
+        ${ruleBoard('flip', size)}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Несколько направлений</strong><span>Один ход может одновременно перевернуть несколько линий. Переворачиваются сразу все фишки, которые новая фишка закрыла вашими фишками.</span></div>
-        ${ruleBoard('multi')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.multi_title'))}</strong>
+          <span>${escapeHtml(t('rules.reversi.multi_text'))}</span>
+        </div>
+        ${ruleBoard('multi', size)}
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Пропуск хода</strong><span>Если доступных ходов нет, система автоматически передаёт ход сопернику. Самостоятельно пропускать допустимый ход нельзя.</span></div>
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.pass_title'))}</strong>
+          <span>${escapeHtml(t('rules.reversi.pass_text'))}</span>
+        </div>
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Конец и подсчёт</strong><span>Партия заканчивается, когда поле заполнено или ни у кого не осталось допустимых ходов. Побеждает игрок с большим числом фишек. При равном счёте — ничья и возврат ставки.</span></div>
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.finish_title'))}</strong>
+          <span>${escapeHtml(t('rules.reversi.finish_text'))}</span>
+        </div>
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Таймер</strong><span>На ход даётся 60 секунд. Выход из активной партии или окончание времени означает техническое поражение.</span></div>
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.reversi.timer_title'))}</strong>
+          <span>${escapeHtml(t('rules.reversi.timer_text'))}</span>
+        </div>
       </section>
     </div>
 
-    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>
   `;
 }
 
-function ruleBoard(type){
-  const size = 6;
-  const cells = Array.from({ length:size * size }, () => '');
-  const set = (row, col, value) => { cells[row * size + col] = value; };
+export function reversiRuleVariant(value){
+  const size = Number(value);
+  return REVERSI_RULE_SIZES.includes(size) ? size : 8;
+}
 
-  if (type === 'start') {
-    set(2,2,'white'); set(3,3,'white'); set(2,3,'black'); set(3,2,'black');
+function ruleBoard(type, size){
+  const cells = Array.from({ length:size * size }, () => '');
+  const set = (row, col, value) => {
+    if (row < 0 || row >= size || col < 0 || col >= size) return;
+    cells[row * size + col] = value;
+  };
+  const lower = Math.floor(size / 2);
+  const upper = lower - 1;
+
+  if (type === 'start' || type === 'legal') {
+    set(upper, upper, 'white');
+    set(lower, lower, 'white');
+    set(upper, lower, 'black');
+    set(lower, upper, 'black');
   }
 
   if (type === 'legal') {
-    set(2,2,'white'); set(3,3,'white'); set(2,3,'black'); set(3,2,'black');
-    set(1,2,'target'); set(2,1,'target'); set(3,4,'target'); set(4,3,'target');
+    set(upper - 1, upper, 'target');
+    set(upper, upper - 1, 'target');
+    set(lower, lower + 1, 'target');
+    set(lower + 1, lower, 'target');
   }
 
   if (type === 'flip') {
-    set(2,1,'black anchor'); set(2,2,'white flip'); set(2,3,'white flip'); set(2,4,'target black-new');
+    const row = upper;
+    set(row, lower - 2, 'black anchor');
+    set(row, lower - 1, 'white flip');
+    set(row, lower, 'white flip');
+    set(row, lower + 1, 'target black-new');
   }
 
   if (type === 'multi') {
-    set(1,1,'black anchor'); set(1,3,'black anchor'); set(3,1,'black anchor');
-    set(2,2,'white flip'); set(2,3,'white flip'); set(3,2,'white flip');
-    set(3,3,'target black-new');
+    set(upper - 1, upper - 1, 'black anchor');
+    set(upper - 1, lower, 'black anchor');
+    set(lower, upper - 1, 'black anchor');
+    set(upper, upper, 'white flip');
+    set(upper, lower, 'white flip');
+    set(lower, upper, 'white flip');
+    set(lower, lower, 'target black-new');
   }
 
-  return `<div class="reversi-rule-board ${type}" style="--reversi-rule-size:${size}">${cells.map((value, index) => {
+  return `<div class="reversi-rule-board ${type} size-${size}" role="img" aria-label="${escapeHtml(t('rules.reversi.diagram_label', { size }))}" style="--reversi-rule-size:${size}">${cells.map((value, index) => {
     const parts = value.split(' ').filter(Boolean);
     const isTarget = parts.includes('target');
     const isFlip = parts.includes('flip');
@@ -80,4 +136,13 @@ function ruleBoard(type){
     const classes = [isTarget ? 'target' : '', isFlip ? 'flip' : '', isAnchor ? 'anchor' : '', parts.includes('black-new') ? 'new' : ''].filter(Boolean).join(' ');
     return `<i class="${classes}" data-cell="${index}">${color ? `<b class="${color}"></b>` : ''}${isTarget && !color ? '<em></em>' : ''}</i>`;
   }).join('')}</div>`;
+}
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
