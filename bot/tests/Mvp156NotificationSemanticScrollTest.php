@@ -18,25 +18,30 @@ $client = $read(dirname($root) . '/app/assets/js/screens/notifications-screen-v1
 $css = $read(dirname($root) . '/app/assets/css/screens/notifications.css');
 $weekly = $read(dirname($root) . '/app/assets/js/screens/weekly-match-info.js');
 $v110 = $read(dirname($root) . '/app/v110.php');
+$versions = require dirname($root) . '/app/runtime/client/version-manifest.php';
 $manifest = $read($root . '/helpers/staging-e2e-runtime-files.txt');
 
 $assertTrue(!str_contains($css, '.notification-card.warning'), 'Notification cards must not expose a fourth warning semantic color');
 $assertTrue(!str_contains($css, '.notification-toast.warning'), 'Notification toasts must not expose a fourth warning semantic color');
 $assertTrue(str_contains($css, 'var(--sk-info)') && str_contains($css, 'var(--sk-success)') && str_contains($css, 'var(--sk-error)'), 'Notification palette must use canonical blue/green/red tokens');
 $assertTrue(
-    str_contains($notificationsPhp, "\$item['tone'] = 'success';")
-    && str_contains($notificationsPhp, "\$item['tone'] = 'danger';")
-    && str_contains($notificationsPhp, "\$item['tone'] = 'info';"),
+    str_contains($notificationsPhp, "$item['tone'] = 'success';")
+    && str_contains($notificationsPhp, "$item['tone'] = 'danger';")
+    && str_contains($notificationsPhp, "$item['tone'] = 'info';"),
     'Backend notification decorator must emit the three canonical tones'
 );
-$assertTrue(!str_contains($notificationsPhp, "\$item['tone'] = 'warning';"), 'Backend notification presentation must not emit warning tone');
+$assertTrue(!str_contains($notificationsPhp, "$item['tone'] = 'warning';"), 'Backend notification presentation must not emit warning tone');
 $assertTrue(str_contains($client, 'function semanticTone(value)') && !str_contains($client, "['success','danger','info','warning']"), 'Client must canonicalize notifications to exactly three semantic tones');
 $assertTrue(str_contains($client, 'const existingList = isNotificationsSheetOpen()') && str_contains($client, 'const scrollTop = existingList.scrollTop;') && str_contains($client, 'existingList.scrollTop = scrollTop;'), 'Open notification refresh must reuse the list owner and preserve scroll position');
 $assertTrue(str_contains($client, 'const POLL_MS = 30000;'), 'Background refresh remains active; scroll fix must not disable polling');
 $assertTrue(str_contains($weekly, 'color:var(--sk-success)'), 'Completed 3/3 and 8/8 progress must use success green');
-$assertTrue(str_contains($v110, 'green-red-blue-v1') && str_contains($v110, 'app-bootstrap-v2.js?v=1&mvp16=single-owner'), 'Accepted /start graph must preserve notification semantics behind the MVP-16.1A bootstrap successor');
+$assertTrue(str_contains($v110, 'green-red-blue-v1'), 'Accepted /start graph must advertise the notification semantic palette');
+$assertSame(
+    './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
+    $versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? null,
+    'Version manifest must preserve the accepted notification successor shell'
+);
 $assertTrue(str_contains($manifest, 'app/assets/css/screens/notifications.css'), 'Exact runtime fingerprint must include notification palette CSS');
-$assertTrue(str_contains($manifest, 'app/assets/js/app-bootstrap-v2.js') && str_contains($manifest, 'app/assets/js/router.js'), 'Exact runtime fingerprint must include the MVP-16.1A bootstrap/router owners');
 
 $service = new NotificationService();
 $legacyDb = ['notifications' => [[

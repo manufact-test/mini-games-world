@@ -10,6 +10,37 @@ if (!is_string($html)) {
     exit;
 }
 
+$manifestPath = __DIR__ . '/runtime/client/version-manifest.php';
+$versionManifest = require $manifestPath;
+if (!is_array($versionManifest)
+    || !is_array($versionManifest['imports'] ?? null)
+    || !is_array($versionManifest['assets'] ?? null)
+    || ($versionManifest['version'] ?? null) !== 'v1-single-owner') {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World client version manifest is unavailable.';
+    exit;
+}
+
+$imports = $versionManifest['imports'];
+$assets = $versionManifest['assets'];
+foreach (['@mgw/clean-entry', '@mgw/main', './assets/js/state.js?v=27', './assets/js/router.js?v=27'] as $requiredImport) {
+    if (!isset($imports[$requiredImport]) || !is_string($imports[$requiredImport]) || $imports[$requiredImport] === '') {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Mini Games World client version manifest import is unavailable: ' . $requiredImport . '.';
+        exit;
+    }
+}
+foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
+    if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Mini Games World client version manifest asset is unavailable: ' . $requiredAsset . '.';
+        exit;
+    }
+}
+
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
 $entryScriptsAnchor = <<<'HTML'
@@ -32,56 +63,27 @@ foreach ([
     }
 }
 
-$importMap = <<<'HTML'
-<script type="importmap">
-{
-  "imports": {
-    "./assets/js/api/client.js?v=34": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
-    "./assets/js/api/client.js?v=38": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
-    "./assets/js/api/client.js?v=46": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
-    "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
-    "./assets/js/config.js?v=38": "./assets/js/config.js?v=39&mvp15=match-economy",
-    "./assets/js/state.js?v=27": "./assets/js/state.js?v=30&mvp16=router-lifecycle",
-    "./assets/js/router.js?v=27": "./assets/js/router.js?v=28&mvp16=lifecycle",
-    "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=92&mvp15=unified-zone",
-    "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet",
-    "./assets/js/screens/store-screen.js?v=34": "./assets/js/screens/store-screen.js?v=35&mvp15=unified-balance",
-    "./assets/js/screens/profile-screen-v110.js?v=1108": "./assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup",
-    "./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5": "./assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish",
-    "./assets/js/session.js?v=21": "./assets/js/session.js?v=1131",
-    "./assets/js/session.js?v=27": "./assets/js/session.js?v=1131",
-    "./assets/js/screens/search-screen-v102.js?v=103": "./assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier",
-    "./assets/js/screens/game-screen-v102-safe.js?v=102": "./assets/js/screens/game-screen-v102-safe.js?v=103&result=terminal-watch-priority",
-    "./assets/js/screens/game-screen-v102.js?v=102": "./assets/js/screens/game-screen-v102.js?v=104&clock=phase-b-single-writer&battleship=leave-guard",
-    "./assets/js/production-v100-optimistic-models.js?v=102": "./assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner",
-    "./assets/js/production-v102-battleship-models.js?v=102": "./assets/js/production-v102-battleship-models.js?v=103&ready=authoritative-reset",
-    "./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a": "./assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch",
-    "./assets/js/production-v110-targeted-interactions.js?v=1102": "./assets/js/production-v110-targeted-interactions.js?v=1105&zone=unified",
-    "./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69": "./assets/js/production-v110-presence.js?v=1123&zone=unified",
-    "./assets/js/games/game-invites-v110.js?v=1137&ux=1": "./assets/js/games/game-invites-v110.js?v=1140&zone=unified",
-    "./assets/js/games/tictactoe/renderer.js?v=53": "./assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought",
-    "./assets/js/games/battleship/renderer.js?v=56": "./assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact",
-    "./assets/js/production-v110-acceptance-runtime.js?v=110": "./assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner",
-    "./assets/js/components/shield-king-visuals.js?v=125&sk=2": "./assets/js/components/shield-king-visuals.js?v=126&sk=3&icons=c1efd5af",
-    "./assets/js/components/preloader.js?v=42": "./assets/js/components/preloader.js?v=44&intro=v1141",
-    "./assets/js/games/game-card-copy.js?v=81&sk=2": "./assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static"
-  }
+try {
+    $importMapPayload = json_encode(
+        ['imports' => $imports],
+        JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+    );
+} catch (JsonException $error) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World client version manifest cannot be rendered.';
+    exit;
 }
-</script>
-HTML;
-
+$importMap = "<script type=\"importmap\">\n{$importMapPayload}\n</script>";
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 
-$cssTarget = './assets/css/main.css?v=155&sk=3&icons=c1efd5af&render=29&palette=three-state-notifications&battleship=authoritative-shot-only&wallet=weekly-bonus-cta';
-$bootstrapTarget = './assets/js/app-bootstrap-v2.js?v=1&mvp16=single-owner';
+$cssTarget = $assets['main_css'];
+$consistencyCssTarget = $assets['consistency_css'];
+$bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
-$html = str_replace(
-    './assets/css/production-v95-consistency.css?v=95',
-    './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
-    $html
-);
+$html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -90,22 +92,25 @@ $html = str_replace(
 $html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);
 $html = str_replace(
     $hotfixAnchor,
-    'data-hotfix-build="v110-mvp16-single-bootstrap-router-v2-v1165"',
+    'data-hotfix-build="v110-mvp16-version-manifest-route-registry-v1166"',
     $html
 );
 
-foreach ([
+$requiredRenderedTargets = [
     'client_bootstrap_v2' => $bootstrapTarget,
+    'clean_entry_v110' => $imports['@mgw/clean-entry'],
+    'main_v110' => $imports['@mgw/main'],
     'shield_king_css' => $cssTarget,
-    'unified_ui_cache' => './assets/js/ui.js?v=92&mvp15=unified-zone',
-    'match_config_cache' => './assets/js/config.js?v=39&mvp15=match-economy',
-    'app_state_v2_cache' => './assets/js/state.js?v=30&mvp16=router-lifecycle',
-    'router_v2_cache' => './assets/js/router.js?v=28&mvp16=lifecycle',
-    'unified_home_cache' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
-    'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
-    'unified_profile_cache' => './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
-] as $targetName => $target) {
-    if (!str_contains($html, $target)) {
+    'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
+    'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
+    'app_state_v2_cache' => $imports['./assets/js/state.js?v=27'],
+    'router_v2_cache' => $imports['./assets/js/router.js?v=27'],
+    'unified_home_cache' => $imports['./assets/js/screens/home-screen.js?v=74'] ?? '',
+    'match_shell_cache' => $imports['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? '',
+    'unified_profile_cache' => $imports['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '',
+];
+foreach ($requiredRenderedTargets as $targetName => $target) {
+    if ($target === '' || !str_contains($html, $target)) {
         http_response_code(500);
         header('Content-Type: text/plain; charset=utf-8');
         echo 'Mini Games World v110 transformed target is unavailable: ' . $targetName . '.';
@@ -125,7 +130,8 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Client-Bootstrap: v2-single-owner');
-header('X-MGW-Router: v2-lifecycle');
+header('X-MGW-Router: v2-route-registry-cleanup');
+header('X-MGW-Query-Version-Manifest: v1-single-owner');
 header('X-MGW-Api-Session-Graph: v1132-canonical-profile');
 header('X-MGW-Profile-API: provider-neutral-mgw-v1');
 header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');
