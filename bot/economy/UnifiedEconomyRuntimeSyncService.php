@@ -101,10 +101,16 @@ final class UnifiedEconomyRuntimeSyncService
     private function buildPlan(array $snapshot): array
     {
         $ownerships = $this->ownershipMap();
+        $activeAccountRefs = [];
+        foreach ($ownerships as $ownership) {
+            if (!is_array($ownership)) continue;
+            $accountRef = trim((string)($ownership['account_ref'] ?? ''));
+            if ($accountRef !== '') $activeAccountRefs[$accountRef] = true;
+        }
+
         $users = is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [];
         $items = [];
         $blocking = [];
-        $expectedAccounts = [];
         $fingerprintParts = [];
         $sourceTotal = 0;
         $databaseTotal = 0;
@@ -112,12 +118,10 @@ final class UnifiedEconomyRuntimeSyncService
         $sourceUsers = 0;
 
         foreach ($users as $key => $user) {
-            // Development/staging test identities are real runtime economy
-            // subjects in the staging snapshot. They pass the same canonical
-            // account-ownership resolver as Telegram users and were already
-            // included by the legacy shadow/import phases. Excluding them here
-            // creates mgw_coin rows that this service then misclassifies as
-            // unmanaged. Process every materialized user with active ownership.
+            // Runtime snapshots are allowed to be partial after the durable
+            // cutover. Process every materialized user with active ownership,
+            // but never interpret an absent user as a request to delete/debit
+            // another account's durable mgw_coin balance.
             if (!is_array($user)) continue;
             $legacyUserId = trim((string)($user['id'] ?? $key));
             if ($legacyUserId === '') {
@@ -139,7 +143,6 @@ final class UnifiedEconomyRuntimeSyncService
 
             $sourceUsers++;
             $accountRef = (string)$ownership['account_ref'];
-            $expectedAccounts[$accountRef] = true;
             $rows = $this->database->fetchAll(
                 'SELECT account_ref, mgw_id, legacy_user_id, available_amount, reserved_amount, version
                  FROM mgw_balances
@@ -192,13 +195,16 @@ final class UnifiedEconomyRuntimeSyncService
             ];
         }
 
+        // A canonical DB balance may belong to an account that is simply absent
+        // from this partial runtime snapshot. That is valid post-cutover. Only a
+        // DB balance with no active ownership is actually unmanaged/corrupt.
         foreach ($this->database->fetchAll(
             'SELECT account_ref FROM mgw_balances WHERE asset_code = :asset_code',
             ['asset_code' => UnifiedBalanceMigrationRule::TARGET_ASSET]
         ) as $row) {
             $accountRef = trim((string)($row['account_ref'] ?? ''));
-            if ($accountRef !== '' && !isset($expectedAccounts[$accountRef])) {
-                $blocking[] = 'Database contains an unmanaged unified balance.';
+            if ($accountRef !== '' && !isset($activeAccountRefs[$accountRef])) {
+                $blocking[] = 'Database contains a unified balance without active ownership.';
                 break;
             }
         }
