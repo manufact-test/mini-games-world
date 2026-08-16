@@ -37,3 +37,4 @@ jobs:
           print(f'RUNTIME_FILES={len(paths)}')
           PY
           echo MVP16_5_PROFILE_V2_FOCUSED=PASS
+          # rerun after shell contract was generalized for Profile v2
