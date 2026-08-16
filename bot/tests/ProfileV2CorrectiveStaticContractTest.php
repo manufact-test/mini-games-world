@@ -113,16 +113,16 @@ $assertContains('state.mgwProfile?.nickname', $ui, 'Shared visible identity must
 $assertContains('state.mgwProfile?.avatar?.item_id', $ui, 'Shared avatar surface must prefer the canonical MGW profile');
 $assertNotContains('initStandardAvatarPolicy', $cleanEntry, 'No second canonical avatar writer may remain initialized');
 
-$assertContains("$user['mgw_nickname'] = $nickname", $runtimeResolver, 'Verified runtime identity must carry the canonical MGW nickname');
-$assertContains("$user['mgw_avatar_item_id'] = $avatarItemId", $runtimeResolver, 'Verified runtime identity must carry the canonical MGW avatar');
-$assertContains("$user['first_name'] = $user['mgw_nickname']", $userService, 'Legacy visible runtime first_name must be projected from canonical MGW nickname');
-$assertContains("$user['username'] = ''", $userService, 'Provider username must not remain a visible game-name owner');
-$assertContains("$user['photo_url'] = ''", $userService, 'Provider photo must not remain a visible runtime avatar owner');
-$assertContains("['player_names'][$userId] = $nickname", $userService, 'Active game snapshot must refresh the current player canonical nickname');
-$assertContains("$a['username'] ?: $a['first_name']", $gameService, 'Shared game creator must read the canonicalized legacy visible identity fields');
+$assertContains("\$user['mgw_nickname'] = \$nickname", $runtimeResolver, 'Verified runtime identity must carry the canonical MGW nickname');
+$assertContains("\$user['mgw_avatar_item_id'] = \$avatarItemId", $runtimeResolver, 'Verified runtime identity must carry the canonical MGW avatar');
+$assertContains("\$user['first_name'] = \$user['mgw_nickname']", $userService, 'Legacy visible runtime first_name must be projected from canonical MGW nickname');
+$assertContains("\$user['username'] = ''", $userService, 'Provider username must not remain a visible game-name owner');
+$assertContains("\$user['photo_url'] = ''", $userService, 'Provider photo must not remain a visible runtime avatar owner');
+$assertContains("['player_names'][\$userId] = \$nickname", $userService, 'Active game snapshot must refresh the current player canonical nickname');
+$assertContains("\$a['username'] ?: \$a['first_name']", $gameService, 'Shared game creator must read the canonicalized legacy visible identity fields');
 $assertContains('return $this->base->startSearch', $chessRuntime, 'Chess/Go/Domino must keep using the shared game creation path');
 $assertContains('$this->legacyGame->startSearch', $gameRuntime, 'Core game runtime must keep using the shared game creation path');
-$assertContains("$runtimeAuthenticatedUser['mgw_nickname']", $endpoint, 'Nickname update response must synchronize the just-committed canonical nickname into active runtime state');
+$assertContains("\$runtimeAuthenticatedUser['mgw_nickname']", $endpoint, 'Nickname update response must synchronize the just-committed canonical nickname into active runtime state');
 $assertContains('bot/accounts/RuntimeAccountIdentityResolver.php', $runtimeFiles, 'Canonical runtime identity resolver must be included in exact staging fingerprint');
 
 $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
