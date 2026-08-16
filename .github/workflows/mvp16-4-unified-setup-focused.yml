@@ -36,7 +36,12 @@ jobs:
           test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
           python3 scripts/ci/staging-runtime-fingerprint.py
           python3 - <<'PY'
-          from scripts.ci.staging_runtime_fingerprint import manifest_paths
-          print(f'RUNTIME_FILES={len(manifest_paths())}')
+          from pathlib import Path
+          paths=[]
+          for raw in Path('bot/helpers/staging-e2e-runtime-files.txt').read_text(encoding='utf-8').splitlines():
+              line=raw.strip()
+              if line and not line.startswith('#'):
+                  paths.append(line)
+          print(f'RUNTIME_FILES={len(paths)}')
           PY
           echo MVP16_4_UNIFIED_SETUP_FOCUSED=PASS
