@@ -4,6 +4,8 @@ declare(strict_types=1);
 final class MgwIdGenerator
 {
     private const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    private const INTERNAL_PATTERN = '/^MGW-[0-9A-HJKMNP-TV-Z]{16}$/';
+    private const PUBLIC_PATTERN = '/^MGW-ID-([0-9A-HJKMNP-TV-Z]{16})$/';
 
     public static function generate(): string
     {
@@ -32,6 +34,21 @@ final class MgwIdGenerator
 
     public static function isValid(string $value): bool
     {
-        return preg_match('/^MGW-[0-9A-HJKMNP-TV-Z]{16}$/', $value) === 1;
+        return preg_match(self::INTERNAL_PATTERN, strtoupper(trim($value))) === 1;
+    }
+
+    public static function toPublic(string $value): string
+    {
+        $internal = strtoupper(trim($value));
+        if (!self::isValid($internal)) throw new InvalidArgumentException('MGW id is invalid.');
+        return 'MGW-ID-' . substr($internal, 4);
+    }
+
+    public static function fromPublic(string $value): ?string
+    {
+        $normalized = strtoupper(trim($value));
+        if (self::isValid($normalized)) return $normalized;
+        if (preg_match(self::PUBLIC_PATTERN, $normalized, $match) !== 1) return null;
+        return 'MGW-' . $match[1];
     }
 }
