@@ -6,23 +6,13 @@ async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      initData:getInitData(),
-      sessionId:getSessionId(),
-      deviceId:getDeviceId(),
-      ...payload,
-    })
+    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), deviceId:getDeviceId(), ...payload })
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok || !data || data.ok === false) {
-    throw new Error(data?.error || `Ошибка API: ${response.status}`);
-  }
+  if (!response.ok || !data || data.ok === false) throw new Error(data?.error || `Ошибка API: ${response.status}`);
   return data;
 }
-
-async function request(action, payload = {}){
-  return requestUrl(APP_CONFIG.apiBase, { action, ...payload });
-}
+async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
 
 export const api = {
   bootstrap: () => request('bootstrap'),
@@ -35,17 +25,13 @@ export const api = {
   makeMove: (gameId, cell) => request('make_move', { gameId, cell }),
   leaveGame: (gameId) => request('leave_game', { gameId }),
   profile: () => request('profile'),
-  profileV2: () => requestUrl(`${window.location.origin}/bot/profile-v2.php`),
+  profileV2: (profileUpdate = null) => requestUrl(`${window.location.origin}/bot/profile-v2.php`, profileUpdate ? { profile_update:profileUpdate } : {}),
   mgwProfile: () => requestUrl(`${window.location.origin}/bot/profile.php`),
   history: () => request('history'),
   support: (type, message) => request('support', { type, message }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),
-  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', {
-    itemId,
-    denominationId,
-    requestToken,
-  }),
+  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', { itemId, denominationId, requestToken }),
   paymentCreateDraft: (room, amount) => request('payment_create_draft', { room, amount })
 };

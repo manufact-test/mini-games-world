@@ -2,22 +2,14 @@ import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
+import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { renderUser, renderBalances } from '../ui.js?v=89';
-import { applyCanonicalMgwProfile, canonicalAvatarUrl } from '../profile/mgw-profile-model.js?v=1';
+import { applyCanonicalMgwProfile, canonicalAvatarItemId } from '../profile/mgw-profile-model.js?v=1';
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
-const GAME_TYPES = Object.freeze([
-  'tictactoe',
-  'four_in_a_row',
-  'battleship',
-  'checkers',
-  'reversi',
-  'chess',
-  'go',
-  'domino',
-]);
-
+const GAME_TYPES = Object.freeze(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
+const STARTER_AVATARS = Object.freeze(['starter-default-01','starter-default-02','starter-default-03']);
 let profileLoading = false;
 
 export function initProfileScreen(){
@@ -34,25 +26,10 @@ export function initProfileScreen(){
 export async function openProfile(){
   showProfileImmediately();
   if (profileLoading) return;
-
   profileLoading = true;
   setProfileBusy(true);
-
   try {
-    const result = await api.profileV2();
-    state.mgwProfile = result.profile || null;
-    state.user = applyCanonicalMgwProfile({
-      ...(state.user && typeof state.user === 'object' ? state.user : {}),
-      ...(result.user && typeof result.user === 'object' ? result.user : {}),
-    }, state.mgwProfile);
-    state.profileStats = result.stats || state.profileStats || null;
-    state.profileHistory = result.history || state.profileHistory || null;
-    state.profileAuth = result.auth || state.profileAuth || null;
-
-    if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
-    renderUser(state.user);
-    renderBalances(state.user);
-    renderProfileV2();
+    applyProfileResponse(await api.profileV2());
   } catch (error) {
     toast(error.message || t('profile.load_error'));
   } finally {
@@ -61,11 +38,23 @@ export async function openProfile(){
   }
 }
 
+function applyProfileResponse(result){
+  state.mgwProfile = result.profile || state.mgwProfile || null;
+  state.user = applyCanonicalMgwProfile({
+    ...(state.user && typeof state.user === 'object' ? state.user : {}),
+    ...(result.user && typeof result.user === 'object' ? result.user : {}),
+  }, state.mgwProfile);
+  state.profileStats = result.stats || state.profileStats || null;
+  state.profileHistory = result.history || state.profileHistory || null;
+  state.profileAuth = result.auth || state.profileAuth || null;
+  if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
+  renderUser(state.user);
+  renderBalances(state.user);
+  renderProfileV2();
+}
+
 function showProfileImmediately(){
-  if (state.user) {
-    renderUser(state.user);
-    renderBalances(state.user);
-  }
+  if (state.user) { renderUser(state.user); renderBalances(state.user); }
   renderProfileV2();
   showScreen('profile');
 }
@@ -76,12 +65,59 @@ function bindProfileActions(){
   screen.dataset.profileV2Bound = '1';
   screen.addEventListener('click', async event => {
     const copyButton = event.target.closest('[data-copy-mgw-id]');
-    if (!copyButton) return;
-    const mgwId = String(copyButton.dataset.copyMgwId || '').trim();
-    if (!mgwId) return;
-    await copyText(mgwId);
-    toast(t('profile.id_copied'));
+    if (copyButton) {
+      const mgwId = String(copyButton.dataset.copyMgwId || '').trim();
+      if (!mgwId) return;
+      await copyText(mgwId);
+      toast(t('profile.id_copied'));
+      return;
+    }
+    if (event.target.closest('[data-edit-mgw-nickname]')) {
+      openNicknameEditor();
+      return;
+    }
+    const avatarChoice = event.target.closest('[data-mgw-avatar-choice]');
+    if (avatarChoice) {
+      const itemId = String(avatarChoice.dataset.mgwAvatarChoice || '').trim();
+      if (STARTER_AVATARS.includes(itemId)) await saveProfileChange({ avatar_item_id:itemId }, 'profile.avatar_saved');
+      return;
+    }
+    if (event.target.closest('[data-open-language-settings]')) {
+      document.dispatchEvent(new CustomEvent('mgw:open-language-settings'));
+    }
   });
+}
+
+function openNicknameEditor(){
+  const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || '').trim();
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(t('profile.nickname_edit_title'))}</h2><p>${escapeHtml(t('profile.nickname_edit_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <input class="form-input" id="mgwNicknameInput" maxlength="24" autocomplete="off" value="${escapeHtml(nickname)}" />
+    <button class="btn primary full" id="mgwNicknameSave" type="button">${escapeHtml(t('profile.nickname_save'))}</button>
+  `);
+  document.getElementById('mgwNicknameSave')?.addEventListener('click', async () => {
+    const value = String(document.getElementById('mgwNicknameInput')?.value || '').trim();
+    if (!value) return;
+    const saved = await saveProfileChange({ nickname:value }, 'profile.nickname_saved');
+    if (saved) closeSheet();
+  });
+}
+
+async function saveProfileChange(change, successKey){
+  if (profileLoading) return false;
+  profileLoading = true;
+  setProfileBusy(true);
+  try {
+    applyProfileResponse(await api.profileV2(change));
+    toast(t(successKey));
+    return true;
+  } catch (error) {
+    toast(error.message || t('profile.save_error'));
+    return false;
+  } finally {
+    profileLoading = false;
+    setProfileBusy(false);
+  }
 }
 
 function setProfileBusy(busy){
@@ -94,102 +130,44 @@ function setProfileBusy(busy){
 function renderProfileV2(){
   const root = ensureProfileRoot();
   if (!root) return;
-
   const profile = state.mgwProfile && typeof state.mgwProfile === 'object' ? state.mgwProfile : {};
   const user = state.user && typeof state.user === 'object' ? state.user : {};
-  const stats = state.profileStats && typeof state.profileStats === 'object'
-    ? state.profileStats
-    : loadCachedProfileStats();
+  const stats = state.profileStats && typeof state.profileStats === 'object' ? state.profileStats : loadCachedProfileStats();
   const history = state.profileHistory && typeof state.profileHistory === 'object' ? state.profileHistory : {};
-
-  const displayName = String(profile.display_name || user.display_name || user.first_name || t('profile.player')).trim();
-  const username = String(profile.username || user.username || '').trim();
+  const nickname = String(profile.nickname || user.display_name || t('profile.player')).trim();
   const mgwId = String(profile.mgw_id || user.mgw_id || '').trim();
   const balance = Number(user.balance || 0);
   const registeredAt = profile.created_at || user.registered_at || null;
   const identities = Array.isArray(profile.identities) ? profile.identities : [];
-  const matches = Array.isArray(history.matches) ? history.matches.slice(0, 8) : [];
+  const matches = Array.isArray(history.matches) ? history.matches.slice(0, 6) : [];
+  const activeAvatar = canonicalAvatarItemId(profile.avatar || { item_id:user.avatar_item_id });
 
   root.innerHTML = `
-    <header class="profile-v2-head">
-      <div>
-        <h1>${escapeHtml(t('profile.title'))}</h1>
-        <p>${escapeHtml(t('profile.subtitle'))}</p>
-      </div>
-    </header>
-
+    <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1><p>${escapeHtml(t('profile.subtitle'))}</p></div></header>
     <section class="profile-v2-identity">
-      <div class="profile-v2-avatar" id="profileV2Avatar" aria-hidden="true">${escapeHtml(initials(displayName))}</div>
+      <div class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</div>
       <div class="profile-v2-person">
-        <strong>${escapeHtml(displayName)}</strong>
-        <span>${escapeHtml(username ? `@${username.replace(/^@/, '')}` : t('profile.nick_missing'))}</span>
+        <strong>${escapeHtml(nickname)}</strong>
+        <button class="profile-v2-edit-link" type="button" data-edit-mgw-nickname>${escapeHtml(t('profile.nickname_edit'))}</button>
         <small>${escapeHtml(registeredAt ? t('profile.member_since', { date:formatDate(registeredAt) }) : t('profile.member_since_unknown'))}</small>
       </div>
-      <div class="profile-v2-id-card">
-        <span>${escapeHtml(t('profile.mgw_id'))}</span>
-        <button type="button" data-copy-mgw-id="${escapeHtml(mgwId)}" ${mgwId ? '' : 'disabled'}>
-          <b>${escapeHtml(mgwId || '—')}</b>
-          <small>${escapeHtml(t('profile.copy_id'))}</small>
-        </button>
+      <div class="profile-v2-avatar-picker" aria-label="${escapeHtml(t('profile.avatar_select'))}">
+        ${STARTER_AVATARS.map((itemId, index) => `<button type="button" data-mgw-avatar-choice="${itemId}" class="profile-v2-avatar-choice${itemId === activeAvatar ? ' active' : ''}" aria-pressed="${itemId === activeAvatar ? 'true' : 'false'}"><span>MG</span><small>${escapeHtml(t('profile.avatar_option', { number:index + 1 }))}</small></button>`).join('')}
       </div>
+      <div class="profile-v2-id-card"><span>${escapeHtml(t('profile.mgw_id'))}</span><button type="button" data-copy-mgw-id="${escapeHtml(mgwId)}" ${mgwId ? '' : 'disabled'}><b>${escapeHtml(mgwId || '—')}</b><small>${escapeHtml(t('profile.copy_id'))}</small></button></div>
     </section>
-
-    <section class="profile-v2-balance">
-      <div>
-        <span>${escapeHtml(t('profile.balance'))}</span>
-        <small>${escapeHtml(t('profile.balance_note'))}</small>
-      </div>
-      <strong>${escapeHtml(formatNumber(balance))}</strong>
-    </section>
-
-    <section class="profile-v2-section">
-      ${sectionHead('profile.stats_title', 'profile.stats_note')}
-      <div class="profile-v2-summary-grid">
-        ${summaryStat(stats?.games_played, 'profile.games_played')}
-        ${summaryStat(stats?.wins, 'profile.wins')}
-        ${summaryStat(stats?.losses, 'profile.losses')}
-        ${summaryStat(stats?.draws, 'profile.draws')}
-      </div>
-    </section>
-
-    <section class="profile-v2-section">
-      ${sectionHead('profile.by_game_title', 'profile.by_game_note')}
-      <div class="profile-v2-games-grid">
-        ${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}
-      </div>
-    </section>
-
-    <section class="profile-v2-section">
-      ${sectionHead('profile.history_title', 'profile.history_note')}
-      <div class="profile-v2-history">
-        ${matches.length ? matches.map(match => historyRow(match)).join('') : emptyState('profile.history_empty')}
-      </div>
-    </section>
-
-    <section class="profile-v2-section">
-      ${sectionHead('profile.achievements_title', 'profile.achievements_note')}
-      <div class="profile-v2-achievements" aria-label="${escapeHtml(t('profile.achievements_title'))}">
-        ${[1,2,3].map(() => `<div class="profile-v2-achievement"><span aria-hidden="true">◇</span><strong>${escapeHtml(t('profile.achievement_locked'))}</strong><small>${escapeHtml(t('profile.achievement_soon'))}</small></div>`).join('')}
-      </div>
-    </section>
-
-    <section class="profile-v2-section">
-      ${sectionHead('profile.account_title', 'profile.account_note')}
-      <div class="profile-v2-account-card">
-        <div class="profile-v2-setting-row">
-          <span><strong>${escapeHtml(t('profile.language'))}</strong><small>${escapeHtml(t('profile.language_note'))}</small></span>
-          <b>${escapeHtml(t('profile.language_value'))}</b>
-        </div>
-        <div class="profile-v2-account-divider"></div>
-        <div class="profile-v2-linked-head"><strong>${escapeHtml(t('profile.linked_accounts'))}</strong><small>${escapeHtml(t('profile.linked_accounts_note'))}</small></div>
-        <div class="profile-v2-linked-list">
-          ${identities.length ? identities.map(identity => identityRow(identity)).join('') : emptyState('profile.linked_empty')}
-        </div>
-      </div>
-    </section>
+    <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
+    <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
+    <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
+    <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
+    <section class="profile-v2-section">${sectionHead('profile.achievements_title','profile.achievements_note')}<div class="profile-v2-achievements" aria-label="${escapeHtml(t('profile.achievements_title'))}">${[1,2,3].map(() => `<div class="profile-v2-achievement"><span aria-hidden="true">◇</span><strong>${escapeHtml(t('profile.achievement_locked'))}</strong><small>${escapeHtml(t('profile.achievement_soon'))}</small></div>`).join('')}</div></section>
+    <section class="profile-v2-section">${sectionHead('profile.account_title','profile.account_note')}<div class="profile-v2-account-card">
+      <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-language-settings><span><strong>${escapeHtml(t('profile.language'))}</strong><small>${escapeHtml(t('profile.language_note'))}</small></span><b>${escapeHtml(t('profile.language_value'))}</b></button>
+      <div class="profile-v2-account-divider"></div>
+      <div class="profile-v2-linked-head"><strong>${escapeHtml(t('profile.linked_accounts'))}</strong><small>${escapeHtml(t('profile.linked_accounts_note'))}</small></div>
+      <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
+    </div></section>
   `;
-
-  renderProfileAvatar(profile, displayName);
 }
 
 function ensureProfileRoot(){
@@ -200,30 +178,12 @@ function ensureProfileRoot(){
   content.innerHTML = '<div class="profile-v2" id="profileV2Root"></div>';
   return document.getElementById('profileV2Root');
 }
-
-function sectionHead(titleKey, noteKey){
-  return `<div class="profile-v2-section-head"><div><h2>${escapeHtml(t(titleKey))}</h2><p>${escapeHtml(t(noteKey))}</p></div></div>`;
-}
-
-function summaryStat(value, labelKey){
-  const normalized = Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '—';
-  return `<div class="profile-v2-summary-stat"><strong>${escapeHtml(normalized)}</strong><span>${escapeHtml(t(labelKey))}</span></div>`;
-}
-
+function sectionHead(titleKey, noteKey = null){ return `<div class="profile-v2-section-head"><div><h2>${escapeHtml(t(titleKey))}</h2>${noteKey ? `<p>${escapeHtml(t(noteKey))}</p>` : ''}</div></div>`; }
+function summaryStat(value, labelKey){ const normalized = Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '—'; return `<div class="profile-v2-summary-stat"><strong>${escapeHtml(normalized)}</strong><span>${escapeHtml(t(labelKey))}</span></div>`; }
 function gameStatCard(gameType, stats = null){
-  const safeStats = stats && typeof stats === 'object' ? stats : {};
-  return `
-    <article class="profile-v2-game-stat">
-      <div class="profile-v2-game-stat-head"><strong>${escapeHtml(gameName(gameType))}</strong><b>${escapeHtml(formatNumber(Number(safeStats.games_played || 0)))}</b></div>
-      <div class="profile-v2-game-metrics">
-        <span><b>${escapeHtml(formatNumber(Number(safeStats.wins || 0)))}</b><small>${escapeHtml(t('profile.metric_wins'))}</small></span>
-        <span><b>${escapeHtml(formatNumber(Number(safeStats.losses || 0)))}</b><small>${escapeHtml(t('profile.metric_losses'))}</small></span>
-        <span><b>${escapeHtml(formatNumber(Number(safeStats.draws || 0)))}</b><small>${escapeHtml(t('profile.metric_draws'))}</small></span>
-      </div>
-    </article>
-  `;
+  const s = stats && typeof stats === 'object' ? stats : {};
+  return `<article class="profile-v2-game-stat"><div class="profile-v2-game-stat-head"><strong>${escapeHtml(gameName(gameType))}</strong><b>${escapeHtml(formatNumber(Number(s.games_played || 0)))}</b></div><div class="profile-v2-game-metrics"><span><b>${escapeHtml(formatNumber(Number(s.wins || 0)))}</b><small>${escapeHtml(t('profile.metric_wins'))}</small></span><span><b>${escapeHtml(formatNumber(Number(s.losses || 0)))}</b><small>${escapeHtml(t('profile.metric_losses'))}</small></span><span><b>${escapeHtml(formatNumber(Number(s.draws || 0)))}</b><small>${escapeHtml(t('profile.metric_draws'))}</small></span></div></article>`;
 }
-
 function historyRow(match){
   const gameType = String(match?.game_type || 'tictactoe');
   const columns = Number(match?.board_columns || match?.board_size || 0);
@@ -231,108 +191,21 @@ function historyRow(match){
   const variant = columns > 0 && rows > 0 ? `${columns}×${rows}` : '';
   const when = match?.finished_at || match?.created_at || null;
   const tone = ['pos','neg','zero'].includes(String(match?.tone || '')) ? String(match.tone) : 'zero';
-  return `
-    <article class="profile-v2-history-row ${tone}">
-      <div class="profile-v2-history-main">
-        <strong>${escapeHtml(gameName(gameType))}${variant ? ` · ${escapeHtml(variant)}` : ''}</strong>
-        <span>${escapeHtml(String(match?.opponent || t('profile.opponent')))}</span>
-      </div>
-      <div class="profile-v2-history-result">
-        <b>${escapeHtml(String(match?.result || '—'))}</b>
-        <small>${escapeHtml(when ? formatDateTime(when) : '')}</small>
-      </div>
-    </article>
-  `;
+  return `<article class="profile-v2-history-row ${tone}"><div class="profile-v2-history-main"><strong>${escapeHtml(gameName(gameType))}${variant ? ` · ${escapeHtml(variant)}` : ''}</strong><span>${escapeHtml(String(match?.opponent || t('profile.opponent')))}</span></div><div class="profile-v2-history-result"><b>${escapeHtml(String(match?.result || '—'))}</b><small>${escapeHtml(when ? formatDateTime(when) : '')}</small></div></article>`;
 }
-
 function identityRow(identity){
   const provider = String(identity?.provider || '').trim().toLowerCase();
   const linkedAt = identity?.linked_at || null;
-  return `
-    <div class="profile-v2-linked-row">
-      <span class="profile-v2-provider-mark" aria-hidden="true">${escapeHtml(provider.slice(0,1).toUpperCase() || '•')}</span>
-      <span><strong>${escapeHtml(providerName(provider))}</strong><small>${escapeHtml(linkedAt ? t('profile.linked_since', { date:formatDate(linkedAt) }) : t('profile.linked'))}</small></span>
-      <b>${escapeHtml(t('profile.connected'))}</b>
-    </div>
-  `;
+  return `<div class="profile-v2-linked-row"><span class="profile-v2-provider-mark" aria-hidden="true">${escapeHtml(provider.slice(0,1).toUpperCase() || '•')}</span><span><strong>${escapeHtml(providerName(provider))}</strong><small>${escapeHtml(linkedAt ? t('profile.linked_since',{ date:formatDate(linkedAt) }) : t('profile.linked'))}</small></span><b>${escapeHtml(t('profile.connected'))}</b></div>`;
 }
-
-function emptyState(key){
-  return `<div class="profile-v2-empty">${escapeHtml(t(key))}</div>`;
-}
-
-function gameName(gameType){
-  try { return t(`games.${gameType}.name`); }
-  catch (error) { return gameType; }
-}
-
-function providerName(provider){
-  const key = `profile.providers.${provider}`;
-  try { return t(key); }
-  catch (error) { return provider || t('profile.provider_unknown'); }
-}
-
-function renderProfileAvatar(profile, displayName){
-  const avatar = document.getElementById('profileV2Avatar');
-  if (!avatar) return;
-  const url = canonicalAvatarUrl(profile?.avatar || null);
-  avatar.textContent = initials(displayName);
-  avatar.style.backgroundImage = '';
-  avatar.classList.remove('has-photo');
-  if (!url) return;
-  avatar.textContent = '';
-  avatar.style.backgroundImage = `url("${String(url).replace(/["\\]/g, '\\$&')}")`;
-  avatar.classList.add('has-photo');
-}
-
-function initials(name){
-  const clean = String(name || 'MG').replace('@','').trim();
-  return clean.slice(0, 2).toUpperCase() || 'MG';
-}
-
-function hasProfileStats(stats){
-  if (!stats || typeof stats !== 'object') return false;
-  return ['games_played', 'wins', 'losses', 'draws'].every(key => Number.isFinite(Number(stats[key])));
-}
-
-function loadCachedProfileStats(){
-  try {
-    const parsed = JSON.parse(localStorage.getItem(PROFILE_STATS_CACHE_KEY) || 'null');
-    return hasProfileStats(parsed) ? parsed : null;
-  } catch (error) {
-    return null;
-  }
-}
-
-function saveCachedProfileStats(stats){
-  try {
-    localStorage.setItem(PROFILE_STATS_CACHE_KEY, JSON.stringify(stats));
-  } catch (error) {
-    // Profile remains usable when storage is unavailable.
-  }
-}
-
+function emptyState(key){ return `<div class="profile-v2-empty">${escapeHtml(t(key))}</div>`; }
+function gameName(gameType){ try { return t(`games.${gameType}.name`); } catch (error) { return gameType; } }
+function providerName(provider){ try { return t(`profile.providers.${provider}`); } catch (error) { return provider || t('profile.provider_unknown'); } }
+function hasProfileStats(stats){ return Boolean(stats && typeof stats === 'object' && ['games_played','wins','losses','draws'].every(key => Number.isFinite(Number(stats[key])))); }
+function loadCachedProfileStats(){ try { const parsed = JSON.parse(localStorage.getItem(PROFILE_STATS_CACHE_KEY) || 'null'); return hasProfileStats(parsed) ? parsed : null; } catch (error) { return null; } }
+function saveCachedProfileStats(stats){ try { localStorage.setItem(PROFILE_STATS_CACHE_KEY, JSON.stringify(stats)); } catch (error) {} }
 async function copyText(value){
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-  const textarea = document.createElement('textarea');
-  textarea.value = value;
-  textarea.setAttribute('readonly', '');
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
-  document.body.appendChild(textarea);
-  textarea.select();
-  document.execCommand('copy');
-  textarea.remove();
+  if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(value); return; }
+  const textarea = document.createElement('textarea'); textarea.value = value; textarea.setAttribute('readonly',''); textarea.style.position='fixed'; textarea.style.opacity='0'; document.body.appendChild(textarea); textarea.select(); document.execCommand('copy'); textarea.remove();
 }
-
-function escapeHtml(value){
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
