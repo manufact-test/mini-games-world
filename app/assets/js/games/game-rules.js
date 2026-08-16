@@ -2,12 +2,12 @@ import { openSheet } from '../components/sheet.js?v=68';
 import { state } from '../state.js?v=27';
 import { gameTypeOf } from './game-router.js?v=74';
 import { ticTacToeRules } from './tictactoe/rules.js?v=54';
-import { fourInARowRules } from './four-in-a-row/rules.js?v=53';
+import { fourInARowRules } from './four-in-a-row/rules.js?v=54';
 import { battleshipRules } from './battleship/rules.js?v=54';
 import { checkersRules } from './checkers/rules.js?v=58';
-import { reversiRules } from './reversi/rules.js?v=66';
+import { reversiRules } from './reversi/rules.js?v=67';
 import { chessRules } from './chess/rules.js?v=69';
-import { goRules } from './go/rules.js?v=71';
+import { goRules } from './go/rules.js?v=72';
 import { dominoRules } from './domino/rules.js?v=75';
 
 const RULE_RENDERERS = {
@@ -55,11 +55,14 @@ export function openGameRules(gameType, context = {}){
   });
 }
 
-export function ruleVariantForGame(gameType, game){
-  if (gameType === 'tictactoe') {
-    return normalizeRuleVariant(game?.board_size ?? game?.boardSize);
-  }
-  return null;
+export function ruleVariantForGame(_gameType, game){
+  return normalizeRuleVariant(
+    game?.board_size
+      ?? game?.boardSize
+      ?? game?.game_variant_size
+      ?? game?.board_columns
+      ?? game?.boardColumns
+  );
 }
 
 function normalizeRuleVariant(value){
