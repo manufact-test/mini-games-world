@@ -40,4 +40,4 @@ jobs:
           python3 scripts/ci/staging-runtime-fingerprint.py
           echo 'MVP16_1B_FOCUSED=PASS'
 
-# retry 2
+# retry 3 after successor verifier update
