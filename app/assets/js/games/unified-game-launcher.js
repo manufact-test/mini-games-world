@@ -96,7 +96,7 @@ function renderSetup(){
   const bet = Number(APP_CONFIG.matchBet);
 
   openSheet(`
-    <div class="sheet-head">
+    <div class="sheet-head unified-setup-head">
       <div>
         <h2>${escapeHtml(title)}</h2>
         <p>${escapeHtml(t('setup.subtitle'))}</p>
