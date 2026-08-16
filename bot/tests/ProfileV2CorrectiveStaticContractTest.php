@@ -67,7 +67,8 @@ $assertSame(true, $invalidNicknameRejected, 'Forbidden nickname characters must 
 $assertContains('nickname_too_short', $endpoint, 'Endpoint must map short nickname validation');
 $assertContains('nickname_too_long', $endpoint, 'Endpoint must map long nickname validation');
 $assertContains('nickname_invalid_characters', $endpoint, 'Endpoint must map forbidden nickname validation');
-$assertContains('Этот ник уже занят, выберите другой', $endpoint, 'Endpoint must preserve explicit occupied nickname feedback');
+$assertSame('Этот ник уже занят, выберите другой', MgwIdentityPolicy::NICKNAME_TAKEN_ERROR, 'Occupied nickname copy must stay canonical');
+$assertContains('MgwIdentityPolicy::NICKNAME_TAKEN_ERROR', $endpoint, 'Endpoint must use the canonical occupied nickname copy');
 $assertContains('буквы, цифры, пробелы', (string)($catalog['profile']['nickname_edit_note'] ?? ''), 'Nickname editor must explain accepted character classes');
 $assertContains('.mgw-nickname-input', $correctiveCss, 'Nickname editor must use the clean focus treatment');
 
