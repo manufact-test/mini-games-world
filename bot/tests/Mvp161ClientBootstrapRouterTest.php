@@ -29,13 +29,13 @@ ob_start();
 require $app . '/v110.php';
 $rendered = (string)ob_get_clean();
 
-$assertSame('v1-single-owner', $versions['version'] ?? null, 'Client query versions must have one explicit manifest owner');
+$assertSame('v2-route-scoped-polling', $versions['version'] ?? null, 'Client query versions must have one explicit manifest owner');
 $assertSame(1, substr_count($rendered, '<script type="module" src="'), 'Telegram /start render must expose one top-level module script');
 $assertTrue(str_contains($rendered, $versions['assets']['bootstrap']), 'Telegram /start render must expose the manifest-owned bootstrap-v2 target');
 $assertTrue(str_contains($rendered, $versions['imports']['@mgw/clean-entry']), 'Rendered import map must resolve accepted clean-entry through the manifest');
 $assertTrue(str_contains($rendered, $versions['imports']['@mgw/main']), 'Rendered import map must resolve accepted main-v110 through the manifest');
-$assertTrue(str_contains($v110, 'X-MGW-Client-Bootstrap: v2-single-owner') && str_contains($v110, 'X-MGW-Query-Version-Manifest: v1-single-owner'), 'v110 must advertise bootstrap and version-manifest ownership');
-$assertTrue(!str_contains($v110, 'v=1146&mvp15=notification-polish'), 'Resolved active target versions must not be duplicated inside v110.php');
+$assertTrue(str_contains($v110, 'X-MGW-Client-Bootstrap: v2-single-owner') && str_contains($v110, 'X-MGW-Query-Version-Manifest: v2-route-scoped-polling'), 'v110 must advertise bootstrap and current version-manifest ownership');
+$assertTrue(!str_contains($v110, 'v=1147&mvp16=route-scoped-polling'), 'Resolved active target versions must not be duplicated inside v110.php');
 
 $cleanPos = strpos($bootstrap, "await import('@mgw/clean-entry');");
 $mainPos = strpos($bootstrap, "await import('@mgw/main');");
