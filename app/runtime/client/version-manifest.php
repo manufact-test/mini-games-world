@@ -21,7 +21,7 @@ return [
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=35&mvp15=unified-balance',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
-        './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1148&mvp16=shell-nav-topbar',
+        './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1149&mvp16=shell-nav-topbar-more-menu',
         './assets/js/session.js?v=21' => './assets/js/session.js?v=1131',
         './assets/js/session.js?v=27' => './assets/js/session.js?v=1131',
         './assets/js/screens/search-screen-v102.js?v=103' => './assets/js/screens/search-screen-v102.js?v=107&search=route-scoped-lifecycle',
@@ -41,7 +41,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=156&sk=3&icons=c1efd5af&render=30&mvp16=shell-nav-topbar',
+        'main_css' => './assets/css/main.css?v=157&sk=3&icons=c1efd5af&render=30&mvp16=shell-nav-topbar-more-menu',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
