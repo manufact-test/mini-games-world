@@ -10,6 +10,7 @@ const dominoMeta = read('app/assets/js/games/domino/meta.js');
 const index = read('app/index.html');
 const locale = JSON.parse(read('app/locales/ru.json'));
 const manifest = read('app/runtime/client/version-manifest.php');
+const runtimeManifest = read('bot/helpers/staging-e2e-runtime-files.txt');
 
 const games = ['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino'];
 for (const game of games) {
@@ -74,5 +75,8 @@ if (!manifest.includes("'version' => 'v2-route-scoped-polling'")) throw new Erro
 if (!manifest.includes("main-v110-handoff-shell.js?v=1151&mvp16=unified-game-setup")) throw new Error('Shell cache target was not advanced for MVP-16.4.');
 if (!manifest.includes("unified-game-launcher.js?v=2&mvp16=unified-game-setup")) throw new Error('Unified launcher cache target is missing.');
 if (!manifest.includes("'version' => 'keys-v1'")) throw new Error('Accepted localization keys-v1 contract must remain stable.');
+if (!runtimeManifest.split(/\r?\n/u).includes('app/assets/js/games/unified-game-launcher.js')) {
+  throw new Error('Unified launcher must be covered by the exact Hostinger runtime fingerprint.');
+}
 
 console.log('MVP16_4_UNIFIED_GAME_SETUP_CONTRACT=PASS');
