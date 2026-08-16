@@ -86,11 +86,18 @@ try:
 except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as exc:
     violations.append(f'app/v110.php: canonical Telegram entry render failed: {exc}'); rendered = ''
 
+version_manifest = Path('app/runtime/client/version-manifest.php').read_text()
+main_css_match = re.search(r"'main_css'\s*=>\s*'([^']+)'", version_manifest)
+if main_css_match is None:
+    violations.append('app/runtime/client/version-manifest.php: canonical main_css owner is missing')
+    canonical_main_css = None
+else:
+    canonical_main_css = main_css_match.group(1)
+
 required_entry_fragments = (
     './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
     './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
-    './assets/css/main.css?v=168&sk=3&icons=c1efd5af&render=36&mvp16=profile-corrective',
     './assets/js/ui.js?v=93&mvp16=canonical-identity',
     './assets/js/state.js?v=30&mvp16=router-lifecycle',
     './assets/js/router.js?v=29&b=871cb833d99d&mvp16=route-registry',
@@ -99,6 +106,8 @@ required_entry_fragments = (
 )
 for fragment in required_entry_fragments:
     if fragment not in rendered: violations.append(f'app/v110.php: transformed Telegram entry is missing {fragment}')
+if canonical_main_css is not None and canonical_main_css not in rendered:
+    violations.append(f'app/v110.php: transformed Telegram entry is missing manifest-owned main_css {canonical_main_css}')
 
 if rendered.count('<script type="module" src="') != 1: violations.append('app/v110.php: canonical Telegram entry must expose exactly one top-level module bootstrap')
 if '<script type="module" src="./assets/js/production-clean-entry-v110.js' in rendered: violations.append('app/v110.php: clean-entry must not remain an independent top-level module script')
