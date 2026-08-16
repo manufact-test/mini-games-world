@@ -1,0 +1,39 @@
+name: MVP-16.5 profile v2 focused
+on:
+  push:
+    branches: [agent/mvp-16-5-profile-v2]
+    paths: ['.github/workflows/mvp16-5-profile-v2-focused.yml']
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Focused contracts
+        run: |
+          set -Eeuo pipefail
+          php -l bot/profile-v2.php
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/api/client.js
+          node ops/checks/mvp16_5_profile_v2_contract.mjs
+          node ops/checks/mvp16_3_shell_navigation_contract.mjs
+          node ops/checks/mvp16_4_remaining_variant_rules_nav_contract.mjs
+          node ops/checks/mvp16_4_ttt_variant_rules_contract.mjs
+          node ops/checks/mvp16_4_rules_return_to_setup_contract.mjs
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php bot/tests/Mvp156NotificationSemanticScrollTest.php
+          php app/v110.php > /tmp/mgw-v110.html
+          test "$(grep -o '<script type=\"module\" src=\"' /tmp/mgw-v110.html | wc -l)" -eq 1
+          grep -F 'profile-screen-v110.js?v=1115&mvp16=profile-v2' /tmp/mgw-v110.html >/dev/null
+          grep -F 'main.css?v=167&sk=3&icons=c1efd5af&render=36&mvp16=final-bottom-nav-align' /tmp/mgw-v110.html >/dev/null
+          python3 scripts/ci/staging-runtime-fingerprint.py
+          python3 - <<'PY'
+          from pathlib import Path
+          paths=[line.strip() for line in Path('bot/helpers/staging-e2e-runtime-files.txt').read_text().splitlines() if line.strip() and not line.lstrip().startswith('#')]
+          print(f'RUNTIME_FILES={len(paths)}')
+          PY
+          echo MVP16_5_PROFILE_V2_FOCUSED=PASS
