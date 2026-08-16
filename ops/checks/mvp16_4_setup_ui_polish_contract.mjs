@@ -22,7 +22,7 @@ if (!css.includes('.unified-setup-head > .close{\n  position:absolute !important
 if (!css.includes('.unified-game-setup > .btn-row{\n  margin-top:10px !important;')) {
   throw new Error('Unified setup actions must remain visually separated from the entry-cost choice.');
 }
-if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=30&mvp16=setup-subtitle-width/u.test(manifest)) {
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:setup-subtitle-width|variant-rules-nav-balance)/u.test(manifest)) {
   throw new Error('Telegram /start must keep a versioned CSS cache target for accepted setup polish.');
 }
 if (!/unified-game-launcher\.js\?v=\d+&mvp16=setup-subtitle-width/u.test(manifest)) {

@@ -40,7 +40,7 @@ if (!launcher.includes('rulesButton.dataset.gameRulesVariant = String(activeSize
 if (!owner.includes("const game = current ? state.activeGame : null;")) {
   throw new Error('In-match Rules must resolve from the authoritative active game.');
 }
-if (!owner.includes('game?.board_size ?? game?.boardSize')) {
+if (!owner.includes('game?.board_size') || !owner.includes('game?.boardSize')) {
   throw new Error('In-match TTT Rules must derive the real board size from the active match payload.');
 }
 if (!owner.includes('button.dataset.gameRulesVariant')) {
@@ -71,14 +71,14 @@ if (/[А-Яа-яЁё]/u.test(rules)) {
 if (!mainCss.includes("./games/tictactoe/rules.css?v=54&mvp16=variant-rules")) {
   throw new Error('TTT rule diagram CSS must use a fresh nested cache target.');
 }
-if (!/game-rules\.js\?v=\d+&mvp16=(?:variant-rules|rules-return-to-setup)/u.test(clientManifest)) {
+if (!/game-rules\.js\?v=\d+&mvp16=(?:variant-rules|rules-return-to-setup|all-variant-rules)/u.test(clientManifest)) {
   throw new Error('Shared rule owner must stay on a versioned MVP-16 cache target.');
 }
 if (!clientManifest.includes("unified-game-launcher.js?v=4&mvp16=setup-subtitle-width")) {
   throw new Error('Unified setup launcher must use fresh bytes after variant binding.');
 }
-if (!clientManifest.includes("main.css?v=161&sk=3&icons=c1efd5af&render=30&mvp16=setup-subtitle-width")) {
-  throw new Error('Outer CSS target must advance after TTT rule diagram CSS changes.');
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:setup-subtitle-width|variant-rules-nav-balance)/u.test(clientManifest)) {
+  throw new Error('Outer CSS target must remain fresh after rules and navigation changes.');
 }
 if (!clientManifest.includes("'version' => 'v2-route-scoped-polling'")) {
   throw new Error('Client manifest schema version must remain stable.');

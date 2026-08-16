@@ -27,12 +27,12 @@
     "schema_version": 1,
     "games": {
       "tictactoe": {"version": 2, "languages": ["ru"], "title_key": "games.tictactoe.name"},
-      "four_in_a_row": {"version": 1, "languages": ["ru"], "title_key": "games.four_in_a_row.name"},
+      "four_in_a_row": {"version": 2, "languages": ["ru"], "title_key": "games.four_in_a_row.name"},
       "battleship": {"version": 1, "languages": ["ru"], "title_key": "games.battleship.name"},
       "checkers": {"version": 1, "languages": ["ru"], "title_key": "games.checkers.name"},
-      "reversi": {"version": 1, "languages": ["ru"], "title_key": "games.reversi.name"},
+      "reversi": {"version": 2, "languages": ["ru"], "title_key": "games.reversi.name"},
       "chess": {"version": 1, "languages": ["ru"], "title_key": "games.chess.name"},
-      "go": {"version": 1, "languages": ["ru"], "title_key": "games.go.name"},
+      "go": {"version": 2, "languages": ["ru"], "title_key": "games.go.name"},
       "domino": {"version": 1, "languages": ["ru"], "title_key": "games.domino.name"}
     }
   }

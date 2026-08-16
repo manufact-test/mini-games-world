@@ -50,10 +50,14 @@ if (!layout.includes('padding-top:calc(68px + max(10px,env(safe-area-inset-top))
 if (!layout.includes('min-height:49px') || !layout.includes('padding-bottom:calc(72px + env(safe-area-inset-bottom))')) {
   throw new Error('Bottom navigation must use the compact footprint without shrinking icon/text sizes.');
 }
-if (!layout.includes('.app-bottom-nav-icon{width:34px;height:34px') || !layout.includes('font-size:10px')) {
-  throw new Error('Compact navigation must preserve accepted icon/text sizes.');
+if (!layout.includes('.app-bottom-nav-icon{width:34px;height:32px')
+    || !layout.includes('.app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px')
+    || !layout.includes('font-size:10px')) {
+  throw new Error('Balanced navigation must preserve the accepted 32px icon and 10px label sizes.');
 }
-if (!mainCss.includes("./base/layout.css?v=127&sk=1&mvp16=unified-primary-tabs")) throw new Error('Layout cache target must advance with primary tab changes.');
+if (!/\.\/base\/layout\.css\?v=\d+&sk=1&mvp16=(?:unified-primary-tabs|balanced-bottom-nav)/u.test(mainCss)) {
+  throw new Error('Layout cache target must stay versioned under the MVP-16 shell owner.');
+}
 if (!mainCss.includes("./screens/store.css?v=29&mvp16=primary-tab")) throw new Error('Store CSS cache target must advance with embedded store changes.');
 
 for (const key of ['home','tournaments','store','profile']) {
@@ -68,7 +72,7 @@ if (!/main-v110-handoff-shell\.js\?v=\d+&mvp16=(?:unified-primary-tabs|unified-g
 }
 if (!manifest.includes("store-screen.js?v=36&mvp16=primary-tab")) throw new Error('Store module cache target was not advanced.');
 if (!manifest.includes("profile-screen-v110.js?v=1114&mvp16=primary-tab")) throw new Error('Profile module cache target was not advanced.');
-if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=30&mvp16=(?:unified-primary-tabs|setup-ui-polish|setup-subtitle-width)/u.test(manifest)) {
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:unified-primary-tabs|setup-ui-polish|setup-subtitle-width|variant-rules-nav-balance)/u.test(manifest)) {
   throw new Error('Shell CSS must remain on a versioned MVP-16 cache target.');
 }
 

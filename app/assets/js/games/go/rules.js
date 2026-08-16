@@ -1,104 +1,159 @@
-export function goRules(){
+import { t } from '@mgw/i18n';
+
+const GO_RULE_SIZES = Object.freeze([9, 13]);
+const GO_KOMI = 6.5;
+
+export function goRules({ variant } = {}){
+  const size = goRuleVariant(variant);
+  const values = { size, komi:String(GO_KOMI).replace('.', ',') };
+
   return `
     <div class="sheet-head game-rules-head">
-      <div><h2>Го</h2><p>Окружайте камни соперника и захватывайте территорию.</p></div>
-      <button class="close" data-close-sheet type="button">×</button>
+      <div>
+        <h2>${escapeHtml(t('rules.go.title', values))}</h2>
+        <p>${escapeHtml(t('rules.go.subtitle', values))}</p>
+      </div>
+      <button class="close" data-close-sheet type="button" aria-label="${escapeHtml(t('common.close'))}">×</button>
     </div>
 
-    <div class="game-rules-content">
-      <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Пустое поле и первый ход</strong><span>Партия начинается на пустом поле. Камни ставятся на пересечения линий и больше не двигаются. Стороны распределяются случайно, первыми ходят чёрные.</span></div>
-        ${ruleBoard('start')}
+    <div class="game-rules-content go-rules" data-rule-variant="${size}">
+      <section class="game-rule-card compact">
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.size_title', values))}</strong>
+          <span>${escapeHtml(t('rules.go.size_text', values))}</span>
+        </div>
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Группы и свободы</strong><span>Соседние по горизонтали или вертикали камни одного цвета образуют группу. Пустые соседние пересечения — её свободы. Диагонали камни не соединяют.</span></div>
-        ${ruleBoard('liberties')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.start_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.start_text', values))}</span>
+        </div>
+        ${ruleBoard('start', size)}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Захват группы</strong><span>Если у камня или группы соперника не осталось свобод, вся группа снимается с поля. Один ход может захватить несколько групп.</span></div>
-        ${ruleBoard('capture')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.liberties_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.liberties_text'))}</span>
+        </div>
+        ${ruleBoard('liberties', size)}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Запрещённый ход</strong><span>Нельзя поставить камень так, чтобы у собственной группы не осталось свобод. Но ход разрешён, если он сначала захватывает соперника и освобождает точки.</span></div>
-        ${ruleBoard('suicide')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.capture_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.capture_text'))}</span>
+        </div>
+        ${ruleBoard('capture', size)}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Запрет повтора позиции</strong><span>Нельзя сразу вернуть поле к позиции, которая уже была в этой партии. После взаимного захвата сначала нужно сделать ход в другом месте.</span></div>
-        ${ruleBoard('ko')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.suicide_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.suicide_text'))}</span>
+        </div>
+        ${ruleBoard('suicide', size)}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Пас и конец партии</strong><span>Пас разрешён в любой момент. Два последовательных паса завершают партию. Перед вторым пасом игра попросит подтвердить завершение.</span></div>
-        ${ruleBoard('score')}
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.ko_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.ko_text'))}</span>
+        </div>
+        ${ruleBoard('ko', size)}
+      </section>
+
+      <section class="game-rule-card">
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.pass_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.pass_text'))}</span>
+        </div>
+        ${ruleBoard('score', size)}
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Подсчёт</strong><span>За каждый камень на поле и каждое окружённое пустое пересечение начисляется одно очко. Смешанные области нейтральны. К счёту белых добавляется 6,5 очка, потому что чёрные ходят первыми. Все камни, оставшиеся после второго паса, считаются живыми.</span></div>
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.score_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.score_text', values))}</span>
+        </div>
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Таймер</strong><span>На ход даётся 60 секунд. Выход из активной партии или окончание времени означает техническое поражение.</span></div>
+        <div class="game-rule-copy">
+          <strong>${escapeHtml(t('rules.go.timer_title'))}</strong>
+          <span>${escapeHtml(t('rules.go.timer_text'))}</span>
+        </div>
       </section>
     </div>
 
-    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>
   `;
 }
 
-function ruleBoard(type){
-  const size = 9;
+export function goRuleVariant(value){
+  const size = Number(value);
+  return GO_RULE_SIZES.includes(size) ? size : 9;
+}
+
+function ruleBoard(type, size){
   const stones = new Map();
   const markers = new Map();
-  const setStone = (row, col, color, extra = '') => stones.set(row * size + col, `${color} ${extra}`.trim());
-  const setMarker = (row, col, marker) => markers.set(row * size + col, marker);
+  const setStone = (row, col, color, extra = '') => {
+    if (row < 0 || row >= size || col < 0 || col >= size) return;
+    stones.set(row * size + col, `${color} ${extra}`.trim());
+  };
+  const setMarker = (row, col, marker) => {
+    if (row < 0 || row >= size || col < 0 || col >= size) return;
+    markers.set(row * size + col, marker);
+  };
+  const mid = Math.floor(size / 2);
 
   if (type === 'start') {
-    setStone(4, 4, 'black', 'first-stone');
+    setStone(mid, mid, 'black', 'first-stone');
   }
 
   if (type === 'liberties') {
-    setStone(4, 4, 'black');
-    setStone(4, 5, 'black');
-    [[3,4],[3,5],[4,3],[4,6],[5,4],[5,5]].forEach(([r,c]) => setMarker(r,c,'liberty'));
+    setStone(mid, mid, 'black');
+    setStone(mid, mid + 1, 'black');
+    [[mid - 1,mid],[mid - 1,mid + 1],[mid,mid - 1],[mid,mid + 2],[mid + 1,mid],[mid + 1,mid + 1]].forEach(([r,c]) => setMarker(r,c,'liberty'));
   }
 
   if (type === 'capture') {
-    setStone(4, 4, 'white capture');
-    setStone(4, 5, 'white capture');
-    [[3,4],[3,5],[4,3],[5,4],[5,5]].forEach(([r,c]) => setStone(r,c,'black'));
-    setMarker(4,6,'target-black');
+    setStone(mid, mid, 'white capture');
+    setStone(mid, mid + 1, 'white capture');
+    [[mid - 1,mid],[mid - 1,mid + 1],[mid,mid - 1],[mid + 1,mid],[mid + 1,mid + 1]].forEach(([r,c]) => setStone(r,c,'black'));
+    setMarker(mid, mid + 2, 'target-black');
   }
 
   if (type === 'suicide') {
-    [[3,4],[4,3],[4,5],[5,4]].forEach(([r,c]) => setStone(r,c,'white'));
-    setMarker(4,4,'forbidden');
+    [[mid - 1,mid],[mid,mid - 1],[mid,mid + 1],[mid + 1,mid]].forEach(([r,c]) => setStone(r,c,'white'));
+    setMarker(mid,mid,'forbidden');
   }
 
   if (type === 'ko') {
-    setStone(3,4,'black');
-    setStone(4,3,'black');
-    setStone(5,4,'black');
-    setStone(4,4,'white capture');
-    setStone(3,5,'white');
-    setStone(5,5,'white');
-    setStone(4,6,'white');
-    setMarker(4,5,'ko');
+    setStone(mid - 1,mid,'black');
+    setStone(mid,mid - 1,'black');
+    setStone(mid + 1,mid,'black');
+    setStone(mid,mid,'white capture');
+    setStone(mid - 1,mid + 1,'white');
+    setStone(mid + 1,mid + 1,'white');
+    setStone(mid,mid + 2,'white');
+    setMarker(mid,mid + 1,'ko');
   }
 
   if (type === 'score') {
-    [[2,2],[2,3],[2,4],[3,2],[4,2]].forEach(([r,c]) => setStone(r,c,'black'));
-    [[5,5],[5,6],[6,5],[6,6],[4,6]].forEach(([r,c]) => setStone(r,c,'white'));
-    [[3,3],[3,4],[4,3],[4,4]].forEach(([r,c]) => setMarker(r,c,'territory-black'));
-    [[5,7],[6,7],[7,5],[7,6],[7,7]].forEach(([r,c]) => setMarker(r,c,'territory-white'));
-    setMarker(4,5,'neutral');
+    const blackBase = Math.max(2, Math.floor(size * .25));
+    const whiteBase = Math.min(size - 3, Math.ceil(size * .7));
+    [[blackBase,blackBase],[blackBase,blackBase + 1],[blackBase,blackBase + 2],[blackBase + 1,blackBase],[blackBase + 2,blackBase]].forEach(([r,c]) => setStone(r,c,'black'));
+    [[whiteBase,whiteBase],[whiteBase,whiteBase + 1],[whiteBase + 1,whiteBase],[whiteBase + 1,whiteBase + 1],[whiteBase - 1,whiteBase + 1]].forEach(([r,c]) => setStone(r,c,'white'));
+    [[blackBase + 1,blackBase + 1],[blackBase + 1,blackBase + 2],[blackBase + 2,blackBase + 1],[blackBase + 2,blackBase + 2]].forEach(([r,c]) => setMarker(r,c,'territory-black'));
+    [[whiteBase,whiteBase + 2],[whiteBase + 1,whiteBase + 2],[whiteBase + 2,whiteBase],[whiteBase + 2,whiteBase + 1],[whiteBase + 2,whiteBase + 2]].forEach(([r,c]) => setMarker(r,c,'territory-white'));
+    setMarker(mid,mid,'neutral');
   }
 
   return `
-    <div class="go-rule-board ${type}" style="--go-rule-size:${size}">
+    <div class="go-rule-board ${type} size-${size}" role="img" aria-label="${escapeHtml(t('rules.go.diagram_label', { size }))}" style="--go-rule-size:${size}">
       ${gridSvg(size)}
       ${starMarkup(size)}
       ${Array.from({ length:size * size }, (_, cell) => rulePoint(cell, size, stones.get(cell) || '', markers.get(cell) || '')).join('')}
@@ -136,9 +191,19 @@ function gridSvg(size){
 function starMarkup(size){
   const inset = 6;
   const span = 88;
-  return [2,4,6].flatMap(row => [2,4,6].map(col => {
+  const coordinates = size === 13 ? [3,6,9] : [2,4,6];
+  return coordinates.flatMap(row => coordinates.map(col => {
     const x = inset + (col / (size - 1)) * span;
     const y = inset + (row / (size - 1)) * span;
     return `<i class="go-star" style="--go-x:${x}%;--go-y:${y}%;--go-rule-point-size:${82 / (size - 1)}%"></i>`;
   })).join('');
+}
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
