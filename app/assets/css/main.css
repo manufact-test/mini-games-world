@@ -61,4 +61,7 @@
 .history-tab-panel{display:none}
 .history-tab-panel.active{display:block}
 .overlay,.sheet{transition:none !important;animation:none !important}
-.sheet .menu-item:focus-visible{outline:none;box-shadow:none;border-color:var(--stroke);background:rgba(255,255,255,.075)}
+.sheet .menu-item:focus,.sheet .menu-item:focus-visible{outline:none;box-shadow:none;border-color:var(--stroke);background:rgba(255,255,255,.055)}
+.sheet #settingsBtn,.sheet #settingsBtn:focus,.sheet #settingsBtn:focus-visible{width:100%!important;min-height:52px!important;height:auto!important;margin:0!important;padding:13px 14px!important;border:1px solid var(--stroke)!important;border-radius:17px!important;background:rgba(255,255,255,.055)!important;box-shadow:none!important;outline:none!important;justify-content:flex-start!important;text-align:left!important;transform:none!important}
+.sheet #settingsBtn:hover{background:rgba(255,255,255,.075)!important}
+.sheet #settingsBtn:active{transform:scale(.975)!important}
