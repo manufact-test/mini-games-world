@@ -1,0 +1,39 @@
+name: MVP-16.4 TTT variant rules live proof
+on:
+  push:
+    branches: [agent/mvp-16-4-ttt-variant-rules-live-proof]
+    paths: ['.github/workflows/mvp16-4-ttt-variant-rules-live-proof.yml']
+permissions:
+  contents: read
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+  EXPECTED_FINGERPRINT: 3afa843f2dc8d8619bff051ef1bfd1b207bc0aaf7b05354032a2868afc6ab7ce
+  EXPECTED_FILES: '198'
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Read authoritative Hostinger readiness fingerprint
+        run: |
+          set -u
+          for attempt in 1 2 3; do
+            echo "ATTEMPT=${attempt}"
+            if curl --connect-timeout 5 --max-time 15 -fsS "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" -o readiness.json && python3 - <<'PY'
+          import json, os
+          data=json.load(open('readiness.json', encoding='utf-8'))
+          actual=str(data.get('source_fingerprint_sha256',''))
+          files=str(data.get('runtime_file_count',''))
+          expected=os.environ['EXPECTED_FINGERPRINT']
+          expected_files=os.environ['EXPECTED_FILES']
+          print(f"EXPECTED={expected}\nACTUAL={actual}\nFILES={files}")
+          assert data.get('ok') is True
+          assert actual == expected
+          assert files == expected_files
+          PY
+            then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
