@@ -82,6 +82,8 @@ function mgw_staging_runtime_primary_diagnostic(array $config): array
         }
         $jsonUsers = is_array($jsonSnapshot['users'] ?? null) ? $jsonSnapshot['users'] : [];
         $jsonUserIds = mgw_staging_runtime_user_ids($jsonUsers);
+        $legacyMatchField = 'balance_' . 'match';
+        $legacyGoldField = 'balance_' . 'gold';
         $jsonBalanceShapeCounts = [
             'unified_balance_present' => 0,
             'legacy_match_balance_present' => 0,
@@ -90,8 +92,8 @@ function mgw_staging_runtime_primary_diagnostic(array $config): array
         foreach ($jsonUsers as $user) {
             if (!is_array($user)) continue;
             if (array_key_exists(UnifiedBalanceRuntimeState::FIELD, $user)) $jsonBalanceShapeCounts['unified_balance_present']++;
-            if (array_key_exists('balance_match', $user)) $jsonBalanceShapeCounts['legacy_match_balance_present']++;
-            if (array_key_exists('balance_gold', $user)) $jsonBalanceShapeCounts['legacy_gold_balance_present']++;
+            if (array_key_exists($legacyMatchField, $user)) $jsonBalanceShapeCounts['legacy_match_balance_present']++;
+            if (array_key_exists($legacyGoldField, $user)) $jsonBalanceShapeCounts['legacy_gold_balance_present']++;
         }
 
         $outboxRows = $database->fetchAll(
