@@ -159,6 +159,7 @@ $assertTrue(str_contains($shop, 'UnifiedGameZonePolicy::rejectLegacyCommerceWrit
 $assertTrue(str_contains($admin, "require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';"), 'Admin archive mutations must share the unified-zone policy');
 $assertNotContains('Gold-тест', $admin, 'Admin keyboard must not expose legacy Gold mutation surface');
 
+// Best-effort cleanup of the isolated presence fixture.
 foreach (glob($presenceDir . '/account-*/*') ?: [] as $path) @unlink($path);
 foreach (glob($presenceDir . '/account-*') ?: [] as $path) @rmdir($path);
 @unlink($presenceDir . '/.enabled');
