@@ -42,7 +42,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(8, $runner->migrate(false)['executed_count'], 'Runtime sync test must apply all migrations');
+$assertSame(9, $runner->migrate(false)['executed_count'], 'Runtime sync test must apply all migrations');
 
 $accounts = new AccountIdentityService($database, 3600);
 $firstIdentity = $accounts->resolveTelegramUser([
@@ -110,45 +110,26 @@ $insertLegacyBalance = static function (
 $insertLegacyBalance($database, '111001', 'match_coin', 100, $now);
 $insertLegacyBalance($database, '111001', 'gold_coin', 10, $now);
 
-$rule = UnifiedBalanceMigrationRule::fromApprovedConfig(
-    require $root . '/economy/unified_balance_mapping.php'
-);
+$rule = UnifiedBalanceMigrationRule::fromApprovedConfig(require $root . '/economy/unified_balance_mapping.php');
 $ledger = new LedgerWriteService($database, static fn(): string => $now);
 $integrity = new LedgerIntegrityVerifier($database);
 $coordinator = new UnifiedBalanceMigrationCoordinator($database, $rule, $ledger, $integrity);
 
 $before = $coordinator->preview();
 $assertSame(false, $before['completed'], 'Read-only preview must not invent a completed cutover marker');
-$assertSame(0, (int)$database->fetchValue(
-    "SELECT COUNT(*) FROM mgw_balances WHERE asset_code = 'mgw_coin'"
-), 'Read-only preview must not create a target balance');
+$assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_balances WHERE asset_code = 'mgw_coin'"), 'Read-only preview must not create a target balance');
 
 $migration = $coordinator->ensureMigrated();
 $assertSame(true, $migration['ok'], 'One-time cutover must complete');
-$assertSame(110, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:111001' AND asset_code = 'mgw_coin'"
-), 'Cutover must create exact Match+Gold canonical balance');
-$assertSame(1, (int)$database->fetchValue(
-    "SELECT COUNT(*) FROM mgw_idempotency_keys
-     WHERE operation_type = 'unified_balance_cutover' AND status = 'completed'"
-), 'Cutover must leave one durable completed marker');
+$assertSame(110, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'mgw_coin'"), 'Cutover must create exact Match+Gold canonical balance');
+$assertSame(1, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_idempotency_keys WHERE operation_type = 'unified_balance_cutover' AND status = 'completed'"), 'Cutover must leave one durable completed marker');
 
 $after = $coordinator->preview();
 $assertSame(true, $after['completed'], 'Read-only preview must verify the completed marker');
 $assertSame(true, $after['read_only'], 'Marker preview must stay read-only');
 
 $sync = new UnifiedEconomyRuntimeSyncService($database, $ledger, $integrity);
-$snapshot = [
-    'users' => [
-        '111001' => [
-            'id' => '111001',
-            'balance' => 110,
-            'balance_match' => 100,
-            'balance_gold' => 10,
-        ],
-    ],
-];
+$snapshot = ['users' => ['111001' => ['id'=>'111001','balance'=>110,'balance_match'=>100,'balance_gold'=>10]]];
 $initialPreview = $sync->preview($snapshot);
 $assertSame(true, $initialPreview['ready'], 'Post-cutover canonical snapshot must be ready');
 $assertSame(0, $initialPreview['planned_delta_count'], 'Equal canonical and DB balances need no delta');
@@ -157,77 +138,35 @@ $snapshot['users']['111001']['balance'] = 90;
 $debit = $sync->run($snapshot);
 $assertSame(1, $debit['applied_delta_count'], 'Canonical debit must create exactly one DB delta');
 $assertSame(20, $debit['debited_total'], 'Canonical debit must preserve exact amount');
-$assertSame(90, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:111001' AND asset_code = 'mgw_coin'"
-), 'DB mgw_coin must follow the canonical debit');
-
-$sourceMatchAfterDebit = (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:111001' AND asset_code = 'match_coin'"
-);
-$sourceGoldAfterDebit = (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:111001' AND asset_code = 'gold_coin'"
-);
-$assertSame(100, $sourceMatchAfterDebit, 'Legacy Match DB row must remain frozen after canonical debit');
-$assertSame(10, $sourceGoldAfterDebit, 'Legacy Gold DB row must remain frozen after canonical debit');
+$assertSame(90, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'mgw_coin'"), 'DB mgw_coin must follow the canonical debit');
+$assertSame(100, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'match_coin'"), 'Legacy Match DB row must remain frozen after canonical debit');
+$assertSame(10, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'gold_coin'"), 'Legacy Gold DB row must remain frozen after canonical debit');
 
 $snapshot['users']['111001']['balance'] = 130;
 $credit = $sync->run($snapshot);
 $assertSame(1, $credit['applied_delta_count'], 'Canonical credit must create exactly one DB delta');
 $assertSame(40, $credit['credited_total'], 'Canonical credit must preserve exact amount');
-$assertSame(130, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:111001' AND asset_code = 'mgw_coin'"
-), 'DB mgw_coin must follow the canonical credit');
-$assertSame(100, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:111001' AND asset_code = 'match_coin'"
-), 'Legacy Match remains frozen after canonical credit');
-$assertSame(10, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:111001' AND asset_code = 'gold_coin'"
-), 'Legacy Gold remains frozen after canonical credit');
+$assertSame(130, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'mgw_coin'"), 'DB mgw_coin must follow the canonical credit');
+$assertSame(100, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'match_coin'"), 'Legacy Match remains frozen after canonical credit');
+$assertSame(10, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'gold_coin'"), 'Legacy Gold remains frozen after canonical credit');
 
-$secondIdentity = $accounts->resolveTelegramUser([
-    'id' => '222002',
-    'first_name' => 'Beta',
-], 'sync-beta-session');
+$secondIdentity = $accounts->resolveTelegramUser(['id'=>'222002','first_name'=>'Beta'], 'sync-beta-session');
 $secondMgwId = (string)$secondIdentity['mgw_id'];
 $insertOwnership($database, '222002', $secondMgwId, $now);
 $insertLegacyBalance($database, '222002', 'match_coin', 0, $now);
 $insertLegacyBalance($database, '222002', 'gold_coin', 0, $now);
 
-$migrationEntryCountBefore = (int)$database->fetchValue(
-    "SELECT COUNT(*) FROM mgw_ledger_entries WHERE category = 'unified_balance_migration'"
-);
+$migrationEntryCountBefore = (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_ledger_entries WHERE category = 'unified_balance_migration'");
 $markerReplay = $coordinator->ensureMigrated();
 $assertSame(true, $markerReplay['replayed'], 'Completed marker must prevent a second legacy conversion pass');
-$assertSame($migrationEntryCountBefore, (int)$database->fetchValue(
-    "SELECT COUNT(*) FROM mgw_ledger_entries WHERE category = 'unified_balance_migration'"
-), 'New account after marker must not create legacy conversion entries');
+$assertSame($migrationEntryCountBefore, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_ledger_entries WHERE category = 'unified_balance_migration'"), 'New account after marker must not create legacy conversion entries');
 
-$snapshot['users']['222002'] = [
-    'id' => '222002',
-    'balance' => 25,
-    'balance_match' => 0,
-    'balance_gold' => 0,
-];
+$snapshot['users']['222002'] = ['id'=>'222002','balance'=>25,'balance_match'=>0,'balance_gold'=>0];
 $newAccountSync = $sync->run($snapshot);
 $assertSame(1, $newAccountSync['applied_delta_count'], 'A post-cutover account must initialize through mgw_coin runtime sync');
-$assertSame(25, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:222002' AND asset_code = 'mgw_coin'"
-), 'Post-cutover account must receive canonical balance without legacy conversion');
-$assertSame(0, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:222002' AND asset_code = 'match_coin'"
-), 'Post-cutover legacy Match row remains frozen at zero');
-$assertSame(0, (int)$database->fetchValue(
-    "SELECT available_amount FROM mgw_balances
-     WHERE account_ref = 'legacy:222002' AND asset_code = 'gold_coin'"
-), 'Post-cutover legacy Gold row remains frozen at zero');
+$assertSame(25, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:222002' AND asset_code = 'mgw_coin'"), 'Post-cutover account must receive canonical balance without legacy conversion');
+$assertSame(0, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:222002' AND asset_code = 'match_coin'"), 'Post-cutover legacy Match row remains frozen at zero');
+$assertSame(0, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:222002' AND asset_code = 'gold_coin'"), 'Post-cutover legacy Gold row remains frozen at zero');
 
 $finalPreview = $sync->preview($snapshot);
 $assertSame(true, $finalPreview['ready'], 'Final canonical parity must be ready');
