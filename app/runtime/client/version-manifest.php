@@ -22,7 +22,8 @@ return [
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=36&mvp16=primary-tab',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1114&mvp16=primary-tab',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1151&mvp16=unified-game-setup',
-        './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=3&mvp16=setup-subtitle-width',
+        './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=76&mvp16=variant-rules',
+        './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=4&mvp16=ttt-variant-rules',
         './assets/js/session.js?v=21' => './assets/js/session.js?v=1131',
         './assets/js/session.js?v=27' => './assets/js/session.js?v=1131',
         './assets/js/screens/search-screen-v102.js?v=103' => './assets/js/screens/search-screen-v102.js?v=107&search=route-scoped-lifecycle',
@@ -42,7 +43,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=160&sk=3&icons=c1efd5af&render=30&mvp16=setup-subtitle-width',
+        'main_css' => './assets/css/main.css?v=161&sk=3&icons=c1efd5af&render=30&mvp16=ttt-variant-rules',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
