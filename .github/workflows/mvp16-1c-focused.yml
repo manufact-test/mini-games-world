@@ -40,4 +40,4 @@ jobs:
           python3 scripts/ci/staging-runtime-fingerprint.py
           echo 'MVP16_1C_FOCUSED=PASS'
 
-# rerun after successor-contract refresh
+# rerun after all known successor-contract refreshes
