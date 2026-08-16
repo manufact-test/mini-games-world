@@ -7,9 +7,12 @@ $home = file_get_contents($root . '/app/assets/js/screens/home-screen.js');
 $model = file_get_contents($root . '/app/assets/js/profile/mgw-profile-model.js');
 $i18n = file_get_contents($root . '/app/assets/js/localization/i18n.js');
 $endpoint = file_get_contents($root . '/bot/profile-v2.php');
+$correctiveCss = file_get_contents($root . '/app/assets/css/screens/profile-corrective.css');
+$mainCss = file_get_contents($root . '/app/assets/css/main.css');
+$versionManifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $catalog = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, flags: JSON_THROW_ON_ERROR);
 
-foreach (['profile' => $profile, 'home' => $home, 'model' => $model, 'i18n' => $i18n, 'endpoint' => $endpoint] as $name => $source) {
+foreach (['profile' => $profile, 'home' => $home, 'model' => $model, 'i18n' => $i18n, 'endpoint' => $endpoint, 'corrective_css' => $correctiveCss, 'main_css' => $mainCss, 'version_manifest' => $versionManifest] as $name => $source) {
     if (!is_string($source)) throw new RuntimeException("Unable to read {$name} corrective source.");
 }
 
@@ -33,6 +36,13 @@ $assertContains("userHistory(\$data, \$userId, 6)", $endpoint, 'Backend profile 
 $assertContains("sectionHead('profile.history_title')", $profile, 'Recent matches heading must render without redundant subtitle');
 $assertNotContains("sectionHead('profile.history_title','profile.history_note')", $profile, 'Recent matches subtitle must stay removed');
 $assertContains("['starter-default-01','starter-default-02','starter-default-03']", $profile, 'Profile must expose the three canonical starter avatar IDs');
+foreach (['starter-default-01','starter-default-02','starter-default-03'] as $avatarItemId) {
+    $assertContains('[data-avatar-item-id="' . $avatarItemId . '"]', $correctiveCss, 'Profile identity avatar must have a visible starter variant');
+    $assertContains('[data-mgw-avatar-choice="' . $avatarItemId . '"]', $correctiveCss, 'Profile picker must preview each starter variant');
+    $assertContains('[data-avatar-id="' . $avatarItemId . '"]', $correctiveCss, 'Shared topbar/profile/search avatar surfaces must render the canonical starter variant');
+}
+$assertContains("profile-corrective.css?v=2&mvp16=avatar-visible-identity", $mainCss, 'Nested corrective stylesheet cache key must advance with avatar visuals');
+$assertContains("main.css?v=169", $versionManifest, 'Runtime main stylesheet cache key must advance with avatar visuals');
 $assertContains('data-edit-mgw-nickname', $profile, 'Profile must expose nickname editing');
 $assertContains('mgw:open-language-settings', $profile, 'Profile language row must reuse the shared settings owner');
 $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
