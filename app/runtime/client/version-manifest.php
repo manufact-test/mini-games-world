@@ -16,7 +16,7 @@ return [
         './assets/js/api/client.js?v=47' => './assets/js/api/client.js?v=1132&mvp15=unified-profile',
         './assets/js/config.js?v=38' => './assets/js/config.js?v=39&mvp15=match-economy',
         './assets/js/state.js?v=27' => './assets/js/state.js?v=30&mvp16=router-lifecycle',
-        './assets/js/router.js?v=27' => './assets/js/router.js?v=30&b=shell-nav&mvp16=route-registry',
+        './assets/js/router.js?v=27' => './assets/js/router.js?v=29&b=871cb833d99d&mvp16=route-registry',
         './assets/js/ui.js?v=89' => './assets/js/ui.js?v=92&mvp15=unified-zone',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=35&mvp15=unified-balance',
