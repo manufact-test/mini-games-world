@@ -1,7 +1,7 @@
 {
   "_meta": {
     "locale": "ru",
-    "version": 1
+    "version": 2
   },
   "common": {
     "back": "Назад",
@@ -18,6 +18,14 @@
   "topbar": {
     "balance": "Баланс",
     "notifications": "Уведомления"
+  },
+  "shell": {
+    "navigation_label": "Основная навигация",
+    "tournaments_title": "Турниры",
+    "tournaments_note": "Турнирный раздел готовится.",
+    "store_title": "Магазин",
+    "store_note": "Откройте текущую витрину Mini Games World.",
+    "store_open": "Открыть магазин"
   },
   "games": {
     "tictactoe": {"name": "Крестики-нолики"},
