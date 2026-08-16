@@ -141,7 +141,7 @@ $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, 'X-MGW-Game-Zone: unified-v1'), 'Accepted /start entry must advertise unified game zone');
 $assertSame(
-    './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
+    './assets/js/main-v110-handoff-shell.js?v=1147&mvp16=route-scoped-polling',
     $versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? null,
     'Accepted /start graph must preserve the bonus modal fit successor shell'
 );

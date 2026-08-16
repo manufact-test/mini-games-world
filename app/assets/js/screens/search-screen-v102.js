@@ -2,7 +2,7 @@ import { state } from '../state.js?v=27';
 import { api } from '../api/client.js?v=47';
 import { toast } from '../components/toast.js?v=41';
 import { closeSheet } from '../components/sheet.js?v=68';
-import { showScreen } from '../router.js?v=27';
+import { registerScreenCleanup, showScreen } from '../router.js?v=27';
 import { clearTimer, renderBalances, roomName } from '../ui.js?v=89';
 import { APP_CONFIG } from '../config.js?v=38';
 import { haptic } from '../telegram/telegram-app.js?v=27';
@@ -43,6 +43,8 @@ export function initSearchScreen(){
   if (searchRuntime.initialized) return;
   searchRuntime.initialized = true;
 
+  registerScreenCleanup('search', handleSearchScreenLeave);
+
   document.addEventListener('click', event => {
     const origin = event.target;
     if (!(origin instanceof Element)) return;
@@ -75,6 +77,20 @@ export function initSearchScreen(){
     const context = normalizeContext(event.detail || {});
     void beginSearch(context);
   });
+}
+
+function handleSearchScreenLeave({ to } = {}){
+  state.timers.search = clearTimer(state.timers.search);
+  if (String(to || '') === 'game') return;
+  if (!searchRuntime.active && !searchRuntime.starting) return;
+
+  const pendingStart = searchRuntime.startPromise;
+  ++searchRuntime.epoch;
+  searchRuntime.active = false;
+  searchRuntime.starting = false;
+  searchRuntime.pollBusy = false;
+  enableVisibleStartControls();
+  void stopSearchAuthoritatively(pendingStart);
 }
 
 export async function beginSearch(rawContext){

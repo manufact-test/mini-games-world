@@ -163,7 +163,7 @@ required_entry_fragments = (
     './assets/css/main.css?v=155&sk=3&icons=c1efd5af&render=29&palette=three-state-notifications&battleship=authoritative-shot-only&wallet=weekly-bonus-cta',
     './assets/js/ui.js?v=92&mvp15=unified-zone',
     './assets/js/state.js?v=30&mvp16=router-lifecycle',
-    './assets/js/router.js?v=28&mvp16=lifecycle',
+    './assets/js/router.js?v=29&b=7eb04c26f47f&mvp16=route-cleanup-registry',
     './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
     './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
 )
