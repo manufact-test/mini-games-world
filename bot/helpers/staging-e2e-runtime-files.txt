@@ -25,6 +25,7 @@ app/assets/js/production-v97-models.js
 app/assets/js/main-v110.js
 app/assets/js/main-v110-handoff-shell.js
 app/assets/js/components/preloader.js
+app/assets/js/components/sheet.js
 app/assets/js/components/shield-king-visuals.js
 app/assets/js/games/game-card-copy.js
 app/assets/js/games/unified-game-launcher.js
