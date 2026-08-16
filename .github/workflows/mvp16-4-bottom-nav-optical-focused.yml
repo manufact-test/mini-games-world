@@ -23,3 +23,4 @@ jobs:
           test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
           python3 scripts/ci/staging-runtime-fingerprint.py
           echo MVP16_4_BOTTOM_NAV_OPTICAL_FOCUSED=PASS
+# rerun after cache-target regression update
