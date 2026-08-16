@@ -9,9 +9,23 @@ const MENU_ICONS = {
   matchHistoryBtn:'ui/navigation/games.webp',
 };
 
+const SHELL_NAV_ICONS = {
+  home:'ui/navigation/home.webp',
+  tournaments:'ui/navigation/ranking.webp',
+  store:'ui/navigation/store.webp',
+  profile:'ui/navigation/profile.webp',
+};
+
 export function initShieldKingVisuals(){
   setIconOnly(document.getElementById('notificationsOpen'), 'ui/navigation/notifications.webp');
   setIconOnly(document.getElementById('moreMenuOpen'), 'ui/actions/more.webp');
+  setIconOnly(document.getElementById('topbarBalanceIcon'), 'ui/economy/coins.webp');
+
+  document.querySelectorAll('[data-shell-nav]').forEach(button => {
+    const asset = SHELL_NAV_ICONS[String(button.dataset.shellNav || '')];
+    const icon = button.querySelector('.app-bottom-nav-icon');
+    if (asset && icon) setIconOnly(icon, asset);
+  });
 
   document.querySelectorAll('.game-rules-button').forEach(button => {
     setIconOnly(button, 'ui/actions/rules.webp');
@@ -34,6 +48,12 @@ function applyDynamicIcons(root){
   root.querySelectorAll?.('.game-rules-button').forEach(button => setIconOnly(button, 'ui/actions/rules.webp'));
   root.querySelectorAll?.('.close').forEach(button => setIconOnly(button, 'ui/actions/close.webp'));
   root.querySelectorAll?.('[data-invite-friend]').forEach(button => prependTextIcon(button, 'ui/actions/invite.webp'));
+
+  root.querySelectorAll?.('[data-shell-nav]').forEach(button => {
+    const asset = SHELL_NAV_ICONS[String(button.dataset.shellNav || '')];
+    const icon = button.querySelector('.app-bottom-nav-icon');
+    if (asset && icon) setIconOnly(icon, asset);
+  });
 
   Object.entries(MENU_ICONS).forEach(([id, asset]) => {
     const button = root.querySelector?.(`#${id}`);

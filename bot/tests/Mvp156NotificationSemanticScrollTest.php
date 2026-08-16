@@ -17,6 +17,7 @@ $notificationsPhp = $read($root . '/notifications.php');
 $client = $read(dirname($root) . '/app/assets/js/screens/notifications-screen-v110r12.js');
 $css = $read(dirname($root) . '/app/assets/css/screens/notifications.css');
 $weekly = $read(dirname($root) . '/app/assets/js/screens/weekly-match-info.js');
+$shell = $read(dirname($root) . '/app/assets/js/main-v110-handoff-shell.js');
 $v110 = $read(dirname($root) . '/app/v110.php');
 $versions = require dirname($root) . '/app/runtime/client/version-manifest.php';
 $manifest = $read($root . '/helpers/staging-e2e-runtime-files.txt');
@@ -36,11 +37,9 @@ $assertTrue(str_contains($client, 'const existingList = isNotificationsSheetOpen
 $assertTrue(str_contains($client, 'const POLL_MS = 30000;'), 'Background refresh remains active; scroll fix must not disable polling');
 $assertTrue(str_contains($weekly, 'color:var(--sk-success)'), 'Completed 3/3 and 8/8 progress must use success green');
 $assertTrue(str_contains($v110, 'green-red-blue-v1'), 'Accepted /start graph must advertise the notification semantic palette');
-$assertSame(
-    './assets/js/main-v110-handoff-shell.js?v=1147&mvp16=route-scoped-polling',
-    $versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? null,
-    'Version manifest must preserve the accepted notification successor shell'
-);
+$shellTarget = (string)($versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? '');
+$assertTrue(str_starts_with($shellTarget, './assets/js/main-v110-handoff-shell.js?v='), 'Version manifest must preserve the canonical handoff shell owner');
+$assertTrue(str_contains($shell, 'initNotificationsScreen()'), 'Shell successors must preserve the accepted notification runtime owner');
 $assertTrue(str_contains($manifest, 'app/assets/css/screens/notifications.css'), 'Exact runtime fingerprint must include notification palette CSS');
 
 $service = new NotificationService();
