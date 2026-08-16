@@ -20,6 +20,37 @@ if ($_GET !== []) {
     exit;
 }
 
+function mgw_staging_profile_runtime_field_counts(array $users): array
+{
+    $counts = [
+        'mgw_nickname' => 0,
+        'mgw_avatar_item_id' => 0,
+        'provider_first_name' => 0,
+        'provider_username' => 0,
+        'provider_photo_url' => 0,
+    ];
+    foreach ($users as $user) {
+        if (!is_array($user)) continue;
+        foreach (array_keys($counts) as $field) {
+            if (trim((string)($user[$field] ?? '')) !== '') $counts[$field]++;
+        }
+    }
+    return $counts;
+}
+
+function mgw_staging_runtime_user_ids(array $users): array
+{
+    $ids = [];
+    foreach ($users as $key => $user) {
+        if (!is_array($user)) continue;
+        $id = trim((string)($user['id'] ?? (is_int($key) || is_string($key) ? $key : '')));
+        if ($id !== '') $ids[$id] = true;
+    }
+    $ids = array_keys($ids);
+    sort($ids, SORT_STRING);
+    return $ids;
+}
+
 function mgw_staging_runtime_primary_diagnostic(array $config): array
 {
     try {
@@ -42,18 +73,27 @@ function mgw_staging_runtime_primary_diagnostic(array $config): array
             return ['available' => false, 'reason' => 'runtime_primary_state_invalid'];
         }
         $users = is_array($state['users'] ?? null) ? $state['users'] : [];
-        $userFieldCounts = [
-            'mgw_nickname' => 0,
-            'mgw_avatar_item_id' => 0,
-            'provider_first_name' => 0,
-            'provider_username' => 0,
-            'provider_photo_url' => 0,
+        $runtimeUserIds = mgw_staging_runtime_user_ids($users);
+
+        $jsonStorage = new JsonStorageAdapter((string)($config['data_dir'] ?? ''));
+        $jsonSnapshot = $jsonStorage->readOnly(static fn(array $data): array => $data);
+        if (!is_array($jsonSnapshot)) {
+            return ['available' => false, 'reason' => 'json_rollback_state_invalid'];
+        }
+        $jsonUsers = is_array($jsonSnapshot['users'] ?? null) ? $jsonSnapshot['users'] : [];
+        $jsonUserIds = mgw_staging_runtime_user_ids($jsonUsers);
+        $legacyMatchField = 'balance_' . 'match';
+        $legacyGoldField = 'balance_' . 'gold';
+        $jsonBalanceShapeCounts = [
+            'unified_balance_present' => 0,
+            'legacy_match_balance_present' => 0,
+            'legacy_gold_balance_present' => 0,
         ];
-        foreach ($users as $user) {
+        foreach ($jsonUsers as $user) {
             if (!is_array($user)) continue;
-            foreach (array_keys($userFieldCounts) as $field) {
-                if (trim((string)($user[$field] ?? '')) !== '') $userFieldCounts[$field]++;
-            }
+            if (array_key_exists(UnifiedBalanceRuntimeState::FIELD, $user)) $jsonBalanceShapeCounts['unified_balance_present']++;
+            if (array_key_exists($legacyMatchField, $user)) $jsonBalanceShapeCounts['legacy_match_balance_present']++;
+            if (array_key_exists($legacyGoldField, $user)) $jsonBalanceShapeCounts['legacy_gold_balance_present']++;
         }
 
         $outboxRows = $database->fetchAll(
@@ -105,7 +145,18 @@ function mgw_staging_runtime_primary_diagnostic(array $config): array
                 'transactions' => count(is_array($state['transactions'] ?? null) ? $state['transactions'] : []),
                 'games' => count(is_array($state['games'] ?? null) ? $state['games'] : []),
             ],
-            'profile_runtime_field_counts' => $userFieldCounts,
+            'profile_runtime_field_counts' => mgw_staging_profile_runtime_field_counts($users),
+            'json_rollback' => [
+                'snapshot_counts' => [
+                    'users' => count($jsonUsers),
+                    'transactions' => count(is_array($jsonSnapshot['transactions'] ?? null) ? $jsonSnapshot['transactions'] : []),
+                    'games' => count(is_array($jsonSnapshot['games'] ?? null) ? $jsonSnapshot['games'] : []),
+                ],
+                'profile_runtime_field_counts' => mgw_staging_profile_runtime_field_counts($jsonUsers),
+                'balance_shape_counts' => $jsonBalanceShapeCounts,
+                'users_missing_from_runtime_primary_count' => count(array_diff($jsonUserIds, $runtimeUserIds)),
+                'users_missing_from_json_count' => count(array_diff($runtimeUserIds, $jsonUserIds)),
+            ],
             'outbox' => [
                 'state_revision' => max(0, (int)($outbox['state_revision'] ?? 0)),
                 'status' => strtolower(trim((string)($outbox['status'] ?? ''))),
