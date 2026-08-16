@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   focused:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
@@ -33,3 +33,4 @@ jobs:
           printf 'RUNTIME_FILES='
           grep -cve '^$' bot/helpers/staging-e2e-runtime-files.txt
           echo MVP16_4_TTT_VARIANT_RULES_FOCUSED=PASS
+          echo FINGERPRINT_COVERAGE_RERUN=PASS
