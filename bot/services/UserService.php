@@ -73,6 +73,7 @@ final class UserService
         // economy idempotency can remain provider-neutral instead of keying a
         // one-time reward only by the current Telegram/legacy user id.
         $this->attachVerifiedAccountIdentity($db['users'][$id], $tgUser);
+        $this->syncCanonicalGameIdentity($db, $db['users'][$id]);
 
         UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);
         return $db['users'][$id];
@@ -201,6 +202,8 @@ final class UserService
         $incomingMgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
         $incomingAccountRef = trim((string)($authenticatedUser['mgw_account_ref'] ?? ''));
         $incomingProvider = trim((string)($authenticatedUser['mgw_identity_provider'] ?? ''));
+        $incomingNickname = trim((string)($authenticatedUser['mgw_nickname'] ?? ''));
+        $incomingAvatarItemId = trim((string)($authenticatedUser['mgw_avatar_item_id'] ?? ''));
 
         if ($incomingMgwId === '' && $incomingAccountRef === '' && $incomingProvider === '') {
             return;
@@ -222,6 +225,27 @@ final class UserService
         if ($incomingProvider !== '') {
             $user['mgw_identity_provider'] = $incomingProvider;
         }
+        if ($incomingNickname !== '') {
+            $user['mgw_nickname'] = clean_string($incomingNickname, 13);
+        }
+        if ($incomingAvatarItemId !== '') {
+            $user['mgw_avatar_item_id'] = clean_string($incomingAvatarItemId, 80);
+        }
+    }
+
+    private function syncCanonicalGameIdentity(array &$db, array &$user): void
+    {
+        $nickname = trim((string)($user['mgw_nickname'] ?? ''));
+        $userId = trim((string)($user['id'] ?? ''));
+        $gameId = trim((string)($user['current_game_id'] ?? ''));
+        if ($nickname === '' || $userId === '' || $gameId === '') return;
+        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) return;
+        if (!in_array($userId, array_map('strval', $db['games'][$gameId]['player_ids'] ?? []), true)) return;
+
+        if (!isset($db['games'][$gameId]['player_names']) || !is_array($db['games'][$gameId]['player_names'])) {
+            $db['games'][$gameId]['player_names'] = [];
+        }
+        $db['games'][$gameId]['player_names'][$userId] = $nickname;
     }
 
     private function ensureStatsShape(array &$user): void
