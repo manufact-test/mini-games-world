@@ -45,7 +45,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=165&sk=3&icons=c1efd5af&render=34&mvp16=final-bottom-nav',
+        'main_css' => './assets/css/main.css?v=166&sk=3&icons=c1efd5af&render=35&mvp16=final-bottom-nav-align',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
