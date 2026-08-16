@@ -34,13 +34,13 @@ ALLOWED_PREFIXES = (
 
 # Exact compatibility/history owners outside those directories.
 ALLOWED_FILES = {
-    'bot/services/UserService.php',
-    'bot/services/AdminService.php',
-    'bot/services/ShopService.php',
+    'bot/services/UserService.php',  # frozen source fields only
+    'bot/services/AdminService.php',  # legacy labels/audit breakdown only
+    'bot/services/ShopService.php',  # temporary response alias only
     'bot/accounts/LegacyAccountOwnershipLinkService.php',
     'bot/runtime/ProductionPrimaryRollbackMaterializedStateConnection.php',
     'bot/runtime/RuntimePrimaryStagingSyntheticSuite.php',
-    'app/runtime/server/session/RuntimeSessionService.php',
+    'app/runtime/server/session/RuntimeSessionService.php',  # one migration fallback
 }
 
 TEXT_SUFFIXES = {'.php', '.js', '.html', '.md', '.sh', '.py'}
@@ -64,6 +64,8 @@ for root in ROOTS:
             continue
         violations.append(f'{name}: legacy balance token exists outside the explicit audit/compatibility allowlist')
 
+# Live user-array writes/reads are forbidden in Admin/Shop. Those files may use
+# the words only as compatibility response labels or legacy audit descriptions.
 for name in ('bot/services/AdminService.php', 'bot/services/ShopService.php'):
     body = Path(name).read_text()
     for token in TOKENS:
@@ -76,12 +78,16 @@ for name in ('bot/services/AdminService.php', 'bot/services/ShopService.php'):
                 violations.append(f'{name}: direct live {token} access is forbidden')
                 break
 
+# UserService is the explicit legacy-source capture point. It may expose the old
+# fields for rollback/audit, but canonical public/runtime money must be present.
 user_service = Path('bot/services/UserService.php').read_text()
 if "'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0)" not in user_service:
     violations.append('bot/services/UserService.php: canonical public balance projection is missing')
 if '$balance = max(0, (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0));' not in user_service:
     violations.append('bot/services/UserService.php: shop availability is not based on canonical balance')
 
+# Clean runtime may keep exactly one old Match fallback to consume a pre-15.3
+# snapshot, but it must never write/read Gold and all live state must be balance.
 session = Path('app/runtime/server/session/RuntimeSessionService.php').read_text()
 if session.count('balance_match') != 1:
     violations.append('RuntimeSessionService.php: expected exactly one pre-15.3 balance_match migration fallback')
@@ -90,6 +96,7 @@ if 'balance_gold' in session:
 if "'balance' => max(0, (int)($existing['balance'] ?? $existing['balance_match']" not in session:
     violations.append('RuntimeSessionService.php: canonical balance migration fallback is missing')
 
+# Shared live money writers must not mention either old field at all.
 for name in (
     'bot/services/GameService.php',
     'bot/services/GameSettlementService.php',
@@ -105,6 +112,7 @@ for name in (
         if token in body:
             violations.append(f'{name}: live shared writer still references {token}')
 
+# Visible current UI must never read the two legacy balances.
 for name in (
     'app/assets/js/ui.js',
     'app/assets/js/screens/home-screen.js',
@@ -118,6 +126,7 @@ for name in (
         if token in body:
             violations.append(f'{name}: visible UI still references {token}')
 
+# Final user-facing 15.3 copy must describe one coin balance without duplicate labels.
 index_ui = Path('app/index.html').read_text()
 profile_ui = Path('app/assets/js/screens/profile-screen-v110.js').read_text()
 if '<div class="balance-note">Ваш баланс коинов.</div>' not in index_ui:
@@ -127,6 +136,9 @@ if '<small>Ваш баланс коинов.</small>' not in profile_ui:
 if 'MGW Coins</span>' in profile_ui:
     violations.append('profile-screen-v110.js: duplicate MGW Coins label must not be visible in profile wallet')
 
+# The real Telegram /start owner is v110.php, not the unversioned /app/ route.
+# Render it against the current index.html and fail if it ever silently falls
+# back to the generic main.js graph again.
 expected_launch = "private const ENTRY_PATH = '/app/v110.php?v=1127';"
 launch_owner = Path('bot/helpers/WebAppLaunchUrl.php').read_text()
 if expected_launch not in launch_owner:
