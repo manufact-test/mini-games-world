@@ -4,6 +4,7 @@
 # WebhookHandler/TelegramService fallback uses the same WebAppLaunchUrl builder.
 # No Telegram menu button may own a second Web App URL.
 app/v110.php
+app/runtime/client/version-manifest.php
 app/index.html
 app/assets/js/app-bootstrap-v2.js
 app/assets/js/router.js
