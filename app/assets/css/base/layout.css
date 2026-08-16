@@ -152,7 +152,7 @@
 }
 .app-bottom-nav-item{
   min-width:0;
-  min-height:52px;
+  min-height:54px;
   padding:5px 3px;
   border:0;
   border-radius:15px;
@@ -180,7 +180,12 @@
   outline:2px solid var(--sk-brand-purple-light,#b274ff);
   outline-offset:2px;
 }
-.app-bottom-nav-icon{width:34px;height:32px;display:grid;place-items:center;flex:0 0 32px}
+/*
+ * Metallic navigation WebPs have transparent canvas below the painted glyph.
+ * Keep the accepted 32px image, but make its layout slot shorter so the label
+ * rises toward the painted icon and the active item gains real bottom air.
+ */
+.app-bottom-nav-icon{width:34px;height:26px;display:grid;place-items:start center;flex:0 0 26px;overflow:visible}
 .app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px;display:block;object-fit:contain;filter:brightness(1.13) contrast(1.05) drop-shadow(0 3px 5px rgba(0,0,0,.28))}
 .app-bottom-nav-item.active .shield-king-metal-icon{filter:brightness(1.24) contrast(1.08) drop-shadow(0 3px 6px rgba(0,0,0,.30)) drop-shadow(0 0 7px rgba(178,116,255,.14))}
 .app-bottom-nav-label{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1;flex:0 0 10px}
