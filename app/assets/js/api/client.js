@@ -35,6 +35,7 @@ export const api = {
   makeMove: (gameId, cell) => request('make_move', { gameId, cell }),
   leaveGame: (gameId) => request('leave_game', { gameId }),
   profile: () => request('profile'),
+  profileV2: () => requestUrl(`${window.location.origin}/bot/profile-v2.php`),
   mgwProfile: () => requestUrl(`${window.location.origin}/bot/profile.php`),
   history: () => request('history'),
   support: (type, message) => request('support', { type, message }),
