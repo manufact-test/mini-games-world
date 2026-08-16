@@ -16,48 +16,122 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Audit exact fingerprinted JS runtime owners
+      - name: Audit exact active Telegram start graph
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
+          php -r '$m=require "app/runtime/client/version-manifest.php"; echo json_encode($m, JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);' > /tmp/mgw-manifest.json
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { URL } = require('url');
 
-          manifest = Path('bot/helpers/staging-e2e-runtime-files.txt')
-          files=[]
-          for raw in manifest.read_text(encoding='utf-8').splitlines():
-              p=raw.strip()
-              if not p or p.startswith('#') or not p.endswith('.js'):
-                  continue
-              path=Path(p)
-              if path.is_file(): files.append(path)
-
-          patterns = {
-              'interval': re.compile(r'\b(?:window\.)?setInterval\s*\('),
-              'timeout': re.compile(r'\b(?:window\.)?setTimeout\s*\('),
-              'add_listener': re.compile(r'\.addEventListener\s*\('),
-              'remove_listener': re.compile(r'\.removeEventListener\s*\('),
-              'state_timer': re.compile(r'\bstate\.timers\.[A-Za-z0-9_]+'),
-              'route_cleanup': re.compile(r'\bregisterScreenCleanup\s*\('),
-              'route_enter': re.compile(r'\bonScreenEnter\s*\('),
-              'route_leave': re.compile(r'\bonScreenLeave\s*\('),
+          const manifest = JSON.parse(fs.readFileSync('/tmp/mgw-manifest.json','utf8'));
+          const documentBase = new URL('https://mgw.invalid/app/v110.php');
+          const normalizedMap = new Map();
+          for (const [key, target] of Object.entries(manifest.imports || {})) {
+            if (key.startsWith('.') || key.startsWith('/')) {
+              normalizedMap.set(new URL(key, documentBase).href, new URL(target, documentBase));
+            } else {
+              normalizedMap.set(key, new URL(target, documentBase));
+            }
           }
 
-          print(f'RUNTIME_JS_FILES={len(files)}')
-          totals={k:0 for k in patterns}
-          for path in files:
-              text=path.read_text(encoding='utf-8')
-              hits=[]
-              for no,line in enumerate(text.splitlines(),1):
-                  kinds=[k for k,rx in patterns.items() if rx.search(line)]
-                  if kinds:
-                      for k in kinds: totals[k]+=1
-                      hits.append((no,','.join(kinds),line.strip()))
-              if hits:
-                  print(f'\nFILE {path}')
-                  for no,kinds,line in hits:
-                      print(f'{no}: [{kinds}] {line}')
-          print('\nTOTALS')
-          for k,v in totals.items(): print(f'{k}={v}')
-          PY
+          function resolveSpecifier(specifier, importerUrl) {
+            if (!specifier.startsWith('.') && !specifier.startsWith('/')) {
+              const mapped = normalizedMap.get(specifier);
+              if (!mapped) throw new Error(`Unmapped bare specifier ${specifier} from ${importerUrl.href}`);
+              return mapped;
+            }
+            const resolved = new URL(specifier, importerUrl);
+            return normalizedMap.get(resolved.href) || resolved;
+          }
+
+          function toRepoPath(url) {
+            const pathname = decodeURIComponent(url.pathname);
+            if (!pathname.startsWith('/app/')) return null;
+            return pathname.slice(1);
+          }
+
+          const staticImport = /\b(?:import|export)\s+(?:[^'";]*?\sfrom\s*)?['"]([^'"]+)['"]/g;
+          const dynamicImport = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+          const queue = [];
+          const seen = new Map();
+          const bootstrap = new URL(manifest.assets.bootstrap, documentBase);
+          queue.push(bootstrap);
+
+          while (queue.length) {
+            const url = queue.shift();
+            const repoPath = toRepoPath(url);
+            if (!repoPath || !repoPath.endsWith('.js')) continue;
+            if (seen.has(repoPath)) continue;
+            if (!fs.existsSync(repoPath)) throw new Error(`Missing active module ${repoPath}`);
+            const text = fs.readFileSync(repoPath,'utf8');
+            seen.set(repoPath, url.href);
+            for (const rx of [staticImport, dynamicImport]) {
+              rx.lastIndex = 0;
+              let match;
+              while ((match = rx.exec(text))) {
+                const child = resolveSpecifier(match[1], url);
+                const childPath = toRepoPath(child);
+                if (childPath && childPath.endsWith('.js') && !seen.has(childPath)) queue.push(child);
+              }
+            }
+          }
+
+          const patterns = {
+            interval: /\b(?:window\.)?setInterval\s*\(/,
+            timeout: /\b(?:window\.)?setTimeout\s*\(/,
+            add_listener: /\.addEventListener\s*\(/,
+            remove_listener: /\.removeEventListener\s*\(/,
+            state_timer: /\bstate\.timers\.[A-Za-z0-9_]+/,
+            route_cleanup: /\bregisterScreenCleanup\s*\(/,
+            route_enter: /\bonScreenEnter\s*\(/,
+            route_leave: /\bonScreenLeave\s*\(/,
+            state_owner: /\bexport\s+const\s+state\s*=/,
+          };
+
+          console.log(`ACTIVE_JS_FILES=${seen.size}`);
+          console.log('ACTIVE_FILES');
+          [...seen.keys()].sort().forEach(f => console.log(f));
+          const totals = Object.fromEntries(Object.keys(patterns).map(k => [k,0]));
+          const filesByKind = Object.fromEntries(Object.keys(patterns).map(k => [k,new Set()]));
+
+          for (const repoPath of [...seen.keys()].sort()) {
+            const lines = fs.readFileSync(repoPath,'utf8').split(/\r?\n/);
+            const hits=[];
+            lines.forEach((line, idx) => {
+              const kinds=[];
+              for (const [kind, rx] of Object.entries(patterns)) {
+                if (rx.test(line)) {
+                  totals[kind]++;
+                  filesByKind[kind].add(repoPath);
+                  kinds.push(kind);
+                }
+              }
+              if (kinds.length) hits.push(`${idx+1}: [${kinds.join(',')}] ${line.trim()}`);
+            });
+            if (hits.length) {
+              console.log(`\nFILE ${repoPath}`);
+              hits.forEach(h => console.log(h));
+            }
+          }
+
+          console.log('\nTOTALS');
+          for (const [kind,total] of Object.entries(totals)) {
+            console.log(`${kind}=${total};files=${[...filesByKind[kind]].sort().join(',')}`);
+          }
+
+          if (totals.state_owner !== 1 || !filesByKind.state_owner.has('app/assets/js/state.js')) {
+            throw new Error('Active graph must have exactly one canonical state owner');
+          }
+          const requiredCleanups = new Set([
+            'app/assets/js/main-v110-handoff-shell.js',
+            'app/assets/js/screens/search-screen-v102.js',
+            'app/assets/js/screens/game-screen-v102-safe.js',
+          ]);
+          for (const file of requiredCleanups) {
+            if (!filesByKind.route_cleanup.has(file)) throw new Error(`Missing route cleanup owner: ${file}`);
+          }
+          console.log('MVP16_1_ACTIVE_GRAPH_AUDIT=PASS');
+          NODE
