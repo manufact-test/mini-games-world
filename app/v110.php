@@ -15,7 +15,7 @@ $versionManifest = require $manifestPath;
 if (!is_array($versionManifest)
     || !is_array($versionManifest['imports'] ?? null)
     || !is_array($versionManifest['assets'] ?? null)
-    || ($versionManifest['version'] ?? null) !== 'v2-route-scoped-polling') {
+    || ($versionManifest['version'] ?? null) !== 'v1-single-owner') {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'Mini Games World client version manifest is unavailable.';
@@ -92,7 +92,7 @@ $html = str_replace(
 $html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);
 $html = str_replace(
     $hotfixAnchor,
-    'data-hotfix-build="v110-mvp16-route-scoped-polling-v1167"',
+    'data-hotfix-build="v110-mvp16-version-manifest-route-registry-v1166"',
     $html
 );
 
@@ -131,7 +131,7 @@ header('Pragma: no-cache');
 header('Expires: 0');
 header('X-MGW-Client-Bootstrap: v2-single-owner');
 header('X-MGW-Router: v2-route-registry-cleanup');
-header('X-MGW-Query-Version-Manifest: v2-route-scoped-polling');
+header('X-MGW-Query-Version-Manifest: v1-single-owner');
 header('X-MGW-Api-Session-Graph: v1132-canonical-profile');
 header('X-MGW-Profile-API: provider-neutral-mgw-v1');
 header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');
@@ -140,7 +140,7 @@ header('X-MGW-Match-Economy: server-config-v1');
 header('X-MGW-Notification-Graph: v1139-three-state-scroll-stable');
 header('X-MGW-Notification-Palette: green-red-blue-v1');
 header('X-MGW-Invite-Graph: v1143-prepared-share-owner');
-header('X-MGW-Search-Graph: v107-route-scoped-lifecycle');
+header('X-MGW-Search-Graph: v106-post-game-release-barrier');
 header('X-MGW-TTT-Clock: authoritative-turn-clock-v7-handoff-state-retained');
 header('X-MGW-TTT-Terminal: v6-terminal-clock-stops-on-finish');
 header('X-MGW-Rematch-UX: v3-single-owner-no-busy-state');

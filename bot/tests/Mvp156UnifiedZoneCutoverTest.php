@@ -141,7 +141,7 @@ $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, 'X-MGW-Game-Zone: unified-v1'), 'Accepted /start entry must advertise unified game zone');
 $assertSame(
-    './assets/js/main-v110-handoff-shell.js?v=1147&mvp16=route-scoped-polling',
+    './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
     $versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? null,
     'Accepted /start graph must preserve the bonus modal fit successor shell'
 );
@@ -159,6 +159,7 @@ $assertTrue(str_contains($shop, 'UnifiedGameZonePolicy::rejectLegacyCommerceWrit
 $assertTrue(str_contains($admin, "require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';"), 'Admin archive mutations must share the unified-zone policy');
 $assertNotContains('Gold-тест', $admin, 'Admin keyboard must not expose legacy Gold mutation surface');
 
+// Best-effort cleanup of the isolated presence fixture.
 foreach (glob($presenceDir . '/account-*/*') ?: [] as $path) @unlink($path);
 foreach (glob($presenceDir . '/account-*') ?: [] as $path) @rmdir($path);
 @unlink($presenceDir . '/.enabled');

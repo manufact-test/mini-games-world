@@ -37,7 +37,7 @@ $assertTrue(str_contains($client, 'const POLL_MS = 30000;'), 'Background refresh
 $assertTrue(str_contains($weekly, 'color:var(--sk-success)'), 'Completed 3/3 and 8/8 progress must use success green');
 $assertTrue(str_contains($v110, 'green-red-blue-v1'), 'Accepted /start graph must advertise the notification semantic palette');
 $assertSame(
-    './assets/js/main-v110-handoff-shell.js?v=1147&mvp16=route-scoped-polling',
+    './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
     $versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? null,
     'Version manifest must preserve the accepted notification successor shell'
 );

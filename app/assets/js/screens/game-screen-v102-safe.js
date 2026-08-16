@@ -1,8 +1,5 @@
-import { state } from '../state.js?v=27';
-import { registerScreenCleanup } from '../router.js?v=27';
-import { clearTimer } from '../ui.js?v=89';
 import {
-  initGameScreen as initBaseGameScreen,
+  initGameScreen,
   enterGame as enterBaseGame,
   startGamePolling,
   clearGameView,
@@ -16,23 +13,12 @@ const runtime = window.__MGW_V100_GAME_RUNTIME__ ||= {
   weeklyNotified:new Set(),
 };
 
-let routeCleanupRegistered = false;
-
 document.addEventListener('mgw:v110-ttt-clock-snapshot', event => {
   const game = event?.detail?.game || null;
   if (String(game?.status || '') === 'finished') enterGame(game);
 });
 
-export function initGameScreen(){
-  initBaseGameScreen();
-  if (routeCleanupRegistered) return;
-  routeCleanupRegistered = true;
-  registerScreenCleanup('game', () => {
-    state.timers.game = clearTimer(state.timers.game);
-  });
-}
-
-export { startGamePolling, clearGameView };
+export { initGameScreen, startGamePolling, clearGameView };
 
 export function enterGame(game, me = null){
   const id = String(game?.id || '');

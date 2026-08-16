@@ -1,11 +1,10 @@
-window.__MGW_BUILD__ = 'v110-mvp16-route-scoped-polling-v1147';
+window.__MGW_BUILD__ = 'v110-mvp15-unified-profile-avatar-v1138';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
-import { currentScreen, onScreenEnter, registerScreenCleanup } from './router.js?v=27';
 import { hidePreloader } from './components/preloader.js?v=42';
 import { initSheet } from './components/sheet.js?v=1109';
 import { toast } from './components/toast.js?v=1109';
@@ -45,7 +44,6 @@ import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b0
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 
 let statsRefreshing = false;
-let statsRouteLifecycleInitialized = false;
 
 initTelegramApp();
 initV110Presence();
@@ -80,7 +78,6 @@ initHomeScreen();
 initAccountShortcuts();
 initProfileScreen();
 initGameRules();
-initStatsRouteLifecycle();
 
 document.addEventListener('mgw:v99-game-found', event => {
   const game = event.detail?.game || null;
@@ -126,21 +123,9 @@ async function boot(){
   }
 }
 
-function initStatsRouteLifecycle(){
-  if (statsRouteLifecycleInitialized) return;
-  statsRouteLifecycleInitialized = true;
-  registerScreenCleanup('home', stopStatsPolling);
-  onScreenEnter('home', startStatsPolling);
-}
-
 function startStatsPolling(){
-  stopStatsPolling();
-  if (currentScreen() !== 'home') return;
-  state.timers.stats = window.setInterval(refreshStatsIfVisible, APP_CONFIG.statsIntervalMs);
-}
-
-function stopStatsPolling(){
   state.timers.stats = clearTimer(state.timers.stats);
+  state.timers.stats = window.setInterval(refreshStatsIfVisible, APP_CONFIG.statsIntervalMs);
 }
 
 async function refreshStatsIfVisible(){
