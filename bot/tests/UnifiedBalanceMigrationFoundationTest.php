@@ -50,7 +50,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(8, $runner->migrate(false)['executed_count'], 'Foundation test must apply all current migrations');
+$assertSame(9, $runner->migrate(false)['executed_count'], 'Foundation test must apply all current migrations');
 
 $assertThrows(
     static fn() => UnifiedBalanceMigrationRule::fromApprovedConfig([
@@ -67,8 +67,6 @@ $rule = UnifiedBalanceMigrationRule::fromApprovedConfig([
     'target_asset' => 'mgw_coin',
     'approved_by' => 'automated-test-only',
     'approved_at_utc' => '2026-08-15T08:00:00Z',
-    // These rates are deliberately non-product test fixtures. They prove that
-    // the conversion engine is generic and do not approve a live economy rule.
     'rates' => [
         'match_coin' => ['numerator' => 2, 'denominator' => 1],
         'gold_coin' => ['numerator' => 3, 'denominator' => 1],
