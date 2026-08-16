@@ -48,6 +48,19 @@
 @import url('./shield-king-icons-v11.css?v=136&icons=c1efd5af&review=visual-polish-exact');
 @import url('./shield-king-icons-v12.css?v=141&icons=c1efd5af&review=more-optical-center-restored');
 
+/* MVP-16.4 unified setup sheet polish. */
+.sheet-head > div:first-child{
+  flex:1 1 auto;
+  min-width:0;
+}
+.sheet-head > div:first-child > p{
+  width:100%;
+  max-width:none;
+}
+.unified-game-setup > .btn-row{
+  margin-top:10px !important;
+}
+
 /* MVP-7.1.2 history tabs */
 .history-tabs{
   display:grid;
