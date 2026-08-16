@@ -106,6 +106,7 @@ $index = $read(dirname($root) . '/app/index.html');
 $home = $read(dirname($root) . '/app/assets/js/screens/home-screen.js');
 $ui = $read(dirname($root) . '/app/assets/js/ui.js');
 $weekly = $read(dirname($root) . '/app/assets/js/screens/weekly-match-info.js');
+$shell = $read(dirname($root) . '/app/assets/js/main-v110-handoff-shell.js');
 $presenceClient = $read(dirname($root) . '/app/assets/js/production-v110-presence.js');
 $v110 = $read(dirname($root) . '/app/v110.php');
 $versions = require dirname($root) . '/app/runtime/client/version-manifest.php';
@@ -140,11 +141,9 @@ $assertNotContains('Матч-комнату', $weekly, 'Weekly bonus copy must n
 $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy must be room-neutral');
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, 'X-MGW-Game-Zone: unified-v1'), 'Accepted /start entry must advertise unified game zone');
-$assertSame(
-    './assets/js/main-v110-handoff-shell.js?v=1147&mvp16=route-scoped-polling',
-    $versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? null,
-    'Accepted /start graph must preserve the bonus modal fit successor shell'
-);
+$shellTarget = (string)($versions['imports']['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? '');
+$assertTrue(str_starts_with($shellTarget, './assets/js/main-v110-handoff-shell.js?v='), 'Accepted /start graph must keep the canonical handoff shell owner');
+$assertTrue(str_contains($shell, 'initWeeklyMatchInfo()') && str_contains($shell, 'syncWeeklyMatchButton'), 'Shell successors must preserve the accepted bonus runtime wiring');
 
 $startSearchPos = strpos($api, "case 'start_search':");
 $nextCasePos = strpos($api, "case '", $startSearchPos + 20);
