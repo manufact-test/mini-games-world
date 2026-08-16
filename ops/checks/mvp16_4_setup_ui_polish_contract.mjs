@@ -22,11 +22,11 @@ if (!css.includes('.unified-setup-head > .close{\n  position:absolute !important
 if (!css.includes('.unified-game-setup > .btn-row{\n  margin-top:10px !important;')) {
   throw new Error('Unified setup actions must remain visually separated from the entry-cost choice.');
 }
-if (!manifest.includes("main.css?v=160&sk=3&icons=c1efd5af&render=30&mvp16=setup-subtitle-width")) {
-  throw new Error('Telegram /start must receive a fresh CSS cache target for subtitle-width correction.');
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=30&mvp16=setup-subtitle-width/u.test(manifest)) {
+  throw new Error('Telegram /start must keep a versioned CSS cache target for accepted setup polish.');
 }
-if (!manifest.includes("unified-game-launcher.js?v=3&mvp16=setup-subtitle-width")) {
-  throw new Error('Telegram /start must receive fresh launcher markup for subtitle-width correction.');
+if (!/unified-game-launcher\.js\?v=\d+&mvp16=setup-subtitle-width/u.test(manifest)) {
+  throw new Error('Telegram /start must keep a versioned launcher target for accepted setup polish.');
 }
 if (!manifest.includes("'version' => 'v2-route-scoped-polling'")) {
   throw new Error('Client manifest schema must remain unchanged.');
