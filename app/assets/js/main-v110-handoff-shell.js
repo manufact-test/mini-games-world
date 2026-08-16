@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp16-shell-nav-topbar-v1148';
+window.__MGW_BUILD__ = 'v110-mvp16-shell-nav-topbar-v1149';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -143,7 +143,6 @@ function initAppShellChrome(){
 
   existingTopbar.id = 'appShellTopbar';
   existingTopbar.classList.add('app-shell-topbar');
-  existingTopbar.querySelector('#moreMenuOpen')?.remove();
   existingTopbar.querySelector('.user-status')?.remove();
 
   const profileTrigger = existingTopbar.querySelector('#profileOpen');
