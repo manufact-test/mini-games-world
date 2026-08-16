@@ -153,7 +153,7 @@
 .app-bottom-nav-item{
   min-width:0;
   min-height:48px;
-  padding:3px 3px;
+  padding:1px 3px 5px;
   border:0;
   border-radius:15px;
   background:transparent;
@@ -182,8 +182,9 @@
 }
 /*
  * Metallic navigation WebPs have transparent canvas around the painted glyph.
- * Keep the accepted 32px image, use a 29px layout slot for +3px icon/label air,
- * and compact the outer panel symmetrically so the nav consumes less height.
+ * Keep the accepted 32px image and 29px layout slot for +3px icon/label air.
+ * Asymmetric item padding only compensates the painted WebP bounds by 2px;
+ * total item height and the compact outer panel remain unchanged.
  */
 .app-bottom-nav-icon{width:34px;height:29px;display:grid;place-items:start center;flex:0 0 29px;overflow:visible}
 .app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px;display:block;object-fit:contain;filter:brightness(1.13) contrast(1.05) drop-shadow(0 3px 5px rgba(0,0,0,.28))}

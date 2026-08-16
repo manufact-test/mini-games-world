@@ -19,8 +19,6 @@ const runtimeManifest = read('bot/helpers/staging-e2e-runtime-files.txt')
   .map(line => line.trim())
   .filter(line => line && !line.startsWith('#'));
 
-// The shared owner must resolve the real active-match size for every game,
-// while pre-match setup continues to pass its current selected variant.
 for (const token of ['game?.board_size','game?.boardSize','game?.game_variant_size','game?.board_columns']) {
   if (!owner.includes(token)) throw new Error(`Shared rules owner missing active-game variant source: ${token}`);
 }
@@ -28,7 +26,6 @@ if (!owner.includes('button.dataset.gameRulesVariant')) throw new Error('Setup r
 if (!owner.includes('renderer({ ...context, gameType, variant })')) throw new Error('Pre-match and in-match rules must share one renderer path.');
 if (!owner.includes('returnToPrevious:context.returnToPrevious === true')) throw new Error('Rules must preserve accepted nested return behavior.');
 
-// Four in a Row: 6x5 / 7x6 / 8x7, always connect four.
 if (!fourBackend.includes('private const CONNECT_LENGTH = 4;')) throw new Error('Four-in-a-Row connect length must remain 4.');
 for (const token of ['6 => [6, 5]','8 => [8, 7]','default => [7, 6]']) {
   if (!fourBackend.includes(token)) throw new Error(`Four-in-a-Row backend dimension mapping missing: ${token}`);
@@ -43,14 +40,12 @@ for (const token of [
   if (!fourRules.includes(token)) throw new Error(`Four-in-a-Row variant rules missing: ${token}`);
 }
 
-// Reversi: same mechanics, but selected board and diagrams must be 6/8/10.
 if (!reversiBackend.includes('private const ALLOWED_SIZES = [6, 8, 10];')) throw new Error('Reversi backend sizes must remain 6/8/10.');
 if (!reversiRules.includes('const REVERSI_RULE_SIZES = Object.freeze([6, 8, 10]);')) throw new Error('Reversi rules must expose all accepted sizes.');
 if (!reversiRules.includes('ruleBoard(\'start\', size)') || !reversiRules.includes('style="--reversi-rule-size:${size}"')) {
   throw new Error('Reversi rule diagrams must follow the selected size.');
 }
 
-// Go: 9/13 with the same accepted 6.5 komi; diagrams must use selected size.
 if (!goBackend.includes('private const ALLOWED_SIZES = [9, 13];')) throw new Error('Go backend sizes must remain 9/13.');
 if (!goBackend.includes('private const KOMI = 6.5;')) throw new Error('Go komi must remain 6.5.');
 if (!goRules.includes('const GO_RULE_SIZES = Object.freeze([9, 13]);') || !goRules.includes('const GO_KOMI = 6.5;')) {
@@ -60,7 +55,6 @@ if (!goRules.includes('ruleBoard(\'start\', size)') || !goRules.includes('gridSv
   throw new Error('Go rule diagrams must be rendered for the selected board size.');
 }
 
-// Do not invent fake variants for games that only expose one setup option today.
 for (const token of [
   "battleship:Object.freeze({ defaultSize:10, options:() => [{ value:10, label:'10×10' }] })",
   "checkers:Object.freeze({ defaultSize:8, options:() => [{ value:8, label:'8×8' }] })",
@@ -70,7 +64,6 @@ for (const token of [
   if (!launcher.includes(token)) throw new Error(`Single-variant setup contract changed unexpectedly: ${token}`);
 }
 
-// New copy for edited rules belongs to the shared locale catalog.
 for (const game of ['four_in_a_row','reversi','go']) {
   if (localeManifest.rules?.games?.[game]?.version !== 2) throw new Error(`${game} variant-aware rules metadata must be version 2.`);
   if (!locale.rules?.[game]?.title || !locale.rules?.[game]?.size_text || !locale.rules?.[game]?.diagram_label) {
@@ -81,9 +74,8 @@ for (const source of [fourRules, reversiRules, goRules]) {
   if (/[А-Яа-яЁё]/u.test(source)) throw new Error('Edited rule renderers must not introduce hardcoded RU product copy.');
 }
 
-// Final bottom navigation polish: +3px icon/label air while reducing total bar height.
-if (!layout.includes('padding:2px 5px max(2px,env(safe-area-inset-bottom))')) throw new Error('Bottom nav outer panel must use compact symmetric padding.');
-if (!layout.includes('min-height:48px;\n  padding:3px 3px;')) throw new Error('Bottom navigation item must reclaim excess vertical space.');
+if (!layout.includes('padding:2px 5px max(2px,env(safe-area-inset-bottom))')) throw new Error('Bottom nav outer panel must stay compact.');
+if (!layout.includes('min-height:48px;\n  padding:1px 3px 5px;')) throw new Error('Bottom navigation item must keep compact height and final 2px optical lift.');
 if (!layout.includes('justify-content:flex-start;\n  gap:0;\n  font-size:10px;\n  line-height:1;')) {
   throw new Error('Bottom navigation content must remain compact and top-owned.');
 }
@@ -91,20 +83,20 @@ if (!layout.includes('.app-bottom-nav-icon{width:34px;height:29px')
     || !layout.includes('place-items:start center')
     || !layout.includes('flex:0 0 29px;overflow:visible')
     || !layout.includes('.app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px')) {
-  throw new Error('Bottom navigation must preserve accepted 32px artwork and add exactly 3px to the painted-bound icon/label spacing.');
+  throw new Error('Bottom navigation must preserve accepted 32px artwork and 3px painted-bound icon/label spacing.');
 }
 if (!layout.includes('padding-bottom:calc(62px + env(safe-area-inset-bottom))')) {
-  throw new Error('Primary screens must reclaim the height removed from the compact bottom navigation.');
+  throw new Error('Primary screens must keep the reclaimed compact-nav height.');
 }
-if (!mainCss.includes("./base/layout.css?v=131&sk=1&mvp16=final-bottom-nav")) {
-  throw new Error('Final bottom navigation must have a fresh nested CSS target.');
+if (!mainCss.includes("./base/layout.css?v=132&sk=1&mvp16=final-bottom-nav-align")) {
+  throw new Error('Final aligned bottom navigation must have a fresh nested CSS target.');
 }
 
 if (!clientManifest.includes("game-rules.js?v=78&mvp16=all-variant-rules")) {
   throw new Error('Shared rules owner must keep accepted Telegram cache bytes.');
 }
-if (!clientManifest.includes("main.css?v=165&sk=3&icons=c1efd5af&render=34&mvp16=final-bottom-nav")) {
-  throw new Error('Outer CSS must use fresh Telegram cache bytes for final nav polish.');
+if (!clientManifest.includes("main.css?v=166&sk=3&icons=c1efd5af&render=35&mvp16=final-bottom-nav-align")) {
+  throw new Error('Outer CSS must use fresh Telegram cache bytes for final nav alignment.');
 }
 if (!clientManifest.includes("'version' => 'v2-route-scoped-polling'")) throw new Error('Client manifest schema must remain stable.');
 if (!clientManifest.includes("'version' => 'keys-v1'")) throw new Error('Localization infrastructure must remain keys-v1.');

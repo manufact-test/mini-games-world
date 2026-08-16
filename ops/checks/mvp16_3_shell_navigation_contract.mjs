@@ -49,19 +49,19 @@ for (const token of ['env(safe-area-inset-top)','env(safe-area-inset-bottom)',':
 if (!layout.includes('padding-top:calc(68px + max(10px,env(safe-area-inset-top)))')) throw new Error('Shell content top spacing must stay at the accepted tightened value.');
 if (!layout.includes('padding:2px 5px max(2px,env(safe-area-inset-bottom))')
     || !layout.includes('min-height:48px')
-    || !layout.includes('padding:3px 3px')
+    || !layout.includes('padding:1px 3px 5px')
     || !layout.includes('justify-content:flex-start')
     || !layout.includes('padding-bottom:calc(62px + env(safe-area-inset-bottom))')) {
-  throw new Error('Final bottom navigation must reduce outer height and return the reclaimed space to primary-screen content.');
+  throw new Error('Final bottom navigation must keep its compact height while raising painted contents by 2px for optical balance.');
 }
 if (!layout.includes('.app-bottom-nav-icon{width:34px;height:29px')
     || !layout.includes('place-items:start center')
     || !layout.includes('flex:0 0 29px;overflow:visible')
     || !layout.includes('.app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px')
     || !layout.includes('font-size:10px')) {
-  throw new Error('Final navigation must add 3px icon-label air while preserving accepted 32px artwork and 10px labels.');
+  throw new Error('Final navigation must keep 3px icon-label air while preserving accepted 32px artwork and 10px labels.');
 }
-if (!/\.\/base\/layout\.css\?v=\d+&sk=1&mvp16=(?:unified-primary-tabs|balanced-bottom-nav|optical-bottom-nav|painted-bottom-nav|final-bottom-nav)/u.test(mainCss)) {
+if (!/\.\/base\/layout\.css\?v=\d+&sk=1&mvp16=(?:unified-primary-tabs|balanced-bottom-nav|optical-bottom-nav|painted-bottom-nav|final-bottom-nav|final-bottom-nav-align)/u.test(mainCss)) {
   throw new Error('Layout cache target must stay versioned under the MVP-16 shell owner.');
 }
 if (!mainCss.includes("./screens/store.css?v=29&mvp16=primary-tab")) throw new Error('Store CSS cache target must advance with embedded store changes.');
@@ -78,7 +78,7 @@ if (!/main-v110-handoff-shell\.js\?v=\d+&mvp16=(?:unified-primary-tabs|unified-g
 }
 if (!manifest.includes("store-screen.js?v=36&mvp16=primary-tab")) throw new Error('Store module cache target was not advanced.');
 if (!manifest.includes("profile-screen-v110.js?v=1114&mvp16=primary-tab")) throw new Error('Profile module cache target was not advanced.');
-if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:unified-primary-tabs|setup-ui-polish|setup-subtitle-width|variant-rules-nav-balance|optical-bottom-nav|painted-bottom-nav|final-bottom-nav)/u.test(manifest)) {
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:unified-primary-tabs|setup-ui-polish|setup-subtitle-width|variant-rules-nav-balance|optical-bottom-nav|painted-bottom-nav|final-bottom-nav|final-bottom-nav-align)/u.test(manifest)) {
   throw new Error('Shell CSS must remain on a versioned MVP-16 cache target.');
 }
 
