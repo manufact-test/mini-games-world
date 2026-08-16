@@ -127,6 +127,7 @@ bot/services/StagingReadinessService.php
 # to mgw_id; the profile service reads only the canonical account DB.
 bot/profile.php
 bot/profile-v2.php
+bot/accounts/MgwIdGenerator.php
 bot/accounts/MgwIdentityPolicy.php
 bot/accounts/MgwProfileService.php
 bot/accounts/AccountIdentityService.php

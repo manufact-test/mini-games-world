@@ -1,16 +1,17 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { showScreen } from '../router.js?v=27';
+import { currentScreen, showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { renderUser, renderBalances } from '../ui.js?v=89';
-import { applyCanonicalMgwProfile, canonicalAvatarItemId } from '../profile/mgw-profile-model.js?v=1';
+import { applyCanonicalMgwProfile, canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../profile/mgw-profile-model.js?v=1';
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
 const GAME_TYPES = Object.freeze(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
 const STARTER_AVATARS = Object.freeze(['starter-default-01','starter-default-02','starter-default-03']);
 let profileLoading = false;
+let profileSaving = false;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -24,26 +25,22 @@ export function initProfileScreen(){
 }
 
 export async function openProfile(){
+  if (currentScreen() === 'profile') return;
   showProfileImmediately();
   if (profileLoading) return;
   profileLoading = true;
-  setProfileBusy(true);
   try {
     applyProfileResponse(await api.profileV2());
   } catch (error) {
     toast(error.message || t('profile.load_error'));
   } finally {
     profileLoading = false;
-    setProfileBusy(false);
   }
 }
 
 function applyProfileResponse(result){
   state.mgwProfile = result.profile || state.mgwProfile || null;
-  state.user = applyCanonicalMgwProfile({
-    ...(state.user && typeof state.user === 'object' ? state.user : {}),
-    ...(result.user && typeof result.user === 'object' ? result.user : {}),
-  }, state.mgwProfile);
+  state.user = mergeCanonicalMgwUser(state.user, result.user, state.mgwProfile);
   state.profileStats = result.stats || state.profileStats || null;
   state.profileHistory = result.history || state.profileHistory || null;
   state.profileAuth = result.auth || state.profileAuth || null;
@@ -54,6 +51,7 @@ function applyProfileResponse(result){
 }
 
 function showProfileImmediately(){
+  if (state.mgwProfile) state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
   if (state.user) { renderUser(state.user); renderBalances(state.user); }
   renderProfileV2();
   showScreen('profile');
@@ -76,10 +74,8 @@ function bindProfileActions(){
       openNicknameEditor();
       return;
     }
-    const avatarChoice = event.target.closest('[data-mgw-avatar-choice]');
-    if (avatarChoice) {
-      const itemId = String(avatarChoice.dataset.mgwAvatarChoice || '').trim();
-      if (STARTER_AVATARS.includes(itemId)) await saveProfileChange({ avatar_item_id:itemId }, 'profile.avatar_saved');
+    if (event.target.closest('[data-edit-mgw-avatar]')) {
+      openAvatarEditor();
       return;
     }
     if (event.target.closest('[data-open-language-settings]')) {
@@ -92,39 +88,77 @@ function openNicknameEditor(){
   const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || '').trim();
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(t('profile.nickname_edit_title'))}</h2><p>${escapeHtml(t('profile.nickname_edit_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <input class="form-input" id="mgwNicknameInput" maxlength="24" autocomplete="off" value="${escapeHtml(nickname)}" />
+    <input class="form-input mgw-nickname-input" id="mgwNicknameInput" maxlength="24" autocomplete="off" value="${escapeHtml(nickname)}" aria-label="${escapeHtml(t('profile.nickname_edit_title'))}" />
     <button class="btn primary full" id="mgwNicknameSave" type="button">${escapeHtml(t('profile.nickname_save'))}</button>
   `);
-  document.getElementById('mgwNicknameSave')?.addEventListener('click', async () => {
-    const value = String(document.getElementById('mgwNicknameInput')?.value || '').trim();
-    if (!value) return;
-    const saved = await saveProfileChange({ nickname:value }, 'profile.nickname_saved');
-    if (saved) closeSheet();
+  const input = document.getElementById('mgwNicknameInput');
+  const save = document.getElementById('mgwNicknameSave');
+  input?.focus({ preventScroll:true });
+  save?.addEventListener('click', async () => {
+    const value = normalizeNicknameInput(input?.value || '');
+    if (!value) {
+      toast(t('profile.nickname_too_short'));
+      return;
+    }
+    if (profileSaving) return;
+    profileSaving = true;
+    if (save instanceof HTMLButtonElement) save.disabled = true;
+    try {
+      applyProfileResponse(await api.profileV2({ nickname:value }));
+      closeSheet();
+      toast(t('profile.nickname_saved'));
+    } catch (error) {
+      toast(error.message || t('profile.save_error'));
+    } finally {
+      profileSaving = false;
+      if (save instanceof HTMLButtonElement && document.body.contains(save)) save.disabled = false;
+    }
   });
 }
 
-async function saveProfileChange(change, successKey){
-  if (profileLoading) return false;
-  profileLoading = true;
-  setProfileBusy(true);
-  try {
-    applyProfileResponse(await api.profileV2(change));
-    toast(t(successKey));
-    return true;
-  } catch (error) {
-    toast(error.message || t('profile.save_error'));
-    return false;
-  } finally {
-    profileLoading = false;
-    setProfileBusy(false);
-  }
+function openAvatarEditor(){
+  const activeAvatar = currentAvatarItemId();
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(t('profile.avatar_edit_title'))}</h2><p>${escapeHtml(t('profile.avatar_edit_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-avatar-sheet-grid" aria-label="${escapeHtml(t('profile.avatar_select'))}">
+      ${STARTER_AVATARS.map((itemId, index) => avatarChoiceMarkup(itemId, index, activeAvatar)).join('')}
+    </div>
+  `);
+  document.querySelectorAll('#sheet [data-mgw-avatar-choice]').forEach(button => {
+    button.addEventListener('click', () => void chooseAvatar(String(button.dataset.mgwAvatarChoice || '')));
+  });
 }
 
-function setProfileBusy(busy){
-  const screen = document.getElementById('screen-profile');
-  if (!screen) return;
-  screen.classList.toggle('is-loading', Boolean(busy));
-  screen.setAttribute('aria-busy', busy ? 'true' : 'false');
+async function chooseAvatar(itemId){
+  if (!STARTER_AVATARS.includes(itemId) || profileSaving || itemId === currentAvatarItemId()) {
+    if (itemId === currentAvatarItemId()) closeSheet();
+    return;
+  }
+  const previousProfile = cloneObject(state.mgwProfile);
+  const previousUser = cloneObject(state.user);
+  const optimisticProfile = {
+    ...(state.mgwProfile && typeof state.mgwProfile === 'object' ? state.mgwProfile : {}),
+    avatar:{ item_id:itemId },
+  };
+
+  profileSaving = true;
+  state.mgwProfile = optimisticProfile;
+  state.user = mergeCanonicalMgwUser(state.user, {}, optimisticProfile);
+  renderUser(state.user);
+  renderProfileV2();
+  closeSheet();
+
+  try {
+    applyProfileResponse(await api.profileV2({ avatar_item_id:itemId }));
+  } catch (error) {
+    state.mgwProfile = previousProfile;
+    state.user = previousProfile ? mergeCanonicalMgwUser(previousUser, {}, previousProfile) : previousUser;
+    renderUser(state.user);
+    renderProfileV2();
+    toast(error.message || t('profile.avatar_save_error'));
+  } finally {
+    profileSaving = false;
+  }
 }
 
 function renderProfileV2(){
@@ -135,7 +169,7 @@ function renderProfileV2(){
   const stats = state.profileStats && typeof state.profileStats === 'object' ? state.profileStats : loadCachedProfileStats();
   const history = state.profileHistory && typeof state.profileHistory === 'object' ? state.profileHistory : {};
   const nickname = String(profile.nickname || user.display_name || t('profile.player')).trim();
-  const mgwId = String(profile.mgw_id || user.mgw_id || '').trim();
+  const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
   const balance = Number(user.balance || 0);
   const registeredAt = profile.created_at || user.registered_at || null;
   const identities = Array.isArray(profile.identities) ? profile.identities : [];
@@ -145,16 +179,16 @@ function renderProfileV2(){
   root.innerHTML = `
     <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1><p>${escapeHtml(t('profile.subtitle'))}</p></div></header>
     <section class="profile-v2-identity">
-      <div class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</div>
+      <button class="profile-v2-avatar-edit" type="button" data-edit-mgw-avatar aria-label="${escapeHtml(t('profile.avatar_edit'))}">
+        <span class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</span>
+        <span class="profile-v2-avatar-pencil" aria-hidden="true">✎</span>
+      </button>
       <div class="profile-v2-person">
         <strong>${escapeHtml(nickname)}</strong>
         <button class="profile-v2-edit-link" type="button" data-edit-mgw-nickname>${escapeHtml(t('profile.nickname_edit'))}</button>
         <small>${escapeHtml(registeredAt ? t('profile.member_since', { date:formatDate(registeredAt) }) : t('profile.member_since_unknown'))}</small>
       </div>
-      <div class="profile-v2-avatar-picker" aria-label="${escapeHtml(t('profile.avatar_select'))}">
-        ${STARTER_AVATARS.map((itemId, index) => `<button type="button" data-mgw-avatar-choice="${itemId}" class="profile-v2-avatar-choice${itemId === activeAvatar ? ' active' : ''}" aria-pressed="${itemId === activeAvatar ? 'true' : 'false'}"><span>MG</span><small>${escapeHtml(t('profile.avatar_option', { number:index + 1 }))}</small></button>`).join('')}
-      </div>
-      <div class="profile-v2-id-card"><span>${escapeHtml(t('profile.mgw_id'))}</span><button type="button" data-copy-mgw-id="${escapeHtml(mgwId)}" ${mgwId ? '' : 'disabled'}><b>${escapeHtml(mgwId || '—')}</b><small>${escapeHtml(t('profile.copy_id'))}</small></button></div>
+      <div class="profile-v2-id-card"><button type="button" data-copy-mgw-id="${escapeHtml(mgwId)}" ${mgwId ? '' : 'disabled'} aria-label="${escapeHtml(t('profile.copy_id'))}"><b>${escapeHtml(mgwId || '—')}</b><small>${escapeHtml(t('profile.copy_id'))}</small></button></div>
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
@@ -170,6 +204,13 @@ function renderProfileV2(){
   `;
 }
 
+function avatarChoiceMarkup(itemId, index, activeAvatar){
+  const active = itemId === activeAvatar;
+  return `<button type="button" data-mgw-avatar-choice="${itemId}" class="profile-v2-avatar-choice${active ? ' active' : ''}" aria-pressed="${active ? 'true' : 'false'}"><span data-avatar-item-id="${itemId}">MG</span><small>${escapeHtml(t('profile.avatar_option', { number:index + 1 }))}</small></button>`;
+}
+function currentAvatarItemId(){ return canonicalAvatarItemId(state.mgwProfile?.avatar || { item_id:state.user?.avatar_item_id }); }
+function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
+function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
 function ensureProfileRoot(){
   const content = document.querySelector('#screen-profile .content');
   if (!content) return null;

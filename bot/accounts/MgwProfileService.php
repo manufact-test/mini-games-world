@@ -38,9 +38,11 @@ final class MgwProfileService
         }
         $user = $users[0];
         $nickname = (string)$user['nickname'];
+        $internalMgwId = (string)$user['mgw_id'];
         $avatarItemId = MgwIdentityPolicy::normalizeAvatarItemId($user['equipped_avatar_item_id'] ?? MgwIdentityPolicy::DEFAULT_AVATAR_ITEM_ID);
         return [
-            'mgw_id' => (string)$user['mgw_id'],
+            'mgw_id' => $internalMgwId,
+            'public_mgw_id' => MgwIdGenerator::toPublic($internalMgwId),
             'status' => (string)($user['status'] ?? 'active'),
             'nickname' => $nickname,
             'display_name' => $nickname,
