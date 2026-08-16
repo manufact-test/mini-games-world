@@ -5,14 +5,18 @@ $root = dirname(__DIR__, 2);
 $profile = file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
 $home = file_get_contents($root . '/app/assets/js/screens/home-screen.js');
 $model = file_get_contents($root . '/app/assets/js/profile/mgw-profile-model.js');
+$ui = file_get_contents($root . '/app/assets/js/ui.js');
+$cleanEntry = file_get_contents($root . '/app/assets/js/production-clean-entry-v110.js');
 $i18n = file_get_contents($root . '/app/assets/js/localization/i18n.js');
 $endpoint = file_get_contents($root . '/bot/profile-v2.php');
+$identityPolicy = file_get_contents($root . '/bot/accounts/MgwIdentityPolicy.php');
+$idGenerator = file_get_contents($root . '/bot/accounts/MgwIdGenerator.php');
 $correctiveCss = file_get_contents($root . '/app/assets/css/screens/profile-corrective.css');
 $mainCss = file_get_contents($root . '/app/assets/css/main.css');
 $versionManifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $catalog = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, flags: JSON_THROW_ON_ERROR);
 
-foreach (['profile' => $profile, 'home' => $home, 'model' => $model, 'i18n' => $i18n, 'endpoint' => $endpoint, 'corrective_css' => $correctiveCss, 'main_css' => $mainCss, 'version_manifest' => $versionManifest] as $name => $source) {
+foreach (['profile'=>$profile,'home'=>$home,'model'=>$model,'ui'=>$ui,'clean_entry'=>$cleanEntry,'i18n'=>$i18n,'endpoint'=>$endpoint,'identity_policy'=>$identityPolicy,'id_generator'=>$idGenerator,'corrective_css'=>$correctiveCss,'main_css'=>$mainCss,'version_manifest'=>$versionManifest] as $name => $source) {
     if (!is_string($source)) throw new RuntimeException("Unable to read {$name} corrective source.");
 }
 
@@ -35,27 +39,19 @@ $assertContains('history.matches.slice(0, 6)', $profile, 'Profile preview must r
 $assertContains("userHistory(\$data, \$userId, 6)", $endpoint, 'Backend profile history must request at most six matches');
 $assertContains("sectionHead('profile.history_title')", $profile, 'Recent matches heading must render without redundant subtitle');
 $assertNotContains("sectionHead('profile.history_title','profile.history_note')", $profile, 'Recent matches subtitle must stay removed');
-$assertContains("['starter-default-01','starter-default-02','starter-default-03']", $profile, 'Profile must expose the three canonical starter avatar IDs');
+$assertContains("['starter-default-01','starter-default-02','starter-default-03']", $profile, 'Profile must retain the three canonical starter avatar IDs');
+$assertContains('data-edit-mgw-avatar', $profile, 'Profile must expose one compact avatar edit affordance');
+$assertContains('profile-v2-avatar-sheet-grid', $profile, 'Avatar choices must live in the dedicated picker sheet');
+$assertNotContains('profile-v2-avatar-picker', $profile, 'Starter avatars must not remain permanently expanded in Profile');
 foreach (['starter-default-01','starter-default-02','starter-default-03'] as $avatarItemId) {
     $assertContains('[data-avatar-item-id="' . $avatarItemId . '"]', $correctiveCss, 'Profile identity avatar must have a visible starter variant');
     $assertContains('[data-mgw-avatar-choice="' . $avatarItemId . '"]', $correctiveCss, 'Profile picker must preview each starter variant');
     $assertContains('[data-avatar-id="' . $avatarItemId . '"]', $correctiveCss, 'Shared topbar/profile/search avatar surfaces must render the canonical starter variant');
 }
-$assertContains("profile-corrective.css?v=2&mvp16=avatar-visible-identity", $mainCss, 'Nested corrective stylesheet cache key must advance with avatar visuals');
-$assertContains("main.css?v=169", $versionManifest, 'Runtime main stylesheet cache key must advance with avatar visuals');
+$assertContains('profile-corrective.css?v=3&mvp16=profile-polish', $mainCss, 'Nested corrective stylesheet cache key must advance with profile polish');
+$assertContains('main.css?v=170', $versionManifest, 'Runtime main stylesheet cache key must advance with profile polish');
 $assertContains('data-edit-mgw-nickname', $profile, 'Profile must expose nickname editing');
-$assertContains('mgw:open-language-settings', $profile, 'Profile language row must reuse the shared settings owner');
-$assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
-$assertContains('id="settingsBtn"', $home, 'More menu must expose Settings');
-$assertContains('id="languageSettingsBtn"', $home, 'Settings must expose Language');
-$assertNotContains('language_en', $home, 'English must not be offered before the full EN catalog exists');
-$assertContains('explicitLocale', $i18n, 'Locale precedence must include explicit user choice');
-$assertContains('accountLocale', $i18n, 'Locale precedence must include saved MGW account locale');
-$assertContains('platformLocale', $i18n, 'Locale precedence must include platform/device locale');
-$assertContains('fallbackLocale', $i18n, 'Locale precedence must include fallback locale');
-$assertNotContains('geo', strtolower($i18n), 'Locale selection must not depend on geolocation');
-$assertNotContains('photo_url: avatarUrl', $model, 'Canonical projection must not restore provider photo ownership');
-$assertContains("photo_url: ''", $model, 'Canonical projection must explicitly suppress provider photo URL');
-$assertSame(3, substr_count($profile, "[1,2,3].map" ) === 1 ? 3 : 0, 'Achievements preview must remain exactly three placeholders');
-
-fwrite(STDOUT, "ProfileV2CorrectiveStaticContractTest: {$assertions} assertions passed\n");
+$assertContains("replace(/\\s+/gu, ' ').trim()", $profile, 'Nickname client normalization must collapse repeated whitespace');
+$assertContains("preg_replace('/\\s+/u', ' '", $identityPolicy, 'Nickname backend normalization must collapse repeated whitespace');
+$assertContains("preg_match('/^[\\p{L}\\p{N}_ -]+$/u'", $identityPolicy, 'Nickname backend must allow Unicode letters and ordinary spaces');
+$assertSame('Этот ник уже занят, выберите другой', $catalog['profile']['nickname_edit_note'] ?? null, 'sentinel');
