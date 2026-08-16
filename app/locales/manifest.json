@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "foundation_version": "mvp16.2-v1",
+  "default_locale": "ru",
+  "fallback_locale": "ru",
+  "supported_locales": ["ru"],
+  "catalogs": {
+    "ru": "ru.json"
+  },
+  "formats": {
+    "ru": {
+      "intl_locale": "ru-RU",
+      "number": {
+        "maximumFractionDigits": 0
+      },
+      "date": {
+        "short": {"day": "2-digit", "month": "2-digit", "year": "numeric"},
+        "long": {"day": "numeric", "month": "long", "year": "numeric"}
+      },
+      "datetime": {
+        "short": {"day": "2-digit", "month": "2-digit", "year": "numeric", "hour": "2-digit", "minute": "2-digit"},
+        "long": {"day": "numeric", "month": "long", "year": "numeric", "hour": "2-digit", "minute": "2-digit"}
+      }
+    }
+  },
+  "rules": {
+    "schema_version": 1,
+    "games": {
+      "tictactoe": {"version": 1, "languages": ["ru"], "title_key": "games.tictactoe.name"},
+      "four_in_a_row": {"version": 1, "languages": ["ru"], "title_key": "games.four_in_a_row.name"},
+      "battleship": {"version": 1, "languages": ["ru"], "title_key": "games.battleship.name"},
+      "checkers": {"version": 1, "languages": ["ru"], "title_key": "games.checkers.name"},
+      "reversi": {"version": 1, "languages": ["ru"], "title_key": "games.reversi.name"},
+      "chess": {"version": 1, "languages": ["ru"], "title_key": "games.chess.name"},
+      "go": {"version": 1, "languages": ["ru"], "title_key": "games.go.name"},
+      "domino": {"version": 1, "languages": ["ru"], "title_key": "games.domino.name"}
+    }
+  }
+}

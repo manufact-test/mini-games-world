@@ -9,6 +9,7 @@ return [
     'imports' => [
         '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
         '@mgw/main' => './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
+        '@mgw/i18n' => './assets/js/localization/i18n.js?v=1&mvp16=locale-keys-v1',
         './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1132&mvp15=unified-profile',
         './assets/js/api/client.js?v=38' => './assets/js/api/client.js?v=1132&mvp15=unified-profile',
         './assets/js/api/client.js?v=46' => './assets/js/api/client.js?v=1132&mvp15=unified-profile',
@@ -43,5 +44,10 @@ return [
         'main_css' => './assets/css/main.css?v=155&sk=3&icons=c1efd5af&render=29&palette=three-state-notifications&battleship=authoritative-shot-only&wallet=weekly-bonus-cta',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
+    ],
+    'localization' => [
+        'version' => 'keys-v1',
+        'default_locale' => 'ru',
+        'manifest' => './locales/manifest.json',
     ],
 ];

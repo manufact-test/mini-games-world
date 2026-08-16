@@ -22,9 +22,30 @@ if (!is_array($versionManifest)
     exit;
 }
 
+require_once __DIR__ . '/runtime/localization/LocalizationCatalog.php';
+try {
+    $localizationCatalog = new LocalizationCatalog(__DIR__ . '/locales');
+    $localizationPayload = $localizationCatalog->clientPayload();
+} catch (Throwable $error) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World localization catalog is unavailable.';
+    exit;
+}
+
 $imports = $versionManifest['imports'];
 $assets = $versionManifest['assets'];
-foreach (['@mgw/clean-entry', '@mgw/main', './assets/js/state.js?v=27', './assets/js/router.js?v=27'] as $requiredImport) {
+$localizationConfig = $versionManifest['localization'] ?? null;
+if (!is_array($localizationConfig)
+    || ($localizationConfig['version'] ?? null) !== 'keys-v1'
+    || ($localizationConfig['default_locale'] ?? null) !== $localizationCatalog->defaultLocale()) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World localization version manifest is unavailable.';
+    exit;
+}
+
+foreach (['@mgw/clean-entry', '@mgw/main', '@mgw/i18n', './assets/js/state.js?v=27', './assets/js/router.js?v=27'] as $requiredImport) {
     if (!isset($imports[$requiredImport]) || !is_string($imports[$requiredImport]) || $imports[$requiredImport] === '') {
         http_response_code(500);
         header('Content-Type: text/plain; charset=utf-8');
@@ -68,14 +89,19 @@ try {
         ['imports' => $imports],
         JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
     );
+    $localizationJson = json_encode(
+        $localizationPayload,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
+    );
 } catch (JsonException $error) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World client version manifest cannot be rendered.';
+    echo 'Mini Games World client manifests cannot be rendered.';
     exit;
 }
+$localizationTag = '<script type="application/json" id="mgw-localization">' . $localizationJson . '</script>';
 $importMap = "<script type=\"importmap\">\n{$importMapPayload}\n</script>";
-$html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
+$html = str_replace($headClose, "  " . $localizationTag . "\n  " . $importMap . "\n" . $headClose, $html);
 
 $cssTarget = $assets['main_css'];
 $consistencyCssTarget = $assets['consistency_css'];
@@ -100,6 +126,7 @@ $requiredRenderedTargets = [
     'client_bootstrap_v2' => $bootstrapTarget,
     'clean_entry_v110' => $imports['@mgw/clean-entry'],
     'main_v110' => $imports['@mgw/main'],
+    'localization_i18n' => $imports['@mgw/i18n'],
     'shield_king_css' => $cssTarget,
     'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
     'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
@@ -118,6 +145,13 @@ foreach ($requiredRenderedTargets as $targetName => $target) {
     }
 }
 
+if (!str_contains($html, 'id="mgw-localization"')) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World localization payload is unavailable.';
+    exit;
+}
+
 if (substr_count($html, '<script type="module" src="') !== 1) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
@@ -132,6 +166,9 @@ header('Expires: 0');
 header('X-MGW-Client-Bootstrap: v2-single-owner');
 header('X-MGW-Router: v2-route-registry-cleanup');
 header('X-MGW-Query-Version-Manifest: v2-route-scoped-polling');
+header('X-MGW-Localization: keys-v1');
+header('X-MGW-Locale: ' . $localizationCatalog->defaultLocale());
+header('X-MGW-Rules-Languages: ru');
 header('X-MGW-Api-Session-Graph: v1132-canonical-profile');
 header('X-MGW-Profile-API: provider-neutral-mgw-v1');
 header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');
