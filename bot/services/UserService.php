@@ -217,6 +217,13 @@ final class UserService
             throw new RuntimeException('Verified MGW identity conflicts with the persisted user owner.');
         }
 
+        // Provider metadata stays available for auth/audit, but it no longer
+        // owns any visible runtime identity field used by game projections.
+        $user['provider_first_name'] = clean_string($authenticatedUser['first_name'] ?? $user['provider_first_name'] ?? '', 80);
+        $user['provider_username'] = clean_string($authenticatedUser['username'] ?? $user['provider_username'] ?? '', 80);
+        $providerPhotoUrl = clean_string($authenticatedUser['photo_url'] ?? '', 2048);
+        if ($providerPhotoUrl !== '') $user['provider_photo_url'] = $providerPhotoUrl;
+
         // mgw_id is the immutable provider-neutral owner. account_ref is a
         // runtime ownership locator and may legitimately rotate during a future
         // link/merge while the same verified MGW owner remains unchanged.
@@ -227,6 +234,9 @@ final class UserService
         }
         if ($incomingNickname !== '') {
             $user['mgw_nickname'] = clean_string($incomingNickname, 13);
+            $user['first_name'] = $user['mgw_nickname'];
+            $user['username'] = '';
+            $user['photo_url'] = '';
         }
         if ($incomingAvatarItemId !== '') {
             $user['mgw_avatar_item_id'] = clean_string($incomingAvatarItemId, 80);
