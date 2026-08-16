@@ -61,10 +61,10 @@ try {
             : $profileService->publicProfile($mgwId);
     } catch (InvalidArgumentException $error) {
         [$code, $message] = mgw_profile_v2_validation_error($error);
-        json_response(['ok'=>false,'error'=>$code,'message'=>$message], 422);
+        json_response(['ok'=>false,'error'=>$message,'code'=>$code], 422);
     } catch (RuntimeException $error) {
         if ($error->getMessage() === MgwIdentityPolicy::NICKNAME_TAKEN_ERROR) {
-            json_response(['ok'=>false,'error'=>'nickname_taken','message'=>MgwIdentityPolicy::NICKNAME_TAKEN_ERROR], 409);
+            json_response(['ok'=>false,'error'=>MgwIdentityPolicy::NICKNAME_TAKEN_ERROR,'code'=>'nickname_taken'], 409);
         }
         throw $error;
     }
