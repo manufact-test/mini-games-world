@@ -2,6 +2,8 @@ import { applyAccountLocalePreference } from '@mgw/i18n';
 
 const DEFAULT_AVATAR_ITEM_ID = 'starter-default-01';
 const STARTER_AVATAR_ITEM_IDS = new Set(['starter-default-01','starter-default-02','starter-default-03']);
+const INTERNAL_MGW_ID_PATTERN = /^MGW-([0-9A-HJKMNP-TV-Z]{16})$/;
+const PUBLIC_MGW_ID_PATTERN = /^MGW-ID-([0-9A-HJKMNP-TV-Z]{16})$/;
 
 export function applyCanonicalMgwProfile(runtimeUser = {}, profile = null){
   if (!profile || typeof profile !== 'object') throw new Error('Canonical MGW profile is unavailable.');
@@ -14,6 +16,7 @@ export function applyCanonicalMgwProfile(runtimeUser = {}, profile = null){
   return {
     ...current,
     mgw_id: mgwId,
+    public_mgw_id: publicMgwId(profile.public_mgw_id || mgwId),
     display_name: nickname,
     first_name: nickname,
     username: null,
@@ -25,9 +28,32 @@ export function applyCanonicalMgwProfile(runtimeUser = {}, profile = null){
   };
 }
 
+export function mergeCanonicalMgwUser(currentUser = {}, runtimeUser = {}, profile = null){
+  return applyCanonicalMgwProfile({
+    ...(currentUser && typeof currentUser === 'object' ? currentUser : {}),
+    ...(runtimeUser && typeof runtimeUser === 'object' ? runtimeUser : {}),
+  }, profile);
+}
+
 export function canonicalAvatarItemId(avatar = null){
   const itemId = String(avatar?.item_id || '').trim();
   return STARTER_AVATAR_ITEM_IDS.has(itemId) ? itemId : DEFAULT_AVATAR_ITEM_ID;
+}
+
+export function publicMgwId(value){
+  const normalized = String(value || '').trim().toUpperCase();
+  const publicMatch = normalized.match(PUBLIC_MGW_ID_PATTERN);
+  if (publicMatch) return `MGW-ID-${publicMatch[1]}`;
+  const internalMatch = normalized.match(INTERNAL_MGW_ID_PATTERN);
+  return internalMatch ? `MGW-ID-${internalMatch[1]}` : '';
+}
+
+export function internalMgwId(value){
+  const normalized = String(value || '').trim().toUpperCase();
+  const internalMatch = normalized.match(INTERNAL_MGW_ID_PATTERN);
+  if (internalMatch) return `MGW-${internalMatch[1]}`;
+  const publicMatch = normalized.match(PUBLIC_MGW_ID_PATTERN);
+  return publicMatch ? `MGW-${publicMatch[1]}` : '';
 }
 
 export function canonicalAvatarUrl(){ return ''; }
