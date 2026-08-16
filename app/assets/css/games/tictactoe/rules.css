@@ -1,2 +1,16 @@
-.rule-tic-grid{display:grid;grid-template-columns:repeat(3,48px);gap:5px;justify-content:center}
-.rule-tic-grid span{aspect-ratio:1;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-size:22px;font-weight:950}
+.rule-tic-figure{display:grid;gap:8px;justify-items:center;margin:0}
+.rule-tic-figure figcaption{color:var(--muted);font-size:11px;line-height:1.35;text-align:center}
+.rule-tic-grid{display:grid;justify-content:center;width:100%;margin:0 auto}
+.rule-tic-grid.size-3{grid-template-columns:repeat(3,48px);gap:5px;max-width:154px}
+.rule-tic-grid.size-5{grid-template-columns:repeat(5,34px);gap:4px;max-width:186px}
+.rule-tic-grid.size-9{grid-template-columns:repeat(9,24px);gap:3px;max-width:240px}
+.rule-tic-cell{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);font-size:19px;font-weight:950;line-height:1}
+.rule-tic-grid.size-5 .rule-tic-cell{border-radius:8px;font-size:16px}
+.rule-tic-grid.size-9 .rule-tic-cell{border-radius:6px;font-size:12px}
+.rule-tic-cell.winner{background:rgba(126,92,255,.27);border-color:rgba(184,139,255,.65);box-shadow:0 0 0 1px rgba(184,139,255,.08) inset,0 0 16px rgba(126,92,255,.14)}
+.rule-tic-cell.opponent{color:rgba(255,255,255,.68)}
+.tictactoe-rule-last-copy{margin-bottom:0}
+@media (max-width:360px){
+  .rule-tic-grid.size-9{grid-template-columns:repeat(9,21px);gap:2px;max-width:205px}
+  .rule-tic-grid.size-5{grid-template-columns:repeat(5,31px);max-width:171px}
+}

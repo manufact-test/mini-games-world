@@ -27,10 +27,11 @@ final class Mvp162LocalizationInfrastructureTest
         $expectedGames = ['tictactoe', 'four_in_a_row', 'battleship', 'checkers', 'reversi', 'chess', 'go', 'domino'];
         foreach ($expectedGames as $gameType) {
             $rules = $catalog->rules($gameType);
-            $this->same(1, $rules['version'] ?? null, 'Every rules entry must be explicitly versioned.');
+            $this->true((int)($rules['version'] ?? 0) >= 1, 'Every rules entry must be explicitly versioned.');
             $this->true(in_array('ru', $rules['languages'] ?? [], true), 'Every accepted game must declare RU rules language.');
             $this->true(is_string($rules['title'] ?? null) && ($rules['title'] ?? '') !== '', 'Every rules entry must resolve its localized game title.');
         }
+        $this->same(2, $catalog->rules('tictactoe')['version'] ?? null, 'Tic-Tac-Toe variant-aware rules must expose rules version 2.');
 
         $manifest = require $root . '/app/runtime/client/version-manifest.php';
         $this->same('keys-v1', $manifest['localization']['version'] ?? null, 'Client manifest must own the localization version.');

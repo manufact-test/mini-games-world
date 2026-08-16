@@ -26,7 +26,7 @@
   "rules": {
     "schema_version": 1,
     "games": {
-      "tictactoe": {"version": 1, "languages": ["ru"], "title_key": "games.tictactoe.name"},
+      "tictactoe": {"version": 2, "languages": ["ru"], "title_key": "games.tictactoe.name"},
       "four_in_a_row": {"version": 1, "languages": ["ru"], "title_key": "games.four_in_a_row.name"},
       "battleship": {"version": 1, "languages": ["ru"], "title_key": "games.battleship.name"},
       "checkers": {"version": 1, "languages": ["ru"], "title_key": "games.checkers.name"},
