@@ -13,38 +13,27 @@ permissions:
 env:
   MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
   EXPECTED_FINGERPRINT: d174dbb7b63b53e26eb741f9c5a318ff7ed4002b85f71c982c9300293e2ab6db
+  EXPECTED_FILES: '190'
 
 jobs:
   prove:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
-      - name: Calculate exact live Hostinger fingerprint
+      - name: Read authoritative Hostinger readiness fingerprint
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p /tmp/mgw-live
-          : > /tmp/mgw-parts.txt
-          count=0
-          while IFS= read -r raw || [ -n "$raw" ]; do
-            path="$(printf '%s' "$raw" | xargs)"
-            [ -z "$path" ] && continue
-            case "$path" in \#*) continue ;; esac
-            echo "FETCH ${path}"
-            target="/tmp/mgw-live/$path"
-            mkdir -p "$(dirname "$target")"
-            curl -fsS "${MGW_STAGING_ORIGIN}/${path}" -o "$target"
-            hash="$(sha256sum "$target" | awk '{print $1}')"
-            if [ "$count" -gt 0 ]; then printf '\n' >> /tmp/mgw-parts.txt; fi
-            printf '%s:%s' "$path" "$hash" >> /tmp/mgw-parts.txt
-            count=$((count+1))
-          done < bot/helpers/staging-e2e-runtime-files.txt
-          actual="$(sha256sum /tmp/mgw-parts.txt | awk '{print $1}')"
-          printf 'EXPECTED=%s\nACTUAL=%s\nFILES=%s\n' "$EXPECTED_FINGERPRINT" "$actual" "$count" | tee live-fingerprint.txt
-          test "$actual" = "$EXPECTED_FINGERPRINT"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: live-fingerprint-proof
-          path: live-fingerprint.txt
-          if-no-files-found: error
+          curl -fsS "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" -o readiness.json
+          python3 - <<'PY'
+          import json, os
+          data=json.load(open('readiness.json', encoding='utf-8'))
+          actual=str(data.get('source_fingerprint_sha256',''))
+          files=str(data.get('runtime_file_count',''))
+          expected=os.environ['EXPECTED_FINGERPRINT']
+          expected_files=os.environ['EXPECTED_FILES']
+          print(f"EXPECTED={expected}\nACTUAL={actual}\nFILES={files}")
+          assert data.get('ok') is True
+          assert actual == expected
+          assert files == expected_files
+          PY
