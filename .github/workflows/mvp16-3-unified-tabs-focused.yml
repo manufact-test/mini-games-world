@@ -1,0 +1,38 @@
+name: MVP-16.3 Unified tabs focused
+on:
+  push:
+    branches: [agent/mvp-16-3-unified-tabs]
+    paths: ['.github/workflows/mvp16-3-unified-tabs-focused.yml']
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unified tab syntax and contract
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node ops/checks/mvp16_3_shell_navigation_contract.mjs
+          php -l app/runtime/client/version-manifest.php
+      - name: Accepted regressions
+        run: |
+          set -Eeuo pipefail
+          node ops/checks/mvp16_1_router_lifecycle_contract.mjs
+          php bot/tests/Mvp161ClientBootstrapRouterTest.php
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php bot/tests/Mvp156NotificationSemanticScrollTest.php
+      - name: Canonical start and fingerprint
+        run: |
+          set -Eeuo pipefail
+          php app/v110.php > /tmp/mgw-v110.html
+          grep -F 'main.css?v=158' /tmp/mgw-v110.html >/dev/null
+          grep -F 'main-v110-handoff-shell.js?v=1150&mvp16=unified-primary-tabs' /tmp/mgw-v110.html >/dev/null
+          test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
+          python3 scripts/ci/staging-runtime-fingerprint.py
+          echo MVP16_3_UNIFIED_TABS_FOCUSED=PASS
