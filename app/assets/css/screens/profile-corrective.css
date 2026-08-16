@@ -1,8 +1,12 @@
 .profile-v2-edit-link{align-self:flex-start;border:0;background:transparent;padding:0;color:var(--sk-brand-purple-light,#b274ff);font:inherit;font-size:11px;font-weight:900;cursor:pointer}
 .profile-v2-edit-link:active{transform:translateY(1px)}
-.profile-v2-avatar-picker{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.profile-v2-avatar-choice{min-width:0;min-height:58px;border:1px solid var(--stroke);border-radius:16px;background:rgba(255,255,255,.018);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 6px}
-.profile-v2-avatar-choice>span{width:31px;height:31px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(145deg,var(--sk-bg-card-secondary),var(--sk-bg-elevated));border:1px solid rgba(230,232,239,.18);font-size:10px;font-weight:950}
+.profile-v2-avatar-edit{position:relative;width:68px;height:68px;padding:0;border:0;background:transparent;border-radius:23px;color:inherit;align-self:start;cursor:pointer}
+.profile-v2-avatar-edit:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(178,116,255,.42)}
+.profile-v2-avatar-edit .profile-v2-avatar{width:68px;height:68px}
+.profile-v2-avatar-pencil{position:absolute;right:-4px;bottom:-4px;width:25px;height:25px;border-radius:10px;display:grid;place-items:center;border:1px solid rgba(230,232,239,.22);background:var(--sk-bg-elevated);box-shadow:0 5px 14px rgba(0,0,0,.32);font-size:13px;font-weight:950;color:var(--text)}
+.profile-v2-avatar-sheet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.profile-v2-avatar-choice{min-width:0;min-height:72px;border:1px solid var(--stroke);border-radius:16px;background:rgba(255,255,255,.018);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:9px 6px}
+.profile-v2-avatar-choice>span{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,var(--sk-bg-card-secondary),var(--sk-bg-elevated));border:1px solid rgba(230,232,239,.18);font-size:11px;font-weight:950}
 .profile-v2-avatar-choice>small{color:var(--muted);font-size:9px;font-weight:850}
 .profile-v2-avatar-choice.active{border-color:rgba(178,116,255,.60);background:rgba(115,91,255,.14);box-shadow:inset 0 0 0 1px rgba(178,116,255,.16)}
 .profile-v2-avatar[data-avatar-item-id="starter-default-01"],
@@ -20,7 +24,14 @@
 #topAvatar[data-avatar-id="starter-default-03"],
 #profileAvatar[data-avatar-id="starter-default-03"],
 #searchMeAvatar[data-avatar-id="starter-default-03"]{background-image:radial-gradient(circle at 30% 25%,rgba(255,255,255,.22) 0 9%,transparent 10%),linear-gradient(145deg,rgba(255,204,92,.92),rgba(112,62,31,.98))!important;color:#fff}
+.profile-v2-id-card{grid-template-columns:minmax(0,1fr);gap:0;padding-top:5px}
+.profile-v2-id-card>span{display:none}
+.profile-v2-id-card button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.profile-v2-id-card b{overflow:visible;text-overflow:clip;font-size:11px;letter-spacing:-.018em}
+.profile-v2-id-card small{font-size:10px}
+.mgw-nickname-input{border:0!important;border-bottom:1px solid rgba(178,116,255,.48)!important;border-radius:0!important;background:transparent!important;padding-left:2px!important;padding-right:2px!important;box-shadow:none!important;outline:none!important}
+.mgw-nickname-input:focus{border-bottom-color:var(--sk-brand-purple-light,#b274ff)!important;box-shadow:none!important;outline:none!important}
 .profile-v2-setting-button{width:100%;border:0;background:transparent;color:inherit;padding:0;text-align:left;font:inherit;cursor:pointer}
 .profile-v2-setting-button:active{opacity:.78}
 .menu-item>span{margin-left:auto;color:var(--muted);font-size:12px}
-@media (max-width:360px){.profile-v2-avatar-choice{gap:4px}.profile-v2-avatar-choice>small{font-size:8px}}
+@media (max-width:360px){.profile-v2-avatar-choice{gap:5px}.profile-v2-avatar-choice>small{font-size:8px}.profile-v2-id-card b{font-size:10px}.profile-v2-id-card small{font-size:9px}}
