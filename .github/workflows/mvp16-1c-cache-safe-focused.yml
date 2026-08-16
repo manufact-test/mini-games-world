@@ -49,3 +49,11 @@ jobs:
         run: php bot/tests/Mvp156NotificationSemanticScrollTest.php
       - name: MVP 15.3 unified balance verifier
         run: python3 ops/checks/verify-mvp15-3-unified-balance-owner.py
+      - name: Exact candidate runtime fingerprint
+        run: |
+          php -r 'require "bot/helpers/StagingE2eSourceFingerprint.php"; $f=(new StagingE2eSourceFingerprint(getcwd(), "bot/helpers/staging-e2e-runtime-files.txt"))->calculate(); file_put_contents("candidate-fingerprint.txt", $f["sha256"]."\n".$f["file_count"]."\n");'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-fingerprint
+          path: candidate-fingerprint.txt
+          if-no-files-found: error
