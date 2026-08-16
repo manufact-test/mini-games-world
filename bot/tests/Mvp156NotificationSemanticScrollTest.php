@@ -25,12 +25,12 @@ $assertTrue(!str_contains($css, '.notification-card.warning'), 'Notification car
 $assertTrue(!str_contains($css, '.notification-toast.warning'), 'Notification toasts must not expose a fourth warning semantic color');
 $assertTrue(str_contains($css, 'var(--sk-info)') && str_contains($css, 'var(--sk-success)') && str_contains($css, 'var(--sk-error)'), 'Notification palette must use canonical blue/green/red tokens');
 $assertTrue(
-    str_contains($notificationsPhp, "$item['tone'] = 'success';")
-    && str_contains($notificationsPhp, "$item['tone'] = 'danger';")
-    && str_contains($notificationsPhp, "$item['tone'] = 'info';"),
+    str_contains($notificationsPhp, "\$item['tone'] = 'success';")
+    && str_contains($notificationsPhp, "\$item['tone'] = 'danger';")
+    && str_contains($notificationsPhp, "\$item['tone'] = 'info';"),
     'Backend notification decorator must emit the three canonical tones'
 );
-$assertTrue(!str_contains($notificationsPhp, "$item['tone'] = 'warning';"), 'Backend notification presentation must not emit warning tone');
+$assertTrue(!str_contains($notificationsPhp, "\$item['tone'] = 'warning';"), 'Backend notification presentation must not emit warning tone');
 $assertTrue(str_contains($client, 'function semanticTone(value)') && !str_contains($client, "['success','danger','info','warning']"), 'Client must canonicalize notifications to exactly three semantic tones');
 $assertTrue(str_contains($client, 'const existingList = isNotificationsSheetOpen()') && str_contains($client, 'const scrollTop = existingList.scrollTop;') && str_contains($client, 'existingList.scrollTop = scrollTop;'), 'Open notification refresh must reuse the list owner and preserve scroll position');
 $assertTrue(str_contains($client, 'const POLL_MS = 30000;'), 'Background refresh remains active; scroll fix must not disable polling');
