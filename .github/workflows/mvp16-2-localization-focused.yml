@@ -1,0 +1,41 @@
+name: MVP-16.2 localization focused
+on:
+  push:
+    branches: [agent/mvp-16-2-localization-foundation]
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and localization contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l app/runtime/localization/LocalizationCatalog.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp162LocalizationInfrastructureTest.php
+          node --check app/assets/js/localization/i18n.js
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+      - name: Render canonical start entry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php app/v110.php > /tmp/mgw-v110.html
+          grep -F 'id="mgw-localization"' /tmp/mgw-v110.html >/dev/null
+          grep -F '"@mgw/i18n": "./assets/js/localization/i18n.js?v=1&mvp16=locale-keys-v1"' /tmp/mgw-v110.html >/dev/null
+          test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
+      - name: MVP-16.1 successor regressions
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node ops/checks/mvp16_1_router_lifecycle_contract.mjs
+          php bot/tests/Mvp161ClientBootstrapRouterTest.php
+          php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php bot/tests/Mvp156NotificationSemanticScrollTest.php
+          python3 scripts/ci/staging-runtime-fingerprint.py
+          echo MVP16_2_FOCUSED=PASS
