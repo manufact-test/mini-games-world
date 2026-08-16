@@ -1,0 +1,92 @@
+name: MVP-16.5 canonical Profile v2 corrective
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/accounts/**'
+      - 'bot/profile.php'
+      - 'bot/profile-v2.php'
+      - 'bot/database/migrations/**'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/AccountIdentityServiceTest.php'
+      - 'bot/tests/MgwProfileIdentityCorrectiveTest.php'
+      - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/ui.js'
+      - 'app/assets/js/profile/**'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/localization/i18n.js'
+      - 'app/assets/css/main.css'
+      - 'app/assets/css/screens/profile-corrective.css'
+      - 'app/locales/**'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/mvp16-5-profile-v2-corrective.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-profile-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - name: Syntax and locale validation
+        run: |
+          set -Eeuo pipefail
+          php -l bot/accounts/MgwIdentityPolicy.php
+          php -l bot/accounts/AccountIdentityService.php
+          php -l bot/accounts/MgwProfileService.php
+          php -l bot/profile-v2.php
+          php -l bot/database/migrations/20260816_0009_add_canonical_profile_identity.php
+          php -l bot/tests/AccountIdentityServiceTest.php
+          php -l bot/tests/MgwProfileIdentityCorrectiveTest.php
+          php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/ui.js
+          node --check app/assets/js/profile/mgw-profile-model.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/localization/i18n.js
+          python3 -m json.tool app/locales/ru.json >/dev/null
+      - name: Canonical account identity regression
+        run: php bot/tests/AccountIdentityServiceTest.php
+      - name: Profile v2 corrective regression
+        run: php bot/tests/MgwProfileIdentityCorrectiveTest.php
+      - name: Profile UI and settings contract
+        run: php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+      - name: Exact staging deployment coverage
+        run: |
+          set -Eeuo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          for file in \
+            bot/accounts/MgwIdentityPolicy.php \
+            bot/accounts/AccountIdentityService.php \
+            bot/accounts/MgwProfileService.php \
+            bot/profile-v2.php \
+            bot/database/migrations/20260816_0009_add_canonical_profile_identity.php \
+            app/assets/js/api/client.js \
+            app/assets/js/ui.js \
+            app/assets/js/profile/mgw-profile-model.js \
+            app/assets/js/screens/profile-screen-v110.js \
+            app/assets/js/screens/home-screen.js \
+            app/assets/js/localization/i18n.js \
+            app/assets/css/screens/profile-corrective.css \
+            app/locales/ru.json \
+            app/runtime/client/version-manifest.php; do
+            grep -Fx "$file" "$manifest"
+          done
+          fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'PROFILE_V2_STAGING_FINGERPRINT=%s\n' "$fingerprint"

@@ -15,9 +15,7 @@ require dirname(__DIR__) . '/accounts/AccountIdentityService.php';
 $assertions = 0;
 $assertSame = static function (mixed $expected, mixed $actual, string $message) use (&$assertions): void {
     $assertions++;
-    if ($expected !== $actual) {
-        throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
-    }
+    if ($expected !== $actual) throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
 };
 $assertTrue = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
@@ -25,9 +23,8 @@ $assertTrue = static function (bool $condition, string $message) use (&$assertio
 };
 $assertThrows = static function (callable $callback, string $contains, string $message) use (&$assertions): void {
     $assertions++;
-    try {
-        $callback();
-    } catch (Throwable $error) {
+    try { $callback(); }
+    catch (Throwable $error) {
         if (str_contains(strtolower($error->getMessage()), strtolower($contains))) return;
         throw new RuntimeException($message . ': unexpected error ' . $error->getMessage());
     }
@@ -54,11 +51,9 @@ foreach ($targets as $label => $target) {
         fwrite(STDOUT, "AccountIdentityDatabaseIntegrationTest: {$label} skipped.\n");
         continue;
     }
-
     $dsnValue = static function (string $key) use ($target): string {
         return preg_match('/(?:^|[:;])' . preg_quote($key, '/') . '=([^;]+)/', $target['dsn'], $matches) === 1
-            ? trim((string)$matches[1])
-            : '';
+            ? trim((string)$matches[1]) : '';
     };
     $config = DatabaseConfig::fromApplicationConfig([
         'database' => [
@@ -75,6 +70,8 @@ foreach ($targets as $label => $target) {
     $database = PdoConnectionFactory::create($config);
     $cleanup = static function () use ($database): void {
         foreach ([
+            'mgw_economy_config_state',
+            'mgw_economy_config_versions',
             'mgw_account_ownership',
             'mgw_legacy_financial_transactions',
             'mgw_legacy_shop_orders',
@@ -107,32 +104,27 @@ foreach ($targets as $label => $target) {
     $cleanup();
     try {
         $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-        $assertSame(7, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
-
+        $assertSame(9, $runner->migrate(false)['executed_count'], "{$label} schema must migrate from empty");
         $accounts = new AccountIdentityService($database, 3600);
         $first = $accounts->resolveTelegramUser([
-            'id' => '10001',
-            'first_name' => 'Primary',
-            'username' => 'primary_user',
+            'id' => '10001', 'first_name' => 'Primary', 'username' => 'primary_user', 'photo_url' => 'https://example.test/primary.jpg',
         ], 'shared-session');
+        $nickname = (string)$database->fetchValue('SELECT nickname FROM mgw_users WHERE mgw_id = :mgw_id', ['mgw_id' => $first['mgw_id']]);
         $repeat = $accounts->resolveTelegramUser([
-            'id' => '10001',
-            'first_name' => 'Primary Updated',
-            'username' => 'primary_updated',
+            'id' => '10001', 'first_name' => 'Provider Changed', 'username' => 'primary_updated', 'photo_url' => 'https://example.test/changed.jpg',
         ], 'second-session');
 
         $assertTrue(MgwIdGenerator::isValid($first['mgw_id']), "{$label} must persist a valid MGW ID");
+        $assertTrue(preg_match('/^Player\d{10}$/', $nickname) === 1, "{$label} must create a provider-neutral nickname");
         $assertSame($first['mgw_id'], $repeat['mgw_id'], "{$label} repeated login must resolve the same MGW ID");
+        $assertSame($nickname, (string)$database->fetchValue('SELECT nickname FROM mgw_users WHERE mgw_id = :mgw_id', ['mgw_id' => $first['mgw_id']]), "{$label} provider metadata must not overwrite MGW nickname");
+        $assertSame('starter-default-01', (string)$database->fetchValue('SELECT equipped_avatar_item_id FROM mgw_users WHERE mgw_id = :mgw_id', ['mgw_id' => $first['mgw_id']]), "{$label} provider photo must not overwrite MGW avatar slot");
         $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_users'), "{$label} must prevent duplicate account creation");
         $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_identities'), "{$label} must enforce one Telegram identity mapping");
         $assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_sessions'), "{$label} must keep both owned sessions");
 
         $assertThrows(
-            static fn() => $accounts->resolveTelegramUser([
-                'id' => '20002',
-                'first_name' => 'Intruder',
-                'username' => 'intruder',
-            ], 'shared-session'),
+            static fn() => $accounts->resolveTelegramUser(['id' => '20002', 'first_name' => 'Intruder', 'username' => 'intruder'], 'shared-session'),
             'session ownership',
             "{$label} must reject cross-account session takeover"
         );

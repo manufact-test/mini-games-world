@@ -67,6 +67,7 @@ app/assets/css/components/preloader.css
 app/assets/css/screens/home.css
 app/assets/css/screens/search.css
 app/assets/css/screens/profile.css
+app/assets/css/screens/profile-corrective.css
 app/assets/css/screens/notifications.css
 app/assets/css/shield-king.css
 app/assets/css/shield-king-v2.css
@@ -126,8 +127,10 @@ bot/services/StagingReadinessService.php
 # to mgw_id; the profile service reads only the canonical account DB.
 bot/profile.php
 bot/profile-v2.php
+bot/accounts/MgwIdentityPolicy.php
 bot/accounts/MgwProfileService.php
 bot/accounts/AccountIdentityService.php
+bot/database/migrations/20260816_0009_add_canonical_profile_identity.php
 
 # MVP-15.2 visible unified profile/avatar consumer. The canonical MGW profile
 # owns visible identity/avatar/date; legacy profile remains temporary stats and

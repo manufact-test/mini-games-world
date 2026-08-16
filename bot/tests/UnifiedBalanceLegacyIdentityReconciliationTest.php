@@ -49,15 +49,12 @@ $foreignMgwId = 'MGW-0000000000000002';
 $makeDatabase = static function () use ($databaseDir): DatabaseConnectionInterface {
     $pdo = new PDO('sqlite::memory:');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    // This regression test targets identity normalization in the migration
-    // executor. Ownership integrity itself is covered by the canonical
-    // ownership service and migration tests, so fixture FKs are disabled here.
     $pdo->exec('PRAGMA foreign_keys = OFF');
     $database = new PdoDatabaseConnection($pdo);
     $runner = new MigrationRunner($database, $databaseDir . '/migrations');
     $result = $runner->migrate(false);
-    if ((int)($result['executed_count'] ?? 0) !== 8) {
-        throw new RuntimeException('Expected all eight database migrations in identity regression fixture.');
+    if ((int)($result['executed_count'] ?? 0) !== 9) {
+        throw new RuntimeException('Expected all nine database migrations in identity regression fixture.');
     }
     return $database;
 };
@@ -116,8 +113,6 @@ $insertBalance = static function (
     );
 };
 
-// Historical canonical case: one opening-balance row is still NULL while the
-// other has already received the same MGW ID from the ownership backfill.
 $db = $makeDatabase();
 $insertOwnership($db, 'alpha', $canonicalMgwId);
 $insertBalance($db, 'alpha', 'match_coin', 100, null);
@@ -146,8 +141,6 @@ $sourceMgwIds = $db->fetchAll(
 );
 $assertSame(null, $sourceMgwIds[1]['mgw_id'], 'Legacy NULL source metadata must remain immutable');
 
-// Real conflict must still fail closed: a non-null foreign MGW ID may never be
-// silently rewritten to the ownership record.
 $conflictDb = $makeDatabase();
 $insertOwnership($conflictDb, 'beta', $canonicalMgwId);
 $insertBalance($conflictDb, 'beta', 'match_coin', 50, null);

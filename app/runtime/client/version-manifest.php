@@ -1,28 +1,26 @@
 <?php
 declare(strict_types=1);
 
-// MVP-16.1: one authoritative query-version owner for the accepted Telegram
-// /start client graph. Historical import specifiers remain compatibility keys;
-// every active resolved target version is owned here instead of app/v110.php.
 return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
         '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
         '@mgw/main' => './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
-        '@mgw/i18n' => './assets/js/localization/i18n.js?v=1&mvp16=locale-keys-v1',
-        './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1133&mvp16=profile-v2',
-        './assets/js/api/client.js?v=38' => './assets/js/api/client.js?v=1133&mvp16=profile-v2',
-        './assets/js/api/client.js?v=46' => './assets/js/api/client.js?v=1133&mvp16=profile-v2',
-        './assets/js/api/client.js?v=47' => './assets/js/api/client.js?v=1133&mvp16=profile-v2',
+        '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
+        './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
+        './assets/js/api/client.js?v=38' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
+        './assets/js/api/client.js?v=46' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
+        './assets/js/api/client.js?v=47' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
         './assets/js/config.js?v=38' => './assets/js/config.js?v=39&mvp15=match-economy',
         './assets/js/state.js?v=27' => './assets/js/state.js?v=30&mvp16=router-lifecycle',
         './assets/js/router.js?v=27' => './assets/js/router.js?v=29&b=871cb833d99d&mvp16=route-registry',
-        './assets/js/ui.js?v=89' => './assets/js/ui.js?v=92&mvp15=unified-zone',
+        './assets/js/ui.js?v=89' => './assets/js/ui.js?v=93&mvp16=canonical-identity',
         './assets/js/components/sheet.js?v=68' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
-        './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
+        './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=79&mvp16=settings-language',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=36&mvp16=primary-tab',
-        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1115&mvp16=profile-v2',
+        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1116&mvp16=canonical-identity',
+        './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=2&mvp16=canonical-identity',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1151&mvp16=unified-game-setup',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
         './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=4&mvp16=setup-subtitle-width',
@@ -45,13 +43,9 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=167&sk=3&icons=c1efd5af&render=36&mvp16=final-bottom-nav-align',
+        'main_css' => './assets/css/main.css?v=168&sk=3&icons=c1efd5af&render=36&mvp16=profile-corrective',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
-    'localization' => [
-        'version' => 'keys-v1',
-        'default_locale' => 'ru',
-        'manifest' => './locales/manifest.json',
-    ],
+    'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
 ];
