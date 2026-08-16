@@ -41,15 +41,18 @@ export function initGameRules(){
     const variant = current
       ? ruleVariantForGame(gameType, game)
       : normalizeRuleVariant(button.dataset.gameRulesVariant);
+    const returnToPrevious = Boolean(button.closest('#sheet'));
 
-    openGameRules(gameType, { variant, game });
+    openGameRules(gameType, { variant, game, returnToPrevious });
   });
 }
 
 export function openGameRules(gameType, context = {}){
   const renderer = RULE_RENDERERS[gameType] || RULE_RENDERERS.tictactoe;
   const variant = context.variant ?? ruleVariantForGame(gameType, context.game);
-  openSheet(renderer({ ...context, gameType, variant }));
+  openSheet(renderer({ ...context, gameType, variant }), {
+    returnToPrevious:context.returnToPrevious === true,
+  });
 }
 
 export function ruleVariantForGame(gameType, game){
