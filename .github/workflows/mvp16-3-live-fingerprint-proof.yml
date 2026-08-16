@@ -1,0 +1,32 @@
+name: MVP-16.3 live fingerprint proof
+on:
+  push:
+    branches: [agent/mvp-16-3-live-fingerprint-proof]
+    paths: ['.github/workflows/mvp16-3-live-fingerprint-proof.yml']
+permissions:
+  contents: read
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+  EXPECTED_FINGERPRINT: ced511fad2d4718cd84e30ada04e51c0f548e68ea11a4b0bc8cf2a0bd6be0ef2
+  EXPECTED_FILES: '194'
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Read authoritative Hostinger readiness fingerprint
+        run: |
+          set -Eeuo pipefail
+          curl -fsS "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" -o readiness.json
+          python3 - <<'PY'
+          import json, os
+          data=json.load(open('readiness.json', encoding='utf-8'))
+          actual=str(data.get('source_fingerprint_sha256',''))
+          files=str(data.get('runtime_file_count',''))
+          expected=os.environ['EXPECTED_FINGERPRINT']
+          expected_files=os.environ['EXPECTED_FILES']
+          print(f"EXPECTED={expected}\nACTUAL={actual}\nFILES={files}")
+          assert data.get('ok') is True
+          assert actual == expected
+          assert files == expected_files
+          PY
