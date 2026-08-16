@@ -175,7 +175,7 @@ async function startUnifiedSearch(){
   });
 
   try {
-    await beginSearch({
+    const searchPromise = beginSearch({
       gameType,
       room:'match',
       bet,
@@ -183,6 +183,9 @@ async function startUnifiedSearch(){
       title:gameTitle(gameType),
       label,
     });
+    const info = document.getElementById('searchInfo');
+    if (info) info.textContent = label;
+    await searchPromise;
   } finally {
     launchPending = false;
     if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
