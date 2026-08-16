@@ -1,0 +1,34 @@
+name: MVP-16.1C router cache diagnostic
+
+on:
+  push:
+    branches:
+      - agent/mvp-16-1c-router-cache-diagnostic
+    paths:
+      - '.github/workflows/mvp16-1c-router-cache-diagnostic.yml'
+
+permissions:
+  contents: read
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect live router cache variants
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for url in \
+            "${MGW_STAGING_ORIGIN}/app/assets/js/router.js?v=27" \
+            "${MGW_STAGING_ORIGIN}/app/assets/js/router.js?v=28&mvp16=lifecycle"; do
+            echo "=== ${url} ==="
+            curl -fsS -D /tmp/headers.txt -o /tmp/router.js "${url}"
+            grep -Ei '^(HTTP/|cache-control:|age:|etag:|expires:|last-modified:|content-type:|x-cache:|cf-cache-status:)' /tmp/headers.txt || true
+            sha256sum /tmp/router.js
+            grep -E 'export function (showScreen|currentScreen|registerScreenCleanup|onScreenEnter)' /tmp/router.js || true
+          done
