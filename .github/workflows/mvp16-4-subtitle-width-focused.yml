@@ -1,0 +1,29 @@
+name: MVP-16.4 Subtitle width focused
+on:
+  push:
+    branches: [agent/mvp-16-4-setup-subtitle-width-fix]
+    paths: ['.github/workflows/mvp16-4-subtitle-width-focused.yml']
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Focused contracts
+        run: |
+          set -Eeuo pipefail
+          node ops/checks/mvp16_4_setup_ui_polish_contract.mjs
+          node ops/checks/mvp16_4_unified_game_setup_contract.mjs
+          node ops/checks/mvp16_3_shell_navigation_contract.mjs
+          node ops/checks/mvp16_1_router_lifecycle_contract.mjs
+          php bot/tests/Mvp161ClientBootstrapRouterTest.php
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/games/unified-game-launcher.js
+          php app/v110.php > /tmp/mgw-v110.html
+          grep -F 'main.css?v=160&sk=3&icons=c1efd5af&render=30&mvp16=setup-subtitle-width' /tmp/mgw-v110.html >/dev/null
+          test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
+          python3 scripts/ci/staging-runtime-fingerprint.py
+          echo MVP16_4_SUBTITLE_WIDTH_FOCUSED=PASS
