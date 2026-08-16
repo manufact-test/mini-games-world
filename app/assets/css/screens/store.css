@@ -11,6 +11,11 @@
 }
 .store-scroll::-webkit-scrollbar{display:none}
 
+.store-tab-surface{display:flex;flex-direction:column;min-height:100%;width:100%}
+.store-tab-surface .store-scroll{overflow:visible;min-height:auto;padding-right:0}
+.store-tab-surface .store-footer{margin-top:14px}
+.store-tab-head{flex:0 0 auto}
+
 .store-loading,
 .store-empty{
   min-height:220px;

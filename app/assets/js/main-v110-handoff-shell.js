@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp16-shell-nav-topbar-v1149';
+window.__MGW_BUILD__ = 'v110-mvp16-shell-nav-topbar-v1150';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -16,7 +16,7 @@ import { showHomeActivity, showBootFailure, dispatchAppReady } from './component
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
 import { initHomeScreen, setRoom } from './screens/home-screen.js?v=74';
-import { initStoreScreen, openStoreSheet } from './screens/store-screen.js?v=34';
+import { initStoreScreen, openStoreTab } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen-v110r12.js?v=1139&semantic=3&scroll=stable';
@@ -179,14 +179,20 @@ function initAppShellChrome(){
 function ensureShellScreens(app){
   if (!document.getElementById('screen-tournaments')) {
     const tournaments = document.createElement('section');
-    tournaments.className = 'screen app-shell-placeholder-screen';
+    tournaments.className = 'screen app-shell-primary-screen';
     tournaments.id = 'screen-tournaments';
     tournaments.dataset.screen = 'tournaments';
     tournaments.innerHTML = `
       <div class="content">
-        <section class="app-shell-placeholder" aria-labelledby="tournamentsTitle">
-          <h1 class="page-title" id="tournamentsTitle">${escapeHtml(t('shell.tournaments_title'))}</h1>
-          <p class="page-sub">${escapeHtml(t('shell.tournaments_note'))}</p>
+        <div class="page-head app-shell-page-head">
+          <div>
+            <h1 class="page-title" id="tournamentsTitle">${escapeHtml(t('shell.tournaments_title'))}</h1>
+            <p class="page-sub">${escapeHtml(t('shell.tournaments_note'))}</p>
+          </div>
+        </div>
+        <section class="app-shell-section" aria-labelledby="tournamentsTitle">
+          <strong>${escapeHtml(t('shell.tournaments_title'))}</strong>
+          <p>${escapeHtml(t('shell.tournaments_note'))}</p>
         </section>
       </div>
     `;
@@ -195,16 +201,19 @@ function ensureShellScreens(app){
 
   if (!document.getElementById('screen-store')) {
     const store = document.createElement('section');
-    store.className = 'screen app-shell-placeholder-screen';
+    store.className = 'screen app-shell-primary-screen';
     store.id = 'screen-store';
     store.dataset.screen = 'store';
     store.innerHTML = `
       <div class="content">
-        <section class="app-shell-placeholder" aria-labelledby="storeTitle">
-          <h1 class="page-title" id="storeTitle">${escapeHtml(t('shell.store_title'))}</h1>
-          <p class="page-sub">${escapeHtml(t('shell.store_note'))}</p>
-          <button class="btn primary full" id="storeOpen" type="button">${escapeHtml(t('shell.store_open'))}</button>
-        </section>
+        <div id="storeTabSurface" class="store-tab-surface" aria-live="polite">
+          <div class="page-head app-shell-page-head">
+            <div>
+              <h1 class="page-title">${escapeHtml(t('shell.store_title'))}</h1>
+              <p class="page-sub">${escapeHtml(t('shell.store_note'))}</p>
+            </div>
+          </div>
+        </div>
       </div>
     `;
     app.append(store);
@@ -255,7 +264,7 @@ function handleShellNavigation(event){
   }
 
   showScreen(route);
-  if (route === 'store') queueMicrotask(() => void openStoreSheet());
+  if (route === 'store') queueMicrotask(() => void openStoreTab());
 }
 
 function syncAppShellChrome(forcedScreen = null){

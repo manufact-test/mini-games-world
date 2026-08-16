@@ -9,6 +9,7 @@ const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v1';
 let profileLoading = false;
 
 export function initProfileScreen(){
+  document.querySelector('#screen-profile [data-back-home]')?.remove();
   if (!hasProfileStats(state.profileStats)) {
     const cached = loadCachedProfileStats();
     if (cached) state.profileStats = cached;

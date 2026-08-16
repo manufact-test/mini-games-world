@@ -136,26 +136,26 @@
 .app-bottom-nav{
   position:absolute;
   z-index:24;
-  left:10px;
-  right:10px;
-  bottom:8px;
-  padding:7px 7px max(7px,env(safe-area-inset-bottom));
+  left:14px;
+  right:14px;
+  bottom:6px;
+  padding:4px 5px max(4px,env(safe-area-inset-bottom));
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
   gap:4px;
-  border-radius:22px;
+  border-radius:20px;
   background:rgba(20,22,30,.94);
   border:1px solid rgba(233,236,244,.20);
-  box-shadow:0 16px 38px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.06);
+  box-shadow:0 14px 32px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.06);
   backdrop-filter:blur(18px);
   -webkit-backdrop-filter:blur(18px);
 }
 .app-bottom-nav-item{
   min-width:0;
-  min-height:56px;
-  padding:5px 3px 4px;
+  min-height:49px;
+  padding:2px 3px 1px;
   border:0;
-  border-radius:16px;
+  border-radius:15px;
   background:transparent;
   color:var(--muted);
   display:flex;
@@ -190,25 +190,25 @@
 .has-shell-chrome .screen[data-screen="store"] .content,
 .has-shell-chrome .screen[data-screen="profile"] .content{
   padding-top:calc(68px + max(10px,env(safe-area-inset-top)));
-  padding-bottom:calc(88px + env(safe-area-inset-bottom));
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));
 }
-.app-shell-placeholder-screen .content{display:flex;align-items:flex-start}
-.app-shell-placeholder{
+.app-shell-primary-screen .content{width:100%}
+.app-shell-page-head{margin-bottom:14px}
+.app-shell-section{
   width:100%;
-  margin-top:18px;
-  padding:20px;
+  padding:18px;
   border-radius:24px;
   background:var(--sk-bg-card);
   border:1px solid var(--sk-border-separator);
   box-shadow:0 14px 36px rgba(0,0,0,.22);
 }
-.app-shell-placeholder .page-sub{margin-bottom:16px}
+.app-shell-section strong{display:block;font-size:17px;letter-spacing:-.025em}
+.app-shell-section p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
 
 @media (max-width:380px){
   .app-shell-topbar{padding-left:12px;padding-right:12px;gap:8px}
   .app-shell-topbar .user-mini{max-width:calc(100% - 183px);gap:8px}
   .app-shell-topbar .user-name{max-width:112px;font-size:13px}
   .app-shell-balance{min-width:66px;padding-left:5px;padding-right:8px}
-  .app-bottom-nav{left:7px;right:7px;gap:2px}
-  .app-bottom-nav-item{font-size:9px}
+  .app-bottom-nav{left:10px;right:10px;gap:2px}
 }
