@@ -4,6 +4,9 @@ declare(strict_types=1);
 final class MgwIdentityPolicy
 {
     public const NICKNAME_TAKEN_ERROR = 'Этот ник уже занят, выберите другой';
+    public const NICKNAME_TOO_SHORT_ERROR = 'nickname_too_short';
+    public const NICKNAME_TOO_LONG_ERROR = 'nickname_too_long';
+    public const NICKNAME_INVALID_CHARACTERS_ERROR = 'nickname_invalid_characters';
     public const DEFAULT_AVATAR_ITEM_ID = 'starter-default-01';
     public const STARTER_AVATAR_ITEM_IDS = [
         'starter-default-01',
@@ -19,10 +22,13 @@ final class MgwIdentityPolicy
 
     public static function normalizeNickname(mixed $value): string
     {
-        $nickname = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', (string)$value) ?? '');
+        $nickname = preg_replace('/[\x00-\x1F\x7F]/u', '', (string)$value) ?? '';
+        $nickname = trim(preg_replace('/\s+/u', ' ', $nickname) ?? '');
         $length = function_exists('mb_strlen') ? mb_strlen($nickname) : strlen($nickname);
-        if ($length < 3 || $length > 24 || preg_match('/^[\p{L}\p{N}_-]+$/u', $nickname) !== 1) {
-            throw new InvalidArgumentException('MGW profile update invalid: nickname');
+        if ($length < 3) throw new InvalidArgumentException(self::NICKNAME_TOO_SHORT_ERROR);
+        if ($length > 24) throw new InvalidArgumentException(self::NICKNAME_TOO_LONG_ERROR);
+        if (preg_match('/^[\p{L}\p{N}_ -]+$/u', $nickname) !== 1) {
+            throw new InvalidArgumentException(self::NICKNAME_INVALID_CHARACTERS_ERROR);
         }
         return $nickname;
     }
