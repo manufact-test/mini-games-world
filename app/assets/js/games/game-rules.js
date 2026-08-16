@@ -1,7 +1,7 @@
 import { openSheet } from '../components/sheet.js?v=68';
 import { state } from '../state.js?v=27';
 import { gameTypeOf } from './game-router.js?v=74';
-import { ticTacToeRules } from './tictactoe/rules.js?v=53';
+import { ticTacToeRules } from './tictactoe/rules.js?v=54';
 import { fourInARowRules } from './four-in-a-row/rules.js?v=53';
 import { battleshipRules } from './battleship/rules.js?v=54';
 import { checkersRules } from './checkers/rules.js?v=58';
@@ -28,18 +28,38 @@ export function initGameRules(){
   initialized = true;
 
   document.addEventListener('click', event => {
-    const button = event.target.closest('[data-game-rules], [data-game-rules-current]');
+    const button = event.target instanceof Element
+      ? event.target.closest('[data-game-rules], [data-game-rules-current]')
+      : null;
     if (!button) return;
 
-    const gameType = button.hasAttribute('data-game-rules-current')
-      ? gameTypeOf(state.activeGame)
+    const current = button.hasAttribute('data-game-rules-current');
+    const game = current ? state.activeGame : null;
+    const gameType = current
+      ? gameTypeOf(game)
       : String(button.dataset.gameRules || 'tictactoe');
+    const variant = current
+      ? ruleVariantForGame(gameType, game)
+      : normalizeRuleVariant(button.dataset.gameRulesVariant);
 
-    openGameRules(gameType);
+    openGameRules(gameType, { variant, game });
   });
 }
 
-export function openGameRules(gameType){
+export function openGameRules(gameType, context = {}){
   const renderer = RULE_RENDERERS[gameType] || RULE_RENDERERS.tictactoe;
-  openSheet(renderer());
+  const variant = context.variant ?? ruleVariantForGame(gameType, context.game);
+  openSheet(renderer({ ...context, gameType, variant }));
+}
+
+export function ruleVariantForGame(gameType, game){
+  if (gameType === 'tictactoe') {
+    return normalizeRuleVariant(game?.board_size ?? game?.boardSize);
+  }
+  return null;
+}
+
+function normalizeRuleVariant(value){
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 }
