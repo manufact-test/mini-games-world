@@ -1,0 +1,39 @@
+name: MVP-16.3 shell focused v2
+on:
+  push:
+    branches: [agent/mvp-16-3-nav-topbar]
+    paths: ['.github/workflows/mvp16-3-shell-focused-v2.yml']
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax and contracts
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/router.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/components/shield-king-visuals.js
+          node ops/checks/mvp16_3_shell_navigation_contract.mjs
+      - name: Accepted foundation regressions
+        run: |
+          set -Eeuo pipefail
+          node ops/checks/mvp16_1_router_lifecycle_contract.mjs
+          php bot/tests/Mvp161ClientBootstrapRouterTest.php
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php bot/tests/Mvp156NotificationSemanticScrollTest.php
+      - name: Canonical start render and fingerprint
+        run: |
+          set -Eeuo pipefail
+          php -l app/v110.php
+          php -l app/runtime/client/version-manifest.php
+          php app/v110.php > /tmp/mgw-v110.html
+          grep -F 'main.css?v=156' /tmp/mgw-v110.html >/dev/null
+          grep -F 'router.js?v=29&b=871cb833d99d&mvp16=route-registry' /tmp/mgw-v110.html >/dev/null
+          test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
+          python3 scripts/ci/staging-runtime-fingerprint.py
+          echo MVP16_3_FOCUSED=PASS
