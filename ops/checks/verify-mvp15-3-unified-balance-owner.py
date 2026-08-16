@@ -157,7 +157,9 @@ except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundEr
     rendered = ''
 
 required_entry_fragments = (
-    './assets/js/app-bootstrap-v2.js?v=1&mvp16=single-owner',
+    './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
+    './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
+    './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
     './assets/css/main.css?v=155&sk=3&icons=c1efd5af&render=29&palette=three-state-notifications&battleship=authoritative-shot-only&wallet=weekly-bonus-cta',
     './assets/js/ui.js?v=92&mvp15=unified-zone',
     './assets/js/state.js?v=30&mvp16=router-lifecycle',
@@ -171,9 +173,9 @@ for fragment in required_entry_fragments:
 
 if rendered.count('<script type="module" src="') != 1:
     violations.append('app/v110.php: canonical Telegram entry must expose exactly one top-level module bootstrap')
-if './assets/js/production-clean-entry-v110.js?v=1124' in rendered:
+if '<script type="module" src="./assets/js/production-clean-entry-v110.js' in rendered:
     violations.append('app/v110.php: clean-entry must not remain an independent top-level module script')
-if './assets/js/main-v110.js?v=1139' in rendered:
+if '<script type="module" src="./assets/js/main-v110.js' in rendered:
     violations.append('app/v110.php: main-v110 must not remain an independent top-level module script')
 if './assets/js/main.js?v=98.4-wallet-15-3' in rendered:
     violations.append('app/v110.php: generic main.js survived the canonical Telegram transform')
@@ -190,6 +192,6 @@ if violations:
 
 print('MVP-15.3 unified balance owner check: PASS')
 print(f'Legacy token references are confined to {len(set(references))} explicit audit/compatibility files or directories.')
-print('Canonical Telegram /start entry: v110 single-bootstrap successor graph PASS.')
+print('Canonical Telegram /start entry: v110 single-bootstrap manifest successor graph PASS.')
 print('Final Home/Profile unified balance copy: PASS.')
 print('Temporary patch tooling: absent.')
