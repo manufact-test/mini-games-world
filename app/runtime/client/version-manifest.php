@@ -5,7 +5,7 @@ declare(strict_types=1);
 // /start client graph. Historical import specifiers remain compatibility keys;
 // every active resolved target version is owned here instead of app/v110.php.
 return [
-    'version' => 'v3-unified-game-setup',
+    'version' => 'v2-route-scoped-polling',
     'imports' => [
         '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
         '@mgw/main' => './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
