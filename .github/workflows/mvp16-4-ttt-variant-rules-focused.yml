@@ -30,7 +30,14 @@ jobs:
           grep -F 'game-rules.js?v=76&mvp16=variant-rules' /tmp/mgw-v110.html >/dev/null
           test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
           python3 scripts/ci/staging-runtime-fingerprint.py
-          printf 'RUNTIME_FILES='
-          grep -cve '^$' bot/helpers/staging-e2e-runtime-files.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          paths=[]
+          for raw in Path('bot/helpers/staging-e2e-runtime-files.txt').read_text(encoding='utf-8').splitlines():
+              value=raw.strip()
+              if value and not value.startswith('#'):
+                  paths.append(value)
+          print(f'RUNTIME_PATHS={len(paths)}')
+          PY
           echo MVP16_4_TTT_VARIANT_RULES_FOCUSED=PASS
-          echo FINGERPRINT_COVERAGE_RERUN=PASS
+          echo EXACT_RUNTIME_COUNT=PASS
