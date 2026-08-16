@@ -14,6 +14,7 @@ require $root . '/accounts/AccountIdentityService.php';
 require $root . '/ledger/LedgerIntegrity.php';
 require $root . '/ledger/LedgerWriteService.php';
 require $root . '/ledger/LedgerIntegrityVerifier.php';
+require $root . '/storage/contracts/StorageAdapterInterface.php';
 require $root . '/ledger/RuntimeEconomySnapshotStorage.php';
 require $root . '/ledger/LegacyEconomyShadowSyncService.php';
 require $root . '/ledger/LegacyEconomyDeltaImportService.php';
