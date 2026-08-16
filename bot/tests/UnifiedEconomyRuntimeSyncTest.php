@@ -14,6 +14,7 @@ require $root . '/accounts/AccountIdentityService.php';
 require $root . '/ledger/LedgerIntegrity.php';
 require $root . '/ledger/LedgerWriteService.php';
 require $root . '/ledger/LedgerIntegrityVerifier.php';
+require $root . '/storage/contracts/StorageTransactionInterface.php';
 require $root . '/storage/contracts/StorageAdapterInterface.php';
 require $root . '/ledger/RuntimeEconomySnapshotStorage.php';
 require $root . '/ledger/LegacyEconomyShadowSyncService.php';
@@ -194,8 +195,6 @@ $assertSame(true, $finalPreview['reconciled'], 'Final canonical parity must be r
 $assertSame(0, $finalPreview['planned_delta_count'], 'Final canonical parity must require no writes');
 $assertSame(false, $finalPreview['sensitive_identifiers_exposed'], 'Public sync report must not expose identifiers');
 
-// A post-cutover runtime snapshot may contain only the currently materialized
-// user. Durable balances for other actively owned accounts must remain intact.
 $partialSnapshot = ['users' => ['111001' => $snapshot['users']['111001']]];
 $partialPreview = $sync->preview($partialSnapshot);
 $assertSame(true, $partialPreview['ready'], 'Partial post-cutover snapshot must not classify another owned balance as unmanaged');
@@ -230,10 +229,6 @@ $runtimeConfig = [
 ];
 $router = new RuntimeStorageRouter($runtimeConfig);
 $repository = new RuntimeEconomyRepository($runtimeConfig, $router, $database);
-
-// Reproduce the live regression: cutover completed, legacy economy user shadow
-// gone, but canonical DB balances still exist. Synchronization must stay in the
-// post-cutover lane instead of replaying the legacy delta importer.
 $database->execute("DELETE FROM mgw_legacy_realtime_shadow WHERE entity_type = 'economy_user_balance'");
 $postCutoverSync = $repository->synchronize($partialSnapshot);
 $assertSame(true, $postCutoverSync['ok'], 'Post-cutover repository sync must succeed without economy balance shadow rows');
@@ -245,8 +240,6 @@ $postCutoverAudit = $repository->auditParity($partialSnapshot);
 $assertSame(true, $postCutoverAudit['ok'], 'Post-cutover audit must ignore retired legacy shadow parity');
 $assertSame('post_cutover', $postCutoverAudit['phase'], 'Post-cutover audit must report the durable cutover lane');
 
-// If the rollback snapshot was stripped, an authenticated existing account must
-// recover its canonical DB amount before the JSON runtime starts mutating it.
 $runtimeState = ['users'=>[], 'games'=>[]];
 $userService = new UserService($runtimeConfig, $database);
 $rehydrated = $userService->ensureUser($runtimeState, [
