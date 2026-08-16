@@ -12,15 +12,16 @@ if (!is_string($html)) {
 
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
-$mainAnchor = './assets/js/main.js?v=98.4-wallet-15-3';
-$cleanEntryAnchor = './assets/js/production-regression-fix-entry.js?v=102';
+$entryScriptsAnchor = <<<'HTML'
+  <script type="module" src="./assets/js/production-regression-fix-entry.js?v=102"></script>
+  <script type="module" src="./assets/js/main.js?v=98.4-wallet-15-3"></script>
+HTML;
 $hotfixAnchor = 'data-hotfix-build="v98-mvp14-notification-canonical-owner"';
 
 foreach ([
     'head' => $headClose,
     'css' => $cssAnchor,
-    'main' => $mainAnchor,
-    'clean_entry' => $cleanEntryAnchor,
+    'entry_scripts' => $entryScriptsAnchor,
     'hotfix_build' => $hotfixAnchor,
 ] as $anchorName => $anchor) {
     if (!str_contains($html, $anchor)) {
@@ -40,7 +41,8 @@ $importMap = <<<'HTML'
     "./assets/js/api/client.js?v=46": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
     "./assets/js/api/client.js?v=47": "./assets/js/api/client.js?v=1132&mvp15=unified-profile",
     "./assets/js/config.js?v=38": "./assets/js/config.js?v=39&mvp15=match-economy",
-    "./assets/js/state.js?v=27": "./assets/js/state.js?v=29&mvp15=match-economy",
+    "./assets/js/state.js?v=27": "./assets/js/state.js?v=30&mvp16=router-lifecycle",
+    "./assets/js/router.js?v=27": "./assets/js/router.js?v=28&mvp16=lifecycle",
     "./assets/js/ui.js?v=89": "./assets/js/ui.js?v=92&mvp15=unified-zone",
     "./assets/js/screens/home-screen.js?v=74": "./assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet",
     "./assets/js/screens/store-screen.js?v=34": "./assets/js/screens/store-screen.js?v=35&mvp15=unified-balance",
@@ -71,8 +73,8 @@ HTML;
 $html = str_replace($headClose, "  " . $importMap . "\n" . $headClose, $html);
 
 $cssTarget = './assets/css/main.css?v=155&sk=3&icons=c1efd5af&render=29&palette=three-state-notifications&battleship=authoritative-shot-only&wallet=weekly-bonus-cta';
-$mainTarget = './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance';
-$cleanEntryTarget = './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine';
+$bootstrapTarget = './assets/js/app-bootstrap-v2.js?v=1&mvp16=single-owner';
+$bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace(
@@ -85,21 +87,20 @@ $html = str_replace(
     '<p>Те самые игры. То самое чувство.</p>',
     $html
 );
-$html = str_replace($cleanEntryAnchor, $cleanEntryTarget, $html);
-$html = str_replace($mainAnchor, $mainTarget, $html);
+$html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);
 $html = str_replace(
     $hotfixAnchor,
-    'data-hotfix-build="v110-mvp15-unified-balance-copy-cleanup-v1164"',
+    'data-hotfix-build="v110-mvp16-single-bootstrap-router-v2-v1165"',
     $html
 );
 
 foreach ([
-    'main_v110' => $mainTarget,
-    'clean_entry_v110' => $cleanEntryTarget,
+    'client_bootstrap_v2' => $bootstrapTarget,
     'shield_king_css' => $cssTarget,
     'unified_ui_cache' => './assets/js/ui.js?v=92&mvp15=unified-zone',
     'match_config_cache' => './assets/js/config.js?v=39&mvp15=match-economy',
-    'match_state_cache' => './assets/js/state.js?v=29&mvp15=match-economy',
+    'app_state_v2_cache' => './assets/js/state.js?v=30&mvp16=router-lifecycle',
+    'router_v2_cache' => './assets/js/router.js?v=28&mvp16=lifecycle',
     'unified_home_cache' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
     'match_shell_cache' => './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
     'unified_profile_cache' => './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
@@ -112,10 +113,19 @@ foreach ([
     }
 }
 
+if (substr_count($html, '<script type="module" src="') !== 1) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World v110 must expose exactly one top-level module bootstrap.';
+    exit;
+}
+
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
+header('X-MGW-Client-Bootstrap: v2-single-owner');
+header('X-MGW-Router: v2-lifecycle');
 header('X-MGW-Api-Session-Graph: v1132-canonical-profile');
 header('X-MGW-Profile-API: provider-neutral-mgw-v1');
 header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');

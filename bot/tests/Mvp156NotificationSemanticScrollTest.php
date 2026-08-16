@@ -34,8 +34,9 @@ $assertTrue(str_contains($client, 'function semanticTone(value)') && !str_contai
 $assertTrue(str_contains($client, 'const existingList = isNotificationsSheetOpen()') && str_contains($client, 'const scrollTop = existingList.scrollTop;') && str_contains($client, 'existingList.scrollTop = scrollTop;'), 'Open notification refresh must reuse the list owner and preserve scroll position');
 $assertTrue(str_contains($client, 'const POLL_MS = 30000;'), 'Background refresh remains active; scroll fix must not disable polling');
 $assertTrue(str_contains($weekly, 'color:var(--sk-success)'), 'Completed 3/3 and 8/8 progress must use success green');
-$assertTrue(str_contains($v110, 'green-red-blue-v1') && str_contains($v110, 'v=1146&mvp15=notification-polish'), 'Accepted /start graph must advertise and cache-bust the notification successor');
+$assertTrue(str_contains($v110, 'green-red-blue-v1') && str_contains($v110, 'app-bootstrap-v2.js?v=1&mvp16=single-owner'), 'Accepted /start graph must preserve notification semantics behind the MVP-16.1A bootstrap successor');
 $assertTrue(str_contains($manifest, 'app/assets/css/screens/notifications.css'), 'Exact runtime fingerprint must include notification palette CSS');
+$assertTrue(str_contains($manifest, 'app/assets/js/app-bootstrap-v2.js') && str_contains($manifest, 'app/assets/js/router.js'), 'Exact runtime fingerprint must include the MVP-16.1A bootstrap/router owners');
 
 $service = new NotificationService();
 $legacyDb = ['notifications' => [[
