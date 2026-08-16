@@ -123,7 +123,7 @@ function renderSetup(){
       </div>
 
       <div class="btn-row">
-        <button class="btn ghost" data-game-rules="${escapeAttr(gameType)}" type="button">${escapeHtml(t('rules.open'))}</button>
+        <button class="btn ghost" data-game-rules="${escapeAttr(gameType)}" data-game-rules-variant="${Number(activeSize)}" type="button">${escapeHtml(t('rules.open'))}</button>
         <button class="btn ghost" data-invite-friend="${escapeAttr(gameType)}" type="button">${escapeHtml(t('setup.invite'))}</button>
       </div>
     </div>
@@ -139,6 +139,10 @@ function renderSetup(){
         item.classList.toggle('active', active);
         item.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
+      const rulesButton = document.querySelector('.unified-game-setup [data-game-rules]');
+      if (rulesButton instanceof HTMLElement) {
+        rulesButton.dataset.gameRulesVariant = String(activeSize);
+      }
       haptic('light');
     });
   });
