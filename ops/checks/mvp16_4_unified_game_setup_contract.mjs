@@ -39,6 +39,7 @@ if (/api\.startSearch\s*\(/u.test(launcher) || /setInterval\s*\(/u.test(launcher
 }
 if (!search.includes('export async function beginSearch(rawContext)')) throw new Error('Accepted v102 search owner is unavailable.');
 
+if (/room-tabs|data-room=/u.test(index)) throw new Error('Legacy room tabs must be absent from the visible Home source.');
 if (!launcher.includes("state.room = 'match'")) throw new Error('Unified setup must remove room selection and use normal Match only.');
 if (!launcher.includes('APP_CONFIG.matchBet')) throw new Error('Unified setup must use server-provided normal-match entry cost.');
 if (!config.includes('boardSizes: [3, 5, 9]')) throw new Error('Tic Tac Toe sizes 3/5/9 must remain available.');
