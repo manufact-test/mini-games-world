@@ -108,6 +108,7 @@ $ui = $read(dirname($root) . '/app/assets/js/ui.js');
 $weekly = $read(dirname($root) . '/app/assets/js/screens/weekly-match-info.js');
 $presenceClient = $read(dirname($root) . '/app/assets/js/production-v110-presence.js');
 $v110 = $read(dirname($root) . '/app/v110.php');
+$bootstrap = $read(dirname($root) . '/app/assets/js/app-bootstrap-v2.js');
 $api = $read($root . '/api.php');
 $payments = $read($root . '/services/PaymentService.php');
 $shop = $read($root . '/services/ShopService.php');
@@ -139,7 +140,8 @@ $assertNotContains('Матч-комнату', $weekly, 'Weekly bonus copy must n
 $assertNotContains('в Матч-комнате', $weekly, 'Weekly threshold copy must be room-neutral');
 $assertNotContains('room,', $presenceClient, 'Presence payload must not publish room metadata');
 $assertTrue(str_contains($v110, "X-MGW-Game-Zone: unified-v1"), 'Accepted /start entry must advertise unified game zone');
-$assertTrue(str_contains($v110, 'v=1146&mvp15=notification-polish'), 'Accepted /start graph must cache-bust the bonus modal fit successor shell');
+$assertTrue(str_contains($v110, 'app-bootstrap-v2.js?v=1&mvp16=single-owner'), 'Accepted /start graph must use the MVP-16.1A single bootstrap successor');
+$assertTrue(str_contains($bootstrap, 'production-clean-entry-v110.js?v=1124') && str_contains($bootstrap, 'main-v110.js?v=1139'), 'Single bootstrap must preserve both accepted internal graphs');
 
 $startSearchPos = strpos($api, "case 'start_search':");
 $nextCasePos = strpos($api, "case '", $startSearchPos + 20);
