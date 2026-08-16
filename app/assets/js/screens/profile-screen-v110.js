@@ -4,14 +4,16 @@ import { currentScreen, showScreen } from '../router.js?v=27';
 import { toast } from '../components/toast.js?v=41';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { renderUser, renderBalances } from '../ui.js?v=89';
-import { applyCanonicalMgwProfile, canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../profile/mgw-profile-model.js?v=1';
+import { canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../profile/mgw-profile-model.js?v=1';
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
 const GAME_TYPES = Object.freeze(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
 const STARTER_AVATARS = Object.freeze(['starter-default-01','starter-default-02','starter-default-03']);
+const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
-let profileSaving = false;
+let nicknameSaving = false;
+let avatarSaving = false;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -88,7 +90,7 @@ function openNicknameEditor(){
   const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || '').trim();
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(t('profile.nickname_edit_title'))}</h2><p>${escapeHtml(t('profile.nickname_edit_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <input class="form-input mgw-nickname-input" id="mgwNicknameInput" maxlength="24" autocomplete="off" value="${escapeHtml(nickname)}" aria-label="${escapeHtml(t('profile.nickname_edit_title'))}" />
+    <input class="form-input mgw-nickname-input" id="mgwNicknameInput" maxlength="${NICKNAME_MAX_LENGTH}" autocomplete="off" value="${escapeHtml(nickname)}" aria-label="${escapeHtml(t('profile.nickname_edit_title'))}" />
     <button class="btn primary full" id="mgwNicknameSave" type="button">${escapeHtml(t('profile.nickname_save'))}</button>
   `);
   const input = document.getElementById('mgwNicknameInput');
@@ -96,22 +98,45 @@ function openNicknameEditor(){
   input?.focus({ preventScroll:true });
   save?.addEventListener('click', async () => {
     const value = normalizeNicknameInput(input?.value || '');
-    if (!value) {
+    if (value.length < 3) {
       toast(t('profile.nickname_too_short'));
       return;
     }
-    if (profileSaving) return;
-    profileSaving = true;
-    if (save instanceof HTMLButtonElement) save.disabled = true;
+    if (value.length > NICKNAME_MAX_LENGTH) {
+      toast(t('profile.nickname_too_long'));
+      return;
+    }
+    if (nicknameSaving) return;
+    if (value === String(state.mgwProfile?.nickname || state.user?.display_name || '').trim()) {
+      closeSheet();
+      return;
+    }
+
+    const previousProfile = cloneObject(state.mgwProfile);
+    const previousUser = cloneObject(state.user);
+    const optimisticProfile = {
+      ...(state.mgwProfile && typeof state.mgwProfile === 'object' ? state.mgwProfile : {}),
+      nickname:value,
+      display_name:value,
+    };
+
+    nicknameSaving = true;
+    state.mgwProfile = optimisticProfile;
+    state.user = mergeCanonicalMgwUser(state.user, {}, optimisticProfile);
+    renderUser(state.user);
+    renderProfileV2();
+    closeSheet();
+
     try {
       applyProfileResponse(await api.profileV2({ nickname:value }));
-      closeSheet();
-      toast(t('profile.nickname_saved'));
     } catch (error) {
+      state.mgwProfile = previousProfile;
+      state.user = previousProfile ? mergeCanonicalMgwUser(previousUser, {}, previousProfile) : previousUser;
+      renderUser(state.user);
+      renderProfileV2();
       toast(error.message || t('profile.save_error'));
     } finally {
-      profileSaving = false;
-      if (save instanceof HTMLButtonElement && document.body.contains(save)) save.disabled = false;
+      nicknameSaving = false;
     }
   });
 }
@@ -130,7 +155,7 @@ function openAvatarEditor(){
 }
 
 async function chooseAvatar(itemId){
-  if (!STARTER_AVATARS.includes(itemId) || profileSaving || itemId === currentAvatarItemId()) {
+  if (!STARTER_AVATARS.includes(itemId) || avatarSaving || itemId === currentAvatarItemId()) {
     if (itemId === currentAvatarItemId()) closeSheet();
     return;
   }
@@ -141,7 +166,7 @@ async function chooseAvatar(itemId){
     avatar:{ item_id:itemId },
   };
 
-  profileSaving = true;
+  avatarSaving = true;
   state.mgwProfile = optimisticProfile;
   state.user = mergeCanonicalMgwUser(state.user, {}, optimisticProfile);
   renderUser(state.user);
@@ -157,7 +182,7 @@ async function chooseAvatar(itemId){
     renderProfileV2();
     toast(error.message || t('profile.avatar_save_error'));
   } finally {
-    profileSaving = false;
+    avatarSaving = false;
   }
 }
 
