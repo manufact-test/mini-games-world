@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 
 const read = path => fs.readFileSync(path, 'utf8');
 const router = read('app/assets/js/router.js');
@@ -38,7 +39,8 @@ for (const key of ['home','tournaments','store','profile']) {
 }
 if (!locale.shell?.navigation_label || !locale.shell?.store_open) throw new Error('Missing localized shell copy.');
 
-if (!manifest.includes("router.js?v=30&b=shell-nav&mvp16=route-registry")) throw new Error('Router cache target was not advanced.');
+const routerHash = crypto.createHash('sha256').update(router).digest('hex').slice(0, 12);
+if (!manifest.includes(`router.js?v=29&b=${routerHash}&mvp16=route-registry`)) throw new Error('Router cache target must be content-bound to current bytes.');
 if (!manifest.includes("main-v110-handoff-shell.js?v=1148&mvp16=shell-nav-topbar")) throw new Error('Shell cache target was not advanced.');
 if (!manifest.includes("main.css?v=156") || !manifest.includes('mvp16=shell-nav-topbar')) throw new Error('Shell CSS cache target was not advanced.');
 
