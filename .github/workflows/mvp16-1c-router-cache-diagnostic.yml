@@ -23,12 +23,20 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          : > router-cache-diagnostic.txt
           for url in \
             "${MGW_STAGING_ORIGIN}/app/assets/js/router.js?v=27" \
             "${MGW_STAGING_ORIGIN}/app/assets/js/router.js?v=28&mvp16=lifecycle"; do
-            echo "=== ${url} ==="
-            curl -fsS -D /tmp/headers.txt -o /tmp/router.js "${url}"
-            grep -Ei '^(HTTP/|cache-control:|age:|etag:|expires:|last-modified:|content-type:|x-cache:|cf-cache-status:)' /tmp/headers.txt || true
-            sha256sum /tmp/router.js
-            grep -E 'export function (showScreen|currentScreen|registerScreenCleanup|onScreenEnter)' /tmp/router.js || true
+            {
+              echo "=== ${url} ==="
+              curl -fsS -D /tmp/headers.txt -o /tmp/router.js "${url}"
+              grep -Ei '^(HTTP/|cache-control:|age:|etag:|expires:|last-modified:|content-type:|x-cache:|cf-cache-status:)' /tmp/headers.txt || true
+              sha256sum /tmp/router.js
+              grep -E 'export function (showScreen|currentScreen|registerScreenCleanup|onScreenEnter)' /tmp/router.js || true
+            } | tee -a router-cache-diagnostic.txt
           done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: router-cache-diagnostic
+          path: router-cache-diagnostic.txt
+          if-no-files-found: error
