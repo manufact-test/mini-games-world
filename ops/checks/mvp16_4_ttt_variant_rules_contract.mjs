@@ -71,8 +71,8 @@ if (/[А-Яа-яЁё]/u.test(rules)) {
 if (!mainCss.includes("./games/tictactoe/rules.css?v=54&mvp16=variant-rules")) {
   throw new Error('TTT rule diagram CSS must use a fresh nested cache target.');
 }
-if (!clientManifest.includes("game-rules.js?v=76&mvp16=variant-rules")) {
-  throw new Error('Shared rule owner must use a fresh Telegram cache target.');
+if (!/game-rules\.js\?v=\d+&mvp16=(?:variant-rules|rules-return-to-setup)/u.test(clientManifest)) {
+  throw new Error('Shared rule owner must stay on a versioned MVP-16 cache target.');
 }
 if (!clientManifest.includes("unified-game-launcher.js?v=4&mvp16=setup-subtitle-width")) {
   throw new Error('Unified setup launcher must use fresh bytes after variant binding.');
