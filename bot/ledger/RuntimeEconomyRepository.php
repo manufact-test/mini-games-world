@@ -28,12 +28,56 @@ final class RuntimeEconomyRepository
             return self::$requestSynchronizeCache[$cacheKey];
         }
 
-        // Phase A remains the immutable legacy audit owner. Match/Gold are first
-        // reconciled exactly as they existed before MVP-15.3 and are never
-        // rewritten from the new unified runtime field afterwards.
-        $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
         $ledger = new LedgerWriteService($database);
         $integrity = new LedgerIntegrityVerifier($database);
+        $rule = $this->unifiedRule();
+        $coordinator = new UnifiedBalanceMigrationCoordinator(
+            $database,
+            $rule,
+            $ledger,
+            $integrity
+        );
+        $migrationStatus = $coordinator->preview();
+
+        // The completed marker is a real cutover boundary. Once it exists,
+        // Match/Gold shadows are immutable migration history and must never be
+        // rebuilt from a later rollback snapshot (which may legitimately be
+        // partial or contain no users). Only the canonical unified runtime copy
+        // is allowed to converge into mgw_coin after this point.
+        if (!empty($migrationStatus['completed'])) {
+            $unifiedReport = (new UnifiedEconomyRuntimeSyncService(
+                $database,
+                $ledger,
+                $integrity
+            ))->run($jsonSnapshot);
+
+            $result = [
+                'ok' => true,
+                'action' => 'synchronize',
+                'phase' => 'post_cutover',
+                'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
+                'shadow' => $this->skippedLegacyStage('shadow'),
+                'balance_bootstrap' => $this->skippedLegacyStage('balance_bootstrap'),
+                'legacy_delta' => $this->skippedLegacyStage('legacy_delta'),
+                'migration' => $this->compactMigration($migrationStatus),
+                'unified' => $this->compactUnified($unifiedReport),
+                'reconciliation' => [
+                    'ready' => true,
+                    'phase' => 'post_cutover',
+                    'legacy_source_frozen' => true,
+                    'blocking_reasons' => [],
+                ],
+                'production_changed' => false,
+                'sensitive_identifiers_exposed' => false,
+            ];
+            unset(self::$requestAuditCache[$cacheKey]);
+            self::$requestSynchronizeCache[$cacheKey] = $result;
+            return $result;
+        }
+
+        // Pre-cutover only: Phase A captures/reconciles the frozen legacy source
+        // exactly once before the durable unified marker is created.
+        $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
         $shadow = new LegacyEconomyShadowSyncService($storage, $database);
         $shadowReport = $shadow->run();
         $bootstrapReport = (new RuntimeEconomyBalanceBootstrapService($database, $ledger))->ensureFromShadow();
@@ -52,22 +96,15 @@ final class RuntimeEconomyRepository
             );
         }
 
-        // Phase B owns the one-time conversion. The durable marker makes this a
-        // true cutover: future users/balance changes are not reinterpreted as
-        // legacy Match/Gold migration input.
-        $rule = $this->unifiedRule();
-        $coordinator = new UnifiedBalanceMigrationCoordinator(
-            $database,
-            $rule,
-            $ledger,
-            $integrity
-        );
         $migrationReport = $coordinator->ensureMigrated();
 
-        // Phase C is the only live balance owner after cutover. Runtime `balance`
-        // converges to DB asset `mgw_coin`; legacy source rows remain history.
-        $unified = new UnifiedEconomyRuntimeSyncService($database, $ledger, $integrity);
-        $unifiedReport = $unified->run($jsonSnapshot);
+        // Phase C becomes the only live balance synchronization owner after the
+        // one-time conversion. Legacy source rows remain immutable history.
+        $unifiedReport = (new UnifiedEconomyRuntimeSyncService(
+            $database,
+            $ledger,
+            $integrity
+        ))->run($jsonSnapshot);
 
         $finalReconciliation = (new LegacyEconomyRuntimeReconciliationService(
             $database,
@@ -84,6 +121,7 @@ final class RuntimeEconomyRepository
         $result = [
             'ok' => true,
             'action' => 'synchronize',
+            'phase' => 'cutover',
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
             'shadow' => $this->compactShadow($shadowReport),
             'balance_bootstrap' => $this->compactBootstrap($bootstrapReport),
@@ -108,17 +146,8 @@ final class RuntimeEconomyRepository
             return self::$requestAuditCache[$cacheKey];
         }
 
-        $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
-        $shadowReport = (new LegacyEconomyShadowSyncService($storage, $database))->preview();
         $ledger = new LedgerWriteService($database);
         $integrity = new LedgerIntegrityVerifier($database);
-        $delta = new LegacyEconomyDeltaImportService($database, $ledger, $integrity);
-        $reconciliation = (new LegacyEconomyRuntimeReconciliationService(
-            $database,
-            $delta,
-            $integrity
-        ))->preview();
-
         $rule = $this->unifiedRule();
         $migration = (new UnifiedBalanceMigrationCoordinator(
             $database,
@@ -126,7 +155,74 @@ final class RuntimeEconomyRepository
             $ledger,
             $integrity
         ))->preview();
-        $unified = (new UnifiedEconomyRuntimeSyncService($database, $ledger, $integrity))->preview($jsonSnapshot);
+        $unified = (new UnifiedEconomyRuntimeSyncService(
+            $database,
+            $ledger,
+            $integrity
+        ))->preview($jsonSnapshot);
+
+        if (!empty($migration['completed'])) {
+            $blockers = [];
+            foreach ((array)($migration['blockers'] ?? []) as $reason) {
+                $blockers[] = (string)$reason;
+            }
+            foreach ((array)($unified['blocking_reasons'] ?? []) as $reason) {
+                $blockers[] = (string)$reason;
+            }
+            if ((int)($unified['planned_delta_count'] ?? 0) > 0) {
+                $blockers[] = 'Canonical runtime balance differs from mgw_coin and requires synchronization.';
+            }
+            $blockers = array_values(array_unique(array_filter(
+                $blockers,
+                static fn(string $value): bool => $value !== ''
+            )));
+
+            $result = [
+                'ok' => $blockers === [],
+                'read_only' => true,
+                'phase' => 'post_cutover',
+                'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
+                'source_fingerprint' => (string)($unified['source_fingerprint'] ?? ''),
+                'source_user_count' => (int)($unified['source_user_count'] ?? 0),
+                'source_asset_count' => 1,
+                'source_totals' => ['mgw_coin' => (int)($unified['source_total'] ?? 0)],
+                'database_totals' => ['mgw_coin' => (int)($unified['database_total'] ?? 0)],
+                'planned_delta_count' => (int)($unified['planned_delta_count'] ?? 0),
+                'integrity_failure_count' => 0,
+                'ledger_entry_count' => 0,
+                'active_reservation_count' => 0,
+                'shadow_delta_count' => 0,
+                'shadow' => $this->skippedLegacyStage('shadow'),
+                'migration' => [
+                    'completed' => true,
+                    'migration_version' => (string)($migration['migration_version'] ?? $rule->version()),
+                    'verified_migration_account_count' => (int)($migration['verified_migration_account_count'] ?? 0),
+                ],
+                'unified' => $this->compactUnified($unified),
+                'reconciliation' => [
+                    'ready' => $blockers === [],
+                    'phase' => 'post_cutover',
+                    'legacy_source_frozen' => true,
+                    'blocking_reasons' => $blockers,
+                ],
+                'blockers' => $blockers,
+                'production_changed' => false,
+                'sensitive_identifiers_exposed' => false,
+            ];
+            self::$requestAuditCache[$cacheKey] = $result;
+            return $result;
+        }
+
+        // Before the durable marker exists, audit the still-active legacy source
+        // and require its exact parity before conversion can proceed.
+        $storage = new RuntimeEconomySnapshotStorage($jsonSnapshot);
+        $shadowReport = (new LegacyEconomyShadowSyncService($storage, $database))->preview();
+        $delta = new LegacyEconomyDeltaImportService($database, $ledger, $integrity);
+        $reconciliation = (new LegacyEconomyRuntimeReconciliationService(
+            $database,
+            $delta,
+            $integrity
+        ))->preview();
 
         $shadowDeltaCount = $this->shadowDeltaCount($shadowReport);
         $blockers = [];
@@ -151,6 +247,7 @@ final class RuntimeEconomyRepository
         $result = [
             'ok' => $blockers === [],
             'read_only' => true,
+            'phase' => 'pre_cutover',
             'storage_driver' => RuntimeStorageRouter::DRIVER_JSON,
             'source_fingerprint' => (string)($shadowReport['source_fingerprint'] ?? ''),
             'source_user_count' => (int)($compactReconciliation['source_user_count'] ?? 0),
@@ -234,6 +331,16 @@ final class RuntimeEconomyRepository
         return $count;
     }
 
+    private function skippedLegacyStage(string $stage): array
+    {
+        return [
+            'skipped' => true,
+            'reason' => 'unified_cutover_completed',
+            'stage' => $stage,
+            'legacy_source_frozen' => true,
+        ];
+    }
+
     private function compactShadow(array $report): array
     {
         $integrity = is_array($report['shadow_integrity'] ?? null)
@@ -278,13 +385,15 @@ final class RuntimeEconomyRepository
     private function compactMigration(array $report): array
     {
         return [
+            'completed' => !empty($report['completed']) || !empty($report['ok']),
             'migration_version' => (string)($report['migration_version'] ?? ''),
             'rule_fingerprint' => (string)($report['rule_fingerprint'] ?? ''),
             'source_account_count' => (int)($report['source_account_count'] ?? 0),
             'source_totals' => $report['source_totals'] ?? [],
             'target_total' => (int)($report['target_total'] ?? 0),
             'applied_ledger_entry_count' => (int)($report['applied_ledger_entry_count'] ?? 0),
-            'replayed' => !empty($report['replayed']),
+            'verified_migration_account_count' => (int)($report['verified_migration_account_count'] ?? 0),
+            'replayed' => !empty($report['replayed']) || !empty($report['completed']),
             'source_balances_preserved' => !empty($report['source_balances_preserved']),
         ];
     }
