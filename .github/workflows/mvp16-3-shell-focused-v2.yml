@@ -37,4 +37,4 @@ jobs:
           test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
           python3 scripts/ci/staging-runtime-fingerprint.py
           echo MVP16_3_FOCUSED=PASS
-# rerun after extensible MVP-16.1 route contract
+# rerun after behavior-based MVP-15.6 shell assertion
