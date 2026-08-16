@@ -36,7 +36,7 @@ jobs:
           php -l app/runtime/client/version-manifest.php
           php app/v110.php > /tmp/mgw-v110.html
           grep -F 'main.css?v=156' /tmp/mgw-v110.html >/dev/null
-          grep -F 'router.js?v=30&b=shell-nav&mvp16=route-registry' /tmp/mgw-v110.html >/dev/null
+          grep -F 'router.js?v=29&b=871cb833d99d&mvp16=route-registry' /tmp/mgw-v110.html >/dev/null
           test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
           python3 scripts/ci/staging-runtime-fingerprint.py
           echo MVP16_3_FOCUSED=PASS
