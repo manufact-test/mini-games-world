@@ -29,13 +29,13 @@ ob_start();
 require $app . '/v110.php';
 $rendered = (string)ob_get_clean();
 
-$assertSame('v1-single-owner', $versions['version'] ?? null, 'Client query versions must have one explicit manifest owner');
+$assertSame('v2-route-scoped-polling', $versions['version'] ?? null, 'Client query versions must have one explicit manifest owner');
 $assertSame(1, substr_count($rendered, '<script type="module" src="'), 'Telegram /start render must expose one top-level module script');
 $assertTrue(str_contains($rendered, $versions['assets']['bootstrap']), 'Telegram /start render must expose the manifest-owned bootstrap-v2 target');
 $assertTrue(str_contains($rendered, $versions['imports']['@mgw/clean-entry']), 'Rendered import map must resolve accepted clean-entry through the manifest');
 $assertTrue(str_contains($rendered, $versions['imports']['@mgw/main']), 'Rendered import map must resolve accepted main-v110 through the manifest');
-$assertTrue(str_contains($v110, 'X-MGW-Client-Bootstrap: v2-single-owner') && str_contains($v110, 'X-MGW-Query-Version-Manifest: v1-single-owner'), 'v110 must advertise bootstrap and version-manifest ownership');
-$assertTrue(!str_contains($v110, 'v=1146&mvp15=notification-polish'), 'Resolved active target versions must not be duplicated inside v110.php');
+$assertTrue(str_contains($v110, 'X-MGW-Client-Bootstrap: v2-single-owner') && str_contains($v110, 'X-MGW-Query-Version-Manifest: v2-route-scoped-polling'), 'v110 must advertise bootstrap and current version-manifest ownership');
+$assertTrue(!str_contains($v110, 'v=1147&mvp16=route-scoped-polling'), 'Resolved active target versions must not be duplicated inside v110.php');
 
 $cleanPos = strpos($bootstrap, "await import('@mgw/clean-entry');");
 $mainPos = strpos($bootstrap, "await import('@mgw/main');");
@@ -56,7 +56,11 @@ $assertTrue(str_contains($router, 'export function onScreenEnter') && str_contai
 $assertTrue(!str_contains($router, 'setInterval') && !str_contains($router, 'setTimeout'), 'Router v2 must not create timer ownership');
 
 $assertSame('./assets/js/state.js?v=30&mvp16=router-lifecycle', $versions['imports']['./assets/js/state.js?v=27'] ?? null, 'Manifest must resolve legacy state imports to one state successor');
-$assertSame('./assets/js/router.js?v=28&mvp16=lifecycle', $versions['imports']['./assets/js/router.js?v=27'] ?? null, 'Manifest must resolve legacy router imports to one router successor');
+$routerTarget = (string)($versions['imports']['./assets/js/router.js?v=27'] ?? '');
+$routerHash = substr(hash('sha256', $router), 0, 12);
+$assertTrue(str_starts_with($routerTarget, './assets/js/router.js?v=29&'), 'Router lifecycle target must use a fresh cache version after cleanup-registry bytes became active');
+$assertTrue(str_contains($routerTarget, 'b=' . $routerHash), 'Router target must be content-bound so future byte changes cannot silently reuse the same cache URL');
+$assertTrue(!str_contains($routerTarget, 'v=28&mvp16=lifecycle'), 'The stale 16.1A router cache URL must never be reused by route-cleanup consumers');
 $assertTrue(str_contains($fingerprintManifest, 'app/runtime/client/version-manifest.php'), 'Exact runtime fingerprint must cover query-version manifest owner');
 $assertTrue(str_contains($fingerprintManifest, 'app/assets/js/app-bootstrap-v2.js') && str_contains($fingerprintManifest, 'app/assets/js/router.js'), 'Exact runtime fingerprint must cover bootstrap and router owners');
 

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-// MVP-16.1B: one authoritative query-version owner for the accepted Telegram
+// MVP-16.1: one authoritative query-version owner for the accepted Telegram
 // /start client graph. Historical import specifiers remain compatibility keys;
 // every active resolved target version is owned here instead of app/v110.php.
 return [
-    'version' => 'v1-single-owner',
+    'version' => 'v2-route-scoped-polling',
     'imports' => [
         '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
         '@mgw/main' => './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
@@ -15,16 +15,16 @@ return [
         './assets/js/api/client.js?v=47' => './assets/js/api/client.js?v=1132&mvp15=unified-profile',
         './assets/js/config.js?v=38' => './assets/js/config.js?v=39&mvp15=match-economy',
         './assets/js/state.js?v=27' => './assets/js/state.js?v=30&mvp16=router-lifecycle',
-        './assets/js/router.js?v=27' => './assets/js/router.js?v=28&mvp16=lifecycle',
+        './assets/js/router.js?v=27' => './assets/js/router.js?v=29&b=7eb04c26f47f&mvp16=route-cleanup-registry',
         './assets/js/ui.js?v=89' => './assets/js/ui.js?v=92&mvp15=unified-zone',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=78&mvp15=weekly-bonus-wallet',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=35&mvp15=unified-balance',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1113&mvp15=unified-balance-copy-cleanup',
-        './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1146&mvp15=notification-polish',
+        './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1147&mvp16=route-scoped-polling',
         './assets/js/session.js?v=21' => './assets/js/session.js?v=1131',
         './assets/js/session.js?v=27' => './assets/js/session.js?v=1131',
-        './assets/js/screens/search-screen-v102.js?v=103' => './assets/js/screens/search-screen-v102.js?v=106&search=post-game-release-barrier',
-        './assets/js/screens/game-screen-v102-safe.js?v=102' => './assets/js/screens/game-screen-v102-safe.js?v=103&result=terminal-watch-priority',
+        './assets/js/screens/search-screen-v102.js?v=103' => './assets/js/screens/search-screen-v102.js?v=107&search=route-scoped-lifecycle',
+        './assets/js/screens/game-screen-v102-safe.js?v=102' => './assets/js/screens/game-screen-v102-safe.js?v=104&polling=route-cleanup',
         './assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=104&clock=phase-b-single-writer&battleship=leave-guard',
         './assets/js/production-v100-optimistic-models.js?v=102' => './assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner',
         './assets/js/production-v102-battleship-models.js?v=102' => './assets/js/production-v102-battleship-models.js?v=103&ready=authoritative-reset',
