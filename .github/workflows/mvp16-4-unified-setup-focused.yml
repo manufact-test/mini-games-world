@@ -1,0 +1,48 @@
+name: MVP-16.4 Unified setup focused
+on:
+  push:
+    branches: [agent/mvp-16-4-unified-game-setup]
+    paths: ['.github/workflows/mvp16-4-unified-setup-focused.yml']
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unified setup syntax and contracts
+        run: |
+          set -Eeuo pipefail
+          node --check app/assets/js/games/unified-game-launcher.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node ops/checks/mvp16_4_unified_game_setup_contract.mjs
+          node ops/checks/mvp16_3_shell_navigation_contract.mjs
+          php -l app/runtime/client/version-manifest.php
+      - name: Accepted regressions
+        run: |
+          set -Eeuo pipefail
+          node ops/checks/mvp16_1_router_lifecycle_contract.mjs
+          php bot/tests/Mvp161ClientBootstrapRouterTest.php
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/Mvp156UnifiedZoneCutoverTest.php
+          php bot/tests/Mvp156NotificationSemanticScrollTest.php
+      - name: Canonical start and fingerprint
+        run: |
+          set -Eeuo pipefail
+          php app/v110.php > /tmp/mgw-v110.html
+          grep -F 'main-v110-handoff-shell.js?v=1151&mvp16=unified-game-setup' /tmp/mgw-v110.html >/dev/null
+          grep -F 'unified-game-launcher.js?v=2&mvp16=unified-game-setup' /tmp/mgw-v110.html >/dev/null
+          test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
+          python3 scripts/ci/staging-runtime-fingerprint.py
+          python3 - <<'PY'
+          from pathlib import Path
+          paths=[]
+          for raw in Path('bot/helpers/staging-e2e-runtime-files.txt').read_text(encoding='utf-8').splitlines():
+              line=raw.strip()
+              if line and not line.startswith('#'):
+                  paths.append(line)
+          print(f'RUNTIME_FILES={len(paths)}')
+          PY
+          echo MVP16_4_UNIFIED_SETUP_FOCUSED=PASS
+# final-room-tabs-contract
