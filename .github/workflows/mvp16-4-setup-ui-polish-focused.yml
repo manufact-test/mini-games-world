@@ -29,3 +29,4 @@ jobs:
           test "$(grep -o '<script type="module" src="' /tmp/mgw-v110.html | wc -l)" -eq 1
           python3 scripts/ci/staging-runtime-fingerprint.py
           echo MVP16_4_SETUP_UI_POLISH_FOCUSED=PASS
+# rerun after making the older 16.3 CSS regression cache-version agnostic
