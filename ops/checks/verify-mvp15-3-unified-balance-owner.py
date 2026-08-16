@@ -87,27 +87,36 @@ except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundEr
     violations.append(f'app/v110.php: canonical Telegram entry render failed: {exc}'); rendered = ''
 
 version_manifest = Path('app/runtime/client/version-manifest.php').read_text()
-main_css_match = re.search(r"'main_css'\s*=>\s*'([^']+)'", version_manifest)
-if main_css_match is None:
-    violations.append('app/runtime/client/version-manifest.php: canonical main_css owner is missing')
-    canonical_main_css = None
-else:
-    canonical_main_css = main_css_match.group(1)
 
-required_entry_fragments = (
-    './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
-    './assets/js/production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine',
-    './assets/js/main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance',
-    './assets/js/ui.js?v=93&mvp16=canonical-identity',
-    './assets/js/state.js?v=30&mvp16=router-lifecycle',
-    './assets/js/router.js?v=29&b=871cb833d99d&mvp16=route-registry',
-    './assets/js/screens/home-screen.js?v=79&mvp16=settings-language',
-    './assets/js/screens/profile-screen-v110.js?v=1116&mvp16=canonical-identity',
+def manifest_value(key):
+    match = re.search(r"'" + re.escape(key) + r"'\s*=>\s*'([^']+)'", version_manifest)
+    return match.group(1) if match else None
+
+# The client manifest is the single owner of successor/cache-key URLs. This
+# verifier checks the rendered Telegram entry against those owned values instead
+# of duplicating exact version strings that unrelated UI work legitimately bumps.
+required_import_specifiers = (
+    '@mgw/clean-entry',
+    '@mgw/main',
+    './assets/js/ui.js?v=89',
+    './assets/js/state.js?v=27',
+    './assets/js/router.js?v=27',
+    './assets/js/screens/home-screen.js?v=74',
+    './assets/js/screens/profile-screen-v110.js?v=1108',
 )
-for fragment in required_entry_fragments:
-    if fragment not in rendered: violations.append(f'app/v110.php: transformed Telegram entry is missing {fragment}')
-if canonical_main_css is not None and canonical_main_css not in rendered:
-    violations.append(f'app/v110.php: transformed Telegram entry is missing manifest-owned main_css {canonical_main_css}')
+for specifier in required_import_specifiers:
+    target = manifest_value(specifier)
+    if target is None:
+        violations.append(f'app/runtime/client/version-manifest.php: canonical import owner is missing for {specifier}')
+    elif target not in rendered:
+        violations.append(f'app/v110.php: transformed Telegram entry is missing manifest-owned import {target}')
+
+for asset_key in ('bootstrap', 'main_css'):
+    target = manifest_value(asset_key)
+    if target is None:
+        violations.append(f'app/runtime/client/version-manifest.php: canonical {asset_key} owner is missing')
+    elif target not in rendered:
+        violations.append(f'app/v110.php: transformed Telegram entry is missing manifest-owned {asset_key} {target}')
 
 if rendered.count('<script type="module" src="') != 1: violations.append('app/v110.php: canonical Telegram entry must expose exactly one top-level module bootstrap')
 if '<script type="module" src="./assets/js/production-clean-entry-v110.js' in rendered: violations.append('app/v110.php: clean-entry must not remain an independent top-level module script')
