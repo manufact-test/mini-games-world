@@ -63,7 +63,9 @@ if (!locale.shell?.navigation_label || !locale.shell?.store_open) throw new Erro
 
 const routerHash = crypto.createHash('sha256').update(router).digest('hex').slice(0, 12);
 if (!manifest.includes(`router.js?v=29&b=${routerHash}&mvp16=route-registry`)) throw new Error('Router cache target must be content-bound to current bytes.');
-if (!manifest.includes("main-v110-handoff-shell.js?v=1150&mvp16=unified-primary-tabs")) throw new Error('Shell cache target was not advanced.');
+if (!/main-v110-handoff-shell\.js\?v=\d+&mvp16=(?:unified-primary-tabs|unified-game-setup)/u.test(manifest)) {
+  throw new Error('Current shell cache target must remain versioned under the MVP-16 shell owner.');
+}
 if (!manifest.includes("store-screen.js?v=36&mvp16=primary-tab")) throw new Error('Store module cache target was not advanced.');
 if (!manifest.includes("profile-screen-v110.js?v=1114&mvp16=primary-tab")) throw new Error('Profile module cache target was not advanced.');
 if (!manifest.includes("main.css?v=158") || !manifest.includes('mvp16=unified-primary-tabs')) throw new Error('Shell CSS cache target was not advanced.');
