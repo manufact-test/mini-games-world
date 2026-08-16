@@ -77,7 +77,7 @@ if (!/game-rules\.js\?v=\d+&mvp16=(?:variant-rules|rules-return-to-setup|all-var
 if (!clientManifest.includes("unified-game-launcher.js?v=4&mvp16=setup-subtitle-width")) {
   throw new Error('Unified setup launcher must use fresh bytes after variant binding.');
 }
-if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:setup-subtitle-width|variant-rules-nav-balance|optical-bottom-nav|painted-bottom-nav)/u.test(clientManifest)) {
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:setup-subtitle-width|variant-rules-nav-balance|optical-bottom-nav|painted-bottom-nav|final-bottom-nav)/u.test(clientManifest)) {
   throw new Error('Outer CSS target must remain fresh after rules and navigation changes.');
 }
 if (!clientManifest.includes("'version' => 'v2-route-scoped-polling'")) {
