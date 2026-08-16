@@ -47,7 +47,7 @@ return [
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
     'localization' => [
-        'version' => 'keys-v2',
+        'version' => 'keys-v1',
         'default_locale' => 'ru',
         'manifest' => './locales/manifest.json',
     ],
