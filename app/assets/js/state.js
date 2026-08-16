@@ -3,6 +3,7 @@ export const state = {
   mgwProfile: null,
   stats: null,
   room: 'match',
+  screen: 'home',
   selectedGame: 'tictactoe',
   selectedBet: 0,
   selectedBoardSize: 3,
