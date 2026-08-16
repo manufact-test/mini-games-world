@@ -125,6 +125,7 @@ bot/services/StagingReadinessService.php
 # current provider; AccountIdentityService resolves verified provider identity
 # to mgw_id; the profile service reads only the canonical account DB.
 bot/profile.php
+bot/profile-v2.php
 bot/accounts/MgwProfileService.php
 bot/accounts/AccountIdentityService.php
 

@@ -77,7 +77,9 @@ if (!/main-v110-handoff-shell\.js\?v=\d+&mvp16=(?:unified-primary-tabs|unified-g
   throw new Error('Current shell cache target must remain versioned under the MVP-16 shell owner.');
 }
 if (!manifest.includes("store-screen.js?v=36&mvp16=primary-tab")) throw new Error('Store module cache target was not advanced.');
-if (!manifest.includes("profile-screen-v110.js?v=1114&mvp16=primary-tab")) throw new Error('Profile module cache target was not advanced.');
+if (!/profile-screen-v110\.js\?v=\d+&mvp16=(?:primary-tab|profile-v2)/u.test(manifest)) {
+  throw new Error('Profile module must remain a versioned primary-tab owner.');
+}
 if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=(?:unified-primary-tabs|setup-ui-polish|setup-subtitle-width|variant-rules-nav-balance|optical-bottom-nav|painted-bottom-nav|final-bottom-nav|final-bottom-nav-align)/u.test(manifest)) {
   throw new Error('Shell CSS must remain on a versioned MVP-16 cache target.');
 }

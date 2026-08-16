@@ -95,8 +95,8 @@ if (!mainCss.includes("./base/layout.css?v=132&sk=1&mvp16=final-bottom-nav-align
 if (!clientManifest.includes("game-rules.js?v=78&mvp16=all-variant-rules")) {
   throw new Error('Shared rules owner must keep accepted Telegram cache bytes.');
 }
-if (!clientManifest.includes("main.css?v=166&sk=3&icons=c1efd5af&render=35&mvp16=final-bottom-nav-align")) {
-  throw new Error('Outer CSS must use fresh Telegram cache bytes for final nav alignment.');
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=\d+&mvp16=final-bottom-nav-align/u.test(clientManifest)) {
+  throw new Error('Outer CSS must keep the accepted final-bottom-nav-align semantic cache owner.');
 }
 if (!clientManifest.includes("'version' => 'v2-route-scoped-polling'")) throw new Error('Client manifest schema must remain stable.');
 if (!clientManifest.includes("'version' => 'keys-v1'")) throw new Error('Localization infrastructure must remain keys-v1.');

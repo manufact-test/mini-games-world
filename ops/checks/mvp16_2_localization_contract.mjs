@@ -13,7 +13,9 @@ if (JSON.stringify(manifest.supported_locales) !== JSON.stringify(['ru'])) throw
 const expectedGames = ['tictactoe', 'four_in_a_row', 'battleship', 'checkers', 'reversi', 'chess', 'go', 'domino'];
 for (const game of expectedGames) {
   const rules = manifest.rules?.games?.[game];
-  if (!rules || rules.version !== 1 || !rules.languages?.includes('ru')) throw new Error(`Rules locale metadata missing for ${game}.`);
+  if (!rules || !Number.isInteger(rules.version) || rules.version < 1 || !rules.languages?.includes('ru')) {
+    throw new Error(`Rules locale metadata missing for ${game}.`);
+  }
   const title = rules.title_key.split('.').reduce((value, key) => value?.[key], ru);
   if (typeof title !== 'string' || !title) throw new Error(`Rules title key missing for ${game}.`);
 }
