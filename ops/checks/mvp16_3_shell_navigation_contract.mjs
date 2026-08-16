@@ -68,7 +68,7 @@ if (!/main-v110-handoff-shell\.js\?v=\d+&mvp16=(?:unified-primary-tabs|unified-g
 }
 if (!manifest.includes("store-screen.js?v=36&mvp16=primary-tab")) throw new Error('Store module cache target was not advanced.');
 if (!manifest.includes("profile-screen-v110.js?v=1114&mvp16=primary-tab")) throw new Error('Profile module cache target was not advanced.');
-if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=30&mvp16=(?:unified-primary-tabs|setup-ui-polish)/u.test(manifest)) {
+if (!/main\.css\?v=\d+&sk=3&icons=c1efd5af&render=30&mvp16=(?:unified-primary-tabs|setup-ui-polish|setup-subtitle-width)/u.test(manifest)) {
   throw new Error('Shell CSS must remain on a versioned MVP-16 cache target.');
 }
 
