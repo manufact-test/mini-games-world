@@ -8,6 +8,7 @@ on:
       - 'bot/accounts/**'
       - 'bot/profile.php'
       - 'bot/profile-v2.php'
+      - 'bot/services/UserService.php'
       - 'bot/database/migrations/**'
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'bot/tests/AccountIdentityServiceTest.php'
@@ -50,6 +51,8 @@ jobs:
           php -l bot/accounts/MgwIdentityPolicy.php
           php -l bot/accounts/AccountIdentityService.php
           php -l bot/accounts/MgwProfileService.php
+          php -l bot/accounts/RuntimeAccountIdentityResolver.php
+          php -l bot/services/UserService.php
           php -l bot/profile-v2.php
           php -l bot/database/migrations/20260816_0009_add_canonical_profile_identity.php
           php -l bot/tests/AccountIdentityServiceTest.php
@@ -78,6 +81,8 @@ jobs:
             bot/accounts/MgwIdentityPolicy.php \
             bot/accounts/AccountIdentityService.php \
             bot/accounts/MgwProfileService.php \
+            bot/accounts/RuntimeAccountIdentityResolver.php \
+            bot/services/UserService.php \
             bot/profile-v2.php \
             bot/database/migrations/20260816_0009_add_canonical_profile_identity.php \
             app/assets/js/api/client.js \

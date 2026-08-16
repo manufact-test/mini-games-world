@@ -34,6 +34,20 @@ final class RuntimeAccountIdentityResolver
         $user['mgw_id'] = $identity['mgw_id'];
         $user['mgw_identity_provider'] = $identity['provider'];
 
+        // Visible game identity is MGW-owned. Carry the canonical nickname/avatar
+        // alongside the verified provider identity so legacy JSON game/session
+        // projections never need to fall back to Telegram name/username.
+        $canonical = $accounts->findByIdentity(
+            (string)$identity['provider'],
+            (string)$identity['provider_subject']
+        );
+        if (is_array($canonical)) {
+            $nickname = trim((string)($canonical['nickname'] ?? ''));
+            $avatarItemId = trim((string)($canonical['equipped_avatar_item_id'] ?? ''));
+            if ($nickname !== '') $user['mgw_nickname'] = $nickname;
+            if ($avatarItemId !== '') $user['mgw_avatar_item_id'] = $avatarItemId;
+        }
+
         if ($this->router->enabled()) {
             $ownership = (new RuntimeAccountOwnershipService($database))->ensure(
                 (string)$identity['provider'],

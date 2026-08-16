@@ -131,6 +131,7 @@ bot/accounts/MgwIdGenerator.php
 bot/accounts/MgwIdentityPolicy.php
 bot/accounts/MgwProfileService.php
 bot/accounts/AccountIdentityService.php
+bot/accounts/RuntimeAccountIdentityResolver.php
 bot/database/migrations/20260816_0009_add_canonical_profile_identity.php
 
 # MVP-15.2 visible unified profile/avatar consumer. The canonical MGW profile

@@ -61,7 +61,8 @@ $nickname = (string)$database->fetchValue(
     'SELECT nickname FROM mgw_users WHERE mgw_id = :mgw_id',
     ['mgw_id' => $first['mgw_id']]
 );
-$assertTrue(preg_match('/^Player\d{10}$/', $nickname) === 1, 'New MGW account must receive a scalable provider-neutral nickname');
+$assertTrue(preg_match('/^Player\d{7}$/', $nickname) === 1, 'New MGW account must receive a 13-character provider-neutral nickname');
+$assertSame(MgwIdentityPolicy::NICKNAME_MAX_LENGTH, mb_strlen($nickname), 'Generated nickname must fit the global visible nickname cap');
 $assertSame($nickname, (string)$database->fetchValue(
     'SELECT display_name FROM mgw_users WHERE mgw_id = :mgw_id',
     ['mgw_id' => $first['mgw_id']]

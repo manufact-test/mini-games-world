@@ -33,7 +33,7 @@ function mgw_profile_v2_validation_error(InvalidArgumentException $error): array
 {
     return match ($error->getMessage()) {
         MgwIdentityPolicy::NICKNAME_TOO_SHORT_ERROR => ['nickname_too_short', 'Ник должен содержать минимум 3 символа.'],
-        MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', 'Ник может содержать максимум 24 символа.'],
+        MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', 'Ник может содержать максимум 13 символов.'],
         MgwIdentityPolicy::NICKNAME_INVALID_CHARACTERS_ERROR => ['nickname_invalid_characters', 'В нике можно использовать буквы, цифры, пробелы, дефис и подчёркивание.'],
         default => ['profile_update_invalid', 'Не удалось сохранить профиль MGW.'],
     };
@@ -68,11 +68,20 @@ try {
         }
         throw $error;
     }
+
+    // Auth resolution happens before a profile mutation. Replace the carried
+    // visible identity with the just-committed canonical profile before the
+    // legacy JSON runtime is synchronized, otherwise an active game can be
+    // rewritten back to the previous nickname for one request.
+    $runtimeAuthenticatedUser = $authenticatedUser;
+    $runtimeAuthenticatedUser['mgw_nickname'] = (string)($canonicalProfile['nickname'] ?? '');
+    $runtimeAuthenticatedUser['mgw_avatar_item_id'] = (string)($canonicalProfile['avatar']['item_id'] ?? '');
+
     $users = new UserService($configRef);
     $historyService = new HistoryService($configRef, $users);
     $storage = StorageFactory::createJson((string)($configRef['data_dir'] ?? (__DIR__ . '/data')));
-    $runtime = $storage->transaction(function (array &$data) use ($authenticatedUser, $users, $historyService) {
-        $user = $users->ensureUser($data, $authenticatedUser);
+    $runtime = $storage->transaction(function (array &$data) use ($runtimeAuthenticatedUser, $users, $historyService) {
+        $user = $users->ensureUser($data, $runtimeAuthenticatedUser);
         $userId = (string)($user['id'] ?? '');
         $stats = $users->profileStats($user, $data);
         $stats['by_game'] = mgw_profile_v2_stats_by_game($data, $userId);

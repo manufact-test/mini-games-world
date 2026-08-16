@@ -19,7 +19,7 @@ return [
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=79&mvp16=settings-language',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=36&mvp16=primary-tab',
-        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1117&mvp16=profile-polish',
+        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1118&mvp16=profile-final-polish',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=3&mvp16=public-id-canonical-identity',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1151&mvp16=unified-game-setup',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
@@ -43,7 +43,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=170&sk=3&icons=c1efd5af&render=36&mvp16=profile-polish',
+        'main_css' => './assets/css/main.css?v=171&sk=3&icons=c1efd5af&render=36&mvp16=profile-final-polish',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],

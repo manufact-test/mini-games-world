@@ -73,6 +73,7 @@ final class UserService
         // economy idempotency can remain provider-neutral instead of keying a
         // one-time reward only by the current Telegram/legacy user id.
         $this->attachVerifiedAccountIdentity($db['users'][$id], $tgUser);
+        $this->syncCanonicalGameIdentity($db, $db['users'][$id]);
 
         UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);
         return $db['users'][$id];
@@ -201,6 +202,8 @@ final class UserService
         $incomingMgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
         $incomingAccountRef = trim((string)($authenticatedUser['mgw_account_ref'] ?? ''));
         $incomingProvider = trim((string)($authenticatedUser['mgw_identity_provider'] ?? ''));
+        $incomingNickname = trim((string)($authenticatedUser['mgw_nickname'] ?? ''));
+        $incomingAvatarItemId = trim((string)($authenticatedUser['mgw_avatar_item_id'] ?? ''));
 
         if ($incomingMgwId === '' && $incomingAccountRef === '' && $incomingProvider === '') {
             return;
@@ -214,6 +217,13 @@ final class UserService
             throw new RuntimeException('Verified MGW identity conflicts with the persisted user owner.');
         }
 
+        // Provider metadata stays available for auth/audit, but it no longer
+        // owns any visible runtime identity field used by game projections.
+        $user['provider_first_name'] = clean_string($authenticatedUser['first_name'] ?? $user['provider_first_name'] ?? '', 80);
+        $user['provider_username'] = clean_string($authenticatedUser['username'] ?? $user['provider_username'] ?? '', 80);
+        $providerPhotoUrl = clean_string($authenticatedUser['photo_url'] ?? '', 2048);
+        if ($providerPhotoUrl !== '') $user['provider_photo_url'] = $providerPhotoUrl;
+
         // mgw_id is the immutable provider-neutral owner. account_ref is a
         // runtime ownership locator and may legitimately rotate during a future
         // link/merge while the same verified MGW owner remains unchanged.
@@ -222,6 +232,30 @@ final class UserService
         if ($incomingProvider !== '') {
             $user['mgw_identity_provider'] = $incomingProvider;
         }
+        if ($incomingNickname !== '') {
+            $user['mgw_nickname'] = clean_string($incomingNickname, 13);
+            $user['first_name'] = $user['mgw_nickname'];
+            $user['username'] = '';
+            $user['photo_url'] = '';
+        }
+        if ($incomingAvatarItemId !== '') {
+            $user['mgw_avatar_item_id'] = clean_string($incomingAvatarItemId, 80);
+        }
+    }
+
+    private function syncCanonicalGameIdentity(array &$db, array &$user): void
+    {
+        $nickname = trim((string)($user['mgw_nickname'] ?? ''));
+        $userId = trim((string)($user['id'] ?? ''));
+        $gameId = trim((string)($user['current_game_id'] ?? ''));
+        if ($nickname === '' || $userId === '' || $gameId === '') return;
+        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) return;
+        if (!in_array($userId, array_map('strval', $db['games'][$gameId]['player_ids'] ?? []), true)) return;
+
+        if (!isset($db['games'][$gameId]['player_names']) || !is_array($db['games'][$gameId]['player_names'])) {
+            $db['games'][$gameId]['player_names'] = [];
+        }
+        $db['games'][$gameId]['player_names'][$userId] = $nickname;
     }
 
     private function ensureStatsShape(array &$user): void
