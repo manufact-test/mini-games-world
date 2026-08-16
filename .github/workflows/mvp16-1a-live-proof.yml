@@ -1,0 +1,50 @@
+name: MVP-16.1A exact live proof
+
+on:
+  push:
+    branches:
+      - agent/mvp-16-1a-single-bootstrap-router-v2
+    paths:
+      - '.github/workflows/mvp16-1a-live-proof.yml'
+
+permissions:
+  contents: read
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp-13-2-staging
+          fetch-depth: 1
+
+      - name: Compare exact staging tree to live Hostinger runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "STAGING_SHA=$(git rev-parse HEAD)"
+          echo "STAGING_TREE=$(git rev-parse HEAD^{tree})"
+          expected="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+            --header 'Accept: application/json' \
+            "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+            --output live-staging-readiness.json
+          python3 - "${expected}" <<'PY'
+          import json, sys
+          from pathlib import Path
+          payload = json.loads(Path('live-staging-readiness.json').read_text(encoding='utf-8'))
+          expected = sys.argv[1]
+          actual = payload.get('source_fingerprint_sha256')
+          assert payload.get('ok') is True, payload
+          assert payload.get('environment') == 'staging', payload
+          assert actual == expected, {'expected': expected, 'actual': actual}
+          assert payload.get('capabilities', {}).get('exact_runtime_fingerprint') is True, payload
+          print(f'EXPECTED_RUNTIME_FINGERPRINT={expected}')
+          print(f'LIVE_RUNTIME_FINGERPRINT={actual}')
+          print('MVP16_1A_LIVE_PROOF=PASS')
+          PY
