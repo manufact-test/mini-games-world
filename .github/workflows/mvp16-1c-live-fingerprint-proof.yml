@@ -31,6 +31,7 @@ jobs:
             path="$(printf '%s' "$raw" | xargs)"
             [ -z "$path" ] && continue
             case "$path" in \#*) continue ;; esac
+            echo "FETCH ${path}"
             target="/tmp/mgw-live/$path"
             mkdir -p "$(dirname "$target")"
             curl -fsS "${MGW_STAGING_ORIGIN}/${path}" -o "$target"
