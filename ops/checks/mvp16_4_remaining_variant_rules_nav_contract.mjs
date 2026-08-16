@@ -81,26 +81,30 @@ for (const source of [fourRules, reversiRules, goRules]) {
   if (/[А-Яа-яЁё]/u.test(source)) throw new Error('Edited rule renderers must not introduce hardcoded RU product copy.');
 }
 
-// Bottom navigation: account for the transparent WebP canvas, not only the CSS image box.
-if (!layout.includes('min-height:54px;\n  padding:5px 3px;')) throw new Error('Bottom navigation item must reserve real visual bottom air.');
+// Final bottom navigation polish: +3px icon/label air while reducing total bar height.
+if (!layout.includes('padding:2px 5px max(2px,env(safe-area-inset-bottom))')) throw new Error('Bottom nav outer panel must use compact symmetric padding.');
+if (!layout.includes('min-height:48px;\n  padding:3px 3px;')) throw new Error('Bottom navigation item must reclaim excess vertical space.');
 if (!layout.includes('justify-content:flex-start;\n  gap:0;\n  font-size:10px;\n  line-height:1;')) {
   throw new Error('Bottom navigation content must remain compact and top-owned.');
 }
-if (!layout.includes('.app-bottom-nav-icon{width:34px;height:26px')
+if (!layout.includes('.app-bottom-nav-icon{width:34px;height:29px')
     || !layout.includes('place-items:start center')
-    || !layout.includes('flex:0 0 26px;overflow:visible')
+    || !layout.includes('flex:0 0 29px;overflow:visible')
     || !layout.includes('.app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px')) {
-  throw new Error('Bottom navigation must preserve accepted 32px artwork while shortening only its transparent layout slot.');
+  throw new Error('Bottom navigation must preserve accepted 32px artwork and add exactly 3px to the painted-bound icon/label spacing.');
 }
-if (!mainCss.includes("./base/layout.css?v=130&sk=1&mvp16=painted-bottom-nav")) {
-  throw new Error('Painted-bound bottom navigation must have a fresh nested CSS target.');
+if (!layout.includes('padding-bottom:calc(62px + env(safe-area-inset-bottom))')) {
+  throw new Error('Primary screens must reclaim the height removed from the compact bottom navigation.');
+}
+if (!mainCss.includes("./base/layout.css?v=131&sk=1&mvp16=final-bottom-nav")) {
+  throw new Error('Final bottom navigation must have a fresh nested CSS target.');
 }
 
 if (!clientManifest.includes("game-rules.js?v=78&mvp16=all-variant-rules")) {
   throw new Error('Shared rules owner must keep accepted Telegram cache bytes.');
 }
-if (!clientManifest.includes("main.css?v=164&sk=3&icons=c1efd5af&render=33&mvp16=painted-bottom-nav")) {
-  throw new Error('Outer CSS must use fresh Telegram cache bytes for painted-bound nav spacing.');
+if (!clientManifest.includes("main.css?v=165&sk=3&icons=c1efd5af&render=34&mvp16=final-bottom-nav")) {
+  throw new Error('Outer CSS must use fresh Telegram cache bytes for final nav polish.');
 }
 if (!clientManifest.includes("'version' => 'v2-route-scoped-polling'")) throw new Error('Client manifest schema must remain stable.');
 if (!clientManifest.includes("'version' => 'keys-v1'")) throw new Error('Localization infrastructure must remain keys-v1.');
