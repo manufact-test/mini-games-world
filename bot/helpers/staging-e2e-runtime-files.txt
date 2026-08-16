@@ -31,6 +31,13 @@ app/assets/js/games/game-card-copy.js
 app/assets/js/games/unified-game-launcher.js
 app/assets/js/games/game-rules.js
 app/assets/js/games/tictactoe/rules.js
+app/assets/js/games/four-in-a-row/rules.js
+app/assets/js/games/battleship/rules.js
+app/assets/js/games/checkers/rules.js
+app/assets/js/games/reversi/rules.js
+app/assets/js/games/chess/rules.js
+app/assets/js/games/go/rules.js
+app/assets/js/games/domino/rules.js
 app/assets/js/screens/search-screen-v102.js
 app/assets/js/screens/game-screen-v102-safe.js
 app/assets/js/screens/game-screen-v102.js
@@ -43,6 +50,14 @@ app/assets/js/screens/notifications-screen-v110r12.js
 # fingerprint them so design acceptance never runs against a partial deployment.
 app/assets/css/main.css
 app/assets/css/games/tictactoe/rules.css
+app/assets/css/games/four-in-a-row/rules.css
+app/assets/css/games/battleship/rules.css
+app/assets/css/games/checkers/rules.css
+app/assets/css/games/reversi/rules.css
+app/assets/css/games/chess/rules.css
+app/assets/css/games/go/rules.css
+app/assets/css/games/domino/rules.css
+app/assets/css/games/go/game.css
 app/assets/css/screens/game.css
 app/assets/css/base/tokens.css
 app/assets/css/base/layout.css
