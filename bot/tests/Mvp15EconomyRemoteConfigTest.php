@@ -45,7 +45,7 @@ $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
 $migrated = $runner->migrate(false);
-$assertSame(8, $migrated['executed_count'], 'Focused test must apply all eight canonical migrations');
+$assertSame(9, $migrated['executed_count'], 'Focused test must apply all nine canonical migrations');
 $assertSame(0, $runner->migrate(false)['executed_count'], 'Migration rerun must be idempotent');
 
 $service = new EconomyConfigService($database);
@@ -63,11 +63,11 @@ $assertSame(500, $current['config']['bonuses']['weekly'], 'Weekly bonus default 
 $assertSame(3, $current['config']['bonuses']['weekly_match_threshold'], 'Weekly threshold default must be 3');
 $assertSame(50, $current['config']['bonuses']['first_game'], 'First-game bonus default must be 50');
 $assertSame(25, $current['config']['rewarded_ads']['reward'], 'Rewarded-ad reward default must be 25');
-$assertSame(12, $current['config']['rewarded_ads']['daily_limit'], 'Rewarded-ad daily limit default must be 12');
+$assertSame(12, $current['config']['rewarded_ads']['daily_limit'], 'Rewarded-ad daily limit must be 12');
 $assertSame(60, $current['config']['rewarded_ads']['cooldown_seconds'], 'Rewarded-ad cooldown default must be 60 seconds');
 $assertSame(300, $current['config']['rewarded_ads']['daily_coin_cap'], 'Rewarded-ad daily cap default must be 300');
-$assertSame([5000, 10500, 27500, 57500, 120000], array_column($current['config']['coin_packages'], 'coins'), 'Coin package amounts must match roadmap defaults');
-$assertSame([499, 999, 2499, 4999, 9999], array_column($current['config']['coin_packages'], 'price_eur_cents'), 'Coin package EUR prices must match roadmap defaults');
+$assertSame([5000,10500,27500,57500,120000], array_column($current['config']['coin_packages'], 'coins'), 'Coin package amounts must match roadmap defaults');
+$assertSame([499,999,2499,4999,9999], array_column($current['config']['coin_packages'], 'price_eur_cents'), 'Coin package EUR prices must match roadmap defaults');
 $assertSame(true, $current['simulation']['normal_match']['balanced'], 'Normal match source/sink simulation must balance');
 $assertSame(true, $current['simulation']['draw']['balanced'], 'Draw source/sink simulation must balance');
 $assertSame(300, $current['simulation']['rewarded_ads']['effective_daily_source'], 'Rewarded-ad simulation must cap at 300 coins');
@@ -101,24 +101,12 @@ $assertSame(600, $service->history(20)[1]['config']['bonuses']['weekly'], 'Histo
 
 $invalidUnknown = $defaults;
 $invalidUnknown['hidden_client_owner'] = 1;
-$assertThrows(
-    static fn() => EconomyConfigDefinition::normalize($invalidUnknown),
-    'Unknown economy config fields must fail closed'
-);
+$assertThrows(static fn() => EconomyConfigDefinition::normalize($invalidUnknown), 'Unknown economy config fields must fail closed');
 $invalidSettlement = $defaults;
 $invalidSettlement['match']['entry_cost'] = 101;
-$assertThrows(
-    static fn() => EconomyConfigDefinition::normalize($invalidSettlement),
-    'Unbalanced match source/sink values must fail deterministic simulation'
-);
-$assertThrows(
-    static fn() => $service->update($service->current()['config'], 'telegram:972585905', 'No-op config'),
-    'Identical config must not create a fake audit version'
-);
-$assertThrows(
-    static fn() => $service->rollback(3, 'telegram:972585905', 'No-op rollback'),
-    'Rollback to current version must fail closed'
-);
+$assertThrows(static fn() => EconomyConfigDefinition::normalize($invalidSettlement), 'Unbalanced match source/sink values must fail deterministic simulation');
+$assertThrows(static fn() => $service->update($service->current()['config'], 'telegram:972585905', 'No-op config'), 'Identical config must not create a fake audit version');
+$assertThrows(static fn() => $service->rollback(3, 'telegram:972585905', 'No-op rollback'), 'Rollback to current version must fail closed');
 
 $now = 1786796000;
 $fresh = 'query_id=x&auth_date=' . ($now - AdminWebAuth::MAX_AGE_SECONDS) . '&hash=x';
