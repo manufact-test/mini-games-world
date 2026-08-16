@@ -8,17 +8,38 @@ require $databaseDir . '/PdoDatabaseConnection.php';
 require $databaseDir . '/DatabaseMigrationInterface.php';
 require $databaseDir . '/MigrationRepository.php';
 require $databaseDir . '/MigrationRunner.php';
+require $databaseDir . '/DatabaseConfig.php';
 require $root . '/accounts/MgwIdGenerator.php';
 require $root . '/accounts/AccountIdentityService.php';
 require $root . '/ledger/LedgerIntegrity.php';
 require $root . '/ledger/LedgerWriteService.php';
 require $root . '/ledger/LedgerIntegrityVerifier.php';
+require $root . '/storage/contracts/StorageTransactionInterface.php';
+require $root . '/storage/contracts/StorageAdapterInterface.php';
+require $root . '/ledger/RuntimeEconomySnapshotStorage.php';
+require $root . '/ledger/LegacyEconomyShadowSyncService.php';
+require $root . '/ledger/LegacyEconomyDeltaImportService.php';
+require $root . '/ledger/LegacyEconomyRuntimeReconciliationService.php';
+require $root . '/ledger/RuntimeEconomyBalanceBootstrapService.php';
 require $root . '/economy/UnifiedBalanceMigrationRule.php';
 require $root . '/economy/UnifiedBalanceMigrationPlanner.php';
 require $root . '/economy/UnifiedBalanceMigrationExecutor.php';
 require $root . '/economy/UnifiedBalanceMigrationCoordinator.php';
 require $root . '/economy/UnifiedBalanceRuntimeState.php';
 require $root . '/economy/UnifiedEconomyRuntimeSyncService.php';
+require $root . '/storage/RuntimeStorageRouter.php';
+require $root . '/ledger/RuntimeEconomyRepository.php';
+require $root . '/services/UserService.php';
+
+if (!function_exists('now_iso')) {
+    function now_iso(): string { return gmdate('c'); }
+}
+if (!function_exists('clean_string')) {
+    function clean_string(mixed $value, int $max = 255): string {
+        $value = trim((string)$value);
+        return function_exists('mb_substr') ? mb_substr($value, 0, $max) : substr($value, 0, $max);
+    }
+}
 
 if (!extension_loaded('pdo_sqlite')) {
     throw new RuntimeException('UnifiedEconomyRuntimeSyncTest requires pdo_sqlite.');
@@ -173,5 +194,63 @@ $assertSame(true, $finalPreview['ready'], 'Final canonical parity must be ready'
 $assertSame(true, $finalPreview['reconciled'], 'Final canonical parity must be reconciled');
 $assertSame(0, $finalPreview['planned_delta_count'], 'Final canonical parity must require no writes');
 $assertSame(false, $finalPreview['sensitive_identifiers_exposed'], 'Public sync report must not expose identifiers');
+
+$partialSnapshot = ['users' => ['111001' => $snapshot['users']['111001']]];
+$partialPreview = $sync->preview($partialSnapshot);
+$assertSame(true, $partialPreview['ready'], 'Partial post-cutover snapshot must not classify another owned balance as unmanaged');
+$assertSame(0, $partialPreview['planned_delta_count'], 'Partial snapshot must not create a debit for an absent account');
+$emptyPreview = $sync->preview(['users'=>[]]);
+$assertSame(true, $emptyPreview['ready'], 'Empty stripped rollback snapshot must be safe after completed cutover');
+$assertSame(0, $emptyPreview['planned_delta_count'], 'Empty stripped rollback snapshot must never modify durable balances');
+$assertSame(25, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:222002' AND asset_code = 'mgw_coin'"), 'Absent account balance must remain unchanged');
+
+$runtimeConfig = [
+    'environment' => 'local',
+    'storage_driver' => 'json',
+    'initial_match_coins' => 0,
+    'initial_gold_coins' => 0,
+    'admin_ids' => [],
+    'database' => [
+        'enabled' => true,
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'port' => 3306,
+        'name' => 'mgw_test',
+        'user' => 'mgw_test',
+        'password' => 'test-password',
+        'charset' => 'utf8mb4',
+    ],
+    'feature_flags' => [
+        'database_runtime' => [
+            'enabled' => true,
+            'modules' => ['accounts'=>true,'economy'=>true],
+        ],
+    ],
+];
+$router = new RuntimeStorageRouter($runtimeConfig);
+$repository = new RuntimeEconomyRepository($runtimeConfig, $router, $database);
+$database->execute("DELETE FROM mgw_legacy_realtime_shadow WHERE entity_type = 'economy_user_balance'");
+$postCutoverSync = $repository->synchronize($partialSnapshot);
+$assertSame(true, $postCutoverSync['ok'], 'Post-cutover repository sync must succeed without economy balance shadow rows');
+$assertSame('post_cutover', $postCutoverSync['phase'], 'Durable marker must select the post-cutover synchronization lane');
+$assertSame(true, $postCutoverSync['legacy_delta']['skipped'] ?? false, 'Legacy delta importer must stay frozen after cutover');
+$assertSame(130, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:111001' AND asset_code = 'mgw_coin'"), 'Post-cutover repository sync must preserve current canonical balance');
+$assertSame(25, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:222002' AND asset_code = 'mgw_coin'"), 'Post-cutover repository sync must preserve absent account balance');
+$postCutoverAudit = $repository->auditParity($partialSnapshot);
+$assertSame(true, $postCutoverAudit['ok'], 'Post-cutover audit must ignore retired legacy shadow parity');
+$assertSame('post_cutover', $postCutoverAudit['phase'], 'Post-cutover audit must report the durable cutover lane');
+
+$runtimeState = ['users'=>[], 'games'=>[]];
+$userService = new UserService($runtimeConfig, $database);
+$rehydrated = $userService->ensureUser($runtimeState, [
+    'id' => '111001',
+    'first_name' => 'Provider Alpha',
+    'username' => 'provider_alpha',
+    'mgw_id' => $firstMgwId,
+    'mgw_account_ref' => 'legacy:111001',
+    'mgw_identity_provider' => 'telegram',
+]);
+$assertSame(130, (int)$rehydrated['balance'], 'Missing runtime user must restore the existing canonical DB balance');
+$assertSame(130, (int)$runtimeState['users']['111001']['balance'], 'Rehydrated canonical balance must persist into the resumed runtime copy');
 
 fwrite(STDOUT, "UnifiedEconomyRuntimeSyncTest: {$assertions} assertions passed\n");
