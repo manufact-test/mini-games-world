@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "locale": "ru",
+    "version": 1
+  },
+  "common": {
+    "back": "Назад",
+    "close": "Закрыть",
+    "retry": "Повторить",
+    "loading": "Загрузка…"
+  },
+  "nav": {
+    "home": "Главная",
+    "tournaments": "Турниры",
+    "store": "Магазин",
+    "profile": "Профиль"
+  },
+  "topbar": {
+    "balance": "Баланс",
+    "notifications": "Уведомления"
+  },
+  "games": {
+    "tictactoe": {"name": "Крестики-нолики"},
+    "four_in_a_row": {"name": "Четыре в ряд"},
+    "battleship": {"name": "Морской бой"},
+    "checkers": {"name": "Русские шашки"},
+    "reversi": {"name": "Реверси"},
+    "chess": {"name": "Шахматы"},
+    "go": {"name": "Го"},
+    "domino": {"name": "Домино"}
+  },
+  "rules": {
+    "open": "Правила",
+    "version": "Версия правил: {version}"
+  },
+  "units": {
+    "coin": {
+      "one": "{count} коин",
+      "few": "{count} коина",
+      "many": "{count} коинов",
+      "other": "{count} коина"
+    },
+    "game": {
+      "one": "{count} игра",
+      "few": "{count} игры",
+      "many": "{count} игр",
+      "other": "{count} игры"
+    }
+  }
+}
