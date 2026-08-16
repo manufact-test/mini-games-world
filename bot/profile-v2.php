@@ -29,6 +29,16 @@ function mgw_profile_v2_stats_by_game(array $data, string $userId): array
     return $result;
 }
 
+function mgw_profile_v2_validation_error(InvalidArgumentException $error): array
+{
+    return match ($error->getMessage()) {
+        MgwIdentityPolicy::NICKNAME_TOO_SHORT_ERROR => ['nickname_too_short', 'Ник должен содержать минимум 3 символа.'],
+        MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', 'Ник может содержать максимум 24 символа.'],
+        MgwIdentityPolicy::NICKNAME_INVALID_CHARACTERS_ERROR => ['nickname_invalid_characters', 'В нике можно использовать буквы, цифры, пробелы, дефис и подчёркивание.'],
+        default => ['profile_update_invalid', 'Не удалось сохранить профиль MGW.'],
+    };
+}
+
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
         json_response(['ok'=>false,'error'=>'Method not allowed.'], 405);
@@ -50,10 +60,11 @@ try {
             ? $profileService->updateProfile($mgwId, $payload['profile_update'])
             : $profileService->publicProfile($mgwId);
     } catch (InvalidArgumentException $error) {
-        json_response(['ok'=>false,'error'=>'Не удалось сохранить профиль MGW.'], 400);
+        [$code, $message] = mgw_profile_v2_validation_error($error);
+        json_response(['ok'=>false,'error'=>$code,'message'=>$message], 422);
     } catch (RuntimeException $error) {
         if ($error->getMessage() === MgwIdentityPolicy::NICKNAME_TAKEN_ERROR) {
-            json_response(['ok'=>false,'error'=>MgwIdentityPolicy::NICKNAME_TAKEN_ERROR], 409);
+            json_response(['ok'=>false,'error'=>'nickname_taken','message'=>MgwIdentityPolicy::NICKNAME_TAKEN_ERROR], 409);
         }
         throw $error;
     }
