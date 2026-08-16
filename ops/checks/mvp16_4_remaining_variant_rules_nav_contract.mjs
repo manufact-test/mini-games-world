@@ -81,22 +81,24 @@ for (const source of [fourRules, reversiRules, goRules]) {
   if (/[А-Яа-яЁё]/u.test(source)) throw new Error('Edited rule renderers must not introduce hardcoded RU product copy.');
 }
 
-// Bottom navigation: same icon/text sizes, equal vertical padding, smaller icon-label gap.
-if (!layout.includes('min-height:49px;\n  padding:3px;')) throw new Error('Bottom navigation item must have symmetric vertical padding.');
-if (!layout.includes('gap:0;\n  font-size:10px;\n  line-height:1;')) throw new Error('Bottom navigation icon/label gap must be tightened without shrinking text.');
+// Bottom navigation: preserve icon/text sizes while giving the label real bottom air.
+if (!layout.includes('min-height:52px;\n  padding:5px 3px;')) throw new Error('Bottom navigation item must have real symmetric 5px vertical space.');
+if (!layout.includes('justify-content:flex-start;\n  gap:0;\n  font-size:10px;\n  line-height:1;')) {
+  throw new Error('Bottom navigation content must use explicit top/bottom geometry with zero icon-label gap.');
+}
 if (!layout.includes('.app-bottom-nav-icon{width:34px;height:32px')
     || !layout.includes('.app-bottom-nav-icon .shield-king-metal-icon{width:32px;height:32px')) {
   throw new Error('Bottom navigation must preserve the accepted 32px icon size.');
 }
-if (!mainCss.includes("./base/layout.css?v=128&sk=1&mvp16=balanced-bottom-nav")) {
-  throw new Error('Balanced bottom navigation must have a fresh nested CSS target.');
+if (!mainCss.includes("./base/layout.css?v=129&sk=1&mvp16=optical-bottom-nav")) {
+  throw new Error('Optical bottom navigation must have a fresh nested CSS target.');
 }
 
 if (!clientManifest.includes("game-rules.js?v=78&mvp16=all-variant-rules")) {
-  throw new Error('Shared rules owner must use fresh Telegram cache bytes.');
+  throw new Error('Shared rules owner must keep accepted Telegram cache bytes.');
 }
-if (!clientManifest.includes("main.css?v=162&sk=3&icons=c1efd5af&render=31&mvp16=variant-rules-nav-balance")) {
-  throw new Error('Outer CSS must use fresh Telegram cache bytes.');
+if (!clientManifest.includes("main.css?v=163&sk=3&icons=c1efd5af&render=32&mvp16=optical-bottom-nav")) {
+  throw new Error('Outer CSS must use fresh Telegram cache bytes for optical nav spacing.');
 }
 if (!clientManifest.includes("'version' => 'v2-route-scoped-polling'")) throw new Error('Client manifest schema must remain stable.');
 if (!clientManifest.includes("'version' => 'keys-v1'")) throw new Error('Localization infrastructure must remain keys-v1.');
