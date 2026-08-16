@@ -41,7 +41,7 @@ $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
 $migration = $runner->migrate(false);
-$assertSame(7, $migration['executed_count'], 'Account test schema must include all migrations');
+$assertSame(9, $migration['executed_count'], 'Account test schema must include all migrations');
 
 $accounts = new AccountIdentityService($database, 3600);
 $telegram = [
@@ -57,19 +57,46 @@ $assertSame(true, $first['created'], 'First provider login must create the MGW a
 $assertSame('telegram', $first['provider'], 'Real Telegram user must use the Telegram provider');
 $assertSame(true, $first['session_registered'], 'Non-empty client session must be registered');
 
+$nickname = (string)$database->fetchValue(
+    'SELECT nickname FROM mgw_users WHERE mgw_id = :mgw_id',
+    ['mgw_id' => $first['mgw_id']]
+);
+$assertTrue(preg_match('/^Player\d{10}$/', $nickname) === 1, 'New MGW account must receive a scalable provider-neutral nickname');
+$assertSame($nickname, (string)$database->fetchValue(
+    'SELECT display_name FROM mgw_users WHERE mgw_id = :mgw_id',
+    ['mgw_id' => $first['mgw_id']]
+), 'Legacy display_name compatibility must mirror canonical MGW nickname');
+$assertSame('starter-default-01', (string)$database->fetchValue(
+    'SELECT equipped_avatar_item_id FROM mgw_users WHERE mgw_id = :mgw_id',
+    ['mgw_id' => $first['mgw_id']]
+), 'New MGW account must use the canonical starter avatar slot');
+$assertSame(null, $database->fetchValue(
+    'SELECT avatar_provider FROM mgw_users WHERE mgw_id = :mgw_id',
+    ['mgw_id' => $first['mgw_id']]
+), 'Provider avatar must not own canonical MGW account identity');
+
+$telegram['first_name'] = 'Telegram Changed Name';
 $telegram['username'] = 'renamed_user';
+$telegram['photo_url'] = 'https://example.test/avatar-2.jpg';
 $second = $accounts->resolveTelegramUser($telegram, 'session-beta');
 $assertSame($first['mgw_id'], $second['mgw_id'], 'Repeated Telegram login must resolve the same MGW ID');
 $assertSame(false, $second['created'], 'Repeated provider login must not create a second account');
+$assertSame($nickname, (string)$database->fetchValue(
+    'SELECT nickname FROM mgw_users WHERE mgw_id = :mgw_id',
+    ['mgw_id' => $first['mgw_id']]
+), 'Provider profile changes must never overwrite canonical MGW nickname');
+$assertSame('starter-default-01', (string)$database->fetchValue(
+    'SELECT equipped_avatar_item_id FROM mgw_users WHERE mgw_id = :mgw_id',
+    ['mgw_id' => $first['mgw_id']]
+), 'Provider photo changes must never overwrite canonical MGW avatar slot');
 
 $identity = $accounts->findByIdentity('telegram', '123456789');
-$assertSame($first['mgw_id'], $identity['mgw_id'] ?? null, 'Identity lookup must preserve the legacy Telegram mapping');
-$assertSame('renamed_user', $identity['provider_username'] ?? null, 'Provider metadata must refresh without remapping the account');
+$assertSame($first['mgw_id'], $identity['mgw_id'] ?? null, 'Identity lookup must preserve the Telegram mapping');
+$assertSame('renamed_user', $identity['provider_username'] ?? null, 'Provider metadata may refresh without owning game identity');
 $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_users'), 'Repeated login must keep one user row');
 $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_identities'), 'Repeated login must keep one identity row');
 $assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_devices'), 'Different client sessions must register separate device records');
 $assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_sessions'), 'Different client sessions must belong to the same account');
-$assertSame('telegram', (string)$database->fetchValue('SELECT avatar_provider FROM mgw_users WHERE mgw_id = :mgw_id', ['mgw_id' => $first['mgw_id']]), 'Signed Telegram avatar metadata must retain its provider');
 
 $storedSessionHashes = array_column($database->fetchAll('SELECT session_key_hash FROM mgw_sessions'), 'session_key_hash');
 $assertTrue(!in_array('session-alpha', $storedSessionHashes, true), 'Raw session IDs must never be stored');
