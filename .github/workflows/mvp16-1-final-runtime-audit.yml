@@ -1,0 +1,63 @@
+name: MVP-16.1 final runtime ownership audit
+
+on:
+  push:
+    branches:
+      - agent/mvp-16-1-final-runtime-audit
+    paths:
+      - '.github/workflows/mvp16-1-final-runtime-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit exact fingerprinted JS runtime owners
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          manifest = Path('bot/helpers/staging-e2e-runtime-files.txt')
+          files=[]
+          for raw in manifest.read_text(encoding='utf-8').splitlines():
+              p=raw.strip()
+              if not p or p.startswith('#') or not p.endswith('.js'):
+                  continue
+              path=Path(p)
+              if path.is_file(): files.append(path)
+
+          patterns = {
+              'interval': re.compile(r'\b(?:window\.)?setInterval\s*\('),
+              'timeout': re.compile(r'\b(?:window\.)?setTimeout\s*\('),
+              'add_listener': re.compile(r'\.addEventListener\s*\('),
+              'remove_listener': re.compile(r'\.removeEventListener\s*\('),
+              'state_timer': re.compile(r'\bstate\.timers\.[A-Za-z0-9_]+'),
+              'route_cleanup': re.compile(r'\bregisterScreenCleanup\s*\('),
+              'route_enter': re.compile(r'\bonScreenEnter\s*\('),
+              'route_leave': re.compile(r'\bonScreenLeave\s*\('),
+          }
+
+          print(f'RUNTIME_JS_FILES={len(files)}')
+          totals={k:0 for k in patterns}
+          for path in files:
+              text=path.read_text(encoding='utf-8')
+              hits=[]
+              for no,line in enumerate(text.splitlines(),1):
+                  kinds=[k for k,rx in patterns.items() if rx.search(line)]
+                  if kinds:
+                      for k in kinds: totals[k]+=1
+                      hits.append((no,','.join(kinds),line.strip()))
+              if hits:
+                  print(f'\nFILE {path}')
+                  for no,kinds,line in hits:
+                      print(f'{no}: [{kinds}] {line}')
+          print('\nTOTALS')
+          for k,v in totals.items(): print(f'{k}={v}')
+          PY
