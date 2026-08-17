@@ -10,6 +10,7 @@ on:
       - 'bot/services/NotificationService.php'
       - 'bot/tests/NotificationCenterV2PolicyTest.php'
       - 'bot/tests/NotificationCenterV2StaticContractTest.php'
+      - 'bot/tests/NotificationCenterV2VisualContractTest.php'
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
@@ -45,6 +46,7 @@ jobs:
           php -l bot/services/NotificationService.php
           php -l bot/tests/NotificationCenterV2PolicyTest.php
           php -l bot/tests/NotificationCenterV2StaticContractTest.php
+          php -l bot/tests/NotificationCenterV2VisualContractTest.php
           php -l app/runtime/client/version-manifest.php
           node --check app/assets/js/screens/notifications-screen-v110r13.js
           node --check app/assets/js/main-v110-handoff-shell.js
@@ -53,14 +55,8 @@ jobs:
         run: php bot/tests/NotificationCenterV2PolicyTest.php
       - name: Notification Center v2 static contract
         run: php bot/tests/NotificationCenterV2StaticContractTest.php
-      - name: Notification Center v2 visual geometry contract
-        run: |
-          set -Eeuo pipefail
-          css='app/assets/css/screens/notifications-v2.css'
-          grep -F '.notification-center-head{align-items:center}' "$css"
-          grep -F '.notification-mark-all{height:40px;min-height:40px;padding:0 12px' "$css"
-          grep -F '.notification-card-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px}' "$css"
-          grep -F '.notification-card-actions .btn{width:100%;min-height:42px;padding:10px 12px}' "$css"
+      - name: Notification Center v2 visual contract
+        run: php bot/tests/NotificationCenterV2VisualContractTest.php
       - name: Notification Center v2 cache-bust contract
         run: |
           set -Eeuo pipefail
