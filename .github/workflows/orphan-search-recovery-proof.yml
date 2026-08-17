@@ -1,0 +1,23 @@
+name: Orphan search recovery proof
+
+on:
+  push:
+    branches:
+      - agent/ci-orphan-search-recovery-proof
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          php -l bot/api.php
+          php -l bot/services/SearchSessionRecoveryService.php
+          php -l bot/tests/ProductionV110OrphanedSearchSessionRecoveryTest.php
+      - name: Orphaned search session regression
+        run: php bot/tests/ProductionV110OrphanedSearchSessionRecoveryTest.php
