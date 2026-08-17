@@ -419,8 +419,6 @@ async function createLinkDraft(context, button){
       return;
     }
 
-    // Keep the accepted in-app fallback owner. A missing/unsupported native
-    // prepared-share surface must never auto-jump the user into t.me/share/url.
     currentInvite = draftInvite;
     showPreparedLink(draftInvite, context);
   } catch (error) {
@@ -467,8 +465,6 @@ function warmShareDraft(context){
     .then(async () => {
       if (shareWarm?.id !== entry.id) return null;
       entry.status = 'loading';
-      // PreparedInlineMessage is warmed before the user taps Share so the
-      // accepted Telegram shareMessage surface remains the visible owner.
       const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true });
       if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
       if (shareWarm?.id !== entry.id) {
@@ -888,11 +884,26 @@ function terminalNotificationItem(context, invite){
 async function createRematch(gameId, button){
   if (!gameId || rematchPendingGameIds.has(gameId)) return;
   rematchPendingGameIds.add(gameId);
+  inviteUiTransitionGeneration += 1;
   haptic('light');
-  const originalText = String(button.textContent || 'Предложить реванш');
-  // The Set above is the single duplicate-request owner. Do not expose an
-  // artificial disabled/busy control state while the fast rematch is in flight.
-  button.textContent = 'Предлагаем реванш…';
+
+  const rollbackHtml = String(document.getElementById('sheet')?.innerHTML || '');
+  const finished = String(lastFinishedGame?.id || '') === gameId
+    ? lastFinishedGame
+    : (String(state.activeGame?.id || '') === gameId ? state.activeGame : null);
+  const gameType = String(finished?.game_type || finished?.type || state.selectedGame || 'tictactoe');
+  const boardSize = Number(finished?.board_size || GAME_OPTIONS[gameType]?.defaultSize || 3);
+  const bet = Number(finished?.bet || APP_CONFIG.matchBet || 0);
+
+  openSheet(`
+    <span data-rematch-pending="${escapeHtml(gameId)}" hidden></span>
+    <div class="sheet-head">
+      <div><h2>Реванш предложен</h2><p>${escapeHtml(gameTitle(gameType))}</p></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    ${contextSummary({ gameType, boardSize, bet })}
+    <div class="small-note invite-status-note">Ждём ответа соперника.</div>
+  `);
 
   try {
     const result = await inviteRequest('rematch', { gameId });
@@ -904,13 +915,23 @@ async function createRematch(gameId, button){
 
     currentInvite = result.invite || null;
     if (!currentInvite?.token) throw new Error('Не удалось создать реванш.');
+    const optimisticSurfaceOpen = String(
+      document.querySelector('#sheet [data-rematch-pending]')?.dataset.rematchPending || ''
+    ) === gameId;
     state.activeGame = null;
     showScreen('home');
-    openCurrentInvite();
+    if (optimisticSurfaceOpen) {
+      showOwnerWaiting(currentInvite);
+    } else if (isPassiveOwnerPending(currentInvite)) {
+      currentInvite = null;
+    }
     scheduleSync(0);
   } catch (error) {
+    const optimisticSurfaceOpen = String(
+      document.querySelector('#sheet [data-rematch-pending]')?.dataset.rematchPending || ''
+    ) === gameId;
+    if (optimisticSurfaceOpen && rollbackHtml) openSheet(rollbackHtml);
     toast(error.message || 'Не удалось предложить реванш.');
-    if (button?.isConnected) button.textContent = originalText;
   } finally {
     rematchPendingGameIds.delete(gameId);
   }
@@ -1250,9 +1271,6 @@ async function watchIncomingInvite(){
 
     if (seenWatchSignals.size > 100) seenWatchSignals.clear();
     seenWatchSignals.add(signalKey);
-    // Runtime-file signal is only a low-latency wake-up. Canonical invite sync
-    // remains the single state/UI owner, including while an invite sheet is
-    // already open and the same token moves pending -> accepted -> active.
     scheduleSync(0);
     return invite;
   } catch (error) {
