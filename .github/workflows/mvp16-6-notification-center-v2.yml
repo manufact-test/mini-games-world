@@ -11,8 +11,10 @@ on:
       - 'bot/tests/NotificationCenterV2PolicyTest.php'
       - 'bot/tests/NotificationCenterV2StaticContractTest.php'
       - 'bot/tests/NotificationCenterV2VisualContractTest.php'
+      - 'bot/tests/NotificationActorSilentTerminalContractTest.php'
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
+      - 'app/assets/js/games/game-invites-v110.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/css/screens/notifications-v2.css'
@@ -47,8 +49,10 @@ jobs:
           php -l bot/tests/NotificationCenterV2PolicyTest.php
           php -l bot/tests/NotificationCenterV2StaticContractTest.php
           php -l bot/tests/NotificationCenterV2VisualContractTest.php
+          php -l bot/tests/NotificationActorSilentTerminalContractTest.php
           php -l app/runtime/client/version-manifest.php
           node --check app/assets/js/screens/notifications-screen-v110r13.js
+          node --check app/assets/js/games/game-invites-v110.js
           node --check app/assets/js/main-v110-handoff-shell.js
           python3 -m json.tool app/locales/ru.json >/dev/null
       - name: Notification Center v2 policy regression
@@ -57,12 +61,15 @@ jobs:
         run: php bot/tests/NotificationCenterV2StaticContractTest.php
       - name: Notification Center v2 visual contract
         run: php bot/tests/NotificationCenterV2VisualContractTest.php
+      - name: Notification actor silent terminal contract
+        run: php bot/tests/NotificationActorSilentTerminalContractTest.php
       - name: Notification Center v2 cache-bust contract
         run: |
           set -Eeuo pipefail
           grep -F "main-v110-handoff-shell.js?v=1152&mvp16=notification-center-v2" app/runtime/client/version-manifest.php
-          grep -F "notifications-v2.css?v=2&mvp16=notification-center-v2-polish" app/assets/css/main.css
-          grep -F "main.css?v=173&sk=3&icons=c1efd5af&render=36&mvp16=notification-center-v2-polish" app/runtime/client/version-manifest.php
+          grep -F "notifications-v2.css?v=3&mvp16=notification-center-v2-polish-desktop" app/assets/css/main.css
+          grep -F "main.css?v=174&sk=3&icons=c1efd5af&render=37&mvp16=notification-center-v2-desktop-cache" app/runtime/client/version-manifest.php
+          grep -F "game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent" app/runtime/client/version-manifest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
@@ -73,6 +80,7 @@ jobs:
             bot/notifications/RuntimeNotificationRepository.php \
             bot/services/NotificationService.php \
             app/assets/js/screens/notifications-screen-v110r13.js \
+            app/assets/js/games/game-invites-v110.js \
             app/assets/js/main-v110-handoff-shell.js \
             app/runtime/client/version-manifest.php \
             app/assets/css/screens/notifications-v2.css \

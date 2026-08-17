@@ -32,7 +32,7 @@ if (!str_contains($block, 'Реванш предложен') || !str_contains($b
 if (!str_contains($block, 'if (optimisticSurfaceOpen && rollbackHtml) openSheet(rollbackHtml);')) {
     throw new RuntimeException('Rematch failure rollback contract missing.');
 }
-if (!str_contains($manifest, "game-invites-v110.js?v=1141&zone=unified&rematch=optimistic")) {
+if (!str_contains($manifest, "game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent")) {
     throw new RuntimeException('Optimistic rematch cache-bust missing.');
 }
 

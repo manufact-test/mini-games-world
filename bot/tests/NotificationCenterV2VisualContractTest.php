@@ -18,11 +18,11 @@ foreach ([
     if (!str_contains($css, $needle)) throw new RuntimeException('Missing visual contract: ' . $needle);
 }
 
-if (!str_contains($main, "notifications-v2.css?v=2&mvp16=notification-center-v2-polish")) {
-    throw new RuntimeException('Notification v2 polish stylesheet cache-bust missing.');
+if (!str_contains($main, "notifications-v2.css?v=3&mvp16=notification-center-v2-polish-desktop")) {
+    throw new RuntimeException('Notification v2 desktop stylesheet cache-bust missing.');
 }
-if (!str_contains($manifest, "main.css?v=173&sk=3&icons=c1efd5af&render=36&mvp16=notification-center-v2-polish")) {
-    throw new RuntimeException('Main CSS polish cache-bust missing.');
+if (!str_contains($manifest, "main.css?v=174&sk=3&icons=c1efd5af&render=37&mvp16=notification-center-v2-desktop-cache")) {
+    throw new RuntimeException('Main CSS desktop cache-bust missing.');
 }
 
 fwrite(STDOUT, "Notification Center v2 visual contract: OK\n");

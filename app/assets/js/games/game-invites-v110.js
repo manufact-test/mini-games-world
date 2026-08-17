@@ -722,6 +722,8 @@ async function performInviteAction(action, token, button){
   if (rollbackInvite?.token) currentInvite = cloneInvite(rollbackInvite);
   const rollbackHtml = String(document.getElementById('sheet')?.innerHTML || '');
   const terminalContext = terminalActionContext(button, action, token);
+  const optimisticNotificationTerminal = terminalContext.notificationSurface
+    && (action === 'decline' || action === 'cancel');
   const optimisticParticipantCancel = action === 'cancel'
     && !terminalContext.notificationSurface
     && String(rollbackInvite?.token || '') === token
@@ -739,6 +741,11 @@ async function performInviteAction(action, token, button){
       is_invitee:true,
       ready_deadline_at:String(rollbackInvite?.ready_deadline_at || ''),
     });
+  } else if (optimisticNotificationTerminal) {
+    closeSheet();
+    document.dispatchEvent(new CustomEvent('mgw:notification-remove', {
+      detail:{ inviteToken:token },
+    }));
   } else if (optimisticParticipantCancel) {
     closeSheet();
     showScreen('home');
@@ -768,13 +775,13 @@ async function performInviteAction(action, token, button){
         && (Boolean(terminalInvite?.is_owner) || Boolean(terminalInvite?.is_invitee));
 
       if (terminalContext.notificationSurface) {
-        document.dispatchEvent(new CustomEvent('mgw:notification-sync', {
+        document.dispatchEvent(new CustomEvent('mgw:notification-remove', {
           detail:{
-            item:terminalNotificationItem(terminalContext, terminalInvite),
-            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : 0,
-            announce:false,
+            inviteToken:token,
+            unreadCount:Number.isFinite(unreadCount) ? Math.max(0, unreadCount) : null,
           },
         }));
+        dispatchNotificationsRefresh();
       } else if (selfCancelledParticipant) {
         consumeInviteNotification(token, unreadCount);
         if (!optimisticParticipantCancel) {
@@ -801,7 +808,8 @@ async function performInviteAction(action, token, button){
   } catch (error) {
     if (action === 'start') endInviteStartTransition(true);
     currentInvite = rollbackInvite;
-    if (rollbackHtml) openSheet(rollbackHtml);
+    if (terminalContext.notificationSurface) dispatchNotificationsRefresh();
+    else if (rollbackHtml) openSheet(rollbackHtml);
     toast(error.message || 'Не удалось выполнить действие.');
     setInviteButtonsDisabled(false);
     const restored = [...document.querySelectorAll('[data-invite-action][data-invite-token]')].find(candidate =>
@@ -840,7 +848,7 @@ function terminalActionContext(button, action, token){
   const card = button.closest('[data-notification-id][data-notification-invite-token]');
   const notificationSurface = Boolean(
     card
-      && card.closest('#sheet')?.querySelector('[data-notifications-owner="r12"]')
+      && card.closest('#sheet')?.querySelector('[data-notifications-owner]')
       && String(card.getAttribute('data-notification-invite-token') || '') === token
   );
 
