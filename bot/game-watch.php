@@ -58,9 +58,9 @@ try {
     if (!is_array($payload)) api_error('Некорректный запрос.');
 
     // The watch endpoint still performs the same Telegram/staging/dev
-    // authentication, but it only needs the verified provider id to authorize a
-    // read of an existing participant game. Provider-neutral MGW identity/DB
-    // resolution is intentionally skipped on this high-frequency read-only path.
+    // authentication and only resolves the verified provider id for authorization.
+    // Canonical MGW visible identity is applied later by the same response-only
+    // projection used by normal game API responses, never by mutating auth state.
     $tgUser = (new AuthService($config))->getUserFromRequest($payload, false);
     $userId = trim((string)($tgUser['id'] ?? ''));
     $gameId = clean_string($payload['gameId'] ?? '', 80);
@@ -79,8 +79,10 @@ try {
         }
     }
 
-    json_response([
-        'ok' => true,
+    // Keep the high-frequency watcher on the exact same public response pipeline
+    // as action/bootstrap game payloads. This prevents alternating legacy and MGW
+    // player names from producing two different snapshots of the same game.
+    api_ok([
         'game' => $game,
         'me' => ['id' => $userId],
     ]);
