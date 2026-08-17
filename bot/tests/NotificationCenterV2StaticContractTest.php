@@ -42,7 +42,7 @@ $contains("data-notifications-mark-all", $sources['client'], 'Client must expose
 $contains("readNotificationId:String(options.readNotificationId", $sources['client'], 'Client must send read-one mutations');
 $contains("deleteNotificationId:String(options.deleteNotificationId", $sources['client'], 'Client must send delete-one mutations');
 $contains("const eventId = String(item?.event_id", $sources['client'], 'Client dedupe must use stable event IDs');
-$contains("if (eventId) return `event:${eventId}`", $sources['client'], 'Stable event ID must own non-invite dedupe identity');
+$contains('if (eventId) return `event:${eventId}`', $sources['client'], 'Stable event ID must own non-invite dedupe identity');
 $contains("safeDeepLink", $sources['client'], 'Client deep links must be allow-listed');
 $contains("['home','profile','store','store:orders']", $sources['client'], 'Client must reject arbitrary external notification links');
 $contains("isRetainedItem", $sources['client'], 'Expired notification cache entries must be removed from active UI');
@@ -52,7 +52,7 @@ $contains('.notification-card.unread', $sources['css'], 'Unread state must be vi
 $contains('notification-card-actions', $sources['css'], 'V2 card actions must have owned styling');
 
 $locale = json_decode($sources['locale'], true, 512, JSON_THROW_ON_ERROR);
-foreach (['title','mark_all','open','delete','empty','loading','load_error','try_again','open_center','unread_count'] as $key) {
+foreach (['title','mark_all','open','delete','empty','loading','item_fallback','load_error','try_again','open_center','unread_count'] as $key) {
     $assertions++;
     if (!is_string($locale['notifications'][$key] ?? null) || trim($locale['notifications'][$key]) === '') {
         throw new RuntimeException('Missing Notification Center localization key: notifications.' . $key);
