@@ -16,6 +16,7 @@ on:
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
       - 'bot/tests/ProfileV2PassAStaticContractTest.php'
       - 'bot/tests/ApiJsonResponseBoundaryContractTest.php'
+      - 'bot/tests/GamePublicIdentityResponseProjectionTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/production-clean-entry-v110.js'
@@ -62,6 +63,7 @@ jobs:
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
           php -l bot/tests/ProfileV2PassAStaticContractTest.php
           php -l bot/tests/ApiJsonResponseBoundaryContractTest.php
+          php -l bot/tests/GamePublicIdentityResponseProjectionTest.php
           node --check app/assets/js/api/client.js
           node --check app/assets/js/ui.js
           node --check app/assets/js/production-clean-entry-v110.js
@@ -80,6 +82,8 @@ jobs:
         run: php bot/tests/ProfileV2PassAStaticContractTest.php
       - name: Browser API JSON response boundary
         run: php bot/tests/ApiJsonResponseBoundaryContractTest.php
+      - name: Game public identity response projection
+        run: php bot/tests/GamePublicIdentityResponseProjectionTest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
