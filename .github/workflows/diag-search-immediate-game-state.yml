@@ -1,0 +1,93 @@
+name: DIAG Search Immediate Game State
+
+on:
+  push:
+    branches:
+      - agent/diag-search-immediate-game-state
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe start_search persistence into immediate game_state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node <<'NODE'
+          const origin = process.env.MGW_STAGING_ORIGIN;
+          const authRoute = `${origin}/bot/staging-test-auth.php`;
+          const apiRoute = `${origin}/bot/api.php`;
+          const audience = 'mini-games-world-staging-e2e';
+
+          async function oidc(){
+            const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
+            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || '';
+            if (!requestUrl || !requestToken) throw new Error('OIDC environment unavailable');
+            const url = new URL(requestUrl);
+            url.searchParams.set('audience', audience);
+            const r = await fetch(url, {headers:{Authorization:`bearer ${requestToken}`,Accept:'application/json'}});
+            const p = await r.json();
+            if (!r.ok || typeof p?.value !== 'string') throw new Error(`OIDC failed ${r.status}`);
+            return p.value;
+          }
+
+          const token = await oidc();
+          const auth = await fetch(authRoute, {
+            method:'POST',
+            headers:{Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json'},
+            body:JSON.stringify({action:'issue',slot:'A'}),
+          });
+          const authPayload = await auth.json().catch(()=>null);
+          const cookie = (auth.headers.get('set-cookie') || '').split(';',1)[0] || '';
+          if (!auth.ok || authPayload?.ok !== true || !cookie.startsWith('mgw_staging_test_session=')) {
+            throw new Error(`auth failed ${auth.status} ${authPayload?.error || ''}`);
+          }
+
+          const common = {
+            initData:'',
+            sessionId:`diag-search-persist-${Date.now()}`,
+            deviceId:'diag-search-persist-device',
+          };
+          async function call(action, extra={}){
+            const r = await fetch(apiRoute, {
+              method:'POST',
+              headers:{Cookie:cookie,Accept:'application/json','Content-Type':'application/json'},
+              body:JSON.stringify({...common,action,...extra}),
+            });
+            const text = await r.text();
+            let p=null; try{p=JSON.parse(text)}catch{}
+            const view = {
+              action,
+              http:r.status,
+              ok:p?.ok === true,
+              error:p?.error || '',
+              user_status:p?.user?.status || p?.result?.user?.status || '',
+              queued:p?.queued ?? p?.result?.queued ?? null,
+              game_id:p?.game?.id || p?.result?.game?.id || '',
+              game_status:p?.game?.status || p?.result?.game?.status || '',
+              session_locked:p?.session?.locked ?? p?.result?.session?.locked ?? null,
+            };
+            console.log('[MGW_SEARCH_PERSIST]', JSON.stringify(view));
+            if (!r.ok || p?.ok !== true) throw new Error(`${action} failed: ${r.status} ${p?.error || text.slice(0,120)}`);
+            return p;
+          }
+
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          await call('bootstrap');
+          await call('leave_search');
+          await call('start_search',{room:'match',bet:100,boardSize:3,gameType:'tictactoe'});
+          await call('game_state');
+          await sleep(300);
+          await call('game_state');
+          await sleep(1000);
+          await call('game_state');
+          await call('leave_search');
+          NODE
