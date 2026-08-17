@@ -1,8 +1,9 @@
 {
-  "_meta": {"locale":"ru","version":9},
+  "_meta": {"locale":"ru","version":10},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Турниры","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
+  "notifications": {"title":"Уведомления","mark_all":"Прочитать все","open":"Открыть","delete":"Удалить","empty":"Пока уведомлений нет","loading":"Загружаем…","item_fallback":"Уведомление","load_error":"Не удалось открыть уведомления","try_again":"Попробуйте ещё раз.","open_center":"Открыть уведомления","unread_count":"Уведомления: {count} новых"},
   "shell": {"navigation_label":"Основная навигация","tournaments_title":"Турниры","tournaments_note":"Турнирный раздел готовится.","store_title":"Магазин","store_note":"Откройте текущую витрину Mini Games World.","store_open":"Открыть магазин"},
   "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_saved":"Язык сохранён"},
   "setup": {"subtitle":"Выберите условия матча и подтвердите участие.","variant_label":"Размер / вариант","entry_label":"Стоимость участия","entry_value":"{count} коинов","confirm":"Начать поиск","invite":"Пригласить друга","one_on_one":"1 на 1","search_label":"{game} · участие {count} коинов · {variant}","insufficient_title":"Недостаточно коинов","insufficient_note":"Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.","economy_unavailable":"Стоимость участия временно недоступна."},

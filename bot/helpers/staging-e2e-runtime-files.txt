@@ -45,6 +45,7 @@ app/assets/js/games/tictactoe/entry.js
 app/assets/js/games/tictactoe/renderer.js
 app/assets/js/games/game-invites-v110.js
 app/assets/js/screens/notifications-screen-v110r12.js
+app/assets/js/screens/notifications-screen-v110r13.js
 
 # Shield King shared presentation assets. These files may change visuals only;
 # fingerprint them so design acceptance never runs against a partial deployment.
@@ -69,6 +70,7 @@ app/assets/css/screens/search.css
 app/assets/css/screens/profile.css
 app/assets/css/screens/profile-corrective.css
 app/assets/css/screens/notifications.css
+app/assets/css/screens/notifications-v2.css
 app/assets/css/shield-king.css
 app/assets/css/shield-king-v2.css
 app/assets/css/shield-king-icons-v3.css
@@ -230,6 +232,7 @@ bot/invites.php
 bot/invites/RuntimeInviteRepository.php
 bot/invites/RuntimeInviteDeltaProjector.php
 bot/notifications.php
+bot/notifications/NotificationCenterV2Policy.php
 bot/notifications/RuntimeNotificationBridgeCoordinator.php
 bot/notifications/RuntimeNotificationRepository.php
 bot/services/AuthService.php
