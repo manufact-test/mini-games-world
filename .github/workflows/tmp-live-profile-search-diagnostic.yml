@@ -1,0 +1,84 @@
+name: TEMP Live Profile Search Diagnostic
+
+on:
+  push:
+    branches:
+      - agent/mvp-16-5-live-profile-search-diagnostic
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ORIGIN: https://seashell-okapi-889488.hostingersite.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe profile v2 and search with isolated staging player
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          audience='mini-games-world-staging-e2e'
+          oidc_json="$(curl --fail-with-body --silent --show-error \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            -H 'Accept: application/json' \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")"
+          oidc="$(printf '%s' "$oidc_json" | jq -r '.value')"
+          test -n "$oidc"
+
+          auth="${ORIGIN}/bot/staging-test-auth.php"
+          api="${ORIGIN}/bot/api.php"
+          profile="${ORIGIN}/bot/profile-v2.php"
+          jar="$RUNNER_TEMP/mgw-cookies.txt"
+          sid='diag_profile_search_20260817'
+          did='diag_device_20260817'
+
+          # Best-effort reset only the isolated staging players. Do not touch real users.
+          reset_code="$(curl --silent --show-error -o "$RUNNER_TEMP/reset.json" -w '%{http_code}' \
+            -X POST -H "Authorization: Bearer ${oidc}" -H 'Content-Type: application/json' \
+            --data '{"action":"reset_test_players"}' "$auth")"
+          echo "RESET_HTTP=${reset_code}"
+          cat "$RUNNER_TEMP/reset.json" | jq -c . || cat "$RUNNER_TEMP/reset.json"
+
+          # OIDC tokens are single-use, request a fresh one for session issue.
+          oidc_json="$(curl --fail-with-body --silent --show-error \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            -H 'Accept: application/json' \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")"
+          oidc="$(printf '%s' "$oidc_json" | jq -r '.value')"
+          issue_code="$(curl --silent --show-error -c "$jar" -o "$RUNNER_TEMP/issue.json" -w '%{http_code}' \
+            -X POST -H "Authorization: Bearer ${oidc}" -H 'Content-Type: application/json' \
+            --data '{"action":"issue","slot":"A"}' "$auth")"
+          echo "ISSUE_HTTP=${issue_code}"
+          cat "$RUNNER_TEMP/issue.json" | jq -c . || cat "$RUNNER_TEMP/issue.json"
+          test "$issue_code" = '200'
+
+          payload="{\"sessionId\":\"${sid}\",\"deviceId\":\"${did}\"}"
+          profile_code="$(curl --silent --show-error -b "$jar" -o "$RUNNER_TEMP/profile.json" -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' --data "$payload" "$profile")"
+          echo "PROFILE_HTTP=${profile_code}"
+          cat "$RUNNER_TEMP/profile.json" | jq -c . || cat "$RUNNER_TEMP/profile.json"
+
+          bootstrap_payload="{\"action\":\"bootstrap\",\"sessionId\":\"${sid}\",\"deviceId\":\"${did}\"}"
+          bootstrap_code="$(curl --silent --show-error -b "$jar" -o "$RUNNER_TEMP/bootstrap.json" -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' --data "$bootstrap_payload" "$api")"
+          echo "BOOTSTRAP_HTTP=${bootstrap_code}"
+          cat "$RUNNER_TEMP/bootstrap.json" | jq -c . || cat "$RUNNER_TEMP/bootstrap.json"
+
+          start_payload="{\"action\":\"start_search\",\"sessionId\":\"${sid}\",\"deviceId\":\"${did}\",\"room\":\"match\",\"bet\":10,\"boardSize\":3,\"gameType\":\"tictactoe\"}"
+          start_code="$(curl --silent --show-error -b "$jar" -o "$RUNNER_TEMP/start.json" -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' --data "$start_payload" "$api")"
+          echo "START_HTTP=${start_code}"
+          cat "$RUNNER_TEMP/start.json" | jq -c . || cat "$RUNNER_TEMP/start.json"
+
+          leave_payload="{\"action\":\"leave_search\",\"sessionId\":\"${sid}\",\"deviceId\":\"${did}\"}"
+          curl --silent --show-error -b "$jar" -o "$RUNNER_TEMP/leave.json" \
+            -X POST -H 'Content-Type: application/json' --data "$leave_payload" "$api" >/dev/null || true
+
+          # The probe itself is diagnostic: require valid JSON and surface exact statuses.
+          jq -e . "$RUNNER_TEMP/profile.json" >/dev/null
+          jq -e . "$RUNNER_TEMP/bootstrap.json" >/dev/null
+          jq -e . "$RUNNER_TEMP/start.json" >/dev/null
