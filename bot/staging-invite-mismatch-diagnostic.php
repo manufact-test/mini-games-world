@@ -42,7 +42,7 @@ try {
     // TEMPORARY READ-ONLY rollback evidence for the real staging account.
     // The canonical staging workflow already calls this OIDC-protected endpoint,
     // so the evidence appears in Actions without creating a second auth surface.
-    $targetMgwId = 'N67MQT6PZG0M84Y2';
+    $targetMgwId = 'MGW-N67MQT6PZG0M84Y2';
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     if ($databaseConfig->enabled()) {
         $database = PdoConnectionFactory::create($databaseConfig);
