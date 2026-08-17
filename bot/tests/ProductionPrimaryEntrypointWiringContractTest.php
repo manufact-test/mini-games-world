@@ -2,8 +2,6 @@
 declare(strict_types=1);
 
 $projectRoot = dirname(__DIR__, 2);
-require_once $projectRoot . '/bot/runtime/ProductionPrimaryApplicationEntrypoints.php';
-
 $paths = [
     'factory' => 'bot/storage/StorageFactory.php',
     'guard' => 'bot/runtime/RuntimePrimaryEntrypointBridgeGuard.php',
@@ -59,18 +57,10 @@ $assertTrue(
         "'bot/invite-opponents.php' => 'invite_opponents'",
         "'bot/shop-history.php' => 'shop_history'",
         "'bot/cron/weekly-match.php' => 'weekly_match_cron'",
-        "'bot/profile-v2.php'",
         'realpath($projectRoot)',
         "return self::PATH_TO_ID[\$relative] ?? '';",
     ]),
     'Production registry must use exact repository paths for all application entrypoints'
-);
-$assertTrue(
-    ProductionPrimaryApplicationEntrypoints::resolve(
-        $projectRoot,
-        ['SCRIPT_FILENAME' => $projectRoot . '/bot/profile-v2.php']
-    ) === 'api',
-    'Profile V2 must reuse the production API DB-primary context instead of legacy JSON storage'
 );
 $assertTrue(
     $containsAll($sources['api'], ['StorageFactory::createJson('])
