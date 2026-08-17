@@ -53,11 +53,20 @@ jobs:
         run: php bot/tests/NotificationCenterV2PolicyTest.php
       - name: Notification Center v2 static contract
         run: php bot/tests/NotificationCenterV2StaticContractTest.php
+      - name: Notification Center v2 visual geometry contract
+        run: |
+          set -Eeuo pipefail
+          css='app/assets/css/screens/notifications-v2.css'
+          grep -F '.notification-center-head{align-items:center}' "$css"
+          grep -F '.notification-mark-all{height:40px;min-height:40px;padding:0 12px' "$css"
+          grep -F '.notification-card-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px}' "$css"
+          grep -F '.notification-card-actions .btn{width:100%;min-height:42px;padding:10px 12px}' "$css"
       - name: Notification Center v2 cache-bust contract
         run: |
           set -Eeuo pipefail
           grep -F "main-v110-handoff-shell.js?v=1152&mvp16=notification-center-v2" app/runtime/client/version-manifest.php
-          grep -F "main.css?v=172&sk=3&icons=c1efd5af&render=36&mvp16=notification-center-v2" app/runtime/client/version-manifest.php
+          grep -F "notifications-v2.css?v=2&mvp16=notification-center-v2-polish" app/assets/css/main.css
+          grep -F "main.css?v=173&sk=3&icons=c1efd5af&render=36&mvp16=notification-center-v2-polish" app/runtime/client/version-manifest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
