@@ -6,7 +6,10 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/invites.php'
+      - 'bot/game-watch.php'
+      - 'bot/helpers/response.php'
       - 'bot/tests/InviteConfigClosureContractTest.php'
+      - 'bot/tests/GameWatchCanonicalIdentityProjectionTest.php'
       - '.github/workflows/mvp16-6-critical-game-regressions.yml'
   workflow_dispatch:
 
@@ -29,13 +32,21 @@ jobs:
         run: |
           set -Eeuo pipefail
           php -l bot/invites.php
+          php -l bot/game-watch.php
+          php -l bot/helpers/response.php
           php -l bot/tests/InviteConfigClosureContractTest.php
+          php -l bot/tests/GameWatchCanonicalIdentityProjectionTest.php
       - name: Invite config closure regression
         run: php bot/tests/InviteConfigClosureContractTest.php
+      - name: Game watch canonical identity regression
+        run: php bot/tests/GameWatchCanonicalIdentityProjectionTest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
-          grep -Fx 'bot/invites.php' bot/helpers/staging-e2e-runtime-files.txt
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          grep -Fx 'bot/invites.php' "$manifest"
+          grep -Fx 'bot/game-watch.php' "$manifest"
+          grep -Fx 'bot/helpers/response.php' "$manifest"
           fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
           [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
           printf 'CRITICAL_GAME_REGRESSION_STAGING_FINGERPRINT=%s\n' "$fingerprint"
