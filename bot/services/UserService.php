@@ -7,13 +7,17 @@ final class UserService
 {
     private const LAST_SEEN_WRITE_INTERVAL_SEC = 30;
 
-    public function __construct(private array $config) {}
+    public function __construct(
+        private array $config,
+        private ?DatabaseConnectionInterface $database = null
+    ) {}
 
     public function ensureUser(array &$db, array $tgUser): array
     {
         $id = (string)$tgUser['id'];
         $now = now_iso();
-        if (!isset($db['users'][$id])) {
+        $createdRuntimeUser = !isset($db['users'][$id]);
+        if ($createdRuntimeUser) {
             $isDevUser = !empty($tgUser['is_dev_user']);
             $db['users'][$id] = [
                 'id' => $id,
@@ -73,8 +77,12 @@ final class UserService
         // economy idempotency can remain provider-neutral instead of keying a
         // one-time reward only by the current Telegram/legacy user id.
         $this->attachVerifiedAccountIdentity($db['users'][$id], $tgUser);
+        $this->syncCanonicalGameIdentity($db, $db['users'][$id]);
 
         UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);
+        if ($createdRuntimeUser) {
+            $this->rehydratePostCutoverBalance($db['users'][$id]);
+        }
         return $db['users'][$id];
     }
 
@@ -201,6 +209,8 @@ final class UserService
         $incomingMgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
         $incomingAccountRef = trim((string)($authenticatedUser['mgw_account_ref'] ?? ''));
         $incomingProvider = trim((string)($authenticatedUser['mgw_identity_provider'] ?? ''));
+        $incomingNickname = trim((string)($authenticatedUser['mgw_nickname'] ?? ''));
+        $incomingAvatarItemId = trim((string)($authenticatedUser['mgw_avatar_item_id'] ?? ''));
 
         if ($incomingMgwId === '' && $incomingAccountRef === '' && $incomingProvider === '') {
             return;
@@ -214,6 +224,13 @@ final class UserService
             throw new RuntimeException('Verified MGW identity conflicts with the persisted user owner.');
         }
 
+        // Provider metadata stays available for auth/audit, but it no longer
+        // owns any visible runtime identity field used by game projections.
+        $user['provider_first_name'] = clean_string($authenticatedUser['first_name'] ?? $user['provider_first_name'] ?? '', 80);
+        $user['provider_username'] = clean_string($authenticatedUser['username'] ?? $user['provider_username'] ?? '', 80);
+        $providerPhotoUrl = clean_string($authenticatedUser['photo_url'] ?? '', 2048);
+        if ($providerPhotoUrl !== '') $user['provider_photo_url'] = $providerPhotoUrl;
+
         // mgw_id is the immutable provider-neutral owner. account_ref is a
         // runtime ownership locator and may legitimately rotate during a future
         // link/merge while the same verified MGW owner remains unchanged.
@@ -222,6 +239,86 @@ final class UserService
         if ($incomingProvider !== '') {
             $user['mgw_identity_provider'] = $incomingProvider;
         }
+        if ($incomingNickname !== '') {
+            $user['mgw_nickname'] = clean_string($incomingNickname, 13);
+            $user['first_name'] = $user['mgw_nickname'];
+            $user['username'] = '';
+            $user['photo_url'] = '';
+        }
+        if ($incomingAvatarItemId !== '') {
+            $user['mgw_avatar_item_id'] = clean_string($incomingAvatarItemId, 80);
+        }
+    }
+
+    /**
+     * A stripped rollback snapshot may legitimately contain no users after the
+     * one-time MVP-15.3 cutover. If a verified existing account reappears there,
+     * restore only its canonical mgw_coin amount from DB before JSON resumes as
+     * the live mutable runtime copy. Never reinterpret legacy Match/Gold rows.
+     */
+    private function rehydratePostCutoverBalance(array &$user): void
+    {
+        $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
+        $mgwId = trim((string)($user['mgw_id'] ?? ''));
+        $legacyUserId = trim((string)($user['id'] ?? ''));
+        if ($accountRef === '' || $mgwId === '' || $legacyUserId === '') return;
+
+        $router = new RuntimeStorageRouter($this->config);
+        if ($router->routeFor('economy') !== RuntimeStorageRouter::DRIVER_DATABASE) return;
+
+        $database = $this->database;
+        if ($database === null) {
+            $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+            if (!$databaseConfig->enabled()) return;
+            $database = $this->database = PdoConnectionFactory::create($databaseConfig);
+        }
+
+        $cutoverCount = (int)$database->fetchValue(
+            "SELECT COUNT(*) FROM mgw_idempotency_keys WHERE operation_type = 'unified_balance_cutover' AND status = 'completed'"
+        );
+        if ($cutoverCount < 1) return;
+        if ($cutoverCount !== 1) {
+            throw new RuntimeException('Unified balance cutover marker is ambiguous during runtime rehydration.');
+        }
+
+        $rows = $database->fetchAll(
+            'SELECT mgw_id, legacy_user_id, available_amount, reserved_amount
+             FROM mgw_balances
+             WHERE account_ref = :account_ref AND asset_code = :asset_code',
+            ['account_ref' => $accountRef, 'asset_code' => UnifiedBalanceMigrationRule::TARGET_ASSET]
+        );
+        if ($rows === []) return;
+        if (count($rows) !== 1 || !is_array($rows[0])) {
+            throw new RuntimeException('Canonical runtime balance is ambiguous during rehydration.');
+        }
+
+        $row = $rows[0];
+        if (trim((string)($row['mgw_id'] ?? '')) !== $mgwId
+            || trim((string)($row['legacy_user_id'] ?? '')) !== $legacyUserId) {
+            throw new RuntimeException('Canonical runtime balance ownership mismatch during rehydration.');
+        }
+        $available = (int)($row['available_amount'] ?? -1);
+        $reserved = (int)($row['reserved_amount'] ?? -1);
+        if ($available < 0 || $reserved !== 0) {
+            throw new RuntimeException('Canonical runtime balance state is not safe for rehydration.');
+        }
+
+        $user[UnifiedBalanceRuntimeState::FIELD] = $available;
+    }
+
+    private function syncCanonicalGameIdentity(array &$db, array &$user): void
+    {
+        $nickname = trim((string)($user['mgw_nickname'] ?? ''));
+        $userId = trim((string)($user['id'] ?? ''));
+        $gameId = trim((string)($user['current_game_id'] ?? ''));
+        if ($nickname === '' || $userId === '' || $gameId === '') return;
+        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) return;
+        if (!in_array($userId, array_map('strval', $db['games'][$gameId]['player_ids'] ?? []), true)) return;
+
+        if (!isset($db['games'][$gameId]['player_names']) || !is_array($db['games'][$gameId]['player_names'])) {
+            $db['games'][$gameId]['player_names'] = [];
+        }
+        $db['games'][$gameId]['player_names'][$userId] = $nickname;
     }
 
     private function ensureStatsShape(array &$user): void
