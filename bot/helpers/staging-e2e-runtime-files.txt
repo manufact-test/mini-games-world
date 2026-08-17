@@ -124,13 +124,15 @@ bot/services/StagingReadinessService.php
 
 # MVP-15.1 provider-neutral MGW profile/auth core. AuthService verifies the
 # current provider; AccountIdentityService resolves verified provider identity
-# to mgw_id; the profile service reads only the canonical account DB.
+# to mgw_id; the runtime resolver carries canonical visible identity downstream;
+# the profile service reads only the canonical account DB.
 bot/profile.php
 bot/profile-v2.php
 bot/accounts/MgwIdGenerator.php
 bot/accounts/MgwIdentityPolicy.php
 bot/accounts/MgwProfileService.php
 bot/accounts/AccountIdentityService.php
+bot/accounts/RuntimeAccountIdentityResolver.php
 bot/database/migrations/20260816_0009_add_canonical_profile_identity.php
 
 # MVP-15.2 visible unified profile/avatar consumer. The canonical MGW profile
