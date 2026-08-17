@@ -419,6 +419,8 @@ async function createLinkDraft(context, button){
       return;
     }
 
+    // Keep the accepted in-app fallback owner. A missing/unsupported native
+    // prepared-share surface must never auto-jump the user into t.me/share/url.
     currentInvite = draftInvite;
     showPreparedLink(draftInvite, context);
   } catch (error) {
@@ -465,6 +467,8 @@ function warmShareDraft(context){
     .then(async () => {
       if (shareWarm?.id !== entry.id) return null;
       entry.status = 'loading';
+      // PreparedInlineMessage is warmed before the user taps Share so the
+      // accepted Telegram shareMessage surface remains the visible owner.
       const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true });
       if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
       if (shareWarm?.id !== entry.id) {
@@ -1271,6 +1275,9 @@ async function watchIncomingInvite(){
 
     if (seenWatchSignals.size > 100) seenWatchSignals.clear();
     seenWatchSignals.add(signalKey);
+    // Runtime-file signal is only a low-latency wake-up. Canonical invite sync
+    // remains the single state/UI owner, including while an invite sheet is
+    // already open and the same token moves pending -> accepted -> active.
     scheduleSync(0);
     return invite;
   } catch (error) {
