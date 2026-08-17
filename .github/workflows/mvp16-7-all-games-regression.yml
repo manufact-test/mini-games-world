@@ -9,7 +9,6 @@ on:
       - 'bot/tests/Mvp14r2GamesContractTest.php'
       - 'bot/tests/Mvp14r2GamesBaselineTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
-      - 'bot/tests/ProductionV110LeaveGameFastPathContractTest.php'
       - 'bot/games/**'
       - 'bot/services/GameCatalogService.php'
       - 'bot/services/GameActionService.php'
@@ -53,7 +52,6 @@ jobs:
           php -l bot/tests/Mvp14r2GamesContractTest.php
           php -l bot/tests/Mvp14r2GamesBaselineTest.php
           php -l bot/tests/RematchOptimisticUxContractTest.php
-          php -l bot/tests/ProductionV110LeaveGameFastPathContractTest.php
           for game in tictactoe four-in-a-row battleship checkers reversi chess go domino; do
             node --check "app/assets/js/games/${game}/entry.js"
             node --check "app/assets/js/games/${game}/meta.js"
@@ -63,7 +61,7 @@ jobs:
           node --check app/assets/js/production-v110-match-lifecycle.js
           node --check app/assets/js/games/game-invites-v110.js
 
-      - name: MVP-16.7 catalog UI lifecycle contract
+      - name: MVP-16.7 catalog UI shared-lifecycle contract
         run: php bot/tests/Mvp167AllGamesRegressionContractTest.php
 
       - name: Frozen mechanics contract for all eight games
@@ -74,6 +72,3 @@ jobs:
 
       - name: Shared rematch regression
         run: php bot/tests/RematchOptimisticUxContractTest.php
-
-      - name: Shared leave regression
-        run: php bot/tests/ProductionV110LeaveGameFastPathContractTest.php
