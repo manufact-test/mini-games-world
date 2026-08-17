@@ -91,3 +91,5 @@ jobs:
           await call('game_state');
           await call('leave_search');
           NODE
+
+# diagnostic-only branch; never merge this workflow
