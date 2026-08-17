@@ -13,6 +13,7 @@ on:
       - 'bot/tests/AccountIdentityServiceTest.php'
       - 'bot/tests/MgwProfileIdentityCorrectiveTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
+      - 'bot/tests/ProfileV2PassAStaticContractTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/production-clean-entry-v110.js'
@@ -55,6 +56,7 @@ jobs:
           php -l bot/tests/AccountIdentityServiceTest.php
           php -l bot/tests/MgwProfileIdentityCorrectiveTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php -l bot/tests/ProfileV2PassAStaticContractTest.php
           node --check app/assets/js/api/client.js
           node --check app/assets/js/ui.js
           node --check app/assets/js/production-clean-entry-v110.js
@@ -69,6 +71,8 @@ jobs:
         run: php bot/tests/MgwProfileIdentityCorrectiveTest.php
       - name: Profile UI and settings contract
         run: php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+      - name: Profile pass A contract
+        run: php bot/tests/ProfileV2PassAStaticContractTest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
