@@ -61,7 +61,7 @@ final class NotificationCenterV2Policy
         if (str_starts_with($type, 'payment_')) return 'home';
 
         return match ($type) {
-            'first_game_bonus' => 'profile',
+            'first_game_bonus' => '',
             'weekly_match_bonus',
             'welcome_match_grant',
             'admin_gold_topup' => 'home',
