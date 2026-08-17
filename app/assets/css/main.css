@@ -30,6 +30,7 @@
 @import url('./screens/store-order.css?v=38');
 @import url('./screens/store-orders.css?v=36');
 @import url('./screens/notifications.css?v=82&palette=three-state-semantic');
+@import url('./screens/notifications-v2.css?v=1&mvp16=notification-center-v2');
 @import url('./screens/search.css?v=124&sk=1');
 @import url('./screens/game.css?v=62&timer=battleship-setup-single-owner');
 @import url('./screens/profile.css?v=126&sk=1&mvp16=profile-v2');
