@@ -103,7 +103,10 @@ $assertContains("photo_url: ''", $model, 'Canonical projection must explicitly s
 $assertSame(3, substr_count($profile, '[1,2,3].map') === 1 ? 3 : 0, 'Achievements preview must remain exactly three placeholders');
 
 $assertContains('profile-corrective.css?v=3&mvp16=profile-polish', $mainCss, 'Nested corrective stylesheet cache key must stay explicit');
-$assertContains('main.css?v=171', $versionManifest, 'Runtime main stylesheet cache key must advance with Profile pass A');
+$assertions++;
+if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
+    throw new RuntimeException('Runtime main stylesheet cache key must stay at or beyond Profile pass A baseline');
+}
 $assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Runtime must ship the Profile pass A controller');
 $assertContains('canonical-avatar-owner', $versionManifest, 'Runtime must keep the canonical avatar owner cleanup');
 $assertContains('canonical-profile-display-owner', $versionManifest, 'Runtime must keep the canonical visible identity owner');

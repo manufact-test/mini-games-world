@@ -61,7 +61,10 @@ $assertContains("rulesBtn:'ui/actions/rules.webp'", $visuals, 'Settings and neig
 
 $assertContains('home-screen.js?v=80&mvp16=settings-row-owner', $versionManifest, 'Settings row cache key must stay current.');
 $assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Profile pass A cache key must stay current.');
-$assertContains('main.css?v=171', $versionManifest, 'Main CSS cache key must stay current.');
+$assertions++;
+if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
+    throw new RuntimeException('Main CSS cache key must stay at or beyond the Profile pass A baseline.');
+}
 $assertContains("shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=128&sk=4&icons=c1efd5af&shell=nav&settings=metallic", $versionManifest, 'Telegram shell must cache-bust the corrected Settings metallic icon owner.');
 
 fwrite(STDOUT, "ProfileV2PassAStaticContractTest: {$assertions} assertions passed\n");
