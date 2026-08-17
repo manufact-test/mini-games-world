@@ -36,19 +36,19 @@ $assertNotContains = static function (string $needle, string $haystack, string $
 
 // One verified provider -> canonical MGW identity bridge.
 $assertContains('$canonical = $accounts->findByIdentity(', $resolver, 'Runtime resolver must read canonical account data after provider verification');
-$assertContains("$user['mgw_nickname'] = $nickname", $resolver, 'Runtime resolver must carry canonical nickname downstream');
-$assertContains("$user['mgw_avatar_item_id'] = $avatarItemId", $resolver, 'Runtime resolver must carry canonical avatar downstream');
+$assertContains('$user[\'mgw_nickname\'] = $nickname', $resolver, 'Runtime resolver must carry canonical nickname downstream');
+$assertContains('$user[\'mgw_avatar_item_id\'] = $avatarItemId', $resolver, 'Runtime resolver must carry canonical avatar downstream');
 
 // Existing shared legacy projection already owns all visible runtime identity fields.
-$assertContains("$incomingNickname = trim((string)($authenticatedUser['mgw_nickname'] ?? ''))", $userService, 'UserService must consume the verified MGW nickname');
-$assertContains("$user['first_name'] = $user['mgw_nickname']", $userService, 'Canonical nickname must own visible legacy first_name');
-$assertContains("$user['username'] = ''", $userService, 'Provider username must not override visible game identity');
+$assertContains('$incomingNickname = trim((string)($authenticatedUser[\'mgw_nickname\'] ?? \'\'))', $userService, 'UserService must consume the verified MGW nickname');
+$assertContains('$user[\'first_name\'] = $user[\'mgw_nickname\']', $userService, 'Canonical nickname must own visible legacy first_name');
+$assertContains('$user[\'username\'] = \'\'', $userService, 'Provider username must not override visible game identity');
 $assertContains('$this->syncCanonicalGameIdentity($db, $db[\'users\'][$id]);', $userService, 'Active game identity must be synchronized through one shared owner');
-$assertContains("$db['games'][$gameId]['player_names'][$userId] = $nickname", $userService, 'Active game player_names must receive canonical nickname');
+$assertContains('$db[\'games\'][$gameId][\'player_names\'][$userId] = $nickname', $userService, 'Active game player_names must receive canonical nickname');
 
 // New matches keep one legacy creation path; no renderer-specific nickname patching.
-$assertContains("($userA['username'] ?: $userA['first_name'])", $gameService, 'Shared match creation must consume the already canonicalized runtime user');
-$assertContains("($user['username'] ?: $user['first_name'])", $gameService, 'Shared bot match creation must consume the already canonicalized runtime user');
+$assertContains('($userA[\'username\'] ?: $userA[\'first_name\'])', $gameService, 'Shared match creation must consume the already canonicalized runtime user');
+$assertContains('($user[\'username\'] ?: $user[\'first_name\'])', $gameService, 'Shared bot match creation must consume the already canonicalized runtime user');
 $assertContains('$this->base->startSearch(', $specialRuntime, 'Non-special engines must keep the shared base runtime');
 $assertContains('$this->legacyGame->startSearch(', $specialRuntime, 'Chess/Go/Domino must keep the shared legacy matcher metadata path');
 
