@@ -1,7 +1,6 @@
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_ONLY_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-only-invite-recovery.php`;
 const FRESH_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-fresh-invite-recovery.php`;
 const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
@@ -25,64 +24,6 @@ async function requestOidcToken(){
     throw new Error('GitHub Actions OIDC reset response did not contain a JWT.');
   }
   return payload.value;
-}
-
-async function probeSearchPersistence(){
-  const oidcToken = await requestOidcToken();
-  const authResponse = await fetch(AUTH_ROUTE, {
-    method:'POST',
-    headers:{
-      Authorization:`Bearer ${oidcToken}`,
-      Accept:'application/json',
-      'Content-Type':'application/json',
-    },
-    body:JSON.stringify({ action:'issue', slot:'A' }),
-  });
-  const authPayload = await authResponse.json().catch(() => null);
-  const cookie = (authResponse.headers.get('set-cookie') || '').split(';', 1)[0] || '';
-  if (!authResponse.ok || authPayload?.ok !== true || !cookie.startsWith('mgw_staging_test_session=')) {
-    throw new Error(`Staging search persistence auth failed: ${authResponse.status} ${authPayload?.error || 'unknown_error'}`);
-  }
-
-  const sessionId = `diag-search-state-${Date.now()}`;
-  const common = { initData:'', sessionId, deviceId:'diag-search-state-device' };
-  const callApi = async (action, extra = {}) => {
-    const response = await fetch(API_ROUTE, {
-      method:'POST',
-      headers:{ Cookie:cookie, Accept:'application/json', 'Content-Type':'application/json' },
-      body:JSON.stringify({ ...common, action, ...extra }),
-    });
-    const text = await response.text();
-    let payload = null;
-    try { payload = JSON.parse(text); } catch {}
-    const result = payload?.result && typeof payload.result === 'object' ? payload.result : payload;
-    const view = {
-      action,
-      status:response.status,
-      ok:payload?.ok === true,
-      error:payload?.error || '',
-      queued:result?.queued ?? null,
-      user_status:result?.user?.status || '',
-      game_id:result?.game?.id || '',
-      game_status:result?.game?.status || '',
-      session_locked:result?.session?.locked ?? null,
-    };
-    console.log('[MGW_STAGING_SEARCH_STATE_PROBE]', JSON.stringify(view));
-    if (!response.ok || payload?.ok !== true) {
-      throw new Error(`Staging search state probe ${action} failed: ${response.status} ${payload?.error || 'invalid_json'}`);
-    }
-    return result;
-  };
-
-  await callApi('bootstrap');
-  await callApi('leave_search');
-  await callApi('start_search', { room:'match', bet:100, boardSize:3, gameType:'tictactoe' });
-  await callApi('game_state');
-  await new Promise(resolve => setTimeout(resolve, 300));
-  await callApi('game_state');
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  await callApi('game_state');
-  await callApi('leave_search');
 }
 
 async function diagnoseInviteMismatch(){
@@ -223,7 +164,6 @@ async function reconcileInviteResiduals(){
 }
 
 export default async function stagingGlobalSetup(){
-  await probeSearchPersistence();
   await diagnoseInviteMismatch();
   await recoverTestOnlyInviteOrphans();
   await recoverFreshInviteReplacement();
