@@ -34,7 +34,7 @@ return [
         './assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a' => './assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch',
         './assets/js/production-v110-targeted-interactions.js?v=1102' => './assets/js/production-v110-targeted-interactions.js?v=1105&zone=unified',
         './assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69' => './assets/js/production-v110-presence.js?v=1123&zone=unified',
-        './assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110.js?v=1141&zone=unified&rematch=optimistic',
+        './assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent',
         './assets/js/games/tictactoe/renderer.js?v=53' => './assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought',
         './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact',
         './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner',
@@ -44,7 +44,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=173&sk=3&icons=c1efd5af&render=36&mvp16=notification-center-v2-polish',
+        'main_css' => './assets/css/main.css?v=174&sk=3&icons=c1efd5af&render=37&mvp16=notification-center-v2-desktop-cache',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
