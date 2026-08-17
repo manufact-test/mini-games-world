@@ -34,6 +34,12 @@ final class ProductionPrimaryApplicationEntrypoints
             // mutation endpoint both reuse the existing API DB-primary context.
             return 'api';
         }
+        if ($relative === 'bot/profile-v2.php') {
+            // Profile V2 also reuses the API DB-primary context. Without this
+            // explicit alias StorageFactory falls back to legacy JSON after the
+            // canonical account read, which is invalid after production cutover.
+            return 'api';
+        }
         return self::PATH_TO_ID[$relative] ?? '';
     }
 
