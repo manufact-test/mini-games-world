@@ -10,6 +10,7 @@ on:
       - 'bot/services/NotificationService.php'
       - 'bot/tests/NotificationCenterV2PolicyTest.php'
       - 'bot/tests/NotificationCenterV2StaticContractTest.php'
+      - 'bot/tests/NotificationCenterV2VisualContractTest.php'
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
@@ -45,6 +46,7 @@ jobs:
           php -l bot/services/NotificationService.php
           php -l bot/tests/NotificationCenterV2PolicyTest.php
           php -l bot/tests/NotificationCenterV2StaticContractTest.php
+          php -l bot/tests/NotificationCenterV2VisualContractTest.php
           php -l app/runtime/client/version-manifest.php
           node --check app/assets/js/screens/notifications-screen-v110r13.js
           node --check app/assets/js/main-v110-handoff-shell.js
@@ -53,11 +55,14 @@ jobs:
         run: php bot/tests/NotificationCenterV2PolicyTest.php
       - name: Notification Center v2 static contract
         run: php bot/tests/NotificationCenterV2StaticContractTest.php
+      - name: Notification Center v2 visual contract
+        run: php bot/tests/NotificationCenterV2VisualContractTest.php
       - name: Notification Center v2 cache-bust contract
         run: |
           set -Eeuo pipefail
           grep -F "main-v110-handoff-shell.js?v=1152&mvp16=notification-center-v2" app/runtime/client/version-manifest.php
-          grep -F "main.css?v=172&sk=3&icons=c1efd5af&render=36&mvp16=notification-center-v2" app/runtime/client/version-manifest.php
+          grep -F "notifications-v2.css?v=2&mvp16=notification-center-v2-polish" app/assets/css/main.css
+          grep -F "main.css?v=173&sk=3&icons=c1efd5af&render=36&mvp16=notification-center-v2-polish" app/runtime/client/version-manifest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
