@@ -59,7 +59,10 @@ final class RuntimeWeeklyBonusRepository
             $this->router,
             $this->database
         ))->synchronize($snapshot);
-        $states = $this->synchronizeStates($snapshot);
+        $states = $this->synchronizeStates(
+            $snapshot,
+            ($economy['phase'] ?? '') === 'post_cutover'
+        );
         $audit = $this->auditParity($snapshot);
         if (empty($audit['ok'])) {
             throw new RuntimeException(
@@ -140,21 +143,23 @@ final class RuntimeWeeklyBonusRepository
             }
         }
 
-        $extraCount = 0;
-        foreach (array_keys($databaseStates) as $accountRef) {
-            if (!isset($source['states'][$accountRef])) $extraCount++;
-        }
-        if ($extraCount > 0) $mismatchCount += $extraCount;
-
-        sort($sourceParts, SORT_STRING);
-        sort($databaseParts, SORT_STRING);
-        $sourceFingerprint = hash('sha256', implode("\n", $sourceParts));
-        $databaseFingerprint = hash('sha256', implode("\n", $databaseParts));
         $economy = (new RuntimeEconomyRepository(
             $this->config,
             $this->router,
             $this->database
         ))->auditParity($snapshot);
+        $allowCanonicalExtras = ($economy['phase'] ?? '') === 'post_cutover';
+
+        $extraCount = 0;
+        foreach (array_keys($databaseStates) as $accountRef) {
+            if (!isset($source['states'][$accountRef])) $extraCount++;
+        }
+        if ($extraCount > 0 && !$allowCanonicalExtras) $mismatchCount += $extraCount;
+
+        sort($sourceParts, SORT_STRING);
+        sort($databaseParts, SORT_STRING);
+        $sourceFingerprint = hash('sha256', implode("\n", $sourceParts));
+        $databaseFingerprint = hash('sha256', implode("\n", $databaseParts));
         $realtime = (new RuntimeRealtimeRepository(
             $this->config,
             $this->router,
@@ -236,7 +241,7 @@ final class RuntimeWeeklyBonusRepository
         return $decoded;
     }
 
-    private function synchronizeStates(array $snapshot): array
+    private function synchronizeStates(array $snapshot, bool $allowCanonicalExtras = false): array
     {
         $source = $this->sourceStates($snapshot);
         if ($source['invalid_count'] > 0) {
@@ -310,7 +315,7 @@ final class RuntimeWeeklyBonusRepository
         foreach (array_keys($existing) as $accountRef) {
             if (!isset($source['states'][$accountRef])) $extraCount++;
         }
-        if ($extraCount > 0) {
+        if ($extraCount > 0 && !$allowCanonicalExtras) {
             throw new RuntimeException('Weekly bonus DB state contains users missing from JSON rollback storage.');
         }
 
