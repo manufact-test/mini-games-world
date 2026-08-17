@@ -33,9 +33,9 @@ $assertSame('store:orders', NotificationCenterV2Policy::deepLink([
 $assertSame('home', NotificationCenterV2Policy::deepLink([
     'type' => 'weekly_match_bonus',
 ]), 'weekly bonus must deep-link to home');
-$assertSame('profile', NotificationCenterV2Policy::deepLink([
+$assertSame('', NotificationCenterV2Policy::deepLink([
     'type' => 'first_game_bonus',
-]), 'first-game bonus must deep-link to Profile');
+]), 'first-game bonus must not invent an unrelated navigation target');
 $assertSame('', NotificationCenterV2Policy::deepLink([
     'type' => 'invite_received',
     'deep_link' => 'https://example.com',
