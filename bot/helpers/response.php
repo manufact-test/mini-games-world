@@ -1,10 +1,30 @@
 <?php
 declare(strict_types=1);
 
+// API/browser requests must never leak PHP warnings/notices into the JSON body.
+// They remain available in the server error log. Keep CLI diagnostics unchanged.
+if (PHP_SAPI !== 'cli') {
+    ini_set('display_errors', '0');
+    ini_set('html_errors', '0');
+}
+
 function json_response(array $data, int $status = 200): void {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    // A single malformed legacy/database string must not turn a successful API
+    // response into an empty HTTP 200 body. Substitute invalid UTF-8 at the API
+    // boundary and fail closed with valid JSON if encoding still cannot complete.
+    $json = json_encode(
+        $data,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+    );
+    if ($json === false) {
+        http_response_code(500);
+        $json = '{"ok":false,"error":"Не удалось сформировать ответ API."}';
+    }
+
+    echo $json;
     exit;
 }
 
