@@ -15,4 +15,12 @@ if ($resolved !== 'api') {
     );
 }
 
-fwrite(STDOUT, "ProfileV2ProductionPrimaryRoutingTest passed.\n");
+$storageFactory = file_get_contents($projectRoot . '/bot/storage/StorageFactory.php');
+if (!is_string($storageFactory)
+    || !str_contains($storageFactory, "'api.php', 'admin-read.php', 'profile-v2.php' => 'api'")) {
+    throw new RuntimeException(
+        'Profile V2 must also reuse the API DB-primary context on staging.'
+    );
+}
+
+fwrite(STDOUT, "ProfileV2PrimaryRoutingTest passed.\n");
