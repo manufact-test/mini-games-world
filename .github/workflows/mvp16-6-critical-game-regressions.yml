@@ -10,6 +10,9 @@ on:
       - 'bot/helpers/response.php'
       - 'bot/tests/InviteConfigClosureContractTest.php'
       - 'bot/tests/GameWatchCanonicalIdentityProjectionTest.php'
+      - 'bot/tests/RematchOptimisticUxContractTest.php'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp16-6-critical-game-regressions.yml'
   workflow_dispatch:
 
@@ -36,10 +39,15 @@ jobs:
           php -l bot/helpers/response.php
           php -l bot/tests/InviteConfigClosureContractTest.php
           php -l bot/tests/GameWatchCanonicalIdentityProjectionTest.php
+          php -l bot/tests/RematchOptimisticUxContractTest.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/games/game-invites-v110.js
       - name: Invite config closure regression
         run: php bot/tests/InviteConfigClosureContractTest.php
       - name: Game watch canonical identity regression
         run: php bot/tests/GameWatchCanonicalIdentityProjectionTest.php
+      - name: Rematch optimistic UX regression
+        run: php bot/tests/RematchOptimisticUxContractTest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
@@ -47,6 +55,8 @@ jobs:
           grep -Fx 'bot/invites.php' "$manifest"
           grep -Fx 'bot/game-watch.php' "$manifest"
           grep -Fx 'bot/helpers/response.php' "$manifest"
+          grep -Fx 'app/assets/js/games/game-invites-v110.js' "$manifest"
+          grep -Fx 'app/runtime/client/version-manifest.php' "$manifest"
           fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
           [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
           printf 'CRITICAL_GAME_REGRESSION_STAGING_FINGERPRINT=%s\n' "$fingerprint"
