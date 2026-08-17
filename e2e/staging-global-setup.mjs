@@ -4,7 +4,6 @@ const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const TEST_ONLY_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-only-invite-recovery.php`;
 const FRESH_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-fresh-invite-recovery.php`;
 const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
-const BALANCE_ROLLBACK_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-balance-rollback-recovery.php`;
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 
 async function requestOidcToken(){
@@ -25,32 +24,6 @@ async function requestOidcToken(){
     throw new Error('GitHub Actions OIDC reset response did not contain a JWT.');
   }
   return payload.value;
-}
-
-async function recoverRollbackBalance(){
-  const oidcToken = await requestOidcToken();
-  const response = await fetch(BALANCE_ROLLBACK_RECOVERY_ROUTE, {
-    method:'POST',
-    headers:{
-      Authorization:`Bearer ${oidcToken}`,
-      Accept:'application/json',
-      'Content-Type':'application/json',
-    },
-    body:'{}',
-  });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok
-      || payload?.ok !== true
-      || !['recovered', 'already_recovered'].includes(payload?.status)
-      || !Number.isInteger(payload?.recovered_amount)
-      || payload.recovered_amount <= 0
-      || payload?.runtime_after !== payload.recovered_amount
-      || payload?.database_after !== payload.recovered_amount
-      || payload?.production_changed !== false
-      || payload?.live_payments_used !== false) {
-    throw new Error(`Staging rollback balance recovery failed: ${response.status} ${payload?.error || 'unknown_error'}`);
-  }
-  console.log('[MGW_STAGING_ROLLBACK_BALANCE_RECOVERY]', JSON.stringify(payload));
 }
 
 async function diagnoseInviteMismatch(){
@@ -191,7 +164,6 @@ async function reconcileInviteResiduals(){
 }
 
 export default async function stagingGlobalSetup(){
-  await recoverRollbackBalance();
   await diagnoseInviteMismatch();
   await recoverTestOnlyInviteOrphans();
   await recoverFreshInviteReplacement();
