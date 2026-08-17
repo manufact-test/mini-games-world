@@ -9,11 +9,13 @@ on:
       - 'bot/profile.php'
       - 'bot/profile-v2.php'
       - 'bot/services/UserService.php'
+      - 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php'
       - 'bot/database/migrations/**'
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'bot/tests/AccountIdentityServiceTest.php'
       - 'bot/tests/MgwProfileIdentityCorrectiveTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
+      - 'bot/tests/ProductionPrimaryEntrypointWiringContractTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/production-clean-entry-v110.js'
@@ -54,10 +56,12 @@ jobs:
           php -l bot/accounts/RuntimeAccountIdentityResolver.php
           php -l bot/services/UserService.php
           php -l bot/profile-v2.php
+          php -l bot/runtime/ProductionPrimaryApplicationEntrypoints.php
           php -l bot/database/migrations/20260816_0009_add_canonical_profile_identity.php
           php -l bot/tests/AccountIdentityServiceTest.php
           php -l bot/tests/MgwProfileIdentityCorrectiveTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php -l bot/tests/ProductionPrimaryEntrypointWiringContractTest.php
           node --check app/assets/js/api/client.js
           node --check app/assets/js/ui.js
           node --check app/assets/js/production-clean-entry-v110.js
@@ -72,6 +76,8 @@ jobs:
         run: php bot/tests/MgwProfileIdentityCorrectiveTest.php
       - name: Profile UI and settings contract
         run: php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+      - name: Profile production DB-primary routing contract
+        run: php bot/tests/ProductionPrimaryEntrypointWiringContractTest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
