@@ -14,6 +14,7 @@ on:
       - 'bot/tests/MgwProfileIdentityCorrectiveTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
       - 'bot/tests/ProfileV2PassAStaticContractTest.php'
+      - 'bot/tests/GameCanonicalNicknameOwnerTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/production-clean-entry-v110.js'
@@ -51,12 +52,14 @@ jobs:
           php -l bot/accounts/MgwIdentityPolicy.php
           php -l bot/accounts/AccountIdentityService.php
           php -l bot/accounts/MgwProfileService.php
+          php -l bot/accounts/RuntimeAccountIdentityResolver.php
           php -l bot/profile-v2.php
           php -l bot/database/migrations/20260816_0009_add_canonical_profile_identity.php
           php -l bot/tests/AccountIdentityServiceTest.php
           php -l bot/tests/MgwProfileIdentityCorrectiveTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
           php -l bot/tests/ProfileV2PassAStaticContractTest.php
+          php -l bot/tests/GameCanonicalNicknameOwnerTest.php
           node --check app/assets/js/api/client.js
           node --check app/assets/js/ui.js
           node --check app/assets/js/production-clean-entry-v110.js
@@ -73,6 +76,8 @@ jobs:
         run: php bot/tests/ProfileV2CorrectiveStaticContractTest.php
       - name: Profile pass A contract
         run: php bot/tests/ProfileV2PassAStaticContractTest.php
+      - name: Canonical game nickname owner contract
+        run: php bot/tests/GameCanonicalNicknameOwnerTest.php
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
@@ -82,6 +87,7 @@ jobs:
             bot/accounts/MgwIdentityPolicy.php \
             bot/accounts/AccountIdentityService.php \
             bot/accounts/MgwProfileService.php \
+            bot/accounts/RuntimeAccountIdentityResolver.php \
             bot/profile-v2.php \
             bot/database/migrations/20260816_0009_add_canonical_profile_identity.php \
             app/assets/js/api/client.js \
