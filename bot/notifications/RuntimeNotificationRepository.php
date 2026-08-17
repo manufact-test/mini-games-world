@@ -318,6 +318,7 @@ final class RuntimeNotificationRepository
         $normalized['created_at'] = $this->isoTimestamp($normalized['created_at']);
         $normalized['read_at'] = $normalized['read_at'] === null ? null : $this->isoTimestamp($normalized['read_at']);
         $normalized['hidden_at'] = $normalized['hidden_at'] === null ? null : $this->isoTimestamp($normalized['hidden_at']);
+        $normalized['expires_at'] = $normalized['expires_at'] === null ? null : $this->isoTimestamp($normalized['expires_at']);
         return $normalized;
     }
 
@@ -339,6 +340,7 @@ final class RuntimeNotificationRepository
             'created_at' => $this->requiredTimestamp($notification['created_at'] ?? null),
             'read_at' => $this->nullableTimestamp($notification['read_at'] ?? null),
             'hidden_at' => $this->nullableTimestamp($notification['hidden_at'] ?? null),
+            'expires_at' => $this->nullableTimestamp($notification['expires_at'] ?? null),
         ];
     }
 
