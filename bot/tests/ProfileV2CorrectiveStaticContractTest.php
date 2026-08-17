@@ -89,7 +89,7 @@ $assertContains('state.mgwProfile?.avatar?.item_id', $ui, 'Shared avatar surface
 $assertNotContains('initStandardAvatarPolicy', $cleanEntry, 'No second canonical avatar writer may remain initialized');
 
 $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
-$assertContains('id="settingsBtn"', $home, 'More menu must expose Settings');
+$assertContains("menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))", $home, 'More menu must expose Settings through the shared row owner');
 $assertContains('id="languageSettingsBtn"', $home, 'Settings must expose Language');
 $assertContains('.sheet .menu-item:focus-visible', $mainCss, 'Menu focus must use the same row geometry without a second outline');
 $assertNotContains('language_en', $home, 'English must not be offered before the full EN catalog exists');
