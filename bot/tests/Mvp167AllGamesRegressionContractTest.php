@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+set_exception_handler(static function (Throwable $error): void {
+    $message = str_replace(["\r", "\n"], ' ', $error->getMessage());
+    fwrite(STDERR, "::error title=MVP-16.7 acceptance::{$message}\n");
+    exit(1);
+});
+
 $root = dirname(__DIR__, 2);
 require_once $root . '/bot/services/FeatureFlagService.php';
 require_once $root . '/bot/services/GameCatalogService.php';
