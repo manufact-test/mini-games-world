@@ -162,6 +162,6 @@ $assert(str_contains($rematchClient, "inviteRequest('rematch', { gameId })"), 'C
 // carry game-specific behavioral acceptance.
 $loaderSmoke = file_get_contents($root . '/e2e/staging/phase-b-all-games-loader.spec.mjs');
 $assert(is_string($loaderSmoke) && $loaderSmoke !== '', 'Historical all-games loader smoke missing.');
-$assert(str_contains($loaderSmoke, "boardSize: 3"), 'Historical loader smoke shape changed; reassess MVP-16.7 evidence layering.');
+$assert(str_contains($loaderSmoke, "boardSize:3"), 'Historical loader smoke shape changed; reassess MVP-16.7 evidence layering.');
 
 fwrite(STDOUT, "Mvp167AllGamesRegressionContractTest passed: {$assertions} assertions.\n");
