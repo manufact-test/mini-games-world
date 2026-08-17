@@ -101,9 +101,9 @@ app/assets/icons/shield-king/games/game-four-in-a-row.svg
 app/assets/icons/shield-king/games/game-battleship.svg
 app/assets/icons/shield-king/games/game-checkers.svg
 app/assets/icons/shield-king/games/game-reversi.svg
-app/assets/icons/shield-king/games/chess.svg
-app/assets/icons/shield-king/games/go.svg
-app/assets/icons/shield-king/games/domino.svg
+app/assets/icons/shield-king/games/game-chess.svg
+app/assets/icons/shield-king/games/game-go.svg
+app/assets/icons/shield-king/games/game-domino.svg
 
 bot/helpers/WebAppLaunchUrl.php
 bot/helpers/UserWelcomeGuard.php
