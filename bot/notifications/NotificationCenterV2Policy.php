@@ -51,18 +51,24 @@ final class NotificationCenterV2Policy
 
     public static function deepLink(array $notification): string
     {
+        $type = trim((string)($notification['type'] ?? ''));
+
+        // Invite cards own their actions inside Notification Center and should not
+        // inherit an unrelated historical navigation target.
+        if (str_starts_with($type, 'invite_')) return '';
+
+        // Informational game-bonus events have no dedicated destination. Ignore
+        // legacy explicit profile/home links so old stored cards do not expose a
+        // meaningless `Открыть` button after the v2 policy is deployed.
+        if (in_array($type, ['first_game_bonus', 'weekly_match_bonus'], true)) return '';
+
         $explicit = trim((string)($notification['deep_link'] ?? ''));
         if (in_array($explicit, self::SAFE_DEEP_LINKS, true)) return $explicit;
-
-        $type = trim((string)($notification['type'] ?? ''));
-        if (str_starts_with($type, 'invite_')) return '';
 
         if (str_starts_with($type, 'shop_order_')) return 'store:orders';
         if (str_starts_with($type, 'payment_')) return 'home';
 
         return match ($type) {
-            'first_game_bonus' => '',
-            'weekly_match_bonus',
             'welcome_match_grant',
             'admin_gold_topup' => 'home',
             default => '',
