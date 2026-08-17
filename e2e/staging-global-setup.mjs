@@ -1,7 +1,6 @@
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
-const API_ROUTE = `${STAGING_ORIGIN}/bot/api.php`;
 const TEST_ONLY_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-only-invite-recovery.php`;
 const FRESH_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-fresh-invite-recovery.php`;
 const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
@@ -25,83 +24,6 @@ async function requestOidcToken(){
     throw new Error('GitHub Actions OIDC reset response did not contain a JWT.');
   }
   return payload.value;
-}
-
-async function probeStartSearch(){
-  const oidcToken = await requestOidcToken();
-  const authResponse = await fetch(AUTH_ROUTE, {
-    method:'POST',
-    headers:{
-      Authorization:`Bearer ${oidcToken}`,
-      Accept:'application/json',
-      'Content-Type':'application/json',
-    },
-    body:JSON.stringify({ action:'issue', slot:'A' }),
-  });
-  const authPayload = await authResponse.json().catch(() => null);
-  const setCookie = authResponse.headers.get('set-cookie') || '';
-  const cookie = setCookie.split(';', 1)[0] || '';
-  if (!authResponse.ok || authPayload?.ok !== true || !cookie.startsWith('mgw_staging_test_session=')) {
-    throw new Error(`Staging start_search probe auth failed: ${authResponse.status} ${authPayload?.error || 'unknown_error'}`);
-  }
-
-  const sessionId = `diag-start-search-${Date.now()}`;
-  const common = { initData:'', sessionId, deviceId:'diag-start-search-runtime' };
-  const callApi = async (action, extra = {}) => {
-    const response = await fetch(API_ROUTE, {
-      method:'POST',
-      headers:{
-        Cookie:cookie,
-        Accept:'application/json',
-        'Content-Type':'application/json',
-      },
-      body:JSON.stringify({ ...common, action, ...extra }),
-    });
-    const text = await response.text();
-    let payload = null;
-    try { payload = JSON.parse(text); } catch {}
-    return { response, payload, text };
-  };
-
-  const bootstrap = await callApi('bootstrap');
-  console.log('[MGW_STAGING_START_SEARCH_BOOTSTRAP]', JSON.stringify({
-    status:bootstrap.response.status,
-    ok:bootstrap.payload?.ok === true,
-    error:bootstrap.payload?.error || '',
-    user_status:bootstrap.payload?.user?.status || bootstrap.payload?.result?.user?.status || '',
-    session_locked:bootstrap.payload?.session?.locked ?? bootstrap.payload?.result?.session?.locked ?? null,
-  }));
-  if (!bootstrap.response.ok || bootstrap.payload?.ok !== true) {
-    throw new Error(`Staging start_search probe bootstrap failed: ${bootstrap.response.status} ${bootstrap.payload?.error || 'invalid_json'}`);
-  }
-
-  const start = await callApi('start_search', {
-    room:'match',
-    bet:10,
-    boardSize:3,
-    gameType:'tictactoe',
-  });
-  console.log('[MGW_STAGING_START_SEARCH_PROBE]', JSON.stringify({
-    status:start.response.status,
-    ok:start.payload?.ok === true,
-    error:start.payload?.error || '',
-    queued:start.payload?.queued ?? start.payload?.result?.queued ?? null,
-    user_status:start.payload?.user?.status || start.payload?.result?.user?.status || '',
-    session_locked:start.payload?.session?.locked ?? start.payload?.result?.session?.locked ?? null,
-  }));
-  if (!start.response.ok || start.payload?.ok !== true) {
-    throw new Error(`Staging start_search probe failed: ${start.response.status} ${start.payload?.error || 'invalid_json'}`);
-  }
-
-  const leave = await callApi('leave_search');
-  console.log('[MGW_STAGING_START_SEARCH_CLEANUP]', JSON.stringify({
-    status:leave.response.status,
-    ok:leave.payload?.ok === true,
-    error:leave.payload?.error || '',
-  }));
-  if (!leave.response.ok || leave.payload?.ok !== true) {
-    throw new Error(`Staging start_search probe cleanup failed: ${leave.response.status} ${leave.payload?.error || 'invalid_json'}`);
-  }
 }
 
 async function diagnoseInviteMismatch(){
@@ -242,7 +164,6 @@ async function reconcileInviteResiduals(){
 }
 
 export default async function stagingGlobalSetup(){
-  await probeStartSearch();
   await diagnoseInviteMismatch();
   await recoverTestOnlyInviteOrphans();
   await recoverFreshInviteReplacement();
