@@ -1,6 +1,7 @@
 const ICON_ENDPOINT = './assets/shield-king-icon.php?v=c1efd5af&asset=';
 
 const MENU_ICONS = {
+  settingsBtn:'ui/navigation/settings.webp',
   rulesBtn:'ui/actions/rules.webp',
   feedbackBtn:'ui/status/info.webp',
   ideaBtn:'ui/status/success.webp',

@@ -6,12 +6,13 @@ require_once $root . '/bot/accounts/MgwIdentityPolicy.php';
 
 $profile = file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
 $home = file_get_contents($root . '/app/assets/js/screens/home-screen.js');
+$visuals = file_get_contents($root . '/app/assets/js/components/shield-king-visuals.js');
 $mainCss = file_get_contents($root . '/app/assets/css/main.css');
 $endpoint = file_get_contents($root . '/bot/profile-v2.php');
 $versionManifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $catalog = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, flags: JSON_THROW_ON_ERROR);
 
-foreach (['profile'=>$profile,'home'=>$home,'main_css'=>$mainCss,'endpoint'=>$endpoint,'version_manifest'=>$versionManifest] as $name => $source) {
+foreach (['profile'=>$profile,'home'=>$home,'visuals'=>$visuals,'main_css'=>$mainCss,'endpoint'=>$endpoint,'version_manifest'=>$versionManifest] as $name => $source) {
     if (!is_string($source)) throw new RuntimeException("Unable to read {$name} pass A source.");
 }
 
@@ -55,9 +56,12 @@ $assertContains('menu-item-standard', $home, 'Shared More-menu row class must ow
 $assertContains('.sheet .menu-item-standard', $mainCss, 'Standard menu geometry must have one shared CSS owner.');
 $assertContains('.sheet .menu-item:focus,.sheet .menu-item:focus-visible', $mainCss, 'All menu rows must share one focus geometry rule.');
 $assertNotContains('.sheet #settingsBtn', $mainCss, 'Settings must not need a one-off CSS patch.');
+$assertContains("settingsBtn:'ui/navigation/settings.webp'", $visuals, 'Settings must use the accepted Shield King metallic settings icon.');
+$assertContains("rulesBtn:'ui/actions/rules.webp'", $visuals, 'Settings and neighboring rows must share the same dynamic metallic icon owner.');
 
-$assertContains('home-screen.js?v=80&mvp16=settings-row-owner', $versionManifest, 'Settings row cache key must advance.');
-$assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Profile pass A cache key must advance.');
-$assertContains('main.css?v=171', $versionManifest, 'Main CSS cache key must advance.');
+$assertContains('home-screen.js?v=80&mvp16=settings-row-owner', $versionManifest, 'Settings row cache key must stay current.');
+$assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Profile pass A cache key must stay current.');
+$assertContains('main.css?v=171', $versionManifest, 'Main CSS cache key must stay current.');
+$assertContains("shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=128&sk=4&icons=c1efd5af&shell=nav&settings=metallic", $versionManifest, 'Telegram shell must cache-bust the corrected Settings metallic icon owner.');
 
 fwrite(STDOUT, "ProfileV2PassAStaticContractTest: {$assertions} assertions passed\n");
