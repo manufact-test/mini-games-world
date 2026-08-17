@@ -30,13 +30,13 @@ export function renderStats(stats){
 
 function openMoreMenuSheet(){
   openSheet(`<div class="sheet-head"><div><h2>Меню</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">
-    <button class="btn menu-item" id="settingsBtn" type="button">⚙️ ${escapeHtml(t('settings.title'))}</button>
-    <button class="btn menu-item" id="rulesBtn" type="button">📘 Правила</button>
-    <button class="btn menu-item" id="feedbackBtn" type="button">💬 Обратная связь</button>
-    <button class="btn menu-item" id="ideaBtn" type="button">💡 Предложить идею</button>
-    <button class="btn menu-item danger" id="supportBtn" type="button">⚠️ Пожаловаться</button>
-    <button class="btn menu-item" id="balanceHistoryBtn" type="button">🧾 История баланса</button>
-    <button class="btn menu-item" id="matchHistoryBtn" type="button">🎮 История матчей</button>
+    ${menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))}
+    ${menuItemMarkup('rulesBtn', '📘', 'Правила')}
+    ${menuItemMarkup('feedbackBtn', '💬', 'Обратная связь')}
+    ${menuItemMarkup('ideaBtn', '💡', 'Предложить идею')}
+    ${menuItemMarkup('supportBtn', '⚠️', 'Пожаловаться', 'danger')}
+    ${menuItemMarkup('balanceHistoryBtn', '🧾', 'История баланса')}
+    ${menuItemMarkup('matchHistoryBtn', '🎮', 'История матчей')}
   </div>`);
   document.getElementById('settingsBtn')?.addEventListener('click', openSettingsSheet);
   document.getElementById('rulesBtn')?.addEventListener('click', openRulesSheet);
@@ -45,6 +45,11 @@ function openMoreMenuSheet(){
   document.getElementById('supportBtn')?.addEventListener('click',()=>openSupportForm('complaint'));
   document.getElementById('balanceHistoryBtn')?.addEventListener('click',openBalanceHistorySheet);
   document.getElementById('matchHistoryBtn')?.addEventListener('click',openMatchHistorySheet);
+}
+
+function menuItemMarkup(id, icon, label, tone = ''){
+  const toneClass = tone ? ` ${tone}` : '';
+  return `<button class="btn menu-item menu-item-standard${toneClass}" id="${escapeHtml(id)}" type="button"><span class="menu-item-icon" aria-hidden="true">${escapeHtml(icon)}</span><span class="menu-item-label">${escapeHtml(label)}</span></button>`;
 }
 
 function openSettingsSheet(){
