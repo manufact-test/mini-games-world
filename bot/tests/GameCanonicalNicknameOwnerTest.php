@@ -47,8 +47,9 @@ $assertContains('$this->syncCanonicalGameIdentity($db, $db[\'users\'][$id]);', $
 $assertContains('$db[\'games\'][$gameId][\'player_names\'][$userId] = $nickname', $userService, 'Active game player_names must receive canonical nickname');
 
 // New matches keep one legacy creation path; no renderer-specific nickname patching.
-$assertContains('($userA[\'username\'] ?: $userA[\'first_name\'])', $gameService, 'Shared match creation must consume the already canonicalized runtime user');
-$assertContains('($user[\'username\'] ?: $user[\'first_name\'])', $gameService, 'Shared bot match creation must consume the already canonicalized runtime user');
+$assertContains('$aId => $a[\'username\'] ?: $a[\'first_name\']', $gameService, 'First human slot must consume the already canonicalized runtime user');
+$assertContains('$bId => $b[\'username\'] ?: $b[\'first_name\']', $gameService, 'Second human slot must consume the already canonicalized runtime user');
+$assertContains('$userId => $user[\'username\'] ?: $user[\'first_name\']', $gameService, 'Bot match human slot must consume the already canonicalized runtime user');
 $assertContains('$this->base->startSearch(', $specialRuntime, 'Non-special engines must keep the shared base runtime');
 $assertContains('$this->legacyGame->startSearch(', $specialRuntime, 'Chess/Go/Domino must keep the shared legacy matcher metadata path');
 
