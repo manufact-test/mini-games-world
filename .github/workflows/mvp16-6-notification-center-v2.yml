@@ -1,0 +1,72 @@
+name: MVP-16.6 Notification Center v2
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/notifications/**'
+      - 'bot/notifications.php'
+      - 'bot/services/NotificationService.php'
+      - 'bot/tests/NotificationCenterV2PolicyTest.php'
+      - 'bot/tests/NotificationCenterV2StaticContractTest.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'app/assets/js/screens/notifications-screen-v110r13.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/css/screens/notifications-v2.css'
+      - 'app/assets/css/main.css'
+      - 'app/locales/ru.json'
+      - '.github/workflows/mvp16-6-notification-center-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-notification-center-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - name: Syntax and locale validation
+        run: |
+          set -Eeuo pipefail
+          php -l bot/notifications/NotificationCenterV2Policy.php
+          php -l bot/notifications/RuntimeNotificationRepository.php
+          php -l bot/notifications.php
+          php -l bot/services/NotificationService.php
+          php -l bot/tests/NotificationCenterV2PolicyTest.php
+          php -l bot/tests/NotificationCenterV2StaticContractTest.php
+          node --check app/assets/js/screens/notifications-screen-v110r13.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          python3 -m json.tool app/locales/ru.json >/dev/null
+      - name: Notification Center v2 policy regression
+        run: php bot/tests/NotificationCenterV2PolicyTest.php
+      - name: Notification Center v2 static contract
+        run: php bot/tests/NotificationCenterV2StaticContractTest.php
+      - name: Exact staging deployment coverage
+        run: |
+          set -Eeuo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          for file in \
+            bot/notifications.php \
+            bot/notifications/NotificationCenterV2Policy.php \
+            bot/notifications/RuntimeNotificationRepository.php \
+            bot/services/NotificationService.php \
+            app/assets/js/screens/notifications-screen-v110r13.js \
+            app/assets/js/main-v110-handoff-shell.js \
+            app/assets/css/screens/notifications-v2.css \
+            app/assets/css/main.css \
+            app/locales/ru.json; do
+            grep -Fx "$file" "$manifest"
+          done
+          fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'NOTIFICATION_CENTER_V2_STAGING_FINGERPRINT=%s\n' "$fingerprint"
