@@ -61,4 +61,7 @@
 .history-tab-panel{display:none}
 .history-tab-panel.active{display:block}
 .overlay,.sheet{transition:none !important;animation:none !important}
-.sheet .menu-item:focus-visible{outline:none;box-shadow:none;border-color:var(--stroke);background:rgba(255,255,255,.075)}
+.sheet .menu-item:focus,.sheet .menu-item:focus-visible{outline:none;box-shadow:none;border-color:var(--stroke);background:rgba(255,255,255,.055)}
+.sheet .menu-item-standard{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-height:52px;padding:13px 14px;text-align:left}
+.sheet .menu-item-standard .menu-item-icon{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;line-height:1;font-size:18px}
+.sheet .menu-item-standard .menu-item-label{display:block;min-width:0;flex:1;line-height:1.22}
