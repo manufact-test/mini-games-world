@@ -145,8 +145,8 @@ $assert(str_contains($api, "\$game = \$games->findActiveGameForUser(\$data, \$us
 // Search/start and leave are shared lifecycle routes for every engine.
 $assert(str_contains($api, "case 'start_search':"), 'Shared start_search route missing.');
 $leaveCase = strpos($api, "case 'leave_game':");
-$leaveSurrender = $leaveCase === false ? false : strpos($api, '\$game = \$games->surrenderGame(\$data, \$user, \$gameId);', $leaveCase);
-$leaveRelease = $leaveSurrender === false ? false : strpos($api, '\$sessions->releaseIfCurrent(\$user, \$sessionId);', $leaveSurrender);
+$leaveSurrender = $leaveCase === false ? false : strpos($api, '$game = $games->surrenderGame($data, $user, $gameId);', $leaveCase);
+$leaveRelease = $leaveSurrender === false ? false : strpos($api, '$sessions->releaseIfCurrent($user, $sessionId);', $leaveSurrender);
 $assert(
     $leaveCase !== false && $leaveSurrender !== false && $leaveRelease !== false && $leaveCase < $leaveSurrender && $leaveSurrender < $leaveRelease,
     'Authoritative leave_game surrender/session-release order changed.'
