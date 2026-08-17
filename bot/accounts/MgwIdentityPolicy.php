@@ -7,6 +7,8 @@ final class MgwIdentityPolicy
     public const NICKNAME_TOO_SHORT_ERROR = 'nickname_too_short';
     public const NICKNAME_TOO_LONG_ERROR = 'nickname_too_long';
     public const NICKNAME_INVALID_CHARACTERS_ERROR = 'nickname_invalid_characters';
+    public const NICKNAME_MIN_LENGTH = 3;
+    public const NICKNAME_MAX_LENGTH = 13;
     public const DEFAULT_AVATAR_ITEM_ID = 'starter-default-01';
     public const STARTER_AVATAR_ITEM_IDS = [
         'starter-default-01',
@@ -17,7 +19,7 @@ final class MgwIdentityPolicy
 
     public static function generateNickname(): string
     {
-        return 'Player' . str_pad((string)random_int(0, 9999999999), 10, '0', STR_PAD_LEFT);
+        return 'Player' . (string)random_int(1000000, 9999999);
     }
 
     public static function normalizeNickname(mixed $value): string
@@ -25,8 +27,8 @@ final class MgwIdentityPolicy
         $nickname = preg_replace('/[\x00-\x1F\x7F]/u', '', (string)$value) ?? '';
         $nickname = trim(preg_replace('/\s+/u', ' ', $nickname) ?? '');
         $length = function_exists('mb_strlen') ? mb_strlen($nickname) : strlen($nickname);
-        if ($length < 3) throw new InvalidArgumentException(self::NICKNAME_TOO_SHORT_ERROR);
-        if ($length > 24) throw new InvalidArgumentException(self::NICKNAME_TOO_LONG_ERROR);
+        if ($length < self::NICKNAME_MIN_LENGTH) throw new InvalidArgumentException(self::NICKNAME_TOO_SHORT_ERROR);
+        if ($length > self::NICKNAME_MAX_LENGTH) throw new InvalidArgumentException(self::NICKNAME_TOO_LONG_ERROR);
         if (preg_match('/^[\p{L}\p{N}_ -]+$/u', $nickname) !== 1) {
             throw new InvalidArgumentException(self::NICKNAME_INVALID_CHARACTERS_ERROR);
         }

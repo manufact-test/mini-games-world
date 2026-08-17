@@ -33,7 +33,7 @@ function mgw_profile_v2_validation_error(InvalidArgumentException $error): array
 {
     return match ($error->getMessage()) {
         MgwIdentityPolicy::NICKNAME_TOO_SHORT_ERROR => ['nickname_too_short', 'Ник должен содержать минимум 3 символа.'],
-        MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', 'Ник может содержать максимум 24 символа.'],
+        MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', 'Ник может содержать максимум 13 символов.'],
         MgwIdentityPolicy::NICKNAME_INVALID_CHARACTERS_ERROR => ['nickname_invalid_characters', 'В нике можно использовать буквы, цифры, пробелы, дефис и подчёркивание.'],
         default => ['profile_update_invalid', 'Не удалось сохранить профиль MGW.'],
     };

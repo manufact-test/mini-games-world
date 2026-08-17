@@ -89,7 +89,7 @@ $assertContains('state.mgwProfile?.avatar?.item_id', $ui, 'Shared avatar surface
 $assertNotContains('initStandardAvatarPolicy', $cleanEntry, 'No second canonical avatar writer may remain initialized');
 
 $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
-$assertContains('id="settingsBtn"', $home, 'More menu must expose Settings');
+$assertContains("menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))", $home, 'More menu must expose Settings through the shared row owner');
 $assertContains('id="languageSettingsBtn"', $home, 'Settings must expose Language');
 $assertContains('.sheet .menu-item:focus-visible', $mainCss, 'Menu focus must use the same row geometry without a second outline');
 $assertNotContains('language_en', $home, 'English must not be offered before the full EN catalog exists');
@@ -102,10 +102,11 @@ $assertNotContains('photo_url: avatarUrl', $model, 'Canonical projection must no
 $assertContains("photo_url: ''", $model, 'Canonical projection must explicitly suppress provider photo URL');
 $assertSame(3, substr_count($profile, '[1,2,3].map') === 1 ? 3 : 0, 'Achievements preview must remain exactly three placeholders');
 
-$assertContains('profile-corrective.css?v=3&mvp16=profile-polish', $mainCss, 'Nested corrective stylesheet cache key must advance with profile polish');
-$assertContains('main.css?v=170', $versionManifest, 'Runtime main stylesheet cache key must advance with profile polish');
-$assertContains('canonical-avatar-owner', $versionManifest, 'Runtime must ship the canonical avatar owner cleanup');
-$assertContains('canonical-profile-display-owner', $versionManifest, 'Runtime must ship the canonical visible identity owner');
-$assertContains('profile-polish', $versionManifest, 'Runtime must ship the Profile polish controller');
+$assertContains('profile-corrective.css?v=3&mvp16=profile-polish', $mainCss, 'Nested corrective stylesheet cache key must stay explicit');
+$assertContains('main.css?v=171', $versionManifest, 'Runtime main stylesheet cache key must advance with Profile pass A');
+$assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Runtime must ship the Profile pass A controller');
+$assertContains('canonical-avatar-owner', $versionManifest, 'Runtime must keep the canonical avatar owner cleanup');
+$assertContains('canonical-profile-display-owner', $versionManifest, 'Runtime must keep the canonical visible identity owner');
+$assertContains('profile-pass-a', $versionManifest, 'Runtime must ship the Profile pass A assets');
 
 fwrite(STDOUT, "ProfileV2CorrectiveStaticContractTest: {$assertions} assertions passed\n");
