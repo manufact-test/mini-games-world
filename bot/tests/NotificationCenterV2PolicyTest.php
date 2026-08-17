@@ -30,12 +30,21 @@ $assertSame('notification_42', NotificationCenterV2Policy::eventId([
 $assertSame('store:orders', NotificationCenterV2Policy::deepLink([
     'type' => 'shop_order_done',
 ]), 'shop events must deep-link to order history');
-$assertSame('home', NotificationCenterV2Policy::deepLink([
+$assertSame('', NotificationCenterV2Policy::deepLink([
     'type' => 'weekly_match_bonus',
-]), 'weekly bonus must deep-link to home');
+]), 'weekly bonus must not invent a generic navigation target');
+$assertSame('', NotificationCenterV2Policy::deepLink([
+    'type' => 'weekly_match_bonus',
+    'deep_link' => 'profile',
+]), 'legacy weekly-bonus profile links must be suppressed');
 $assertSame('', NotificationCenterV2Policy::deepLink([
     'type' => 'first_game_bonus',
-]), 'first-game bonus must not invent an unrelated navigation target');
+    'deep_link' => 'profile',
+]), 'legacy first-game bonus links must be suppressed');
+$assertSame('', NotificationCenterV2Policy::deepLink([
+    'type' => 'invite_received',
+    'deep_link' => 'profile',
+]), 'invite actions must not inherit unrelated safe navigation links');
 $assertSame('', NotificationCenterV2Policy::deepLink([
     'type' => 'invite_received',
     'deep_link' => 'https://example.com',
@@ -43,7 +52,7 @@ $assertSame('', NotificationCenterV2Policy::deepLink([
 $assertSame('profile', NotificationCenterV2Policy::deepLink([
     'type' => 'custom',
     'deep_link' => 'profile',
-]), 'explicit safe internal deep link must be preserved');
+]), 'explicit safe internal deep link must be preserved for eligible events');
 
 $now = new DateTimeImmutable('2026-08-17T16:00:00Z');
 $assertTrue(NotificationCenterV2Policy::isExpired([
