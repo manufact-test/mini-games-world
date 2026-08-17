@@ -1,22 +1,21 @@
 /* MVP-16.6 Notification Center v2 additions. */
-.notification-center-head{align-items:flex-start}
+.notification-center-head{align-items:center}
 .notification-center-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
-.notification-mark-all{min-height:36px;padding:8px 11px;border-radius:12px;font-size:11px;white-space:nowrap}
+.notification-mark-all{height:40px;min-height:40px;padding:0 12px;border-radius:12px;font-size:11px;line-height:1;white-space:nowrap}
 .notification-mark-all[hidden]{display:none !important}
 
 .notification-card.unread{box-shadow:inset 3px 0 0 rgba(178,116,255,.74)}
 .notification-head strong{display:flex;align-items:center;gap:7px;min-width:0}
 .notification-unread-dot{flex:0 0 7px;width:7px;height:7px;border-radius:999px;background:rgba(190,132,255,.96);box-shadow:0 0 0 3px rgba(178,116,255,.14)}
 
-.notification-card-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-top:3px}
-.notification-card-actions .btn{min-height:34px;padding:7px 10px;border-radius:11px;font-size:11px}
+/* Generic v2 actions use the same full-width geometry as invite actions. */
+.notification-card-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px}
+.notification-card-actions .btn{width:100%;min-height:42px;padding:10px 12px}
 .notification-card-actions .btn.danger{color:var(--sk-error);border-color:rgba(255,97,125,.30);background:rgba(255,97,125,.055)}
 .notification-card-actions .btn.danger:hover{border-color:rgba(255,97,125,.46);background:rgba(255,97,125,.10)}
 
 @media (max-width:360px){
   .notification-center-head{gap:8px}
   .notification-center-head-actions{gap:6px}
-  .notification-mark-all{padding:7px 8px;font-size:10px}
-  .notification-card-actions{justify-content:stretch}
-  .notification-card-actions .btn{flex:1}
+  .notification-mark-all{height:40px;min-height:40px;padding:0 9px;font-size:10px;line-height:1}
 }
