@@ -142,11 +142,33 @@ $assert(str_contains($api, "'active_game' => \$active ? \$games->publicGame(\$ac
 $assert(str_contains($api, "case 'game_state':"), 'Shared game_state reconnect route missing.');
 $assert(str_contains($api, "\$game = \$games->findActiveGameForUser(\$data, \$userId);"), 'Shared active-game reconnect lookup changed.');
 
-// Search/start and manual leave are also shared lifecycle routes for every engine.
+// Search/start and leave are shared lifecycle routes for every engine.
 $assert(str_contains($api, "case 'start_search':"), 'Shared start_search route missing.');
-$assert(str_contains($api, "case 'leave_game':"), 'Shared leave_game route missing.');
-$assert(str_contains($leaveLifecycle, "const result = await api.leaveGame(String(snapshot.id));"), 'Shared client leave-game request changed.');
-$assert(str_contains($leaveLifecycle, "enterGame(snapshot, viewer);"), 'Failed leave must restore the game view.');
+$leaveCase = strpos($api, "case 'leave_game':");
+$leaveSurrender = $leaveCase === false ? false : strpos($api, '\$game = \$games->surrenderGame(\$data, \$user, \$gameId);', $leaveCase);
+$leaveRelease = $leaveSurrender === false ? false : strpos($api, '\$sessions->releaseIfCurrent(\$user, \$sessionId);', $leaveSurrender);
+$assert(
+    $leaveCase !== false && $leaveSurrender !== false && $leaveRelease !== false && $leaveCase < $leaveSurrender && $leaveSurrender < $leaveRelease,
+    'Authoritative leave_game surrender/session-release order changed.'
+);
+
+$leaveOwner = strpos($leaveLifecycle, 'function surrenderToHome(game)');
+$homeBeforeLeave = $leaveOwner === false ? false : strpos($leaveLifecycle, "showScreen('home');", $leaveOwner);
+$leaveRequest = $homeBeforeLeave === false ? false : strpos($leaveLifecycle, 'const result = await api.leaveGame(String(snapshot.id));', $homeBeforeLeave);
+$assert(
+    $leaveOwner !== false && $homeBeforeLeave !== false && $leaveRequest !== false && $homeBeforeLeave < $leaveRequest,
+    'Client leave must preserve immediate home transition before authoritative leave request.'
+);
+$assert(str_contains($leaveLifecycle, 'releaseBarrier:null'), 'Leave release barrier state missing.');
+$assert(str_contains($leaveLifecycle, 'if (runtime.leavePending) return runtime.releaseBarrier;'), 'Repeated leave must reuse the release barrier.');
+$assert(str_contains($leaveLifecycle, 'runtime.releaseBarrier = completion;'), 'Leave completion must publish the release barrier.');
+$assert(str_contains($leaveLifecycle, 'if (runtime.releaseBarrier === completion) runtime.releaseBarrier = null;'), 'Leave completion must clear the release barrier.');
+$assert(str_contains($leaveLifecycle, 'quarantineGameActions(snapshot.id);'), 'Leave must quarantine pending game actions.');
+$assert(str_contains($leaveLifecycle, 'retireGameRuntime(snapshot.id);'), 'Successful leave must retire the old game runtime.');
+$assert(str_contains($leaveLifecycle, 'releaseGameActionQuarantine(snapshot.id);'), 'Failed leave must release action quarantine.');
+$assert(str_contains($leaveLifecycle, 'enterGame(snapshot, viewer);'), 'Failed leave must restore the game view.');
+$assert(!str_contains($leaveLifecycle, 'queueSearchAfterRelease'), 'Removed queued-search leave implementation must not return.');
+$assert(!str_contains($leaveLifecycle, 'window.queueMicrotask(() => queuedButton.click());'), 'Removed queued-search replay must not return.');
 
 // Direct invite, accept/start and rematch all preserve gameType/boardSize in the
 // shared invite service; there is no per-engine invite fork to validate separately.
@@ -162,6 +184,6 @@ $assert(str_contains($rematchClient, "inviteRequest('rematch', { gameId })"), 'C
 // carry game-specific behavioral acceptance.
 $loaderSmoke = file_get_contents($root . '/e2e/staging/phase-b-all-games-loader.spec.mjs');
 $assert(is_string($loaderSmoke) && $loaderSmoke !== '', 'Historical all-games loader smoke missing.');
-$assert(str_contains($loaderSmoke, "boardSize:3"), 'Historical loader smoke shape changed; reassess MVP-16.7 evidence layering.');
+$assert(str_contains($loaderSmoke, 'boardSize:3'), 'Historical loader smoke shape changed; reassess MVP-16.7 evidence layering.');
 
 fwrite(STDOUT, "Mvp167AllGamesRegressionContractTest passed: {$assertions} assertions.\n");
