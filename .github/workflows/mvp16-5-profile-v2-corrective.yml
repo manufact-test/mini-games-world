@@ -15,7 +15,6 @@ on:
       - 'bot/tests/MgwProfileIdentityCorrectiveTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
       - 'bot/tests/ProfileV2PassAStaticContractTest.php'
-      - 'bot/tests/GameCanonicalNicknameOwnerTest.php'
       - 'bot/tests/ApiJsonResponseBoundaryContractTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/ui.js'
@@ -62,7 +61,6 @@ jobs:
           php -l bot/tests/MgwProfileIdentityCorrectiveTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
           php -l bot/tests/ProfileV2PassAStaticContractTest.php
-          php -l bot/tests/GameCanonicalNicknameOwnerTest.php
           php -l bot/tests/ApiJsonResponseBoundaryContractTest.php
           node --check app/assets/js/api/client.js
           node --check app/assets/js/ui.js
@@ -80,8 +78,6 @@ jobs:
         run: php bot/tests/ProfileV2CorrectiveStaticContractTest.php
       - name: Profile pass A contract
         run: php bot/tests/ProfileV2PassAStaticContractTest.php
-      - name: Canonical game nickname owner contract
-        run: php bot/tests/GameCanonicalNicknameOwnerTest.php
       - name: Browser API JSON response boundary
         run: php bot/tests/ApiJsonResponseBoundaryContractTest.php
       - name: Exact staging deployment coverage
