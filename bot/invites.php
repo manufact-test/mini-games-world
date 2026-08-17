@@ -225,7 +225,8 @@ try {
             $tgUser,
             $users,
             $sessions,
-            $invites
+            $invites,
+            $config
         ): array {
             $inviteFingerprintsBefore = mgw_invite_row_fingerprints(
                 is_array($data['invites'] ?? null) ? $data['invites'] : []

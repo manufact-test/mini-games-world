@@ -1,0 +1,41 @@
+name: MVP-16.6 Critical game regressions
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/invites.php'
+      - 'bot/tests/InviteConfigClosureContractTest.php'
+      - '.github/workflows/mvp16-6-critical-game-regressions.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-critical-game-regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Syntax validation
+        run: |
+          set -Eeuo pipefail
+          php -l bot/invites.php
+          php -l bot/tests/InviteConfigClosureContractTest.php
+      - name: Invite config closure regression
+        run: php bot/tests/InviteConfigClosureContractTest.php
+      - name: Exact staging deployment coverage
+        run: |
+          set -Eeuo pipefail
+          grep -Fx 'bot/invites.php' bot/helpers/staging-e2e-runtime-files.txt
+          fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'CRITICAL_GAME_REGRESSION_STAGING_FINGERPRINT=%s\n' "$fingerprint"
