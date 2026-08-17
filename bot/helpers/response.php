@@ -60,8 +60,115 @@ function mgw_run_api_data_filters(array $data): array {
     return $data;
 }
 
+/**
+ * Resolve visible game names from the canonical MGW account database without
+ * mutating authenticated runtime users, search/session state or stored games.
+ *
+ * The legacy game record still owns mechanics and persistence. This helper is
+ * a read-only response projection used only when a successful API response
+ * already contains public game players.
+ */
+function mgw_canonical_game_player_names(array $playerIds): array {
+    $subjects = [];
+    foreach ($playerIds as $playerId) {
+        $subject = trim((string)$playerId);
+        if ($subject === '' || str_starts_with($subject, 'bot_')) continue;
+        $subjects[$subject] = true;
+    }
+    $subjects = array_keys($subjects);
+    if ($subjects === []) return [];
+
+    $config = $GLOBALS['config'] ?? null;
+    if (!is_array($config)
+        || !class_exists('DatabaseConfig')
+        || !class_exists('PdoConnectionFactory')) {
+        return [];
+    }
+
+    try {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if (!$databaseConfig->enabled()) return [];
+        $database = PdoConnectionFactory::create($databaseConfig);
+
+        $placeholders = [];
+        $parameters = [];
+        foreach ($subjects as $index => $subject) {
+            $key = ':subject_' . $index;
+            $placeholders[] = $key;
+            $parameters[$key] = $subject;
+        }
+
+        $rows = $database->fetchAll(
+            'SELECT i.provider_subject, i.mgw_id, u.nickname
+             FROM mgw_identities i
+             INNER JOIN mgw_users u ON u.mgw_id = i.mgw_id
+             WHERE i.provider_subject IN (' . implode(', ', $placeholders) . ")
+               AND i.provider IN ('telegram', 'development')
+               AND u.status = 'active'",
+            $parameters
+        );
+    } catch (Throwable $error) {
+        error_log('Mini Games World game identity projection failed: ' . $error->getMessage());
+        return [];
+    }
+
+    // A provider subject may theoretically exist under more than one provider.
+    // Only project when all rows for that subject resolve to one MGW owner;
+    // otherwise preserve the already-safe legacy display name.
+    $owners = [];
+    foreach ($rows as $row) {
+        if (!is_array($row)) continue;
+        $subject = trim((string)($row['provider_subject'] ?? ''));
+        $mgwId = trim((string)($row['mgw_id'] ?? ''));
+        $nickname = trim((string)($row['nickname'] ?? ''));
+        if ($subject === '' || $mgwId === '' || $nickname === '') continue;
+        $owners[$subject][$mgwId] = $nickname;
+    }
+
+    $names = [];
+    foreach ($owners as $subject => $byOwner) {
+        if (count($byOwner) !== 1) continue;
+        $nickname = reset($byOwner);
+        if (is_string($nickname) && trim($nickname) !== '') {
+            $names[(string)$subject] = trim($nickname);
+        }
+    }
+    return $names;
+}
+
+function mgw_project_canonical_game_identity(array $data): array {
+    foreach (['game', 'active_game'] as $gameKey) {
+        $game = $data[$gameKey] ?? null;
+        if (!is_array($game) || !isset($game['players']) || !is_array($game['players'])) {
+            continue;
+        }
+
+        $playerIds = [];
+        foreach ($game['players'] as $player) {
+            if (!is_array($player)) continue;
+            $playerIds[] = (string)($player['id'] ?? '');
+        }
+        $canonicalNames = mgw_canonical_game_player_names($playerIds);
+        if ($canonicalNames === []) continue;
+
+        foreach ($game['players'] as &$player) {
+            if (!is_array($player)) continue;
+            $playerId = trim((string)($player['id'] ?? ''));
+            if ($playerId !== '' && isset($canonicalNames[$playerId])) {
+                $player['name'] = $canonicalNames[$playerId];
+            }
+        }
+        unset($player);
+
+        $data[$gameKey] = $game;
+    }
+
+    return $data;
+}
+
 function mgw_normalize_api_data(array $data): array {
     $data = mgw_run_api_data_filters($data);
+    $data = mgw_project_canonical_game_identity($data);
 
     if ((string)($data['message'] ?? '') === 'Заявка на пополнение создана. Баланс не изменён.') {
         $data['message'] = 'Баланс изменится после подтверждения администратором.';
