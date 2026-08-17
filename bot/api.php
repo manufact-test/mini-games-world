@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameLaunchFinalizationService.php';
 require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
+require_once __DIR__ . '/services/SearchSessionRecoveryService.php';
 
 function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
@@ -200,6 +201,7 @@ try {
                 UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
 
             case 'start_search':
+                SearchSessionRecoveryService::repairOrphanedSearch($data, $user);
                 $sessions->assertCanPlay($user, $sessionId);
                 $sessions->touch($user, $sessionId);
 
