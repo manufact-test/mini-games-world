@@ -6,12 +6,16 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/screens/game-screen-v102.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
       - 'app/assets/js/games/game-invites-v110.js'
       - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/services/HistoryService.php'
       - 'bot/services/BotProfilePolicy.php'
       - 'bot/services/GameInviteService.php'
       - 'bot/services/invites/GameInviteActionTrait.php'
+      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - 'bot/tests/Mvp17_5BotOpaqueRematchContractTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/NotificationActorSilentTerminalContractTest.php'
@@ -45,9 +49,11 @@ jobs:
           set -Eeuo pipefail
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
+          php -l bot/services/HistoryService.php
           php -l bot/services/BotProfilePolicy.php
           php -l bot/services/GameInviteService.php
           php -l bot/services/invites/GameInviteActionTrait.php
+          php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
           php -l bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
           php -l bot/tests/RematchOptimisticUxContractTest.php
           php -l bot/tests/NotificationActorSilentTerminalContractTest.php
@@ -60,8 +66,13 @@ jobs:
       - name: JavaScript syntax validation
         run: |
           set -Eeuo pipefail
+          node --input-type=module --check < app/assets/js/screens/game-screen-v102.js
+          node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110.js
+
+      - name: MVP-17.5 result history economy presentation contract
+        run: php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
 
       - name: MVP-17.5 bot-opaque rematch contract
         run: php bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
