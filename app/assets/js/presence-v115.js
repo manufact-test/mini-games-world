@@ -31,7 +31,11 @@ export function initV115Presence(){
   }, { once:true });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') resumePresence();
+    if (document.visibilityState === 'visible') {
+      resumePresence();
+    } else {
+      sendLifecycleBeacon('background');
+    }
   });
 
   window.addEventListener('pageshow', () => {
@@ -39,7 +43,7 @@ export function initV115Presence(){
   }, { capture:true });
 
   window.addEventListener('pagehide', event => {
-    if (!event.persisted) sendLeaveBeacon();
+    if (!event.persisted) sendLifecycleBeacon('leave');
   }, { capture:true });
 
   const telegram = getTelegram();
@@ -132,7 +136,6 @@ async function requestPresence(action){
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body:JSON.stringify(payload(action)),
-      keepalive:action === 'leave',
       priority:'high',
       cache:'no-store',
       signal:controller.signal,
@@ -145,10 +148,13 @@ async function requestPresence(action){
   }
 }
 
-function sendLeaveBeacon(){
-  if (runtime.left) return;
-  runtime.left = true;
-  const body = JSON.stringify(payload('leave'));
+function sendLifecycleBeacon(action){
+  if (action === 'leave') {
+    if (runtime.left) return;
+    runtime.left = true;
+  }
+
+  const body = JSON.stringify(payload(action));
   try {
     const blob = new Blob([body], { type:'application/json' });
     if (navigator.sendBeacon?.(PRESENCE_URL, blob)) return;
