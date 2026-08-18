@@ -1,0 +1,60 @@
+name: MVP-17.1 Platform-neutral matchmaking
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/services/MatchmakingQueue.php'
+      - 'bot/services/GameRuntimeService.php'
+      - 'bot/tests/Mvp17_1MatchmakingQueueTest.php'
+      - 'bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php'
+      - 'bot/tests/BotFallbackQueueIdentityContractTest.php'
+      - 'bot/tests/Mvp14r2GamesContractTest.php'
+      - 'bot/tests/Mvp14r2GamesBaselineTest.php'
+      - 'bot/api.php'
+      - '.github/workflows/mvp17-1-platform-neutral-matchmaking.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matchmaking-focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax validation
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/MatchmakingQueue.php
+          php -l bot/services/GameRuntimeService.php
+          php -l bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php -l bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+          php -l bot/tests/BotFallbackQueueIdentityContractTest.php
+          php -l bot/tests/Mvp14r2GamesContractTest.php
+          php -l bot/tests/Mvp14r2GamesBaselineTest.php
+
+      - name: MVP-17.1 queue policy contract
+        run: php bot/tests/Mvp17_1MatchmakingQueueTest.php
+
+      - name: MVP-17.1 integration and concurrency contract
+        run: php bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+
+      - name: Legacy queue identity regression
+        run: php bot/tests/BotFallbackQueueIdentityContractTest.php
+
+      - name: Frozen mechanics contract for all eight games
+        run: php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Frozen terminal mechanics baseline for all eight games
+        run: php bot/tests/Mvp14r2GamesBaselineTest.php
