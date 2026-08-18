@@ -1,10 +1,10 @@
-window.__MGW_BUILD__ = 'd1-bootstrap-authoritative-owner';
+window.__MGW_BUILD__ = 'mvp17-4-reconnect-resume-r2';
 import { initFirstInteractionReadinessEarly } from './first-interaction-readiness.js?v=d1';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
-import { initV115Presence, waitForV115InitialPresence } from './presence-v115.js?v=115';
+import { initV115Presence, waitForV115InitialPresence } from './presence-v115.js?v=1742';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';

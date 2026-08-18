@@ -3,16 +3,20 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/MatchPreparationClockService.php';
 require_once __DIR__ . '/GameSettlementService.php';
+require_once __DIR__ . '/PresenceService.php';
+require_once __DIR__ . '/ReconnectLifecycleService.php';
 
 final class MatchPreparationRuntimeService
 {
     private MatchPreparationClockService $clock;
     private GameSettlementService $settlement;
+    private ReconnectLifecycleService $reconnect;
 
     public function __construct(array $config)
     {
         $this->clock = new MatchPreparationClockService();
         $this->settlement = new GameSettlementService($config);
+        $this->reconnect = new ReconnectLifecycleService($config, new PresenceService());
     }
 
     public function synchronizeCurrentGame(
@@ -43,6 +47,17 @@ final class MatchPreparationRuntimeService
         // advance, settle or mark readiness for lifecycle ownership the user no
         // longer holds.
         if (!$isCurrentParticipant) {
+            return $game;
+        }
+
+        // An authenticated game_state request from the current participant is
+        // itself authoritative proof that this client has returned. Do not leave
+        // the match frozen merely because the separate presence heartbeat lost a
+        // race during app reopen. Reuse the one reconnect lifecycle owner so its
+        // exact 60-second deadline, clock restoration and no-contest rules remain
+        // unchanged.
+        $this->reconnect->synchronize($db, $userId, $sessionId, 'ping', []);
+        if (($game['status'] ?? '') !== 'active') {
             return $game;
         }
 
