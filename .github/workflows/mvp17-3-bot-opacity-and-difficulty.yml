@@ -7,7 +7,11 @@ on:
     paths:
       - 'bot/services/BotProfilePolicy.php'
       - 'bot/services/GameRuntimeService.php'
+      - 'bot/services/ChessRuntimeService.php'
       - 'bot/services/HistoryService.php'
+      - 'bot/games/chess/ChessService.php'
+      - 'bot/games/go/GoService.php'
+      - 'bot/games/domino/DominoService.php'
       - 'bot/tests/Mvp17_3BotProfilePolicyTest.php'
       - 'bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php'
       - 'bot/tests/Mvp17_2HumanPriorityFallbackTest.php'
@@ -42,7 +46,11 @@ jobs:
           set -Eeuo pipefail
           php -l bot/services/BotProfilePolicy.php
           php -l bot/services/GameRuntimeService.php
+          php -l bot/services/ChessRuntimeService.php
           php -l bot/services/HistoryService.php
+          php -l bot/games/chess/ChessService.php
+          php -l bot/games/go/GoService.php
+          php -l bot/games/domino/DominoService.php
           php -l bot/tests/Mvp17_3BotProfilePolicyTest.php
           php -l bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
           php -l bot/tests/Mvp17_2HumanPriorityFallbackTest.php
