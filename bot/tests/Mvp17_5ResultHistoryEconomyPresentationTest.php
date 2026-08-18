@@ -97,12 +97,12 @@ $assert(is_string($resultClient) && str_contains($resultClient, 'id="newOpponent
 $assert(is_string($profileClient) && str_contains($profileClient, 'match?.economy'), 'Profile history must consume the same canonical match economy projection.');
 $assert(is_string($profileClient) && str_contains($profileClient, 'economy.ledger_delta'), 'Profile history must display canonical ledger delta.');
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=105&mvp17=result-history-economy'),
-    'Active v110 manifest must route canonical game result owner to the new economy presentation cache identity.'
+    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=104&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy'),
+    'Active v110 manifest must preserve the accepted game result cache identity and append the economy presentation cache marker.'
 );
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? ''), 'v=1119&mvp17=result-history-economy'),
-    'Active v110 manifest must route profile history owner to the new economy presentation cache identity.'
+    str_contains((string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? ''), 'v=1118&mvp16=profile-pass-a&mvp17=result-history-economy'),
+    'Active v110 manifest must preserve the accepted Profile pass A cache identity and append the economy presentation cache marker.'
 );
 $assert(
     str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=1&fp=2'),
