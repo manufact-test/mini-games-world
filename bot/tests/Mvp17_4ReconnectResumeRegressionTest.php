@@ -143,7 +143,6 @@ try {
     $runtimeSource = file_get_contents($root . '/services/MatchPreparationRuntimeService.php');
     $assert(
         is_string($runtimeSource)
-            && str_contains($runtimeSource, "$this->reconnect->synchronize") === false
             && str_contains($runtimeSource, '$this->reconnect->synchronize($db, $userId, $sessionId, \'ping\', []);'),
         'game_state lifecycle must reuse the canonical reconnect owner before clock synchronization.'
     );
