@@ -7,8 +7,7 @@ if (!function_exists('now_iso')) {
 if (!function_exists('make_id')) {
     function make_id(string $prefix): string {
         static $counter = 0;
-        $counter++;
-        return $prefix . '_test_' . $counter;
+        return $prefix . '_test_' . (++$counter);
     }
 }
 
@@ -31,10 +30,7 @@ if (!mkdir($temp, 0700, true) && !is_dir($temp)) {
 }
 
 $removeTree = static function (string $path) use (&$removeTree): void {
-    if (!is_dir($path)) {
-        @unlink($path);
-        return;
-    }
+    if (!is_dir($path)) { @unlink($path); return; }
     foreach (scandir($path) ?: [] as $item) {
         if ($item === '.' || $item === '..') continue;
         $removeTree($path . DIRECTORY_SEPARATOR . $item);
@@ -61,7 +57,7 @@ $newUser = static function (string $id, string $session, string $gameId): array 
     ];
 };
 
-$newHumanGameDb = static function (string $gameId, string $a, string $b): array use ($newUser) {
+$newHumanGameDb = static function (string $gameId, string $a, string $b) use ($newUser): array {
     $now = time();
     return [
         'users' => [
@@ -94,57 +90,45 @@ $lifecycle = new ReconnectLifecycleService($config, $presence);
 $sessions = new SessionService($config);
 
 try {
-    // Background is connected-idle: it must never enter reconnect or pause the
-    // normal move clock merely because foreground heartbeats stop.
     $db = $newHumanGameDb('g-human', 'u1', 'u2');
     $presence->touch('u1', 'session-u1', 'lease-u1');
     $presence->touch('u2', 'session-u2', 'lease-u2');
     $presence->background('u1', 'session-u1', 'lease-u1');
-    $assert($presence->gameplaySnapshot('u1')['state'] === 'background', 'Background lease must remain connected-idle.');
-    $assert(
-        !$lifecycle->needsMutation($db, 'u1', 'session-u1', 'background', ['state' => 'foreground']),
-        'Background must not create reconnect state.'
-    );
-    $assert(!isset($db['games']['g-human']['reconnect_v2']), 'Background must not mutate the active game.');
+    $assert($presence->gameplaySnapshot('u1')['state'] === 'background', 'Background must remain connected-idle.');
+    $assert(!$lifecycle->needsMutation($db, 'u1', 'session-u1', 'background', ['state' => 'foreground']), 'Background must not start reconnect.');
+    $assert(!isset($db['games']['g-human']['reconnect_v2']), 'Background must not mutate game state.');
 
-    // Explicit document leave enters one authoritative 60-second reconnect
-    // window and freezes the existing clock without changing the game engine.
     $presence->touch('u1', 'session-u1', 'lease-u1');
     $previous = $presence->gameplaySnapshot('u1');
     $originalTurnStarted = strtotime((string)$db['games']['g-human']['turn_started_at']);
     $originalDeadlineMs = (int)$db['games']['g-human']['turn_deadline_epoch_ms'];
     $presence->leave('u1', 'session-u1', 'lease-u1');
-    $assert($lifecycle->needsMutation($db, 'u1', 'session-u1', 'leave', $previous), 'Explicit leave must require reconnect mutation.');
+    $assert($lifecycle->needsMutation($db, 'u1', 'session-u1', 'leave', $previous), 'Explicit leave must start reconnect.');
     $lifecycle->synchronize($db, 'u1', 'session-u1', 'leave', $previous);
 
     $reconnect = $db['games']['g-human']['reconnect_v2'] ?? null;
-    $assert(is_array($reconnect) && !empty($reconnect['paused']), 'Disconnect must pause the match through reconnect_v2.');
+    $assert(is_array($reconnect) && !empty($reconnect['paused']), 'Disconnect must pause match.');
     $deadlineMs = (int)($reconnect['players']['u1']['deadline_ms'] ?? 0);
     $disconnectedAtMs = (int)($reconnect['players']['u1']['disconnected_at_ms'] ?? 0);
     $assert($deadlineMs - $disconnectedAtMs === 60000, 'Reconnect window must be exactly 60 seconds.');
-    $assert(strtotime((string)$db['games']['g-human']['turn_started_at']) > time() + 3600, 'Frozen legacy turn clock must not timeout inside reconnect.');
-    $assert((int)$db['games']['g-human']['turn_deadline_epoch_ms'] > (time() + 3600) * 1000, 'Frozen millisecond deadline must not double-stack with reconnect.');
-    $assert($sessions->canTakeSession($db['users']['u1'], 'session-u1-new'), 'Another client may take session ownership only inside reconnect window.');
+    $assert(strtotime((string)$db['games']['g-human']['turn_started_at']) > time() + 3600, 'Legacy clock must be frozen during reconnect.');
+    $assert((int)$db['games']['g-human']['turn_deadline_epoch_ms'] > (time() + 3600) * 1000, 'Millisecond deadline must be frozen during reconnect.');
+    $assert($sessions->canTakeSession($db['users']['u1'], 'session-u1-new'), 'New client may take session inside reconnect window.');
 
-    // New supported client restores the same game and the old move clock with
-    // only the actual pause duration added.
     $previous = $presence->gameplaySnapshot('u1');
     $presence->touch('u1', 'session-u1-new', 'lease-u1-new');
     $lifecycle->synchronize($db, 'u1', 'session-u1-new', 'ping', $previous);
-    $assert(!isset($db['games']['g-human']['reconnect_v2']), 'Successful reconnect must clear pause state.');
-    $assert((string)$db['users']['u1']['current_game_id'] === 'g-human', 'Reconnect must restore the same active match.');
-    $assert((string)$db['users']['u1']['active_session_id'] === 'session-u1-new', 'Reconnect must transfer session ownership to the returning client.');
+    $assert(!isset($db['games']['g-human']['reconnect_v2']), 'Successful reconnect must clear pause.');
+    $assert((string)$db['users']['u1']['current_game_id'] === 'g-human', 'Reconnect must restore same game.');
+    $assert((string)$db['users']['u1']['active_session_id'] === 'session-u1-new', 'Reconnect must transfer session ownership.');
     $restoredTurnStarted = strtotime((string)$db['games']['g-human']['turn_started_at']);
     $restoredDeadlineMs = (int)$db['games']['g-human']['turn_deadline_epoch_ms'];
-    $assert($restoredTurnStarted >= $originalTurnStarted && $restoredTurnStarted <= $originalTurnStarted + 3, 'Legacy turn clock must resume with only elapsed reconnect pause added.');
-    $assert($restoredDeadlineMs >= $originalDeadlineMs && $restoredDeadlineMs <= $originalDeadlineMs + 3000, 'Millisecond turn deadline must preserve remaining move time.');
+    $assert($restoredTurnStarted >= $originalTurnStarted && $restoredTurnStarted <= $originalTurnStarted + 3, 'Legacy clock must resume with only actual pause added.');
+    $assert($restoredDeadlineMs >= $originalDeadlineMs && $restoredDeadlineMs <= $originalDeadlineMs + 3000, 'Millisecond deadline must preserve remaining move time.');
 
-    // Generic multi-device protection is unchanged outside reconnect.
     $lockedUser = $newUser('locked', 'session-old', 'g-locked');
-    $assert(!$sessions->canTakeSession($lockedUser, 'session-new'), 'Active game must stay device-locked without reconnect marker.');
+    $assert(!$sessions->canTakeSession($lockedUser, 'session-new'), 'Device lock must remain outside reconnect.');
 
-    // Human-vs-bot disconnect is NOT "both disconnected". The human gets the
-    // same reconnect window; expiry is a normal technical loss, not a refund.
     $botNow = time();
     $dbBot = [
         'users' => ['u5' => $newUser('u5', 'session-u5', 'g-bot')],
@@ -173,17 +157,15 @@ try {
     $previous = $presence->gameplaySnapshot('u5');
     $presence->leave('u5', 'session-u5', 'lease-u5');
     $lifecycle->synchronize($dbBot, 'u5', 'session-u5', 'leave', $previous);
-    $assert(($dbBot['games']['g-bot']['status'] ?? '') === 'active', 'Bot match must remain active during human reconnect window.');
-    $assert(empty($dbBot['games']['g-bot']['no_contest']), 'Bot match disconnect must not be settled as both-disconnected.');
+    $assert(($dbBot['games']['g-bot']['status'] ?? '') === 'active', 'Bot match must remain active during reconnect window.');
+    $assert(empty($dbBot['games']['g-bot']['no_contest']), 'Human-vs-bot disconnect must not become both-disconnected.');
     $dbBot['games']['g-bot']['reconnect_v2']['players']['u5']['deadline_ms'] = 1;
     $lifecycle->synchronize($dbBot, 'nobody', 'session-none', 'status', []);
-    $assert(($dbBot['games']['g-bot']['status'] ?? '') === 'finished', 'Expired bot-match reconnect must finish the game.');
-    $assert(($dbBot['games']['g-bot']['finish_reason'] ?? '') === 'disconnect_timeout', 'Expired reconnect must be a technical disconnect loss.');
-    $assert((int)($dbBot['users']['u5']['stats']['losses'] ?? 0) === 1, 'Technical disconnect loss must count as a loss.');
-    $assert((int)$dbBot['users']['u5']['balance'] === 900, 'Technical disconnect loss must not refund entry cost.');
+    $assert(($dbBot['games']['g-bot']['status'] ?? '') === 'finished', 'Expired bot reconnect must finish match.');
+    $assert(($dbBot['games']['g-bot']['finish_reason'] ?? '') === 'disconnect_timeout', 'Expired reconnect must be technical loss.');
+    $assert((int)($dbBot['users']['u5']['stats']['losses'] ?? 0) === 1, 'Technical disconnect loss must count as loss.');
+    $assert((int)$dbBot['users']['u5']['balance'] === 900, 'Technical disconnect loss must not refund entry.');
 
-    // Two human disconnects are no-contest: both entries return and no match
-    // statistics are incremented.
     $dbBoth = $newHumanGameDb('g-both', 'u3', 'u4');
     $presence->touch('u3', 'session-u3', 'lease-u3');
     $presence->touch('u4', 'session-u4', 'lease-u4');
@@ -192,25 +174,23 @@ try {
     $lifecycle->synchronize($dbBoth, 'u3', 'session-u3', 'leave', $previousU3);
     $previousU4 = $presence->gameplaySnapshot('u4');
     $presence->leave('u4', 'session-u4', 'lease-u4');
-    $assert($lifecycle->needsMutation($dbBoth, 'u4', 'session-u4', 'leave', $previousU4), 'Second disconnect must be observed while match is already paused.');
+    $assert($lifecycle->needsMutation($dbBoth, 'u4', 'session-u4', 'leave', $previousU4), 'Second disconnect must be observed while paused.');
     $lifecycle->synchronize($dbBoth, 'u4', 'session-u4', 'leave', $previousU4);
-    $assert(($dbBoth['games']['g-both']['finish_reason'] ?? '') === 'both_disconnected', 'Two human disconnects must settle no-contest.');
-    $assert(!empty($dbBoth['games']['g-both']['no_contest']), 'Two human disconnects must carry no-contest marker.');
-    $assert((int)$dbBoth['users']['u3']['balance'] === 1000 && (int)$dbBoth['users']['u4']['balance'] === 1000, 'Both disconnected players must receive full entry refund.');
-    $assert((int)$dbBoth['users']['u3']['stats']['games_played'] === 0 && (int)$dbBoth['users']['u4']['stats']['games_played'] === 0, 'No-contest must not change played-game statistics.');
+    $assert(($dbBoth['games']['g-both']['finish_reason'] ?? '') === 'both_disconnected', 'Two humans disconnected must settle no-contest.');
+    $assert(!empty($dbBoth['games']['g-both']['no_contest']), 'Both-disconnected must carry no-contest marker.');
+    $assert((int)$dbBoth['users']['u3']['balance'] === 1000 && (int)$dbBoth['users']['u4']['balance'] === 1000, 'Both entries must be refunded.');
+    $assert((int)$dbBoth['users']['u3']['stats']['games_played'] === 0 && (int)$dbBoth['users']['u4']['stats']['games_played'] === 0, 'No-contest must not increment match stats.');
 
-    // Mass server failure has an explicit no-contest/refund path with telemetry,
-    // but no automatic outage oracle is invented inside normal game timers.
     $dbFailure = $newHumanGameDb('g-failure', 'u6', 'u7');
     $cancelled = $lifecycle->cancelActiveGamesForServerFailure($dbFailure, 'incident-test');
-    $assert($cancelled === 1, 'Server-failure recovery path must cancel every active game once.');
-    $assert(($dbFailure['games']['g-failure']['finish_reason'] ?? '') === 'server_failure', 'Server failure must use dedicated finish reason.');
-    $assert((int)$dbFailure['users']['u6']['balance'] === 1000 && (int)$dbFailure['users']['u7']['balance'] === 1000, 'Server failure must refund both entries.');
-    $assert((int)$dbFailure['users']['u6']['stats']['games_played'] === 0 && (int)$dbFailure['users']['u7']['stats']['games_played'] === 0, 'Server failure must not change match statistics.');
-    $assert((int)($dbFailure['system']['telemetry']['server_failure_cancelled_games_total'] ?? 0) === 1, 'Server failure cancellation must be logged in telemetry.');
+    $assert($cancelled === 1, 'Server-failure path must cancel active match once.');
+    $assert(($dbFailure['games']['g-failure']['finish_reason'] ?? '') === 'server_failure', 'Server failure needs dedicated reason.');
+    $assert((int)$dbFailure['users']['u6']['balance'] === 1000 && (int)$dbFailure['users']['u7']['balance'] === 1000, 'Server failure must refund entries.');
+    $assert((int)$dbFailure['users']['u6']['stats']['games_played'] === 0 && (int)$dbFailure['users']['u7']['stats']['games_played'] === 0, 'Server failure must not change match stats.');
+    $assert((int)($dbFailure['system']['telemetry']['server_failure_cancelled_games_total'] ?? 0) === 1, 'Server failure must be logged.');
 
     $clockSource = file_get_contents($root . '/services/MatchPreparationClockService.php');
-    $assert(is_string($clockSource) && str_contains($clockSource, 'private const MOVE_TIMEOUT_SEC = 60;'), 'Existing authoritative 60-second move timeout must remain unchanged.');
+    $assert(is_string($clockSource) && str_contains($clockSource, 'private const MOVE_TIMEOUT_SEC = 60;'), 'Existing 60-second move timeout must remain unchanged.');
 
     fwrite(STDOUT, "Mvp17_4ReconnectLifecycleTest: {$assertions} assertions passed\n");
 } finally {
