@@ -69,12 +69,53 @@ final class HistoryService
         foreach (array_reverse($db['games'] ?? []) as $game) {
             $players = array_map('strval', $game['player_ids'] ?? []);
             if (!in_array($userId, $players, true)) continue;
-            $item = $this->matchItem($game, $userId);
+            $item = $this->matchItem($db, $game, $userId);
             unset($item['room'], $item['room_label']);
             $items[] = $item;
             if (count($items) >= $limit) break;
         }
         return $items;
+    }
+
+    public function matchEconomy(array $db, string $userId, string $gameId): ?array
+    {
+        $gameId = trim($gameId);
+        if ($gameId === '' || $userId === '') return null;
+
+        $entry = 0;
+        $reward = 0;
+        $ledgerDelta = 0;
+        $newBalance = null;
+        $matched = 0;
+
+        foreach ($db['transactions'] ?? [] as $tx) {
+            if (!is_array($tx)
+                || (string)($tx['type'] ?? '') !== 'balance_change'
+                || (string)($tx['user_id'] ?? '') !== $userId
+                || (string)($tx['game_id'] ?? '') !== $gameId) {
+                continue;
+            }
+
+            $category = (string)($tx['category'] ?? '');
+            if (!in_array($category, ['game_entry', 'game_win', 'game_refund'], true)) continue;
+
+            $amount = (int)($tx['amount'] ?? 0);
+            if ($category === 'game_entry' && $amount < 0) $entry += abs($amount);
+            if (in_array($category, ['game_win', 'game_refund'], true) && $amount > 0) $reward += $amount;
+            $ledgerDelta += $amount;
+            if (array_key_exists('balance_after', $tx)) $newBalance = (int)$tx['balance_after'];
+            $matched++;
+        }
+
+        if ($matched === 0) return null;
+
+        return [
+            'entry' => $entry,
+            'reward' => $reward,
+            'net' => $ledgerDelta,
+            'ledger_delta' => $ledgerDelta,
+            'new_balance' => $newBalance,
+        ];
     }
 
     private function operationFromTransaction(array $db, array $tx, string $userId): ?array
@@ -183,7 +224,7 @@ final class HistoryService
         return null;
     }
 
-    private function matchItem(array $game, string $userId): array
+    private function matchItem(array $db, array $game, string $userId): array
     {
         $winnerId = isset($game['winner_id']) ? (string)$game['winner_id'] : null;
         $status = (string)($game['status'] ?? '');
@@ -197,7 +238,7 @@ final class HistoryService
         elseif ($winnerId === $userId) { $result = $reason === 'timeout' ? 'Победа по таймауту' : ($reason === 'player_left' ? 'Победа: соперник вышел' : 'Победа'); $tone = 'pos'; }
         else { $result = in_array($reason, ['timeout', 'player_left'], true) ? 'Техническое поражение' : 'Поражение'; $tone = 'neg'; }
 
-        return [
+        $item = [
             'id' => (string)($game['id'] ?? ''),
             'short_id' => $this->prettyMatchId((string)($game['id'] ?? '')),
             'room' => (string)($game['room'] ?? 'match'),
@@ -217,6 +258,10 @@ final class HistoryService
             'created_at' => (string)($game['created_at'] ?? ''),
             'finished_at' => (string)($game['finished_at'] ?? ''),
         ];
+
+        $economy = $this->matchEconomy($db, $userId, (string)($game['id'] ?? ''));
+        if ($economy !== null) $item['economy'] = $economy;
+        return $item;
     }
 
     private function operationGameDescription(array $game, string $userId, string $category): string
