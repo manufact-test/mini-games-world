@@ -33,8 +33,12 @@ $assert(is_string($homeClient) && str_contains($homeClient, 'Вход:') && str_
 $assert(is_string($homeClient) && !str_contains($homeClient, 'const payout=item.payout'), 'Actual menu History owner must not restore raw winner payout.');
 
 $assert(
-    str_contains((string)($manifest['imports']['@mgw/main'] ?? ''), 'mvp17=result-history-fix3'),
-    'Top-level Telegram module graph must receive a new cache identity for the corrective pass.'
+    (string)($manifest['imports']['@mgw/main'] ?? '') === './assets/js/main-v110-reconnect-v174.js?v=2',
+    'The accepted reconnect wrapper cache identity must remain byte-for-byte unchanged.'
+);
+$assert(
+    str_contains((string)($manifest['assets']['bootstrap'] ?? ''), 'mvp17=result-history-fix3'),
+    'The single top-level bootstrap must receive the corrective cache identity instead.'
 );
 $assert(
     str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'mvp17=match-history-economy&fix=2'),
