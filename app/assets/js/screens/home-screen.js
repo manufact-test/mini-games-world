@@ -9,6 +9,7 @@ import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { t, setExplicitLocale } from '@mgw/i18n';
 
 window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';
+window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-stable-history-sheet-v1';
 
 export function initHomeScreen(){
   document.addEventListener('click', event => {
@@ -77,14 +78,19 @@ function openRulesSheet(){
 }
 
 async function openBalanceHistorySheet(){
-  openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">Загружаем историю…</div>`);
+  openHistoryLoadingSheet('История баланса','Операции баланса','Загружаем историю…',true);
   try { const result=await api.history(); if(result.user){state.user=result.user;renderBalances(state.user);} renderHistorySheet(result.history||{},result.topups||[]); }
   catch(error){ openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
 }
 async function openMatchHistorySheet(){
-  openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">Загружаем матчи…</div>`);
+  openHistoryLoadingSheet('История матчей','Последние игры','Загружаем матчи…',false);
   try { const result=await api.history(); renderMatchHistorySheet(result.history?.matches||[]); }
   catch(error){ openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
+}
+function openHistoryLoadingSheet(title,sectionTitle,message,withTabs=false){
+  const tabs=withTabs?`<div class="history-tabs" role="tablist"><button class="history-tab active" type="button" disabled>Операции</button><button class="history-tab" type="button" disabled>Пополнения</button></div>`:'';
+  const rows=Array.from({length:5},(_,index)=>`<div class="history-item" aria-hidden="${index===0?'false':'true'}"><div><strong>${index===0?escapeHtml(message):'&nbsp;'}</strong><span>&nbsp;</span><em>&nbsp;</em></div><b>&nbsp;</b></div>`).join('');
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(title)}</h2></div><button class="close" data-close-sheet type="button">×</button></div>${tabs}<div class="history-scroll"><div class="history-section"><h3>${escapeHtml(sectionTitle)}</h3><div class="history-list">${rows}</div></div></div><button class="btn ghost full" type="button" disabled>Понятно</button>`);
 }
 function renderHistorySheet(history,topups=[]){
   const operations=history.operations||[];
@@ -103,15 +109,11 @@ function renderMatchHistorySheet(matches=[]){
     const opponent=item.opponent||'Соперник';
     const economy=item.economy&&typeof item.economy==='object'?item.economy:null;
     const date=formatDate(item.finished_at||item.created_at);
-    const economyLine=economy
-      ? `Вход: ${matchCoins(economy.entry)} · Награда: ${matchCoins(economy.reward)} · Итог: ${matchDelta(economy.ledger_delta)} · Баланс: ${matchCoins(economy.new_balance)}`
-      : 'Финансовый итог недоступен';
     const delta=economy?matchDelta(economy.ledger_delta):'';
-    return `<div class="history-item match-history-item"><div><strong>${escapeHtml(result)}</strong><span>${escapeHtml([game,board].filter(Boolean).join(' · '))}</span><span>Соперник: ${escapeHtml(opponent)}</span><span>${escapeHtml(economyLine)}</span><em>${escapeHtml(date)}</em></div><b class="${tone}">${escapeHtml(delta)}</b></div>`;
+    return `<div class="history-item match-history-item"><div><strong>${escapeHtml(result)}</strong><span>${escapeHtml([game,board].filter(Boolean).join(' · '))}</span><span>Соперник: ${escapeHtml(opponent)}</span><em>${escapeHtml(date)}</em></div><b class="${tone}">${escapeHtml(delta)}</b></div>`;
   }).join(''):`<div class="small-note">Истории матчей пока нет.</div>`;
   openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>Последние игры</h3><div class="history-list">${matchHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`);
 }
-function matchCoins(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';return `${Math.trunc(Number(value))} коинов`;}
 function matchDelta(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';const normalized=Math.trunc(Number(value));return `${normalized>0?'+':''}${normalized} коинов`;}
 function bindHistoryTabs(){const tabs=document.querySelectorAll('[data-history-tab]');const panels=document.querySelectorAll('[data-history-panel]');tabs.forEach(tab=>tab.addEventListener('click',()=>{const target=tab.dataset.historyTab;tabs.forEach(item=>item.classList.toggle('active',item===tab));panels.forEach(panel=>panel.classList.toggle('active',panel.dataset.historyPanel===target));}));}
 function topupStatusText(status){if(status==='paid')return'Пополнение начислено';if(status==='rejected')return'Заявка отклонена';if(status==='cancelled')return'Заявка отменена';if(status==='pending')return'Ожидает оплаты';return'Заявка на пополнение';}
