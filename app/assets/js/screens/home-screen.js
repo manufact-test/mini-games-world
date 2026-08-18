@@ -91,9 +91,26 @@ function renderHistorySheet(history,topups=[]){
   openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-tabs" role="tablist"><button class="history-tab active" data-history-tab="operations" type="button">Операции</button><button class="history-tab" data-history-tab="topups" type="button">Пополнения</button></div><div class="history-scroll"><div class="history-tab-panel active" data-history-panel="operations"><div class="history-section"><h3>Операции баланса</h3><div class="history-list">${operationHtml}</div></div></div><div class="history-tab-panel" data-history-panel="topups"><div class="history-section"><h3>Пополнения</h3><div class="history-list">${topupHtml}</div></div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); bindHistoryTabs();
 }
 function renderMatchHistorySheet(matches=[]){
-  const matchHtml=matches.length?matches.slice(0,20).map(item=>{const result=item.result||'Матч';const tone=item.tone==='pos'?'pos':(item.tone==='neg'?'neg':'');const room=item.room_label||(item.room==='gold'?'Gold':'Match');const board=item.board_size?`${item.board_size}×${item.board_size}`:'поле';const bet=Number(item.bet||0).toLocaleString('ru-RU');const opponent=item.opponent||'Соперник';const payout=item.payout?'+'+Number(item.payout).toLocaleString('ru-RU')+' коинов':'';const date=formatDate(item.finished_at||item.created_at);return `<div class="history-item match-history-item"><div><strong>${escapeHtml(result)}</strong><span>${escapeHtml(room)} · ${escapeHtml(board)} · ставка ${bet} коинов</span><span>Соперник: ${escapeHtml(opponent)}</span><em>#${escapeHtml(item.short_id||'')} · ${escapeHtml(date)}</em></div><b class="${tone}">${escapeHtml(payout)}</b></div>`;}).join(''):`<div class="small-note">Истории матчей пока нет.</div>`;
+  const matchHtml=matches.length?matches.slice(0,20).map(item=>{
+    const result=item.result||'Матч';
+    const tone=item.tone==='pos'?'pos':(item.tone==='neg'?'neg':'');
+    const game=item.game_title||'Матч';
+    const columns=Number(item.board_columns||item.board_size||0);
+    const rows=Number(item.board_rows||item.board_size||0);
+    const board=columns>0&&rows>0?`${columns}×${rows}`:'';
+    const opponent=item.opponent||'Соперник';
+    const economy=item.economy&&typeof item.economy==='object'?item.economy:null;
+    const date=formatDate(item.finished_at||item.created_at);
+    const economyLine=economy
+      ? `Вход: ${matchCoins(economy.entry)} · Награда: ${matchCoins(economy.reward)} · Итог: ${matchDelta(economy.ledger_delta)} · Баланс: ${matchCoins(economy.new_balance)}`
+      : 'Финансовый итог недоступен';
+    const delta=economy?matchDelta(economy.ledger_delta):'';
+    return `<div class="history-item match-history-item"><div><strong>${escapeHtml(result)}</strong><span>${escapeHtml([game,board].filter(Boolean).join(' · '))}</span><span>Соперник: ${escapeHtml(opponent)}</span><span>${escapeHtml(economyLine)}</span><em>${escapeHtml(date)}</em></div><b class="${tone}">${escapeHtml(delta)}</b></div>`;
+  }).join(''):`<div class="small-note">Истории матчей пока нет.</div>`;
   openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>Последние игры</h3><div class="history-list">${matchHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`);
 }
+function matchCoins(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';return `${Math.trunc(Number(value))} коинов`;}
+function matchDelta(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';const normalized=Math.trunc(Number(value));return `${normalized>0?'+':''}${normalized} коинов`;}
 function bindHistoryTabs(){const tabs=document.querySelectorAll('[data-history-tab]');const panels=document.querySelectorAll('[data-history-panel]');tabs.forEach(tab=>tab.addEventListener('click',()=>{const target=tab.dataset.historyTab;tabs.forEach(item=>item.classList.toggle('active',item===tab));panels.forEach(panel=>panel.classList.toggle('active',panel.dataset.historyPanel===target));}));}
 function topupStatusText(status){if(status==='paid')return'Пополнение начислено';if(status==='rejected')return'Заявка отклонена';if(status==='cancelled')return'Заявка отменена';if(status==='pending')return'Ожидает оплаты';return'Заявка на пополнение';}
 function topupTone(status){if(status==='paid')return'pos';if(status==='rejected'||status==='cancelled')return'neg';return'';}
