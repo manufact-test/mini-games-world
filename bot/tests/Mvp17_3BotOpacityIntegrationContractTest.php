@@ -3,11 +3,22 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $runtime = file_get_contents($root . '/services/GameRuntimeService.php');
+$specialRuntime = file_get_contents($root . '/services/ChessRuntimeService.php');
 $history = file_get_contents($root . '/services/HistoryService.php');
 $gameService = file_get_contents($root . '/services/GameService.php');
 $profiles = file_get_contents($root . '/services/BotProfilePolicy.php');
+$chess = file_get_contents($root . '/games/chess/ChessService.php');
+$go = file_get_contents($root . '/games/go/GoService.php');
+$domino = file_get_contents($root . '/games/domino/DominoService.php');
 
-if (!is_string($runtime) || !is_string($history) || !is_string($gameService) || !is_string($profiles)) {
+if (!is_string($runtime)
+    || !is_string($specialRuntime)
+    || !is_string($history)
+    || !is_string($gameService)
+    || !is_string($profiles)
+    || !is_string($chess)
+    || !is_string($go)
+    || !is_string($domino)) {
     throw new RuntimeException('MVP-17.3 runtime sources are unavailable.');
 }
 
@@ -22,6 +33,19 @@ $assert(
         && str_contains($runtime, '$this->botProfiles->ensureStoredProfile')
         && str_contains($runtime, '$this->botProfiles->sanitizePublicGame'),
     'GameRuntimeService must own one centralized bot presentation boundary.'
+);
+$assert(
+    str_contains($specialRuntime, "require_once __DIR__ . '/BotProfilePolicy.php';")
+        && str_contains($specialRuntime, 'private BotProfilePolicy $botProfiles;')
+        && str_contains($specialRuntime, '$this->botProfiles->ensureStoredProfile($game);')
+        && str_contains($specialRuntime, '$this->botProfiles->sanitizePublicGame($public, $game);'),
+    'Chess/Go/Domino wrapper must reuse the same bot presentation owner before public responses.'
+);
+$assert(
+    str_contains($chess, "'is_bot_game' => !empty(\$game['is_bot_game'])")
+        && str_contains($go, "'is_bot_game' => !empty(\$game['is_bot_game'])")
+        && str_contains($domino, "'is_bot_game' => !empty(\$game['is_bot_game'])"),
+    'Special engines may retain their frozen internal marker projection only because ChessRuntimeService sanitizes it.'
 );
 $assert(
     str_contains($runtime, "['easy' => 1, 'medium' => 69, 'hard' => 30]")
