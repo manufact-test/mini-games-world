@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/games/checkers/CheckersService.php';
 require_once dirname(__DIR__) . '/games/reversi/ReversiBotService.php';
 require_once dirname(__DIR__) . '/games/reversi/ReversiService.php';
 require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
+require_once __DIR__ . '/MatchmakingQueue.php';
 
 final class GameRuntimeService
 {
@@ -15,6 +16,7 @@ final class GameRuntimeService
     private BattleshipService $battleship;
     private CheckersService $checkers;
     private ReversiService $reversi;
+    private MatchmakingQueue $matchmaking;
 
     public function __construct(
         private array $config,
@@ -26,11 +28,13 @@ final class GameRuntimeService
         $this->battleship = new BattleshipService($this->config, $settlement);
         $this->checkers = new CheckersService($this->config, $settlement);
         $this->reversi = new ReversiService($this->config, $settlement);
+        $this->matchmaking = new MatchmakingQueue();
     }
 
     public function cleanup(array &$db): void
     {
         $this->normalizeDatabaseGameTypes($db);
+        $this->matchmaking->purgeActiveGameQueueEntries($db);
 
         $nonLegacyGames = [];
         foreach ($db['games'] ?? [] as $gameId => $game) {
@@ -51,39 +55,56 @@ final class GameRuntimeService
         $this->battleship->cleanup($db);
         $this->checkers->cleanup($db);
         $this->reversi->cleanup($db);
+        $this->matchmaking->observeQueueDepth($db);
     }
 
     public function cleanupQueue(array &$db): void
     {
         $this->normalizeDatabaseGameTypes($db);
+        $this->matchmaking->purgeActiveGameQueueEntries($db);
         $this->legacyGame->cleanupQueue($db);
+        $this->matchmaking->observeQueueDepth($db);
     }
 
     public function refreshSearch(array &$db, array &$user): void
     {
         $this->normalizeDatabaseGameTypes($db);
+        $this->matchmaking->purgeActiveGameQueueEntries($db);
         $this->legacyGame->refreshSearch($db, $user);
+        $this->matchmaking->observeQueueDepth($db);
     }
 
     public function maybeCreateBotGameForSearchingUser(array &$db, array &$user): ?array
     {
         $this->normalizeDatabaseGameTypes($db);
-        $queueItem = $this->queueItemForUser($db, (string)($user['id'] ?? ''));
+        $this->matchmaking->purgeActiveGameQueueEntries($db);
+
+        $userId = (string)($user['id'] ?? '');
+        $queueItem = $this->queueItemForUser($db, $userId);
         if (!$queueItem) return null;
 
         $gameType = $this->gameTypeFromRecord($queueItem);
         if (!$this->catalog->supportsBot($gameType)) return null;
 
         $requestedBoardSize = $this->requestedBoardSizeFromQueue($gameType, $queueItem);
+        $skillBand = $this->matchmaking->normalizeSkillBand($queueItem['skill_band'] ?? null);
+        $candidate = $this->matchmaking->firstCandidate($db, $userId, $gameType, $requestedBoardSize, $skillBand);
+
         $game = $this->withIsolatedQueue(
             $db,
             $gameType,
+            $requestedBoardSize,
+            $skillBand,
             function () use (&$db, &$user): ?array {
                 return $this->legacyGame->maybeCreateBotGameForSearchingUser($db, $user);
             }
         );
 
+        $this->matchmaking->observeQueueDepth($db);
         if (!is_array($game)) return null;
+
+        $this->matchmaking->observeWaitFromQueueItem($db, !empty($game['is_bot_game']) ? $queueItem : $candidate);
+
         $gameId = (string)($game['id'] ?? '');
         if ($gameId === '' || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
             return $game;
@@ -104,10 +125,12 @@ final class GameRuntimeService
         string $room,
         int $bet,
         int $boardSize,
-        ?string $gameType = null
+        ?string $gameType = null,
+        ?string $skillBand = null
     ): array {
         $this->normalizeDatabaseGameTypes($db);
         $gameType = $this->catalog->normalizeGameType($gameType);
+        $skillBand = $this->matchmaking->normalizeSkillBand($skillBand ?? ($user['skill_band'] ?? null));
         $room = UnifiedGameZonePolicy::storageRoom();
         $bet = UnifiedGameZonePolicy::entryCost($this->config);
 
@@ -116,8 +139,13 @@ final class GameRuntimeService
         }
 
         $userId = (string)($user['id'] ?? '');
-        $active = $this->findActiveGameForUser($db, $userId);
-        if ($active) return ['game' => $this->publicGame($active, $userId)];
+        $active = $this->matchmaking->activeGameForUser($db, $userId);
+        if ($active) {
+            $this->matchmaking->preventDuplicateMatch($db, $userId);
+            return ['game' => $this->publicGame($active, $userId)];
+        }
+
+        $this->matchmaking->purgeActiveGameQueueEntries($db);
 
         $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
         $definition = $this->catalog->get($gameType);
@@ -130,10 +158,13 @@ final class GameRuntimeService
         $legacyBoardSize = $engine === 'tictactoe'
             ? $boardSize
             : $this->legacyProxyBoardSize($boardSize);
+        $candidate = $this->matchmaking->firstCandidate($db, $userId, $gameType, $boardSize, $skillBand);
 
         $result = $this->withIsolatedQueue(
             $db,
             $gameType,
+            $boardSize,
+            $skillBand,
             function () use (&$db, &$user, $room, $bet, $legacyBoardSize): array {
                 return $this->legacyGame->startSearch($db, $user, $room, $bet, $legacyBoardSize);
             },
@@ -141,6 +172,7 @@ final class GameRuntimeService
         );
 
         if (isset($result['game']) && is_array($result['game'])) {
+            $this->matchmaking->observeWaitFromQueueItem($db, $candidate);
             $gameId = (string)($result['game']['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;
@@ -150,15 +182,17 @@ final class GameRuntimeService
                 $result['game'] = $this->publicGame($db['games'][$gameId], $userId);
             }
         } else {
-            $this->setQueuedGameType($db, $userId, $gameType, $boardSize);
+            $this->setQueuedGameType($db, $userId, $gameType, $boardSize, $skillBand);
         }
 
+        $this->matchmaking->observeQueueDepth($db);
         return $result;
     }
 
     public function leaveSearch(array &$db, array &$user): void
     {
         $this->legacyGame->leaveSearch($db, $user);
+        $this->matchmaking->observeQueueDepth($db);
     }
 
     public function surrenderGame(array &$db, array &$user, string $gameId): array
@@ -307,12 +341,15 @@ final class GameRuntimeService
     }
 
     /**
-     * Runs the legacy matcher against only one queue type and only legacy game records.
-     * Non-legacy games are temporarily hidden because GameService performs its own cleanup.
+     * Runs the legacy matcher against one explicit platform-neutral matchmaking
+     * key and only legacy game records. Non-legacy games are temporarily hidden
+     * because GameService performs its own cleanup.
      */
     private function withIsolatedQueue(
         array &$db,
         string $gameType,
+        int $boardSize,
+        string $skillBand,
         callable $callback,
         ?string $dropUserId = null
     ): mixed {
@@ -324,7 +361,7 @@ final class GameRuntimeService
         foreach ($originalQueue as $item) {
             if (!is_array($item)) continue;
             if ($dropUserId !== null && (string)($item['user_id'] ?? '') === $dropUserId) continue;
-            if ($this->gameTypeFromRecord($item) === $gameType) $workingQueue[] = $item;
+            if ($this->matchmaking->matchesKey($item, $gameType, $boardSize, $skillBand)) $workingQueue[] = $item;
         }
 
         foreach ($originalGames as $id => $game) {
@@ -340,7 +377,14 @@ final class GameRuntimeService
         } finally {
             $updatedWorkingQueue = is_array($db['queue'] ?? null) ? array_values($db['queue']) : [];
             $updatedLegacyGames = is_array($db['games'] ?? null) ? $db['games'] : [];
-            $db['queue'] = $this->mergeIsolatedQueue($originalQueue, $updatedWorkingQueue, $gameType, $dropUserId);
+            $db['queue'] = $this->mergeIsolatedQueue(
+                $originalQueue,
+                $updatedWorkingQueue,
+                $gameType,
+                $boardSize,
+                $skillBand,
+                $dropUserId
+            );
             $db['games'] = $this->mergeLegacyGameIsolation($originalGames, $updatedLegacyGames);
         }
     }
@@ -370,6 +414,8 @@ final class GameRuntimeService
         array $originalQueue,
         array $updatedWorkingQueue,
         string $gameType,
+        int $boardSize,
+        string $skillBand,
         ?string $dropUserId
     ): array {
         $updatedById = [];
@@ -385,7 +431,7 @@ final class GameRuntimeService
         foreach ($originalQueue as $item) {
             if (!is_array($item)) continue;
             if ($dropUserId !== null && (string)($item['user_id'] ?? '') === $dropUserId) continue;
-            if ($this->gameTypeFromRecord($item) !== $gameType) {
+            if (!$this->matchmaking->matchesKey($item, $gameType, $boardSize, $skillBand)) {
                 $merged[] = $item;
                 continue;
             }
@@ -465,7 +511,11 @@ final class GameRuntimeService
             unset($game);
         }
         if (isset($db['queue']) && is_array($db['queue'])) {
-            foreach ($db['queue'] as &$item) if (is_array($item)) $this->ensureGameType($item);
+            foreach ($db['queue'] as &$item) {
+                if (!is_array($item)) continue;
+                $this->ensureGameType($item);
+                $item['skill_band'] = $this->matchmaking->normalizeSkillBand($item['skill_band'] ?? null);
+            }
             unset($item);
         }
     }
@@ -504,13 +554,19 @@ final class GameRuntimeService
         return $this->catalog->normalizeGameType((string)($record['game_type'] ?? ''));
     }
 
-    private function setQueuedGameType(array &$db, string $userId, string $gameType, int $requestedBoardSize): void
-    {
+    private function setQueuedGameType(
+        array &$db,
+        string $userId,
+        string $gameType,
+        int $requestedBoardSize,
+        string $skillBand
+    ): void {
         if ($userId === '' || !isset($db['queue']) || !is_array($db['queue'])) return;
         foreach ($db['queue'] as &$item) {
             if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
             $item['game_type'] = $gameType;
             $item['requested_board_size'] = $requestedBoardSize;
+            $item['skill_band'] = $this->matchmaking->normalizeSkillBand($skillBand);
             if ($gameType === 'four_in_a_row') $item['game_variant_size'] = $requestedBoardSize;
             unset($item);
             return;
