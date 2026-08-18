@@ -20,6 +20,16 @@ $matchHistoryEnd = is_string($home) ? strpos($home, 'function bindHistoryTabs', 
 $matchHistory = is_int($matchHistoryStart) && is_int($matchHistoryEnd)
     ? substr($home, $matchHistoryStart, $matchHistoryEnd - $matchHistoryStart)
     : '';
+$balanceOpenStart = is_string($home) ? strpos($home, 'async function openBalanceHistorySheet') : false;
+$balanceOpenEnd = is_string($home) ? strpos($home, 'async function openMatchHistorySheet', is_int($balanceOpenStart) ? $balanceOpenStart : 0) : false;
+$balanceOpen = is_int($balanceOpenStart) && is_int($balanceOpenEnd)
+    ? substr($home, $balanceOpenStart, $balanceOpenEnd - $balanceOpenStart)
+    : '';
+$matchOpenStart = is_string($home) ? strpos($home, 'async function openMatchHistorySheet') : false;
+$matchOpenEnd = is_string($home) ? strpos($home, 'function setHistoryButtonsDisabled', is_int($matchOpenStart) ? $matchOpenStart : 0) : false;
+$matchOpen = is_int($matchOpenStart) && is_int($matchOpenEnd)
+    ? substr($home, $matchOpenStart, $matchOpenEnd - $matchOpenStart)
+    : '';
 
 $assert(is_string($historyService) && str_contains($historyService, '$repository->read($userId, $limit)'), 'History read path must use the staged DB snapshot without per-request full shadow synchronization.');
 $assert(is_string($historyService) && !str_contains($historyService, '$repository->synchronizeAndRead($db, $userId, $limit)'), 'User-facing history must not run the heavy full shadow synchronization on every read.');
@@ -28,10 +38,12 @@ $assert(is_string($historyService) && str_contains($historyService, "PRESENTATIO
 $assert(is_string($historyService) && str_contains($historyService, "'presentation_version'"), 'History payload must carry the authoritative presentation version marker.');
 
 $assert(is_string($home) && str_contains($home, "window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';"), 'Actual History UI owner must carry the live redeploy build marker.');
-$assert(is_string($home) && str_contains($home, "window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-stable-history-sheet-v1';"), 'History modal bundle must expose the stable-loading UX marker.');
-$assert(is_string($home) && str_contains($home, "openHistoryLoadingSheet('История баланса','Операции баланса','Загружаем историю…',true);"), 'Balance History must use the shared full-size loading shell.');
-$assert(is_string($home) && str_contains($home, "openHistoryLoadingSheet('История матчей','Последние игры','Загружаем матчи…',false);"), 'Match History must use the shared full-size loading shell.');
-$assert(is_string($home) && str_contains($home, 'Array.from({length:5}'), 'Shared History loading shell must reserve final modal geometry instead of rendering a one-line temporary sheet.');
+$assert(is_string($home) && str_contains($home, "window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-ready-only-history-sheet-v2';"), 'History modal bundle must expose the ready-only UX marker.');
+$assert(is_string($home) && !str_contains($home, 'openHistoryLoadingSheet'), 'History must not own a temporary loading sheet.');
+$assert(is_string($home) && !str_contains($home, 'Загружаем матчи…') && !str_contains($home, 'Загружаем историю…'), 'History must not render intermediate loading copy inside a modal.');
+$assert($balanceOpen !== '' && str_contains($balanceOpen, 'await api.history()') && !str_contains(substr($balanceOpen, 0, (int)strpos($balanceOpen, 'await api.history()')), 'openSheet('), 'Balance History must await data before opening any History sheet.');
+$assert($matchOpen !== '' && str_contains($matchOpen, 'await api.history()') && !str_contains(substr($matchOpen, 0, (int)strpos($matchOpen, 'await api.history()')), 'openSheet('), 'Match History must await data before opening any History sheet.');
+$assert(is_string($home) && str_contains($home, "setHistoryButtonsDisabled(true);"), 'History actions must prevent duplicate requests while the current menu remains visible.');
 
 $assert($matchHistory !== '' && str_contains($matchHistory, "const game=item.game_title||'Матч';"), 'Actual History modal must display the real game title.');
 $assert($matchHistory !== '' && str_contains($matchHistory, "const economy=item.economy&&typeof item.economy==='object'?item.economy:null;"), 'Actual History modal must consume the canonical viewer economy projection.');
@@ -47,8 +59,8 @@ $assert(is_string($result) && !str_contains($result, '${game.payout'), 'Result s
 $assert(is_string($result) && str_contains($result, 'id="newOpponent"') && str_contains($result, 'id="goHome"'), 'Accepted result action IDs must remain unchanged.');
 
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=stable-history-sheet'),
-    'Active v110 manifest must cache-bust the bundled History modal UX while preserving the accepted settings/history prefix.'
+    str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet'),
+    'Active v110 manifest must cache-bust the ready-only History modal UX while preserving the accepted settings/history prefix.'
 );
 $assert(
     str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=105&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3'),

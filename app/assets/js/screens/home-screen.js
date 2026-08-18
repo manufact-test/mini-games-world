@@ -9,7 +9,7 @@ import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { t, setExplicitLocale } from '@mgw/i18n';
 
 window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';
-window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-stable-history-sheet-v1';
+window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-ready-only-history-sheet-v2';
 
 export function initHomeScreen(){
   document.addEventListener('click', event => {
@@ -78,19 +78,19 @@ function openRulesSheet(){
 }
 
 async function openBalanceHistorySheet(){
-  openHistoryLoadingSheet('История баланса','Операции баланса','Загружаем историю…',true);
+  setHistoryButtonsDisabled(true);
   try { const result=await api.history(); if(result.user){state.user=result.user;renderBalances(state.user);} renderHistorySheet(result.history||{},result.topups||[]); }
   catch(error){ openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
+  finally { setHistoryButtonsDisabled(false); }
 }
 async function openMatchHistorySheet(){
-  openHistoryLoadingSheet('История матчей','Последние игры','Загружаем матчи…',false);
+  setHistoryButtonsDisabled(true);
   try { const result=await api.history(); renderMatchHistorySheet(result.history?.matches||[]); }
   catch(error){ openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
+  finally { setHistoryButtonsDisabled(false); }
 }
-function openHistoryLoadingSheet(title,sectionTitle,message,withTabs=false){
-  const tabs=withTabs?`<div class="history-tabs" role="tablist"><button class="history-tab active" type="button" disabled>Операции</button><button class="history-tab" type="button" disabled>Пополнения</button></div>`:'';
-  const rows=Array.from({length:5},(_,index)=>`<div class="history-item" aria-hidden="${index===0?'false':'true'}"><div><strong>${index===0?escapeHtml(message):'&nbsp;'}</strong><span>&nbsp;</span><em>&nbsp;</em></div><b>&nbsp;</b></div>`).join('');
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(title)}</h2></div><button class="close" data-close-sheet type="button">×</button></div>${tabs}<div class="history-scroll"><div class="history-section"><h3>${escapeHtml(sectionTitle)}</h3><div class="history-list">${rows}</div></div></div><button class="btn ghost full" type="button" disabled>Понятно</button>`);
+function setHistoryButtonsDisabled(disabled){
+  ['balanceHistoryBtn','matchHistoryBtn'].forEach(id=>{const button=document.getElementById(id);if(button)button.disabled=disabled;});
 }
 function renderHistorySheet(history,topups=[]){
   const operations=history.operations||[];
