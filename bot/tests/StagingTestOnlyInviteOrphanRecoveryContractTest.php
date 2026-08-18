@@ -48,26 +48,25 @@ $assert(str_contains($service, 'candidate deletion verification failed')
     'Orphan recovery must verify its exact deletion scope after mutation.');
 $assert(str_contains($service, "'candidate_scope' => true")
     && str_contains($service, "'global_parity_owner' => 'reconcile_invite_residuals'"),
-    'Orphan recovery must publish its scoped verification and delegate global parity explicitly.');
-$assert(!str_contains($service, '->auditParity(')
-    && !str_contains($service, 'Staging test-only orphan invite parity did not recover'),
-    'Orphan recovery must not duplicate the later global parity owner.');
+    'Orphan recovery must publish its scoped verification and leave global parity to the explicit admin owner.');
+$assert(!str_contains($service, '->auditParity('),
+    'A/B orphan recovery must not duplicate global residual parity.');
 $assert(str_contains($residual, '->synchronize($snapshot)')
-    && str_contains($residual, '->synchronizeAndList($snapshot, $legacyUserId)')
-    && str_contains($residual, "'invites' => true")
-    && str_contains($residual, "'scoped_notifications' => true"),
-    'Residual reconciliation must remain the authoritative global invite/notification parity owner.');
+    && str_contains($residual, '->synchronizeAndList($snapshot, $legacyUserId)'),
+    'Explicit residual reconciliation must remain available as the global parity owner.');
 $assert(str_contains($endpoint, 'GitHubActionsOidcVerifier')
     && str_contains($endpoint, "error' => 'test_only_invite_recovery_unavailable'"),
     'Recovery endpoint must remain GitHub-OIDC-only and fail closed.');
-$assert(str_contains($setup, "payload?.verification?.candidate_scope !== true")
-    && str_contains($setup, "payload?.verification?.global_parity_owner !== 'reconcile_invite_residuals'"),
-    'Global setup must require scoped orphan verification rather than premature global parity.');
+$assert(str_contains($setup, "payload?.verification?.candidate_scope !== true"),
+    'Global setup must require scoped orphan verification.');
+$assert(!str_contains($setup, 'recoverFreshInviteReplacement()')
+    && !str_contains($setup, 'diagnoseInviteResiduals()')
+    && !str_contains($setup, 'reconcileInviteResiduals()')
+    && !str_contains($setup, "action:'reconcile_invite_residuals'"),
+    'Normal A/B Playwright setup must not mutate or block on unrelated real-user residual history.');
 $recoverPos = strpos($setup, 'await recoverTestOnlyInviteOrphans();');
-$residualPos = strpos($setup, 'await reconcileInviteResiduals();');
-$resetPos = strpos($setup, "body:JSON.stringify({ action:'reset_test_players' })");
-$assert($recoverPos !== false && $residualPos !== false && $resetPos !== false
-    && $recoverPos < $residualPos && $residualPos < $resetPos,
-    'Setup order must be scoped orphan cleanup, authoritative global parity, then A/B state reset.');
+$resetPos = strpos($setup, 'await resetTestPlayers();');
+$assert($recoverPos !== false && $resetPos !== false && $recoverPos < $resetPos,
+    'Setup order must be A/B orphan cleanup followed directly by A/B state reset.');
 
 fwrite(STDOUT, "StagingTestOnlyInviteOrphanRecoveryContractTest: {$assertions} assertions passed\n");
