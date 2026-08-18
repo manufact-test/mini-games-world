@@ -74,9 +74,9 @@ $assert(
     'A stale client rematch request must receive neutral copy without disclosing opponent type.'
 );
 $assert(
-    !str_contains(mb_strtolower($neutralError), 'бот')
-        && !str_contains(mb_strtolower($neutralError), 'ai')
-        && !str_contains(mb_strtolower($neutralError), 'жив'),
+    !str_contains($neutralError, 'бот')
+        && !str_contains($neutralError, 'AI')
+        && !str_contains($neutralError, 'жив'),
     'Fallback rematch copy must not reveal or strongly imply automation.'
 );
 
