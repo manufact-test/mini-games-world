@@ -1,5 +1,4 @@
 import { APP_CONFIG } from '../config.js?v=38';
-import { state } from '../state.js?v=27';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
 import { getSessionId, getDeviceId } from '../session.js?v=1131';
 
@@ -17,19 +16,15 @@ async function requestUrl(url, payload = {}){
 }
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
 
-function finishedActiveGameId(){
-  const game = state.activeGame;
-  return String(game?.status || '') === 'finished' ? String(game?.id || '') : '';
-}
-
 function historyHasMatch(result, gameId){
   if (!gameId) return true;
   const matches = Array.isArray(result?.history?.matches) ? result.history.matches : [];
-  return matches.some(item => String(item?.id || '') === gameId);
+  return matches.some(item => String(item?.id || '') === String(gameId));
 }
 
-async function requestHistory(){
-  const targetGameId = finishedActiveGameId();
+async function requestHistoryForFinishedGame(gameId){
+  const targetGameId = String(gameId || '');
+  if (!targetGameId) return request('history');
   let lastResult = null;
   let lastError = null;
 
@@ -38,10 +33,10 @@ async function requestHistory(){
     try {
       lastResult = await request('history');
       lastError = null;
-      if (!targetGameId || historyHasMatch(lastResult, targetGameId)) return lastResult;
+      if (historyHasMatch(lastResult, targetGameId)) return lastResult;
     } catch (error) {
       lastError = error;
-      if (!targetGameId || attempt === HISTORY_FRESHNESS_DELAYS_MS.length) throw error;
+      if (attempt === HISTORY_FRESHNESS_DELAYS_MS.length) throw error;
     }
   }
 
@@ -66,7 +61,8 @@ export const api = {
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestUrl(`${window.location.origin}/bot/profile-v2.php`, profileUpdate ? { profile_update:profileUpdate } : {}),
   mgwProfile: () => requestUrl(`${window.location.origin}/bot/profile.php`),
-  history: () => requestHistory(),
+  history: () => request('history'),
+  historyForFinishedGame: gameId => requestHistoryForFinishedGame(gameId),
   support: (type, message) => request('support', { type, message }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
