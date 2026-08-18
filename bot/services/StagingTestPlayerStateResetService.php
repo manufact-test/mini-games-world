@@ -64,118 +64,118 @@ final class StagingTestPlayerStateResetService
                 &$notificationsRemoved,
                 &$gamesFinished
             ): array {
-            UnifiedBalanceRuntimeState::migrateAll($data);
-            if (!isset($data['users']) || !is_array($data['users'])) {
-                throw new RuntimeException('Staging test users are unavailable.');
-            }
-
-            $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
-            foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
-                if (!isset($data['users'][$legacyUserId]) || !is_array($data['users'][$legacyUserId])) {
-                    throw new RuntimeException('Staging test player is not initialized.');
+                UnifiedBalanceRuntimeState::migrateAll($data);
+                if (!isset($data['users']) || !is_array($data['users'])) {
+                    throw new RuntimeException('Staging test users are unavailable.');
                 }
-                $before[$legacyUserId] = (int)($data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] ?? 0);
-            }
 
-            $games = new GameService($this->config);
-            foreach (($data['games'] ?? []) as $gameId => $game) {
-                if (!is_array($game) || (string)($game['status'] ?? '') !== 'active') continue;
-                $participants = array_values(array_filter(
-                    array_map('strval', is_array($game['player_ids'] ?? null) ? $game['player_ids'] : []),
-                    static fn(string $id): bool => $id !== ''
+                $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
+                foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+                    if (!isset($data['users'][$legacyUserId]) || !is_array($data['users'][$legacyUserId])) {
+                        throw new RuntimeException('Staging test player is not initialized.');
+                    }
+                    $before[$legacyUserId] = (int)($data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] ?? 0);
+                }
+
+                $games = new GameService($this->config);
+                foreach (($data['games'] ?? []) as $gameId => $game) {
+                    if (!is_array($game) || (string)($game['status'] ?? '') !== 'active') continue;
+                    $participants = array_values(array_filter(
+                        array_map('strval', is_array($game['player_ids'] ?? null) ? $game['player_ids'] : []),
+                        static fn(string $id): bool => $id !== ''
+                    ));
+                    $testParticipants = array_values(array_filter(
+                        $participants,
+                        static fn(string $id): bool => isset($testIds[$id])
+                    ));
+                    if ($testParticipants === []) continue;
+
+                    foreach ($participants as $participantId) {
+                        if (isset($testIds[$participantId]) || str_starts_with($participantId, 'bot_')) continue;
+                        throw new RuntimeException('Staging test reset refuses an active game with a non-test player.');
+                    }
+
+                    $actorId = $testParticipants[0];
+                    if (!isset($data['users'][$actorId]) || !is_array($data['users'][$actorId])) {
+                        throw new RuntimeException('Staging test active-game participant is unavailable.');
+                    }
+                    $actor =& $data['users'][$actorId];
+                    $games->surrenderGame($data, $actor, (string)$gameId);
+                    unset($actor);
+                    $gamesFinished++;
+                }
+
+                $queueBefore = count(is_array($data['queue'] ?? null) ? $data['queue'] : []);
+                $data['queue'] = array_values(array_filter(
+                    is_array($data['queue'] ?? null) ? $data['queue'] : [],
+                    static fn($item): bool => !is_array($item)
+                        || !isset($testIds[(string)($item['user_id'] ?? '')])
                 ));
-                $testParticipants = array_values(array_filter(
-                    $participants,
-                    static fn(string $id): bool => isset($testIds[$id])
+                $queueRemoved = $queueBefore - count($data['queue']);
+
+                foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+                    $data['users'][$legacyUserId]['status'] = 'idle';
+                    $data['users'][$legacyUserId]['current_game_id'] = null;
+                    $data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] = self::MATCH_BALANCE;
+                }
+
+                foreach ((is_array($data['invites'] ?? null) ? $data['invites'] : []) as $index => $invite) {
+                    if (!is_array($invite)) continue;
+                    $status = (string)($invite['status'] ?? '');
+                    if (!in_array($status, self::OPEN_INVITE_STATUSES, true)) continue;
+                    if (trim((string)($invite['game_id'] ?? '')) !== '') continue;
+
+                    $participants = array_values(array_unique(array_filter([
+                        trim((string)($invite['inviter_id'] ?? '')),
+                        trim((string)($invite['invitee_id'] ?? '')),
+                    ], static fn(string $id): bool => $id !== '')));
+                    if ($participants === []) continue;
+
+                    $hasTestParticipant = false;
+                    foreach ($participants as $participantId) {
+                        if (isset($testIds[$participantId])) {
+                            $hasTestParticipant = true;
+                            continue;
+                        }
+                        if (isset($testIds[(string)($invite['inviter_id'] ?? '')])
+                            || isset($testIds[(string)($invite['invitee_id'] ?? '')])) {
+                            throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
+                        }
+                    }
+                    if (!$hasTestParticipant) continue;
+                    foreach ($participants as $participantId) {
+                        if (!isset($testIds[$participantId])) {
+                            throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
+                        }
+                    }
+
+                    $inviteId = trim((string)($invite['id'] ?? ''));
+                    $token = trim((string)($invite['token'] ?? ''));
+                    if ($inviteId === '' || $token === '') {
+                        throw new RuntimeException('Staging test reset refuses an invite without stable identity.');
+                    }
+                    sort($participants, SORT_STRING);
+                    $removedInvites[] = [
+                        'invite_id' => $inviteId,
+                        'token' => $token,
+                        'status' => $status === 'accepted' ? 'awaiting_start' : $status,
+                        'participant_ids' => $participants,
+                    ];
+                    unset($data['invites'][$index]);
+                }
+                $data['invites'] = array_values(is_array($data['invites'] ?? null) ? $data['invites'] : []);
+
+                // A/B are dedicated technical identities. Every suite starts with no
+                // historical notification state for them, while real-user rows are kept.
+                $notificationsBefore = count(is_array($data['notifications'] ?? null) ? $data['notifications'] : []);
+                $data['notifications'] = array_values(array_filter(
+                    is_array($data['notifications'] ?? null) ? $data['notifications'] : [],
+                    static function ($notification) use ($testIds): bool {
+                        if (!is_array($notification)) return true;
+                        return !isset($testIds[(string)($notification['user_id'] ?? '')]);
+                    }
                 ));
-                if ($testParticipants === []) continue;
-
-                foreach ($participants as $participantId) {
-                    if (isset($testIds[$participantId]) || str_starts_with($participantId, 'bot_')) continue;
-                    throw new RuntimeException('Staging test reset refuses an active game with a non-test player.');
-                }
-
-                $actorId = $testParticipants[0];
-                if (!isset($data['users'][$actorId]) || !is_array($data['users'][$actorId])) {
-                    throw new RuntimeException('Staging test active-game participant is unavailable.');
-                }
-                $actor =& $data['users'][$actorId];
-                $games->surrenderGame($data, $actor, (string)$gameId);
-                unset($actor);
-                $gamesFinished++;
-            }
-
-            $queueBefore = count(is_array($data['queue'] ?? null) ? $data['queue'] : []);
-            $data['queue'] = array_values(array_filter(
-                is_array($data['queue'] ?? null) ? $data['queue'] : [],
-                static fn($item): bool => !is_array($item)
-                    || !isset($testIds[(string)($item['user_id'] ?? '')])
-            ));
-            $queueRemoved = $queueBefore - count($data['queue']);
-
-            foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
-                $data['users'][$legacyUserId]['status'] = 'idle';
-                $data['users'][$legacyUserId]['current_game_id'] = null;
-                $data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] = self::MATCH_BALANCE;
-            }
-
-            foreach ((is_array($data['invites'] ?? null) ? $data['invites'] : []) as $index => $invite) {
-                if (!is_array($invite)) continue;
-                $status = (string)($invite['status'] ?? '');
-                if (!in_array($status, self::OPEN_INVITE_STATUSES, true)) continue;
-                if (trim((string)($invite['game_id'] ?? '')) !== '') continue;
-
-                $participants = array_values(array_unique(array_filter([
-                    trim((string)($invite['inviter_id'] ?? '')),
-                    trim((string)($invite['invitee_id'] ?? '')),
-                ], static fn(string $id): bool => $id !== '')));
-                if ($participants === []) continue;
-
-                $hasTestParticipant = false;
-                foreach ($participants as $participantId) {
-                    if (isset($testIds[$participantId])) {
-                        $hasTestParticipant = true;
-                        continue;
-                    }
-                    if (isset($testIds[(string)($invite['inviter_id'] ?? '')])
-                        || isset($testIds[(string)($invite['invitee_id'] ?? '')])) {
-                        throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
-                    }
-                }
-                if (!$hasTestParticipant) continue;
-                foreach ($participants as $participantId) {
-                    if (!isset($testIds[$participantId])) {
-                        throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
-                    }
-                }
-
-                $inviteId = trim((string)($invite['id'] ?? ''));
-                $token = trim((string)($invite['token'] ?? ''));
-                if ($inviteId === '' || $token === '') {
-                    throw new RuntimeException('Staging test reset refuses an invite without stable identity.');
-                }
-                sort($participants, SORT_STRING);
-                $removedInvites[] = [
-                    'invite_id' => $inviteId,
-                    'token' => $token,
-                    'status' => $status === 'accepted' ? 'awaiting_start' : $status,
-                    'participant_ids' => $participants,
-                ];
-                unset($data['invites'][$index]);
-            }
-            $data['invites'] = array_values(is_array($data['invites'] ?? null) ? $data['invites'] : []);
-
-            // A/B are dedicated technical identities. Every suite starts with no
-            // historical notification state for them, while real-user rows are kept.
-            $notificationsBefore = count(is_array($data['notifications'] ?? null) ? $data['notifications'] : []);
-            $data['notifications'] = array_values(array_filter(
-                is_array($data['notifications'] ?? null) ? $data['notifications'] : [],
-                static function ($notification) use ($testIds): bool {
-                    if (!is_array($notification)) return true;
-                    return !isset($testIds[(string)($notification['user_id'] ?? '')]);
-                }
-            ));
-            $notificationsRemoved = $notificationsBefore - count($data['notifications']);
+                $notificationsRemoved = $notificationsBefore - count($data['notifications']);
 
                 return $data;
             });
@@ -183,8 +183,8 @@ final class StagingTestPlayerStateResetService
             throw new StagingTestPlayerResetStageException('json_state', $error);
         }
 
-        // Notification cleanup must commit before invite parity audits. The JSON
-        // snapshot above contains no A/B notification history by contract.
+        // Notification cleanup commits before the A/B-scoped invite check. The
+        // JSON snapshot above contains no A/B notification history by contract.
         try {
             $notificationCleanup = $this->cleanupRuntimeTestNotificationRows($snapshot);
         } catch (Throwable $error) {
@@ -221,7 +221,7 @@ final class StagingTestPlayerStateResetService
             'service' => 'mini-games-world-staging-test-player-state-reset',
             'status' => 'reset',
             'balance' => self::MATCH_BALANCE,
-            'match_balance' => self::MATCH_BALANCE, // temporary response alias for old staging tooling
+            'match_balance' => self::MATCH_BALANCE,
             'players' => $balances,
             'queue_removed' => $queueRemoved,
             'open_invites_removed' => count($removedInvites),
@@ -310,7 +310,6 @@ final class StagingTestPlayerStateResetService
             return $count;
         });
 
-        // Audit only after the exact technical-account delete transaction commits.
         foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
             $notificationAudit = (new RuntimeNotificationRepository($this->config, $this->router, $database))
                 ->auditParity($snapshot, $legacyUserId);
@@ -324,16 +323,6 @@ final class StagingTestPlayerStateResetService
 
     private function cleanupRuntimeInviteRows(array $snapshot, array $removedInvites): array
     {
-        if ($removedInvites === []) {
-            $this->assertInviteParity($snapshot);
-            return [
-                'invite_rows' => 0,
-                'invite_event_rows' => 0,
-                'notification_rows' => 0,
-                'parity' => true,
-            ];
-        }
-
         if (!$this->router->enabled()
             || $this->router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE
             || $this->router->routeFor('notifications') !== RuntimeStorageRouter::DRIVER_DATABASE
@@ -352,111 +341,183 @@ final class StagingTestPlayerStateResetService
         }
         $database = PdoConnectionFactory::create($databaseConfig);
         $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
+        $deleted = ['invite_rows' => 0, 'invite_event_rows' => 0, 'notification_rows' => 0];
 
-        $deleted = $database->transaction(function (DatabaseConnectionInterface $db) use (
-            $removedInvites,
-            $testIds
-        ): array {
-            $deleted = ['invite_rows' => 0, 'invite_event_rows' => 0, 'notification_rows' => 0];
+        if ($removedInvites !== []) {
+            $deleted = $database->transaction(function (DatabaseConnectionInterface $db) use (
+                $removedInvites,
+                $testIds
+            ): array {
+                $deleted = ['invite_rows' => 0, 'invite_event_rows' => 0, 'notification_rows' => 0];
 
-            foreach ($removedInvites as $removedInvite) {
-                if (!is_array($removedInvite)) continue;
-                $inviteId = (string)($removedInvite['invite_id'] ?? '');
-                $token = (string)($removedInvite['token'] ?? '');
-                $status = (string)($removedInvite['status'] ?? '');
-                $participants = array_values(array_map('strval', $removedInvite['participant_ids'] ?? []));
-                if ($inviteId === '' || $token === '' || $participants === []) {
-                    throw new RuntimeException('Staging test invite cleanup identity is incomplete.');
-                }
-                foreach ($participants as $participantId) {
-                    if (!isset($testIds[$participantId])) {
-                        throw new RuntimeException('Staging test invite cleanup refuses a non-test participant.');
+                foreach ($removedInvites as $removedInvite) {
+                    if (!is_array($removedInvite)) continue;
+                    $inviteId = (string)($removedInvite['invite_id'] ?? '');
+                    $token = (string)($removedInvite['token'] ?? '');
+                    $status = (string)($removedInvite['status'] ?? '');
+                    $participants = array_values(array_map('strval', $removedInvite['participant_ids'] ?? []));
+                    if ($inviteId === '' || $token === '' || $participants === []) {
+                        throw new RuntimeException('Staging test invite cleanup identity is incomplete.');
                     }
-                }
-
-                $rows = $db->fetchAll(
-                    'SELECT * FROM mgw_invites WHERE invite_id = :invite_id AND token = :token',
-                    ['invite_id' => $inviteId, 'token' => $token]
-                );
-                if (count($rows) > 1) {
-                    throw new RuntimeException('Staging test invite cleanup found duplicate DB identity.');
-                }
-                if ($rows === []) continue;
-
-                $row = $rows[0];
-                $dbParticipants = array_values(array_unique(array_filter([
-                    trim((string)($row['inviter_legacy_user_id'] ?? '')),
-                    trim((string)($row['invitee_legacy_user_id'] ?? '')),
-                ], static fn(string $id): bool => $id !== '')));
-                sort($dbParticipants, SORT_STRING);
-                sort($participants, SORT_STRING);
-                if ($dbParticipants !== $participants) {
-                    throw new RuntimeException('Staging test invite cleanup participant identity mismatch.');
-                }
-                if ((string)($row['status'] ?? '') !== $status
-                    || trim((string)($row['match_id'] ?? '')) !== '') {
-                    throw new RuntimeException('Staging test invite cleanup refuses changed or matched DB state.');
-                }
-                $matchRefs = (int)$db->fetchValue(
-                    'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
-                    ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
-                );
-                if ($matchRefs !== 0) {
-                    throw new RuntimeException('Staging test invite cleanup refuses a match-referenced invite.');
-                }
-
-                // All A/B notification rows were removed by the dedicated cleanup
-                // before this transaction. Any remaining row for the invite is unsafe.
-                $remainingNotifications = $db->fetchAll(
-                    'SELECT notification_id, legacy_user_id FROM mgw_notifications WHERE invite_token = :invite_token',
-                    ['invite_token' => $token]
-                );
-                foreach ($remainingNotifications as $notification) {
-                    $recipient = trim((string)($notification['legacy_user_id'] ?? ''));
-                    if (!isset($testIds[$recipient])) {
-                        throw new RuntimeException('Staging test invite cleanup refuses a non-test notification.');
+                    foreach ($participants as $participantId) {
+                        if (!isset($testIds[$participantId])) {
+                            throw new RuntimeException('Staging test invite cleanup refuses a non-test participant.');
+                        }
                     }
-                    throw new RuntimeException('Staging test invite cleanup found unexpected test notification residue.');
+
+                    $rows = $db->fetchAll(
+                        'SELECT * FROM mgw_invites WHERE invite_id = :invite_id AND token = :token',
+                        ['invite_id' => $inviteId, 'token' => $token]
+                    );
+                    if (count($rows) > 1) {
+                        throw new RuntimeException('Staging test invite cleanup found duplicate DB identity.');
+                    }
+                    if ($rows === []) continue;
+
+                    $row = $rows[0];
+                    $dbParticipants = array_values(array_unique(array_filter([
+                        trim((string)($row['inviter_legacy_user_id'] ?? '')),
+                        trim((string)($row['invitee_legacy_user_id'] ?? '')),
+                    ], static fn(string $id): bool => $id !== '')));
+                    sort($dbParticipants, SORT_STRING);
+                    sort($participants, SORT_STRING);
+                    if ($dbParticipants !== $participants) {
+                        throw new RuntimeException('Staging test invite cleanup participant identity mismatch.');
+                    }
+                    if ((string)($row['status'] ?? '') !== $status
+                        || trim((string)($row['match_id'] ?? '')) !== '') {
+                        throw new RuntimeException('Staging test invite cleanup refuses changed or matched DB state.');
+                    }
+                    $matchRefs = (int)$db->fetchValue(
+                        'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
+                        ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
+                    );
+                    if ($matchRefs !== 0) {
+                        throw new RuntimeException('Staging test invite cleanup refuses a match-referenced invite.');
+                    }
+
+                    $remainingNotifications = $db->fetchAll(
+                        'SELECT notification_id, legacy_user_id FROM mgw_notifications WHERE invite_token = :invite_token',
+                        ['invite_token' => $token]
+                    );
+                    foreach ($remainingNotifications as $notification) {
+                        $recipient = trim((string)($notification['legacy_user_id'] ?? ''));
+                        if (!isset($testIds[$recipient])) {
+                            throw new RuntimeException('Staging test invite cleanup refuses a non-test notification.');
+                        }
+                        throw new RuntimeException('Staging test invite cleanup found unexpected test notification residue.');
+                    }
+
+                    $eventCount = $db->execute(
+                        'DELETE FROM mgw_invite_events WHERE invite_id = :invite_id',
+                        ['invite_id' => $inviteId]
+                    );
+                    $deleted['invite_event_rows'] += $eventCount;
+
+                    $inviteCount = $db->execute(
+                        'DELETE FROM mgw_invites WHERE invite_id = :invite_id AND token = :token AND status = :status',
+                        ['invite_id' => $inviteId, 'token' => $token, 'status' => $status]
+                    );
+                    if ($inviteCount !== 1) {
+                        throw new RuntimeException('Staging test invite delete count is unexpected.');
+                    }
+                    $deleted['invite_rows'] += $inviteCount;
                 }
 
-                $eventCount = $db->execute(
-                    'DELETE FROM mgw_invite_events WHERE invite_id = :invite_id',
-                    ['invite_id' => $inviteId]
-                );
-                $deleted['invite_event_rows'] += $eventCount;
+                return $deleted;
+            });
+        }
 
-                $inviteCount = $db->execute(
-                    'DELETE FROM mgw_invites WHERE invite_id = :invite_id AND token = :token AND status = :status',
-                    ['invite_id' => $inviteId, 'token' => $token, 'status' => $status]
-                );
-                if ($inviteCount !== 1) {
-                    throw new RuntimeException('Staging test invite delete count is unexpected.');
-                }
-                $deleted['invite_rows'] += $inviteCount;
-            }
-
-            return $deleted;
-        });
-
-        $this->assertInviteParity($snapshot);
+        $this->assertTestInviteParity($snapshot, $database);
         return $deleted + ['parity' => true];
     }
 
-    private function assertInviteParity(array $snapshot): void
-    {
-        if (!$this->router->enabled()
-            || $this->router->routeFor('invites') !== RuntimeStorageRouter::DRIVER_DATABASE) {
-            return;
+    private function assertTestInviteParity(
+        array $snapshot,
+        DatabaseConnectionInterface $database
+    ): void {
+        $testIds = array_fill_keys(self::TEST_PLAYER_IDS, true);
+        $jsonOpen = [];
+
+        foreach (is_array($snapshot['invites'] ?? null) ? $snapshot['invites'] : [] as $invite) {
+            if (!is_array($invite)) continue;
+            $status = trim((string)($invite['status'] ?? ''));
+            if (!in_array($status, self::OPEN_INVITE_STATUSES, true)) continue;
+            if (trim((string)($invite['game_id'] ?? '')) !== '') continue;
+
+            $participants = array_values(array_unique(array_filter([
+                trim((string)($invite['inviter_id'] ?? '')),
+                trim((string)($invite['invitee_id'] ?? '')),
+            ], static fn(string $id): bool => $id !== '')));
+            $hasTest = false;
+            foreach ($participants as $participantId) {
+                if (isset($testIds[$participantId])) {
+                    $hasTest = true;
+                    continue;
+                }
+                if ($hasTest || isset($testIds[(string)($invite['inviter_id'] ?? '')])
+                    || isset($testIds[(string)($invite['invitee_id'] ?? '')])) {
+                    throw new RuntimeException('Staging test invite parity refuses a mixed A/B invite.');
+                }
+            }
+            if (!$hasTest) continue;
+            foreach ($participants as $participantId) {
+                if (!isset($testIds[$participantId])) {
+                    throw new RuntimeException('Staging test invite parity refuses a non-test participant.');
+                }
+            }
+
+            $inviteId = trim((string)($invite['id'] ?? ''));
+            $token = trim((string)($invite['token'] ?? ''));
+            if ($inviteId === '' || $token === '') {
+                throw new RuntimeException('Staging test invite parity requires stable JSON identity.');
+            }
+            $jsonOpen[$inviteId . '|' . $token] = true;
         }
-        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
-        if (!$databaseConfig->enabled()) {
-            throw new RuntimeException('Staging test invite parity requires an enabled database.');
+
+        $dbOpen = [];
+        foreach ($database->fetchAll('SELECT * FROM mgw_invites ORDER BY invite_id') as $row) {
+            $participants = array_values(array_unique(array_filter([
+                trim((string)($row['inviter_legacy_user_id'] ?? '')),
+                trim((string)($row['invitee_legacy_user_id'] ?? '')),
+            ], static fn(string $id): bool => $id !== '')));
+            $hasTest = false;
+            foreach ($participants as $participantId) {
+                if (isset($testIds[$participantId])) {
+                    $hasTest = true;
+                    break;
+                }
+            }
+            if (!$hasTest) continue;
+
+            $status = trim((string)($row['status'] ?? ''));
+            if (!in_array($status, self::OPEN_INVITE_STATUSES, true)) continue;
+            $inviteId = trim((string)($row['invite_id'] ?? ''));
+            $token = trim((string)($row['token'] ?? ''));
+            if ($inviteId === '' || $token === '') {
+                throw new RuntimeException('Staging test invite parity requires stable DB identity.');
+            }
+            if (trim((string)($row['match_id'] ?? '')) !== '') continue;
+            $matchRefs = (int)$database->fetchValue(
+                'SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id',
+                ['invite_id' => $inviteId, 'source_match_id' => $inviteId]
+            );
+            if ($matchRefs !== 0) continue;
+
+            foreach ($participants as $participantId) {
+                if (!isset($testIds[$participantId])) {
+                    throw new RuntimeException('Staging test invite parity refuses an unmatched mixed A/B DB invite.');
+                }
+            }
+            $dbOpen[$inviteId . '|' . $token] = true;
         }
-        $database = PdoConnectionFactory::create($databaseConfig);
-        $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $database))
-            ->auditParity($snapshot);
-        if (($inviteAudit['ok'] ?? false) !== true) {
-            throw new RuntimeException('Staging test invite cleanup did not restore invite parity.');
+
+        $jsonKeys = array_keys($jsonOpen);
+        $dbKeys = array_keys($dbOpen);
+        sort($jsonKeys, SORT_STRING);
+        sort($dbKeys, SORT_STRING);
+        if ($jsonKeys !== $dbKeys) {
+            throw new RuntimeException('Staging test invite cleanup did not restore A/B invite parity.');
         }
     }
 
