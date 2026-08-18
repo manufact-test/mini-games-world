@@ -214,8 +214,6 @@ final class HistoryService
             'payout' => (int)($game['payout'] ?? 0),
             'commission' => (int)($game['commission'] ?? 0),
             'finish_reason' => $reason,
-            'is_bot_game' => !empty($game['is_bot_game']),
-            'bot_difficulty' => (string)($game['bot_difficulty'] ?? ''),
             'created_at' => (string)($game['created_at'] ?? ''),
             'finished_at' => (string)($game['finished_at'] ?? ''),
         ];

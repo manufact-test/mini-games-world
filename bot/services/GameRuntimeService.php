@@ -9,6 +9,7 @@ require_once dirname(__DIR__) . '/games/reversi/ReversiBotService.php';
 require_once dirname(__DIR__) . '/games/reversi/ReversiService.php';
 require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
 require_once __DIR__ . '/MatchmakingQueue.php';
+require_once __DIR__ . '/BotProfilePolicy.php';
 
 final class GameRuntimeService
 {
@@ -17,6 +18,7 @@ final class GameRuntimeService
     private CheckersService $checkers;
     private ReversiService $reversi;
     private MatchmakingQueue $matchmaking;
+    private BotProfilePolicy $botProfiles;
 
     public function __construct(
         private array $config,
@@ -29,6 +31,7 @@ final class GameRuntimeService
         $this->checkers = new CheckersService($this->config, $settlement);
         $this->reversi = new ReversiService($this->config, $settlement);
         $this->matchmaking = new MatchmakingQueue();
+        $this->botProfiles = new BotProfilePolicy();
     }
 
     public function cleanup(array &$db): void
@@ -115,6 +118,7 @@ final class GameRuntimeService
         $this->initializeEngineGame($db['games'][$gameId]);
         $this->syncGameMetadataTransactions($db, $gameId);
         $this->rebalanceNewBotDifficulty($db, $user, $gameId);
+        $this->botProfiles->ensureStoredProfile($db['games'][$gameId]);
 
         return $db['games'][$gameId];
     }
@@ -265,6 +269,7 @@ final class GameRuntimeService
     public function publicGame(array $game, string $viewerId): array
     {
         $this->ensureGameType($game);
+        $this->botProfiles->ensureStoredProfile($game);
         $gameType = $this->gameTypeFromRecord($game);
         $definition = $this->catalog->publicGameDefinition($gameType);
 
@@ -275,6 +280,7 @@ final class GameRuntimeService
             'reversi' => $this->reversi->publicGame($game, $viewerId),
             default => $this->legacyGame->publicGame($game, $viewerId),
         };
+        $public = $this->botProfiles->sanitizePublicGame($public, $game);
 
         return [
             'game_type' => $gameType,
@@ -486,10 +492,7 @@ final class GameRuntimeService
         if ($botStreak >= 3 || ($games >= 20 && $winRate >= 0.55)) {
             return $this->weightedDifficulty(['medium' => 45, 'hard' => 55]);
         }
-        if ($games < 5 && $botGames < 3) {
-            return $this->weightedDifficulty(['easy' => 8, 'medium' => 62, 'hard' => 30]);
-        }
-        return $this->weightedDifficulty(['easy' => 5, 'medium' => 65, 'hard' => 30]);
+        return $this->weightedDifficulty(['easy' => 1, 'medium' => 69, 'hard' => 30]);
     }
 
     private function weightedDifficulty(array $weights): string
