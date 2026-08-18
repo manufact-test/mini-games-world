@@ -26,18 +26,15 @@ final class GameInviteService
     /**
      * Preserve the established rematch lifecycle while keeping the public error
      * reason opponent-neutral. Older cached clients may still call this endpoint
-     * after an automated match; they must not learn the technical opponent type.
+     * after a match where direct rematch is not an available capability.
      */
     public function createRematch(array &$db, array &$user, string $gameId): array
     {
-        try {
-            return $this->createRematchFromTrait($db, $user, $gameId);
-        } catch (RuntimeException $error) {
-            if ($error->getMessage() === 'Реванш доступен только с живым соперником.') {
-                throw new RuntimeException('Реванш сейчас недоступен. Выберите «Сыграть ещё».');
-            }
-            throw $error;
+        $game = $db['games'][$gameId] ?? null;
+        if (is_array($game) && (string)($game['status'] ?? '') === 'finished' && !empty($game['is_bot_game'])) {
+            throw new RuntimeException('Реванш сейчас недоступен. Выберите «Сыграть ещё».');
         }
+        return $this->createRematchFromTrait($db, $user, $gameId);
     }
 
     public function notificationSnapshot(array $invite, string $viewerId): array
