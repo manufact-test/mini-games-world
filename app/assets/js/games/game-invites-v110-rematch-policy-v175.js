@@ -11,8 +11,11 @@ let syncQueued = false;
 export { openIncomingInviteIfPresent };
 
 export function initGameInvites(){
-  initBaseGameInvites();
+  // Install the bot-opaque result policy before the legacy invite owner starts
+  // observing result sheets. This keeps the final action hierarchy stable from
+  // the first paint instead of correcting it after a 40 ms legacy enhancement.
   initRematchPresentationPolicy();
+  initBaseGameInvites();
 }
 
 function initRematchPresentationPolicy(){
@@ -31,7 +34,7 @@ function initRematchPresentationPolicy(){
   const sheet = document.getElementById('sheet');
   if (sheet) {
     resultObserver = new MutationObserver(queueResultPolicySync);
-    resultObserver.observe(sheet, { childList:true, subtree:true, characterData:true });
+    resultObserver.observe(sheet, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:['class'] });
   }
 
   document.addEventListener('mgw:game-finished', queueResultPolicySync);
@@ -49,14 +52,26 @@ function queueResultPolicySync(){
 }
 
 function syncResultActions(){
-  const playAgain = document.getElementById('newOpponent');
-  if (playAgain && playAgain.textContent !== 'Сыграть ещё') {
-    playAgain.textContent = 'Сыграть ещё';
-  }
-
   const game = state.activeGame;
   const directRematchAvailable = String(game?.status || '') === 'finished'
     && game?.rematch_available === true;
+
+  const playAgain = document.getElementById('newOpponent');
+  if (playAgain) {
+    if (playAgain.textContent !== 'Сыграть ещё') playAgain.textContent = 'Сыграть ещё';
+
+    // Legacy v110 turns this button into ghost styling 40 ms after every
+    // two-player result. For an automated opponent that creates the visible
+    // purple flash even though the direct-rematch button is immediately hidden.
+    // Neutral capability ownership must also own the button hierarchy.
+    if (directRematchAvailable) {
+      playAgain.classList.remove('primary');
+      playAgain.classList.add('ghost');
+    } else {
+      playAgain.classList.remove('ghost');
+      playAgain.classList.add('primary');
+    }
+  }
 
   document.querySelectorAll('#sheet [data-create-rematch]').forEach(button => {
     if (!(button instanceof HTMLButtonElement)) return;
