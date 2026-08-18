@@ -190,10 +190,28 @@ try {
         'Stable index source anchor must remain unchanged for canonical entry transforms.'
     );
     $assert(
-        is_string($entry) && str_contains($entry, './assets/js/main.js?v=d2-unified-wallet-15-3-r1742'),
-        'Canonical v114 entry owner must keep the reconnect main bundle cache identity.'
+        is_string($entry) && str_contains($entry, './assets/js/main.js?v=d2-unified-wallet-15-3-r1743'),
+        'Canonical v114 entry owner must cache-bust the authoritative reconnect boot bundle.'
     );
-    $assert(is_string($main) && str_contains($main, "./presence-v115.js?v=1742"), 'Main bundle must keep the reconnect presence module cache identity.');
+    $assert(is_string($main) && str_contains($main, "./presence-v115.js?v=1742"), 'Presence module identity must remain unchanged by the boot-only corrective pass.');
+    $assert(is_string($main) && str_contains($main, "mvp17-4-authoritative-reconnect-boot-r3"), 'Frontend build marker must identify the authoritative reconnect boot pass.');
+
+    $authoritativeBoot = is_string($main)
+        ? strpos($main, 'const activeState = await api.gameState(result.active_game.id);')
+        : false;
+    $adoptAuthoritative = is_string($main)
+        ? strpos($main, 'state.activeGame = activeGame;')
+        : false;
+    $oldBootstrapAdoption = is_string($main)
+        ? strpos($main, 'state.activeGame = result.active_game;')
+        : false;
+    $assert(
+        is_int($authoritativeBoot)
+            && is_int($adoptAuthoritative)
+            && $authoritativeBoot < $adoptAuthoritative
+            && $oldBootstrapAdoption === false,
+        'Reopened active matches must await authoritative game_state before becoming local activeGame state.'
+    );
 
     $clockSource = file_get_contents($root . '/services/MatchPreparationClockService.php');
     $assert(

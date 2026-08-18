@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'mvp17-4-reconnect-resume-r2';
+window.__MGW_BUILD__ = 'mvp17-4-authoritative-reconnect-boot-r3';
 import { initFirstInteractionReadinessEarly } from './first-interaction-readiness.js?v=d1';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
@@ -117,9 +117,29 @@ async function boot(){
     if (isSessionLocked(state.session)) {
       toast(sessionMessage(state.session));
     } else if (result.active_game) {
-      state.activeGame = result.active_game;
-      showScreen('game');
-      startGamePolling(result.active_game.id);
+      // bootstrap is a read/bootstrap projection, not the reconnect lifecycle
+      // owner. Before this document adopts an existing active match as local
+      // state, force one authoritative game_state round-trip while activeGame is
+      // still empty. This prevents the cross-game coordinator from satisfying
+      // the first poll with the frozen bootstrap snapshot and guarantees that
+      // reconnect/session restoration runs before the board and clock are shown.
+      const activeState = await api.gameState(result.active_game.id);
+      if (activeState.user) {
+        state.user = activeState.user;
+        renderUser(state.user);
+        renderBalances(state.user);
+      }
+      state.session = activeState.session || state.session;
+
+      const activeGame = activeState.game || null;
+      if (activeGame?.id) {
+        state.activeGame = activeGame;
+        showScreen('game');
+        startGamePolling(activeGame.id);
+      } else {
+        state.activeGame = null;
+        showScreen('home');
+      }
     } else {
       await openIncomingInviteFromTelegram();
     }
