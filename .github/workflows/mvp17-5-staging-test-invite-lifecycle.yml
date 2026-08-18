@@ -7,9 +7,12 @@ on:
     paths:
       - 'bot/services/StagingTestOnlyInviteOrphanRecoveryService.php'
       - 'bot/services/StagingTestInviteResidualRecoveryService.php'
+      - 'bot/services/StagingFreshInviteReplacementRecoveryService.php'
       - 'bot/services/StagingTestPlayerStateResetService.php'
+      - 'bot/staging-test-auth.php'
       - 'bot/staging-test-only-invite-recovery.php'
       - 'bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php'
+      - 'bot/tests/StagingTestAuthIsolationFromRealInviteResidualsContractTest.php'
       - 'bot/tests/StagingInviteLifecycleParityReconciliationTest.php'
       - 'e2e/staging-global-setup.mjs'
       - '.github/workflows/mvp17-5-staging-test-invite-lifecycle.yml'
@@ -37,14 +40,20 @@ jobs:
           set -Eeuo pipefail
           php -l bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
           php -l bot/services/StagingTestInviteResidualRecoveryService.php
+          php -l bot/services/StagingFreshInviteReplacementRecoveryService.php
           php -l bot/services/StagingTestPlayerStateResetService.php
+          php -l bot/staging-test-auth.php
           php -l bot/staging-test-only-invite-recovery.php
           php -l bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
+          php -l bot/tests/StagingTestAuthIsolationFromRealInviteResidualsContractTest.php
           php -l bot/tests/StagingInviteLifecycleParityReconciliationTest.php
           node --check e2e/staging-global-setup.mjs
 
       - name: Test-only orphan recovery safety contract
         run: php bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
 
-      - name: Invite lifecycle parity reconciliation
+      - name: A/B isolation from real-user invite residuals
+        run: php bot/tests/StagingTestAuthIsolationFromRealInviteResidualsContractTest.php
+
+      - name: Explicit admin residual reconciliation remains safe
         run: php bot/tests/StagingInviteLifecycleParityReconciliationTest.php
