@@ -6,7 +6,8 @@ declare(strict_types=1);
  *
  * Analytics/economy markers remain on the stored game. Public projections get
  * only ordinary player presentation data and never the automation marker or
- * difficulty value from this policy.
+ * difficulty value from this policy. Result/rematch UX receives only a neutral
+ * capability and never the internal reason why a direct rematch is unavailable.
  */
 final class BotProfilePolicy
 {
@@ -66,6 +67,10 @@ final class BotProfilePolicy
             $public['bot_profile']
         );
 
+        // The client may decide whether to offer a direct rematch, but it must
+        // never receive the technical opponent type in order to make that choice.
+        $public['rematch_available'] = $this->rematchAvailable($storedGame);
+
         if (empty($storedGame['is_bot_game'])) return $public;
 
         $copy = $storedGame;
@@ -89,5 +94,22 @@ final class BotProfilePolicy
         unset($player);
 
         return $public;
+    }
+
+    private function rematchAvailable(array $storedGame): bool
+    {
+        if ((string)($storedGame['status'] ?? '') !== 'finished') return false;
+        if (!empty($storedGame['is_bot_game'])) return false;
+
+        $playerIds = array_values(array_filter(
+            array_map('strval', $storedGame['player_ids'] ?? []),
+            static fn(string $playerId): bool => trim($playerId) !== ''
+        ));
+        if (count($playerIds) !== 2) return false;
+
+        foreach ($playerIds as $playerId) {
+            if (str_starts_with($playerId, 'bot_')) return false;
+        }
+        return true;
     }
 }
