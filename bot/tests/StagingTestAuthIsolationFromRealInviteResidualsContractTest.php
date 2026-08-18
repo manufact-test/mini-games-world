@@ -48,8 +48,11 @@ $assert(str_contains($setup, 'await diagnoseInviteMismatch();')
 $assert(str_contains($reset, 'private function assertTestInviteParity('),
     'A/B reset must own a scoped invite parity check.');
 $assert(!str_contains($reset, 'private function assertInviteParity(')
-    && !str_contains($reset, '->auditParity($snapshot);'),
-    'A/B reset must not require global invite parity across unrelated real staging users.');
+    && !str_contains($reset, 'new RuntimeInviteRepository('),
+    'A/B reset must not require the global invite repository parity audit across unrelated real staging users.');
+$assert(str_contains($reset, 'new RuntimeNotificationRepository(')
+    && str_contains($reset, 'new RuntimeEconomyRepository('),
+    'A/B-scoped notification parity and economy parity must remain enforced.');
 $assert(str_contains($reset, "throw new RuntimeException('Staging test invite cleanup did not restore A/B invite parity.');"),
     'A/B reset must still fail closed if its own invite scope is not clean.');
 $assert(str_contains($reset, "SELECT COUNT(*) FROM mgw_matches WHERE invite_id = :invite_id OR source_match_id = :source_match_id"),
