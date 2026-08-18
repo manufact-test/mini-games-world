@@ -5,6 +5,7 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'app/index.html'
       - 'app/assets/js/main.js'
       - 'app/assets/js/presence-v115.js'
       - 'bot/presence.php'
@@ -14,7 +15,9 @@ on:
       - 'bot/services/ReconnectLifecycleService.php'
       - 'bot/services/SessionService.php'
       - 'bot/services/MatchPreparationClockService.php'
+      - 'bot/services/MatchPreparationRuntimeService.php'
       - 'bot/tests/Mvp17_4ReconnectLifecycleTest.php'
+      - 'bot/tests/Mvp17_4ReconnectResumeRegressionTest.php'
       - 'bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php'
       - 'bot/tests/Mvp17_2HumanPriorityFallbackTest.php'
       - 'bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php'
@@ -50,7 +53,9 @@ jobs:
           php -l bot/services/ReconnectLifecycleService.php
           php -l bot/services/SessionService.php
           php -l bot/services/MatchPreparationClockService.php
+          php -l bot/services/MatchPreparationRuntimeService.php
           php -l bot/tests/Mvp17_4ReconnectLifecycleTest.php
+          php -l bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
           php -l bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
           php -l bot/tests/Mvp17_2HumanPriorityFallbackTest.php
           php -l bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
@@ -62,6 +67,9 @@ jobs:
           set -Eeuo pipefail
           node --input-type=module --check < app/assets/js/presence-v115.js
           node --input-type=module --check < app/assets/js/main.js
+
+      - name: MVP-17.4 reconnect resume regression
+        run: php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
 
       - name: MVP-17.4 reconnect lifecycle
         run: php bot/tests/Mvp17_4ReconnectLifecycleTest.php
