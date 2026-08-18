@@ -4,7 +4,7 @@ import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
-import { initV115Presence } from './presence-v115.js?v=115';
+import { initV115Presence, waitForV115InitialPresence } from './presence-v115.js?v=115';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -85,7 +85,17 @@ initGameRules();
 
 async function boot(){
   try {
-    const result = await api.bootstrap();
+    let result = await api.bootstrap();
+
+    // A reconnecting client starts presence before bootstrap, but both requests
+    // are asynchronous. If bootstrap wins that race and still sees the old
+    // device lock, wait for the initial presence handshake and retry exactly
+    // once. Normal cold starts keep their existing single-bootstrap path.
+    if (isSessionLocked(result.session)) {
+      await waitForV115InitialPresence();
+      result = await api.bootstrap();
+    }
+
     const matchEntryCost = Number(result.match_economy?.entry_cost);
     if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {
       throw new Error('Серверная стоимость участия недоступна.');
