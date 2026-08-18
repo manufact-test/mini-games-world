@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $service = file_get_contents($root . '/bot/services/StagingTestOnlyInviteOrphanRecoveryService.php');
+$residual = file_get_contents($root . '/bot/services/StagingTestInviteResidualRecoveryService.php');
 $endpoint = file_get_contents($root . '/bot/staging-test-only-invite-recovery.php');
 $setup = file_get_contents($root . '/e2e/staging-global-setup.mjs');
-if (!is_string($service) || !is_string($endpoint) || !is_string($setup)) {
+if (!is_string($service) || !is_string($residual) || !is_string($endpoint) || !is_string($setup)) {
     throw new RuntimeException('Cannot read staging test-only recovery sources.');
 }
 
@@ -27,7 +28,7 @@ $assert(str_contains($service, "if (\$matchId !== '' || \$matchRefs !== 0) {")
 $assert(str_contains($service, "throw new RuntimeException('Staging test-only orphan recovery found unsafe A/B invite state.');"),
     'Unsafe status/source combinations must fail closed.');
 $assert(str_contains($service, '$this->assertOwnership($database, $invite, $participants);')
-    && str_contains($service, "ownership_status")
+    && str_contains($service, 'ownership_status')
     && str_contains($service, 'hash_equals'),
     'Every candidate must prove current A/B ownership before mutation.');
 $assert(str_contains($service, "throw new RuntimeException('Staging test-only orphan recovery refuses non-test notification state.');"),
@@ -41,19 +42,32 @@ $assert(!str_contains($service, 'MAX_CANDIDATES')
 $assert(str_contains($service, '$deleted = $database->transaction(')
     && str_contains($service, 'foreach ($candidates as $candidate)'),
     'All strictly proved candidates must drain inside one DB transaction.');
-$deletePos = strpos($service, '$deleted = $database->transaction(');
-$auditPos = strpos($service, '$inviteAudit = (new RuntimeInviteRepository');
-$assert($deletePos !== false && $auditPos !== false && $auditPos > $deletePos,
-    'Invite parity audit must run after the delete transaction.');
-$assert(str_contains($service, "->auditParity(\$snapshot, \$legacyUserId)")
-    && str_contains($service, "'candidate_count' => count(\$candidates)"),
-    'Recovery must audit test notifications and report the complete drained candidate count.');
+$assert(str_contains($service, 'candidate deletion verification failed')
+    && str_contains($service, 'event deletion verification failed')
+    && str_contains($service, 'notification deletion verification failed'),
+    'Orphan recovery must verify its exact deletion scope after mutation.');
+$assert(str_contains($service, "'candidate_scope' => true")
+    && str_contains($service, "'global_parity_owner' => 'reconcile_invite_residuals'"),
+    'Orphan recovery must publish its scoped verification and delegate global parity explicitly.');
+$assert(!str_contains($service, '->auditParity(')
+    && !str_contains($service, 'Staging test-only orphan invite parity did not recover'),
+    'Orphan recovery must not duplicate the later global parity owner.');
+$assert(str_contains($residual, '->synchronize($snapshot)')
+    && str_contains($residual, '->synchronizeAndList($snapshot, $legacyUserId)')
+    && str_contains($residual, "'invites' => true")
+    && str_contains($residual, "'scoped_notifications' => true"),
+    'Residual reconciliation must remain the authoritative global invite/notification parity owner.');
 $assert(str_contains($endpoint, 'GitHubActionsOidcVerifier')
     && str_contains($endpoint, "error' => 'test_only_invite_recovery_unavailable'"),
     'Recovery endpoint must remain GitHub-OIDC-only and fail closed.');
+$assert(str_contains($setup, "payload?.verification?.candidate_scope !== true")
+    && str_contains($setup, "payload?.verification?.global_parity_owner !== 'reconcile_invite_residuals'"),
+    'Global setup must require scoped orphan verification rather than premature global parity.');
 $recoverPos = strpos($setup, 'await recoverTestOnlyInviteOrphans();');
+$residualPos = strpos($setup, 'await reconcileInviteResiduals();');
 $resetPos = strpos($setup, "body:JSON.stringify({ action:'reset_test_players' })");
-$assert($recoverPos !== false && $resetPos !== false && $recoverPos < $resetPos,
-    'DB-only orphan recovery must complete before the normal A/B reset can drain JSON-backed test state.');
+$assert($recoverPos !== false && $residualPos !== false && $resetPos !== false
+    && $recoverPos < $residualPos && $residualPos < $resetPos,
+    'Setup order must be scoped orphan cleanup, authoritative global parity, then A/B state reset.');
 
 fwrite(STDOUT, "StagingTestOnlyInviteOrphanRecoveryContractTest: {$assertions} assertions passed\n");
