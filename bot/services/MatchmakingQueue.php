@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * Platform-neutral matchmaking queue policy.
  *
- * The queue identity is intentionally independent from Telegram or any other
- * transport: internal user id + game type + requested board size + skill band.
+ * The queue identity is intentionally independent from any transport:
+ * internal user id + game type + requested board size + skill band.
  * Progressive skill widening is deliberately out of scope for MVP-17.1.
  */
 final class MatchmakingQueue
