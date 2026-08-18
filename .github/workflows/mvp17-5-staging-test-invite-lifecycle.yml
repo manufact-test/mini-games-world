@@ -1,0 +1,48 @@
+name: MVP-17.5 staging test-invite lifecycle
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/services/StagingTestOnlyInviteOrphanRecoveryService.php'
+      - 'bot/services/StagingTestPlayerStateResetService.php'
+      - 'bot/staging-test-only-invite-recovery.php'
+      - 'bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php'
+      - 'bot/tests/StagingInviteLifecycleParityReconciliationTest.php'
+      - 'e2e/staging-global-setup.mjs'
+      - '.github/workflows/mvp17-5-staging-test-invite-lifecycle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging-test-invite-lifecycle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax validation
+        run: |
+          set -Eeuo pipefail
+          php -l bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+          php -l bot/services/StagingTestPlayerStateResetService.php
+          php -l bot/staging-test-only-invite-recovery.php
+          php -l bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
+          php -l bot/tests/StagingInviteLifecycleParityReconciliationTest.php
+          node --check e2e/staging-global-setup.mjs
+
+      - name: Test-only orphan recovery safety contract
+        run: php bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
+
+      - name: Invite lifecycle parity reconciliation
+        run: php bot/tests/StagingInviteLifecycleParityReconciliationTest.php
