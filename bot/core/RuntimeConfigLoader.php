@@ -5,6 +5,11 @@ final class RuntimeConfigLoader
 {
     public static function merge(array $config, string $primaryConfigFile): array
     {
+        // MVP-17.2 makes the human-priority window a product invariant. Older
+        // private configs may still carry the legacy 15-second fallback value;
+        // normalize it server-side so clients cannot shorten or extend the gate.
+        $config['match_bot_after_sec'] = 8;
+
         // Staging already requires a declared expected Telegram username. Reuse
         // that deterministic identity for ordinary bot links when the legacy
         // bot_username key is absent, so invite drafting never needs a live getMe
