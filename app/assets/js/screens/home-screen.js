@@ -8,8 +8,13 @@ import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { t, setExplicitLocale } from '@mgw/i18n';
 
+const HISTORY_CACHE_MAX_AGE_MS = 15000;
+let historyCache = null;
+let historyCacheAt = 0;
+let historyCachePromise = null;
+
 window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';
-window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-ready-only-history-sheet-v2';
+window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-prefetched-history-v3';
 
 export function initHomeScreen(){
   document.addEventListener('click', event => {
@@ -22,6 +27,11 @@ export function initHomeScreen(){
   });
   document.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target?.id === 'profileOpen') openProfileFromTop(); });
   document.addEventListener('mgw:open-language-settings', openLanguageSettingsSheet);
+  document.addEventListener('mgw:game-finished', () => {
+    historyCacheAt = 0;
+    window.setTimeout(() => { void refreshHistoryCache({ force:true }).catch(() => {}); }, 700);
+  });
+  void refreshHistoryCache({ force:true }).catch(() => {});
 }
 function openProfileFromTop(){ document.dispatchEvent(new CustomEvent('mgw:open-profile')); }
 export function setRoom(){ state.room='match'; state.selectedBet=APP_CONFIG.matchBet; renderRoomCard(); }
@@ -32,6 +42,7 @@ export function renderStats(stats){
 }
 
 function openMoreMenuSheet(){
+  void refreshHistoryCache().catch(() => {});
   openSheet(`<div class="sheet-head"><div><h2>Меню</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">
     ${menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))}
     ${menuItemMarkup('rulesBtn', '📘', 'Правила')}
@@ -78,19 +89,28 @@ function openRulesSheet(){
 }
 
 async function openBalanceHistorySheet(){
-  setHistoryButtonsDisabled(true);
-  try { const result=await api.history(); if(result.user){state.user=result.user;renderBalances(state.user);} renderHistorySheet(result.history||{},result.topups||[]); }
-  catch(error){ openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
-  finally { setHistoryButtonsDisabled(false); }
+  try {
+    const result=historyCache || await refreshHistoryCache({ force:true });
+    if(result.user){state.user=result.user;renderBalances(state.user);}
+    renderHistorySheet(result.history||{},result.topups||[]);
+    void refreshHistoryCache({ force:isHistoryCacheStale() }).catch(() => {});
+  } catch(error){ openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
 }
 async function openMatchHistorySheet(){
-  setHistoryButtonsDisabled(true);
-  try { const result=await api.history(); renderMatchHistorySheet(result.history?.matches||[]); }
-  catch(error){ openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
-  finally { setHistoryButtonsDisabled(false); }
+  try {
+    const result=historyCache || await refreshHistoryCache({ force:true });
+    renderMatchHistorySheet(result.history?.matches||[]);
+    void refreshHistoryCache({ force:isHistoryCacheStale() }).catch(() => {});
+  } catch(error){ openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
 }
-function setHistoryButtonsDisabled(disabled){
-  ['balanceHistoryBtn','matchHistoryBtn'].forEach(id=>{const button=document.getElementById(id);if(button)button.disabled=disabled;});
+function isHistoryCacheStale(){return !historyCache || (Date.now()-historyCacheAt)>=HISTORY_CACHE_MAX_AGE_MS;}
+function refreshHistoryCache({force=false}={}){
+  if(!force&&!isHistoryCacheStale())return Promise.resolve(historyCache);
+  if(historyCachePromise)return historyCachePromise;
+  historyCachePromise=api.historyFast()
+    .then(result=>{historyCache=result;historyCacheAt=Date.now();return result;})
+    .finally(()=>{historyCachePromise=null;});
+  return historyCachePromise;
 }
 function renderHistorySheet(history,topups=[]){
   const operations=history.operations||[];

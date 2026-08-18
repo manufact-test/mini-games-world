@@ -67,6 +67,7 @@ export const api = {
   profileV2: (profileUpdate = null) => requestUrl(`${window.location.origin}/bot/profile-v2.php`, profileUpdate ? { profile_update:profileUpdate } : {}),
   mgwProfile: () => requestUrl(`${window.location.origin}/bot/profile.php`),
   history: () => requestHistory(),
+  historyFast: () => request('history'),
   support: (type, message) => request('support', { type, message }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
