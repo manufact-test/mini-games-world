@@ -173,8 +173,9 @@ try {
     $reconnectCall = is_string($runtimeSource)
         ? strpos($runtimeSource, '$this->reconnect->synchronize($db, $userId, $sessionId, \'ping\', []);')
         : false;
+    $legacyGateNeedle = "if (!array_key_exists('launch_phase', " . '$game' . '))';
     $legacyGate = is_string($runtimeSource)
-        ? strpos($runtimeSource, "if (!array_key_exists('launch_phase', $game))")
+        ? strpos($runtimeSource, $legacyGateNeedle)
         : false;
     $assert(
         is_int($reconnectCall) && is_int($legacyGate) && $reconnectCall < $legacyGate,
