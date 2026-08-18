@@ -34,7 +34,7 @@ return [
         './assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a' => './assets/js/production-v110-readonly-game-sync.js?v=1112&terminal=nonblocking-watch',
         './assets/js/production-v110-targeted-interactions.js?v=1102' => './assets/js/production-v110-targeted-interactions.js?v=1105&zone=unified',
         './assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69' => './assets/js/production-v110-presence.js?v=1124&mvp17=reconnect-v2',
-        './assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110-rematch-policy-v175.js?v=2',
+        './assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110-rematch-policy-v175.js?v=1',
         './assets/js/games/tictactoe/renderer.js?v=53' => './assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought',
         './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact',
         './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner',
