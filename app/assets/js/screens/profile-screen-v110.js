@@ -257,7 +257,21 @@ function historyRow(match){
   const variant = columns > 0 && rows > 0 ? `${columns}×${rows}` : '';
   const when = match?.finished_at || match?.created_at || null;
   const tone = ['pos','neg','zero'].includes(String(match?.tone || '')) ? String(match.tone) : 'zero';
-  return `<article class="profile-v2-history-row ${tone}"><div class="profile-v2-history-main"><strong>${escapeHtml(gameName(gameType))}${variant ? ` · ${escapeHtml(variant)}` : ''}</strong><span>${escapeHtml(String(match?.opponent || t('profile.opponent')))}</span></div><div class="profile-v2-history-result"><b>${escapeHtml(String(match?.result || '—'))}</b><small>${escapeHtml(when ? formatDateTime(when) : '')}</small></div></article>`;
+  const economy = match?.economy && typeof match.economy === 'object' ? match.economy : null;
+  const economyText = economy
+    ? `Вход ${historyCoins(economy.entry)} · Награда ${historyCoins(economy.reward)} · Итог ${historyDelta(economy.ledger_delta)} · Баланс ${historyCoins(economy.new_balance)}`
+    : '';
+  const meta = [economyText, when ? formatDateTime(when) : ''].filter(Boolean).join(' · ');
+  return `<article class="profile-v2-history-row ${tone}"><div class="profile-v2-history-main"><strong>${escapeHtml(gameName(gameType))}${variant ? ` · ${escapeHtml(variant)}` : ''}</strong><span>${escapeHtml(String(match?.opponent || t('profile.opponent')))}</span></div><div class="profile-v2-history-result"><b>${escapeHtml(String(match?.result || '—'))}</b><small>${escapeHtml(meta)}</small></div></article>`;
+}
+function historyCoins(value){
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+  return `${Math.trunc(Number(value))}`;
+}
+function historyDelta(value){
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+  const normalized = Math.trunc(Number(value));
+  return `${normalized > 0 ? '+' : ''}${normalized}`;
 }
 function identityRow(identity){
   const provider = String(identity?.provider || '').trim().toLowerCase();

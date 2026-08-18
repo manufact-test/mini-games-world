@@ -387,6 +387,7 @@ async function confirmLeaveGame(){
     renderGame(authoritative, confirmedViewer, false);
     notifyWeeklyProgress(authoritative);
     setResultActionsDisabled(false);
+    void hydrateResultSummary(authoritative, confirmedViewer);
   } catch (error) {
     item.surrenderPending = false;
     runtime.resultOpened.delete(id);
@@ -412,7 +413,7 @@ function buildOptimisticSurrender(game, viewerId){
 function openResultSheet(game, me, options = {}){
   if (options.notify !== false) notifyWeeklyProgress(game);
   let title = 'Ничья';
-  let text = chessDrawText(game) || 'Коины возвращены на баланс.';
+  let text = chessDrawText(game) || 'Матч завершён вничью.';
 
   if (game.finish_reason === 'preparation_timeout') {
     title = 'Матч не начался';
@@ -422,20 +423,20 @@ function openResultSheet(game, me, options = {}){
     title = isWin ? 'Победа!' : 'Поражение';
     if (game.finish_reason === 'timeout') {
       text = isWin
-        ? `Соперник не сделал ход вовремя. Вы получили ${game.payout ?? 0} коинов.`
+        ? 'Соперник не сделал ход вовремя.'
         : 'Время хода вышло. Засчитано техническое поражение.';
     } else if (game.finish_reason === 'player_left') {
       text = isWin
-        ? `Соперник вышел из матча. Вы получили ${game.payout ?? 0} коинов.`
+        ? 'Соперник вышел из матча.'
         : 'Вы вышли из матча. Засчитано техническое поражение.';
     } else if (gameTypeOf(game) === 'chess' && game.chess_end_reason === 'checkmate') {
-      text = isWin ? `Мат. Вы получили ${game.payout ?? 0} коинов.` : 'Вашему королю поставлен мат.';
+      text = isWin ? 'Мат.' : 'Вашему королю поставлен мат.';
     } else if (gameTypeOf(game) === 'domino' && game.end_reason === 'empty_hand') {
       text = isWin
-        ? `Вы первыми избавились от всех костяшек и получили ${game.payout ?? 0} коинов.`
+        ? 'Вы первыми избавились от всех костяшек.'
         : 'Соперник первым избавился от всех костяшек.';
     } else {
-      text = isWin ? `Вы получили ${game.payout ?? 0} коинов.` : 'Соперник оказался сильнее.';
+      text = isWin ? 'Матч завершён в вашу пользу.' : 'Соперник оказался сильнее.';
     }
   }
 
@@ -443,12 +444,14 @@ function openResultSheet(game, me, options = {}){
   text += goScoreText(game, me);
   text += dominoScoreText(game);
   const disabled = options.pending ? 'disabled aria-busy="true"' : '';
+  const summaryText = options.pending ? 'Подтверждаем итог матча…' : 'Загружаем итог матча…';
 
   openSheet(`
     <div class="sheet-head">
       <div><h2>${title}</h2><p>${text}</p></div>
       <button class="close" data-close-sheet type="button" ${disabled}>×</button>
     </div>
+    <div class="small-note" id="resultSummary" data-result-game-id="${escapeHtml(game?.id || '')}">${summaryText}</div>
     <div class="stack">
       <button class="btn primary full" id="newOpponent" type="button" ${disabled}>Найти нового соперника</button>
       <button class="btn ghost full" id="goHome" type="button" ${disabled}>В меню</button>
@@ -467,6 +470,8 @@ function openResultSheet(game, me, options = {}){
     showScreen('home');
     document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
   });
+
+  if (!options.pending) void hydrateResultSummary(game, me);
 }
 
 function setResultActionsDisabled(disabled){
@@ -477,6 +482,73 @@ function setResultActionsDisabled(disabled){
     if (disabled) button.setAttribute('aria-busy', 'true');
     else button.removeAttribute('aria-busy');
   }
+}
+
+async function hydrateResultSummary(game, me){
+  const gameId = String(game?.id || '');
+  if (!gameId) return;
+  const target = document.getElementById('resultSummary');
+  if (!(target instanceof HTMLElement) || String(target.dataset.resultGameId || '') !== gameId) return;
+
+  try {
+    const result = await api.history();
+    rememberUserAndSession(result);
+    const matches = Array.isArray(result?.history?.matches) ? result.history.matches : [];
+    const match = matches.find(item => String(item?.id || '') === gameId);
+    const current = document.getElementById('resultSummary');
+    if (!(current instanceof HTMLElement) || String(current.dataset.resultGameId || '') !== gameId) return;
+    current.innerHTML = match ? resultSummaryMarkup(match) : escapeHtml(resultContextFromGame(game, me));
+  } catch (error) {
+    const current = document.getElementById('resultSummary');
+    if (!(current instanceof HTMLElement) || String(current.dataset.resultGameId || '') !== gameId) return;
+    current.textContent = resultContextFromGame(game, me);
+  }
+}
+
+function resultSummaryMarkup(match){
+  const context = resultContextFromMatch(match);
+  const economy = match?.economy && typeof match.economy === 'object' ? match.economy : null;
+  if (!economy) return `<strong>${escapeHtml(context)}</strong><br>Финансовый итог пока недоступен.`;
+
+  const entry = formatCoins(economy.entry);
+  const reward = formatCoins(economy.reward);
+  const delta = formatCoinDelta(economy.ledger_delta);
+  const balance = economy.new_balance === null || economy.new_balance === undefined
+    ? '—'
+    : formatCoins(economy.new_balance);
+  return `<strong>${escapeHtml(context)}</strong><br>Вход: ${escapeHtml(entry)} · Награда: ${escapeHtml(reward)}<br>Итог: ${escapeHtml(delta)} · Баланс: ${escapeHtml(balance)}`;
+}
+
+function resultContextFromMatch(match){
+  const title = String(match?.game_title || 'Матч');
+  const columns = Number(match?.board_columns || match?.board_size || 0);
+  const rows = Number(match?.board_rows || match?.board_size || 0);
+  const variant = columns > 0 && rows > 0 ? `${columns}×${rows}` : '';
+  const opponent = String(match?.opponent || 'Соперник');
+  return [title, variant, `против ${opponent}`].filter(Boolean).join(' · ');
+}
+
+function resultContextFromGame(game, me){
+  const title = String(game?.game_title || 'Матч');
+  const columns = Number(game?.board_columns || game?.board_size || 0);
+  const rows = Number(game?.board_rows || game?.board_size || 0);
+  const variant = columns > 0 && rows > 0 ? `${columns}×${rows}` : '';
+  const opponent = (Array.isArray(game?.players) ? game.players : [])
+    .find(player => String(player?.id || '') !== String(me?.id || ''));
+  const opponentName = String(opponent?.name || 'Соперник');
+  return [title, variant, `против ${opponentName}`].filter(Boolean).join(' · ');
+}
+
+function formatCoins(value){
+  const number = Number(value);
+  return Number.isFinite(number) ? `${Math.trunc(number)} коинов` : '—';
+}
+
+function formatCoinDelta(value){
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '—';
+  const normalized = Math.trunc(number);
+  return `${normalized > 0 ? '+' : ''}${normalized} коинов`;
 }
 
 function searchContextFromGame(game){
@@ -548,13 +620,12 @@ function normalizeViewer(viewer){
 
 function chessDrawText(game){
   if (gameTypeOf(game) !== 'chess') return '';
-  const label = {
+  return {
     stalemate:'Пат.',
     insufficient_material:'Недостаточно фигур для мата.',
     threefold_repetition:'Позиция повторилась три раза.',
     fifty_move:'Сработало правило 50 ходов.',
   }[String(game?.chess_end_reason || '')] || 'Партия завершилась вничью.';
-  return `${label} Коины возвращены на баланс.`;
 }
 
 function reversiScoreText(game, me){
