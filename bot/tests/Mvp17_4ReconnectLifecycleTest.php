@@ -190,7 +190,10 @@ try {
     $assert((int)($dbFailure['system']['telemetry']['server_failure_cancelled_games_total'] ?? 0) === 1, 'Server failure must be logged.');
 
     $clockSource = file_get_contents($root . '/services/MatchPreparationClockService.php');
-    $assert(is_string($clockSource) && str_contains($clockSource, 'private const MOVE_TIMEOUT_SEC = 60;'), 'Existing 60-second move timeout must remain unchanged.');
+    $assert(
+        is_string($clockSource) && preg_match('/\bMOVE_TIMEOUT_SEC\s*=\s*60\s*;/', $clockSource) === 1,
+        'Existing 60-second move timeout must remain unchanged.'
+    );
 
     fwrite(STDOUT, "Mvp17_4ReconnectLifecycleTest: {$assertions} assertions passed\n");
 } finally {
