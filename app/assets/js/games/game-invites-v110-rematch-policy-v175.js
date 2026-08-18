@@ -49,14 +49,27 @@ function queueResultPolicySync(){
 }
 
 function syncResultActions(){
-  const playAgain = document.getElementById('newOpponent');
-  if (playAgain && playAgain.textContent !== 'Сыграть ещё') {
-    playAgain.textContent = 'Сыграть ещё';
-  }
-
   const game = state.activeGame;
   const directRematchAvailable = String(game?.status || '') === 'finished'
     && game?.rematch_available === true;
+
+  const playAgain = document.getElementById('newOpponent');
+  if (playAgain) {
+    if (playAgain.textContent !== 'Сыграть ещё') playAgain.textContent = 'Сыграть ещё';
+
+    // The legacy result enhancer inserts direct rematch 40 ms later and changes
+    // this button's hierarchy in the same task. Its child insertion is already
+    // observed here, so restore the neutral hierarchy in the MutationObserver
+    // microtask before the browser's next paint. Do not observe class mutations:
+    // that would make this class correction recursively trigger itself.
+    if (directRematchAvailable) {
+      playAgain.classList.remove('primary');
+      playAgain.classList.add('ghost');
+    } else {
+      playAgain.classList.remove('ghost');
+      playAgain.classList.add('primary');
+    }
+  }
 
   document.querySelectorAll('#sheet [data-create-rematch]').forEach(button => {
     if (!(button instanceof HTMLButtonElement)) return;
