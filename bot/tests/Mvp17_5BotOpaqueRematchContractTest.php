@@ -81,6 +81,7 @@ $assert(
 );
 
 $clientPolicy = file_get_contents($repoRoot . '/app/assets/js/games/game-invites-v110-rematch-policy-v175.js');
+$legacyInvites = file_get_contents($repoRoot . '/app/assets/js/games/game-invites-v110.js');
 $manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
 $launch = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
 $inviteServiceSource = file_get_contents($root . '/services/GameInviteService.php');
@@ -96,13 +97,35 @@ $assert(
     is_string($clientPolicy) && str_contains($clientPolicy, "playAgain.textContent = 'Сыграть ещё';"),
     'The ordinary replay path must use neutral Play again copy.'
 );
+
+$policyInit = is_string($clientPolicy) ? strpos($clientPolicy, 'initRematchPresentationPolicy();') : false;
+$legacyInit = is_string($clientPolicy) ? strpos($clientPolicy, 'initBaseGameInvites();') : false;
+$assert(
+    is_int($policyInit) && is_int($legacyInit) && $policyInit < $legacyInit,
+    'Bot-opaque result policy must initialize before the legacy result enhancer can observe a result sheet.'
+);
+$assert(
+    is_string($clientPolicy)
+        && str_contains($clientPolicy, "playAgain.classList.remove('ghost');")
+        && str_contains($clientPolicy, "playAgain.classList.add('primary');")
+        && str_contains($clientPolicy, "playAgain.classList.remove('primary');")
+        && str_contains($clientPolicy, "playAgain.classList.add('ghost');"),
+    'Neutral rematch capability must own the result-button hierarchy so a hidden direct rematch cannot leave a one-frame style flash.'
+);
+$assert(
+    is_string($legacyInvites)
+        && str_contains($legacyInvites, 'resultEnhanceTimer = window.setTimeout(enhanceResultSheet, 40);')
+        && str_contains($legacyInvites, "newOpponent.classList.remove('primary');")
+        && str_contains($legacyInvites, "newOpponent.classList.add('ghost');"),
+    'The contract must cover the legacy delayed enhancer that originally caused the visible first-paint jump.'
+);
 $assert(
     is_array($manifest)
         && str_contains(
             (string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''),
-            'game-invites-v110-rematch-policy-v175.js?v=1'
+            'game-invites-v110-rematch-policy-v175.js?v=2'
         ),
-    'The active v110 invite import must route through the bot-opaque rematch presentation owner.'
+    'The active v110 invite import must cache-bust to the stable first-paint rematch presentation owner.'
 );
 $assert(
     is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
