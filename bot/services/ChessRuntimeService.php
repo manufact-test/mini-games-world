@@ -9,6 +9,7 @@ require_once dirname(__DIR__) . '/games/domino/DominoBotService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoService.php';
 require_once __DIR__ . '/MatchPreparationClockService.php';
 require_once __DIR__ . '/MatchmakingQueue.php';
+require_once __DIR__ . '/BotProfilePolicy.php';
 require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
 
 /**
@@ -23,6 +24,7 @@ final class ChessRuntimeService
     private DominoService $domino;
     private MatchPreparationClockService $matchPreparationClock;
     private MatchmakingQueue $matchmaking;
+    private BotProfilePolicy $botProfiles;
 
     public function __construct(
         private array $config,
@@ -36,6 +38,7 @@ final class ChessRuntimeService
         $this->domino = new DominoService($config, $settlement);
         $this->matchPreparationClock = new MatchPreparationClockService();
         $this->matchmaking = new MatchmakingQueue();
+        $this->botProfiles = new BotProfilePolicy();
     }
 
     public function cleanup(array &$db): void
@@ -276,6 +279,7 @@ final class ChessRuntimeService
         if (!in_array($gameType, ['chess', 'go', 'domino'], true)) {
             $public = $this->base->publicGame($game, $viewerId);
         } else {
+            $this->botProfiles->ensureStoredProfile($game);
             $definition = $this->catalog->publicGameDefinition($gameType);
             $enginePublic = match ($gameType) {
                 'chess' => $this->chess->publicGame($game, $viewerId),
@@ -289,6 +293,7 @@ final class ChessRuntimeService
                 'renderer' => (string)$definition['renderer'],
                 'action_type' => (string)$definition['action_type'],
             ] + $enginePublic;
+            $public = $this->botProfiles->sanitizePublicGame($public, $game);
         }
 
         // Dormant until a stored game has explicitly entered the Phase B state
@@ -477,7 +482,6 @@ final class ChessRuntimeService
             $isOwner = (string)($invite['inviter_id'] ?? '') === $userId;
             $isInvitee = (string)($invite['invitee_id'] ?? '') === $userId;
             if (!$isOwner && !$isInvitee) continue;
-
             // Pending invitations are notification-only while either side is waiting
             // for the owner's explicit start decision after acceptance.
             if ($status === 'pending') continue;
