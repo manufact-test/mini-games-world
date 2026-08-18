@@ -37,7 +37,7 @@ return [
         './assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110-rematch-policy-v175.js?v=1&fp=2',
         './assets/js/games/tictactoe/renderer.js?v=53' => './assets/js/games/tictactoe/renderer.js?v=54&mark=full-size-nought',
         './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact',
-        './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner',
+        './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner&launch=ready-gated-v2&terminal=clock-stable',
         './assets/js/components/shield-king-visuals.js?v=125&sk=2' => './assets/js/components/shield-king-visuals.js?v=128&sk=4&icons=c1efd5af&shell=nav&settings=metallic',
         './assets/js/components/shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=128&sk=4&icons=c1efd5af&shell=nav&settings=metallic',
         './assets/js/components/preloader.js?v=42' => './assets/js/components/preloader.js?v=44&intro=v1141',
