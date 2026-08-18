@@ -11,7 +11,6 @@ on:
       - 'app/assets/js/screens/home-screen.js'
       - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
       - 'app/assets/js/games/game-invites-v110.js'
-      - 'bot/api.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/services/HistoryService.php'
       - 'bot/services/BotProfilePolicy.php'
@@ -19,7 +18,6 @@ on:
       - 'bot/services/invites/GameInviteActionTrait.php'
       - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - 'bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php'
-      - 'bot/tests/Mvp17_5DirectResultPresentationContractTest.php'
       - 'bot/tests/Mvp17_5BotOpaqueRematchContractTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/NotificationActorSilentTerminalContractTest.php'
@@ -52,7 +50,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           php -l app/runtime/client/version-manifest.php
-          php -l bot/api.php
           php -l bot/helpers/WebAppLaunchUrl.php
           php -l bot/services/HistoryService.php
           php -l bot/services/BotProfilePolicy.php
@@ -60,7 +57,6 @@ jobs:
           php -l bot/services/invites/GameInviteActionTrait.php
           php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
           php -l bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
-          php -l bot/tests/Mvp17_5DirectResultPresentationContractTest.php
           php -l bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
           php -l bot/tests/RematchOptimisticUxContractTest.php
           php -l bot/tests/NotificationActorSilentTerminalContractTest.php
@@ -84,9 +80,6 @@ jobs:
 
       - name: MVP-17.5 actual history corrective contract
         run: php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
-
-      - name: MVP-17.5 direct terminal result projection contract
-        run: php bot/tests/Mvp17_5DirectResultPresentationContractTest.php
 
       - name: MVP-17.5 bot-opaque rematch contract
         run: php bot/tests/Mvp17_5BotOpaqueRematchContractTest.php

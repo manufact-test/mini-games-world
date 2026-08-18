@@ -42,42 +42,6 @@ function mgw_observe_matchmaking_source(array &$data, array $game): void
     $data['system']['telemetry'][$key] = (int)($data['system']['telemetry'][$key] ?? 0) + 1;
 }
 
-function mgw_public_game_with_result(
-    array $data,
-    ?array $game,
-    string $userId,
-    ChessRuntimeService $games,
-    HistoryService $history
-): ?array {
-    if (!is_array($game)) return null;
-
-    $public = $games->publicGame($game, $userId);
-    if ((string)($game['status'] ?? '') !== 'finished') return $public;
-
-    $gameId = trim((string)($game['id'] ?? ''));
-    if ($gameId === '') return $public;
-
-    foreach ($history->matchHistory($data, $userId, 12) as $match) {
-        if (!is_array($match) || (string)($match['id'] ?? '') !== $gameId) continue;
-        $public['result_presentation'] = [
-            'id' => $gameId,
-            'opponent' => (string)($match['opponent'] ?? 'Соперник'),
-            'result' => (string)($match['result'] ?? 'Матч завершён'),
-            'tone' => (string)($match['tone'] ?? 'zero'),
-            'game_type' => (string)($match['game_type'] ?? ''),
-            'game_title' => (string)($match['game_title'] ?? 'Матч'),
-            'board_size' => (int)($match['board_size'] ?? 0),
-            'board_columns' => (int)($match['board_columns'] ?? 0),
-            'board_rows' => (int)($match['board_rows'] ?? 0),
-            'economy' => is_array($match['economy'] ?? null) ? $match['economy'] : null,
-            'finished_at' => (string)($match['finished_at'] ?? ''),
-        ];
-        break;
-    }
-
-    return $public;
-}
-
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
@@ -146,7 +110,7 @@ try {
                     'match_economy' => MatchEconomyRuntimeConfig::publicStatus($config),
                     'games' => $games->catalog(),
                     'stats' => $statsService->build($data),
-                    'active_game' => mgw_public_game_with_result($data, $active, $userId, $games, $history),
+                    'active_game' => $active ? $games->publicGame($active, $userId) : null,
                 ];
 
             case 'stats':
@@ -237,7 +201,7 @@ try {
                         $existingGameIdBeforeSearch === '' || $existingGameIdBeforeSearch !== $gameId
                     );
                     if (is_array($finalizedGame)) {
-                        $search['game'] = mgw_public_game_with_result($data, $finalizedGame, $userId, $games, $history);
+                        $search['game'] = $games->publicGame($finalizedGame, $userId);
                     }
                 }
 
@@ -335,7 +299,7 @@ try {
                 return [
                     'user' => $users->publicUser($user),
                     'me' => ['id' => $userId],
-                    'game' => mgw_public_game_with_result($data, $game, $userId, $games, $history),
+                    'game' => $game ? $games->publicGame($game, $userId) : null,
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
@@ -362,7 +326,7 @@ try {
                 return [
                     'user' => $users->publicUser($user),
                     'me' => ['id' => $userId],
-                    'game' => mgw_public_game_with_result($data, $game, $userId, $games, $history),
+                    'game' => $games->publicGame($game, $userId),
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
@@ -379,7 +343,7 @@ try {
                         return [
                             'user' => $users->publicUser($user),
                             'me' => ['id' => $userId],
-                            'game' => mgw_public_game_with_result($data, $candidate, $userId, $games, $history),
+                            'game' => $games->publicGame($candidate, $userId),
                             'shop' => $shop->status($user),
                             'session' => $sessions->publicState($user, $sessionId),
                         ];
@@ -402,7 +366,7 @@ try {
                 return [
                     'user' => $users->publicUser($user),
                     'me' => ['id' => $userId],
-                    'game' => mgw_public_game_with_result($data, $game, $userId, $games, $history),
+                    'game' => $games->publicGame($game, $userId),
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
@@ -419,7 +383,7 @@ try {
                 return [
                     'user' => $users->publicUser($user),
                     'me' => ['id' => $userId],
-                    'game' => mgw_public_game_with_result($data, $game, $userId, $games, $history),
+                    'game' => $games->publicGame($game, $userId),
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
                     'stats' => $statsService->build($data),
