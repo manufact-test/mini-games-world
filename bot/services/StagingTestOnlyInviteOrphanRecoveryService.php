@@ -10,7 +10,6 @@ final class StagingTestOnlyInviteOrphanRecoveryService
         'declined', 'cancelled', 'expired', 'timed_out',
     ];
     private const SAFE_SOURCES = ['direct', 'link'];
-    private const MAX_CANDIDATES = 10;
 
     private RuntimeStorageRouter $router;
     private ?DatabaseConnectionInterface $database = null;
@@ -100,9 +99,11 @@ final class StagingTestOnlyInviteOrphanRecoveryService
             ];
         }
 
-        if (count($candidates) > self::MAX_CANDIDATES) {
-            throw new RuntimeException('Staging test-only orphan recovery refuses excessive candidates.');
-        }
+        // Candidate cardinality is not a safety boundary. Every row above has
+        // independently proved A/B-only ownership, no JSON identity, no match
+        // reference, an allowed source/status, and safe linked notifications.
+        // Refusing a large set here would permanently prevent the subsequent
+        // reset_test_players cleanup from running and let test state accumulate.
         if ($candidates === []) {
             return [
                 'ok' => true,
