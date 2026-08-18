@@ -161,12 +161,7 @@ try {
         'active_session_timeout_sec' => 180,
     ]);
 
-    // Existing regression: a Phase-B active match must resume.
     $assertResumed($runtime, $makeFrozenDb('g-phase-b', true), 'g-phase-b', true);
-
-    // Manual-acceptance regression: a compatible active match that predates
-    // launch_phase may still enter reconnect_v2. It must resume on game_state
-    // instead of returning early with the one-day frozen guard clock intact.
     $assertResumed($runtime, $makeFrozenDb('g-legacy', false), 'g-legacy', false);
 
     $runtimeSource = file_get_contents($root . '/services/MatchPreparationRuntimeService.php');
@@ -190,11 +185,11 @@ try {
         'Stable index source anchor must remain unchanged for canonical entry transforms.'
     );
     $assert(
-        is_string($entry) && str_contains($entry, './assets/js/main.js?v=d2-unified-wallet-15-3-r1743'),
-        'Canonical v114 entry owner must cache-bust the authoritative reconnect boot bundle.'
+        is_string($entry) && str_contains($entry, './assets/js/main.js?v=d2-unified-wallet-15-3-r1744'),
+        'Canonical v114 entry owner must cache-bust the visible reconnect resume bundle.'
     );
-    $assert(is_string($main) && str_contains($main, "./presence-v115.js?v=1742"), 'Presence module identity must remain unchanged by the boot-only corrective pass.');
-    $assert(is_string($main) && str_contains($main, "mvp17-4-authoritative-reconnect-boot-r3"), 'Frontend build marker must identify the authoritative reconnect boot pass.');
+    $assert(is_string($main) && str_contains($main, "./presence-v115.js?v=1742"), 'Presence module identity must remain unchanged by the visible-resume corrective pass.');
+    $assert(is_string($main) && str_contains($main, "mvp17-4-visible-authoritative-resume-r4"), 'Frontend build marker must identify the same-document visible reconnect pass.');
 
     $authoritativeBoot = is_string($main)
         ? strpos($main, 'const activeState = await api.gameState(result.active_game.id);')
@@ -210,7 +205,28 @@ try {
             && is_int($adoptAuthoritative)
             && $authoritativeBoot < $adoptAuthoritative
             && $oldBootstrapAdoption === false,
-        'Reopened active matches must await authoritative game_state before becoming local activeGame state.'
+        'Cold/reloaded reconnect must await authoritative game_state before becoming local activeGame state.'
+    );
+
+    $visibleResume = is_string($main)
+        ? strpos($main, 'async function refreshActiveGameAfterReturn()')
+        : false;
+    $visibleGameState = is_string($main)
+        ? strpos($main, 'const result = await api.gameState(gameId);', is_int($visibleResume) ? $visibleResume : 0)
+        : false;
+    $visiblePolling = is_string($main)
+        ? strpos($main, 'startGamePolling(gameId);', is_int($visibleResume) ? $visibleResume : 0)
+        : false;
+    $assert(
+        is_int($visibleResume)
+            && is_int($visibleGameState)
+            && is_int($visiblePolling)
+            && $visibleResume < $visibleGameState
+            && $visibleGameState < $visiblePolling
+            && str_contains($main, "document.addEventListener('visibilitychange'")
+            && str_contains($main, "window.addEventListener('pageshow'")
+            && str_contains($main, "telegram.onEvent('activated', resume)"),
+        'Same-document Telegram return must force authoritative game_state before restarting the existing game polling/render path.'
     );
 
     $clockSource = file_get_contents($root . '/services/MatchPreparationClockService.php');
