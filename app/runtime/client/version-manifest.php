@@ -5,7 +5,7 @@ return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
         '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1125&mvp16=canonical-avatar-owner',
-        '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2&mvp17=result-history-fix3',
+        '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2',
         '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
         './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
         './assets/js/api/client.js?v=38' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
@@ -46,7 +46,7 @@ return [
     'assets' => [
         'main_css' => './assets/css/main.css?v=174&sk=3&icons=c1efd5af&render=37&mvp16=notification-center-v2-desktop-cache',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
-        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
+        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest&mvp17=result-history-fix3',
     ],
     'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
 ];
