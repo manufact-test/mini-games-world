@@ -53,6 +53,52 @@ function mgw_game_watch_read_json_games(array $config): array
     }
 }
 
+function mgw_game_watch_result_history(array $config, string $userId, string $gameId): array
+{
+    $storage = new JsonStorageAdapter((string)($config['data_dir'] ?? ''));
+
+    return $storage->readOnlySections(
+        ['users', 'games', 'transactions'],
+        static function (array $data) use ($config, $userId, $gameId): array {
+            $game = $data['games'][$gameId] ?? null;
+            if (!is_array($game)) throw new RuntimeException('Итог матча ещё недоступен.');
+
+            $participants = array_map('strval', $game['player_ids'] ?? []);
+            if (!in_array($userId, $participants, true)) {
+                throw new RuntimeException('Вы не участвуете в этой игре.');
+            }
+            if ((string)($game['status'] ?? '') !== 'finished') {
+                throw new RuntimeException('Матч ещё не завершён.');
+            }
+
+            // Keep Result on the same server-side presentation owner as History,
+            // but build it from one coherent JSON projection snapshot. The fast
+            // watcher can observe games.json before a multi-file projection has
+            // finished; this shared app.lock read waits until games + ledger are
+            // published together instead of retrying arbitrary client timers.
+            $formatter = new HistoryService($config, new UserService($config));
+            $resultSnapshot = [
+                'users' => is_array($data['users'] ?? null) ? $data['users'] : [],
+                'games' => [$gameId => $game],
+                'transactions' => is_array($data['transactions'] ?? null) ? $data['transactions'] : [],
+            ];
+            $matches = $formatter->matchHistory($resultSnapshot, $userId, 1);
+            $match = $matches[0] ?? null;
+            if (!is_array($match) || (string)($match['id'] ?? '') !== $gameId) {
+                throw new RuntimeException('Итог матча ещё недоступен.');
+            }
+            if (!is_array($match['economy'] ?? null)) {
+                throw new RuntimeException('Финансовый итог матча ещё недоступен.');
+            }
+
+            return [
+                'history' => ['matches' => [$match]],
+                'presentation_version' => 'mvp17-5-result-locked-projection-v1',
+            ];
+        }
+    );
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
@@ -65,6 +111,12 @@ try {
     $userId = trim((string)($tgUser['id'] ?? ''));
     $gameId = clean_string($payload['gameId'] ?? '', 80);
     if ($userId === '' || $gameId === '') throw new RuntimeException('Игра не найдена.');
+
+    if (clean_string($payload['mode'] ?? '', 24) === 'result') {
+        api_ok(mgw_game_watch_result_history($config, $userId, $gameId) + [
+            'me' => ['id' => $userId],
+        ]);
+    }
 
     $catalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $catalog, new GameService($config));

@@ -3,7 +3,7 @@ import { state } from '../state.js?v=27';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
 import { getSessionId, getDeviceId } from '../session.js?v=1131';
 
-const HISTORY_FRESHNESS_DELAYS_MS = [80, 120, 180, 260];
+const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
@@ -22,35 +22,12 @@ function finishedActiveGameId(){
   return String(game?.status || '') === 'finished' ? String(game?.id || '') : '';
 }
 
-function historyHasMatch(result, gameId){
-  if (!gameId) return true;
-  const matches = Array.isArray(result?.history?.matches) ? result.history.matches : [];
-  return matches.some(item => String(item?.id || '') === gameId);
-}
-
 async function requestHistory(){
   const targetGameId = finishedActiveGameId();
-  let lastResult = null;
-  let lastError = null;
-
-  for (let attempt = 0; attempt <= HISTORY_FRESHNESS_DELAYS_MS.length; attempt++) {
-    if (attempt > 0) await delay(HISTORY_FRESHNESS_DELAYS_MS[attempt - 1]);
-    try {
-      lastResult = await request('history');
-      lastError = null;
-      if (!targetGameId || historyHasMatch(lastResult, targetGameId)) return lastResult;
-    } catch (error) {
-      lastError = error;
-      if (!targetGameId || attempt === HISTORY_FRESHNESS_DELAYS_MS.length) throw error;
-    }
+  if (targetGameId) {
+    return requestUrl(RESULT_WATCH_URL, { gameId:targetGameId, mode:'result' });
   }
-
-  if (lastResult) return lastResult;
-  throw lastError || new Error('Не удалось загрузить историю.');
-}
-
-function delay(ms){
-  return new Promise(resolve => window.setTimeout(resolve, ms));
+  return request('history');
 }
 
 export const api = {
