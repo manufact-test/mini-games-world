@@ -97,12 +97,34 @@ $assert(
     'The ordinary replay path must use neutral Play again copy.'
 );
 $assert(
+    is_string($clientPolicy)
+        && str_contains($clientPolicy, "playAgain.classList.remove('ghost');")
+        && str_contains($clientPolicy, "playAgain.classList.add('primary');")
+        && str_contains($clientPolicy, "playAgain.classList.remove('primary');")
+        && str_contains($clientPolicy, "playAgain.classList.add('ghost');"),
+    'Neutral rematch capability must own the result action hierarchy before the next paint.'
+);
+
+$baseInit = is_string($clientPolicy) ? strpos($clientPolicy, 'initBaseGameInvites();') : false;
+$policyInit = is_string($clientPolicy) ? strpos($clientPolicy, 'initRematchPresentationPolicy();') : false;
+$assert(
+    is_int($baseInit) && is_int($policyInit) && $baseInit < $policyInit,
+    'The accepted invite/result initialization order must remain unchanged.'
+);
+$assert(
+    is_string($clientPolicy)
+        && str_contains($clientPolicy, 'resultObserver.observe(sheet, { childList:true, subtree:true, characterData:true });')
+        && !str_contains($clientPolicy, 'attributes:true')
+        && !str_contains($clientPolicy, 'attributeFilter'),
+    'The rematch policy must not observe class mutations and recursively trigger its own hierarchy correction.'
+);
+$assert(
     is_array($manifest)
         && str_contains(
             (string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''),
-            'game-invites-v110-rematch-policy-v175.js?v=1'
+            'game-invites-v110-rematch-policy-v175.js?v=1&fp=2'
         ),
-    'The active v110 invite import must route through the bot-opaque rematch presentation owner.'
+    'The active v110 invite import must cache-bust to the safe prepaint policy without changing frozen v1 contract identity.'
 );
 $assert(
     is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
