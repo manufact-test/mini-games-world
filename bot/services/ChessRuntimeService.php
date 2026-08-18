@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/games/go/GoService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoBotService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoService.php';
 require_once __DIR__ . '/MatchPreparationClockService.php';
+require_once __DIR__ . '/MatchmakingQueue.php';
 require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
 
 /**
@@ -21,6 +22,7 @@ final class ChessRuntimeService
     private GoService $go;
     private DominoService $domino;
     private MatchPreparationClockService $matchPreparationClock;
+    private MatchmakingQueue $matchmaking;
 
     public function __construct(
         private array $config,
@@ -33,6 +35,7 @@ final class ChessRuntimeService
         $this->go = new GoService($config, $settlement);
         $this->domino = new DominoService($config, $settlement);
         $this->matchPreparationClock = new MatchPreparationClockService();
+        $this->matchmaking = new MatchmakingQueue();
     }
 
     public function cleanup(array &$db): void
@@ -57,10 +60,8 @@ final class ChessRuntimeService
     {
         $userId = (string)($user['id'] ?? '');
         $queuedGoSize = null;
-        $acceleratedBotFallback = false;
         foreach ($db['queue'] ?? [] as $queueItem) {
             if (!is_array($queueItem) || (string)($queueItem['user_id'] ?? '') !== $userId) continue;
-            $acceleratedBotFallback = (string)($queueItem['status'] ?? 'waiting') === 'bot_fallback_5s';
             if ((string)($queueItem['game_type'] ?? '') === 'go') {
                 $queuedGoSize = $this->catalog->normalizeBoardSize(
                     'go',
@@ -70,18 +71,7 @@ final class ChessRuntimeService
             break;
         }
 
-        $runtime = $this->base;
-        if ($acceleratedBotFallback) {
-            $runtimeConfig = $this->config;
-            $runtimeConfig['match_bot_after_sec'] = 5;
-            $runtime = new GameRuntimeService(
-                $runtimeConfig,
-                $this->catalog,
-                new GameService($runtimeConfig)
-            );
-        }
-
-        $game = $runtime->maybeCreateBotGameForSearchingUser($db, $user);
+        $game = $this->base->maybeCreateBotGameForSearchingUser($db, $user);
         if (!is_array($game)) return null;
 
         $gameId = (string)($game['id'] ?? '');
@@ -128,8 +118,13 @@ final class ChessRuntimeService
 
         $userId = (string)($user['id'] ?? '');
         $active = $this->findActiveGameForUser($db, $userId);
-        if ($active) return ['game' => $this->publicGame($active, $userId)];
+        if ($active) {
+            $this->matchmaking->preventDuplicateMatch($db, $userId);
+            return ['game' => $this->publicGame($active, $userId)];
+        }
+        $this->matchmaking->purgeActiveGameQueueEntries($db);
 
+        $skillBand = $this->matchmaking->normalizeSkillBand($user['skill_band'] ?? null);
         $requestedBoardSize = match ($gameType) {
             'chess' => 8,
             'domino' => 7,
@@ -140,10 +135,19 @@ final class ChessRuntimeService
             'domino' => 3,
             default => $requestedBoardSize === 9 ? 9 : 5,
         };
+        $candidate = $this->matchmaking->firstCandidate(
+            $db,
+            $userId,
+            $gameType,
+            $requestedBoardSize,
+            $skillBand
+        );
 
         $result = $this->withIsolatedQueue(
             $db,
             $gameType,
+            $requestedBoardSize,
+            $skillBand,
             function () use (&$db, &$user, $room, $bet, $legacyBoardSize): array {
                 return $this->legacyGame->startSearch($db, $user, $room, $bet, $legacyBoardSize);
             },
@@ -151,6 +155,7 @@ final class ChessRuntimeService
         );
 
         if (isset($result['game']) && is_array($result['game'])) {
+            $this->matchmaking->observeWaitFromQueueItem($db, $candidate);
             $gameId = (string)($result['game']['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;
@@ -170,9 +175,17 @@ final class ChessRuntimeService
                 $result['game'] = $this->publicGame($db['games'][$gameId], $userId);
             }
         } else {
-            $this->setQueuedSpecialType($db, $userId, $gameType, $requestedBoardSize, $legacyBoardSize);
+            $this->setQueuedSpecialType(
+                $db,
+                $userId,
+                $gameType,
+                $requestedBoardSize,
+                $legacyBoardSize,
+                $skillBand
+            );
         }
 
+        $this->matchmaking->observeQueueDepth($db);
         return $result;
     }
 
@@ -330,7 +343,8 @@ final class ChessRuntimeService
         string $userId,
         string $gameType,
         int $requestedBoardSize,
-        int $legacyBoardSize
+        int $legacyBoardSize,
+        string $skillBand
     ): void {
         if (!isset($db['queue']) || !is_array($db['queue'])) return;
 
@@ -339,6 +353,7 @@ final class ChessRuntimeService
             $item['game_type'] = $gameType;
             $item['requested_board_size'] = $requestedBoardSize;
             $item['board_size'] = $legacyBoardSize;
+            $item['skill_band'] = $this->matchmaking->normalizeSkillBand($skillBand);
             unset($item);
             return;
         }
@@ -348,6 +363,8 @@ final class ChessRuntimeService
     private function withIsolatedQueue(
         array &$db,
         string $gameType,
+        int $boardSize,
+        string $skillBand,
         callable $callback,
         ?string $dropUserId = null
     ): mixed {
@@ -359,7 +376,9 @@ final class ChessRuntimeService
         foreach ($originalQueue as $item) {
             if (!is_array($item)) continue;
             if ($dropUserId !== null && (string)($item['user_id'] ?? '') === $dropUserId) continue;
-            if ((string)($item['game_type'] ?? 'tictactoe') === $gameType) $workingQueue[] = $item;
+            if ($this->matchmaking->matchesKey($item, $gameType, $boardSize, $skillBand)) {
+                $workingQueue[] = $item;
+            }
         }
 
         foreach ($originalGames as $id => $game) {
@@ -375,7 +394,14 @@ final class ChessRuntimeService
         } finally {
             $updatedWorkingQueue = is_array($db['queue'] ?? null) ? array_values($db['queue']) : [];
             $updatedLegacyGames = is_array($db['games'] ?? null) ? $db['games'] : [];
-            $db['queue'] = $this->mergeIsolatedQueue($originalQueue, $updatedWorkingQueue, $gameType, $dropUserId);
+            $db['queue'] = $this->mergeIsolatedQueue(
+                $originalQueue,
+                $updatedWorkingQueue,
+                $gameType,
+                $boardSize,
+                $skillBand,
+                $dropUserId
+            );
             $db['games'] = $this->mergeLegacyGames($originalGames, $updatedLegacyGames);
         }
     }
@@ -405,6 +431,8 @@ final class ChessRuntimeService
         array $originalQueue,
         array $updatedWorkingQueue,
         string $gameType,
+        int $boardSize,
+        string $skillBand,
         ?string $dropUserId
     ): array {
         $updatedById = [];
@@ -420,7 +448,7 @@ final class ChessRuntimeService
         foreach ($originalQueue as $item) {
             if (!is_array($item)) continue;
             if ($dropUserId !== null && (string)($item['user_id'] ?? '') === $dropUserId) continue;
-            if ((string)($item['game_type'] ?? 'tictactoe') !== $gameType) {
+            if (!$this->matchmaking->matchesKey($item, $gameType, $boardSize, $skillBand)) {
                 $merged[] = $item;
                 continue;
             }
