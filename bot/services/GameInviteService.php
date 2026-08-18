@@ -9,7 +9,7 @@ require_once __DIR__ . '/invites/GameInviteValidationTrait.php';
 final class GameInviteService
 {
     use GameInviteCreationTrait;
-    use GameInviteActionTrait;
+    use GameInviteActionTrait { createRematch as private createRematchFromTrait; }
     use GameInviteStorageTrait;
     use GameInviteValidationTrait;
 
@@ -22,6 +22,23 @@ final class GameInviteService
         private GameCatalogService $catalog,
         private ChessRuntimeService $games
     ) {}
+
+    /**
+     * Preserve the established rematch lifecycle while keeping the public error
+     * reason opponent-neutral. Older cached clients may still call this endpoint
+     * after an automated match; they must not learn the technical opponent type.
+     */
+    public function createRematch(array &$db, array &$user, string $gameId): array
+    {
+        try {
+            return $this->createRematchFromTrait($db, $user, $gameId);
+        } catch (RuntimeException $error) {
+            if ($error->getMessage() === 'Реванш доступен только с живым соперником.') {
+                throw new RuntimeException('Реванш сейчас недоступен. Выберите «Сыграть ещё».');
+            }
+            throw $error;
+        }
+    }
 
     public function notificationSnapshot(array $invite, string $viewerId): array
     {
