@@ -12,6 +12,7 @@ on:
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/screens/home-screen.js'
       - 'app/assets/js/production-v110-acceptance-runtime.js'
+      - 'app/assets/js/production-v110-targeted-interactions.js'
       - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
       - 'app/assets/js/games/game-invites-v110.js'
       - 'bot/helpers/WebAppLaunchUrl.php'
@@ -23,6 +24,7 @@ on:
       - 'bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php'
       - 'bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php'
       - 'bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php'
+      - 'bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php'
       - 'bot/tests/Mvp17_5BotOpaqueRematchContractTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/NotificationActorSilentTerminalContractTest.php'
@@ -64,6 +66,7 @@ jobs:
           php -l bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
           php -l bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php
           php -l bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php
+          php -l bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php
           php -l bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
           php -l bot/tests/RematchOptimisticUxContractTest.php
           php -l bot/tests/NotificationActorSilentTerminalContractTest.php
@@ -82,6 +85,7 @@ jobs:
           node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
           node --input-type=module --check < app/assets/js/screens/home-screen.js
           node --input-type=module --check < app/assets/js/production-v110-acceptance-runtime.js
+          node --input-type=module --check < app/assets/js/production-v110-targeted-interactions.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110.js
 
@@ -96,6 +100,9 @@ jobs:
 
       - name: MVP-17.5 terminal and launch presentation contract
         run: php bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php
+
+      - name: MVP-17.5 Tic Tac Toe first-tap single-owner contract
+        run: php bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php
 
       - name: MVP-17.5 bot-opaque rematch contract
         run: php bot/tests/Mvp17_5BotOpaqueRematchContractTest.php

@@ -1,4 +1,3 @@
-import { state } from './state.js?v=27';
 import { toast } from './components/toast.js?v=41';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 
@@ -45,19 +44,10 @@ function interceptClick(event){
   const button = origin.closest('button, [role="button"]');
   if (!(button instanceof Element)) return;
 
-
   if (PLAY_IDS.has(String(button.id || '')) && currentLock()) {
     event.preventDefault();
     event.stopImmediatePropagation();
     showLockMessage();
-    return;
-  }
-
-  if (button.matches('#gameBoard[data-game-type="tictactoe"] [data-game-cell]')) {
-    if (!ticTacToeActionIsCurrent(button)) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
   }
 }
 
@@ -89,22 +79,4 @@ function ensureWeeklyDetailsButton(){
   if (!document.getElementById('weeklyMatchInfo')) {
     actions.insertAdjacentHTML('beforeend', '<button class="btn ghost" id="weeklyMatchInfo" type="button" aria-label="Подробнее о еженедельных бесплатных коинах">Подробнее</button>');
   }
-}
-
-function ticTacToeActionIsCurrent(button){
-  const game = state.activeGame;
-  if (!game?.id || String(game.game_type || '') !== 'tictactoe') return true;
-
-  const item = window.__MGW_V100_GAME_RUNTIME__?.games?.get?.(String(game.id));
-  const authoritative = item?.authoritative || game;
-  const viewerId = String(item?.viewer?.id || state.user?.id || '');
-  const cell = Number(button.dataset.gameCell);
-  const board = String(authoritative?.board || '');
-
-  if (!viewerId || !Number.isInteger(cell)) return false;
-  if (item?.running || Number(item?.queue?.length || 0) > 0 || item?.surrenderPending) return false;
-  if (String(authoritative?.status || '') !== 'active') return false;
-  if (String(authoritative?.turn || '') !== viewerId) return false;
-  if (cell < 0 || cell >= board.length || board[cell] !== '-') return false;
-  return true;
 }
