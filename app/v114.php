@@ -73,11 +73,11 @@ $html = str_replace(
 );
 $html = str_replace(
     './assets/js/main.js?v=98.4-wallet-15-3',
-    './assets/js/main.js?v=d2-unified-wallet-15-3',
+    './assets/js/main.js?v=d2-unified-wallet-15-3-r1742',
     $html
 );
 
-$mainScript = '<script type="module" src="./assets/js/main.js?v=d2-unified-wallet-15-3"></script>';
+$mainScript = '<script type="module" src="./assets/js/main.js?v=d2-unified-wallet-15-3-r1742"></script>';
 if (!str_contains($html, $mainScript)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
@@ -101,7 +101,7 @@ header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
-header('X-MGW-Frontend-Build: d2-unified-wallet-15-3');
+header('X-MGW-Frontend-Build: d2-unified-wallet-15-3-r1742');
 header('X-MGW-Phase-B-Build: phase-b-current-v122');
 header('X-MGW-Entry-Version: v' . $entryVersion);
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
