@@ -24,7 +24,10 @@ $matchHistory = is_int($matchHistoryStart) && is_int($matchHistoryEnd)
 $assert(is_string($historyService) && str_contains($historyService, '$repository->read($userId, $limit)'), 'History read path must use the staged DB snapshot without per-request full shadow synchronization.');
 $assert(is_string($historyService) && !str_contains($historyService, '$repository->synchronizeAndRead($db, $userId, $limit)'), 'User-facing history must not run the heavy full shadow synchronization on every read.');
 $assert(is_string($historyService) && str_contains($historyService, 'mergeCurrentMatchPresentation'), 'History must merge the current request snapshot so the just-finished match is immediately available.');
+$assert(is_string($historyService) && str_contains($historyService, "PRESENTATION_VERSION = 'mvp17-5-history-economy-live-owner-v3'"), 'History server owner must expose the live redeploy presentation marker.');
+$assert(is_string($historyService) && str_contains($historyService, "'presentation_version'"), 'History payload must carry the authoritative presentation version marker.');
 
+$assert(is_string($home) && str_contains($home, "window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';"), 'Actual History UI owner must carry the live redeploy build marker.');
 $assert($matchHistory !== '' && str_contains($matchHistory, "const game=item.game_title||'Матч';"), 'Actual History modal must display the real game title.');
 $assert($matchHistory !== '' && str_contains($matchHistory, "const economy=item.economy&&typeof item.economy==='object'?item.economy:null;"), 'Actual History modal must consume the canonical viewer economy projection.');
 $assert($matchHistory !== '' && str_contains($matchHistory, 'economy.ledger_delta'), 'Actual History modal must display the viewer ledger delta.');
@@ -38,8 +41,12 @@ $assert(is_string($result) && !str_contains($result, '${game.payout'), 'Result s
 $assert(is_string($result) && str_contains($result, 'id="newOpponent"') && str_contains($result, 'id="goHome"'), 'Accepted result action IDs must remain unchanged.');
 
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'v=80&mvp16=settings-row-owner&mvp17=match-history-economy'),
-    'Active v110 manifest must cache-bust the actual History modal owner while preserving the accepted settings-row identity.'
+    str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'v=81&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3'),
+    'Active v110 manifest must force a fresh actual History owner while preserving its accepted settings identity.'
+);
+$assert(
+    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=105&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3'),
+    'Active v110 manifest must force a fresh Result owner without changing its accepted clock or battleship ownership.'
 );
 $assert(is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"), 'Corrective pass must remain anchored to the actual Telegram v110 entry.');
 
