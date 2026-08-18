@@ -8,6 +8,8 @@ import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { t, setExplicitLocale } from '@mgw/i18n';
 
+window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';
+
 export function initHomeScreen(){
   document.addEventListener('click', event => {
     const target = event.target.closest('button, [role="button"]');
