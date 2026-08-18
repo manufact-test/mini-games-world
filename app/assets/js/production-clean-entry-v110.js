@@ -7,7 +7,6 @@ import { initV101SpeedRuntime } from './production-v101-speed-runtime-v102.js?v=
 import { initV101InviteSyncDedupe } from './production-v101-invite-sync-dedupe.js?v=101';
 import { initV101CacheSafety } from './production-v101-cache-safety.js?v=101';
 import { initV102BattleshipBridge } from './production-v102-battleship-bridge.js?v=102';
-import { initV102HistoryController } from './production-v102-history-controller.js?v=102';
 import { initV104GamePollTuning } from './production-v104-game-poll-tuning.js?v=104';
 import { initV109SearchSpeed } from './production-v109-search-speed.js?v=109';
 import { initV110AcceptanceRuntime } from './production-v110-acceptance-runtime.js?v=110';
@@ -34,7 +33,6 @@ initV101SpeedRuntime();
 initV101InviteSyncDedupe();
 initV101CacheSafety();
 initV102BattleshipBridge();
-initV102HistoryController();
 initV110TargetedInteractions();
 
 initV100SearchEventBridge();
