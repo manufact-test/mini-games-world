@@ -1,0 +1,82 @@
+name: MVP-17.4 Reconnect and timers v2
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/main.js'
+      - 'app/assets/js/presence-v115.js'
+      - 'bot/presence.php'
+      - 'bot/services/GameActionService.php'
+      - 'bot/services/GameNoContestSettlementService.php'
+      - 'bot/services/PresenceService.php'
+      - 'bot/services/ReconnectLifecycleService.php'
+      - 'bot/services/SessionService.php'
+      - 'bot/services/MatchPreparationClockService.php'
+      - 'bot/tests/Mvp17_4ReconnectLifecycleTest.php'
+      - 'bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php'
+      - 'bot/tests/Mvp17_2HumanPriorityFallbackTest.php'
+      - 'bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php'
+      - 'bot/tests/Mvp14r2GamesContractTest.php'
+      - 'bot/tests/Mvp14r2GamesBaselineTest.php'
+      - '.github/workflows/mvp17-4-reconnect-and-timers-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconnect-timers-focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: PHP syntax validation
+        run: |
+          set -Eeuo pipefail
+          php -l bot/presence.php
+          php -l bot/services/GameActionService.php
+          php -l bot/services/GameNoContestSettlementService.php
+          php -l bot/services/PresenceService.php
+          php -l bot/services/ReconnectLifecycleService.php
+          php -l bot/services/SessionService.php
+          php -l bot/services/MatchPreparationClockService.php
+          php -l bot/tests/Mvp17_4ReconnectLifecycleTest.php
+          php -l bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
+          php -l bot/tests/Mvp17_2HumanPriorityFallbackTest.php
+          php -l bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+          php -l bot/tests/Mvp14r2GamesContractTest.php
+          php -l bot/tests/Mvp14r2GamesBaselineTest.php
+
+      - name: JavaScript syntax validation
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module --check < app/assets/js/presence-v115.js
+          node --input-type=module --check < app/assets/js/main.js
+
+      - name: MVP-17.4 reconnect lifecycle
+        run: php bot/tests/Mvp17_4ReconnectLifecycleTest.php
+
+      - name: MVP-17.3 bot opacity regression
+        run: php bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
+
+      - name: MVP-17.2 human-priority regression
+        run: php bot/tests/Mvp17_2HumanPriorityFallbackTest.php
+
+      - name: MVP-17.2 matchmaking integration regression
+        run: php bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+
+      - name: Frozen mechanics contract for all eight games
+        run: php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Frozen terminal mechanics baseline for all eight games
+        run: php bot/tests/Mvp14r2GamesBaselineTest.php
