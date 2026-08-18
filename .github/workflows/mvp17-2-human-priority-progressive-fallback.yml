@@ -1,0 +1,77 @@
+name: MVP-17.2 Human priority and progressive fallback
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/api.php'
+      - 'bot/core/RuntimeConfigLoader.php'
+      - 'bot/services/MatchmakingQueue.php'
+      - 'bot/services/GameRuntimeService.php'
+      - 'bot/services/ChessRuntimeService.php'
+      - 'bot/services/GameService.php'
+      - 'bot/tests/Mvp17_2HumanPriorityFallbackTest.php'
+      - 'bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php'
+      - 'bot/tests/Mvp17_1MatchmakingQueueTest.php'
+      - 'bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php'
+      - 'bot/tests/BotFallbackQueueIdentityContractTest.php'
+      - 'bot/tests/Mvp14r2GamesContractTest.php'
+      - 'bot/tests/Mvp14r2GamesBaselineTest.php'
+      - '.github/workflows/mvp17-2-human-priority-progressive-fallback.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matchmaking-fallback-focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax validation
+        run: |
+          set -Eeuo pipefail
+          php -l bot/api.php
+          php -l bot/core/RuntimeConfigLoader.php
+          php -l bot/services/MatchmakingQueue.php
+          php -l bot/services/GameRuntimeService.php
+          php -l bot/services/ChessRuntimeService.php
+          php -l bot/services/GameService.php
+          php -l bot/tests/Mvp17_2HumanPriorityFallbackTest.php
+          php -l bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+          php -l bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php -l bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+          php -l bot/tests/BotFallbackQueueIdentityContractTest.php
+          php -l bot/tests/Mvp14r2GamesContractTest.php
+          php -l bot/tests/Mvp14r2GamesBaselineTest.php
+
+      - name: MVP-17.2 human-priority and widening policy
+        run: php bot/tests/Mvp17_2HumanPriorityFallbackTest.php
+
+      - name: MVP-17.2 runtime integration contract
+        run: php bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+
+      - name: MVP-17.1 queue policy regression
+        run: php bot/tests/Mvp17_1MatchmakingQueueTest.php
+
+      - name: MVP-17.1 integration and concurrency regression
+        run: php bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+
+      - name: Queue identity regression
+        run: php bot/tests/BotFallbackQueueIdentityContractTest.php
+
+      - name: Frozen mechanics contract for all eight games
+        run: php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Frozen terminal mechanics baseline for all eight games
+        run: php bot/tests/Mvp14r2GamesBaselineTest.php
