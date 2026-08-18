@@ -2,6 +2,7 @@ import { state } from './state.js?v=27';
 
 const LAUNCH_COUNTDOWN_STEP_MS = 1000;
 const LAUNCH_READY_HOLD_MS = 260;
+const TTT_FIRST_TAP_GRACE_MS = 400;
 
 const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
   initialized:false,
@@ -9,10 +10,12 @@ const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
   launchPresentation:null,
   pendingClockSnapshot:null,
   lastClockLabel:null,
+  deferredTap:null,
 };
 if (!('launchPresentation' in runtime)) runtime.launchPresentation = null;
 if (!('pendingClockSnapshot' in runtime)) runtime.pendingClockSnapshot = null;
 if (!('lastClockLabel' in runtime)) runtime.lastClockLabel = null;
+if (!('deferredTap' in runtime)) runtime.deferredTap = null;
 
 export function initV110AcceptanceRuntime(){
   if (runtime.initialized) return;
@@ -139,6 +142,10 @@ function guardPhaseBPreStartControls(event){
   const allowed = boardControl ? launchAllowsAction(game) : launchAllowsLeave(game);
   if (allowed) return;
 
+  if (boardControl instanceof HTMLButtonElement
+      && boardControl.matches('#gameBoard[data-game-type="tictactoe"] [data-game-cell]')) {
+    queueDeferredTicTacToeTap(boardControl, game);
+  }
   event.preventDefault();
   event.stopImmediatePropagation();
 }
@@ -154,30 +161,76 @@ function guardAndTrackTicTacToe(event){
     event.stopImmediatePropagation();
     return;
   }
+  runtime.deferredTap = null;
   runtime.pendingClockSnapshot = null;
   runtime.pending = { ...descriptor, startedAt:Date.now(), sawRequest:false };
   queuePendingPaint();
 }
 
-function validTicTacToeMove(button){
+function validTicTacToeMove(button, { requireLaunch = true } = {}){
   const game = state.activeGame;
   const id = String(game?.id || '');
   if (!id || String(game?.status || '') !== 'active') return null;
+  if (requireLaunch && !launchAllowsAction(game)) return null;
+
   const item = window.__MGW_V100_GAME_RUNTIME__?.games?.get?.(id);
-  const authoritative = item?.authoritative || game;
-  if (!launchAllowsAction(authoritative)) return null;
   const viewerId = String(item?.viewer?.id || state.user?.id || '');
   const cell = Number(button.dataset.gameCell);
-  const board = String(authoritative?.board || '');
-  const player = Array.isArray(authoritative?.players)
-    ? authoritative.players.find(value => String(value?.id || '') === viewerId) : null;
+  const board = String(game?.board || '');
+  const player = Array.isArray(game?.players)
+    ? game.players.find(value => String(value?.id || '') === viewerId) : null;
   const symbol = String(player?.symbol || '');
+
   if (!viewerId || !Number.isInteger(cell) || !['X','O'].includes(symbol)) return null;
+  if (button.disabled || button.classList.contains('locked') || button.textContent.trim() !== '') return null;
   if (item?.running || Number(item?.queue?.length || 0) > 0 || item?.surrenderPending) return null;
-  if (String(authoritative?.turn || '') !== viewerId) return null;
+  if (String(game?.turn || '') !== viewerId) return null;
   if (cell < 0 || cell >= board.length || board[cell] !== '-') return null;
   return { gameId:id, cell, symbol };
 }
+
+function queueDeferredTicTacToeTap(button, game){
+  const descriptor = validTicTacToeMove(button, { requireLaunch:false });
+  if (!descriptor) return false;
+  const delay = ticTacToeActionReadyDelayMs(game);
+  if (delay === null || delay > TTT_FIRST_TAP_GRACE_MS) return false;
+
+  const key = `${descriptor.gameId}:${descriptor.cell}`;
+  if (runtime.deferredTap?.key === key) return true;
+  const token = { key, gameId:descriptor.gameId, cell:descriptor.cell };
+  runtime.deferredTap = token;
+
+  window.setTimeout(() => {
+    if (runtime.deferredTap !== token) return;
+    runtime.deferredTap = null;
+    if (String(state.activeGame?.id || '') !== token.gameId) return;
+    const live = document.querySelector(`#gameBoard[data-game-type="tictactoe"] [data-game-cell="${token.cell}"]`);
+    if (!(live instanceof HTMLButtonElement) || !validTicTacToeMove(live)) return;
+    live.click();
+  }, Math.max(0, delay) + 18);
+  return true;
+}
+
+function ticTacToeActionReadyDelayMs(game){
+  if (launchAllowsAction(game)) return 0;
+  const phase = String(game?.launch_phase || '');
+  if (phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled') return null;
+
+  const clock = runtime.clock;
+  if (clock && clock.gameId === String(game?.id || '')) {
+    return Math.max(0, clock.start - performance.now());
+  }
+
+  const serverNowMs = finiteNumber(game?.server_now_ms);
+  if (serverNowMs === null) return null;
+  let readyAtMs = serverNowMs;
+  const startsAtMs = finiteNumber(game?.starts_at_ms);
+  const turnStartsAtMs = finiteNumber(game?.turn_starts_at_ms);
+  if (phase === 'countdown' && startsAtMs !== null) readyAtMs = Math.max(readyAtMs, startsAtMs);
+  if (turnStartsAtMs !== null) readyAtMs = Math.max(readyAtMs, turnStartsAtMs);
+  return Math.max(0, readyAtMs - serverNowMs);
+}
+
 function tickGameUi(){
   reconcilePendingMove();
   syncClock();
