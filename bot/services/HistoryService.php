@@ -3,13 +3,17 @@ declare(strict_types=1);
 
 final class HistoryService
 {
+    public const PRESENTATION_VERSION = 'mvp17-5-history-economy-live-owner-v3';
+
     public function __construct(private array $config, private UserService $users) {}
 
     public function userHistory(array $db, string $userId, int $limit = 24): array
     {
         $router = new RuntimeStorageRouter($this->config);
         if ($router->routeFor('history') !== RuntimeStorageRouter::DRIVER_DATABASE) {
-            return $this->formatHistory($db, $userId, $limit);
+            $history = $this->formatHistory($db, $userId, $limit);
+            $history['presentation_version'] = self::PRESENTATION_VERSION;
+            return $history;
         }
 
         $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
@@ -28,7 +32,9 @@ final class HistoryService
         // several seconds after a match. Read the staged DB snapshot directly and
         // merge the current request snapshot for the newest match presentation.
         $history = $repository->read($userId, $limit);
-        return $this->mergeCurrentMatchPresentation($history, $db, $userId);
+        $history = $this->mergeCurrentMatchPresentation($history, $db, $userId);
+        $history['presentation_version'] = self::PRESENTATION_VERSION;
+        return $history;
     }
 
     public function formatHistory(array $db, string $userId, int $limit = 24): array
