@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $invites = file_get_contents($root . '/app/assets/js/games/game-invites-v110.js');
+$rematchPolicy = file_get_contents($root . '/app/assets/js/games/game-invites-v110-rematch-policy-v175.js');
 $notifications = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v110r13.js');
 $manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
-if (!is_string($invites) || !is_string($notifications) || !is_string($manifest)) {
+if (!is_string($invites) || !is_string($rematchPolicy) || !is_string($notifications) || !is_string($manifest)) {
     throw new RuntimeException('Unable to read notification terminal runtime files.');
 }
 
@@ -63,8 +64,13 @@ if (!str_contains($invites, 'data-rematch-pending')
     throw new RuntimeException('Silent terminal correction must preserve the accepted optimistic rematch UX.');
 }
 
-if (!str_contains($manifest, 'game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent')) {
-    throw new RuntimeException('Silent terminal runtime cache-bust missing.');
+// MVP-17.5 adds a presentation-only rematch policy in front of this accepted
+// invite/notification runtime. It must preserve the exact silent-terminal owner.
+if (!str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=1')) {
+    throw new RuntimeException('Bot-opaque rematch policy cache-bust missing.');
+}
+if (!str_contains($rematchPolicy, './game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent')) {
+    throw new RuntimeException('Silent terminal runtime must remain underneath the MVP-17.5 rematch presentation policy.');
 }
 
 fwrite(STDOUT, "Notification actor silent terminal contract: OK\n");
