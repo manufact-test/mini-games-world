@@ -315,7 +315,7 @@ function finishGame(game, me){
   renderGame(game, me, false);
   if (runtime.resultOpened.has(id)) return;
   runtime.resultOpened.add(id);
-  window.requestAnimationFrame(() => window.setTimeout(() => openResultSheet(game, me), 80));
+  window.requestAnimationFrame(() => openResultSheet(game, me));
 }
 
 function requestLeaveGame(){
@@ -444,14 +444,18 @@ function openResultSheet(game, me, options = {}){
   text += goScoreText(game, me);
   text += dominoScoreText(game);
   const disabled = options.pending ? 'disabled aria-busy="true"' : '';
-  const summaryText = options.pending ? 'Подтверждаем итог матча…' : 'Загружаем итог матча…';
+  const summaryMarkup = resultSummaryPlaceholder(
+    game,
+    me,
+    options.pending ? 'подтверждаем…' : 'считаем…'
+  );
 
   openSheet(`
     <div class="sheet-head">
       <div><h2>${title}</h2><p>${text}</p></div>
       <button class="close" data-close-sheet type="button" ${disabled}>×</button>
     </div>
-    <div class="small-note" id="resultSummary" data-result-game-id="${escapeHtml(game?.id || '')}">${summaryText}</div>
+    <div class="small-note" id="resultSummary" data-result-game-id="${escapeHtml(game?.id || '')}">${summaryMarkup}</div>
     <div class="stack">
       <button class="btn primary full" id="newOpponent" type="button" ${disabled}>Найти нового соперника</button>
       <button class="btn ghost full" id="goHome" type="button" ${disabled}>В меню</button>
@@ -497,46 +501,45 @@ async function hydrateResultSummary(game, me){
     const match = matches.find(item => String(item?.id || '') === gameId);
     const current = document.getElementById('resultSummary');
     if (!(current instanceof HTMLElement) || String(current.dataset.resultGameId || '') !== gameId) return;
-    current.innerHTML = match ? resultSummaryMarkup(match) : escapeHtml(resultContextFromGame(game, me));
+    current.innerHTML = match
+      ? resultSummaryMarkup(match)
+      : resultSummaryPlaceholder(game, me, 'итог пока недоступен');
   } catch (error) {
     const current = document.getElementById('resultSummary');
     if (!(current instanceof HTMLElement) || String(current.dataset.resultGameId || '') !== gameId) return;
-    current.textContent = resultContextFromGame(game, me);
+    current.innerHTML = resultSummaryPlaceholder(game, me, 'итог пока недоступен');
   }
 }
 
 function resultSummaryMarkup(match){
   const context = resultContextFromMatch(match);
   const economy = match?.economy && typeof match.economy === 'object' ? match.economy : null;
-  if (!economy) return `<strong>${escapeHtml(context)}</strong><br>Финансовый итог пока недоступен.`;
+  if (!economy) return `<strong>${escapeHtml(context)}</strong><br>За игру: итог пока недоступен · Баланс: —`;
 
-  const entry = formatCoins(economy.entry);
-  const reward = formatCoins(economy.reward);
   const delta = formatCoinDelta(economy.ledger_delta);
   const balance = economy.new_balance === null || economy.new_balance === undefined
     ? '—'
     : formatCoins(economy.new_balance);
-  return `<strong>${escapeHtml(context)}</strong><br>Вход: ${escapeHtml(entry)} · Награда: ${escapeHtml(reward)}<br>Итог: ${escapeHtml(delta)} · Баланс: ${escapeHtml(balance)}`;
+  return `<strong>${escapeHtml(context)}</strong><br>За игру: ${escapeHtml(delta)} · Баланс: ${escapeHtml(balance)}`;
+}
+
+function resultSummaryPlaceholder(game, me, status){
+  const context = resultContextFromGame(game, me);
+  return `<strong>${escapeHtml(context)}</strong><br>За игру: ${escapeHtml(status)} · Баланс: —`;
 }
 
 function resultContextFromMatch(match){
   const title = String(match?.game_title || 'Матч');
-  const columns = Number(match?.board_columns || match?.board_size || 0);
-  const rows = Number(match?.board_rows || match?.board_size || 0);
-  const variant = columns > 0 && rows > 0 ? `${columns}×${rows}` : '';
   const opponent = String(match?.opponent || 'Соперник');
-  return [title, variant, `против ${opponent}`].filter(Boolean).join(' · ');
+  return [title, `против ${opponent}`].filter(Boolean).join(' · ');
 }
 
 function resultContextFromGame(game, me){
   const title = String(game?.game_title || 'Матч');
-  const columns = Number(game?.board_columns || game?.board_size || 0);
-  const rows = Number(game?.board_rows || game?.board_size || 0);
-  const variant = columns > 0 && rows > 0 ? `${columns}×${rows}` : '';
   const opponent = (Array.isArray(game?.players) ? game.players : [])
     .find(player => String(player?.id || '') !== String(me?.id || ''));
   const opponentName = String(opponent?.name || 'Соперник');
-  return [title, variant, `против ${opponentName}`].filter(Boolean).join(' · ');
+  return [title, `против ${opponentName}`].filter(Boolean).join(' · ');
 }
 
 function formatCoins(value){

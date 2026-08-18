@@ -49,7 +49,7 @@ $assert($matchHistory !== '' && !str_contains($matchHistory, 'const payout=item.
 $assert($matchHistory !== '' && !str_contains($matchHistory, 'short_id'), 'Actual History modal must not expose technical match hashes.');
 $assert($matchHistory !== '' && !str_contains($matchHistory, 'ставка'), 'Actual History modal must not use the old raw stake-only presentation.');
 
-$assert(is_string($result) && str_contains($result, 'await api.history()'), 'Result sheet must keep the exact finished-match History retry owner.');
+$assert(is_string($result) && str_contains($result, 'await api.history()'), 'Result sheet must keep the exact locked finished-match projection owner.');
 $assert(is_string($result) && !str_contains($result, '${game.payout'), 'Result sheet must remain free of raw global payout arithmetic.');
 $assert(is_string($result) && str_contains($result, 'id="newOpponent"') && str_contains($result, 'id="goHome"'), 'Accepted result action IDs must remain unchanged.');
 
@@ -62,8 +62,8 @@ foreach ([34, 38, 46, 47] as $version) {
     $assert(str_contains($url, 'v=1134&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history'), "API alias v{$version} must cache-bust the fast menu History owner while preserving the accepted prefix.");
 }
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=105&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3'),
-    'Active v110 manifest must leave the accepted Result owner cache identity unchanged.'
+    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=106&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1'),
+    'Active v110 manifest must publish the accepted compact Result owner cache identity.'
 );
 $assert(is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"), 'Corrective pass must remain anchored to the actual Telegram v110 entry.');
 
