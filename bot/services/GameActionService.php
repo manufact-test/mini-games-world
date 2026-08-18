@@ -33,6 +33,13 @@ final class GameActionService
             return $game;
         }
 
+        // Reconnect is a match-wide pause. Keep this guard above every engine so
+        // none of the eight games can advance while an opponent owns a live
+        // reconnect window.
+        if (!empty($game['reconnect_v2']['paused'])) {
+            throw new RuntimeException('Соперник переподключается. Подождите.');
+        }
+
         $phaseManaged = array_key_exists('launch_phase', $game);
         if ($phaseManaged) {
             $storedGame =& $db['games'][$gameId];

@@ -16,6 +16,7 @@ const runtime = window.__MGW_V115_PRESENCE__ ||= {
   heartbeatTimer:null,
   statusTimer:null,
   retryTimer:null,
+  initialPingPromise:null,
   pingBusy:false,
   statusBusy:false,
   left:false,
@@ -31,7 +32,11 @@ export function initV115Presence(){
   }, { once:true });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') resumePresence();
+    if (document.visibilityState === 'visible') {
+      resumePresence();
+    } else {
+      sendLifecycleBeacon('background');
+    }
   });
 
   window.addEventListener('pageshow', () => {
@@ -39,7 +44,7 @@ export function initV115Presence(){
   }, { capture:true });
 
   window.addEventListener('pagehide', event => {
-    if (!event.persisted) sendLeaveBeacon();
+    if (!event.persisted) sendLifecycleBeacon('leave');
   }, { capture:true });
 
   const telegram = getTelegram();
@@ -59,12 +64,18 @@ export function initV115Presence(){
   resumePresence();
 }
 
+export function waitForV115InitialPresence(){
+  return runtime.initialPingPromise || Promise.resolve(false);
+}
+
 function resumePresence(){
-  if (document.visibilityState !== 'visible') return;
+  if (document.visibilityState !== 'visible') return Promise.resolve(false);
   runtime.left = false;
   window.clearTimeout(runtime.retryTimer);
   runtime.retryTimer = null;
-  void pingPresence();
+  const ping = pingPresence();
+  if (!runtime.initialPingPromise) runtime.initialPingPromise = ping;
+  return ping;
 }
 
 async function pingPresence(){
@@ -99,7 +110,7 @@ async function refreshStatus(){
 function applyOnlinePlayers(stats){
   if (!stats || !Object.prototype.hasOwnProperty.call(stats, 'online_players')) return;
   state.stats = {
-    ...(state.stats && typeof state.stats === 'object' ? state.stats : {}),
+    ...(state.stats && typeof state.stats === 'object' ? { ...state.stats } : {}),
     online_players:stats.online_players,
   };
   window.__MGW_V115_PRESENCE_ONLINE__ = Number(stats.online_players || 0);
@@ -132,7 +143,6 @@ async function requestPresence(action){
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body:JSON.stringify(payload(action)),
-      keepalive:action === 'leave',
       priority:'high',
       cache:'no-store',
       signal:controller.signal,
@@ -145,10 +155,13 @@ async function requestPresence(action){
   }
 }
 
-function sendLeaveBeacon(){
-  if (runtime.left) return;
-  runtime.left = true;
-  const body = JSON.stringify(payload('leave'));
+function sendLifecycleBeacon(action){
+  if (action === 'leave') {
+    if (runtime.left) return;
+    runtime.left = true;
+  }
+
+  const body = JSON.stringify(payload(action));
   try {
     const blob = new Blob([body], { type:'application/json' });
     if (navigator.sendBeacon?.(PRESENCE_URL, blob)) return;

@@ -69,6 +69,13 @@ final class SessionService
             return true;
         }
 
+        // MVP-17.4: a different supported client may take ownership only while
+        // the server has an explicit, still-live reconnect window for this same
+        // active game. Generic search/game session locking remains unchanged.
+        if ($this->hasActiveReconnectWindow($user)) {
+            return true;
+        }
+
         return $this->isExpired($user);
     }
 
@@ -95,6 +102,7 @@ final class SessionService
             && in_array($status, ['searching', 'playing'], true)
             && $activeId !== ''
             && $activeId !== $sessionId
+            && !$this->hasActiveReconnectWindow($user)
             && !$this->isExpired($user);
 
         $message = null;
@@ -123,6 +131,20 @@ final class SessionService
             $user['active_session_id'] = null;
             $user['active_session_at'] = null;
         }
+    }
+
+    private function hasActiveReconnectWindow(array $user): bool
+    {
+        if ((string)($user['status'] ?? '') !== 'playing') return false;
+
+        $currentGameId = trim((string)($user['current_game_id'] ?? ''));
+        $reconnectGameId = trim((string)($user['reconnect_game_id'] ?? ''));
+        if ($currentGameId === '' || $reconnectGameId === '' || $currentGameId !== $reconnectGameId) {
+            return false;
+        }
+
+        $reconnectUntil = strtotime((string)($user['reconnect_until'] ?? '')) ?: 0;
+        return $reconnectUntil > time();
     }
 
     private function isExpired(array $user): bool
