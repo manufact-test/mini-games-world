@@ -44,11 +44,18 @@ final class ReconnectLifecycleService
             $reconnect = $game['reconnect_v2'] ?? null;
             if (is_array($reconnect) && !empty($reconnect['paused'])) {
                 $players = is_array($reconnect['players'] ?? null) ? $reconnect['players'] : [];
-                if (count($players) >= 2) return true;
+                if ($this->allHumanPlayersDisconnected($game, $players)) return true;
 
                 foreach ($players as $playerState) {
                     $deadlineMs = (int)($playerState['deadline_ms'] ?? 0);
                     if ($deadlineMs > 0 && $deadlineMs <= $nowMs) return true;
+                }
+
+                foreach ($this->humanPlayerIds($game) as $playerId) {
+                    if (isset($players[$playerId])) continue;
+                    if ($this->presence->gameplaySnapshot($playerId)['state'] === 'disconnected') {
+                        return true;
+                    }
                 }
 
                 if (in_array($action, ['ping', 'status'], true)
@@ -97,6 +104,35 @@ final class ReconnectLifecycleService
             unset($game);
         }
 
+        // If the match is already paused for one player and the other human
+        // disconnects too, settle no-contest immediately. Do not wait for either
+        // individual reconnect deadline and do not count a played game.
+        foreach (array_keys($db['games'] ?? []) as $gameId) {
+            if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) continue;
+            $game = $db['games'][$gameId];
+            if (!$this->isReconnectManagedGame($game) || empty($game['reconnect_v2']['paused'])) continue;
+
+            $players = is_array($game['reconnect_v2']['players'] ?? null) ? $game['reconnect_v2']['players'] : [];
+            $candidate = null;
+            foreach ($this->humanPlayerIds($game) as $playerId) {
+                if (isset($players[$playerId])) continue;
+                $snapshot = $this->presence->gameplaySnapshot($playerId);
+                if ((string)($snapshot['state'] ?? '') !== 'disconnected') continue;
+                $candidate = [
+                    'player_id' => $playerId,
+                    'disconnected_at_ms' => $this->disconnectedAtFromPresence($snapshot, $nowMs),
+                ];
+                break;
+            }
+            if (is_array($candidate)) {
+                $this->markPlayerDisconnected(
+                    $db,
+                    (string)$candidate['player_id'],
+                    (int)$candidate['disconnected_at_ms']
+                );
+            }
+        }
+
         // A fresh client ping can arrive before an opponent had a chance to
         // observe a stale foreground lease. Preserve that stale state from the
         // pre-ping snapshot, enter reconnect, then restore in the same request.
@@ -110,11 +146,8 @@ final class ReconnectLifecycleService
         // human match. Background leases are intentionally NOT disconnects.
         foreach (array_keys($db['games'] ?? []) as $gameId) {
             if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) continue;
-            $game =& $db['games'][$gameId];
-            if (!$this->isReconnectManagedGame($game) || !empty($game['reconnect_v2']['paused'])) {
-                unset($game);
-                continue;
-            }
+            $game = $db['games'][$gameId];
+            if (!$this->isReconnectManagedGame($game) || !empty($game['reconnect_v2']['paused'])) continue;
 
             foreach ($this->humanPlayerIds($game) as $playerId) {
                 $snapshot = $this->presence->gameplaySnapshot($playerId);
@@ -126,7 +159,6 @@ final class ReconnectLifecycleService
                 );
                 break;
             }
-            unset($game);
         }
 
         // A different supported client may take ownership only after the match
@@ -222,7 +254,8 @@ final class ReconnectLifecycleService
             $db['users'][$playerId]['reconnect_until'] = gmdate('c', intdiv($deadlineMs, 1000));
         }
 
-        if (count($game['reconnect_v2']['players']) >= count($this->humanPlayerIds($game))) {
+        $players = is_array($game['reconnect_v2']['players'] ?? null) ? $game['reconnect_v2']['players'] : [];
+        if ($this->allHumanPlayersDisconnected($game, $players)) {
             $this->noContest->cancel(
                 $db,
                 $game,
@@ -286,7 +319,7 @@ final class ReconnectLifecycleService
         if (!is_array($reconnect) || empty($reconnect['paused'])) return;
 
         $players = is_array($reconnect['players'] ?? null) ? $reconnect['players'] : [];
-        if (count($players) >= count($this->humanPlayerIds($game))) {
+        if ($this->allHumanPlayersDisconnected($game, $players)) {
             $this->noContest->cancel(
                 $db,
                 $game,
@@ -389,6 +422,17 @@ final class ReconnectLifecycleService
             $result[] = $playerId;
         }
         return array_values(array_unique($result));
+    }
+
+    private function allHumanPlayersDisconnected(array $game, array $players): bool
+    {
+        $humanIds = $this->humanPlayerIds($game);
+        if (count($humanIds) < 2) return false;
+
+        foreach ($humanIds as $humanId) {
+            if (!isset($players[$humanId])) return false;
+        }
+        return true;
     }
 
     private function otherPlayerId(array $game, string $playerId): string
