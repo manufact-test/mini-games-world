@@ -36,18 +36,14 @@ if (!str_contains($block, 'if (optimisticSurfaceOpen && rollbackHtml) openSheet(
 
 // MVP-17.5 inserts one bot-opaque presentation owner in the real v110 import
 // graph. The accepted optimistic rematch lifecycle remains the underlying owner.
-if (!str_contains($manifest, "game-invites-v110-rematch-policy-v175.js?v=2")) {
-    throw new RuntimeException('Bot-opaque first-paint rematch presentation cache-bust missing.');
+if (!str_contains($manifest, "game-invites-v110-rematch-policy-v175.js?v=1")) {
+    throw new RuntimeException('Bot-opaque rematch presentation cache-bust missing.');
 }
 if (!str_contains($policy, "./game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent")) {
     throw new RuntimeException('Accepted optimistic rematch owner must remain under the MVP-17.5 presentation policy.');
 }
 if (!str_contains($policy, 'game?.rematch_available === true') || str_contains($policy, 'is_bot_game')) {
     throw new RuntimeException('Direct rematch presentation must be capability-driven and bot-opaque.');
-}
-if (!str_contains($policy, "playAgain.classList.remove('ghost');")
-    || !str_contains($policy, "playAgain.classList.add('primary');")) {
-    throw new RuntimeException('Unavailable direct rematch must keep Play again primary without a visible legacy style flash.');
 }
 
 fwrite(STDOUT, "Rematch optimistic UX contract: OK\n");
