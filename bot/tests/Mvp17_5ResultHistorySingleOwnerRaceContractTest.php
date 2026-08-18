@@ -37,7 +37,7 @@ $assert($matchHistory !== '' && !str_contains($matchHistory, 'short_id'), 'Match
 $assert($matchHistory !== '' && !str_contains($matchHistory, 'ставка'), 'Match History must not expose the legacy stake-only row.');
 
 $assert(is_string($client) && str_contains($client, "import { state } from '../state.js?v=27';"), 'Shared API owner must identify the currently finished game.');
-$assert(is_string($client) && str_contains($client, "const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;"), 'Finished Result must use the active read-only watcher route.');
+$assert(is_string($client) && str_contains($client, 'const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;'), 'Finished Result must use the active read-only watcher route.');
 $assert(is_string($client) && str_contains($client, "String(game?.status || '') === 'finished'"), 'Locked Result read must activate only for a finished active game.');
 $assert(is_string($client) && str_contains($client, "return requestUrl(RESULT_WATCH_URL, { gameId:targetGameId, mode:'result' });"), 'Finished Result must request one exact locked projection snapshot.');
 $assert(is_string($client) && !str_contains($client, 'HISTORY_FRESHNESS_DELAYS_MS'), 'Result must not hide storage races behind arbitrary retry delays.');
@@ -46,11 +46,11 @@ $assert(is_string($client) && str_contains($client, "return request('history');"
 $assert(is_string($client) && str_contains($client, "historyFast: () => request('history')"), 'Accepted prefetched menu History fast read must remain unchanged.');
 
 $assert(is_string($gameWatch) && str_contains($gameWatch, 'LOCK_SH | LOCK_NB'), 'High-frequency watcher must preserve its accepted non-blocking games-only read.');
-$assert(is_string($gameWatch) && str_contains($gameWatch, "clean_string(\$payload['mode'] ?? '', 24) === 'result'"), 'Watcher must expose the locked path only for explicit Result mode.');
+$assert(is_string($gameWatch) && str_contains($gameWatch, 'clean_string($payload[\'mode\'] ?? \'\', 24) === \'result\''), 'Watcher must expose the locked path only for explicit Result mode.');
 $assert(is_string($gameWatch) && str_contains($gameWatch, "['users', 'games', 'transactions']"), 'Result mode must read game context and ledger rows from one coherent shared-lock snapshot.');
 $assert(is_string($gameWatch) && str_contains($gameWatch, 'new HistoryService($config, new UserService($config))'), 'Result mode must reuse the existing server History presentation owner.');
 $assert(is_string($gameWatch) && str_contains($gameWatch, '$formatter->matchHistory($resultSnapshot, $userId, 1)'), 'Result mode must format only the exact finished game through canonical Match History presentation.');
-$assert(is_string($gameWatch) && str_contains($gameWatch, "!is_array(\$match['economy'] ?? null)"), 'Result mode must not publish a terminal summary before authoritative ledger economy exists.');
+$assert(is_string($gameWatch) && str_contains($gameWatch, '!is_array($match[\'economy\'] ?? null)'), 'Result mode must not publish a terminal summary before authoritative ledger economy exists.');
 $assert(is_string($gameWatch) && str_contains($gameWatch, "'presentation_version' => 'mvp17-5-result-locked-projection-v1'"), 'Result response must expose its locked projection build marker.');
 
 $assert(is_string($result) && str_contains($result, 'await api.history()'), 'Game screen must remain the single Result UI owner and consume the shared API abstraction.');
