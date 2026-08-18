@@ -22,8 +22,13 @@ final class HistoryService
             PdoConnectionFactory::create($databaseConfig),
             $this
         );
-        $result = $repository->synchronizeAndRead($db, $userId, $limit);
-        return is_array($result['history'] ?? null) ? $result['history'] : [];
+
+        // History is a read path. The old flow re-synchronized the whole realtime
+        // and economy shadow on every user read, which made the result sheet wait
+        // several seconds after a match. Read the staged DB snapshot directly and
+        // merge the current request snapshot for the newest match presentation.
+        $history = $repository->read($userId, $limit);
+        return $this->mergeCurrentMatchPresentation($history, $db, $userId);
     }
 
     public function formatHistory(array $db, string $userId, int $limit = 24): array
@@ -32,6 +37,34 @@ final class HistoryService
             'operations' => $this->balanceOperations($db, $userId, $limit),
             'matches' => $this->matchHistory($db, $userId, 12),
         ];
+    }
+
+    private function mergeCurrentMatchPresentation(array $history, array $db, string $userId): array
+    {
+        $databaseMatches = is_array($history['matches'] ?? null) ? $history['matches'] : [];
+        $currentMatches = $this->matchHistory($db, $userId, 12);
+        if ($currentMatches === []) {
+            $history['matches'] = array_slice($databaseMatches, 0, 12);
+            return $history;
+        }
+
+        $merged = [];
+        $seen = [];
+        foreach ($currentMatches as $match) {
+            $id = trim((string)($match['id'] ?? ''));
+            if ($id !== '') $seen[$id] = true;
+            $merged[] = $match;
+        }
+        foreach ($databaseMatches as $match) {
+            if (!is_array($match)) continue;
+            $id = trim((string)($match['id'] ?? ''));
+            if ($id !== '' && isset($seen[$id])) continue;
+            $merged[] = $match;
+            if ($id !== '') $seen[$id] = true;
+        }
+
+        $history['matches'] = array_slice($merged, 0, 12);
+        return $history;
     }
 
     public function balanceOperations(array $db, string $userId, int $limit = 24): array
