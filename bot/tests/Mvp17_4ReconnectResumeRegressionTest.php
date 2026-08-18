@@ -148,9 +148,17 @@ try {
     );
 
     $index = file_get_contents(dirname($root) . '/app/index.html');
+    $entry = file_get_contents(dirname($root) . '/app/v114.php');
     $main = file_get_contents(dirname($root) . '/app/assets/js/main.js');
-    $assert(is_string($index) && str_contains($index, './assets/js/main.js?v=1742'), 'Entrypoint must bust the cached main reconnect bundle.');
-    $assert(is_string($main) && str_contains($main, "./presence-v115.js?v=1742"), 'Main bundle must bust the cached presence module.');
+    $assert(
+        is_string($index) && str_contains($index, './assets/js/main.js?v=98.4-wallet-15-3'),
+        'Stable index source anchor must remain unchanged for canonical entry transforms.'
+    );
+    $assert(
+        is_string($entry) && str_contains($entry, './assets/js/main.js?v=d2-unified-wallet-15-3-r1742'),
+        'Canonical v114 entry owner must cache-bust the reconnect main bundle.'
+    );
+    $assert(is_string($main) && str_contains($main, "./presence-v115.js?v=1742"), 'Main bundle must cache-bust the reconnect presence module.');
 
     $clockSource = file_get_contents($root . '/services/MatchPreparationClockService.php');
     $assert(
