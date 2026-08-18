@@ -33,10 +33,6 @@ final class MatchPreparationRuntimeService
         }
 
         $game =& $db['games'][$gameId];
-        if (!array_key_exists('launch_phase', $game)) {
-            return $game;
-        }
-
         $userId = (string)($user['id'] ?? '');
         $playerIds = array_map('strval', $game['player_ids'] ?? []);
         $isCurrentParticipant = $userId !== ''
@@ -44,20 +40,26 @@ final class MatchPreparationRuntimeService
             && in_array($userId, $playerIds, true);
 
         // A stale response may still project an older game, but it must never
-        // advance, settle or mark readiness for lifecycle ownership the user no
-        // longer holds.
+        // advance, settle or claim reconnect/session ownership for lifecycle the
+        // user no longer holds.
         if (!$isCurrentParticipant) {
             return $game;
         }
 
-        // An authenticated game_state request from the current participant is
-        // itself authoritative proof that this client has returned. Do not leave
-        // the match frozen merely because the separate presence heartbeat lost a
-        // race during app reopen. Reuse the one reconnect lifecycle owner so its
-        // exact 60-second deadline, clock restoration and no-contest rules remain
-        // unchanged.
+        // Reconnect ownership applies to both Phase-B games and compatible active
+        // games that predate launch_phase. An authenticated game_state request
+        // from the current participant is authoritative proof that the client has
+        // returned, so release a live reconnect pause before any Phase-B-only
+        // early return. Reuse the single reconnect owner; do not duplicate clocks.
         $this->reconnect->synchronize($db, $userId, $sessionId, 'ping', []);
         if (($game['status'] ?? '') !== 'active') {
+            return $game;
+        }
+
+        // Compatibility reads must not migrate an existing legacy match into the
+        // newer preparation state machine. Reconnect has already been restored;
+        // only Phase-B clock/readiness work is gated by launch_phase.
+        if (!array_key_exists('launch_phase', $game)) {
             return $game;
         }
 
