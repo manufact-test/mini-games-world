@@ -6,6 +6,7 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'app/index.html'
+      - 'app/v114.php'
       - 'app/assets/js/main.js'
       - 'app/assets/js/presence-v115.js'
       - 'bot/presence.php'
@@ -46,6 +47,7 @@ jobs:
       - name: PHP syntax validation
         run: |
           set -Eeuo pipefail
+          php -l app/v114.php
           php -l bot/presence.php
           php -l bot/services/GameActionService.php
           php -l bot/services/GameNoContestSettlementService.php
