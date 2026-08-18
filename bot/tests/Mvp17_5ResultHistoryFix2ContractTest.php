@@ -41,7 +41,7 @@ $assert(is_string($result) && !str_contains($result, '${game.payout'), 'Result s
 $assert(is_string($result) && str_contains($result, 'id="newOpponent"') && str_contains($result, 'id="goHome"'), 'Accepted result action IDs must remain unchanged.');
 
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'v=81&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3'),
+    str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3'),
     'Active v110 manifest must force a fresh actual History owner while preserving its accepted settings identity.'
 );
 $assert(
