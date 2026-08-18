@@ -13,6 +13,8 @@ on:
       - 'bot/services/GameInviteService.php'
       - 'bot/services/invites/GameInviteActionTrait.php'
       - 'bot/tests/Mvp17_5BotOpaqueRematchContractTest.php'
+      - 'bot/tests/RematchOptimisticUxContractTest.php'
+      - 'bot/tests/NotificationActorSilentTerminalContractTest.php'
       - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/tests/Mvp17_4ReconnectResumeRegressionTest.php'
       - 'bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php'
@@ -47,6 +49,8 @@ jobs:
           php -l bot/services/GameInviteService.php
           php -l bot/services/invites/GameInviteActionTrait.php
           php -l bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
+          php -l bot/tests/RematchOptimisticUxContractTest.php
+          php -l bot/tests/NotificationActorSilentTerminalContractTest.php
           php -l bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
           php -l bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
           php -l bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
@@ -61,6 +65,12 @@ jobs:
 
       - name: MVP-17.5 bot-opaque rematch contract
         run: php bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
+
+      - name: Accepted optimistic rematch regression
+        run: php bot/tests/RematchOptimisticUxContractTest.php
+
+      - name: Accepted notification terminal regression
+        run: php bot/tests/NotificationActorSilentTerminalContractTest.php
 
       - name: MVP-17.4 active v110 reconnect regression
         run: php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
