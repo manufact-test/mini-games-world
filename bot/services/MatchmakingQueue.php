@@ -6,11 +6,15 @@ declare(strict_types=1);
  *
  * The queue identity is intentionally independent from any transport:
  * internal user id + game type + requested board size + skill band.
- * Progressive skill widening is deliberately out of scope for MVP-17.1.
+ * MVP-17.2 keeps the first eight seconds human-only and progressively widens
+ * server-assigned ordinal skill bands while preserving hard server limits.
  */
 final class MatchmakingQueue
 {
     public const DEFAULT_SKILL_BAND = 'unrated';
+    public const HUMAN_PRIORITY_SEC = 8;
+    public const SKILL_WIDEN_STEP_SEC = 2;
+    public const MAX_SKILL_BAND_DISTANCE = 3;
 
     public function normalizeSkillBand(mixed $value): string
     {
@@ -28,9 +32,22 @@ final class MatchmakingQueue
 
     public function matchesKey(array $item, string $gameType, int $boardSize, string $skillBand): bool
     {
-        return (string)($item['game_type'] ?? 'tictactoe') === $gameType
-            && $this->requestedBoardSize($item) === $boardSize
-            && $this->normalizeSkillBand($item['skill_band'] ?? null) === $this->normalizeSkillBand($skillBand);
+        if ((string)($item['game_type'] ?? 'tictactoe') !== $gameType
+            || $this->requestedBoardSize($item) !== $boardSize) {
+            return false;
+        }
+
+        $candidateBand = $this->normalizeSkillBand($item['skill_band'] ?? null);
+        $requestedBand = $this->normalizeSkillBand($skillBand);
+        if ($candidateBand === $requestedBand) {
+            return true;
+        }
+
+        return $this->skillBandsCompatible(
+            $candidateBand,
+            $requestedBand,
+            $this->queueWaitSeconds($item)
+        );
     }
 
     public function firstCandidate(
@@ -60,6 +77,31 @@ final class MatchmakingQueue
         }
 
         return null;
+    }
+
+    public function queueWaitSeconds(?array $item, ?int $now = null): int
+    {
+        if (!$item) return 0;
+
+        $created = strtotime((string)($item['created_at'] ?? '')) ?: 0;
+        if ($created <= 0) return 0;
+
+        return max(0, ($now ?? time()) - $created);
+    }
+
+    public function botFallbackAllowed(?array $item, ?int $now = null): bool
+    {
+        return $this->queueWaitSeconds($item, $now) >= self::HUMAN_PRIORITY_SEC;
+    }
+
+    public function allowedSkillDistanceForWait(int $waitSeconds): int
+    {
+        if ($waitSeconds <= 0) return 0;
+
+        return min(
+            self::MAX_SKILL_BAND_DISTANCE,
+            intdiv(max(0, $waitSeconds), self::SKILL_WIDEN_STEP_SEC)
+        );
     }
 
     public function activeGameForUser(array $db, string $userId): ?array
@@ -143,7 +185,39 @@ final class MatchmakingQueue
             'matchmaking_queue_depth' => (int)($telemetry['matchmaking_queue_depth'] ?? count($db['queue'] ?? [])),
             'matchmaking_wait_ms' => (int)($telemetry['matchmaking_wait_ms'] ?? 0),
             'matchmaking_duplicate_match_prevented_total' => (int)($telemetry['matchmaking_duplicate_match_prevented_total'] ?? 0),
+            'matchmaking_human_match_total' => (int)($telemetry['matchmaking_human_match_total'] ?? 0),
+            'matchmaking_bot_match_total' => (int)($telemetry['matchmaking_bot_match_total'] ?? 0),
         ];
+    }
+
+    private function skillBandsCompatible(string $candidateBand, string $requestedBand, int $waitSeconds): bool
+    {
+        if ($candidateBand === self::DEFAULT_SKILL_BAND || $requestedBand === self::DEFAULT_SKILL_BAND) {
+            return false;
+        }
+
+        $candidateRank = $this->skillBandRank($candidateBand);
+        $requestedRank = $this->skillBandRank($requestedBand);
+        if ($candidateRank === null || $requestedRank === null) {
+            return false;
+        }
+
+        return abs($candidateRank - $requestedRank) <= $this->allowedSkillDistanceForWait($waitSeconds);
+    }
+
+    /**
+     * MVP-17.2 owns only the widening mechanism, not the hidden-skill model.
+     * A later skill owner may assign an ordinal token such as band:12. Unknown
+     * named bands remain exact-only rather than inventing an ordering here.
+     */
+    private function skillBandRank(string $band): ?int
+    {
+        if (!preg_match('/^band:(\d{1,4})$/', $band, $match)) {
+            return null;
+        }
+
+        $rank = (int)$match[1];
+        return $rank >= 0 && $rank <= 9999 ? $rank : null;
     }
 
     private function requestedBoardSize(array $item): int

@@ -27,43 +27,19 @@ function mgw_mark_matchmaking_presence(array &$user, string $gameType, int $boar
     $user['last_matchmaking_at'] = now_iso();
 }
 
-function mgw_has_other_recent_human(array $data, string $userId): bool
+function mgw_observe_matchmaking_source(array &$data, array $game): void
 {
-    $now = time();
-    foreach ($data['users'] ?? [] as $otherId => $other) {
-        $otherId = (string)$otherId;
-        if ($otherId === '' || $otherId === $userId || str_starts_with($otherId, 'bot_') || !is_array($other)) continue;
-        $lastSeen = strtotime((string)($other['last_seen_at'] ?? '')) ?: 0;
-        if ($lastSeen > 0 && $now - $lastSeen <= 90) return true;
+    if (!isset($data['system']) || !is_array($data['system'])) {
+        $data['system'] = [];
     }
-    return false;
-}
-
-function mgw_prepare_match_bot_fallback(array &$data, string $userId, bool $otherRecentHuman): void
-{
-    if (!isset($data['queue']) || !is_array($data['queue'])) return;
-
-    foreach ($data['queue'] as &$item) {
-        if (!is_array($item) || (string)($item['user_id'] ?? '') !== $userId) continue;
-
-        // Queue creation time is immutable once realtime first projects the row.
-        // Prepare the complete fallback policy inside the original start_search
-        // transaction so every later request sees one stable queue identity.
-        if ($otherRecentHuman) {
-            // The bounded five-second policy starts two seconds in, preserving the
-            // existing real-world ~3 second window for a human match to win first.
-            $item['created_at'] = gmdate('c', time() - 2);
-            $item['status'] = 'bot_fallback_5s';
-            $item['updated_at'] = now_iso();
-        } else {
-            // Standard bot fallback is 15 seconds. Backdating by 12 seconds leaves
-            // the same actual three-second human window without a later mutation.
-            $item['created_at'] = gmdate('c', time() - 12);
-        }
-        unset($item);
-        return;
+    if (!isset($data['system']['telemetry']) || !is_array($data['system']['telemetry'])) {
+        $data['system']['telemetry'] = [];
     }
-    unset($item);
+
+    $key = !empty($game['is_bot_game'])
+        ? 'matchmaking_bot_match_total'
+        : 'matchmaking_human_match_total';
+    $data['system']['telemetry'][$key] = (int)($data['system']['telemetry'][$key] ?? 0) + 1;
 }
 
 try {
@@ -214,16 +190,11 @@ try {
                     : '';
                 $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
 
-                if (empty($search['game'])) {
-                    mgw_prepare_match_bot_fallback(
-                        $data,
-                        $userId,
-                        mgw_has_other_recent_human($data, $userId)
-                    );
-                }
-
                 if (!empty($search['game']['id'])) {
                     $gameId = (string)$search['game']['id'];
+                    if ($existingGameIdBeforeSearch === '' || $existingGameIdBeforeSearch !== $gameId) {
+                        mgw_observe_matchmaking_source($data, $search['game']);
+                    }
                     $finalizedGame = GameLaunchFinalizationService::finalizeStoredGame(
                         $data,
                         $gameId,
@@ -272,6 +243,9 @@ try {
                     $game = $games->maybeCreateBotGameForSearchingUser($data, $user);
                     if (is_array($game)) {
                         $createdFallbackGameId = (string)($game['id'] ?? '');
+                        if ($createdFallbackGameId !== '') {
+                            mgw_observe_matchmaking_source($data, $game);
+                        }
                     }
                 }
 

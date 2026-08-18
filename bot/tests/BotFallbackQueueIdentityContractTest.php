@@ -5,9 +5,16 @@ $root = dirname(__DIR__);
 $api = file_get_contents($root . '/api.php');
 $searchSpeed = file_get_contents($root . '/search-speed.php');
 $runtime = file_get_contents($root . '/services/ChessRuntimeService.php');
+$queuePolicy = file_get_contents($root . '/services/MatchmakingQueue.php');
+$configLoader = file_get_contents($root . '/core/RuntimeConfigLoader.php');
 $identity = file_get_contents($root . '/realtime/RuntimeRealtimeIdentityTrait.php');
 
-if (!is_string($api) || !is_string($searchSpeed) || !is_string($runtime) || !is_string($identity)) {
+if (!is_string($api)
+    || !is_string($searchSpeed)
+    || !is_string($runtime)
+    || !is_string($queuePolicy)
+    || !is_string($configLoader)
+    || !is_string($identity)) {
     throw new RuntimeException('Bot fallback queue identity sources are unavailable.');
 }
 
@@ -28,22 +35,30 @@ $assert(
     'Search speed checkpoint must not mutate realtime queue fields.'
 );
 $assert(
-    str_contains($api, 'function mgw_prepare_match_bot_fallback('),
-    'Bot fallback policy must be prepared by the authoritative start_search owner.'
+    !str_contains($api, 'function mgw_prepare_match_bot_fallback(')
+        && !str_contains($api, "gmdate('c', time() - 2)")
+        && !str_contains($api, "gmdate('c', time() - 12)"),
+    'Authoritative start_search must preserve the real immutable queue creation time.'
 );
 $assert(
-    str_contains($api, "\$item['created_at'] = gmdate('c', time() - 2);")
-        && str_contains($api, "\$item['status'] = 'bot_fallback_5s';"),
-    'Human-present searches must publish stable queue identity with the bounded fallback policy before first projection.'
+    str_contains($configLoader, "\$config['match_bot_after_sec'] = 8;"),
+    'Runtime config must normalize the canonical eight-second human-priority gate server-side.'
 );
 $assert(
-    str_contains($api, "\$item['created_at'] = gmdate('c', time() - 12);"),
-    'No-human searches must preserve the established three-second fallback preparation before first projection.'
+    str_contains($queuePolicy, 'public const HUMAN_PRIORITY_SEC = 8;')
+        && str_contains($queuePolicy, 'public const SKILL_WIDEN_STEP_SEC = 2;')
+        && str_contains($queuePolicy, 'public const MAX_SKILL_BAND_DISTANCE = 3;'),
+    'MatchmakingQueue must own the bounded human-priority and widening policy.'
 );
 $assert(
-    str_contains($runtime, "=== 'bot_fallback_5s'")
-        && str_contains($runtime, "\$runtimeConfig['match_bot_after_sec'] = 5;"),
-    'Runtime must honor the pre-published bounded five-second fallback policy.'
+    !str_contains($runtime, 'bot_fallback_5s')
+        && !str_contains($runtime, "\$runtimeConfig['match_bot_after_sec'] = 5;"),
+    'Special-game runtime must not reintroduce the removed accelerated fallback owner.'
+);
+$assert(
+    str_contains($runtime, '$this->matchmaking->matchesKey(')
+        && str_contains($runtime, "\$item['skill_band'] = \$this->matchmaking->normalizeSkillBand"),
+    'Chess, Go and Domino must use the same platform-neutral matchmaking key as the base runtime.'
 );
 $assert(
     str_contains($identity, "'created_at_utc'"),
