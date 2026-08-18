@@ -137,7 +137,7 @@ try {
 
     $restoredDeadlineMs = (int)($db['games']['g1']['turn_deadline_epoch_ms'] ?? 0);
     $remainingMs = $restoredDeadlineMs - ((int)floor(microtime(true) * 1000));
-    $assert($remainingMs > 35000 && $remainingMs <= 42000, 'Move clock must resume with the pre-disconnect remaining time, not stay frozen at 60 seconds.');
+    $assert($remainingMs > 43000 && $remainingMs <= 47000, 'Move clock must resume with the pre-disconnect remaining time, not stay frozen at 60 seconds.');
     $assert($restoredDeadlineMs < ($future * 1000), 'Frozen one-day guard deadline must be removed on reconnect.');
 
     $runtimeSource = file_get_contents($root . '/services/MatchPreparationRuntimeService.php');
