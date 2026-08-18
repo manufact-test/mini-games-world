@@ -9,6 +9,7 @@ on:
       - 'app/v114.php'
       - 'app/assets/js/main.js'
       - 'app/assets/js/presence-v115.js'
+      - 'app/assets/js/reconnect-diagnostic-r5.js'
       - 'bot/presence.php'
       - 'bot/services/GameActionService.php'
       - 'bot/services/GameNoContestSettlementService.php'
@@ -69,6 +70,7 @@ jobs:
           set -Eeuo pipefail
           node --input-type=module --check < app/assets/js/presence-v115.js
           node --input-type=module --check < app/assets/js/main.js
+          node --input-type=module --check < app/assets/js/reconnect-diagnostic-r5.js
 
       - name: MVP-17.4 reconnect resume regression
         run: php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php

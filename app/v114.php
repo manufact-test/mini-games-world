@@ -84,6 +84,12 @@ if (!str_contains($html, $mainScript)) {
     echo 'Mini Games World main-script anchor is unavailable.';
     exit;
 }
+$diagnosticScript = '<script type="module" src="./assets/js/reconnect-diagnostic-r5.js?v=1"></script>';
+$html = str_replace(
+    $mainScript,
+    $diagnosticScript . "\n  " . $mainScript,
+    $html
+);
 if (!str_contains($html, './assets/js/phase-b-current-entry.js?v=122&b=da0ce0747073')) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
@@ -104,5 +110,6 @@ header('Expires: 0');
 header('X-MGW-Frontend-Build: d2-unified-wallet-15-3-r1744');
 header('X-MGW-Phase-B-Build: phase-b-current-v122');
 header('X-MGW-Entry-Version: v' . $entryVersion);
+header('X-MGW-Reconnect-Diagnostic: r5');
 header('X-MGW-App-Entry-Presentation: shield-king-v1141-animation-end-gated-assembly');
 echo $html;
