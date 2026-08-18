@@ -17,7 +17,7 @@ return [
         './assets/js/ui.js?v=89' => './assets/js/ui.js?v=94&mvp16=canonical-profile-display-owner',
         './assets/js/components/sheet.js?v=68' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
-        './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=stable-history-sheet',
+        './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=36&mvp16=primary-tab',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1118&mvp16=profile-pass-a&mvp17=result-history-economy',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=3&mvp16=public-id-canonical-identity',
