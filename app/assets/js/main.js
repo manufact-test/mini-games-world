@@ -1,9 +1,9 @@
-window.__MGW_BUILD__ = 'mvp17-4-authoritative-reconnect-boot-r3';
+window.__MGW_BUILD__ = 'mvp17-4-visible-authoritative-resume-r4';
 import { initFirstInteractionReadinessEarly } from './first-interaction-readiness.js?v=d1';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
 import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';
-import { initTelegramApp } from './telegram/telegram-app.js?v=27';
+import { initTelegramApp, getTelegram } from './telegram/telegram-app.js?v=27';
 import { initV115Presence, waitForV115InitialPresence } from './presence-v115.js?v=1742';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
@@ -45,6 +45,7 @@ import { showScreen } from './router.js?v=27';
 import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
+let activeGameReturnRefreshing = false;
 
 initNotificationsScreen();
 initFirstInteractionReadinessEarly();
@@ -54,6 +55,7 @@ initInteractionLatencyCoordinator();
 initResidualUiGameRaceFixAfter();
 initTelegramApp();
 initV115Presence();
+installActiveGameReturnResume();
 initRuntimeStatus();
 initTypography();
 initSheet();
@@ -150,6 +152,66 @@ async function boot(){
     toast(error.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
   } finally {
     hidePreloader();
+  }
+}
+
+function installActiveGameReturnResume(){
+  const resume = () => {
+    if (document.visibilityState !== 'visible') return;
+    void refreshActiveGameAfterReturn();
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resume();
+  });
+  window.addEventListener('pageshow', resume, { capture:true });
+
+  const telegram = getTelegram();
+  if (typeof telegram?.onEvent === 'function') {
+    try { telegram.onEvent('activated', resume); } catch (error) {}
+  }
+}
+
+async function refreshActiveGameAfterReturn(){
+  if (activeGameReturnRefreshing || document.visibilityState !== 'visible') return;
+
+  const current = state.activeGame;
+  const gameId = String(current?.id || '');
+  const activeScreen = document.querySelector('.screen.active');
+  if (!gameId || String(current?.status || '') !== 'active') return;
+  if (String(activeScreen?.dataset.screen || '') !== 'game') return;
+
+  activeGameReturnRefreshing = true;
+  try {
+    // Telegram Web may reactivate the same document instead of creating a new
+    // one. In that path boot() does not run again, while the Phase-B watch is
+    // intentionally read-only and cannot release reconnect_v2. Force exactly
+    // one normal game_state mutation/read through the existing lifecycle owner,
+    // then restart the existing polling/render path from that authoritative game.
+    const result = await api.gameState(gameId);
+    if (result.user) {
+      state.user = result.user;
+      renderUser(state.user);
+      renderBalances(state.user);
+    }
+    state.session = result.session || state.session;
+
+    if (!result.game) {
+      state.timers.game = clearTimer(state.timers.game);
+      state.activeGame = null;
+      showScreen('home');
+      return;
+    }
+    if (String(result.game.id || '') !== gameId) return;
+
+    state.activeGame = result.game;
+    showScreen('game');
+    startGamePolling(gameId);
+  } catch (error) {
+    // Returning to a live match is self-healing through the normal polling path;
+    // a transient resume request must not replace the game with an error screen.
+  } finally {
+    activeGameReturnRefreshing = false;
   }
 }
 
