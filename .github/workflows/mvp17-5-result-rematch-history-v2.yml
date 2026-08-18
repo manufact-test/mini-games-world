@@ -1,0 +1,78 @@
+name: MVP-17.5 Result rematch history v2
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/services/BotProfilePolicy.php'
+      - 'bot/services/GameInviteService.php'
+      - 'bot/services/invites/GameInviteActionTrait.php'
+      - 'bot/tests/Mvp17_5BotOpaqueRematchContractTest.php'
+      - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
+      - 'bot/tests/Mvp17_4ReconnectResumeRegressionTest.php'
+      - 'bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php'
+      - 'bot/tests/Mvp14r2GamesContractTest.php'
+      - 'bot/tests/Mvp14r2GamesBaselineTest.php'
+      - '.github/workflows/mvp17-5-result-rematch-history-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  result-rematch-history-focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: PHP syntax validation
+        run: |
+          set -Eeuo pipefail
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+          php -l bot/services/BotProfilePolicy.php
+          php -l bot/services/GameInviteService.php
+          php -l bot/services/invites/GameInviteActionTrait.php
+          php -l bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
+          php -l bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
+          php -l bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+          php -l bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
+          php -l bot/tests/Mvp14r2GamesContractTest.php
+          php -l bot/tests/Mvp14r2GamesBaselineTest.php
+
+      - name: JavaScript syntax validation
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module --check < app/assets/js/games/game-invites-v110-rematch-policy-v175.js
+          node --input-type=module --check < app/assets/js/games/game-invites-v110.js
+
+      - name: MVP-17.5 bot-opaque rematch contract
+        run: php bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
+
+      - name: MVP-17.4 active v110 reconnect regression
+        run: php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
+
+      - name: MVP-17.4 reconnect resume regression
+        run: php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+
+      - name: MVP-17.3 bot opacity regression
+        run: php bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
+
+      - name: Frozen mechanics contract for all eight games
+        run: php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Frozen terminal mechanics baseline for all eight games
+        run: php bot/tests/Mvp14r2GamesBaselineTest.php
