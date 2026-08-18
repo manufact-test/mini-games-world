@@ -46,8 +46,8 @@ $assert(
     'Reconnect must wrap the accepted v110 shell rather than replace or fork its game/UI implementation.'
 );
 $assert(
-    str_contains($wrapper, "import './reconnect-diagnostic-r5.js?v=2';"),
-    'The temporary reconnect diagnostic must run inside the real v110 Telegram graph during manual acceptance.'
+    !str_contains($wrapper, 'reconnect-diagnostic-r5.js'),
+    'Temporary reconnect diagnostics must not remain in the accepted user-facing v110 graph.'
 );
 
 $bootstrapWrap = strpos($reconnect, 'api.bootstrap = async');
@@ -83,8 +83,8 @@ $assert(
     'Successful v110 foreground resume must publish one reconnect-resume signal to the authoritative game_state owner.'
 );
 $assert(
-    str_contains($manifestSource, "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=1'"),
-    'The active v110 reconnect wrapper must have an explicit cache identity in the manifest source.'
+    str_contains($manifestSource, "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'"),
+    'The accepted active v110 reconnect wrapper must have a post-diagnostic cache identity in the manifest source.'
 );
 $assert(
     preg_match('/\bMOVE_TIMEOUT_SEC\s*=\s*60\s*;/', $clock) === 1,
