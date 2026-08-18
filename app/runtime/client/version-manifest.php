@@ -4,13 +4,13 @@ declare(strict_types=1);
 return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
-        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1125&mvp16=canonical-avatar-owner',
+        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1125&mvp16=canonical-avatar-owner&mvp17=history-single-owner',
         '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2',
         '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
-        './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
-        './assets/js/api/client.js?v=38' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
-        './assets/js/api/client.js?v=46' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
-        './assets/js/api/client.js?v=47' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective',
+        './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match',
+        './assets/js/api/client.js?v=38' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match',
+        './assets/js/api/client.js?v=46' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match',
+        './assets/js/api/client.js?v=47' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match',
         './assets/js/config.js?v=38' => './assets/js/config.js?v=39&mvp15=match-economy',
         './assets/js/state.js?v=27' => './assets/js/state.js?v=30&mvp16=router-lifecycle',
         './assets/js/router.js?v=27' => './assets/js/router.js?v=29&b=871cb833d99d&mvp16=route-registry',
