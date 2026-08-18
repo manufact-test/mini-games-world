@@ -28,10 +28,10 @@ $assert(!str_contains((string)$cleanEntry, 'initV102HistoryController'), 'Legacy
 
 $assert(is_string($home) && str_contains($home, "document.getElementById('matchHistoryBtn')?.addEventListener('click',openMatchHistorySheet);"), 'Home screen must remain the single Match History click owner.');
 $assert($matchHistory !== '' && str_contains($matchHistory, 'item.game_title'), 'Match History must render the canonical game title.');
-$assert($matchHistory !== '' && str_contains($matchHistory, 'economy.entry'), 'Match History must render viewer entry cost.');
-$assert($matchHistory !== '' && str_contains($matchHistory, 'economy.reward'), 'Match History must render viewer reward.');
-$assert($matchHistory !== '' && str_contains($matchHistory, 'economy.ledger_delta'), 'Match History must render viewer ledger delta.');
-$assert($matchHistory !== '' && str_contains($matchHistory, 'economy.new_balance'), 'Match History must render viewer new balance.');
+$assert($matchHistory !== '' && str_contains($matchHistory, 'economy.ledger_delta'), 'Compact Match History must render the authoritative viewer ledger delta.');
+$assert($matchHistory !== '' && !str_contains($matchHistory, 'economy.entry'), 'Compact Match History must not repeat viewer entry cost in every card.');
+$assert($matchHistory !== '' && !str_contains($matchHistory, 'economy.reward'), 'Compact Match History must not repeat viewer reward in every card.');
+$assert($matchHistory !== '' && !str_contains($matchHistory, 'economy.new_balance'), 'Compact Match History must not repeat new balance in every card.');
 $assert($matchHistory !== '' && !str_contains($matchHistory, 'short_id'), 'Match History must not expose technical match hashes.');
 $assert($matchHistory !== '' && !str_contains($matchHistory, 'ставка'), 'Match History must not expose the legacy stake-only row.');
 
