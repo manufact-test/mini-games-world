@@ -111,7 +111,10 @@ final class StagingTestOnlyInviteOrphanRecoveryService
                 'status' => 'already_clean',
                 'candidate_count' => 0,
                 'deleted' => ['invite_rows' => 0, 'notification_rows' => 0, 'invite_event_rows' => 0],
-                'parity' => ['invites' => true, 'test_notifications' => true],
+                'verification' => [
+                    'candidate_scope' => true,
+                    'global_parity_owner' => 'reconcile_invite_residuals',
+                ],
                 'production_changed' => false,
                 'live_payments_used' => false,
             ];
@@ -164,16 +167,43 @@ final class StagingTestOnlyInviteOrphanRecoveryService
             return $deleted;
         });
 
-        $inviteAudit = (new RuntimeInviteRepository($this->config, $this->router, $database))
-            ->auditParity($snapshot);
-        if (($inviteAudit['ok'] ?? false) !== true) {
-            throw new RuntimeException('Staging test-only orphan invite parity did not recover.');
-        }
-        foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
-            $notificationAudit = (new RuntimeNotificationRepository($this->config, $this->router, $database))
-                ->auditParity($snapshot, $legacyUserId);
-            if (($notificationAudit['ok'] ?? false) !== true) {
-                throw new RuntimeException('Staging test-only orphan notification parity did not recover.');
+        // This service owns only the strictly proved DB-only A/B deletion set.
+        // Global invite/notification parity is intentionally owned by the next
+        // reconcile_invite_residuals stage, which can synchronize the complete
+        // JSON snapshot before reset_test_players drains JSON-backed test state.
+        foreach ($candidates as $candidate) {
+            $invite = $candidate['invite'];
+            $inviteId = (string)$invite['invite_id'];
+            $token = (string)$invite['token'];
+            $remainingInvite = (int)$database->fetchValue(
+                'SELECT COUNT(*) FROM mgw_invites WHERE invite_id = :invite_id OR token = :token',
+                ['invite_id' => $inviteId, 'token' => $token]
+            );
+            if ($remainingInvite !== 0) {
+                throw new RuntimeException('Staging test-only orphan candidate deletion verification failed.');
+            }
+            $remainingEvents = (int)$database->fetchValue(
+                'SELECT COUNT(*) FROM mgw_invite_events WHERE invite_id = :invite_id',
+                ['invite_id' => $inviteId]
+            );
+            if ($remainingEvents !== 0) {
+                throw new RuntimeException('Staging test-only orphan event deletion verification failed.');
+            }
+            foreach ($candidate['notifications'] as $notification) {
+                $remainingNotification = (int)$database->fetchValue(
+                    'SELECT COUNT(*) FROM mgw_notifications
+                     WHERE notification_id = :notification_id
+                       AND invite_token = :invite_token
+                       AND legacy_user_id = :legacy_user_id',
+                    [
+                        'notification_id' => (string)$notification['notification_id'],
+                        'invite_token' => $token,
+                        'legacy_user_id' => (string)$notification['legacy_user_id'],
+                    ]
+                );
+                if ($remainingNotification !== 0) {
+                    throw new RuntimeException('Staging test-only orphan notification deletion verification failed.');
+                }
             }
         }
 
@@ -183,7 +213,10 @@ final class StagingTestOnlyInviteOrphanRecoveryService
             'status' => 'recovered',
             'candidate_count' => count($candidates),
             'deleted' => $deleted,
-            'parity' => ['invites' => true, 'test_notifications' => true],
+            'verification' => [
+                'candidate_scope' => true,
+                'global_parity_owner' => 'reconcile_invite_residuals',
+            ],
             'production_changed' => false,
             'live_payments_used' => false,
         ];

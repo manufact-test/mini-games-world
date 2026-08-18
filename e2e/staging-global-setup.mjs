@@ -62,17 +62,19 @@ async function recoverTestOnlyInviteOrphans(){
       .join(' ');
     throw new Error(`Staging test-only invite recovery failed: ${response.status} ${safeDetail || 'unknown_error'}`);
   }
-  if (payload.status === 'recovered') {
-    if ((payload?.candidate_count || 0) < 1 || (payload?.deleted?.invite_rows || 0) < 1
-        || payload?.parity?.invites !== true || payload?.parity?.test_notifications !== true) {
-      throw new Error('Staging test-only invite recovery did not prove parity.');
-    }
+  if (payload?.verification?.candidate_scope !== true
+      || payload?.verification?.global_parity_owner !== 'reconcile_invite_residuals') {
+    throw new Error('Staging test-only invite recovery did not prove its deletion scope.');
+  }
+  if (payload.status === 'recovered'
+      && ((payload?.candidate_count || 0) < 1 || (payload?.deleted?.invite_rows || 0) < 1)) {
+    throw new Error('Staging test-only invite recovery reported no candidate deletion.');
   }
   console.log('[MGW_STAGING_TEST_ONLY_INVITE_RECOVERY]', JSON.stringify({
     status:payload.status,
     candidate_count:payload.candidate_count,
     deleted:payload.deleted,
-    parity:payload.parity,
+    verification:payload.verification,
   }));
 }
 

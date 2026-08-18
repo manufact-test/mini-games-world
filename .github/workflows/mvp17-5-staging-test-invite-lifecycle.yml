@@ -6,6 +6,7 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/services/StagingTestOnlyInviteOrphanRecoveryService.php'
+      - 'bot/services/StagingTestInviteResidualRecoveryService.php'
       - 'bot/services/StagingTestPlayerStateResetService.php'
       - 'bot/staging-test-only-invite-recovery.php'
       - 'bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php'
@@ -35,6 +36,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           php -l bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
+          php -l bot/services/StagingTestInviteResidualRecoveryService.php
           php -l bot/services/StagingTestPlayerStateResetService.php
           php -l bot/staging-test-only-invite-recovery.php
           php -l bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
