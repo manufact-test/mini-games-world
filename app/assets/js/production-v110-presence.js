@@ -23,6 +23,9 @@ const runtime = window.__MGW_V110_PRESENCE__ ||= {
   pingController:null,
   statusController:null,
   left:false,
+  initialPingPromise:null,
+  initialPresenceReady:false,
+  resumeSignalPending:false,
 };
 
 export function initV110Presence(){
@@ -31,16 +34,20 @@ export function initV110Presence(){
 
   document.addEventListener('mgw:app-ready', () => {
     runtime.appReady = true;
-    resumePresence(true);
+    void resumePresence(true);
   }, { once:true });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') resumePresence(true);
-    else cancelInFlightRequests();
+    if (document.visibilityState === 'visible') {
+      void resumePresence(true);
+    } else {
+      cancelInFlightRequests();
+      sendLifecycleBeacon('background');
+    }
   });
 
   window.addEventListener('pageshow', () => {
-    if (document.visibilityState === 'visible') resumePresence(true);
+    if (document.visibilityState === 'visible') void resumePresence(true);
   }, { capture:true });
 
   window.addEventListener('pagehide', event => {
@@ -49,14 +56,18 @@ export function initV110Presence(){
 
   const telegram = getTelegram();
   if (typeof telegram?.onEvent === 'function') {
-    try { telegram.onEvent('activated', () => resumePresence(true)); } catch (error) {}
+    try { telegram.onEvent('activated', () => void resumePresence(true)); } catch (error) {}
   }
 
-  // Presence transport starts before the profile bootstrap. The newly opened
-  // Telegram document therefore owns a live lease while the old document is
-  // still inside its bounded leave grace, instead of appearing offline between
-  // the two documents.
+  // Presence transport starts before profile/bootstrap reads. MVP-17.4 also
+  // exposes the first ping promise so the active v110 entry can make reconnect
+  // restoration authoritative before it adopts a bootstrap game snapshot.
   startPresence();
+}
+
+export function waitForV110InitialPresence(){
+  if (runtime.initialPresenceReady) return Promise.resolve(true);
+  return runtime.initialPingPromise || Promise.resolve(false);
 }
 
 function startPresence(){
@@ -69,16 +80,19 @@ function startPresence(){
       if (canReadHomeStatus()) void refreshStatus();
     }, STATUS_MS);
   }
-  resumePresence(true);
+  runtime.initialPingPromise = resumePresence(true);
 }
 
 function resumePresence(force = false){
-  if (document.visibilityState !== 'visible') return;
+  if (document.visibilityState !== 'visible') return Promise.resolve(false);
   runtime.left = false;
+  runtime.resumeSignalPending = true;
   window.clearTimeout(runtime.retryTimer);
   runtime.retryTimer = null;
   if (force) cancelInFlightRequests();
-  void pingPresence();
+  const ping = pingPresence();
+  if (!runtime.initialPresenceReady) runtime.initialPingPromise = ping;
+  return ping;
 }
 
 function cancelInFlightRequests(){
@@ -111,6 +125,11 @@ async function pingPresence(){
     const data = await requestPresence('ping', controller.signal);
     if (requestId !== runtime.pingRequestId) return false;
     applyStatsSnapshot(statsTicket, data?.stats);
+    runtime.initialPresenceReady = true;
+    if (runtime.resumeSignalPending) {
+      runtime.resumeSignalPending = false;
+      document.dispatchEvent(new CustomEvent('mgw:v110-presence-ready'));
+    }
     return true;
   } catch (error) {
     if (requestId === runtime.pingRequestId) scheduleRetry();
@@ -173,7 +192,7 @@ async function requestPresence(action, signal){
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
     body:JSON.stringify(payload(action)),
-    keepalive:action === 'leave',
+    keepalive:action === 'leave' || action === 'background',
     priority:'high',
     cache:'no-store',
     signal,
@@ -187,7 +206,11 @@ function sendLeaveBeacon(){
   if (runtime.left) return;
   runtime.left = true;
   cancelInFlightRequests();
-  const body = JSON.stringify(payload('leave'));
+  sendLifecycleBeacon('leave');
+}
+
+function sendLifecycleBeacon(action){
+  const body = JSON.stringify(payload(action));
   try {
     const blob = new Blob([body], { type:'application/json' });
     if (navigator.sendBeacon?.(PRESENCE_URL, blob)) return;
