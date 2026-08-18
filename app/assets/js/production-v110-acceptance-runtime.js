@@ -1,16 +1,18 @@
 import { state } from './state.js?v=27';
 
-const LAUNCH_COUNTDOWN_STEP_MS = 600;
-const LAUNCH_READY_HOLD_MS = 450;
+const LAUNCH_COUNTDOWN_STEP_MS = 1000;
+const LAUNCH_READY_HOLD_MS = 260;
 
 const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
   initialized:false,
   pending:null, pendingFrame:0, clock:null, timer:null, observer:null,
   launchPresentation:null,
   pendingClockSnapshot:null,
+  lastClockLabel:null,
 };
 if (!('launchPresentation' in runtime)) runtime.launchPresentation = null;
 if (!('pendingClockSnapshot' in runtime)) runtime.pendingClockSnapshot = null;
+if (!('lastClockLabel' in runtime)) runtime.lastClockLabel = null;
 
 export function initV110AcceptanceRuntime(){
   if (runtime.initialized) return;
@@ -99,8 +101,8 @@ function installLaunchStyle(){
     .mgw-phase-b-countdown[data-stage="prepare"]:before{content:'';width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,#7c5cff,#2ee6a6);box-shadow:0 0 22px rgba(124,92,255,.42);animation:mgwPhaseBPrepare 1.05s ease-in-out infinite}
     .mgw-phase-b-countdown[data-stage="prepare"]:after{content:'';position:absolute;width:38px;height:38px;border:1px solid rgba(255,255,255,.14);border-radius:50%;animation:mgwPhaseBPrepareHalo 1.05s ease-out infinite}
     .mgw-phase-b-countdown[data-stage="sync"]:before{content:'';width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:-18px 0 #7c5cff,18px 0 #2ee6a6;animation:mgwPhaseBSync .78s ease-in-out infinite}
-    .mgw-phase-b-countdown[data-stage="ready"]:before{content:'';width:19px;height:36px;border-right:5px solid #2ee6a6;border-bottom:5px solid #2ee6a6;border-radius:2px;animation:mgwPhaseBCheckIn .42s cubic-bezier(.2,.85,.25,1.25) both}
-    .mgw-phase-b-countdown[data-stage="ready"]:after{content:'';position:absolute;width:58px;height:58px;border:1px solid rgba(46,230,166,.42);border-radius:50%;animation:mgwPhaseBReadyHalo .48s ease-out both}
+    .mgw-phase-b-countdown[data-stage="ready"]:before{content:'';width:19px;height:36px;border-right:5px solid #2ee6a6;border-bottom:5px solid #2ee6a6;border-radius:2px;animation:mgwPhaseBCheckIn .24s cubic-bezier(.2,.85,.25,1.25) both}
+    .mgw-phase-b-countdown[data-stage="ready"]:after{content:'';position:absolute;width:58px;height:58px;border:1px solid rgba(46,230,166,.42);border-radius:50%;animation:mgwPhaseBReadyHalo .28s ease-out both}
     .mgw-phase-b-launch-overlay[data-stage="ready"] .mgw-phase-b-launch-ring{animation:none;border-color:rgba(46,230,166,.22);opacity:.72}
     .mgw-phase-b-countdown[hidden]{display:none!important}
     .mgw-phase-b-launch-title{position:relative;z-index:2;grid-row:3;align-self:center;display:flex;align-items:center;justify-content:center;width:100%;height:52px;margin:0;white-space:nowrap;font-size:25px;font-weight:950;line-height:1.08;letter-spacing:-.04em}
@@ -284,6 +286,13 @@ function paintClock(){
   const game = state.activeGame;
   if (!timer) return;
   if (String(game?.status || '') !== 'active') {
+    const gameId = String(game?.id || '');
+    const resultTransition = gameId !== ''
+      && window.__MGW_V100_GAME_RUNTIME__?.resultOpened?.has?.(gameId);
+    if (resultTransition && runtime.lastClockLabel) {
+      if (timer.textContent !== runtime.lastClockLabel) timer.textContent = runtime.lastClockLabel;
+      return;
+    }
     if (timer.textContent !== '—') timer.textContent = '—';
     return;
   }
@@ -300,6 +309,7 @@ function paintClock(){
     ? clock.timeoutSec
     : Math.max(0, Math.ceil((clock.deadline - now) / 1000));
   const label = `${seconds} сек`;
+  runtime.lastClockLabel = label;
   if (timer.textContent !== label) timer.textContent = label;
 }
 function headerClockOwnsGame(game){
@@ -358,7 +368,6 @@ function syncLaunchPresentation(game, phase){
   const now = performance.now();
   if (phase === 'countdown' && presentation.countdownStartedAt === null) {
     const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * 3;
-    const presentationDuration = numbersDuration + LAUNCH_READY_HOLD_MS;
     const startsAtMs = finiteNumber(game?.starts_at_ms);
     const serverNowMs = finiteNumber(game?.server_now_ms);
     const remainingToStart = startsAtMs !== null && serverNowMs !== null
@@ -366,10 +375,11 @@ function syncLaunchPresentation(game, phase){
       : null;
     const elapsedAtReceipt = remainingToStart === null
       ? 0
-      : Math.max(0, Math.min(presentationDuration, presentationDuration - remainingToStart));
+      : Math.max(0, Math.min(numbersDuration, numbersDuration - remainingToStart));
 
-    // Both clients render the complete 3-2-1 + ready sequence toward the same
-    // server start, so the first 60-second turn never runs behind the overlay.
+    // The visible 3-2-1 consumes the same three seconds as the authoritative
+    // server launch. Any remaining synchronization stays in the sync state;
+    // Ready is reserved for the final handoff immediately before gameplay.
     presentation.countdownStartedAt = now - elapsedAtReceipt;
   }
 
@@ -384,12 +394,11 @@ function syncLaunchPresentation(game, phase){
   const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * 3;
   const numbersComplete = now - presentation.countdownStartedAt >= numbersDuration;
   const serverReady = phase === 'active' || (phase === 'countdown' && launchStartReached(game));
-  if (numbersComplete && presentation.readyStartedAt === null) {
-    presentation.readyStartedAt = presentation.countdownStartedAt + numbersDuration;
+  if (numbersComplete && serverReady && presentation.readyStartedAt === null) {
+    presentation.readyStartedAt = now;
   }
   if (presentation.readyStartedAt !== null
-      && now - presentation.readyStartedAt >= LAUNCH_READY_HOLD_MS
-      && serverReady) {
+      && now - presentation.readyStartedAt >= LAUNCH_READY_HOLD_MS) {
     presentation.complete = true;
   }
   return presentation;
@@ -423,8 +432,9 @@ function paintLaunchState(){
   const status = String(game?.status || '');
   const phase = String(game?.launch_phase || '');
   const presentation = syncLaunchPresentation(game, phase);
+  const countdownWaiting = phase === 'countdown' && !launchStartReached(game);
   const serverBlocking = status === 'active'
-    && (phase === 'preparing' || phase === 'countdown' || phase === 'preparation_timeout');
+    && (phase === 'preparing' || countdownWaiting || phase === 'preparation_timeout');
   const presentationBlocking = status === 'active'
     && !!presentation
     && !presentation.complete
