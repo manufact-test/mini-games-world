@@ -1,0 +1,80 @@
+name: MVP-18.1 Schema Count Maintenance
+
+on:
+  push:
+    branches:
+      - agent/mvp18-1-friends-data-api
+    paths:
+      - '.github/workflows/mvp18-1-schema-count-maintenance.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-schema-contracts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp18-1-friends-data-api
+
+      - name: Update exact migration-count contracts
+        shell: python
+        run: |
+          from pathlib import Path
+
+          replacements = {
+              'bot/tests/Mvp15EconomyRemoteConfigTest.php': [
+                  ("$assertSame(10, $migrated['executed_count'], 'Focused test must apply all ten canonical migrations');",
+                   "$assertSame(11, $migrated['executed_count'], 'Focused test must apply all eleven canonical migrations');"),
+              ],
+              'bot/tests/UnifiedBalanceMigrationFoundationTest.php': [
+                  ("$assertSame(10, $runner->migrate(false)['executed_count'], 'Foundation test must apply all current migrations');",
+                   "$assertSame(11, $runner->migrate(false)['executed_count'], 'Foundation test must apply all current migrations');"),
+              ],
+              'bot/tests/UnifiedBalanceMigrationExecutionTest.php': [
+                  ("$assertSame(10, $runner->migrate(false)['executed_count'], 'Execution test must apply all current migrations');",
+                   "$assertSame(11, $runner->migrate(false)['executed_count'], 'Execution test must apply all current migrations');"),
+              ],
+              'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php': [
+                  ("if ((int)($result['executed_count'] ?? 0) !== 10) {",
+                   "if ((int)($result['executed_count'] ?? 0) !== 11) {"),
+                  ("Expected all ten database migrations in identity regression fixture.",
+                   "Expected all eleven database migrations in identity regression fixture."),
+              ],
+              'bot/tests/UnifiedEconomyRuntimeSyncTest.php': [
+                  ("$assertSame(10, $runner->migrate(false)['executed_count'], 'Runtime sync test must apply all migrations');",
+                   "$assertSame(11, $runner->migrate(false)['executed_count'], 'Runtime sync test must apply all migrations');"),
+              ],
+              'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php': [
+                  ("$assertSame(10, $runner->migrate(false)['executed_count'], 'Regression fixture must apply current schema');",
+                   "$assertSame(11, $runner->migrate(false)['executed_count'], 'Regression fixture must apply current schema');"),
+              ],
+          }
+
+          for filename, pairs in replacements.items():
+              path = Path(filename)
+              text = path.read_text()
+              for old, new in pairs:
+                  if text.count(old) != 1:
+                      raise SystemExit(f'{filename}: expected exactly one match for {old!r}')
+                  text = text.replace(old, new)
+              path.write_text(text)
+
+      - name: Commit bounded test-contract update
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff --name-only
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            bot/tests/Mvp15EconomyRemoteConfigTest.php \
+            bot/tests/UnifiedBalanceMigrationFoundationTest.php \
+            bot/tests/UnifiedBalanceMigrationExecutionTest.php \
+            bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php \
+            bot/tests/UnifiedEconomyRuntimeSyncTest.php \
+            bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+          git commit -m 'MVP-18.1: advance migration-count regression contracts to 11'
+          git push origin HEAD:agent/mvp18-1-friends-data-api
