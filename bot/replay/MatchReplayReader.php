@@ -12,11 +12,12 @@ final class MatchReplayReader
             throw new InvalidArgumentException('Match ID is invalid.');
         }
 
-        $match = $this->database->fetchOne(
+        $matchRows = $this->database->fetchAll(
             'SELECT * FROM mgw_matches WHERE match_id = :match_id LIMIT 1',
             ['match_id' => $matchId]
         );
-        if ($match === null) return null;
+        $match = $matchRows[0] ?? null;
+        if (!is_array($match)) return null;
 
         $players = $this->database->fetchAll(
             'SELECT * FROM mgw_match_players WHERE match_id = :match_id ORDER BY seat_index, player_ref',
