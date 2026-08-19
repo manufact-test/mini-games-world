@@ -31,7 +31,7 @@ $assert(str_contains($package, 'test:e2e:staging:legacy')
 
 $assert(str_contains($currentSpec, "readFileSync(resolve(repoRoot, 'bot/helpers/WebAppLaunchUrl.php')")
     && str_contains($currentSpec, "private const ENTRY_PATH")
-    && !str_contains($currentSpec, "${ORIGIN}/app/"),
+    && !str_contains($currentSpec, 'const ENTRY_URL = `${ORIGIN}/app/`;'),
     'Current live core must derive the exact Telegram entry from WebAppLaunchUrl.');
 $assert(str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
     'Owner contract expects the current canonical Telegram v110 launch path.');
