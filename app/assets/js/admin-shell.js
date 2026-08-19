@@ -20,8 +20,16 @@
   const economySave = root.querySelector('[data-economy-save]');
   const economySimulation = root.querySelector('[data-economy-simulation]');
   const economyHistory = root.querySelector('[data-economy-history]');
+  const replayMatchId = root.querySelector('[data-replay-match-id]');
+  const replayLoad = root.querySelector('[data-replay-load]');
+  const replayStatus = root.querySelector('[data-replay-status]');
+  const replayOutput = root.querySelector('[data-replay-output]');
+  const replaySummary = root.querySelector('[data-replay-summary]');
+  const replayTimeline = root.querySelector('[data-replay-timeline]');
+  const replayFrames = root.querySelector('[data-replay-frames]');
   const endpoint = String(root.dataset.adminApi || '');
   const economyEndpoint = String(root.dataset.economyApi || '');
+  const replayEndpoint = String(root.dataset.replayApi || '');
   const telegram = window.Telegram?.WebApp || null;
   let requestInFlight = false;
   let currentEconomyVersion = 0;
@@ -36,6 +44,7 @@
     requestInFlight = busy;
     refresh.disabled = busy;
     economySave.disabled = busy;
+    replayLoad.disabled = busy;
     economyHistory.querySelectorAll('button').forEach(button => {
       button.disabled = busy;
     });
@@ -119,6 +128,109 @@
     economyConfig.value = JSON.stringify(current.config || {}, null, 2);
     economySimulation.textContent = JSON.stringify(current.simulation || {}, null, 2);
     renderEconomyHistory(data.history || []);
+  };
+
+  const addReplaySummary = (label, value) => {
+    const item = document.createElement('div');
+    const key = document.createElement('span');
+    const strong = document.createElement('strong');
+    key.textContent = label;
+    strong.textContent = String(value ?? '—');
+    item.append(key, strong);
+    replaySummary.append(item);
+  };
+
+  const replayDetails = (titleText, metaText, payload) => {
+    const details = document.createElement('details');
+    details.className = 'mgw-admin__replay-item';
+    const summary = document.createElement('summary');
+    const title = document.createElement('strong');
+    const metaTextNode = document.createElement('span');
+    title.textContent = titleText;
+    metaTextNode.textContent = metaText;
+    summary.append(title, metaTextNode);
+    const pre = document.createElement('pre');
+    pre.textContent = JSON.stringify(payload, null, 2);
+    details.append(summary, pre);
+    return details;
+  };
+
+  const renderReplay = (data) => {
+    const replay = data.replay || {};
+    const match = replay.match || {};
+    const diagnostics = replay.diagnostics || {};
+    const players = Array.isArray(replay.players) ? replay.players : [];
+    const timeline = Array.isArray(replay.timeline) ? replay.timeline : [];
+    const frames = Array.isArray(replay.frames) ? replay.frames : [];
+
+    replaySummary.replaceChildren();
+    replayTimeline.replaceChildren();
+    replayFrames.replaceChildren();
+    addReplaySummary('Match', match.match_id || '—');
+    addReplaySummary('Игра', match.game_type || '—');
+    addReplaySummary('Статус', match.status || '—');
+    addReplaySummary('State version', match.state_version || '—');
+    addReplaySummary('События', diagnostics.event_count ?? timeline.length);
+    addReplaySummary('Snapshots', diagnostics.snapshot_count ?? frames.length);
+    addReplaySummary('Игроки', players.map(player => player.display_name || player.player_ref).join(' / ') || '—');
+    addReplaySummary('Replayable', diagnostics.replayable === true ? 'YES' : 'NO');
+
+    timeline.forEach(event => {
+      const actor = event.actor_user_id ? ` · actor ${event.actor_user_id}` : '';
+      replayTimeline.append(replayDetails(
+        `${event.event_type || 'event'} · rev ${event.primary_revision}.${event.event_ordinal}`,
+        `${event.occurred_at_utc || '—'} · snapshot v${event.snapshot_state_version || '—'}${actor}`,
+        event
+      ));
+    });
+    if (timeline.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__history-empty';
+      empty.textContent = 'События для этого матча не сохранены.';
+      replayTimeline.append(empty);
+    }
+
+    frames.forEach(frame => {
+      replayFrames.append(replayDetails(
+        `Snapshot v${frame.state_version}`,
+        `${frame.created_at_utc || '—'} · events ${Array.isArray(frame.events) ? frame.events.length : 0}`,
+        frame
+      ));
+    });
+
+    const missing = Array.isArray(diagnostics.missing_snapshot_versions)
+      ? diagnostics.missing_snapshot_versions.join(', ')
+      : '';
+    replayStatus.textContent = diagnostics.replayable === true
+      ? 'Replay chain целостна: durable events связаны с immutable snapshots.'
+      : `Replay chain неполна${missing ? `; отсутствуют snapshots: ${missing}` : '.'}`;
+    replayStatus.dataset.state = diagnostics.replayable === true ? 'ok' : 'error';
+    replayOutput.hidden = false;
+  };
+
+  const loadReplay = async () => {
+    if (requestInFlight) return;
+    const matchId = replayMatchId.value.trim();
+    if (!matchId) {
+      replayStatus.textContent = 'Укажите Match ID.';
+      replayStatus.dataset.state = 'error';
+      replayMatchId.focus();
+      return;
+    }
+
+    setBusy(true);
+    replayStatus.textContent = 'Читаю durable event log и snapshots…';
+    delete replayStatus.dataset.state;
+    replayOutput.hidden = true;
+    try {
+      const data = await post(replayEndpoint, {action: 'match_replay', matchId});
+      renderReplay(data);
+    } catch (error) {
+      replayStatus.textContent = error instanceof Error ? error.message : 'Не удалось загрузить replay.';
+      replayStatus.dataset.state = 'error';
+    } finally {
+      setBusy(false);
+    }
   };
 
   const load = async () => {
@@ -208,6 +320,10 @@
   }
 
   refresh.addEventListener('click', load);
+  replayLoad.addEventListener('click', loadReplay);
+  replayMatchId.addEventListener('keydown', event => {
+    if (event.key === 'Enter') loadReplay();
+  });
   economySave.addEventListener('click', saveEconomy);
   load();
 })();

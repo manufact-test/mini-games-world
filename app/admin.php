@@ -14,17 +14,17 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Admin</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=2&economy=15-8">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=3&replay=17-6">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=2&economy=15-8" defer></script>
+  <script src="./assets/js/admin-shell.js?v=3&replay=17-6" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-replay-api="../bot/admin-replay.php">
     <header class="mgw-admin__header">
       <div>
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
         <h1>Web Admin</h1>
-        <p class="mgw-admin__subtitle">Системный обзор и версионная конфигурация экономики.</p>
+        <p class="mgw-admin__subtitle">Системный обзор, экономика и read-only replay storage.</p>
       </div>
       <button class="mgw-admin__refresh" type="button" data-admin-refresh>Обновить</button>
     </header>
@@ -54,6 +54,30 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span>read-only</span>
         </div>
         <pre data-admin-system-check>—</pre>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-replay-card>
+        <div class="mgw-admin__card-head">
+          <h2>Replay матча</h2>
+          <span>MVP-17.6 · read-only</span>
+        </div>
+        <div class="mgw-admin__replay">
+          <div class="mgw-admin__replay-search">
+            <label class="mgw-admin__field">
+              <span>Match ID</span>
+              <input data-replay-match-id type="text" maxlength="191" autocomplete="off" placeholder="Введите ID матча">
+            </label>
+            <button type="button" data-replay-load>Загрузить replay</button>
+          </div>
+          <div class="mgw-admin__replay-status" data-replay-status>Укажите Match ID. Данные не изменяются.</div>
+          <div data-replay-output hidden>
+            <div class="mgw-admin__replay-summary" data-replay-summary></div>
+            <h3>События</h3>
+            <div class="mgw-admin__replay-list" data-replay-timeline></div>
+            <h3>Снимки состояния</h3>
+            <div class="mgw-admin__replay-list" data-replay-frames></div>
+          </div>
+        </div>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-economy-card>
@@ -96,7 +120,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     </section>
 
     <footer class="mgw-admin__footer">
-      Веб-панель не редактирует пользовательские балансы, не удаляет данные и не переключает runtime. Economy rollback всегда создаёт новую аудируемую версию.
+      Replay viewer читает только durable events/snapshots. Веб-панель не редактирует пользовательские балансы, не удаляет данные и не переключает runtime. Economy rollback всегда создаёт новую аудируемую версию.
     </footer>
   </main>
 </body>
