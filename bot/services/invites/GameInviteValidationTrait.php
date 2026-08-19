@@ -169,14 +169,18 @@ trait GameInviteValidationTrait
         $inviteeId = (string)($invite['invitee_id'] ?? '');
         $isOwner = $viewerId !== '' && $viewerId === $inviterId;
         $isInvitee = $viewerId !== '' && $viewerId === $inviteeId;
-        $deadline = '';
+        $readyDeadline = (string)($invite['ready_deadline_at'] ?? '');
+        $countdownDeadline = '';
         $deadlineTs = 0;
         if (in_array($storedStatus, ['draft', 'pending'], true)) {
-            $deadline = (string)($invite['expires_at'] ?? '');
-            $deadlineTs = strtotime($deadline) ?: 0;
+            $countdownDeadline = (string)($invite['expires_at'] ?? '');
+            $deadlineTs = strtotime($countdownDeadline) ?: 0;
         } elseif ($storedStatus === 'awaiting_start') {
             $deadlineTs = $this->effectiveReadyDeadlineTs($invite);
-            if ($deadlineTs > 0) $deadline = gmdate('c', $deadlineTs);
+            if ($deadlineTs > 0) {
+                $readyDeadline = gmdate('c', $deadlineTs);
+                $countdownDeadline = $readyDeadline;
+            }
         }
         return [
             'token' => (string)($invite['token'] ?? ''),
@@ -205,7 +209,8 @@ trait GameInviteValidationTrait
             'opened_at' => (string)($invite['opened_at'] ?? ''),
             'open_requested_at' => (string)($invite['open_requested_at'] ?? ''),
             'accepted_at' => (string)($invite['accepted_at'] ?? ''),
-            'ready_deadline_at' => $deadline,
+            'ready_deadline_at' => $readyDeadline,
+            'countdown_deadline_at' => $countdownDeadline,
             'waiting_seconds' => $deadlineTs > 0 ? max(0, $deadlineTs - time()) : 0,
             'source_game_id' => (string)($invite['source_game_id'] ?? ''),
             'game_id' => (string)($invite['game_id'] ?? ''),

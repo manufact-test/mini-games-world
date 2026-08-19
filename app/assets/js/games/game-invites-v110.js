@@ -1092,7 +1092,10 @@ function updateOpenInviteSheet(){
   if (!currentInvite?.token) return;
   const openToken = openSheetInviteToken();
   if (openToken !== String(currentInvite.token || '')) return;
-  if (openSheetInviteState() === inviteSheetState(currentInvite)) return;
+  if (openSheetInviteState() === inviteSheetState(currentInvite)) {
+    mountInviteCountdown(currentInvite, inviteCountdownLabel(currentInvite));
+    return;
+  }
 
   const status = String(currentInvite.status || '');
   if (status === 'pending' && currentInvite.is_owner) {
@@ -1241,7 +1244,7 @@ function reconcileInviteeWaiting(invite){
   const note = document.querySelector('#sheet .invite-status-note');
   if (!marker || !note) return false;
   marker.dataset.inviteState = inviteSheetState(invite);
-  note.textContent = inviteeWaitingNote(invite);
+  mountInviteCountdown(invite, 'Ждём запуск матча');
   return true;
 }
 
@@ -1464,6 +1467,13 @@ function inviteSheetState(invite){
 
 function inviteMarker(invite){
   return `<span data-invite-sheet data-invite-token="${escapeHtml(invite?.token || '')}" data-invite-state="${escapeHtml(inviteSheetState(invite))}" hidden></span>`;
+}
+
+function inviteCountdownLabel(invite){
+  const status = String(invite?.status || '');
+  if (status === 'accepted') return invite?.is_owner ? 'Запустите матч' : 'Ждём запуск матча';
+  if (status === 'pending') return invite?.is_invitee ? 'Ответьте на приглашение' : 'Ожидаем ответ';
+  return 'Ожидание';
 }
 
 function clearInviteCountdown(){
