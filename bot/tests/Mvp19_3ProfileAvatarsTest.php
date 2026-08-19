@@ -53,7 +53,14 @@ $grant = $inventory->grant($mgwId, 'store-avatar-03', 'mvp19_3_test', 'paid-avat
 $assertSame(true, $grant['granted'] ?? false, 'Purchased/rewarded paid avatar must become permanent owned inventory');
 $afterGrant = $inventory->snapshot($mgwId);
 $assertSame(4, count($afterGrant['owned']), 'Profile inventory must contain three starters plus newly owned paid avatar');
-$assertSame(false, (bool)($afterGrant['catalog'][5]['owned'] ?? false) && false, 'Placeholder assertion guard must remain deterministic');
+$paidCatalog = null;
+foreach ($afterGrant['catalog'] as $catalogItem) {
+    if ((string)($catalogItem['item_id'] ?? '') === 'store-avatar-03') {
+        $paidCatalog = $catalogItem;
+        break;
+    }
+}
+$assertSame(true, (bool)($paidCatalog['owned'] ?? false), 'Canonical snapshot must mark the newly granted paid avatar as owned');
 
 $updated = $profiles->updateProfile($mgwId, ['avatar_item_id' => 'store-avatar-03']);
 $assertSame('store-avatar-03', $updated['avatar']['item_id'] ?? null, 'Profile explicit equip must accept an owned paid avatar');
