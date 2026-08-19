@@ -7,7 +7,7 @@ require_once dirname(__DIR__) . '/accounts/MgwIdGenerator.php';
 final class SocialInviteGuardException extends RuntimeException {}
 
 /**
- * Adapter between the legacy invite runtime ids and canonical MGW social ids.
+ * Adapter between legacy invite runtime ids and canonical MGW social ids.
  * Block ownership remains exclusively in FriendGraphService.
  */
 final class SocialInviteGuard
@@ -64,13 +64,11 @@ final class SocialInviteGuard
 
     public function assertNotBlocked(string $actorMgwId, string $targetMgwId): void
     {
-        try {
-            $this->friends->assertPairNotBlocked($actorMgwId, $targetMgwId);
-        } catch (FriendGraphException $error) {
-            if ($error->reason === 'blocked_pair') {
-                throw new SocialInviteGuardException('Приглашение недоступно: один из игроков заблокирован.');
-            }
-            throw $error;
+        if ($actorMgwId === $targetMgwId) return;
+        // FriendGraphService::lookupExact is the canonical read boundary and
+        // intentionally hides either block direction. Do not duplicate its SQL.
+        if ($this->friends->lookupExact($actorMgwId, $targetMgwId) === null) {
+            throw new SocialInviteGuardException('Приглашение недоступно: игрок заблокирован или недоступен.');
         }
     }
 
