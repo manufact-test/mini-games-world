@@ -1,8 +1,12 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/DatabaseExceptionClassifier.php';
+
 final class PdoDatabaseConnection implements DatabaseConnectionInterface
 {
+    private const OUTER_TRANSACTION_MAX_ATTEMPTS = 2;
+
     private int $transactionDepth = 0;
 
     public function __construct(private PDO $pdo)
@@ -56,38 +60,54 @@ final class PdoDatabaseConnection implements DatabaseConnectionInterface
 
     public function transaction(callable $callback): mixed
     {
+        if ($this->transactionDepth > 0) {
+            return $this->nestedTransaction($callback);
+        }
+
+        for ($attempt = 1; $attempt <= self::OUTER_TRANSACTION_MAX_ATTEMPTS; $attempt++) {
+            $this->pdo->beginTransaction();
+            $this->transactionDepth = 1;
+
+            try {
+                $result = $callback($this);
+                $this->transactionDepth = 0;
+                $this->pdo->commit();
+                return $result;
+            } catch (Throwable $error) {
+                $this->transactionDepth = 0;
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->rollBack();
+                }
+
+                if ($attempt < self::OUTER_TRANSACTION_MAX_ATTEMPTS
+                    && DatabaseExceptionClassifier::isDeadlock($error)) {
+                    // Intentional immediate retry: no sleep/backoff and only the
+                    // exact outer transaction is replayed after a deadlock.
+                    continue;
+                }
+
+                throw $error;
+            }
+        }
+
+        throw new LogicException('Database transaction retry loop exhausted unexpectedly.');
+    }
+
+    private function nestedTransaction(callable $callback): mixed
+    {
         $depth = $this->transactionDepth;
         $savepoint = 'mgw_sp_' . $depth;
-
-        if ($depth === 0) {
-            $this->pdo->beginTransaction();
-        } else {
-            $this->pdo->exec('SAVEPOINT ' . $savepoint);
-        }
+        $this->pdo->exec('SAVEPOINT ' . $savepoint);
         $this->transactionDepth++;
 
         try {
             $result = $callback($this);
             $this->transactionDepth--;
-
-            if ($depth === 0) {
-                $this->pdo->commit();
-            } else {
-                $this->pdo->exec('RELEASE SAVEPOINT ' . $savepoint);
-            }
-
+            $this->pdo->exec('RELEASE SAVEPOINT ' . $savepoint);
             return $result;
         } catch (Throwable $error) {
             $this->transactionDepth--;
-
-            if ($depth === 0) {
-                if ($this->pdo->inTransaction()) {
-                    $this->pdo->rollBack();
-                }
-            } else {
-                $this->pdo->exec('ROLLBACK TO SAVEPOINT ' . $savepoint);
-            }
-
+            $this->pdo->exec('ROLLBACK TO SAVEPOINT ' . $savepoint);
             throw $error;
         }
     }
