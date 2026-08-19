@@ -1,6 +1,7 @@
 export const state = {
   user: null,
   mgwProfile: null,
+  profileInventory: null,
   stats: null,
   room: 'match',
   screen: 'home',
