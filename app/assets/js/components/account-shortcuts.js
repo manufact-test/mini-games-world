@@ -6,16 +6,17 @@ export function initAccountShortcuts(){
     if (!trigger) return;
 
     // home-screen opens the menu synchronously before this listener runs.
-    queueMicrotask(enhanceCurrentMenu);
+    const allowSocialNavigation = trigger.id === 'moreMenuOpen';
+    queueMicrotask(() => enhanceCurrentMenu(allowSocialNavigation));
   });
 }
 
-async function enhanceCurrentMenu(){
+async function enhanceCurrentMenu(allowSocialNavigation = false){
   const sheet = document.getElementById('sheet');
   const menu = sheet?.querySelector('.menu-list');
   if (!menu) return;
 
-  if (!sheet.querySelector('[data-account-friends-shortcut]')) {
+  if (allowSocialNavigation && !sheet.querySelector('[data-account-friends-shortcut]')) {
     const friends = document.createElement('button');
     friends.className = 'btn menu-item account-menu-entry';
     friends.type = 'button';
