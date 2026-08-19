@@ -4,6 +4,7 @@ import { getInitData } from '../telegram/telegram-app.js?v=21';
 import { getSessionId, getDeviceId } from '../session.js?v=1131';
 
 const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
+const FRIENDS_URL = `${window.location.origin}/bot/friends.php`;
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
@@ -43,6 +44,7 @@ export const api = {
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestUrl(`${window.location.origin}/bot/profile-v2.php`, profileUpdate ? { profile_update:profileUpdate } : {}),
   mgwProfile: () => requestUrl(`${window.location.origin}/bot/profile.php`),
+  friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),
   historyFast: () => request('history'),
   support: (type, message) => request('support', { type, message }),
