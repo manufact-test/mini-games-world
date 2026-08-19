@@ -15,6 +15,8 @@ export function initMgwAvatarPresentation(){
     observer?.disconnect();
     observer = new MutationObserver(scheduleDecorate);
     observer.observe(row, { childList:true, subtree:false });
+    const timer = document.getElementById('timerText');
+    if (timer) observer.observe(timer, { childList:true, characterData:true, subtree:true });
     decoratePlayersRow();
   };
 
