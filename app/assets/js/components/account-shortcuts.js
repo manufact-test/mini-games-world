@@ -11,6 +11,12 @@ export function initAccountShortcuts(){
   });
 }
 
+async function openFriendsShortcut(){
+  const module = await import('../screens/friends-screen-v110.js?v=1&mvp18=friends-ui');
+  if (typeof module.initFriendsScreen === 'function') module.initFriendsScreen();
+  document.dispatchEvent(new CustomEvent('mgw:open-friends'));
+}
+
 async function enhanceCurrentMenu(allowSocialNavigation = false){
   const sheet = document.getElementById('sheet');
   const menu = sheet?.querySelector('.menu-list');
@@ -26,7 +32,7 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
       <span class="account-menu-copy"><strong>Друзья</strong></span>
     `;
     friends.addEventListener('click', () => {
-      document.dispatchEvent(new CustomEvent('mgw:open-friends'));
+      void openFriendsShortcut();
     });
     menu.prepend(friends);
   }
