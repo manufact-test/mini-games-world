@@ -10,23 +10,11 @@ const STORE_TABS = Object.freeze([
   { id:'profile', label:'Профиль' },
   { id:'games', label:'Игры' },
   { id:'bundles', label:'Наборы' },
-  { id:'inventory', label:'Инвентарь' },
-  { id:'tournament_rewards', label:'Турнирные награды' },
 ]);
-
-const INVENTORY_FAMILY_LABELS = Object.freeze({
-  avatar:'Аватарки',
-  frame:'Рамки',
-  background:'Фоны',
-  badge:'Значки',
-  reaction:'Реакции',
-  effect:'Эффекты',
-});
 
 let storeState = null;
 let storeSurface = 'tab';
 let activeTab = 'profile';
-let inventoryFamily = 'avatar';
 let storeLoadPromise = null;
 let purchaseBusy = false;
 
@@ -52,7 +40,7 @@ export async function openStoreTab(){
   haptic('light');
   if (storeState) {
     renderStore();
-    void refreshStore();
+    void refreshStoreSilently();
     return;
   }
   renderStorePending();
@@ -64,7 +52,7 @@ export async function openStoreSheet(){
   haptic('light');
   if (storeState) {
     renderStore();
-    void refreshStore();
+    void refreshStoreSilently();
     return;
   }
   renderStorePending();
@@ -98,10 +86,10 @@ async function loadStore(){
   }
 }
 
-async function refreshStore(){
+async function refreshStoreSilently(){
   try {
     await fetchStore();
-    renderStore();
+    updateVisibleBalance();
   } catch (_) {
     // Keep the already rendered Store snapshot if a background refresh fails.
   }
@@ -114,8 +102,7 @@ function applyStoreResponse(result){
     state.user = { ...state.user, balance:Number(storeState.balance || 0) };
     renderBalances(state.user);
   }
-  const availableTabs = new Set(storeTabs().map(tab => String(tab.id || '')));
-  if (!availableTabs.has(activeTab)) activeTab = 'profile';
+  if (!STORE_TABS.some(tab => tab.id === activeTab)) activeTab = 'profile';
 }
 
 function renderStorePending(){
@@ -126,7 +113,7 @@ function renderStorePending(){
       ${renderTabs()}
       <div class="store-v2-content" data-store-v2-panel="${escapeAttr(activeTab)}">
         <div class="store-v2-skeleton-grid" aria-hidden="true">
-          ${Array.from({ length:6 }, () => '<span></span>').join('')}
+          ${Array.from({ length:4 }, () => '<span></span>').join('')}
         </div>
       </div>
     </div>
@@ -154,14 +141,22 @@ function renderBalanceHero(){
   return `
     <section class="store-v2-balance">
       <span>Баланс</span>
-      <strong>${formatNumber(balance)} <small>коинов</small></strong>
+      <strong data-store-v2-balance>${formatNumber(balance)} <small>коинов</small></strong>
     </section>
   `;
 }
 
+function updateVisibleBalance(){
+  const root = currentRoot();
+  const target = root?.querySelector('[data-store-v2-balance]');
+  if (!target) return;
+  target.innerHTML = `${formatNumber(storeState?.balance ?? state.user?.balance ?? 0)} <small>коинов</small>`;
+}
+
 function storeTabs(){
   const serverTabs = Array.isArray(storeState?.tabs) ? storeState.tabs : [];
-  return serverTabs.length ? serverTabs : STORE_TABS;
+  const serverById = new Map(serverTabs.map(tab => [String(tab?.id || ''), tab]));
+  return STORE_TABS.map(tab => ({ ...tab, ...(serverById.get(tab.id) || {}) }));
 }
 
 function renderTabs(){
@@ -180,10 +175,8 @@ function renderActiveTab(){
   switch (activeTab) {
     case 'coins': return renderCoinsTab();
     case 'profile': return renderProfileTab();
-    case 'games': return renderDevPlaceholder('Игры');
+    case 'games': return renderDevPlaceholder();
     case 'bundles': return renderBundlesTab();
-    case 'inventory': return renderInventoryTab();
-    case 'tournament_rewards': return renderDevPlaceholder('Турнирные награды');
     default: return renderProfileTab();
   }
 }
@@ -194,9 +187,13 @@ function renderCoinsTab(){
     <div class="store-v2-coin-grid">
       ${packages.map(pkg => `
         <article class="store-v2-coin-card">
-          <div class="store-v2-coin-amount"><strong>${formatNumber(pkg.coins)}</strong><span>коинов</span></div>
-          <b>${formatEuro(pkg.price_eur_cents)}</b>
-          <button class="store-v2-secondary-action" type="button" disabled>Скоро</button>
+          <div class="store-v2-coin-mark" aria-hidden="true"><span>MG</span></div>
+          <div class="store-v2-coin-copy">
+            <strong>${formatNumber(pkg.coins)}</strong>
+            <span>коинов</span>
+            <b>${formatEuro(pkg.price_eur_cents)}</b>
+          </div>
+          <em>Скоро</em>
         </article>
       `).join('') || emptyState('Пакеты пока недоступны')}
     </div>
@@ -217,17 +214,19 @@ function renderAvatarOffer(offer){
   const owned = Boolean(offer?.already_owned);
   const number = Number(offer?.preview_number || 0);
   const itemId = Array.isArray(offer?.item_ids) ? String(offer.item_ids[0] || '') : '';
+  const equippedItemId = String(storeState?.inventory?.equipped?.profile_avatar || '');
+  const equipped = owned && itemId !== '' && itemId === equippedItemId;
   return `
-    <article class="store-v2-product ${owned ? 'owned' : ''}">
+    <article class="store-v2-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
       <div class="store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}">
         <span>${String(number).padStart(2, '0')}</span>
+        ${equipped ? '<i class="store-v2-selected-check" aria-label="Выбрана">✓</i>' : ''}
       </div>
       <strong class="store-v2-product-name">Аватарка ${number || ''}</strong>
       <div class="store-v2-product-foot">
-        <b>${owned ? 'Куплено' : `${formatNumber(offer?.price_coins || 0)} коинов`}</b>
-        <button class="store-v2-buy ${owned ? 'owned' : ''}" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button" ${owned ? 'disabled' : ''}>
-          ${owned ? 'В инвентаре' : 'Купить'}
-        </button>
+        ${owned
+          ? `<b>${equipped ? '' : 'Куплено'}</b>`
+          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">Купить</button>`}
       </div>
     </article>
   `;
@@ -248,11 +247,9 @@ function renderBundlesTab(){
       </div>
       <div class="store-v2-bundle-copy">
         <h2>Комплект аватарок</h2>
-        <p>${allOwned
-          ? 'Все пять платных аватарок уже у вас.'
-          : (owned
-            ? `У вас уже ${owned} из 5 — в комплект войдут только ${missing} недостающих.`
-            : 'Все пять платных аватарок сразу — дешевле, чем по одной.')}</p>
+        ${allOwned
+          ? '<p>Комплект уже собран.</p>'
+          : (owned ? `<p>Осталось ${missing} из 5.</p>` : '')}
         ${!allOwned ? `<div class="store-v2-bundle-price"><strong>${formatNumber(bundle.price_coins || 0)} коинов</strong>${saving > 0 ? `<span>−${formatNumber(saving)}</span>` : ''}</div>` : ''}
       </div>
       <button class="btn primary full" data-store-v2-buy="${escapeAttr(bundle.offer_id || '')}" type="button" ${allOwned ? 'disabled' : ''}>
@@ -271,46 +268,8 @@ function regularBundlePrice(bundle){
   }, 0);
 }
 
-function renderInventoryTab(){
-  const items = Array.isArray(storeState?.inventory?.items) ? storeState.inventory.items : [];
-  const families = [...new Set(items.map(item => String(item?.item_family || '')).filter(Boolean))];
-  if (families.length && !families.includes(inventoryFamily)) inventoryFamily = families[0];
-  const visibleItems = families.length ? items.filter(item => String(item?.item_family || '') === inventoryFamily) : items;
-  return `
-    ${families.length ? `<div class="store-v2-subtabs" role="tablist" aria-label="Тип предметов">
-      ${families.map(family => `<button class="store-v2-subtab ${inventoryFamily === family ? 'active' : ''}" data-store-v2-inventory-family="${escapeAttr(family)}" type="button" role="tab" aria-selected="${inventoryFamily === family ? 'true' : 'false'}">${escapeHtml(inventoryFamilyLabel(family))}</button>`).join('')}
-    </div>` : ''}
-    <div class="store-v2-inventory-grid">
-      ${visibleItems.map(renderInventoryItem).join('') || emptyState('Инвентарь пуст')}
-    </div>
-  `;
-}
-
-function renderInventoryItem(item){
-  const number = Number(item?.preview_number || 0);
-  const itemId = String(item?.item_id || '');
-  const equipped = Boolean(item?.equipped);
-  const avatarText = item?.starter ? 'MG' : String(number).padStart(2, '0');
-  return `
-    <article class="store-v2-inventory-item ${equipped ? 'equipped' : ''}">
-      <div class="store-v2-mini-avatar" data-avatar-item-id="${escapeAttr(itemId)}"><span>${escapeHtml(avatarText)}</span></div>
-      <strong>Аватарка ${number || ''}</strong>
-      ${equipped ? '<b>Выбрана</b>' : ''}
-    </article>
-  `;
-}
-
-function inventoryFamilyLabel(family){
-  return INVENTORY_FAMILY_LABELS[family] || family;
-}
-
-function renderDevPlaceholder(section){
-  return `
-    <div class="store-v2-dev-placeholder">
-      <strong>ПОКА НЕ ГОТОВО</strong>
-      <span>${escapeHtml(section)} — этот раздел пока не проверяем.</span>
-    </div>
-  `;
+function renderDevPlaceholder(){
+  return `<div class="store-v2-dev-placeholder"><strong>ПОКА НЕ ГОТОВО</strong></div>`;
 }
 
 function emptyState(title){
@@ -321,19 +280,12 @@ function bindStoreEvents(){
   const root = currentRoot();
   if (!root) return;
   root.querySelectorAll('[data-store-v2-tab]').forEach(button => {
-    button.addEventListener('click', () => {
-      activeTab = String(button.dataset.storeV2Tab || 'profile');
-      haptic('light');
-      storeState ? renderStore() : renderStorePending();
-    });
+    button.addEventListener('click', () => activateStoreTab(String(button.dataset.storeV2Tab || 'profile')));
   });
-  root.querySelectorAll('[data-store-v2-inventory-family]').forEach(button => {
-    button.addEventListener('click', () => {
-      inventoryFamily = String(button.dataset.storeV2InventoryFamily || 'avatar');
-      haptic('light');
-      renderStore();
-    });
-  });
+  bindPanelEvents(root);
+}
+
+function bindPanelEvents(root){
   root.querySelectorAll('[data-store-v2-buy]').forEach(button => {
     button.addEventListener('click', () => {
       const offer = findOffer(String(button.dataset.storeV2Buy || ''));
@@ -342,6 +294,24 @@ function bindStoreEvents(){
       openPurchaseConfirm(offer);
     });
   });
+}
+
+function activateStoreTab(nextTab){
+  if (!STORE_TABS.some(tab => tab.id === nextTab) || nextTab === activeTab) return;
+  activeTab = nextTab;
+  haptic('light');
+  const root = currentRoot();
+  if (!root) return;
+  root.querySelectorAll('[data-store-v2-tab]').forEach(button => {
+    const active = String(button.dataset.storeV2Tab || '') === activeTab;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  const panel = root.querySelector('[data-store-v2-panel]');
+  if (!panel) return;
+  panel.dataset.storeV2Panel = activeTab;
+  panel.innerHTML = storeState ? renderActiveTab() : '<div class="store-v2-skeleton-grid" aria-hidden="true"><span></span><span></span><span></span><span></span></div>';
+  bindPanelEvents(panel);
 }
 
 function findOffer(offerId){
@@ -363,15 +333,12 @@ function openPurchaseConfirm(offer){
   const visual = isBundle
     ? `<div class="store-v2-confirm-bundle">${[4,5,6,7,8].map(value => `<span>${String(value).padStart(2,'0')}</span>`).join('')}</div>`
     : `<div class="store-v2-confirm-avatar"><span>${String(number).padStart(2,'0')}</span></div>`;
-  const purchaseNote = isBundle
-    ? 'После покупки недостающие аватарки появятся в Инвентаре.'
-    : 'После покупки аватарка появится в Инвентаре.';
 
   openSheet(`
     <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="store-v2-confirm">
       ${visual}
-      <div class="store-v2-confirm-copy"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(purchaseNote)}</p></div>
+      <div class="store-v2-confirm-copy"><strong>${escapeHtml(title)}</strong></div>
       <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
       <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
       <button class="btn primary full" id="storeV2ConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
@@ -393,7 +360,7 @@ async function purchaseOffer(offer, token, button){
     const result = await api.cosmeticStorePurchase(String(offer.offer_id || ''), token);
     applyStoreResponse(result);
     haptic('success');
-    toast('Готово. Покупка в Инвентаре.');
+    toast(String(offer.offer_type || '') === 'bundle' ? 'Комплект добавлен в коллекцию.' : 'Аватарка добавлена в коллекцию.');
     closeSheet();
     renderStore();
   } catch (error) {
