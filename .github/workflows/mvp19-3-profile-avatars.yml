@@ -8,6 +8,7 @@ on:
       - 'bot/profile-v2.php'
       - 'bot/helpers/response.php'
       - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
+      - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
       - 'app/assets/js/state.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
@@ -54,6 +55,7 @@ jobs:
           php -l bot/profile-v2.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
       - name: Validate active JavaScript syntax
         run: |
@@ -70,6 +72,7 @@ jobs:
         run: |
           php bot/tests/AccountIdentityServiceTest.php
           php bot/tests/MgwProfileIdentityCorrectiveTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
       - name: Run accepted Store purchase regression
         run: php bot/tests/Mvp19_2CosmeticStoreTest.php
@@ -151,6 +154,7 @@ jobs:
               bot/profile-v2.php|\
               bot/helpers/response.php|\
               bot/tests/Mvp19_3ProfileAvatarsTest.php|\
+              bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
               app/assets/js/state.js|\
               app/assets/js/ui.js|\
               app/assets/js/screens/profile-screen-v110.js|\
