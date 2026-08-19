@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/database/DatabaseExceptionClassifier.php';
+
 final class RealtimeDatabaseStore
 {
     public function __construct(private DatabaseConnectionInterface $database) {}
@@ -210,28 +212,40 @@ final class RealtimeDatabaseStore
             ];
 
             if ($existing === []) {
-                $db->execute(
-                    'INSERT INTO mgw_match_queue (
-                        queue_id, player_ref, mgw_id, legacy_user_id, game_type, room, bet, board_size,
-                        status, reserved_match_id, created_at_utc, updated_at_utc, expires_at_utc
-                     ) VALUES (
-                        :queue_id, :player_ref, :mgw_id, :legacy_user_id, :game_type, :room, :bet, :board_size,
-                        :status, :reserved_match_id, :created_at_utc, :updated_at_utc, :expires_at_utc
-                     )',
-                    $params
-                );
+                try {
+                    $db->execute(
+                        'INSERT INTO mgw_match_queue (
+                            queue_id, player_ref, mgw_id, legacy_user_id, game_type, room, bet, board_size,
+                            status, reserved_match_id, created_at_utc, updated_at_utc, expires_at_utc
+                         ) VALUES (
+                            :queue_id, :player_ref, :mgw_id, :legacy_user_id, :game_type, :room, :bet, :board_size,
+                            :status, :reserved_match_id, :created_at_utc, :updated_at_utc, :expires_at_utc
+                         )',
+                        $params
+                    );
+                } catch (Throwable $error) {
+                    if (!DatabaseExceptionClassifier::isUniqueConstraintViolation($error)) {
+                        throw $error;
+                    }
+
+                    // Two first requests for the same player can both observe an
+                    // absent row. The unique player_ref constraint is the final
+                    // authority: recover only if the collision belongs to this
+                    // exact player. A queue_id collision for another player is
+                    // not recoverable and must still fail closed.
+                    $collision = $db->fetchAll(
+                        'SELECT queue_id, created_at_utc FROM mgw_match_queue WHERE player_ref = :player_ref' . $this->forUpdate($db),
+                        ['player_ref' => $playerRef]
+                    );
+                    if ($collision === []) {
+                        throw $error;
+                    }
+                    $params['queue_id'] = (string)$collision[0]['queue_id'];
+                    $params['created_at_utc'] = (string)$collision[0]['created_at_utc'];
+                    $this->updateQueueEntry($db, $params);
+                }
             } else {
-                $update = $params;
-                unset($update['queue_id'], $update['created_at_utc']);
-                $db->execute(
-                    'UPDATE mgw_match_queue SET
-                        mgw_id = :mgw_id, legacy_user_id = :legacy_user_id, game_type = :game_type,
-                        room = :room, bet = :bet, board_size = :board_size, status = :status,
-                        reserved_match_id = :reserved_match_id, updated_at_utc = :updated_at_utc,
-                        expires_at_utc = :expires_at_utc
-                     WHERE player_ref = :player_ref',
-                    $update
-                );
+                $this->updateQueueEntry($db, $params);
             }
             return $this->findQueueEntry($playerRef) ?? [];
         });
@@ -471,6 +485,21 @@ final class RealtimeDatabaseStore
         }
         unset($row);
         return $rows;
+    }
+
+    private function updateQueueEntry(DatabaseConnectionInterface $db, array $params): void
+    {
+        $update = $params;
+        unset($update['queue_id'], $update['created_at_utc']);
+        $db->execute(
+            'UPDATE mgw_match_queue SET
+                mgw_id = :mgw_id, legacy_user_id = :legacy_user_id, game_type = :game_type,
+                room = :room, bet = :bet, board_size = :board_size, status = :status,
+                reserved_match_id = :reserved_match_id, updated_at_utc = :updated_at_utc,
+                expires_at_utc = :expires_at_utc
+             WHERE player_ref = :player_ref',
+            $update
+        );
     }
 
     private function replacePlayers(DatabaseConnectionInterface $db, string $matchId, array $players, string $updatedAt): void
