@@ -5,6 +5,7 @@ const ROUTES = Object.freeze({
   tournaments:Object.freeze({ screen:'tournaments', shell:true }),
   store:Object.freeze({ screen:'store', shell:true }),
   profile:Object.freeze({ screen:'profile', shell:true }),
+  friends:Object.freeze({ screen:'friends', shell:false }),
   search:Object.freeze({ screen:'search', shell:false }),
   game:Object.freeze({ screen:'game', shell:false }),
 });
