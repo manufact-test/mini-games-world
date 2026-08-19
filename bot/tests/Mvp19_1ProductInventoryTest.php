@@ -57,8 +57,8 @@ $assertSame(3, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_cata
 $assertSame(5, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_family = 'avatar' AND is_store_product = 1"), 'Exactly five launch avatars must be store products');
 $assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE starter_grant = 1 AND is_store_product = 1"), 'Starter avatars must not be store products');
 $assertSame(
-    ['bundle', 'game', 'profile', 'seasonal', 'showcase'],
-    array_values(array_unique(array_merge(ProductInventoryService::ITEM_TYPES, []))),
+    ['profile', 'game', 'bundle', 'seasonal', 'showcase'],
+    array_values(array_unique(ProductInventoryService::ITEM_TYPES)),
     'Catalogue service must expose all canonical MVP-19.1 item types'
 );
 
