@@ -14,8 +14,9 @@ final class RuntimeMatchVersionResolver
         'domino' => 'domino',
     ];
 
-    private const ENGINE_OWNER_FILES = [
+    private const SHARED_ENGINE_OWNER_FILES = [
         'bot/services/GameActionService.php',
+        'bot/services/GameService.php',
         'bot/services/GameRuntimeService.php',
         'bot/services/ChessRuntimeService.php',
         'bot/services/FourInARowService.php',
@@ -38,7 +39,8 @@ final class RuntimeMatchVersionResolver
             throw new RuntimeException('Match event log cannot version unsupported game type: ' . $gameType . '.');
         }
 
-        $definition = $this->projectRoot . '/bot/games/' . $directory . '/definition.php';
+        $gameDir = $this->projectRoot . '/bot/games/' . $directory;
+        $definition = $gameDir . '/definition.php';
         if (!is_file($definition)) {
             throw new RuntimeException('Match event rules owner is missing for: ' . $gameType . '.');
         }
@@ -48,14 +50,16 @@ final class RuntimeMatchVersionResolver
             throw new RuntimeException('Match event rules fingerprint is unavailable.');
         }
 
-        $engineOwners = [$definition];
-        foreach (self::ENGINE_OWNER_FILES as $relative) {
+        $engineOwners = glob($gameDir . '/*.php') ?: [];
+        foreach (self::SHARED_ENGINE_OWNER_FILES as $relative) {
             $path = $this->projectRoot . '/' . $relative;
             if (!is_file($path)) {
                 throw new RuntimeException('Match event engine owner is missing: ' . $relative . '.');
             }
             $engineOwners[] = $path;
         }
+        $engineOwners = array_values(array_unique($engineOwners));
+        sort($engineOwners, SORT_STRING);
 
         $parts = [];
         foreach ($engineOwners as $path) {
