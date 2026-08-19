@@ -15,11 +15,15 @@ on:
       - 'bot/invites.php'
       - 'bot/social/PlayerReportService.php'
       - 'bot/social/SocialInviteGuard.php'
+      - 'bot/tests/FriendGraphServiceTest.php'
       - 'bot/tests/Mvp15EconomyRemoteConfigTest.php'
       - 'bot/tests/Mvp18FriendsUiContractTest.mjs'
       - 'bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php'
       - 'bot/tests/SocialPlayerProfileReaderTest.php'
+      - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - '.github/workflows/mvp18-4-universal-invite-landing.yml'
       - '.github/workflows/mvp18-5-reports-blocked-users.yml'
   workflow_dispatch:
 
@@ -63,9 +67,12 @@ jobs:
           php -l bot/invites.php
           php -l bot/admin-reports.php
           php -l app/admin.php
+          php -l bot/tests/FriendGraphServiceTest.php
           php -l bot/tests/Mvp15EconomyRemoteConfigTest.php
           php -l bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
           php -l bot/tests/SocialPlayerProfileReaderTest.php
+          php -l bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
+          php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
           php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
 
       - name: Check bounded MVP-18.5 JavaScript
@@ -78,6 +85,9 @@ jobs:
 
       - name: Run reports and blocked users contract
         run: php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+
+      - name: Run canonical friend graph regression
+        run: php bot/tests/FriendGraphServiceTest.php
 
       - name: Run Friends UI owner regression
         run: node bot/tests/Mvp18FriendsUiContractTest.mjs
@@ -93,6 +103,12 @@ jobs:
 
       - name: Run unified balance schema regression
         run: php bot/tests/UnifiedBalanceMigrationFoundationTest.php
+
+      - name: Run unified balance execution regression
+        run: php bot/tests/UnifiedBalanceMigrationExecutionTest.php
+
+      - name: Run unified balance identity reconciliation regression
+        run: php bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
 
       - name: Run economy schema regression
         run: php bot/tests/Mvp15EconomyRemoteConfigTest.php
@@ -112,7 +128,7 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/mvp18-5-reports-blocked-users.yml|app/admin.php|app/assets/js/admin-reports.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|bot/admin-reports.php|bot/database/migrations/20260819_0012_create_player_reports.php|bot/friends.php|bot/invites.php|bot/social/PlayerReportService.php|bot/social/SocialInviteGuard.php|bot/tests/Mvp15EconomyRemoteConfigTest.php|bot/tests/Mvp18FriendsUiContractTest.mjs|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/SocialPlayerProfileReaderTest.php|bot/tests/UnifiedBalanceMigrationFoundationTest.php)
+              .github/workflows/mvp18-4-universal-invite-landing.yml|.github/workflows/mvp18-5-reports-blocked-users.yml|app/admin.php|app/assets/js/admin-reports.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|bot/admin-reports.php|bot/database/migrations/20260819_0012_create_player_reports.php|bot/friends.php|bot/invites.php|bot/social/PlayerReportService.php|bot/social/SocialInviteGuard.php|bot/tests/FriendGraphServiceTest.php|bot/tests/Mvp15EconomyRemoteConfigTest.php|bot/tests/Mvp18FriendsUiContractTest.mjs|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/SocialPlayerProfileReaderTest.php|bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php|bot/tests/UnifiedBalanceMigrationExecutionTest.php|bot/tests/UnifiedBalanceMigrationFoundationTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-18.5 path: $path" >&2
