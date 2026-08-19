@@ -64,6 +64,33 @@ try {
             $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
         );
     };
+    $resetReasonCode = static function (StagingTestPlayerResetStageException $error): string {
+        $previous = $error->getPrevious();
+        $message = $previous instanceof Throwable ? $previous->getMessage() : '';
+
+        return match (true) {
+            $message === 'Staging test users are unavailable.' => 'test_users_unavailable',
+            $message === 'Staging test player is not initialized.' => 'test_player_uninitialized',
+            $message === 'Canonical balance has legacy fields but no unification audit metadata.' => 'test_user_balance_metadata_missing',
+            $message === 'Unified balance migration version mismatch.' => 'test_user_balance_version_mismatch',
+            $message === 'Unified balance legacy breakdown is inconsistent.' => 'test_user_balance_breakdown_invalid',
+            $message === 'Unified balance migration target is invalid.' => 'test_user_balance_target_invalid',
+            str_starts_with($message, 'Invalid unified balance field:') => 'test_user_balance_field_invalid',
+            str_starts_with($message, 'Negative unified balance field:') => 'test_user_balance_field_negative',
+            str_starts_with($message, 'Unified balance field exceeds integer range:') => 'test_user_balance_field_overflow',
+            $message === 'Unified balance migration would overflow integer range.' => 'test_user_balance_overflow',
+            $message === 'Staging test reset refuses an active game with a non-test player.' => 'active_test_game_mixed_owner',
+            $message === 'Staging test active-game participant is unavailable.' => 'active_test_game_participant_missing',
+            $message === 'Staging test reset refuses an invite with a non-test player.' => 'test_invite_mixed_owner',
+            $message === 'Staging test reset refuses an invite without stable identity.' => 'test_invite_identity_missing',
+            $message === 'Staging test reset refuses an active invite without game identity.' => 'started_invite_game_id_missing',
+            $message === 'Staging test reset refuses an active invite with malformed game state.' => 'started_invite_game_malformed',
+            $message === 'Staging test reset refuses an active invite with unknown linked game state.' => 'started_invite_game_status_unknown',
+            $message === 'Staging test reset cannot prove linked game ownership.' => 'started_invite_game_owner_unknown',
+            $message === 'Staging test reset refuses an active invite linked to a non-test game.' => 'started_invite_game_mixed_owner',
+            default => $error->stage() . '_unclassified',
+        };
+    };
 
     if ($action === 'diagnose_invite_residuals') {
         if (array_key_exists('slot', $payload) || substr_count($providedCredential, '.') !== 2) {
@@ -101,13 +128,15 @@ try {
         try {
             $result = $playerResetService()->reset($_SERVER);
         } catch (StagingTestPlayerResetStageException $error) {
-            error_log('[MiniGamesWorld staging test reset] failed stage=' . $error->stage());
+            $reasonCode = $resetReasonCode($error);
+            error_log('[MiniGamesWorld staging test reset] failed stage=' . $error->stage() . ' reason=' . $reasonCode);
             http_response_code(403);
             echo json_encode([
                 'ok' => false,
                 'service' => 'mini-games-world-staging-test-auth',
                 'error' => 'test_player_reset_unavailable',
                 'stage' => $error->stage(),
+                'reason_code' => $reasonCode,
             ], JSON_UNESCAPED_SLASHES) . PHP_EOL;
             exit;
         }
