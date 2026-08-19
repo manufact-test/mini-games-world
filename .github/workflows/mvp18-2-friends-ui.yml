@@ -1,0 +1,102 @@
+name: MVP-18.2 Friends UI
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/friends.php'
+      - 'bot/social/**'
+      - 'bot/tests/SocialPlayerProfileReaderTest.php'
+      - 'bot/tests/Mvp18FriendsUiContractTest.mjs'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/main-v110-social-v182.js'
+      - 'app/assets/js/router.js'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/assets/js/screens/friends-screen-v110.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
+      - 'app/assets/css/friends-v110.css'
+      - '.github/workflows/mvp18-2-friends-ui.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp18-2-friends-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Active Friends UI and player actions contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Lint bounded PHP slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l bot/friends.php
+          php -l bot/social/FriendGraphService.php
+          php -l bot/social/SocialPlayerProfileReader.php
+          php -l bot/tests/FriendGraphServiceTest.php
+          php -l bot/tests/SocialPlayerProfileReaderTest.php
+
+      - name: Validate active JavaScript graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/main-v110-social-v182.js
+          node --check app/assets/js/router.js
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/components/account-shortcuts.js
+          node --check app/assets/js/screens/friends-screen-v110.js
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/games/game-invites-v110-rematch-policy-v175.js
+          node --check bot/tests/Mvp18FriendsUiContractTest.mjs
+
+      - name: Run canonical social data regression
+        run: php bot/tests/FriendGraphServiceTest.php
+
+      - name: Run public player profile regression
+        run: php bot/tests/SocialPlayerProfileReaderTest.php
+
+      - name: Run active launch and one-owner Friends UI contract
+        run: node bot/tests/Mvp18FriendsUiContractTest.mjs
+
+      - name: Guard frozen game engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if git diff --name-only "$base" "$head" -- 'bot/games/**' | grep -q .; then
+            echo 'MVP-18.2 must not modify accepted game engines.' >&2
+            exit 1
+          fi
+
+      - name: Guard no parallel social invite endpoint owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -Fq '/bot/invites.php' app/assets/js/screens/friends-screen-v110.js; then
+            echo 'Friends UI must hand off to existing invite owner instead of calling invites endpoint directly.' >&2
+            exit 1
+          fi
