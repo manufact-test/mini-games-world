@@ -1,0 +1,166 @@
+name: MVP-18.3 Invite v2 Maintenance
+
+on:
+  push:
+    branches:
+      - agent/mvp18-3-invite-v2
+    paths:
+      - '.github/workflows/mvp18-3-invite-v2-maintenance.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-bounded-invite-v2:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp18-3-invite-v2
+
+      - name: Apply canonical invite v2 roots
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {text.count(old)}')
+              p.write_text(text.replace(old, new))
+
+          replace_once(
+              'bot/services/invites/GameInviteStorageTrait.php',
+              "        $now = now_iso();\n        return [",
+              "        $now = now_iso();\n        $ttl = $status === 'draft' ? self::DRAFT_TTL_SEC : self::INVITE_TTL_SEC;\n        return ["
+          )
+          replace_once(
+              'bot/services/invites/GameInviteStorageTrait.php',
+              "            'expires_at' => gmdate('c', time() + self::INVITE_TTL_SEC),",
+              "            'expires_at' => gmdate('c', time() + $ttl),"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteStorageTrait.php',
+              "    private function effectiveReadyDeadlineTs(array $invite): int\n    {\n        $deadline = strtotime((string)($invite['ready_deadline_at'] ?? '')) ?: 0;\n        if ((string)($invite['source'] ?? '') !== 'rematch') {\n            $inviteExpiry = strtotime((string)($invite['expires_at'] ?? '')) ?: 0;\n            if ($inviteExpiry > $deadline) $deadline = $inviteExpiry;\n        }\n        return $deadline;\n    }",
+              "    private function effectiveReadyDeadlineTs(array $invite): int\n    {\n        // Once accepted, the canonical ready window is exactly 90 seconds.\n        // The original pending expiry must never extend the committed launch window.\n        return strtotime((string)($invite['ready_deadline_at'] ?? '')) ?: 0;\n    }"
+          )
+
+          replace_once(
+              'bot/services/invites/GameInviteCreationTrait.php',
+              "        $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');\n        $this->assertCanReceiveInvite($db, $invitee, 'Игрок сейчас занят поиском, матчем или другим приглашением.');\n\n        $invite = $this->newInvite($db, $user, $gameType, $room, $bet, $boardSize, 'direct', 'pending');",
+              "        $normalizedGameType = $this->catalog->normalizeGameType($gameType);\n        $normalizedBoardSize = $this->catalog->normalizeBoardSize($normalizedGameType, $boardSize);\n        $normalizedRoom = UnifiedGameZonePolicy::storageRoom();\n        $normalizedBet = UnifiedGameZonePolicy::entryCost($this->config);\n        $openDirectIndex = $this->findOpenDirectIndex($db, $userId, $inviteeId);\n        if ($openDirectIndex !== null) {\n            $existing = $db['invites'][$openDirectIndex];\n            $sameContext = (string)($existing['game_type'] ?? '') === $normalizedGameType\n                && (string)($existing['room'] ?? '') === $normalizedRoom\n                && (int)($existing['bet'] ?? 0) === $normalizedBet\n                && (int)($existing['board_size'] ?? 0) === $normalizedBoardSize;\n            if ($sameContext) return $this->publicInvite($existing, $userId);\n            throw new RuntimeException('Этому игроку уже отправлено другое приглашение.');\n        }\n\n        $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');\n        $this->assertCanReceiveInvite($db, $invitee, 'Игрок сейчас занят поиском, матчем или другим приглашением.');\n\n        $invite = $this->newInvite($db, $user, $normalizedGameType, $normalizedRoom, $normalizedBet, $normalizedBoardSize, 'direct', 'pending');"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteCreationTrait.php',
+              "        $invite['status'] = 'pending';\n        $invite['shared_at'] = $now;\n        $invite['updated_at'] = $now;",
+              "        $invite['status'] = 'pending';\n        $invite['shared_at'] = $now;\n        $invite['expires_at'] = gmdate('c', time() + self::INVITE_TTL_SEC);\n        $invite['updated_at'] = $now;"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteCreationTrait.php',
+              "        if ($status === 'draft') {\n            $invite['status'] = 'pending';\n            $invite['shared_at'] = (string)($invite['shared_at'] ?? $now);\n        }",
+              "        if ($status === 'draft') {\n            $invite['status'] = 'pending';\n            $invite['shared_at'] = (string)($invite['shared_at'] ?? $now);\n            $invite['expires_at'] = gmdate('c', time() + self::INVITE_TTL_SEC);\n        }"
+          )
+
+          replace_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              "    private function findOpenRematchIndex(array $db, string $sourceGameId, array $playerIds): ?int\n    {",
+              "    private function findOpenDirectIndex(array $db, string $inviterId, string $inviteeId): ?int\n    {\n        foreach ($db['invites'] ?? [] as $index => $invite) {\n            if (!is_array($invite) || (string)($invite['source'] ?? '') !== 'direct') continue;\n            if ((string)($invite['status'] ?? '') !== 'pending') continue;\n            if ((string)($invite['inviter_id'] ?? '') !== $inviterId) continue;\n            if ((string)($invite['invitee_id'] ?? '') !== $inviteeId) continue;\n            return (int)$index;\n        }\n        return null;\n    }\n\n    private function findOpenRematchIndex(array $db, string $sourceGameId, array $playerIds): ?int\n    {"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              "        $deadline = (string)($invite['ready_deadline_at'] ?? '');\n        $deadlineTs = $storedStatus === 'awaiting_start'\n            ? $this->effectiveReadyDeadlineTs($invite)\n            : (strtotime($deadline) ?: 0);\n        if ($storedStatus === 'awaiting_start' && $deadlineTs > 0) {\n            $deadline = gmdate('c', $deadlineTs);\n        }",
+              "        $deadline = '';\n        $deadlineTs = 0;\n        if (in_array($storedStatus, ['draft', 'pending'], true)) {\n            $deadline = (string)($invite['expires_at'] ?? '');\n            $deadlineTs = strtotime($deadline) ?: 0;\n        } elseif ($storedStatus === 'awaiting_start') {\n            $deadlineTs = $this->effectiveReadyDeadlineTs($invite);\n            if ($deadlineTs > 0) $deadline = gmdate('c', $deadlineTs);\n        }"
+          )
+
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "let inviteUiTransitionGeneration = 0;",
+              "let inviteUiTransitionGeneration = 0;\nlet inviteCountdownTimer = null;"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  document.addEventListener('mgw:sheet-closed', () => {\n    playerPickerRequestGeneration += 1;",
+              "  document.addEventListener('mgw:sheet-closed', () => {\n    clearInviteCountdown();\n    playerPickerRequestGeneration += 1;"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "    ${contextSummary(context)}\n    <button class=\"btn primary full\" data-direct-invite-cancel-reserved=\"${Number(requestGeneration || 0)}\" type=\"button\">Отменить приглашение</button>",
+              "    ${contextSummary(context)}\n    <div class=\"small-note invite-status-note\" data-invite-countdown>Отправляем приглашение…</div>\n    <button class=\"btn primary full\" data-direct-invite-cancel-reserved=\"${Number(requestGeneration || 0)}\" type=\"button\">Отменить приглашение</button>"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  button.dataset.inviteAction = 'cancel';\n  button.dataset.inviteToken = token;\n}",
+              "  button.dataset.inviteAction = 'cancel';\n  button.dataset.inviteToken = token;\n  mountInviteCountdown(invite, 'Ожидаем ответ');\n}"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "    ${inviteSummary(invite)}\n    <div class=\"stack invite-actions\">\n      <button class=\"btn primary full\" data-invite-action=\"accept\"",
+              "    ${inviteSummary(invite)}\n    <div class=\"small-note invite-status-note\" data-invite-countdown></div>\n    <div class=\"stack invite-actions\">\n      <button class=\"btn primary full\" data-invite-action=\"accept\""
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  `);\n}\n\nfunction contextSummary(context){",
+              "  `);\n  mountInviteCountdown(invite, 'Ответьте на приглашение');\n}\n\nfunction contextSummary(context){"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "    ${inviteSummary(invite)}\n    ${message ? `<div class=\"small-note invite-status-note\">${escapeHtml(message)}</div>` : ''}\n    <button class=\"btn primary full\" data-invite-action=\"cancel\"",
+              "    ${inviteSummary(invite)}\n    <div class=\"small-note invite-status-note\" data-invite-countdown>${message ? escapeHtml(message) : ''}</div>\n    <button class=\"btn primary full\" data-invite-action=\"cancel\""
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  `);\n}\n\nfunction showOwnerReady(invite){",
+              "  `);\n  mountInviteCountdown(invite, 'Ожидаем ответ');\n}\n\nfunction showOwnerReady(invite){"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "    <div class=\"small-note invite-status-note\">Запустите матч до ${escapeHtml(formatTime(invite.ready_deadline_at))}.</div>",
+              "    <div class=\"small-note invite-status-note\" data-invite-countdown></div>"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  `);\n}\n\nfunction showInviteeWaiting(invite){",
+              "  `);\n  mountInviteCountdown(invite, 'Запустите матч');\n}\n\nfunction showInviteeWaiting(invite){"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "    <div class=\"small-note invite-status-note\">${escapeHtml(inviteeWaitingNote(invite))}</div>",
+              "    <div class=\"small-note invite-status-note\" data-invite-countdown>${escapeHtml(inviteeWaitingNote(invite))}</div>"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  `);\n}\n\nfunction reconcileInviteeWaiting(invite){",
+              "  `);\n  mountInviteCountdown(invite, 'Ждём запуск матча');\n}\n\nfunction reconcileInviteeWaiting(invite){"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "function showTerminalInvite(invite){\n  openSheet(`",
+              "function showTerminalInvite(invite){\n  clearInviteCountdown();\n  openSheet(`"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "function inviteSummary(invite){\n  return `",
+              "function clearInviteCountdown(){\n  window.clearInterval(inviteCountdownTimer);\n  inviteCountdownTimer = null;\n}\n\nfunction mountInviteCountdown(invite, label){\n  clearInviteCountdown();\n  const node = document.querySelector('#sheet [data-invite-countdown]');\n  if (!node) return;\n  let remaining = Math.max(0, Math.floor(Number(invite?.waiting_seconds || 0)));\n  const paint = () => {\n    const minutes = Math.floor(remaining / 60);\n    const seconds = String(remaining % 60).padStart(2, '0');\n    node.textContent = `${label} · ${minutes}:${seconds}`;\n  };\n  paint();\n  if (remaining <= 0) return;\n  inviteCountdownTimer = window.setInterval(() => {\n    remaining = Math.max(0, remaining - 1);\n    paint();\n    if (remaining <= 0) {\n      clearInviteCountdown();\n      scheduleSync(0);\n    }\n  }, 1000);\n}\n\nfunction inviteSummary(invite){\n  return `"
+          )
+
+      - name: Verify bounded syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l bot/services/GameInviteService.php
+          php -l bot/services/invites/GameInviteStorageTrait.php
+          php -l bot/services/invites/GameInviteCreationTrait.php
+          php -l bot/services/invites/GameInviteValidationTrait.php
+          node --check app/assets/js/games/game-invites-v110.js
+          git diff --check
+
+      - name: Commit bounded product changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot/services/invites/GameInviteStorageTrait.php bot/services/invites/GameInviteCreationTrait.php bot/services/invites/GameInviteValidationTrait.php app/assets/js/games/game-invites-v110.js
+          git commit -m 'MVP-18.3: enforce invite v2 lifecycle contract'
+          git push origin HEAD:agent/mvp18-3-invite-v2
