@@ -421,7 +421,8 @@ test('CURRENT CORE: active Telegram v110 entry completes one authoritative two-p
       { action: 'accept', token: inviteToken },
       'Player B accepts current direct invitation',
     );
-    expect(String(accepted.invite?.status || '')).toBe('awaiting_start');
+    expect(String(accepted.invite?.status || '')).toBe('accepted');
+    expect(accepted.invite?.can_start).toBe(false);
 
     const started = await expectPlayerRequest(
       playerA.page,
