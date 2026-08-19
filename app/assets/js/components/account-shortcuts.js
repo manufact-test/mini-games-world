@@ -6,14 +6,38 @@ export function initAccountShortcuts(){
     if (!trigger) return;
 
     // home-screen opens the menu synchronously before this listener runs.
-    queueMicrotask(enhanceCurrentMenu);
+    const allowSocialNavigation = trigger.id === 'moreMenuOpen';
+    queueMicrotask(() => enhanceCurrentMenu(allowSocialNavigation));
   });
 }
 
-async function enhanceCurrentMenu(){
+async function openFriendsShortcut(){
+  const module = await import('../screens/friends-screen-v110.js?v=1&mvp18=friends-ui');
+  if (typeof module.initFriendsScreen === 'function') module.initFriendsScreen();
+  document.dispatchEvent(new CustomEvent('mgw:open-friends'));
+}
+
+async function enhanceCurrentMenu(allowSocialNavigation = false){
   const sheet = document.getElementById('sheet');
   const menu = sheet?.querySelector('.menu-list');
-  if (!menu || sheet.querySelector('[data-account-orders-shortcut]')) return;
+  if (!menu) return;
+
+  if (allowSocialNavigation && !sheet.querySelector('[data-account-friends-shortcut]')) {
+    const friends = document.createElement('button');
+    friends.className = 'btn menu-item account-menu-entry';
+    friends.type = 'button';
+    friends.dataset.accountFriendsShortcut = '1';
+    friends.innerHTML = `
+      <span class="account-menu-icon" aria-hidden="true">👥</span>
+      <span class="account-menu-copy"><strong>Друзья</strong></span>
+    `;
+    friends.addEventListener('click', () => {
+      void openFriendsShortcut();
+    });
+    menu.prepend(friends);
+  }
+
+  if (sheet.querySelector('[data-account-orders-shortcut]')) return;
 
   const button = document.createElement('button');
   button.className = 'btn menu-item account-menu-entry';

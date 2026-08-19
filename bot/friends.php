@@ -8,6 +8,7 @@ header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/social/FriendGraphService.php';
+require_once __DIR__ . '/social/SocialPlayerProfileReader.php';
 
 function mgw_friend_error_status(string $reason): int
 {
@@ -53,7 +54,9 @@ try {
         json_response(['ok' => false, 'error' => 'Друзья MGW временно недоступны.'], 503);
     }
 
-    $service = new FriendGraphService(PdoConnectionFactory::create($databaseConfig));
+    $database = PdoConnectionFactory::create($databaseConfig);
+    $service = new FriendGraphService($database);
+    $profileReader = new SocialPlayerProfileReader($database);
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
     $target = trim((string)($payload['target_mgw_id'] ?? ''));
 
@@ -61,6 +64,12 @@ try {
         $result = match ($action) {
             'snapshot' => $service->snapshot($actorMgwId),
             'lookup' => $service->lookupExact($actorMgwId, (string)($payload['query'] ?? '')),
+            'player_profile' => (function () use ($service, $profileReader, $actorMgwId, $target): array {
+                if ($service->lookupExact($actorMgwId, $target) === null) {
+                    throw new FriendGraphException('user_unavailable', 'MGW account is unavailable.');
+                }
+                return $profileReader->read($target);
+            })(),
             'request' => $service->requestFriend($actorMgwId, $target),
             'accept' => $service->acceptFriendRequest($actorMgwId, $target),
             'decline' => $service->declineFriendRequest($actorMgwId, $target),
