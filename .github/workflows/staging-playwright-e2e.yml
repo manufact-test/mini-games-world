@@ -131,7 +131,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           npm install --no-save --package-lock=false @playwright/test@1.62.0
-          npx --no-install playwright install --with-deps chromium
+          # GitHub's Ubuntu image already contains Chromium runtime libraries.
+          # Keep the browser itself pinned by Playwright, but avoid the apt/font
+          # reinstall that repeatedly stalls independent staging runners.
+          npx --no-install playwright install chromium
 
       - name: Run two-context staging test on Linux route
         id: e2e
