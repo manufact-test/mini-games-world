@@ -10,8 +10,14 @@ on:
       - 'bot/runtime/RuntimeMatchEventContext.php'
       - 'bot/runtime/RuntimeMatchEventLogWriter.php'
       - 'bot/runtime/RuntimeMatchVersionResolver.php'
+      - 'bot/replay/MatchReplayReader.php'
+      - 'bot/admin-replay.php'
       - 'bot/tests/RuntimeMatchEventLogWriterTest.php'
       - 'bot/tests/RuntimeMatchEventMigrationContractTest.php'
+      - 'bot/tests/MatchReplayReaderTest.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-shell.js'
+      - 'app/assets/css/admin-shell.css'
       - '.github/workflows/mvp17-6-match-event-log-safety.yml'
   workflow_dispatch:
 
@@ -53,19 +59,27 @@ jobs:
             bot/runtime/RuntimeMatchEventContext.php
             bot/runtime/RuntimeMatchEventLogWriter.php
             bot/runtime/RuntimeMatchVersionResolver.php
+            bot/replay/MatchReplayReader.php
+            bot/admin-replay.php
             bot/tests/RuntimeMatchEventLogWriterTest.php
             bot/tests/RuntimeMatchEventMigrationContractTest.php
+            bot/tests/MatchReplayReaderTest.php
             bot/tests/DatabasePrimaryStateStorageAdapterTest.php
+            app/admin.php
           )
           for file in "${files[@]}"; do
             php -l "$file"
           done
+          node --check app/assets/js/admin-shell.js
 
       - name: Test exact migration discovery contract
         run: php bot/tests/RuntimeMatchEventMigrationContractTest.php
 
       - name: Test authoritative event-log replay storage
         run: php bot/tests/RuntimeMatchEventLogWriterTest.php
+
+      - name: Test deterministic admin replay reader
+        run: php bot/tests/MatchReplayReaderTest.php
 
       - name: Test DB-primary state transaction regression
         run: php bot/tests/DatabasePrimaryStateStorageAdapterTest.php
