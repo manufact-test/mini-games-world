@@ -92,7 +92,7 @@ final class AccountIdentityService
                 created_at_utc, updated_at_utc, last_seen_at_utc
              ) VALUES (
                 :mgw_id, :status, :nickname, :display_name, NULL,
-                NULL, NULL, :avatar_item_id,
+                NULL, NULL, NULL,
                 :created_at, :updated_at, :last_seen_at
              )',
             [
@@ -100,7 +100,6 @@ final class AccountIdentityService
                 'status' => 'active',
                 'nickname' => $nickname,
                 'display_name' => $nickname,
-                'avatar_item_id' => MgwIdentityPolicy::DEFAULT_AVATAR_ITEM_ID,
                 'created_at' => $now,
                 'updated_at' => $now,
                 'last_seen_at' => $now,
