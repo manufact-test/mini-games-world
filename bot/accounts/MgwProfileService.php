@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/MgwIdentityPolicy.php';
+require_once dirname(__DIR__) . '/catalog/ProductInventoryService.php';
 
 final class MgwProfileService
 {
@@ -39,7 +40,8 @@ final class MgwProfileService
         $user = $users[0];
         $nickname = (string)$user['nickname'];
         $internalMgwId = (string)$user['mgw_id'];
-        $avatarItemId = MgwIdentityPolicy::normalizeAvatarItemId($user['equipped_avatar_item_id'] ?? MgwIdentityPolicy::DEFAULT_AVATAR_ITEM_ID);
+        $avatarItemId = trim((string)($user['equipped_avatar_item_id'] ?? ''));
+        if ($avatarItemId === '') $avatarItemId = MgwIdentityPolicy::DEFAULT_AVATAR_ITEM_ID;
         return [
             'mgw_id' => $internalMgwId,
             'public_mgw_id' => MgwIdGenerator::toPublic($internalMgwId),
@@ -60,36 +62,54 @@ final class MgwProfileService
     {
         $mgwId = trim($mgwId);
         if (!MgwIdGenerator::isValid($mgwId)) throw new InvalidArgumentException('MGW profile update invalid: id');
-        $sets = [];
-        $parameters = ['mgw_id' => $mgwId, 'updated_at' => $this->timestamp()];
-        if (array_key_exists('nickname', $changes)) {
-            $nickname = MgwIdentityPolicy::normalizeNickname($changes['nickname']);
-            $sets[] = 'nickname = :nickname';
-            $sets[] = 'display_name = :display_name';
-            $parameters['nickname'] = $nickname;
-            $parameters['display_name'] = $nickname;
-        }
-        if (array_key_exists('avatar_item_id', $changes)) {
-            $sets[] = 'equipped_avatar_item_id = :avatar_item_id';
-            $parameters['avatar_item_id'] = MgwIdentityPolicy::normalizeAvatarItemId($changes['avatar_item_id']);
-        }
-        if (array_key_exists('preferred_locale', $changes)) {
-            $sets[] = 'preferred_locale = :preferred_locale';
-            $parameters['preferred_locale'] = MgwIdentityPolicy::normalizeLocale($changes['preferred_locale']);
-        }
-        if ($sets === []) throw new InvalidArgumentException('MGW profile update invalid: empty');
-        $sets[] = 'updated_at_utc = :updated_at';
+        if ($changes === []) throw new InvalidArgumentException('MGW profile update invalid: empty');
+
         try {
-            $affected = $this->database->execute(
-                'UPDATE mgw_users SET ' . implode(', ', $sets) . ' WHERE mgw_id = :mgw_id',
-                $parameters
-            );
-            if ($affected !== 1) throw new RuntimeException('Authenticated MGW profile is unavailable.');
+            return $this->database->transaction(function (DatabaseConnectionInterface $database) use ($mgwId, $changes): array {
+                $sets = [];
+                $parameters = ['mgw_id' => $mgwId, 'updated_at' => $this->timestamp()];
+                if (array_key_exists('nickname', $changes)) {
+                    $nickname = MgwIdentityPolicy::normalizeNickname($changes['nickname']);
+                    $sets[] = 'nickname = :nickname';
+                    $sets[] = 'display_name = :display_name';
+                    $parameters['nickname'] = $nickname;
+                    $parameters['display_name'] = $nickname;
+                }
+                if (array_key_exists('preferred_locale', $changes)) {
+                    $sets[] = 'preferred_locale = :preferred_locale';
+                    $parameters['preferred_locale'] = MgwIdentityPolicy::normalizeLocale($changes['preferred_locale']);
+                }
+
+                if ($sets !== []) {
+                    $sets[] = 'updated_at_utc = :updated_at';
+                    $affected = $database->execute(
+                        'UPDATE mgw_users SET ' . implode(', ', $sets) . ' WHERE mgw_id = :mgw_id',
+                        $parameters
+                    );
+                    if ($affected !== 1) throw new RuntimeException('Authenticated MGW profile is unavailable.');
+                }
+
+                if (array_key_exists('avatar_item_id', $changes)) {
+                    $avatarItemId = strtolower(trim((string)$changes['avatar_item_id']));
+                    if ($avatarItemId === '') throw new InvalidArgumentException('MGW avatar item id is invalid.');
+                    // ProductInventoryService is the only post-MVP-19.1 avatar
+                    // equip writer. It validates catalogue membership + ownership
+                    // and projects the selected item into mgw_users compatibility.
+                    (new ProductInventoryService($database))->equip($mgwId, $avatarItemId);
+                }
+
+                if ($sets === [] && !array_key_exists('avatar_item_id', $changes)) {
+                    throw new InvalidArgumentException('MGW profile update invalid: empty');
+                }
+
+                return $this->publicProfile($mgwId);
+            });
         } catch (PDOException $error) {
-            if (MgwIdentityPolicy::isUniqueViolation($error)) throw new RuntimeException(MgwIdentityPolicy::NICKNAME_TAKEN_ERROR, 0, $error);
+            if (MgwIdentityPolicy::isUniqueViolation($error)) {
+                throw new RuntimeException(MgwIdentityPolicy::NICKNAME_TAKEN_ERROR, 0, $error);
+            }
             throw $error;
         }
-        return $this->publicProfile($mgwId);
     }
 
     private function ensureCanonicalIdentity(string $mgwId): void
@@ -102,7 +122,7 @@ final class MgwProfileService
             if (count($rows) !== 1) throw new RuntimeException('Authenticated MGW profile is unavailable.');
             $nickname = trim((string)($rows[0]['nickname'] ?? ''));
             $avatarItemId = trim((string)($rows[0]['equipped_avatar_item_id'] ?? ''));
-            if ($nickname !== '' && in_array($avatarItemId, MgwIdentityPolicy::STARTER_AVATAR_ITEM_IDS, true)) return;
+            if ($nickname !== '' && $avatarItemId !== '') return;
             $candidate = $nickname !== '' ? $nickname : MgwIdentityPolicy::generateNickname();
             try {
                 $this->database->execute(
@@ -112,20 +132,20 @@ final class MgwProfileService
                          username = NULL,
                          avatar_provider = NULL,
                          avatar_external_ref = NULL,
-                         equipped_avatar_item_id = CASE
-                            WHEN equipped_avatar_item_id IS NULL OR equipped_avatar_item_id = \'\' THEN :avatar_item_id
-                            ELSE equipped_avatar_item_id
-                         END,
                          updated_at_utc = :updated_at
                      WHERE mgw_id = :mgw_id',
                     [
                         'nickname' => $candidate,
                         'display_name' => $candidate,
-                        'avatar_item_id' => MgwIdentityPolicy::DEFAULT_AVATAR_ITEM_ID,
                         'updated_at' => $this->timestamp(),
                         'mgw_id' => $mgwId,
                     ]
                 );
+                if ($avatarItemId === '') {
+                    $inventory = new ProductInventoryService($this->database);
+                    $inventory->grantStarterItems($mgwId);
+                    $inventory->equip($mgwId, MgwIdentityPolicy::DEFAULT_AVATAR_ITEM_ID);
+                }
                 return;
             } catch (PDOException $error) {
                 if (!MgwIdentityPolicy::isUniqueViolation($error) || $attempt === self::CLAIM_ATTEMPTS) throw $error;

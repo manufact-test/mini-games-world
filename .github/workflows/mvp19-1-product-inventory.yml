@@ -1,0 +1,104 @@
+name: MVP-19.1 Product catalogue inventory equip
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260819_0012_create_product_catalog_inventory_equipment.php'
+      - 'bot/catalog/ProductInventoryService.php'
+      - 'bot/accounts/AccountIdentityService.php'
+      - 'bot/accounts/MgwProfileService.php'
+      - 'bot/tests/Mvp19_1ProductInventoryTest.php'
+      - '.github/workflows/mvp19-1-product-inventory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-1-inventory-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    name: Catalogue ownership and equip foundation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-19.1 slice
+        run: |
+          php -l bot/database/migrations/20260819_0012_create_product_catalog_inventory_equipment.php
+          php -l bot/catalog/ProductInventoryService.php
+          php -l bot/accounts/AccountIdentityService.php
+          php -l bot/accounts/MgwProfileService.php
+          php -l bot/tests/Mvp19_1ProductInventoryTest.php
+
+      - name: Run MVP-19.1 catalogue inventory and equip contract
+        run: php bot/tests/Mvp19_1ProductInventoryTest.php
+
+      - name: Run account identity regression
+        run: php bot/tests/AccountIdentityServiceTest.php
+
+      - name: Run canonical profile regression
+        run: php bot/tests/MgwProfileIdentityCorrectiveTest.php
+
+      - name: Guard MVP-19.1 scope
+        if: startsWith(github.head_ref, 'agent/mvp19-1')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp19-1-product-inventory.yml|\
+              bot/database/migrations/20260819_0012_create_product_catalog_inventory_equipment.php|\
+              bot/catalog/ProductInventoryService.php|\
+              bot/accounts/AccountIdentityService.php|\
+              bot/accounts/MgwProfileService.php|\
+              bot/tests/Mvp19_1ProductInventoryTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-19.1 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+      - name: Guard deferred pricing purchase UI and accepted engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if git diff --name-only "$base" "$head" -- 'app/**' 'site/**' 'bot/games/**' | grep -q .; then
+            echo 'MVP-19.1 must not change visible Store/Profile UI, site, or accepted game engines.' >&2
+            exit 1
+          fi
+          if grep -Eqi '(^|[^a-z_])(price|purchase|checkout|discount)([^a-z_]|$)' \
+              bot/database/migrations/20260819_0012_create_product_catalog_inventory_equipment.php; then
+            echo 'MVP-19.1 migration must not invent pricing or purchase schema.' >&2
+            exit 1
+          fi
+          test "$(grep -c "'store-avatar-0[1-5]'" bot/catalog/ProductInventoryService.php)" -eq 5
+          grep -F "'starter-default-01'" bot/accounts/MgwIdentityPolicy.php
+          git diff --exit-code "$base" "$head" -- bot/games app site
