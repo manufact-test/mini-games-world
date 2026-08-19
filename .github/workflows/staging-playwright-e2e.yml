@@ -111,9 +111,18 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Run A/B state preflight on Linux route
+        id: preflight
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module -e "const {default:setup}=await import('./e2e/staging-global-setup.mjs'); await setup();"
+
       - name: Install pinned Playwright on Linux route
         id: install
-        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success'
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.preflight.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -123,7 +132,7 @@ jobs:
 
       - name: Run two-context staging test on Linux route
         id: e2e
-        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.install.outcome == 'success'
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.preflight.outcome == 'success' && steps.install.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -137,13 +146,18 @@ jobs:
         env:
           READINESS_OUTCOME: ${{ steps.readiness.outcome }}
           SETUP_OUTCOME: ${{ steps.setup-node.outcome }}
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           E2E_OUTCOME: ${{ steps.e2e.outcome }}
         run: |
           set -Eeuo pipefail
           if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
             result='network_unavailable'
-          elif [[ "${SETUP_OUTCOME}" != 'success' || "${INSTALL_OUTCOME}" != 'success' ]]; then
+          elif [[ "${SETUP_OUTCOME}" != 'success' ]]; then
+            result='runner_infrastructure_failure'
+          elif [[ "${PREFLIGHT_OUTCOME}" != 'success' ]]; then
+            result='application_failure'
+          elif [[ "${INSTALL_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${E2E_OUTCOME}" == 'success' ]]; then
             result='success'
@@ -233,9 +247,18 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Run A/B state preflight on macOS fallback route
+        id: preflight
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module -e "const {default:setup}=await import('./e2e/staging-global-setup.mjs'); await setup();"
+
       - name: Install pinned Playwright on macOS fallback route
         id: install
-        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success'
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.preflight.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -245,7 +268,7 @@ jobs:
 
       - name: Run two-context staging test on macOS fallback route
         id: e2e
-        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.install.outcome == 'success'
+        if: steps.readiness.outcome == 'success' && steps.setup-node.outcome == 'success' && steps.preflight.outcome == 'success' && steps.install.outcome == 'success'
         continue-on-error: true
         shell: bash
         run: |
@@ -259,13 +282,18 @@ jobs:
         env:
           READINESS_OUTCOME: ${{ steps.readiness.outcome }}
           SETUP_OUTCOME: ${{ steps.setup-node.outcome }}
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
           E2E_OUTCOME: ${{ steps.e2e.outcome }}
         run: |
           set -Eeuo pipefail
           if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
             result='network_unavailable'
-          elif [[ "${SETUP_OUTCOME}" != 'success' || "${INSTALL_OUTCOME}" != 'success' ]]; then
+          elif [[ "${SETUP_OUTCOME}" != 'success' ]]; then
+            result='runner_infrastructure_failure'
+          elif [[ "${PREFLIGHT_OUTCOME}" != 'success' ]]; then
+            result='application_failure'
+          elif [[ "${INSTALL_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${E2E_OUTCOME}" == 'success' ]]; then
             result='success'
