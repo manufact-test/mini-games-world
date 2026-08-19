@@ -9,7 +9,10 @@ import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
 const GAME_TYPES = Object.freeze(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
-const STARTER_AVATARS = Object.freeze(['starter-default-01','starter-default-02','starter-default-03']);
+const LAUNCH_AVATARS = Object.freeze([
+  'starter-default-01','starter-default-02','starter-default-03',
+  'store-avatar-01','store-avatar-02','store-avatar-03','store-avatar-04','store-avatar-05',
+]);
 const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
 let nicknameSaving = false;
@@ -42,6 +45,7 @@ export async function openProfile(){
 
 function applyProfileResponse(result){
   state.mgwProfile = result.profile || state.mgwProfile || null;
+  state.profileInventory = result.inventory || state.profileInventory || null;
   state.user = mergeCanonicalMgwUser(state.user, result.user, state.mgwProfile);
   state.profileStats = result.stats || state.profileStats || null;
   state.profileHistory = result.history || state.profileHistory || null;
@@ -78,6 +82,11 @@ function bindProfileActions(){
     }
     if (event.target.closest('[data-edit-mgw-avatar]')) {
       openAvatarEditor();
+      return;
+    }
+    const avatarCard = event.target.closest('[data-profile-avatar-preview]');
+    if (avatarCard) {
+      openAvatarPreview(String(avatarCard.dataset.profileAvatarPreview || ''));
       return;
     }
     if (event.target.closest('[data-open-language-settings]')) {
@@ -142,23 +151,37 @@ function openNicknameEditor(){
 }
 
 function openAvatarEditor(){
+  const avatars = ownedAvatarItems();
   const activeAvatar = currentAvatarItemId();
   openSheet(`
-    <div class="sheet-head"><div><h2>${escapeHtml(t('profile.avatar_edit_title'))}</h2><p>${escapeHtml(t('profile.avatar_edit_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="profile-v2-avatar-sheet-grid" aria-label="${escapeHtml(t('profile.avatar_select'))}">
-      ${STARTER_AVATARS.map((itemId, index) => avatarChoiceMarkup(itemId, index, activeAvatar)).join('')}
+    <div class="sheet-head"><div><h2>Аватарки</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-avatar-sheet-grid profile-v2-avatar-sheet-grid--owned" aria-label="Аватарки">
+      ${avatars.map(item => avatarChoiceMarkup(item, activeAvatar)).join('')}
     </div>
   `);
   document.querySelectorAll('#sheet [data-mgw-avatar-choice]').forEach(button => {
-    button.addEventListener('click', () => void chooseAvatar(String(button.dataset.mgwAvatarChoice || '')));
+    button.addEventListener('click', () => openAvatarPreview(String(button.dataset.mgwAvatarChoice || '')));
   });
 }
 
-async function chooseAvatar(itemId){
-  if (!STARTER_AVATARS.includes(itemId) || avatarSaving || itemId === currentAvatarItemId()) {
-    if (itemId === currentAvatarItemId()) closeSheet();
-    return;
-  }
+function openAvatarPreview(itemId){
+  const item = ownedAvatarItems().find(candidate => candidate.item_id === itemId);
+  if (!item) return;
+  const active = itemId === currentAvatarItemId();
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(avatarName(itemId))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-avatar-preview-wrap">
+      <div class="profile-v2-avatar-preview" data-avatar-item-id="${escapeHtml(itemId)}" aria-hidden="true">MG</div>
+    </div>
+    <button class="btn primary full" id="mgwAvatarEquip" type="button" ${active ? 'disabled' : ''}>${active ? 'Выбрана' : 'Выбрать'}</button>
+  `);
+  document.getElementById('mgwAvatarEquip')?.addEventListener('click', event => {
+    void chooseAvatar(itemId, event.currentTarget);
+  });
+}
+
+async function chooseAvatar(itemId, button = null){
+  if (!ownedAvatarIds().includes(itemId) || avatarSaving || itemId === currentAvatarItemId()) return;
   const previousProfile = cloneObject(state.mgwProfile);
   const previousUser = cloneObject(state.user);
   const optimisticProfile = {
@@ -167,19 +190,27 @@ async function chooseAvatar(itemId){
   };
 
   avatarSaving = true;
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Выбираем…';
+  }
   state.mgwProfile = optimisticProfile;
   state.user = mergeCanonicalMgwUser(state.user, {}, optimisticProfile);
   renderUser(state.user);
   renderProfileV2();
-  closeSheet();
 
   try {
     applyProfileResponse(await api.profileV2({ avatar_item_id:itemId }));
+    closeSheet();
   } catch (error) {
     state.mgwProfile = previousProfile;
     state.user = previousProfile ? mergeCanonicalMgwUser(previousUser, {}, previousProfile) : previousUser;
     renderUser(state.user);
     renderProfileV2();
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Выбрать';
+    }
     toast(error.message || t('profile.avatar_save_error'));
   } finally {
     avatarSaving = false;
@@ -200,6 +231,7 @@ function renderProfileV2(){
   const identities = Array.isArray(profile.identities) ? profile.identities : [];
   const matches = Array.isArray(history.matches) ? history.matches.slice(0, 6) : [];
   const activeAvatar = canonicalAvatarItemId(profile.avatar || { item_id:user.avatar_item_id });
+  const ownedAvatars = ownedAvatarItems(activeAvatar);
 
   root.innerHTML = `
     <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1><p>${escapeHtml(t('profile.subtitle'))}</p></div></header>
@@ -215,6 +247,13 @@ function renderProfileV2(){
       </div>
       <div class="profile-v2-id-card"><button type="button" data-copy-mgw-id="${escapeHtml(mgwId)}" ${mgwId ? '' : 'disabled'} aria-label="${escapeHtml(t('profile.copy_id'))}"><b>${escapeHtml(mgwId || '—')}</b><small>${escapeHtml(t('profile.copy_id'))}</small></button></div>
     </section>
+    <section class="profile-v2-section profile-v2-collection-section">
+      <div class="profile-v2-section-head"><div><h2>Моя коллекция</h2></div></div>
+      <div class="profile-v2-collection-title">Аватарки</div>
+      <div class="profile-v2-collection-grid" aria-label="Мои аватарки">
+        ${ownedAvatars.map(item => collectionAvatarMarkup(item, activeAvatar)).join('')}
+      </div>
+    </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
@@ -229,9 +268,43 @@ function renderProfileV2(){
   `;
 }
 
-function avatarChoiceMarkup(itemId, index, activeAvatar){
+function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
+  const inventory = state.profileInventory && typeof state.profileInventory === 'object' ? state.profileInventory : null;
+  const catalog = Array.isArray(inventory?.catalog) ? inventory.catalog : [];
+  const owned = catalog
+    .filter(item => item && item.item_family === 'avatar' && item.owned === true)
+    .map(item => ({ ...item, item_id:String(item.item_id || '') }))
+    .filter(item => LAUNCH_AVATARS.includes(item.item_id));
+
+  if (owned.length) {
+    return owned.sort((a,b) => LAUNCH_AVATARS.indexOf(a.item_id) - LAUNCH_AVATARS.indexOf(b.item_id));
+  }
+
+  // Every canonical account owns all three starter avatars. This fallback only
+  // prevents a blank collection during the first profile request; DB inventory
+  // replaces it as soon as the authoritative snapshot arrives.
+  const fallbackIds = ['starter-default-01','starter-default-02','starter-default-03'];
+  if (LAUNCH_AVATARS.includes(activeAvatar) && !fallbackIds.includes(activeAvatar)) fallbackIds.push(activeAvatar);
+  return fallbackIds.map(itemId => ({ item_id:itemId, item_family:'avatar', owned:true }));
+}
+
+function ownedAvatarIds(){ return ownedAvatarItems().map(item => item.item_id); }
+
+function collectionAvatarMarkup(item, activeAvatar){
+  const itemId = String(item?.item_id || '');
   const active = itemId === activeAvatar;
-  return `<button type="button" data-mgw-avatar-choice="${itemId}" class="profile-v2-avatar-choice${active ? ' active' : ''}" aria-pressed="${active ? 'true' : 'false'}"><span data-avatar-item-id="${itemId}">MG</span><small>${escapeHtml(t('profile.avatar_option', { number:index + 1 }))}</small></button>`;
+  return `<button class="profile-v2-collection-card${active ? ' active' : ''}" type="button" data-profile-avatar-preview="${escapeHtml(itemId)}" aria-label="${escapeHtml(avatarName(itemId))}" aria-pressed="${active ? 'true' : 'false'}"><span class="profile-v2-collection-avatar" data-avatar-item-id="${escapeHtml(itemId)}" aria-hidden="true">MG</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+}
+
+function avatarChoiceMarkup(item, activeAvatar){
+  const itemId = String(item?.item_id || '');
+  const active = itemId === activeAvatar;
+  return `<button type="button" data-mgw-avatar-choice="${escapeHtml(itemId)}" class="profile-v2-avatar-choice${active ? ' active' : ''}" aria-label="${escapeHtml(avatarName(itemId))}" aria-pressed="${active ? 'true' : 'false'}"><span data-avatar-item-id="${escapeHtml(itemId)}">MG</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+}
+
+function avatarName(itemId){
+  const index = LAUNCH_AVATARS.indexOf(String(itemId || ''));
+  return index >= 0 ? `Аватарка ${index + 1}` : 'Аватарка';
 }
 function currentAvatarItemId(){ return canonicalAvatarItemId(state.mgwProfile?.avatar || { item_id:state.user?.avatar_item_id }); }
 function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
