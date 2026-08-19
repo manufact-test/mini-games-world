@@ -7,7 +7,7 @@ const outputRoot = 'artifacts/playwright';
 // separate playwright.legacy.config.mjs archive.
 export default defineConfig({
   testDir: './staging',
-  testMatch: 'current-core-live.spec.mjs',
+  testMatch: 'current-core-final.spec.mjs',
   globalSetup: './staging-global-setup.mjs',
   outputDir: `${outputRoot}/test-results`,
   fullyParallel: false,
