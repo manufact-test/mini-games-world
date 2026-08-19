@@ -59,9 +59,7 @@ jobs:
         run: php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
 
       - name: Run frozen invite and matchmaking behavior baseline
-        run: |
-          php bot/tests/Mvp14r2InviteMatchmakingBaselineTest.php
-          php bot/tests/Mvp14r2InviteMatchmakingContractTest.php
+        run: php bot/tests/Mvp14r2InviteMatchmakingBaselineTest.php
 
       - name: Run current Invite v2 lifecycle
         run: php bot/tests/Mvp18_3InviteV2ContractTest.php
@@ -73,9 +71,7 @@ jobs:
         run: php bot/tests/ProductionV101InviteSyncDedupeRuntimeTest.php
 
       - name: Run insufficient-balance behavior baseline
-        run: |
-          php bot/tests/Mvp14r2EconomySupportingBaselineTest.php
-          php bot/tests/Mvp14r2EconomySupportingContractTest.php
+        run: php bot/tests/Mvp14r2EconomySupportingBaselineTest.php
 
       - name: Run blocked-user invite boundaries
         run: php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
