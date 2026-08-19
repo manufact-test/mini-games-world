@@ -28,7 +28,9 @@ final class RuntimeMatchEventLogWriter
 
         $beforeGames = is_array($beforeState['games'] ?? null) ? $beforeState['games'] : [];
         $afterGames = is_array($afterState['games'] ?? null) ? $afterState['games'] : [];
-        $request = $requestContext ?? RuntimeMatchEventContext::current();
+        $request = $requestContext !== null
+            ? RuntimeMatchEventContext::normalize($requestContext)
+            : RuntimeMatchEventContext::current();
         $created = 0;
         $matches = [];
 
@@ -149,7 +151,7 @@ final class RuntimeMatchEventLogWriter
 
         if ($before !== null && $requestTargetsMatch
             && in_array($requestAction, ['game_action', 'make_move'], true)) {
-            $actor = trim((string)($before['current_turn'] ?? $before['turn_user_id'] ?? ''));
+            $actor = trim((string)($before['turn'] ?? $before['current_turn'] ?? $before['turn_user_id'] ?? ''));
             $events[] = [
                 'event_type' => 'move',
                 'occurred_at_utc' => $requestTime,
@@ -185,6 +187,7 @@ final class RuntimeMatchEventLogWriter
                     'loser_id' => (string)($after['loser_id'] ?? ''),
                     'finish_reason' => (string)($after['finish_reason'] ?? $after['end_reason'] ?? ''),
                     'result' => is_scalar($after['result'] ?? null) ? $after['result'] : null,
+                    'no_contest' => !empty($after['no_contest']) ? true : null,
                 ], static fn(mixed $value): bool => $value !== '' && $value !== null),
             ];
         }
@@ -229,6 +232,22 @@ final class RuntimeMatchEventLogWriter
                     'deadline_ms' => isset($state['deadline_ms']) ? (int)$state['deadline_ms'] : null,
                 ], static fn(mixed $value): bool => $value !== '' && $value !== null),
             ];
+        }
+
+        if (($after['status'] ?? '') === 'finished'
+            && (string)($after['finish_reason'] ?? '') === 'both_disconnected') {
+            foreach ((array)($after['player_ids'] ?? []) as $playerId) {
+                $playerId = trim((string)$playerId);
+                if ($playerId === '' || str_starts_with($playerId, 'bot_') || isset($beforePlayers[$playerId])) {
+                    continue;
+                }
+                $events[] = [
+                    'event_type' => 'disconnect',
+                    'occurred_at_utc' => $fallbackTime,
+                    'actor_user_id' => $playerId,
+                    'payload' => ['settled_immediately' => true],
+                ];
+            }
         }
 
         foreach ($beforePlayers as $playerId => $state) {
