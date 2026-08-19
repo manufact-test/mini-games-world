@@ -21,9 +21,10 @@ assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.j
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
 assert(activeMain.includes("friends-screen-v110.js?v=1&mvp18=friends-ui"), 'Active reconnect composition must load Friends screen without parallel top-level owner');
-assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=3&social=1"), 'Accepted rematch wrapper must be cache-busted');
-assert(manifest.includes("game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1"), 'Old base invite specifier must converge on one social-aware cache identity');
-assert(inviteWrapper.includes("v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1"), 'Wrapper must consume the same base invite module identity');
+assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
+assert(inviteWrapper.includes("v=1142&zone=unified&rematch=optimistic&terminal=self-silent"), 'Accepted rematch wrapper must keep its frozen base invite specifier');
+assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1'"), 'Frozen base invite specifier must converge through the manifest on the social-aware cache identity');
+assert(friends.includes("game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1"), 'Friends must consume the same resolved social-aware invite owner identity');
 assert(inviteOwner.includes('export function openSocialPlayerInvite'), 'Existing invite owner must expose one bounded social entry');
 assert(inviteOwner.includes("inviteRequest('create_direct'"), 'Social invite must remain inside existing direct-invite lifecycle owner');
 assert(!friends.includes('/bot/invites.php'), 'Friends UI must not create a second invite endpoint owner');
