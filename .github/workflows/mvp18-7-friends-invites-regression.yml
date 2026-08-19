@@ -55,7 +55,7 @@ jobs:
       - name: Lint regression-only slice
         run: php -l bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
 
-      - name: Run MVP-18.7 active-owner contract
+      - name: Run MVP-18.7 active-owner and reconnect contract
         run: php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
 
       - name: Run frozen invite and matchmaking behavior baseline
@@ -78,9 +78,6 @@ jobs:
 
       - name: Run Friends UI invite handoff owner
         run: node bot/tests/Mvp18FriendsUiContractTest.mjs
-
-      - name: Run accepted reconnect reliability regression
-        run: php bot/tests/Mvp17ReliabilityRegressionTest.php
 
       - name: Run accepted rematch regression
         run: php bot/tests/RematchOptimisticUxContractTest.php
