@@ -9,8 +9,9 @@ on:
       - 'bot/social/**'
       - 'bot/tests/SocialPlayerProfileReaderTest.php'
       - 'bot/tests/Mvp18FriendsUiContractTest.mjs'
+      - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'app/runtime/client/version-manifest.php'
-      - 'app/assets/js/main-v110-social-v182.js'
+      - 'app/assets/js/main-v110-reconnect-v174.js'
       - 'app/assets/js/router.js'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/components/account-shortcuts.js'
@@ -58,12 +59,13 @@ jobs:
           php -l bot/social/SocialPlayerProfileReader.php
           php -l bot/tests/FriendGraphServiceTest.php
           php -l bot/tests/SocialPlayerProfileReaderTest.php
+          php -l bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
 
       - name: Validate active JavaScript graph
         shell: bash
         run: |
           set -euo pipefail
-          node --check app/assets/js/main-v110-social-v182.js
+          node --check app/assets/js/main-v110-reconnect-v174.js
           node --check app/assets/js/router.js
           node --check app/assets/js/api/client.js
           node --check app/assets/js/components/account-shortcuts.js
@@ -80,6 +82,9 @@ jobs:
 
       - name: Run active launch and one-owner Friends UI contract
         run: node bot/tests/Mvp18FriendsUiContractTest.mjs
+
+      - name: Run preserved reconnect active-route contract
+        run: php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
 
       - name: Guard frozen game engines
         shell: bash
