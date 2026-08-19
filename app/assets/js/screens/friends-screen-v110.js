@@ -3,7 +3,7 @@ import { state } from '../state.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=1109';
-import { openSocialPlayerInvite } from '../games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent';
+import { openSocialPlayerInvite } from '../games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1';
 
 const STYLE_URL = './assets/css/friends-v110.css?v=1&mvp18=friends-ui';
 const GAME_NAMES = Object.freeze({
