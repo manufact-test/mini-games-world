@@ -11,6 +11,7 @@ on:
       - 'bot/runtime/DatabasePrimaryStateStorageAdapter.php'
       - 'bot/services/ReconnectLifecycleService.php'
       - 'bot/tests/Mvp17ReliabilityRegressionTest.php'
+      - 'bot/tests/RealtimeDatabaseStoreTest.php'
       - '.github/workflows/mvp17-7-reliability-regression.yml'
   workflow_dispatch:
 
@@ -50,6 +51,7 @@ jobs:
             bot/services/GameSettlementService.php
             bot/services/GameNoContestSettlementService.php
             bot/tests/Mvp17ReliabilityRegressionTest.php
+            bot/tests/RealtimeDatabaseStoreTest.php
           )
           for file in "${files[@]}"; do
             php -l "$file"
@@ -57,6 +59,9 @@ jobs:
 
       - name: Run MVP-17.7 reliability contract
         run: php bot/tests/Mvp17ReliabilityRegressionTest.php
+
+      - name: Run realtime database store regression
+        run: php bot/tests/RealtimeDatabaseStoreTest.php
 
       - name: Run DB-primary state regression
         run: php bot/tests/DatabasePrimaryStateStorageAdapterTest.php
