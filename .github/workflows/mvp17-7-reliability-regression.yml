@@ -1,0 +1,82 @@
+name: MVP-17.7 Reliability Regression
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/DatabaseExceptionClassifier.php'
+      - 'bot/database/PdoDatabaseConnection.php'
+      - 'bot/realtime/RealtimeDatabaseStore.php'
+      - 'bot/runtime/DatabasePrimaryStateStorageAdapter.php'
+      - 'bot/services/ReconnectLifecycleService.php'
+      - 'bot/tests/Mvp17ReliabilityRegressionTest.php'
+      - 'bot/tests/RealtimeDatabaseStoreTest.php'
+      - '.github/workflows/mvp17-7-reliability-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reliability-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Lint bounded reliability slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/DatabaseExceptionClassifier.php
+            bot/database/PdoDatabaseConnection.php
+            bot/realtime/RealtimeDatabaseStore.php
+            bot/runtime/DatabasePrimaryStateStorageAdapter.php
+            bot/services/PresenceService.php
+            bot/services/ReconnectLifecycleService.php
+            bot/services/GameSettlementService.php
+            bot/services/GameNoContestSettlementService.php
+            bot/tests/Mvp17ReliabilityRegressionTest.php
+            bot/tests/RealtimeDatabaseStoreTest.php
+          )
+          for file in "${files[@]}"; do
+            php -l "$file"
+          done
+
+      - name: Run MVP-17.7 reliability contract
+        run: php bot/tests/Mvp17ReliabilityRegressionTest.php
+
+      - name: Run realtime database store regression
+        run: php bot/tests/RealtimeDatabaseStoreTest.php
+
+      - name: Run DB-primary state regression
+        run: php bot/tests/DatabasePrimaryStateStorageAdapterTest.php
+
+      - name: Run event-log atomicity regression
+        run: php bot/tests/RuntimeMatchEventLogWriterTest.php
+
+      - name: Run unified balance foundation regression
+        run: php bot/tests/UnifiedBalanceMigrationFoundationTest.php
+
+      - name: Run unified balance execution regression
+        run: php bot/tests/UnifiedBalanceMigrationExecutionTest.php
+
+      - name: Run economy config regression
+        run: php bot/tests/Mvp15EconomyRemoteConfigTest.php
+
+      - name: Run post-cutover economy sync regression
+        run: php bot/tests/UnifiedEconomyRuntimeSyncTest.php
