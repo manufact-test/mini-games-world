@@ -13,7 +13,8 @@ final class GameInviteService
     use GameInviteStorageTrait;
     use GameInviteValidationTrait;
 
-    private const INVITE_TTL_SEC = 900;
+    private const INVITE_TTL_SEC = 120;
+    private const DRAFT_TTL_SEC = 900;
     private const READY_TTL_SEC = 90;
     private const RETENTION_SEC = 604800;
 
