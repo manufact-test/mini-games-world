@@ -18,14 +18,15 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=3&replay=17-6" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
+  <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php">
     <header class="mgw-admin__header">
       <div>
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
         <h1>Web Admin</h1>
-        <p class="mgw-admin__subtitle">Системный обзор, экономика, replay storage и очередь жалоб.</p>
+        <p class="mgw-admin__subtitle">Системный обзор, bell events, экономика, replay storage и очередь жалоб.</p>
       </div>
       <button class="mgw-admin__refresh" type="button" data-admin-refresh>Обновить</button>
     </header>
@@ -55,6 +56,93 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span>read-only</span>
         </div>
         <pre data-admin-system-check>—</pre>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-notifications>
+        <div class="mgw-admin__card-head">
+          <h2>Bell events</h2>
+          <span>MVP-18.6 · one pipeline</span>
+        </div>
+        <div class="mgw-admin__economy">
+          <div class="mgw-admin__economy-meta">
+            <label class="mgw-admin__field">
+              <span>Источник</span>
+              <select data-notification-source-type>
+                <option value="admin">admin</option>
+                <option value="system">system</option>
+                <option value="support">support</option>
+              </select>
+            </label>
+            <label class="mgw-admin__field">
+              <span>Аудитория</span>
+              <select data-notification-audience-type>
+                <option value="all">all</option>
+                <option value="one">one</option>
+                <option value="segment">segment</option>
+                <option value="platform">platform</option>
+                <option value="tournament">tournament</option>
+                <option value="support">support</option>
+              </select>
+            </label>
+          </div>
+
+          <small data-notification-audience-hint>Все текущие MGW-аккаунты.</small>
+
+          <label class="mgw-admin__field" hidden>
+            <span>Target MGW-ID</span>
+            <input data-notification-target-mgw-id type="text" maxlength="24" autocomplete="off" placeholder="MGW-ID">
+          </label>
+          <label class="mgw-admin__field" hidden>
+            <span>Platform</span>
+            <input data-notification-platform type="text" maxlength="32" autocomplete="off" placeholder="telegram">
+          </label>
+          <label class="mgw-admin__field" hidden>
+            <span>Audience ref</span>
+            <input data-notification-audience-ref type="text" maxlength="191" autocomplete="off" placeholder="segment / tournament / case ID">
+          </label>
+          <label class="mgw-admin__field" hidden>
+            <span>Recipient MGW-IDs</span>
+            <input data-notification-recipient-mgw-ids type="text" autocomplete="off" placeholder="MGW-ID, MGW-ID, ...">
+          </label>
+
+          <label class="mgw-admin__field">
+            <span>Заголовок</span>
+            <input data-notification-title type="text" maxlength="160" autocomplete="off" placeholder="Заголовок уведомления">
+          </label>
+          <label class="mgw-admin__field">
+            <span>Текст</span>
+            <input data-notification-text type="text" maxlength="4000" autocomplete="off" placeholder="Текст уведомления">
+          </label>
+          <label class="mgw-admin__field">
+            <span>Deep link</span>
+            <select data-notification-deep-link>
+              <option value="">без перехода</option>
+              <option value="home">home</option>
+              <option value="profile">profile</option>
+              <option value="store">store</option>
+              <option value="store:orders">store:orders</option>
+            </select>
+          </label>
+
+          <div class="mgw-admin__economy-meta">
+            <label class="mgw-admin__field">
+              <span>Schedule</span>
+              <input data-notification-scheduled-at type="datetime-local">
+            </label>
+            <label class="mgw-admin__field">
+              <span>Expiry</span>
+              <input data-notification-expires-at type="datetime-local">
+            </label>
+          </div>
+
+          <div class="mgw-admin__economy-actions">
+            <button type="button" data-notification-event-send>Создать bell event</button>
+            <button type="button" data-notification-event-refresh>Обновить историю</button>
+            <small>Schedule/expiry исполняются в существующем bell pipeline. Android push не используется.</small>
+          </div>
+          <div class="mgw-admin__replay-status" data-notification-event-status>Bell events ещё не загружены.</div>
+          <div class="mgw-admin__history" data-notification-event-list></div>
+        </div>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-reports>
@@ -134,7 +222,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     </section>
 
     <footer class="mgw-admin__footer">
-      Replay viewer читает только durable events/snapshots. Очередь жалоб хранит только case/status и не применяет автоматических санкций. Веб-панель не редактирует пользовательские балансы, не удаляет данные и не переключает runtime. Economy rollback всегда создаёт новую аудируемую версию.
+      Bell events используют существующий Notification Center и не создают второй notification store. Replay viewer читает только durable events/snapshots. Очередь жалоб не применяет автоматических санкций. Web Admin не переключает runtime; Android push остаётся вне MVP-18.6.
     </footer>
   </main>
 </body>
