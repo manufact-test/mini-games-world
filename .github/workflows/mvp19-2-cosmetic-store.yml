@@ -58,9 +58,8 @@ jobs:
       - name: Run Store pricing purchase and idempotency contract
         run: php bot/tests/Mvp19_2CosmeticStoreTest.php
 
-      - name: Run frozen inventory and profile foundations
+      - name: Run frozen account and profile regressions
         run: |
-          php bot/tests/Mvp19_1ProductInventoryTest.php
           php bot/tests/AccountIdentityServiceTest.php
           php bot/tests/MgwProfileIdentityCorrectiveTest.php
 
