@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/MgwIdentityPolicy.php';
+require_once dirname(__DIR__) . '/catalog/ProductInventoryService.php';
 
 final class AccountIdentityService
 {
@@ -120,6 +121,11 @@ final class AccountIdentityService
                 'last_authenticated_at' => $now,
             ]
         );
+
+        // MVP-19.1: account creation owns the one-time starter bootstrap.
+        // The inventory service is idempotent and runs inside this same account
+        // transaction, so a partial account can never escape without starters.
+        (new ProductInventoryService($database))->grantStarterItems($mgwId);
         return $mgwId;
     }
 
