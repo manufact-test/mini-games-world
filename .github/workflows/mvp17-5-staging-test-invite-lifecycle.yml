@@ -20,6 +20,7 @@ on:
       - 'bot/tests/StagingCurrentE2EOwnerContractTest.php'
       - 'e2e/staging-global-setup.mjs'
       - 'e2e/staging/current-core.spec.mjs'
+      - 'e2e/staging/current-core-live.spec.mjs'
       - 'e2e/playwright.config.mjs'
       - 'e2e/playwright.legacy.config.mjs'
       - 'package.json'
@@ -60,6 +61,7 @@ jobs:
           php -l bot/tests/StagingCurrentE2EOwnerContractTest.php
           node --check e2e/staging-global-setup.mjs
           node --check e2e/staging/current-core.spec.mjs
+          node --check e2e/staging/current-core-live.spec.mjs
           node --check e2e/playwright.config.mjs
           node --check e2e/playwright.legacy.config.mjs
 
