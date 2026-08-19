@@ -8,7 +8,7 @@ const supersededScenarios = /D1 follow-up: (declined invitation remains read his
 // runs, but it is not the blocking owner of the current Telegram v110 staging runtime.
 export default defineConfig({
   testDir: './staging',
-  testIgnore: ['current-core-live.spec.mjs'],
+  testIgnore: ['current-core-final.spec.mjs'],
   globalSetup: './staging-global-setup.mjs',
   grepInvert: supersededScenarios,
   outputDir: `${outputRoot}/test-results`,
