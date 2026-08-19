@@ -139,27 +139,46 @@ final class PlayerReportService
         if ($rows === []) throw new PlayerReportException('report_not_found', 'Жалоба не найдена.');
 
         $now = $this->timestamp();
-        $reviewedAt = $status === 'reviewing' ? $now : null;
-        $resolvedAt = $status === 'closed' ? $now : null;
-        $this->database->execute(
-            'UPDATE mgw_player_reports
-             SET status = :status,
-                 updated_at_utc = :updated_at,
-                 reviewed_at_utc = CASE WHEN :status_reviewing = 1 THEN COALESCE(reviewed_at_utc, :reviewed_at) ELSE reviewed_at_utc END,
-                 resolved_at_utc = CASE WHEN :status_closed = 1 THEN :resolved_at ELSE NULL END,
-                 last_admin_ref = :last_admin_ref
-             WHERE report_id = :report_id',
-            [
-                'status' => $status,
-                'updated_at' => $now,
-                'status_reviewing' => $status === 'reviewing' ? 1 : 0,
-                'reviewed_at' => $reviewedAt,
-                'status_closed' => $status === 'closed' ? 1 : 0,
-                'resolved_at' => $resolvedAt,
-                'last_admin_ref' => $adminRef !== '' ? $adminRef : null,
-                'report_id' => $reportId,
-            ]
-        );
+        $parameters = [
+            'status' => $status,
+            'updated_at' => $now,
+            'last_admin_ref' => $adminRef !== '' ? $adminRef : null,
+            'report_id' => $reportId,
+        ];
+
+        if ($status === 'closed') {
+            $this->database->execute(
+                'UPDATE mgw_player_reports
+                 SET status = :status,
+                     updated_at_utc = :updated_at,
+                     reviewed_at_utc = COALESCE(reviewed_at_utc, :reviewed_at),
+                     resolved_at_utc = :resolved_at,
+                     last_admin_ref = :last_admin_ref
+                 WHERE report_id = :report_id',
+                $parameters + ['reviewed_at' => $now, 'resolved_at' => $now]
+            );
+        } elseif ($status === 'reviewing') {
+            $this->database->execute(
+                'UPDATE mgw_player_reports
+                 SET status = :status,
+                     updated_at_utc = :updated_at,
+                     reviewed_at_utc = COALESCE(reviewed_at_utc, :reviewed_at),
+                     resolved_at_utc = NULL,
+                     last_admin_ref = :last_admin_ref
+                 WHERE report_id = :report_id',
+                $parameters + ['reviewed_at' => $now]
+            );
+        } else {
+            $this->database->execute(
+                'UPDATE mgw_player_reports
+                 SET status = :status,
+                     updated_at_utc = :updated_at,
+                     resolved_at_utc = NULL,
+                     last_admin_ref = :last_admin_ref
+                 WHERE report_id = :report_id',
+                $parameters
+            );
+        }
 
         foreach ($this->queue(200) as $report) {
             if ((string)$report['report_id'] === $reportId) return $report;
