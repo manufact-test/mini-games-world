@@ -124,16 +124,20 @@ $assertTrue(NotificationCenterV2Policy::isExpired($row, null, new DateTimeImmuta
 $db = $base();
 $currentEvent = $event('req-active-000001', 'one');
 $currentEvent['target_mgw_id'] = 'MGW000000000000000000001';
+$currentEvent['scheduled_at'] = '2020-01-01T00:00:00Z';
 $service->createEvent($db, $currentEvent, 'telegram:1', $now);
-$futureEvent['request_id'] = 'req-future-000002';
-$service->createEvent($db, $futureEvent, 'telegram:1', $now);
+$serviceFutureEvent = $event('req-future-000002', 'one');
+$serviceFutureEvent['target_mgw_id'] = 'MGW000000000000000000001';
+$serviceFutureEvent['scheduled_at'] = '2099-01-01T00:00:00Z';
+$serviceFutureEvent['expires_at'] = '2100-01-01T00:00:00Z';
+$service->createEvent($db, $serviceFutureEvent, 'telegram:1', $now);
 $notifications = new NotificationService();
 $visible = $notifications->userNotifications($db, '101', 30);
 $assertSame(1, count($visible), 'NotificationService must filter future scheduled rows before applying feed limit');
 $assertTrue($visible[0]['delivered'], 'visible canonical event must expose delivered state');
 $notifications->markAllRead($db, '101');
-$activeRows = array_values(array_filter($db['notifications'], static fn(array $item): bool => ($item['scheduled_at'] ?? '') === '2026-08-19T20:00:00+00:00'));
-$futureRows = array_values(array_filter($db['notifications'], static fn(array $item): bool => ($item['scheduled_at'] ?? '') === '2026-08-19T21:00:00+00:00'));
+$activeRows = array_values(array_filter($db['notifications'], static fn(array $item): bool => ($item['scheduled_at'] ?? '') === '2020-01-01T00:00:00+00:00'));
+$futureRows = array_values(array_filter($db['notifications'], static fn(array $item): bool => ($item['scheduled_at'] ?? '') === '2099-01-01T00:00:00+00:00'));
 $assertTrue(!empty($activeRows[0]['read_at']), 'mark-all must read currently delivered bell events');
 $assertSame(null, $futureRows[0]['read_at'], 'mark-all must not pre-read future scheduled bell events');
 
