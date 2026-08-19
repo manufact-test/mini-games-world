@@ -51,6 +51,7 @@ let shareWarm = null;
 let shareWarmSerial = Promise.resolve();
 let shareAttempt = null;
 let shareClickPending = false;
+let socialInviteTarget = null;
 let playerPickerRequestGeneration = 0;
 let directInviteRequestGeneration = 0;
 const directInviteCancelIntents = new Set();
@@ -82,6 +83,7 @@ export function initGameInvites(){
   });
   document.addEventListener('mgw:sheet-closed', () => {
     playerPickerRequestGeneration += 1;
+    socialInviteTarget = null;
     if (isPassiveOwnerPending(currentInvite)) currentInvite = null;
     if (!shareAttempt?.nativePending) cancelWarmShareDraft();
   });
@@ -116,6 +118,31 @@ export function initGameInvites(){
       // Older Telegram clients do not expose this event.
     }
   }
+}
+
+export function openSocialPlayerInvite(inviteeId, opponentName = 'Игрок'){
+  const id = String(inviteeId || '').trim();
+  const name = String(opponentName || 'Игрок').trim() || 'Игрок';
+  if (!id) return;
+  if (hasActionableInvite()) {
+    openCurrentInvite();
+    return;
+  }
+
+  socialInviteTarget = { id, name };
+  haptic('light');
+  openSheet(`
+    <div class="sheet-head">
+      <div><h2>Пригласить ${escapeHtml(name)}</h2><p>Выберите игру.</p></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    <div class="choice-grid" data-social-invite-games>
+      ${Object.entries(GAME_OPTIONS).map(([gameType, option]) => `<button class="choice" data-social-invite-game="${escapeHtml(gameType)}" type="button">${escapeHtml(option.title)}</button>`).join('')}
+    </div>
+  `);
+  document.querySelectorAll('[data-social-invite-game]').forEach(button => {
+    button.addEventListener('click', () => openInviteSetup(String(button.dataset.socialInviteGame || 'tictactoe')));
+  });
 }
 
 export async function openIncomingInviteIfPresent(){
@@ -215,23 +242,34 @@ function openInviteSetup(gameType, preserved = null){
     </div>
 
     <div class="stack invite-actions">
-      <button class="btn primary full" data-open-player-picker type="button">Пригласить игрока</button>
-      <button class="btn ghost full" data-create-link-invite type="button">Поделиться ссылкой</button>
+      ${socialInviteTarget
+        ? `<button class="btn primary full" data-send-social-invite type="button">Пригласить ${escapeHtml(socialInviteTarget.name)}</button>`
+        : `<button class="btn primary full" data-open-player-picker type="button">Пригласить игрока</button>
+           <button class="btn ghost full" data-create-link-invite type="button">Поделиться ссылкой</button>`}
     </div>
-    <div class="invite-method-note">Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.</div>
+    <div class="invite-method-note">${socialInviteTarget ? 'Приглашение получит выбранный игрок.' : 'Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.'}</div>
   `);
 
   const currentContext = () => normalizeInviteContext({ gameType, boardSize, bet });
   document.querySelectorAll('[data-invite-size]').forEach(button => button.addEventListener('click', () => {
     boardSize = Number(button.dataset.inviteSize || option.defaultSize);
     document.querySelectorAll('[data-invite-size]').forEach(item => item.classList.toggle('active', item === button));
-    scheduleWarmShareDraft(currentContext());
+    if (!socialInviteTarget) scheduleWarmShareDraft(currentContext());
   }));
-  document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
-    openPlayerPicker(currentContext(), event.currentTarget);
-  });
-  document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
-  scheduleWarmShareDraft(currentContext(), 0);
+
+  const selectedSocialTarget = socialInviteTarget ? { ...socialInviteTarget } : null;
+  if (selectedSocialTarget) {
+    document.querySelector('[data-send-social-invite]')?.addEventListener('click', event => {
+      socialInviteTarget = null;
+      void createDirectInvite(currentContext(), selectedSocialTarget.id, event.currentTarget, selectedSocialTarget.name);
+    });
+  } else {
+    document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
+      openPlayerPicker(currentContext(), event.currentTarget);
+    });
+    document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
+    scheduleWarmShareDraft(currentContext(), 0);
+  }
 }
 
 async function openPlayerPicker(context, sourceButton = null){
@@ -338,10 +376,10 @@ function playerCard(item){
   `;
 }
 
-async function createDirectInvite(context, inviteeId, button){
+async function createDirectInvite(context, inviteeId, button, opponentNameOverride = ''){
   if (!inviteeId || button.disabled) return;
   haptic('light');
-  const opponentName = String(button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
+  const opponentName = String(opponentNameOverride || button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
   const requestGeneration = ++directInviteRequestGeneration;
 
   showDirectInvitePending(context, opponentName, requestGeneration);
@@ -375,7 +413,14 @@ async function createDirectInvite(context, inviteeId, button){
       return;
     }
     toast(error.message || 'Не удалось отправить приглашение.');
-    if (isDirectInvitePendingSurfaceOpen(requestGeneration)) await openPlayerPicker(context);
+    if (isDirectInvitePendingSurfaceOpen(requestGeneration)) {
+      if (opponentNameOverride) {
+        socialInviteTarget = { id:String(inviteeId), name:opponentName };
+        openInviteSetup(context.gameType, context);
+      } else {
+        await openPlayerPicker(context);
+      }
+    }
   }
 }
 
