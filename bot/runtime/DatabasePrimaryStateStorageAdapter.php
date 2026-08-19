@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/RuntimeMatchEventLogWriter.php';
+
 final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterface
 {
     public const DRIVER = 'database';
@@ -87,6 +89,7 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use ($callback): mixed {
             $row = $this->requiredRow($database, true);
             $data = $this->decodeAndVerify($row);
+            $beforeState = $data;
             $before = $this->canonicalJson($data);
             $result = $callback($data);
             $after = $this->canonicalJson($data);
@@ -118,6 +121,17 @@ final class DatabasePrimaryStateStorageAdapter implements StorageAdapterInterfac
             );
             if ($updated !== 1) {
                 throw new RuntimeException('Concurrent runtime primary state update was detected.');
+            }
+
+            $requestContext = RuntimeMatchEventContext::current();
+            if ($requestContext !== null) {
+                (new RuntimeMatchEventLogWriter(dirname(__DIR__, 2)))->appendTransition(
+                    $database,
+                    $nextRevision,
+                    $beforeState,
+                    $data,
+                    $requestContext
+                );
             }
 
             $this->ensureProjectionEvent($database, $nextRevision, $after, $afterFingerprint);
