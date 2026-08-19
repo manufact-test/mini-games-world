@@ -88,7 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"mvp19=store-v2")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2")) exit(3);'
-          grep -F "@import url('./screens/store-v2.css?v=1&mvp19=store-v2');" app/assets/css/main.css
+          grep -F "@import url('./screens/store-v2.css?v=2&mvp19=store-v2&corrective=1');" app/assets/css/main.css
           grep -F 'cosmeticStoreStatus' app/assets/js/api/client.js
           grep -F 'cosmeticStorePurchase' app/assets/js/api/client.js
           grep -F 'api.cosmeticStoreStatus()' app/assets/js/screens/store-screen.js
@@ -97,6 +97,32 @@ jobs:
             echo 'Legacy certificate Store leaked into Store v2 owner.' >&2
             exit 1
           fi
+
+      - name: Guard corrective Store UX contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'requestIdleCallback' app/assets/js/screens/store-screen.js
+          grep -F "label:'Турнирные награды'" app/assets/js/screens/store-screen.js
+          grep -F 'ПОКА НЕ ГОТОВО' app/assets/js/screens/store-screen.js
+          grep -F 'Комплект аватарок' app/assets/js/screens/store-screen.js
+          grep -F 'data-store-v2-inventory-family' app/assets/js/screens/store-screen.js
+          grep -F 'grid-template-columns:repeat(3,minmax(0,1fr))' app/assets/css/screens/store-v2.css
+          grep -F 'starter-default-01' app/assets/css/screens/store-v2.css
+          grep -F 'starter-default-02' app/assets/css/screens/store-v2.css
+          grep -F 'starter-default-03' app/assets/css/screens/store-v2.css
+          for forbidden in \
+            'Косметика и коллекция MGW' \
+            'Пакеты пополнения уже зафиксированы' \
+            'Постоянная косметика профиля' \
+            'numbered preview' \
+            'Раздел уже занимает своё постоянное место' \
+            'Смена активного предмета остаётся в профиле'; do
+            if grep -Fq "$forbidden" app/assets/js/screens/store-screen.js; then
+              echo "Technical Store copy leaked into user UI: $forbidden" >&2
+              exit 1
+            fi
+          done
 
       - name: Guard purchase ordering and recovery
         shell: bash
