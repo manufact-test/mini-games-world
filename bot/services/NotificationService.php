@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../notifications/NotificationCenterV2Policy.php';
+
 final class NotificationService
 {
     public function addShopOrderDecision(array &$db, array $order, string $decision): ?array
@@ -221,7 +223,8 @@ final class NotificationService
         $source = array_values(array_filter($db['notifications'] ?? [], static function ($notification) use ($userId): bool {
             return is_array($notification)
                 && (string)($notification['user_id'] ?? '') === $userId
-                && empty($notification['hidden_at']);
+                && empty($notification['hidden_at'])
+                && NotificationCenterV2Policy::isActive($notification);
         }));
 
         usort($source, static function (array $left, array $right): int {
@@ -238,12 +241,23 @@ final class NotificationService
                 'type' => (string)($notification['type'] ?? ''),
                 'title' => (string)($notification['title'] ?? 'Уведомление'),
                 'message' => $this->displayMessage($notification),
+                'text' => (string)($notification['text'] ?? $notification['message'] ?? ''),
                 'tone' => (string)($notification['tone'] ?? 'info'),
                 'order_id' => (string)($notification['order_id'] ?? ''),
                 'payment_id' => (string)($notification['payment_id'] ?? ''),
                 'transaction_id' => (string)($notification['transaction_id'] ?? ''),
                 'invite_token' => (string)($notification['invite_token'] ?? ''),
+                'notification_event_id' => (string)($notification['notification_event_id'] ?? ''),
+                'source_type' => (string)($notification['source_type'] ?? ''),
+                'audience_type' => (string)($notification['audience_type'] ?? ''),
+                'audience_ref' => (string)($notification['audience_ref'] ?? ''),
+                'deep_link' => (string)($notification['deep_link'] ?? ''),
+                'scheduled_at' => NotificationCenterV2Policy::scheduledAt($notification),
+                'delivered_at' => NotificationCenterV2Policy::deliveredAt($notification),
+                'delivered' => NotificationCenterV2Policy::isDelivered($notification),
+                'expires_at' => NotificationCenterV2Policy::expiresAt($notification),
                 'created_at' => (string)($notification['created_at'] ?? ''),
+                'created_by' => (string)($notification['created_by'] ?? ''),
                 'read' => !empty($notification['read_at']),
             ];
             if (count($items) >= $limit) break;
@@ -258,6 +272,7 @@ final class NotificationService
             if (!is_array($notification)) continue;
             if ((string)($notification['user_id'] ?? '') !== $userId) continue;
             if (!empty($notification['hidden_at']) || !empty($notification['read_at'])) continue;
+            if (!NotificationCenterV2Policy::isActive($notification)) continue;
             $count++;
         }
         return $count;
@@ -271,11 +286,13 @@ final class NotificationService
         }
 
         $now = now_iso();
+        $instant = new DateTimeImmutable($now);
         foreach ($db['notifications'] as &$notification) {
             if (!is_array($notification)) continue;
-            if ((string)($notification['user_id'] ?? '') === $userId && empty($notification['read_at'])) {
-                $notification['read_at'] = $now;
-            }
+            if ((string)($notification['user_id'] ?? '') !== $userId) continue;
+            if (!empty($notification['read_at'])) continue;
+            if (!NotificationCenterV2Policy::isActive($notification, null, $instant)) continue;
+            $notification['read_at'] = $now;
         }
         unset($notification);
     }
