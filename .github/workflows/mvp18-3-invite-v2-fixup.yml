@@ -1,0 +1,76 @@
+name: MVP-18.3 Invite v2 Fixup
+
+on:
+  push:
+    branches:
+      - agent/mvp18-3-invite-v2
+    paths:
+      - '.github/workflows/mvp18-3-invite-v2-fixup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fixup:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp18-3-invite-v2
+
+      - name: Keep ready deadline semantic and resync countdown
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, found {text.count(old)}')
+              p.write_text(text.replace(old, new))
+
+          replace_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              "        $deadline = '';\n        $deadlineTs = 0;\n        if (in_array($storedStatus, ['draft', 'pending'], true)) {\n            $deadline = (string)($invite['expires_at'] ?? '');\n            $deadlineTs = strtotime($deadline) ?: 0;\n        } elseif ($storedStatus === 'awaiting_start') {\n            $deadlineTs = $this->effectiveReadyDeadlineTs($invite);\n            if ($deadlineTs > 0) $deadline = gmdate('c', $deadlineTs);\n        }",
+              "        $readyDeadline = (string)($invite['ready_deadline_at'] ?? '');\n        $countdownDeadline = '';\n        $deadlineTs = 0;\n        if (in_array($storedStatus, ['draft', 'pending'], true)) {\n            $countdownDeadline = (string)($invite['expires_at'] ?? '');\n            $deadlineTs = strtotime($countdownDeadline) ?: 0;\n        } elseif ($storedStatus === 'awaiting_start') {\n            $deadlineTs = $this->effectiveReadyDeadlineTs($invite);\n            if ($deadlineTs > 0) {\n                $readyDeadline = gmdate('c', $deadlineTs);\n                $countdownDeadline = $readyDeadline;\n            }\n        }"
+          )
+          replace_once(
+              'bot/services/invites/GameInviteValidationTrait.php',
+              "            'ready_deadline_at' => $deadline,\n            'waiting_seconds' => $deadlineTs > 0 ? max(0, $deadlineTs - time()) : 0,",
+              "            'ready_deadline_at' => $readyDeadline,\n            'countdown_deadline_at' => $countdownDeadline,\n            'waiting_seconds' => $deadlineTs > 0 ? max(0, $deadlineTs - time()) : 0,"
+          )
+
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  if (!marker || !note) return false;\n  marker.dataset.inviteState = inviteSheetState(invite);\n  note.textContent = inviteeWaitingNote(invite);\n  return true;",
+              "  if (!marker || !note) return false;\n  marker.dataset.inviteState = inviteSheetState(invite);\n  mountInviteCountdown(invite, 'Ждём запуск матча');\n  return true;"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "  if (openToken !== String(currentInvite.token || '')) return;\n  if (openSheetInviteState() === inviteSheetState(currentInvite)) return;",
+              "  if (openToken !== String(currentInvite.token || '')) return;\n  if (openSheetInviteState() === inviteSheetState(currentInvite)) {\n    mountInviteCountdown(currentInvite, inviteCountdownLabel(currentInvite));\n    return;\n  }"
+          )
+          replace_once(
+              'app/assets/js/games/game-invites-v110.js',
+              "function clearInviteCountdown(){",
+              "function inviteCountdownLabel(invite){\n  const status = String(invite?.status || '');\n  if (status === 'accepted') return invite?.is_owner ? 'Запустите матч' : 'Ждём запуск матча';\n  if (status === 'pending') return invite?.is_invitee ? 'Ответьте на приглашение' : 'Ожидаем ответ';\n  return 'Ожидание';\n}\n\nfunction clearInviteCountdown(){"
+          )
+
+      - name: Verify syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l bot/services/invites/GameInviteValidationTrait.php
+          node --check app/assets/js/games/game-invites-v110.js
+          git diff --check
+
+      - name: Commit fixup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot/services/invites/GameInviteValidationTrait.php app/assets/js/games/game-invites-v110.js
+          git commit -m 'MVP-18.3: resync authoritative invite countdown'
+          git push origin HEAD:agent/mvp18-3-invite-v2
