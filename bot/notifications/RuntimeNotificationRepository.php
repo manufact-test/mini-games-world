@@ -318,6 +318,8 @@ final class RuntimeNotificationRepository
         $normalized['created_at'] = $this->isoTimestamp($normalized['created_at']);
         $normalized['read_at'] = $normalized['read_at'] === null ? null : $this->isoTimestamp($normalized['read_at']);
         $normalized['hidden_at'] = $normalized['hidden_at'] === null ? null : $this->isoTimestamp($normalized['hidden_at']);
+        $normalized['scheduled_at'] = $normalized['scheduled_at'] === null ? null : $this->isoTimestamp($normalized['scheduled_at']);
+        $normalized['delivered_at'] = $normalized['delivered_at'] === null ? null : $this->isoTimestamp($normalized['delivered_at']);
         $normalized['expires_at'] = $normalized['expires_at'] === null ? null : $this->isoTimestamp($normalized['expires_at']);
         return $normalized;
     }
@@ -327,17 +329,27 @@ final class RuntimeNotificationRepository
         return [
             'id' => trim((string)($notification['id'] ?? '')),
             'event_key' => trim((string)($notification['event_key'] ?? '')),
+            'notification_event_id' => trim((string)($notification['notification_event_id'] ?? '')),
+            'event_fingerprint' => trim((string)($notification['event_fingerprint'] ?? '')),
             'user_id' => trim((string)($notification['user_id'] ?? '')),
             'type' => trim((string)($notification['type'] ?? '')),
+            'source_type' => trim((string)($notification['source_type'] ?? '')),
+            'audience_type' => trim((string)($notification['audience_type'] ?? '')),
+            'audience_ref' => trim((string)($notification['audience_ref'] ?? '')),
             'title' => (string)($notification['title'] ?? 'Уведомление'),
             'message' => (string)($notification['message'] ?? ''),
+            'text' => (string)($notification['text'] ?? $notification['message'] ?? ''),
             'tone' => trim((string)($notification['tone'] ?? 'info')) ?: 'info',
             'order_id' => trim((string)($notification['order_id'] ?? '')),
             'payment_id' => trim((string)($notification['payment_id'] ?? '')),
             'transaction_id' => trim((string)($notification['transaction_id'] ?? '')),
             'invite_token' => trim((string)($notification['invite_token'] ?? '')),
             'cycle_key' => trim((string)($notification['cycle_key'] ?? '')),
+            'deep_link' => trim((string)($notification['deep_link'] ?? '')),
+            'created_by' => trim((string)($notification['created_by'] ?? '')),
             'created_at' => $this->requiredTimestamp($notification['created_at'] ?? null),
+            'scheduled_at' => $this->nullableTimestamp($notification['scheduled_at'] ?? null),
+            'delivered_at' => $this->nullableTimestamp($notification['delivered_at'] ?? null),
             'read_at' => $this->nullableTimestamp($notification['read_at'] ?? null),
             'hidden_at' => $this->nullableTimestamp($notification['hidden_at'] ?? null),
             'expires_at' => $this->nullableTimestamp($notification['expires_at'] ?? null),
