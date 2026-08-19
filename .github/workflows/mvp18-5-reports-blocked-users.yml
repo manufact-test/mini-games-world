@@ -23,6 +23,8 @@ on:
       - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - 'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php'
+      - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
       - '.github/workflows/mvp18-4-universal-invite-landing.yml'
       - '.github/workflows/mvp18-5-reports-blocked-users.yml'
   workflow_dispatch:
@@ -74,6 +76,8 @@ jobs:
           php -l bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
           php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
           php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
+          php -l bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+          php -l bot/tests/UnifiedEconomyRuntimeSyncTest.php
 
       - name: Check bounded MVP-18.5 JavaScript
         shell: bash
@@ -113,6 +117,12 @@ jobs:
       - name: Run economy schema regression
         run: php bot/tests/Mvp15EconomyRemoteConfigTest.php
 
+      - name: Run economy dev-user sync regression
+        run: php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+
+      - name: Run economy runtime sync regression
+        run: php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+
       - name: Run accepted rematch regression
         run: php bot/tests/RematchOptimisticUxContractTest.php
 
@@ -128,7 +138,7 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/mvp18-4-universal-invite-landing.yml|.github/workflows/mvp18-5-reports-blocked-users.yml|app/admin.php|app/assets/js/admin-reports.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|bot/admin-reports.php|bot/database/migrations/20260819_0012_create_player_reports.php|bot/friends.php|bot/invites.php|bot/social/PlayerReportService.php|bot/social/SocialInviteGuard.php|bot/tests/FriendGraphServiceTest.php|bot/tests/Mvp15EconomyRemoteConfigTest.php|bot/tests/Mvp18FriendsUiContractTest.mjs|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/SocialPlayerProfileReaderTest.php|bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php|bot/tests/UnifiedBalanceMigrationExecutionTest.php|bot/tests/UnifiedBalanceMigrationFoundationTest.php)
+              .github/workflows/mvp18-4-universal-invite-landing.yml|.github/workflows/mvp18-5-reports-blocked-users.yml|app/admin.php|app/assets/js/admin-reports.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|bot/admin-reports.php|bot/database/migrations/20260819_0012_create_player_reports.php|bot/friends.php|bot/invites.php|bot/social/PlayerReportService.php|bot/social/SocialInviteGuard.php|bot/tests/FriendGraphServiceTest.php|bot/tests/Mvp15EconomyRemoteConfigTest.php|bot/tests/Mvp18FriendsUiContractTest.mjs|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/SocialPlayerProfileReaderTest.php|bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php|bot/tests/UnifiedBalanceMigrationExecutionTest.php|bot/tests/UnifiedBalanceMigrationFoundationTest.php|bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php|bot/tests/UnifiedEconomyRuntimeSyncTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-18.5 path: $path" >&2
