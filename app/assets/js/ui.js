@@ -18,13 +18,7 @@ export function username(user){
 export function roomName(){ return 'Обычный матч'; }
 export function renderUser(user){
   const name = username(user);
-  const canonicalProfileLoaded = Boolean(String(state.mgwProfile?.mgw_id || '').trim()) || user?.mgw_profile_loaded === true;
-  const canonicalAvatarId = String(state.mgwProfile?.avatar?.item_id || user?.avatar_item_id || 'starter-default-01').trim();
-  const avatarLabel = canonicalProfileLoaded ? String(user?.avatar_label || 'MG') : initials(name);
-  const photoOwnerId = String(state.mgwProfile?.mgw_id || user?.mgw_id || user?.id || user?.telegram_id || '').trim();
-  const telegramOwnerId = String(user?.id || user?.telegram_id || '').trim();
-  const explicitPhotoUrl = canonicalProfileLoaded ? '' : String(user?.photo_url || '').trim();
-  const telegramPhotoUrl = canonicalProfileLoaded ? '' : currentTelegramPhotoUrl(telegramOwnerId);
+  const canonicalAvatarId = String(state.mgwProfile?.avatar?.item_id || user?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
 
   ['topName','profileName','searchMeName'].forEach(id => {
     const el = document.getElementById(id);
@@ -33,23 +27,10 @@ export function renderUser(user){
   ['topAvatar','profileAvatar','searchMeAvatar'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    const existingOwner = String(el.dataset.photoOwner || '').trim();
-    const existingPhotoUrl = existingOwner === photoOwnerId ? String(el.dataset.photoUrl || '').trim() : '';
-    const photoUrl = explicitPhotoUrl || telegramPhotoUrl || existingPhotoUrl;
-    el.dataset.photoOwner = photoOwnerId;
-    if (canonicalProfileLoaded) el.dataset.avatarId = canonicalAvatarId;
-    if (photoUrl) {
-      el.dataset.photoUrl = photoUrl;
-      el.textContent = '';
-      el.style.backgroundImage = `url("${photoUrl.replace(/["\\]/g, '\\$&')}")`;
-      el.style.backgroundSize = 'cover';
-      el.style.backgroundPosition = 'center';
-      el.style.backgroundRepeat = 'no-repeat';
-      el.classList.add('has-photo');
-      return;
-    }
+    el.dataset.avatarId = canonicalAvatarId;
     delete el.dataset.photoUrl;
-    el.textContent = avatarLabel;
+    delete el.dataset.photoOwner;
+    el.textContent = 'MG';
     el.style.backgroundImage = '';
     el.style.backgroundSize = '';
     el.style.backgroundPosition = '';
@@ -64,11 +45,3 @@ export function renderBalances(user){
   if (unified) unified.textContent = user?.balance ?? '—';
 }
 export function clearTimer(timer){ if (timer) clearInterval(timer); return null; }
-
-function currentTelegramPhotoUrl(ownerId){
-  const telegramUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-  if (!telegramUser) return '';
-  const telegramUserId = String(telegramUser.id || '').trim();
-  if (ownerId && telegramUserId && ownerId !== telegramUserId) return '';
-  return String(telegramUser.photo_url || '').trim();
-}
