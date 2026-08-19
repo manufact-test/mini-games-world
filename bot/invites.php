@@ -31,9 +31,10 @@ function mgw_invite_webapp_url(array $config, string $token): string
 
 function mgw_invite_share_url(array $config, string $token): string
 {
-    $username = mgw_invite_bot_username($config);
-    if ($username === '') return '';
-    return 'https://t.me/' . rawurlencode($username) . '?start=invite_' . rawurlencode($token);
+    $baseUrl = rtrim(trim((string)($config['base_url'] ?? '')), '/');
+    $normalizedToken = strtolower(trim($token));
+    if ($baseUrl === '' || preg_match('/^[a-f0-9]{24}$/', $normalizedToken) !== 1) return '';
+    return $baseUrl . '/invite/' . rawurlencode($normalizedToken);
 }
 
 function mgw_invite_board_label(array $invite): string
