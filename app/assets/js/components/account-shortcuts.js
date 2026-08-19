@@ -13,7 +13,24 @@ export function initAccountShortcuts(){
 async function enhanceCurrentMenu(){
   const sheet = document.getElementById('sheet');
   const menu = sheet?.querySelector('.menu-list');
-  if (!menu || sheet.querySelector('[data-account-orders-shortcut]')) return;
+  if (!menu) return;
+
+  if (!sheet.querySelector('[data-account-friends-shortcut]')) {
+    const friends = document.createElement('button');
+    friends.className = 'btn menu-item account-menu-entry';
+    friends.type = 'button';
+    friends.dataset.accountFriendsShortcut = '1';
+    friends.innerHTML = `
+      <span class="account-menu-icon" aria-hidden="true">👥</span>
+      <span class="account-menu-copy"><strong>Друзья</strong></span>
+    `;
+    friends.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('mgw:open-friends'));
+    });
+    menu.prepend(friends);
+  }
+
+  if (sheet.querySelector('[data-account-orders-shortcut]')) return;
 
   const button = document.createElement('button');
   button.className = 'btn menu-item account-menu-entry';
