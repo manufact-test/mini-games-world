@@ -77,7 +77,7 @@ $avatarCss = (string)file_get_contents($root . '/app/assets/css/components/mgw-a
 $cleanEntry = (string)file_get_contents($root . '/app/assets/js/production-clean-entry-v110.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 
-$assertTrue(str_contains($profileEndpoint, "'inventory'=>$inventory"), 'Profile v2 must return canonical inventory snapshot');
+$assertTrue(str_contains($profileEndpoint, "'inventory'=>\$inventory"), 'Profile v2 must return canonical inventory snapshot');
 $assertTrue(str_contains($profileEndpoint, 'ProductInventoryService($database))->snapshot'), 'Profile endpoint must consume canonical inventory owner');
 $assertTrue(!str_contains($profileClient, 'STARTER_AVATARS'), 'Profile client must not remain starter-only after MVP-19.3');
 $assertTrue(str_contains($profileClient, 'ownedAvatarItems'), 'Profile client must render owned avatar collection');
