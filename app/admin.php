@@ -17,14 +17,15 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=3&replay=17-6">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=3&replay=17-6" defer></script>
+  <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-replay-api="../bot/admin-replay.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php">
     <header class="mgw-admin__header">
       <div>
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
         <h1>Web Admin</h1>
-        <p class="mgw-admin__subtitle">Системный обзор, экономика и read-only replay storage.</p>
+        <p class="mgw-admin__subtitle">Системный обзор, экономика, replay storage и очередь жалоб.</p>
       </div>
       <button class="mgw-admin__refresh" type="button" data-admin-refresh>Обновить</button>
     </header>
@@ -54,6 +55,19 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span>read-only</span>
         </div>
         <pre data-admin-system-check>—</pre>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-reports>
+        <div class="mgw-admin__card-head">
+          <h2>Жалобы игроков</h2>
+          <span>MVP-18.5 · manual moderation</span>
+        </div>
+        <div class="mgw-admin__economy-actions">
+          <button type="button" data-report-queue-refresh>Обновить очередь</button>
+          <small>Статус меняется вручную. Auto-ban и автоматические ограничения отсутствуют.</small>
+        </div>
+        <div class="mgw-admin__replay-status" data-report-queue-status>Очередь ещё не загружена.</div>
+        <div class="mgw-admin__history" data-report-queue-list></div>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-replay-card>
@@ -120,7 +134,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     </section>
 
     <footer class="mgw-admin__footer">
-      Replay viewer читает только durable events/snapshots. Веб-панель не редактирует пользовательские балансы, не удаляет данные и не переключает runtime. Economy rollback всегда создаёт новую аудируемую версию.
+      Replay viewer читает только durable events/snapshots. Очередь жалоб хранит только case/status и не применяет автоматических санкций. Веб-панель не редактирует пользовательские балансы, не удаляет данные и не переключает runtime. Economy rollback всегда создаёт новую аудируемую версию.
     </footer>
   </main>
 </body>

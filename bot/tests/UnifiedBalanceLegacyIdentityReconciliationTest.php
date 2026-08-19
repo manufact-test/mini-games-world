@@ -53,8 +53,8 @@ $makeDatabase = static function () use ($databaseDir): DatabaseConnectionInterfa
     $database = new PdoDatabaseConnection($pdo);
     $runner = new MigrationRunner($database, $databaseDir . '/migrations');
     $result = $runner->migrate(false);
-    if ((int)($result['executed_count'] ?? 0) !== 11) {
-        throw new RuntimeException('Expected all eleven database migrations in identity regression fixture.');
+    if ((int)($result['executed_count'] ?? 0) !== 12) {
+        throw new RuntimeException('Expected all twelve database migrations in identity regression fixture.');
     }
     return $database;
 };

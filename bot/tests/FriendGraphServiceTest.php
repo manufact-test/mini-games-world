@@ -43,7 +43,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(11, $runner->migrate(false)['executed_count'], 'Social graph test must apply all current migrations');
+$assertSame(12, $runner->migrate(false)['executed_count'], 'Social graph test must apply all current migrations');
 
 $now = '2026-08-19 15:00:00.000000';
 $users = [

@@ -10,6 +10,13 @@ const GAME_NAMES = Object.freeze({
   tictactoe:'Крестики-нолики', four_in_a_row:'4 в ряд', battleship:'Морской бой',
   checkers:'Шашки', reversi:'Реверси', chess:'Шахматы', go:'Го', domino:'Домино',
 });
+const REPORT_REASONS = Object.freeze([
+  ['abuse','Оскорбления или травля'],
+  ['cheating','Нечестная игра'],
+  ['spam','Спам или навязчивые сообщения'],
+  ['offensive_profile','Недопустимый профиль'],
+  ['other','Другое'],
+]);
 
 let initialized = false;
 let loading = false;
@@ -84,6 +91,7 @@ function render(){
   const outgoing = snapshot.outgoing;
   const friends = snapshot.friends;
   const recent = snapshot.recent_opponents;
+  const blocked = snapshot.blocked;
 
   root.innerHTML = `
     <div class="page-head">
@@ -101,6 +109,7 @@ function render(){
         ${section('Исходящие заявки', outgoing, 'outgoing')}
         ${section('Друзья', friends, 'friends')}
         ${section('Недавние соперники', recent, 'recent')}
+        ${section('Заблокированные', blocked, 'blocked')}
       </div>
     `}
   `;
@@ -142,7 +151,7 @@ function playerCard(player, kind){
       <span class="friends-v110-copy"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(secondary)}</small></span>
       <span class="friends-v110-actions">
         ${inlineActions(id, relation)}
-        <button class="friends-v110-more" data-friends-menu="${escapeHtml(id)}" type="button" aria-label="Действия с игроком">⋯</button>
+        ${relation === 'blocked' ? '' : `<button class="friends-v110-more" data-friends-menu="${escapeHtml(id)}" type="button" aria-label="Действия с игроком">⋯</button>`}
       </span>
     </article>
   `;
@@ -154,6 +163,9 @@ function inlineActions(id, relation){
   }
   if (relation === 'outgoing') {
     return `<button class="btn ghost" data-friends-action="cancel" data-target-mgw-id="${escapeHtml(id)}" type="button">Отменить</button>`;
+  }
+  if (relation === 'blocked') {
+    return `<button class="btn ghost" data-friends-action="unblock" data-target-mgw-id="${escapeHtml(id)}" type="button">Разблокировать</button>`;
   }
   if (relation === 'none') {
     return `<button class="btn primary" data-friends-action="request" data-target-mgw-id="${escapeHtml(id)}" type="button">Добавить</button>`;
@@ -178,7 +190,19 @@ function handleClick(event){
 
   const action = event.target.closest('[data-friends-action]');
   if (action) {
-    void mutateRelation(String(action.dataset.friendsAction || ''), String(action.dataset.targetMgwId || ''), action);
+    const mutation = String(action.dataset.friendsAction || '');
+    const targetMgwId = String(action.dataset.targetMgwId || '');
+    if (mutation === 'unblock') {
+      const player = playerById(targetMgwId);
+      openConfirmSheet(
+        'Разблокировать игрока?',
+        `${String(player?.nickname || 'Игрок')} снова сможет взаимодействовать с вами через социальные функции.`,
+        'Разблокировать',
+        () => mutateFromSheet('unblock', targetMgwId)
+      );
+      return;
+    }
+    void mutateRelation(mutation, targetMgwId, action);
     return;
   }
 
@@ -261,7 +285,7 @@ async function performMenuAction(action, player){
     return;
   }
   if (action === 'block') {
-    openConfirmSheet('Заблокировать игрока?', 'Заявки в друзья будут недоступны, текущая дружба будет удалена.', 'Заблокировать', () => mutateFromSheet('block', targetMgwId), true);
+    openConfirmSheet('Заблокировать игрока?', 'Заявки в друзья и новые приглашения в игру будут недоступны, текущая дружба будет удалена.', 'Заблокировать', () => mutateFromSheet('block', targetMgwId), true);
   }
 }
 
@@ -294,19 +318,29 @@ function profileMarkup(profile){
 function openReportSheet(player){
   openSheet(`
     <div class="sheet-head"><div><h2>Пожаловаться</h2><p>${escapeHtml(player?.nickname || 'Игрок')} · ${escapeHtml(player?.public_mgw_id || '')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="friends-v110-report"><textarea class="form-input" id="socialReportText" maxlength="800" placeholder="Кратко опишите ситуацию"></textarea></div>
-    <button class="btn primary full" id="socialReportSend" type="button">Отправить</button>
+    <div class="friends-v110-report">
+      <label><span>Причина</span><select class="form-input" id="socialReportReason">${REPORT_REASONS.map(([value,label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join('')}</select></label>
+      <label><span>Комментарий</span><textarea class="form-input" id="socialReportText" maxlength="800" placeholder="Необязательно. Кратко опишите ситуацию"></textarea></label>
+    </div>
+    <button class="btn primary full" id="socialReportSend" type="button">Отправить жалобу</button>
   `);
   document.getElementById('socialReportSend')?.addEventListener('click', async event => {
-    const message = String(document.getElementById('socialReportText')?.value || '').trim();
-    if (!message) return toast('Опишите ситуацию.');
+    const reason = String(document.getElementById('socialReportReason')?.value || '').trim();
+    const details = String(document.getElementById('socialReportText')?.value || '').trim();
     const button = event.currentTarget;
+    if (!reason) return toast('Выберите причину жалобы.');
     if (button instanceof HTMLButtonElement) button.disabled = true;
     try {
-      const target = String(player?.public_mgw_id || player?.mgw_id || '');
-      await api.support('player_report', `Target MGW-ID: ${target}\n${message}`);
+      const response = await api.friends({
+        action:'report',
+        target_mgw_id:String(player?.mgw_id || ''),
+        reason,
+        details,
+        related_match_id:String(player?.related_match_id || ''),
+      });
+      const caseId = String(response?.result?.report_id || '');
       closeSheet();
-      toast('Жалоба отправлена.');
+      toast(caseId ? `Жалоба отправлена · ${caseId}` : 'Жалоба отправлена.');
     } catch (error) {
       toast(error?.message || 'Не удалось отправить жалобу.');
       if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
@@ -337,16 +371,17 @@ async function mutateFromSheet(action, targetMgwId){
 }
 
 function relationStatus(targetMgwId, fallback = ''){
+  if (snapshot.blocked.some(item => item.mgw_id === targetMgwId)) return 'blocked';
   if (snapshot.friends.some(item => item.mgw_id === targetMgwId)) return 'friends';
   if (snapshot.incoming.some(item => item.mgw_id === targetMgwId)) return 'incoming';
   if (snapshot.outgoing.some(item => item.mgw_id === targetMgwId)) return 'outgoing';
-  if (fallback === 'friends' || fallback === 'incoming' || fallback === 'outgoing') return fallback;
+  if (['blocked','friends','incoming','outgoing'].includes(fallback)) return fallback;
   return 'none';
 }
 
 function playerById(targetMgwId){
   if (searchResult?.mgw_id === targetMgwId) return searchResult;
-  for (const key of ['incoming','outgoing','friends','recent_opponents']) {
+  for (const key of ['incoming','outgoing','friends','recent_opponents','blocked']) {
     const found = snapshot[key].find(item => item.mgw_id === targetMgwId);
     if (found) return found;
   }
@@ -365,7 +400,7 @@ function normalizeSnapshot(value){
 }
 
 function emptySnapshot(){ return { incoming:[], outgoing:[], friends:[], blocked:[], recent_opponents:[] }; }
-function emptyText(kind){ return ({ incoming:'Нет входящих заявок.', outgoing:'Нет исходящих заявок.', friends:'Добавьте игрока по точному нику или MGW-ID.', recent:'Завершённые матчи с людьми появятся здесь.' })[kind] || 'Пока пусто.'; }
+function emptyText(kind){ return ({ incoming:'Нет входящих заявок.', outgoing:'Нет исходящих заявок.', friends:'Добавьте игрока по точному нику или MGW-ID.', recent:'Завершённые матчи с людьми появятся здесь.', blocked:'Список заблокированных пуст.' })[kind] || 'Пока пусто.'; }
 function activeMatchLocked(){ const game = state.activeGame; const id = String(game?.id || ''); const status = String(game?.status || '').toLowerCase(); return Boolean(id && !['finished','cancelled','canceled','abandoned'].includes(status)); }
 function stat(label, value){ return `<div class="friends-v110-stat"><strong>${escapeHtml(number(value))}</strong><span>${escapeHtml(label)}</span></div>`; }
 function gameStat(title, value){ const s = value || {}; return `<div class="friends-v110-game"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(number(s.games_played))} матч. · ${escapeHtml(number(s.wins))} побед</small></div>`; }

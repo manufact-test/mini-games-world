@@ -1,0 +1,172 @@
+name: MVP-18.5 Reports and blocked users
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/admin.php'
+      - 'app/assets/js/admin-reports.js'
+      - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/assets/js/screens/friends-screen-v110.js'
+      - 'bot/admin-reports.php'
+      - 'bot/database/migrations/20260819_0012_create_player_reports.php'
+      - 'bot/friends.php'
+      - 'bot/invites.php'
+      - 'bot/social/PlayerReportService.php'
+      - 'bot/social/SocialInviteGuard.php'
+      - 'bot/tests/FriendGraphServiceTest.php'
+      - 'bot/tests/Mvp15EconomyRemoteConfigTest.php'
+      - 'bot/tests/Mvp18FriendsUiContractTest.mjs'
+      - 'bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php'
+      - 'bot/tests/SocialPlayerProfileReaderTest.php'
+      - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
+      - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
+      - 'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php'
+      - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - '.github/workflows/mvp18-4-universal-invite-landing.yml'
+      - '.github/workflows/mvp18-5-reports-blocked-users.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp18-5-reports-blocked-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Reports queue and social block contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Lint bounded MVP-18.5 PHP slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l bot/database/migrations/20260819_0012_create_player_reports.php
+          php -l bot/social/PlayerReportService.php
+          php -l bot/social/SocialInviteGuard.php
+          php -l bot/friends.php
+          php -l bot/invites.php
+          php -l bot/admin-reports.php
+          php -l app/admin.php
+          php -l bot/tests/FriendGraphServiceTest.php
+          php -l bot/tests/Mvp15EconomyRemoteConfigTest.php
+          php -l bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+          php -l bot/tests/SocialPlayerProfileReaderTest.php
+          php -l bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
+          php -l bot/tests/UnifiedBalanceMigrationExecutionTest.php
+          php -l bot/tests/UnifiedBalanceMigrationFoundationTest.php
+          php -l bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+          php -l bot/tests/UnifiedEconomyRuntimeSyncTest.php
+
+      - name: Check bounded MVP-18.5 JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/screens/friends-screen-v110.js
+          node --check app/assets/js/admin-reports.js
+          node --check app/assets/js/components/account-shortcuts.js
+
+      - name: Run reports and blocked users contract
+        run: php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+
+      - name: Run canonical friend graph regression
+        run: php bot/tests/FriendGraphServiceTest.php
+
+      - name: Run Friends UI owner regression
+        run: node bot/tests/Mvp18FriendsUiContractTest.mjs
+
+      - name: Run universal invite landing regression
+        run: php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+
+      - name: Run Invite v2 lifecycle regression
+        run: php bot/tests/Mvp18_3InviteV2ContractTest.php
+
+      - name: Run public social profile regression
+        run: php bot/tests/SocialPlayerProfileReaderTest.php
+
+      - name: Run unified balance schema regression
+        run: php bot/tests/UnifiedBalanceMigrationFoundationTest.php
+
+      - name: Run unified balance execution regression
+        run: php bot/tests/UnifiedBalanceMigrationExecutionTest.php
+
+      - name: Run unified balance identity reconciliation regression
+        run: php bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
+
+      - name: Run economy schema regression
+        run: php bot/tests/Mvp15EconomyRemoteConfigTest.php
+
+      - name: Run economy dev-user sync regression
+        run: php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+
+      - name: Run economy runtime sync regression
+        run: php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+
+      - name: Run accepted rematch regression
+        run: php bot/tests/RematchOptimisticUxContractTest.php
+
+      - name: Run Result and History cache regression
+        run: php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
+
+      - name: Guard bounded MVP-18.5 scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp18-4-universal-invite-landing.yml|.github/workflows/mvp18-5-reports-blocked-users.yml|app/admin.php|app/assets/js/admin-reports.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|bot/admin-reports.php|bot/database/migrations/20260819_0012_create_player_reports.php|bot/friends.php|bot/invites.php|bot/social/PlayerReportService.php|bot/social/SocialInviteGuard.php|bot/tests/FriendGraphServiceTest.php|bot/tests/Mvp15EconomyRemoteConfigTest.php|bot/tests/Mvp18FriendsUiContractTest.mjs|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/SocialPlayerProfileReaderTest.php|bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php|bot/tests/UnifiedBalanceMigrationExecutionTest.php|bot/tests/UnifiedBalanceMigrationFoundationTest.php|bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php|bot/tests/UnifiedEconomyRuntimeSyncTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-18.5 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+      - name: Guard accepted game engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if git diff --name-only "$base" "$head" -- 'bot/games/**' | grep -q .; then
+            echo 'MVP-18.5 must not modify accepted game engines.' >&2
+            exit 1
+          fi
+
+      - name: Guard frozen Telegram launch graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1127';" bot/helpers/WebAppLaunchUrl.php
+          grep -F "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'" app/runtime/client/version-manifest.php
+          git diff --exit-code '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}' -- \
+            bot/helpers/WebAppLaunchUrl.php \
+            app/assets/js/main-v110-reconnect-v174.js \
+            app/assets/js/games/game-invites-v110-rematch-policy-v175.js \
+            bot/games

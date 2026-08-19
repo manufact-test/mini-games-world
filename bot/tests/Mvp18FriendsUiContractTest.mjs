@@ -21,7 +21,7 @@ assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.j
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
 assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify the frozen reconnect composition owner');
-assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=1&mvp18=friends-ui')"), 'Existing account shortcut owner must lazy-load Friends on demand');
+assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=1&mvp18=friends-ui&moderation=1')"), 'Existing account shortcut owner must lazy-load the current Friends moderation module on demand');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
 assert(inviteWrapper.includes("v=1142&zone=unified&rematch=optimistic&terminal=self-silent"), 'Accepted rematch wrapper must keep its frozen base invite specifier');
 assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1'"), 'Frozen base invite specifier must converge through the manifest on the social-aware cache identity');
@@ -39,12 +39,17 @@ assert(friends.includes("section('Входящие заявки'"), 'Friends UI 
 assert(friends.includes("section('Исходящие заявки'"), 'Friends UI must render outgoing requests');
 assert(friends.includes("section('Друзья'"), 'Friends UI must render friends');
 assert(friends.includes("section('Недавние соперники'"), 'Friends UI must render recent opponents');
+assert(friends.includes("section('Заблокированные'"), 'Friends settings must render the canonical blocked list');
 for (const action of ['invite','profile','remove','report','block']) {
   assert(friends.includes(`data-social-menu-action=\\\"${action}\\\"`) || friends.includes(`data-social-menu-action="${action}"`), `Player context menu must include ${action}`);
 }
-assert(friends.includes("api.support('player_report'"), '18.2 report action must hand off to existing support owner');
+assert(friends.includes("action:'report'"), '18.5 report action must use the structured Friends moderation endpoint');
+assert(!friends.includes("api.support('player_report'"), 'Legacy free-text support must no longer own player reports');
+assert(friends.includes("mutation === 'unblock'"), 'Blocked list must require explicit unblock handling');
+assert(friends.includes("openConfirmSheet("), 'Unblock must stay behind a confirmation sheet');
 assert(!friends.toLowerCase().includes('phone') && !friends.toLowerCase().includes('email') && !friends.toLowerCase().includes('real name'), 'Friends UI must not introduce prohibited identity search fields');
 assert(endpoint.includes("'player_profile'"), 'Friends endpoint must expose read-only public player profile projection');
 assert(endpoint.includes('SocialPlayerProfileReader'), 'Player profile action must use dedicated read-only projection');
+assert(endpoint.includes("'report' => $reports->submit("), 'Friends endpoint must hand reports to the canonical DB queue service');
 
-console.log('PASS: MVP-18.2 active Friends UI contract');
+console.log('PASS: MVP-18.2/18.5 active Friends UI contract');
