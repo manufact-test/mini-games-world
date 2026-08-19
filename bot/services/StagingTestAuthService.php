@@ -25,6 +25,11 @@ final class StagingTestAuthService
 
     public function __construct(private array $config) {}
 
+    public static function playerDefinitions(): array
+    {
+        return self::PLAYERS;
+    }
+
     public function issue(string $slot, string $providedSecret, array $server): array
     {
         $this->assertAvailable($server);
