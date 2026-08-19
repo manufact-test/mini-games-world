@@ -2,7 +2,7 @@ import { state } from '../state.js?v=27';
 import {
   initGameInvites as initBaseGameInvites,
   openIncomingInviteIfPresent,
-} from './game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent';
+} from './game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1';
 
 let policyInitialized = false;
 let resultObserver = null;
