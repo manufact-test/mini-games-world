@@ -50,7 +50,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(10, $runner->migrate(false)['executed_count'], 'Foundation test must apply all current migrations');
+$assertSame(11, $runner->migrate(false)['executed_count'], 'Foundation test must apply all current migrations');
 
 $assertThrows(
     static fn() => UnifiedBalanceMigrationRule::fromApprovedConfig([
