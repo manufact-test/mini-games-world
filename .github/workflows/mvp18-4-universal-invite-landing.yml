@@ -1,0 +1,108 @@
+name: MVP-18.4 Universal invite landing
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.htaccess'
+      - 'site/invite.php'
+      - 'bot/invites.php'
+      - 'bot/services/GameInviteService.php'
+      - 'bot/tests/Mvp18_4UniversalInviteLandingContractTest.php'
+      - '.github/workflows/mvp18-4-universal-invite-landing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp18-4-universal-invite-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Universal link privacy and binding contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Lint bounded MVP-18.4 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l site/invite.php
+          php -l bot/invites.php
+          php -l bot/services/GameInviteService.php
+          php -l bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+
+      - name: Run universal invite landing contract
+        run: php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+
+      - name: Run Invite v2 lifecycle regression
+        run: php bot/tests/Mvp18_3InviteV2ContractTest.php
+
+      - name: Run Friends UI owner regression
+        run: node bot/tests/Mvp18FriendsUiContractTest.mjs
+
+      - name: Run accepted rematch regression
+        run: php bot/tests/RematchOptimisticUxContractTest.php
+
+      - name: Run Result and History cache regression
+        run: php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
+
+      - name: Guard bounded MVP-18.4 scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          unexpected="$(git diff --name-only "$base" "$head" -- \
+            ':!/.htaccess' \
+            ':!/site/invite.php' \
+            ':!/bot/invites.php' \
+            ':!/bot/services/GameInviteService.php' \
+            ':!/bot/tests/Mvp18_4UniversalInviteLandingContractTest.php' \
+            ':!/.github/workflows/mvp18-4-universal-invite-landing.yml')"
+          if [ -n "$unexpected" ]; then
+            echo 'MVP-18.4 contains files outside the approved bounded slice:' >&2
+            printf '%s\n' "$unexpected" >&2
+            exit 1
+          fi
+
+      - name: Guard accepted game engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if git diff --name-only "$base" "$head" -- 'bot/games/**' | grep -q .; then
+            echo 'MVP-18.4 must not modify accepted game engines.' >&2
+            exit 1
+          fi
+
+      - name: Guard frozen Telegram launch graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1127';" bot/helpers/WebAppLaunchUrl.php
+          grep -F "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'" app/runtime/client/version-manifest.php
+          git diff --exit-code '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}' -- \
+            bot/helpers/WebAppLaunchUrl.php \
+            app/assets/js/main-v110-reconnect-v174.js \
+            app/assets/js/games/game-invites-v110-rematch-policy-v175.js \
+            bot/games
