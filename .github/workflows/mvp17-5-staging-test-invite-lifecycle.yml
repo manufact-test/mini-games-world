@@ -13,10 +13,16 @@ on:
       - 'bot/services/StagingTestPlayerStateResetService.php'
       - 'bot/staging-test-auth.php'
       - 'bot/staging-test-only-invite-recovery.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php'
       - 'bot/tests/StagingTestAuthIsolationFromRealInviteResidualsContractTest.php'
       - 'bot/tests/StagingInviteLifecycleParityReconciliationTest.php'
+      - 'bot/tests/StagingCurrentE2EOwnerContractTest.php'
       - 'e2e/staging-global-setup.mjs'
+      - 'e2e/staging/current-core.spec.mjs'
+      - 'e2e/playwright.config.mjs'
+      - 'e2e/playwright.legacy.config.mjs'
+      - 'package.json'
       - '.github/workflows/mvp17-5-staging-test-invite-lifecycle.yml'
   workflow_dispatch:
 
@@ -51,7 +57,11 @@ jobs:
           php -l bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
           php -l bot/tests/StagingTestAuthIsolationFromRealInviteResidualsContractTest.php
           php -l bot/tests/StagingInviteLifecycleParityReconciliationTest.php
+          php -l bot/tests/StagingCurrentE2EOwnerContractTest.php
           node --check e2e/staging-global-setup.mjs
+          node --check e2e/staging/current-core.spec.mjs
+          node --check e2e/playwright.config.mjs
+          node --check e2e/playwright.legacy.config.mjs
 
       - name: Test-only orphan recovery safety contract
         run: php bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
@@ -61,3 +71,6 @@ jobs:
 
       - name: Explicit admin residual reconciliation remains safe
         run: php bot/tests/StagingInviteLifecycleParityReconciliationTest.php
+
+      - name: Current staging E2E owner contract
+        run: php bot/tests/StagingCurrentE2EOwnerContractTest.php
