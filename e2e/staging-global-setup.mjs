@@ -94,10 +94,10 @@ async function resetTestPlayers(){
       || payload?.invite_parity !== true
       || payload?.notification_parity !== true
       || payload?.economy_parity !== true) {
-    const stage = typeof payload?.stage === 'string' && payload.stage !== ''
-      ? ` stage=${payload.stage}`
-      : '';
-    throw new Error(`Staging test-player reset failed: ${response.status} ${payload?.error || 'unknown_error'}${stage}`);
+    const safeDetail = [payload?.error, payload?.stage, payload?.reason_code]
+      .filter((value) => typeof value === 'string' && value !== '')
+      .join(' ');
+    throw new Error(`Staging test-player reset failed: ${response.status} ${safeDetail || 'unknown_error'}`);
   }
   if (payload?.match_balance !== 100 || !Array.isArray(payload?.players) || payload.players.length !== 2) {
     throw new Error('Staging test-player reset returned an unexpected projection.');
@@ -107,6 +107,7 @@ async function resetTestPlayers(){
     match_balance:payload.match_balance,
     players:payload.players,
     open_invites_removed:payload.open_invites_removed,
+    retired_started_invites:payload.retired_started_invites,
     invite_db_rows_removed:payload.invite_db_rows_removed,
     invite_parity:payload.invite_parity,
     notification_parity:payload.notification_parity,
