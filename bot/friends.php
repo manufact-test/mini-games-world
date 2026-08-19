@@ -9,12 +9,13 @@ header('Referrer-Policy: no-referrer');
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/social/FriendGraphService.php';
 require_once __DIR__ . '/social/SocialPlayerProfileReader.php';
+require_once __DIR__ . '/social/PlayerReportService.php';
 
 function mgw_friend_error_status(string $reason): int
 {
     return match ($reason) {
-        'self_relation' => 422,
-        'user_unavailable' => 404,
+        'self_relation', 'self_report', 'invalid_reason', 'invalid_match' => 422,
+        'user_unavailable', 'report_not_found' => 404,
         'request_unavailable', 'incoming_request_exists', 'request_not_incoming', 'request_not_outgoing' => 409,
         default => 409,
     };
@@ -24,6 +25,9 @@ function mgw_friend_error_message(string $reason): string
 {
     return match ($reason) {
         'self_relation' => 'Нельзя выполнить это действие со своим профилем.',
+        'self_report' => 'Нельзя отправить жалобу на свой профиль.',
+        'invalid_reason' => 'Выберите причину жалобы.',
+        'invalid_match' => 'Связанный матч недоступен для этой жалобы.',
         'user_unavailable' => 'Игрок MGW не найден.',
         'incoming_request_exists' => 'У вас уже есть входящая заявка от этого игрока.',
         'request_not_incoming' => 'Входящая заявка уже недоступна.',
@@ -57,6 +61,7 @@ try {
     $database = PdoConnectionFactory::create($databaseConfig);
     $service = new FriendGraphService($database);
     $profileReader = new SocialPlayerProfileReader($database);
+    $reports = new PlayerReportService($database);
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
     $target = trim((string)($payload['target_mgw_id'] ?? ''));
 
@@ -77,9 +82,16 @@ try {
             'remove' => $service->removeFriend($actorMgwId, $target),
             'block' => $service->block($actorMgwId, $target),
             'unblock' => $service->unblock($actorMgwId, $target),
+            'report' => $reports->submit(
+                $actorMgwId,
+                $target,
+                (string)($payload['reason'] ?? ''),
+                (string)($payload['details'] ?? ''),
+                (string)($payload['related_match_id'] ?? '')
+            ),
             default => throw new InvalidArgumentException('unknown_action'),
         };
-    } catch (FriendGraphException $error) {
+    } catch (FriendGraphException|PlayerReportException $error) {
         json_response([
             'ok' => false,
             'code' => $error->reason,
