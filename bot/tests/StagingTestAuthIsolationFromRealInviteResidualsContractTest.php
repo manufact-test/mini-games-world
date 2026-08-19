@@ -3,11 +3,14 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $auth = file_get_contents($root . '/bot/staging-test-auth.php');
+$authService = file_get_contents($root . '/bot/services/StagingTestAuthService.php');
+$bootstrap = file_get_contents($root . '/bot/services/StagingTestPlayerBootstrapService.php');
 $setup = file_get_contents($root . '/e2e/staging-global-setup.mjs');
 $reset = file_get_contents($root . '/bot/services/StagingTestPlayerStateResetService.php');
 $residual = file_get_contents($root . '/bot/services/StagingTestInviteResidualRecoveryService.php');
 $fresh = file_get_contents($root . '/bot/services/StagingFreshInviteReplacementRecoveryService.php');
-if (!is_string($auth) || !is_string($setup) || !is_string($reset)
+if (!is_string($auth) || !is_string($authService) || !is_string($bootstrap)
+    || !is_string($setup) || !is_string($reset)
     || !is_string($residual) || !is_string($fresh)) {
     throw new RuntimeException('Cannot read staging A/B isolation sources.');
 }
@@ -44,6 +47,30 @@ $assert(str_contains($setup, 'await diagnoseInviteMismatch();')
     && str_contains($setup, 'await recoverTestOnlyInviteOrphans();')
     && str_contains($setup, 'await resetTestPlayers();'),
     'A/B pre-suite may keep read-only evidence and A/B-only cleanup/reset.');
+
+$assert(str_contains($authService, 'public static function playerDefinitions(): array')
+    && str_contains($authService, "'stg_test_player_a'")
+    && str_contains($authService, "'stg_test_player_b'"),
+    'The authorization owner must expose one canonical A/B identity catalog for technical bootstrap.');
+$assert(str_contains($bootstrap, 'final class StagingTestPlayerBootstrapService')
+    && str_contains($bootstrap, 'StagingTestAuthService::playerDefinitions()')
+    && str_contains($bootstrap, 'new UserService($this->config)'),
+    'Missing technical A/B users must be recreated through the canonical auth identities and normal UserService initialization.');
+$assert(str_contains($bootstrap, "if (array_key_exists(\$legacyUserId, \$data['users']))")
+    && str_contains($bootstrap, '$createdSlots[] = $slot;')
+    && str_contains($bootstrap, '$existingSlots[] = $slot;'),
+    'Bootstrap must create only missing A/B runtime users and leave existing A/B identities intact.');
+$assert(str_contains($bootstrap, "Staging test player bootstrap refuses live payments")
+    && str_contains($bootstrap, "self::STAGING_HOST"),
+    'A/B bootstrap must remain exact-staging-only and fail closed when live payments are enabled.');
+$assert(str_contains($auth, 'new StagingTestPlayerBootstrapService($config)')
+    && strpos($auth, '$bootstrap = $playerBootstrapService()->ensure($_SERVER);') !== false
+    && strpos($auth, '$result = $playerResetService()->reset($_SERVER);') !== false
+    && strpos($auth, '$bootstrap = $playerBootstrapService()->ensure($_SERVER);')
+        < strpos($auth, '$result = $playerResetService()->reset($_SERVER);'),
+    'Reset endpoint must rehydrate missing A/B identities before running the A/B state reset.');
+$assert(str_contains($auth, "'test_player_bootstrap' => \$bootstrap"),
+    'Reset response must expose bounded bootstrap evidence.');
 
 $assert(str_contains($reset, 'private function assertTestInviteParity('),
     'A/B reset must own a scoped invite parity check.');
