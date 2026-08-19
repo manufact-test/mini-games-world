@@ -28,7 +28,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(11, $runner->migrate(false)['executed_count'], 'Reader fixture must apply current schema');
+$assertSame(12, $runner->migrate(false)['executed_count'], 'Reader fixture must apply current schema');
 
 $mgwId = 'MGW-00000000000000AA';
 $database->execute(
