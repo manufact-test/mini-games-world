@@ -6,6 +6,7 @@ require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';
 require_once __DIR__ . '/services/GameInviteService.php';
 require_once __DIR__ . '/services/InviteSignalService.php';
 require_once __DIR__ . '/invites/RuntimeInviteDeltaProjector.php';
+require_once __DIR__ . '/social/SocialInviteGuard.php';
 
 function mgw_invite_bot_username(array $config): string
 {
@@ -189,6 +190,17 @@ try {
     $invites = new GameInviteService($config, $catalog, $games);
     $inviteSignals = new InviteSignalService($config);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+
+    $socialInviteGuard = null;
+    $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+    $socialRouter = new RuntimeStorageRouter($config);
+    if ($databaseConfig->enabled()
+        && (!$socialRouter->enabled() || $socialRouter->routeFor('accounts') === RuntimeStorageRouter::DRIVER_DATABASE)) {
+        $socialInviteGuard = new SocialInviteGuard(PdoConnectionFactory::create($databaseConfig));
+    }
+    $actorMgwId = strtoupper(trim((string)($tgUser['mgw_id'] ?? '')));
+    $identityProvider = SocialInviteGuard::providerForAuthenticatedUser($tgUser);
+
     $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
     $runtimeInviteProjector = $legacyBridgeAllowed
         ? new RuntimeInviteDeltaProjector($config, $runtimeStorageRouter)
@@ -227,7 +239,10 @@ try {
             $users,
             $sessions,
             $invites,
-            $config
+            $config,
+            $socialInviteGuard,
+            $actorMgwId,
+            $identityProvider
         ): array {
             $inviteFingerprintsBefore = mgw_invite_row_fingerprints(
                 is_array($data['invites'] ?? null) ? $data['invites'] : []
@@ -275,7 +290,19 @@ try {
                 case 'create_direct':
                     $sessions->assertCanPlay($user, $sessionId);
                     $sessions->touch($user, $sessionId);
-                    $inviteeId = clean_string($payload['inviteeId'] ?? '', 40);
+                    $inviteeInput = clean_string($payload['inviteeId'] ?? '', 40);
+                    $targetMgwId = MgwIdGenerator::fromPublic($inviteeInput);
+                    if ($targetMgwId !== null) {
+                        if (!$socialInviteGuard instanceof SocialInviteGuard || !MgwIdGenerator::isValid($actorMgwId)) {
+                            throw new RuntimeException('Социальные приглашения временно недоступны.');
+                        }
+                        $inviteeId = $socialInviteGuard->runtimeSubjectForMgwId($actorMgwId, $targetMgwId, $identityProvider);
+                    } else {
+                        $inviteeId = $inviteeInput;
+                        if ($socialInviteGuard instanceof SocialInviteGuard && MgwIdGenerator::isValid($actorMgwId)) {
+                            $socialInviteGuard->assertRuntimeSubjectNotBlocked($actorMgwId, $inviteeId, $identityProvider);
+                        }
+                    }
                     if ($inviteeId === '' || !isset($data['users'][$inviteeId]) || !is_array($data['users'][$inviteeId])) {
                         throw new RuntimeException('Игрок больше недоступен.');
                     }
@@ -288,6 +315,16 @@ try {
                     break;
 
                 case 'open_link':
+                    if ($socialInviteGuard instanceof SocialInviteGuard && MgwIdGenerator::isValid($actorMgwId)) {
+                        foreach ($data['invites'] ?? [] as $storedInvite) {
+                            if (!is_array($storedInvite) || (string)($storedInvite['token'] ?? '') !== $token) continue;
+                            $inviterRuntimeId = trim((string)($storedInvite['inviter_id'] ?? ''));
+                            if ($inviterRuntimeId !== '') {
+                                $socialInviteGuard->assertRuntimeSubjectNotBlocked($actorMgwId, $inviterRuntimeId, $identityProvider);
+                            }
+                            break;
+                        }
+                    }
                     $invites->bindFromLink($data, $user, $token, true, false);
                     $core = $invites->sync($data, $user, $token);
                     break;
@@ -321,6 +358,11 @@ try {
                         clean_string($payload['gameId'] ?? '', 120)
                     );
                     $opponentId = (string)($core['opponent_id'] ?? '');
+                    if ($opponentId !== ''
+                        && $socialInviteGuard instanceof SocialInviteGuard
+                        && MgwIdGenerator::isValid($actorMgwId)) {
+                        $socialInviteGuard->assertRuntimeSubjectNotBlocked($actorMgwId, $opponentId, $identityProvider);
+                    }
                     if ($opponentId !== '' && isset($data['users'][$opponentId]) && is_array($data['users'][$opponentId])) {
                         $lastSeen = strtotime((string)($data['users'][$opponentId]['last_seen_at'] ?? '')) ?: 0;
                         $core['opponent_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
