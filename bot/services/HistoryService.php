@@ -105,7 +105,13 @@ final class HistoryService
     public function matchHistory(array $db, string $userId, int $limit = 12): array
     {
         $items = [];
-        foreach (array_reverse($db['games'] ?? []) as $game) {
+        $games = array_values(array_filter(
+            is_array($db['games'] ?? null) ? $db['games'] : [],
+            static fn($game): bool => is_array($game)
+        ));
+        usort($games, fn(array $left, array $right): int => $this->compareMatchRecency($left, $right));
+
+        foreach ($games as $game) {
             $players = array_map('strval', $game['player_ids'] ?? []);
             if (!in_array($userId, $players, true)) continue;
             $item = $this->matchItem($db, $game, $userId);
@@ -114,6 +120,24 @@ final class HistoryService
             if (count($items) >= $limit) break;
         }
         return $items;
+    }
+
+    private function compareMatchRecency(array $left, array $right): int
+    {
+        $time = $this->matchRecencyTimestamp($right) <=> $this->matchRecencyTimestamp($left);
+        if ($time !== 0) return $time;
+        return strcmp((string)($right['id'] ?? ''), (string)($left['id'] ?? ''));
+    }
+
+    private function matchRecencyTimestamp(array $game): int
+    {
+        foreach (['finished_at', 'updated_at', 'created_at'] as $field) {
+            $value = trim((string)($game[$field] ?? ''));
+            if ($value === '') continue;
+            $timestamp = strtotime($value);
+            if ($timestamp !== false) return $timestamp;
+        }
+        return 0;
     }
 
     public function matchEconomy(array $db, string $userId, string $gameId): ?array
