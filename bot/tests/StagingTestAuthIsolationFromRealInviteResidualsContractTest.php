@@ -50,6 +50,9 @@ $assert(str_contains($reset, 'private function assertTestInviteParity('),
 $assert(!str_contains($reset, 'private function assertInviteParity(')
     && !str_contains($reset, 'new RuntimeInviteRepository('),
     'A/B reset must not require the global invite repository parity audit across unrelated real staging users.');
+$assert(!str_contains($reset, 'UnifiedBalanceRuntimeState::migrateAll($data)')
+    && str_contains($reset, "UnifiedBalanceRuntimeState::ensureUser(\$data['users'][\$legacyUserId]);"),
+    'A/B reset must migrate/validate unified balance only for the two technical identities, never every real staging user.');
 $assert(str_contains($reset, 'new RuntimeNotificationRepository(')
     && str_contains($reset, 'new RuntimeEconomyRepository('),
     'A/B-scoped notification parity and economy parity must remain enforced.');
@@ -59,6 +62,22 @@ $assert(str_contains($reset, "SELECT COUNT(*) FROM mgw_matches WHERE invite_id =
     'A/B scoped parity must preserve match-referenced historical invite rows.');
 $assert(str_contains($reset, "Staging test invite parity refuses an unmatched mixed A/B DB invite"),
     'A/B scoped parity must refuse unmatched mixed test/real invite state.');
+
+$assert(str_contains($reset, "\$isStarted = \$status === 'active';")
+    && str_contains($reset, 'private function startedTestInviteCanRetire('),
+    'A/B reset must handle already-started test invites through a dedicated guarded retirement path.');
+$assert(str_contains($reset, "if (\$linkedGame === null) {")
+    && str_contains($reset, "if (\$gameStatus !== 'finished') {")
+    && str_contains($reset, "in_array(\$gameStatus, ['active', 'waiting'], true)"),
+    'Started A/B invites may retire only when the linked game is gone or proven finished, never while a game is live.');
+$assert(str_contains($reset, "Staging test reset refuses an active invite linked to a non-test game"),
+    'Started-invite retirement must fail closed on mixed/non-test linked game ownership.');
+$assert(str_contains($reset, '$retiredStartedInvites++')
+    && str_contains($reset, "'retired_started_invites' => \$retiredStartedInvites"),
+    'Started A/B invite retirement must be explicit and observable.');
+$assert(str_contains($reset, '$this->cleanupRuntimeInviteRows($snapshot, $removedInvites)')
+    && !str_contains($reset, 'cleanupRuntimeInviteRows($snapshot, $retiredStartedInvites)'),
+    'Started historical A/B invites must never enter unmatched DB invite deletion.');
 
 $assert(str_contains($residual, 'MAX_RESIDUAL_INVITES')
     && str_contains($residual, 'notification_still_in_json'),
