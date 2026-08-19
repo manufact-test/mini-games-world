@@ -38,7 +38,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(11, $runner->migrate(false)['executed_count'], 'Regression fixture must apply current schema');
+$assertSame(12, $runner->migrate(false)['executed_count'], 'Regression fixture must apply current schema');
 
 $accounts = new AccountIdentityService($database, 3600);
 $normal = $accounts->resolveTelegramUser(['id' => '910001', 'first_name' => 'Normal'], 'normal-session');
