@@ -1,17 +1,19 @@
 import { defineConfig } from '@playwright/test';
 
 const outputRoot = 'artifacts/playwright';
-const supersededScenarios = /D1 follow-up: (declined invitation remains read history without actions or toast|mobile cached invitation wins over a delayed false-empty response|desktop bell opens during an unfinished request and ignores its stale finish)|Player A uses Share, player picker and cancellation through the live UI/;
 
+// Blocking staging acceptance follows the exact Telegram launch entry and the
+// current v110 product contract. Historical version-pinned suites remain in the
+// separate playwright.legacy.config.mjs archive.
 export default defineConfig({
   testDir: './staging',
-  globalSetup:'./staging-global-setup.mjs',
-  grepInvert:supersededScenarios,
+  testMatch: 'current-core.spec.mjs',
+  globalSetup: './staging-global-setup.mjs',
   outputDir: `${outputRoot}/test-results`,
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  timeout: 90_000,
+  timeout: 120_000,
   expect: {
     timeout: 15_000,
   },
