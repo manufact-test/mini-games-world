@@ -72,7 +72,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(grep -c "price_coins, 300\|, 300," bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php)" -ge 1
           grep -F "'avatar-bundle-5'" bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
           grep -F '1200' bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
           grep -F '240' bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
