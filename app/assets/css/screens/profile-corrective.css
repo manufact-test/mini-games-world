@@ -9,21 +9,6 @@
 .profile-v2-avatar-choice>span{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,var(--sk-bg-card-secondary),var(--sk-bg-elevated));border:1px solid rgba(230,232,239,.18);font-size:11px;font-weight:950}
 .profile-v2-avatar-choice>small{color:var(--muted);font-size:9px;font-weight:850}
 .profile-v2-avatar-choice.active{border-color:rgba(178,116,255,.60);background:rgba(115,91,255,.14);box-shadow:inset 0 0 0 1px rgba(178,116,255,.16)}
-.profile-v2-avatar[data-avatar-item-id="starter-default-01"],
-.profile-v2-avatar-choice[data-mgw-avatar-choice="starter-default-01"]>span,
-#topAvatar[data-avatar-id="starter-default-01"],
-#profileAvatar[data-avatar-id="starter-default-01"],
-#searchMeAvatar[data-avatar-id="starter-default-01"]{background-image:linear-gradient(145deg,rgba(115,91,255,.96),rgba(47,35,98,.98))!important;color:#fff}
-.profile-v2-avatar[data-avatar-item-id="starter-default-02"],
-.profile-v2-avatar-choice[data-mgw-avatar-choice="starter-default-02"]>span,
-#topAvatar[data-avatar-id="starter-default-02"],
-#profileAvatar[data-avatar-id="starter-default-02"],
-#searchMeAvatar[data-avatar-id="starter-default-02"]{background-image:linear-gradient(135deg,rgba(72,214,165,.88),rgba(25,68,78,.98)),repeating-linear-gradient(45deg,transparent 0 8px,rgba(255,255,255,.10) 8px 10px)!important;color:#fff}
-.profile-v2-avatar[data-avatar-item-id="starter-default-03"],
-.profile-v2-avatar-choice[data-mgw-avatar-choice="starter-default-03"]>span,
-#topAvatar[data-avatar-id="starter-default-03"],
-#profileAvatar[data-avatar-id="starter-default-03"],
-#searchMeAvatar[data-avatar-id="starter-default-03"]{background-image:radial-gradient(circle at 30% 25%,rgba(255,255,255,.22) 0 9%,transparent 10%),linear-gradient(145deg,rgba(255,204,92,.92),rgba(112,62,31,.98))!important;color:#fff}
 .profile-v2-id-card{grid-template-columns:minmax(0,1fr);gap:0;padding-top:5px}
 .profile-v2-id-card>span{display:none}
 .profile-v2-id-card button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
