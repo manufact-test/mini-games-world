@@ -55,7 +55,7 @@ final class RuntimeMatchEventContext
         ]);
     }
 
-    private static function normalize(array $context): array
+    public static function normalize(array $context): array
     {
         $occurredAt = trim((string)($context['occurred_at_utc'] ?? ''));
         if ($occurredAt === '' || strtotime($occurredAt) === false) {
