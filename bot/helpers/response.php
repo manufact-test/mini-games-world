@@ -61,14 +61,11 @@ function mgw_run_api_data_filters(array $data): array {
 }
 
 /**
- * Resolve visible game names from the canonical MGW account database without
- * mutating authenticated runtime users, search/session state or stored games.
- *
- * The legacy game record still owns mechanics and persistence. This helper is
- * a read-only response projection used only when a successful API response
- * already contains public game players.
+ * Resolve visible game identity from the canonical MGW account database
+ * without mutating authenticated runtime users, search/session state or stored
+ * games. Nickname and equipped avatar are one public identity projection.
  */
-function mgw_canonical_game_player_names(array $playerIds): array {
+function mgw_canonical_game_player_profiles(array $playerIds): array {
     $subjects = [];
     foreach ($playerIds as $playerId) {
         $subject = trim((string)$playerId);
@@ -99,7 +96,7 @@ function mgw_canonical_game_player_names(array $playerIds): array {
         }
 
         $rows = $database->fetchAll(
-            'SELECT i.provider_subject, i.mgw_id, u.nickname
+            'SELECT i.provider_subject, i.mgw_id, u.nickname, u.equipped_avatar_item_id
              FROM mgw_identities i
              INNER JOIN mgw_users u ON u.mgw_id = i.mgw_id
              WHERE i.provider_subject IN (' . implode(', ', $placeholders) . ")
@@ -113,25 +110,39 @@ function mgw_canonical_game_player_names(array $playerIds): array {
     }
 
     // A provider subject may theoretically exist under more than one provider.
-    // Only project when all rows for that subject resolve to one MGW owner;
-    // otherwise preserve the already-safe legacy display name.
+    // Project only when every matching row resolves to one MGW owner; ambiguous
+    // subjects preserve the already-safe legacy display identity.
     $owners = [];
     foreach ($rows as $row) {
         if (!is_array($row)) continue;
         $subject = trim((string)($row['provider_subject'] ?? ''));
         $mgwId = trim((string)($row['mgw_id'] ?? ''));
         $nickname = trim((string)($row['nickname'] ?? ''));
+        $avatarItemId = strtolower(trim((string)($row['equipped_avatar_item_id'] ?? '')));
         if ($subject === '' || $mgwId === '' || $nickname === '') continue;
-        $owners[$subject][$mgwId] = $nickname;
+        if ($avatarItemId === '') $avatarItemId = 'starter-default-01';
+        $owners[$subject][$mgwId] = [
+            'name' => $nickname,
+            'avatar_item_id' => $avatarItemId,
+        ];
     }
 
-    $names = [];
+    $profiles = [];
     foreach ($owners as $subject => $byOwner) {
         if (count($byOwner) !== 1) continue;
-        $nickname = reset($byOwner);
-        if (is_string($nickname) && trim($nickname) !== '') {
-            $names[(string)$subject] = trim($nickname);
-        }
+        $profile = reset($byOwner);
+        if (!is_array($profile) || trim((string)($profile['name'] ?? '')) === '') continue;
+        $profiles[(string)$subject] = $profile;
+    }
+    return $profiles;
+}
+
+// Compatibility helper retained for older tests/readers that only need names.
+function mgw_canonical_game_player_names(array $playerIds): array {
+    $names = [];
+    foreach (mgw_canonical_game_player_profiles($playerIds) as $subject => $profile) {
+        $name = trim((string)($profile['name'] ?? ''));
+        if ($name !== '') $names[(string)$subject] = $name;
     }
     return $names;
 }
@@ -148,15 +159,18 @@ function mgw_project_canonical_game_identity(array $data): array {
             if (!is_array($player)) continue;
             $playerIds[] = (string)($player['id'] ?? '');
         }
-        $canonicalNames = mgw_canonical_game_player_names($playerIds);
-        if ($canonicalNames === []) continue;
+        $canonicalProfiles = mgw_canonical_game_player_profiles($playerIds);
+        if ($canonicalProfiles === []) continue;
 
         foreach ($game['players'] as &$player) {
             if (!is_array($player)) continue;
             $playerId = trim((string)($player['id'] ?? ''));
-            if ($playerId !== '' && isset($canonicalNames[$playerId])) {
-                $player['name'] = $canonicalNames[$playerId];
-            }
+            $profile = $playerId !== '' ? ($canonicalProfiles[$playerId] ?? null) : null;
+            if (!is_array($profile)) continue;
+            $name = trim((string)($profile['name'] ?? ''));
+            $avatarItemId = trim((string)($profile['avatar_item_id'] ?? ''));
+            if ($name !== '') $player['name'] = $name;
+            if ($avatarItemId !== '') $player['avatar_item_id'] = $avatarItemId;
         }
         unset($player);
 

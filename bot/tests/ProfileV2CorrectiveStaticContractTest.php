@@ -12,11 +12,12 @@ $endpoint = file_get_contents($root . '/bot/profile-v2.php');
 $identityPolicy = file_get_contents($root . '/bot/accounts/MgwIdentityPolicy.php');
 $idGenerator = file_get_contents($root . '/bot/accounts/MgwIdGenerator.php');
 $correctiveCss = file_get_contents($root . '/app/assets/css/screens/profile-corrective.css');
+$avatarCss = file_get_contents($root . '/app/assets/css/components/mgw-avatars.css');
 $mainCss = file_get_contents($root . '/app/assets/css/main.css');
 $versionManifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $catalog = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, flags: JSON_THROW_ON_ERROR);
 
-foreach (['profile'=>$profile,'home'=>$home,'model'=>$model,'ui'=>$ui,'clean_entry'=>$cleanEntry,'i18n'=>$i18n,'endpoint'=>$endpoint,'identity_policy'=>$identityPolicy,'id_generator'=>$idGenerator,'corrective_css'=>$correctiveCss,'main_css'=>$mainCss,'version_manifest'=>$versionManifest] as $name => $source) {
+foreach (['profile'=>$profile,'home'=>$home,'model'=>$model,'ui'=>$ui,'clean_entry'=>$cleanEntry,'i18n'=>$i18n,'endpoint'=>$endpoint,'identity_policy'=>$identityPolicy,'id_generator'=>$idGenerator,'corrective_css'=>$correctiveCss,'avatar_css'=>$avatarCss,'main_css'=>$mainCss,'version_manifest'=>$versionManifest] as $name => $source) {
     if (!is_string($source)) throw new RuntimeException("Unable to read {$name} corrective source.");
 }
 
@@ -46,11 +47,20 @@ $assertContains("['starter-default-01','starter-default-02','starter-default-03'
 $assertContains('data-edit-mgw-avatar', $profile, 'Profile must expose one compact avatar edit affordance');
 $assertContains('profile-v2-avatar-sheet-grid', $profile, 'Avatar choices must live in the dedicated picker sheet');
 $assertNotContains('profile-v2-avatar-picker', $profile, 'Starter avatars must not remain permanently expanded in Profile');
+
+// MVP-19.3 moved visual ownership out of the Profile-only corrective sheet.
+// The shared avatar component now owns the exact same item artwork for Profile,
+// Store, topbar/search and game-player surfaces. Profile CSS only owns picker
+// and collection geometry, so do not require duplicated item-specific rules.
 foreach (['starter-default-01','starter-default-02','starter-default-03'] as $avatarItemId) {
-    $assertContains('[data-avatar-item-id="' . $avatarItemId . '"]', $correctiveCss, 'Profile identity avatar must have a visible starter variant');
-    $assertContains('[data-mgw-avatar-choice="' . $avatarItemId . '"]', $correctiveCss, 'Profile picker must preview each starter variant');
-    $assertContains('[data-avatar-id="' . $avatarItemId . '"]', $correctiveCss, 'Shared topbar/profile/search avatar surfaces must render the canonical starter variant');
+    $assertContains('[data-avatar-item-id="' . $avatarItemId . '"]', $avatarCss, 'Shared avatar owner must keep a visible starter variant');
+    $assertContains('[data-avatar-id="' . $avatarItemId . '"]', $avatarCss, 'Shared topbar/profile/search surfaces must render the canonical starter variant');
 }
+$assertContains('data-mgw-avatar-choice', $profile, 'Profile picker must expose canonical owned avatar choices');
+$assertContains('.profile-v2-avatar-choice', $correctiveCss, 'Profile corrective CSS must own picker geometry');
+$assertContains('.profile-v2-collection-grid', $correctiveCss, 'Profile corrective CSS must own collection geometry');
+$assertContains("@import url('./components/mgw-avatars.css?v=1&mvp19=avatar-owner');", $mainCss, 'Main stylesheet must load the shared avatar visual owner');
+
 $assertNotContains('profile.avatar_saved', $profile, 'Avatar success toast must stay removed');
 $assertContains('state.mgwProfile = optimisticProfile', $profile, 'Avatar selection must update visible canonical state optimistically');
 $assertContains('state.mgwProfile = previousProfile', $profile, 'Avatar selection must roll back if persistence fails');
@@ -102,12 +112,12 @@ $assertNotContains('photo_url: avatarUrl', $model, 'Canonical projection must no
 $assertContains("photo_url: ''", $model, 'Canonical projection must explicitly suppress provider photo URL');
 $assertSame(3, substr_count($profile, '[1,2,3].map') === 1 ? 3 : 0, 'Achievements preview must remain exactly three placeholders');
 
-$assertContains('profile-corrective.css?v=3&mvp16=profile-polish', $mainCss, 'Nested corrective stylesheet cache key must stay explicit');
+$assertContains('profile-corrective.css?v=4&mvp19=profile-collection', $mainCss, 'Profile collection corrective stylesheet cache key must stay explicit');
 $assertions++;
 if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
     throw new RuntimeException('Runtime main stylesheet cache key must stay at or beyond Profile pass A baseline');
 }
-$assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Runtime must ship the Profile pass A controller');
+$assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Runtime must retain the accepted Profile pass A controller lineage');
 $assertContains('canonical-avatar-owner', $versionManifest, 'Runtime must keep the canonical avatar owner cleanup');
 $assertContains('canonical-profile-display-owner', $versionManifest, 'Runtime must keep the canonical visible identity owner');
 $assertContains('profile-pass-a', $versionManifest, 'Runtime must ship the Profile pass A assets');

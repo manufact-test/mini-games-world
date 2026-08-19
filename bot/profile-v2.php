@@ -34,7 +34,7 @@ function mgw_profile_v2_validation_error(InvalidArgumentException $error): array
     return match ($error->getMessage()) {
         MgwIdentityPolicy::NICKNAME_TOO_SHORT_ERROR => ['nickname_too_short', 'Ник должен содержать минимум 3 символа.'],
         MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', 'Ник может содержать максимум 13 символов.'],
-        MgwIdentityPolicy::NICKNAME_INVALID_CHARACTERS_ERROR => ['nickname_invalid_characters', 'В нике можно использовать буквы, цифры, пробелы, дефис и подчёркивание.'],
+        MgwIdentityPolicy::NICKNAME_INVALID_CHARACTERS_ERROR => ['nickname_invalid_characters', 'В нике можно использовать буквы, цифры, пробел, дефис и подчёркивание.'],
         default => ['profile_update_invalid', 'Не удалось сохранить профиль MGW.'],
     };
 }
@@ -54,7 +54,11 @@ try {
     if (!$databaseConfig->enabled() || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
         json_response(['ok'=>false,'error'=>'Профиль MGW временно недоступен.'], 503);
     }
-    $profileService = new MgwProfileService(PdoConnectionFactory::create($databaseConfig));
+
+    // One DB connection, one canonical ownership/equip owner. Profile consumes
+    // ProductInventoryService snapshots; it never recreates inventory state.
+    $database = PdoConnectionFactory::create($databaseConfig);
+    $profileService = new MgwProfileService($database);
     try {
         $canonicalProfile = isset($payload['profile_update']) && is_array($payload['profile_update'])
             ? $profileService->updateProfile($mgwId, $payload['profile_update'])
@@ -68,6 +72,8 @@ try {
         }
         throw $error;
     }
+    $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
+
     $users = new UserService($configRef);
     $historyService = new HistoryService($configRef, $users);
     $storage = StorageFactory::createJson((string)($configRef['data_dir'] ?? (__DIR__ . '/data')));
@@ -86,6 +92,7 @@ try {
     json_response([
         'ok'=>true,
         'profile'=>$canonicalProfile,
+        'inventory'=>$inventory,
         'user'=>$runtime['user'] ?? null,
         'stats'=>$runtime['stats'] ?? null,
         'history'=>$runtime['history'] ?? ['matches'=>[],'operations'=>[]],

@@ -13,6 +13,7 @@ import { initV110AcceptanceRuntime } from './production-v110-acceptance-runtime.
 import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1106&release=battleship-action-quarantine';
 import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=97&sk=6';
+import { initMgwAvatarPresentation } from './profile/mgw-avatar-presentation.js?v=1&mvp19=avatars';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
 
@@ -37,3 +38,4 @@ initV110TargetedInteractions();
 
 initV100SearchEventBridge();
 initDeterministicGameIcons();
+initMgwAvatarPresentation();
