@@ -7,8 +7,9 @@ $setup = file_get_contents($root . '/e2e/staging-global-setup.mjs');
 $reset = file_get_contents($root . '/bot/services/StagingTestPlayerStateResetService.php');
 $residual = file_get_contents($root . '/bot/services/StagingTestInviteResidualRecoveryService.php');
 $fresh = file_get_contents($root . '/bot/services/StagingFreshInviteReplacementRecoveryService.php');
+$workflow = file_get_contents($root . '/.github/workflows/staging-playwright-e2e.yml');
 if (!is_string($auth) || !is_string($setup) || !is_string($reset)
-    || !is_string($residual) || !is_string($fresh)) {
+    || !is_string($residual) || !is_string($fresh) || !is_string($workflow)) {
     throw new RuntimeException('Cannot read staging A/B isolation sources.');
 }
 
@@ -88,6 +89,20 @@ $assert(!str_contains($auth, "'reason' => \$error->getPrevious()")
     'Reset endpoint must not expose raw internal exception details.');
 $assert(str_contains($setup, '[payload?.error, payload?.stage, payload?.reason_code]'),
     'Staging E2E must surface the safe reset reason code when setup fails.');
+
+$linuxPreflight = strpos($workflow, '- name: Run A/B state preflight on Linux route');
+$linuxInstall = strpos($workflow, '- name: Install pinned Playwright on Linux route');
+$macPreflight = strpos($workflow, '- name: Run A/B state preflight on macOS fallback route');
+$macInstall = strpos($workflow, '- name: Install pinned Playwright on macOS fallback route');
+$assert($linuxPreflight !== false && $linuxInstall !== false && $linuxPreflight < $linuxInstall,
+    'Linux route must prove A/B state before downloading Playwright/Chromium.');
+$assert($macPreflight !== false && $macInstall !== false && $macPreflight < $macInstall,
+    'macOS fallback must prove A/B state before downloading Playwright/Chromium.');
+$assert(substr_count($workflow, "steps.preflight.outcome == 'success'") >= 4,
+    'Browser installation and execution must be gated on successful A/B preflight on both routes.');
+$assert(substr_count($workflow, "elif [[ \"\${PREFLIGHT_OUTCOME}\" != 'success' ]]; then") === 2
+    && substr_count($workflow, "result='application_failure'") >= 4,
+    'Preflight failure must classify as application failure instead of runner infrastructure failure.');
 
 $assert(str_contains($residual, 'MAX_RESIDUAL_INVITES')
     && str_contains($residual, 'notification_still_in_json'),
