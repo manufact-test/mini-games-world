@@ -1,16 +1,20 @@
 name: TEMP MVP-18.5 schema12 fixture maintenance
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/mvp18-5-reports-blocked-users
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/tmp-mvp18-5-schema12.yml'
+      - 'bot/tests/UnifiedEconomyRuntimeSyncTest.php'
+      - 'bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php'
 
 permissions:
   contents: write
 
 jobs:
   patch:
-    if: github.actor != 'github-actions[bot]'
+    if: github.head_ref == 'agent/mvp18-5-reports-blocked-users'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
