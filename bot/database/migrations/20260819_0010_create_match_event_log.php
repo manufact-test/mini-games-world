@@ -5,7 +5,7 @@ return new class implements DatabaseMigrationInterface
 {
     public function version(): string
     {
-        return '20260819_0010';
+        return '20260819_0010_create_match_event_log';
     }
 
     public function description(): string
