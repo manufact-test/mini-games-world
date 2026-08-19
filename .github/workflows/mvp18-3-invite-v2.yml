@@ -1,0 +1,94 @@
+name: MVP-18.3 Invite v2
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/services/GameInviteService.php'
+      - 'bot/services/invites/GameInviteCreationTrait.php'
+      - 'bot/services/invites/GameInviteActionTrait.php'
+      - 'bot/services/invites/GameInviteStorageTrait.php'
+      - 'bot/services/invites/GameInviteValidationTrait.php'
+      - 'bot/invites.php'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'bot/tests/Mvp18_3InviteV2ContractTest.php'
+      - '.github/workflows/mvp18-3-invite-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp18-3-invite-v2-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Canonical 120/90 invite lifecycle contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Lint bounded Invite v2 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l bot/services/GameInviteService.php
+          php -l bot/services/invites/GameInviteCreationTrait.php
+          php -l bot/services/invites/GameInviteActionTrait.php
+          php -l bot/services/invites/GameInviteStorageTrait.php
+          php -l bot/services/invites/GameInviteValidationTrait.php
+          php -l bot/tests/Mvp18_3InviteV2ContractTest.php
+          node --check app/assets/js/games/game-invites-v110.js
+
+      - name: Run Invite v2 120/90 contract
+        run: php bot/tests/Mvp18_3InviteV2ContractTest.php
+
+      - name: Run accepted rematch optimistic regression
+        run: php bot/tests/RematchOptimisticUxContractTest.php
+
+      - name: Run Result and History economy presentation regression
+        run: php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
+
+      - name: Run Result and History cache contract
+        run: php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
+
+      - name: Run terminal launch polish regression
+        run: php bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php
+
+      - name: Run Friends UI owner regression
+        run: node bot/tests/Mvp18FriendsUiContractTest.mjs
+
+      - name: Guard accepted game engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if git diff --name-only "$base" "$head" -- 'bot/games/**' | grep -q .; then
+            echo 'MVP-18.3 must not modify accepted game engines.' >&2
+            exit 1
+          fi
+
+      - name: Guard frozen Telegram launch graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1127';" bot/helpers/WebAppLaunchUrl.php
+          grep -F "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'" app/runtime/client/version-manifest.php
+          git diff --exit-code '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}' -- app/assets/js/main-v110-reconnect-v174.js app/assets/js/games/game-invites-v110-rematch-policy-v175.js

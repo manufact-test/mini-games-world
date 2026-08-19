@@ -58,6 +58,7 @@ const directInviteCancelIntents = new Set();
 const rematchPendingGameIds = new Set();
 let inviteStartPending = false;
 let inviteUiTransitionGeneration = 0;
+let inviteCountdownTimer = null;
 
 export function initGameInvites(){
   if (initialized) return;
@@ -82,6 +83,7 @@ export function initGameInvites(){
     scheduleWatch(80);
   });
   document.addEventListener('mgw:sheet-closed', () => {
+    clearInviteCountdown();
     playerPickerRequestGeneration += 1;
     socialInviteTarget = null;
     if (isPassiveOwnerPending(currentInvite)) currentInvite = null;
@@ -1090,7 +1092,10 @@ function updateOpenInviteSheet(){
   if (!currentInvite?.token) return;
   const openToken = openSheetInviteToken();
   if (openToken !== String(currentInvite.token || '')) return;
-  if (openSheetInviteState() === inviteSheetState(currentInvite)) return;
+  if (openSheetInviteState() === inviteSheetState(currentInvite)) {
+    mountInviteCountdown(currentInvite, inviteCountdownLabel(currentInvite));
+    return;
+  }
 
   const status = String(currentInvite.status || '');
   if (status === 'pending' && currentInvite.is_owner) {
@@ -1116,6 +1121,7 @@ function showDirectInvitePending(context, opponentName, requestGeneration){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${contextSummary(context)}
+    <div class="small-note invite-status-note" data-invite-countdown>Отправляем приглашение…</div>
     <button class="btn primary full" data-direct-invite-cancel-reserved="${Number(requestGeneration || 0)}" type="button">Отменить приглашение</button>
   `);
   document.querySelector(`[data-direct-invite-cancel-reserved="${Number(requestGeneration || 0)}"]`)?.addEventListener('click', () => {
@@ -1156,6 +1162,7 @@ function finalizeDirectInvitePendingSurface(invite, requestGeneration){
   button.removeAttribute('data-direct-invite-cancel-reserved');
   button.dataset.inviteAction = 'cancel';
   button.dataset.inviteToken = token;
+  mountInviteCountdown(invite, 'Ожидаем ответ');
 }
 
 function showIncomingInvite(invite){
@@ -1166,11 +1173,13 @@ function showIncomingInvite(invite){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
+    <div class="small-note invite-status-note" data-invite-countdown></div>
     <div class="stack invite-actions">
       <button class="btn primary full" data-invite-action="accept" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Принять приглашение</button>
       <button class="btn ghost full" data-invite-action="decline" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отклонить</button>
     </div>
   `);
+  mountInviteCountdown(invite, 'Ответьте на приглашение');
 }
 
 function contextSummary(context){
@@ -1191,9 +1200,10 @@ function showOwnerWaiting(invite, message = ''){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    ${message ? `<div class="small-note invite-status-note">${escapeHtml(message)}</div>` : ''}
+    <div class="small-note invite-status-note" data-invite-countdown>${message ? escapeHtml(message) : ''}</div>
     <button class="btn primary full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
   `);
+  mountInviteCountdown(invite, 'Ожидаем ответ');
 }
 
 function showOwnerReady(invite){
@@ -1204,12 +1214,13 @@ function showOwnerReady(invite){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    <div class="small-note invite-status-note">Запустите матч до ${escapeHtml(formatTime(invite.ready_deadline_at))}.</div>
+    <div class="small-note invite-status-note" data-invite-countdown></div>
     <div class="stack invite-actions">
       <button class="btn primary full" data-invite-action="start" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Начать игру</button>
       <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить</button>
     </div>
   `);
+  mountInviteCountdown(invite, 'Запустите матч');
 }
 
 function showInviteeWaiting(invite){
@@ -1220,9 +1231,10 @@ function showInviteeWaiting(invite){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    <div class="small-note invite-status-note">${escapeHtml(inviteeWaitingNote(invite))}</div>
+    <div class="small-note invite-status-note" data-invite-countdown>${escapeHtml(inviteeWaitingNote(invite))}</div>
     <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить участие</button>
   `);
+  mountInviteCountdown(invite, 'Ждём запуск матча');
 }
 
 function reconcileInviteeWaiting(invite){
@@ -1232,7 +1244,7 @@ function reconcileInviteeWaiting(invite){
   const note = document.querySelector('#sheet .invite-status-note');
   if (!marker || !note) return false;
   marker.dataset.inviteState = inviteSheetState(invite);
-  note.textContent = inviteeWaitingNote(invite);
+  mountInviteCountdown(invite, 'Ждём запуск матча');
   return true;
 }
 
@@ -1242,6 +1254,7 @@ function inviteeWaitingNote(invite){
 }
 
 function showTerminalInvite(invite){
+  clearInviteCountdown();
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
@@ -1454,6 +1467,40 @@ function inviteSheetState(invite){
 
 function inviteMarker(invite){
   return `<span data-invite-sheet data-invite-token="${escapeHtml(invite?.token || '')}" data-invite-state="${escapeHtml(inviteSheetState(invite))}" hidden></span>`;
+}
+
+function inviteCountdownLabel(invite){
+  const status = String(invite?.status || '');
+  if (status === 'accepted') return invite?.is_owner ? 'Запустите матч' : 'Ждём запуск матча';
+  if (status === 'pending') return invite?.is_invitee ? 'Ответьте на приглашение' : 'Ожидаем ответ';
+  return 'Ожидание';
+}
+
+function clearInviteCountdown(){
+  window.clearInterval(inviteCountdownTimer);
+  inviteCountdownTimer = null;
+}
+
+function mountInviteCountdown(invite, label){
+  clearInviteCountdown();
+  const node = document.querySelector('#sheet [data-invite-countdown]');
+  if (!node) return;
+  let remaining = Math.max(0, Math.floor(Number(invite?.waiting_seconds || 0)));
+  const paint = () => {
+    const minutes = Math.floor(remaining / 60);
+    const seconds = String(remaining % 60).padStart(2, '0');
+    node.textContent = `${label} · ${minutes}:${seconds}`;
+  };
+  paint();
+  if (remaining <= 0) return;
+  inviteCountdownTimer = window.setInterval(() => {
+    remaining = Math.max(0, remaining - 1);
+    paint();
+    if (remaining <= 0) {
+      clearInviteCountdown();
+      scheduleSync(0);
+    }
+  }, 1000);
 }
 
 function inviteSummary(invite){

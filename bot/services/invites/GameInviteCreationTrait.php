@@ -40,10 +40,25 @@ trait GameInviteCreationTrait
             throw new RuntimeException('Выберите другого игрока.');
         }
 
+        $normalizedGameType = $this->catalog->normalizeGameType($gameType);
+        $normalizedBoardSize = $this->catalog->normalizeBoardSize($normalizedGameType, $boardSize);
+        $normalizedRoom = UnifiedGameZonePolicy::storageRoom();
+        $normalizedBet = UnifiedGameZonePolicy::entryCost($this->config);
+        $openDirectIndex = $this->findOpenDirectIndex($db, $userId, $inviteeId);
+        if ($openDirectIndex !== null) {
+            $existing = $db['invites'][$openDirectIndex];
+            $sameContext = (string)($existing['game_type'] ?? '') === $normalizedGameType
+                && (string)($existing['room'] ?? '') === $normalizedRoom
+                && (int)($existing['bet'] ?? 0) === $normalizedBet
+                && (int)($existing['board_size'] ?? 0) === $normalizedBoardSize;
+            if ($sameContext) return $this->publicInvite($existing, $userId);
+            throw new RuntimeException('Этому игроку уже отправлено другое приглашение.');
+        }
+
         $this->assertAvailableForInvite($db, $user, 'Сначала завершите текущий поиск, матч или приглашение.');
         $this->assertCanReceiveInvite($db, $invitee, 'Игрок сейчас занят поиском, матчем или другим приглашением.');
 
-        $invite = $this->newInvite($db, $user, $gameType, $room, $bet, $boardSize, 'direct', 'pending');
+        $invite = $this->newInvite($db, $user, $normalizedGameType, $normalizedRoom, $normalizedBet, $normalizedBoardSize, 'direct', 'pending');
         $invite['invitee_id'] = $inviteeId;
         $invite['invitee_name'] = $this->userName($invitee);
         $invite['shared_at'] = $invite['created_at'];
@@ -81,6 +96,7 @@ trait GameInviteCreationTrait
         $now = now_iso();
         $invite['status'] = 'pending';
         $invite['shared_at'] = $now;
+        $invite['expires_at'] = gmdate('c', time() + self::INVITE_TTL_SEC);
         $invite['updated_at'] = $now;
         return $this->publicInvite($invite, $userId);
     }
@@ -154,6 +170,7 @@ trait GameInviteCreationTrait
         if ($status === 'draft') {
             $invite['status'] = 'pending';
             $invite['shared_at'] = (string)($invite['shared_at'] ?? $now);
+            $invite['expires_at'] = gmdate('c', time() + self::INVITE_TTL_SEC);
         }
         $invite['invitee_id'] = $userId;
         $invite['invitee_name'] = $this->userName($user);
