@@ -53,6 +53,7 @@ final class StagingTestPlayerStateResetService
         $before = [];
         $queueRemoved = 0;
         $removedInvites = [];
+        $retiredStartedInvites = 0;
         $notificationsRemoved = 0;
         $gamesFinished = 0;
 
@@ -61,10 +62,10 @@ final class StagingTestPlayerStateResetService
                 &$before,
                 &$queueRemoved,
                 &$removedInvites,
+                &$retiredStartedInvites,
                 &$notificationsRemoved,
                 &$gamesFinished
             ): array {
-                UnifiedBalanceRuntimeState::migrateAll($data);
                 if (!isset($data['users']) || !is_array($data['users'])) {
                     throw new RuntimeException('Staging test users are unavailable.');
                 }
@@ -74,7 +75,8 @@ final class StagingTestPlayerStateResetService
                     if (!isset($data['users'][$legacyUserId]) || !is_array($data['users'][$legacyUserId])) {
                         throw new RuntimeException('Staging test player is not initialized.');
                     }
-                    $before[$legacyUserId] = (int)($data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] ?? 0);
+                    UnifiedBalanceRuntimeState::ensureUser($data['users'][$legacyUserId]);
+                    $before[$legacyUserId] = (int)$data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD];
                 }
 
                 $games = new GameService($this->config);
@@ -121,40 +123,38 @@ final class StagingTestPlayerStateResetService
 
                 foreach ((is_array($data['invites'] ?? null) ? $data['invites'] : []) as $index => $invite) {
                     if (!is_array($invite)) continue;
-                    $status = (string)($invite['status'] ?? '');
-                    if (!in_array($status, self::OPEN_INVITE_STATUSES, true)) continue;
-                    if (trim((string)($invite['game_id'] ?? '')) !== '') continue;
+                    $status = trim((string)($invite['status'] ?? ''));
+                    $isOpen = in_array($status, self::OPEN_INVITE_STATUSES, true);
+                    $isStarted = $status === 'active';
+                    if (!$isOpen && !$isStarted) continue;
 
-                    $participants = array_values(array_unique(array_filter([
-                        trim((string)($invite['inviter_id'] ?? '')),
-                        trim((string)($invite['invitee_id'] ?? '')),
-                    ], static fn(string $id): bool => $id !== '')));
-                    if ($participants === []) continue;
-
-                    $hasTestParticipant = false;
-                    foreach ($participants as $participantId) {
-                        if (isset($testIds[$participantId])) {
-                            $hasTestParticipant = true;
-                            continue;
-                        }
-                        if (isset($testIds[(string)($invite['inviter_id'] ?? '')])
-                            || isset($testIds[(string)($invite['invitee_id'] ?? '')])) {
-                            throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
-                        }
-                    }
-                    if (!$hasTestParticipant) continue;
-                    foreach ($participants as $participantId) {
-                        if (!isset($testIds[$participantId])) {
-                            throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
-                        }
-                    }
+                    $participants = $this->testOnlyInviteParticipants($invite, $testIds);
+                    if ($participants === null) continue;
 
                     $inviteId = trim((string)($invite['id'] ?? ''));
                     $token = trim((string)($invite['token'] ?? ''));
                     if ($inviteId === '' || $token === '') {
                         throw new RuntimeException('Staging test reset refuses an invite without stable identity.');
                     }
-                    sort($participants, SORT_STRING);
+
+                    if ($isStarted) {
+                        $gameId = trim((string)($invite['game_id'] ?? ''));
+                        if ($gameId === '') {
+                            throw new RuntimeException('Staging test reset refuses an active invite without game identity.');
+                        }
+                        if (!$this->startedTestInviteCanRetire($data, $gameId, $testIds)) {
+                            continue;
+                        }
+
+                        // This is JSON-only test-state retirement. Started invites may
+                        // already be referenced by durable match history, so their DB
+                        // rows must never enter the unmatched-invite deletion path.
+                        unset($data['invites'][$index]);
+                        $retiredStartedInvites++;
+                        continue;
+                    }
+
+                    if (trim((string)($invite['game_id'] ?? '')) !== '') continue;
                     $removedInvites[] = [
                         'invite_id' => $inviteId,
                         'token' => $token,
@@ -225,6 +225,7 @@ final class StagingTestPlayerStateResetService
             'players' => $balances,
             'queue_removed' => $queueRemoved,
             'open_invites_removed' => count($removedInvites),
+            'retired_started_invites' => $retiredStartedInvites,
             'notifications_removed' => $notificationsRemoved,
             'active_test_games_finished' => $gamesFinished,
             'invite_db_rows_removed' => (int)($inviteCleanup['invite_rows'] ?? 0),
@@ -237,6 +238,65 @@ final class StagingTestPlayerStateResetService
             'production_changed' => false,
             'live_payments_used' => false,
         ];
+    }
+
+    private function testOnlyInviteParticipants(array $invite, array $testIds): ?array
+    {
+        $participants = array_values(array_unique(array_filter([
+            trim((string)($invite['inviter_id'] ?? '')),
+            trim((string)($invite['invitee_id'] ?? '')),
+        ], static fn(string $id): bool => $id !== '')));
+        if ($participants === []) return null;
+
+        $hasTestParticipant = false;
+        foreach ($participants as $participantId) {
+            if (isset($testIds[$participantId])) {
+                $hasTestParticipant = true;
+                break;
+            }
+        }
+        if (!$hasTestParticipant) return null;
+
+        foreach ($participants as $participantId) {
+            if (!isset($testIds[$participantId])) {
+                throw new RuntimeException('Staging test reset refuses an invite with a non-test player.');
+            }
+        }
+        sort($participants, SORT_STRING);
+        return $participants;
+    }
+
+    private function startedTestInviteCanRetire(array $data, string $gameId, array $testIds): bool
+    {
+        $linkedGame = $data['games'][$gameId] ?? null;
+        if ($linkedGame === null) {
+            return true;
+        }
+        if (!is_array($linkedGame)) {
+            throw new RuntimeException('Staging test reset refuses an active invite with malformed game state.');
+        }
+
+        $gameStatus = trim((string)($linkedGame['status'] ?? ''));
+        if (in_array($gameStatus, ['active', 'waiting'], true)) {
+            return false;
+        }
+        if ($gameStatus !== 'finished') {
+            throw new RuntimeException('Staging test reset refuses an active invite with unknown linked game state.');
+        }
+
+        $gameParticipants = array_values(array_unique(array_filter(
+            array_map('strval', is_array($linkedGame['player_ids'] ?? null) ? $linkedGame['player_ids'] : []),
+            static fn(string $id): bool => $id !== ''
+        )));
+        if ($gameParticipants === []) {
+            throw new RuntimeException('Staging test reset cannot prove linked game ownership.');
+        }
+        foreach ($gameParticipants as $participantId) {
+            if (!isset($testIds[$participantId])) {
+                throw new RuntimeException('Staging test reset refuses an active invite linked to a non-test game.');
+            }
+        }
+        return true;
     }
 
     private function cleanupRuntimeTestNotificationRows(array $snapshot): array
