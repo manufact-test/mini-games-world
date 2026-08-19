@@ -11,6 +11,7 @@ on:
       - 'bot/runtime/RuntimeMatchEventLogWriter.php'
       - 'bot/runtime/RuntimeMatchVersionResolver.php'
       - 'bot/tests/RuntimeMatchEventLogWriterTest.php'
+      - 'bot/tests/RuntimeMatchEventMigrationContractTest.php'
       - '.github/workflows/mvp17-6-match-event-log-safety.yml'
   workflow_dispatch:
 
@@ -53,11 +54,15 @@ jobs:
             bot/runtime/RuntimeMatchEventLogWriter.php
             bot/runtime/RuntimeMatchVersionResolver.php
             bot/tests/RuntimeMatchEventLogWriterTest.php
+            bot/tests/RuntimeMatchEventMigrationContractTest.php
             bot/tests/DatabasePrimaryStateStorageAdapterTest.php
           )
           for file in "${files[@]}"; do
             php -l "$file"
           done
+
+      - name: Test exact migration discovery contract
+        run: php bot/tests/RuntimeMatchEventMigrationContractTest.php
 
       - name: Test authoritative event-log replay storage
         run: php bot/tests/RuntimeMatchEventLogWriterTest.php
