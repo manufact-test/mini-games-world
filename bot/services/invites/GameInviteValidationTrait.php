@@ -135,6 +135,18 @@ trait GameInviteValidationTrait
         unset($invite);
     }
 
+    private function findOpenDirectIndex(array $db, string $inviterId, string $inviteeId): ?int
+    {
+        foreach ($db['invites'] ?? [] as $index => $invite) {
+            if (!is_array($invite) || (string)($invite['source'] ?? '') !== 'direct') continue;
+            if ((string)($invite['status'] ?? '') !== 'pending') continue;
+            if ((string)($invite['inviter_id'] ?? '') !== $inviterId) continue;
+            if ((string)($invite['invitee_id'] ?? '') !== $inviteeId) continue;
+            return (int)$index;
+        }
+        return null;
+    }
+
     private function findOpenRematchIndex(array $db, string $sourceGameId, array $playerIds): ?int
     {
         sort($playerIds, SORT_STRING);
@@ -157,12 +169,14 @@ trait GameInviteValidationTrait
         $inviteeId = (string)($invite['invitee_id'] ?? '');
         $isOwner = $viewerId !== '' && $viewerId === $inviterId;
         $isInvitee = $viewerId !== '' && $viewerId === $inviteeId;
-        $deadline = (string)($invite['ready_deadline_at'] ?? '');
-        $deadlineTs = $storedStatus === 'awaiting_start'
-            ? $this->effectiveReadyDeadlineTs($invite)
-            : (strtotime($deadline) ?: 0);
-        if ($storedStatus === 'awaiting_start' && $deadlineTs > 0) {
-            $deadline = gmdate('c', $deadlineTs);
+        $deadline = '';
+        $deadlineTs = 0;
+        if (in_array($storedStatus, ['draft', 'pending'], true)) {
+            $deadline = (string)($invite['expires_at'] ?? '');
+            $deadlineTs = strtotime($deadline) ?: 0;
+        } elseif ($storedStatus === 'awaiting_start') {
+            $deadlineTs = $this->effectiveReadyDeadlineTs($invite);
+            if ($deadlineTs > 0) $deadline = gmdate('c', $deadlineTs);
         }
         return [
             'token' => (string)($invite['token'] ?? ''),

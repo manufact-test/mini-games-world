@@ -34,6 +34,7 @@ trait GameInviteStorageTrait
         $definition = $this->catalog->publicGameDefinition($gameType);
         [$columns, $rows] = $this->dimensions($gameType, $boardSize);
         $now = now_iso();
+        $ttl = $status === 'draft' ? self::DRAFT_TTL_SEC : self::INVITE_TTL_SEC;
         return [
             'id' => make_id('invite'),
             'token' => $this->uniqueToken($db['invites']),
@@ -52,7 +53,7 @@ trait GameInviteStorageTrait
             'board_rows' => $rows,
             'created_at' => $now,
             'updated_at' => $now,
-            'expires_at' => gmdate('c', time() + self::INVITE_TTL_SEC),
+            'expires_at' => gmdate('c', time() + $ttl),
             'shared_at' => null,
             'opened_at' => null,
             'open_requested_at' => null,
@@ -226,12 +227,9 @@ trait GameInviteStorageTrait
 
     private function effectiveReadyDeadlineTs(array $invite): int
     {
-        $deadline = strtotime((string)($invite['ready_deadline_at'] ?? '')) ?: 0;
-        if ((string)($invite['source'] ?? '') !== 'rematch') {
-            $inviteExpiry = strtotime((string)($invite['expires_at'] ?? '')) ?: 0;
-            if ($inviteExpiry > $deadline) $deadline = $inviteExpiry;
-        }
-        return $deadline;
+        // Once accepted, the canonical ready window is exactly 90 seconds.
+        // The original pending expiry must never extend the committed launch window.
+        return strtotime((string)($invite['ready_deadline_at'] ?? '')) ?: 0;
     }
 
     private function expireIfDue(array &$db, array &$invite, int $now): void
