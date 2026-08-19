@@ -119,6 +119,12 @@
 /* Shared compact player/profile variants keep the same avatar artwork. */
 .game-player-avatar,
 .profile-v2-collection-avatar{display:block;background-size:cover!important;background-position:center!important}
+.game-player.has-mgw-avatar{display:grid;grid-template-columns:32px minmax(0,1fr);grid-template-areas:"avatar name" "avatar mark";column-gap:8px;align-items:center}
+.game-player.has-mgw-avatar>.game-player-avatar{grid-area:avatar;width:32px;height:32px;border-radius:11px;border:1px solid rgba(255,255,255,.10)}
+.game-player.has-mgw-avatar>.name{grid-area:name;align-self:end}
+.game-player.has-mgw-avatar>.mark{grid-area:mark;align-self:start;margin-top:1px}
+.game-board-screen[data-game-type="battleship"] .game-player.has-mgw-avatar{grid-template-columns:28px minmax(0,1fr);column-gap:6px}
+.game-board-screen[data-game-type="battleship"] .game-player.has-mgw-avatar>.game-player-avatar{width:28px;height:28px;border-radius:9px}
 
 @media (prefers-reduced-motion:reduce){
   [data-avatar-item-id^="starter-default-"]::before,
