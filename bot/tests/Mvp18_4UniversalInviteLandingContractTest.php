@@ -97,7 +97,7 @@ foreach ([$endpointSource, $creationSource, $serviceSource, $siteSource, $rewrit
 }
 
 $assertTrue(
-    str_contains($endpointSource, "return $baseUrl . '/invite/' . rawurlencode($normalizedToken);"),
+    str_contains($endpointSource, 'return $baseUrl . \'/invite/\' . rawurlencode($normalizedToken);'),
     'Shared link owner must emit the universal /invite/CODE URL'
 );
 $assertTrue(
@@ -115,15 +115,15 @@ $assertTrue(!str_contains($siteSource, 'invitee_name'), 'Public landing must not
 $assertTrue(!str_contains($siteSource, 'inviter_id'), 'Public landing must not render inviter ID');
 $assertTrue(!str_contains($siteSource, 'invitee_id'), 'Public landing must not render accepter ID');
 $assertTrue(
-    str_contains($creationSource, "Нельзя открыть собственное приглашение как соперник."),
+    str_contains($creationSource, 'Нельзя открыть собственное приглашение как соперник.'),
     'Authenticated open owner must retain self-invite protection'
 );
 $assertTrue(
-    str_contains($creationSource, "Это приглашение уже предназначено другому игроку."),
+    str_contains($creationSource, 'Это приглашение уже предназначено другому игроку.'),
     'Authenticated open owner must retain first-accepter/reopen protection'
 );
 $assertTrue(
-    str_contains($creationSource, "$invite['invitee_id'] = $userId;"),
+    str_contains($creationSource, '$invite[\'invitee_id\'] = $userId;'),
     'First accepter binding must remain in the existing authenticated bindFromLink owner'
 );
 $assertTrue(
