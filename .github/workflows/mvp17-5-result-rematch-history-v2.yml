@@ -20,6 +20,7 @@ on:
       - 'bot/services/BotProfilePolicy.php'
       - 'bot/services/GameInviteService.php'
       - 'bot/services/invites/GameInviteActionTrait.php'
+      - 'bot/tests/Mvp17_5HistoryChronologyRegressionTest.php'
       - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - 'bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php'
       - 'bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php'
@@ -62,6 +63,7 @@ jobs:
           php -l bot/services/BotProfilePolicy.php
           php -l bot/services/GameInviteService.php
           php -l bot/services/invites/GameInviteActionTrait.php
+          php -l bot/tests/Mvp17_5HistoryChronologyRegressionTest.php
           php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
           php -l bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
           php -l bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php
@@ -88,6 +90,9 @@ jobs:
           node --input-type=module --check < app/assets/js/production-v110-targeted-interactions.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --input-type=module --check < app/assets/js/games/game-invites-v110.js
+
+      - name: MVP-17.5 History chronological current-match regression
+        run: php bot/tests/Mvp17_5HistoryChronologyRegressionTest.php
 
       - name: MVP-17.5 result history economy presentation contract
         run: php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
