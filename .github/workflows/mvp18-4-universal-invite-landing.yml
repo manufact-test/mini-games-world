@@ -71,18 +71,18 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          unexpected="$(git diff --name-only "$base" "$head" -- \
-            ':!/.htaccess' \
-            ':!/site/invite.php' \
-            ':!/bot/invites.php' \
-            ':!/bot/services/GameInviteService.php' \
-            ':!/bot/tests/Mvp18_4UniversalInviteLandingContractTest.php' \
-            ':!/.github/workflows/mvp18-4-universal-invite-landing.yml')"
-          if [ -n "$unexpected" ]; then
-            echo 'MVP-18.4 contains files outside the approved bounded slice:' >&2
-            printf '%s\n' "$unexpected" >&2
-            exit 1
-          fi
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .htaccess|site/invite.php|bot/invites.php|bot/services/GameInviteService.php|bot/tests/Mvp18_4UniversalInviteLandingContractTest.php|.github/workflows/mvp18-4-universal-invite-landing.yml)
+                ;;
+              *)
+                echo "Unexpected MVP-18.4 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
 
       - name: Guard accepted game engines
         shell: bash
