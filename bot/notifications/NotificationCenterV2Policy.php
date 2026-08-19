@@ -6,7 +6,8 @@ declare(strict_types=1);
  *
  * Storage remains owned by NotificationService + RuntimeNotificationRepository.
  * This policy only defines stable event identity, safe internal deep links,
- * explicit expiry/retention semantics and authenticated per-item mutations.
+ * delivery scheduling, explicit expiry/retention semantics and authenticated
+ * per-item mutations.
  */
 final class NotificationCenterV2Policy
 {
@@ -24,21 +25,43 @@ final class NotificationCenterV2Policy
         return trim((string)($notification['id'] ?? ''));
     }
 
+    public static function isSafeDeepLink(string $deepLink): bool
+    {
+        $deepLink = trim($deepLink);
+        return $deepLink === '' || in_array($deepLink, self::SAFE_DEEP_LINKS, true);
+    }
+
+    public static function scheduledAt(array $notification): ?string
+    {
+        return self::normalizedTimestamp($notification['scheduled_at'] ?? null);
+    }
+
+    public static function deliveredAt(array $notification): ?string
+    {
+        $deliveredAt = self::normalizedTimestamp($notification['delivered_at'] ?? null);
+        if ($deliveredAt !== null) return $deliveredAt;
+
+        $scheduledAt = self::scheduledAt($notification);
+        if ($scheduledAt !== null) return $scheduledAt;
+
+        return self::normalizedTimestamp($notification['created_at'] ?? null);
+    }
+
+    public static function isDelivered(array $notification, ?DateTimeImmutable $now = null): bool
+    {
+        $deliveredAt = self::deliveredAt($notification);
+        if ($deliveredAt === null) return true;
+        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        return new DateTimeImmutable($deliveredAt) <= $now;
+    }
+
     public static function expiresAt(array $notification, ?array $invite = null): ?string
     {
-        $value = trim((string)($notification['expires_at'] ?? ''));
-        if ($value === '' && is_array($invite)) {
-            $value = trim((string)($invite['expires_at'] ?? ''));
+        $value = self::normalizedTimestamp($notification['expires_at'] ?? null);
+        if ($value === null && is_array($invite)) {
+            $value = self::normalizedTimestamp($invite['expires_at'] ?? null);
         }
-        if ($value === '') return null;
-
-        try {
-            return (new DateTimeImmutable($value))
-                ->setTimezone(new DateTimeZone('UTC'))
-                ->format(DATE_ATOM);
-        } catch (Throwable) {
-            return null;
-        }
+        return $value;
     }
 
     public static function isExpired(array $notification, ?array $invite = null, ?DateTimeImmutable $now = null): bool
@@ -47,6 +70,12 @@ final class NotificationCenterV2Policy
         if ($expiresAt === null) return false;
         $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
         return new DateTimeImmutable($expiresAt) <= $now;
+    }
+
+    public static function isActive(array $notification, ?array $invite = null, ?DateTimeImmutable $now = null): bool
+    {
+        $now ??= new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        return self::isDelivered($notification, $now) && !self::isExpired($notification, $invite, $now);
     }
 
     public static function deepLink(array $notification): string
@@ -98,10 +127,15 @@ final class NotificationCenterV2Policy
         if (preg_match('/[\x00-\x1F\x7F]/', $notificationId) === 1) return false;
 
         $now = self::normalizedNow($now);
+        $instant = new DateTimeImmutable($now);
         foreach ($notifications as &$notification) {
             if (!is_array($notification)) continue;
             if ((string)($notification['user_id'] ?? '') !== $userId) continue;
             if (!hash_equals((string)($notification['id'] ?? ''), $notificationId)) continue;
+            if (!self::isActive($notification, null, $instant)) {
+                unset($notification);
+                return false;
+            }
 
             if (empty($notification['read_at'])) $notification['read_at'] = $now;
             if ($mode === 'hide' && empty($notification['hidden_at'])) $notification['hidden_at'] = $now;
@@ -110,6 +144,19 @@ final class NotificationCenterV2Policy
         }
         unset($notification);
         return false;
+    }
+
+    private static function normalizedTimestamp(mixed $value): ?string
+    {
+        $value = trim((string)($value ?? ''));
+        if ($value === '') return null;
+        try {
+            return (new DateTimeImmutable($value))
+                ->setTimezone(new DateTimeZone('UTC'))
+                ->format(DATE_ATOM);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private static function normalizedNow(?string $value): string

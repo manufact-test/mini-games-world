@@ -140,9 +140,12 @@ function mgw_notification_apply_v2_contract(array $item, array $raw, ?array $inv
 {
     $source = array_replace($raw, $item);
     $item['event_id'] = NotificationCenterV2Policy::eventId($source);
+    $item['scheduled_at'] = NotificationCenterV2Policy::scheduledAt($source);
+    $item['delivered_at'] = NotificationCenterV2Policy::deliveredAt($source);
+    $item['delivered'] = NotificationCenterV2Policy::isDelivered($source);
     $item['expires_at'] = NotificationCenterV2Policy::expiresAt($source, $invite);
     $item['deep_link'] = NotificationCenterV2Policy::deepLink($source);
-    $item['active'] = !NotificationCenterV2Policy::isExpired($source, $invite);
+    $item['active'] = NotificationCenterV2Policy::isActive($source, $invite);
     return $item;
 }
 
@@ -162,6 +165,7 @@ function mgw_visible_notifications(
         $raw = $rawById[(string)($item['id'] ?? '')] ?? $item;
         $token = (string)($item['invite_token'] ?? '');
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
+        if (!NotificationCenterV2Policy::isDelivered($raw)) continue;
         if (NotificationCenterV2Policy::isExpired($raw, $invite)) continue;
         if (!mgw_notification_is_visible($item, $invite, $userId)) continue;
 
@@ -194,6 +198,7 @@ function mgw_visible_unread_count(array $data, string $userId): int
 
         $token = (string)($notification['invite_token'] ?? '');
         $invite = $token !== '' ? ($invites[$token] ?? null) : null;
+        if (!NotificationCenterV2Policy::isDelivered($notification)) continue;
         if (NotificationCenterV2Policy::isExpired($notification, $invite)) continue;
         if (!mgw_notification_is_visible($notification, $invite, $userId)) continue;
 
