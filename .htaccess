@@ -11,6 +11,11 @@ RewriteEngine On
 # Keep the Telegram Mini App and bot completely independent from the public site.
 RewriteRule ^(?:app|bot)(?:/|$) - [L]
 
+# Universal invite landing. The public page is read-only; authenticated binding
+# remains owned by the existing Mini App invite flow.
+RewriteRule ^invite/([A-Fa-f0-9]{24})/?$ site/invite.php?code=$1 [L,QSA]
+RewriteRule ^invite(?:/.*)?$ site/invite.php [L,QSA]
+
 # Do not expose the internal physical site directory as a second public URL.
 RewriteCond %{THE_REQUEST} \s/+site(?:[/?\s]) [NC]
 RewriteRule ^site(?:/|$) - [F,L]

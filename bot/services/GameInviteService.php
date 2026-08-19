@@ -38,6 +38,47 @@ final class GameInviteService
         return $this->createRematchFromTrait($db, $user, $gameId);
     }
 
+    /**
+     * Read-only projection for the public /invite/CODE landing.
+     *
+     * The projection deliberately exposes no player identity, IDs, balance,
+     * room, match identifiers or raw token. Lifecycle normalization runs on an
+     * in-memory copy so the public GET never becomes a second invite state owner.
+     */
+    public function landingSnapshot(array $db, string $token): array
+    {
+        $snapshot = $db;
+        $this->cleanup($snapshot);
+        $index = $this->findIndex($snapshot, $token);
+        if ($index === null || !isset($snapshot['invites'][$index]) || !is_array($snapshot['invites'][$index])) {
+            return [
+                'available' => false,
+                'state' => 'unavailable',
+                'phase' => '',
+                'waiting_seconds' => 0,
+            ];
+        }
+
+        $invite = $snapshot['invites'][$index];
+        $status = (string)($invite['status'] ?? '');
+        $bound = trim((string)($invite['invitee_id'] ?? '')) !== '';
+        $available = in_array($status, ['draft', 'pending'], true) && !$bound;
+        $deadlineTs = $available
+            ? (strtotime((string)($invite['expires_at'] ?? '')) ?: 0)
+            : 0;
+        $expired = in_array($status, ['expired', 'timed_out'], true)
+            || ($available && $deadlineTs > 0 && $deadlineTs <= time());
+
+        return [
+            'available' => $available && !$expired,
+            'state' => $expired ? 'expired' : ($available ? 'available' : 'unavailable'),
+            'phase' => $available ? $status : '',
+            'waiting_seconds' => $available && $deadlineTs > 0
+                ? max(0, $deadlineTs - time())
+                : 0,
+        ];
+    }
+
     public function notificationSnapshot(array $invite, string $viewerId): array
     {
         return $this->publicInvite($invite, $viewerId);
