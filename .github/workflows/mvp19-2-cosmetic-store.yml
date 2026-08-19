@@ -1,0 +1,159 @@
+name: MVP-19.2 Cosmetic Store v2
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php'
+      - 'bot/catalog/CosmeticStoreService.php'
+      - 'bot/catalog/CosmeticStoreRuntimePurchaseService.php'
+      - 'bot/cosmetic-store.php'
+      - 'bot/tests/Mvp19_2CosmeticStoreTest.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/css/screens/store-v2.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/mvp19-2-cosmetic-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-2-store-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  store:
+    name: Store pricing purchase inventory and active client
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint Store backend
+        run: |
+          php -l bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
+          php -l bot/catalog/CosmeticStoreService.php
+          php -l bot/catalog/CosmeticStoreRuntimePurchaseService.php
+          php -l bot/cosmetic-store.php
+          php -l bot/tests/Mvp19_2CosmeticStoreTest.php
+
+      - name: Run Store pricing purchase and idempotency contract
+        run: php bot/tests/Mvp19_2CosmeticStoreTest.php
+
+      - name: Run frozen account and profile regressions
+        run: |
+          php bot/tests/AccountIdentityServiceTest.php
+          php bot/tests/MgwProfileIdentityCorrectiveTest.php
+
+      - name: Validate Store client syntax
+        run: |
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/screens/store-screen.js
+
+      - name: Guard canonical Store product decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "'avatar-bundle-5'" bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
+          grep -F '1200' bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
+          grep -F '240' bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
+          grep -F "'auto_equip' => false" bot/catalog/CosmeticStoreService.php
+          grep -F "'duplicate_purchase' => false" bot/catalog/CosmeticStoreService.php
+          grep -F "'duplicate_compensation' => false" bot/catalog/CosmeticStoreService.php
+          if grep -Eqi 'loot[ _-]?box|roulette|coin transfer|inactivity tax' bot/catalog/CosmeticStoreService.php bot/cosmetic-store.php; then
+            echo 'Forbidden product mechanic entered MVP-19.2.' >&2
+            exit 1
+          fi
+
+      - name: Guard active v110 Store graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"mvp19=store-v2")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2")) exit(3);'
+          grep -F "@import url('./screens/store-v2.css?v=1&mvp19=store-v2');" app/assets/css/main.css
+          grep -F 'cosmeticStoreStatus' app/assets/js/api/client.js
+          grep -F 'cosmeticStorePurchase' app/assets/js/api/client.js
+          grep -F 'api.cosmeticStoreStatus()' app/assets/js/screens/store-screen.js
+          grep -F 'api.cosmeticStorePurchase' app/assets/js/screens/store-screen.js
+          if grep -Eq 'api\.shopStatus\(|shop_order|Gold|сертификат' app/assets/js/screens/store-screen.js; then
+            echo 'Legacy certificate Store leaked into Store v2 owner.' >&2
+            exit 1
+          fi
+
+      - name: Guard purchase ordering and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'EconomyRuntimeBridge' bot/cosmetic-store.php
+          grep -F 'synchronizeCurrentJson' bot/cosmetic-store.php
+          grep -F '$store->fulfill' bot/cosmetic-store.php
+          grep -F 'purchase_in_progress' bot/catalog/CosmeticStoreRuntimePurchaseService.php
+          grep -F 'cosmetic_purchase_refund' bot/catalog/CosmeticStoreRuntimePurchaseService.php
+          grep -F 'store_purchase' bot/catalog/CosmeticStoreService.php
+          if grep -Fq -- '->equip(' bot/catalog/CosmeticStoreService.php bot/cosmetic-store.php; then
+            echo 'Purchase must not auto-equip.' >&2
+            exit 1
+          fi
+
+      - name: Guard bounded MVP-19.2 diff
+        if: startsWith(github.head_ref, 'agent/mvp19-2')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp19-2-cosmetic-store.yml|\
+              bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php|\
+              bot/catalog/CosmeticStoreService.php|\
+              bot/catalog/CosmeticStoreRuntimePurchaseService.php|\
+              bot/cosmetic-store.php|\
+              bot/tests/Mvp19_2CosmeticStoreTest.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/screens/store-screen.js|\
+              app/assets/css/screens/store-v2.css|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-19.2 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+      - name: Guard accepted engines and frozen social owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/services/GameInviteService.php \
+            bot/services/invites \
+            bot/services/FriendGraphService.php \
+            bot/services/ReconnectLifecycleService.php \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/games/game-invites-v110-rematch-policy-v175.js

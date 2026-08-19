@@ -5,6 +5,7 @@ import { getSessionId, getDeviceId } from '../session.js?v=1131';
 
 const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const FRIENDS_URL = `${window.location.origin}/bot/friends.php`;
+const COSMETIC_STORE_URL = `${window.location.origin}/bot/cosmetic-store.php`;
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
@@ -13,7 +14,11 @@ async function requestUrl(url, payload = {}){
     body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), deviceId:getDeviceId(), ...payload })
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok || !data || data.ok === false) throw new Error(data?.error || `Ошибка API: ${response.status}`);
+  if (!response.ok || !data || data.ok === false) {
+    const error = new Error(data?.error || `Ошибка API: ${response.status}`);
+    error.code = data?.code || '';
+    throw error;
+  }
   return data;
 }
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
@@ -48,6 +53,8 @@ export const api = {
   history: () => requestHistory(),
   historyFast: () => request('history'),
   support: (type, message) => request('support', { type, message }),
+  cosmeticStoreStatus: () => requestUrl(COSMETIC_STORE_URL, { action:'status' }),
+  cosmeticStorePurchase: (offerId, requestToken) => requestUrl(COSMETIC_STORE_URL, { action:'purchase', offer_id:offerId, request_token:requestToken }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),
