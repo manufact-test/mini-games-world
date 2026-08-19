@@ -20,6 +20,7 @@ try {
     require_once __DIR__ . '/services/StagingTestAuthService.php';
     require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
     require_once __DIR__ . '/services/StagingTestInviteResidualRecoveryService.php';
+    require_once __DIR__ . '/services/StagingTestPlayerBootstrapService.php';
     require_once __DIR__ . '/services/StagingTestPlayerStateResetService.php';
 
     $raw = file_get_contents('php://input');
@@ -57,6 +58,9 @@ try {
             $config,
             $runtimeStorageRouter instanceof RuntimeStorageRouter ? $runtimeStorageRouter : null
         );
+    };
+    $playerBootstrapService = static function () use ($config): StagingTestPlayerBootstrapService {
+        return new StagingTestPlayerBootstrapService($config);
     };
     $playerResetService = static function () use ($config, $runtimeStorageRouter): StagingTestPlayerStateResetService {
         return new StagingTestPlayerStateResetService(
@@ -125,6 +129,20 @@ try {
             throw new RuntimeException('Staging test-player reset requires GitHub OIDC.');
         }
         (new GitHubActionsOidcVerifier($config))->verifyAndConsume($providedCredential);
+
+        try {
+            $bootstrap = $playerBootstrapService()->ensure($_SERVER);
+        } catch (Throwable $error) {
+            error_log('[MiniGamesWorld staging test bootstrap] denied: ' . get_class($error));
+            http_response_code(403);
+            echo json_encode([
+                'ok' => false,
+                'service' => 'mini-games-world-staging-test-auth',
+                'error' => 'test_player_bootstrap_unavailable',
+            ], JSON_UNESCAPED_SLASHES) . PHP_EOL;
+            exit;
+        }
+
         try {
             $result = $playerResetService()->reset($_SERVER);
         } catch (StagingTestPlayerResetStageException $error) {
@@ -142,7 +160,10 @@ try {
         }
 
         echo json_encode(
-            $result + ['authorization_mode' => 'github_actions_oidc'],
+            $result + [
+                'test_player_bootstrap' => $bootstrap,
+                'authorization_mode' => 'github_actions_oidc',
+            ],
             JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
         ) . PHP_EOL;
         exit;

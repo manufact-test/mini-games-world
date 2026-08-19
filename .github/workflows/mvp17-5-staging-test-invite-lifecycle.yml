@@ -5,9 +5,11 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'bot/services/StagingTestAuthService.php'
       - 'bot/services/StagingTestOnlyInviteOrphanRecoveryService.php'
       - 'bot/services/StagingTestInviteResidualRecoveryService.php'
       - 'bot/services/StagingFreshInviteReplacementRecoveryService.php'
+      - 'bot/services/StagingTestPlayerBootstrapService.php'
       - 'bot/services/StagingTestPlayerStateResetService.php'
       - 'bot/staging-test-auth.php'
       - 'bot/staging-test-only-invite-recovery.php'
@@ -38,9 +40,11 @@ jobs:
       - name: Syntax validation
         run: |
           set -Eeuo pipefail
+          php -l bot/services/StagingTestAuthService.php
           php -l bot/services/StagingTestOnlyInviteOrphanRecoveryService.php
           php -l bot/services/StagingTestInviteResidualRecoveryService.php
           php -l bot/services/StagingFreshInviteReplacementRecoveryService.php
+          php -l bot/services/StagingTestPlayerBootstrapService.php
           php -l bot/services/StagingTestPlayerStateResetService.php
           php -l bot/staging-test-auth.php
           php -l bot/staging-test-only-invite-recovery.php
