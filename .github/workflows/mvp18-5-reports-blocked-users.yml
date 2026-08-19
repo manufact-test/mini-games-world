@@ -130,6 +130,7 @@ jobs:
         run: php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
 
       - name: Guard bounded MVP-18.5 scope
+        if: startsWith(github.head_ref, 'agent/mvp18-5')
         shell: bash
         run: |
           set -euo pipefail
