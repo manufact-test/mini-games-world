@@ -1,0 +1,129 @@
+name: MVP-18.7 Friends and invites regression
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/services/GameInviteService.php'
+      - 'bot/services/invites/**'
+      - 'bot/invites.php'
+      - 'bot/invite-watch.php'
+      - 'bot/invite-opponents.php'
+      - 'bot/services/FriendGraphService.php'
+      - 'bot/services/ReconnectLifecycleService.php'
+      - 'site/invite.php'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/production-v101-invite-sync-dedupe.js'
+      - 'app/assets/js/main-v110-reconnect-v174.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php'
+      - '.github/workflows/mvp18-7-friends-invites-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp18-7-friends-invites-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: MVP-12 social invite scenarios remain intact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint regression-only slice
+        run: php -l bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+
+      - name: Run MVP-18.7 active-owner and reconnect contract
+        run: php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+
+      - name: Run frozen invite and matchmaking behavior baseline
+        run: php bot/tests/Mvp14r2InviteMatchmakingBaselineTest.php
+
+      - name: Run current Invite v2 lifecycle
+        run: php bot/tests/Mvp18_3InviteV2ContractTest.php
+
+      - name: Run universal invite landing contract
+        run: php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+
+      - name: Run Telegram/client duplicate synchronization contract
+        run: php bot/tests/ProductionV101InviteSyncDedupeRuntimeTest.php
+
+      - name: Run insufficient-balance behavior baseline
+        run: php bot/tests/Mvp14r2EconomySupportingBaselineTest.php
+
+      - name: Run blocked-user invite boundaries
+        run: php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+
+      - name: Run Friends UI invite handoff owner
+        run: node bot/tests/Mvp18FriendsUiContractTest.mjs
+
+      - name: Run accepted rematch regression
+        run: php bot/tests/RematchOptimisticUxContractTest.php
+
+      - name: Guard bounded MVP-18.7 change set
+        if: startsWith(github.head_ref, 'agent/mvp18-7')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp18-7-friends-invites-regression.yml|bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-18.7 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+      - name: Guard accepted game engines and frozen runtime owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if git diff --name-only "$base" "$head" -- 'bot/games/**' | grep -q .; then
+            echo 'MVP-18.7 regression gate must not modify accepted game engines.' >&2
+            exit 1
+          fi
+          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1127';" bot/helpers/WebAppLaunchUrl.php
+          grep -F "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'" app/runtime/client/version-manifest.php
+          git diff --exit-code "$base" "$head" -- \
+            bot/helpers/WebAppLaunchUrl.php \
+            app/runtime/client/version-manifest.php \
+            app/assets/js/production-clean-entry-v110.js \
+            app/assets/js/production-v101-invite-sync-dedupe.js \
+            app/assets/js/main-v110-reconnect-v174.js \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/games/game-invites-v110-rematch-policy-v175.js \
+            bot/services/GameInviteService.php \
+            bot/services/invites \
+            bot/invites.php \
+            site/invite.php \
+            bot/games
