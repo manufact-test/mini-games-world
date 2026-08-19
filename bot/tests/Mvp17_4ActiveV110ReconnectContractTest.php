@@ -83,8 +83,8 @@ $assert(
     'Successful v110 foreground resume must publish one reconnect-resume signal to the authoritative game_state owner.'
 );
 $assert(
-    str_contains($manifestSource, "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=3&mvp18=friends-ui'"),
-    'The accepted active v110 reconnect wrapper must keep owning @mgw/main with the current cache identity.'
+    str_contains($manifestSource, "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'"),
+    'The accepted active v110 reconnect wrapper must have a post-diagnostic cache identity in the manifest source.'
 );
 $assert(
     preg_match('/\bMOVE_TIMEOUT_SEC\s*=\s*60\s*;/', $clock) === 1,

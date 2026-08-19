@@ -5,7 +5,7 @@ return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
         '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1125&mvp16=canonical-avatar-owner&mvp17=history-single-owner',
-        '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=3&mvp18=friends-ui',
+        '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2',
         '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
         './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch&mvp18=friends',
         './assets/js/api/client.js?v=38' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch&mvp18=friends',
