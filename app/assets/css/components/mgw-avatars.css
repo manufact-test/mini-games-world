@@ -107,7 +107,7 @@
 /* 08 — midnight gold */
 [data-avatar-item-id="store-avatar-05"],[data-avatar-id="store-avatar-05"]{
   --mgw-avatar-emblem:linear-gradient(145deg,rgba(255,238,184,.28),rgba(117,72,22,.15));
-  --mgw-avatar-core:#ffe4৮f;
+  --mgw-avatar-core:#ffe48f;
   --mgw-avatar-glow:rgba(255,188,72,.82);
   background-image:radial-gradient(circle at 24% 18%,rgba(255,228,157,.28) 0 6%,transparent 7%),radial-gradient(circle at 78% 76%,rgba(255,181,66,.20),transparent 28%),linear-gradient(145deg,#d28e31 0%,#65502e 42%,#222238 100%)!important;
 }
