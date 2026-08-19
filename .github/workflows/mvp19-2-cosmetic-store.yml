@@ -110,7 +110,7 @@ jobs:
           grep -F 'purchase_in_progress' bot/catalog/CosmeticStoreRuntimePurchaseService.php
           grep -F 'cosmetic_purchase_refund' bot/catalog/CosmeticStoreRuntimePurchaseService.php
           grep -F 'store_purchase' bot/catalog/CosmeticStoreService.php
-          if grep -Fq '->equip(' bot/catalog/CosmeticStoreService.php bot/cosmetic-store.php; then
+          if grep -Fq -- '->equip(' bot/catalog/CosmeticStoreService.php bot/cosmetic-store.php; then
             echo 'Purchase must not auto-equip.' >&2
             exit 1
           fi
