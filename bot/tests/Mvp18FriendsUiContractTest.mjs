@@ -17,10 +17,11 @@ const endpoint = read('bot/friends.php');
 
 assert(launch.includes("private const ENTRY_PATH = '/app/v110.php?v=1127';"), 'Telegram launch owner must remain v110.php?v=1127');
 assert(entry.includes("app/runtime/client/version-manifest.php") || entry.includes("runtime/client/version-manifest.php"), 'v110 entry must still render version manifest');
-assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=3&mvp18=friends-ui'"), 'Manifest must preserve reconnect wrapper as active @mgw/main owner');
+assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'"), 'Accepted reconnect wrapper cache identity must remain frozen');
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
-assert(activeMain.includes("friends-screen-v110.js?v=1&mvp18=friends-ui"), 'Active reconnect composition must load Friends screen without parallel top-level owner');
+assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify the frozen reconnect composition owner');
+assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=1&mvp18=friends-ui')"), 'Existing account shortcut owner must lazy-load Friends on demand');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
 assert(inviteWrapper.includes("v=1142&zone=unified&rematch=optimistic&terminal=self-silent"), 'Accepted rematch wrapper must keep its frozen base invite specifier');
 assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1'"), 'Frozen base invite specifier must converge through the manifest on the social-aware cache identity');
