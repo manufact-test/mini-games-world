@@ -79,6 +79,16 @@ $assert(str_contains($reset, '$this->cleanupRuntimeInviteRows($snapshot, $remove
     && !str_contains($reset, 'cleanupRuntimeInviteRows($snapshot, $retiredStartedInvites)'),
     'Started historical A/B invites must never enter unmatched DB invite deletion.');
 
+$assert(str_contains($auth, '$resetReasonCode = static function (StagingTestPlayerResetStageException $error): string')
+    && str_contains($auth, "'reason_code' => \$reasonCode")
+    && str_contains($auth, "default => \$error->stage() . '_unclassified'"),
+    'Reset failures must expose only a bounded machine-readable reason code, never raw internal exception text.');
+$assert(!str_contains($auth, "'reason' => \$error->getPrevious()")
+    && !str_contains($auth, "'message' => \$error->getPrevious()"),
+    'Reset endpoint must not expose raw internal exception details.');
+$assert(str_contains($setup, '[payload?.error, payload?.stage, payload?.reason_code]'),
+    'Staging E2E must surface the safe reset reason code when setup fails.');
+
 $assert(str_contains($residual, 'MAX_RESIDUAL_INVITES')
     && str_contains($residual, 'notification_still_in_json'),
     'Separate real-user residual recovery must retain its conservative safety guards.');
