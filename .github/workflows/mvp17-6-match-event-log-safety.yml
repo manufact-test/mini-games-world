@@ -1,0 +1,71 @@
+name: MVP-17.6 Match Event Log Safety
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260819_0010_create_match_event_log.php'
+      - 'bot/runtime/DatabasePrimaryStateStorageAdapter.php'
+      - 'bot/runtime/RuntimeMatchEventContext.php'
+      - 'bot/runtime/RuntimeMatchEventLogWriter.php'
+      - 'bot/runtime/RuntimeMatchVersionResolver.php'
+      - 'bot/tests/RuntimeMatchEventLogWriterTest.php'
+      - 'bot/tests/RuntimeMatchEventMigrationContractTest.php'
+      - '.github/workflows/mvp17-6-match-event-log-safety.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp17-6-event-log-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Event log atomic storage and replay contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Lint bounded MVP-17.6 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260819_0010_create_match_event_log.php
+            bot/runtime/DatabasePrimaryStateStorageAdapter.php
+            bot/runtime/RuntimeMatchEventContext.php
+            bot/runtime/RuntimeMatchEventLogWriter.php
+            bot/runtime/RuntimeMatchVersionResolver.php
+            bot/tests/RuntimeMatchEventLogWriterTest.php
+            bot/tests/RuntimeMatchEventMigrationContractTest.php
+            bot/tests/DatabasePrimaryStateStorageAdapterTest.php
+          )
+          for file in "${files[@]}"; do
+            php -l "$file"
+          done
+
+      - name: Test exact migration discovery contract
+        run: php bot/tests/RuntimeMatchEventMigrationContractTest.php
+
+      - name: Test authoritative event-log replay storage
+        run: php bot/tests/RuntimeMatchEventLogWriterTest.php
+
+      - name: Test DB-primary state transaction regression
+        run: php bot/tests/DatabasePrimaryStateStorageAdapterTest.php

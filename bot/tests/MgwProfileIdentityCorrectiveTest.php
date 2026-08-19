@@ -36,7 +36,8 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(9, $runner->migrate(false)['executed_count'], 'Corrective profile test must use the current schema');
+$expectedMigrationCount = count(glob($databaseDir . '/migrations/*.php') ?: []);
+$assertSame($expectedMigrationCount, $runner->migrate(false)['executed_count'], 'Corrective profile test must use the current schema');
 
 $accounts = new AccountIdentityService($database, 3600);
 $profiles = new MgwProfileService($database);
