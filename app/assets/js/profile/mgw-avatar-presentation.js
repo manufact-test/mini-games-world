@@ -56,21 +56,36 @@ function decoratePlayersRow(){
       return;
     }
 
-    if (existing instanceof HTMLElement) {
-      existing.dataset.avatarItemId = itemId;
-      existing.dataset.rarity = meta.rarity;
-      return;
-    }
-
-    const avatar = document.createElement('span');
-    avatar.className = 'game-player-avatar';
+    const avatar = existing instanceof HTMLElement ? existing : createAvatarNode();
     avatar.dataset.avatarItemId = itemId;
     avatar.dataset.rarity = meta.rarity;
-    avatar.setAttribute('aria-hidden', 'true');
-    avatar.textContent = 'MG';
-    card.prepend(avatar);
-    card.classList.add('has-mgw-avatar');
+    renderAvatarVisual(avatar, meta);
+
+    if (!existing) {
+      card.prepend(avatar);
+      card.classList.add('has-mgw-avatar');
+    }
   });
+}
+
+function createAvatarNode(){
+  const avatar = document.createElement('span');
+  avatar.className = 'game-player-avatar';
+  avatar.setAttribute('aria-hidden', 'true');
+  return avatar;
+}
+
+function renderAvatarVisual(node, meta){
+  node.textContent = '';
+  if (meta.asset) {
+    const image = document.createElement('img');
+    image.src = meta.asset;
+    image.alt = '';
+    image.loading = 'lazy';
+    node.appendChild(image);
+    return;
+  }
+  node.textContent = 'MG';
 }
 
 function visibleAvatarItemId(player){
