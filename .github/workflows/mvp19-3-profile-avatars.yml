@@ -9,6 +9,7 @@ on:
       - 'bot/helpers/response.php'
       - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
       - 'bot/tests/Mvp19_2CosmeticStoreTest.php'
+      - 'bot/tests/AvatarEconomyTiersTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
       - 'app/assets/js/state.js'
       - 'app/assets/js/ui.js'
@@ -61,6 +62,7 @@ jobs:
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileAvatarsTest.php
           php -l bot/tests/Mvp19_2CosmeticStoreTest.php
+          php -l bot/tests/AvatarEconomyTiersTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
       - name: Validate active JavaScript syntax
@@ -181,6 +183,7 @@ jobs:
               bot/helpers/response.php|\
               bot/tests/Mvp19_3ProfileAvatarsTest.php|\
               bot/tests/Mvp19_2CosmeticStoreTest.php|\
+              bot/tests/AvatarEconomyTiersTest.php|\
               bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
               app/assets/js/state.js|\
               app/assets/js/ui.js|\
