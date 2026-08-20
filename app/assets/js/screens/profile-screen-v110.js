@@ -47,6 +47,8 @@ function applyProfileResponse(result){
   state.mgwProfile = result.profile || state.mgwProfile || null;
   state.profileInventory = result.inventory || state.profileInventory || null;
   state.user = mergeCanonicalMgwUser(state.user, result.user, state.mgwProfile);
+  const confirmedAvatar = canonicalAvatarItemId(state.mgwProfile?.avatar || { item_id:state.user?.avatar_item_id });
+  if (confirmedAvatar) state.selectedAvatarId = confirmedAvatar;
   state.profileStats = result.stats || state.profileStats || null;
   state.profileHistory = result.history || state.profileHistory || null;
   state.profileAuth = result.auth || state.profileAuth || null;
@@ -58,6 +60,7 @@ function applyProfileResponse(result){
 
 function showProfileImmediately(){
   if (state.mgwProfile) state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
+  currentAvatarItemId();
   if (state.user) { renderUser(state.user); renderBalances(state.user); }
   renderProfileV2();
   showScreen('profile');
@@ -184,12 +187,14 @@ async function chooseAvatar(itemId){
   if (!ownedAvatarIds().includes(itemId) || avatarSaving || itemId === currentAvatarItemId()) return;
   const previousProfile = cloneObject(state.mgwProfile);
   const previousUser = cloneObject(state.user);
+  const previousSelectedAvatarId = state.selectedAvatarId;
   const optimisticProfile = {
     ...(state.mgwProfile && typeof state.mgwProfile === 'object' ? state.mgwProfile : {}),
     avatar:{ item_id:itemId },
   };
 
   avatarSaving = true;
+  state.selectedAvatarId = itemId;
   state.mgwProfile = optimisticProfile;
   state.user = mergeCanonicalMgwUser(state.user, {}, optimisticProfile);
   renderUser(state.user);
@@ -199,6 +204,7 @@ async function chooseAvatar(itemId){
   try {
     applyProfileResponse(await api.profileV2({ avatar_item_id:itemId }));
   } catch (error) {
+    state.selectedAvatarId = previousSelectedAvatarId;
     state.mgwProfile = previousProfile;
     state.user = previousProfile ? mergeCanonicalMgwUser(previousUser, {}, previousProfile) : previousUser;
     renderUser(state.user);
@@ -222,7 +228,7 @@ function renderProfileV2(){
   const registeredAt = profile.created_at || user.registered_at || null;
   const identities = Array.isArray(profile.identities) ? profile.identities : [];
   const matches = Array.isArray(history.matches) ? history.matches.slice(0, 6) : [];
-  const activeAvatar = canonicalAvatarItemId(profile.avatar || { item_id:user.avatar_item_id });
+  const activeAvatar = currentAvatarItemId();
   const ownedAvatars = ownedAvatarItems(activeAvatar);
 
   root.innerHTML = `
@@ -298,7 +304,13 @@ function avatarName(itemId){
   const index = LAUNCH_AVATARS.indexOf(String(itemId || ''));
   return index >= 0 ? `Аватарка ${index + 1}` : 'Аватарка';
 }
-function currentAvatarItemId(){ return canonicalAvatarItemId(state.mgwProfile?.avatar || { item_id:state.user?.avatar_item_id }); }
+function currentAvatarItemId(){
+  const selected = String(state.selectedAvatarId || '').trim();
+  if (selected) return selected;
+  const canonical = canonicalAvatarItemId(state.mgwProfile?.avatar || { item_id:state.user?.avatar_item_id });
+  state.selectedAvatarId = canonical;
+  return canonical;
+}
 function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
 function ensureProfileRoot(){
