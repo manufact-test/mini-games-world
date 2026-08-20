@@ -60,7 +60,7 @@ $assertContains("settingsBtn:'ui/navigation/settings.webp'", $visuals, 'Settings
 $assertContains("rulesBtn:'ui/actions/rules.webp'", $visuals, 'Settings and neighboring rows must share the same dynamic metallic icon owner.');
 
 $assertContains('home-screen.js?v=80&mvp16=settings-row-owner', $versionManifest, 'Settings row cache key must stay current.');
-$assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Profile pass A cache key must stay current.');
+$assertContains('profile-screen-v110.js?v=1119&mvp16=profile-pass-a', $versionManifest, 'Profile pass A cache key must stay aligned with the accepted current controller target.');
 $assertions++;
 if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
     throw new RuntimeException('Main CSS cache key must stay at or beyond the Profile pass A baseline.');
