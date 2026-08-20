@@ -20,7 +20,7 @@ return [
         './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=49&mvp18=friends',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=38&mvp16=primary-tab&mvp19=store-v2&corrective=2',
-        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1118&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection',
+        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1118&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=3&mvp16=public-id-canonical-identity',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1152&mvp16=notification-center-v2',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
