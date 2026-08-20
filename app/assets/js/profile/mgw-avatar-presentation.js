@@ -1,6 +1,22 @@
 import { state } from '../state.js?v=27';
 
 const DEFAULT_AVATAR = 'starter-default-01';
+
+const AVATAR_VISUAL_REGISTRY = {
+  'starter-default-01': { rarity: 'free', asset: null },
+  'starter-default-02': { rarity: 'free', asset: null },
+  'starter-default-03': { rarity: 'free', asset: null },
+  'store-avatar-01': { rarity: 'rare', asset: null },
+  'store-avatar-02': { rarity: 'rare', asset: null },
+  'store-avatar-03': { rarity: 'rare', asset: null },
+  'store-avatar-04': { rarity: 'elite', asset: null },
+  'store-avatar-05': { rarity: 'elite', asset: null },
+  'store-avatar-06': { rarity: 'elite', asset: null },
+  'store-avatar-07': { rarity: 'legendary', asset: null },
+  'store-avatar-08': { rarity: 'legendary', asset: null },
+  'store-avatar-09': { rarity: 'legendary', asset: null }
+};
+
 let initialized = false;
 let observer = null;
 let scheduled = false;
@@ -54,13 +70,13 @@ function decoratePlayersRow(){
 
     if (existing instanceof HTMLElement) {
       if (existing.dataset.avatarItemId !== itemId) existing.dataset.avatarItemId = itemId;
-      card.classList.add('has-mgw-avatar');
       return;
     }
 
     const avatar = document.createElement('span');
     avatar.className = 'game-player-avatar';
     avatar.dataset.avatarItemId = itemId;
+    avatar.dataset.rarity = AVATAR_VISUAL_REGISTRY[itemId]?.rarity || 'unknown';
     avatar.setAttribute('aria-hidden', 'true');
     avatar.textContent = 'MG';
     card.prepend(avatar);
@@ -70,7 +86,7 @@ function decoratePlayersRow(){
 
 function visibleAvatarItemId(player){
   const explicit = String(player?.avatar_item_id || player?.avatar?.item_id || '').trim().toLowerCase();
-  if (explicit) return explicit;
+  if (explicit && AVATAR_VISUAL_REGISTRY[explicit]) return explicit;
   const playerId = String(player?.id || '').trim();
   return playerId && !playerId.startsWith('bot_') ? DEFAULT_AVATAR : '';
 }
