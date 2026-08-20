@@ -12,6 +12,7 @@ on:
       - 'bot/tests/AvatarEconomyTiersTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
       - 'bot/tests/ProfileV2PassAStaticContractTest.php'
+      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - 'app/assets/js/state.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
@@ -66,6 +67,7 @@ jobs:
           php -l bot/tests/AvatarEconomyTiersTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
           php -l bot/tests/ProfileV2PassAStaticContractTest.php
+          php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
 
       - name: Validate active JavaScript syntax
         run: |
@@ -87,6 +89,7 @@ jobs:
           php bot/tests/MgwProfileIdentityCorrectiveTest.php
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
           php bot/tests/ProfileV2PassAStaticContractTest.php
+          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
 
       - name: Run active Store purchase regression
         run: |
@@ -189,6 +192,7 @@ jobs:
               bot/tests/AvatarEconomyTiersTest.php|\
               bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
               bot/tests/ProfileV2PassAStaticContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
               app/assets/js/state.js|\
               app/assets/js/ui.js|\
               app/assets/js/screens/profile-screen-v110.js|\
