@@ -175,12 +175,12 @@ function openAvatarPreview(itemId){
     </div>
     <button class="btn primary full" id="mgwAvatarEquip" type="button" ${active ? 'disabled' : ''}>${active ? 'Выбрана' : 'Выбрать'}</button>
   `);
-  document.getElementById('mgwAvatarEquip')?.addEventListener('click', event => {
-    void chooseAvatar(itemId, event.currentTarget);
+  document.getElementById('mgwAvatarEquip')?.addEventListener('click', () => {
+    void chooseAvatar(itemId);
   });
 }
 
-async function chooseAvatar(itemId, button = null){
+async function chooseAvatar(itemId){
   if (!ownedAvatarIds().includes(itemId) || avatarSaving || itemId === currentAvatarItemId()) return;
   const previousProfile = cloneObject(state.mgwProfile);
   const previousUser = cloneObject(state.user);
@@ -190,27 +190,19 @@ async function chooseAvatar(itemId, button = null){
   };
 
   avatarSaving = true;
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Выбираем…';
-  }
   state.mgwProfile = optimisticProfile;
   state.user = mergeCanonicalMgwUser(state.user, {}, optimisticProfile);
   renderUser(state.user);
   renderProfileV2();
+  closeSheet();
 
   try {
     applyProfileResponse(await api.profileV2({ avatar_item_id:itemId }));
-    closeSheet();
   } catch (error) {
     state.mgwProfile = previousProfile;
     state.user = previousProfile ? mergeCanonicalMgwUser(previousUser, {}, previousProfile) : previousUser;
     renderUser(state.user);
     renderProfileV2();
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Выбрать';
-    }
     toast(error.message || t('profile.avatar_save_error'));
   } finally {
     avatarSaving = false;
@@ -234,7 +226,7 @@ function renderProfileV2(){
   const ownedAvatars = ownedAvatarItems(activeAvatar);
 
   root.innerHTML = `
-    <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1><p>${escapeHtml(t('profile.subtitle'))}</p></div></header>
+    <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1></div></header>
     <section class="profile-v2-identity">
       <button class="profile-v2-avatar-edit" type="button" data-edit-mgw-avatar aria-label="${escapeHtml(t('profile.avatar_edit'))}">
         <span class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</span>
