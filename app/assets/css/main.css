@@ -38,3 +38,33 @@
 @import url('./screens/profile-corrective.css?v=4&mvp19=profile-collection');
 @import url('./components/mgw-avatars.css?v=2&mvp19_4=character-identity');
 @import url('./animations.css?v=27');
+@import url('./responsive.css?v=37');
+@import url('./shield-king.css?v=124&sk=1');
+@import url('./shield-king-v2.css?v=125&sk=2');
+@import url('./shield-king-icons-v3.css?v=126&icons=c1efd5af');
+@import url('./shield-king-icons-v4.css?v=127&icons=c1efd5af&render=4');
+@import url('./shield-king-icons-v5.css?v=128&icons=c1efd5af&render=7');
+@import url('./shield-king-icons-v6.css?v=129&icons=c1efd5af&render=8');
+@import url('./shield-king-icons-v7.css?v=130&icons=c1efd5af&frame=emblem-cut');
+@import url('./shield-king-icons-v8.css?v=131&icons=c1efd5af&review=consolidated');
+@import url('./shield-king-icons-v9.css?v=132&icons=c1efd5af&review=user-correction');
+@import url('./shield-king-icons-v10.css?v=133&icons=c1efd5af&proof=painted-geometry');
+@import url('./shield-king-icons-v11.css?v=136&icons=c1efd5af&review=visual-polish-exact');
+@import url('./shield-king-icons-v12.css?v=141&icons=c1efd5af&review=more-optical-center-restored');
+
+.unified-setup-head{position:relative;display:block}
+.unified-setup-head > div:first-child{width:100%;min-width:0}
+.unified-setup-head > div:first-child > h2{padding-right:52px}
+.unified-setup-head > div:first-child > p{width:100%;max-width:none}
+.unified-setup-head > .close{position:absolute !important;top:0;right:0}
+.unified-game-setup > .btn-row{margin-top:10px !important}
+.history-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.history-tab{border:1px solid var(--stroke);background:var(--sk-bg-card);color:var(--muted);border-radius:16px;min-height:42px;padding:0 12px;font-size:14px;font-weight:950;transition:background .15s ease,color .15s ease,border-color .15s ease}
+.history-tab.active{color:var(--text);border-color:rgba(178,116,255,.52);background:rgba(115,91,255,.23)}
+.history-tab-panel{display:none}
+.history-tab-panel.active{display:block}
+.overlay,.sheet{transition:none !important;animation:none !important}
+.sheet .menu-item:focus,.sheet .menu-item:focus-visible{outline:none;box-shadow:none;border-color:var(--stroke);background:rgba(255,255,255,.055)}
+.sheet .menu-item-standard{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-height:52px;padding:13px 14px;text-align:left}
+.sheet .menu-item-standard .menu-item-icon{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;line-height:1;font-size:18px}
+.sheet .menu-item-standard .menu-item-label{display:block;min-width:0;flex:1;line-height:1.22}
