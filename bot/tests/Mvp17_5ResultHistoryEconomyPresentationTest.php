@@ -108,8 +108,8 @@ $assert(
     'Active v110 manifest must publish the compact fast Result owner while preserving accepted game ownership prefixes.'
 );
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? ''), 'v=1118&mvp16=profile-pass-a&mvp17=result-history-economy'),
-    'Active v110 manifest must preserve the accepted Profile pass A cache identity and append the economy presentation cache marker.'
+    str_contains((string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? ''), 'v=1119&mvp16=profile-pass-a&mvp17=result-history-economy'),
+    'Active v110 manifest must preserve the accepted current Profile pass A cache identity and append the economy presentation cache marker.'
 );
 $assert(
     str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=1&fp=2'),

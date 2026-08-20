@@ -1,6 +1,8 @@
 import { state } from '../state.js?v=27';
+import { getAvatarVisualMeta } from './mgw-avatar-registry.js';
 
 const DEFAULT_AVATAR = 'starter-default-01';
+
 let initialized = false;
 let observer = null;
 let scheduled = false;
@@ -45,32 +47,36 @@ function decoratePlayersRow(){
     if (!player || typeof player !== 'object') return;
 
     const itemId = visibleAvatarItemId(player);
+    const meta = getAvatarVisualMeta(itemId);
     const existing = card.querySelector(':scope > .game-player-avatar');
-    if (!itemId) {
+
+    if (!itemId || !meta) {
       existing?.remove();
       card.classList.remove('has-mgw-avatar');
       return;
     }
 
-    if (existing instanceof HTMLElement) {
-      if (existing.dataset.avatarItemId !== itemId) existing.dataset.avatarItemId = itemId;
-      card.classList.add('has-mgw-avatar');
-      return;
-    }
-
-    const avatar = document.createElement('span');
-    avatar.className = 'game-player-avatar';
+    const avatar = existing instanceof HTMLElement ? existing : createAvatarNode();
     avatar.dataset.avatarItemId = itemId;
-    avatar.setAttribute('aria-hidden', 'true');
-    avatar.textContent = 'MG';
-    card.prepend(avatar);
+    avatar.dataset.rarity = meta.rarity;
+    avatar.dataset.avatarName = meta.name;
+    avatar.textContent = '';
+
+    if (!existing) card.prepend(avatar);
     card.classList.add('has-mgw-avatar');
   });
 }
 
+function createAvatarNode(){
+  const avatar = document.createElement('span');
+  avatar.className = 'game-player-avatar';
+  avatar.setAttribute('aria-hidden', 'true');
+  return avatar;
+}
+
 function visibleAvatarItemId(player){
   const explicit = String(player?.avatar_item_id || player?.avatar?.item_id || '').trim().toLowerCase();
-  if (explicit) return explicit;
+  if (explicit && getAvatarVisualMeta(explicit)) return explicit;
   const playerId = String(player?.id || '').trim();
   return playerId && !playerId.startsWith('bot_') ? DEFAULT_AVATAR : '';
 }

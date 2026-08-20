@@ -1,4 +1,4 @@
-name: MVP-19.3 Profile avatars and collection
+name: MVP-19.3/19.4 Profile avatars and visual identity
 
 on:
   pull_request:
@@ -9,17 +9,22 @@ on:
       - 'bot/helpers/response.php'
       - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
       - 'bot/tests/Mvp19_2CosmeticStoreTest.php'
+      - 'bot/tests/AvatarEconomyTiersTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
+      - 'bot/tests/ProfileV2PassAStaticContractTest.php'
+      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - 'app/assets/js/state.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/profile/mgw-profile-model.js'
       - 'app/assets/js/profile/mgw-avatar-presentation.js'
+      - 'app/assets/js/profile/mgw-avatar-registry.js'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/css/screens/profile-corrective.css'
       - 'app/assets/css/components/mgw-avatars.css'
       - 'app/assets/css/main.css'
+      - 'app/assets/media/avatars/mgw-avatar-characters-v1.svg'
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp19-3-profile-avatars.yml'
   workflow_dispatch:
@@ -28,12 +33,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: mgw-mvp19-3-profile-avatars-${{ github.ref }}
+  group: mgw-mvp19-profile-avatars-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   profile-avatars:
-    name: Owned collection equip and public visibility
+    name: Owned collection equip visibility and character identity
     runs-on: ubuntu-24.04
     timeout-minutes: 18
 
@@ -53,13 +58,16 @@ jobs:
           extensions: pdo_sqlite, mbstring
           coverage: none
 
-      - name: Lint MVP-19.3 backend
+      - name: Lint MVP-19 backend
         run: |
           php -l bot/profile-v2.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileAvatarsTest.php
           php -l bot/tests/Mvp19_2CosmeticStoreTest.php
+          php -l bot/tests/AvatarEconomyTiersTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php -l bot/tests/ProfileV2PassAStaticContractTest.php
+          php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
 
       - name: Validate active JavaScript syntax
         run: |
@@ -69,6 +77,7 @@ jobs:
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/profile/mgw-profile-model.js
           node --check app/assets/js/profile/mgw-avatar-presentation.js
+          node --check app/assets/js/profile/mgw-avatar-registry.js
           node --check app/assets/js/production-clean-entry-v110.js
 
       - name: Run canonical avatar collection and visibility contract
@@ -79,6 +88,8 @@ jobs:
           php bot/tests/AccountIdentityServiceTest.php
           php bot/tests/MgwProfileIdentityCorrectiveTest.php
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php bot/tests/ProfileV2PassAStaticContractTest.php
+          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
 
       - name: Run active Store purchase regression
         run: |
@@ -121,23 +132,30 @@ jobs:
           grep -F 'grid-template-columns:repeat(4,minmax(0,1fr))' app/assets/css/screens/profile-corrective.css
           grep -F 'profile-v2-selected-check' app/assets/css/screens/profile-corrective.css
 
-      - name: Guard exactly eight shared previsual avatar visuals
+      - name: Guard twelve shared character avatar visuals
         shell: bash
         run: |
           set -euo pipefail
-          for id in starter-default-01 starter-default-02 starter-default-03 store-avatar-01 store-avatar-02 store-avatar-03 store-avatar-04 store-avatar-05; do
+          ids=(starter-default-01 starter-default-02 starter-default-03 store-avatar-01 store-avatar-02 store-avatar-03 store-avatar-04 store-avatar-05 store-avatar-06 store-avatar-07 store-avatar-08 store-avatar-09)
+          for id in "${ids[@]}"; do
+            grep -F "'$id'" app/assets/js/profile/mgw-avatar-registry.js
             grep -F "data-avatar-item-id=\"$id\"" app/assets/css/components/mgw-avatars.css
           done
-          test "$(grep -o 'data-avatar-item-id=\"store-avatar-[0-9][0-9]\"' app/assets/css/components/mgw-avatars.css | sort -u | wc -l)" -eq 5
+          test "$(grep -o "'store-avatar-[0-9][0-9]'" app/assets/js/profile/mgw-avatar-registry.js | sort -u | wc -l)" -eq 9
+          grep -F 'mgw-avatar-characters-v1.svg?v=1' app/assets/js/profile/mgw-avatar-registry.js
+          grep -F "background-image:url('../../media/avatars/mgw-avatar-characters-v1.svg?v=1')" app/assets/css/components/mgw-avatars.css
+          grep -F 'width="1200" height="100"' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          test "$(grep -o 'translate([0-9][0-9]* 0)' app/assets/media/avatars/mgw-avatar-characters-v1.svg | sort -u | wc -l)" -eq 12
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-avatars.css
 
       - name: Guard active v110 avatar graph
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(2); if(!str_contains($m["assets"]["main_css"]??"","avatar=profile-v1")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_3_1=optimistic-purchase")) exit(4); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(5);'
-          grep -F "@import url('./components/mgw-avatars.css?v=1&mvp19=avatar-owner');" app/assets/css/main.css
-          grep -F 'initMgwAvatarPresentation' app/assets/js/production-clean-entry-v110.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19_4=character-identity")) exit(2); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(3); if(!str_contains($m["assets"]["main_css"]??"","avatar=character-v1")) exit(4); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_3_1=optimistic-purchase")) exit(5); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(6);'
+          grep -F "@import url('./components/mgw-avatars.css?v=2&mvp19_4=character-identity');" app/assets/css/main.css
+          grep -F "./profile/mgw-avatar-presentation.js?v=2&mvp19_4=character-identity" app/assets/js/production-clean-entry-v110.js
+          grep -F "./mgw-avatar-registry.js" app/assets/js/profile/mgw-avatar-presentation.js
 
       - name: Guard frozen game engines and social lifecycle
         shell: bash
@@ -156,8 +174,8 @@ jobs:
             app/assets/js/screens/game-screen-v102.js \
             app/assets/js/games
 
-      - name: Guard bounded MVP-19.3 avatar diff
-        if: startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3')
+      - name: Guard bounded MVP-19 avatar diff
+        if: startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3') || startsWith(github.head_ref, 'agent/mvp19-4') || startsWith(github.head_ref, 'agent/mvp-19-4')
         shell: bash
         run: |
           set -euo pipefail
@@ -171,21 +189,26 @@ jobs:
               bot/helpers/response.php|\
               bot/tests/Mvp19_3ProfileAvatarsTest.php|\
               bot/tests/Mvp19_2CosmeticStoreTest.php|\
+              bot/tests/AvatarEconomyTiersTest.php|\
               bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
+              bot/tests/ProfileV2PassAStaticContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
               app/assets/js/state.js|\
               app/assets/js/ui.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/screens/store-screen.js|\
               app/assets/js/profile/mgw-profile-model.js|\
               app/assets/js/profile/mgw-avatar-presentation.js|\
+              app/assets/js/profile/mgw-avatar-registry.js|\
               app/assets/js/production-clean-entry-v110.js|\
               app/assets/css/screens/profile-corrective.css|\
               app/assets/css/components/mgw-avatars.css|\
               app/assets/css/main.css|\
+              app/assets/media/avatars/mgw-avatar-characters-v1.svg|\
               app/runtime/client/version-manifest.php)
                 ;;
               *)
-                echo "Unexpected MVP-19.3 avatar path: $path" >&2
+                echo "Unexpected MVP-19 avatar path: $path" >&2
                 bad=1
                 ;;
             esac

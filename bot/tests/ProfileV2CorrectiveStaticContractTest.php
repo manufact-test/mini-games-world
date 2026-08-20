@@ -49,9 +49,9 @@ $assertContains('profile-v2-avatar-sheet-grid', $profile, 'Avatar choices must l
 $assertNotContains('profile-v2-avatar-picker', $profile, 'Starter avatars must not remain permanently expanded in Profile');
 
 // MVP-19.3 moved visual ownership out of the Profile-only corrective sheet.
-// The shared avatar component now owns the exact same item artwork for Profile,
-// Store, topbar/search and game-player surfaces. Profile CSS only owns picker
-// and collection geometry, so do not require duplicated item-specific rules.
+// MVP-19.4 keeps that shared owner and replaces previsuals with character art.
+// Profile CSS only owns picker and collection geometry, so do not require
+// duplicated item-specific rules.
 foreach (['starter-default-01','starter-default-02','starter-default-03'] as $avatarItemId) {
     $assertContains('[data-avatar-item-id="' . $avatarItemId . '"]', $avatarCss, 'Shared avatar owner must keep a visible starter variant');
     $assertContains('[data-avatar-id="' . $avatarItemId . '"]', $avatarCss, 'Shared topbar/profile/search surfaces must render the canonical starter variant');
@@ -59,7 +59,7 @@ foreach (['starter-default-01','starter-default-02','starter-default-03'] as $av
 $assertContains('data-mgw-avatar-choice', $profile, 'Profile picker must expose canonical owned avatar choices');
 $assertContains('.profile-v2-avatar-choice', $correctiveCss, 'Profile corrective CSS must own picker geometry');
 $assertContains('.profile-v2-collection-grid', $correctiveCss, 'Profile corrective CSS must own collection geometry');
-$assertContains("@import url('./components/mgw-avatars.css?v=1&mvp19=avatar-owner');", $mainCss, 'Main stylesheet must load the shared avatar visual owner');
+$assertContains("@import url('./components/mgw-avatars.css?v=2&mvp19_4=character-identity');", $mainCss, 'Main stylesheet must load the shared MVP-19.4 character avatar owner');
 
 $assertNotContains('profile.avatar_saved', $profile, 'Avatar success toast must stay removed');
 $assertContains('state.mgwProfile = optimisticProfile', $profile, 'Avatar selection must update visible canonical state optimistically');
@@ -117,7 +117,7 @@ $assertions++;
 if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
     throw new RuntimeException('Runtime main stylesheet cache key must stay at or beyond Profile pass A baseline');
 }
-$assertContains('profile-screen-v110.js?v=1118&mvp16=profile-pass-a', $versionManifest, 'Runtime must retain the accepted Profile pass A controller lineage');
+$assertContains('profile-screen-v110.js?v=1119&mvp16=profile-pass-a', $versionManifest, 'Runtime must retain the accepted current Profile pass A controller lineage');
 $assertContains('canonical-avatar-owner', $versionManifest, 'Runtime must keep the canonical avatar owner cleanup');
 $assertContains('canonical-profile-display-owner', $versionManifest, 'Runtime must keep the canonical visible identity owner');
 $assertContains('profile-pass-a', $versionManifest, 'Runtime must ship the Profile pass A assets');
