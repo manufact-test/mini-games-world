@@ -1,77 +1,92 @@
 <?php
 declare(strict_types=1);
 
-$root = dirname(__DIR__, 2);
-$services = $root . '/bot/services';
-$tests = $root . '/bot/tests';
-$assets = $root . '/app/assets/js';
+$root = dirname(__DIR__);
+$repoRoot = dirname($root);
+
+require_once $root . '/economy/UnifiedBalanceRuntimeState.php';
+require_once $root . '/services/UserService.php';
+require_once $root . '/services/HistoryService.php';
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
-    if (!$condition) {
-        throw new RuntimeException($message);
-    }
+    if (!$condition) throw new RuntimeException($message);
 };
 
-require_once $services . '/HistoryService.php';
+$users = (new ReflectionClass(UserService::class))->newInstanceWithoutConstructor();
+$history = new HistoryService(['storage_driver'=>'json'], $users);
 
-$db = new PDO('sqlite::memory:');
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$db->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, display_name TEXT, nickname TEXT, photo_url TEXT, mgw_id TEXT, balance INTEGER NOT NULL DEFAULT 0)');
-$db->exec('CREATE TABLE games (
-    id TEXT PRIMARY KEY,
-    game_type TEXT NOT NULL,
-    status TEXT NOT NULL,
-    room TEXT NOT NULL,
-    bet INTEGER NOT NULL DEFAULT 0,
-    payout INTEGER NOT NULL DEFAULT 0,
-    winner_id INTEGER,
-    ended_at TEXT,
-    created_at TEXT
-)');
-$db->exec('CREATE TABLE game_players (game_id TEXT NOT NULL, user_id INTEGER NOT NULL, mark TEXT, position INTEGER)');
-$db->exec('CREATE TABLE ledger (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, game_id TEXT, amount INTEGER NOT NULL, type TEXT NOT NULL, created_at TEXT)');
-$db->exec("INSERT INTO users(id,display_name,nickname,photo_url,mgw_id,balance) VALUES
-    (1,'Me','Me','','MGW-0000000000000001',1015),
-    (2,'Other','Other','','MGW-0000000000000002',1000)");
-$db->exec("INSERT INTO games(id,game_type,status,room,bet,payout,winner_id,ended_at,created_at) VALUES
-    ('g-win','tictactoe','finished','room-win',10,20,1,'2026-08-19 10:00:00','2026-08-19 09:58:00'),
-    ('g-loss','tictactoe','finished','room-loss',10,20,2,'2026-08-19 09:00:00','2026-08-19 08:58:00')");
-$db->exec("INSERT INTO game_players(game_id,user_id,mark,position) VALUES
-    ('g-win',1,'X',0),('g-win',2,'O',1),
-    ('g-loss',1,'X',0),('g-loss',2,'O',1)");
-$db->exec("INSERT INTO ledger(user_id,game_id,amount,type,created_at) VALUES
-    (1,'g-win',-10,'game_entry','2026-08-19 09:58:30'),
-    (1,'g-win',18,'game_reward','2026-08-19 10:00:01'),
-    (1,'g-loss',-10,'game_entry','2026-08-19 08:58:30')");
+$db = [
+    'games' => [
+        'game_win_1' => [
+            'id'=>'game_win_1','status'=>'finished','game_type'=>'tictactoe','room'=>'match',
+            'player_ids'=>['u1','bot_private_1'],'player_names'=>['u1'=>'Player','bot_private_1'=>'Leo'],
+            'winner_id'=>'u1','loser_id'=>'bot_private_1','finish_reason'=>'normal_win',
+            'board_size'=>3,'bet'=>10,'payout'=>18,'commission'=>2,
+            'is_bot_game'=>true,'bot_id'=>'bot_private_1','bot_difficulty'=>'hard',
+            'created_at'=>'2026-08-18T10:00:00Z','finished_at'=>'2026-08-18T10:01:00Z',
+        ],
+        'game_loss_1' => [
+            'id'=>'game_loss_1','status'=>'finished','game_type'=>'chess','room'=>'match',
+            'player_ids'=>['u1','u2'],'player_names'=>['u1'=>'Player','u2'=>'Rival'],
+            'winner_id'=>'u2','loser_id'=>'u1','finish_reason'=>'normal_win',
+            'board_size'=>8,'bet'=>10,'payout'=>18,'commission'=>2,
+            'created_at'=>'2026-08-18T11:00:00Z','finished_at'=>'2026-08-18T11:10:00Z',
+        ],
+        'game_refund_1' => [
+            'id'=>'game_refund_1','status'=>'finished','game_type'=>'reversi','room'=>'match',
+            'player_ids'=>['u1','u3'],'player_names'=>['u1'=>'Player','u3'=>'Rival 2'],
+            'winner_id'=>null,'loser_id'=>null,'finish_reason'=>'preparation_timeout',
+            'board_size'=>8,'bet'=>10,'payout'=>0,'commission'=>0,
+            'created_at'=>'2026-08-18T12:00:00Z','finished_at'=>'2026-08-18T12:00:30Z',
+        ],
+    ],
+    'transactions' => [
+        ['id'=>'tx1','type'=>'balance_change','category'=>'game_entry','user_id'=>'u1','game_id'=>'game_win_1','amount'=>-10,'balance_after'=>90,'is_bot_game'=>true,'bot_difficulty'=>'hard','created_at'=>'2026-08-18T10:00:00Z'],
+        ['id'=>'tx2','type'=>'game_start','game_id'=>'game_win_1','players'=>['u1','bot_private_1'],'bet'=>10,'is_bot_game'=>true,'bot_difficulty'=>'hard','created_at'=>'2026-08-18T10:00:00Z'],
+        ['id'=>'tx3','type'=>'balance_change','category'=>'game_win','user_id'=>'u1','game_id'=>'game_win_1','amount'=>18,'balance_after'=>108,'is_bot_game'=>true,'bot_difficulty'=>'hard','created_at'=>'2026-08-18T10:01:00Z'],
+        ['id'=>'tx4','type'=>'game_finish','game_id'=>'game_win_1','winner_id'=>'u1','payout'=>18,'commission'=>2,'is_bot_game'=>true,'bot_difficulty'=>'hard','created_at'=>'2026-08-18T10:01:00Z'],
+        ['id'=>'tx5','type'=>'balance_change','category'=>'game_entry','user_id'=>'u1','game_id'=>'game_loss_1','amount'=>-10,'balance_after'=>98,'created_at'=>'2026-08-18T11:00:00Z'],
+        ['id'=>'tx6','type'=>'game_finish','game_id'=>'game_loss_1','winner_id'=>'u2','payout'=>18,'commission'=>2,'created_at'=>'2026-08-18T11:10:00Z'],
+        ['id'=>'tx7','type'=>'balance_change','category'=>'game_entry','user_id'=>'u1','game_id'=>'game_refund_1','amount'=>-10,'balance_after'=>88,'created_at'=>'2026-08-18T12:00:00Z'],
+        ['id'=>'tx8','type'=>'balance_change','category'=>'game_refund','user_id'=>'u1','game_id'=>'game_refund_1','amount'=>10,'balance_after'=>98,'created_at'=>'2026-08-18T12:00:30Z'],
+        ['id'=>'tx9','type'=>'game_finish','game_id'=>'game_refund_1','winner_id'=>null,'payout'=>0,'commission'=>0,'finish_reason'=>'preparation_timeout','created_at'=>'2026-08-18T12:00:30Z'],
+    ],
+];
 
-$history = new HistoryService($db);
-$rows = $history->userHistory(1, 10);
-$assert(count($rows) === 2, 'History must return both finished matches.');
+$formatted = $history->formatHistory($db, 'u1', 24);
+$matches = [];
+foreach ($formatted['matches'] ?? [] as $match) $matches[(string)($match['id'] ?? '')] = $match;
 
-$byId = [];
-foreach ($rows as $row) {
-    $byId[(string)($row['id'] ?? '')] = $row;
-}
+$win = $matches['game_win_1']['economy'] ?? null;
+$assert(is_array($win), 'Winning match must expose canonical economy presentation.');
+$assert(($win['entry'] ?? null) === 10, 'Winning entry must come from the negative game_entry ledger row.');
+$assert(($win['reward'] ?? null) === 18, 'Winning reward must come from the positive game_win ledger row.');
+$assert(($win['net'] ?? null) === 8 && ($win['ledger_delta'] ?? null) === 8, 'Winning net must equal the exact summed ledger delta.');
+$assert(($win['new_balance'] ?? null) === 108, 'Winning new balance must use the final ledger balance_after.');
 
-$winEconomy = $byId['g-win']['economy'] ?? null;
-$assert(is_array($winEconomy), 'Winning history row must expose economy projection.');
-$assert(($winEconomy['entry_delta'] ?? null) === -10, 'Winning history entry delta must come from ledger.');
-$assert(($winEconomy['reward_delta'] ?? null) === 18, 'Winning history reward delta must come from ledger.');
-$assert(($winEconomy['ledger_delta'] ?? null) === 8, 'Winning history ledger delta must be canonical viewer net delta.');
-$assert(($winEconomy['new_balance'] ?? null) === 1015, 'Latest match new balance must reconcile from the current authoritative balance.');
+$loss = $matches['game_loss_1']['economy'] ?? null;
+$assert(is_array($loss), 'Losing match must expose canonical economy presentation.');
+$assert(($loss['entry'] ?? null) === 10 && ($loss['reward'] ?? null) === 0, 'Loss must show entry with zero reward.');
+$assert(($loss['ledger_delta'] ?? null) === -10, 'Loss ledger delta must remain the charged entry.');
+$assert(($loss['new_balance'] ?? null) === 98, 'Loss new balance must be the entry ledger balance_after.');
 
-$lossEconomy = $byId['g-loss']['economy'] ?? null;
-$assert(is_array($lossEconomy), 'Loss history row must expose economy projection.');
-$assert(($lossEconomy['entry_delta'] ?? null) === -10, 'Loss history entry delta must come from ledger.');
-$assert(($lossEconomy['reward_delta'] ?? null) === 0, 'Loss history reward delta must remain zero without reward ledger.');
-$assert(($lossEconomy['ledger_delta'] ?? null) === -10, 'Loss history ledger delta must reflect the entry debit only.');
-$assert(($lossEconomy['new_balance'] ?? null) === 1007, 'Older match new balance must backtrack later ledger movement deterministically.');
+$refund = $matches['game_refund_1']['economy'] ?? null;
+$assert(is_array($refund), 'Refunded preparation timeout must expose canonical economy presentation.');
+$assert(($refund['entry'] ?? null) === 10 && ($refund['reward'] ?? null) === 10, 'Refund must show the charged entry and exact refund credit.');
+$assert(($refund['ledger_delta'] ?? null) === 0 && ($refund['new_balance'] ?? null) === 98, 'Refund net must be zero with the final refunded balance.');
+$assert(($matches['game_refund_1']['result'] ?? '') === 'Матч не начался', 'Preparation timeout result copy must remain neutral and explicit.');
 
-$resultClient = file_get_contents($assets . '/screens/game-screen-v102.js');
-$profileClient = file_get_contents($assets . '/screens/profile-screen-v110.js');
-$manifest = require $root . '/app/runtime/client/version-manifest.php';
+$serialized = json_encode($formatted, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+$assert(!str_contains($serialized, 'is_bot_game'), 'History projection must not expose is_bot_game.');
+$assert(!str_contains($serialized, 'bot_difficulty'), 'History projection must not expose bot difficulty.');
+$assert(!str_contains($serialized, 'bot_private_1'), 'History projection must not expose the technical bot identifier.');
+$assert(str_contains($serialized, 'Leo'), 'Neutral opponent display name remains allowed in history.');
+
+$resultClient = file_get_contents($repoRoot . '/app/assets/js/screens/game-screen-v102.js');
+$profileClient = file_get_contents($repoRoot . '/app/assets/js/screens/profile-screen-v110.js');
+$manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
 $launch = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
 
 $assert(is_string($resultClient) && str_contains($resultClient, 'await api.history()'), 'Result sheet must hydrate from canonical server history.');
