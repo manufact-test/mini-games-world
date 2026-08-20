@@ -78,10 +78,11 @@ $migration = $runner->migrate(false);
 $expectedMigrations = count(glob($dbDir . '/migrations/*.php') ?: []);
 $assertSame($expectedMigrations, (int)$migration['executed_count'], 'Store fixture must apply the current additive migration set');
 
-$assertSame(6, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_status = 'active'"), 'Launch Store must seed five avatar offers plus one bundle');
-$assertSame(5, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'item' AND price_coins = 300"), 'Every paid launch avatar must cost exactly 300 coins');
-$assertSame(1200, (int)$database->fetchValue("SELECT price_coins FROM mgw_product_offers WHERE offer_id = 'avatar-bundle-5'"), 'Full avatar bundle must cost exactly 1200 coins');
-$assertSame(240, (int)$database->fetchValue("SELECT partial_unit_price_coins FROM mgw_product_offers WHERE offer_id = 'avatar-bundle-5'"), 'Partial avatar bundle must cost 240 per missing avatar');
+$assertSame(9, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_status = 'active' AND offer_type = 'item' AND category = 'profile' AND subcategory = 'avatars'"), 'Active Store must expose exactly nine paid avatar offers');
+$assertSame(3, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_status = 'active' AND offer_type = 'item' AND price_coins = 250"), 'Rare tier must contain exactly three 250-coin avatars');
+$assertSame(3, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_status = 'active' AND offer_type = 'item' AND price_coins = 300"), 'Elite tier must contain exactly three 300-coin avatars');
+$assertSame(3, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_status = 'active' AND offer_type = 'item' AND price_coins = 400"), 'Legendary tier must contain exactly three 400-coin avatars');
+$assertSame('retired', (string)$database->fetchValue("SELECT offer_status FROM mgw_product_offers WHERE offer_id = 'avatar-bundle-5'"), 'Superseded five-avatar bundle must remain retired');
 
 $accountService = new AccountIdentityService($database, 3600);
 $account = $accountService->resolveProviderIdentity('development', 'mvp19-2-user', 'browser_dev', ['username' => 'store-test'], 'mvp19-2-session');
@@ -94,13 +95,14 @@ $snapshot = $store->snapshot($mgwId, 3000, [
     ['id'=>'coins_5000','coins'=>5000,'price_eur_cents'=>499,'enabled'=>true],
 ]);
 $assertSame(['coins','profile','games','bundles','inventory','tournament_rewards'], array_column($snapshot['tabs'], 'id'), 'Store v2 must expose the six canonical tabs in order');
-$assertSame(5, count($snapshot['profile']['avatars']), 'Profile Store tab must expose all five paid avatar offers');
+$assertSame(9, count($snapshot['profile']['avatars']), 'Profile Store tab must expose all nine paid avatar offers');
 $assertSame(3, count($snapshot['inventory']['items']), 'Inventory must expose the three starter ownership rows before purchases');
+$assertSame(null, $snapshot['bundles']['avatar_bundle'], 'Retired avatar bundle must not be exposed as an active Store offer');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'], 'Purchase must never auto-equip');
 $assertSame(false, $snapshot['coins']['billing_available'], 'Real billing callbacks must remain outside MVP-19.2');
 
 $singleQuote = $store->quote($mgwId, 'avatar-01');
-$assertSame(300, $singleQuote['price_coins'], 'Single avatar quote must be exactly 300 coins');
+$assertSame(250, $singleQuote['price_coins'], 'Rare avatar quote must be exactly 250 coins');
 $assertSame(['store-avatar-01'], $singleQuote['item_ids'], 'Single avatar offer must own exactly its canonical item');
 
 $runtimeStorage = new Mvp19_2MemoryStorage([
@@ -118,12 +120,12 @@ $runtime = new CosmeticStoreRuntimePurchaseService($runtimeStorage);
 $user =& $runtimeStorage->data['users']['legacy-store-user'];
 $prepared = $runtime->prepare($runtimeStorage->data, $user, $singleQuote, 'store:test-single-0001');
 $assertSame(false, $prepared['replayed_runtime'], 'First request token must create a runtime purchase intent');
-$assertSame(2700, $user['balance'], 'Single avatar runtime debit must subtract exactly 300 coins');
+$assertSame(2750, $user['balance'], 'Rare avatar runtime debit must subtract exactly 250 coins');
 $assertSame('debited', $prepared['intent']['status'], 'Runtime purchase must remain pending until durable ownership is written');
 
 $replay = $runtime->prepare($runtimeStorage->data, $user, $singleQuote, 'store:test-single-0001');
 $assertSame(true, $replay['replayed_runtime'], 'Same request token must replay the existing runtime intent');
-$assertSame(2700, $user['balance'], 'Exact runtime replay must not debit balance twice');
+$assertSame(2750, $user['balance'], 'Exact runtime replay must not debit balance twice');
 $assertStoreError(
     static function () use ($runtime, &$runtimeStorage, &$user, $singleQuote): void {
         $runtime->prepare($runtimeStorage->data, $user, $singleQuote, 'store:test-overlap-0002');
@@ -144,33 +146,38 @@ $assertSame(true, $purchaseReplay['replayed'], 'Durable same-token fulfillment m
 $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_cosmetic_purchases WHERE mgw_id = :mgw_id', ['mgw_id'=>$mgwId]), 'Durable replay must not create a second purchase audit row');
 $assertStoreError(static fn() => $store->quote($mgwId, 'avatar-01'), 'already_owned', 'Already-owned individual avatar must not be purchasable again');
 
-$refundQuote = $store->quote($mgwId, 'avatar-02');
+$refundQuote = $store->quote($mgwId, 'avatar-04');
 $user =& $runtimeStorage->data['users']['legacy-store-user'];
 $refundPrepared = $runtime->prepare($runtimeStorage->data, $user, $refundQuote, 'store:test-refund-0003');
-$assertSame(2400, $user['balance'], 'Second intent must debit before fulfillment');
+$assertSame(2450, $user['balance'], 'Elite purchase intent must debit exactly 300 coins');
 $assertSame(true, $runtime->refund('legacy-store-user', 'store:test-refund-0003'), 'Pending intent must support one safe compensating refund');
-$assertSame(2700, $runtimeStorage->data['users']['legacy-store-user']['balance'], 'Compensating refund must restore the exact debited amount');
+$assertSame(2750, $runtimeStorage->data['users']['legacy-store-user']['balance'], 'Compensating refund must restore the exact debited amount');
 $assertSame(false, $runtime->refund('legacy-store-user', 'store:test-refund-0003'), 'Compensating refund must be idempotent');
-$assertSame(false, $inventory->isOwned($mgwId, 'store-avatar-02'), 'Refund without fulfillment must not invent ownership');
+$assertSame(false, $inventory->isOwned($mgwId, 'store-avatar-04'), 'Refund without fulfillment must not invent ownership');
 
-$bundleQuote = $store->quote($mgwId, 'avatar-bundle-5');
-$assertSame(960, $bundleQuote['price_coins'], 'Owning one paid avatar must reduce bundle to 4 × 240 = 960');
-$assertSame(4, count($bundleQuote['item_ids']), 'Partial bundle must include only missing avatar IDs');
+$legendaryQuote = $store->quote($mgwId, 'avatar-07');
+$assertSame(400, $legendaryQuote['price_coins'], 'Legendary avatar quote must be exactly 400 coins');
 $user =& $runtimeStorage->data['users']['legacy-store-user'];
-$bundlePrepared = $runtime->prepare($runtimeStorage->data, $user, $bundleQuote, 'store:test-bundle-0004');
-$assertSame(1740, $user['balance'], 'Partial bundle must debit exactly 960 coins');
-$bundlePurchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-store-user', $bundlePrepared['intent']);
-$runtime->markCompleted('legacy-store-user', 'store:test-bundle-0004');
-$assertSame(960, $bundlePurchase['price_coins'], 'Durable partial bundle audit must preserve the dynamic approved price');
-$assertSame(8, count($inventory->snapshot($mgwId)['owned']), 'After bundle completion account must own 3 starter + 5 paid avatars');
-$assertSame('starter-default-01', $inventory->snapshot($mgwId)['equipped']['profile_avatar'] ?? null, 'Bundle purchase must not auto-equip any new avatar');
-$assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_cosmetic_purchases WHERE mgw_id = :mgw_id', ['mgw_id'=>$mgwId]), 'Single + bundle must produce exactly two durable purchase rows');
+$legendaryPrepared = $runtime->prepare($runtimeStorage->data, $user, $legendaryQuote, 'store:test-legendary-0004');
+$assertSame(2350, $user['balance'], 'Legendary avatar runtime debit must subtract exactly 400 coins');
+$legendaryPurchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-store-user', $legendaryPrepared['intent']);
+$runtime->markCompleted('legacy-store-user', 'store:test-legendary-0004');
+$assertSame(400, $legendaryPurchase['price_coins'], 'Durable legendary purchase audit must preserve the approved price');
+$assertSame(true, $inventory->isOwned($mgwId, 'store-avatar-07'), 'Legendary purchase must create permanent ownership');
+$assertSame(2, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_cosmetic_purchases WHERE mgw_id = :mgw_id', ['mgw_id'=>$mgwId]), 'Two completed avatar purchases must produce exactly two durable audit rows');
+$assertSame('starter-default-01', $inventory->snapshot($mgwId)['equipped']['profile_avatar'] ?? null, 'Purchases must never auto-equip a new avatar');
 
-$finalSnapshot = $store->snapshot($mgwId, 1740, []);
-$assertTrue(array_reduce($finalSnapshot['profile']['avatars'], static fn(bool $carry, array $offer): bool => $carry && !empty($offer['already_owned']), true), 'All five avatar offers must become owned after bundle completion');
-$assertSame(true, $finalSnapshot['bundles']['avatar_bundle']['already_owned'], 'Full bundle must become owned when all five avatars are present');
-$assertSame(0, $finalSnapshot['bundles']['avatar_bundle']['price_coins'], 'Owned bundle must not expose a second purchase price');
-$assertSame(8, count($finalSnapshot['inventory']['items']), 'Inventory Store tab must expose all eight owned launch avatars');
-$assertStoreError(static fn() => $store->quote($mgwId, 'avatar-bundle-5'), 'already_owned', 'Completed bundle must not be repurchasable');
+$assertStoreError(static fn() => $store->quote($mgwId, 'avatar-bundle-5'), 'offer_unavailable', 'Retired five-avatar bundle must not be purchasable');
 
-fwrite(STDOUT, "PASS: MVP-19.2 cosmetic Store foundation ({$assertions} assertions)\n");
+$finalSnapshot = $store->snapshot($mgwId, 2350, []);
+$assertSame(9, count($finalSnapshot['profile']['avatars']), 'Store snapshot must continue exposing all nine active paid avatar offers');
+$assertSame(null, $finalSnapshot['bundles']['avatar_bundle'], 'Retired bundle must remain absent from active Store snapshot');
+$assertSame(5, count($finalSnapshot['inventory']['items']), 'Inventory Store tab must expose three starters plus the two completed paid purchases');
+$ownedOffers = [];
+foreach ($finalSnapshot['profile']['avatars'] as $offer) {
+    if (!empty($offer['already_owned'])) $ownedOffers[] = (string)$offer['offer_id'];
+}
+sort($ownedOffers, SORT_STRING);
+$assertSame(['avatar-01','avatar-07'], $ownedOffers, 'Store snapshot must mark only completed paid purchases as owned');
+
+fwrite(STDOUT, "PASS: MVP-19.2 Store purchase mechanics on active MVP-19.3 avatar economy ({$assertions} assertions)\n");
