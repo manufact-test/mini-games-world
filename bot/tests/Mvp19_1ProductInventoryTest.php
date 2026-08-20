@@ -52,9 +52,9 @@ $newDatabase = static function () use ($databaseDir): PdoDatabaseConnection {
 
 $database = $newDatabase();
 
-$assertSame(8, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_family = 'avatar'"), 'Launch avatar catalogue must contain exactly eight avatars');
-$assertSame(3, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_family = 'avatar' AND starter_grant = 1"), 'Exactly three launch avatars must be starter grants');
-$assertSame(5, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_family = 'avatar' AND is_store_product = 1"), 'Exactly five launch avatars must be store products');
+$assertSame(12, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_family = 'avatar'"), 'Current avatar catalogue must contain exactly twelve avatars');
+$assertSame(3, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_family = 'avatar' AND starter_grant = 1"), 'Exactly three avatars must remain starter grants');
+$assertSame(9, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_family = 'avatar' AND is_store_product = 1"), 'Exactly nine avatars must be store products');
 $assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE starter_grant = 1 AND is_store_product = 1"), 'Starter avatars must not be store products');
 $assertSame(
     ['profile', 'game', 'bundle', 'seasonal', 'showcase'],
@@ -66,8 +66,8 @@ $catalogColumns = array_map(
     static fn(array $row): string => (string)($row['name'] ?? ''),
     $database->fetchAll('PRAGMA table_info(mgw_product_catalog)')
 );
-$assertTrue(!in_array('price', $catalogColumns, true), 'MVP-19.1 must not invent exact product prices');
-$assertTrue(!in_array('price_mgw_coin', $catalogColumns, true), 'MVP-19.1 must keep pricing out of catalogue foundation');
+$assertTrue(!in_array('price', $catalogColumns, true), 'MVP-19.1 catalogue rows must keep pricing out of the catalogue table');
+$assertTrue(!in_array('price_mgw_coin', $catalogColumns, true), 'MVP-19.1 catalogue rows must keep pricing out of the catalogue table');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveTelegramUser([
@@ -141,13 +141,15 @@ $assertSame('starter-default-01', $profiles->publicProfile($mgwId)['avatar']['it
 $snapshotA = $inventory->snapshot($mgwId);
 $snapshotB = $inventory->snapshot($mgwId);
 $assertSame($snapshotA, $snapshotB, 'Inventory snapshot must be deterministic for unchanged state');
-$assertSame(8, count($snapshotA['catalog']), 'Snapshot must expose the eight launch avatars');
+$assertSame(12, count($snapshotA['catalog']), 'Snapshot must expose the twelve current avatars');
 $assertSame(4, count($snapshotA['owned']), 'Snapshot must expose three starters plus one granted store avatar');
 $assertSame('starter-default-01', $snapshotA['equipped']['profile_avatar'] ?? null, 'Snapshot must expose canonical profile equip slot');
-$assertTrue(!array_key_exists('price', $snapshotA['catalog'][0] ?? []), 'Snapshot must not leak invented pricing in MVP-19.1');
+$assertTrue(!array_key_exists('price', $snapshotA['catalog'][0] ?? []), 'Inventory snapshot must not duplicate offer pricing into catalogue rows');
 
-// Existing-account migration proof: create the pre-0012 schema, insert an
-// account that already selected starter-default-03, then apply 0012 directly.
+// Existing-account migration proof: create only the schema that existed before
+// 0012, insert an account that already selected starter-default-03, then apply
+// the 0012 inventory migration directly. Later migrations must not contaminate
+// this historical fixture.
 $legacyPdo = new PDO('sqlite::memory:');
 $legacyPdo->exec('PRAGMA foreign_keys = ON');
 $legacyDb = new PdoDatabaseConnection($legacyPdo);
@@ -159,7 +161,7 @@ foreach ($migrationFiles as $migrationFile) {
     if (!($migration instanceof DatabaseMigrationInterface)) throw new RuntimeException('Invalid migration fixture.');
     if ($migration->version() === '20260819_0012_create_product_catalog_inventory_equipment') {
         $inventoryMigration = $migration;
-        continue;
+        break;
     }
     $migration->up($legacyDb);
 }
