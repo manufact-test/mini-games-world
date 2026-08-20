@@ -1,7 +1,6 @@
 import { applyAccountLocalePreference } from '@mgw/i18n';
 
 const DEFAULT_AVATAR_ITEM_ID = 'starter-default-01';
-const STARTER_AVATAR_ITEM_IDS = new Set(['starter-default-01','starter-default-02','starter-default-03']);
 const INTERNAL_MGW_ID_PATTERN = /^MGW-([0-9A-HJKMNP-TV-Z]{16})$/;
 const PUBLIC_MGW_ID_PATTERN = /^MGW-ID-([0-9A-HJKMNP-TV-Z]{16})$/;
 
@@ -36,8 +35,11 @@ export function mergeCanonicalMgwUser(currentUser = {}, runtimeUser = {}, profil
 }
 
 export function canonicalAvatarItemId(avatar = null){
+  // ProductInventoryService / Profile API own canonical avatar validation.
+  // The client model only transports the authoritative item id and must not
+  // maintain a second starter-only catalog that can erase paid/future avatars.
   const itemId = String(avatar?.item_id || '').trim();
-  return STARTER_AVATAR_ITEM_IDS.has(itemId) ? itemId : DEFAULT_AVATAR_ITEM_ID;
+  return itemId || DEFAULT_AVATAR_ITEM_ID;
 }
 
 export function publicMgwId(value){

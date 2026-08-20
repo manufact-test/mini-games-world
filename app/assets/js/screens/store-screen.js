@@ -68,7 +68,7 @@ function fetchStore(){
   if (storeLoadPromise) return storeLoadPromise;
   storeLoadPromise = api.cosmeticStoreStatus()
     .then(result => {
-      applyStoreResponse(result);
+      if (!purchaseBusy) applyStoreResponse(result);
       return storeState;
     })
     .finally(() => {
@@ -214,7 +214,7 @@ function renderAvatarOffer(offer){
   const owned = Boolean(offer?.already_owned);
   const number = Number(offer?.preview_number || 0);
   const itemId = Array.isArray(offer?.item_ids) ? String(offer.item_ids[0] || '') : '';
-  const equippedItemId = String(storeState?.inventory?.equipped?.profile_avatar || '');
+  const equippedItemId = String(state.selectedAvatarId || storeState?.inventory?.equipped?.profile_avatar || '');
   const equipped = owned && itemId !== '' && itemId === equippedItemId;
   return `
     <article class="store-v2-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
@@ -322,6 +322,67 @@ function findOffer(offerId){
   return String(bundle?.offer_id || '') === offerId ? bundle : null;
 }
 
+function purchasedItemIds(offer){
+  const missing = Array.isArray(offer?.missing_item_ids) ? offer.missing_item_ids.map(String).filter(Boolean) : [];
+  if (missing.length) return missing;
+  return Array.isArray(offer?.item_ids) ? offer.item_ids.map(String).filter(Boolean) : [];
+}
+
+function applyOptimisticPurchase(offer){
+  if (!storeState) return;
+  const purchasedIds = purchasedItemIds(offer);
+  const purchasedSet = new Set(purchasedIds);
+  const next = cloneObject(storeState);
+  const price = Math.max(0, Number(offer?.price_coins || 0));
+  next.balance = Math.max(0, Number(next.balance || 0) - price);
+
+  const avatars = Array.isArray(next?.profile?.avatars) ? next.profile.avatars : [];
+  avatars.forEach(candidate => {
+    const ids = Array.isArray(candidate?.item_ids) ? candidate.item_ids.map(String) : [];
+    if (!ids.some(itemId => purchasedSet.has(itemId))) return;
+    candidate.already_owned = true;
+    candidate.purchasable = false;
+    candidate.missing_item_ids = [];
+    candidate.missing_count = 0;
+    candidate.owned_count = ids.length;
+  });
+
+  const bundle = next?.bundles?.avatar_bundle;
+  if (bundle && typeof bundle === 'object') {
+    const members = Array.isArray(bundle.item_ids) ? bundle.item_ids.map(String) : [];
+    const previousMissing = Array.isArray(bundle.missing_item_ids) ? bundle.missing_item_ids.map(String) : members;
+    const remaining = previousMissing.filter(itemId => !purchasedSet.has(itemId));
+    bundle.missing_item_ids = remaining;
+    bundle.missing_count = remaining.length;
+    bundle.owned_count = Math.max(0, members.length - remaining.length);
+    bundle.already_owned = remaining.length === 0;
+    bundle.purchasable = remaining.length > 0;
+    if (remaining.length > 0 && remaining.length < members.length) {
+      const unit = Number(bundle.partial_unit_price_coins || 0);
+      if (unit > 0) bundle.price_coins = unit * remaining.length;
+    }
+  }
+
+  const inventoryItems = Array.isArray(next?.inventory?.items) ? next.inventory.items : [];
+  purchasedIds.forEach(itemId => {
+    if (inventoryItems.some(item => String(item?.item_id || '') === itemId)) return;
+    inventoryItems.push({ item_id:itemId, item_family:'avatar', store_product:true, equipped:false });
+  });
+
+  storeState = next;
+  if (state.user && typeof state.user === 'object') {
+    state.user = { ...state.user, balance:Number(next.balance || 0) };
+    renderBalances(state.user);
+  }
+  if (state.profileInventory && typeof state.profileInventory === 'object' && Array.isArray(state.profileInventory.catalog)) {
+    const profileInventory = cloneObject(state.profileInventory);
+    profileInventory.catalog = profileInventory.catalog.map(item => (
+      purchasedSet.has(String(item?.item_id || '')) ? { ...item, owned:true } : item
+    ));
+    state.profileInventory = profileInventory;
+  }
+}
+
 function openPurchaseConfirm(offer){
   const token = purchaseToken();
   const isBundle = String(offer.offer_type || '') === 'bundle';
@@ -354,20 +415,28 @@ async function purchaseOffer(offer, token, button){
   if (purchaseBusy || !button || button.disabled) return;
   purchaseBusy = true;
   button.disabled = true;
-  const originalText = button.textContent;
-  button.textContent = 'Покупаем…';
+
+  const previousStoreState = cloneObject(storeState);
+  const previousUser = cloneObject(state.user);
+  const previousProfileInventory = cloneObject(state.profileInventory);
+  applyOptimisticPurchase(offer);
+  closeSheet();
+  renderStore();
+
   try {
     const result = await api.cosmeticStorePurchase(String(offer.offer_id || ''), token);
     applyStoreResponse(result);
+    renderStore();
     haptic('success');
     toast(String(offer.offer_type || '') === 'bundle' ? 'Комплект добавлен в коллекцию.' : 'Аватарка добавлена в коллекцию.');
-    closeSheet();
-    renderStore();
   } catch (error) {
+    storeState = previousStoreState;
+    state.user = previousUser;
+    state.profileInventory = previousProfileInventory;
+    if (state.user) renderBalances(state.user);
+    renderStore();
     haptic('error');
     toast(error?.message || 'Не удалось выполнить покупку.');
-    button.disabled = false;
-    button.textContent = originalText;
   } finally {
     purchaseBusy = false;
   }
@@ -411,6 +480,7 @@ function purchaseToken(){
   return `store:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 14)}`;
 }
 
+function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
 function formatNumber(value){ return Number(value || 0).toLocaleString('ru-RU'); }
 function formatEuro(cents){ return new Intl.NumberFormat('ru-RU', { style:'currency', currency:'EUR' }).format(Number(cents || 0) / 100); }
 function escapeHtml(value){

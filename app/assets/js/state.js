@@ -1,6 +1,7 @@
 export const state = {
   user: null,
   mgwProfile: null,
+  selectedAvatarId: null,
   profileInventory: null,
   stats: null,
   room: 'match',

@@ -70,7 +70,10 @@ $assertSame('store-avatar-03', $profiles->publicProfile($mgwId)['avatar']['item_
 
 $profileEndpoint = (string)file_get_contents($root . '/bot/profile-v2.php');
 $profileClient = (string)file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
+$storeClient = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
+$stateClient = (string)file_get_contents($root . '/app/assets/js/state.js');
 $profileUi = (string)file_get_contents($root . '/app/assets/js/ui.js');
+$profileModel = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-model.js');
 $responseHelper = (string)file_get_contents($root . '/bot/helpers/response.php');
 $avatarPresentation = (string)file_get_contents($root . '/app/assets/js/profile/mgw-avatar-presentation.js');
 $avatarCss = (string)file_get_contents($root . '/app/assets/css/components/mgw-avatars.css');
@@ -85,9 +88,29 @@ $assertTrue(str_contains($profileClient, 'data-profile-avatar-preview'), 'Owned 
 $assertTrue(str_contains($profileClient, "api.profileV2({ avatar_item_id:itemId })"), 'Explicit equip must continue through canonical Profile API');
 $assertTrue(str_contains($profileClient, "'store-avatar-05'"), 'Launch order must include all five paid avatar IDs');
 
+$assertTrue(str_contains($stateClient, 'selectedAvatarId: null'), 'Client state must expose one explicit selectedAvatarId owner');
+$assertTrue(str_contains($profileClient, 'state.selectedAvatarId = itemId;'), 'Equip must update selectedAvatarId optimistically before server confirmation');
+$assertTrue(str_contains($profileClient, 'const previousSelectedAvatarId = state.selectedAvatarId;'), 'Equip must snapshot the selected avatar before optimistic mutation');
+$assertTrue(str_contains($profileClient, 'state.selectedAvatarId = previousSelectedAvatarId;'), 'Failed equip must roll selectedAvatarId back');
+$assertTrue(str_contains($profileClient, 'const activeAvatar = currentAvatarItemId();'), 'Profile card and collection must render from the selected avatar owner');
+$assertTrue(str_contains($profileClient, 'if (confirmedAvatar) state.selectedAvatarId = confirmedAvatar;'), 'Authoritative Profile response must reconcile selectedAvatarId after confirmation');
+$assertTrue(str_contains($profileUi, 'state.selectedAvatarId || state.mgwProfile?.avatar?.item_id'), 'Header identity render must prefer selectedAvatarId over independent profile fallback state');
+$assertTrue(!str_contains($profileModel, 'STARTER_AVATAR_ITEM_IDS'), 'Client profile model must not maintain a second starter-only avatar catalog');
+$assertTrue(str_contains($profileModel, 'return itemId || DEFAULT_AVATAR_ITEM_ID;'), 'Canonical client model must preserve the authoritative paid/future avatar item id');
+
 $assertTrue(!str_contains($profileUi, 'photo_url'), 'Visible UI avatar owner must not consume provider photo_url');
 $assertTrue(!str_contains($profileUi, 'Telegram?.WebApp'), 'Telegram photo must not remain a visible avatar fallback');
 $assertTrue(str_contains($profileUi, "'starter-default-01'"), 'MGW default avatar must remain the only pre-profile fallback');
+
+$optimisticOffset = strpos($storeClient, 'applyOptimisticPurchase(offer);');
+$networkOffset = strpos($storeClient, "await api.cosmeticStorePurchase(String(offer.offer_id || ''), token)");
+$assertTrue($optimisticOffset !== false && $networkOffset !== false && $optimisticOffset < $networkOffset, 'Store must apply optimistic purchase UI before waiting for the network response');
+$assertTrue(str_contains($storeClient, 'const previousStoreState = cloneObject(storeState);'), 'Optimistic purchase must snapshot Store state for rollback');
+$assertTrue(str_contains($storeClient, 'const previousProfileInventory = cloneObject(state.profileInventory);'), 'Optimistic purchase must snapshot Profile inventory for rollback');
+$assertTrue(str_contains($storeClient, 'storeState = previousStoreState;'), 'Failed purchase must restore Store snapshot');
+$assertTrue(str_contains($storeClient, 'state.profileInventory = previousProfileInventory;'), 'Failed purchase must restore Profile inventory snapshot');
+$assertTrue(str_contains($storeClient, 'if (!purchaseBusy) applyStoreResponse(result);'), 'Background Store refresh must not overwrite a pending optimistic purchase');
+$assertTrue(str_contains($storeClient, 'state.selectedAvatarId || storeState?.inventory?.equipped?.profile_avatar'), 'Store selected check must follow the same selected avatar owner');
 
 $assertTrue(str_contains($responseHelper, 'u.equipped_avatar_item_id'), 'Game identity projection must read canonical equipped avatar');
 $assertTrue(str_contains($responseHelper, "\$player['avatar_item_id']"), 'Game response must expose equipped avatar to presentation');
@@ -108,10 +131,19 @@ foreach ($launchIds as $itemId) {
 $assertTrue(str_contains($avatarCss, 'prefers-reduced-motion:reduce'), 'Avatar presentation must preserve reduced-motion safety');
 
 $profileTarget = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
+$storeTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
+$stateTarget = (string)($manifest['imports']['./assets/js/state.js?v=27'] ?? '');
+$uiTarget = (string)($manifest['imports']['./assets/js/ui.js?v=89'] ?? '');
+$modelTarget = (string)($manifest['imports']['./assets/js/profile/mgw-profile-model.js?v=1'] ?? '');
 $cleanTarget = (string)($manifest['imports']['@mgw/clean-entry'] ?? '');
 $cssTarget = (string)($manifest['assets']['main_css'] ?? '');
 $assertTrue(str_contains($profileTarget, 'mvp19=avatar-collection'), 'Active manifest must publish MVP-19.3 Profile client');
+$assertTrue(str_contains($profileTarget, 'mvp19_3_1=avatar-sync'), 'Active manifest must publish MVP-19.3.1 Profile avatar sync target');
+$assertTrue(str_contains($storeTarget, 'mvp19_3_1=optimistic-purchase'), 'Active manifest must publish MVP-19.3.1 optimistic Store target');
+$assertTrue(str_contains($stateTarget, 'mvp19_3_1=avatar-owner'), 'Active manifest must publish MVP-19.3.1 avatar state owner target');
+$assertTrue(str_contains($uiTarget, 'mvp19_3_1=selected-avatar-owner'), 'Active manifest must publish MVP-19.3.1 shared identity render target');
+$assertTrue(str_contains($modelTarget, 'mvp19_3_1=avatar-pass-through'), 'Active manifest must publish the paid-avatar canonical model fix');
 $assertTrue(str_contains($cleanTarget, 'mvp19=avatar-presentation'), 'Active manifest must publish shared game avatar presentation');
 $assertTrue(str_contains($cssTarget, 'avatar=profile-v1'), 'Active manifest must bust shared avatar CSS cache');
 
-fwrite(STDOUT, "PASS: MVP-19.3 profile avatar collection/equip/visibility ({$assertions} assertions)\n");
+fwrite(STDOUT, "PASS: MVP-19.3 profile avatar collection/equip/visibility + MVP-19.3.1 state sync/purchase UX ({$assertions} assertions)\n");

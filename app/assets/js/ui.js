@@ -18,7 +18,8 @@ export function username(user){
 export function roomName(){ return 'Обычный матч'; }
 export function renderUser(user){
   const name = username(user);
-  const canonicalAvatarId = String(state.mgwProfile?.avatar?.item_id || user?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
+  const canonicalAvatarId = String(state.selectedAvatarId || state.mgwProfile?.avatar?.item_id || user?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
+  if (!state.selectedAvatarId) state.selectedAvatarId = canonicalAvatarId;
 
   ['topName','profileName','searchMeName'].forEach(id => {
     const el = document.getElementById(id);
