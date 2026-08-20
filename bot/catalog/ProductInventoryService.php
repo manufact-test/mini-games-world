@@ -13,6 +13,10 @@ final class ProductInventoryService
         'store-avatar-03',
         'store-avatar-04',
         'store-avatar-05',
+        'store-avatar-06',
+        'store-avatar-07',
+        'store-avatar-08',
+        'store-avatar-09',
     ];
 
     private const TOKEN_PATTERN = '/^[a-z0-9][a-z0-9_.-]{0,63}$/';
