@@ -12,6 +12,7 @@ const GAME_TYPES = Object.freeze(['tictactoe','four_in_a_row','battleship','chec
 const LAUNCH_AVATARS = Object.freeze([
   'starter-default-01','starter-default-02','starter-default-03',
   'store-avatar-01','store-avatar-02','store-avatar-03','store-avatar-04','store-avatar-05',
+  'store-avatar-06','store-avatar-07','store-avatar-08','store-avatar-09',
 ]);
 const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
