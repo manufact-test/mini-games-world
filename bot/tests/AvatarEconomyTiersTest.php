@@ -41,7 +41,7 @@ foreach ($tierRows as $row) {
 }
 $assert($expected === [], 'Some paid avatar rarity/price rows are missing.');
 
-$assert(str_contains($migration, "json_encode(['rarity' => $rarity]"), 'Avatar rarity must be persisted as catalog metadata.');
+$assert(str_contains($migration, "json_encode(['rarity' => \$rarity]"), 'Avatar rarity must be persisted as catalog metadata.');
 $assert(str_contains($migration, "WHERE offer_id = 'avatar-bundle-5'"), 'Superseded five-avatar bundle must be explicitly retired.');
 $assert(str_contains($migration, "SET offer_status = 'retired'"), 'Superseded bundle retirement must preserve history instead of deleting it.');
 $assert(!preg_match("/'avatar-bundle-(?!5)[^']*'/", $migration), 'No replacement avatar bundle may be invented without an approved price.');
