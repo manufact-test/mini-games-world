@@ -68,7 +68,7 @@ function fetchStore(){
   if (storeLoadPromise) return storeLoadPromise;
   storeLoadPromise = api.cosmeticStoreStatus()
     .then(result => {
-      applyStoreResponse(result);
+      if (!purchaseBusy) applyStoreResponse(result);
       return storeState;
     })
     .finally(() => {
