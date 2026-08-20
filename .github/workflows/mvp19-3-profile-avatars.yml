@@ -12,6 +12,8 @@ on:
       - 'app/assets/js/state.js'
       - 'app/assets/js/ui.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/profile/mgw-profile-model.js'
       - 'app/assets/js/profile/mgw-avatar-presentation.js'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/css/screens/profile-corrective.css'
@@ -62,6 +64,8 @@ jobs:
           node --check app/assets/js/state.js
           node --check app/assets/js/ui.js
           node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/profile/mgw-profile-model.js
           node --check app/assets/js/profile/mgw-avatar-presentation.js
           node --check app/assets/js/production-clean-entry-v110.js
 
@@ -98,6 +102,14 @@ jobs:
           grep -F 'ownedAvatarItems' app/assets/js/screens/profile-screen-v110.js
           grep -F 'data-profile-avatar-preview' app/assets/js/screens/profile-screen-v110.js
           grep -F "api.profileV2({ avatar_item_id:itemId })" app/assets/js/screens/profile-screen-v110.js
+          grep -F 'state.selectedAvatarId = itemId;' app/assets/js/screens/profile-screen-v110.js
+          grep -F 'state.selectedAvatarId = previousSelectedAvatarId;' app/assets/js/screens/profile-screen-v110.js
+          grep -F 'applyOptimisticPurchase(offer);' app/assets/js/screens/store-screen.js
+          grep -F 'if (!purchaseBusy) applyStoreResponse(result);' app/assets/js/screens/store-screen.js
+          if grep -Fq 'STARTER_AVATAR_ITEM_IDS' app/assets/js/profile/mgw-profile-model.js; then
+            echo 'Starter-only canonical avatar gate returned.' >&2
+            exit 1
+          fi
           if grep -Fq 'STARTER_AVATARS' app/assets/js/screens/profile-screen-v110.js; then
             echo 'Starter-only Profile avatar gate returned.' >&2
             exit 1
@@ -119,7 +131,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(2); if(!str_contains($m["assets"]["main_css"]??"","avatar=profile-v1")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(2); if(!str_contains($m["assets"]["main_css"]??"","avatar=profile-v1")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_3_1=optimistic-purchase")) exit(4); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(5);'
           grep -F "@import url('./components/mgw-avatars.css?v=1&mvp19=avatar-owner');" app/assets/css/main.css
           grep -F 'initMgwAvatarPresentation' app/assets/js/production-clean-entry-v110.js
 
@@ -141,7 +153,7 @@ jobs:
             app/assets/js/games
 
       - name: Guard bounded MVP-19.3 avatar diff
-        if: startsWith(github.head_ref, 'agent/mvp19-3')
+        if: startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3')
         shell: bash
         run: |
           set -euo pipefail
@@ -158,6 +170,8 @@ jobs:
               app/assets/js/state.js|\
               app/assets/js/ui.js|\
               app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/screens/store-screen.js|\
+              app/assets/js/profile/mgw-profile-model.js|\
               app/assets/js/profile/mgw-avatar-presentation.js|\
               app/assets/js/production-clean-entry-v110.js|\
               app/assets/css/screens/profile-corrective.css|\
