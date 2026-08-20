@@ -14,8 +14,10 @@ $assert = static function (bool $condition, string $message): void {
     if (!$condition) throw new RuntimeException($message);
 };
 
-preg_match_all("/'starter-default-0[1-3]'/", $identity, $starterMatches);
-$assert(count($starterMatches[0]) === 3, 'Exactly three free starter avatars must remain canonical.');
+preg_match('/STARTER_AVATAR_ITEM_IDS\s*=\s*\[(.*?)\];/s', $identity, $starterBlock);
+$assert(isset($starterBlock[1]), 'Starter avatar constant is missing.');
+preg_match_all("/'starter-default-(\\d{2})'/", $starterBlock[1], $starterMatches);
+$assert(($starterMatches[1] ?? []) === ['01', '02', '03'], 'Exactly three free starter avatars must remain canonical.');
 
 preg_match('/STORE_AVATAR_ITEM_IDS\s*=\s*\[(.*?)\];/s', $inventory, $paidBlock);
 $assert(isset($paidBlock[1]), 'Paid avatar inventory constant is missing.');
