@@ -6,12 +6,12 @@
     <linearGradient id="p3" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#FFD3E0"/><stop offset="1" stop-color="#EA4F7E"/></linearGradient>
     <linearGradient id="p4" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#D8FAFF"/><stop offset="1" stop-color="#36B8DD"/></linearGradient>
     <linearGradient id="p5" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#F3D4FF"/><stop offset="1" stop-color="#AA4AD9"/></linearGradient>
-    <linearGradient id="p6" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#F0FFB5"/><stop offset="1" stop-color="#9AD548"/></linearGradient>
-    <linearGradient id="p7" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE8A6"/><stop offset="1" stop-color="#D18B2E"/></linearGradient>
-    <linearGradient id="p8" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#E8FCFF"/><stop offset="1" stop-color="#75AEEA"/></linearGradient>
-    <linearGradient id="p9" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#D7D3FF"/><stop offset="1" stop-color="#5144B9"/></linearGradient>
-    <linearGradient id="p10" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF6C8"/><stop offset="1" stop-color="#F0B532"/></linearGradient>
-    <linearGradient id="p11" x1="22" y1="16" x2="82" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#FFD7C9"/><stop offset="1" stop-color="#D84C3F"/></linearGradient>
+    <linearGradient id="p6" x1="28" y1="18" x2="72" y2="83" gradientUnits="userSpaceOnUse"><stop stop-color="#E6E9EE"/><stop offset=".45" stop-color="#868D99"/><stop offset="1" stop-color="#343944"/></linearGradient>
+    <linearGradient id="p7" x1="26" y1="14" x2="74" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE7A3"/><stop offset=".42" stop-color="#C79A3D"/><stop offset="1" stop-color="#5E4827"/></linearGradient>
+    <linearGradient id="p8" x1="27" y1="15" x2="73" y2="86" gradientUnits="userSpaceOnUse"><stop stop-color="#F3FBFF"/><stop offset=".45" stop-color="#9AB6C7"/><stop offset="1" stop-color="#405668"/></linearGradient>
+    <linearGradient id="p9" x1="26" y1="13" x2="76" y2="88" gradientUnits="userSpaceOnUse"><stop stop-color="#77728A"/><stop offset=".42" stop-color="#2B2934"/><stop offset="1" stop-color="#0E0F14"/></linearGradient>
+    <linearGradient id="p10" x1="26" y1="13" x2="74" y2="88" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF4C8"/><stop offset=".38" stop-color="#E0B95C"/><stop offset="1" stop-color="#7A5627"/></linearGradient>
+    <linearGradient id="p11" x1="24" y1="12" x2="76" y2="88" gradientUnits="userSpaceOnUse"><stop stop-color="#D9A29C"/><stop offset=".4" stop-color="#843A39"/><stop offset="1" stop-color="#30191B"/></linearGradient>
   </defs>
 
   <!-- 01 NOVA: compact prism pilot -->
@@ -80,73 +80,84 @@
     <path d="m50 9 5 7-5 7-5-7 5-7Z" fill="#EBC8FF" stroke="#7D3BA2" stroke-width="2"/>
   </g>
 
-  <!-- 07 VOLT: lime android -->
+  <!-- 07 VOLT: elite steel vanguard -->
   <g transform="translate(600 0)">
-    <path d="M20 94c3-18 13-26 30-26s27 8 30 26H20Z" fill="#4B7D42"/>
-    <rect x="30" y="17" width="40" height="50" rx="18" fill="url(#p6)"/>
-    <path d="M35 25h30l4 11-7 7H38l-7-7 4-11Z" fill="#263D30"/>
-    <rect x="38" y="38" width="24" height="12" rx="6" fill="#18281E"/>
-    <circle cx="44" cy="44" r="2.5" fill="#E8FF9B"/><circle cx="56" cy="44" r="2.5" fill="#E8FF9B"/>
-    <path d="M43 57h14" stroke="#507D43" stroke-width="3" stroke-linecap="round"/>
-    <path d="M50 17V9l7 4" stroke="#DFFF93" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="30" cy="41" r="4" fill="#BCE66A"/><circle cx="70" cy="41" r="4" fill="#BCE66A"/>
+    <path d="M17 95c3-20 14-30 33-30s30 10 33 30H17Z" fill="#303541"/>
+    <path d="M22 79 35 67h30l13 12-8 16H30l-8-16Z" fill="#454C58" stroke="#858D9A" stroke-width="2"/>
+    <path d="M28 38c0-20 9-31 22-31s22 11 22 31v15c0 11-10 18-22 18S28 64 28 53V38Z" fill="url(#p6)" stroke="#AEB4BE" stroke-width="2"/>
+    <path d="M33 33 42 17h16l9 16-5 28H38l-5-28Z" fill="#5B626E" stroke="#C9CED5" stroke-width="2"/>
+    <path d="M36 39h28l-3 11H39l-3-11Z" fill="#171B22"/>
+    <path d="M40 44h7M53 44h7" stroke="#B88CFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M50 17V7M45 11h10" stroke="#C6CBD3" stroke-width="3" stroke-linecap="round"/>
+    <path d="M31 31 23 27l7 12M69 31l8-4-7 12" fill="#747C88" stroke="#AEB4BE" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M43 57h14" stroke="#222832" stroke-width="3" stroke-linecap="round"/>
   </g>
 
-  <!-- 08 AUREX: gold lion sentinel -->
+  <!-- 08 AUREX: elite gilded lion guard -->
   <g transform="translate(700 0)">
-    <path d="M19 94c4-19 14-28 31-28s27 9 31 28H19Z" fill="#7B5529"/>
-    <path d="M28 42c0-20 9-31 22-31s22 11 22 31c0 19-9 28-22 28s-22-9-22-28Z" fill="#8B5D2E"/>
-    <ellipse cx="50" cy="44" rx="16" ry="23" fill="url(#p7)"/>
-    <path d="M35 31c7-8 23-8 30 0l-5 7H40l-5-7Z" fill="#F4C664"/>
-    <path d="M38 43h7M55 43h7" stroke="#432D1B" stroke-width="3" stroke-linecap="round"/>
-    <path d="m46 52 4 3 4-3" fill="#55331C"/>
-    <path d="M44 59c4 3 8 3 12 0" stroke="#83582A" stroke-width="2" stroke-linecap="round"/>
-    <path d="M42 17 50 7l8 10" fill="#FFE9A8" stroke="#A7742A" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M16 95c4-21 15-30 34-30s30 9 34 30H16Z" fill="#4A3924"/>
+    <path d="M23 80 34 66h32l11 14-8 15H31l-8-15Z" fill="#6B5127" stroke="#D3A84B" stroke-width="2"/>
+    <path d="M26 39c0-22 10-33 24-33s24 11 24 33v13c0 12-10 20-24 20s-24-8-24-20V39Z" fill="url(#p7)" stroke="#F3D37B" stroke-width="2"/>
+    <path d="M31 33 40 15h20l9 18-4 29H35l-4-29Z" fill="#A8792E" stroke="#F1CF72" stroke-width="2"/>
+    <path d="m41 16 9-10 9 10-4 5H45l-4-5Z" fill="#F7DA83" stroke="#A8792E" stroke-width="2"/>
+    <path d="M34 39h32l-4 12H38l-4-12Z" fill="#231C15"/>
+    <path d="M40 45h7M53 45h7" stroke="#FFE6A0" stroke-width="3" stroke-linecap="round"/>
+    <path d="M28 37 18 33l10 14M72 37l10-4-10 14" fill="#8C662F" stroke="#D6AE56" stroke-width="2"/>
+    <path d="M42 57h16" stroke="#503B22" stroke-width="3" stroke-linecap="round"/>
+    <path d="M35 69 27 61M65 69l8-8" stroke="#D2A850" stroke-width="3" stroke-linecap="round"/>
   </g>
 
-  <!-- 09 FROST: ice warden -->
+  <!-- 09 FROST: elite silver ice warden -->
   <g transform="translate(800 0)">
-    <path d="M20 94c3-18 13-27 30-27s27 9 30 27H20Z" fill="#466B9A"/>
-    <ellipse cx="50" cy="43" rx="19" ry="26" fill="url(#p8)"/>
-    <path d="M31 34c3-15 10-23 19-23s16 8 19 23L58 26l-8 8-8-8-11 8Z" fill="#D8F5FF" stroke="#658CC0" stroke-width="2" stroke-linejoin="round"/>
-    <path d="M35 44h12M53 44h12" stroke="#24476F" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="42" cy="44" r="2" fill="#F5FDFF"/><circle cx="58" cy="44" r="2" fill="#F5FDFF"/>
-    <path d="M44 58h12" stroke="#5679A7" stroke-width="2" stroke-linecap="round"/>
-    <path d="m50 7 5 9-5 7-5-7 5-9Z" fill="#EEF9FF" stroke="#7397C4" stroke-width="2"/>
+    <path d="M17 95c4-20 15-30 33-30s29 10 33 30H17Z" fill="#334653"/>
+    <path d="M22 80 34 66h32l12 14-8 15H30l-8-15Z" fill="#496170" stroke="#9CC2D6" stroke-width="2"/>
+    <path d="M27 39c0-21 9-32 23-32s23 11 23 32v14c0 12-10 19-23 19s-23-7-23-19V39Z" fill="url(#p8)" stroke="#CFE8F4" stroke-width="2"/>
+    <path d="M32 33 40 16l10-9 10 9 8 17-5 29H37l-5-29Z" fill="#718B9A" stroke="#DCECF4" stroke-width="2"/>
+    <path d="M50 8 56 2l-1 15h-10L44 2l6 6Z" fill="#E9F7FF" stroke="#9CC2D6" stroke-width="2"/>
+    <path d="M35 40h30l-4 11H39l-4-11Z" fill="#18242C"/>
+    <path d="M40 45h7M53 45h7" stroke="#9DF2FF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M30 35 20 29l8 15M70 35l10-6-8 15" fill="#627C8B" stroke="#BCD9E7" stroke-width="2"/>
+    <path d="M43 58h14" stroke="#2D424E" stroke-width="3" stroke-linecap="round"/>
   </g>
 
-  <!-- 10 VOID: cosmic assassin -->
+  <!-- 10 VOID: legendary obsidian dread knight -->
   <g transform="translate(900 0)">
-    <path d="M19 94c3-20 14-29 31-29s28 9 31 29H19Z" fill="#2A245A"/>
-    <ellipse cx="50" cy="43" rx="19" ry="26" fill="url(#p9)"/>
-    <path d="M29 38c2-19 10-29 21-29 12 0 20 10 21 29-9-9-16-13-21-13s-12 4-21 13Z" fill="#19172F"/>
-    <path d="M34 42h13l3 4 3-4h13" stroke="#C6BCFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="42" cy="43" r="2.3" fill="#F0EDFF"/><circle cx="58" cy="43" r="2.3" fill="#F0EDFF"/>
-    <path d="M43 59c5-2 9-2 14 0" stroke="#4D438D" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="50" cy="13" r="5" fill="#6A5FD0" stroke="#C6BCFF" stroke-width="2"/>
+    <path d="M14 96c4-23 16-33 36-33s32 10 36 33H14Z" fill="#12131A"/>
+    <path d="M19 81 32 64h36l13 17-9 15H28l-9-15Z" fill="#20212A" stroke="#5A566B" stroke-width="2"/>
+    <path d="M24 39c0-23 10-35 26-35s26 12 26 35v14c0 13-11 21-26 21s-26-8-26-21V39Z" fill="url(#p9)" stroke="#6F6B7E" stroke-width="2"/>
+    <path d="M29 33 36 14l7 6 7-16 7 16 7-6 7 19-5 31H34l-5-31Z" fill="#252632" stroke="#777287" stroke-width="2"/>
+    <path d="M32 40h36l-5 12H37l-5-12Z" fill="#08090D"/>
+    <path d="M38 46h9M53 46h9" stroke="#A177FF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M28 35 17 27l8 18M72 35l11-8-8 18" fill="#1A1B23" stroke="#625E73" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M42 59h16" stroke="#0B0C11" stroke-width="4" stroke-linecap="round"/>
+    <path d="M31 69 22 60M69 69l9-9" stroke="#514B62" stroke-width="3" stroke-linecap="round"/>
   </g>
 
-  <!-- 11 SOLARIS: sun monarch -->
+  <!-- 11 SOLARIS: legendary sun paladin -->
   <g transform="translate(1000 0)">
-    <path d="M18 94c4-20 14-29 32-29s28 9 32 29H18Z" fill="#A86D22"/>
-    <ellipse cx="50" cy="43" rx="19" ry="26" fill="url(#p10)"/>
-    <path d="M31 32c3-14 10-21 19-21s16 7 19 21c-8-5-14-7-19-7s-11 2-19 7Z" fill="#C98B2E"/>
-    <path d="m34 24 5-13 8 10 3-15 3 15 8-10 5 13" fill="#FFF0AD" stroke="#C88A2D" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="42" cy="44" r="3" fill="#59421F"/><circle cx="58" cy="44" r="3" fill="#59421F"/>
-    <path d="M44 58c4 3 8 3 12 0" stroke="#9A6825" stroke-width="2" stroke-linecap="round"/>
-    <path d="M45 35h10" stroke="#FFF8D6" stroke-width="2" stroke-linecap="round"/>
+    <path d="M14 96c4-23 16-33 36-33s32 10 36 33H14Z" fill="#6D4F23"/>
+    <path d="M19 81 32 64h36l13 17-9 15H28l-9-15Z" fill="#A5762E" stroke="#F1D27B" stroke-width="2"/>
+    <path d="M24 39c0-23 10-35 26-35s26 12 26 35v14c0 13-11 21-26 21s-26-8-26-21V39Z" fill="url(#p10)" stroke="#FFF0B0" stroke-width="2"/>
+    <path d="M28 34 35 15l8 6 7-18 7 18 8-6 7 19-5 31H33l-5-31Z" fill="#C5933D" stroke="#FFE29A" stroke-width="2"/>
+    <path d="m35 16 7-12 8 10 8-10 7 12-7 6H42l-7-6Z" fill="#FFF0AF" stroke="#B77B2D" stroke-width="2"/>
+    <path d="M31 40h38l-5 12H36l-5-12Z" fill="#352614"/>
+    <path d="M38 46h9M53 46h9" stroke="#FFF3B9" stroke-width="3" stroke-linecap="round"/>
+    <path d="M27 35 16 28l9 18M73 35l11-7-9 18" fill="#B98635" stroke="#F0CD71" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M42 59h16" stroke="#63471F" stroke-width="3" stroke-linecap="round"/>
+    <path d="M31 69 21 59M69 69l10-10" stroke="#E2BB5A" stroke-width="3" stroke-linecap="round"/>
   </g>
 
-  <!-- 12 DRAX: crimson dragon -->
+  <!-- 12 DRAX: legendary crimson dragon emperor -->
   <g transform="translate(1100 0)">
-    <path d="M18 94c4-20 15-29 32-29s28 9 32 29H18Z" fill="#7D2E2B"/>
-    <path d="m32 27-8-17 16 9M68 27l8-17-16 9" fill="#A93F36" stroke="#702A28" stroke-width="3" stroke-linejoin="round"/>
-    <ellipse cx="50" cy="43" rx="20" ry="27" fill="url(#p11)"/>
-    <path d="M32 39c6-7 12-10 18-10s12 3 18 10l-5 4c-4-4-8-6-13-6s-9 2-13 6l-5-4Z" fill="#8F342F"/>
-    <path d="M36 44h10M54 44h10" stroke="#451D1C" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="42" cy="44" r="2" fill="#FFF0C5"/><circle cx="58" cy="44" r="2" fill="#FFF0C5"/>
-    <path d="m47 53 3 3 3-3" fill="#612522"/>
-    <path d="M43 60c5 2 9 2 14 0" stroke="#7D2E2B" stroke-width="2" stroke-linecap="round"/>
-    <path d="M30 55c-7 2-10 6-10 12M70 55c7 2 10 6 10 12" stroke="#B8483E" stroke-width="3" stroke-linecap="round"/>
+    <path d="M13 96c4-23 17-33 37-33s33 10 37 33H13Z" fill="#35191B"/>
+    <path d="M18 81 31 63h38l13 18-9 15H27l-9-15Z" fill="#542326" stroke="#A85854" stroke-width="2"/>
+    <path d="M23 40c0-24 11-36 27-36s27 12 27 36v13c0 13-11 22-27 22s-27-9-27-22V40Z" fill="url(#p11)" stroke="#C97972" stroke-width="2"/>
+    <path d="M28 34 34 15l10 6 6-18 6 18 10-6 6 19-5 31H33l-5-31Z" fill="#6B292D" stroke="#B96560" stroke-width="2"/>
+    <path d="M33 20 22 8l5 20M67 20 78 8l-5 20" fill="#7E3033" stroke="#B85B56" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M31 41h38l-6 13H37l-6-13Z" fill="#1A0D0F"/>
+    <path d="M38 47h9M53 47h9" stroke="#FFB06D" stroke-width="3" stroke-linecap="round"/>
+    <path d="M26 39 14 32l10 19M74 39l12-7-10 19" fill="#4D2023" stroke="#9D4B49" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M41 60h18" stroke="#271214" stroke-width="4" stroke-linecap="round"/>
+    <path d="M32 70 20 60M68 70l12-10" stroke="#9B4544" stroke-width="3" stroke-linecap="round"/>
   </g>
 </svg>

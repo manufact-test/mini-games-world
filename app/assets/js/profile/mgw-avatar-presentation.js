@@ -1,5 +1,5 @@
 import { state } from '../state.js?v=27';
-import { getAvatarVisualMeta } from './mgw-avatar-registry.js';
+import { getAvatarVisualMeta } from './mgw-avatar-registry.js?v=2';
 
 const DEFAULT_AVATAR = 'starter-default-01';
 
@@ -47,21 +47,28 @@ function decoratePlayersRow(){
     if (!player || typeof player !== 'object') return;
 
     const itemId = visibleAvatarItemId(player);
-    const meta = getAvatarVisualMeta(itemId);
     const existing = card.querySelector(':scope > .game-player-avatar');
 
-    if (!itemId || !meta) {
+    if (!itemId) {
       existing?.remove();
       card.classList.remove('has-mgw-avatar');
       return;
     }
 
+    const meta = getAvatarVisualMeta(itemId);
     const avatar = existing instanceof HTMLElement ? existing : createAvatarNode();
     avatar.dataset.avatarItemId = itemId;
-    avatar.dataset.rarity = meta.rarity;
-    avatar.dataset.avatarName = meta.name;
-    avatar.textContent = '';
+    avatar.dataset.avatarKnown = meta ? 'true' : 'false';
 
+    if (meta) {
+      avatar.dataset.rarity = meta.rarity;
+      avatar.dataset.avatarName = meta.name;
+    } else {
+      delete avatar.dataset.rarity;
+      delete avatar.dataset.avatarName;
+    }
+
+    avatar.textContent = '';
     if (!existing) card.prepend(avatar);
     card.classList.add('has-mgw-avatar');
   });
@@ -76,7 +83,7 @@ function createAvatarNode(){
 
 function visibleAvatarItemId(player){
   const explicit = String(player?.avatar_item_id || player?.avatar?.item_id || '').trim().toLowerCase();
-  if (explicit && getAvatarVisualMeta(explicit)) return explicit;
+  if (explicit) return explicit;
   const playerId = String(player?.id || '').trim();
   return playerId && !playerId.startsWith('bot_') ? DEFAULT_AVATAR : '';
 }
