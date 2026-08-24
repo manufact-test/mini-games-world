@@ -12,7 +12,7 @@ export function initAccountShortcuts(){
 }
 
 async function openFriendsShortcut(){
-  const module = await import('../screens/friends-screen-v110.js?v=2&mvp18=friends-corrective&moderation=1');
+  const module = await import('../screens/friends-screen-v110.js?v=3&mvp18=nested-panels-polish&moderation=1');
   if (typeof module.initFriendsScreen === 'function') module.initFriendsScreen();
   document.dispatchEvent(new CustomEvent('mgw:open-friends'));
 }

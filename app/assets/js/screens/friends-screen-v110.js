@@ -5,7 +5,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=1109';
 import { openSocialPlayerInvite } from '../games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1';
 
-const STYLE_URL = './assets/css/friends-v110.css?v=2&mvp18=friends-corrective';
+const STYLE_URL = './assets/css/friends-v110.css?v=3&mvp18=nested-panels-polish';
 const GAME_NAMES = Object.freeze({
   tictactoe:'Крестики-нолики', four_in_a_row:'4 в ряд', battleship:'Морской бой',
   checkers:'Шашки', reversi:'Реверси', chess:'Шахматы', go:'Го', domino:'Домино',
@@ -107,7 +107,6 @@ function render(){
         <input class="form-input" name="query" autocomplete="off" maxlength="40" value="${escapeHtml(searchQuery)}" placeholder="Часть ника или MGW-ID" aria-label="Найти игрока по части ника или MGW-ID" />
         <button class="btn primary" type="submit" ${searching ? 'disabled' : ''}>${searching ? 'Ищем…' : 'Найти'}</button>
       </div>
-      <small>Минимум 2 символа ника или полный MGW-ID.</small>
     </form>
     ${searchSurface()}
     ${loading ? '<div class="friends-v110-loading">Обновляем список…</div>' : `
