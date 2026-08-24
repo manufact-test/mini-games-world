@@ -126,9 +126,11 @@ jobs:
           fi
           grep -F "private const ENTRY_PATH = '/app/v110.php?v=1127';" bot/helpers/WebAppLaunchUrl.php
           grep -F "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'" app/runtime/client/version-manifest.php
+          # version-manifest.php is a shared cache/import registry. The exact
+          # notification-owned @mgw/main mapping is asserted above, while other
+          # feature-owned cache keys remain free to advance in their own PRs.
           git diff --exit-code "$base" "$head" -- \
             bot/helpers/WebAppLaunchUrl.php \
-            app/runtime/client/version-manifest.php \
             app/assets/js/main-v110-reconnect-v174.js \
             app/assets/js/games/game-invites-v110-rematch-policy-v175.js \
             bot/games
