@@ -1,3 +1,11 @@
+#screen-friends{
+  z-index:2;
+  background:var(--sk-gradient-bg-accent),linear-gradient(180deg,var(--sk-bg-elevated),var(--sk-bg-app));
+  transform:none;
+  transition:none;
+}
+#screen-friends.active{transform:none}
+
 .friends-v110{
   width:100%;
   max-width:760px;

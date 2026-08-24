@@ -5,6 +5,8 @@ require_once __DIR__ . '/CosmeticStoreService.php';
 
 final class CosmeticStoreRuntimePurchaseService
 {
+    private const ITEM_ID_PATTERN = '/^[a-z0-9][a-z0-9_.-]{0,63}$/';
+
     public function __construct(private StorageTransactionInterface $storage) {}
 
     public function prepare(array &$data, array &$user, array $quote, string $requestToken): array
@@ -174,7 +176,7 @@ final class CosmeticStoreRuntimePurchaseService
         $result = [];
         foreach ($value as $itemId) {
             $itemId = strtolower(trim((string)$itemId));
-            if (!in_array($itemId, ProductInventoryService::STORE_AVATAR_ITEM_IDS, true)) {
+            if (preg_match(self::ITEM_ID_PATTERN, $itemId) !== 1) {
                 throw new CosmeticStoreException('intent_invalid', 'Purchase item is unavailable.');
             }
             $result[$itemId] = true;

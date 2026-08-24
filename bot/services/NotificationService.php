@@ -374,9 +374,10 @@ final class NotificationService
             'type' => $type,
             'title' => $request ? 'Новая заявка в друзья' : 'Теперь вы друзья',
             'message' => $request
-                ? $actorNickname . ' хочет добавить вас в друзья.'
+                ? $actorNickname . ' хочет добавить вас в друзья. Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.'
                 : 'Ваша заявка принята игроком «' . $actorNickname . '».',
             'tone' => $request ? 'info' : 'success',
+            'deep_link' => $request ? 'friends:requests' : '',
             'actor_mgw_id' => $actorMgwId,
             'recipient_mgw_id' => $recipientMgwId,
             'created_at' => $createdAt,

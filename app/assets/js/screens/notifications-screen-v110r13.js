@@ -23,6 +23,7 @@ let appReady = false;
 let baselineLoaded = false;
 let pollTimer = null;
 let refreshPromise = null;
+let friendsModulePromise = null;
 let notificationReadGeneration = 0;
 let unreadHint = 0;
 let items = new Map();
@@ -374,10 +375,23 @@ async function openNotificationDeepLink(id){
   if (notificationCenterBlockedByMatch()) return;
   const item = itemById(id);
   if (!item?.id || !item.deep_link) return;
+  const deepLink = String(item.deep_link || '');
+  if (deepLink === 'friends:requests') {
+    if (!item.read) void markOneNotificationRead(id);
+    try {
+      const module = await loadFriendsModule();
+      if (notificationCenterBlockedByMatch()) return;
+      if (typeof module.initFriendsScreen === 'function') module.initFriendsScreen();
+      closeSheet();
+      document.dispatchEvent(new CustomEvent('mgw:open-friends', { detail:{ tab:'requests' } }));
+    } catch (_) {
+      // Keep the notification visible if its internal destination cannot load.
+    }
+    return;
+  }
+
   if (!item.read) await markOneNotificationRead(id);
   if (notificationCenterBlockedByMatch()) return;
-
-  const deepLink = String(item.deep_link || '');
   closeSheet();
   if (deepLink === 'home') {
     showScreen('home');
@@ -395,6 +409,17 @@ async function openNotificationDeepLink(id){
     showScreen('store');
     queueMicrotask(() => void openStoreOrders());
   }
+}
+
+function loadFriendsModule(){
+  if (!friendsModulePromise) {
+    friendsModulePromise = import('./friends-screen-v110.js?v=5&mvp18=instant-route&optimistic-relations')
+      .catch(error => {
+        friendsModulePromise = null;
+        throw error;
+      });
+  }
+  return friendsModulePromise;
 }
 
 function notificationCenterBlockedByMatch(){
@@ -657,6 +682,9 @@ function renderNotification(item){
 }
 
 function renderV2Actions(item){
+  if (item.type === 'friend_request' && item.deep_link === 'friends:requests') {
+    return `<div class="notification-card-actions"><button class="btn primary full" data-notification-open="${escapeHtml(item.id)}" type="button">Добавить в друзья</button></div>`;
+  }
   const buttons = [];
   if (item.deep_link) {
     buttons.push(`<button class="btn ghost" data-notification-open="${escapeHtml(item.id)}" type="button">${escapeHtml(t('notifications.open'))}</button>`);
@@ -966,7 +994,7 @@ function normalizeItem(value){
 
 function safeDeepLink(value){
   const link = String(value || '');
-  return ['home','profile','store','store:orders'].includes(link) ? link : '';
+  return ['home','profile','store','store:orders','friends:requests'].includes(link) ? link : '';
 }
 
 function isRetainedItem(item){
@@ -1091,6 +1119,7 @@ function cacheKey(){
 
 function notificationIcon(tone, type){
   if (String(type || '').startsWith('invite_')) return '🎮';
+  if (type === 'friend_request' || type === 'friend_accepted') return '👥';
   if (tone === 'success') return '✓';
   return tone === 'danger' ? '!' : 'i';
 }
@@ -1098,6 +1127,9 @@ function notificationIcon(tone, type){
 function notificationMessage(item){
   let message = String(item?.message || '').trim();
   if (!message) return terminalNotificationFallback(item);
+  if (item?.type === 'friend_request' && !message.includes('Откройте заявку')) {
+    message += ' Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.';
+  }
   const technical = [
     /\s*Баланс уже обновлён\.?/giu,
     /\s*Баланс не изменён\.?/giu,

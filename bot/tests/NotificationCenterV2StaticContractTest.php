@@ -44,7 +44,10 @@ $contains("deleteNotificationId:String(options.deleteNotificationId", $sources['
 $contains("const eventId = String(item?.event_id", $sources['client'], 'Client dedupe must use stable event IDs');
 $contains('if (eventId) return `event:${eventId}`', $sources['client'], 'Stable event ID must own non-invite dedupe identity');
 $contains("safeDeepLink", $sources['client'], 'Client deep links must be allow-listed');
-$contains("['home','profile','store','store:orders']", $sources['client'], 'Client must reject arbitrary external notification links');
+$contains("['home','profile','store','store:orders','friends:requests']", $sources['client'], 'Client must reject arbitrary external notification links');
+$contains("item.type === 'friend_request'", $sources['client'], 'Friend request events must own a dedicated review action');
+$contains('Добавить в друзья', $sources['client'], 'Friend request notification must use the requested social action label');
+$contains("detail:{ tab:'requests' }", $sources['client'], 'Friend request action must open the canonical requests tab');
 $contains("isRetainedItem", $sources['client'], 'Expired notification cache entries must be removed from active UI');
 $notContains("void rawNotifications(true).catch", $sources['client'], 'Opening the center must not silently auto-mark all notifications');
 

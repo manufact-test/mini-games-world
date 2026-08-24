@@ -66,7 +66,8 @@ $requestEvent = $service->publish('request', $requester, $recipient, [
 ]);
 $assertSame('202', $requestEvent['user_id'] ?? null, 'Friend request bell event must resolve the target legacy notification identity');
 $assertSame('friend_request', $requestEvent['type'] ?? null, 'Friend request must use the canonical social bell type');
-$assertSame('Альфа хочет добавить вас в друзья.', $requestEvent['message'] ?? null, 'Friend request bell copy must name the canonical actor');
+$assertSame('Альфа хочет добавить вас в друзья. Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.', $requestEvent['message'] ?? null, 'Friend request bell copy must explain the review flow');
+$assertSame('friends:requests', $requestEvent['deep_link'] ?? null, 'Friend request bell event must deep-link to the canonical request review tab');
 
 $service->publish('request', $requester, $recipient, [
     'changed' => true,
