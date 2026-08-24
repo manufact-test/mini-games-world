@@ -59,7 +59,10 @@ $assert(is_string($result) && str_contains($result, 'resultSummaryMarkup(match)'
 $assert(is_string($result) && !str_contains($result, '${game.payout'), 'Result UI must not calculate money from raw global payout.');
 
 $cleanEntryUrl = (string)($manifest['imports']['@mgw/clean-entry'] ?? '');
-$assert(str_contains($cleanEntryUrl, 'v=1125&mvp16=canonical-avatar-owner&mvp17=history-single-owner'), 'Active clean entry must preserve the accepted single History owner prefix.');
+$assert(
+    preg_match('/v=(?:112[5-9]|11[3-9][0-9]|1[2-9][0-9]{2}|[2-9][0-9]{3,}).*mvp16=canonical-avatar-owner.*mvp17=history-single-owner/', $cleanEntryUrl) === 1,
+    'Active clean entry must preserve the accepted single History owner and a non-regressing cache version.'
+);
 foreach ([34, 38, 46, 47] as $version) {
     $url = (string)($manifest['imports']["./assets/js/api/client.js?v={$version}"] ?? '');
     $assert(
