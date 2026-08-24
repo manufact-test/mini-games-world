@@ -143,26 +143,32 @@ jobs:
             grep -F "data-avatar-item-id=\"$id\"" app/assets/css/components/mgw-avatars.css
           done
           test "$(grep -o "'store-avatar-[0-9][0-9]'" app/assets/js/profile/mgw-avatar-registry.js | sort -u | wc -l)" -eq 9
-          grep -F 'mgw-avatar-characters-v1.svg?v=2' app/assets/js/profile/mgw-avatar-registry.js
-          grep -F "background-image:url('../../media/avatars/mgw-avatar-characters-v1.svg?v=2')" app/assets/css/components/mgw-avatars.css
+          grep -F 'mgw-avatar-characters-v1.svg?v=3' app/assets/js/profile/mgw-avatar-registry.js
+          grep -F "background-image:url('../../media/avatars/mgw-avatar-characters-v1.svg?v=3')" app/assets/css/components/mgw-avatars.css
           grep -F 'width="1200" height="100"' app/assets/media/avatars/mgw-avatar-characters-v1.svg
           test "$(grep -o 'translate([0-9][0-9]* 0)' app/assets/media/avatars/mgw-avatar-characters-v1.svg | sort -u | wc -l)" -eq 12
-          grep -F 'elite steel vanguard' app/assets/media/avatars/mgw-avatar-characters-v1.svg
-          grep -F 'elite gilded lion guard' app/assets/media/avatars/mgw-avatar-characters-v1.svg
-          grep -F 'elite silver ice warden' app/assets/media/avatars/mgw-avatar-characters-v1.svg
-          grep -F 'legendary obsidian dread knight' app/assets/media/avatars/mgw-avatar-characters-v1.svg
-          grep -F 'legendary sun paladin' app/assets/media/avatars/mgw-avatar-characters-v1.svg
-          grep -F 'legendary crimson dragon emperor' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'free village farmhand' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'free village herbalist' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'free road apprentice' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'rare woodland ranger' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'rare academy mage' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'rare young guild warrior' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'elite storm captain' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'elite lion marshal' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'elite ice valkyrie' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'legendary void sovereign' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'legendary sun crown paladin' app/assets/media/avatars/mgw-avatar-characters-v1.svg
+          grep -F 'legendary dragon emperor' app/assets/media/avatars/mgw-avatar-characters-v1.svg
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-avatars.css
 
       - name: Guard active v110 avatar graph
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19_4=character-identity")) exit(2); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","art=knight-v2")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","avatar=character-v1")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","art=knight-v2")) exit(6); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_3_1=optimistic-purchase")) exit(7); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(8);'
-          grep -F "@import url('./components/mgw-avatars.css?v=3&mvp19_4=knight-art-v2');" app/assets/css/main.css
-          grep -F "./profile/mgw-avatar-presentation.js?v=3&mvp19_4=knight-art-v2" app/assets/js/production-clean-entry-v110.js
-          grep -F "./mgw-avatar-registry.js?v=2" app/assets/js/profile/mgw-avatar-presentation.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19_4=character-identity")) exit(2); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","roster=full-fantasy-v4")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","avatar=character-v1")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","roster=full-fantasy-v4")) exit(6); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_3_1=optimistic-purchase")) exit(7); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(8);'
+          grep -F "@import url('./components/mgw-avatars.css?v=4&mvp19_4=full-fantasy-roster-v4');" app/assets/css/main.css
+          grep -F "./profile/mgw-avatar-presentation.js?v=4&mvp19_4=full-fantasy-roster-v4" app/assets/js/production-clean-entry-v110.js
+          grep -F "./mgw-avatar-registry.js?v=3" app/assets/js/profile/mgw-avatar-presentation.js
 
       - name: Guard frozen game engines and social lifecycle
         shell: bash
