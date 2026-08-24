@@ -43,6 +43,49 @@ final class NotificationService
         );
     }
 
+    /**
+     * Hide every friend-request card that no longer represents the exact
+     * canonical pending relation. This also removes duplicate cards from
+     * older request cycles between the same two players.
+     *
+     * @param array<string,int> $activeRequests actor MGW-ID => requested-at unix timestamp
+     */
+    public function reconcileFriendRequests(
+        array &$db,
+        string $recipientUserId,
+        string $recipientMgwId,
+        array $activeRequests,
+        string $resolvedAt
+    ): int {
+        $recipientUserId = trim($recipientUserId);
+        $recipientMgwId = trim($recipientMgwId);
+        if ($recipientUserId === '' || $recipientMgwId === '') return 0;
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) return 0;
+
+        $hidden = 0;
+        foreach ($db['notifications'] as &$notification) {
+            if (!is_array($notification)
+                || (string)($notification['type'] ?? '') !== 'friend_request'
+                || (string)($notification['user_id'] ?? '') !== $recipientUserId
+                || !empty($notification['hidden_at'])) {
+                continue;
+            }
+
+            [$actorMgwId, $eventRecipientMgwId] = $this->friendRequestParticipants($notification);
+            if ($actorMgwId === '' || $eventRecipientMgwId !== $recipientMgwId) continue;
+
+            $createdAt = $this->socialTimestamp((string)($notification['created_at'] ?? ''));
+            $activeAt = (int)($activeRequests[$actorMgwId] ?? 0);
+            if ($createdAt > 0 && $activeAt > 0 && $createdAt === $activeAt) continue;
+
+            if (empty($notification['read_at'])) $notification['read_at'] = $resolvedAt;
+            $notification['hidden_at'] = $resolvedAt;
+            $hidden++;
+        }
+        unset($notification);
+        return $hidden;
+    }
+
     public function addShopOrderDecision(array &$db, array $order, string $decision): ?array
     {
         if (!in_array($decision, ['done', 'rejected'], true)) return null;
@@ -385,6 +428,31 @@ final class NotificationService
         ];
         $db['notifications'][] = $notification;
         return $notification;
+    }
+
+    /** @return array{0:string,1:string} */
+    private function friendRequestParticipants(array $notification): array
+    {
+        $actorMgwId = trim((string)($notification['actor_mgw_id'] ?? ''));
+        $recipientMgwId = trim((string)($notification['recipient_mgw_id'] ?? ''));
+        if ($actorMgwId !== '' && $recipientMgwId !== '') return [$actorMgwId, $recipientMgwId];
+
+        $eventKey = trim((string)($notification['event_key'] ?? ''));
+        if (preg_match('/^social:friend_request:([^:]+):([^:]+):/', $eventKey, $matches) === 1) {
+            return [trim($matches[1]), trim($matches[2])];
+        }
+        return ['', ''];
+    }
+
+    private function socialTimestamp(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '') return 0;
+        try {
+            return (new DateTimeImmutable($value, new DateTimeZone('UTC')))->getTimestamp();
+        } catch (Throwable) {
+            return 0;
+        }
     }
 
     private function displayMessage(array $notification): string

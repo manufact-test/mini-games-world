@@ -6,6 +6,7 @@ require_once __DIR__ . '/services/NotificationService.php';
 require_once __DIR__ . '/services/GameInviteService.php';
 require_once __DIR__ . '/notifications/RuntimeNotificationBridgeCoordinator.php';
 require_once __DIR__ . '/notifications/NotificationCenterV2Policy.php';
+require_once __DIR__ . '/social/SocialFriendNotificationService.php';
 
 function mgw_notification_invites_by_token(array $data): array
 {
@@ -284,6 +285,19 @@ try {
     $router = $runtimeStorageRouter instanceof RuntimeStorageRouter
         ? $runtimeStorageRouter
         : new RuntimeStorageRouter($config);
+
+    try {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if ($databaseConfig->enabled()
+            && (!$router->enabled() || $router->routeFor('accounts') === RuntimeStorageRouter::DRIVER_DATABASE)) {
+            $socialDatabase = PdoConnectionFactory::create($databaseConfig);
+            (new SocialFriendNotificationService($socialDatabase, $db))
+                ->synchronizeResolvedForRecipient((string)($tgUser['mgw_id'] ?? ''));
+        }
+    } catch (Throwable $socialNotificationError) {
+        error_log('[MiniGamesWorld Notification friend reconciliation] ' . $socialNotificationError->getMessage());
+    }
+
     $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
 
     if ($legacyBridgeAllowed

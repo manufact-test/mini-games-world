@@ -433,7 +433,9 @@ function notificationCenterBlockedByMatch(){
 
 function mergeServerItems(serverItems){
   pruneLocalAuthority();
-  const preserved = [...localAuthority.values()].map(entry => entry.item);
+  const preserved = [...localAuthority.values()]
+    .map(entry => entry.item)
+    .filter(item => item?.type !== 'friend_request');
   const visibleServerItems = normalizeItems(serverItems).filter(item => {
     const token = String(item.invite_token || '');
     return (!token || !consumedInviteTokens.has(token)) && isRetainedItem(item);
@@ -683,7 +685,7 @@ function renderNotification(item){
 
 function renderV2Actions(item){
   if (item.type === 'friend_request' && item.deep_link === 'friends:requests') {
-    return `<div class="notification-card-actions"><button class="btn primary full" data-notification-open="${escapeHtml(item.id)}" type="button">Добавить в друзья</button></div>`;
+    return `<div class="notification-card-actions"><button class="btn primary full" data-notification-open="${escapeHtml(item.id)}" type="button">Посмотреть</button></div>`;
   }
   const buttons = [];
   if (item.deep_link) {
