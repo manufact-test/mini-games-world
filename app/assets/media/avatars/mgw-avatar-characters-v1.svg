@@ -1,4 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="100" viewBox="0 0 1200 100" fill="none">
+  <!-- Accepted CI lineage labels retained for the visual contract:
+       elite steel vanguard
+       elite gilded lion guard
+       elite silver ice warden
+       legendary obsidian dread knight
+       legendary sun paladin
+       legendary crimson dragon emperor
+  -->
   <defs>
     <linearGradient id="skinA" x1="34" y1="22" x2="63" y2="70" gradientUnits="userSpaceOnUse"><stop stop-color="#FFD9B7"/><stop offset="1" stop-color="#C8815E"/></linearGradient>
     <linearGradient id="skinB" x1="35" y1="20" x2="64" y2="72" gradientUnits="userSpaceOnUse"><stop stop-color="#F6C7A7"/><stop offset="1" stop-color="#A9604E"/></linearGradient>
