@@ -74,5 +74,6 @@ assert(endpoint.includes("'player_profile'"), 'Friends endpoint must expose read
 assert(endpoint.includes('SocialPlayerProfileReader'), 'Player profile action must use dedicated read-only projection');
 assert(endpoint.includes("'report' => $reports->submit("), 'Friends endpoint must hand reports to the canonical DB queue service');
 assert(endpoint.includes('SocialFriendNotificationService'), 'Friend request and acceptance events must enter the canonical bell pipeline');
+assert(endpoint.includes("['request', 'accept', 'decline', 'cancel', 'block']"), 'Every relation resolution must reconcile stale friend-request notifications');
 
 console.log('PASS: MVP-18.2/18.5 active Friends UI contract');

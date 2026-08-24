@@ -22,7 +22,7 @@ return [
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=43&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1119&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=4&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through',
-        './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1153&mvp18=friend-request-action',
+        './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1154&mvp18=friend-request-lifecycle',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
         './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=4&mvp16=setup-subtitle-width',
         './assets/js/session.js?v=21' => './assets/js/session.js?v=1131',

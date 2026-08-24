@@ -46,7 +46,9 @@ $contains('if (eventId) return `event:${eventId}`', $sources['client'], 'Stable 
 $contains("safeDeepLink", $sources['client'], 'Client deep links must be allow-listed');
 $contains("['home','profile','store','store:orders','friends:requests']", $sources['client'], 'Client must reject arbitrary external notification links');
 $contains("item.type === 'friend_request'", $sources['client'], 'Friend request events must own a dedicated review action');
-$contains('Добавить в друзья', $sources['client'], 'Friend request notification must use the requested social action label');
+$contains('Посмотреть', $sources['client'], 'Friend request notification must describe navigation instead of implying immediate acceptance');
+$notContains('>Добавить в друзья</button>', $sources['client'], 'Friend request notification must not claim that navigation accepts the request');
+$contains("item?.type !== 'friend_request'", $sources['client'], 'Resolved request cards must not survive a server reconciliation through local cache authority');
 $contains("detail:{ tab:'requests' }", $sources['client'], 'Friend request action must open the canonical requests tab');
 $contains("isRetainedItem", $sources['client'], 'Expired notification cache entries must be removed from active UI');
 $notContains("void rawNotifications(true).catch", $sources['client'], 'Opening the center must not silently auto-mark all notifications');

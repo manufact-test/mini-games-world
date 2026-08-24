@@ -105,7 +105,7 @@ try {
         json_response(['ok' => false, 'code' => 'invalid_request', 'error' => 'Некорректный запрос.'], 422);
     }
 
-    if (in_array($action, ['request', 'accept'], true) && is_array($result) && !empty($result['changed'])) {
+    if (in_array($action, ['request', 'accept', 'decline', 'cancel', 'block'], true) && is_array($result) && !empty($result['changed'])) {
         try {
             $notificationStorage = StorageFactory::createJson((string)($configRef['data_dir'] ?? (__DIR__ . '/data')));
             (new SocialFriendNotificationService($database, $notificationStorage))
