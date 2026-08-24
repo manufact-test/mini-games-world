@@ -36,7 +36,6 @@
 }
 .friends-v110-search .form-input::placeholder{color:rgba(233,236,244,.43)}
 .friends-v110-search .btn{min-width:94px;min-height:45px;padding:0 16px;border-radius:12px;font-size:12px}
-.friends-v110-search>small{padding-left:2px;color:var(--muted,#a6a1af);font-size:10.5px;line-height:1.3}
 
 .friends-v110-search-surface{
   display:grid;
@@ -169,7 +168,8 @@
 }
 .friends-v110-loading{padding:22px 12px;color:var(--muted,#a6a1af);text-align:center;font-size:12px}
 
-.friends-v110-profile{display:grid;gap:14px}
+.friends-v110-profile{min-height:0;flex:1 1 auto;display:grid;gap:14px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-right:2px}
+.friends-v110-profile::-webkit-scrollbar{display:none}
 .friends-v110-profile-main{display:flex;align-items:center;gap:12px}
 .friends-v110-profile-main .friends-v110-avatar{width:58px;height:58px;border-radius:18px}
 .friends-v110-profile-id{margin-top:3px;color:var(--muted,#a6a1af);font-size:11px}
@@ -180,8 +180,41 @@
 .friends-v110-game{padding:10px;border:1px solid rgba(233,236,244,.1);border-radius:14px;background:rgba(255,255,255,.025)}
 .friends-v110-game strong{display:block;font-size:13px}.friends-v110-game small{display:block;margin-top:3px;color:var(--muted,#a6a1af);font-size:10px}
 .friends-v110-context{display:grid;gap:8px}
-.friends-v110-report{display:grid;gap:12px}.friends-v110-report label{display:grid;gap:6px}.friends-v110-report label>span{font-size:11px;font-weight:850}
-.friends-v110-report textarea{width:100%;min-height:110px;resize:vertical}
+.friends-v110-report{display:grid;gap:14px;color-scheme:dark}
+.friends-v110-report label{display:grid;gap:7px}
+.friends-v110-report label>span{padding-left:2px;color:#f3effa;font-size:11px;font-weight:900}
+.friends-v110-report .form-input{
+  width:100%;
+  min-width:0;
+  border:1px solid rgba(233,236,244,.16);
+  border-radius:14px;
+  appearance:none;
+  -webkit-appearance:none;
+  background:linear-gradient(180deg,#171923,#10131c);
+  color:#f7f5fb;
+  font:inherit;
+  font-size:12px;
+  font-weight:750;
+  line-height:1.4;
+  outline:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 20px rgba(0,0,0,.1);
+}
+.friends-v110-report .form-input:focus{
+  border-color:rgba(178,116,255,.7);
+  box-shadow:0 0 0 3px rgba(124,92,255,.16),inset 0 1px 0 rgba(255,255,255,.04);
+}
+.friends-v110-report select.form-input{
+  min-height:46px;
+  padding:0 42px 0 13px;
+  background:
+    linear-gradient(45deg,transparent 50%,#c9c4d3 50%) calc(100% - 17px) 50%/5px 5px no-repeat,
+    linear-gradient(135deg,#c9c4d3 50%,transparent 50%) calc(100% - 12px) 50%/5px 5px no-repeat,
+    linear-gradient(180deg,#171923,#10131c);
+}
+.friends-v110-report select.form-input option{background:#171923;color:#f7f5fb}
+.friends-v110-report textarea.form-input{min-height:122px;padding:12px 13px;resize:none}
+.friends-v110-report textarea.form-input::placeholder{color:rgba(233,236,244,.4)}
+.friends-v110-report+.btn{min-height:46px;border-radius:14px}
 .friends-v110-danger{color:#ff9bad!important}
 
 @media(max-width:639px){

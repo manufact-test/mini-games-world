@@ -24,7 +24,7 @@ assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.j
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
 assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify the frozen reconnect composition owner');
-assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=2&mvp18=friends-corrective&moderation=1')"), 'Existing account shortcut owner must lazy-load the corrected Friends moderation module on demand');
+assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=3&mvp18=nested-panels-polish&moderation=1')"), 'Existing account shortcut owner must lazy-load the polished Friends moderation module on demand');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
 assert(inviteWrapper.includes("v=1142&zone=unified&rematch=optimistic&terminal=self-silent"), 'Accepted rematch wrapper must keep its frozen base invite specifier');
 assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1'"), 'Frozen base invite specifier must converge through the manifest on the social-aware cache identity');
@@ -45,6 +45,9 @@ assert(friendsCss.includes('linear-gradient(145deg,#1c1d28,#12151e)') && !friend
 assert(friends.includes("tabButton('friends', 'Друзья'") && friends.includes("tabButton('requests', 'Заявки'") && friends.includes("tabButton('recent', 'Недавние'") && friends.includes("tabButton('blocked', 'Блокировки'"), 'Friends data groups must use compact explicit tabs');
 assert(friends.includes("response?.result?.players") && friends.includes('searchResults.map'), 'Partial lookup must render a bounded explicit result list');
 assert(endpoint.includes("'players' => $service->searchPlayers") && endpoint.includes("'limit' => FriendGraphService::SEARCH_LIMIT"), 'Friends endpoint must expose bounded canonical partial nickname search');
+assert(!friends.includes('Минимум 2 символа ника или полный MGW-ID.'), 'Search must not repeat the self-evident minimum-length hint below the input');
+assert(friendsCss.includes('.friends-v110-profile{') && friendsCss.includes('overflow-y:auto'), 'Public profile must scroll through all game statistics inside the bounded sheet');
+assert(friendsCss.includes('.friends-v110-report .form-input') && friendsCss.includes('appearance:none'), 'Report controls must use the dark MGW field system instead of browser-grey rectangles');
 assert(friends.includes("section('Входящие заявки'"), 'Friends UI must render incoming requests');
 assert(friends.includes("section('Исходящие заявки'"), 'Friends UI must render outgoing requests');
 assert(friends.includes("section('Друзья'"), 'Friends UI must render friends');
