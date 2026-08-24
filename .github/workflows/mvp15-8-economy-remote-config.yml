@@ -11,11 +11,14 @@ on:
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'bot/admin-read.php'
       - 'bot/admin-economy.php'
+      - 'bot/admin-test-coins.php'
+      - 'bot/services/StagingAdminTestCoinGrantService.php'
       - 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php'
       - 'app/admin.php'
       - 'app/assets/css/admin-shell.css'
       - 'app/assets/js/admin-shell.js'
       - 'bot/tests/Mvp15EconomyRemoteConfigTest.php'
+      - 'bot/tests/StagingAdminTestCoinGrantServiceTest.php'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
@@ -33,11 +36,14 @@ on:
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'bot/admin-read.php'
       - 'bot/admin-economy.php'
+      - 'bot/admin-test-coins.php'
+      - 'bot/services/StagingAdminTestCoinGrantService.php'
       - 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php'
       - 'app/admin.php'
       - 'app/assets/css/admin-shell.css'
       - 'app/assets/js/admin-shell.js'
       - 'bot/tests/Mvp15EconomyRemoteConfigTest.php'
+      - 'bot/tests/StagingAdminTestCoinGrantServiceTest.php'
       - 'bot/tests/UnifiedBalanceMigrationFoundationTest.php'
       - 'bot/tests/UnifiedBalanceMigrationExecutionTest.php'
       - 'bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php'
@@ -74,9 +80,12 @@ jobs:
           php -l bot/helpers/AdminWebAuth.php
           php -l bot/admin-read.php
           php -l bot/admin-economy.php
+          php -l bot/admin-test-coins.php
+          php -l bot/services/StagingAdminTestCoinGrantService.php
           php -l bot/runtime/ProductionPrimaryApplicationEntrypoints.php
           php -l app/admin.php
           php -l bot/tests/Mvp15EconomyRemoteConfigTest.php
+          php -l bot/tests/StagingAdminTestCoinGrantServiceTest.php
           node --check app/assets/js/admin-shell.js
 
       - name: Run economy config foundation regression
@@ -90,12 +99,15 @@ jobs:
           php bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
           php bot/tests/UnifiedEconomyRuntimeSyncTest.php
           php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+          php bot/tests/StagingAdminTestCoinGrantServiceTest.php
 
       - name: Verify exact staging fingerprint coverage
         run: |
           set -Eeuo pipefail
           manifest='bot/helpers/staging-e2e-runtime-files.txt'
           grep -Fx 'bot/admin-economy.php' "$manifest"
+          grep -Fx 'bot/admin-test-coins.php' "$manifest"
+          grep -Fx 'bot/services/StagingAdminTestCoinGrantService.php' "$manifest"
           grep -Fx 'bot/helpers/AdminWebAuth.php' "$manifest"
           grep -Fx 'bot/economy/EconomyConfigSimulator.php' "$manifest"
           grep -Fx 'bot/economy/EconomyConfigDefinition.php' "$manifest"

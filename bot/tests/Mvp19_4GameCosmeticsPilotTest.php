@@ -73,6 +73,8 @@ $effectPrices = array_map('intval', array_column($database->fetchAll(
 $assertSame([3000,5000,8000,12000], $themePrices, 'Theme prices must match the common canonical grid');
 $assertSame([3000,6000,9000,12500], $elementPrices, 'Element prices must match the common canonical grid');
 $assertSame([2500,5000,7500], $effectPrices, 'Effect prices must match the common canonical grid');
+$strikeMetadata = json_decode((string)$database->fetchValue("SELECT metadata_json FROM mgw_product_catalog WHERE item_id = 'game-ttt-effect-strike'"), true, 32, JSON_THROW_ON_ERROR);
+$assertSame('Перечёркивание', (string)($strikeMetadata['display_name'] ?? ''), 'The strike effect must use a clear Russian catalogue title');
 
 $bundleRow = $database->fetchAll("SELECT price_coins, members_json FROM mgw_product_offers WHERE offer_id = 'ttt-premium-bundle' AND offer_status = 'active'")[0] ?? null;
 $assertTrue(is_array($bundleRow), 'Premium pilot bundle must be active');
@@ -161,7 +163,10 @@ $assertTrue(str_contains($rendererSource, 'player?.game_cosmetics?.slots') && st
 $assertTrue(!str_contains($rendererSource, 'api.gameAction') && !str_contains($rendererSource, 'time_left'), 'Cosmetic renderer must not become an action or timer owner');
 $assertTrue(str_contains($storeSource, 'Оформление игры') && str_contains($storeSource, 'Купить</span><b>${price} коинов'), 'Games Store must explain the collection and include the exact purchase price in every action');
 $assertTrue(str_contains($storeSource, 'Фон и сетка игрового поля') && str_contains($storeSource, 'Внешний вид крестиков и ноликов'), 'Games Store must explain what each cosmetic group changes');
+$assertTrue(!str_contains($storeSource, 'сразу показываются в матче') && !str_contains($storeSource, '${items.length} варианта'), 'Games Store must not repeat self-evident match copy or decorative offer counters');
+$assertTrue(str_contains($storeSource, 'store-v2-effect-x') && str_contains($storeSource, "safeVariant === 'sign' ? '<b aria-hidden=\"true\">+</b>' : ''"), 'Effect cards must render one straight CSS X and reserve the plus badge for the sign effect');
 $assertTrue(str_contains($storeCss, 'grid-template-columns:116px minmax(0,1fr)') && str_contains($storeCss, 'min-height:39px'), 'Mobile game offers must render as readable preview cards with usable actions');
-$assertTrue(str_contains($mainCss, 'store-v2.css?v=4') && str_contains($mainCss, 'game-cosmetics-visual-v2'), 'Active CSS graph must cache-bust the visual game catalogue instead of reusing the pre-pilot Store stylesheet');
+$assertTrue(str_contains($storeCss, '.store-v2-effect-x::before,.store-v2-effect-x::after'), 'Effect X must use symmetrical CSS geometry instead of a font glyph');
+$assertTrue(str_contains($mainCss, 'store-v2.css?v=5') && str_contains($mainCss, 'game-cosmetics-polish-v3'), 'Active CSS graph must cache-bust the polished game catalogue instead of reusing the previous Store stylesheet');
 
 fwrite(STDOUT, "PASS: MVP-19.4 game cosmetics framework and Tic Tac Toe pilot ({$assertions} assertions)\n");

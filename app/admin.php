@@ -16,12 +16,12 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <title>Mini Games World · Admin</title>
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=3&replay=17-6">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=3&replay=17-6" defer></script>
+  <script src="./assets/js/admin-shell.js?v=4&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php">
     <header class="mgw-admin__header">
       <div>
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
@@ -217,6 +217,34 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <h3>История версий</h3>
             <div data-economy-history></div>
           </div>
+        </div>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-test-coins-card>
+        <div class="mgw-admin__card-head">
+          <h2>Тестовые коины</h2>
+          <span>staging only</span>
+        </div>
+        <div class="mgw-admin__economy">
+          <div class="mgw-admin__economy-meta">
+            <label class="mgw-admin__field">
+              <span>Игрок</span>
+              <input data-test-coins-player type="text" maxlength="191" autocomplete="off" placeholder="Пусто — начислить себе">
+            </label>
+            <label class="mgw-admin__field">
+              <span>Количество</span>
+              <input data-test-coins-amount type="number" min="1" max="250000" step="1" value="100000" inputmode="numeric">
+            </label>
+          </div>
+          <label class="mgw-admin__field">
+            <span>Причина</span>
+            <input data-test-coins-reason type="text" maxlength="200" autocomplete="off" value="Проверка игровой косметики">
+          </label>
+          <div class="mgw-admin__economy-actions">
+            <button type="button" data-test-coins-grant>Начислить тестовые коины</button>
+            <small>Только staging. Пустое поле игрока использует Telegram ID текущего администратора.</small>
+          </div>
+          <div class="mgw-admin__replay-status" data-test-coins-status>Начислений в этой сессии ещё не было.</div>
         </div>
       </article>
     </section>

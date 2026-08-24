@@ -19,7 +19,7 @@ return [
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=49&mvp18=friends',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history',
-        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=42&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-visual-v2',
+        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=43&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1119&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=4&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1152&mvp16=notification-center-v2',
@@ -46,7 +46,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=178&sk=3&icons=c1efd5af&render=38&mvp16=notification-center-v2-desktop-cache&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-visual-v2',
+        'main_css' => './assets/css/main.css?v=179&sk=3&icons=c1efd5af&render=38&mvp16=notification-center-v2-desktop-cache&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],

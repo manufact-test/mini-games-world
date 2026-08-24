@@ -120,6 +120,8 @@ app/admin.php
 app/assets/css/admin-shell.css
 app/assets/js/admin-shell.js
 bot/admin-read.php
+bot/admin-test-coins.php
+bot/services/StagingAdminTestCoinGrantService.php
 bot/runtime/ProductionPrimaryApplicationEntrypoints.php
 bot/storage/StorageFactory.php
 bot/services/StagingReadinessService.php
