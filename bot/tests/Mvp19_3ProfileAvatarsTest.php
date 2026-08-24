@@ -76,7 +76,9 @@ $profileUi = (string)file_get_contents($root . '/app/assets/js/ui.js');
 $profileModel = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-model.js');
 $responseHelper = (string)file_get_contents($root . '/bot/helpers/response.php');
 $avatarPresentation = (string)file_get_contents($root . '/app/assets/js/profile/mgw-avatar-presentation.js');
+$avatarRegistry = (string)file_get_contents($root . '/app/assets/js/profile/mgw-avatar-registry.js');
 $avatarCss = (string)file_get_contents($root . '/app/assets/css/components/mgw-avatars.css');
+$avatarSprite = $root . '/app/assets/media/avatars/mgw-avatar-characters-v2.webp';
 $cleanEntry = (string)file_get_contents($root . '/app/assets/js/production-clean-entry-v110.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 
@@ -86,7 +88,7 @@ $assertTrue(!str_contains($profileClient, 'STARTER_AVATARS'), 'Profile client mu
 $assertTrue(str_contains($profileClient, 'ownedAvatarItems'), 'Profile client must render owned avatar collection');
 $assertTrue(str_contains($profileClient, 'data-profile-avatar-preview'), 'Owned avatar click must open preview before equip');
 $assertTrue(str_contains($profileClient, "api.profileV2({ avatar_item_id:itemId })"), 'Explicit equip must continue through canonical Profile API');
-$assertTrue(str_contains($profileClient, "'store-avatar-05'"), 'Launch order must include all five paid avatar IDs');
+$assertTrue(str_contains($profileClient, "'store-avatar-09'"), 'Launch order must include all nine paid avatar IDs');
 
 $assertTrue(str_contains($stateClient, 'selectedAvatarId: null'), 'Client state must expose one explicit selectedAvatarId owner');
 $assertTrue(str_contains($profileClient, 'state.selectedAvatarId = itemId;'), 'Equip must update selectedAvatarId optimistically before server confirmation');
@@ -124,11 +126,18 @@ $assertTrue(str_contains($cleanEntry, 'initMgwAvatarPresentation'), 'Active clea
 $launchIds = [
     'starter-default-01','starter-default-02','starter-default-03',
     'store-avatar-01','store-avatar-02','store-avatar-03','store-avatar-04','store-avatar-05',
+    'store-avatar-06','store-avatar-07','store-avatar-08','store-avatar-09',
 ];
 foreach ($launchIds as $itemId) {
     $assertTrue(str_contains($avatarCss, 'data-avatar-item-id="' . $itemId . '"'), 'Shared avatar CSS must own launch item ' . $itemId);
 }
 $assertTrue(str_contains($avatarCss, 'prefers-reduced-motion:reduce'), 'Avatar presentation must preserve reduced-motion safety');
+$assertTrue(str_contains($avatarRegistry, 'mgw-avatar-characters-v2.webp?v=1'), 'Registry must publish the illustrated raster avatar sprite');
+$assertTrue(str_contains($avatarCss, 'mgw-avatar-characters-v2.webp?v=1'), 'Shared CSS must render the illustrated raster avatar sprite');
+$assertTrue(is_file($avatarSprite), 'Illustrated raster avatar sprite must exist');
+$spriteSize = getimagesize($avatarSprite);
+$assertSame(6144, (int)($spriteSize[0] ?? 0), 'Avatar sprite must contain twelve equal 512px portraits');
+$assertSame(512, (int)($spriteSize[1] ?? 0), 'Avatar sprite height must stay at the 512px portrait baseline');
 
 $profileTarget = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
 $storeTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');

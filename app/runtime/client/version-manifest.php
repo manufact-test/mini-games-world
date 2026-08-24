@@ -4,7 +4,7 @@ declare(strict_types=1);
 return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
-        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1126&mvp16=canonical-avatar-owner&mvp17=history-single-owner&mvp19=avatar-presentation&mvp19_4=character-identity&art=knight-v2&roster=full-fantasy-v4',
+        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1127&mvp16=canonical-avatar-owner&mvp17=history-single-owner&mvp19=avatar-presentation&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5',
         '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2',
         '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
         './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch&mvp18=friends&mvp19=store-v2',
@@ -46,7 +46,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=175&sk=3&icons=c1efd5af&render=38&mvp16=notification-center-v2-desktop-cache&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v1&mvp19_4=character-identity&art=knight-v2&roster=full-fantasy-v4',
+        'main_css' => './assets/css/main.css?v=176&sk=3&icons=c1efd5af&render=38&mvp16=notification-center-v2-desktop-cache&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],

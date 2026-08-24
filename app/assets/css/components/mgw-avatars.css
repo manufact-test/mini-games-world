@@ -1,4 +1,4 @@
-/* MVP-19.4 — character-only avatar artwork shared by Profile / Store / games. */
+/* MVP-19.4 — illustrated raster character portraits shared by Profile / Store / games. */
 [data-avatar-item-id^="starter-default-"],
 [data-avatar-item-id^="store-avatar-"],
 [data-avatar-id^="starter-default-"],
@@ -7,15 +7,15 @@
   isolation:isolate;
   overflow:hidden;
   color:transparent!important;
-  background-color:#171827!important;
-  background-image:url('../../media/avatars/mgw-avatar-characters-v1.svg?v=3')!important;
+  background-color:#0c1020!important;
+  background-image:url('../../media/avatars/mgw-avatar-characters-v2.webp?v=1')!important;
   background-repeat:no-repeat!important;
   background-size:1200% 100%!important;
   background-position-y:50%!important;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);
 }
 
-/* One transparent character portrait per canonical avatar id. */
+/* One full illustrated portrait per canonical avatar id. */
 [data-avatar-item-id="starter-default-01"],[data-avatar-id="starter-default-01"]{background-position-x:0%!important}
 [data-avatar-item-id="starter-default-02"],[data-avatar-id="starter-default-02"]{background-position-x:9.0909%!important}
 [data-avatar-item-id="starter-default-03"],[data-avatar-id="starter-default-03"]{background-position-x:18.1818%!important}
