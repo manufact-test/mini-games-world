@@ -5,6 +5,44 @@ require_once __DIR__ . '/../notifications/NotificationCenterV2Policy.php';
 
 final class NotificationService
 {
+    public function addFriendRequest(
+        array &$db,
+        string $recipientUserId,
+        string $actorMgwId,
+        string $recipientMgwId,
+        string $actorNickname,
+        string $eventAt
+    ): ?array {
+        return $this->addFriendEvent(
+            $db,
+            'friend_request',
+            $recipientUserId,
+            $actorMgwId,
+            $recipientMgwId,
+            $actorNickname,
+            $eventAt
+        );
+    }
+
+    public function addFriendAccepted(
+        array &$db,
+        string $recipientUserId,
+        string $actorMgwId,
+        string $recipientMgwId,
+        string $actorNickname,
+        string $eventAt
+    ): ?array {
+        return $this->addFriendEvent(
+            $db,
+            'friend_accepted',
+            $recipientUserId,
+            $actorMgwId,
+            $recipientMgwId,
+            $actorNickname,
+            $eventAt
+        );
+    }
+
     public function addShopOrderDecision(array &$db, array $order, string $decision): ?array
     {
         if (!in_array($decision, ['done', 'rejected'], true)) return null;
@@ -295,6 +333,57 @@ final class NotificationService
             $notification['read_at'] = $now;
         }
         unset($notification);
+    }
+
+    private function addFriendEvent(
+        array &$db,
+        string $type,
+        string $recipientUserId,
+        string $actorMgwId,
+        string $recipientMgwId,
+        string $actorNickname,
+        string $eventAt
+    ): ?array {
+        $recipientUserId = trim($recipientUserId);
+        $actorMgwId = trim($actorMgwId);
+        $recipientMgwId = trim($recipientMgwId);
+        $actorNickname = trim($actorNickname);
+        if ($recipientUserId === '' || $actorMgwId === '' || $recipientMgwId === '' || $actorNickname === '') return null;
+        if (!in_array($type, ['friend_request', 'friend_accepted'], true)) return null;
+
+        try {
+            $createdAt = (new DateTimeImmutable($eventAt, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('UTC'))
+                ->format(DATE_ATOM);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (!isset($db['notifications']) || !is_array($db['notifications'])) $db['notifications'] = [];
+        $eventKey = 'social:' . $type . ':' . $actorMgwId . ':' . $recipientMgwId . ':'
+            . substr(hash('sha256', $createdAt), 0, 16);
+        foreach ($db['notifications'] as $existing) {
+            if (is_array($existing) && (string)($existing['event_key'] ?? '') === $eventKey) return $existing;
+        }
+
+        $request = $type === 'friend_request';
+        $notification = [
+            'id' => make_id('notification'),
+            'event_key' => $eventKey,
+            'user_id' => $recipientUserId,
+            'type' => $type,
+            'title' => $request ? 'Новая заявка в друзья' : 'Теперь вы друзья',
+            'message' => $request
+                ? $actorNickname . ' хочет добавить вас в друзья.'
+                : 'Ваша заявка принята игроком «' . $actorNickname . '».',
+            'tone' => $request ? 'info' : 'success',
+            'actor_mgw_id' => $actorMgwId,
+            'recipient_mgw_id' => $recipientMgwId,
+            'created_at' => $createdAt,
+            'read_at' => null,
+        ];
+        $db['notifications'][] = $notification;
+        return $notification;
     }
 
     private function displayMessage(array $notification): string

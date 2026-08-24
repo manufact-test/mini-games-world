@@ -195,7 +195,7 @@ final class FriendGraphService
                 'friend_resolved_at_utc' => null,
                 'updated_at_utc' => $now,
             ]);
-            return $this->mutationResult('outgoing', true, $targetMgwId);
+            return $this->mutationResult('outgoing', true, $targetMgwId) + ['event_at' => $now];
         });
     }
 
@@ -218,7 +218,7 @@ final class FriendGraphService
                 'friend_resolved_at_utc' => $now,
                 'updated_at_utc' => $now,
             ]);
-            return $this->mutationResult('friends', true, $targetMgwId);
+            return $this->mutationResult('friends', true, $targetMgwId) + ['event_at' => $now];
         });
     }
 

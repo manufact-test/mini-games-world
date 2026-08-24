@@ -181,8 +181,8 @@
 .friends-v110-game strong{display:block;font-size:13px}.friends-v110-game small{display:block;margin-top:3px;color:var(--muted,#a6a1af);font-size:10px}
 .friends-v110-context{display:grid;gap:8px}
 .friends-v110-report{display:grid;gap:14px;color-scheme:dark}
-.friends-v110-report label{display:grid;gap:7px}
-.friends-v110-report label>span{padding-left:2px;color:#f3effa;font-size:11px;font-weight:900}
+.friends-v110-field{display:grid;gap:7px}
+.friends-v110-field>span{padding-left:2px;color:#f3effa;font-size:11px;font-weight:900}
 .friends-v110-report .form-input{
   width:100%;
   min-width:0;
@@ -203,15 +203,77 @@
   border-color:rgba(178,116,255,.7);
   box-shadow:0 0 0 3px rgba(124,92,255,.16),inset 0 1px 0 rgba(255,255,255,.04);
 }
-.friends-v110-report select.form-input{
+.friends-v110-report-select{position:relative}
+.friends-v110-report-select-trigger{
+  width:100%;
   min-height:46px;
-  padding:0 42px 0 13px;
-  background:
-    linear-gradient(45deg,transparent 50%,#c9c4d3 50%) calc(100% - 17px) 50%/5px 5px no-repeat,
-    linear-gradient(135deg,#c9c4d3 50%,transparent 50%) calc(100% - 12px) 50%/5px 5px no-repeat,
-    linear-gradient(180deg,#171923,#10131c);
+  padding:0 13px;
+  border:1px solid rgba(233,236,244,.16);
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  background:linear-gradient(180deg,#171923,#10131c);
+  color:#f7f5fb;
+  font:inherit;
+  font-size:12px;
+  font-weight:800;
+  text-align:left;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 8px 20px rgba(0,0,0,.1);
 }
-.friends-v110-report select.form-input option{background:#171923;color:#f7f5fb}
+.friends-v110-report-select-trigger:focus-visible,.friends-v110-report-select-trigger[aria-expanded="true"]{
+  border-color:rgba(178,116,255,.72);
+  outline:none;
+  box-shadow:0 0 0 3px rgba(124,92,255,.16),inset 0 1px 0 rgba(255,255,255,.04);
+}
+.friends-v110-report-select-trigger i{
+  width:8px;
+  height:8px;
+  flex:0 0 8px;
+  border-right:2px solid #c9c4d3;
+  border-bottom:2px solid #c9c4d3;
+  transform:rotate(45deg) translateY(-2px);
+  transition:transform .16s ease;
+}
+.friends-v110-report-select-trigger[aria-expanded="true"] i{transform:rotate(225deg) translate(-1px,-1px)}
+.friends-v110-report-select-menu{
+  position:absolute;
+  z-index:12;
+  top:calc(100% + 7px);
+  left:0;
+  right:0;
+  padding:6px;
+  border:1px solid rgba(178,116,255,.38);
+  border-radius:14px;
+  display:grid;
+  gap:3px;
+  background:linear-gradient(155deg,#24202f,#11141d 74%);
+  box-shadow:0 18px 44px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.friends-v110-report-select-menu[hidden]{display:none}
+.friends-v110-report-select-menu button{
+  min-height:40px;
+  padding:0 11px;
+  border:1px solid transparent;
+  border-radius:10px;
+  background:transparent;
+  color:#f5f2fa;
+  font:inherit;
+  font-size:11.5px;
+  font-weight:760;
+  text-align:left;
+}
+.friends-v110-report-select-menu button:hover,.friends-v110-report-select-menu button:focus-visible{
+  border-color:rgba(178,116,255,.28);
+  outline:none;
+  background:rgba(124,92,255,.2);
+}
+.friends-v110-report-select-menu button[aria-selected="true"]{
+  border-color:rgba(178,116,255,.42);
+  background:linear-gradient(135deg,rgba(124,92,255,.5),rgba(178,116,255,.24));
+  color:#fff;
+}
 .friends-v110-report textarea.form-input{min-height:122px;padding:12px 13px;resize:none}
 .friends-v110-report textarea.form-input::placeholder{color:rgba(233,236,244,.4)}
 .friends-v110-report+.btn{min-height:46px;border-radius:14px}

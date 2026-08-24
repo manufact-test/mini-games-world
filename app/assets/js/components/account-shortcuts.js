@@ -1,4 +1,7 @@
 import { api } from '../api/client.js?v=47';
+import { closeSheet } from './sheet.js?v=1109';
+
+let friendsModulePromise = null;
 
 export function initAccountShortcuts(){
   document.addEventListener('click', event => {
@@ -12,9 +15,21 @@ export function initAccountShortcuts(){
 }
 
 async function openFriendsShortcut(){
-  const module = await import('../screens/friends-screen-v110.js?v=3&mvp18=nested-panels-polish&moderation=1');
+  closeSheet();
+  const module = await loadFriendsModule();
   if (typeof module.initFriendsScreen === 'function') module.initFriendsScreen();
   document.dispatchEvent(new CustomEvent('mgw:open-friends'));
+}
+
+function loadFriendsModule(){
+  if (!friendsModulePromise) {
+    friendsModulePromise = import('../screens/friends-screen-v110.js?v=4&mvp18=social-live-sync&report-select=custom')
+      .catch(error => {
+        friendsModulePromise = null;
+        throw error;
+      });
+  }
+  return friendsModulePromise;
 }
 
 async function enhanceCurrentMenu(allowSocialNavigation = false){
@@ -35,6 +50,7 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
       void openFriendsShortcut();
     });
     menu.prepend(friends);
+    void loadFriendsModule();
   }
 
   if (sheet.querySelector('[data-account-orders-shortcut]')) return;

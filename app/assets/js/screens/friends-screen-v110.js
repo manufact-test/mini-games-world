@@ -1,11 +1,12 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { showScreen } from '../router.js?v=27';
+import { currentScreen, showScreen } from '../router.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=1109';
 import { openSocialPlayerInvite } from '../games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1';
 
-const STYLE_URL = './assets/css/friends-v110.css?v=3&mvp18=nested-panels-polish';
+const STYLE_URL = './assets/css/friends-v110.css?v=4&mvp18=social-live-sync&report-select=custom';
+const FRIENDS_REFRESH_MS = 5000;
 const GAME_NAMES = Object.freeze({
   tictactoe:'Крестики-нолики', four_in_a_row:'4 в ряд', battleship:'Морской бой',
   checkers:'Шашки', reversi:'Реверси', chess:'Шахматы', go:'Го', domino:'Домино',
@@ -27,6 +28,8 @@ let searching = false;
 let searchQuery = '';
 let searchResults = [];
 let searchMessage = '';
+let snapshotRefreshPromise = null;
+let snapshotPollTimer = null;
 
 export function initFriendsScreen(){
   if (initialized) return;
@@ -34,6 +37,15 @@ export function initFriendsScreen(){
   ensureStyles();
   ensureScreen();
   document.addEventListener('mgw:open-friends', () => void openFriends());
+  document.addEventListener('mgw:screen-changed', event => {
+    if (event?.detail?.to === 'friends') startSnapshotPolling();
+    if (event?.detail?.from === 'friends') stopSnapshotPolling();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && currentScreen() === 'friends') {
+      void refreshSnapshot({ silent:true });
+    }
+  });
 }
 
 async function openFriends(){
@@ -46,7 +58,21 @@ async function openFriends(){
   closeSheet();
   showScreen('friends');
   render();
-  await refreshSnapshot();
+  await refreshSnapshot({ silent:false });
+}
+
+function startSnapshotPolling(){
+  stopSnapshotPolling();
+  snapshotPollTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible' && currentScreen() === 'friends') {
+      void refreshSnapshot({ silent:true });
+    }
+  }, FRIENDS_REFRESH_MS);
+}
+
+function stopSnapshotPolling(){
+  if (snapshotPollTimer !== null) window.clearInterval(snapshotPollTimer);
+  snapshotPollTimer = null;
 }
 
 function ensureStyles(){
@@ -72,19 +98,52 @@ function ensureScreen(){
   app.append(screen);
 }
 
-async function refreshSnapshot(){
-  if (loading) return;
-  loading = true;
-  render();
+async function refreshSnapshot({ silent = false } = {}){
+  if (snapshotRefreshPromise) return snapshotRefreshPromise;
+  snapshotRefreshPromise = (async () => {
+    if (!silent) {
+      loading = true;
+      render();
+    }
+    try {
+      const response = await api.friends({ action:'snapshot' });
+      const nextSnapshot = normalizeSnapshot(response?.result);
+      const changed = snapshotSignature(nextSnapshot) !== snapshotSignature(snapshot);
+      snapshot = nextSnapshot;
+      if (changed && silent) renderSilentSnapshotUpdate();
+      if (changed) document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
+    } catch (error) {
+      if (!silent) toast(error?.message || 'Не удалось загрузить друзей.');
+    } finally {
+      if (!silent) {
+        loading = false;
+        render();
+      }
+    }
+  })();
   try {
-    const response = await api.friends({ action:'snapshot' });
-    snapshot = normalizeSnapshot(response?.result);
-  } catch (error) {
-    toast(error?.message || 'Не удалось загрузить друзей.');
+    await snapshotRefreshPromise;
   } finally {
-    loading = false;
-    render();
+    snapshotRefreshPromise = null;
   }
+}
+
+function snapshotSignature(value){
+  return JSON.stringify(value);
+}
+
+function renderSilentSnapshotUpdate(){
+  const previousInput = document.querySelector('#friendsV110Root input[name="query"]');
+  const restoreFocus = previousInput instanceof HTMLInputElement && document.activeElement === previousInput;
+  const selectionStart = restoreFocus ? previousInput.selectionStart : null;
+  const selectionEnd = restoreFocus ? previousInput.selectionEnd : null;
+  if (previousInput instanceof HTMLInputElement) searchQuery = previousInput.value;
+  render();
+  if (!restoreFocus) return;
+  const nextInput = document.querySelector('#friendsV110Root input[name="query"]');
+  if (!(nextInput instanceof HTMLInputElement)) return;
+  nextInput.focus({ preventScroll:true });
+  if (selectionStart !== null && selectionEnd !== null) nextInput.setSelectionRange(selectionStart, selectionEnd);
 }
 
 function render(){
@@ -376,14 +435,24 @@ function profileMarkup(profile){
 }
 
 function openReportSheet(player){
+  const [initialReason, initialReasonLabel] = REPORT_REASONS[0];
   openSheet(`
     <div class="sheet-head"><div><h2>Пожаловаться</h2><p>${escapeHtml(player?.nickname || 'Игрок')} · ${escapeHtml(player?.public_mgw_id || '')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="friends-v110-report">
-      <label><span>Причина</span><select class="form-input" id="socialReportReason">${REPORT_REASONS.map(([value,label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join('')}</select></label>
-      <label><span>Комментарий</span><textarea class="form-input" id="socialReportText" maxlength="800" placeholder="Необязательно. Кратко опишите ситуацию"></textarea></label>
+      <div class="friends-v110-field"><span id="socialReportReasonLabel">Причина</span>
+        <div class="friends-v110-report-select" data-report-reason-select>
+          <button class="friends-v110-report-select-trigger" data-report-reason-trigger type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="socialReportReasonLabel socialReportReasonValue"><span id="socialReportReasonValue">${escapeHtml(initialReasonLabel)}</span><i aria-hidden="true"></i></button>
+          <div class="friends-v110-report-select-menu" data-report-reason-menu role="listbox" aria-labelledby="socialReportReasonLabel" hidden>
+            ${REPORT_REASONS.map(([value,label], index) => `<button type="button" role="option" data-report-reason="${escapeHtml(value)}" aria-selected="${index === 0 ? 'true' : 'false'}">${escapeHtml(label)}</button>`).join('')}
+          </div>
+          <input id="socialReportReason" type="hidden" value="${escapeHtml(initialReason)}" />
+        </div>
+      </div>
+      <label class="friends-v110-field"><span>Комментарий</span><textarea class="form-input" id="socialReportText" maxlength="800" placeholder="Необязательно. Кратко опишите ситуацию"></textarea></label>
     </div>
     <button class="btn primary full" id="socialReportSend" type="button">Отправить жалобу</button>
   `);
+  bindReportReasonSelect();
   document.getElementById('socialReportSend')?.addEventListener('click', async event => {
     const reason = String(document.getElementById('socialReportReason')?.value || '').trim();
     const details = String(document.getElementById('socialReportText')?.value || '').trim();
@@ -405,6 +474,43 @@ function openReportSheet(player){
       toast(error?.message || 'Не удалось отправить жалобу.');
       if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
     }
+  });
+}
+
+function bindReportReasonSelect(){
+  const root = document.querySelector('#sheet [data-report-reason-select]');
+  const trigger = root?.querySelector('[data-report-reason-trigger]');
+  const menu = root?.querySelector('[data-report-reason-menu]');
+  const value = document.getElementById('socialReportReason');
+  const valueLabel = document.getElementById('socialReportReasonValue');
+  if (!(root instanceof HTMLElement) || !(trigger instanceof HTMLButtonElement) || !(menu instanceof HTMLElement)) return;
+
+  const close = () => {
+    menu.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+  trigger.addEventListener('click', () => {
+    const open = menu.hidden;
+    menu.hidden = !open;
+    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) menu.querySelector('[aria-selected="true"]')?.focus();
+  });
+  menu.addEventListener('click', event => {
+    const option = event.target.closest('[data-report-reason]');
+    if (!(option instanceof HTMLButtonElement)) return;
+    menu.querySelectorAll('[data-report-reason]').forEach(item => item.setAttribute('aria-selected', item === option ? 'true' : 'false'));
+    if (value instanceof HTMLInputElement) value.value = String(option.dataset.reportReason || '');
+    if (valueLabel) valueLabel.textContent = String(option.textContent || '').trim();
+    close();
+    trigger.focus();
+  });
+  root.addEventListener('focusout', event => {
+    if (!(event.relatedTarget instanceof Node) || !root.contains(event.relatedTarget)) close();
+  });
+  root.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    close();
+    trigger.focus();
   });
 }
 
