@@ -17,7 +17,7 @@ return [
         './assets/js/ui.js?v=89' => './assets/js/ui.js?v=95&mvp16=canonical-profile-display-owner&mvp19=mgw-avatar-only&mvp19_3_1=selected-avatar-owner',
         './assets/js/components/sheet.js?v=68' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
-        './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=51&mvp18=friends-nested-panels-polish',
+        './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=52&mvp18=social-live-sync&report-select=custom',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=43&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1119&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync',

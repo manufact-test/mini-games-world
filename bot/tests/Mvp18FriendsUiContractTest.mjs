@@ -24,7 +24,9 @@ assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.j
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
 assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify the frozen reconnect composition owner');
-assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=3&mvp18=nested-panels-polish&moderation=1')"), 'Existing account shortcut owner must lazy-load the polished Friends moderation module on demand');
+assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=4&mvp18=social-live-sync&report-select=custom')"), 'Existing account shortcut owner must lazy-load the live Friends module on demand');
+assert(accountShortcuts.includes('closeSheet();') && accountShortcuts.indexOf('closeSheet();') < accountShortcuts.indexOf('await loadFriendsModule()'), 'Friends shortcut must close the menu synchronously before awaiting its module');
+assert(accountShortcuts.includes('void loadFriendsModule();'), 'Friends module must prewarm while the menu is visible');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
 assert(inviteWrapper.includes("v=1142&zone=unified&rematch=optimistic&terminal=self-silent"), 'Accepted rematch wrapper must keep its frozen base invite specifier');
 assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1'"), 'Frozen base invite specifier must converge through the manifest on the social-aware cache identity');
@@ -48,6 +50,10 @@ assert(endpoint.includes("'players' => $service->searchPlayers") && endpoint.inc
 assert(!friends.includes('Минимум 2 символа ника или полный MGW-ID.'), 'Search must not repeat the self-evident minimum-length hint below the input');
 assert(friendsCss.includes('.friends-v110-profile{') && friendsCss.includes('overflow-y:auto'), 'Public profile must scroll through all game statistics inside the bounded sheet');
 assert(friendsCss.includes('.friends-v110-report .form-input') && friendsCss.includes('appearance:none'), 'Report controls must use the dark MGW field system instead of browser-grey rectangles');
+assert(!friends.includes('<select') && friends.includes('data-report-reason-menu'), 'Report reason must use the managed MGW dropdown instead of the native browser select');
+assert(friendsCss.includes('.friends-v110-report-select-menu') && friendsCss.includes('button[aria-selected="true"]'), 'Managed report options must preserve the dark selected state');
+assert(friends.includes('const FRIENDS_REFRESH_MS = 5000') && friends.includes("currentScreen() === 'friends'"), 'Friends snapshot must refresh while the route stays visible');
+assert(friends.includes("new CustomEvent('mgw:notifications-refresh')"), 'Changed social snapshots must immediately refresh the existing bell owner');
 assert(friends.includes("section('Входящие заявки'"), 'Friends UI must render incoming requests');
 assert(friends.includes("section('Исходящие заявки'"), 'Friends UI must render outgoing requests');
 assert(friends.includes("section('Друзья'"), 'Friends UI must render friends');
@@ -64,5 +70,6 @@ assert(!friends.toLowerCase().includes('phone') && !friends.toLowerCase().includ
 assert(endpoint.includes("'player_profile'"), 'Friends endpoint must expose read-only public player profile projection');
 assert(endpoint.includes('SocialPlayerProfileReader'), 'Player profile action must use dedicated read-only projection');
 assert(endpoint.includes("'report' => $reports->submit("), 'Friends endpoint must hand reports to the canonical DB queue service');
+assert(endpoint.includes('SocialFriendNotificationService'), 'Friend request and acceptance events must enter the canonical bell pipeline');
 
 console.log('PASS: MVP-18.2/18.5 active Friends UI contract');

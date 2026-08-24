@@ -8,6 +8,7 @@ header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/social/FriendGraphService.php';
+require_once __DIR__ . '/social/SocialFriendNotificationService.php';
 require_once __DIR__ . '/social/SocialPlayerProfileReader.php';
 require_once __DIR__ . '/social/PlayerReportService.php';
 
@@ -102,6 +103,16 @@ try {
         ], mgw_friend_error_status($error->reason));
     } catch (InvalidArgumentException $error) {
         json_response(['ok' => false, 'code' => 'invalid_request', 'error' => 'Некорректный запрос.'], 422);
+    }
+
+    if (in_array($action, ['request', 'accept'], true) && is_array($result) && !empty($result['changed'])) {
+        try {
+            $notificationStorage = StorageFactory::createJson((string)($configRef['data_dir'] ?? (__DIR__ . '/data')));
+            (new SocialFriendNotificationService($database, $notificationStorage))
+                ->publish($action, $actorMgwId, $target, $result);
+        } catch (Throwable $notificationError) {
+            error_log('[MiniGamesWorld Friends notification] ' . $notificationError->getMessage());
+        }
     }
 
     json_response(['ok' => true, 'action' => $action, 'result' => $result]);

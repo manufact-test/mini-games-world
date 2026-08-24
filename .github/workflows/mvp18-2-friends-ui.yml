@@ -8,6 +8,7 @@ on:
       - 'bot/friends.php'
       - 'bot/social/**'
       - 'bot/tests/SocialPlayerProfileReaderTest.php'
+      - 'bot/tests/SocialFriendNotificationServiceTest.php'
       - 'bot/tests/Mvp18FriendsUiContractTest.mjs'
       - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'app/runtime/client/version-manifest.php'
@@ -60,8 +61,10 @@ jobs:
           php -l bot/friends.php
           php -l bot/social/FriendGraphService.php
           php -l bot/social/SocialPlayerProfileReader.php
+          php -l bot/social/SocialFriendNotificationService.php
           php -l bot/tests/FriendGraphServiceTest.php
           php -l bot/tests/SocialPlayerProfileReaderTest.php
+          php -l bot/tests/SocialFriendNotificationServiceTest.php
           php -l bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
 
       - name: Validate active JavaScript graph
@@ -83,6 +86,9 @@ jobs:
 
       - name: Run public player profile regression
         run: php bot/tests/SocialPlayerProfileReaderTest.php
+
+      - name: Run social bell delivery regression
+        run: php bot/tests/SocialFriendNotificationServiceTest.php
 
       - name: Run active launch and one-owner Friends UI contract
         run: node bot/tests/Mvp18FriendsUiContractTest.mjs

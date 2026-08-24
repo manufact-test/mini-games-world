@@ -162,6 +162,7 @@ $assertTrue(str_contains($friendsUi, "section('Заблокированные'")
 $assertTrue(str_contains($friendsUi, "mutation === 'unblock'"), 'Unblock must have an explicit UI branch');
 $assertTrue(str_contains($friendsUi, 'Разблокировать игрока?'), 'Unblock must require confirmation');
 $assertTrue(str_contains($friendsUi, "action:'report'"), 'Report UI must submit structured moderation data');
+$assertTrue(!str_contains($friendsUi, '<select') && str_contains($friendsUi, 'data-report-reason-menu'), 'Report reason must use the managed dark dropdown instead of a native browser list');
 $assertTrue(!str_contains($friendsUi, "api.support('player_report'"), 'Legacy support text must not own player reports after MVP-18.5');
 $assertTrue(str_contains($friendsEndpoint, 'PlayerReportService'), 'Friends endpoint must use the canonical report queue owner');
 $assertTrue(str_contains($invitesEndpoint, 'SocialInviteGuard'), 'Invite endpoint must enforce the canonical social block graph');

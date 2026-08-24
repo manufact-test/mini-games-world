@@ -99,6 +99,7 @@ $assertTrue(count($partial) <= FriendGraphService::SEARCH_LIMIT, 'Nickname searc
 $request = $service->requestFriend($users['a']['id'], $users['b']['id']);
 $assertSame('outgoing', $request['status'], 'First friend request must become outgoing');
 $assertSame(true, $request['changed'], 'First friend request must mutate pair state');
+$assertTrue(trim((string)($request['event_at'] ?? '')) !== '', 'Changed friend request must expose a stable event time for bell delivery');
 $duplicate = $service->requestFriend($users['a']['id'], $users['b']['id']);
 $assertSame(false, $duplicate['changed'], 'Same-direction duplicate request must be idempotent');
 $assertReason(
@@ -119,6 +120,7 @@ $assertSame(1, count($bSnapshot['incoming']), 'Target must see one incoming requ
 
 $accepted = $service->acceptFriendRequest($users['b']['id'], $users['a']['id']);
 $assertSame('friends', $accepted['status'], 'Incoming request acceptance must create friendship');
+$assertTrue(trim((string)($accepted['event_at'] ?? '')) !== '', 'Changed acceptance must expose a stable event time for bell delivery');
 $assertSame(1, count($service->snapshot($users['a']['id'])['friends']), 'Friendship must project symmetrically to requester');
 $assertSame(1, count($service->snapshot($users['b']['id'])['friends']), 'Friendship must project symmetrically to accepter');
 
