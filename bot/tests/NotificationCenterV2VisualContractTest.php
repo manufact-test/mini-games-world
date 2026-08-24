@@ -21,7 +21,7 @@ foreach ([
 if (!str_contains($main, "notifications-v2.css?v=3&mvp16=notification-center-v2-polish-desktop")) {
     throw new RuntimeException('Notification v2 desktop stylesheet cache-bust missing.');
 }
-if (!str_contains($manifest, "main.css?v=174&sk=3&icons=c1efd5af&render=37&mvp16=notification-center-v2-desktop-cache")) {
+if (!preg_match('/main\.css\?v=(?:17[4-9]|1[89][0-9]|[2-9][0-9]{2,}).*mvp16=notification-center-v2-desktop-cache/', $manifest)) {
     throw new RuntimeException('Main CSS desktop cache-bust missing.');
 }
 

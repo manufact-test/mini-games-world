@@ -96,9 +96,16 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
         }
 
         $rows = $database->fetchAll(
-            'SELECT i.provider_subject, i.mgw_id, u.nickname, u.equipped_avatar_item_id
+            'SELECT i.provider_subject, i.mgw_id, u.nickname, u.equipped_avatar_item_id,
+                    ge.equip_slot AS game_equip_slot, ge.item_id AS game_item_id
              FROM mgw_identities i
              INNER JOIN mgw_users u ON u.mgw_id = i.mgw_id
+             LEFT JOIN (
+                 SELECT e.mgw_id, e.equip_slot, e.item_id
+                 FROM mgw_equipped_items e
+                 INNER JOIN mgw_product_catalog c ON c.item_id = e.item_id
+                 WHERE c.item_type = \'game\' AND c.catalog_status = \'active\'
+             ) ge ON ge.mgw_id = i.mgw_id
              WHERE i.provider_subject IN (' . implode(', ', $placeholders) . ")
                AND i.provider IN ('telegram', 'development')
                AND u.status = 'active'",
@@ -121,10 +128,18 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
         $avatarItemId = strtolower(trim((string)($row['equipped_avatar_item_id'] ?? '')));
         if ($subject === '' || $mgwId === '' || $nickname === '') continue;
         if ($avatarItemId === '') $avatarItemId = 'starter-default-01';
-        $owners[$subject][$mgwId] = [
-            'name' => $nickname,
-            'avatar_item_id' => $avatarItemId,
-        ];
+        if (!isset($owners[$subject][$mgwId])) {
+            $owners[$subject][$mgwId] = [
+                'name' => $nickname,
+                'avatar_item_id' => $avatarItemId,
+                'game_cosmetics' => ['slots' => []],
+            ];
+        }
+        $slot = strtolower(trim((string)($row['game_equip_slot'] ?? '')));
+        $gameItemId = strtolower(trim((string)($row['game_item_id'] ?? '')));
+        if ($slot !== '' && $gameItemId !== '' && str_starts_with($slot, 'game_')) {
+            $owners[$subject][$mgwId]['game_cosmetics']['slots'][$slot] = $gameItemId;
+        }
     }
 
     $profiles = [];
@@ -132,6 +147,9 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
         if (count($byOwner) !== 1) continue;
         $profile = reset($byOwner);
         if (!is_array($profile) || trim((string)($profile['name'] ?? '')) === '') continue;
+        if (is_array($profile['game_cosmetics']['slots'] ?? null)) {
+            ksort($profile['game_cosmetics']['slots'], SORT_STRING);
+        }
         $profiles[(string)$subject] = $profile;
     }
     return $profiles;
@@ -169,8 +187,12 @@ function mgw_project_canonical_game_identity(array $data): array {
             if (!is_array($profile)) continue;
             $name = trim((string)($profile['name'] ?? ''));
             $avatarItemId = trim((string)($profile['avatar_item_id'] ?? ''));
+            $gameCosmetics = is_array($profile['game_cosmetics'] ?? null)
+                ? $profile['game_cosmetics']
+                : ['slots' => []];
             if ($name !== '') $player['name'] = $name;
             if ($avatarItemId !== '') $player['avatar_item_id'] = $avatarItemId;
+            $player['game_cosmetics'] = $gameCosmetics;
         }
         unset($player);
 

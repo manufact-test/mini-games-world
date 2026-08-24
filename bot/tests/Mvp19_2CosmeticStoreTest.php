@@ -94,10 +94,15 @@ $assertSame(3, count($inventory->snapshot($mgwId)['owned']), 'Store test account
 $snapshot = $store->snapshot($mgwId, 3000, [
     ['id'=>'coins_5000','coins'=>5000,'price_eur_cents'=>499,'enabled'=>true],
 ]);
-$assertSame(['coins','profile','games','bundles','inventory','tournament_rewards'], array_column($snapshot['tabs'], 'id'), 'Store v2 must expose the six canonical tabs in order');
+$assertSame(['coins','profile','games','bundles'], array_column($snapshot['tabs'], 'id'), 'Store v2 must expose only the four purchasable canonical tabs in order');
 $assertSame(9, count($snapshot['profile']['avatars']), 'Profile Store tab must expose all nine paid avatar offers');
+$assertSame(true, $snapshot['games']['available'] ?? false, 'Games Store tab must expose the active cosmetics framework pilot');
+$assertSame(4, count($snapshot['games']['catalogs']['tictactoe']['themes'] ?? []), 'Tic Tac Toe pilot must expose four field themes');
+$assertSame(4, count($snapshot['games']['catalogs']['tictactoe']['elements'] ?? []), 'Tic Tac Toe pilot must expose four mark sets');
+$assertSame(3, count($snapshot['games']['catalogs']['tictactoe']['effects'] ?? []), 'Tic Tac Toe pilot must expose three effects');
 $assertSame(3, count($snapshot['inventory']['items']), 'Inventory must expose the three starter ownership rows before purchases');
 $assertSame(null, $snapshot['bundles']['avatar_bundle'], 'Retired avatar bundle must not be exposed as an active Store offer');
+$assertSame(34000, $snapshot['bundles']['tictactoe_bundle']['price_coins'] ?? null, 'Tic Tac Toe premium bundle must preserve the canonical 34,000 price');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'], 'Purchase must never auto-equip');
 $assertSame(false, $snapshot['coins']['billing_available'], 'Real billing callbacks must remain outside MVP-19.2');
 

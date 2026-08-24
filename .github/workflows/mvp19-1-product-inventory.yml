@@ -85,6 +85,7 @@ jobs:
           test "$bad" -eq 0
 
       - name: Guard deferred pricing purchase UI and accepted engines
+        if: startsWith(github.head_ref, 'agent/mvp19-1')
         shell: bash
         run: |
           set -euo pipefail

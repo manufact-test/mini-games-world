@@ -1,0 +1,101 @@
+/* MVP-19.4: presentation-only Tic Tac Toe cosmetics. Rules and hit targets stay untouched. */
+#gameBoard[data-game-type="tictactoe"].ttt-cosmetics{
+  --ttt-surface-border:rgba(255,255,255,.08);
+  --ttt-surface-glow:rgba(124,92,255,.08);
+  box-sizing:border-box;
+  padding:7px;
+  border:1px solid var(--ttt-surface-border);
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(255,255,255,.025),rgba(255,255,255,.01));
+  box-shadow:0 12px 30px rgba(0,0,0,.17),0 0 20px var(--ttt-surface-glow);
+}
+
+#gameBoard[data-game-type="tictactoe"][data-ttt-opponent-theme="classic"]{--ttt-surface-border:rgba(223,188,126,.40);--ttt-surface-glow:rgba(223,188,126,.10)}
+#gameBoard[data-game-type="tictactoe"][data-ttt-opponent-theme="dark"]{--ttt-surface-border:rgba(128,143,180,.36);--ttt-surface-glow:rgba(70,84,126,.17)}
+#gameBoard[data-game-type="tictactoe"][data-ttt-opponent-theme="glass"]{--ttt-surface-border:rgba(135,218,255,.44);--ttt-surface-glow:rgba(83,189,255,.17)}
+#gameBoard[data-game-type="tictactoe"][data-ttt-opponent-theme="neon"]{--ttt-surface-border:rgba(217,87,255,.58);--ttt-surface-glow:rgba(168,59,255,.28)}
+
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="classic"]{
+  background:radial-gradient(circle at 30% 15%,rgba(255,229,166,.18),transparent 35%),linear-gradient(145deg,#4b3429,#251c20);
+}
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="classic"] .cell{
+  border-color:rgba(255,224,171,.17);
+  background:linear-gradient(145deg,rgba(117,76,50,.70),rgba(56,39,36,.88));
+  box-shadow:inset 0 1px 0 rgba(255,241,204,.08);
+}
+
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="dark"]{
+  background:radial-gradient(circle at 80% 0,rgba(103,119,173,.19),transparent 40%),linear-gradient(150deg,#181d2c,#090c14);
+}
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="dark"] .cell{
+  border-color:rgba(157,172,221,.13);
+  background:linear-gradient(145deg,rgba(42,49,73,.82),rgba(17,22,35,.94));
+}
+
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="glass"]{
+  background:radial-gradient(circle at 16% 5%,rgba(181,238,255,.28),transparent 32%),linear-gradient(145deg,rgba(50,99,137,.70),rgba(23,35,67,.88));
+  backdrop-filter:blur(14px) saturate(1.2);
+}
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="glass"] .cell{
+  border-color:rgba(204,244,255,.24);
+  background:linear-gradient(145deg,rgba(225,249,255,.17),rgba(80,146,186,.10));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 -7px 16px rgba(17,48,90,.20),0 5px 12px rgba(4,18,44,.15);
+}
+
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="neon"]{
+  background:radial-gradient(circle at 85% 12%,rgba(244,76,255,.23),transparent 34%),radial-gradient(circle at 5% 90%,rgba(20,234,255,.18),transparent 42%),linear-gradient(145deg,#170c2a,#070916);
+  box-shadow:0 13px 34px rgba(0,0,0,.30),0 0 24px rgba(180,59,255,.28),inset 0 0 24px rgba(30,213,255,.07);
+}
+#gameBoard[data-game-type="tictactoe"][data-ttt-theme="neon"] .cell{
+  border-color:rgba(132,100,255,.29);
+  background:linear-gradient(145deg,rgba(85,42,130,.31),rgba(10,16,36,.86));
+  box-shadow:inset 0 0 14px rgba(50,209,255,.035);
+}
+
+#gameBoard[data-game-type="tictactoe"] .cell[data-ttt-mark="classic"]{color:#eee5d3}
+#gameBoard[data-game-type="tictactoe"] .cell.x[data-ttt-mark="classic"]{color:#e0d2ff}
+#gameBoard[data-game-type="tictactoe"] .cell.o[data-ttt-mark="classic"]{color:#a7f5dc}
+
+#gameBoard[data-game-type="tictactoe"] .cell[data-ttt-mark="3d"]{
+  color:#f1f5ff;
+  filter:drop-shadow(0 4px 2px rgba(0,0,0,.38)) drop-shadow(0 0 5px rgba(141,160,255,.22));
+}
+#gameBoard[data-game-type="tictactoe"] .cell[data-ttt-mark="3d"]::before,
+#gameBoard[data-game-type="tictactoe"] .cell.x[data-ttt-mark="3d"]::after{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.70),0 2px 2px rgba(0,0,0,.33);
+}
+
+#gameBoard[data-game-type="tictactoe"] .cell.x[data-ttt-mark="metal"]{color:#e6b85e}
+#gameBoard[data-game-type="tictactoe"] .cell.o[data-ttt-mark="metal"]{color:#d9e4ef}
+#gameBoard[data-game-type="tictactoe"] .cell[data-ttt-mark="metal"]{
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.52)) drop-shadow(0 -1px 0 rgba(255,255,255,.28));
+}
+
+#gameBoard[data-game-type="tictactoe"] .cell.x[data-ttt-mark="neon"]{color:#ec63ff}
+#gameBoard[data-game-type="tictactoe"] .cell.o[data-ttt-mark="neon"]{color:#45f3ff}
+#gameBoard[data-game-type="tictactoe"] .cell[data-ttt-mark="neon"]{
+  filter:drop-shadow(0 0 4px currentColor) drop-shadow(0 0 9px currentColor);
+}
+
+#gameBoard[data-game-type="tictactoe"] .cell.ttt-sign-effect{animation:tttCosmeticSign .42s cubic-bezier(.2,.8,.2,1)}
+#gameBoard[data-game-type="tictactoe"] .cell.ttt-winning-cell{
+  border-color:rgba(255,221,104,.72);
+  box-shadow:inset 0 0 18px rgba(255,204,63,.22),0 0 13px rgba(255,205,74,.30);
+  animation:tttCosmeticWin 1.35s ease-in-out infinite alternate;
+}
+#gameBoard[data-game-type="tictactoe"] .cell.ttt-struck-cell{
+  opacity:.58;
+  background-image:linear-gradient(165deg,transparent 45%,rgba(255,102,133,.85) 47%,rgba(255,102,133,.85) 53%,transparent 55%);
+}
+
+@keyframes tttCosmeticSign{0%{transform:scale(.62);filter:brightness(1.8) drop-shadow(0 0 12px currentColor)}70%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes tttCosmeticWin{from{filter:brightness(1)}to{filter:brightness(1.25)}}
+
+@media (prefers-reduced-motion:reduce){
+  #gameBoard[data-game-type="tictactoe"] .cell.ttt-sign-effect,
+  #gameBoard[data-game-type="tictactoe"] .cell.ttt-winning-cell{animation:none}
+}
+
+@media (max-width:380px){
+  #gameBoard[data-game-type="tictactoe"].ttt-cosmetics{padding:5px;border-radius:18px}
+}

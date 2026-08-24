@@ -141,7 +141,11 @@ $assertSame('starter-default-01', $profiles->publicProfile($mgwId)['avatar']['it
 $snapshotA = $inventory->snapshot($mgwId);
 $snapshotB = $inventory->snapshot($mgwId);
 $assertSame($snapshotA, $snapshotB, 'Inventory snapshot must be deterministic for unchanged state');
-$assertSame(12, count($snapshotA['catalog']), 'Snapshot must expose the twelve current avatars');
+$avatarCatalog = array_values(array_filter(
+    $snapshotA['catalog'],
+    static fn(array $item): bool => (string)($item['item_family'] ?? '') === 'avatar'
+));
+$assertSame(12, count($avatarCatalog), 'Snapshot must preserve the twelve current avatars alongside later cosmetic families');
 $assertSame(4, count($snapshotA['owned']), 'Snapshot must expose three starters plus one granted store avatar');
 $assertSame('starter-default-01', $snapshotA['equipped']['profile_avatar'] ?? null, 'Snapshot must expose canonical profile equip slot');
 $assertTrue(!array_key_exists('price', $snapshotA['catalog'][0] ?? []), 'Inventory snapshot must not duplicate offer pricing into catalogue rows');
