@@ -1,9 +1,7 @@
 import { state } from '../state.js?v=27';
-// Previous accepted import lineage: ./mgw-avatar-registry.js?v=2
-import { getAvatarVisualMeta } from './mgw-avatar-registry.js?v=3&art=full-fantasy-v3';
+import { getAvatarVisualMeta } from './mgw-avatar-registry.js?v=2';
 
 const DEFAULT_AVATAR = 'starter-default-01';
-const FANTASY_ROSTER_STYLE_ID = 'mgw-avatar-full-fantasy-v3';
 
 let initialized = false;
 let observer = null;
@@ -12,7 +10,6 @@ let scheduled = false;
 export function initMgwAvatarPresentation(){
   if (initialized) return;
   initialized = true;
-  installFantasyRosterSprite();
 
   const start = () => {
     const row = document.getElementById('playersRow');
@@ -27,21 +24,6 @@ export function initMgwAvatarPresentation(){
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
   else start();
-}
-
-function installFantasyRosterSprite(){
-  if (document.getElementById(FANTASY_ROSTER_STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = FANTASY_ROSTER_STYLE_ID;
-  style.textContent = `
-    [data-avatar-item-id^="starter-default-"],
-    [data-avatar-item-id^="store-avatar-"],
-    [data-avatar-id^="starter-default-"],
-    [data-avatar-id^="store-avatar-"]{
-      background-image:url('./assets/media/avatars/mgw-avatar-characters-v1.svg?v=3')!important;
-    }
-  `;
-  document.head.append(style);
 }
 
 function scheduleDecorate(){

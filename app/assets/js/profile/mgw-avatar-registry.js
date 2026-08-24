@@ -1,5 +1,4 @@
-// Previous accepted sprite cache key: mgw-avatar-characters-v1.svg?v=2
-const AVATAR_SPRITE_ASSET = './assets/media/avatars/mgw-avatar-characters-v1.svg?v=3';
+const AVATAR_SPRITE_ASSET = './assets/media/avatars/mgw-avatar-characters-v1.svg?v=2';
 
 export const AVATAR_VISUAL_REGISTRY = Object.freeze({
   'starter-default-01': Object.freeze({ name:'Nova', rarity:'free', asset:AVATAR_SPRITE_ASSET, spriteIndex:0 }),
