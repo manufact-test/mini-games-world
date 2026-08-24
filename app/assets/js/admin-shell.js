@@ -20,6 +20,11 @@
   const economySave = root.querySelector('[data-economy-save]');
   const economySimulation = root.querySelector('[data-economy-simulation]');
   const economyHistory = root.querySelector('[data-economy-history]');
+  const testCoinsPlayer = root.querySelector('[data-test-coins-player]');
+  const testCoinsAmount = root.querySelector('[data-test-coins-amount]');
+  const testCoinsReason = root.querySelector('[data-test-coins-reason]');
+  const testCoinsGrant = root.querySelector('[data-test-coins-grant]');
+  const testCoinsStatus = root.querySelector('[data-test-coins-status]');
   const replayMatchId = root.querySelector('[data-replay-match-id]');
   const replayLoad = root.querySelector('[data-replay-load]');
   const replayStatus = root.querySelector('[data-replay-status]');
@@ -29,6 +34,7 @@
   const replayFrames = root.querySelector('[data-replay-frames]');
   const endpoint = String(root.dataset.adminApi || '');
   const economyEndpoint = String(root.dataset.economyApi || '');
+  const testCoinsEndpoint = String(root.dataset.testCoinsApi || '');
   const replayEndpoint = String(root.dataset.replayApi || '');
   const telegram = window.Telegram?.WebApp || null;
   let requestInFlight = false;
@@ -44,6 +50,7 @@
     requestInFlight = busy;
     refresh.disabled = busy;
     economySave.disabled = busy;
+    testCoinsGrant.disabled = busy;
     replayLoad.disabled = busy;
     economyHistory.querySelectorAll('button').forEach(button => {
       button.disabled = busy;
@@ -314,6 +321,50 @@
     }
   };
 
+  const grantTestCoins = async () => {
+    if (requestInFlight) return;
+    const player = testCoinsPlayer.value.trim();
+    const amount = Number(testCoinsAmount.value);
+    const reason = testCoinsReason.value.trim();
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 250000) {
+      testCoinsStatus.textContent = 'Укажите целое количество от 1 до 250 000.';
+      testCoinsStatus.dataset.state = 'error';
+      testCoinsAmount.focus();
+      return;
+    }
+    if (reason.length < 3) {
+      testCoinsStatus.textContent = 'Укажите причину начисления.';
+      testCoinsStatus.dataset.state = 'error';
+      testCoinsReason.focus();
+      return;
+    }
+    const target = player || 'себе';
+    if (!window.confirm(`Начислить ${amount.toLocaleString('ru-RU')} тестовых коинов ${target}?`)) return;
+
+    setBusy(true);
+    testCoinsStatus.textContent = 'Начисляю тестовые коины…';
+    delete testCoinsStatus.dataset.state;
+    try {
+      const requestToken = `admin-test-coins:${Date.now()}:${String(telegram.initDataUnsafe?.user?.id || 'admin')}`;
+      const data = await post(testCoinsEndpoint, {
+        action: 'grant_test_coins',
+        player,
+        amount,
+        reason,
+        request_token: requestToken
+      });
+      const grant = data.grant || {};
+      const syncNote = data.economy_sync === 'pending' ? ' Синхронизация ledger будет повторена магазином.' : '';
+      testCoinsStatus.textContent = `${grant.player || target}: +${Number(grant.amount || amount).toLocaleString('ru-RU')}. Баланс: ${Number(grant.balance_after || 0).toLocaleString('ru-RU')}.${syncNote}`;
+      testCoinsStatus.dataset.state = 'ok';
+    } catch (error) {
+      testCoinsStatus.textContent = error instanceof Error ? error.message : 'Не удалось начислить тестовые коины.';
+      testCoinsStatus.dataset.state = 'error';
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (telegram) {
     telegram.ready();
     telegram.expand();
@@ -325,5 +376,6 @@
     if (event.key === 'Enter') loadReplay();
   });
   economySave.addEventListener('click', saveEconomy);
+  testCoinsGrant.addEventListener('click', grantTestCoins);
   load();
 })();

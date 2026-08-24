@@ -241,7 +241,6 @@ function renderGamesTab(){
       <div>
         <span>Оформление игры</span>
         <h2>${escapeHtml(catalog.title || 'Крестики-нолики')}</h2>
-        <p>Поля, знаки и эффекты сразу показываются в матче.</p>
       </div>
       <div class="store-v2-game-head-marks" aria-hidden="true"><b>✕</b><b>○</b></div>
     </div>
@@ -257,7 +256,6 @@ function renderGameCosmeticGroup(title, subtitle, offers){
     <section class="store-v2-game-group">
       <div class="store-v2-title-row store-v2-game-title-row">
         <div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div>
-        <span>${items.length} варианта</span>
       </div>
       <div class="store-v2-game-grid">${items.map(renderGameOffer).join('')}</div>
     </section>
@@ -309,7 +307,10 @@ function gameCosmeticPreview(layer, variant, label = ''){
     content = `<i class="store-v2-mini-board">${marks.map(mark => `<span>${mark ? `<b>${mark}</b>` : ''}</span>`).join('')}</i>`;
   }
   else if (safeLayer === 'elements') content = '<i class="store-v2-mini-marks"><span>✕</span><span>○</span></i>';
-  else content = `<i class="store-v2-mini-effect"><span>✕</span><b>${safeVariant === 'sign' ? '+' : ''}</b></i>`;
+  else {
+    const badge = safeVariant === 'sign' ? '<b aria-hidden="true">+</b>' : '';
+    content = `<i class="store-v2-mini-effect"><span class="store-v2-effect-x" aria-hidden="true"></span>${badge}</i>`;
+  }
   return `<div class="store-v2-game-preview" data-cosmetic-layer="${safeLayer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeAttr(label)}">${content}</div>`;
 }
 
