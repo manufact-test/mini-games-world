@@ -59,7 +59,7 @@ foreach (['starter-default-01','starter-default-02','starter-default-03'] as $av
 $assertContains('data-mgw-avatar-choice', $profile, 'Profile picker must expose canonical owned avatar choices');
 $assertContains('.profile-v2-avatar-choice', $correctiveCss, 'Profile corrective CSS must own picker geometry');
 $assertContains('.profile-v2-collection-grid', $correctiveCss, 'Profile corrective CSS must own collection geometry');
-$assertContains("@import url('./components/mgw-avatars.css?v=3&mvp19_4=knight-art-v2');", $mainCss, 'Main stylesheet must load the shared MVP-19.4 knight-art avatar owner');
+$assertContains("@import url('./components/mgw-avatars.css?v=4&mvp19_4=full-fantasy-roster-v4');", $mainCss, 'Main stylesheet must load the shared MVP-19.4 full-fantasy avatar owner');
 
 $assertNotContains('profile.avatar_saved', $profile, 'Avatar success toast must stay removed');
 $assertContains('state.mgwProfile = optimisticProfile', $profile, 'Avatar selection must update visible canonical state optimistically');
