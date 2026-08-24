@@ -1,5 +1,5 @@
 import { state } from '../state.js?v=27';
-import { getAvatarVisualMeta } from './mgw-avatar-registry.js?v=2';
+import { getAvatarVisualMeta } from './mgw-avatar-registry.js?v=3';
 
 const DEFAULT_AVATAR = 'starter-default-01';
 
