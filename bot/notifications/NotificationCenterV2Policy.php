@@ -16,6 +16,7 @@ final class NotificationCenterV2Policy
         'profile',
         'store',
         'store:orders',
+        'friends:requests',
     ];
 
     public static function eventId(array $notification): string
@@ -98,6 +99,7 @@ final class NotificationCenterV2Policy
         if (str_starts_with($type, 'payment_')) return 'home';
 
         return match ($type) {
+            'friend_request' => 'friends:requests',
             'welcome_match_grant',
             'admin_gold_topup' => 'home',
             default => '',

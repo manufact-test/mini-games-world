@@ -5,7 +5,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=1109';
 import { openSocialPlayerInvite } from '../games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1';
 
-const STYLE_URL = './assets/css/friends-v110.css?v=4&mvp18=social-live-sync&report-select=custom';
+const STYLE_URL = './assets/css/friends-v110.css?v=5&mvp18=instant-route&optimistic-relations';
 const FRIENDS_REFRESH_MS = 5000;
 const GAME_NAMES = Object.freeze({
   tictactoe:'Крестики-нолики', four_in_a_row:'4 в ряд', battleship:'Морской бой',
@@ -29,6 +29,7 @@ let searchQuery = '';
 let searchResults = [];
 let searchMessage = '';
 let snapshotRefreshPromise = null;
+let snapshotGeneration = 0;
 let snapshotPollTimer = null;
 
 export function initFriendsScreen(){
@@ -36,7 +37,7 @@ export function initFriendsScreen(){
   initialized = true;
   ensureStyles();
   ensureScreen();
-  document.addEventListener('mgw:open-friends', () => void openFriends());
+  document.addEventListener('mgw:open-friends', event => void openFriends(event?.detail));
   document.addEventListener('mgw:screen-changed', event => {
     if (event?.detail?.to === 'friends') startSnapshotPolling();
     if (event?.detail?.from === 'friends') stopSnapshotPolling();
@@ -48,12 +49,14 @@ export function initFriendsScreen(){
   });
 }
 
-async function openFriends(){
+async function openFriends(options = {}){
   if (activeMatchLocked()) {
     closeSheet();
     showScreen('game');
     return;
   }
+  const requestedTab = String(options?.tab || '');
+  if (['friends','requests','recent','blocked'].includes(requestedTab)) activeTab = requestedTab;
   ensureScreen();
   closeSheet();
   showScreen('friends');
@@ -92,14 +95,19 @@ function ensureScreen(){
   screen.className = 'screen';
   screen.id = 'screen-friends';
   screen.dataset.screen = 'friends';
+  screen.style.cssText = 'z-index:2;transition:none;transform:none;background:var(--sk-gradient-bg-accent),linear-gradient(180deg,var(--sk-bg-elevated),var(--sk-bg-app))';
   screen.innerHTML = '<div class="content"><div class="friends-v110" id="friendsV110Root"></div></div>';
   screen.addEventListener('click', handleClick);
   screen.addEventListener('submit', handleSubmit);
   app.append(screen);
 }
 
-async function refreshSnapshot({ silent = false } = {}){
-  if (snapshotRefreshPromise) return snapshotRefreshPromise;
+async function refreshSnapshot({ silent = false, force = false } = {}){
+  if (snapshotRefreshPromise) {
+    if (!force) return snapshotRefreshPromise;
+    await snapshotRefreshPromise;
+  }
+  const generation = snapshotGeneration;
   snapshotRefreshPromise = (async () => {
     if (!silent) {
       loading = true;
@@ -107,15 +115,16 @@ async function refreshSnapshot({ silent = false } = {}){
     }
     try {
       const response = await api.friends({ action:'snapshot' });
+      if (generation !== snapshotGeneration) return;
       const nextSnapshot = normalizeSnapshot(response?.result);
       const changed = snapshotSignature(nextSnapshot) !== snapshotSignature(snapshot);
       snapshot = nextSnapshot;
       if (changed && silent) renderSilentSnapshotUpdate();
       if (changed) document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
     } catch (error) {
-      if (!silent) toast(error?.message || 'Не удалось загрузить друзей.');
+      if (!silent && generation === snapshotGeneration) toast(error?.message || 'Не удалось загрузить друзей.');
     } finally {
-      if (!silent) {
+      if (!silent && generation === snapshotGeneration) {
         loading = false;
         render();
       }
@@ -133,12 +142,15 @@ function snapshotSignature(value){
 }
 
 function renderSilentSnapshotUpdate(){
+  const scrollSurface = document.querySelector('#screen-friends > .content');
+  const scrollTop = scrollSurface instanceof HTMLElement ? scrollSurface.scrollTop : 0;
   const previousInput = document.querySelector('#friendsV110Root input[name="query"]');
   const restoreFocus = previousInput instanceof HTMLInputElement && document.activeElement === previousInput;
   const selectionStart = restoreFocus ? previousInput.selectionStart : null;
   const selectionEnd = restoreFocus ? previousInput.selectionEnd : null;
   if (previousInput instanceof HTMLInputElement) searchQuery = previousInput.value;
   render();
+  if (scrollSurface instanceof HTMLElement) scrollSurface.scrollTop = scrollTop;
   if (!restoreFocus) return;
   const nextInput = document.querySelector('#friendsV110Root input[name="query"]');
   if (!(nextInput instanceof HTMLInputElement)) return;
@@ -308,7 +320,7 @@ function handleClick(event){
       );
       return;
     }
-    void mutateRelation(mutation, targetMgwId, action);
+    void mutateRelation(mutation, targetMgwId);
     return;
   }
 
@@ -348,20 +360,46 @@ async function lookupPlayer(query){
   render();
 }
 
-async function mutateRelation(action, targetMgwId, button = null){
+async function mutateRelation(action, targetMgwId){
   if (mutationPending || !targetMgwId) return;
   mutationPending = true;
-  if (button instanceof HTMLButtonElement) button.disabled = true;
+  snapshotGeneration += 1;
+  loading = false;
+  const previousSnapshot = cloneObject(snapshot);
+  const previousSearchResults = cloneObject(searchResults);
+  const optimistic = applyOptimisticRelation(action, targetMgwId);
+  if (optimistic) renderSilentSnapshotUpdate();
   try {
     await api.friends({ action, target_mgw_id:targetMgwId });
     if (['block','remove'].includes(action)) searchResults = searchResults.filter(player => player?.mgw_id !== targetMgwId);
-    await refreshSnapshot();
+    document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
+    await refreshSnapshot({ silent:true, force:true });
   } catch (error) {
+    snapshot = previousSnapshot;
+    searchResults = previousSearchResults;
+    renderSilentSnapshotUpdate();
     toast(error?.message || 'Не удалось выполнить действие.');
   } finally {
     mutationPending = false;
-    if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
   }
+}
+
+function applyOptimisticRelation(action, targetMgwId){
+  const player = playerById(targetMgwId);
+  if (!player) return false;
+  const next = cloneObject(snapshot);
+  for (const key of ['incoming','outgoing','friends','blocked']) {
+    next[key] = next[key].filter(item => String(item?.mgw_id || '') !== targetMgwId);
+  }
+
+  const target = cloneObject(player);
+  if (action === 'request') next.outgoing.unshift(target);
+  else if (action === 'accept') next.friends.unshift(target);
+  else if (action === 'block') next.blocked.unshift(target);
+  else if (!['cancel','decline','remove','unblock'].includes(action)) return false;
+
+  snapshot = next;
+  return true;
 }
 
 function openPlayerMenu(targetMgwId){
@@ -523,16 +561,27 @@ function openConfirmSheet(title, note, actionLabel, callback, danger = false){
 }
 
 async function mutateFromSheet(action, targetMgwId){
-  const button = document.getElementById('socialConfirmAction');
-  if (button instanceof HTMLButtonElement) button.disabled = true;
+  if (mutationPending || !targetMgwId) return;
+  mutationPending = true;
+  snapshotGeneration += 1;
+  loading = false;
+  const previousSnapshot = cloneObject(snapshot);
+  const previousSearchResults = cloneObject(searchResults);
+  applyOptimisticRelation(action, targetMgwId);
+  closeSheet();
+  renderSilentSnapshotUpdate();
   try {
     await api.friends({ action, target_mgw_id:targetMgwId });
-    closeSheet();
     searchResults = searchResults.filter(player => player?.mgw_id !== targetMgwId);
-    await refreshSnapshot();
+    document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
+    await refreshSnapshot({ silent:true, force:true });
   } catch (error) {
+    snapshot = previousSnapshot;
+    searchResults = previousSearchResults;
+    renderSilentSnapshotUpdate();
     toast(error?.message || 'Не удалось выполнить действие.');
-    if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
+  } finally {
+    mutationPending = false;
   }
 }
 
@@ -564,6 +613,10 @@ function normalizeSnapshot(value){
     blocked:Array.isArray(source.blocked) ? source.blocked : [],
     recent_opponents:Array.isArray(source.recent_opponents) ? source.recent_opponents : [],
   };
+}
+
+function cloneObject(value){
+  return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value;
 }
 
 function emptySnapshot(){ return { incoming:[], outgoing:[], friends:[], blocked:[], recent_opponents:[] }; }

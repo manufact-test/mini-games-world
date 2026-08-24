@@ -24,7 +24,7 @@ assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.j
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
 assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify the frozen reconnect composition owner');
-assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=4&mvp18=social-live-sync&report-select=custom')"), 'Existing account shortcut owner must lazy-load the live Friends module on demand');
+assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=5&mvp18=instant-route&optimistic-relations')"), 'Existing account shortcut owner must lazy-load the instant Friends module on demand');
 assert(accountShortcuts.includes('closeSheet();') && accountShortcuts.indexOf('closeSheet();') < accountShortcuts.indexOf('await loadFriendsModule()'), 'Friends shortcut must close the menu synchronously before awaiting its module');
 assert(accountShortcuts.includes('void loadFriendsModule();'), 'Friends module must prewarm while the menu is visible');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
@@ -53,6 +53,9 @@ assert(friendsCss.includes('.friends-v110-report .form-input') && friendsCss.inc
 assert(!friends.includes('<select') && friends.includes('data-report-reason-menu'), 'Report reason must use the managed MGW dropdown instead of the native browser select');
 assert(friendsCss.includes('.friends-v110-report-select-menu') && friendsCss.includes('button[aria-selected="true"]'), 'Managed report options must preserve the dark selected state');
 assert(friends.includes('const FRIENDS_REFRESH_MS = 5000') && friends.includes("currentScreen() === 'friends'"), 'Friends snapshot must refresh while the route stays visible');
+assert(friends.includes('applyOptimisticRelation(action, targetMgwId)') && friends.includes('refreshSnapshot({ silent:true })'), 'Friend mutations must update locally and reconcile without a full loading repaint');
+assert(!friends.includes('await refreshSnapshot();'), 'Friend mutations must never replace the page with the blocking loading state');
+assert(friendsCss.includes('#screen-friends{') && friendsCss.includes('transition:none'), 'Friends route must cover the previous screen without a visible cross-fade underlayer');
 assert(friends.includes("new CustomEvent('mgw:notifications-refresh')"), 'Changed social snapshots must immediately refresh the existing bell owner');
 assert(friends.includes("section('Входящие заявки'"), 'Friends UI must render incoming requests');
 assert(friends.includes("section('Исходящие заявки'"), 'Friends UI must render outgoing requests');

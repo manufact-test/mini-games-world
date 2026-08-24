@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp16-notification-center-v2-v1152';
+window.__MGW_BUILD__ = 'v110-mvp18-friends-interaction-corrective-v1153';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -19,7 +19,7 @@ import { initHomeScreen, setRoom } from './screens/home-screen.js?v=74';
 import { initStoreScreen, openStoreTab } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110r13.js?v=1160&mvp16=notification-center-v2';
+import { initNotificationsScreen } from './screens/notifications-screen-v110r13.js?v=1161&mvp18=friend-request-action';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=79&complete=green';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';

@@ -174,6 +174,24 @@ $assertSame('starter-default-01', $inventory->snapshot($mgwId)['equipped']['prof
 
 $assertStoreError(static fn() => $store->quote($mgwId, 'avatar-bundle-5'), 'offer_unavailable', 'Retired five-avatar bundle must not be purchasable');
 
+$gameQuote = $store->quote($mgwId, 'ttt-field-dark');
+$gameRuntimeStorage = new Mvp19_2MemoryStorage([
+    'users' => [
+        'legacy-game-store-user' => [
+            'id' => 'legacy-game-store-user',
+            'mgw_id' => $mgwId,
+            'mgw_account_ref' => 'mgw:' . $mgwId,
+            'balance' => 20000,
+        ],
+    ],
+    'transactions' => [],
+]);
+$gameRuntime = new CosmeticStoreRuntimePurchaseService($gameRuntimeStorage);
+$gameUser =& $gameRuntimeStorage->data['users']['legacy-game-store-user'];
+$gamePrepared = $gameRuntime->prepare($gameRuntimeStorage->data, $gameUser, $gameQuote, 'store:test-game-cosmetic-0005');
+$assertSame(['game-ttt-field-dark'], $gamePrepared['intent']['item_ids'], 'Runtime purchase preparation must accept canonical game cosmetic item IDs');
+$assertSame(15000, $gameUser['balance'], 'Game cosmetic runtime debit must preserve the quoted Store price');
+
 $finalSnapshot = $store->snapshot($mgwId, 2350, []);
 $assertSame(9, count($finalSnapshot['profile']['avatars']), 'Store snapshot must continue exposing all nine active paid avatar offers');
 $assertSame(null, $finalSnapshot['bundles']['avatar_bundle'], 'Retired bundle must remain absent from active Store snapshot');

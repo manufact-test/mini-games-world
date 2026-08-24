@@ -53,6 +53,9 @@ $assertSame('profile', NotificationCenterV2Policy::deepLink([
     'type' => 'custom',
     'deep_link' => 'profile',
 ]), 'explicit safe internal deep link must be preserved for eligible events');
+$assertSame('friends:requests', NotificationCenterV2Policy::deepLink([
+    'type' => 'friend_request',
+]), 'friend requests must open the canonical requests tab even for older stored events');
 
 $now = new DateTimeImmutable('2026-08-17T16:00:00Z');
 $assertTrue(NotificationCenterV2Policy::isExpired([
