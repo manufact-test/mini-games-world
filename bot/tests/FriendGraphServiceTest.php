@@ -52,6 +52,7 @@ $users = [
     'b' => ['id' => 'MGW-000000000000000B', 'nickname' => 'Bravo'],
     'c' => ['id' => 'MGW-000000000000000C', 'nickname' => 'Charlie'],
     'd' => ['id' => 'MGW-000000000000000D', 'nickname' => 'Delta'],
+    'e' => ['id' => 'MGW-000000000000000E', 'nickname' => 'BravoPrime'],
 ];
 foreach ($users as $user) {
     $database->execute(
@@ -86,6 +87,15 @@ $lookupByPublicId = $service->lookupExact($users['a']['id'], MgwIdGenerator::toP
 $assertSame($users['b']['id'], $lookupByPublicId['mgw_id'] ?? null, 'Public MGW-ID lookup must resolve exact canonical account');
 $assertSame(null, $service->lookupExact($users['a']['id'], 'bravo'), 'Nickname lookup must remain exact/case-sensitive');
 
+$partial = $service->searchPlayers($users['a']['id'], 'bRaVo');
+$assertSame(2, count($partial), 'Partial nickname search must be case-insensitive and return every bounded match');
+$assertSame($users['b']['id'], $partial[0]['mgw_id'] ?? null, 'Exact nickname match must be ordered before a longer partial match');
+$assertSame($users['e']['id'], $partial[1]['mgw_id'] ?? null, 'Partial nickname search must return a clear second candidate');
+$searchByPublicId = $service->searchPlayers($users['a']['id'], MgwIdGenerator::toPublic($users['b']['id']));
+$assertSame([$users['b']['id']], array_column($searchByPublicId, 'mgw_id'), 'Exact public MGW-ID search must remain available');
+$assertSame([], $service->searchPlayers($users['a']['id'], 'Alpha'), 'Social search must not return the current player');
+$assertTrue(count($partial) <= FriendGraphService::SEARCH_LIMIT, 'Nickname search results must stay within the public response limit');
+
 $request = $service->requestFriend($users['a']['id'], $users['b']['id']);
 $assertSame('outgoing', $request['status'], 'First friend request must become outgoing');
 $assertSame(true, $request['changed'], 'First friend request must mutate pair state');
@@ -118,6 +128,7 @@ $assertSame(0, count($service->snapshot($users['a']['id'])['friends']), 'Blockin
 $assertSame(1, count($service->snapshot($users['a']['id'])['blocked']), 'Blocker must see target in blocked list');
 $assertSame(0, count($service->snapshot($users['b']['id'])['friends']), 'Blocked target must not retain friendship projection');
 $assertSame(null, $service->lookupExact($users['b']['id'], 'Alpha'), 'Blocked pair must be hidden from exact social lookup');
+$assertSame([], $service->searchPlayers($users['b']['id'], 'Alpha'), 'Blocked pair must be hidden from partial social search');
 $assertReason(
     static fn() => $service->requestFriend($users['b']['id'], $users['a']['id']),
     'request_unavailable',

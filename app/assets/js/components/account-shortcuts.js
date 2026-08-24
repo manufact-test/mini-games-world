@@ -12,7 +12,7 @@ export function initAccountShortcuts(){
 }
 
 async function openFriendsShortcut(){
-  const module = await import('../screens/friends-screen-v110.js?v=1&mvp18=friends-ui&moderation=1');
+  const module = await import('../screens/friends-screen-v110.js?v=2&mvp18=friends-corrective&moderation=1');
   if (typeof module.initFriendsScreen === 'function') module.initFriendsScreen();
   document.dispatchEvent(new CustomEvent('mgw:open-friends'));
 }
@@ -24,7 +24,7 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
 
   if (allowSocialNavigation && !sheet.querySelector('[data-account-friends-shortcut]')) {
     const friends = document.createElement('button');
-    friends.className = 'btn menu-item account-menu-entry';
+    friends.className = 'btn menu-item account-menu-entry account-menu-entry--friends';
     friends.type = 'button';
     friends.dataset.accountFriendsShortcut = '1';
     friends.innerHTML = `
@@ -40,7 +40,7 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
   if (sheet.querySelector('[data-account-orders-shortcut]')) return;
 
   const button = document.createElement('button');
-  button.className = 'btn menu-item account-menu-entry';
+  button.className = 'btn menu-item account-menu-entry account-menu-entry--orders';
   button.type = 'button';
   button.dataset.accountOrdersShortcut = '1';
   button.dataset.openStoreOrders = '1';

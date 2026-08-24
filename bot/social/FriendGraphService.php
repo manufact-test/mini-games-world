@@ -24,6 +24,8 @@ final class FriendGraphService
     private const STATUS_NONE = 'none';
     private const STATUS_PENDING = 'pending';
     private const STATUS_FRIENDS = 'friends';
+    public const SEARCH_LIMIT = 8;
+    private const SEARCH_CANDIDATE_LIMIT = 24;
 
     public function __construct(private DatabaseConnectionInterface $database) {}
 
@@ -100,6 +102,72 @@ final class FriendGraphService
         if ($profile === null) return null;
         if ($targetMgwId !== $actorMgwId && $this->pairIsBlocked($actorMgwId, $targetMgwId)) return null;
         return $profile;
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function searchPlayers(string $actorMgwId, string $query): array
+    {
+        $actorMgwId = $this->requireActiveUser($actorMgwId);
+        $query = trim($query);
+        if ($query === '') throw new InvalidArgumentException('lookup_empty');
+
+        $targetMgwId = MgwIdGenerator::fromPublic($query);
+        if ($targetMgwId !== null) {
+            if ($targetMgwId === $actorMgwId) return [];
+            $profile = $this->publicUser($targetMgwId);
+            if ($profile === null || $this->pairIsBlocked($actorMgwId, $targetMgwId)) return [];
+            return [$profile];
+        }
+
+        $nickname = ltrim($query, '@');
+        $length = function_exists('mb_strlen') ? mb_strlen($nickname, 'UTF-8') : strlen($nickname);
+        if ($length < 2 || $length > 40) throw new InvalidArgumentException('lookup_invalid');
+
+        $pattern = '%' . $this->escapeLike($nickname) . '%';
+        if ($this->database->driver() === 'sqlite') {
+            $rows = $this->database->fetchAll(
+                "SELECT mgw_id FROM mgw_users
+                 WHERE status = :status
+                   AND mgw_id <> :actor_mgw_id
+                   AND nickname COLLATE NOCASE LIKE :nickname_pattern ESCAPE '!'
+                 ORDER BY CASE WHEN nickname COLLATE NOCASE = :nickname_exact THEN 0 ELSE 1 END,
+                          last_seen_at_utc DESC, nickname ASC
+                 LIMIT " . self::SEARCH_CANDIDATE_LIMIT,
+                [
+                    'status' => 'active',
+                    'actor_mgw_id' => $actorMgwId,
+                    'nickname_pattern' => $pattern,
+                    'nickname_exact' => $nickname,
+                ]
+            );
+        } else {
+            $rows = $this->database->fetchAll(
+                "SELECT mgw_id FROM mgw_users
+                 WHERE status = :status
+                   AND mgw_id <> :actor_mgw_id
+                   AND nickname COLLATE utf8mb4_unicode_ci LIKE :nickname_pattern ESCAPE '!'
+                 ORDER BY CASE WHEN nickname COLLATE utf8mb4_unicode_ci = :nickname_exact THEN 0 ELSE 1 END,
+                          last_seen_at_utc DESC, nickname ASC
+                 LIMIT " . self::SEARCH_CANDIDATE_LIMIT,
+                [
+                    'status' => 'active',
+                    'actor_mgw_id' => $actorMgwId,
+                    'nickname_pattern' => $pattern,
+                    'nickname_exact' => $nickname,
+                ]
+            );
+        }
+
+        $result = [];
+        foreach ($rows as $row) {
+            $targetMgwId = trim((string)($row['mgw_id'] ?? ''));
+            if ($targetMgwId === '' || $this->pairIsBlocked($actorMgwId, $targetMgwId)) continue;
+            $profile = $this->publicUser($targetMgwId);
+            if ($profile === null) continue;
+            $result[] = $profile;
+            if (count($result) >= self::SEARCH_LIMIT) break;
+        }
+        return $result;
     }
 
     /** @return array{status:string,changed:bool,target:array<string,mixed>} */
@@ -455,6 +523,11 @@ final class FriendGraphService
     {
         $value = trim((string)($value ?? ''));
         return $value === '' ? null : $value;
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $value);
     }
 
     private function timestamp(): string

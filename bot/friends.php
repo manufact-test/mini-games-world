@@ -68,7 +68,10 @@ try {
     try {
         $result = match ($action) {
             'snapshot' => $service->snapshot($actorMgwId),
-            'lookup' => $service->lookupExact($actorMgwId, (string)($payload['query'] ?? '')),
+            'lookup' => [
+                'players' => $service->searchPlayers($actorMgwId, (string)($payload['query'] ?? '')),
+                'limit' => FriendGraphService::SEARCH_LIMIT,
+            ],
             'player_profile' => (function () use ($service, $profileReader, $actorMgwId, $target): array {
                 if ($service->lookupExact($actorMgwId, $target) === null) {
                     throw new FriendGraphException('user_unavailable', 'MGW account is unavailable.');

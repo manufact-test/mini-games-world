@@ -65,6 +65,11 @@ function applyDynamicIcons(root){
     const icon = button.querySelector('.account-menu-icon');
     if (icon) setIconOnly(icon, 'ui/navigation/store.webp');
   });
+
+  root.querySelectorAll?.('[data-account-friends-shortcut]').forEach(button => {
+    const icon = button.querySelector('.account-menu-icon');
+    if (icon) setIconOnly(icon, 'ui/navigation/friends.webp');
+  });
 }
 
 function assetUrl(asset){

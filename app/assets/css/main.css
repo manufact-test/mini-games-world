@@ -7,7 +7,7 @@
 @import url('./components/modals.css?v=27');
 @import url('./components/game-invites.css?v=85');
 @import url('./components/preloader.css?v=125&sk=2');
-@import url('./components/account-shortcuts.css?v=40');
+@import url('./components/account-shortcuts.css?v=41&mvp18=friends-corrective');
 @import url('./components/game-rules.css?v=53');
 @import url('./games/tictactoe/rules.css?v=54&mvp16=variant-rules');
 @import url('./games/tictactoe/cosmetics.css?v=1&mvp19_4=pilot');
