@@ -110,7 +110,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_4=game-cosmetics-pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","mvp19_4=game-cosmetics-pilot")) exit(2); if(!str_contains($m["assets"]["main_css"]??"","mvp19_4=game-cosmetics-pilot")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","game_cosmetics=pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","mvp19_4=game-cosmetics-pilot")) exit(2); if(!str_contains($m["assets"]["main_css"]??"","game_cosmetics=pilot")) exit(3);'
           grep -F "@import url('./games/tictactoe/cosmetics.css?v=1&mvp19_4=pilot');" app/assets/css/main.css
 
       - name: Guard accepted mechanics and lifecycle owners
