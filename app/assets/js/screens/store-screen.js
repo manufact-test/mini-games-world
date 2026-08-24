@@ -387,13 +387,14 @@ function openPurchaseConfirm(offer){
   const token = purchaseToken();
   const isBundle = String(offer.offer_type || '') === 'bundle';
   const number = Number(offer.preview_number || 0);
+  const itemId = Array.isArray(offer.item_ids) ? String(offer.item_ids[0] || '') : '';
   const balance = Number(storeState?.balance || 0);
   const price = Number(offer.price_coins || 0);
   const missing = Math.max(0, price - balance);
   const title = isBundle ? 'Комплект аватарок' : `Аватарка ${number}`;
   const visual = isBundle
     ? `<div class="store-v2-confirm-bundle">${[4,5,6,7,8].map(value => `<span>${String(value).padStart(2,'0')}</span>`).join('')}</div>`
-    : `<div class="store-v2-confirm-avatar"><span>${String(number).padStart(2,'0')}</span></div>`;
+    : `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(`Аватарка ${number}`)}"><span>${String(number).padStart(2,'0')}</span></div>`;
 
   openSheet(`
     <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
