@@ -1,4 +1,4 @@
-const AVATAR_SPRITE_ASSET = './assets/media/avatars/mgw-avatar-characters-v1.svg?v=3';
+const AVATAR_SPRITE_ASSET = './assets/media/avatars/mgw-avatar-characters-v2.webp?v=1';
 
 export const AVATAR_VISUAL_REGISTRY = Object.freeze({
   'starter-default-01': Object.freeze({ name:'Bram', rarity:'free', asset:AVATAR_SPRITE_ASSET, spriteIndex:0 }),
