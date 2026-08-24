@@ -65,6 +65,6 @@ $assertions++;
 if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
     throw new RuntimeException('Main CSS cache key must stay at or beyond the Profile pass A baseline.');
 }
-$assertContains("shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=128&sk=4&icons=c1efd5af&shell=nav&settings=metallic", $versionManifest, 'Telegram shell must cache-bust the corrected Settings metallic icon owner.');
+$assertContains("shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=129&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1", $versionManifest, 'Telegram shell must preserve the corrected Settings icon owner while cache-busting the Friends menu art.');
 
 fwrite(STDOUT, "ProfileV2PassAStaticContractTest: {$assertions} assertions passed\n");

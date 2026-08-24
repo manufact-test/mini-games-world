@@ -15,10 +15,13 @@ on:
       - 'app/assets/js/router.js'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/assets/js/components/shield-king-visuals.js'
       - 'app/assets/js/screens/friends-screen-v110.js'
       - 'app/assets/js/games/game-invites-v110.js'
       - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
       - 'app/assets/css/friends-v110.css'
+      - 'app/assets/css/components/account-shortcuts.css'
+      - 'app/assets/css/main.css'
       - '.github/workflows/mvp18-2-friends-ui.yml'
   workflow_dispatch:
 
@@ -69,6 +72,7 @@ jobs:
           node --check app/assets/js/router.js
           node --check app/assets/js/api/client.js
           node --check app/assets/js/components/account-shortcuts.js
+          node --check app/assets/js/components/shield-king-visuals.js
           node --check app/assets/js/screens/friends-screen-v110.js
           node --check app/assets/js/games/game-invites-v110.js
           node --check app/assets/js/games/game-invites-v110-rematch-policy-v175.js

@@ -1,10 +1,10 @@
 .account-menu-entry{
-  min-height:66px;
+  min-height:54px;
   justify-content:flex-start;
   text-align:left;
-  padding:10px 12px;
-  background:linear-gradient(135deg,rgba(242,197,75,.14),rgba(255,255,255,.055));
-  border-color:rgba(242,197,75,.28);
+  padding:8px 12px;
+  background:linear-gradient(180deg,#25202d,#171a22);
+  border-color:rgba(233,236,244,.26);
 }
 
 .account-menu-icon{
@@ -19,6 +19,12 @@
   font-size:20px;
 }
 
+.account-menu-entry>.account-menu-icon{
+  margin-left:0;
+  color:inherit;
+  font-size:20px;
+}
+
 .account-menu-copy{
   min-width:0;
   flex:1;
@@ -27,9 +33,28 @@
   gap:3px;
 }
 
+.account-menu-entry>.account-menu-copy{
+  margin-left:0;
+  color:inherit;
+  font-size:inherit;
+}
+
 .account-menu-copy strong{
-  font-size:14px;
+  color:#fff;
+  font-size:16px;
   line-height:1.2;
+}
+
+.account-menu-entry--friends .account-menu-copy strong{
+  color:#fff;
+  font-size:16px;
+  font-weight:900;
+}
+
+.account-menu-entry--orders .account-menu-copy strong{
+  color:var(--muted);
+  font-size:13px;
+  font-weight:850;
 }
 
 .account-menu-copy small{
