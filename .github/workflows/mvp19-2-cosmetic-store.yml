@@ -108,8 +108,9 @@ jobs:
           grep -F "{ id:'profile', label:'Профиль' }" app/assets/js/screens/store-screen.js
           grep -F "{ id:'games', label:'Игры' }" app/assets/js/screens/store-screen.js
           grep -F "{ id:'bundles', label:'Наборы' }" app/assets/js/screens/store-screen.js
-          grep -F 'ПОКА НЕ ГОТОВО' app/assets/js/screens/store-screen.js
-          grep -F 'Комплект аватарок' app/assets/js/screens/store-screen.js
+          grep -F 'Пилотная коллекция' app/assets/js/screens/store-screen.js
+          grep -F 'Неоновый комплект' app/assets/js/screens/store-screen.js
+          grep -F 'data-store-v2-equip' app/assets/js/screens/store-screen.js
           grep -F 'store-v2-selected-check' app/assets/js/screens/store-screen.js
           grep -F 'store-v2-coin-mark' app/assets/js/screens/store-screen.js
           grep -F 'grid-template-columns:repeat(4,minmax(0,1fr))' app/assets/css/screens/store-v2.css
@@ -148,10 +149,8 @@ jobs:
           grep -F 'purchase_in_progress' bot/catalog/CosmeticStoreRuntimePurchaseService.php
           grep -F 'cosmetic_purchase_refund' bot/catalog/CosmeticStoreRuntimePurchaseService.php
           grep -F 'store_purchase' bot/catalog/CosmeticStoreService.php
-          if grep -Fq -- '->equip(' bot/catalog/CosmeticStoreService.php bot/cosmetic-store.php; then
-            echo 'Purchase must not auto-equip.' >&2
-            exit 1
-          fi
+          grep -F '$store->equipGameItem' bot/cosmetic-store.php
+          grep -F "'auto_equip' => false" bot/catalog/CosmeticStoreService.php
 
       - name: Guard bounded MVP-19.2 diff
         if: startsWith(github.head_ref, 'agent/mvp19-2')

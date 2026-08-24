@@ -13,8 +13,8 @@ require_once __DIR__ . '/catalog/CosmeticStoreRuntimePurchaseService.php';
 function mgw_cosmetic_store_error_status(string $reason): int
 {
     return match ($reason) {
-        'already_owned', 'request_conflict', 'purchase_in_progress', 'ownership_conflict', 'price_changed' => 409,
-        'offer_unavailable' => 404,
+        'already_owned', 'request_conflict', 'purchase_in_progress', 'ownership_conflict', 'price_changed', 'item_not_owned', 'equip_failed' => 409,
+        'offer_unavailable', 'item_unavailable' => 404,
         'request_invalid', 'intent_invalid', 'offer_invalid' => 422,
         'insufficient_balance' => 402,
         'account_unavailable' => 401,
@@ -31,6 +31,9 @@ function mgw_cosmetic_store_error_message(string $reason, string $fallback): str
         'ownership_conflict' => 'Состав покупки изменился. Баланс восстановлен, обновите магазин.',
         'price_changed' => 'Цена предложения изменилась. Баланс восстановлен, обновите магазин.',
         'offer_unavailable' => 'Предложение магазина больше недоступно.',
+        'item_unavailable' => 'Игровой предмет больше недоступен.',
+        'item_not_owned' => 'Сначала купите этот предмет.',
+        'equip_failed' => 'Не удалось выбрать игровой предмет.',
         'request_invalid', 'intent_invalid', 'offer_invalid' => 'Не удалось подготовить покупку. Обновите магазин.',
         'insufficient_balance' => 'Недостаточно коинов для покупки.',
         'account_unavailable' => 'Профиль MGW недоступен для этой сессии.',
@@ -112,6 +115,20 @@ try {
             throw $error;
         }
     };
+
+    if ($action === 'equip') {
+        $runtime = $captureRuntimeUser();
+        $equipment = $store->equipGameItem($mgwId, (string)($payload['item_id'] ?? ''));
+        json_response([
+            'ok' => true,
+            'equipment' => $equipment,
+            'store' => $store->snapshot(
+                $mgwId,
+                $runtimePurchases->balance((string)$runtime['user_id']),
+                $coinPackages
+            ),
+        ]);
+    }
 
     if ($action === 'status') {
         $runtime = $captureRuntimeUser();

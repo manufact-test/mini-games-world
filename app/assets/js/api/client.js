@@ -55,6 +55,7 @@ export const api = {
   support: (type, message) => request('support', { type, message }),
   cosmeticStoreStatus: () => requestUrl(COSMETIC_STORE_URL, { action:'status' }),
   cosmeticStorePurchase: (offerId, requestToken) => requestUrl(COSMETIC_STORE_URL, { action:'purchase', offer_id:offerId, request_token:requestToken }),
+  cosmeticStoreEquip: itemId => requestUrl(COSMETIC_STORE_URL, { action:'equip', item_id:itemId }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),

@@ -17,6 +17,7 @@ let storeSurface = 'tab';
 let activeTab = 'profile';
 let storeLoadPromise = null;
 let purchaseBusy = false;
+let equipBusy = false;
 
 export function initStoreScreen(){
   document.addEventListener('click', event => {
@@ -175,7 +176,7 @@ function renderActiveTab(){
   switch (activeTab) {
     case 'coins': return renderCoinsTab();
     case 'profile': return renderProfileTab();
-    case 'games': return renderDevPlaceholder();
+    case 'games': return renderGamesTab();
     case 'bundles': return renderBundlesTab();
     default: return renderProfileTab();
   }
@@ -232,8 +233,61 @@ function renderAvatarOffer(offer){
   `;
 }
 
+function renderGamesTab(){
+  const catalog = storeState?.games?.catalogs?.tictactoe;
+  if (!catalog) return emptyState('Игровая косметика пока недоступна');
+  return `
+    <div class="store-v2-game-head">
+      <div><span>Пилотная коллекция</span><h2>${escapeHtml(catalog.title || 'Крестики-нолики')}</h2></div>
+      <div class="store-v2-game-head-marks" aria-hidden="true"><b>✕</b><b>○</b></div>
+    </div>
+    ${renderGameCosmeticGroup('Поля', catalog.themes)}
+    ${renderGameCosmeticGroup('Знаки', catalog.elements)}
+    ${renderGameCosmeticGroup('Эффекты', catalog.effects)}
+  `;
+}
+
+function renderGameCosmeticGroup(title, offers){
+  const items = Array.isArray(offers) ? offers : [];
+  return `
+    <section class="store-v2-game-group">
+      <div class="store-v2-title-row"><h2>${escapeHtml(title)}</h2></div>
+      <div class="store-v2-game-grid">${items.map(renderGameOffer).join('')}</div>
+    </section>
+  `;
+}
+
+function renderGameOffer(offer){
+  const owned = Boolean(offer?.already_owned);
+  const equipped = owned && Boolean(offer?.equipped);
+  const itemId = String(offer?.item_ids?.[0] || '');
+  const layer = String(offer?.metadata?.layer || 'theme');
+  const variant = String(offer?.metadata?.variant || 'base');
+  return `
+    <article class="store-v2-game-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
+      ${gameCosmeticPreview(layer, variant, offer?.display_name || '')}
+      <strong>${escapeHtml(offer?.display_name || itemId)}</strong>
+      <div class="store-v2-game-product-foot">
+        ${owned
+          ? `<button class="store-v2-equip ${equipped ? 'active' : ''}" data-store-v2-equip="${escapeAttr(itemId)}" type="button" ${equipped ? 'disabled' : ''}>${equipped ? 'Выбрано' : 'Выбрать'}</button>`
+          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">Купить</button>`}
+      </div>
+    </article>
+  `;
+}
+
+function gameCosmeticPreview(layer, variant, label = ''){
+  const safeLayer = ['theme','elements','effect'].includes(String(layer)) ? String(layer) : 'theme';
+  const safeVariant = String(variant || 'base').replace(/[^a-z0-9-]/g, '');
+  let content = '';
+  if (safeLayer === 'theme') content = `<i class="store-v2-mini-board">${Array.from({ length:9 }, () => '<span></span>').join('')}</i>`;
+  else if (safeLayer === 'elements') content = '<i class="store-v2-mini-marks"><span>✕</span><span>○</span></i>';
+  else content = `<i class="store-v2-mini-effect"><span></span><b>${safeVariant === 'sign' ? '+' : (safeVariant === 'winning-line' ? '3' : '×')}</b></i>`;
+  return `<div class="store-v2-game-preview" data-cosmetic-layer="${safeLayer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeAttr(label)}">${content}</div>`;
+}
+
 function renderBundlesTab(){
-  const bundle = storeState?.bundles?.avatar_bundle;
+  const bundle = storeState?.bundles?.tictactoe_bundle;
   if (!bundle) return emptyState('Наборы пока недоступны');
   const missing = Number(bundle.missing_count || 0);
   const owned = Number(bundle.owned_count || 0);
@@ -243,10 +297,11 @@ function renderBundlesTab(){
   return `
     <article class="store-v2-bundle ${allOwned ? 'owned' : ''}">
       <div class="store-v2-bundle-visual" aria-hidden="true">
-        ${[4,5,6,7,8].map(number => `<span>${String(number).padStart(2, '0')}</span>`).join('')}
+        <span>✕</span><span>○</span><span>＋</span><span>／</span><span>×</span>
       </div>
       <div class="store-v2-bundle-copy">
-        <h2>Комплект аватарок</h2>
+        <h2>Неоновый комплект</h2>
+        <p>Поле, знаки и три эффекта для крестиков-ноликов.</p>
         ${allOwned
           ? '<p>Комплект уже собран.</p>'
           : (owned ? `<p>Осталось ${missing} из 5.</p>` : '')}
@@ -260,16 +315,7 @@ function renderBundlesTab(){
 }
 
 function regularBundlePrice(bundle){
-  const missingIds = Array.isArray(bundle?.missing_item_ids) ? bundle.missing_item_ids.map(String) : [];
-  const avatars = Array.isArray(storeState?.profile?.avatars) ? storeState.profile.avatars : [];
-  return missingIds.reduce((total, itemId) => {
-    const offer = avatars.find(candidate => Array.isArray(candidate?.item_ids) && candidate.item_ids.map(String).includes(itemId));
-    return total + Number(offer?.price_coins || 0);
-  }, 0);
-}
-
-function renderDevPlaceholder(){
-  return `<div class="store-v2-dev-placeholder"><strong>ПОКА НЕ ГОТОВО</strong></div>`;
+  return Number(bundle?.regular_missing_price_coins || bundle?.regular_price_coins || 0);
 }
 
 function emptyState(title){
@@ -294,6 +340,13 @@ function bindPanelEvents(root){
       openPurchaseConfirm(offer);
     });
   });
+  root.querySelectorAll('[data-store-v2-equip]').forEach(button => {
+    button.addEventListener('click', () => {
+      const itemId = String(button.dataset.storeV2Equip || '');
+      if (!itemId || button.disabled) return;
+      void equipGameItem(itemId);
+    });
+  });
 }
 
 function activateStoreTab(nextTab){
@@ -315,11 +368,21 @@ function activateStoreTab(nextTab){
 }
 
 function findOffer(offerId){
-  const avatars = Array.isArray(storeState?.profile?.avatars) ? storeState.profile.avatars : [];
-  const avatar = avatars.find(item => String(item.offer_id || '') === offerId);
-  if (avatar) return avatar;
-  const bundle = storeState?.bundles?.avatar_bundle;
-  return String(bundle?.offer_id || '') === offerId ? bundle : null;
+  return offersFromSnapshot(storeState).find(item => String(item?.offer_id || '') === offerId) || null;
+}
+
+function offersFromSnapshot(snapshot){
+  const catalog = snapshot?.games?.catalogs?.tictactoe || {};
+  const groups = [catalog.themes, catalog.elements, catalog.effects];
+  const offers = [
+    ...(Array.isArray(snapshot?.profile?.avatars) ? snapshot.profile.avatars : []),
+    ...groups.flatMap(group => Array.isArray(group) ? group : []),
+  ];
+  const avatarBundle = snapshot?.bundles?.avatar_bundle;
+  const tictactoeBundle = snapshot?.bundles?.tictactoe_bundle;
+  if (avatarBundle) offers.push(avatarBundle);
+  if (tictactoeBundle) offers.push(tictactoeBundle);
+  return offers;
 }
 
 function purchasedItemIds(offer){
@@ -336,37 +399,51 @@ function applyOptimisticPurchase(offer){
   const price = Math.max(0, Number(offer?.price_coins || 0));
   next.balance = Math.max(0, Number(next.balance || 0) - price);
 
-  const avatars = Array.isArray(next?.profile?.avatars) ? next.profile.avatars : [];
-  avatars.forEach(candidate => {
+  const offers = offersFromSnapshot(next);
+  offers.forEach(candidate => {
     const ids = Array.isArray(candidate?.item_ids) ? candidate.item_ids.map(String) : [];
     if (!ids.some(itemId => purchasedSet.has(itemId))) return;
-    candidate.already_owned = true;
-    candidate.purchasable = false;
-    candidate.missing_item_ids = [];
-    candidate.missing_count = 0;
-    candidate.owned_count = ids.length;
+    const previousMissing = Array.isArray(candidate.missing_item_ids) ? candidate.missing_item_ids.map(String) : ids;
+    const remaining = previousMissing.filter(itemId => !purchasedSet.has(itemId));
+    candidate.missing_item_ids = remaining;
+    candidate.missing_count = remaining.length;
+    candidate.owned_count = Math.max(0, ids.length - remaining.length);
+    candidate.already_owned = remaining.length === 0;
+    candidate.purchasable = remaining.length > 0;
   });
 
-  const bundle = next?.bundles?.avatar_bundle;
-  if (bundle && typeof bundle === 'object') {
+  const bundles = [next?.bundles?.avatar_bundle, next?.bundles?.tictactoe_bundle].filter(Boolean);
+  const individualByItem = new Map();
+  offers.filter(candidate => String(candidate?.offer_type || '') === 'item').forEach(candidate => {
+    const itemId = String(candidate?.item_ids?.[0] || '');
+    if (itemId) individualByItem.set(itemId, Number(candidate?.full_price_coins || candidate?.price_coins || 0));
+  });
+  bundles.forEach(bundle => {
     const members = Array.isArray(bundle.item_ids) ? bundle.item_ids.map(String) : [];
-    const previousMissing = Array.isArray(bundle.missing_item_ids) ? bundle.missing_item_ids.map(String) : members;
-    const remaining = previousMissing.filter(itemId => !purchasedSet.has(itemId));
+    const remaining = Array.isArray(bundle.missing_item_ids) ? bundle.missing_item_ids.map(String) : members;
+    const regularMissing = remaining.reduce((total, itemId) => total + Number(individualByItem.get(itemId) || 0), 0);
     bundle.missing_item_ids = remaining;
     bundle.missing_count = remaining.length;
     bundle.owned_count = Math.max(0, members.length - remaining.length);
     bundle.already_owned = remaining.length === 0;
     bundle.purchasable = remaining.length > 0;
-    if (remaining.length > 0 && remaining.length < members.length) {
-      const unit = Number(bundle.partial_unit_price_coins || 0);
-      if (unit > 0) bundle.price_coins = unit * remaining.length;
-    }
-  }
+    bundle.regular_missing_price_coins = regularMissing;
+    bundle.price_coins = remaining.length ? Math.min(Number(bundle.full_price_coins || 0), regularMissing) : 0;
+  });
 
   const inventoryItems = Array.isArray(next?.inventory?.items) ? next.inventory.items : [];
   purchasedIds.forEach(itemId => {
     if (inventoryItems.some(item => String(item?.item_id || '') === itemId)) return;
-    inventoryItems.push({ item_id:itemId, item_family:'avatar', store_product:true, equipped:false });
+    const sourceOffer = offers.find(candidate => String(candidate?.item_ids?.[0] || '') === itemId) || {};
+    inventoryItems.push({
+      item_id:itemId,
+      item_type:String(sourceOffer?.item_type || ''),
+      item_family:String(sourceOffer?.item_family || ''),
+      equip_slot:String(sourceOffer?.equip_slot || ''),
+      metadata:cloneObject(sourceOffer?.metadata || {}),
+      store_product:true,
+      equipped:false,
+    });
   });
 
   storeState = next;
@@ -386,15 +463,23 @@ function applyOptimisticPurchase(offer){
 function openPurchaseConfirm(offer){
   const token = purchaseToken();
   const isBundle = String(offer.offer_type || '') === 'bundle';
+  const isAvatar = String(offer.item_family || '') === 'avatar';
   const number = Number(offer.preview_number || 0);
   const itemId = Array.isArray(offer.item_ids) ? String(offer.item_ids[0] || '') : '';
   const balance = Number(storeState?.balance || 0);
   const price = Number(offer.price_coins || 0);
   const missing = Math.max(0, price - balance);
-  const title = isBundle ? 'Комплект аватарок' : `Аватарка ${number}`;
-  const visual = isBundle
-    ? `<div class="store-v2-confirm-bundle">${[4,5,6,7,8].map(value => `<span>${String(value).padStart(2,'0')}</span>`).join('')}</div>`
-    : `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(`Аватарка ${number}`)}"><span>${String(number).padStart(2,'0')}</span></div>`;
+  const title = isBundle
+    ? String(offer.display_name || 'Неоновый комплект')
+    : (isAvatar ? `Аватарка ${number}` : String(offer.display_name || 'Игровой предмет'));
+  let visual;
+  if (isBundle) {
+    visual = '<div class="store-v2-confirm-game-bundle"><span>✕</span><span>○</span><b>＋3</b></div>';
+  } else if (isAvatar) {
+    visual = `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(`Аватарка ${number}`)}"><span>${String(number).padStart(2,'0')}</span></div>`;
+  } else {
+    visual = `<div class="store-v2-confirm-game">${gameCosmeticPreview(offer?.metadata?.layer, offer?.metadata?.variant, title)}</div>`;
+  }
 
   openSheet(`
     <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
@@ -429,7 +514,10 @@ async function purchaseOffer(offer, token, button){
     applyStoreResponse(result);
     renderStore();
     haptic('success');
-    toast(String(offer.offer_type || '') === 'bundle' ? 'Комплект добавлен в коллекцию.' : 'Аватарка добавлена в коллекцию.');
+    const isAvatar = String(offer?.item_family || '') === 'avatar';
+    toast(String(offer.offer_type || '') === 'bundle'
+      ? 'Комплект добавлен в коллекцию.'
+      : (isAvatar ? 'Аватарка добавлена в коллекцию.' : 'Предмет добавлен в коллекцию.'));
   } catch (error) {
     storeState = previousStoreState;
     state.user = previousUser;
@@ -440,6 +528,43 @@ async function purchaseOffer(offer, token, button){
     toast(error?.message || 'Не удалось выполнить покупку.');
   } finally {
     purchaseBusy = false;
+  }
+}
+
+async function equipGameItem(itemId){
+  if (equipBusy || !storeState) return;
+  const previousStoreState = cloneObject(storeState);
+  const next = cloneObject(storeState);
+  const target = offersFromSnapshot(next).find(candidate => String(candidate?.item_ids?.[0] || '') === itemId);
+  const slot = String(target?.equip_slot || '');
+  if (!target || !target.already_owned || !slot) return;
+
+  equipBusy = true;
+  offersFromSnapshot(next).forEach(candidate => {
+    if (String(candidate?.equip_slot || '') === slot) candidate.equipped = String(candidate?.item_ids?.[0] || '') === itemId;
+  });
+  next.inventory ||= { items:[], equipped:{} };
+  next.inventory.equipped ||= {};
+  next.inventory.equipped[slot] = itemId;
+  (next.inventory.items || []).forEach(item => {
+    if (String(item?.equip_slot || '') === slot) item.equipped = String(item?.item_id || '') === itemId;
+  });
+  storeState = next;
+  renderStore();
+
+  try {
+    const result = await api.cosmeticStoreEquip(itemId);
+    applyStoreResponse(result);
+    renderStore();
+    haptic('success');
+    toast('Предмет выбран.');
+  } catch (error) {
+    storeState = previousStoreState;
+    renderStore();
+    haptic('error');
+    toast(error?.message || 'Не удалось выбрать предмет.');
+  } finally {
+    equipBusy = false;
   }
 }
 
