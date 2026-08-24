@@ -88,7 +88,7 @@ jobs:
         run: |
           set -euo pipefail
           php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"mvp19=store-v2") || !str_contains($s,"corrective=2")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2") || !str_contains($css,"corrective=2")) exit(3);'
-          grep -F "@import url('./screens/store-v2.css?v=3&mvp19=store-v2&corrective=2');" app/assets/css/main.css
+          grep -F "@import url('./screens/store-v2.css?v=4&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-visual-v2');" app/assets/css/main.css
           grep -F 'cosmeticStoreStatus' app/assets/js/api/client.js
           grep -F 'cosmeticStorePurchase' app/assets/js/api/client.js
           grep -F 'api.cosmeticStoreStatus()' app/assets/js/screens/store-screen.js
@@ -108,7 +108,7 @@ jobs:
           grep -F "{ id:'profile', label:'Профиль' }" app/assets/js/screens/store-screen.js
           grep -F "{ id:'games', label:'Игры' }" app/assets/js/screens/store-screen.js
           grep -F "{ id:'bundles', label:'Наборы' }" app/assets/js/screens/store-screen.js
-          grep -F 'Пилотная коллекция' app/assets/js/screens/store-screen.js
+          grep -F 'Оформление игры' app/assets/js/screens/store-screen.js
           grep -F 'Неоновый комплект' app/assets/js/screens/store-screen.js
           grep -F 'data-store-v2-equip' app/assets/js/screens/store-screen.js
           grep -F 'store-v2-selected-check' app/assets/js/screens/store-screen.js

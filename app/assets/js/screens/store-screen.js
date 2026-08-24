@@ -238,20 +238,27 @@ function renderGamesTab(){
   if (!catalog) return emptyState('Игровая косметика пока недоступна');
   return `
     <div class="store-v2-game-head">
-      <div><span>Пилотная коллекция</span><h2>${escapeHtml(catalog.title || 'Крестики-нолики')}</h2></div>
+      <div>
+        <span>Оформление игры</span>
+        <h2>${escapeHtml(catalog.title || 'Крестики-нолики')}</h2>
+        <p>Поля, знаки и эффекты сразу показываются в матче.</p>
+      </div>
       <div class="store-v2-game-head-marks" aria-hidden="true"><b>✕</b><b>○</b></div>
     </div>
-    ${renderGameCosmeticGroup('Поля', catalog.themes)}
-    ${renderGameCosmeticGroup('Знаки', catalog.elements)}
-    ${renderGameCosmeticGroup('Эффекты', catalog.effects)}
+    ${renderGameCosmeticGroup('Поля', 'Фон и сетка игрового поля', catalog.themes)}
+    ${renderGameCosmeticGroup('Знаки', 'Внешний вид крестиков и ноликов', catalog.elements)}
+    ${renderGameCosmeticGroup('Эффекты', 'Анимации хода и завершения матча', catalog.effects)}
   `;
 }
 
-function renderGameCosmeticGroup(title, offers){
+function renderGameCosmeticGroup(title, subtitle, offers){
   const items = Array.isArray(offers) ? offers : [];
   return `
     <section class="store-v2-game-group">
-      <div class="store-v2-title-row"><h2>${escapeHtml(title)}</h2></div>
+      <div class="store-v2-title-row store-v2-game-title-row">
+        <div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div>
+        <span>${items.length} варианта</span>
+      </div>
       <div class="store-v2-game-grid">${items.map(renderGameOffer).join('')}</div>
     </section>
   `;
@@ -263,26 +270,46 @@ function renderGameOffer(offer){
   const itemId = String(offer?.item_ids?.[0] || '');
   const layer = String(offer?.metadata?.layer || 'theme');
   const variant = String(offer?.metadata?.variant || 'base');
+  const price = formatNumber(offer?.price_coins || 0);
+  const kind = layer === 'theme' ? 'Игровое поле' : (layer === 'elements' ? 'Комплект знаков' : 'Эффект матча');
+  const description = gameCosmeticDescription(layer, variant);
   return `
     <article class="store-v2-game-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
       ${gameCosmeticPreview(layer, variant, offer?.display_name || '')}
-      <strong>${escapeHtml(offer?.display_name || itemId)}</strong>
+      <div class="store-v2-game-product-copy">
+        <span>${escapeHtml(kind)}</span>
+        <strong>${escapeHtml(offer?.display_name || itemId)}</strong>
+        <p>${escapeHtml(description)}</p>
+      </div>
       <div class="store-v2-game-product-foot">
         ${owned
           ? `<button class="store-v2-equip ${equipped ? 'active' : ''}" data-store-v2-equip="${escapeAttr(itemId)}" type="button" ${equipped ? 'disabled' : ''}>${equipped ? 'Выбрано' : 'Выбрать'}</button>`
-          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">Купить</button>`}
+          : `<button class="store-v2-buy store-v2-game-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button"><span>Купить</span><b>${price} коинов</b></button>`}
       </div>
     </article>
   `;
+}
+
+function gameCosmeticDescription(layer, variant){
+  if (layer === 'theme') {
+    return ({ classic:'Тёплая классическая доска', dark:'Строгое тёмное оформление', glass:'Объёмное стеклянное поле', neon:'Неоновая сетка и свечение' })[variant] || 'Меняет фон и сетку поля';
+  }
+  if (layer === 'elements') {
+    return ({ classic:'Чистые классические X и O', '3d':'Объёмные светлые знаки', metal:'Золотой X и стальной O', neon:'Светящиеся неоновые знаки' })[variant] || 'Меняет крестики и нолики';
+  }
+  return ({ sign:'Вспышка при установке знака', 'winning-line':'Светящаяся линия победы', 'strike-through':'Перечёркивает проигравшие знаки' })[variant] || 'Добавляет эффект в матч';
 }
 
 function gameCosmeticPreview(layer, variant, label = ''){
   const safeLayer = ['theme','elements','effect'].includes(String(layer)) ? String(layer) : 'theme';
   const safeVariant = String(variant || 'base').replace(/[^a-z0-9-]/g, '');
   let content = '';
-  if (safeLayer === 'theme') content = `<i class="store-v2-mini-board">${Array.from({ length:9 }, () => '<span></span>').join('')}</i>`;
+  if (safeLayer === 'theme') {
+    const marks = ['✕','','○','','○','','✕','','✕'];
+    content = `<i class="store-v2-mini-board">${marks.map(mark => `<span>${mark ? `<b>${mark}</b>` : ''}</span>`).join('')}</i>`;
+  }
   else if (safeLayer === 'elements') content = '<i class="store-v2-mini-marks"><span>✕</span><span>○</span></i>';
-  else content = `<i class="store-v2-mini-effect"><span></span><b>${safeVariant === 'sign' ? '+' : (safeVariant === 'winning-line' ? '3' : '×')}</b></i>`;
+  else content = `<i class="store-v2-mini-effect"><span>✕</span><b>${safeVariant === 'sign' ? '+' : ''}</b></i>`;
   return `<div class="store-v2-game-preview" data-cosmetic-layer="${safeLayer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeAttr(label)}">${content}</div>`;
 }
 
