@@ -113,6 +113,7 @@ $assertTrue(str_contains($storeClient, 'storeState = previousStoreState;'), 'Fai
 $assertTrue(str_contains($storeClient, 'state.profileInventory = previousProfileInventory;'), 'Failed purchase must restore Profile inventory snapshot');
 $assertTrue(str_contains($storeClient, 'if (!purchaseBusy) applyStoreResponse(result);'), 'Background Store refresh must not overwrite a pending optimistic purchase');
 $assertTrue(str_contains($storeClient, 'state.selectedAvatarId || storeState?.inventory?.equipped?.profile_avatar'), 'Store selected check must follow the same selected avatar owner');
+$assertTrue(str_contains($storeClient, 'class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}"'), 'Purchase confirmation must render the selected illustrated avatar instead of the numeric placeholder');
 
 $assertTrue(str_contains($responseHelper, 'u.equipped_avatar_item_id'), 'Game identity projection must read canonical equipped avatar');
 $assertTrue(str_contains($responseHelper, "\$player['avatar_item_id']"), 'Game response must expose equipped avatar to presentation');
@@ -149,6 +150,7 @@ $cssTarget = (string)($manifest['assets']['main_css'] ?? '');
 $assertTrue(str_contains($profileTarget, 'mvp19=avatar-collection'), 'Active manifest must publish MVP-19.3 Profile client');
 $assertTrue(str_contains($profileTarget, 'mvp19_3_1=avatar-sync'), 'Active manifest must publish MVP-19.3.1 Profile avatar sync target');
 $assertTrue(str_contains($storeTarget, 'mvp19_3_1=optimistic-purchase'), 'Active manifest must publish MVP-19.3.1 optimistic Store target');
+$assertTrue(str_contains($storeTarget, 'mvp19_4=purchase-avatar-preview'), 'Active manifest must publish the purchase avatar preview fix');
 $assertTrue(str_contains($stateTarget, 'mvp19_3_1=avatar-owner'), 'Active manifest must publish MVP-19.3.1 avatar state owner target');
 $assertTrue(str_contains($uiTarget, 'mvp19_3_1=selected-avatar-owner'), 'Active manifest must publish MVP-19.3.1 shared identity render target');
 $assertTrue(str_contains($modelTarget, 'mvp19_3_1=avatar-pass-through'), 'Active manifest must publish the paid-avatar canonical model fix');
