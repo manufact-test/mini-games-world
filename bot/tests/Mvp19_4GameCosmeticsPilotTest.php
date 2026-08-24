@@ -153,8 +153,15 @@ $assertStoreError(static fn() => $store->quote($mgwId, 'ttt-premium-bundle'), 'a
 
 $responseSource = (string)file_get_contents($root . '/bot/helpers/response.php');
 $rendererSource = (string)file_get_contents($root . '/app/assets/js/games/tictactoe/renderer.js');
+$storeSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
+$storeCss = (string)file_get_contents($root . '/app/assets/css/screens/store-v2.css');
+$mainCss = (string)file_get_contents($root . '/app/assets/css/main.css');
 $assertTrue(str_contains($responseSource, "c.item_type = \\'game\\'") && str_contains($responseSource, "\$player['game_cosmetics']"), 'Game response must project canonical equipped cosmetics for both players');
 $assertTrue(str_contains($rendererSource, 'player?.game_cosmetics?.slots') && str_contains($rendererSource, 'game_tictactoe_effect_winning_line'), 'Pilot renderer must consume public cosmetics without touching rules');
 $assertTrue(!str_contains($rendererSource, 'api.gameAction') && !str_contains($rendererSource, 'time_left'), 'Cosmetic renderer must not become an action or timer owner');
+$assertTrue(str_contains($storeSource, 'Оформление игры') && str_contains($storeSource, 'Купить</span><b>${price} коинов'), 'Games Store must explain the collection and include the exact purchase price in every action');
+$assertTrue(str_contains($storeSource, 'Фон и сетка игрового поля') && str_contains($storeSource, 'Внешний вид крестиков и ноликов'), 'Games Store must explain what each cosmetic group changes');
+$assertTrue(str_contains($storeCss, 'grid-template-columns:116px minmax(0,1fr)') && str_contains($storeCss, 'min-height:39px'), 'Mobile game offers must render as readable preview cards with usable actions');
+$assertTrue(str_contains($mainCss, 'store-v2.css?v=4') && str_contains($mainCss, 'game-cosmetics-visual-v2'), 'Active CSS graph must cache-bust the visual game catalogue instead of reusing the pre-pilot Store stylesheet');
 
 fwrite(STDOUT, "PASS: MVP-19.4 game cosmetics framework and Tic Tac Toe pilot ({$assertions} assertions)\n");

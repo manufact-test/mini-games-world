@@ -108,7 +108,7 @@ jobs:
           grep -F "{ id:'profile', label:'Профиль' }" app/assets/js/screens/store-screen.js
           grep -F "{ id:'games', label:'Игры' }" app/assets/js/screens/store-screen.js
           grep -F "{ id:'bundles', label:'Наборы' }" app/assets/js/screens/store-screen.js
-          grep -F 'Пилотная коллекция' app/assets/js/screens/store-screen.js
+          grep -F 'Оформление игры' app/assets/js/screens/store-screen.js
           grep -F 'Неоновый комплект' app/assets/js/screens/store-screen.js
           grep -F 'data-store-v2-equip' app/assets/js/screens/store-screen.js
           grep -F 'store-v2-selected-check' app/assets/js/screens/store-screen.js
