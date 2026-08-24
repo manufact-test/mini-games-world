@@ -45,7 +45,8 @@ $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
 $migrated = $runner->migrate(false);
-$assertSame(12, $migrated['executed_count'], 'Focused test must apply all twelve canonical migrations');
+$expectedMigrations = count(glob($databaseDir . '/migrations/*.php') ?: []);
+$assertSame($expectedMigrations, $migrated['executed_count'], 'Focused test must apply every current canonical migration');
 $assertSame(0, $runner->migrate(false)['executed_count'], 'Migration rerun must be idempotent');
 
 $service = new EconomyConfigService($database);
