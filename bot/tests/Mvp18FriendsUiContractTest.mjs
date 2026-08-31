@@ -29,8 +29,9 @@ assert(accountShortcuts.includes('closeSheet();') && accountShortcuts.indexOf('c
 assert(accountShortcuts.includes('void loadFriendsModule();'), 'Friends module must prewarm while the menu is visible');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
 assert(inviteWrapper.includes("v=1142&zone=unified&rematch=optimistic&terminal=self-silent"), 'Accepted rematch wrapper must keep its frozen base invite specifier');
-assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1'"), 'Frozen base invite specifier must converge through the manifest on the social-aware cache identity');
-assert(friends.includes("game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1"), 'Friends must consume the same resolved social-aware invite owner identity');
+assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native'"), 'Frozen wrapper specifier must converge through the manifest on the current social-aware Telegram-share owner');
+assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native'"), 'Existing Friends invite specifier must converge on the same current invite owner');
+assert(friends.includes("game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1"), 'Friends must keep handing off through its accepted invite specifier');
 assert(inviteOwner.includes('export function openSocialPlayerInvite'), 'Existing invite owner must expose one bounded social entry');
 assert(inviteOwner.includes("inviteRequest('create_direct'"), 'Social invite must remain inside existing direct-invite lifecycle owner');
 assert(!friends.includes('/bot/invites.php'), 'Friends UI must not create a second invite endpoint owner');

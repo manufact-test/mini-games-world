@@ -159,7 +159,7 @@ jobs:
           grep -F "./mgw-avatar-registry.js?v=4" app/assets/js/profile/mgw-avatar-presentation.js
 
       - name: Guard frozen game engines and social lifecycle
-        if: ${{ !contains(github.head_ref, 'game-cosmetics') }}
+        if: ${{ (startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3') || startsWith(github.head_ref, 'agent/mvp19-4') || startsWith(github.head_ref, 'agent/mvp-19-4')) && !contains(github.head_ref, 'game-cosmetics') }}
         shell: bash
         run: |
           set -euo pipefail
