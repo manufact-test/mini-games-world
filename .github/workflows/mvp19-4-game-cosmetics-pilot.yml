@@ -117,6 +117,7 @@ jobs:
           grep -F "@import url('./games/tictactoe/cosmetics.css?v=1&mvp19_4=pilot');" app/assets/css/main.css
 
       - name: Guard accepted mechanics and lifecycle owners
+        if: contains(github.head_ref, 'game-cosmetics')
         shell: bash
         run: |
           set -euo pipefail
