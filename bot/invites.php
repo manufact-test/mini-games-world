@@ -38,6 +38,14 @@ function mgw_invite_share_url(array $config, string $token): string
     return $baseUrl . '/invite/' . rawurlencode($normalizedToken);
 }
 
+function mgw_invite_telegram_open_url(array $config, string $token): string
+{
+    $username = mgw_invite_bot_username($config);
+    $normalizedToken = strtolower(trim($token));
+    if ($username === '' || preg_match('/^[a-f0-9]{24}$/', $normalizedToken) !== 1) return '';
+    return 'https://t.me/' . rawurlencode($username) . '?start=invite_' . rawurlencode($normalizedToken);
+}
+
 function mgw_invite_board_label(array $invite): string
 {
     $gameType = (string)($invite['game_type'] ?? '');
@@ -49,25 +57,24 @@ function mgw_invite_board_label(array $invite): string
     return $size . '×' . $size;
 }
 
-function mgw_invite_share_text(array $invite, string $shareUrl): string
+function mgw_invite_share_text(array $invite): string
 {
     return "🎮 Приглашение в Mini Games World\n\n"
         . (string)($invite['inviter_name'] ?? 'Игрок') . " приглашает вас сыграть!\n\n"
         . '🎲 Игра: ' . (string)($invite['game_title'] ?? 'Игра') . "\n"
         . '📐 Вариант: ' . mgw_invite_board_label($invite) . "\n"
         . '🪙 Ставка: ' . (int)($invite['bet'] ?? 0) . " коинов\n\n"
-        . "Откройте приглашение и примите вызов 👇\n"
-        . $shareUrl;
+        . 'Откройте приглашение и примите вызов 👇';
 }
 
 function mgw_prepare_invite_message(
     array $config,
     string $userId,
     array $invite,
-    string $shareUrl,
+    string $telegramOpenUrl,
     string $shareText
 ): string {
-    if ($userId === '' || $shareUrl === '') return '';
+    if ($userId === '' || $telegramOpenUrl === '') return '';
 
     try {
         $response = (new TelegramService($config))->api('savePreparedInlineMessage', [
@@ -84,7 +91,7 @@ function mgw_prepare_invite_message(
                 ],
                 'reply_markup' => [
                     'inline_keyboard' => [[
-                        ['text' => '🎮 Открыть приглашение', 'url' => $shareUrl],
+                        ['text' => '🎮 Открыть приглашение', 'url' => $telegramOpenUrl],
                     ]],
                 ],
             ],
@@ -438,18 +445,20 @@ try {
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
         $token = (string)($result['invite']['token'] ?? '');
         $shareUrl = mgw_invite_share_url($config, $token);
-        if ($shareUrl === '') {
+        $telegramOpenUrl = mgw_invite_telegram_open_url($config, $token);
+        if ($shareUrl === '' || $telegramOpenUrl === '') {
             throw new RuntimeException('Не удалось подготовить Telegram-приглашение.');
         }
-        $shareText = mgw_invite_share_text($result['invite'], $shareUrl);
+        $shareText = mgw_invite_share_text($result['invite']);
         $result['invite']['share_url'] = $shareUrl;
+        $result['invite']['telegram_open_url'] = $telegramOpenUrl;
         $result['invite']['share_text'] = $shareText;
         $result['invite']['prepared_message_id'] = $prepareMessage
             ? mgw_prepare_invite_message(
                 $config,
                 (string)($tgUser['id'] ?? ''),
                 $result['invite'],
-                $shareUrl,
+                $telegramOpenUrl,
                 $shareText
             )
             : '';
