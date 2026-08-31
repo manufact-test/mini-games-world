@@ -53,9 +53,14 @@ $assertContains(
     'MVP-18.7 must retain the accepted reconnect wrapper'
 );
 $assertContains(
-    "'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1'",
+    "'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native'",
     $manifest,
-    'MVP-18.7 must retain the accepted social-aware invite owner'
+    'MVP-18.7 must route the frozen wrapper specifier to the current Telegram-native invite owner'
+);
+$assertContains(
+    "'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native'",
+    $manifest,
+    'Friends and the wrapper must converge on one invite owner identity'
 );
 $assertContains(
     "initV101InviteSyncDedupe();",
@@ -112,6 +117,52 @@ $assertContains(
     "const SHARE_CALLBACK_TIMEOUT_MS = 12000;",
     $invites,
     'The existing bounded native callback timeout must remain explicit'
+);
+
+$assertContains(
+    "function mgw_invite_share_url(array $config, string $token): string",
+    $inviteEndpoint,
+    'Public universal invite URL must remain a separate stable owner'
+);
+$assertContains(
+    "return $baseUrl . '/invite/' . rawurlencode($normalizedToken);",
+    $inviteEndpoint,
+    'Copy/external invite URL must remain the public /invite/TOKEN route'
+);
+$assertContains(
+    "function mgw_invite_telegram_open_url(array $config, string $token): string",
+    $inviteEndpoint,
+    'Telegram share transport must have an explicit Telegram-native URL builder'
+);
+$assertContains(
+    "'?start=invite_' . rawurlencode($normalizedToken)",
+    $inviteEndpoint,
+    'Telegram-native invite must use the existing /start invite_TOKEN ingress'
+);
+$assertContains(
+    "['text' => '🎮 Открыть приглашение', 'url' => $telegramOpenUrl]",
+    $inviteEndpoint,
+    'Prepared Telegram message must open the Telegram-native ingress'
+);
+$assertContains(
+    "$result['invite']['share_url'] = $shareUrl;",
+    $inviteEndpoint,
+    'Public share URL must stay available for explicit copy'
+);
+$assertContains(
+    "$result['invite']['telegram_open_url'] = $telegramOpenUrl;",
+    $inviteEndpoint,
+    'Telegram-native open URL must be projected separately from the public URL'
+);
+$assertContains(
+    "const telegramOpenUrl = String(invite.telegram_open_url || publicShareUrl);",
+    $invites,
+    'Fallback Telegram share must prefer the Telegram-native URL'
+);
+$assertContains(
+    "copyInviteLink(shareUrl)",
+    $invites,
+    'Explicit copy action must continue copying the public universal URL'
 );
 
 $assertNotContains(
