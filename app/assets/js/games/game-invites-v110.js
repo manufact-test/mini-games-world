@@ -737,10 +737,14 @@ function showPreparedLink(invite, context){
 }
 
 function openFallbackShare(invite){
-  const shareUrl = String(invite.share_url || '');
-  if (!shareUrl) return toast('Ссылка временно недоступна.');
-  const text = String(invite.share_text || '').replace(shareUrl, '').trim();
-  const url = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+  const publicShareUrl = String(invite.share_url || '');
+  const telegramOpenUrl = String(invite.telegram_open_url || publicShareUrl);
+  if (!telegramOpenUrl) return toast('Ссылка временно недоступна.');
+  const text = String(invite.share_text || '')
+    .replace(publicShareUrl, '')
+    .replace(telegramOpenUrl, '')
+    .trim();
+  const url = `https://t.me/share/url?url=${encodeURIComponent(telegramOpenUrl)}&text=${encodeURIComponent(text)}`;
   const tg = getTelegram();
   try {
     if (tg?.openTelegramLink) tg.openTelegramLink(url);
