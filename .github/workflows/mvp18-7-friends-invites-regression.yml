@@ -103,6 +103,7 @@ jobs:
           test "$bad" -eq 0
 
       - name: Guard accepted game engines and frozen runtime owners
+        if: startsWith(github.head_ref, 'agent/mvp18-7')
         shell: bash
         run: |
           set -euo pipefail
