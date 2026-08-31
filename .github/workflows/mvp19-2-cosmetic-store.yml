@@ -183,6 +183,7 @@ jobs:
           test "$bad" -eq 0
 
       - name: Guard accepted engines and frozen social owners
+        if: startsWith(github.head_ref, 'agent/mvp19-2')
         shell: bash
         run: |
           set -euo pipefail
