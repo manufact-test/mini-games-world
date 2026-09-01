@@ -23,6 +23,20 @@ async function requestUrl(url, payload = {}){
 }
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
 
+function publishCosmeticInventory(result){
+  const equipped = result?.store?.inventory?.equipped;
+  if (equipped && typeof equipped === 'object') {
+    const current = state.profileInventory && typeof state.profileInventory === 'object' ? state.profileInventory : {};
+    state.profileInventory = { ...current, equipped:{ ...equipped } };
+    document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ equipped:{ ...equipped } } }));
+  }
+  return result;
+}
+
+async function requestCosmeticStore(payload){
+  return publishCosmeticInventory(await requestUrl(COSMETIC_STORE_URL, payload));
+}
+
 function finishedActiveGameId(){
   const game = state.activeGame;
   return String(game?.status || '') === 'finished' ? String(game?.id || '') : '';
@@ -61,10 +75,10 @@ export const api = {
   history: () => requestHistory(),
   historyFast: () => request('history'),
   support: (type, message) => request('support', { type, message }),
-  cosmeticStoreStatus: () => requestUrl(COSMETIC_STORE_URL, { action:'status' }),
-  cosmeticStorePurchase: (offerId, requestToken) => requestUrl(COSMETIC_STORE_URL, { action:'purchase', offer_id:offerId, request_token:requestToken }),
-  cosmeticStoreEquip: itemId => requestUrl(COSMETIC_STORE_URL, { action:'equip', item_id:itemId }),
-  cosmeticStoreUnequip: equipSlot => requestUrl(COSMETIC_STORE_URL, { action:'unequip', equip_slot:equipSlot }),
+  cosmeticStoreStatus: () => requestCosmeticStore({ action:'status' }),
+  cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase', offer_id:offerId, request_token:requestToken }),
+  cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip', item_id:itemId }),
+  cosmeticStoreUnequip: equipSlot => requestCosmeticStore({ action:'unequip', equip_slot:equipSlot }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),
