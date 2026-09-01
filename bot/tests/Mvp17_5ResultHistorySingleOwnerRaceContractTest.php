@@ -66,8 +66,8 @@ $assert(
 foreach ([34, 38, 46, 47] as $version) {
     $url = (string)($manifest['imports']["./assets/js/api/client.js?v={$version}"] ?? '');
     $assert(
-        str_contains($url, 'v=1134&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch'),
-        "API client alias v{$version} must preserve accepted Profile/History prefixes and cache-bust locked Result routing."
+        str_contains($url, 'v=1135&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch'),
+        "API client alias v{$version} must preserve accepted Profile/History/locked Result prefixes across the name-color cache bump."
     );
 }
 

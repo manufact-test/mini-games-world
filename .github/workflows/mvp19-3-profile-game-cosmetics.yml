@@ -94,7 +94,7 @@ jobs:
         run: |
           set -euo pipefail
           php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19_3_3=game-tabs-fresh")) exit(1); if(!str_contains($m["assets"]["main_css"]??"","mvp19_3=profile-game-tabs-fresh")) exit(2);'
-          grep -F "@import url('./screens/profile-corrective.css?v=6&mvp19=profile-collection&mvp19_3=game-tabs&fresh-selection');" app/assets/css/main.css
+          grep -F "@import url('./screens/profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs&fresh-selection&ttt-mark=css');" app/assets/css/main.css
 
       - name: Guard frozen owners and bounded Profile evolution
         if: ${{ github.event_name == 'pull_request' }}
@@ -121,6 +121,8 @@ jobs:
               .github/workflows/mvp19-3-profile-name-colors.yml|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
               .github/workflows/mvp19-4-game-cosmetics-pilot.yml|\
+              app/assets/js/api/client.js|\
+              app/assets/js/ui.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/screens/store-screen.js|\
               app/assets/js/profile/mgw-avatar-presentation.js|\
@@ -138,7 +140,9 @@ jobs:
               bot/tests/Mvp19_4EffectsV2ContractTest.mjs|\
               bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
               bot/tests/ProfileV2PassAStaticContractTest.php|\
-              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php)
+              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
+              bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php|\
+              bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php)
                 ;;
               *)
                 echo "Unexpected Profile cosmetics path: $path" >&2

@@ -59,7 +59,7 @@ $assert(
 );
 foreach ([34, 38, 46, 47] as $version) {
     $url = (string)($manifest['imports']["./assets/js/api/client.js?v={$version}"] ?? '');
-    $assert(str_contains($url, 'v=1134&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history'), "API alias v{$version} must cache-bust the fast menu History owner while preserving the accepted prefix.");
+    $assert(str_contains($url, 'v=1135&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history'), "API alias v{$version} must preserve the accepted fast menu History prefix across the name-color cache bump.");
 }
 $assert(
     str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=106&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1'),
