@@ -5,6 +5,11 @@ const EFFECT_VARIANTS = Object.freeze({
   'game-ttt-effect-winning-line':'sparks',
   'game-ttt-effect-strike':'wave',
 });
+const EFFECT_CLASSES = Object.freeze({
+  impact:'ttt-fx-impact',
+  sparks:'ttt-fx-sparks',
+  wave:'ttt-fx-wave',
+});
 
 export function renderTicTacToeSurface({ game, me, container, onAction }){
   const boardSize = Number(game?.board_size || 3);
@@ -31,6 +36,7 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
     const label = cell === '-' ? '' : (cell === 'X' ? '✕' : '○');
     const markVariant = variantFor(owner, 'game_tictactoe_elements', 'marks');
     const moveEffect = index === changedCell ? effectVariantFor(owner) : '';
+    const moveEffectClass = EFFECT_CLASSES[moveEffect] || '';
     const classes = [
       'cell',
       cell === 'X' ? 'x' : (cell === 'O' ? 'o' : ''),
@@ -38,8 +44,8 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
     ].filter(Boolean).join(' ');
     const markClasses = [
       'ttt-mark',
-      moveEffect ? 'ttt-effect-mark' : '',
-      moveEffect ? `ttt-fx-${moveEffect}` : '',
+      moveEffectClass ? 'ttt-effect-mark' : '',
+      moveEffectClass,
     ].filter(Boolean).join(' ');
 
     return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label ? `<span class="${markClasses}" aria-hidden="true">${label}</span>` : ''}</button>`;
