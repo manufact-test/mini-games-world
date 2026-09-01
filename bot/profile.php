@@ -34,14 +34,18 @@ try {
         json_response(['ok' => false, 'error' => 'Профиль MGW временно недоступен.'], 503);
     }
 
-    $profile = (new MgwProfileService(
-        PdoConnectionFactory::create($databaseConfig)
-    ))->publicProfile($mgwId);
+    // First-visible identity and collection must come from the same canonical DB
+    // snapshot before the Mini App preloader is released. Reuse one connection;
+    // ProductInventoryService remains the sole ownership/equip owner.
+    $database = PdoConnectionFactory::create($databaseConfig);
+    $profile = (new MgwProfileService($database))->publicProfile($mgwId);
+    $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
 
     $provider = strtolower(trim((string)($authenticatedUser['mgw_identity_provider'] ?? '')));
     json_response([
         'ok' => true,
         'profile' => $profile,
+        'inventory' => $inventory,
         'auth' => [
             'provider' => $provider !== '' ? $provider : null,
             'provider_neutral' => true,
