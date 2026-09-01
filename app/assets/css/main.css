@@ -69,3 +69,6 @@
 .sheet .menu-item-standard{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-height:52px;padding:13px 14px;text-align:left}
 .sheet .menu-item-standard .menu-item-icon{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;line-height:1;font-size:18px}
 .sheet .menu-item-standard .menu-item-label{display:block;min-width:0;flex:1;line-height:1.22}
+
+/* Store primary screen already reserves the fixed bottom navigation in base layout. */
+.has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}
