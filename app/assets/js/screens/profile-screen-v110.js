@@ -38,7 +38,8 @@ export function initProfileScreen(){
 }
 
 export async function openProfile(){
-  if (currentScreen() === 'profile' || profileLoading) return;
+  if (currentScreen() === 'profile') return;
+  if (profileLoading) return;
   profileLoading = true;
   try {
     applyProfileResponse(await api.profileV2());
