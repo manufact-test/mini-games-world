@@ -11,6 +11,7 @@
 @import url('./components/game-rules.css?v=53');
 @import url('./games/tictactoe/rules.css?v=54&mvp16=variant-rules');
 @import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2&c2_1=single-slot-parity&c2_5=visible-mark-layer');
+@import url('./games/tictactoe/effects-v3.css?v=1&c2_6=cell-native-dom-fx');
 @import url('./games/four-in-a-row/rules.css?v=53');
 @import url('./games/four-in-a-row/game.css?v=54&ios-fit=width-owned');
 @import url('./games/battleship/rules.css?v=54');
