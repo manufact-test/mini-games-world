@@ -10,7 +10,7 @@
 @import url('./components/account-shortcuts.css?v=41&mvp18=friends-corrective');
 @import url('./components/game-rules.css?v=53');
 @import url('./games/tictactoe/rules.css?v=54&mvp16=variant-rules');
-@import url('./games/tictactoe/cosmetics.css?v=1&mvp19_4=pilot');
+@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field');
 @import url('./games/four-in-a-row/rules.css?v=53');
 @import url('./games/four-in-a-row/game.css?v=54&ios-fit=width-owned');
 @import url('./games/battleship/rules.css?v=54');
@@ -27,7 +27,7 @@
 @import url('./games/domino/game.css?v=81');
 @import url('./screens/home.css?v=124&sk=1');
 @import url('./screens/store.css?v=29&mvp16=primary-tab');
-@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3');
+@import url('./screens/store-v2.css?v=6&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');
 @import url('./screens/store-cleanup.css?v=43');
 @import url('./screens/store-order.css?v=38');
 @import url('./screens/store-orders.css?v=36');
