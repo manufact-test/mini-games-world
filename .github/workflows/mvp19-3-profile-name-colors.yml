@@ -9,10 +9,13 @@ on:
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/ui.js'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/profile/mgw-avatar-presentation.js'
       - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/css/screens/profile-corrective.css'
       - 'app/assets/css/components/mgw-name-colors.css'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
@@ -60,6 +63,8 @@ jobs:
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileNameColorsTest.php
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/ui.js
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/screens/profile-screen-v110.js
           node --check app/assets/js/profile/mgw-avatar-presentation.js
@@ -92,7 +97,11 @@ jobs:
           grep -F "data-name-color-item-id" app/assets/js/screens/store-screen.js
           grep -F "ownedNameColorItems" app/assets/js/screens/profile-screen-v110.js
           grep -F "player?.name_color_item_id" app/assets/js/profile/mgw-avatar-presentation.js
-          grep -F "mvp19_3_4=name-colors" app/runtime/client/version-manifest.php
+          grep -F "mgw:cosmetic-inventory-changed" app/assets/js/api/client.js
+          grep -F "el.dataset.nameColorItemId = nameColorItemId" app/assets/js/ui.js
+          grep -F 'content:"Mini Games"' app/assets/css/components/mgw-name-colors.css
+          grep -F 'data-profile-game-tab="tictactoe"' app/assets/css/screens/profile-corrective.css
+          grep -F "name-color-live-projection" app/runtime/client/version-manifest.php
           if grep -Fq 'cosmeticStorePurchase(' app/assets/js/screens/profile-screen-v110.js; then
             echo 'Profile became a purchase owner.' >&2
             exit 1
@@ -127,10 +136,13 @@ jobs:
               bot/catalog/CosmeticStoreService.php|\
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/ui.js|\
               app/assets/js/screens/store-screen.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/profile/mgw-avatar-presentation.js|\
               app/assets/js/production-clean-entry-v110.js|\
+              app/assets/css/screens/profile-corrective.css|\
               app/assets/css/components/mgw-name-colors.css|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
