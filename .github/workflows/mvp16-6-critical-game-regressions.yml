@@ -11,7 +11,10 @@ on:
       - 'bot/tests/InviteConfigClosureContractTest.php'
       - 'bot/tests/GameWatchCanonicalIdentityProjectionTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
+      - 'bot/tests/FourInARowResponsiveLayoutContractTest.mjs'
       - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/css/games/four-in-a-row/game.css'
+      - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp16-6-critical-game-regressions.yml'
   workflow_dispatch:
@@ -42,12 +45,15 @@ jobs:
           php -l bot/tests/RematchOptimisticUxContractTest.php
           php -l app/runtime/client/version-manifest.php
           node --check app/assets/js/games/game-invites-v110.js
+          node --check bot/tests/FourInARowResponsiveLayoutContractTest.mjs
       - name: Invite config closure regression
         run: php bot/tests/InviteConfigClosureContractTest.php
       - name: Game watch canonical identity regression
         run: php bot/tests/GameWatchCanonicalIdentityProjectionTest.php
       - name: Rematch optimistic UX regression
         run: php bot/tests/RematchOptimisticUxContractTest.php
+      - name: Four in a Row responsive layout regression
+        run: node bot/tests/FourInARowResponsiveLayoutContractTest.mjs
       - name: Exact staging deployment coverage
         run: |
           set -Eeuo pipefail
