@@ -29,6 +29,8 @@ expect(renderer.includes('slots.game_tictactoe_effect'), 'renderer must read the
 for (const token of ['ttt-effect-mark', 'ttt-fx-impact', 'ttt-fx-sparks', 'ttt-fx-wave']) {
   expect(renderer.includes(token), `renderer must expose shared runtime effect token: ${token}`);
 }
+expect(renderer.includes('ttt-mark-glyph'), 'runtime mark must separate the visible X/O glyph from decorative FX layers');
+expect(renderer.includes("viewerMoveEffect ? ' ttt-move-effect-enabled' : ''"), 'runtime board must suppress generic cell press feedback while a move effect is equipped');
 expect(!renderer.includes('findWinningCells'), 'renderer must not keep a terminal winning-effect owner');
 expect(!renderer.includes('ttt-winning-cell'), 'renderer must not paint an after-match winning effect');
 expect(!renderer.includes('ttt-move-pulse'), 'legacy cell-owned move pulse class must be retired');
@@ -48,7 +50,11 @@ for (const token of ['tttFxImpact', 'tttFxSparksBurst', 'tttFxWaveRing']) {
   expect(css.includes(token), `missing shared runtime/store keyframe: ${token}`);
 }
 expect(css.includes('.ttt-effect-mark::before,.ttt-effect-mark::after'), 'effect decoration must originate from the mark itself');
-expect(css.includes('Store loops the exact runtime effect'), 'Store must reuse the runtime visual owner');
+expect(css.includes('.ttt-mark-glyph{') && css.includes('z-index:2;'), 'visible X/O glyph must sit above its effect decoration');
+expect(css.includes('.ttt-effect-mark::before,.ttt-effect-mark::after{\n  content:"";\n  position:absolute;\n  z-index:1;'), 'runtime FX decoration must sit above the cell surface instead of behind it');
+expect(css.includes('#gameBoard[data-game-type="tictactoe"] .cell{overflow:visible}'), 'real game cells must not clip mark-owned sparks or waves');
+expect(css.includes('#gameBoard[data-game-type="tictactoe"].ttt-move-effect-enabled .cell:active{transform:none}'), 'generic square press animation must not visually compete with equipped mark effects');
+expect(css.includes('Store loops the same runtime effect'), 'Store must continue to use the runtime visual owner');
 expect(!css.includes('storeTttImpact'), 'Store-only impact animation must be retired');
 expect(!css.includes('storeTttWinningLine'), 'Store-only winning animation must be retired');
 expect(!css.includes('storeTttMovePulse'), 'Store-only wave animation must be retired');
@@ -75,13 +81,15 @@ expect(endpoint.includes("(string)($catalogItem['equip_slot'] ?? '') !== $equipS
 expect(!endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endpoint must not hardcode unequip to effects only');
 
 expect(mainCss.includes('c2_1=single-slot-parity'), 'active CSS graph must publish C2.1 identity');
+expect(mainCss.includes('c2_5=visible-mark-layer'), 'active CSS graph must cache-bust C2.5 visible runtime effect layers');
 expect(mainCss.includes('.has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}'), 'Store primary screen must not stack the old 78px tail on top of shell navigation spacing');
 expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
 expect(manifest.includes('c2_1=single-effect'), 'active runtime manifest must cache-bust Store single-effect UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
 expect(manifest.includes('c2_2=selection-consistency'), 'active runtime manifest must cache-bust Store selection consistency');
-expect(manifest.includes('c2_4=poll-persistent-effects'), 'active runtime manifest must cache-bust the poll-persistent Tic Tac Toe renderer');
+expect(manifest.includes('c2_4=poll-persistent-effects'), 'active runtime manifest must preserve the poll-persistent Tic Tac Toe renderer');
+expect(manifest.includes('c2_5=visible-mark-layer'), 'active runtime manifest must publish C2.5 visible mark layering');
 expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=28&store=quiet-equip'"), 'active runtime manifest must cache-bust quiet Store acknowledgements');
 expect(manifest.includes('store=compact-tail'), 'active runtime manifest must cache-bust compact Store bottom spacing');
 
-console.log('MVP-19.4 effects C2.4 runtime persistence contract: OK');
+console.log('MVP-19.4 effects C2.5 visible mark layering contract: OK');
