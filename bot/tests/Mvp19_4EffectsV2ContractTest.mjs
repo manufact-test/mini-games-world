@@ -2,7 +2,10 @@ import fs from 'node:fs';
 
 const renderer = fs.readFileSync('app/assets/js/games/tictactoe/renderer.js', 'utf8');
 const css = fs.readFileSync('app/assets/css/games/tictactoe/cosmetics.css', 'utf8');
-const migration = fs.readFileSync('bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php', 'utf8');
+const migration = fs.readFileSync('bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php', 'utf8');
+const store = fs.readFileSync('app/assets/js/screens/store-screen.js', 'utf8');
+const api = fs.readFileSync('app/assets/js/api/client.js', 'utf8');
+const endpoint = fs.readFileSync('bot/cosmetic-store.php', 'utf8');
 const mainCss = fs.readFileSync('app/assets/css/main.css', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 
@@ -10,30 +13,48 @@ function expect(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-expect(renderer.includes("hasEquipped(owner, 'game_tictactoe_effect_sign')"), 'sign effect must remain event-owned by the moved mark');
-expect(renderer.includes("hasEquipped(winner, 'game_tictactoe_effect_winning_line')"), 'winning effect must remain winner-owned');
-expect(renderer.includes("hasEquipped(owner, 'game_tictactoe_effect_strike_through')"), 'legacy stable slot must drive Move Pulse for existing purchases');
-expect(renderer.includes("'ttt-move-pulse'"), 'renderer must emit Move Pulse class');
-expect(!renderer.includes("'ttt-struck-cell'"), 'strike-through rendering must be removed');
+expect(migration.includes("private const EFFECT_SLOT = 'game_tictactoe_effect'"), 'all effects must migrate to one canonical equip slot');
+expect(migration.includes("'game-ttt-effect-sign'"), 'sign item identity must be preserved');
+expect(migration.includes("'game-ttt-effect-winning-line'"), 'historical winning-line item identity must be preserved');
+expect(migration.includes("'game-ttt-effect-strike'"), 'historical strike item identity must be preserved');
+expect(migration.includes("'display_name' => 'Искры хода'"), 'end-of-game winning effect must become a visible move-time effect');
+expect(migration.includes("'variant' => 'impact'"), 'impact variant must be canonical');
+expect(migration.includes("'variant' => 'sparks'"), 'sparks variant must be canonical');
+expect(migration.includes("'variant' => 'wave'"), 'wave variant must be canonical');
+expect(migration.includes("'event' => 'move'"), 'effects must fire during moves, not after the match');
+expect(migration.includes('ORDER BY mgw_id ASC, equipped_at_utc DESC'), 'legacy multi-selection collapse must preserve the most recently equipped effect');
 
-for (const token of [
-  'tttEffectImpact',
-  'tttEffectWinningLine',
-  'tttEffectMovePulse',
-  'storeTttImpact',
-  'storeTttWinningLine',
-  'storeTttMovePulse',
-  'data-cosmetic-variant="move-pulse"',
-]) {
-  expect(css.includes(token), `missing effects v2 CSS token: ${token}`);
+expect(renderer.includes("slots.game_tictactoe_effect"), 'renderer must read the canonical single effect slot');
+for (const token of ['ttt-effect-mark', 'ttt-fx-impact', 'ttt-fx-sparks', 'ttt-fx-wave']) {
+  expect(renderer.includes(token), `renderer must expose shared runtime effect token: ${token}`);
 }
+expect(!renderer.includes('findWinningCells'), 'renderer must not keep a terminal winning-effect owner');
+expect(!renderer.includes('ttt-winning-cell'), 'renderer must not paint an after-match winning effect');
+expect(!renderer.includes('ttt-move-pulse'), 'legacy cell-owned move pulse class must be retired');
 
-expect(migration.includes("'display_name' => 'Импульс знака'"), 'sign effect must have v2 name');
-expect(migration.includes("'display_name' => 'Победный импульс'"), 'winning effect must have v2 name');
-expect(migration.includes("'display_name' => 'Импульс хода'"), 'legacy strike item must become Move Pulse');
-expect(migration.includes("'variant' => 'move-pulse'"), 'Move Pulse metadata variant must reach Store preview');
-expect(migration.includes("'game-ttt-effect-strike'"), 'stable purchased item id must be preserved');
-expect(mainCss.includes('c2=effects-v2'), 'active CSS graph must load effects v2');
-expect(manifest.includes('c2=effects-v2'), 'active runtime manifest must cache-bust effects v2');
+for (const token of ['tttFxImpact', 'tttFxSparksBurst', 'tttFxWaveRing']) {
+  expect(css.includes(token), `missing shared runtime/store keyframe: ${token}`);
+}
+expect(css.includes('.ttt-effect-mark::before,.ttt-effect-mark::after'), 'effect decoration must originate from the mark itself');
+expect(css.includes('Store loops the exact runtime effect'), 'Store must reuse the runtime visual owner');
+expect(!css.includes('storeTttImpact'), 'Store-only impact animation must be retired');
+expect(!css.includes('storeTttWinningLine'), 'Store-only winning animation must be retired');
+expect(!css.includes('storeTttMovePulse'), 'Store-only wave animation must be retired');
 
-console.log('MVP-19.4 effects v2 contract: OK');
+expect(store.includes("'Один выбранный эффект срабатывает при каждом ходе'"), 'Store must explain single-effect move-time behavior');
+expect(store.includes('data-store-v2-unequip'), 'selected effect must expose a remove action');
+expect(store.includes('>Снять</button>'), 'selected effect button must say Снять');
+expect(store.includes('ttt-mark ttt-effect-mark ttt-fx-${safeVariant}'), 'Store preview must render the same runtime effect classes');
+expect(store.includes("winning-line:'sparks'"), 'stale cached winning-line metadata must preview as sparks during rollout');
+expect(store.includes("'move-pulse':'wave'"), 'stale cached move-pulse metadata must preview as wave during rollout');
+expect(api.includes('cosmeticStoreUnequip'), 'API client must expose cosmetic unequip');
+expect(endpoint.includes("if ($action === 'unequip')"), 'Store endpoint must accept unequip action');
+expect(endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endpoint must limit this corrective unequip to the Tic Tac Toe effect slot');
+
+expect(mainCss.includes('c2_1=single-slot-parity'), 'active CSS graph must publish C2.1 identity');
+expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
+expect(manifest.includes('c2_1=mark-owned'), 'active runtime manifest must cache-bust the mark-owned renderer');
+expect(manifest.includes('c2_1=single-effect'), 'active runtime manifest must cache-bust Store single-effect UI');
+expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
+
+console.log('MVP-19.4 effects C2.1 single-slot parity contract: OK');
