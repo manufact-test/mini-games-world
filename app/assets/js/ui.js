@@ -1,5 +1,19 @@
 import { state } from './state.js?v=27';
 
+const PROFILE_NAME_COLOR_IDS = new Set([
+  'profile-name-color-sky',
+  'profile-name-color-gold',
+  'profile-name-color-aurora',
+]);
+
+function activeProfileNameColorItemId(user){
+  const equipped = state.profileInventory && typeof state.profileInventory === 'object' && state.profileInventory.equipped && typeof state.profileInventory.equipped === 'object'
+    ? state.profileInventory.equipped
+    : {};
+  const candidate = String(equipped.profile_name_color || state.mgwProfile?.name_color_item_id || user?.name_color_item_id || '').trim();
+  return PROFILE_NAME_COLOR_IDS.has(candidate) ? candidate : '';
+}
+
 export function formatDate(value){
   if (!value) return 'Дата регистрации появится после входа';
   return new Intl.DateTimeFormat('ru-RU', { day:'2-digit', month:'long', year:'numeric' }).format(new Date(value));
@@ -18,13 +32,17 @@ export function username(user){
 export function roomName(){ return 'Обычный матч'; }
 export function renderUser(user){
   const name = username(user);
+  const nameColorItemId = activeProfileNameColorItemId(user);
   const resolvedAvatarId = String(state.selectedAvatarId || state.mgwProfile?.avatar?.item_id || user?.avatar_item_id || '').trim();
   const canonicalAvatarId = resolvedAvatarId || 'starter-default-01';
   if (!state.selectedAvatarId && resolvedAvatarId) state.selectedAvatarId = canonicalAvatarId;
 
   ['topName','profileName','searchMeName'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.textContent = name;
+    if (!el) return;
+    el.textContent = name;
+    if (nameColorItemId) el.dataset.nameColorItemId = nameColorItemId;
+    else delete el.dataset.nameColorItemId;
   });
   ['topAvatar','profileAvatar','searchMeAvatar'].forEach(id => {
     const el = document.getElementById(id);
@@ -47,3 +65,7 @@ export function renderBalances(user){
   if (unified) unified.textContent = user?.balance ?? '—';
 }
 export function clearTimer(timer){ if (timer) clearInterval(timer); return null; }
+
+document.addEventListener('mgw:cosmetic-inventory-changed', () => {
+  if (state.user && typeof state.user === 'object') renderUser(state.user);
+});
