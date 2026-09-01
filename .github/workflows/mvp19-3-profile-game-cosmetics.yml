@@ -141,7 +141,8 @@ jobs:
               bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
               bot/tests/ProfileV2PassAStaticContractTest.php|\
               bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
-              bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php)
+              bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php|\
+              bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php)
                 ;;
               *)
                 echo "Unexpected Profile cosmetics path: $path" >&2
