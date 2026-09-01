@@ -614,11 +614,21 @@ function openNativeShare(tg, invite, context){
     timeout:null,
   };
   shareAttempt = attempt;
+
+  // Paint the owner waiting state before Telegram takes over with its native
+  // share dialog. Some Desktop/Web clients close that dialog without delivering
+  // the optional callback/event back to the Mini App; the draft itself remains
+  // a valid passive offer and can be bound by the recipient opening the link.
+  currentInvite = attempt.invite;
+  showOwnerWaiting(currentInvite);
+
   attempt.timeout = window.setTimeout(() => {
     if (attempt.settled) return;
     attempt.settled = true;
     attempt.nativePending = false;
     if (shareAttempt?.id === attempt.id) shareAttempt = null;
+    currentInvite = attempt.invite;
+    scheduleSync(0);
   }, SHARE_CALLBACK_TIMEOUT_MS);
 
   try {
@@ -651,6 +661,8 @@ function settleNativeShare(sent, errorCode = '', targetAttempt = null){
 
   if (String(errorCode || '') === 'USER_DECLINED' || String(errorCode || '') === '') {
     restoreWarmShareDraft(attempt);
+    currentInvite = null;
+    openInviteSetup(attempt.context.gameType, attempt.context);
     return;
   }
 
@@ -660,7 +672,9 @@ function settleNativeShare(sent, errorCode = '', targetAttempt = null){
     return;
   }
 
+  currentInvite = null;
   void discardDraft(attempt.invite);
+  openInviteSetup(attempt.context.gameType, attempt.context);
   toast('Не удалось отправить приглашение. Попробуйте ещё раз.');
 }
 
@@ -672,6 +686,13 @@ async function confirmSharedInvite(attempt){
     showOwnerWaiting(currentInvite);
     scheduleSync(0);
   } catch (error) {
+    // Keep the already-rendered draft waiting surface instead of dropping the
+    // owner back into invite setup. A recipient opening the link can still bind
+    // this exact draft and canonical sync will advance it to pending/accepted.
+    currentInvite = attempt.invite;
+    if (openSheetInviteToken() !== String(attempt.invite?.token || '')) {
+      showOwnerWaiting(currentInvite);
+    }
     scheduleSync(0);
   }
 }
