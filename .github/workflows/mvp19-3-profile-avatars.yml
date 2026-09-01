@@ -155,7 +155,7 @@ jobs:
           set -euo pipefail
           php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19_4=character-identity")) exit(2); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","roster=portrait-v5")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","avatar=character-v2")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","roster=portrait-v5")) exit(6); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_3_1=optimistic-purchase")) exit(7); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(8);'
           grep -F "@import url('./components/mgw-avatars.css?v=5&mvp19_4=illustrated-raster-roster-v5');" app/assets/css/main.css
-          grep -F "./profile/mgw-avatar-presentation.js?v=5&mvp19_4=illustrated-raster-roster-v5" app/assets/js/production-clean-entry-v110.js
+          grep -F "./profile/mgw-avatar-presentation.js?v=6&mvp19_4=illustrated-raster-roster-v5&mvp19_3=name-colors" app/assets/js/production-clean-entry-v110.js
           grep -F "./mgw-avatar-registry.js?v=4" app/assets/js/profile/mgw-avatar-presentation.js
 
       - name: Guard frozen game engines and social lifecycle
