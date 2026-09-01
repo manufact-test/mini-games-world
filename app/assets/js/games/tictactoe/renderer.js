@@ -32,7 +32,8 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
   previousVisualSignatures.set(gameKey, visualSignature);
 
   const cosmeticsVisible = players.some(player => Object.keys(equippedSlots(player)).length > 0);
-  container.className = `board size-${boardSize}${cosmeticsVisible ? ' ttt-cosmetics' : ''}`;
+  const viewerMoveEffect = effectVariantFor(viewer);
+  container.className = `board size-${boardSize}${cosmeticsVisible ? ' ttt-cosmetics' : ''}${viewerMoveEffect ? ' ttt-move-effect-enabled' : ''}`;
   container.dataset.gameType = 'tictactoe';
   container.dataset.tttGameKey = gameKey;
   container.dataset.tttTheme = variantFor(viewer, 'game_tictactoe_theme', 'field');
@@ -69,7 +70,7 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
       moveEffectClass,
     ].filter(Boolean).join(' ');
 
-    return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label ? `<span class="${markClasses}" aria-hidden="true">${label}</span>` : ''}</button>`;
+    return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label ? `<span class="${markClasses}" aria-hidden="true"><span class="ttt-mark-glyph">${label}</span></span>` : ''}</button>`;
   }).join('');
 
   bindCellActions(container, onAction);
