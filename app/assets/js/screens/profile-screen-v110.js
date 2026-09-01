@@ -41,18 +41,32 @@ export function initProfileScreen(){
   bindProfileActions();
   renderProfileV2();
   document.addEventListener('mgw:open-profile', openProfile);
+  const warm = () => warmProfileSnapshot();
+  if (typeof globalThis.requestIdleCallback === 'function') {
+    globalThis.requestIdleCallback(warm, { timeout:700 });
+  } else {
+    globalThis.setTimeout(warm, 180);
+  }
+}
+
+function warmProfileSnapshot(){
+  if (profileLoading) return;
+  profileLoading = true;
+  void api.profileV2()
+    .then(applyProfileResponse)
+    .catch(() => {})
+    .finally(() => { profileLoading = false; });
 }
 
 export async function openProfile(){
   if (currentScreen() === 'profile') return;
+  showProfileImmediately();
   if (profileLoading) return;
   profileLoading = true;
   try {
     applyProfileResponse(await api.profileV2());
-    showScreen('profile');
   } catch (error) {
-    showProfileImmediately();
-    toast(error.message || t('profile.load_error'));
+    if (currentScreen() === 'profile') toast(error.message || t('profile.load_error'));
   } finally {
     profileLoading = false;
   }
