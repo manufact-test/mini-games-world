@@ -30,7 +30,7 @@ foreach (['classic','dark','glass','neon'] as $variant) {
 $assert(str_contains((string)$storeCss, '.store-v2-game-preview[data-cosmetic-layer="theme"]{overflow:visible;border-color:transparent;background:transparent;box-shadow:none}'), 'Store theme preview wrapper must stay neutral and expose only the real field surface.');
 $assert(str_contains((string)$storeCss, '.store-v2-mini-board{') && str_contains((string)$storeCss, 'background:transparent;box-shadow:none}'), 'Store mini-board geometry must not recreate theme appearance.');
 $assert(str_contains((string)$mainCss, "./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field"), 'Active main CSS must cache-bust the shared Tic Tac Toe field owner.');
-$assert(str_contains((string)$mainCss, "./screens/store-v2.css?v=6&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity"), 'Active main CSS must cache-bust the Store geometry cleanup.');
+$assert(str_contains((string)$mainCss, "./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity"), 'Active main CSS must preserve the accepted Store prefix while cache-busting C1 field parity.');
 $assert(str_contains((string)($manifest['assets']['main_css'] ?? ''), '&c1=ttt-field-parity'), 'Active version manifest must publish the C1 Store field parity CSS identity.');
 
 fwrite(STDOUT, "C1StoreTicTacToeFieldParityTest: {$assertions} assertions passed\n");
