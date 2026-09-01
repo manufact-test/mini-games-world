@@ -36,6 +36,14 @@ async function requestHistory(){
   return request('history');
 }
 
+async function requestMgwProfile(){
+  const result = await requestUrl(`${window.location.origin}/bot/profile.php`);
+  if (result?.inventory && typeof result.inventory === 'object') {
+    state.profileInventory = result.inventory;
+  }
+  return result;
+}
+
 export const api = {
   bootstrap: () => request('bootstrap'),
   stats: () => request('stats'),
@@ -48,7 +56,7 @@ export const api = {
   leaveGame: (gameId) => request('leave_game', { gameId }),
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestUrl(`${window.location.origin}/bot/profile-v2.php`, profileUpdate ? { profile_update:profileUpdate } : {}),
-  mgwProfile: () => requestUrl(`${window.location.origin}/bot/profile.php`),
+  mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),
   historyFast: () => request('history'),
