@@ -14,6 +14,11 @@ const LAUNCH_AVATARS = Object.freeze([
   'store-avatar-01','store-avatar-02','store-avatar-03','store-avatar-04','store-avatar-05',
   'store-avatar-06','store-avatar-07','store-avatar-08','store-avatar-09',
 ]);
+const NAME_COLOR_ITEM_IDS = Object.freeze([
+  'profile-name-color-sky',
+  'profile-name-color-gold',
+  'profile-name-color-aurora',
+]);
 const GAME_COSMETIC_GROUPS = Object.freeze([
   { layer:'theme', title:'Поля' },
   { layer:'elements', title:'Знаки' },
@@ -23,6 +28,7 @@ const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
 let nicknameSaving = false;
 let avatarSaving = false;
+let nameColorSaving = false;
 let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
 
@@ -99,6 +105,11 @@ function bindProfileActions(){
     const avatarCard = event.target.closest('[data-profile-avatar-preview]');
     if (avatarCard) {
       openAvatarPreview(String(avatarCard.dataset.profileAvatarPreview || ''));
+      return;
+    }
+    const nameColorCard = event.target.closest('[data-profile-name-color]');
+    if (nameColorCard) {
+      openNameColorPreview(String(nameColorCard.dataset.profileNameColor || ''));
       return;
     }
     const gameTab = event.target.closest('[data-profile-game-tab]');
@@ -253,6 +264,8 @@ function renderProfileV2(){
   const matches = Array.isArray(history.matches) ? history.matches.slice(0, 6) : [];
   const activeAvatar = currentAvatarItemId();
   const ownedAvatars = ownedAvatarItems(activeAvatar);
+  const activeNameColor = currentNameColorItemId();
+  const nameColorAttribute = activeNameColor ? ` data-name-color-item-id="${escapeHtml(activeNameColor)}"` : '';
 
   root.innerHTML = `
     <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1></div></header>
@@ -262,7 +275,7 @@ function renderProfileV2(){
         <span class="profile-v2-avatar-pencil" aria-hidden="true">✎</span>
       </button>
       <div class="profile-v2-person">
-        <strong>${escapeHtml(nickname)}</strong>
+        <strong${nameColorAttribute}>${escapeHtml(nickname)}</strong>
         <button class="profile-v2-edit-link" type="button" data-edit-mgw-nickname>${escapeHtml(t('profile.nickname_edit'))}</button>
         <small>${escapeHtml(registeredAt ? t('profile.member_since', { date:formatDate(registeredAt) }) : t('profile.member_since_unknown'))}</small>
       </div>
@@ -274,6 +287,7 @@ function renderProfileV2(){
       <div class="profile-v2-collection-grid" aria-label="Мои аватарки">
         ${ownedAvatars.map(item => collectionAvatarMarkup(item, activeAvatar)).join('')}
       </div>
+      ${renderNameColorCollection(nickname)}
       ${renderGameCosmeticsCollection()}
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
@@ -327,6 +341,111 @@ function avatarChoiceMarkup(item, activeAvatar){
 function avatarName(itemId){
   const index = LAUNCH_AVATARS.indexOf(String(itemId || ''));
   return index >= 0 ? `Аватарка ${index + 1}` : 'Аватарка';
+}
+
+function renderNameColorCollection(nickname){
+  const items = ownedNameColorItems();
+  if (!items.length) return '';
+  const active = currentNameColorItemId();
+  return `
+    <div class="profile-v2-name-color-collection" aria-label="Цвет имени">
+      <div class="profile-v2-collection-title">Цвет имени</div>
+      <div class="profile-v2-name-color-grid">
+        ${items.map(item => nameColorCardMarkup(item, active, nickname)).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function ownedNameColorItems(){
+  const inventory = state.profileInventory && typeof state.profileInventory === 'object' ? state.profileInventory : null;
+  const catalog = Array.isArray(inventory?.catalog) ? inventory.catalog : [];
+  return catalog
+    .filter(item => item && item.owned === true && item.item_type === 'profile' && item.item_family === 'name_color' && item.equip_slot === 'profile_name_color')
+    .map(item => ({ ...item, item_id:String(item.item_id || '') }))
+    .filter(item => NAME_COLOR_ITEM_IDS.includes(item.item_id))
+    .sort((left, right) => NAME_COLOR_ITEM_IDS.indexOf(left.item_id) - NAME_COLOR_ITEM_IDS.indexOf(right.item_id));
+}
+
+function currentNameColorItemId(){
+  const equipped = state.profileInventory && typeof state.profileInventory === 'object' && state.profileInventory.equipped && typeof state.profileInventory.equipped === 'object'
+    ? state.profileInventory.equipped
+    : {};
+  const itemId = String(equipped.profile_name_color || '');
+  return NAME_COLOR_ITEM_IDS.includes(itemId) ? itemId : '';
+}
+
+function nameColorCardMarkup(item, activeItemId, nickname){
+  const itemId = String(item?.item_id || '');
+  const active = itemId === activeItemId;
+  const name = nameColorName(item);
+  return `<button class="profile-v2-name-color-card${active ? ' active' : ''}" type="button" data-profile-name-color="${escapeHtml(itemId)}" aria-label="${escapeHtml(name)}" aria-pressed="${active ? 'true' : 'false'}"><span class="profile-v2-name-color-sample" data-name-color-item-id="${escapeHtml(itemId)}">${escapeHtml(nickname)}</span><small>${escapeHtml(name)}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+}
+
+function openNameColorPreview(itemId){
+  const item = ownedNameColorItems().find(candidate => candidate.item_id === itemId);
+  if (!item) return;
+  const active = itemId === currentNameColorItemId();
+  const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || t('profile.player')).trim();
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(nameColorName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-name-color-preview-wrap"><strong data-name-color-item-id="${escapeHtml(itemId)}">${escapeHtml(nickname)}</strong></div>
+    <div class="profile-v2-game-preview-meta"><strong>Цвет имени</strong><small>${escapeHtml(nameColorTierLabel(item))}</small></div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwNameColorEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
+  `);
+  document.getElementById('mgwNameColorEquip')?.addEventListener('click', () => {
+    void saveNameColor(itemId, active);
+  });
+}
+
+async function saveNameColor(itemId, remove){
+  if (nameColorSaving) return;
+  const item = ownedNameColorItems().find(candidate => candidate.item_id === itemId);
+  if (!item || String(item.catalog_status || '') !== 'active') return;
+  const active = itemId === currentNameColorItemId();
+  if ((remove && !active) || (!remove && active)) return;
+
+  const previousInventory = cloneObject(state.profileInventory);
+  nameColorSaving = true;
+  applyOptimisticProfileSlot(itemId, 'profile_name_color', !remove);
+  renderProfileV2();
+  closeSheet();
+
+  try {
+    if (remove) await api.cosmeticStoreUnequip('profile_name_color');
+    else await api.cosmeticStoreEquip(itemId);
+    applyProfileResponse(await api.profileV2());
+  } catch (error) {
+    state.profileInventory = previousInventory;
+    renderProfileV2();
+    toast(error?.message || (remove ? 'Не удалось снять цвет имени.' : 'Не удалось выбрать цвет имени.'));
+  } finally {
+    nameColorSaving = false;
+  }
+}
+
+function nameColorName(item){
+  const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
+  return String(metadata.display_name || item?.item_id || 'Цвет имени');
+}
+
+function nameColorTierLabel(item){
+  const tier = String(item?.metadata?.tier || 'normal');
+  return ({ normal:'Обычный', rare:'Редкий', gradient:'Градиент' })[tier] || 'Цвет имени';
+}
+
+function applyOptimisticProfileSlot(itemId, slot, equipped){
+  const inventory = cloneObject(state.profileInventory) || { catalog:[], owned:[], equipped:{} };
+  if (!inventory.equipped || typeof inventory.equipped !== 'object') inventory.equipped = {};
+  if (equipped) inventory.equipped[slot] = itemId;
+  else delete inventory.equipped[slot];
+  if (Array.isArray(inventory.catalog)) {
+    inventory.catalog = inventory.catalog.map(item => {
+      if (!item || String(item.equip_slot || '') !== slot) return item;
+      return { ...item, equipped:equipped && String(item.item_id || '') === itemId };
+    });
+  }
+  state.profileInventory = inventory;
 }
 
 function renderGameCosmeticsCollection(){
