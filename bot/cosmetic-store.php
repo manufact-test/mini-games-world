@@ -134,7 +134,19 @@ try {
     if ($action === 'unequip') {
         $runtime = $captureRuntimeUser();
         $equipSlot = strtolower(trim((string)($payload['equip_slot'] ?? '')));
-        if ($equipSlot !== 'game_tictactoe_effect') {
+        $inventorySnapshot = $inventory->snapshot($mgwId);
+        $knownGameSlot = false;
+        if ($equipSlot !== '' && str_starts_with($equipSlot, 'game_')) {
+            foreach ((array)($inventorySnapshot['catalog'] ?? []) as $catalogItem) {
+                if (!is_array($catalogItem)) continue;
+                if ((string)($catalogItem['item_type'] ?? '') !== 'game') continue;
+                if ((string)($catalogItem['catalog_status'] ?? '') !== 'active') continue;
+                if ((string)($catalogItem['equip_slot'] ?? '') !== $equipSlot) continue;
+                $knownGameSlot = true;
+                break;
+            }
+        }
+        if (!$knownGameSlot) {
             throw new CosmeticStoreException('item_unavailable', 'Этот игровой слот нельзя снять через магазин.');
         }
         $equipment = $inventory->unequip($mgwId, $equipSlot);
