@@ -76,8 +76,8 @@ expect(store.includes('ttt-mark ttt-effect-mark ttt-fx-${safeVariant}'), 'Store 
 expect(store.includes("'winning-line':'sparks'"), 'stale cached winning-line metadata must preview as sparks during rollout');
 expect(store.includes("'move-pulse':'wave'"), 'stale cached move-pulse metadata must preview as wave during rollout');
 expect(store.includes('function isKnownSelectableSlot(slot)'), 'Store must validate unequip against the current selectable cosmetic catalogue');
-expect(store.includes('if (isGameCosmetic(item)) return true;'), 'Store selectable slot validation must preserve all active game cosmetics');
-expect(store.includes("item?.metadata?.profile_kind === 'name_color'"), 'Store selectable slot validation must explicitly allow Profile name colors');
+expect(store.includes("if (itemType === 'game' && normalized.startsWith('game_')) return true;"), 'Store selectable slot validation must preserve all active game cosmetics');
+expect(store.includes("return itemType === 'profile' && itemFamily === 'name_color' && normalized === 'profile_name_color';"), 'Store selectable slot validation must explicitly allow Profile name colors');
 expect(!store.includes("slot !== 'game_tictactoe_effect'"), 'Store client must not hardcode unequip to effects only');
 expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);'), 'background Store refresh must not overwrite an active cosmetic mutation');
 expect(store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'fresh background Store snapshot must repaint product cards, not only the balance');
