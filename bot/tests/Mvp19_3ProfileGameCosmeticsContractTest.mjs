@@ -34,9 +34,10 @@ expect(profile.includes("'move-pulse':'wave'"), 'Profile preview must tolerate r
 expect(!profile.includes('Игровая косметика'), 'unclear game-cosmetics wording must not be visible in Profile');
 
 const openProfileStart = profile.indexOf('export async function openProfile()');
-const freshHydration = profile.indexOf('applyProfileResponse(await api.profileV2());', openProfileStart);
-const visibleProfile = profile.indexOf("showScreen('profile');", freshHydration);
-expect(openProfileStart >= 0 && freshHydration > openProfileStart && visibleProfile > freshHydration, 'Profile must hydrate the authoritative inventory before painting a newly opened Profile');
+const visibleProfile = profile.indexOf('showProfileImmediately();', openProfileStart);
+const backgroundHydration = profile.indexOf('applyProfileResponse(await api.profileV2());', visibleProfile);
+expect(openProfileStart >= 0 && visibleProfile > openProfileStart && backgroundHydration > visibleProfile, 'Profile must paint shared state immediately and refresh authoritatively in the background');
+expect(profile.includes('function warmProfileSnapshot()') && profile.includes('requestIdleCallback(warm, { timeout:700 })'), 'Profile must warm its authoritative snapshot before likely navigation');
 
 expect(profileCss.includes('.profile-v2-game-collection'), 'Profile game collection layout must exist');
 expect(profileCss.includes('.profile-v2-game-tabs{display:flex'), 'Profile must keep games in one horizontal selector row');
@@ -47,6 +48,7 @@ expect(profileCss.includes('.profile-v2-game-grid{display:grid;grid-template-col
 expect(profileCss.includes('.store-v2-game-preview'), 'Profile layout may size but must not duplicate Store cosmetic artwork');
 expect(mainCss.includes('profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs&fresh-selection&ttt-mark=css'), 'active CSS graph must publish compact game tabs and stable Tic Tac Toe mark geometry');
 expect(manifest.includes('mvp19_3_3=game-tabs-fresh'), 'active Profile runtime identity must publish fresh game-tab collection');
+expect(manifest.includes('perf=instant-open-refresh'), 'active Profile runtime must publish instant-open background refresh behavior');
 expect(manifest.includes('mvp19_3=profile-game-tabs-fresh'), 'active main CSS identity must publish Profile game-tab polish');
 
 expect(inventory.includes('public function equip(string $mgwId, string $itemId): array'), 'ProductInventoryService must remain the equip owner');
