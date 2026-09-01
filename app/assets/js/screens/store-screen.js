@@ -207,11 +207,18 @@ function renderCoinsTab(){
 
 function renderProfileTab(){
   const avatars = Array.isArray(storeState?.profile?.avatars) ? storeState.profile.avatars : [];
+  const nameColors = Array.isArray(storeState?.profile?.name_colors) ? storeState.profile.name_colors : [];
   return `
     <div class="store-v2-title-row"><h2>Аватарки</h2></div>
     <div class="store-v2-product-grid">
       ${avatars.map(renderAvatarOffer).join('') || emptyState('Аватарки пока недоступны')}
     </div>
+    <section class="store-v2-name-color-section">
+      <div class="store-v2-title-row"><h2>Цвет имени</h2></div>
+      <div class="store-v2-name-color-grid">
+        ${nameColors.map(renderNameColorOffer).join('') || emptyState('Цвета имени пока недоступны')}
+      </div>
+    </section>
   `;
 }
 
@@ -231,6 +238,29 @@ function renderAvatarOffer(offer){
       <div class="store-v2-product-foot">
         ${owned
           ? `<b>${equipped ? '' : 'Куплено'}</b>`
+          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">Купить</button>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderNameColorOffer(offer){
+  const owned = Boolean(offer?.already_owned);
+  const equipped = owned && Boolean(offer?.equipped);
+  const itemId = String(offer?.item_ids?.[0] || '');
+  const slot = String(offer?.equip_slot || 'profile_name_color');
+  const title = String(offer?.display_name || itemId || 'Цвет имени');
+  const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || 'Игрок');
+  const tier = ({ normal:'Обычный', rare:'Редкий', gradient:'Градиент' })[String(offer?.metadata?.tier || 'normal')] || 'Цвет имени';
+  return `
+    <article class="store-v2-name-color-card ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
+      <div class="store-v2-name-color-preview"><strong data-name-color-item-id="${escapeAttr(itemId)}">${escapeHtml(nickname)}</strong>${equipped ? '<i class="store-v2-selected-check" aria-label="Выбран">✓</i>' : ''}</div>
+      <div class="store-v2-name-color-copy"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(tier)}</small></div>
+      <div class="store-v2-name-color-foot">
+        ${owned
+          ? (equipped
+            ? `<button class="store-v2-equip active" data-store-v2-unequip="${escapeAttr(slot)}" type="button">Снять</button>`
+            : `<button class="store-v2-equip" data-store-v2-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
           : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">Купить</button>`}
       </div>
     </article>
@@ -386,14 +416,14 @@ function bindPanelEvents(root){
     button.addEventListener('click', () => {
       const itemId = String(button.dataset.storeV2Equip || '');
       if (!itemId || button.disabled) return;
-      void equipGameItem(itemId);
+      void equipStoreItem(itemId);
     });
   });
   root.querySelectorAll('[data-store-v2-unequip]').forEach(button => {
     button.addEventListener('click', () => {
       const slot = String(button.dataset.storeV2Unequip || '');
       if (!slot || button.disabled) return;
-      void unequipGameSlot(slot);
+      void unequipStoreSlot(slot);
     });
   });
 }
@@ -425,6 +455,7 @@ function offersFromSnapshot(snapshot){
   const groups = [catalog.themes, catalog.elements, catalog.effects];
   const offers = [
     ...(Array.isArray(snapshot?.profile?.avatars) ? snapshot.profile.avatars : []),
+    ...(Array.isArray(snapshot?.profile?.name_colors) ? snapshot.profile.name_colors : []),
     ...groups.flatMap(group => Array.isArray(group) ? group : []),
   ];
   const avatarBundle = snapshot?.bundles?.avatar_bundle;
@@ -434,13 +465,16 @@ function offersFromSnapshot(snapshot){
   return offers;
 }
 
-function isKnownGameCosmeticSlot(slot){
+function isKnownSelectableSlot(slot){
   const normalized = String(slot || '');
-  if (!normalized.startsWith('game_') || !storeState) return false;
-  return offersFromSnapshot(storeState).some(candidate => (
-    String(candidate?.equip_slot || '') === normalized
-    && String(candidate?.item_type || '') === 'game'
-  ));
+  if (!normalized || !storeState) return false;
+  return offersFromSnapshot(storeState).some(candidate => {
+    if (String(candidate?.equip_slot || '') !== normalized) return false;
+    const itemType = String(candidate?.item_type || '');
+    const itemFamily = String(candidate?.item_family || '');
+    if (itemType === 'game' && normalized.startsWith('game_')) return true;
+    return itemType === 'profile' && itemFamily === 'name_color' && normalized === 'profile_name_color';
+  });
 }
 
 function purchasedItemIds(offer){
@@ -522,6 +556,7 @@ function openPurchaseConfirm(offer){
   const token = purchaseToken();
   const isBundle = String(offer.offer_type || '') === 'bundle';
   const isAvatar = String(offer.item_family || '') === 'avatar';
+  const isNameColor = String(offer.item_family || '') === 'name_color';
   const number = Number(offer.preview_number || 0);
   const itemId = Array.isArray(offer.item_ids) ? String(offer.item_ids[0] || '') : '';
   const balance = Number(storeState?.balance || 0);
@@ -529,12 +564,15 @@ function openPurchaseConfirm(offer){
   const missing = Math.max(0, price - balance);
   const title = isBundle
     ? String(offer.display_name || 'Неоновый комплект')
-    : (isAvatar ? `Аватарка ${number}` : String(offer.display_name || 'Игровой предмет'));
+    : (isAvatar ? `Аватарка ${number}` : String(offer.display_name || (isNameColor ? 'Цвет имени' : 'Игровой предмет')));
   let visual;
   if (isBundle) {
     visual = '<div class="store-v2-confirm-game-bundle"><span>✕</span><span>○</span><b>＋3</b></div>';
   } else if (isAvatar) {
     visual = `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(`Аватарка ${number}`)}"><span>${String(number).padStart(2,'0')}</span></div>`;
+  } else if (isNameColor) {
+    const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || 'Игрок');
+    visual = `<div class="profile-v2-name-color-preview-wrap"><strong data-name-color-item-id="${escapeAttr(itemId)}">${escapeHtml(nickname)}</strong></div>`;
   } else {
     visual = `<div class="store-v2-confirm-game">${gameCosmeticPreview(offer?.metadata?.layer, offer?.metadata?.variant, title)}</div>`;
   }
@@ -573,9 +611,10 @@ async function purchaseOffer(offer, token, button){
     renderStore();
     haptic('success');
     const isAvatar = String(offer?.item_family || '') === 'avatar';
+    const isNameColor = String(offer?.item_family || '') === 'name_color';
     toast(String(offer.offer_type || '') === 'bundle'
       ? 'Комплект добавлен в коллекцию.'
-      : (isAvatar ? 'Аватарка добавлена в коллекцию.' : 'Предмет добавлен в коллекцию.'));
+      : (isAvatar ? 'Аватарка добавлена в коллекцию.' : (isNameColor ? 'Цвет имени добавлен в коллекцию.' : 'Предмет добавлен в коллекцию.')));
   } catch (error) {
     storeState = previousStoreState;
     state.user = previousUser;
@@ -589,13 +628,13 @@ async function purchaseOffer(offer, token, button){
   }
 }
 
-async function equipGameItem(itemId){
+async function equipStoreItem(itemId){
   if (equipBusy || !storeState) return;
   const previousStoreState = cloneObject(storeState);
   const next = cloneObject(storeState);
   const target = offersFromSnapshot(next).find(candidate => String(candidate?.item_ids?.[0] || '') === itemId);
   const slot = String(target?.equip_slot || '');
-  if (!target || !target.already_owned || !slot) return;
+  if (!target || !target.already_owned || !slot || !isKnownSelectableSlot(slot)) return;
 
   equipBusy = true;
   offersFromSnapshot(next).forEach(candidate => {
@@ -626,8 +665,8 @@ async function equipGameItem(itemId){
   }
 }
 
-async function unequipGameSlot(slot){
-  if (equipBusy || !storeState || !isKnownGameCosmeticSlot(slot)) return;
+async function unequipStoreSlot(slot){
+  if (equipBusy || !storeState || !isKnownSelectableSlot(slot)) return;
   const previousStoreState = cloneObject(storeState);
   const next = cloneObject(storeState);
 
