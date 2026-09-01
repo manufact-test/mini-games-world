@@ -165,6 +165,10 @@ function mgw_canonical_game_player_names(array $playerIds): array {
     return $names;
 }
 
+function mgw_canonical_bot_avatar_item_id(): string {
+    return 'starter-default-01';
+}
+
 function mgw_project_canonical_game_identity(array $data): array {
     foreach (['game', 'active_game'] as $gameKey) {
         $game = $data[$gameKey] ?? null;
@@ -178,11 +182,14 @@ function mgw_project_canonical_game_identity(array $data): array {
             $playerIds[] = (string)($player['id'] ?? '');
         }
         $canonicalProfiles = mgw_canonical_game_player_profiles($playerIds);
-        if ($canonicalProfiles === []) continue;
 
         foreach ($game['players'] as &$player) {
             if (!is_array($player)) continue;
             $playerId = trim((string)($player['id'] ?? ''));
+            if ($playerId !== '' && str_starts_with($playerId, 'bot_')) {
+                $player['avatar_item_id'] = mgw_canonical_bot_avatar_item_id();
+                continue;
+            }
             $profile = $playerId !== '' ? ($canonicalProfiles[$playerId] ?? null) : null;
             if (!is_array($profile)) continue;
             $name = trim((string)($profile['name'] ?? ''));
