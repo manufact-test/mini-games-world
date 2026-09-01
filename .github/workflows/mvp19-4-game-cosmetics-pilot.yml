@@ -115,6 +115,7 @@ jobs:
           grep -F "\$player['game_cosmetics']" bot/helpers/response.php
           grep -F 'player?.game_cosmetics?.slots' app/assets/js/games/tictactoe/renderer.js
           grep -F 'slots.game_tictactoe_effect' app/assets/js/games/tictactoe/renderer.js
+          grep -F 'ttt-mark-glyph' app/assets/js/games/tictactoe/renderer.js
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/games/tictactoe/cosmetics.css
           if grep -Eq 'api\.gameAction|time_left|turn_started_at' app/assets/js/games/tictactoe/renderer.js; then
             echo 'Cosmetic renderer became a rules, action or timer owner.' >&2
@@ -125,9 +126,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","game_cosmetics=pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","c2_1=single-effect")) exit(2); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_1=mark-owned")) exit(3); if(!str_contains($m["assets"]["main_css"]??"","c2_1=single-slot-parity")) exit(4);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","game_cosmetics=pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","c2_1=single-effect")) exit(2); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_1=mark-owned")) exit(3); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_5=visible-mark-layer")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","c2_1=single-slot-parity")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","c2_5=visible-mark-layer")) exit(6);'
           grep -F "@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');" app/assets/css/main.css
-          grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2&c2_1=single-slot-parity');" app/assets/css/main.css
+          grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2&c2_1=single-slot-parity&c2_5=visible-mark-layer');" app/assets/css/main.css
 
       - name: Guard accepted mechanics and lifecycle owners
         shell: bash

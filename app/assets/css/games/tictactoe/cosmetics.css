@@ -1,4 +1,4 @@
-/* MVP-19.4 + C1 + C2.1: presentation-only Tic Tac Toe cosmetics. Rules and hit targets stay untouched. */
+/* MVP-19.4 + C1 + C2.5: presentation-only Tic Tac Toe cosmetics. Rules and hit targets stay untouched. */
 #gameBoard[data-game-type="tictactoe"].ttt-cosmetics{
   --ttt-surface-border:rgba(255,255,255,.08);
   --ttt-surface-glow:rgba(124,92,255,.08);
@@ -95,9 +95,12 @@
   filter:drop-shadow(0 0 4px currentColor) drop-shadow(0 0 9px currentColor);
 }
 
-/* C2.1: the mark itself owns every move effect. Store previews reuse these exact classes/keyframes. */
+/* C2.5: the cell owns only its board surface. FX and glyph have explicit layers above it. */
+#gameBoard[data-game-type="tictactoe"] .cell{overflow:visible}
+#gameBoard[data-game-type="tictactoe"].ttt-move-effect-enabled .cell:active{transform:none}
 .ttt-mark{
   position:relative;
+  z-index:0;
   display:inline-grid;
   place-items:center;
   width:1.12em;
@@ -107,9 +110,20 @@
   overflow:visible;
   transform-origin:50% 50%;
 }
+.ttt-mark-glyph{
+  position:relative;
+  z-index:2;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  line-height:1;
+  pointer-events:none;
+}
 .ttt-effect-mark::before,.ttt-effect-mark::after{
   content:"";
   position:absolute;
+  z-index:1;
   left:50%;
   top:50%;
   pointer-events:none;
@@ -118,7 +132,6 @@
 
 .ttt-effect-mark.ttt-fx-impact{animation:tttFxImpact .62s cubic-bezier(.16,.84,.28,1) both}
 .ttt-effect-mark.ttt-fx-impact::before{
-  z-index:-1;
   width:1.25em;
   height:1.25em;
   border-radius:50%;
@@ -129,7 +142,6 @@
 
 .ttt-effect-mark.ttt-fx-sparks{animation:tttFxSparksMark .72s ease-out both}
 .ttt-effect-mark.ttt-fx-sparks::before{
-  z-index:-1;
   width:2.4em;
   height:2.4em;
   border-radius:50%;
@@ -140,7 +152,6 @@
   animation:tttFxSparksBurst .72s ease-out both;
 }
 .ttt-effect-mark.ttt-fx-sparks::after{
-  z-index:-1;
   width:1.55em;
   height:1.55em;
   border-radius:50%;
@@ -151,7 +162,6 @@
 
 .ttt-effect-mark.ttt-fx-wave{animation:tttFxWaveMark .78s ease-out both}
 .ttt-effect-mark.ttt-fx-wave::before,.ttt-effect-mark.ttt-fx-wave::after{
-  z-index:-1;
   width:1.05em;
   height:1.05em;
   border:2px solid currentColor;
@@ -162,7 +172,7 @@
 }
 .ttt-effect-mark.ttt-fx-wave::after{animation-delay:.10s}
 
-/* Store loops the exact runtime effect; only repetition differs. */
+/* Store loops the same runtime effect. Its legacy direct text stays above negative preview FX. */
 .store-v2-game-preview[data-cosmetic-layer="effect"] .store-v2-mini-effect{
   position:relative;
   display:grid;
@@ -176,6 +186,8 @@
   font-style:normal;
   font-weight:900;
 }
+.store-v2-game-preview[data-cosmetic-layer="effect"] .ttt-effect-mark::before,
+.store-v2-game-preview[data-cosmetic-layer="effect"] .ttt-effect-mark::after{z-index:-1}
 .store-v2-game-preview[data-cosmetic-layer="effect"] .ttt-fx-impact,
 .store-v2-game-preview[data-cosmetic-layer="effect"] .ttt-fx-impact::before{animation-iteration-count:infinite}
 .store-v2-game-preview[data-cosmetic-layer="effect"] .ttt-fx-sparks,
