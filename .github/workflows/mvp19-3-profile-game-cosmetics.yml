@@ -11,6 +11,8 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
       - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
+      - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
+      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
   workflow_dispatch:
 
@@ -44,7 +46,10 @@ jobs:
           coverage: none
 
       - name: Validate Profile client syntax
-        run: node --check app/assets/js/screens/profile-screen-v110.js
+        run: |
+          node --check app/assets/js/screens/profile-screen-v110.js
+          php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
 
       - name: Run Profile game cosmetics contract
         run: node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
@@ -55,6 +60,8 @@ jobs:
           php bot/tests/Mvp19_3ProfileAvatarsTest.php
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
           node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
 
       - name: Guard Profile collection semantics
         shell: bash
@@ -108,7 +115,9 @@ jobs:
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
-              bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
+              bot/tests/Mvp19_4EffectsV2ContractTest.mjs|\
+              bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php)
                 ;;
               *)
                 echo "Unexpected Profile game cosmetics path: $path" >&2
