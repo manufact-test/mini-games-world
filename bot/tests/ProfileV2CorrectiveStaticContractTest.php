@@ -112,12 +112,19 @@ $assertNotContains('photo_url: avatarUrl', $model, 'Canonical projection must no
 $assertContains("photo_url: ''", $model, 'Canonical projection must explicitly suppress provider photo URL');
 $assertSame(3, substr_count($profile, '[1,2,3].map') === 1 ? 3 : 0, 'Achievements preview must remain exactly three placeholders');
 
-$assertContains('profile-corrective.css?v=4&mvp19=profile-collection', $mainCss, 'Profile collection corrective stylesheet cache key must stay explicit');
+$assertions++;
+if (preg_match('/profile-corrective\.css\?v=(\d+)[^\']*mvp19=profile-collection/', $mainCss, $profileCssVersionMatch) !== 1 || (int)$profileCssVersionMatch[1] < 4) {
+    throw new RuntimeException('Profile collection corrective stylesheet cache key must stay explicit and may advance for later bounded Profile work');
+}
 $assertions++;
 if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
     throw new RuntimeException('Runtime main stylesheet cache key must stay at or beyond Profile pass A baseline');
 }
-$assertContains('profile-screen-v110.js?v=1119&mvp16=profile-pass-a', $versionManifest, 'Runtime must retain the accepted current Profile pass A controller lineage');
+$assertions++;
+if (preg_match('/profile-screen-v110\.js\?v=(\d+)[^\']*mvp16=profile-pass-a/', $versionManifest, $profileVersionMatch) !== 1 || (int)$profileVersionMatch[1] < 1119) {
+    throw new RuntimeException('Runtime must retain the accepted Profile pass A controller lineage while allowing later bounded Profile cache identities');
+}
+$assertContains('mvp17=result-history-economy', $versionManifest, 'Runtime must preserve the accepted Profile economy presentation marker');
 $assertContains('canonical-avatar-owner', $versionManifest, 'Runtime must keep the canonical avatar owner cleanup');
 $assertContains('canonical-profile-display-owner', $versionManifest, 'Runtime must keep the canonical visible identity owner');
 $assertContains('profile-pass-a', $versionManifest, 'Runtime must ship the Profile pass A assets');

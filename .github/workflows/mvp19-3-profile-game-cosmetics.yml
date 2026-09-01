@@ -1,0 +1,132 @@
+name: MVP-19.3 Profile-owned game cosmetics
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/css/screens/profile-corrective.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
+      - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
+      - 'bot/tests/ProfileV2PassAStaticContractTest.php'
+      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
+      - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-profile-game-cosmetics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile-game-cosmetics:
+    name: Owned collection and canonical equip convergence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Validate Profile client syntax
+        run: |
+          node --check app/assets/js/screens/profile-screen-v110.js
+          php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php -l bot/tests/ProfileV2PassAStaticContractTest.php
+          php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
+
+      - name: Run Profile game cosmetics contract
+        run: node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+
+      - name: Preserve accepted inventory and cosmetics owners
+        run: |
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php bot/tests/ProfileV2PassAStaticContractTest.php
+          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
+
+      - name: Guard Profile collection semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "{ slot:'game_tictactoe_theme', layer:'theme', title:'Поля' }" app/assets/js/screens/profile-screen-v110.js
+          grep -F "{ slot:'game_tictactoe_elements', layer:'elements', title:'Знаки' }" app/assets/js/screens/profile-screen-v110.js
+          grep -F "{ slot:'game_tictactoe_effect', layer:'effect', title:'Эффекты' }" app/assets/js/screens/profile-screen-v110.js
+          grep -F 'api.cosmeticStoreEquip(itemId)' app/assets/js/screens/profile-screen-v110.js
+          grep -F 'api.cosmeticStoreUnequip(slot)' app/assets/js/screens/profile-screen-v110.js
+          grep -F 'applyProfileResponse(await api.profileV2())' app/assets/js/screens/profile-screen-v110.js
+          grep -F 'store-v2-game-preview' app/assets/js/screens/profile-screen-v110.js
+          if grep -Fq 'cosmeticStorePurchase(' app/assets/js/screens/profile-screen-v110.js; then
+            echo 'Profile became a Store purchase owner.' >&2
+            exit 1
+          fi
+
+      - name: Guard active Telegram v110 delivery identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19_3_2=game-cosmetics")) exit(1); if(!str_contains($m["assets"]["main_css"]??"","mvp19_3=profile-game-cosmetics")) exit(2);'
+          grep -F "@import url('./screens/profile-corrective.css?v=5&mvp19=profile-collection&mvp19_3=game-cosmetics');" app/assets/css/main.css
+
+      - name: Guard frozen owners and bounded diff
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/catalog/ProductInventoryService.php \
+            bot/cosmetic-store.php \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/services/GameInviteService.php \
+            bot/services/FriendGraphService.php \
+            bot/services/ReconnectLifecycleService.php \
+            app/assets/js/screens/store-screen.js \
+            app/assets/js/screens/game-screen-v102.js \
+            app/assets/js/games
+
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/screens/profile-corrective.css|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              bot/tests/Mvp19_4EffectsV2ContractTest.mjs|\
+              bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
+              bot/tests/ProfileV2PassAStaticContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php)
+                ;;
+              *)
+                echo "Unexpected Profile game cosmetics path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
