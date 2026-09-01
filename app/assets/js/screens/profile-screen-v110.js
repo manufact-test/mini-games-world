@@ -14,10 +14,16 @@ const LAUNCH_AVATARS = Object.freeze([
   'store-avatar-01','store-avatar-02','store-avatar-03','store-avatar-04','store-avatar-05',
   'store-avatar-06','store-avatar-07','store-avatar-08','store-avatar-09',
 ]);
+const TICTACTOE_COSMETIC_GROUPS = Object.freeze([
+  { slot:'game_tictactoe_theme', layer:'theme', title:'Поля' },
+  { slot:'game_tictactoe_elements', layer:'elements', title:'Знаки' },
+  { slot:'game_tictactoe_effect', layer:'effect', title:'Эффекты' },
+]);
 const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
 let nicknameSaving = false;
 let avatarSaving = false;
+let gameCosmeticSaving = false;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -91,6 +97,11 @@ function bindProfileActions(){
     const avatarCard = event.target.closest('[data-profile-avatar-preview]');
     if (avatarCard) {
       openAvatarPreview(String(avatarCard.dataset.profileAvatarPreview || ''));
+      return;
+    }
+    const gameCosmeticCard = event.target.closest('[data-profile-game-cosmetic]');
+    if (gameCosmeticCard) {
+      openGameCosmeticPreview(String(gameCosmeticCard.dataset.profileGameCosmetic || ''));
       return;
     }
     if (event.target.closest('[data-open-language-settings]')) {
@@ -252,6 +263,7 @@ function renderProfileV2(){
       <div class="profile-v2-collection-grid" aria-label="Мои аватарки">
         ${ownedAvatars.map(item => collectionAvatarMarkup(item, activeAvatar)).join('')}
       </div>
+      ${renderGameCosmeticsCollection()}
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
@@ -305,6 +317,150 @@ function avatarName(itemId){
   const index = LAUNCH_AVATARS.indexOf(String(itemId || ''));
   return index >= 0 ? `Аватарка ${index + 1}` : 'Аватарка';
 }
+
+function renderGameCosmeticsCollection(){
+  const items = ownedGameCosmeticItems();
+  const groups = TICTACTOE_COSMETIC_GROUPS.map(group => ({
+    ...group,
+    items:items.filter(item => String(item?.equip_slot || '') === group.slot),
+  })).filter(group => group.items.length > 0);
+
+  return `
+    <div class="profile-v2-game-collection" aria-label="Игровая косметика">
+      <div class="profile-v2-game-collection-head">
+        <div><span>Игровая косметика</span><strong>Крестики-нолики</strong></div>
+        <div class="profile-v2-game-collection-marks" aria-hidden="true"><i>✕</i><i>○</i></div>
+      </div>
+      ${groups.length
+        ? groups.map(group => `<div class="profile-v2-game-group"><div class="profile-v2-game-group-title">${escapeHtml(group.title)}</div><div class="profile-v2-game-grid">${group.items.map(gameCosmeticCardMarkup).join('')}</div></div>`).join('')
+        : '<div class="profile-v2-game-empty">Купленные игровые предметы появятся здесь.</div>'}
+    </div>
+  `;
+}
+
+function ownedGameCosmeticItems(){
+  const inventory = state.profileInventory && typeof state.profileInventory === 'object' ? state.profileInventory : null;
+  const catalog = Array.isArray(inventory?.catalog) ? inventory.catalog : [];
+  const groupOrder = new Map(TICTACTOE_COSMETIC_GROUPS.map((group, index) => [group.slot, index]));
+  return catalog
+    .filter(item => item && item.owned === true && item.item_type === 'game')
+    .filter(item => String(item.item_family || '') === 'game_tictactoe' || String(item?.metadata?.game_type || '') === 'tictactoe')
+    .map(item => ({ ...item, item_id:String(item.item_id || ''), equip_slot:String(item.equip_slot || '') }))
+    .filter(item => groupOrder.has(item.equip_slot))
+    .sort((left, right) => {
+      const groupDelta = Number(groupOrder.get(left.equip_slot)) - Number(groupOrder.get(right.equip_slot));
+      return groupDelta || left.item_id.localeCompare(right.item_id);
+    });
+}
+
+function gameCosmeticCardMarkup(item){
+  const itemId = String(item?.item_id || '');
+  const active = isGameCosmeticEquipped(item);
+  const available = String(item?.catalog_status || '') === 'active';
+  const name = gameCosmeticName(item);
+  return `<button class="profile-v2-game-card${active ? ' active' : ''}${available ? '' : ' unavailable'}" type="button" data-profile-game-cosmetic="${escapeHtml(itemId)}" aria-label="${escapeHtml(name)}" aria-pressed="${active ? 'true' : 'false'}">${gameCosmeticPreviewMarkup(item)}<span class="profile-v2-game-card-name">${escapeHtml(name)}</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+}
+
+function openGameCosmeticPreview(itemId){
+  const item = ownedGameCosmeticItems().find(candidate => candidate.item_id === itemId);
+  if (!item) return;
+  const active = isGameCosmeticEquipped(item);
+  const available = String(item?.catalog_status || '') === 'active';
+  const group = TICTACTOE_COSMETIC_GROUPS.find(candidate => candidate.slot === item.equip_slot);
+  const buttonLabel = available ? (active ? 'Снять' : 'Выбрать') : 'Недоступно';
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(gameCosmeticName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-game-preview-wrap">${gameCosmeticPreviewMarkup(item)}</div>
+    <div class="profile-v2-game-preview-meta"><strong>Крестики-нолики</strong><small>${escapeHtml(group?.title || 'Игровая косметика')}</small></div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwGameCosmeticEquip" type="button" ${available ? '' : 'disabled'}>${escapeHtml(buttonLabel)}</button>
+  `);
+  document.getElementById('mgwGameCosmeticEquip')?.addEventListener('click', () => {
+    void saveGameCosmetic(itemId, active);
+  });
+}
+
+async function saveGameCosmetic(itemId, remove){
+  if (gameCosmeticSaving) return;
+  const item = ownedGameCosmeticItems().find(candidate => candidate.item_id === itemId);
+  if (!item || String(item.catalog_status || '') !== 'active') return;
+  const slot = String(item.equip_slot || '');
+  if (!slot.startsWith('game_')) return;
+  const active = isGameCosmeticEquipped(item);
+  if ((remove && !active) || (!remove && active)) return;
+
+  const previousInventory = cloneObject(state.profileInventory);
+  gameCosmeticSaving = true;
+  applyOptimisticGameCosmetic(itemId, slot, !remove);
+  renderProfileV2();
+  closeSheet();
+
+  try {
+    if (remove) await api.cosmeticStoreUnequip(slot);
+    else await api.cosmeticStoreEquip(itemId);
+    applyProfileResponse(await api.profileV2());
+  } catch (error) {
+    state.profileInventory = previousInventory;
+    renderProfileV2();
+    toast(error?.message || (remove ? 'Не удалось снять оформление.' : 'Не удалось выбрать предмет.'));
+  } finally {
+    gameCosmeticSaving = false;
+  }
+}
+
+function applyOptimisticGameCosmetic(itemId, slot, equipped){
+  const inventory = cloneObject(state.profileInventory) || { catalog:[], owned:[], equipped:{} };
+  if (!inventory.equipped || typeof inventory.equipped !== 'object') inventory.equipped = {};
+  if (equipped) inventory.equipped[slot] = itemId;
+  else delete inventory.equipped[slot];
+  if (Array.isArray(inventory.catalog)) {
+    inventory.catalog = inventory.catalog.map(item => {
+      if (!item || String(item.equip_slot || '') !== slot) return item;
+      return { ...item, equipped:equipped && String(item.item_id || '') === itemId };
+    });
+  }
+  state.profileInventory = inventory;
+}
+
+function isGameCosmeticEquipped(item){
+  const slot = String(item?.equip_slot || '');
+  const itemId = String(item?.item_id || '');
+  const equipped = state.profileInventory && typeof state.profileInventory === 'object' && state.profileInventory.equipped && typeof state.profileInventory.equipped === 'object'
+    ? state.profileInventory.equipped
+    : {};
+  return slot !== '' && itemId !== '' && String(equipped[slot] || '') === itemId;
+}
+
+function gameCosmeticName(item){
+  const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
+  const displayName = String(metadata.display_name || '').trim();
+  if (displayName) return displayName;
+  return String(item?.item_id || 'Игровой предмет');
+}
+
+function gameCosmeticPreviewMarkup(item){
+  const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
+  const rawLayer = String(metadata.layer || 'theme');
+  const layer = ['theme','elements','effect'].includes(rawLayer) ? rawLayer : 'theme';
+  const variant = layer === 'effect'
+    ? normalizeEffectVariant(String(metadata.variant || 'base'))
+    : String(metadata.variant || 'base');
+  const safeVariant = variant.replace(/[^a-z0-9-]/g, '');
+  let content = '';
+  if (layer === 'theme') {
+    const marks = ['✕','','○','','○','','✕','','✕'];
+    content = `<i class="store-v2-mini-board">${marks.map(mark => `<span>${mark ? `<b>${mark}</b>` : ''}</span>`).join('')}</i>`;
+  } else if (layer === 'elements') {
+    content = '<i class="store-v2-mini-marks"><span>✕</span><span>○</span></i>';
+  } else {
+    content = `<i class="store-v2-mini-effect"><span class="ttt-mark ttt-effect-mark ttt-fx-${safeVariant}" aria-hidden="true">✕</span></i>`;
+  }
+  return `<div class="store-v2-game-preview" data-cosmetic-layer="${layer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeHtml(gameCosmeticName(item))}">${content}</div>`;
+}
+
+function normalizeEffectVariant(variant){
+  return ({ sign:'impact', 'winning-line':'sparks', 'move-pulse':'wave', 'strike-through':'wave' })[variant] || variant;
+}
+
 function currentAvatarItemId(){
   const selected = String(state.selectedAvatarId || '').trim();
   if (selected) return selected;
