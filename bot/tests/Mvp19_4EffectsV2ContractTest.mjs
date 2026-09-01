@@ -4,6 +4,7 @@ const renderer = fs.readFileSync('app/assets/js/games/tictactoe/renderer.js', 'u
 const css = fs.readFileSync('app/assets/css/games/tictactoe/cosmetics.css', 'utf8');
 const migration = fs.readFileSync('bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php', 'utf8');
 const store = fs.readFileSync('app/assets/js/screens/store-screen.js', 'utf8');
+const toast = fs.readFileSync('app/assets/js/components/toast.js', 'utf8');
 const api = fs.readFileSync('app/assets/js/api/client.js', 'utf8');
 const endpoint = fs.readFileSync('bot/cosmetic-store.php', 'utf8');
 const mainCss = fs.readFileSync('app/assets/css/main.css', 'utf8');
@@ -51,6 +52,9 @@ expect(store.includes('function isKnownGameCosmeticSlot(slot)'), 'Store must val
 expect(!store.includes("slot !== 'game_tictactoe_effect'"), 'Store client must not hardcode unequip to effects only');
 expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);'), 'background Store refresh must not overwrite an active cosmetic mutation');
 expect(store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'fresh background Store snapshot must repaint product cards, not only the balance');
+expect(toast.includes("'Предмет выбран.'"), 'redundant Store equip acknowledgement must be explicitly silent');
+expect(toast.includes("'Оформление снято.'"), 'redundant Store unequip acknowledgement must be explicitly silent');
+expect(toast.includes('SILENT_ACKNOWLEDGEMENTS.has(normalized)'), 'toast owner must suppress only the redundant acknowledgements before rendering');
 expect(api.includes('cosmeticStoreUnequip'), 'API client must expose cosmetic unequip');
 expect(endpoint.includes("if ($action === 'unequip')"), 'Store endpoint must accept unequip action');
 expect(endpoint.includes("str_starts_with($equipSlot, 'game_')"), 'Store endpoint must restrict unequip to game slots');
@@ -60,10 +64,13 @@ expect(endpoint.includes("(string)($catalogItem['equip_slot'] ?? '') !== $equipS
 expect(!endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endpoint must not hardcode unequip to effects only');
 
 expect(mainCss.includes('c2_1=single-slot-parity'), 'active CSS graph must publish C2.1 identity');
+expect(mainCss.includes('.has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}'), 'Store primary screen must not stack the old 78px tail on top of shell navigation spacing');
 expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
 expect(manifest.includes('c2_1=mark-owned'), 'active runtime manifest must cache-bust the mark-owned renderer');
 expect(manifest.includes('c2_1=single-effect'), 'active runtime manifest must cache-bust Store single-effect UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
 expect(manifest.includes('c2_2=selection-consistency'), 'active runtime manifest must cache-bust Store selection consistency');
+expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=28&store=quiet-equip'"), 'active runtime manifest must cache-bust quiet Store acknowledgements');
+expect(manifest.includes('store=compact-tail'), 'active runtime manifest must cache-bust compact Store bottom spacing');
 
-console.log('MVP-19.4 effects C2.2 Store selection consistency contract: OK');
+console.log('MVP-19.4 effects C2.3 Store polish contract: OK');
