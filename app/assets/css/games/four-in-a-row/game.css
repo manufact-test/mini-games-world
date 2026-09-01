@@ -1,12 +1,16 @@
-.four-in-a-row-board{
+.board.four-in-a-row-board{
   display:block;
-  width:100%;
-  max-width:420px;
+  width:min(100%,390px);
+  max-width:390px;
+  height:auto;
   margin:0 auto;
+  gap:0;
 }
 .four-board-frame{
   position:relative;
-  width:100%;
+  width:min(100%,350px);
+  max-width:350px;
+  margin:0 auto;
   aspect-ratio:var(--four-columns)/var(--four-rows);
   border-radius:22px;
   padding:8px;
@@ -20,12 +24,15 @@
   grid-template-rows:repeat(var(--four-rows),minmax(0,1fr));
   width:100%;
   height:100%;
-  gap:5px;
+  gap:4px;
 }
 .four-disc-slot{
   position:relative;
+  width:min(100%,42px);
+  aspect-ratio:1;
   min-width:0;
   min-height:0;
+  place-self:center;
   border-radius:50%;
   background:rgba(6,10,24,.68);
   box-shadow:inset 0 2px 8px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.08);
@@ -103,7 +110,6 @@
 @keyframes fourWinPulse{from{transform:scale(.9)}to{transform:scale(1.02)}}
 @media (max-width:380px){
   .four-board-frame{padding:6px;border-radius:18px}
-  .four-disc-grid{gap:4px}
   .four-column-controls{inset:6px}
   .four-setup-preview{padding:6px;gap:3px;border-radius:16px}
 }
