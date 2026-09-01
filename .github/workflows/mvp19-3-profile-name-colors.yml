@@ -21,6 +21,7 @@ on:
       - '.github/workflows/mvp19-3-profile-name-colors.yml'
       - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
       - '.github/workflows/mvp19-3-profile-avatars.yml'
+      - '.github/workflows/mvp19-4-game-cosmetics-pilot.yml'
   workflow_dispatch:
 
 permissions:
@@ -121,6 +122,7 @@ jobs:
               .github/workflows/mvp19-3-profile-name-colors.yml|\
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-4-game-cosmetics-pilot.yml|\
               bot/database/migrations/20260901_0019_add_profile_name_colors.php|\
               bot/catalog/CosmeticStoreService.php|\
               bot/cosmetic-store.php|\
