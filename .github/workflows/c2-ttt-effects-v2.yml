@@ -1,0 +1,57 @@
+name: C2 Tic Tac Toe effects v2
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
+      - 'app/assets/js/games/tictactoe/renderer.js'
+      - 'app/assets/css/games/tictactoe/cosmetics.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/c2-ttt-effects-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  effects-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Validate syntax
+        run: |
+          node --check app/assets/js/games/tictactoe/renderer.js
+          node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          php -l bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php
+          php -l app/runtime/client/version-manifest.php
+
+      - name: Run effects v2 contract
+        run: node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+
+      - name: Guard mechanics owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/games

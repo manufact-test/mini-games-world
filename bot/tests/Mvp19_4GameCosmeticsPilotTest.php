@@ -74,7 +74,9 @@ $assertSame([3000,5000,8000,12000], $themePrices, 'Theme prices must match the c
 $assertSame([3000,6000,9000,12500], $elementPrices, 'Element prices must match the common canonical grid');
 $assertSame([2500,5000,7500], $effectPrices, 'Effect prices must match the common canonical grid');
 $strikeMetadata = json_decode((string)$database->fetchValue("SELECT metadata_json FROM mgw_product_catalog WHERE item_id = 'game-ttt-effect-strike'"), true, 32, JSON_THROW_ON_ERROR);
-$assertSame('Перечёркивание', (string)($strikeMetadata['display_name'] ?? ''), 'The strike effect must use a clear Russian catalogue title');
+$assertSame('Импульс хода', (string)($strikeMetadata['display_name'] ?? ''), 'The historical strike item must surface the C2 Move Pulse catalogue title');
+$assertSame('move-pulse', (string)($strikeMetadata['variant'] ?? ''), 'The historical strike item must expose the Move Pulse preview variant');
+$assertSame('move_pulse', (string)($strikeMetadata['event'] ?? ''), 'The historical strike item must expose the Move Pulse event metadata');
 
 $bundleRow = $database->fetchAll("SELECT price_coins, members_json FROM mgw_product_offers WHERE offer_id = 'ttt-premium-bundle' AND offer_status = 'active'")[0] ?? null;
 $assertTrue(is_array($bundleRow), 'Premium pilot bundle must be active');
@@ -150,16 +152,21 @@ $equipped = $inventory->snapshot($mgwId)['equipped'];
 $assertSame('game-ttt-marks-neon', $equipped['game_tictactoe_elements'] ?? null, 'Element set must have its own reusable equip slot');
 $assertSame('game-ttt-effect-sign', $equipped['game_tictactoe_effect_sign'] ?? null, 'Sign effect must have an independent event slot');
 $assertSame('game-ttt-effect-winning-line', $equipped['game_tictactoe_effect_winning_line'] ?? null, 'Winning-line effect must have an independent event slot');
-$assertSame('game-ttt-effect-strike', $equipped['game_tictactoe_effect_strike_through'] ?? null, 'Strike-through effect must have an independent event slot');
+$assertSame('game-ttt-effect-strike', $equipped['game_tictactoe_effect_strike_through'] ?? null, 'Move Pulse must preserve the historical independent equip slot for existing purchases');
 $assertStoreError(static fn() => $store->quote($mgwId, 'ttt-premium-bundle'), 'already_owned', 'Completed premium collection must reject duplicate purchase');
 
 $responseSource = (string)file_get_contents($root . '/bot/helpers/response.php');
 $rendererSource = (string)file_get_contents($root . '/app/assets/js/games/tictactoe/renderer.js');
 $storeSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
 $storeCss = (string)file_get_contents($root . '/app/assets/css/screens/store-v2.css');
+$cosmeticsCss = (string)file_get_contents($root . '/app/assets/css/games/tictactoe/cosmetics.css');
 $mainCss = (string)file_get_contents($root . '/app/assets/css/main.css');
 $assertTrue(str_contains($responseSource, "c.item_type = \\'game\\'") && str_contains($responseSource, "\$player['game_cosmetics']"), 'Game response must project canonical equipped cosmetics for both players');
 $assertTrue(str_contains($rendererSource, 'player?.game_cosmetics?.slots') && str_contains($rendererSource, 'game_tictactoe_effect_winning_line'), 'Pilot renderer must consume public cosmetics without touching rules');
+$assertTrue(str_contains($rendererSource, 'game_tictactoe_effect_strike_through') && str_contains($rendererSource, "'ttt-move-pulse'"), 'C2 renderer must preserve the historical slot while rendering Move Pulse');
+$assertTrue(!str_contains($rendererSource, "'ttt-struck-cell'") && !str_contains($cosmeticsCss, 'text-decoration:line-through'), 'Legacy strike-through presentation must be removed');
+$assertTrue(str_contains($cosmeticsCss, 'tttEffectImpact') && str_contains($cosmeticsCss, 'tttEffectWinningLine') && str_contains($cosmeticsCss, 'tttEffectMovePulse'), 'All three runtime effects must have distinct C2 animations');
+$assertTrue(str_contains($cosmeticsCss, 'storeTttImpact') && str_contains($cosmeticsCss, 'storeTttWinningLine') && str_contains($cosmeticsCss, 'storeTttMovePulse'), 'All three Store effect previews must visibly animate');
 $assertTrue(!str_contains($rendererSource, 'api.gameAction') && !str_contains($rendererSource, 'time_left'), 'Cosmetic renderer must not become an action or timer owner');
 $assertTrue(str_contains($storeSource, 'Оформление игры') && str_contains($storeSource, 'Купить</span><b>${price} коинов'), 'Games Store must explain the collection and include the exact purchase price in every action');
 $assertTrue(str_contains($storeSource, 'Фон и сетка игрового поля') && str_contains($storeSource, 'Внешний вид крестиков и ноликов'), 'Games Store must explain what each cosmetic group changes');
