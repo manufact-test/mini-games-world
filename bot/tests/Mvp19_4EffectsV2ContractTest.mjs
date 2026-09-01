@@ -42,19 +42,28 @@ expect(!css.includes('storeTttWinningLine'), 'Store-only winning animation must 
 expect(!css.includes('storeTttMovePulse'), 'Store-only wave animation must be retired');
 
 expect(store.includes('Один выбранный эффект срабатывает при каждом ходе'), 'Store must explain single-effect move-time behavior');
-expect(store.includes('data-store-v2-unequip'), 'selected effect must expose a remove action');
-expect(store.includes('>Снять</button>'), 'selected effect button must say Снять');
+expect(store.includes('data-store-v2-unequip'), 'selected game cosmetic must expose a remove action');
+expect(store.includes('>Снять</button>'), 'selected game cosmetic button must say Снять');
 expect(store.includes('ttt-mark ttt-effect-mark ttt-fx-${safeVariant}'), 'Store preview must render the same runtime effect classes');
 expect(store.includes("'winning-line':'sparks'"), 'stale cached winning-line metadata must preview as sparks during rollout');
 expect(store.includes("'move-pulse':'wave'"), 'stale cached move-pulse metadata must preview as wave during rollout');
+expect(store.includes('function isKnownGameCosmeticSlot(slot)'), 'Store must validate unequip against the current game cosmetic catalogue');
+expect(!store.includes("slot !== 'game_tictactoe_effect'"), 'Store client must not hardcode unequip to effects only');
+expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);'), 'background Store refresh must not overwrite an active cosmetic mutation');
+expect(store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'fresh background Store snapshot must repaint product cards, not only the balance');
 expect(api.includes('cosmeticStoreUnequip'), 'API client must expose cosmetic unequip');
 expect(endpoint.includes("if ($action === 'unequip')"), 'Store endpoint must accept unequip action');
-expect(endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endpoint must limit this corrective unequip to the Tic Tac Toe effect slot');
+expect(endpoint.includes("str_starts_with($equipSlot, 'game_')"), 'Store endpoint must restrict unequip to game slots');
+expect(endpoint.includes("(string)($catalogItem['item_type'] ?? '') !== 'game'"), 'Store endpoint must validate the slot against game catalogue items');
+expect(endpoint.includes("(string)($catalogItem['catalog_status'] ?? '') !== 'active'"), 'Store endpoint must only accept active catalogue slots');
+expect(endpoint.includes("(string)($catalogItem['equip_slot'] ?? '') !== $equipSlot"), 'Store endpoint must match the requested slot to the catalogue');
+expect(!endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endpoint must not hardcode unequip to effects only');
 
 expect(mainCss.includes('c2_1=single-slot-parity'), 'active CSS graph must publish C2.1 identity');
 expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
 expect(manifest.includes('c2_1=mark-owned'), 'active runtime manifest must cache-bust the mark-owned renderer');
 expect(manifest.includes('c2_1=single-effect'), 'active runtime manifest must cache-bust Store single-effect UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
+expect(manifest.includes('c2_2=selection-consistency'), 'active runtime manifest must cache-bust Store selection consistency');
 
-console.log('MVP-19.4 effects C2.1 single-slot parity contract: OK');
+console.log('MVP-19.4 effects C2.2 Store selection consistency contract: OK');
