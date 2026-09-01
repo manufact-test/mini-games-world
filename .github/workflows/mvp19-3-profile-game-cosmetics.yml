@@ -96,7 +96,7 @@ jobs:
           php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19_3_3=game-tabs-fresh")) exit(1); if(!str_contains($m["assets"]["main_css"]??"","mvp19_3=profile-game-tabs-fresh")) exit(2);'
           grep -F "@import url('./screens/profile-corrective.css?v=6&mvp19=profile-collection&mvp19_3=game-tabs&fresh-selection');" app/assets/css/main.css
 
-      - name: Guard frozen owners and bounded diff
+      - name: Guard frozen owners and bounded Profile evolution
         if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
@@ -106,13 +106,11 @@ jobs:
           git diff --exit-code "$base" "$head" -- \
             bot/games \
             bot/catalog/ProductInventoryService.php \
-            bot/cosmetic-store.php \
             bot/services/GameService.php \
             bot/services/GameActionService.php \
             bot/services/GameInviteService.php \
             bot/services/FriendGraphService.php \
             bot/services/ReconnectLifecycleService.php \
-            app/assets/js/screens/store-screen.js \
             app/assets/js/screens/game-screen-v102.js \
             app/assets/js/games
 
@@ -120,10 +118,20 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
+              .github/workflows/mvp19-3-profile-name-colors.yml|\
               app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/screens/store-screen.js|\
+              app/assets/js/profile/mgw-avatar-presentation.js|\
+              app/assets/js/production-clean-entry-v110.js|\
               app/assets/css/screens/profile-corrective.css|\
+              app/assets/css/components/mgw-name-colors.css|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
+              bot/database/migrations/20260901_0019_add_profile_name_colors.php|\
+              bot/catalog/CosmeticStoreService.php|\
+              bot/cosmetic-store.php|\
+              bot/helpers/response.php|\
+              bot/tests/Mvp19_3ProfileNameColorsTest.php|\
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/tests/Mvp19_4EffectsV2ContractTest.mjs|\
               bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
@@ -131,7 +139,7 @@ jobs:
               bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php)
                 ;;
               *)
-                echo "Unexpected Profile game cosmetics path: $path" >&2
+                echo "Unexpected Profile cosmetics path: $path" >&2
                 bad=1
                 ;;
             esac
