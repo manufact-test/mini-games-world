@@ -24,7 +24,7 @@ expect(migration.includes("'variant' => 'wave'"), 'wave variant must be canonica
 expect(migration.includes("'event' => 'move'"), 'effects must fire during moves, not after the match');
 expect(migration.includes('ORDER BY mgw_id ASC, equipped_at_utc DESC'), 'legacy multi-selection collapse must preserve the most recently equipped effect');
 
-expect(renderer.includes("slots.game_tictactoe_effect"), 'renderer must read the canonical single effect slot');
+expect(renderer.includes('slots.game_tictactoe_effect'), 'renderer must read the canonical single effect slot');
 for (const token of ['ttt-effect-mark', 'ttt-fx-impact', 'ttt-fx-sparks', 'ttt-fx-wave']) {
   expect(renderer.includes(token), `renderer must expose shared runtime effect token: ${token}`);
 }
@@ -41,11 +41,11 @@ expect(!css.includes('storeTttImpact'), 'Store-only impact animation must be ret
 expect(!css.includes('storeTttWinningLine'), 'Store-only winning animation must be retired');
 expect(!css.includes('storeTttMovePulse'), 'Store-only wave animation must be retired');
 
-expect(store.includes("'Один выбранный эффект срабатывает при каждом ходе'"), 'Store must explain single-effect move-time behavior');
+expect(store.includes('Один выбранный эффект срабатывает при каждом ходе'), 'Store must explain single-effect move-time behavior');
 expect(store.includes('data-store-v2-unequip'), 'selected effect must expose a remove action');
 expect(store.includes('>Снять</button>'), 'selected effect button must say Снять');
 expect(store.includes('ttt-mark ttt-effect-mark ttt-fx-${safeVariant}'), 'Store preview must render the same runtime effect classes');
-expect(store.includes("winning-line:'sparks'"), 'stale cached winning-line metadata must preview as sparks during rollout');
+expect(store.includes("'winning-line':'sparks'"), 'stale cached winning-line metadata must preview as sparks during rollout');
 expect(store.includes("'move-pulse':'wave'"), 'stale cached move-pulse metadata must preview as wave during rollout');
 expect(api.includes('cosmeticStoreUnequip'), 'API client must expose cosmetic unequip');
 expect(endpoint.includes("if ($action === 'unequip')"), 'Store endpoint must accept unequip action');
