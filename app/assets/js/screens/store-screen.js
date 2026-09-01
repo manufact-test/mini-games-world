@@ -69,7 +69,7 @@ function fetchStore(){
   if (storeLoadPromise) return storeLoadPromise;
   storeLoadPromise = api.cosmeticStoreStatus()
     .then(result => {
-      if (!purchaseBusy) applyStoreResponse(result);
+      if (!purchaseBusy && !equipBusy) applyStoreResponse(result);
       return storeState;
     })
     .finally(() => {
@@ -90,7 +90,11 @@ async function loadStore(){
 async function refreshStoreSilently(){
   try {
     await fetchStore();
-    updateVisibleBalance();
+    if (!purchaseBusy && !equipBusy) {
+      renderStore();
+    } else {
+      updateVisibleBalance();
+    }
   } catch (_) {
     // Keep the already rendered Store snapshot if a background refresh fails.
   }
@@ -430,6 +434,15 @@ function offersFromSnapshot(snapshot){
   return offers;
 }
 
+function isKnownGameCosmeticSlot(slot){
+  const normalized = String(slot || '');
+  if (!normalized.startsWith('game_') || !storeState) return false;
+  return offersFromSnapshot(storeState).some(candidate => (
+    String(candidate?.equip_slot || '') === normalized
+    && String(candidate?.item_type || '') === 'game'
+  ));
+}
+
 function purchasedItemIds(offer){
   const missing = Array.isArray(offer?.missing_item_ids) ? offer.missing_item_ids.map(String).filter(Boolean) : [];
   if (missing.length) return missing;
@@ -614,7 +627,7 @@ async function equipGameItem(itemId){
 }
 
 async function unequipGameSlot(slot){
-  if (equipBusy || !storeState || slot !== 'game_tictactoe_effect') return;
+  if (equipBusy || !storeState || !isKnownGameCosmeticSlot(slot)) return;
   const previousStoreState = cloneObject(storeState);
   const next = cloneObject(storeState);
 
@@ -636,12 +649,12 @@ async function unequipGameSlot(slot){
     applyStoreResponse(result);
     renderStore();
     haptic('success');
-    toast('Эффект снят.');
+    toast('Оформление снято.');
   } catch (error) {
     storeState = previousStoreState;
     renderStore();
     haptic('error');
-    toast(error?.message || 'Не удалось снять эффект.');
+    toast(error?.message || 'Не удалось снять оформление.');
   } finally {
     equipBusy = false;
   }
