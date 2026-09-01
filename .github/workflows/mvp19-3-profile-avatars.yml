@@ -120,7 +120,7 @@ jobs:
           grep -F 'state.selectedAvatarId = itemId;' app/assets/js/screens/profile-screen-v110.js
           grep -F 'state.selectedAvatarId = previousSelectedAvatarId;' app/assets/js/screens/profile-screen-v110.js
           grep -F 'applyOptimisticPurchase(offer);' app/assets/js/screens/store-screen.js
-          grep -F 'if (!purchaseBusy) applyStoreResponse(result);' app/assets/js/screens/store-screen.js
+          grep -F 'if (!purchaseBusy && !equipBusy) applyStoreResponse(result);' app/assets/js/screens/store-screen.js
           if grep -Fq 'STARTER_AVATAR_ITEM_IDS' app/assets/js/profile/mgw-profile-model.js; then
             echo 'Starter-only canonical avatar gate returned.' >&2
             exit 1

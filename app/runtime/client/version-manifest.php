@@ -19,7 +19,7 @@ return [
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=53&mvp18=instant-route&optimistic-relations',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history',
-        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=43&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3&c2_1=single-effect',
+        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=43&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3&c2_1=single-effect&c2_2=selection-consistency',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1119&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1154&mvp18=friend-request-lifecycle',
