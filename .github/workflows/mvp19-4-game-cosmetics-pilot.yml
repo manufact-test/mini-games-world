@@ -7,12 +7,14 @@ on:
     paths:
       - 'bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php'
       - 'bot/database/migrations/20260824_0016_localize_tictactoe_strike_effect.php'
+      - 'bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
       - 'bot/tests/Mvp19_1ProductInventoryTest.php'
       - 'bot/tests/Mvp19_2CosmeticStoreTest.php'
       - 'bot/tests/Mvp19_4GameCosmeticsPilotTest.php'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/games/tictactoe/renderer.js'
@@ -59,6 +61,7 @@ jobs:
         run: |
           php -l bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php
           php -l bot/database/migrations/20260824_0016_localize_tictactoe_strike_effect.php
+          php -l bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php
           php -l bot/catalog/CosmeticStoreService.php
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
@@ -72,6 +75,7 @@ jobs:
           php bot/tests/Mvp19_2CosmeticStoreTest.php
           php bot/tests/Mvp19_3ProfileAvatarsTest.php
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
 
       - name: Validate active client syntax
         run: |
@@ -114,7 +118,7 @@ jobs:
           set -euo pipefail
           php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","game_cosmetics=pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","mvp19_4=game-cosmetics-pilot")) exit(2); if(!str_contains($m["assets"]["main_css"]??"","game_cosmetics=pilot")) exit(3);'
           grep -F "@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');" app/assets/css/main.css
-          grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field');" app/assets/css/main.css
+          grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2');" app/assets/css/main.css
 
       - name: Guard accepted mechanics and lifecycle owners
         if: contains(github.head_ref, 'game-cosmetics')
