@@ -1,0 +1,187 @@
+/* C2.6: cell-native Tic Tac Toe move FX.
+ * Runtime effects are sized from the whole cell, not from the 30px X/O font.
+ * Explicit DOM particles/rings avoid WebView-dependent mask/conic rendering.
+ */
+
+.game-board-screen[data-game-type="tictactoe"] .board-wrap{overflow:visible}
+
+#gameBoard[data-game-type="tictactoe"] .cell{overflow:visible}
+#gameBoard[data-game-type="tictactoe"] .ttt-mark{
+  position:relative;
+  z-index:0;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  line-height:1;
+  isolation:isolate;
+  overflow:visible;
+  transform:none;
+  animation:none;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-mark-glyph{
+  position:relative;
+  z-index:2;
+  display:grid;
+  place-items:center;
+  width:auto;
+  height:auto;
+  line-height:1;
+  pointer-events:none;
+  transform-origin:50% 50%;
+}
+
+/* Retire the old mark-sized pseudo FX in the real match only. Store keeps its accepted preview loop. */
+#gameBoard[data-game-type="tictactoe"] .ttt-effect-mark::before,
+#gameBoard[data-game-type="tictactoe"] .ttt-effect-mark::after{
+  content:none !important;
+  animation:none !important;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-effect-mark{animation:none !important}
+
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-layer{
+  position:absolute;
+  z-index:1;
+  inset:0;
+  overflow:visible;
+  pointer-events:none;
+  color:currentColor;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-layer > span{
+  position:absolute;
+  left:50%;
+  top:50%;
+  pointer-events:none;
+}
+
+/* Impact: the sign itself lands hard, followed by a flash and a full-cell ring. */
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-impact .ttt-mark-glyph{
+  animation:tttFx3ImpactGlyph .74s cubic-bezier(.16,.84,.28,1) both;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-impact-flash{
+  width:72%;
+  height:72%;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.96) 0 7%,currentColor 9% 28%,transparent 67%);
+  transform:translate(-50%,-50%) scale(.18);
+  filter:drop-shadow(0 0 10px currentColor);
+  opacity:0;
+  animation:tttFx3ImpactFlash .72s ease-out both;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-impact-ring{
+  width:38%;
+  aspect-ratio:1;
+  border:3px solid currentColor;
+  border-radius:50%;
+  box-shadow:0 0 12px currentColor,inset 0 0 8px currentColor;
+  transform:translate(-50%,-50%) scale(.35);
+  opacity:0;
+  animation:tttFx3ImpactRing .78s cubic-bezier(.18,.72,.22,1) both;
+}
+
+/* Sparks: eight real particles fly away from the newly placed sign. */
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-sparks .ttt-mark-glyph{
+  animation:tttFx3SparksGlyph .82s ease-out both;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-sparks-glow{
+  width:48%;
+  height:48%;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.90) 0 8%,currentColor 10% 34%,transparent 70%);
+  transform:translate(-50%,-50%) scale(.35);
+  opacity:0;
+  filter:drop-shadow(0 0 9px currentColor);
+  animation:tttFx3SparksGlow .72s ease-out both;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark{
+  --spark-x:50%;
+  --spark-y:50%;
+  --spark-r:0deg;
+  width:clamp(2px,4%,4px);
+  height:clamp(7px,15%,14px);
+  border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.98),currentColor 52%,transparent);
+  box-shadow:0 0 7px currentColor;
+  transform:translate(-50%,-50%) scale(.25) rotate(var(--spark-r));
+  transform-origin:50% 50%;
+  opacity:0;
+  animation:tttFx3SparkFly .88s cubic-bezier(.12,.72,.24,1) both;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(2){--spark-x:50%;--spark-y:5%;--spark-r:0deg;animation-delay:.00s}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(3){--spark-x:82%;--spark-y:18%;--spark-r:45deg;animation-delay:.035s}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(4){--spark-x:95%;--spark-y:50%;--spark-r:90deg;animation-delay:.015s}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(5){--spark-x:82%;--spark-y:82%;--spark-r:135deg;animation-delay:.055s}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(6){--spark-x:50%;--spark-y:95%;--spark-r:180deg;animation-delay:.025s}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(7){--spark-x:18%;--spark-y:82%;--spark-r:225deg;animation-delay:.07s}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(8){--spark-x:5%;--spark-y:50%;--spark-r:270deg;animation-delay:.04s}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-spark:nth-child(9){--spark-x:18%;--spark-y:18%;--spark-r:315deg;animation-delay:.085s}
+
+/* Wave: two large rings expand from the whole cell centre, clearly beyond the O/X glyph. */
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-wave .ttt-mark-glyph{
+  animation:tttFx3WaveGlyph .92s ease-out both;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-wave-ring{
+  width:30%;
+  aspect-ratio:1;
+  border:3px solid currentColor;
+  border-radius:50%;
+  box-shadow:0 0 13px currentColor,inset 0 0 8px currentColor;
+  transform:translate(-50%,-50%) scale(.28);
+  opacity:0;
+  animation:tttFx3WaveRing 1.02s cubic-bezier(.14,.70,.18,1) both;
+}
+#gameBoard[data-game-type="tictactoe"] .ttt-fx-wave-ring + .ttt-fx-wave-ring{animation-delay:.14s}
+
+@keyframes tttFx3ImpactGlyph{
+  0%{transform:scale(.34);filter:brightness(2.5) drop-shadow(0 0 12px currentColor)}
+  44%{transform:scale(1.34);filter:brightness(1.55) drop-shadow(0 0 9px currentColor)}
+  70%{transform:scale(.90);filter:brightness(1.16)}
+  100%{transform:scale(1);filter:none}
+}
+@keyframes tttFx3ImpactFlash{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.18)}
+  14%{opacity:1}
+  62%{opacity:.30;transform:translate(-50%,-50%) scale(1.12)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.58)}
+}
+@keyframes tttFx3ImpactRing{
+  0%{opacity:.95;transform:translate(-50%,-50%) scale(.35)}
+  74%{opacity:.24;transform:translate(-50%,-50%) scale(2.30)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(2.62)}
+}
+@keyframes tttFx3SparksGlyph{
+  0%{transform:scale(.62) rotate(-8deg);filter:brightness(2.2) drop-shadow(0 0 10px currentColor)}
+  38%{transform:scale(1.20) rotate(3deg);filter:brightness(1.45) drop-shadow(0 0 7px currentColor)}
+  70%{transform:scale(.94) rotate(-1deg)}
+  100%{transform:scale(1) rotate(0);filter:none}
+}
+@keyframes tttFx3SparksGlow{
+  0%{opacity:.95;transform:translate(-50%,-50%) scale(.28)}
+  54%{opacity:.30;transform:translate(-50%,-50%) scale(1.20)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.62)}
+}
+@keyframes tttFx3SparkFly{
+  0%{left:50%;top:50%;opacity:0;transform:translate(-50%,-50%) scale(.20) rotate(var(--spark-r))}
+  14%{opacity:1}
+  66%{opacity:.82}
+  100%{left:var(--spark-x);top:var(--spark-y);opacity:0;transform:translate(-50%,-50%) scale(.86) rotate(var(--spark-r))}
+}
+@keyframes tttFx3WaveGlyph{
+  0%{transform:scale(.72);filter:brightness(2) drop-shadow(0 0 9px currentColor)}
+  38%{transform:scale(1.16);filter:brightness(1.40) drop-shadow(0 0 7px currentColor)}
+  70%{transform:scale(.96)}
+  100%{transform:scale(1);filter:none}
+}
+@keyframes tttFx3WaveRing{
+  0%{opacity:.98;transform:translate(-50%,-50%) scale(.28)}
+  58%{opacity:.52}
+  84%{opacity:.18;transform:translate(-50%,-50%) scale(3.15)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(3.72)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #gameBoard[data-game-type="tictactoe"] .ttt-mark-glyph,
+  #gameBoard[data-game-type="tictactoe"] .ttt-fx-layer > span{animation:none !important}
+}

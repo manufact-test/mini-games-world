@@ -69,11 +69,25 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
       moveEffectClass ? 'ttt-effect-mark' : '',
       moveEffectClass,
     ].filter(Boolean).join(' ');
+    const effectLayer = moveEffect ? renderMoveEffectLayer(moveEffect) : '';
 
-    return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label ? `<span class="${markClasses}" aria-hidden="true"><span class="ttt-mark-glyph">${label}</span></span>` : ''}</button>`;
+    return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label ? `<span class="${markClasses}" aria-hidden="true">${effectLayer}<span class="ttt-mark-glyph">${label}</span></span>` : ''}</button>`;
   }).join('');
 
   bindCellActions(container, onAction);
+}
+
+function renderMoveEffectLayer(effect){
+  if (effect === 'impact') {
+    return '<span class="ttt-fx-layer ttt-fx-layer-impact"><span class="ttt-fx-impact-flash"></span><span class="ttt-fx-impact-ring"></span></span>';
+  }
+  if (effect === 'sparks') {
+    return '<span class="ttt-fx-layer ttt-fx-layer-sparks"><span class="ttt-fx-sparks-glow"></span><span class="ttt-fx-spark"></span><span class="ttt-fx-spark"></span><span class="ttt-fx-spark"></span><span class="ttt-fx-spark"></span><span class="ttt-fx-spark"></span><span class="ttt-fx-spark"></span><span class="ttt-fx-spark"></span><span class="ttt-fx-spark"></span></span>';
+  }
+  if (effect === 'wave') {
+    return '<span class="ttt-fx-layer ttt-fx-layer-wave"><span class="ttt-fx-wave-ring"></span><span class="ttt-fx-wave-ring"></span></span>';
+  }
+  return '';
 }
 
 function bindCellActions(container, onAction){
