@@ -5,6 +5,7 @@ const profileCss = fs.readFileSync('app/assets/css/screens/profile-corrective.cs
 const mainCss = fs.readFileSync('app/assets/css/main.css', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const inventory = fs.readFileSync('bot/catalog/ProductInventoryService.php', 'utf8');
+const storeService = fs.readFileSync('bot/catalog/CosmeticStoreService.php', 'utf8');
 const endpoint = fs.readFileSync('bot/cosmetic-store.php', 'utf8');
 
 function expect(condition, message) {
@@ -38,7 +39,8 @@ expect(manifest.includes('mvp19_3=profile-game-cosmetics'), 'active main CSS ide
 
 expect(inventory.includes('public function equip(string $mgwId, string $itemId): array'), 'ProductInventoryService must remain the equip owner');
 expect(inventory.includes('public function unequip(string $mgwId, string $equipSlot): array'), 'ProductInventoryService must remain the unequip owner');
-expect(endpoint.includes('$inventory->equip($mgwId, $itemId)'), 'existing game cosmetic endpoint must delegate equip to ProductInventoryService');
+expect(endpoint.includes('$store->equipGameItem($mgwId'), 'existing game cosmetic endpoint must retain its bounded game-item validation path');
+expect(storeService.includes('return $this->inventory->equip($mgwId, $itemId);'), 'game-item validation path must delegate equip to ProductInventoryService');
 expect(endpoint.includes('$inventory->unequip($mgwId, $equipSlot)'), 'existing game cosmetic endpoint must delegate unequip to ProductInventoryService');
 
 console.log('MVP-19.3 Profile-owned game cosmetics contract: OK');
