@@ -17,6 +17,7 @@ return [
         './assets/js/ui.js?v=89' => './assets/js/ui.js?v=96&mvp16=canonical-profile-display-owner&mvp19=mgw-avatar-only&mvp19_3_1=selected-avatar-owner&c7=no-false-starter',
         './assets/js/components/sheet.js?v=68' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
+        './assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=28&store=quiet-equip',
         './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=53&mvp18=instant-route&optimistic-relations',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=43&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3&c2_1=single-effect&c2_2=selection-consistency',
@@ -48,7 +49,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=180&sk=3&icons=c1efd5af&render=40&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity',
+        'main_css' => './assets/css/main.css?v=181&sk=3&icons=c1efd5af&render=40&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity&store=compact-tail',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
