@@ -33,6 +33,17 @@ expect(!renderer.includes('findWinningCells'), 'renderer must not keep a termina
 expect(!renderer.includes('ttt-winning-cell'), 'renderer must not paint an after-match winning effect');
 expect(!renderer.includes('ttt-move-pulse'), 'legacy cell-owned move pulse class must be retired');
 
+// C2.4: the game poller is allowed to call the renderer repeatedly for the same
+// board, but an identical snapshot must not destroy/recreate the X/O DOM while
+// its one-shot effect animation is still playing.
+expect(renderer.includes('const previousVisualSignatures = new Map();'), 'renderer must remember the last visual board signature');
+expect(renderer.includes('const canReuseBoardDom = previousBoard === board'), 'unchanged authoritative boards must be eligible for DOM reuse');
+expect(renderer.includes("String(container.dataset.tttGameKey || '') === gameKey"), 'DOM reuse must be scoped to the same game');
+expect(renderer.includes("container.querySelectorAll('[data-game-cell]').length === board.length"), 'DOM reuse must require a complete rendered board');
+expect(renderer.includes('if (canReuseBoardDom) {\n    updateCellInteractivity(container, game, me, board);\n    return;'), 'identical poll snapshots must update controls without rebuilding marks');
+expect(renderer.includes('function updateCellInteractivity(container, game, me, board)'), 'reused boards must still synchronize turn availability');
+expect(renderer.includes('function visualSignatureFor(boardSize, players)'), 'cosmetic changes must invalidate DOM reuse even when the board is unchanged');
+
 for (const token of ['tttFxImpact', 'tttFxSparksBurst', 'tttFxWaveRing']) {
   expect(css.includes(token), `missing shared runtime/store keyframe: ${token}`);
 }
@@ -66,11 +77,11 @@ expect(!endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endp
 expect(mainCss.includes('c2_1=single-slot-parity'), 'active CSS graph must publish C2.1 identity');
 expect(mainCss.includes('.has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}'), 'Store primary screen must not stack the old 78px tail on top of shell navigation spacing');
 expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
-expect(manifest.includes('c2_1=mark-owned'), 'active runtime manifest must cache-bust the mark-owned renderer');
 expect(manifest.includes('c2_1=single-effect'), 'active runtime manifest must cache-bust Store single-effect UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
 expect(manifest.includes('c2_2=selection-consistency'), 'active runtime manifest must cache-bust Store selection consistency');
+expect(manifest.includes('c2_4=poll-persistent-effects'), 'active runtime manifest must cache-bust the poll-persistent Tic Tac Toe renderer');
 expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=28&store=quiet-equip'"), 'active runtime manifest must cache-bust quiet Store acknowledgements');
 expect(manifest.includes('store=compact-tail'), 'active runtime manifest must cache-bust compact Store bottom spacing');
 
-console.log('MVP-19.4 effects C2.3 Store polish contract: OK');
+console.log('MVP-19.4 effects C2.4 runtime persistence contract: OK');
