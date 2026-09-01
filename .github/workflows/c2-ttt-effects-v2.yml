@@ -6,7 +6,12 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php'
+      - 'bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php'
       - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
+      - 'bot/tests/TicTacToeSingleEffectMigrationTest.php'
+      - 'bot/cosmetic-store.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/games/tictactoe/renderer.js'
       - 'app/assets/css/games/tictactoe/cosmetics.css'
       - 'app/assets/css/main.css'
@@ -37,13 +42,20 @@ jobs:
 
       - name: Validate syntax
         run: |
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/games/tictactoe/renderer.js
           node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
-          php -l bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php
+          php -l bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php
+          php -l bot/tests/TicTacToeSingleEffectMigrationTest.php
+          php -l bot/cosmetic-store.php
           php -l app/runtime/client/version-manifest.php
 
-      - name: Run effects v2 contract
-        run: node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+      - name: Run effects C2.1 contracts
+        run: |
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          php bot/tests/TicTacToeSingleEffectMigrationTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
 
       - name: Guard mechanics owners
         shell: bash
