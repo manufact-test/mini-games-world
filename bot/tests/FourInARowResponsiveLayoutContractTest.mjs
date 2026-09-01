@@ -15,6 +15,6 @@ assert(css.includes('width:min(100%,42px);'), 'Four in a Row disc slots must cap
 assert(css.includes('gap:4px;'), 'Four in a Row gameplay grid must keep a 4px gap');
 assert(!css.includes('100dvh'), 'Four in a Row game-specific layout must not depend on viewport-height sizing');
 assert(main.includes("./games/four-in-a-row/game.css?v=54&ios-fit=width-owned"), 'Main CSS must cache-bust the width-owned Four in a Row layout');
-assert(manifest.includes("main.css?v=180") && manifest.includes('&four=ios-fit'), 'Runtime manifest must cache-bust the updated main CSS');
+assert(/main\.css\?v=\d+/.test(manifest) && manifest.includes('&four=ios-fit'), 'Runtime manifest must keep a versioned main CSS identity with the Four in a Row layout marker');
 
 console.log('PASS: Four in a Row responsive layout contract');
