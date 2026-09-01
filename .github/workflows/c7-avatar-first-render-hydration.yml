@@ -1,0 +1,88 @@
+name: C7 Avatar first-render hydration corrective
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/profile.php'
+      - 'bot/tests/Mvp19_3AvatarFirstRenderHydrationTest.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/ui.js'
+      - 'app/assets/js/profile/mgw-profile-model.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/c7-avatar-first-render-hydration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-c7-avatar-first-render-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  avatar-first-render:
+    name: Authoritative avatar and collection before first visible render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Validate changed runtime syntax
+        run: |
+          php -l bot/profile.php
+          php -l bot/tests/Mvp19_3AvatarFirstRenderHydrationTest.php
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/ui.js
+          node --check app/assets/js/profile/mgw-profile-model.js
+          php -l app/runtime/client/version-manifest.php
+
+      - name: Run C7 first-render hydration contract
+        run: php bot/tests/Mvp19_3AvatarFirstRenderHydrationTest.php
+
+      - name: Run accepted avatar regressions
+        run: |
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php bot/tests/ProfileV2PassAStaticContractTest.php
+
+      - name: Guard bounded corrective scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/c7-avatar-first-render-hydration.yml|\
+              bot/profile.php|\
+              bot/tests/Mvp19_3AvatarFirstRenderHydrationTest.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/ui.js|\
+              app/assets/js/profile/mgw-profile-model.js|\
+              app/runtime/client/version-manifest.php)
+                ;;
+              *)
+                echo "Unexpected C7 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
