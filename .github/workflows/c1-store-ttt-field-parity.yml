@@ -1,0 +1,38 @@
+name: C1 Store Tic Tac Toe field parity
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/css/games/tictactoe/cosmetics.css'
+      - 'app/assets/css/screens/store-v2.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/games/tictactoe/renderer.js'
+      - 'bot/tests/C1StoreTicTacToeFieldParityTest.php'
+      - '.github/workflows/c1-store-ttt-field-parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  field-parity:
+    name: shared field visual owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: CSS and manifest contract
+        run: |
+          set -Eeuo pipefail
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/C1StoreTicTacToeFieldParityTest.php
+          php bot/tests/C1StoreTicTacToeFieldParityTest.php

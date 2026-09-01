@@ -66,6 +66,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${GITHUB_HEAD_REF:-}" != 'agent/corrective-avatar-first-render' ]]; then
+            echo 'C7 bounded scope guard applies only to the C7 corrective branch; C7 regression tests remain active for later cross-slice changes.'
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           bad=0
