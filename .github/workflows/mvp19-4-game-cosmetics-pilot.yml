@@ -110,8 +110,8 @@ jobs:
           grep -F 'cosmeticStoreEquip' app/assets/js/api/client.js
           grep -F 'cosmeticStoreUnequip' app/assets/js/api/client.js
           grep -F 'gameCosmeticPreview' app/assets/js/screens/store-screen.js
-          grep -F 'equipGameItem' app/assets/js/screens/store-screen.js
-          grep -F 'unequipGameSlot' app/assets/js/screens/store-screen.js
+          grep -F 'equipStoreItem' app/assets/js/screens/store-screen.js
+          grep -F 'unequipStoreSlot' app/assets/js/screens/store-screen.js
           grep -F "\$player['game_cosmetics']" bot/helpers/response.php
           grep -F 'player?.game_cosmetics?.slots' app/assets/js/games/tictactoe/renderer.js
           grep -F 'slots.game_tictactoe_effect' app/assets/js/games/tictactoe/renderer.js

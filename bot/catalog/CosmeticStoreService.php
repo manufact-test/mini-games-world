@@ -67,6 +67,14 @@ final class CosmeticStoreService
             ];
         }
 
+        $profileNameColors = [];
+        foreach ($offers as $offer) {
+            if (($offer['category'] ?? '') !== 'profile' || ($offer['subcategory'] ?? '') !== 'name_color') continue;
+            if (($offer['item_type'] ?? '') !== 'profile' || ($offer['item_family'] ?? '') !== 'name_color') continue;
+            if (($offer['equip_slot'] ?? '') !== 'profile_name_color') continue;
+            $profileNameColors[] = $offer + ['preview_kind' => 'profile_name_color'];
+        }
+
         $avatarBundle = $offers[self::AVATAR_BUNDLE_OFFER_ID] ?? null;
         if (is_array($avatarBundle)) {
             $avatarBundle['preview_kind'] = 'avatar_bundle_placeholder';
@@ -108,7 +116,7 @@ final class CosmeticStoreService
                 'display_name' => (string)($metadata['display_name'] ?? $itemId),
                 'metadata' => $metadata,
                 'preview_number' => $starterIndex !== false ? $starterIndex + 1 : ($storeIndex !== false ? $storeIndex + 4 : null),
-                'preview_kind' => $family === 'avatar' ? 'numbered_avatar_placeholder' : 'game_cosmetic',
+                'preview_kind' => $family === 'avatar' ? 'numbered_avatar_placeholder' : ($family === 'name_color' ? 'profile_name_color' : 'game_cosmetic'),
                 'equipped' => $slot !== '' && (string)($equipped[$slot] ?? '') === $itemId,
                 'acquired_source' => (string)($ownedRow['acquired_source'] ?? ''),
                 'acquired_at' => $ownedRow['acquired_at'] ?? null,
@@ -151,6 +159,7 @@ final class CosmeticStoreService
             ],
             'profile' => [
                 'avatars' => $profileAvatars,
+                'name_colors' => array_values($profileNameColors),
             ],
             'games' => [
                 'available' => true,

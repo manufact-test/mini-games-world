@@ -2,6 +2,11 @@ import { state } from '../state.js?v=27';
 import { getAvatarVisualMeta } from './mgw-avatar-registry.js?v=4';
 
 const DEFAULT_AVATAR = 'starter-default-01';
+const NAME_COLOR_ITEM_IDS = new Set([
+  'profile-name-color-sky',
+  'profile-name-color-gold',
+  'profile-name-color-aurora',
+]);
 
 let initialized = false;
 let observer = null;
@@ -46,6 +51,8 @@ function decoratePlayersRow(){
     const player = players[index];
     if (!player || typeof player !== 'object') return;
 
+    decoratePlayerName(card, player);
+
     const itemId = visibleAvatarItemId(player);
     const existing = card.querySelector(':scope > .game-player-avatar');
 
@@ -72,6 +79,14 @@ function decoratePlayersRow(){
     if (!existing) card.prepend(avatar);
     card.classList.add('has-mgw-avatar');
   });
+}
+
+function decoratePlayerName(card, player){
+  const name = card.querySelector(':scope > .name');
+  if (!(name instanceof HTMLElement)) return;
+  const itemId = String(player?.name_color_item_id || '').trim().toLowerCase();
+  if (NAME_COLOR_ITEM_IDS.has(itemId)) name.dataset.nameColorItemId = itemId;
+  else delete name.dataset.nameColorItemId;
 }
 
 function createAvatarNode(){

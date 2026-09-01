@@ -75,7 +75,9 @@ expect(store.includes('>Снять</button>'), 'selected game cosmetic button mu
 expect(store.includes('ttt-mark ttt-effect-mark ttt-fx-${safeVariant}'), 'Store preview must keep the canonical effect class identities');
 expect(store.includes("'winning-line':'sparks'"), 'stale cached winning-line metadata must preview as sparks during rollout');
 expect(store.includes("'move-pulse':'wave'"), 'stale cached move-pulse metadata must preview as wave during rollout');
-expect(store.includes('function isKnownGameCosmeticSlot(slot)'), 'Store must validate unequip against the current game cosmetic catalogue');
+expect(store.includes('function isKnownSelectableSlot(slot)'), 'Store must validate unequip against the current selectable cosmetic catalogue');
+expect(store.includes("if (itemType === 'game' && normalized.startsWith('game_')) return true;"), 'Store selectable slot validation must preserve all active game cosmetics');
+expect(store.includes("return itemType === 'profile' && itemFamily === 'name_color' && normalized === 'profile_name_color';"), 'Store selectable slot validation must explicitly allow Profile name colors');
 expect(!store.includes("slot !== 'game_tictactoe_effect'"), 'Store client must not hardcode unequip to effects only');
 expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);'), 'background Store refresh must not overwrite an active cosmetic mutation');
 expect(store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'fresh background Store snapshot must repaint product cards, not only the balance');
@@ -84,8 +86,10 @@ expect(toast.includes("'Оформление снято.'"), 'redundant Store un
 expect(toast.includes('SILENT_ACKNOWLEDGEMENTS.has(normalized)'), 'toast owner must suppress only the redundant acknowledgements before rendering');
 expect(api.includes('cosmeticStoreUnequip'), 'API client must expose cosmetic unequip');
 expect(endpoint.includes("if ($action === 'unequip')"), 'Store endpoint must accept unequip action');
-expect(endpoint.includes("str_starts_with($equipSlot, 'game_')"), 'Store endpoint must restrict unequip to game slots');
-expect(endpoint.includes("(string)($catalogItem['item_type'] ?? '') !== 'game'"), 'Store endpoint must validate the slot against game catalogue items');
+expect(endpoint.includes("$isGameSlot = (string)($catalogItem['item_type'] ?? '') === 'game'"), 'Store endpoint must retain explicit game-slot classification');
+expect(endpoint.includes("str_starts_with($equipSlot, 'game_')"), 'Store endpoint must keep the canonical game-slot prefix guard');
+expect(endpoint.includes("mgw_store_profile_name_color($catalogItem)"), 'Store endpoint must explicitly classify Profile name colors');
+expect(endpoint.includes('if ($isGameSlot || mgw_store_profile_name_color($catalogItem))'), 'Store endpoint must restrict unequip to game cosmetics or Profile name colors');
 expect(endpoint.includes("(string)($catalogItem['catalog_status'] ?? '') !== 'active'"), 'Store endpoint must only accept active catalogue slots');
 expect(endpoint.includes("(string)($catalogItem['equip_slot'] ?? '') !== $equipSlot"), 'Store endpoint must match the requested slot to the catalogue');
 expect(!endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endpoint must not hardcode unequip to effects only');

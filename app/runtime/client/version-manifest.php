@@ -4,7 +4,7 @@ declare(strict_types=1);
 return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
-        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1127&mvp16=canonical-avatar-owner&mvp17=history-single-owner&mvp19=avatar-presentation&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5',
+        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1128&mvp16=canonical-avatar-owner&mvp17=history-single-owner&mvp19=avatar-presentation&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&mvp19_3=name-colors',
         '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2',
         '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
         './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1134&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch&mvp18=friends&mvp19=store-v2&mvp19_4=game-cosmetics-pilot&c7=avatar-bootstrap-inventory&c2_1=effect-unequip',
@@ -20,8 +20,8 @@ return [
         './assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=28&store=quiet-equip',
         './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=53&mvp18=instant-route&optimistic-relations',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history',
-        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=43&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3&c2_1=single-effect&c2_2=selection-consistency',
-        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1121&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync&mvp19_3_2=game-cosmetics&mvp19_3_3=game-tabs-fresh',
+        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=44&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3&c2_1=single-effect&c2_2=selection-consistency&mvp19_3_4=name-colors',
+        './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1122&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync&mvp19_3_2=game-cosmetics&mvp19_3_3=game-tabs-fresh&mvp19_3_4=name-colors',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1154&mvp18=friend-request-lifecycle',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
@@ -49,7 +49,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=184&sk=3&icons=c1efd5af&render=42&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity&store=compact-tail&c2_5=visible-mark-layer&c2_6=cell-native-dom-fx&mvp19_3=profile-game-tabs-fresh',
+        'main_css' => './assets/css/main.css?v=185&sk=3&icons=c1efd5af&render=42&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity&store=compact-tail&c2_5=visible-mark-layer&c2_6=cell-native-dom-fx&mvp19_3=profile-game-tabs-fresh&mvp19_3_4=name-colors',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
