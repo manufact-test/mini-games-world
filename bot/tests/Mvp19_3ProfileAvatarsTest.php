@@ -12,6 +12,7 @@ require_once $root . '/bot/accounts/MgwIdGenerator.php';
 require_once $root . '/bot/accounts/AccountIdentityService.php';
 require_once $root . '/bot/accounts/MgwProfileService.php';
 require_once $root . '/bot/catalog/ProductInventoryService.php';
+require_once $root . '/bot/helpers/response.php';
 
 if (!extension_loaded('pdo_sqlite')) throw new RuntimeException('MVP-19.3 test requires pdo_sqlite.');
 
@@ -68,6 +69,22 @@ $afterEquip = $inventory->snapshot($mgwId);
 $assertSame('store-avatar-03', $afterEquip['equipped']['profile_avatar'] ?? null, 'Canonical equipment must match paid avatar selection');
 $assertSame('store-avatar-03', $profiles->publicProfile($mgwId)['avatar']['item_id'] ?? null, 'Public profile must expose the same equipped paid avatar');
 
+$botProjection = mgw_project_canonical_game_identity([
+    'game' => [
+        'players' => [
+            ['id' => 'bot_mvp19_avatar', 'name' => 'Бот'],
+        ],
+    ],
+    'active_game' => [
+        'players' => [
+            ['id' => 'bot_mvp19_active_avatar', 'name' => 'Бот 2'],
+        ],
+    ],
+]);
+$assertSame('starter-default-01', $botProjection['game']['players'][0]['avatar_item_id'] ?? null, 'Bot player must receive the canonical standard avatar in game projection');
+$assertSame('starter-default-01', $botProjection['active_game']['players'][0]['avatar_item_id'] ?? null, 'Bot player must receive the canonical standard avatar in active_game projection');
+$assertSame('Бот', $botProjection['game']['players'][0]['name'] ?? null, 'Bot avatar projection must not rewrite bot display name or create a user profile');
+
 $profileEndpoint = (string)file_get_contents($root . '/bot/profile-v2.php');
 $profileClient = (string)file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
 $storeClient = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
@@ -118,6 +135,8 @@ $assertTrue(str_contains($storeClient, 'class="store-v2-confirm-avatar store-v2-
 $assertTrue(str_contains($responseHelper, 'u.equipped_avatar_item_id'), 'Game identity projection must read canonical equipped avatar');
 $assertTrue(str_contains($responseHelper, "\$player['avatar_item_id']"), 'Game response must expose equipped avatar to presentation');
 $assertTrue(str_contains($responseHelper, 'mgw_canonical_game_player_profiles'), 'Name and avatar must share one canonical game identity projection');
+$assertTrue(str_contains($responseHelper, 'mgw_canonical_bot_avatar_item_id'), 'Bot identity must use the canonical game response projection instead of a client-only avatar hack');
+$assertTrue(str_contains($responseHelper, "str_starts_with(\$playerId, 'bot_')"), 'Canonical game projection must recognize bot player identities explicitly');
 
 $assertTrue(str_contains($avatarPresentation, "document.getElementById('playersRow')"), 'Shared avatar presentation must decorate the existing player row');
 $assertTrue(str_contains($avatarPresentation, 'state.activeGame'), 'Presentation must consume current canonical game response instead of a second game owner');
