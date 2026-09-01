@@ -1,6 +1,8 @@
 import { applyAccountLocalePreference } from '@mgw/i18n';
 
-const DEFAULT_AVATAR_ITEM_ID = 'starter-default-01';
+// No client-side starter identity is authoritative before Profile API hydration.
+// Fresh accounts still receive starter-default-01 from the canonical backend.
+const DEFAULT_AVATAR_ITEM_ID = '';
 const INTERNAL_MGW_ID_PATTERN = /^MGW-([0-9A-HJKMNP-TV-Z]{16})$/;
 const PUBLIC_MGW_ID_PATTERN = /^MGW-ID-([0-9A-HJKMNP-TV-Z]{16})$/;
 
@@ -36,8 +38,8 @@ export function mergeCanonicalMgwUser(currentUser = {}, runtimeUser = {}, profil
 
 export function canonicalAvatarItemId(avatar = null){
   // ProductInventoryService / Profile API own canonical avatar validation.
-  // The client model only transports the authoritative item id and must not
-  // maintain a second starter-only catalog that can erase paid/future avatars.
+  // The client model only transports an authoritative item id. Before that
+  // state exists it returns empty instead of fabricating starter-default-01.
   const itemId = String(avatar?.item_id || '').trim();
   return itemId || DEFAULT_AVATAR_ITEM_ID;
 }
