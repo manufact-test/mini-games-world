@@ -106,10 +106,14 @@ $assertStoreError(static fn() => $store->quote($mgwId, 'name-color-sky'), 'alrea
 
 $endpoint = (string)file_get_contents($root . '/bot/cosmetic-store.php');
 $response = (string)file_get_contents($root . '/bot/helpers/response.php');
+$apiSource = (string)file_get_contents($root . '/app/assets/js/api/client.js');
+$uiSource = (string)file_get_contents($root . '/app/assets/js/ui.js');
 $storeSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
 $profileSource = (string)file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
 $presentationSource = (string)file_get_contents($root . '/app/assets/js/profile/mgw-avatar-presentation.js');
 $nameColorCss = (string)file_get_contents($root . '/app/assets/css/components/mgw-name-colors.css');
+$profileCorrectiveCss = (string)file_get_contents($root . '/app/assets/css/screens/profile-corrective.css');
+$mainCss = (string)file_get_contents($root . '/app/assets/css/main.css');
 $manifestSource = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
 
 $assertTrue(str_contains($endpoint, "item_family'] ?? '') === 'name_color'") && str_contains($endpoint, "'profile_name_color'"), 'Store mutation endpoint must whitelist only the canonical profile name-color family and slot');
@@ -118,7 +122,12 @@ $assertTrue(str_contains($presentationSource, 'player?.name_color_item_id') && s
 $assertTrue(str_contains($storeSource, 'storeState?.profile?.name_colors') && str_contains($storeSource, 'data-name-color-item-id'), 'Store Profile tab must render server-owned name-color offers using the shared visual attribute');
 $assertTrue(str_contains($profileSource, 'ownedNameColorItems()') && str_contains($profileSource, "api.cosmeticStoreUnequip('profile_name_color')"), 'Profile collection must expose owned-only name colors and canonical equip/unequip transport');
 $assertTrue(!str_contains($profileSource, 'cosmeticStorePurchase'), 'Profile must never become a purchase owner');
+$assertTrue(str_contains($apiSource, 'function publishCosmeticInventory') && str_contains($apiSource, "mgw:cosmetic-inventory-changed") && str_contains($apiSource, 'state.profileInventory = { ...current, equipped:{ ...equipped } };'), 'Successful Store mutations must publish authoritative equipped cosmetics into shared client state');
+$assertTrue(str_contains($uiSource, 'activeProfileNameColorItemId') && str_contains($uiSource, 'el.dataset.nameColorItemId = nameColorItemId') && str_contains($uiSource, "delete el.dataset.nameColorItemId"), 'Global user chrome must apply and remove the equipped profile name color');
 $assertTrue(str_contains($nameColorCss, '[data-name-color-item-id="profile-name-color-sky"]') && str_contains($nameColorCss, '[data-name-color-item-id="profile-name-color-aurora"]'), 'Store, Profile and game player cards must share one name-color CSS owner');
-$assertTrue(str_contains($manifestSource, 'mvp19_3_4=name-colors'), 'Active v110 delivery graph must carry a fresh name-color cache identity');
+$assertTrue(str_contains($nameColorCss, 'content:"Mini Games"') && str_contains($nameColorCss, '.store-v2-name-color-grid{display:grid;grid-template-columns:minmax(0,1fr)') && str_contains($nameColorCss, '.profile-v2-name-color-grid{display:grid;grid-template-columns:minmax(0,1fr)'), 'Name-color previews must use a stable sample and mobile cards must own usable full-width space');
+$assertTrue(str_contains($profileCorrectiveCss, '.profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::before') && str_contains($profileCorrectiveCss, '.profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::after'), 'Profile Tic Tac Toe tab icon must be drawn with stable CSS geometry instead of font-dependent X/O glyph rendering');
+$assertTrue(str_contains($mainCss, 'mgw-name-colors.css?v=2') && str_contains($mainCss, 'profile-corrective.css?v=7'), 'Main stylesheet must request the corrective name-color and Tic Tac Toe tab presentation identities');
+$assertTrue(str_contains($manifestSource, 'name-color-live-projection') && str_contains($manifestSource, 'name-color-chrome') && str_contains($manifestSource, 'name-colors-polish'), 'Active v110 delivery graph must carry fresh corrective name-color cache identities');
 
 fwrite(STDOUT, "MVP-19.3 profile name colors passed ({$assertions} assertions).\n");
