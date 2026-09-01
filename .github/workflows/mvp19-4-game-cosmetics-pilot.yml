@@ -8,6 +8,7 @@ on:
       - 'bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php'
       - 'bot/database/migrations/20260824_0016_localize_tictactoe_strike_effect.php'
       - 'bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php'
+      - 'bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
@@ -15,6 +16,7 @@ on:
       - 'bot/tests/Mvp19_2CosmeticStoreTest.php'
       - 'bot/tests/Mvp19_4GameCosmeticsPilotTest.php'
       - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
+      - 'bot/tests/TicTacToeSingleEffectMigrationTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/games/tictactoe/renderer.js'
@@ -62,12 +64,14 @@ jobs:
           php -l bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php
           php -l bot/database/migrations/20260824_0016_localize_tictactoe_strike_effect.php
           php -l bot/database/migrations/20260901_0017_upgrade_tictactoe_effects_v2.php
+          php -l bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php
           php -l bot/catalog/CosmeticStoreService.php
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_1ProductInventoryTest.php
           php -l bot/tests/Mvp19_2CosmeticStoreTest.php
           php -l bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php -l bot/tests/TicTacToeSingleEffectMigrationTest.php
 
       - name: Run cosmetics and inventory contracts
         run: |
@@ -75,6 +79,7 @@ jobs:
           php bot/tests/Mvp19_2CosmeticStoreTest.php
           php bot/tests/Mvp19_3ProfileAvatarsTest.php
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php bot/tests/TicTacToeSingleEffectMigrationTest.php
           node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
 
       - name: Validate active client syntax
@@ -95,6 +100,7 @@ jobs:
           grep -F "'ttt-premium-bundle'" bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php
           grep -F 'price_coins = 34000' bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php
           grep -F "'auto_equip' => false" bot/catalog/CosmeticStoreService.php
+          grep -F "private const EFFECT_SLOT = 'game_tictactoe_effect'" bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php
 
       - name: Guard complete application loop
         shell: bash
@@ -102,10 +108,13 @@ jobs:
           set -euo pipefail
           grep -F 'cosmeticStorePurchase' app/assets/js/api/client.js
           grep -F 'cosmeticStoreEquip' app/assets/js/api/client.js
+          grep -F 'cosmeticStoreUnequip' app/assets/js/api/client.js
           grep -F 'gameCosmeticPreview' app/assets/js/screens/store-screen.js
           grep -F 'equipGameItem' app/assets/js/screens/store-screen.js
+          grep -F 'unequipGameSlot' app/assets/js/screens/store-screen.js
           grep -F "\$player['game_cosmetics']" bot/helpers/response.php
           grep -F 'player?.game_cosmetics?.slots' app/assets/js/games/tictactoe/renderer.js
+          grep -F 'slots.game_tictactoe_effect' app/assets/js/games/tictactoe/renderer.js
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/games/tictactoe/cosmetics.css
           if grep -Eq 'api\.gameAction|time_left|turn_started_at' app/assets/js/games/tictactoe/renderer.js; then
             echo 'Cosmetic renderer became a rules, action or timer owner.' >&2
@@ -116,12 +125,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","game_cosmetics=pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","mvp19_4=game-cosmetics-pilot")) exit(2); if(!str_contains($m["assets"]["main_css"]??"","game_cosmetics=pilot")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","game_cosmetics=pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","c2_1=single-effect")) exit(2); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_1=mark-owned")) exit(3); if(!str_contains($m["assets"]["main_css"]??"","c2_1=single-slot-parity")) exit(4);'
           grep -F "@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');" app/assets/css/main.css
-          grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2');" app/assets/css/main.css
+          grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2&c2_1=single-slot-parity');" app/assets/css/main.css
 
       - name: Guard accepted mechanics and lifecycle owners
-        if: contains(github.head_ref, 'game-cosmetics')
         shell: bash
         run: |
           set -euo pipefail

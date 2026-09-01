@@ -64,6 +64,7 @@ export const api = {
   cosmeticStoreStatus: () => requestUrl(COSMETIC_STORE_URL, { action:'status' }),
   cosmeticStorePurchase: (offerId, requestToken) => requestUrl(COSMETIC_STORE_URL, { action:'purchase', offer_id:offerId, request_token:requestToken }),
   cosmeticStoreEquip: itemId => requestUrl(COSMETIC_STORE_URL, { action:'equip', item_id:itemId }),
+  cosmeticStoreUnequip: equipSlot => requestUrl(COSMETIC_STORE_URL, { action:'unequip', equip_slot:equipSlot }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),

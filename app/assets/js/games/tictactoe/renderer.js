@@ -1,5 +1,16 @@
 const previousBoards = new Map();
 
+const EFFECT_VARIANTS = Object.freeze({
+  'game-ttt-effect-sign':'impact',
+  'game-ttt-effect-winning-line':'sparks',
+  'game-ttt-effect-strike':'wave',
+});
+const EFFECT_CLASSES = Object.freeze({
+  impact:'ttt-fx-impact',
+  sparks:'ttt-fx-sparks',
+  wave:'ttt-fx-wave',
+});
+
 export function renderTicTacToeSurface({ game, me, container, onAction }){
   const boardSize = Number(game?.board_size || 3);
   const board = String(game?.board || '');
@@ -10,13 +21,6 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
   const gameKey = String(game?.id || `local:${boardSize}`);
   const changedCell = changedCellIndex(previousBoards.get(gameKey), board);
   previousBoards.set(gameKey, board);
-
-  const winner = players.find(player => String(player?.id || '') === String(game?.winner_id || '')) || null;
-  const winnerSymbol = String(winner?.symbol || '');
-  const winningCells = String(game?.status || '') === 'finished' && winnerSymbol
-    ? new Set(findWinningCells(board, boardSize, winnerSymbol))
-    : new Set();
-  const winningLineEnabled = hasEquipped(winner, 'game_tictactoe_effect_winning_line');
   const cosmeticsVisible = players.some(player => Object.keys(equippedSlots(player)).length > 0);
 
   container.className = `board size-${boardSize}${cosmeticsVisible ? ' ttt-cosmetics' : ''}`;
@@ -31,19 +35,20 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
       && isEmpty;
     const label = cell === '-' ? '' : (cell === 'X' ? '✕' : '○');
     const markVariant = variantFor(owner, 'game_tictactoe_elements', 'marks');
-    const signEffect = index === changedCell && hasEquipped(owner, 'game_tictactoe_effect_sign');
-    const movePulse = index === changedCell && hasEquipped(owner, 'game_tictactoe_effect_strike_through');
-    const winning = winningLineEnabled && winningCells.has(index);
+    const moveEffect = index === changedCell ? effectVariantFor(owner) : '';
+    const moveEffectClass = EFFECT_CLASSES[moveEffect] || '';
     const classes = [
       'cell',
       cell === 'X' ? 'x' : (cell === 'O' ? 'o' : ''),
       canMove ? '' : 'locked',
-      signEffect ? 'ttt-sign-effect' : '',
-      movePulse ? 'ttt-move-pulse' : '',
-      winning ? 'ttt-winning-cell' : '',
+    ].filter(Boolean).join(' ');
+    const markClasses = [
+      'ttt-mark',
+      moveEffectClass ? 'ttt-effect-mark' : '',
+      moveEffectClass,
     ].filter(Boolean).join(' ');
 
-    return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label}</button>`;
+    return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label ? `<span class="${markClasses}" aria-hidden="true">${label}</span>` : ''}</button>`;
   }).join('');
 
   container.querySelectorAll('[data-game-cell]').forEach(button => {
@@ -61,8 +66,21 @@ function equippedSlots(player){
   return slots && typeof slots === 'object' ? slots : {};
 }
 
-function hasEquipped(player, slot){
-  return String(equippedSlots(player)[slot] || '') !== '';
+function effectVariantFor(player){
+  const slots = equippedSlots(player);
+  const current = String(slots.game_tictactoe_effect || '');
+  if (EFFECT_VARIANTS[current]) return EFFECT_VARIANTS[current];
+
+  // Deployment-race fallback only. Migration 0018 collapses these legacy slots into one slot.
+  for (const legacySlot of [
+    'game_tictactoe_effect_sign',
+    'game_tictactoe_effect_winning_line',
+    'game_tictactoe_effect_strike_through',
+  ]) {
+    const itemId = String(slots[legacySlot] || '');
+    if (EFFECT_VARIANTS[itemId]) return EFFECT_VARIANTS[itemId];
+  }
+  return '';
 }
 
 function variantFor(player, slot, family){
@@ -81,29 +99,6 @@ function changedCellIndex(previous, current){
     changed = index;
   }
   return changed;
-}
-
-function findWinningCells(board, size, symbol){
-  const need = size === 3 ? 3 : (size === 5 ? 4 : 5);
-  const directions = [[1,0],[0,1],[1,1],[1,-1]];
-  for (let row = 0; row < size; row++) {
-    for (let column = 0; column < size; column++) {
-      if (board[row * size + column] !== symbol) continue;
-      for (const [dr, dc] of directions) {
-        const cells = [];
-        for (let step = 0; step < need; step++) {
-          const nextRow = row + dr * step;
-          const nextColumn = column + dc * step;
-          if (nextRow < 0 || nextRow >= size || nextColumn < 0 || nextColumn >= size) break;
-          const cell = nextRow * size + nextColumn;
-          if (board[cell] !== symbol) break;
-          cells.push(cell);
-        }
-        if (cells.length === need) return cells;
-      }
-    }
-  }
-  return [];
 }
 
 export function ticTacToeMeta(game){

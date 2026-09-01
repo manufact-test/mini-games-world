@@ -64,6 +64,7 @@ try {
 
     $database = PdoConnectionFactory::create($databaseConfig);
     $store = new CosmeticStoreService($database);
+    $inventory = new ProductInventoryService($database);
     $storage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     if (!$storage instanceof StorageTransactionInterface) {
         throw new RuntimeException('Cosmetic Store requires transactional runtime storage.');
@@ -119,6 +120,24 @@ try {
     if ($action === 'equip') {
         $runtime = $captureRuntimeUser();
         $equipment = $store->equipGameItem($mgwId, (string)($payload['item_id'] ?? ''));
+        json_response([
+            'ok' => true,
+            'equipment' => $equipment,
+            'store' => $store->snapshot(
+                $mgwId,
+                $runtimePurchases->balance((string)$runtime['user_id']),
+                $coinPackages
+            ),
+        ]);
+    }
+
+    if ($action === 'unequip') {
+        $runtime = $captureRuntimeUser();
+        $equipSlot = strtolower(trim((string)($payload['equip_slot'] ?? '')));
+        if ($equipSlot !== 'game_tictactoe_effect') {
+            throw new CosmeticStoreException('item_unavailable', 'Этот игровой слот нельзя снять через магазин.');
+        }
+        $equipment = $inventory->unequip($mgwId, $equipSlot);
         json_response([
             'ok' => true,
             'equipment' => $equipment,

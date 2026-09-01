@@ -246,7 +246,7 @@ function renderGamesTab(){
     </div>
     ${renderGameCosmeticGroup('Поля', 'Фон и сетка игрового поля', catalog.themes)}
     ${renderGameCosmeticGroup('Знаки', 'Внешний вид крестиков и ноликов', catalog.elements)}
-    ${renderGameCosmeticGroup('Эффекты', 'Анимации хода и завершения матча', catalog.effects)}
+    ${renderGameCosmeticGroup('Эффекты', 'Один выбранный эффект срабатывает при каждом ходе', catalog.effects)}
   `;
 }
 
@@ -266,10 +266,11 @@ function renderGameOffer(offer){
   const owned = Boolean(offer?.already_owned);
   const equipped = owned && Boolean(offer?.equipped);
   const itemId = String(offer?.item_ids?.[0] || '');
+  const slot = String(offer?.equip_slot || '');
   const layer = String(offer?.metadata?.layer || 'theme');
   const variant = String(offer?.metadata?.variant || 'base');
   const price = formatNumber(offer?.price_coins || 0);
-  const kind = layer === 'theme' ? 'Игровое поле' : (layer === 'elements' ? 'Комплект знаков' : 'Эффект матча');
+  const kind = layer === 'theme' ? 'Игровое поле' : (layer === 'elements' ? 'Комплект знаков' : 'Эффект хода');
   const description = gameCosmeticDescription(layer, variant);
   return `
     <article class="store-v2-game-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
@@ -281,7 +282,9 @@ function renderGameOffer(offer){
       </div>
       <div class="store-v2-game-product-foot">
         ${owned
-          ? `<button class="store-v2-equip ${equipped ? 'active' : ''}" data-store-v2-equip="${escapeAttr(itemId)}" type="button" ${equipped ? 'disabled' : ''}>${equipped ? 'Выбрано' : 'Выбрать'}</button>`
+          ? (equipped
+            ? `<button class="store-v2-equip active" data-store-v2-unequip="${escapeAttr(slot)}" type="button">Снять</button>`
+            : `<button class="store-v2-equip" data-store-v2-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
           : `<button class="store-v2-buy store-v2-game-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button"><span>Купить</span><b>${price} коинов</b></button>`}
       </div>
     </article>
@@ -295,22 +298,29 @@ function gameCosmeticDescription(layer, variant){
   if (layer === 'elements') {
     return ({ classic:'Чистые классические X и O', '3d':'Объёмные светлые знаки', metal:'Золотой X и стальной O', neon:'Светящиеся неоновые знаки' })[variant] || 'Меняет крестики и нолики';
   }
-  return ({ sign:'Вспышка при установке знака', 'winning-line':'Светящаяся линия победы', 'strike-through':'Перечёркивает проигравшие знаки' })[variant] || 'Добавляет эффект в матч';
+  const effect = normalizeEffectVariant(variant);
+  return ({
+    impact:'Знак появляется с коротким ударом и вспышкой',
+    sparks:'Вокруг нового знака разлетается короткая вспышка искр',
+    wave:'От самого нового знака расходятся две световые волны',
+  })[effect] || 'Добавляет визуальный эффект каждому ходу';
+}
+
+function normalizeEffectVariant(variant){
+  return ({ sign:'impact', 'winning-line':'sparks', 'move-pulse':'wave', 'strike-through':'wave' })[variant] || variant;
 }
 
 function gameCosmeticPreview(layer, variant, label = ''){
   const safeLayer = ['theme','elements','effect'].includes(String(layer)) ? String(layer) : 'theme';
-  const safeVariant = String(variant || 'base').replace(/[^a-z0-9-]/g, '');
+  const normalizedVariant = safeLayer === 'effect' ? normalizeEffectVariant(String(variant || 'base')) : String(variant || 'base');
+  const safeVariant = normalizedVariant.replace(/[^a-z0-9-]/g, '');
   let content = '';
   if (safeLayer === 'theme') {
     const marks = ['✕','','○','','○','','✕','','✕'];
     content = `<i class="store-v2-mini-board">${marks.map(mark => `<span>${mark ? `<b>${mark}</b>` : ''}</span>`).join('')}</i>`;
   }
   else if (safeLayer === 'elements') content = '<i class="store-v2-mini-marks"><span>✕</span><span>○</span></i>';
-  else {
-    const badge = safeVariant === 'sign' ? '<b aria-hidden="true">+</b>' : '';
-    content = `<i class="store-v2-mini-effect"><span class="store-v2-effect-x" aria-hidden="true"></span>${badge}</i>`;
-  }
+  else content = `<i class="store-v2-mini-effect"><span class="ttt-mark ttt-effect-mark ttt-fx-${safeVariant}" aria-hidden="true">✕</span></i>`;
   return `<div class="store-v2-game-preview" data-cosmetic-layer="${safeLayer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeAttr(label)}">${content}</div>`;
 }
 
@@ -373,6 +383,13 @@ function bindPanelEvents(root){
       const itemId = String(button.dataset.storeV2Equip || '');
       if (!itemId || button.disabled) return;
       void equipGameItem(itemId);
+    });
+  });
+  root.querySelectorAll('[data-store-v2-unequip]').forEach(button => {
+    button.addEventListener('click', () => {
+      const slot = String(button.dataset.storeV2Unequip || '');
+      if (!slot || button.disabled) return;
+      void unequipGameSlot(slot);
     });
   });
 }
@@ -591,6 +608,40 @@ async function equipGameItem(itemId){
     renderStore();
     haptic('error');
     toast(error?.message || 'Не удалось выбрать предмет.');
+  } finally {
+    equipBusy = false;
+  }
+}
+
+async function unequipGameSlot(slot){
+  if (equipBusy || !storeState || slot !== 'game_tictactoe_effect') return;
+  const previousStoreState = cloneObject(storeState);
+  const next = cloneObject(storeState);
+
+  equipBusy = true;
+  offersFromSnapshot(next).forEach(candidate => {
+    if (String(candidate?.equip_slot || '') === slot) candidate.equipped = false;
+  });
+  next.inventory ||= { items:[], equipped:{} };
+  next.inventory.equipped ||= {};
+  delete next.inventory.equipped[slot];
+  (next.inventory.items || []).forEach(item => {
+    if (String(item?.equip_slot || '') === slot) item.equipped = false;
+  });
+  storeState = next;
+  renderStore();
+
+  try {
+    const result = await api.cosmeticStoreUnequip(slot);
+    applyStoreResponse(result);
+    renderStore();
+    haptic('success');
+    toast('Эффект снят.');
+  } catch (error) {
+    storeState = previousStoreState;
+    renderStore();
+    haptic('error');
+    toast(error?.message || 'Не удалось снять эффект.');
   } finally {
     equipBusy = false;
   }
