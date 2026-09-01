@@ -119,6 +119,8 @@ jobs:
             case "$path" in
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
               .github/workflows/mvp19-3-profile-name-colors.yml|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-4-game-cosmetics-pilot.yml|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/screens/store-screen.js|\
               app/assets/js/profile/mgw-avatar-presentation.js|\
