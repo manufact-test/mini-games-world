@@ -31,14 +31,31 @@ function mgw_cosmetic_store_error_message(string $reason, string $fallback): str
         'ownership_conflict' => 'Состав покупки изменился. Баланс восстановлен, обновите магазин.',
         'price_changed' => 'Цена предложения изменилась. Баланс восстановлен, обновите магазин.',
         'offer_unavailable' => 'Предложение магазина больше недоступно.',
-        'item_unavailable' => 'Игровой предмет больше недоступен.',
+        'item_unavailable' => 'Предмет больше недоступен.',
         'item_not_owned' => 'Сначала купите этот предмет.',
-        'equip_failed' => 'Не удалось выбрать игровой предмет.',
+        'equip_failed' => 'Не удалось выбрать предмет.',
         'request_invalid', 'intent_invalid', 'offer_invalid' => 'Не удалось подготовить покупку. Обновите магазин.',
         'insufficient_balance' => 'Недостаточно коинов для покупки.',
         'account_unavailable' => 'Профиль MGW недоступен для этой сессии.',
         default => $fallback !== '' ? $fallback : 'Не удалось выполнить покупку.',
     };
+}
+
+function mgw_store_catalog_item(array $snapshot, string $itemId): ?array
+{
+    foreach ((array)($snapshot['catalog'] ?? []) as $item) {
+        if (!is_array($item) || (string)($item['item_id'] ?? '') !== $itemId) continue;
+        return $item;
+    }
+    return null;
+}
+
+function mgw_store_profile_name_color(array $item): bool
+{
+    return (string)($item['item_type'] ?? '') === 'profile'
+        && (string)($item['item_family'] ?? '') === 'name_color'
+        && (string)($item['equip_slot'] ?? '') === 'profile_name_color'
+        && (string)($item['catalog_status'] ?? '') === 'active';
 }
 
 try {
@@ -119,7 +136,28 @@ try {
 
     if ($action === 'equip') {
         $runtime = $captureRuntimeUser();
-        $equipment = $store->equipGameItem($mgwId, (string)($payload['item_id'] ?? ''));
+        $itemId = strtolower(trim((string)($payload['item_id'] ?? '')));
+        $inventorySnapshot = $inventory->snapshot($mgwId);
+        $catalogItem = mgw_store_catalog_item($inventorySnapshot, $itemId);
+        if (!is_array($catalogItem) || empty($catalogItem['owned'])) {
+            throw new CosmeticStoreException(is_array($catalogItem) ? 'item_not_owned' : 'item_unavailable', 'Предмет нельзя выбрать.');
+        }
+
+        $isGameItem = (string)($catalogItem['item_type'] ?? '') === 'game'
+            && (string)($catalogItem['catalog_status'] ?? '') === 'active'
+            && str_starts_with((string)($catalogItem['equip_slot'] ?? ''), 'game_');
+        if ($isGameItem) {
+            $equipment = $store->equipGameItem($mgwId, $itemId);
+        } elseif (mgw_store_profile_name_color($catalogItem)) {
+            try {
+                $equipment = $inventory->equip($mgwId, $itemId);
+            } catch (Throwable $error) {
+                throw new CosmeticStoreException('equip_failed', 'Не удалось выбрать цвет имени.');
+            }
+        } else {
+            throw new CosmeticStoreException('item_unavailable', 'Этот предмет нельзя выбрать через магазин.');
+        }
+
         json_response([
             'ok' => true,
             'equipment' => $equipment,
@@ -135,19 +173,19 @@ try {
         $runtime = $captureRuntimeUser();
         $equipSlot = strtolower(trim((string)($payload['equip_slot'] ?? '')));
         $inventorySnapshot = $inventory->snapshot($mgwId);
-        $knownGameSlot = false;
-        if ($equipSlot !== '' && str_starts_with($equipSlot, 'game_')) {
-            foreach ((array)($inventorySnapshot['catalog'] ?? []) as $catalogItem) {
-                if (!is_array($catalogItem)) continue;
-                if ((string)($catalogItem['item_type'] ?? '') !== 'game') continue;
-                if ((string)($catalogItem['catalog_status'] ?? '') !== 'active') continue;
-                if ((string)($catalogItem['equip_slot'] ?? '') !== $equipSlot) continue;
-                $knownGameSlot = true;
+        $knownSlot = false;
+        foreach ((array)($inventorySnapshot['catalog'] ?? []) as $catalogItem) {
+            if (!is_array($catalogItem)) continue;
+            if ((string)($catalogItem['catalog_status'] ?? '') !== 'active') continue;
+            if ((string)($catalogItem['equip_slot'] ?? '') !== $equipSlot) continue;
+            $isGameSlot = (string)($catalogItem['item_type'] ?? '') === 'game' && str_starts_with($equipSlot, 'game_');
+            if ($isGameSlot || mgw_store_profile_name_color($catalogItem)) {
+                $knownSlot = true;
                 break;
             }
         }
-        if (!$knownGameSlot) {
-            throw new CosmeticStoreException('item_unavailable', 'Этот игровой слот нельзя снять через магазин.');
+        if (!$knownSlot) {
+            throw new CosmeticStoreException('item_unavailable', 'Этот слот нельзя снять через магазин.');
         }
         $equipment = $inventory->unequip($mgwId, $equipSlot);
         json_response([
