@@ -39,7 +39,7 @@ return [
         './assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe',
         './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe',
         './assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe',
-        './assets/js/games/tictactoe/renderer.js?v=53' => './assets/js/games/tictactoe/renderer.js?v=55&mark=full-size-nought&mvp19_4=game-cosmetics-pilot',
+        './assets/js/games/tictactoe/renderer.js?v=53' => './assets/js/games/tictactoe/renderer.js?v=56&mark=full-size-nought&mvp19_4=game-cosmetics-pilot&c2=effects-v2',
         './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact',
         './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner&launch=ready-gated-v2&terminal=clock-stable&input=first-tap-v1',
         './assets/js/components/shield-king-visuals.js?v=125&sk=2' => './assets/js/components/shield-king-visuals.js?v=129&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1',
@@ -48,7 +48,7 @@ return [
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
-        'main_css' => './assets/css/main.css?v=180&sk=3&icons=c1efd5af&render=39&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity',
+        'main_css' => './assets/css/main.css?v=181&sk=3&icons=c1efd5af&render=40&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2',
         'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
