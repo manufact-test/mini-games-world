@@ -17,8 +17,10 @@ on:
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileNameColorsTest.php'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
       - '.github/workflows/mvp19-3-profile-name-colors.yml'
       - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
+      - '.github/workflows/mvp19-3-profile-avatars.yml'
   workflow_dispatch:
 
 permissions:
@@ -118,6 +120,7 @@ jobs:
             case "$path" in
               .github/workflows/mvp19-3-profile-name-colors.yml|\
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
               bot/database/migrations/20260901_0019_add_profile_name_colors.php|\
               bot/catalog/CosmeticStoreService.php|\
               bot/cosmetic-store.php|\
@@ -129,7 +132,8 @@ jobs:
               app/assets/css/components/mgw-name-colors.css|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp19_3ProfileNameColorsTest.php)
+              bot/tests/Mvp19_3ProfileNameColorsTest.php|\
+              bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
                 ;;
               *)
                 echo "Unexpected name-color slice path: $path" >&2
