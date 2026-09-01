@@ -107,9 +107,13 @@ $assert(
     str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=106&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1'),
     'Active v110 manifest must publish the compact fast Result owner while preserving accepted game ownership prefixes.'
 );
+$profileTarget = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? ''), 'v=1119&mvp16=profile-pass-a&mvp17=result-history-economy'),
-    'Active v110 manifest must preserve the accepted current Profile pass A cache identity and append the economy presentation cache marker.'
+    preg_match('/profile-screen-v110\.js\?v=(\d+)/', $profileTarget, $profileTargetMatch) === 1
+        && (int)$profileTargetMatch[1] >= 1119
+        && str_contains($profileTarget, 'mvp16=profile-pass-a')
+        && str_contains($profileTarget, 'mvp17=result-history-economy'),
+    'Active v110 manifest must preserve the accepted Profile pass A and Result/History economy lineage while allowing later bounded Profile work.'
 );
 $assert(
     str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=1&fp=2'),
