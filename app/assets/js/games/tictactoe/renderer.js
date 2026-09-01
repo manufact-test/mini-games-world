@@ -17,7 +17,6 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
     ? new Set(findWinningCells(board, boardSize, winnerSymbol))
     : new Set();
   const winningLineEnabled = hasEquipped(winner, 'game_tictactoe_effect_winning_line');
-  const strikeEnabled = hasEquipped(winner, 'game_tictactoe_effect_strike_through');
   const cosmeticsVisible = players.some(player => Object.keys(equippedSlots(player)).length > 0);
 
   container.className = `board size-${boardSize}${cosmeticsVisible ? ' ttt-cosmetics' : ''}`;
@@ -33,15 +32,15 @@ export function renderTicTacToeSurface({ game, me, container, onAction }){
     const label = cell === '-' ? '' : (cell === 'X' ? '✕' : '○');
     const markVariant = variantFor(owner, 'game_tictactoe_elements', 'marks');
     const signEffect = index === changedCell && hasEquipped(owner, 'game_tictactoe_effect_sign');
+    const movePulse = index === changedCell && hasEquipped(owner, 'game_tictactoe_effect_strike_through');
     const winning = winningLineEnabled && winningCells.has(index);
-    const struck = strikeEnabled && winnerSymbol && cell !== '-' && cell !== winnerSymbol;
     const classes = [
       'cell',
       cell === 'X' ? 'x' : (cell === 'O' ? 'o' : ''),
       canMove ? '' : 'locked',
       signEffect ? 'ttt-sign-effect' : '',
+      movePulse ? 'ttt-move-pulse' : '',
       winning ? 'ttt-winning-cell' : '',
-      struck ? 'ttt-struck-cell' : '',
     ].filter(Boolean).join(' ');
 
     return `<button class="${classes}" data-game-cell="${index}" data-ttt-mark="${markVariant}" ${canMove ? '' : 'disabled'} type="button" aria-label="${label}">${label}</button>`;
