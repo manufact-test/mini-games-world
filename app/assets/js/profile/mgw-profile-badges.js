@@ -5,6 +5,7 @@ import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 
 const BADGE_SLOT = 'profile_badge';
+const BADGE_PREVIEW_AVATAR = 'starter-default-01';
 const BADGE_ITEM_IDS = Object.freeze([
   'profile-badge-spark',
   'profile-badge-crest',
@@ -165,6 +166,10 @@ function applyAvatarBadge(element, itemId){
   }
 }
 
+function badgePreviewMarkup(itemId, label = 'Mini Games'){
+  return `<span class="mgw-profile-badge-demo"><span class="mgw-profile-badge-demo-avatar" data-avatar-item-id="${BADGE_PREVIEW_AVATAR}" data-profile-badge-avatar-item-id="${escapeAttr(itemId)}" aria-hidden="true"></span><strong>${escapeHtml(label)}</strong></span>`;
+}
+
 function renderStoreBadgeSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
@@ -194,7 +199,7 @@ function storeBadgeCard(item, activeItemId){
   const active = owned && itemId === activeItemId;
   return `
     <article class="store-v2-profile-badge-card ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
-      <div class="store-v2-profile-badge-preview"><strong data-profile-badge-item-id="${escapeAttr(itemId)}">Mini Games</strong>${active ? '<i class="store-v2-selected-check" aria-label="Выбран">✓</i>' : ''}</div>
+      <div class="store-v2-profile-badge-preview">${badgePreviewMarkup(itemId)}${active ? '<i class="store-v2-selected-check" aria-label="Выбран">✓</i>' : ''}</div>
       <div class="store-v2-profile-badge-copy"><strong>${escapeHtml(badgeName(item))}</strong><small>${escapeHtml(badgeTierLabel(item))}</small></div>
       <div class="store-v2-profile-badge-foot">
         ${owned
@@ -259,7 +264,7 @@ function renderProfileBadgeCollection(catalog){
 function profileBadgeCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
-  return `<button class="profile-v2-badge-card${active ? ' active' : ''}" type="button" data-profile-badge-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(badgeName(item))}" aria-pressed="${active ? 'true' : 'false'}"><strong data-profile-badge-item-id="${escapeAttr(itemId)}">Mini Games</strong><small>${escapeHtml(badgeName(item))}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-badge-card${active ? ' active' : ''}" type="button" data-profile-badge-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(badgeName(item))}" aria-pressed="${active ? 'true' : 'false'}">${badgePreviewMarkup(itemId)}<small>${escapeHtml(badgeName(item))}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function openBadgePurchase(itemId){
@@ -273,7 +278,7 @@ function openBadgePurchase(itemId){
   openSheet(
     '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
     '<div class="store-v2-confirm">' +
-      '<div class="profile-v2-badge-preview-wrap"><strong data-profile-badge-item-id="' + escapeAttr(itemId) + '">Mini Games</strong></div>' +
+      '<div class="profile-v2-badge-preview-wrap">' + badgePreviewMarkup(itemId) + '</div>' +
       '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(badgeName(item)) + '</strong></div>' +
       '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
       '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
@@ -312,7 +317,7 @@ function openBadgePreview(itemId){
   const active = itemId === currentBadgeItemId();
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(badgeName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="profile-v2-badge-preview-wrap"><strong data-profile-badge-item-id="${escapeAttr(itemId)}">Mini Games</strong></div>
+    <div class="profile-v2-badge-preview-wrap">${badgePreviewMarkup(itemId)}</div>
     <div class="profile-v2-badge-preview-meta"><strong>Бейдж</strong><small>${escapeHtml(badgeTierLabel(item))}</small></div>
     <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileBadgeEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
   `);
