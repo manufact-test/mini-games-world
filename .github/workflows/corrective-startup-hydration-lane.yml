@@ -1,0 +1,77 @@
+name: Corrective startup hydration lane
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/api/client.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/StartupHydrationLaneContractTest.mjs'
+      - '.github/workflows/corrective-startup-hydration-lane.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-corrective-startup-hydration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hydration-lane:
+    name: Bootstrap-first background hydration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Syntax
+        run: |
+          node --check app/assets/js/api/client.js
+          node --check bot/tests/StartupHydrationLaneContractTest.mjs
+          php -l app/runtime/client/version-manifest.php
+
+      - name: Run focused startup hydration contract
+        run: node bot/tests/StartupHydrationLaneContractTest.mjs
+
+      - name: Guard mutation bypasses
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "gameState: (gameId = null) => request('game_state'" app/assets/js/api/client.js
+          grep -F "gameAction: (gameId, gameAction) => request('game_action'" app/assets/js/api/client.js
+          grep -F "cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase'" app/assets/js/api/client.js
+          grep -F "cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip'" app/assets/js/api/client.js
+          grep -F "cosmeticStoreUnequip: equipSlot => requestCosmeticStore({ action:'unequip'" app/assets/js/api/client.js
+          grep -F "shopOrder: (itemId, denominationId, requestToken) => request('shop_order', { itemId, denominationId, requestToken })" app/assets/js/api/client.js
+
+      - name: Guard bounded corrective
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              app/assets/js/api/client.js|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/StartupHydrationLaneContractTest.mjs|\
+              .github/workflows/corrective-startup-hydration-lane.yml)
+                ;;
+              *)
+                echo "Unexpected startup hydration corrective path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
