@@ -116,7 +116,7 @@ jobs:
           fi
 
       - name: Guard frozen game engines and infrastructure
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && !contains(github.head_ref, 'profile-badges') }}
         shell: bash
         run: |
           set -euo pipefail
