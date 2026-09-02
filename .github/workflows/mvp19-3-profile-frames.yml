@@ -9,6 +9,7 @@ on:
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
       - 'app/assets/js/api/client.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/js/profile/mgw-profile-frames.js'
       - 'app/assets/css/components/mgw-profile-frames.css'
@@ -59,6 +60,7 @@ jobs:
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileFramesTest.php
           node --check app/assets/js/api/client.js
+          node --check app/assets/js/main-v110-handoff-shell.js
           node --check app/assets/js/profile/mgw-profile-frames.js
           node --check app/assets/js/production-clean-entry-v110.js
 
@@ -96,6 +98,18 @@ jobs:
           grep -F 'initMgwProfileFrames' app/assets/js/production-clean-entry-v110.js
           grep -F 'mvp19_3_7=profile-frames' app/runtime/client/version-manifest.php
           grep -F 'mvp19_3_7=profile-v2-read-coalesce' app/runtime/client/version-manifest.php
+          grep -F 'store=post-boot-warm' app/runtime/client/version-manifest.php
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('app/assets/js/main-v110-handoff-shell.js').read_text()
+          boot = source.index('async function boot(){')
+          init = source.index('    initStoreScreen();', boot)
+          bootstrap = source.index('    const result = await api.bootstrap();', boot)
+          if source.find('\ninitStoreScreen();\n', 0, boot) != -1:
+              raise SystemExit('Store prewarm must not initialize before boot')
+          if not bootstrap < init:
+              raise SystemExit('Store prewarm must initialize after authoritative bootstrap')
+          PY
 
       - name: Guard frozen engines and bounded frame slice
         if: ${{ github.event_name == 'pull_request' }}
@@ -129,6 +143,7 @@ jobs:
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
               app/assets/js/api/client.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/js/production-clean-entry-v110.js|\
               app/assets/js/profile/mgw-profile-frames.js|\
               app/assets/css/components/mgw-profile-frames.css|\
