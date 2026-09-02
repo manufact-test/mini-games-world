@@ -5,6 +5,7 @@ import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 
 const FRAME_SLOT = 'profile_frame';
+const FRAME_PREVIEW_AVATAR_ITEM_ID = 'starter-default-01';
 const FRAME_ITEM_IDS = Object.freeze([
   'profile-frame-01',
   'profile-frame-02',
@@ -151,6 +152,10 @@ function applyAvatarFrame(element, itemId){
   }
 }
 
+function framePreviewMarkup(itemId, surfaceClass, selected = false){
+  return `<span class="${surfaceClass}" data-avatar-item-id="${FRAME_PREVIEW_AVATAR_ITEM_ID}" data-profile-frame-avatar-item-id="${escapeAttr(itemId)}" aria-hidden="true">${selected ? '<i class="store-v2-selected-check" aria-hidden="true">✓</i>' : ''}</span>`;
+}
+
 function renderStoreFrameSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
@@ -166,7 +171,7 @@ function renderStoreFrameSection(catalog){
   const markup = `
     <section class="store-v2-profile-frame-section" data-profile-frame-store-section data-profile-frame-signature="${escapeAttr(signature)}">
       <div class="store-v2-title-row"><h2>Рамки</h2></div>
-      <div class="store-v2-profile-frame-grid">
+      <div class="store-v2-product-grid" data-profile-frame-grid>
         ${catalog.map(item => storeFrameCard(item, active)).join('')}
       </div>
     </section>
@@ -178,19 +183,15 @@ function renderStoreFrameSection(catalog){
   bindStoreFrameActions(section);
 }
 
-function framePreviewMarkup(itemId, label = 'MG'){
-  return `<span class="mgw-profile-frame-preview" data-profile-frame-item-id="${escapeAttr(itemId)}"><span>${escapeHtml(label)}</span></span>`;
-}
-
 function storeFrameCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const owned = item.owned === true;
   const active = owned && itemId === activeItemId;
   return `
-    <article class="store-v2-profile-frame-card ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
-      <div class="store-v2-profile-frame-preview">${framePreviewMarkup(itemId)}${active ? '<i class="store-v2-selected-check" aria-label="Выбрана">✓</i>' : ''}</div>
-      <div class="store-v2-profile-frame-copy"><strong>${escapeHtml(frameName(item))}</strong><small>${escapeHtml(frameTierLabel(item))}</small></div>
-      <div class="store-v2-profile-frame-foot">
+    <article class="store-v2-product ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
+      ${framePreviewMarkup(itemId, 'store-v2-avatar-preview', active)}
+      <strong class="store-v2-product-name">${escapeHtml(frameName(item))}</strong>
+      <div class="store-v2-product-foot store-v2-profile-frame-foot">
         ${owned
           ? (active
             ? `<button class="store-v2-equip active" data-profile-frame-unequip type="button">Снять</button>`
@@ -234,7 +235,7 @@ function renderProfileFrameCollection(catalog){
   const markup = `
     <div class="profile-v2-frame-collection" data-profile-frame-collection data-profile-frame-signature="${escapeAttr(signature)}" aria-label="Рамки">
       <div class="profile-v2-collection-title">Рамки</div>
-      <div class="profile-v2-frame-grid">
+      <div class="profile-v2-collection-grid" data-profile-frame-grid>
         ${owned.map(item => profileFrameCard(item, active)).join('')}
       </div>
     </div>
@@ -257,7 +258,7 @@ function renderProfileFrameCollection(catalog){
 function profileFrameCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
-  return `<button class="profile-v2-frame-card${active ? ' active' : ''}" type="button" data-profile-frame-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(frameName(item))}" aria-pressed="${active ? 'true' : 'false'}">${framePreviewMarkup(itemId)}<small>${escapeHtml(frameName(item))}</small>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-collection-card${active ? ' active' : ''}" type="button" data-profile-frame-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(frameName(item))}" aria-pressed="${active ? 'true' : 'false'}">${framePreviewMarkup(itemId, 'profile-v2-collection-avatar')}${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function openFramePurchase(itemId){
@@ -271,7 +272,7 @@ function openFramePurchase(itemId){
   openSheet(
     '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
     '<div class="store-v2-confirm">' +
-      '<div class="profile-v2-frame-preview-wrap">' + framePreviewMarkup(itemId, 'MG') + '</div>' +
+      '<div class="profile-v2-frame-preview-wrap">' + framePreviewMarkup(itemId, 'profile-v2-avatar-preview') + '</div>' +
       '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(frameName(item)) + '</strong></div>' +
       '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
       '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
@@ -310,7 +311,7 @@ function openFramePreview(itemId){
   const active = itemId === currentFrameItemId();
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(frameName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="profile-v2-frame-preview-wrap">${framePreviewMarkup(itemId, 'MG')}</div>
+    <div class="profile-v2-frame-preview-wrap">${framePreviewMarkup(itemId, 'profile-v2-avatar-preview')}</div>
     <div class="profile-v2-frame-preview-meta"><strong>Рамка</strong><small>${escapeHtml(frameTierLabel(item))}</small></div>
     <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileFrameEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
   `);
