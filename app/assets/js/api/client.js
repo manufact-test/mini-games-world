@@ -7,8 +7,15 @@ const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const FRIENDS_URL = `${window.location.origin}/bot/friends.php`;
 const COSMETIC_STORE_URL = `${window.location.origin}/bot/cosmetic-store.php`;
 const PROFILE_V2_URL = `${window.location.origin}/bot/profile-v2.php`;
+const INITIAL_BOOTSTRAP_GRACE_MS = 250;
 
 let profileV2ReadPromise = null;
+let bootstrapReadPromise = null;
+let bootstrapStarted = false;
+let bootstrapSettled = false;
+let resolveBootstrapStarted = null;
+const bootstrapStartedPromise = new Promise(resolve => { resolveBootstrapStarted = resolve; });
+let backgroundHydrationLane = Promise.resolve();
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
@@ -25,6 +32,44 @@ async function requestUrl(url, payload = {}){
   return data;
 }
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
+
+function requestBootstrap(){
+  if (!bootstrapStarted) {
+    bootstrapStarted = true;
+    resolveBootstrapStarted?.();
+    resolveBootstrapStarted = null;
+  }
+  if (bootstrapReadPromise) return bootstrapReadPromise;
+  bootstrapReadPromise = request('bootstrap')
+    .finally(() => {
+      bootstrapSettled = true;
+      bootstrapReadPromise = null;
+    });
+  return bootstrapReadPromise;
+}
+
+function waitForInitialBootstrapStart(){
+  if (bootstrapStarted || bootstrapSettled) return Promise.resolve();
+  return Promise.race([
+    bootstrapStartedPromise,
+    new Promise(resolve => globalThis.setTimeout(resolve, INITIAL_BOOTSTRAP_GRACE_MS)),
+  ]);
+}
+
+function enqueueBackgroundHydration(task){
+  const run = backgroundHydrationLane
+    .catch(() => undefined)
+    .then(async () => {
+      await waitForInitialBootstrapStart();
+      const activeBootstrap = bootstrapReadPromise;
+      if (activeBootstrap && !bootstrapSettled) {
+        await activeBootstrap.catch(() => undefined);
+      }
+      return task();
+    });
+  backgroundHydrationLane = run.then(() => undefined, () => undefined);
+  return run;
+}
 
 function publishCosmeticInventory(result){
   const equipped = result?.store?.inventory?.equipped;
@@ -66,13 +111,13 @@ function requestProfileV2(profileUpdate = null){
     return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate });
   }
   if (profileV2ReadPromise) return profileV2ReadPromise;
-  profileV2ReadPromise = requestUrl(PROFILE_V2_URL)
+  profileV2ReadPromise = enqueueBackgroundHydration(() => requestUrl(PROFILE_V2_URL))
     .finally(() => { profileV2ReadPromise = null; });
   return profileV2ReadPromise;
 }
 
 export const api = {
-  bootstrap: () => request('bootstrap'),
+  bootstrap: () => requestBootstrap(),
   stats: () => request('stats'),
   weeklyMatchStatus: () => request('weekly_match_status'),
   startSearch: (room, bet, boardSize, gameType = 'tictactoe') => request('start_search', { room, bet, boardSize, gameType }),
@@ -86,15 +131,15 @@ export const api = {
   mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),
-  historyFast: () => request('history'),
+  historyFast: () => enqueueBackgroundHydration(() => request('history')),
   support: (type, message) => request('support', { type, message }),
-  cosmeticStoreStatus: () => requestCosmeticStore({ action:'status' }),
+  cosmeticStoreStatus: () => enqueueBackgroundHydration(() => requestCosmeticStore({ action:'status' })),
   cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase', offer_id:offerId, request_token:requestToken }),
   cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip', item_id:itemId }),
   cosmeticStoreUnequip: equipSlot => requestCosmeticStore({ action:'unequip', equip_slot:equipSlot }),
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),
-  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', { itemId, denominationId, requestToken }),
+  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', { itemId, requestToken }),
   paymentCreateDraft: (room, amount) => request('payment_create_draft', { room, amount })
 };
