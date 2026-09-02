@@ -15,6 +15,7 @@ let initialized = false;
 let observer = null;
 let scheduled = false;
 let refreshPromise = null;
+let initialSnapshotAttempted = false;
 let badgeBusy = false;
 
 export function initMgwProfileBadges(){
@@ -45,10 +46,7 @@ function scheduleDecorate(){
 
 function decorateAll(){
   const catalog = badgeCatalog();
-  if (!catalog.length) {
-    void ensureBadgeSnapshot();
-    return;
-  }
+  if (!catalog.length) return;
   decorateChrome();
   decoratePlayersRow();
   renderStoreBadgeSection(catalog);
@@ -56,12 +54,14 @@ function decorateAll(){
 }
 
 function ensureBadgeSnapshot(){
-  if (badgeCatalog().length) return Promise.resolve(state.profileInventory);
+  if (badgeCatalog().length || initialSnapshotAttempted) return Promise.resolve(state.profileInventory);
+  initialSnapshotAttempted = true;
   return refreshBadgeSnapshot();
 }
 
 function refreshBadgeSnapshot(){
   if (refreshPromise) return refreshPromise;
+  initialSnapshotAttempted = true;
   refreshPromise = api.profileV2()
     .then(result => {
       if (result?.inventory && typeof result.inventory === 'object') state.profileInventory = result.inventory;
@@ -260,7 +260,7 @@ function openBadgePurchase(itemId){
       <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
       <button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
     </div>
-  `);
+  `;
   document.getElementById('mgwProfileBadgeConfirmBuy')?.addEventListener('click', event => {
     void purchaseBadge(item, event.currentTarget);
   });
