@@ -1,0 +1,164 @@
+<?php
+declare(strict_types=1);
+
+return new class implements DatabaseMigrationInterface {
+    private const SLOT = 'profile_background';
+
+    private const ITEMS = [
+        'profile-background-01' => [
+            'tier' => 'normal',
+            'variant' => 'twilight',
+            'name' => 'Сумерки',
+            'price' => 2000,
+            'sort' => 64,
+        ],
+        'profile-background-02' => [
+            'tier' => 'rare',
+            'variant' => 'north',
+            'name' => 'Север',
+            'price' => 4000,
+            'sort' => 65,
+        ],
+        'profile-background-03' => [
+            'tier' => 'epic',
+            'variant' => 'neon',
+            'name' => 'Неон',
+            'price' => 7500,
+            'sort' => 66,
+        ],
+        'profile-background-04' => [
+            'tier' => 'legendary',
+            'variant' => 'abyss',
+            'name' => 'Бездна',
+            'price' => 12500,
+            'sort' => 67,
+        ],
+    ];
+
+    public function version(): string
+    {
+        return '20260903_0022_add_profile_backgrounds';
+    }
+
+    public function description(): string
+    {
+        return 'Seed the canonical MVP-19.3 profile background price tiers and Store offers.';
+    }
+
+    public function transactional(): bool
+    {
+        return false;
+    }
+
+    public function up(DatabaseConnectionInterface $database): void
+    {
+        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s.u');
+        foreach (self::ITEMS as $itemId => $definition) {
+            $this->ensureCatalogItem($database, $itemId, $definition, $now);
+            $this->ensureOffer($database, $itemId, $definition, $now);
+        }
+    }
+
+    private function ensureCatalogItem(
+        DatabaseConnectionInterface $database,
+        string $itemId,
+        array $definition,
+        string $now
+    ): void {
+        $offerId = str_replace('profile-', '', $itemId);
+        $metadata = json_encode([
+            'display_name' => (string)$definition['name'],
+            'tier' => (string)$definition['tier'],
+            'variant' => (string)$definition['variant'],
+            'price_coins' => (int)$definition['price'],
+            'offer_id' => $offerId,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $prefix = $database->driver() === 'sqlite' ? 'INSERT OR IGNORE' : 'INSERT IGNORE';
+
+        $database->execute(
+            $prefix . ' INTO mgw_product_catalog (
+                item_id, item_type, item_family, equip_slot, is_store_product, starter_grant,
+                catalog_status, metadata_json, created_at_utc, updated_at_utc
+             ) VALUES (
+                :item_id, :item_type, :item_family, :equip_slot, 1, 0,
+                :catalog_status, :metadata_json, :created_at, :updated_at
+             )',
+            [
+                'item_id' => $itemId,
+                'item_type' => 'profile',
+                'item_family' => 'background',
+                'equip_slot' => self::SLOT,
+                'catalog_status' => 'active',
+                'metadata_json' => $metadata,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+
+        $database->execute(
+            "UPDATE mgw_product_catalog
+             SET item_type = 'profile', item_family = 'background', equip_slot = :equip_slot,
+                 is_store_product = 1, starter_grant = 0, catalog_status = 'active',
+                 metadata_json = :metadata_json, updated_at_utc = :updated_at
+             WHERE item_id = :item_id",
+            [
+                'equip_slot' => self::SLOT,
+                'metadata_json' => $metadata,
+                'updated_at' => $now,
+                'item_id' => $itemId,
+            ]
+        );
+    }
+
+    private function ensureOffer(
+        DatabaseConnectionInterface $database,
+        string $itemId,
+        array $definition,
+        string $now
+    ): void {
+        $offerId = str_replace('profile-', '', $itemId);
+        $members = json_encode([$itemId], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $prefix = $database->driver() === 'sqlite' ? 'INSERT OR IGNORE' : 'INSERT IGNORE';
+
+        $database->execute(
+            $prefix . ' INTO mgw_product_offers (
+                offer_id, offer_type, item_id, category, subcategory, price_coins,
+                partial_unit_price_coins, members_json, offer_status, sort_order,
+                created_at_utc, updated_at_utc
+             ) VALUES (
+                :offer_id, :offer_type, :item_id, :category, :subcategory, :price_coins,
+                NULL, :members_json, :offer_status, :sort_order, :created_at, :updated_at
+             )',
+            [
+                'offer_id' => $offerId,
+                'offer_type' => 'item',
+                'item_id' => $itemId,
+                'category' => 'profile',
+                'subcategory' => 'background',
+                'price_coins' => (int)$definition['price'],
+                'members_json' => $members,
+                'offer_status' => 'active',
+                'sort_order' => (int)$definition['sort'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+
+        $database->execute(
+            "UPDATE mgw_product_offers
+             SET offer_type = 'item', item_id = :item_id, category = 'profile', subcategory = 'background',
+                 price_coins = :price_coins, partial_unit_price_coins = NULL,
+                 members_json = :members_json, offer_status = 'active', sort_order = :sort_order,
+                 updated_at_utc = :updated_at
+             WHERE offer_id = :offer_id",
+            [
+                'item_id' => $itemId,
+                'price_coins' => (int)$definition['price'],
+                'members_json' => $members,
+                'sort_order' => (int)$definition['sort'],
+                'updated_at' => $now,
+                'offer_id' => $offerId,
+            ]
+        );
+    }
+};

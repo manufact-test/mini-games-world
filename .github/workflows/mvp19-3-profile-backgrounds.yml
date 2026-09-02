@@ -1,0 +1,135 @@
+name: MVP-19.3 Profile backgrounds
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260903_0022_add_profile_backgrounds.php'
+      - 'bot/cosmetic-store.php'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/profile/mgw-profile-backgrounds.js'
+      - 'app/assets/css/components/mgw-profile-backgrounds.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileBackgroundsTest.php'
+      - '.github/workflows/mvp19-3-profile-backgrounds.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-profile-backgrounds-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile-backgrounds:
+    name: Purchase equip and Profile background projection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          php -l bot/cosmetic-store.php
+          php -l bot/tests/Mvp19_3ProfileBackgroundsTest.php
+          node --check app/assets/js/profile/mgw-profile-backgrounds.js
+          node --check app/assets/js/production-clean-entry-v110.js
+
+      - name: Run focused background contract
+        run: php bot/tests/Mvp19_3ProfileBackgroundsTest.php
+
+      - name: Preserve accepted cosmetics contracts
+        run: |
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_3ProfileNameColorsTest.php
+          php bot/tests/Mvp19_3ProfileBadgesTest.php
+          php bot/tests/Mvp19_3ProfileFramesTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+
+      - name: Guard canonical background semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "'price' => 2000" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          grep -F "'price' => 4000" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          grep -F "'price' => 7500" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          grep -F "'price' => 12500" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          grep -F "private const SLOT = 'profile_background'" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          grep -F 'api.cosmeticStorePurchase' app/assets/js/profile/mgw-profile-backgrounds.js
+          grep -F 'api.cosmeticStoreEquip' app/assets/js/profile/mgw-profile-backgrounds.js
+          grep -F 'api.cosmeticStoreUnequip' app/assets/js/profile/mgw-profile-backgrounds.js
+          grep -F "document.addEventListener('mgw:app-ready'" app/assets/js/profile/mgw-profile-backgrounds.js
+          grep -F '#screen-profile[data-profile-background-item-id]' app/assets/css/components/mgw-profile-backgrounds.css
+
+      - name: Guard active integration when published
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -Fq 'initMgwProfileBackgrounds' app/assets/js/production-clean-entry-v110.js; then
+            grep -F 'function mgw_store_profile_background' bot/cosmetic-store.php
+            grep -F "'profile_background'" bot/cosmetic-store.php
+            grep -F "mgw-profile-backgrounds.css?v=1&mvp19_3=profile-backgrounds" app/assets/css/main.css
+            grep -F 'mvp19_3_15=profile-backgrounds' app/runtime/client/version-manifest.php
+          fi
+
+      - name: Guard frozen engines and bounded background slice
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/catalog/ProductInventoryService.php \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/services/GameInviteService.php \
+            bot/services/FriendGraphService.php \
+            bot/services/ReconnectLifecycleService.php \
+            app/assets/js/screens/game-screen-v102.js \
+            app/assets/js/games \
+            cron \
+            config/private.php
+
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp19-3-profile-backgrounds.yml|\
+              bot/database/migrations/20260903_0022_add_profile_backgrounds.php|\
+              bot/cosmetic-store.php|\
+              app/assets/js/production-clean-entry-v110.js|\
+              app/assets/js/profile/mgw-profile-backgrounds.js|\
+              app/assets/css/components/mgw-profile-backgrounds.css|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp19_3ProfileBackgroundsTest.php)
+                ;;
+              *)
+                echo "Unexpected Profile background path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
