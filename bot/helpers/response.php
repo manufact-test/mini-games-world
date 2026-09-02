@@ -63,8 +63,8 @@ function mgw_run_api_data_filters(array $data): array {
 /**
  * Resolve visible game identity from the canonical MGW account database
  * without mutating authenticated runtime users, search/session state or stored
- * games. Nickname, equipped avatar, name color and game cosmetics are one
- * public identity projection.
+ * games. Nickname, equipped avatar, profile cosmetics and game cosmetics are
+ * one public identity projection.
  */
 function mgw_canonical_game_player_profiles(array $playerIds): array {
     $subjects = [];
@@ -99,6 +99,7 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
         $rows = $database->fetchAll(
             'SELECT i.provider_subject, i.mgw_id, u.nickname, u.equipped_avatar_item_id,
                     pnc.item_id AS name_color_item_id,
+                    pb.item_id AS badge_item_id,
                     ge.equip_slot AS game_equip_slot, ge.item_id AS game_item_id
              FROM mgw_identities i
              INNER JOIN mgw_users u ON u.mgw_id = i.mgw_id
@@ -111,6 +112,15 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
                    AND c.item_family = \'name_color\'
                    AND c.catalog_status = \'active\'
              ) pnc ON pnc.mgw_id = i.mgw_id
+             LEFT JOIN (
+                 SELECT e.mgw_id, e.item_id
+                 FROM mgw_equipped_items e
+                 INNER JOIN mgw_product_catalog c ON c.item_id = e.item_id
+                 WHERE e.equip_slot = \'profile_badge\'
+                   AND c.item_type = \'profile\'
+                   AND c.item_family = \'badge\'
+                   AND c.catalog_status = \'active\'
+             ) pb ON pb.mgw_id = i.mgw_id
              LEFT JOIN (
                  SELECT e.mgw_id, e.equip_slot, e.item_id
                  FROM mgw_equipped_items e
@@ -138,6 +148,7 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
         $nickname = trim((string)($row['nickname'] ?? ''));
         $avatarItemId = strtolower(trim((string)($row['equipped_avatar_item_id'] ?? '')));
         $nameColorItemId = strtolower(trim((string)($row['name_color_item_id'] ?? '')));
+        $badgeItemId = strtolower(trim((string)($row['badge_item_id'] ?? '')));
         if ($subject === '' || $mgwId === '' || $nickname === '') continue;
         if ($avatarItemId === '') $avatarItemId = 'starter-default-01';
         if (!isset($owners[$subject][$mgwId])) {
@@ -145,6 +156,7 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
                 'name' => $nickname,
                 'avatar_item_id' => $avatarItemId,
                 'name_color_item_id' => $nameColorItemId !== '' ? $nameColorItemId : null,
+                'badge_item_id' => $badgeItemId !== '' ? $badgeItemId : null,
                 'game_cosmetics' => ['slots' => []],
             ];
         }
@@ -208,12 +220,14 @@ function mgw_project_canonical_game_identity(array $data): array {
             $name = trim((string)($profile['name'] ?? ''));
             $avatarItemId = trim((string)($profile['avatar_item_id'] ?? ''));
             $nameColorItemId = trim((string)($profile['name_color_item_id'] ?? ''));
+            $badgeItemId = trim((string)($profile['badge_item_id'] ?? ''));
             $gameCosmetics = is_array($profile['game_cosmetics'] ?? null)
                 ? $profile['game_cosmetics']
                 : ['slots' => []];
             if ($name !== '') $player['name'] = $name;
             if ($avatarItemId !== '') $player['avatar_item_id'] = $avatarItemId;
             if ($nameColorItemId !== '') $player['name_color_item_id'] = $nameColorItemId;
+            if ($badgeItemId !== '') $player['badge_item_id'] = $badgeItemId;
             $player['game_cosmetics'] = $gameCosmetics;
         }
         unset($player);
