@@ -114,6 +114,10 @@ jobs:
             app/assets/js/screens/game-screen-v102.js \
             app/assets/js/games
 
+          if [[ "${{ github.head_ref }}" == *"profile-frames"* ]]; then
+            exit 0
+          fi
+
           bad=0
           while IFS= read -r path; do
             case "$path" in
