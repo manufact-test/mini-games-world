@@ -58,6 +58,14 @@ function mgw_store_profile_name_color(array $item): bool
         && (string)($item['catalog_status'] ?? '') === 'active';
 }
 
+function mgw_store_profile_badge(array $item): bool
+{
+    return (string)($item['item_type'] ?? '') === 'profile'
+        && (string)($item['item_family'] ?? '') === 'badge'
+        && (string)($item['equip_slot'] ?? '') === 'profile_badge'
+        && (string)($item['catalog_status'] ?? '') === 'active';
+}
+
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
         json_response(['ok' => false, 'error' => 'Method not allowed.'], 405);
@@ -148,11 +156,11 @@ try {
             && str_starts_with((string)($catalogItem['equip_slot'] ?? ''), 'game_');
         if ($isGameItem) {
             $equipment = $store->equipGameItem($mgwId, $itemId);
-        } elseif (mgw_store_profile_name_color($catalogItem)) {
+        } elseif (mgw_store_profile_name_color($catalogItem) || mgw_store_profile_badge($catalogItem)) {
             try {
                 $equipment = $inventory->equip($mgwId, $itemId);
             } catch (Throwable $error) {
-                throw new CosmeticStoreException('equip_failed', 'Не удалось выбрать цвет имени.');
+                throw new CosmeticStoreException('equip_failed', 'Не удалось выбрать оформление профиля.');
             }
         } else {
             throw new CosmeticStoreException('item_unavailable', 'Этот предмет нельзя выбрать через магазин.');
@@ -179,7 +187,7 @@ try {
             if ((string)($catalogItem['catalog_status'] ?? '') !== 'active') continue;
             if ((string)($catalogItem['equip_slot'] ?? '') !== $equipSlot) continue;
             $isGameSlot = (string)($catalogItem['item_type'] ?? '') === 'game' && str_starts_with($equipSlot, 'game_');
-            if ($isGameSlot || mgw_store_profile_name_color($catalogItem)) {
+            if ($isGameSlot || mgw_store_profile_name_color($catalogItem) || mgw_store_profile_badge($catalogItem)) {
                 $knownSlot = true;
                 break;
             }

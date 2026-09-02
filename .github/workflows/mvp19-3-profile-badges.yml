@@ -1,0 +1,140 @@
+name: MVP-19.3 Profile badges
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260902_0020_add_profile_badges.php'
+      - 'bot/catalog/CosmeticStoreService.php'
+      - 'bot/cosmetic-store.php'
+      - 'bot/helpers/response.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/profile/mgw-profile-badges.js'
+      - 'app/assets/css/components/mgw-profile-badges.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileBadgesTest.php'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
+      - '.github/workflows/mvp19-3-profile-badges.yml'
+      - '.github/workflows/mvp19-3-profile-name-colors.yml'
+      - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
+      - '.github/workflows/mvp19-3-profile-avatars.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-profile-badges-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile-badges:
+    name: Purchase equip projection and reduced motion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/database/migrations/20260902_0020_add_profile_badges.php
+          php -l bot/cosmetic-store.php
+          php -l bot/helpers/response.php
+          php -l bot/tests/Mvp19_3ProfileBadgesTest.php
+          node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          node --check app/assets/js/profile/mgw-profile-badges.js
+          node --check app/assets/js/production-clean-entry-v110.js
+
+      - name: Run focused badge contract
+        run: php bot/tests/Mvp19_3ProfileBadgesTest.php
+
+      - name: Preserve accepted inventory and cosmetics contracts
+        run: |
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_3ProfileNameColorsTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+
+      - name: Guard canonical badge semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "'price' => 1000" bot/database/migrations/20260902_0020_add_profile_badges.php
+          grep -F "'price' => 2500" bot/database/migrations/20260902_0020_add_profile_badges.php
+          grep -F "'price' => 6000" bot/database/migrations/20260902_0020_add_profile_badges.php
+          grep -F "'animated' => true" bot/database/migrations/20260902_0020_add_profile_badges.php
+          grep -F "private const SLOT = 'profile_badge'" bot/database/migrations/20260902_0020_add_profile_badges.php
+          grep -F 'function mgw_store_profile_badge' bot/cosmetic-store.php
+          grep -F 'badge_item_id' bot/helpers/response.php
+          grep -F 'api.cosmeticStorePurchase' app/assets/js/profile/mgw-profile-badges.js
+          grep -F 'api.cosmeticStoreEquip' app/assets/js/profile/mgw-profile-badges.js
+          grep -F 'api.cosmeticStoreUnequip' app/assets/js/profile/mgw-profile-badges.js
+          grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-badges.css
+          grep -F 'initMgwProfileBadges' app/assets/js/production-clean-entry-v110.js
+          grep -F 'mvp19_3_6=profile-badges' app/runtime/client/version-manifest.php
+
+      - name: Guard frozen engines and bounded badge slice
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/catalog/ProductInventoryService.php \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/services/GameInviteService.php \
+            bot/services/FriendGraphService.php \
+            bot/services/ReconnectLifecycleService.php \
+            app/assets/js/screens/game-screen-v102.js \
+            app/assets/js/games \
+            cron \
+            config/private.php
+
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp19-3-profile-badges.yml|\
+              .github/workflows/mvp19-3-profile-name-colors.yml|\
+              .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              bot/database/migrations/20260902_0020_add_profile_badges.php|\
+              bot/cosmetic-store.php|\
+              bot/helpers/response.php|\
+              app/assets/js/production-clean-entry-v110.js|\
+              app/assets/js/profile/mgw-profile-badges.js|\
+              app/assets/css/components/mgw-profile-badges.css|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp19_3ProfileBadgesTest.php|\
+              bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
+                ;;
+              *)
+                echo "Unexpected Profile badge path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
