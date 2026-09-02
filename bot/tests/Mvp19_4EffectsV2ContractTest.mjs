@@ -91,7 +91,14 @@ expect(endpoint.includes("str_starts_with($equipSlot, 'game_')"), 'Store endpoin
 expect(endpoint.includes("mgw_store_profile_name_color($catalogItem)"), 'Store endpoint must explicitly classify Profile name colors');
 expect(endpoint.includes("mgw_store_profile_badge($catalogItem)"), 'Store endpoint must explicitly classify Profile badges');
 expect(endpoint.includes("mgw_store_profile_frame($catalogItem)"), 'Store endpoint must explicitly classify Profile frames');
-expect(endpoint.includes('if ($isGameSlot || mgw_store_profile_name_color($catalogItem) || mgw_store_profile_badge($catalogItem) || mgw_store_profile_frame($catalogItem))'), 'Store endpoint must restrict unequip to game cosmetics or explicitly supported Profile cosmetic families');
+const backgroundProfileSupported = endpoint.includes('function mgw_store_profile_background');
+if (backgroundProfileSupported) {
+  expect(endpoint.includes("mgw_store_profile_background($catalogItem)"), 'Store endpoint must explicitly classify Profile backgrounds when that family is active');
+}
+const expectedProfileUnequipGuard = backgroundProfileSupported
+  ? 'if ($isGameSlot || mgw_store_profile_name_color($catalogItem) || mgw_store_profile_badge($catalogItem) || mgw_store_profile_frame($catalogItem) || mgw_store_profile_background($catalogItem))'
+  : 'if ($isGameSlot || mgw_store_profile_name_color($catalogItem) || mgw_store_profile_badge($catalogItem) || mgw_store_profile_frame($catalogItem))';
+expect(endpoint.includes(expectedProfileUnequipGuard), 'Store endpoint must restrict unequip to game cosmetics or explicitly supported Profile cosmetic families');
 expect(endpoint.includes("(string)($catalogItem['catalog_status'] ?? '') !== 'active'"), 'Store endpoint must only accept active catalogue slots');
 expect(endpoint.includes("(string)($catalogItem['equip_slot'] ?? '') !== $equipSlot"), 'Store endpoint must match the requested slot to the catalogue');
 expect(!endpoint.includes("$equipSlot !== 'game_tictactoe_effect'"), 'Store endpoint must not hardcode unequip to effects only');
