@@ -15,6 +15,7 @@ let initialized = false;
 let observer = null;
 let scheduled = false;
 let refreshPromise = null;
+let initialSnapshotAttempted = false;
 let badgeBusy = false;
 
 export function initMgwProfileBadges(){
@@ -45,10 +46,7 @@ function scheduleDecorate(){
 
 function decorateAll(){
   const catalog = badgeCatalog();
-  if (!catalog.length) {
-    void ensureBadgeSnapshot();
-    return;
-  }
+  if (!catalog.length) return;
   decorateChrome();
   decoratePlayersRow();
   renderStoreBadgeSection(catalog);
@@ -56,12 +54,14 @@ function decorateAll(){
 }
 
 function ensureBadgeSnapshot(){
-  if (badgeCatalog().length) return Promise.resolve(state.profileInventory);
+  if (badgeCatalog().length || initialSnapshotAttempted) return Promise.resolve(state.profileInventory);
+  initialSnapshotAttempted = true;
   return refreshBadgeSnapshot();
 }
 
 function refreshBadgeSnapshot(){
   if (refreshPromise) return refreshPromise;
+  initialSnapshotAttempted = true;
   refreshPromise = api.profileV2()
     .then(result => {
       if (result?.inventory && typeof result.inventory === 'object') state.profileInventory = result.inventory;
@@ -117,7 +117,6 @@ function badgeTierLabel(item){
 function badgePrice(item){
   return Math.max(0, Number(badgeMeta(item).price_coins || 0));
 }
-
 function badgeOfferId(item){
   return String(badgeMeta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, ''));
 }
@@ -238,7 +237,6 @@ function renderProfileBadgeCollection(catalog){
     button.addEventListener('click', () => openBadgePreview(String(button.dataset.profileBadgePreview || '')));
   });
 }
-
 function profileBadgeCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
@@ -251,16 +249,18 @@ function openBadgePurchase(itemId){
   const price = badgePrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
-  openSheet(`
-    <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="store-v2-confirm">
-      <div class="profile-v2-badge-preview-wrap"><strong data-profile-badge-item-id="${escapeAttr(itemId)}">Mini Games</strong></div>
-      <div class="store-v2-confirm-copy"><strong>${escapeHtml(badgeName(item))}</strong></div>
-      <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
-      <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
-      <button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
-    </div>
-  `);
+  const disabled = missing > 0 ? ' disabled' : '';
+  const label = missing > 0 ? 'Не хватает ' + formatNumber(missing) : 'Купить за ' + formatNumber(price);
+  openSheet(
+    '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
+    '<div class="store-v2-confirm">' +
+      '<div class="profile-v2-badge-preview-wrap"><strong data-profile-badge-item-id="' + escapeAttr(itemId) + '">Mini Games</strong></div>' +
+      '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(badgeName(item)) + '</strong></div>' +
+      '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
+      '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
+      '<button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button"' + disabled + '>' + escapeHtml(label) + '</button>' +
+    '</div>'
+  );
   document.getElementById('mgwProfileBadgeConfirmBuy')?.addEventListener('click', event => {
     void purchaseBadge(item, event.currentTarget);
   });

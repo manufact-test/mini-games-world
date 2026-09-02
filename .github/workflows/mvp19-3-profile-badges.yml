@@ -93,6 +93,24 @@ jobs:
           grep -F 'initMgwProfileBadges' app/assets/js/production-clean-entry-v110.js
           grep -F 'mvp19_3_6=profile-badges' app/runtime/client/version-manifest.php
 
+      - name: Guard bounded badge snapshot hydration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('app/assets/js/profile/mgw-profile-badges.js').read_text(encoding='utf-8')
+          assert 'let initialSnapshotAttempted = false;' in source
+          decorate = source.split('function decorateAll(){', 1)[1].split('function ensureBadgeSnapshot(){', 1)[0]
+          assert 'ensureBadgeSnapshot' not in decorate, 'decorateAll must not recursively refetch profileV2 when badge catalog is absent'
+          ensure = source.split('function ensureBadgeSnapshot(){', 1)[1].split('function refreshBadgeSnapshot(){', 1)[0]
+          assert 'initialSnapshotAttempted' in ensure
+          assert 'return refreshBadgeSnapshot();' in ensure
+          refresh = source.split('function refreshBadgeSnapshot(){', 1)[1].split('function badgeCatalog(){', 1)[0]
+          assert 'initialSnapshotAttempted = true;' in refresh
+          assert 'api.profileV2()' in refresh
+          PY
+
       - name: Guard frozen engines and bounded badge slice
         if: ${{ github.event_name == 'pull_request' }}
         shell: bash

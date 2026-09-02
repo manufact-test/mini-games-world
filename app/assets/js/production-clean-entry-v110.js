@@ -14,7 +14,7 @@ import { initV110MatchLifecycle } from './production-v110-match-lifecycle.js?v=1
 import { initV110TargetedInteractions } from './production-v110-targeted-interactions.js?v=1102';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=97&sk=6';
 import { initMgwAvatarPresentation } from './profile/mgw-avatar-presentation.js?v=6&mvp19_4=illustrated-raster-roster-v5&mvp19_3=name-colors';
-import { initMgwProfileBadges } from './profile/mgw-profile-badges.js?v=1&mvp19_3=profile-badges';
+import { initMgwProfileBadges } from './profile/mgw-profile-badges.js?v=2&mvp19_3=profile-badges-stability';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
 

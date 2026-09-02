@@ -124,7 +124,7 @@ $assertTrue(str_contains($badgeSource, "item.owned === true") && !str_contains($
 $assertTrue(str_contains($badgeSource, "String(players[index]?.badge_item_id") && str_contains($badgeSource, 'dataset.profileBadgeItemId'), 'Live player presentation must consume the canonical badge projection');
 $assertTrue(str_contains($badgeCss, 'profile-badge-spark') && str_contains($badgeCss, 'profile-badge-crest') && str_contains($badgeCss, 'profile-badge-pulse'), 'One CSS owner must define all three badge visuals');
 $assertTrue(str_contains($badgeCss, '@media (prefers-reduced-motion:reduce)') && str_contains($badgeCss, 'animation:none!important'), 'Animated badge must be reduced-motion safe');
-$assertTrue(str_contains($cleanEntry, 'initMgwProfileBadges') && str_contains($cleanEntry, 'mgw-profile-badges.js?v=1'), 'Active v110 clean entry must initialize badge presentation');
-$assertTrue(str_contains($mainCss, 'mgw-profile-badges.css?v=1') && str_contains($manifest, 'mvp19_3_6=profile-badges'), 'Active v110 delivery graph must carry fresh badge JS/CSS identities');
+$assertTrue(str_contains($cleanEntry, 'initMgwProfileBadges') && str_contains($cleanEntry, 'mgw-profile-badges.js?v=2&mvp19_3=profile-badges-stability'), 'Active v110 clean entry must initialize the bounded badge presentation build');
+$assertTrue(str_contains($mainCss, 'mgw-profile-badges.css?v=1') && str_contains($manifest, 'mvp19_3_6=profile-badges-stability'), 'Active v110 delivery graph must carry fresh badge JS/CSS identities');
 
 fwrite(STDOUT, "MVP-19.3 profile badges passed ({$assertions} assertions).\n");
