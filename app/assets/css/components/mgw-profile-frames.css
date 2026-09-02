@@ -31,18 +31,20 @@
 }
 .game-player-avatar[data-profile-frame-avatar-item-id]::before{inset:-2px;border-width:1.5px}
 
-.mgw-profile-frame-preview{position:relative;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.14),rgba(255,255,255,.035) 38%,rgba(5,9,18,.92) 72%);color:var(--text);font-size:12px;font-weight:950;line-height:1;box-sizing:border-box}
-.mgw-profile-frame-preview::before{content:"";position:absolute;inset:-4px;border-radius:50%;box-sizing:border-box;pointer-events:none}
-.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-01"]::before{border:3px solid rgba(129,217,255,.92);box-shadow:0 0 8px rgba(92,196,255,.28)}
-.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-02"]::before{border:3px solid transparent;background:linear-gradient(#0b1020,#0b1020) padding-box,linear-gradient(145deg,#f6d67d,#d08a28,#fff1ad) border-box;box-shadow:0 0 9px rgba(239,183,67,.3)}
-.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-03"]::before{border:3px solid transparent;background:linear-gradient(#0b1020,#0b1020) padding-box,linear-gradient(135deg,#8d6dff,#ff78c6,#63ddff) border-box;box-shadow:0 0 10px rgba(145,103,255,.34)}
-.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-animated"]::before{border:3px solid transparent;background:linear-gradient(#0b1020,#0b1020) padding-box,conic-gradient(from var(--mgw-frame-angle,0deg),#68efff,#9e75ff,#ff7fc7,#ffd66f,#68efff) border-box;box-shadow:0 0 11px rgba(128,128,255,.4);animation:mgwProfileFrameSpin 3.2s linear infinite}
+/* Product previews use the canonical starter portrait so buyers see the frame in context. */
+.mgw-profile-frame-preview{position:relative;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#0c1020;box-sizing:border-box;overflow:visible}
+.mgw-profile-frame-preview>span{position:absolute;inset:0;display:block;border-radius:50%;overflow:hidden;color:transparent!important;background-color:#0c1020;background-image:url('../../media/avatars/mgw-avatar-characters-v2.webp?v=1');background-repeat:no-repeat;background-size:1200% 100%;background-position:0% 50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),0 6px 14px rgba(0,0,0,.22)}
+.mgw-profile-frame-preview::before{content:"";position:absolute;inset:-4px;border-radius:50%;box-sizing:border-box;pointer-events:none;z-index:3}
+.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-01"]::before{border:3px solid rgba(129,217,255,.92);box-shadow:0 0 8px rgba(92,196,255,.32)}
+.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-02"]::before{border:3px solid transparent;background:linear-gradient(#0b1020,#0b1020) padding-box,linear-gradient(145deg,#f6d67d,#d08a28,#fff1ad) border-box;box-shadow:0 0 9px rgba(239,183,67,.34)}
+.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-03"]::before{border:3px solid transparent;background:linear-gradient(#0b1020,#0b1020) padding-box,linear-gradient(135deg,#8d6dff,#ff78c6,#63ddff) border-box;box-shadow:0 0 10px rgba(145,103,255,.38)}
+.mgw-profile-frame-preview[data-profile-frame-item-id="profile-frame-animated"]::before{border:3px solid transparent;background:linear-gradient(#0b1020,#0b1020) padding-box,conic-gradient(from var(--mgw-frame-angle,0deg),#68efff,#9e75ff,#ff7fc7,#ffd66f,#68efff) border-box;box-shadow:0 0 11px rgba(128,128,255,.45);animation:mgwProfileFrameSpin 3.2s linear infinite}
 
 .store-v2-profile-frame-section{margin-top:18px;display:flex;flex-direction:column;gap:9px}
 .store-v2-profile-frame-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.store-v2-profile-frame-card{position:relative;min-width:0;min-height:160px;padding:8px;border:1px solid var(--stroke);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.028));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 6px 16px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:7px}
+.store-v2-profile-frame-card{position:relative;min-width:0;min-height:170px;padding:8px;border:1px solid var(--stroke);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.028));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 6px 16px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:7px}
 .store-v2-profile-frame-card.equipped{border-color:rgba(99,216,255,.58);box-shadow:inset 0 0 0 1px rgba(99,216,255,.16),0 6px 16px rgba(0,0,0,.08)}
-.store-v2-profile-frame-preview{position:relative;display:grid;place-items:center;min-height:76px;border-radius:11px;background:radial-gradient(circle at 50% 15%,rgba(124,92,255,.13),transparent 48%),rgba(7,11,23,.5);overflow:visible}
+.store-v2-profile-frame-preview{position:relative;display:grid;place-items:center;min-height:88px;border-radius:11px;background:radial-gradient(circle at 50% 15%,rgba(124,92,255,.15),transparent 48%),rgba(7,11,23,.5);overflow:visible}
 .store-v2-profile-frame-copy{display:grid;gap:2px;min-width:0;align-content:start}
 .store-v2-profile-frame-copy strong{font-size:11px;line-height:1.15;color:var(--text)}
 .store-v2-profile-frame-copy small{font-size:9px;line-height:1.15;color:var(--muted)}
@@ -52,11 +54,12 @@
 
 .profile-v2-frame-collection{margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:8px}
 .profile-v2-frame-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.profile-v2-frame-card{position:relative;display:grid;place-items:center;align-content:center;gap:9px;min-width:0;min-height:104px;padding:11px 8px 8px;border:1px solid var(--stroke);border-radius:14px;background:radial-gradient(circle at 100% 0,rgba(124,92,255,.10),transparent 42%),linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.025));color:var(--text)}
+.profile-v2-frame-card{position:relative;display:grid;place-items:center;align-content:center;gap:5px;min-width:0;min-height:116px;padding:10px 8px 8px;border:1px solid var(--stroke);border-radius:14px;background:radial-gradient(circle at 50% 10%,rgba(124,92,255,.11),transparent 44%),linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.025));color:var(--text)}
 .profile-v2-frame-card.active{border-color:rgba(99,216,255,.58);box-shadow:inset 0 0 0 1px rgba(99,216,255,.16),0 6px 16px rgba(0,0,0,.08)}
-.profile-v2-frame-card small{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:var(--muted);font-size:9px;line-height:1.15}
-.profile-v2-frame-preview-wrap{display:grid;place-items:center;min-height:160px;border:1px solid var(--stroke);border-radius:20px;background:radial-gradient(circle at 50% 0,rgba(124,92,255,.12),transparent 46%),rgba(7,11,23,.54);padding:24px}
-.profile-v2-frame-preview-wrap .mgw-profile-frame-preview{width:76px;height:76px;font-size:17px}
+.profile-v2-frame-card .mgw-profile-frame-preview{width:62px;height:62px}
+.profile-v2-frame-card small{width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;color:var(--text);font-size:10px;font-weight:850;line-height:1.15}
+.profile-v2-frame-preview-wrap{display:grid;place-items:center;min-height:170px;border:1px solid var(--stroke);border-radius:20px;background:radial-gradient(circle at 50% 0,rgba(124,92,255,.14),transparent 46%),rgba(7,11,23,.54);padding:24px}
+.profile-v2-frame-preview-wrap .mgw-profile-frame-preview{width:86px;height:86px}
 .profile-v2-frame-preview-wrap .mgw-profile-frame-preview::before{inset:-6px;border-width:4px}
 .profile-v2-frame-preview-meta{display:grid;gap:4px;margin:12px 0 14px}
 .profile-v2-frame-preview-meta strong{font-size:16px;color:var(--text)}
@@ -66,8 +69,9 @@
 @keyframes mgwProfileFrameSpin{to{--mgw-frame-angle:360deg}}
 
 @media (max-width:340px){
-  .store-v2-profile-frame-card{min-height:154px;padding:7px}
-  .mgw-profile-frame-preview{width:44px;height:44px}
+  .store-v2-profile-frame-card{min-height:164px;padding:7px}
+  .mgw-profile-frame-preview{width:52px;height:52px}
+  .profile-v2-frame-card .mgw-profile-frame-preview{width:58px;height:58px}
 }
 @media (prefers-reduced-motion:reduce){
   [data-profile-frame-avatar-item-id="profile-frame-animated"]::before,
