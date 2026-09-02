@@ -66,6 +66,7 @@ $metadata = array_map(static fn(array $row): array => json_decode((string)$row['
 $assertSame(['normal','rare','epic','animated'], array_column($metadata, 'tier'), 'Frame tier order must remain deterministic');
 $assertSame([false,false,false,true], array_column($metadata, 'animated'), 'Only the top 12000 frame tier is animated');
 $assertSame([2500,5000,8000,12000], array_map('intval', array_column($metadata, 'price_coins')), 'Presentation metadata must match server offer prices');
+$assertSame(['Небо','Золото','Аврора','Спектр'], array_column($metadata, 'display_name'), 'Frame product names must replace placeholder Roman numerals with concise user-facing names');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'mvp19-3-profile-frames-user', 'browser_dev', ['username'=>'profile-frames'], 'mvp19-3-profile-frames-session');
@@ -120,11 +121,13 @@ $assertTrue(str_contains($frameSource, "const FRAME_SLOT = 'profile_frame'") && 
 $assertTrue(str_contains($frameSource, 'data-profile-frame-store-section') && str_contains($frameSource, 'data-profile-frame-collection'), 'Frame UX must render Store discovery and Profile owned collection surfaces');
 $assertTrue(str_contains($frameSource, "String(players[index]?.frame_item_id") && str_contains($frameSource, 'dataset.profileFrameAvatarItemId'), 'Live game presentation must consume canonical frame projection on avatar surfaces');
 $assertTrue(str_contains($frameSource, "getElementById('topAvatar')") && str_contains($frameSource, "getElementById('profileV2Avatar')") && str_contains($frameSource, "getElementById('searchMeAvatar')") && str_contains($frameSource, "querySelector(':scope > .game-player-avatar')"), 'Live frame presentation must cover chrome, Profile, search and game avatars');
+$assertTrue(str_contains($frameSource, "const FRAME_PREVIEW_AVATAR = 'starter-default-01'") && str_contains($frameSource, 'mgw-profile-frame-avatar') && str_contains($frameSource, 'data-avatar-item-id'), 'Frame cards must demonstrate every frame on the canonical starter avatar');
 $assertTrue(str_contains($frameCss, '[data-profile-frame-avatar-item-id]::before') && str_contains($frameCss, 'profile-frame-animated'), 'One CSS owner must define zero-width avatar frames and animated top tier');
+$assertTrue(str_contains($frameCss, '.mgw-profile-frame-avatar') && str_contains($frameCss, '.mgw-profile-frame-preview'), 'Frame preview CSS must render the real avatar inside each frame sample');
 $assertTrue(str_contains($frameCss, '@media (prefers-reduced-motion:reduce)') && str_contains($frameCss, 'animation:none!important'), 'Animated frame must be reduced-motion safe');
-$assertTrue(str_contains($cleanEntry, 'initMgwProfileFrames') && str_contains($cleanEntry, 'mgw-profile-frames.js?v=1&mvp19_3=profile-frames'), 'Active clean entry must initialize profile frames');
+$assertTrue(str_contains($cleanEntry, 'initMgwProfileFrames') && str_contains($cleanEntry, 'mgw-profile-frames.js?v=2&mvp19_3=profile-frame-avatar-demo'), 'Active clean entry must initialize polished profile frame previews');
 $assertTrue(str_contains($apiClient, 'let profileV2ReadPromise = null;') && str_contains($apiClient, 'if (profileV2ReadPromise) return profileV2ReadPromise;') && str_contains($apiClient, '.finally(() => { profileV2ReadPromise = null; });'), 'Concurrent read-only Profile v2 hydration must coalesce to one in-flight request');
 $assertTrue(str_contains($apiClient, "return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate });"), 'Profile mutations must bypass the read-only hydration coalescer');
-$assertTrue(str_contains($mainCss, 'mgw-profile-frames.css?v=1&mvp19_3=profile-frames') && str_contains($manifest, 'mvp19_3_7=profile-frames') && str_contains($manifest, 'mvp19_3_7=profile-v2-read-coalesce'), 'Active delivery graph must carry fresh profile-frame JS/CSS and coalesced Profile v2 client identities');
+$assertTrue(str_contains($mainCss, 'mgw-profile-frames.css?v=2&mvp19_3=profile-frame-avatar-demo') && str_contains($manifest, 'mvp19_3_8=badge-frame-visual-polish') && str_contains($manifest, 'mvp19_3_7=profile-v2-read-coalesce'), 'Active delivery graph must carry fresh profile-frame JS/CSS and coalesced Profile v2 client identities');
 
 fwrite(STDOUT, "MVP-19.3 profile frames passed ({$assertions} assertions).\n");
