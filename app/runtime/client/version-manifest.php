@@ -19,7 +19,7 @@ return [
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=28&store=quiet-equip',
         './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=53&mvp18=instant-route&optimistic-relations',
-        './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history',
+        './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history&startup=after-app-ready',
         './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen.js?v=44&mvp16=primary-tab&mvp19=store-v2&corrective=2&mvp19_3_1=optimistic-purchase&mvp19_4=purchase-avatar-preview&game_cosmetics=pilot-polish-v3&c2_1=single-effect&c2_2=selection-consistency&mvp19_3_4=name-colors',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1123&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync&mvp19_3_2=game-cosmetics&mvp19_3_3=game-tabs-fresh&mvp19_3_4=name-colors&perf=instant-open-refresh',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
