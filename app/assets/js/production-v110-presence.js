@@ -4,6 +4,8 @@ import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1
 
 const PRESENCE_URL = `${window.location.origin}/bot/presence.php`;
 const HEARTBEAT_MS = 4000;
+const HEARTBEAT_PHASE_MIN_MS = 120;
+const HEARTBEAT_PHASE_RANGE_MS = 720;
 const STATUS_MS = 1200;
 const RETRY_MS = 500;
 const REQUEST_TIMEOUT_MS = 4500;
@@ -73,14 +75,30 @@ export function waitForV110InitialPresence(){
 function startPresence(){
   if (!runtime.started) {
     runtime.started = true;
-    runtime.heartbeatTimer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void pingPresence();
-    }, HEARTBEAT_MS);
+    scheduleHeartbeat();
     runtime.statusTimer = window.setInterval(() => {
       if (canReadHomeStatus()) void refreshStatus();
     }, STATUS_MS);
   }
   runtime.initialPingPromise = resumePresence(true);
+}
+
+function scheduleHeartbeat(){
+  const firstDelay = HEARTBEAT_MS + heartbeatPhaseMs(presenceLeaseId);
+  const heartbeat = () => {
+    if (document.visibilityState === 'visible') void pingPresence();
+    runtime.heartbeatTimer = window.setTimeout(heartbeat, HEARTBEAT_MS);
+  };
+  runtime.heartbeatTimer = window.setTimeout(heartbeat, firstDelay);
+}
+
+function heartbeatPhaseMs(value){
+  let hash = 0;
+  const source = String(value || '');
+  for (let index = 0; index < source.length; index++) {
+    hash = ((hash * 31) + source.charCodeAt(index)) >>> 0;
+  }
+  return HEARTBEAT_PHASE_MIN_MS + (hash % HEARTBEAT_PHASE_RANGE_MS);
 }
 
 function resumePresence(force = false){
