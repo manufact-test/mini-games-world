@@ -167,7 +167,7 @@ function applyAvatarBadge(element, itemId){
 }
 
 function badgePreviewMarkup(itemId, label = 'Mini Games'){
-  return `<span class="mgw-profile-badge-demo"><span class="mgw-profile-badge-demo-avatar" data-avatar-item-id="${BADGE_PREVIEW_AVATAR}" data-profile-badge-avatar-item-id="${escapeAttr(itemId)}" aria-hidden="true"></span><strong>${escapeHtml(label)}</strong></span>`;
+  return `<span class="mgw-profile-badge-demo"><span class="mgw-profile-badge-demo-avatar" style="border-radius:24%" data-avatar-item-id="${BADGE_PREVIEW_AVATAR}" data-profile-badge-avatar-item-id="${escapeAttr(itemId)}" aria-hidden="true"></span><strong>${escapeHtml(label)}</strong></span>`;
 }
 
 function renderStoreBadgeSection(catalog){
