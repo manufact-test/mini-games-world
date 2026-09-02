@@ -147,6 +147,7 @@ jobs:
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileBadgesTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
                 ;;
               *)
