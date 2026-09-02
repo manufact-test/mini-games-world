@@ -28,7 +28,7 @@
 .store-v2-name-color-copy{display:grid;gap:2px;min-width:0;align-content:start;min-height:31px}
 .store-v2-name-color-copy strong{overflow:visible;text-overflow:clip;white-space:normal;font-size:10.5px;line-height:1.12;color:var(--text)}
 .store-v2-name-color-copy small{font-size:8.5px;line-height:1.15;color:var(--muted)}
-.store-v2-name-color-foot{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:4px;min-width:0;min-height:34px;margin-top:auto}
+.store-v2-name-color-foot{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:7px;min-width:0;min-height:34px;margin-top:auto}
 .store-v2-name-color-foot b{font-size:9px;line-height:1;color:var(--soft);white-space:nowrap}
 .store-v2-name-color-foot .store-v2-buy,.store-v2-name-color-foot .store-v2-equip{width:100%;min-width:0;min-height:30px;padding:0 5px;font-size:9px;border-radius:9px}
 
