@@ -66,7 +66,7 @@ $metadata = array_map(static fn(array $row): array => json_decode((string)$row['
 $assertSame(['normal','rare','epic','animated'], array_column($metadata, 'tier'), 'Frame tier order must remain deterministic');
 $assertSame([false,false,false,true], array_column($metadata, 'animated'), 'Only the top 12000 frame tier is animated');
 $assertSame([2500,5000,8000,12000], array_map('intval', array_column($metadata, 'price_coins')), 'Presentation metadata must match server offer prices');
-$assertSame(['Небо','Золото','Аврора','Спектр'], array_column($metadata, 'display_name'), 'Frame product names must replace placeholder Roman numerals with concise user-facing names');
+$assertSame(['Голубое небо','Золотой ореол','Аврора','Живой спектр'], array_column($metadata, 'display_name'), 'Frame product names must replace placeholder Roman numerals with concise user-facing names');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'mvp19-3-profile-frames-user', 'browser_dev', ['username'=>'profile-frames'], 'mvp19-3-profile-frames-session');
