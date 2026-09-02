@@ -67,9 +67,23 @@ final class EconomyRuntimeBridge
     private function currentApiActionIsLatencyCritical(): bool
     {
         $script = trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? ''));
-        if ($script === '' || basename($script) !== 'api.php') return false;
+        if ($script === '') return false;
 
+        $basename = basename($script);
         $action = strtolower(trim((string)($GLOBALS['mgw_api_action'] ?? $GLOBALS['action'] ?? '')));
+
+        // Cosmetic Store status is a read-only hydration path. It already reads
+        // the authoritative runtime balance from the transactional JSON snapshot,
+        // while any pending purchase recovery calls synchronizeCurrentJson()
+        // again inside fulfill(). Running a full JSON->DB economy projection for
+        // every Store status request is therefore redundant and, during active
+        // match reload bursts, can race other runtime projectors. Keep purchase
+        // fulfillment unchanged while making status hydration non-blocking.
+        if ($basename === 'cosmetic-store.php') {
+            return $action === 'status';
+        }
+
+        if ($basename !== 'api.php') return false;
         return in_array($action, [
             'start_search',
             'leave_search',
