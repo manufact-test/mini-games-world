@@ -5,6 +5,7 @@ import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 
 const FRAME_SLOT = 'profile_frame';
+const FRAME_PREVIEW_AVATAR = 'starter-default-01';
 const FRAME_ITEM_IDS = Object.freeze([
   'profile-frame-01',
   'profile-frame-02',
@@ -169,8 +170,8 @@ function renderStoreFrameSection(catalog){
   bindStoreFrameActions(section);
 }
 
-function framePreviewMarkup(itemId, label = 'MG'){
-  return `<span class="mgw-profile-frame-preview" data-profile-frame-item-id="${escapeAttr(itemId)}"><span>${escapeHtml(label)}</span></span>`;
+function framePreviewMarkup(itemId){
+  return `<span class="mgw-profile-frame-preview" data-profile-frame-item-id="${escapeAttr(itemId)}"><span class="mgw-profile-frame-avatar" data-avatar-item-id="${FRAME_PREVIEW_AVATAR}" aria-hidden="true"></span></span>`;
 }
 
 function storeFrameCard(item, activeItemId){
@@ -262,7 +263,7 @@ function openFramePurchase(itemId){
   openSheet(
     '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
     '<div class="store-v2-confirm">' +
-      '<div class="profile-v2-frame-preview-wrap">' + framePreviewMarkup(itemId, 'MG') + '</div>' +
+      '<div class="profile-v2-frame-preview-wrap">' + framePreviewMarkup(itemId) + '</div>' +
       '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(frameName(item)) + '</strong></div>' +
       '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
       '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
@@ -301,7 +302,7 @@ function openFramePreview(itemId){
   const active = itemId === currentFrameItemId();
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(frameName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="profile-v2-frame-preview-wrap">${framePreviewMarkup(itemId, 'MG')}</div>
+    <div class="profile-v2-frame-preview-wrap">${framePreviewMarkup(itemId)}</div>
     <div class="profile-v2-frame-preview-meta"><strong>Рамка</strong><small>${escapeHtml(frameTierLabel(item))}</small></div>
     <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileFrameEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
   `);
