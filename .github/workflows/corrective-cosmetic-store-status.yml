@@ -1,0 +1,69 @@
+name: Corrective Cosmetic Store status hydration
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/ledger/EconomyRuntimeBridge.php'
+      - 'bot/tests/EconomyRuntimeBridgeTest.php'
+      - '.github/workflows/corrective-cosmetic-store-status.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-corrective-cosmetic-store-status-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  status-hydration:
+    name: Store status skips redundant economy projection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/ledger/EconomyRuntimeBridge.php
+          php -l bot/tests/EconomyRuntimeBridgeTest.php
+
+      - name: Run focused bridge contract
+        run: php bot/tests/EconomyRuntimeBridgeTest.php
+
+      - name: Guard bounded corrective
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              bot/ledger/EconomyRuntimeBridge.php|\
+              bot/tests/EconomyRuntimeBridgeTest.php|\
+              .github/workflows/corrective-cosmetic-store-status.yml)
+                ;;
+              *)
+                echo "Unexpected corrective path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
