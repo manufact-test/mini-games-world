@@ -18,6 +18,7 @@ on:
       - 'bot/tests/Mvp19_3ProfileBadgesTest.php'
       - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
       - '.github/workflows/mvp19-3-profile-badges.yml'
+      - '.github/workflows/mvp19-3-profile-frames.yml'
       - '.github/workflows/mvp19-3-profile-name-colors.yml'
       - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
       - '.github/workflows/mvp19-3-profile-avatars.yml'
@@ -139,6 +140,7 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp19-3-profile-badges.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml|\
               .github/workflows/mvp19-3-profile-name-colors.yml|\
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
