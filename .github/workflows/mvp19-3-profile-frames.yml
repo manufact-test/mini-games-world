@@ -14,6 +14,7 @@ on:
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileFramesTest.php'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
       - '.github/workflows/mvp19-3-profile-frames.yml'
       - '.github/workflows/mvp19-3-profile-badges.yml'
       - '.github/workflows/mvp19-3-profile-name-colors.yml'
@@ -127,7 +128,8 @@ jobs:
               app/assets/css/components/mgw-profile-frames.css|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp19_3ProfileFramesTest.php)
+              bot/tests/Mvp19_3ProfileFramesTest.php|\
+              bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
                 ;;
               *)
                 echo "Unexpected Profile frame path: $path" >&2
