@@ -6,6 +6,9 @@ import { getSessionId, getDeviceId } from '../session.js?v=1131';
 const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const FRIENDS_URL = `${window.location.origin}/bot/friends.php`;
 const COSMETIC_STORE_URL = `${window.location.origin}/bot/cosmetic-store.php`;
+const PROFILE_V2_URL = `${window.location.origin}/bot/profile-v2.php`;
+
+let profileV2ReadPromise = null;
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
@@ -58,6 +61,16 @@ async function requestMgwProfile(){
   return result;
 }
 
+function requestProfileV2(profileUpdate = null){
+  if (profileUpdate) {
+    return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate });
+  }
+  if (profileV2ReadPromise) return profileV2ReadPromise;
+  profileV2ReadPromise = requestUrl(PROFILE_V2_URL)
+    .finally(() => { profileV2ReadPromise = null; });
+  return profileV2ReadPromise;
+}
+
 export const api = {
   bootstrap: () => request('bootstrap'),
   stats: () => request('stats'),
@@ -69,7 +82,7 @@ export const api = {
   makeMove: (gameId, cell) => request('make_move', { gameId, cell }),
   leaveGame: (gameId) => request('leave_game', { gameId }),
   profile: () => request('profile'),
-  profileV2: (profileUpdate = null) => requestUrl(`${window.location.origin}/bot/profile-v2.php`, profileUpdate ? { profile_update:profileUpdate } : {}),
+  profileV2: (profileUpdate = null) => requestProfileV2(profileUpdate),
   mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),

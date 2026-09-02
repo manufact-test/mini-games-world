@@ -107,6 +107,7 @@ $assertStoreError(static fn() => $store->quote($mgwId, 'frame-01'), 'already_own
 
 $endpoint = (string)file_get_contents($root . '/bot/cosmetic-store.php');
 $response = (string)file_get_contents($root . '/bot/helpers/response.php');
+$apiClient = (string)file_get_contents($root . '/app/assets/js/api/client.js');
 $frameSource = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-frames.js');
 $frameCss = (string)file_get_contents($root . '/app/assets/css/components/mgw-profile-frames.css');
 $cleanEntry = (string)file_get_contents($root . '/app/assets/js/production-clean-entry-v110.js');
@@ -122,6 +123,8 @@ $assertTrue(str_contains($frameSource, "getElementById('topAvatar')") && str_con
 $assertTrue(str_contains($frameCss, '[data-profile-frame-avatar-item-id]::before') && str_contains($frameCss, 'profile-frame-animated'), 'One CSS owner must define zero-width avatar frames and animated top tier');
 $assertTrue(str_contains($frameCss, '@media (prefers-reduced-motion:reduce)') && str_contains($frameCss, 'animation:none!important'), 'Animated frame must be reduced-motion safe');
 $assertTrue(str_contains($cleanEntry, 'initMgwProfileFrames') && str_contains($cleanEntry, 'mgw-profile-frames.js?v=1&mvp19_3=profile-frames'), 'Active clean entry must initialize profile frames');
-$assertTrue(str_contains($mainCss, 'mgw-profile-frames.css?v=1&mvp19_3=profile-frames') && str_contains($manifest, 'mvp19_3_7=profile-frames'), 'Active delivery graph must carry fresh profile-frame JS/CSS identities');
+$assertTrue(str_contains($apiClient, 'let profileV2ReadPromise = null;') && str_contains($apiClient, 'if (profileV2ReadPromise) return profileV2ReadPromise;') && str_contains($apiClient, '.finally(() => { profileV2ReadPromise = null; });'), 'Concurrent read-only Profile v2 hydration must coalesce to one in-flight request');
+$assertTrue(str_contains($apiClient, "return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate });"), 'Profile mutations must bypass the read-only hydration coalescer');
+$assertTrue(str_contains($mainCss, 'mgw-profile-frames.css?v=1&mvp19_3=profile-frames') && str_contains($manifest, 'mvp19_3_7=profile-frames') && str_contains($manifest, 'mvp19_3_7=profile-v2-read-coalesce'), 'Active delivery graph must carry fresh profile-frame JS/CSS and coalesced Profile v2 client identities');
 
 fwrite(STDOUT, "MVP-19.3 profile frames passed ({$assertions} assertions).\n");

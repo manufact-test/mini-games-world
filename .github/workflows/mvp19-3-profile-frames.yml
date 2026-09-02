@@ -8,6 +8,7 @@ on:
       - 'bot/database/migrations/20260902_0021_add_profile_frames.php'
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
+      - 'app/assets/js/api/client.js'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/js/profile/mgw-profile-frames.js'
       - 'app/assets/css/components/mgw-profile-frames.css'
@@ -57,6 +58,7 @@ jobs:
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileFramesTest.php
+          node --check app/assets/js/api/client.js
           node --check app/assets/js/profile/mgw-profile-frames.js
           node --check app/assets/js/production-clean-entry-v110.js
 
@@ -88,9 +90,12 @@ jobs:
           grep -F 'api.cosmeticStorePurchase' app/assets/js/profile/mgw-profile-frames.js
           grep -F 'api.cosmeticStoreEquip' app/assets/js/profile/mgw-profile-frames.js
           grep -F 'api.cosmeticStoreUnequip' app/assets/js/profile/mgw-profile-frames.js
+          grep -F 'let profileV2ReadPromise = null;' app/assets/js/api/client.js
+          grep -F 'if (profileV2ReadPromise) return profileV2ReadPromise;' app/assets/js/api/client.js
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-frames.css
           grep -F 'initMgwProfileFrames' app/assets/js/production-clean-entry-v110.js
           grep -F 'mvp19_3_7=profile-frames' app/runtime/client/version-manifest.php
+          grep -F 'mvp19_3_7=profile-v2-read-coalesce' app/runtime/client/version-manifest.php
 
       - name: Guard frozen engines and bounded frame slice
         if: ${{ github.event_name == 'pull_request' }}
@@ -123,6 +128,7 @@ jobs:
               bot/database/migrations/20260902_0021_add_profile_frames.php|\
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
+              app/assets/js/api/client.js|\
               app/assets/js/production-clean-entry-v110.js|\
               app/assets/js/profile/mgw-profile-frames.js|\
               app/assets/css/components/mgw-profile-frames.css|\
