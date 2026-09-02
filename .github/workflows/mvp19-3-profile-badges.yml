@@ -91,7 +91,7 @@ jobs:
           grep -F 'api.cosmeticStoreUnequip' app/assets/js/profile/mgw-profile-badges.js
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-badges.css
           grep -F 'initMgwProfileBadges' app/assets/js/production-clean-entry-v110.js
-          grep -F 'mvp19_3_6=profile-badges' app/runtime/client/version-manifest.php
+          grep -F 'mvp19_3_6=profile-badge-avatar-overlay' app/runtime/client/version-manifest.php
 
       - name: Guard bounded badge snapshot hydration
         shell: bash
@@ -147,6 +147,7 @@ jobs:
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileBadgesTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
                 ;;
               *)
