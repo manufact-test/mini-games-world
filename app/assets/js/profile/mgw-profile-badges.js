@@ -249,16 +249,18 @@ function openBadgePurchase(itemId){
   const price = badgePrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
-  openSheet(`
-    <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="store-v2-confirm">
-      <div class="profile-v2-badge-preview-wrap"><strong data-profile-badge-item-id="${escapeAttr(itemId)}">Mini Games</strong></div>
-      <div class="store-v2-confirm-copy"><strong>${escapeHtml(badgeName(item))}</strong></div>
-      <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
-      <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
-      <button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? 'Не хватает ' + formatNumber(missing) : 'Купить за ' + formatNumber(price)}</button>
-    </div>
-  `;
+  const disabled = missing > 0 ? ' disabled' : '';
+  const label = missing > 0 ? 'Не хватает ' + formatNumber(missing) : 'Купить за ' + formatNumber(price);
+  openSheet(
+    '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
+    '<div class="store-v2-confirm">' +
+      '<div class="profile-v2-badge-preview-wrap"><strong data-profile-badge-item-id="' + escapeAttr(itemId) + '">Mini Games</strong></div>' +
+      '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(badgeName(item)) + '</strong></div>' +
+      '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
+      '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
+      '<button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button"' + disabled + '>' + escapeHtml(label) + '</button>' +
+    '</div>'
+  );
   document.getElementById('mgwProfileBadgeConfirmBuy')?.addEventListener('click', event => {
     void purchaseBadge(item, event.currentTarget);
   });
