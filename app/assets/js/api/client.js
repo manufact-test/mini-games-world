@@ -140,6 +140,6 @@ export const api = {
   shopStatus: () => request('shop_status'),
   shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
   notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),
-  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', { itemId, requestToken }),
+  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', { itemId, denominationId, requestToken }),
   paymentCreateDraft: (room, amount) => request('payment_create_draft', { room, amount })
 };
