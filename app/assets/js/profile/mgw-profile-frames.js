@@ -12,10 +12,10 @@ const FRAME_ITEM_IDS = Object.freeze([
   'profile-frame-animated',
 ]);
 const FRAME_DISPLAY_NAMES = Object.freeze({
-  'profile-frame-01':'Небо',
-  'profile-frame-02':'Золото',
+  'profile-frame-01':'Голубое небо',
+  'profile-frame-02':'Золотой ореол',
   'profile-frame-03':'Аврора',
-  'profile-frame-animated':'Спектр',
+  'profile-frame-animated':'Живой спектр',
 });
 
 let initialized = false;
