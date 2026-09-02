@@ -28,6 +28,42 @@
   animation:mgwProfileBadgePulse 2.4s linear infinite;
 }
 
+/* Equipped badges live on avatars and never consume nickname width. */
+[data-profile-badge-avatar-item-id]{position:relative!important;overflow:visible!important}
+[data-profile-badge-avatar-item-id]::after{
+  content:"";
+  position:absolute;
+  right:-4px;
+  top:-4px;
+  width:15px;
+  height:15px;
+  pointer-events:none;
+  box-sizing:border-box;
+  z-index:8;
+}
+[data-profile-badge-avatar-item-id="profile-badge-spark"]::after{
+  border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,#e8fbff 0 14%,#66ddff 18% 42%,#208cb9 48% 64%,rgba(32,140,185,.15) 68% 100%);
+  box-shadow:0 0 0 1px rgba(112,226,255,.55),0 0 8px rgba(83,213,255,.5);
+}
+[data-profile-badge-avatar-item-id="profile-badge-crest"]::after{
+  clip-path:polygon(50% 0,91% 17%,84% 70%,50% 100%,16% 70%,9% 17%);
+  background:linear-gradient(145deg,#fff0a1 0%,#f3ba45 45%,#8f5519 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.38),0 0 8px rgba(241,183,62,.36);
+}
+[data-profile-badge-avatar-item-id="profile-badge-pulse"]::after{
+  border-radius:50%;
+  background:conic-gradient(from 0deg,#69efff,#9c7cff,#ff7fc9,#ffd56d,#69efff);
+  box-shadow:0 0 0 1px rgba(255,255,255,.36),0 0 10px rgba(153,111,255,.56);
+  animation:mgwProfileBadgeAvatarPulse 2.4s linear infinite;
+}
+#topAvatar[data-profile-badge-avatar-item-id]::after{width:16px;height:16px;right:-4px;top:-3px}
+#profileV2Avatar[data-profile-badge-avatar-item-id]::after,
+#profileAvatar[data-profile-badge-avatar-item-id]::after{width:18px;height:18px;right:-5px;top:-4px}
+#searchMeAvatar[data-profile-badge-avatar-item-id]::after{width:16px;height:16px;right:-4px;top:-4px}
+.game-player-avatar[data-profile-badge-avatar-item-id]::after{width:13px;height:13px;right:-4px;top:-4px}
+.game-board-screen[data-game-type="battleship"] .game-player-avatar[data-profile-badge-avatar-item-id]::after{width:12px;height:12px;right:-3px;top:-3px}
+
 .store-v2-profile-badge-section{margin-top:18px;display:flex;flex-direction:column;gap:9px}
 .store-v2-profile-badge-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .store-v2-profile-badge-card{position:relative;min-width:0;min-height:148px;padding:6px;border:1px solid var(--stroke);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.028));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 6px 16px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:5px}
@@ -58,6 +94,11 @@
   50%{transform:translateY(-50%) rotate(180deg) scale(1.08);filter:brightness(1.18)}
   100%{transform:translateY(-50%) rotate(360deg) scale(.92);filter:brightness(.92)}
 }
+@keyframes mgwProfileBadgeAvatarPulse{
+  0%{transform:rotate(0deg) scale(.92);filter:brightness(.92)}
+  50%{transform:rotate(180deg) scale(1.08);filter:brightness(1.18)}
+  100%{transform:rotate(360deg) scale(.92);filter:brightness(.92)}
+}
 
 @media (max-width:360px){
   .store-v2-profile-badge-grid,.profile-v2-badge-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -66,4 +107,5 @@
 
 @media (prefers-reduced-motion:reduce){
   [data-profile-badge-item-id="profile-badge-pulse"]::after{animation:none!important;transform:translateY(-50%)!important;filter:none!important}
+  [data-profile-badge-avatar-item-id="profile-badge-pulse"]::after{animation:none!important;transform:none!important;filter:none!important}
 }
