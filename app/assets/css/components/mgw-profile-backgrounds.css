@@ -1,0 +1,30 @@
+/* MVP-19.3 — canonical Profile background cosmetics. */
+.store-v2-profile-background-section{margin-top:8px;display:flex;flex-direction:column;gap:9px}
+.store-v2-profile-background-preview,.profile-v2-background-preview{position:relative;width:100%;aspect-ratio:1;border-radius:11px;border:1px solid rgba(255,255,255,.11);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 16px rgba(0,0,0,.10)}
+.profile-v2-background-preview{height:100%;border-radius:13px}
+.store-v2-profile-background-preview::after,.profile-v2-background-preview::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(145deg,rgba(255,255,255,.10),transparent 28%,rgba(0,0,0,.12) 78%)}
+.store-v2-profile-background-foot{min-height:43px}
+.profile-v2-background-collection{margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:8px}
+.profile-v2-background-preview-wrap{display:grid;place-items:center;padding:4px 0 10px}
+.profile-v2-background-preview-wrap .profile-v2-background-preview{width:172px;height:172px;border-radius:23px;box-shadow:0 18px 38px rgba(0,0,0,.28)}
+.profile-v2-background-preview-meta{display:grid;gap:3px;margin:-2px 0 10px;text-align:center}.profile-v2-background-preview-meta strong{font-size:15px}.profile-v2-background-preview-meta small{color:var(--muted);font-size:10px}
+
+[data-profile-background-item-id="profile-background-01"]{
+  --mgw-profile-background:radial-gradient(circle at 18% 20%,rgba(105,112,255,.44),transparent 31%),radial-gradient(circle at 82% 76%,rgba(177,91,255,.28),transparent 34%),linear-gradient(145deg,#171d3b 0%,#11162c 48%,#090d19 100%);
+}
+[data-profile-background-item-id="profile-background-02"]{
+  --mgw-profile-background:radial-gradient(ellipse at 50% -5%,rgba(108,239,255,.34),transparent 42%),radial-gradient(ellipse at 12% 72%,rgba(76,153,255,.25),transparent 35%),linear-gradient(155deg,#102637 0%,#0c1728 48%,#08101d 100%);
+}
+[data-profile-background-item-id="profile-background-03"]{
+  --mgw-profile-background:linear-gradient(115deg,transparent 0 38%,rgba(255,91,214,.15) 39% 40%,transparent 41% 57%,rgba(68,225,255,.17) 58% 59%,transparent 60%),radial-gradient(circle at 76% 22%,rgba(255,73,204,.31),transparent 29%),radial-gradient(circle at 18% 82%,rgba(63,218,255,.29),transparent 32%),linear-gradient(145deg,#1b102c,#0d1426 54%,#08101c);
+}
+[data-profile-background-item-id="profile-background-04"]{
+  --mgw-profile-background:radial-gradient(circle at 50% 38%,rgba(128,88,255,.27),transparent 24%),radial-gradient(circle at 50% 38%,transparent 0 17%,rgba(191,116,255,.13) 18% 19%,transparent 20% 29%,rgba(76,218,255,.08) 30% 31%,transparent 32%),linear-gradient(155deg,#160f27 0%,#0a0d18 52%,#04060c 100%);
+}
+.store-v2-profile-background-preview[data-profile-background-item-id],.profile-v2-background-preview[data-profile-background-item-id]{background-image:var(--mgw-profile-background);background-size:cover;background-position:center}
+
+#screen-profile[data-profile-background-item-id]{background-color:#090d18;background-image:var(--mgw-profile-background);background-size:cover;background-position:center top;background-repeat:no-repeat}
+#screen-profile[data-profile-background-item-id] .profile-v2-identity,#screen-profile[data-profile-background-item-id] .profile-v2-balance,#screen-profile[data-profile-background-item-id] .profile-v2-summary-stat,#screen-profile[data-profile-background-item-id] .profile-v2-game-stat,#screen-profile[data-profile-background-item-id] .profile-v2-history-row,#screen-profile[data-profile-background-item-id] .profile-v2-account-card{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);background-color:rgba(13,17,29,.79)}
+
+@media (max-width:360px){.profile-v2-background-preview-wrap .profile-v2-background-preview{width:154px;height:154px}}
+@media (prefers-reduced-motion:reduce){[data-profile-background-item-id]{transition:none!important;animation:none!important}}
