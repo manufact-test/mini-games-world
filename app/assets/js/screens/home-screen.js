@@ -31,7 +31,14 @@ export function initHomeScreen(){
     historyCacheAt = 0;
     window.setTimeout(() => { void refreshHistoryCache({ force:true }).catch(() => {}); }, 700);
   });
-  void refreshHistoryCache({ force:true }).catch(() => {});
+  document.addEventListener('mgw:app-ready', () => {
+    window.setTimeout(() => {
+      const activeGameId = String(state.activeGame?.id || '').trim();
+      const activeGameStatus = String(state.activeGame?.status || '').trim().toLowerCase();
+      if (activeGameId && !['finished','cancelled','canceled','abandoned'].includes(activeGameStatus)) return;
+      void refreshHistoryCache({ force:true }).catch(() => {});
+    }, 700);
+  }, { once:true });
 }
 function openProfileFromTop(){ document.dispatchEvent(new CustomEvent('mgw:open-profile')); }
 export function setRoom(){ state.room='match'; state.selectedBet=APP_CONFIG.matchBet; renderRoomCard(); }
