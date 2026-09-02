@@ -11,6 +11,12 @@ const FRAME_ITEM_IDS = Object.freeze([
   'profile-frame-03',
   'profile-frame-animated',
 ]);
+const FRAME_DISPLAY_NAMES = Object.freeze({
+  'profile-frame-01':'Небо',
+  'profile-frame-02':'Золото',
+  'profile-frame-03':'Аврора',
+  'profile-frame-animated':'Спектр',
+});
 
 let initialized = false;
 let observer = null;
@@ -101,7 +107,10 @@ function currentFrameItemId(){
 }
 
 function frameMeta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function frameName(item){ return String(frameMeta(item).display_name || item?.item_id || 'Рамка'); }
+function frameName(item){
+  const itemId = String(item?.item_id || '');
+  return FRAME_DISPLAY_NAMES[itemId] || String(frameMeta(item).display_name || itemId || 'Рамка');
+}
 function framePrice(item){ return Math.max(0, Number(frameMeta(item).price_coins || 0)); }
 function frameOfferId(item){ return String(frameMeta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function frameTierLabel(item){
