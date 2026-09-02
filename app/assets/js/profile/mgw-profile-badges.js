@@ -123,8 +123,15 @@ function badgeOfferId(item){
 
 function decorateChrome(){
   const itemId = currentBadgeItemId();
-  ['topName','profileName','searchMeName'].forEach(id => applyBadgeAttribute(document.getElementById(id), itemId));
-  applyBadgeAttribute(document.querySelector('#screen-profile .profile-v2-person > strong'), itemId);
+  clearLegacyNameBadge(document.getElementById('topName'));
+  clearLegacyNameBadge(document.getElementById('profileName'));
+  clearLegacyNameBadge(document.getElementById('searchMeName'));
+  clearLegacyNameBadge(document.querySelector('#screen-profile .profile-v2-person > strong'));
+
+  applyAvatarBadge(document.getElementById('topAvatar'), itemId);
+  applyAvatarBadge(document.getElementById('profileAvatar'), itemId);
+  applyAvatarBadge(document.getElementById('profileV2Avatar'), itemId);
+  applyAvatarBadge(document.getElementById('searchMeAvatar'), itemId);
 }
 
 function decoratePlayersRow(){
@@ -133,17 +140,29 @@ function decoratePlayersRow(){
   if (!row || !players.length) return;
   [...row.children].forEach((card, index) => {
     if (!(card instanceof HTMLElement)) return;
-    const name = card.querySelector(':scope > .name');
-    if (!(name instanceof HTMLElement)) return;
+    clearLegacyNameBadge(card.querySelector(':scope > .name'));
+    const avatar = card.querySelector(':scope > .game-player-avatar');
+    if (!(avatar instanceof HTMLElement)) return;
     const itemId = String(players[index]?.badge_item_id || '').trim().toLowerCase();
-    applyBadgeAttribute(name, BADGE_ITEM_IDS.includes(itemId) ? itemId : '');
+    applyAvatarBadge(avatar, BADGE_ITEM_IDS.includes(itemId) ? itemId : '');
   });
 }
 
-function applyBadgeAttribute(element, itemId){
+function clearLegacyNameBadge(element){
   if (!(element instanceof HTMLElement)) return;
-  if (itemId) element.dataset.profileBadgeItemId = itemId;
-  else delete element.dataset.profileBadgeItemId;
+  delete element.dataset.profileBadgeItemId;
+}
+
+function applyAvatarBadge(element, itemId){
+  if (!(element instanceof HTMLElement)) return;
+  const normalized = BADGE_ITEM_IDS.includes(String(itemId || '').trim().toLowerCase())
+    ? String(itemId || '').trim().toLowerCase()
+    : '';
+  if (normalized) {
+    if (element.dataset.profileBadgeAvatarItemId !== normalized) element.dataset.profileBadgeAvatarItemId = normalized;
+  } else if (element.dataset.profileBadgeAvatarItemId) {
+    delete element.dataset.profileBadgeAvatarItemId;
+  }
 }
 
 function renderStoreBadgeSection(catalog){
