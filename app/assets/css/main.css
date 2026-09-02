@@ -40,7 +40,7 @@
 @import url('./screens/profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs-fresh&fresh-selection&ttt-mark=css');
 @import url('./components/mgw-avatars.css?v=5&mvp19_4=illustrated-raster-roster-v5');
 @import url('./components/mgw-name-colors.css?v=4&mvp19_3=name-colors&corrective=compact-grid&spacing=price-button');
-@import url('./components/mgw-profile-badges.css?v=2&mvp19_3=profile-badge-avatar-overlay&position=bottom-right&profile=collection-fit&store=unclip');
+@import url('./components/mgw-profile-badges.css?v=3&mvp19_3=profile-badge-avatar-demo');
 @import url('./components/mgw-profile-frames.css?v=2&mvp19_3=profile-frame-preview-polish');
 @import url('./animations.css?v=27');
 @import url('./responsive.css?v=37');
@@ -76,14 +76,3 @@
 
 /* Store primary screen already reserves the fixed bottom navigation in base layout. */
 .has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}
-
-/* MVP-19.3 badge corrective: keep the preview glyph beside the label without letting the ellipsis clip it. */
-.store-v2-profile-badge-preview:has([data-profile-badge-item-id]){padding-right:22px}
-.store-v2-profile-badge-preview:has([data-profile-badge-item-id])::after{content:"";position:relative;display:block;flex:0 0 13px;width:13px;height:13px;margin-left:6px;pointer-events:none;box-sizing:border-box;z-index:2}
-.store-v2-profile-badge-preview [data-profile-badge-item-id]{flex:0 1 auto;min-width:0;max-width:calc(100% - 19px);padding-right:0!important}
-.store-v2-profile-badge-preview [data-profile-badge-item-id]::after{display:none!important}
-.store-v2-profile-badge-preview:has([data-profile-badge-item-id="profile-badge-spark"])::after{border-radius:50%;background:radial-gradient(circle at 38% 32%,#e8fbff 0 14%,#66ddff 18% 42%,#208cb9 48% 64%,rgba(32,140,185,.15) 68% 100%);box-shadow:0 0 0 1px rgba(112,226,255,.45),0 0 8px rgba(83,213,255,.42)}
-.store-v2-profile-badge-preview:has([data-profile-badge-item-id="profile-badge-crest"])::after{clip-path:polygon(50% 0,91% 17%,84% 70%,50% 100%,16% 70%,9% 17%);background:linear-gradient(145deg,#fff0a1 0%,#f3ba45 45%,#8f5519 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.38),0 0 8px rgba(241,183,62,.28)}
-.store-v2-profile-badge-preview:has([data-profile-badge-item-id="profile-badge-pulse"])::after{border-radius:50%;background:conic-gradient(from 0deg,#69efff,#9c7cff,#ff7fc9,#ffd56d,#69efff);box-shadow:0 0 0 1px rgba(255,255,255,.3),0 0 10px rgba(153,111,255,.5);animation:mgwProfileBadgeStorePulse 2.4s linear infinite}
-@keyframes mgwProfileBadgeStorePulse{0%{transform:rotate(0deg) scale(.92);filter:brightness(.92)}50%{transform:rotate(180deg) scale(1.08);filter:brightness(1.18)}100%{transform:rotate(360deg) scale(.92);filter:brightness(.92)}}
-@media (prefers-reduced-motion:reduce){.store-v2-profile-badge-preview:has([data-profile-badge-item-id="profile-badge-pulse"])::after{animation:none!important;transform:none!important;filter:none!important}}
