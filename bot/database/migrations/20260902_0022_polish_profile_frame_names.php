@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 return new class implements DatabaseMigrationInterface {
     private const NAMES = [
-        'profile-frame-01' => 'Небо',
-        'profile-frame-02' => 'Золото',
+        'profile-frame-01' => 'Голубое небо',
+        'profile-frame-02' => 'Золотой ореол',
         'profile-frame-03' => 'Аврора',
-        'profile-frame-animated' => 'Спектр',
+        'profile-frame-animated' => 'Живой спектр',
     ];
 
     public function version(): string
