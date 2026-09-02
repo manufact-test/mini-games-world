@@ -16,6 +16,7 @@ import { initDeterministicGameIcons } from './production-deterministic-icons.js?
 import { initMgwAvatarPresentation } from './profile/mgw-avatar-presentation.js?v=6&mvp19_4=illustrated-raster-roster-v5&mvp19_3=name-colors';
 import { initMgwProfileBadges } from './profile/mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape';
 import { initMgwProfileFrames } from './profile/mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity';
+import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=1&mvp19_3=profile-backgrounds';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
 
@@ -43,3 +44,4 @@ initDeterministicGameIcons();
 initMgwAvatarPresentation();
 initMgwProfileBadges();
 initMgwProfileFrames();
+initMgwProfileBackgrounds();
