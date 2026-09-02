@@ -4,7 +4,7 @@ declare(strict_types=1);
 return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
-        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1131&mvp16=canonical-avatar-owner&mvp17=history-single-owner&mvp19=avatar-presentation&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&mvp19_3=name-colors&mvp19_3_6=profile-badge-avatar-overlay&mvp19_3_7=profile-frames&mvp19_3_8=profile-frame-preview-polish&mvp19_3_9=badge-avatar-card&mvp19_3_10=profile-frame-name-polish',
+        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1131&mvp16=canonical-avatar-owner&mvp17=history-single-owner&mvp19=avatar-presentation&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&mvp19_3=name-colors&mvp19_3_6=profile-badge-avatar-overlay&mvp19_3_7=profile-frames&mvp19_3_8=profile-frame-preview-polish&mvp19_3_9=badge-avatar-card&mvp19_3_10=profile-frame-name-polish&mvp19_3_11=profile-badge-avatar-shape',
         '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2',
         '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
         './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1135&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch&mvp18=friends&mvp19=store-v2&mvp19_4=game-cosmetics-pilot&c7=avatar-bootstrap-inventory&c2_1=effect-unequip&mvp19_3_4=name-color-live-projection&mvp19_3_7=profile-v2-read-coalesce',
