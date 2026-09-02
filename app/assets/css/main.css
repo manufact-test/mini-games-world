@@ -76,3 +76,22 @@
 
 /* Store primary screen already reserves the fixed bottom navigation in base layout. */
 .has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}
+
+/* MVP-19.3 final visual polish: keep gradient frames hollow so every card shows the same starter avatar. */
+[data-profile-frame-avatar-item-id="profile-frame-02"]::before,
+[data-profile-frame-avatar-item-id="profile-frame-03"]::before,
+[data-profile-frame-avatar-item-id="profile-frame-animated"]::before{
+  -webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;
+  mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);
+  mask-composite:exclude;
+}
+[data-profile-frame-avatar-item-id="profile-frame-02"]::before{background:linear-gradient(145deg,#f6d67d,#d08a28,#fff1ad) border-box}
+[data-profile-frame-avatar-item-id="profile-frame-03"]::before{background:linear-gradient(135deg,#8d6dff,#ff78c6,#63ddff) border-box}
+[data-profile-frame-avatar-item-id="profile-frame-animated"]::before{background:conic-gradient(from var(--mgw-frame-angle,0deg),#68efff,#9e75ff,#ff7fc7,#ffd66f,#68efff) border-box}
+
+/* The badge identity demo needs a visible edge against the blue Store background. */
+.store-v2-profile-badge-preview{
+  border:1px solid rgba(116,196,255,.34);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 0 12px rgba(85,156,255,.07);
+}
