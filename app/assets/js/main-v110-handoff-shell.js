@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1154';
+window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1155';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -62,7 +62,6 @@ initSearchScreen();
 initSearchInviteReconciliation();
 initDominoChainLayout();
 initUnifiedGameLauncher();
-initStoreScreen();
 initStoreOrder();
 initStoreOrders();
 initWeeklyMatchInfo();
@@ -109,6 +108,11 @@ async function boot(){
 
     startStatsPolling();
     syncAppShellChrome();
+    // Store prewarm is intentionally registered only after authoritative boot.
+    // During an active-match reload the previous eager idle warm raced the
+    // bootstrap/history/presence burst and could exhaust the staging PHP worker
+    // window, producing an empty cosmetic-store 500 despite no Store intent.
+    initStoreScreen();
   } catch (error) {
     showBootFailure();
     toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
