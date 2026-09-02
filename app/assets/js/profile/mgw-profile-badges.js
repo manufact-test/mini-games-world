@@ -117,7 +117,6 @@ function badgeTierLabel(item){
 function badgePrice(item){
   return Math.max(0, Number(badgeMeta(item).price_coins || 0));
 }
-
 function badgeOfferId(item){
   return String(badgeMeta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, ''));
 }
@@ -238,7 +237,6 @@ function renderProfileBadgeCollection(catalog){
     button.addEventListener('click', () => openBadgePreview(String(button.dataset.profileBadgePreview || '')));
   });
 }
-
 function profileBadgeCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
@@ -258,7 +256,7 @@ function openBadgePurchase(itemId){
       <div class="store-v2-confirm-copy"><strong>${escapeHtml(badgeName(item))}</strong></div>
       <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
       <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
-      <button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
+      <button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? 'Не хватает ' + formatNumber(missing) : 'Купить за ' + formatNumber(price)}</button>
     </div>
   `;
   document.getElementById('mgwProfileBadgeConfirmBuy')?.addEventListener('click', event => {
