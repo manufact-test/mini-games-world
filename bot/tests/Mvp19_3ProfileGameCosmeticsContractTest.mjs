@@ -46,7 +46,7 @@ expect(profileCss.includes('.profile-v2-game-tab.active'), 'active game tab must
 expect(profileCss.includes('.profile-v2-game-card.active'), 'equipped game item must have an explicit selected state');
 expect(profileCss.includes('.profile-v2-game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'), 'mobile Profile game items must remain compact');
 expect(profileCss.includes('.store-v2-game-preview'), 'Profile layout may size but must not duplicate Store cosmetic artwork');
-expect(mainCss.includes('profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs&fresh-selection&ttt-mark=css'), 'active CSS graph must publish compact game tabs and stable Tic Tac Toe mark geometry');
+expect(mainCss.includes('profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs-fresh&fresh-selection&ttt-mark=css'), 'active CSS graph must publish compact game tabs and stable Tic Tac Toe mark geometry');
 expect(manifest.includes('mvp19_3_3=game-tabs-fresh'), 'active Profile runtime identity must publish fresh game-tab collection');
 expect(manifest.includes('perf=instant-open-refresh'), 'active Profile runtime must publish instant-open background refresh behavior');
 expect(manifest.includes('mvp19_3=profile-game-tabs-fresh'), 'active main CSS identity must publish Profile game-tab polish');
