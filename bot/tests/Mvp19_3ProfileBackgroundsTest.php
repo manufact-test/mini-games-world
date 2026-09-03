@@ -53,7 +53,8 @@ $assertSame(['background'], array_values(array_unique(array_column($rows, 'subca
 $assertSame(['background-01','background-02','background-03','background-04'], array_column($rows, 'offer_id'), 'Background offer ids must remain deterministic');
 
 $metadata = array_map(static fn(array $row): array => json_decode((string)$row['metadata_json'], true, 32, JSON_THROW_ON_ERROR), $rows);
-$assertSame(['Сумерки','Север','Неон','Бездна'], array_column($metadata, 'display_name'), 'Background names must remain deterministic');
+$assertSame(['Сумерки','Север','Бездна','Квантовый шторм'], array_column($metadata, 'display_name'), 'Background names must reflect the accepted tier upgrade');
+$assertSame(['twilight','north','abyss','quantum_storm'], array_column($metadata, 'variant'), 'Background variants must reflect the accepted tier upgrade');
 $assertSame(['normal','rare','epic','legendary'], array_column($metadata, 'tier'), 'Background tiers must remain deterministic');
 $assertSame([2000,4000,7500,12500], array_map('intval', array_column($metadata, 'price_coins')), 'Metadata prices must match Store offers');
 
@@ -97,11 +98,13 @@ $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['profile_background'
 $source = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-backgrounds.js');
 $entry = (string)file_get_contents($root . '/app/assets/js/production-clean-entry-v110.js');
 $css = (string)file_get_contents($root . '/app/assets/css/components/mgw-profile-backgrounds.css');
+$consistencyCss = (string)file_get_contents($root . '/app/assets/css/production-v96-consistency.css');
 $assertTrue(str_contains($source, "const BACKGROUND_SLOT = 'profile_background'") && str_contains($source, 'api.cosmeticStorePurchase') && str_contains($source, 'api.cosmeticStoreEquip') && str_contains($source, 'api.cosmeticStoreUnequip'), 'Background UX must use canonical purchase/equip transports');
 $assertTrue(str_contains($source, 'data-profile-background-store-section') && str_contains($source, 'data-profile-background-collection'), 'Background UX must own Store discovery and Profile collection surfaces');
 $assertTrue(str_contains($source, "document.addEventListener('mgw:app-ready'") && str_contains($source, "getElementById('screen-profile')"), 'Background fallback hydration must wait for app-ready and project to Profile only');
 $assertTrue(str_contains($entry, 'initMgwProfileBackgroundsOnDemand') && str_contains($entry, "document.addEventListener('mgw:screen-changed'") && str_contains($entry, "screen === 'store' || screen === 'profile'"), 'Background runtime must be route-gated to Store/Profile surfaces');
 $assertSame(1, substr_count($entry, 'initMgwProfileBackgrounds();'), 'Background runtime must not have an eager startup initializer outside the on-demand wrapper');
 $assertTrue(str_contains($css, '#screen-profile[data-profile-background-item-id]') && str_contains($css, 'profile-background-04'), 'Background CSS must define all four Profile variants');
+$assertTrue(str_contains($consistencyCss, 'profile-background-03') && str_contains($consistencyCss, 'mgwQuantumStormSurface'), 'Final consistency layer must project Abyss at 7,500 and Quantum Storm at 12,500');
 
 fwrite(STDOUT, "MVP-19.3 profile backgrounds passed ({$assertions} assertions).\n");

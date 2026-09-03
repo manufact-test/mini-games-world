@@ -1,0 +1,203 @@
+@import url('./production-v95-consistency.css?v=97&battleship=pending-lock-only&mvp19_3=final-cosmetic-geometry-abyss-parallax');
+
+/* v96: final Profile cosmetic rhythm + background tier upgrade.
+   Keep v95 as the accepted baseline, then own only the three reviewed deltas. */
+
+/* STORE: the subtitle-to-state/price distance is one deterministic 4px step.
+   No family may push its footer down with margin-top:auto anymore. */
+.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-name-color-card,
+[data-profile-badge-store-section] .store-v2-profile-badge-card,
+[data-profile-frame-store-section] .store-v2-product,
+[data-profile-background-store-section] .store-v2-profile-background-card{
+  min-height:0 !important;
+  height:auto !important;
+  gap:4px !important;
+}
+
+.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product > .store-v2-product-name,
+[data-profile-frame-store-section] .store-v2-product > .store-v2-product-name,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-name-color-copy,
+[data-profile-badge-store-section] .store-v2-profile-badge-copy,
+[data-profile-background-store-section] .store-v2-profile-background-copy{
+  box-sizing:border-box !important;
+  height:25px !important;
+  min-height:25px !important;
+  max-height:25px !important;
+  margin:0 1px !important;
+}
+
+.store-v2-content[data-store-v2-panel="profile"] .mgw-profile-cosmetic-foot,
+.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product > .store-v2-product-foot,
+[data-profile-frame-store-section] .store-v2-product > .store-v2-product-foot,
+[data-profile-background-store-section] .store-v2-profile-background-foot{
+  min-height:44px !important;
+  margin-top:0 !important;
+  gap:4px !important;
+}
+
+/* PROFILE name colours: v95 gives the sample its inner card surface.
+   Aurora inherited transparent text fill from the colour token while that surface
+   replaced the text gradient, which made Mini Games invisible. Paint the colour
+   on the generated text itself so the inner card can stay intact. */
+#screen-profile [data-profile-name-color] > .profile-v2-name-color-sample::after{
+  opacity:1 !important;
+}
+#screen-profile [data-profile-name-color] > .profile-v2-name-color-sample[data-name-color-item-id="profile-name-color-sky"]::after,
+#screen-profile [data-profile-name-color][data-name-color-item-id="profile-name-color-sky"] > .profile-v2-name-color-sample::after{
+  color:#63d8ff !important;
+  -webkit-text-fill-color:#63d8ff !important;
+  background:none !important;
+}
+#screen-profile [data-profile-name-color] > .profile-v2-name-color-sample[data-name-color-item-id="profile-name-color-gold"]::after,
+#screen-profile [data-profile-name-color][data-name-color-item-id="profile-name-color-gold"] > .profile-v2-name-color-sample::after{
+  color:#ffd66b !important;
+  -webkit-text-fill-color:#ffd66b !important;
+  background:none !important;
+}
+#screen-profile [data-profile-name-color] > .profile-v2-name-color-sample[data-name-color-item-id="profile-name-color-aurora"]::after,
+#screen-profile [data-profile-name-color][data-name-color-item-id="profile-name-color-aurora"] > .profile-v2-name-color-sample::after{
+  color:transparent !important;
+  background:linear-gradient(100deg,#6fe7ff 0%,#a994ff 48%,#ff8fd8 100%) !important;
+  -webkit-background-clip:text !important;
+  background-clip:text !important;
+  -webkit-text-fill-color:transparent !important;
+}
+
+/* 7 500 — Abyss. This is the accepted former 12 500 visual, moved intact to
+   profile-background-03 so ownership IDs and economy prices do not change. */
+[data-profile-background-item-id="profile-background-03"]{
+  --mgw-profile-background:
+    linear-gradient(116deg,transparent 0 10%,rgba(74,235,255,.10) 12%,rgba(74,235,255,.72) 13.5%,rgba(186,244,255,.18) 15%,transparent 17% 31%,rgba(150,89,255,.12) 33%,rgba(154,93,255,.66) 35%,transparent 38% 53%,rgba(255,73,215,.14) 56%,rgba(255,83,220,.58) 58%,transparent 61%),
+    linear-gradient(67deg,transparent 0 21%,rgba(95,119,255,.18) 23%,transparent 28% 48%,rgba(69,226,255,.22) 51%,transparent 56% 76%,rgba(255,87,212,.17) 79%,transparent 83%),
+    radial-gradient(ellipse at 10% 6%,rgba(69,229,255,.52),transparent 31%),
+    radial-gradient(ellipse at 92% 18%,rgba(255,70,220,.42),transparent 29%),
+    radial-gradient(ellipse at 47% 93%,rgba(128,77,255,.46),transparent 41%),
+    radial-gradient(circle at 17% 24%,rgba(255,255,255,.92) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 69% 17%,rgba(190,244,255,.86) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 84% 66%,rgba(255,198,242,.82) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 31% 73%,rgba(218,220,255,.82) 0 1px,transparent 1.6px),
+    linear-gradient(158deg,#010207 0%,#08091d 36%,#07152a 66%,#010207 100%);
+  --mgw-profile-atmosphere:
+    repeating-linear-gradient(121deg,transparent 0 34px,rgba(80,231,255,.045) 36px 38px,transparent 40px 76px,rgba(171,96,255,.045) 78px 81px,transparent 83px 118px),
+    linear-gradient(126deg,transparent 0 13%,rgba(80,232,255,.24) 16%,transparent 20% 42%,rgba(157,91,255,.25) 46%,transparent 51% 68%,rgba(255,74,217,.18) 72%,transparent 77%),
+    radial-gradient(ellipse at 50% 52%,rgba(116,89,255,.18),transparent 58%);
+  --mgw-profile-glass:rgba(5,8,18,.52)
+}
+#screen-profile[data-profile-background-item-id="profile-background-03"]{
+  timeline-scope:--mgw-abyss-scroll-v96;
+  background-size:150% 150%,145% 145%,125% 125%,130% 130%,138% 138%,100% 100%,100% 100%,100% 100%,100% 100%,cover !important;
+  animation:mgwAbyssSurfaceDrive 8.5s ease-in-out infinite alternate !important;
+}
+#screen-profile[data-profile-background-item-id="profile-background-03"] > .content{
+  scroll-timeline-name:--mgw-abyss-scroll-v96;
+  scroll-timeline-axis:block;
+}
+#screen-profile[data-profile-background-item-id="profile-background-03"]::before{
+  inset:-16% !important;
+  opacity:1 !important;
+  mix-blend-mode:screen !important;
+  filter:saturate(1.28) brightness(1.12) !important;
+  animation:mgwAbyssRiftFloat 6.2s ease-in-out infinite alternate !important;
+}
+#screen-profile[data-profile-background-item-id="profile-background-03"]::after{
+  background:
+    linear-gradient(180deg,rgba(1,2,7,.03),rgba(1,3,9,.12) 54%,rgba(1,2,7,.38)),
+    linear-gradient(111deg,transparent 0 24%,rgba(163,246,255,.08) 28%,transparent 32% 58%,rgba(230,169,255,.07) 62%,transparent 66%) !important;
+  animation:mgwAbyssSheenPulse 3.8s ease-in-out infinite !important;
+}
+.store-v2-profile-background-preview[data-profile-background-item-id="profile-background-03"],
+.profile-v2-background-preview[data-profile-background-item-id="profile-background-03"],
+.profile-v2-background-card-preview[data-profile-background-item-id="profile-background-03"]{
+  background-size:155% 155%,150% 150%,130% 130%,135% 135%,142% 142%,100% 100%,100% 100%,100% 100%,100% 100%,cover !important;
+  animation:mgwAbyssPreviewDrive 5.2s ease-in-out infinite alternate !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 22px rgba(87,216,255,.14),0 0 28px rgba(168,82,255,.16),0 7px 18px rgba(0,0,0,.20) !important;
+}
+@supports (animation-timeline:scroll()){
+  #screen-profile[data-profile-background-item-id="profile-background-03"]::before{
+    animation-name:mgwAbyssScrollParallax !important;
+    animation-duration:1s !important;
+    animation-timing-function:linear !important;
+    animation-iteration-count:1 !important;
+    animation-fill-mode:both !important;
+    animation-timeline:--mgw-abyss-scroll-v96 !important;
+    animation-range:0% 100% !important;
+  }
+}
+
+/* 12 500 — Quantum Storm. A distinct flagship: fast iridescent plasma seams,
+   warm metallic flashes, crystalline depth and moving particle lanes. No central
+   black-hole/circle motif; the whole surface feels alive. */
+[data-profile-background-item-id="profile-background-04"]{
+  --mgw-profile-background:
+    linear-gradient(111deg,transparent 0 7%,rgba(219,253,255,.10) 9%,rgba(91,239,255,.92) 10.5%,rgba(231,255,255,.24) 12%,transparent 14% 27%,rgba(255,210,104,.20) 30%,rgba(255,176,79,.55) 31.5%,transparent 34% 47%,rgba(174,95,255,.22) 49%,rgba(166,89,255,.82) 51%,transparent 54% 68%,rgba(255,74,202,.18) 71%,rgba(255,77,209,.66) 73%,transparent 76%),
+    linear-gradient(63deg,transparent 0 17%,rgba(111,135,255,.12) 20%,rgba(104,126,255,.58) 22%,transparent 25% 44%,rgba(73,242,224,.14) 47%,rgba(79,241,230,.62) 49%,transparent 52% 71%,rgba(255,198,92,.12) 75%,rgba(255,192,89,.48) 77%,transparent 80%),
+    conic-gradient(from 224deg at 20% 82%,transparent 0 9%,rgba(68,227,255,.28) 13%,transparent 20% 32%,rgba(255,188,78,.20) 37%,transparent 45% 61%,rgba(166,87,255,.28) 67%,transparent 76%),
+    conic-gradient(from 34deg at 88% 16%,transparent 0 12%,rgba(255,79,210,.30) 17%,transparent 27% 41%,rgba(85,240,229,.24) 47%,transparent 58% 70%,rgba(255,196,91,.18) 75%,transparent 84%),
+    radial-gradient(ellipse at 8% 3%,rgba(76,236,255,.58),transparent 30%),
+    radial-gradient(ellipse at 92% 7%,rgba(255,193,87,.30),rgba(255,74,205,.24) 16%,transparent 34%),
+    repeating-linear-gradient(124deg,transparent 0 38px,rgba(255,255,255,.045) 39px 40px,transparent 42px 78px,rgba(112,231,255,.035) 80px 82px,transparent 84px 120px),
+    linear-gradient(158deg,#010208 0%,#071126 34%,#13091f 63%,#02030a 100%);
+  --mgw-profile-atmosphere:
+    repeating-linear-gradient(127deg,transparent 0 31px,rgba(94,240,255,.055) 32px 34px,transparent 35px 67px,rgba(255,188,86,.035) 68px 70px,transparent 72px 106px),
+    conic-gradient(from 198deg at 50% 48%,transparent 0 10%,rgba(83,234,255,.16) 16%,transparent 25%,rgba(255,190,88,.12) 35%,transparent 45%,rgba(166,88,255,.18) 56%,transparent 67%,rgba(255,74,207,.14) 77%,transparent 88%),
+    radial-gradient(ellipse at 50% 48%,rgba(123,103,255,.18),transparent 62%);
+  --mgw-profile-glass:rgba(4,7,17,.48)
+}
+#screen-profile[data-profile-background-item-id="profile-background-04"]{
+  background-size:158% 158%,152% 152%,145% 145%,150% 150%,132% 132%,136% 136%,180% 180%,cover !important;
+  animation:mgwQuantumStormSurface 6.8s cubic-bezier(.45,.05,.45,.95) infinite alternate !important;
+}
+#screen-profile[data-profile-background-item-id="profile-background-04"]::before{
+  inset:-18% !important;
+  opacity:1 !important;
+  mix-blend-mode:screen !important;
+  filter:saturate(1.34) brightness(1.12) !important;
+  animation:mgwQuantumStormMesh 4.6s ease-in-out infinite alternate !important;
+}
+#screen-profile[data-profile-background-item-id="profile-background-04"]::after{
+  background:
+    linear-gradient(180deg,rgba(1,2,8,.02),rgba(2,4,12,.10) 48%,rgba(1,2,8,.34)),
+    linear-gradient(108deg,transparent 0 18%,rgba(224,255,255,.11) 21%,transparent 24% 43%,rgba(255,220,143,.08) 47%,transparent 50% 67%,rgba(232,192,255,.10) 71%,transparent 75%) !important;
+  animation:mgwQuantumStormFlash 2.6s ease-in-out infinite !important;
+}
+.store-v2-profile-background-preview[data-profile-background-item-id="profile-background-04"],
+.profile-v2-background-preview[data-profile-background-item-id="profile-background-04"],
+.profile-v2-background-card-preview[data-profile-background-item-id="profile-background-04"]{
+  background-size:164% 164%,158% 158%,150% 150%,155% 155%,136% 136%,140% 140%,185% 185%,cover !important;
+  animation:mgwQuantumStormPreview 3.9s cubic-bezier(.45,.05,.45,.95) infinite alternate !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.20),0 0 24px rgba(82,232,255,.18),0 0 32px rgba(169,83,255,.18),0 0 22px rgba(255,190,87,.10),0 8px 20px rgba(0,0,0,.24) !important;
+}
+@keyframes mgwQuantumStormSurface{
+  0%{background-position:-12% -4%,108% 104%,0% 100%,100% 0%,0% 0%,100% 4%,0% 0%,50% 50%;filter:saturate(1.02) brightness(.98)}
+  45%{background-position:3% 5%,95% 90%,9% 88%,91% 10%,6% 4%,94% 8%,18% 12%,50% 50%;filter:saturate(1.16) brightness(1.05)}
+  100%{background-position:18% 11%,82% 79%,17% 76%,82% 20%,12% 8%,87% 13%,36% 24%,50% 50%;filter:saturate(1.30) brightness(1.12)}
+}
+@keyframes mgwQuantumStormMesh{
+  0%{transform:translate3d(-18px,-12px,0) scale(1.04) skewX(-2.4deg) rotate(-.4deg);filter:saturate(1.18) brightness(.98)}
+  100%{transform:translate3d(20px,14px,0) scale(1.14) skewX(2.4deg) rotate(.4deg);filter:saturate(1.42) brightness(1.18)}
+}
+@keyframes mgwQuantumStormFlash{0%,100%{opacity:.56}48%{opacity:1}62%{opacity:.78}}
+@keyframes mgwQuantumStormPreview{
+  0%{background-position:-12% -4%,108% 104%,0% 100%,100% 0%,0% 0%,100% 4%,0% 0%,50% 50%;filter:brightness(.98) saturate(1.02)}
+  100%{background-position:18% 11%,82% 79%,17% 76%,82% 20%,12% 8%,87% 13%,36% 24%,50% 50%;filter:brightness(1.16) saturate(1.34)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #screen-profile[data-profile-background-item-id="profile-background-03"],
+  #screen-profile[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile[data-profile-background-item-id="profile-background-03"]::after,
+  .store-v2-profile-background-preview[data-profile-background-item-id="profile-background-03"],
+  .profile-v2-background-preview[data-profile-background-item-id="profile-background-03"],
+  .profile-v2-background-card-preview[data-profile-background-item-id="profile-background-03"],
+  #screen-profile[data-profile-background-item-id="profile-background-04"],
+  #screen-profile[data-profile-background-item-id="profile-background-04"]::before,
+  #screen-profile[data-profile-background-item-id="profile-background-04"]::after,
+  .store-v2-profile-background-preview[data-profile-background-item-id="profile-background-04"],
+  .profile-v2-background-preview[data-profile-background-item-id="profile-background-04"],
+  .profile-v2-background-card-preview[data-profile-background-item-id="profile-background-04"]{
+    animation:none !important;
+    transform:none !important;
+    filter:none !important;
+  }
+}
