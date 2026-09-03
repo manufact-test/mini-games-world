@@ -316,15 +316,14 @@ function renderGameComposer(){
   const eligible = row instanceof HTMLElement
     && screen?.classList.contains('active')
     && String(game?.status || '') === 'active'
-    && !game?.is_bot_game
     && codes.length > 0;
   if (!eligible) { toolbar?.remove(); paletteOpen = false; return; }
 
   const signature = `${String(game.id || '')}|${String(item.item_id || '')}|${codes.join(',')}|${paletteOpen ? 1 : 0}`;
   if (toolbar instanceof HTMLElement && toolbar.dataset.signature === signature) return;
   const markup = `<div class="mgw-reaction-toolbar" id="mgwReactionToolbar" data-signature="${escapeAttr(signature)}">
-    <button class="mgw-reaction-trigger" id="mgwReactionTrigger" type="button" aria-expanded="${paletteOpen ? 'true' : 'false'}"><span>🙂</span> Реакция</button>
-    ${paletteOpen ? `<div class="mgw-reaction-palette" role="menu">${codes.map(code => `<button type="button" data-send-reaction="${escapeAttr(code)}" title="${escapeAttr(REACTION_CODES[code].label)}"><span>${REACTION_CODES[code].glyph}</span><small>${escapeHtml(REACTION_CODES[code].label)}</small></button>`).join('')}</div>` : ''}
+    <button class="mgw-reaction-trigger" id="mgwReactionTrigger" type="button" aria-label="Реакции" title="Реакции" aria-expanded="${paletteOpen ? 'true' : 'false'}"><span aria-hidden="true">🙂</span></button>
+    ${paletteOpen ? `<div class="mgw-reaction-palette" role="menu" aria-label="Выбрать реакцию">${codes.map(code => `<button type="button" role="menuitem" data-send-reaction="${escapeAttr(code)}" title="${escapeAttr(REACTION_CODES[code].label)}" aria-label="${escapeAttr(REACTION_CODES[code].label)}"><span aria-hidden="true">${REACTION_CODES[code].glyph}</span></button>`).join('')}</div>` : ''}
   </div>`;
   if (toolbar instanceof HTMLElement) toolbar.outerHTML = markup;
   else row.insertAdjacentHTML('afterend', markup);
@@ -369,12 +368,26 @@ function showReaction(reaction){
   const card = index >= 0 ? row.children[index] : null;
   if (!(card instanceof HTMLElement)) return;
   row.querySelectorAll('.mgw-live-reaction').forEach(node => node.remove());
+
   const bubble = document.createElement('div');
   bubble.className = 'mgw-live-reaction';
-  bubble.innerHTML = `<span>${escapeHtml(reaction.glyph || REACTION_CODES[String(reaction.code || '')]?.glyph || '✨')}</span><small>${escapeHtml(reaction.label || '')}</small>`;
+  bubble.setAttribute('aria-hidden', 'true');
+  bubble.innerHTML = `<span>${escapeHtml(reaction.glyph || REACTION_CODES[String(reaction.code || '')]?.glyph || '✨')}</span>`;
+
+  const avatar = card.querySelector(':scope > .game-player-avatar');
+  if (avatar instanceof HTMLElement) {
+    const cardRect = card.getBoundingClientRect();
+    const avatarRect = avatar.getBoundingClientRect();
+    bubble.classList.add('from-avatar');
+    bubble.style.setProperty('--mgw-reaction-origin-x', `${Math.round(avatarRect.left - cardRect.left + avatarRect.width / 2)}px`);
+    bubble.style.setProperty('--mgw-reaction-origin-y', `${Math.round(avatarRect.top - cardRect.top + avatarRect.height / 2)}px`);
+  } else {
+    bubble.classList.add('from-card');
+  }
+
   card.append(bubble);
   window.clearTimeout(reactionHideTimer);
-  reactionHideTimer = window.setTimeout(() => bubble.remove(), 2300);
+  reactionHideTimer = window.setTimeout(() => bubble.remove(), 1800);
 }
 
 function handleOutsideClick(event){
