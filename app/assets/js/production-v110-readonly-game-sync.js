@@ -3,6 +3,7 @@ import { APP_CONFIG } from './config.js?v=38';
 import { getInitData } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
 import { enterGame } from './screens/game-screen-v102-safe.js?v=102';
+import { initMgwProfileReactions } from './profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions';
 
 const WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const WATCH_INTERVAL_MS = 250;
@@ -40,6 +41,7 @@ export function initV110ReadonlyGameSync(){
   APP_CONFIG.gameIntervalMs = Math.max(Number(APP_CONFIG.gameIntervalMs || 0), FALLBACK_GAME_POLL_MS);
 
   document.addEventListener('mgw:app-ready', () => scheduleWatch(0), { once:true });
+  document.addEventListener('mgw:app-ready', initMgwProfileReactions, { once:true });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') scheduleWatch(0);
   });
@@ -125,7 +127,9 @@ function publishReaction(reaction, gameId){
   const previous = Number(runtime.reactionSeqByGame.get(gameId) || 0);
   if (seq <= previous) return;
   runtime.reactionSeqByGame.set(gameId, seq);
-  document.dispatchEvent(new CustomEvent('mgw:game-reaction', { detail:{ reaction } }));
+  queueMicrotask(() => {
+    document.dispatchEvent(new CustomEvent('mgw:game-reaction', { detail:{ reaction } }));
+  });
 }
 
 function adoptClockProjection(game){
