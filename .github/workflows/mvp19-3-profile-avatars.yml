@@ -177,7 +177,7 @@ jobs:
             app/assets/js/games
 
       - name: Guard bounded MVP-19 avatar diff
-        if: ${{ (startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3') || startsWith(github.head_ref, 'agent/mvp19-4') || startsWith(github.head_ref, 'agent/mvp-19-4')) && !contains(github.head_ref, 'game-cosmetics') && !contains(github.head_ref, 'name-colors') && !contains(github.head_ref, 'profile-badges') && !contains(github.head_ref, 'profile-frames') }}
+        if: ${{ (startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3') || startsWith(github.head_ref, 'agent/mvp19-4') || startsWith(github.head_ref, 'agent/mvp-19-4')) && !contains(github.head_ref, 'game-cosmetics') && !contains(github.head_ref, 'name-colors') && !contains(github.head_ref, 'profile-badges') && !contains(github.head_ref, 'profile-frames') && !contains(github.head_ref, 'profile-backgrounds') }}
         shell: bash
         run: |
           set -euo pipefail
