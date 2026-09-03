@@ -17,6 +17,12 @@ import { initMgwAvatarPresentation } from './profile/mgw-avatar-presentation.js?
 import { initMgwProfileBadges } from './profile/mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape';
 import { initMgwProfileFrames } from './profile/mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity';
 import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
+import { api } from './api/client.js?v=47';
+import { state } from './state.js?v=27';
+import { toast } from './components/toast.js?v=27';
+import { renderUser } from './ui.js?v=89';
+import { haptic } from './telegram/telegram-app.js?v=27';
+import { mergeCanonicalMgwUser } from './profile/mgw-profile-model.js?v=1';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
 
@@ -44,6 +50,121 @@ initDeterministicGameIcons();
 initMgwAvatarPresentation();
 initMgwProfileBadges();
 initMgwProfileFrames();
+initStoreAvatarSelection();
+
+// Store owns discovery/purchase, while Profile remains the canonical avatar
+// selection owner. This integration only exposes that existing Profile action
+// directly on already-owned Store avatar cards; it never adds a second equip API.
+let storeAvatarSaving = false;
+let storeAvatarObserver = null;
+let storeAvatarDecorateScheduled = false;
+
+function initStoreAvatarSelection(){
+  const start = () => {
+    storeAvatarObserver?.disconnect();
+    storeAvatarObserver = new MutationObserver(scheduleStoreAvatarDecoration);
+    [document.getElementById('storeTabSurface'), document.getElementById('sheet')].forEach(root => {
+      if (root) storeAvatarObserver.observe(root, { childList:true, subtree:true });
+    });
+    document.addEventListener('click', handleStoreAvatarSelection, true);
+    document.addEventListener('mgw:screen-changed', scheduleStoreAvatarDecoration);
+    decorateStoreAvatarCards();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
+  else start();
+}
+
+function scheduleStoreAvatarDecoration(){
+  if (storeAvatarDecorateScheduled) return;
+  storeAvatarDecorateScheduled = true;
+  queueMicrotask(() => {
+    storeAvatarDecorateScheduled = false;
+    decorateStoreAvatarCards();
+  });
+}
+
+function decorateStoreAvatarCards(){
+  document.querySelectorAll('.store-v2-product.owned .store-v2-avatar-preview[data-avatar-item-id]').forEach(preview => {
+    if (!(preview instanceof HTMLElement)) return;
+    const card = preview.closest('.store-v2-product');
+    const foot = card?.querySelector(':scope > .store-v2-product-foot');
+    const itemId = String(preview.dataset.avatarItemId || '').trim();
+    if (!(card instanceof HTMLElement) || !(foot instanceof HTMLElement) || !itemId) return;
+
+    const selectedItemId = String(state.selectedAvatarId || '').trim();
+    const active = selectedItemId ? selectedItemId === itemId : card.classList.contains('equipped');
+    card.classList.toggle('equipped', active);
+
+    const boughtLabel = foot.querySelector(':scope > b');
+    if (boughtLabel instanceof HTMLElement) boughtLabel.hidden = true;
+
+    let action = foot.querySelector(':scope > [data-mgw-store-avatar-select]');
+    if (!(action instanceof HTMLButtonElement)) {
+      action = document.createElement('button');
+      action.type = 'button';
+      foot.append(action);
+    }
+    action.dataset.mgwStoreAvatarSelect = itemId;
+    action.className = `store-v2-equip store-v2-avatar-select${active ? ' active' : ''}`;
+    action.textContent = active ? 'Выбрана' : 'Выбрать';
+    action.disabled = active;
+    action.setAttribute('aria-pressed', active ? 'true' : 'false');
+
+    const existingCheck = preview.querySelector(':scope > .store-v2-selected-check');
+    if (active && !(existingCheck instanceof HTMLElement)) {
+      const check = document.createElement('i');
+      check.className = 'store-v2-selected-check';
+      check.setAttribute('aria-label', 'Выбрана');
+      check.textContent = '✓';
+      preview.append(check);
+    } else if (!active && existingCheck instanceof HTMLElement) {
+      existingCheck.remove();
+    }
+  });
+}
+
+function handleStoreAvatarSelection(event){
+  const action = event.target instanceof Element ? event.target.closest('[data-mgw-store-avatar-select]') : null;
+  if (!(action instanceof HTMLButtonElement)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const itemId = String(action.dataset.mgwStoreAvatarSelect || '').trim();
+  if (!itemId || action.disabled || storeAvatarSaving || itemId === String(state.selectedAvatarId || '')) return;
+  if (!(action.closest('.store-v2-product.owned') instanceof HTMLElement)) return;
+  void selectOwnedStoreAvatar(itemId);
+}
+
+async function selectOwnedStoreAvatar(itemId){
+  if (storeAvatarSaving) return;
+  const previousSelectedAvatarId = state.selectedAvatarId;
+  storeAvatarSaving = true;
+  state.selectedAvatarId = itemId;
+  decorateStoreAvatarCards();
+  if (state.user) renderUser(state.user);
+  haptic('light');
+
+  try {
+    const result = await api.profileV2({ avatar_item_id:itemId });
+    const confirmedItemId = String(result?.profile?.avatar?.item_id || result?.user?.avatar_item_id || '').trim();
+    if (confirmedItemId !== itemId) throw new Error('Профиль не подтвердил выбранную аватарку.');
+    state.mgwProfile = result?.profile || state.mgwProfile;
+    state.profileInventory = result?.inventory || state.profileInventory;
+    state.user = mergeCanonicalMgwUser(state.user, result?.user || {}, state.mgwProfile);
+    state.selectedAvatarId = confirmedItemId;
+    decorateStoreAvatarCards();
+    if (state.user) renderUser(state.user);
+    haptic('success');
+    toast('Аватарка выбрана.');
+  } catch (error) {
+    state.selectedAvatarId = previousSelectedAvatarId;
+    decorateStoreAvatarCards();
+    if (state.user) renderUser(state.user);
+    haptic('error');
+    toast(error?.message || 'Не удалось выбрать аватарку.');
+  } finally {
+    storeAvatarSaving = false;
+  }
+}
 
 // Profile backgrounds are a Store/Profile-only surface. Do not initialize their
 // fallback Profile snapshot reader during Home or active-game bootstrap: the

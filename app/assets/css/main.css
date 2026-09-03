@@ -130,3 +130,19 @@
 .store-v2-profile-frame-foot b{display:block;min-height:10px!important;line-height:1!important}
 .store-v2-profile-frame-foot .store-v2-buy,
 .store-v2-profile-frame-foot .store-v2-equip{width:100%!important;height:31px!important;min-height:31px!important;padding:0 6px!important;margin:0!important}
+
+/* Owned avatar cards keep the same compact footer geometry as their Buy state. */
+.store-v2-product-foot .store-v2-avatar-select{
+  width:100%;
+  min-height:27px;
+  height:27px;
+  padding:0 4px;
+  margin:0;
+  border-radius:9px;
+  font-size:8.5px;
+}
+.store-v2-product-foot .store-v2-avatar-select.active{
+  color:#07120c;
+  background:#63dc98;
+  border-color:#63dc98;
+}
