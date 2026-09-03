@@ -29,15 +29,14 @@ const runtime = window.__MGW_V110_READONLY_GAME_SYNC__ ||= {
   initialized:false,
   timer:null,
   busy:false,
+  reactionSeqByGame:new Map(),
 };
+if (!(runtime.reactionSeqByGame instanceof Map)) runtime.reactionSeqByGame = new Map();
 
 export function initV110ReadonlyGameSync(){
   if (runtime.initialized) return;
   runtime.initialized = true;
 
-  // Full game_state stays the authoritative readiness/session/cleanup fallback.
-  // Frequent cross-device freshness reads only games.json and never takes the
-  // global write transaction lock, including Phase B preparation/countdown.
   APP_CONFIG.gameIntervalMs = Math.max(Number(APP_CONFIG.gameIntervalMs || 0), FALLBACK_GAME_POLL_MS);
 
   document.addEventListener('mgw:app-ready', () => scheduleWatch(0), { once:true });
@@ -83,6 +82,8 @@ async function watchCurrentGame(){
     const result = await response.json().catch(() => null);
     if (!response.ok || !result || result.ok === false) return null;
 
+    publishReaction(result.reaction || null, gameId);
+
     const game = result.game || null;
     if (!game?.id || String(game.id) !== gameId) return null;
 
@@ -92,9 +93,6 @@ async function watchCurrentGame(){
     const currentAllowBusyRead = currentPendingClockOnly || currentBusyTerminalOnly;
     if (!canWatch(state.activeGame, gameId, currentAllowBusyRead)) return null;
 
-    // A server-committed terminal state outranks a local in-flight action. The
-    // existing game screen remains the only result owner; this read-only watcher
-    // merely delivers the already-published finished snapshot immediately.
     if (String(game.status || '') === 'finished') {
       enterGame(game, result.me || null);
       return game;
@@ -102,28 +100,15 @@ async function watchCurrentGame(){
 
     if (actionIsBusy(currentItem)) {
       if (currentPendingClockOnly) {
-        // Preserve only the authoritative handoff clock in the shared active
-        // state before the local pending action is cleared. This closes the
-        // rare race where the acceptance runtime correctly received the new
-        // 60-second deadline, then fell back to the previous turn because the
-        // main action response had not projected the same clock yet. Board and
-        // result fields remain exclusively owned by game-screen-v102.
         adoptClockProjection(game);
         document.dispatchEvent(new CustomEvent('mgw:v110-ttt-clock-snapshot', {
           detail:{ game },
         }));
       }
-      // During a local TTT action the same watcher may either carry the clock
-      // handoff or observe a terminal server snapshot. It never projects an
-      // intermediate board while the action owner is still busy.
       return game;
     }
 
     if (projectionKey(state.activeGame) === projectionKey(game)) return game;
-
-    // Existing game-screen-v102 stays the only board/result owner. During
-    // preparation this call only projects the latest server state; readiness and
-    // phase advancement remain owned by authoritative game_state/action paths.
     enterGame(game, result.me || null);
     return game;
   } catch (error) {
@@ -131,6 +116,16 @@ async function watchCurrentGame(){
   } finally {
     runtime.busy = false;
   }
+}
+
+function publishReaction(reaction, gameId){
+  if (!reaction || String(reaction.game_id || '') !== String(gameId || '')) return;
+  const seq = Number(reaction.seq || 0);
+  if (!Number.isFinite(seq) || seq <= 0) return;
+  const previous = Number(runtime.reactionSeqByGame.get(gameId) || 0);
+  if (seq <= previous) return;
+  runtime.reactionSeqByGame.set(gameId, seq);
+  document.dispatchEvent(new CustomEvent('mgw:game-reaction', { detail:{ reaction } }));
 }
 
 function adoptClockProjection(game){
@@ -168,8 +163,6 @@ function canWatch(game, gameId, allowBusyRead = false){
   if (!gameId || String(game?.status || '') !== 'active') return false;
   const launchPhase = String(game?.launch_phase || '');
   if (launchPhase && !['preparing', 'countdown', 'active'].includes(launchPhase)) return false;
-  // Bot games do not need the normal high-frequency board watcher, but a local
-  // pending Tic-Tac-Toe action may still need a clock handoff or terminal state.
   if (game?.is_bot_game && !allowBusyRead) return false;
   if (document.visibilityState !== 'visible') return false;
   const screen = document.querySelector('.screen.active');
