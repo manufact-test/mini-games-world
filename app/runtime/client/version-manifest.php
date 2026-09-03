@@ -51,7 +51,7 @@ return [
     ],
     'assets' => [
         'main_css' => './assets/css/main.css?v=190&sk=3&icons=c1efd5af&render=42&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity&store=compact-tail&c2_5=visible-mark-layer&c2_6=cell-native-dom-fx&mvp19_3=profile-game-tabs-fresh&mvp19_3_4=name-colors-polish&mvp19_3_5=compact-name-colors-instant-profile&spacing=name-color-price-button&mvp19_3_6=profile-badge-avatar-overlay&badge_position=bottom-right&badge_collection=fit&badge_store=avatar-card&mvp19_3_7=profile-frames&frame_preview=avatar-card&mvp19_3_9=badge-avatar-card&frame_names=polish&mvp19_3_13=badge-frame-final-polish&mvp19_3_14=final-spacing-parity&mvp19_3_15=profile-backgrounds&mvp19_3_16=profile-backgrounds-ux-corrective&mvp19_3_18=background-final-card-grid&mvp19_3_19=selected-green-frame-align&mvp19_3_20=avatar-store-action&mvp19_3_24=profile-card-parity&mvp19_3_25=profile-background-full-surface&mvp19_3_26=profile-card-copy-premium-bg&mvp19_3_27=profile-density-abyss-frame-polish',
-        'consistency_css' => './assets/css/production-v95-consistency.css?v=96&battleship=pending-lock-only',
+        'consistency_css' => './assets/css/production-v95-consistency.css?v=97&battleship=pending-lock-only&mvp19_3=final-cosmetic-geometry-abyss-parallax',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
     'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
