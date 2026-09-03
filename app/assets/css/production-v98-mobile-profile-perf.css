@@ -1,6 +1,7 @@
 @import url('./production-v97-reactions.css?v=2&mvp19_3=ingame-corrective');
 
-/* v98: keep reaction control inside the existing turn header so it owns no board height. */
+/* v98.1: reaction control lives inside the existing turn header and now uses
+   the same compact framed language as the rules/book control. */
 #screen-game .turn-actions{
   position:relative;
   display:flex;
@@ -10,16 +11,44 @@
   min-width:0;
 }
 #screen-game .turn-actions > .mgw-reaction-toolbar{
-  flex:0 0 28px;
-  width:28px;
-  height:28px;
+  flex:0 0 32px;
+  width:32px;
+  height:32px;
   margin:0;
   align-self:center;
   z-index:55;
 }
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger{
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  background:rgba(9,12,20,.22);
+  box-shadow:none;
+}
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger > span{
+  font-size:16px;
+}
 #screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-palette{
   z-index:120;
   max-width:calc(100vw - 16px);
+}
+
+/* One continuous sender-origin motion. The previous keyframes intentionally
+   overshot twice; on mobile that read as a double jerk. Keep one rise, a short
+   readable hold and a gentle fade instead. */
+#screen-game .mgw-live-reaction{
+  animation:mgwReactionFromSender 2.35s cubic-bezier(.22,.72,.2,1) both;
+  will-change:transform,opacity;
+  backface-visibility:hidden;
+}
+@keyframes mgwReactionFromSender{
+  0%{opacity:0;transform:translate3d(-50%,-22%,0) scale(.72)}
+  16%{opacity:1;transform:translate3d(-50%,-116%,0) scale(1)}
+  76%{opacity:1;transform:translate3d(-50%,-144%,0) scale(1)}
+  100%{opacity:0;transform:translate3d(-50%,-190%,0) scale(.96)}
 }
 
 /* Mobile Profile performance corrective.
@@ -52,6 +81,19 @@
   #screen-profile.active .profile-v2-collection-section{
     contain:layout style;
   }
+
+  /* Long Profile screens should not continuously style/layout off-screen
+     sections while the user is scrolling or trying to leave the route. Chrome
+     remembers the real size after first layout, so this does not collapse the
+     page or change the accepted visual order. */
+  #screen-profile.active .profile-v2 > .profile-v2-section,
+  #screen-profile.active .profile-v2 > .profile-v2-balance{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 280px;
+  }
+  #screen-profile.active .profile-v2 > .profile-v2-collection-section{
+    contain-intrinsic-size:auto 760px;
+  }
 }
 
 @keyframes mgwMobileProfileAtmosphere{
@@ -63,6 +105,10 @@
   #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
   #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
     animation:none !important;
+    will-change:auto;
+  }
+  #screen-game .mgw-live-reaction{
+    animation:mgwReactionReduced 1.8s ease both;
     will-change:auto;
   }
 }
