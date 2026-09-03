@@ -112,3 +112,64 @@
     will-change:auto;
   }
 }
+
+/* v98.2: first-frame and route-transition corrective after Telegram mobile review.
+   Keep the reaction control 32x32 even during the brief frame before the header
+   relocation helper runs, so it never flashes at the historical 28px size. */
+#screen-game .mgw-reaction-toolbar{
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+}
+#screen-game .mgw-reaction-trigger{
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+}
+
+/* Telegram WebView can skip the first painted animation frame when a freshly
+   inserted reaction starts immediately. A tiny filled delay gives the compositor
+   one frame to establish the sender-origin bubble before motion starts. */
+#screen-game .mgw-live-reaction{
+  animation-delay:48ms;
+}
+
+@media (max-width:640px), (pointer:coarse){
+  /* Profile is substantially heavier than the other shell routes. The generic
+     240ms opacity/translate screen transition forces the WebView to composite
+     the full Profile while entering and leaving, which is exactly where bottom
+     navigation taps were stalling. Make this route switch atomic on mobile. */
+  #screen-profile{
+    transition:none !important;
+    transform:none !important;
+  }
+
+  /* v98.1 content-visibility deferred layout work until the first Profile scroll.
+     That moved the cost into the user's gesture and created the visible "loading"
+     catch-up. Keep sections laid out while the hidden absolute screen is idle,
+     then contain each section so later scrolls stay cheap and deterministic. */
+  #screen-profile.active .profile-v2 > .profile-v2-section,
+  #screen-profile.active .profile-v2 > .profile-v2-balance{
+    content-visibility:visible !important;
+    contain-intrinsic-size:none !important;
+    contain:layout style;
+  }
+
+  /* Fixed shell glass has to continuously blur whatever moves underneath it.
+     Over the premium Profile background and long collection this turns every
+     scroll/route change into a large repaint. Preserve the same dark glass look
+     with an opaque mobile fallback and remove the live blur only on Profile. */
+  #app[data-shell-screen="profile"] .app-shell-topbar,
+  #app[data-shell-screen="profile"] .app-bottom-nav{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  #app[data-shell-screen="profile"] .app-shell-topbar{
+    background:linear-gradient(180deg,rgba(16,19,27,.985),rgba(16,19,27,.94) 78%,rgba(16,19,27,.86));
+  }
+  #app[data-shell-screen="profile"] .app-bottom-nav{
+    background:rgba(20,22,30,.985);
+  }
+}
