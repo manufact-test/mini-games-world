@@ -25,6 +25,8 @@ let initialSnapshotAttempted = false;
 let busy = false;
 let paletteOpen = false;
 let lastReactionSeq = 0;
+let lastReactionFingerprint = '';
+let lastReactionShownAt = 0;
 let reactionHideTimer = null;
 
 export function initMgwProfileReactions(){
@@ -360,7 +362,13 @@ function showReaction(reaction){
   if (!reaction || String(reaction.game_id || '') !== String(state.activeGame?.id || '')) return;
   const seq = Number(reaction.seq || 0);
   if (!Number.isFinite(seq) || seq <= lastReactionSeq) return;
+  const fingerprint = `${String(reaction.game_id || '')}|${String(reaction.sender_id || '')}|${String(reaction.code || '')}|${String(reaction.glyph || '')}`;
+  const shownAt = Date.now();
+  const duplicateDelivery = fingerprint === lastReactionFingerprint && shownAt - lastReactionShownAt < 1200;
   lastReactionSeq = seq;
+  if (duplicateDelivery) return;
+  lastReactionFingerprint = fingerprint;
+  lastReactionShownAt = shownAt;
   const row = document.getElementById('playersRow');
   const players = Array.isArray(state.activeGame?.players) ? state.activeGame.players : [];
   if (!(row instanceof HTMLElement) || !players.length) return;
@@ -387,7 +395,7 @@ function showReaction(reaction){
 
   card.append(bubble);
   window.clearTimeout(reactionHideTimer);
-  reactionHideTimer = window.setTimeout(() => bubble.remove(), 1800);
+  reactionHideTimer = window.setTimeout(() => bubble.remove(), 2400);
 }
 
 function handleOutsideClick(event){
