@@ -6,12 +6,14 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260903_0022_add_profile_backgrounds.php'
+      - 'bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php'
       - 'bot/cosmetic-store.php'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/js/profile/mgw-profile-backgrounds.js'
       - 'app/assets/css/components/mgw-profile-backgrounds.css'
       - 'app/assets/css/main.css'
       - 'app/assets/css/production-v95-consistency.css'
+      - 'app/assets/css/production-v96-consistency.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileBackgroundsTest.php'
       - '.github/workflows/mvp19-3-profile-backgrounds.yml'
@@ -49,6 +51,7 @@ jobs:
       - name: Syntax
         run: |
           php -l bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          php -l bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php
           php -l bot/cosmetic-store.php
           php -l bot/tests/Mvp19_3ProfileBackgroundsTest.php
           node --check app/assets/js/profile/mgw-profile-backgrounds.js
@@ -77,11 +80,15 @@ jobs:
           grep -F "'price' => 7500" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
           grep -F "'price' => 12500" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
           grep -F "private const SLOT = 'profile_background'" bot/database/migrations/20260903_0022_add_profile_backgrounds.php
+          grep -F "'profile-background-03'" bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php
+          grep -F "'display_name' => 'Бездна'" bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php
+          grep -F "'display_name' => 'Квантовый шторм'" bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php
           grep -F 'api.cosmeticStorePurchase' app/assets/js/profile/mgw-profile-backgrounds.js
           grep -F 'api.cosmeticStoreEquip' app/assets/js/profile/mgw-profile-backgrounds.js
           grep -F 'api.cosmeticStoreUnequip' app/assets/js/profile/mgw-profile-backgrounds.js
           grep -F "document.addEventListener('mgw:app-ready'" app/assets/js/profile/mgw-profile-backgrounds.js
           grep -F '#screen-profile[data-profile-background-item-id]' app/assets/css/components/mgw-profile-backgrounds.css
+          grep -F 'mgwQuantumStormSurface' app/assets/css/production-v96-consistency.css
 
       - name: Guard active integration when published
         shell: bash
@@ -91,6 +98,7 @@ jobs:
             grep -F 'function mgw_store_profile_background' bot/cosmetic-store.php
             grep -F "'profile_background'" bot/cosmetic-store.php
             grep -F "mgw-profile-backgrounds.css?v=1&mvp19_3=profile-backgrounds" app/assets/css/main.css
+            grep -F 'production-v96-consistency.css' app/runtime/client/version-manifest.php
             grep -F 'mvp19_3_15=profile-backgrounds' app/runtime/client/version-manifest.php
           fi
 
@@ -124,12 +132,14 @@ jobs:
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
               bot/database/migrations/20260903_0022_add_profile_backgrounds.php|\
+              bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php|\
               bot/cosmetic-store.php|\
               app/assets/js/production-clean-entry-v110.js|\
               app/assets/js/profile/mgw-profile-backgrounds.js|\
               app/assets/css/components/mgw-profile-backgrounds.css|\
               app/assets/css/main.css|\
               app/assets/css/production-v95-consistency.css|\
+              app/assets/css/production-v96-consistency.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileBackgroundsTest.php)
                 ;;
