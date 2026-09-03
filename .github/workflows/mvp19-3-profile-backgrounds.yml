@@ -11,6 +11,7 @@ on:
       - 'app/assets/js/profile/mgw-profile-backgrounds.js'
       - 'app/assets/css/components/mgw-profile-backgrounds.css'
       - 'app/assets/css/main.css'
+      - 'app/assets/css/production-v95-consistency.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileBackgroundsTest.php'
       - '.github/workflows/mvp19-3-profile-backgrounds.yml'
@@ -128,6 +129,7 @@ jobs:
               app/assets/js/profile/mgw-profile-backgrounds.js|\
               app/assets/css/components/mgw-profile-backgrounds.css|\
               app/assets/css/main.css|\
+              app/assets/css/production-v95-consistency.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileBackgroundsTest.php)
                 ;;
