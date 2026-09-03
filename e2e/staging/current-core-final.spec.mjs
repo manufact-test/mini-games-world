@@ -101,6 +101,19 @@ async function browserPost(page, path, data) {
   }, { path, data });
 }
 
+async function testProbePost(player, path, data) {
+  const transport = await player.page.evaluate(() => ({
+    sessionId: localStorage.getItem('mgw_device_session_id'),
+    deviceId: localStorage.getItem('mgw_device_id'),
+  }));
+  const response = await player.context.request.post(`${ORIGIN}${path}`, {
+    headers: { Accept: 'application/json' },
+    data: { ...data, initData: '', ...transport },
+    timeout: 15_000,
+  });
+  return { status: response.status(), payload: await response.json().catch(() => null) };
+}
+
 async function observedAction(page, path, data, action, label) {
   const expectedUrl = `${ORIGIN}${path}`;
   const responsePromise = page.waitForResponse(response => (
@@ -171,7 +184,7 @@ async function reload(player) {
 async function waitInviteEvent(player, token) {
   let found = null;
   await expect.poll(async () => {
-    const result = await browserPost(player.page, '/bot/invites.php', { action: 'sync' });
+    const result = await testProbePost(player, '/bot/invites.php', { action: 'sync' });
     if (result.status !== 200 || result.payload?.ok !== true) return `http:${result.status}`;
     found = (Array.isArray(result.payload?.invite_events) ? result.payload.invite_events : [])
       .find(item => String(item?.invite_token || '') === token) || null;
@@ -183,7 +196,7 @@ async function waitInviteEvent(player, token) {
 async function waitLaunch(player, gameId) {
   let game = null;
   await expect.poll(async () => {
-    const result = await browserPost(player.page, '/bot/api.php', { action: 'game_state', gameId });
+    const result = await testProbePost(player, '/bot/api.php', { action: 'game_state', gameId });
     const candidate = result.payload?.game || {};
     const ready = result.status === 200 && result.payload?.ok === true
       && candidate.status === 'active'
@@ -199,7 +212,7 @@ async function waitLaunch(player, gameId) {
 async function waitTurn(player, gameId) {
   const userId = player.profile.user.id;
   await expect.poll(async () => {
-    const result = await browserPost(player.page, '/bot/api.php', { action: 'game_state', gameId });
+    const result = await testProbePost(player, '/bot/api.php', { action: 'game_state', gameId });
     const game = result.payload?.game || {};
     return result.status === 200 && result.payload?.ok === true
       && game.status === 'active'
@@ -236,7 +249,7 @@ async function directCell(player, gameId, cell) {
 }
 
 async function historyItem(player, gameId) {
-  const result = await browserPost(player.page, '/bot/api.php', { action: 'history' });
+  const result = await testProbePost(player, '/bot/api.php', { action: 'history' });
   if (result.status !== 200 || result.payload?.ok !== true) return null;
   return (result.payload?.history?.matches || []).find(item => String(item?.id || '') === gameId) || null;
 }
