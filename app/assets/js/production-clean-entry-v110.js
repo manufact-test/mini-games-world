@@ -44,4 +44,22 @@ initDeterministicGameIcons();
 initMgwAvatarPresentation();
 initMgwProfileBadges();
 initMgwProfileFrames();
-initMgwProfileBackgrounds();
+
+// Profile backgrounds are a Store/Profile-only surface. Do not initialize their
+// fallback Profile snapshot reader during Home or active-game bootstrap: the
+// two-player reload path is intentionally kept free of this optional read.
+let profileBackgroundsInitialized = false;
+function initMgwProfileBackgroundsOnDemand(){
+  if (profileBackgroundsInitialized) return;
+  profileBackgroundsInitialized = true;
+  initMgwProfileBackgrounds();
+}
+function isProfileBackgroundSurface(screen){
+  return screen === 'store' || screen === 'profile';
+}
+document.addEventListener('mgw:screen-changed', event => {
+  const next = String(event?.detail?.to || '').trim();
+  if (isProfileBackgroundSurface(next)) initMgwProfileBackgroundsOnDemand();
+});
+const activeScreen = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
+if (isProfileBackgroundSurface(activeScreen)) initMgwProfileBackgroundsOnDemand();
