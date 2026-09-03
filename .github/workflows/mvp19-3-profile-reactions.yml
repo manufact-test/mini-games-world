@@ -12,7 +12,9 @@ on:
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/production-v110-readonly-game-sync.js'
       - 'app/assets/js/profile/mgw-profile-reactions.js'
+      - 'app/assets/js/profile/mgw-profile-reactions-header.js'
       - 'app/assets/css/production-v97-reactions.css'
+      - 'app/assets/css/production-v98-mobile-profile-perf.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
       - '.github/workflows/mvp19-3-profile-reactions.yml'
@@ -57,6 +59,7 @@ jobs:
           node --check app/assets/js/api/client.js
           node --check app/assets/js/production-v110-readonly-game-sync.js
           node --check app/assets/js/profile/mgw-profile-reactions.js
+          node --check app/assets/js/profile/mgw-profile-reactions-header.js
 
       - name: Run focused reaction contract
         run: php bot/tests/Mvp19_3ProfileReactionsTest.php
@@ -93,6 +96,9 @@ jobs:
           grep -F "document.addEventListener('mgw:app-ready', initMgwProfileReactions" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "new CustomEvent('mgw:game-reaction'" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "'reaction' => \$reaction" bot/game-watch.php
+          grep -F "host.insertBefore(toolbar" app/assets/js/profile/mgw-profile-reactions-header.js
+          grep -F "positionPalette" app/assets/js/profile/mgw-profile-reactions-header.js
+          grep -F 'production-v98-mobile-profile-perf.css' app/runtime/client/version-manifest.php
           grep -F 'production-v97-reactions.css' app/runtime/client/version-manifest.php
 
       - name: Guard frozen engines and bounded reaction slice
@@ -132,7 +138,9 @@ jobs:
               app/assets/js/api/client.js|\
               app/assets/js/production-v110-readonly-game-sync.js|\
               app/assets/js/profile/mgw-profile-reactions.js|\
+              app/assets/js/profile/mgw-profile-reactions-header.js|\
               app/assets/css/production-v97-reactions.css|\
+              app/assets/css/production-v98-mobile-profile-perf.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileReactionsTest.php)
                 ;;
