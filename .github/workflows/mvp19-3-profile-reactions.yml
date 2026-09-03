@@ -119,6 +119,12 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp19-3-profile-reactions.yml|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-backgrounds.yml|\
+              .github/workflows/mvp19-3-profile-badges.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml|\
+              .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
+              .github/workflows/mvp19-3-profile-name-colors.yml|\
               bot/database/migrations/20260903_0024_add_profile_reactions.php|\
               bot/services/GameReactionService.php|\
               bot/game-reaction.php|\
