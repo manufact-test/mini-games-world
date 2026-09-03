@@ -193,112 +193,127 @@
 }
 .profile-v2-reaction-preview-meta small{color:var(--muted)}
 
-/* Match composer stays outside the board/action tree, so it never owns a game move. */
-#screen-game .game-player{position:relative}
+/* Match reactions remain presentation-only and sit outside the game action tree. */
+#screen-game .game-player{position:relative;overflow:visible}
 .mgw-reaction-toolbar{
   position:relative;
-  z-index:15;
+  z-index:26;
   display:flex;
   justify-content:center;
-  margin:8px auto 6px;
-  width:min(100%,360px);
+  align-items:center;
+  width:28px;
+  height:28px;
+  margin:3px auto 2px;
 }
 .mgw-reaction-trigger{
-  min-height:34px;
-  padding:0 13px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  border:1px solid rgba(137,153,205,.34);
+  box-sizing:border-box;
+  width:28px;
+  min-width:28px;
+  height:28px;
+  min-height:28px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(137,153,205,.38);
   border-radius:999px;
-  background:rgba(10,13,26,.86);
+  background:rgba(10,13,26,.9);
   color:var(--text);
-  font-size:11px;
-  font-weight:850;
-  box-shadow:0 7px 22px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.045);
+  box-shadow:0 5px 16px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.05);
 }
-.mgw-reaction-trigger > span{font-size:17px;line-height:1}
+.mgw-reaction-trigger:active{transform:scale(.94)}
+.mgw-reaction-trigger > span{font-size:16px;line-height:1}
 .mgw-reaction-palette{
   position:absolute;
   left:50%;
-  top:42px;
-  z-index:30;
-  width:min(332px,calc(100vw - 28px));
+  top:32px;
+  z-index:40;
+  width:max-content;
+  max-width:calc(100vw - 24px);
   transform:translateX(-50%);
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:6px;
-  padding:8px;
-  border:1px solid rgba(145,159,206,.40);
-  border-radius:16px;
+  display:flex;
+  align-items:center;
+  flex-wrap:nowrap;
+  gap:4px;
+  padding:5px;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+  border:1px solid rgba(145,159,206,.4);
+  border-radius:13px;
   background:rgba(7,9,19,.96);
-  box-shadow:0 18px 48px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.05);
+  box-shadow:0 14px 34px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.05);
   backdrop-filter:blur(14px);
 }
+.mgw-reaction-palette::-webkit-scrollbar{display:none}
 .mgw-reaction-palette button{
-  min-width:0;
-  min-height:62px;
-  padding:6px 3px;
+  box-sizing:border-box;
+  flex:0 0 31px;
+  width:31px;
+  min-width:31px;
+  height:31px;
+  min-height:31px;
+  padding:0;
   display:grid;
   place-items:center;
-  gap:3px;
   border:1px solid rgba(126,145,202,.28);
-  border-radius:11px;
+  border-radius:9px;
   background:linear-gradient(150deg,rgba(101,77,220,.19),rgba(17,23,45,.72));
   color:var(--text);
 }
-.mgw-reaction-palette button:active{transform:scale(.96)}
-.mgw-reaction-palette button > span{font-size:25px;line-height:1}
-.mgw-reaction-palette button > small{
-  max-width:100%;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--soft);
-  font-size:8px;
-  font-weight:800;
-}
+.mgw-reaction-palette button:active{transform:scale(.92)}
+.mgw-reaction-palette button > span{font-size:19px;line-height:1}
 .mgw-live-reaction{
+  --mgw-reaction-origin-x:50%;
+  --mgw-reaction-origin-y:14px;
   position:absolute;
-  left:50%;
-  top:-8px;
-  z-index:40;
-  transform:translate(-50%,-100%);
-  min-width:60px;
-  max-width:120px;
+  left:var(--mgw-reaction-origin-x);
+  top:var(--mgw-reaction-origin-y);
+  z-index:55;
+  width:38px;
+  height:38px;
   display:grid;
   place-items:center;
-  gap:2px;
-  padding:8px 10px 7px;
   pointer-events:none;
-  border:1px solid rgba(190,205,255,.42);
-  border-radius:16px 16px 16px 5px;
-  background:rgba(8,11,24,.95);
-  box-shadow:0 12px 32px rgba(0,0,0,.38),0 0 22px rgba(123,94,255,.18);
-  animation:mgwReactionPop 2.3s cubic-bezier(.2,.8,.2,1) both;
+  border:1px solid rgba(205,215,255,.48);
+  border-radius:14px 14px 14px 5px;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.1),transparent 48%),rgba(8,11,24,.94);
+  box-shadow:0 10px 28px rgba(0,0,0,.34),0 0 22px rgba(123,94,255,.2);
+  transform-origin:50% 100%;
+  animation:mgwReactionFromSender 1.8s cubic-bezier(.2,.82,.2,1) both;
 }
-.mgw-live-reaction > span{font-size:30px;line-height:1}
-.mgw-live-reaction > small{
-  overflow:hidden;
-  max-width:100%;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--soft);
-  font-size:8px;
-  font-weight:850;
+.mgw-live-reaction.from-card{
+  --mgw-reaction-origin-x:22px;
+  --mgw-reaction-origin-y:20px;
 }
-@keyframes mgwReactionPop{
-  0%{opacity:0;transform:translate(-50%,-80%) scale(.55) rotate(-4deg)}
-  12%{opacity:1;transform:translate(-50%,-105%) scale(1.08) rotate(1deg)}
-  23%,76%{opacity:1;transform:translate(-50%,-100%) scale(1)}
-  100%{opacity:0;transform:translate(-50%,-128%) scale(.92)}
+.mgw-live-reaction::after{
+  content:'';
+  position:absolute;
+  left:6px;
+  bottom:-4px;
+  width:8px;
+  height:8px;
+  border-left:1px solid rgba(205,215,255,.34);
+  border-bottom:1px solid rgba(205,215,255,.34);
+  background:rgba(8,11,24,.94);
+  transform:rotate(-28deg) skew(-8deg);
+}
+.mgw-live-reaction > span{position:relative;z-index:1;font-size:24px;line-height:1}
+@keyframes mgwReactionFromSender{
+  0%{opacity:0;transform:translate(-50%,-18%) scale(.5) rotate(-5deg)}
+  14%{opacity:1;transform:translate(-50%,-112%) scale(1.13) rotate(2deg)}
+  28%,68%{opacity:1;transform:translate(-50%,-128%) scale(1) rotate(0)}
+  100%{opacity:0;transform:translate(-50%,-205%) scale(.82) rotate(3deg)}
 }
 @media(max-width:360px){
   .store-v2-reaction-grid,.profile-v2-reaction-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .mgw-reaction-palette{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .mgw-reaction-palette{max-width:calc(100vw - 16px)}
 }
 @media(prefers-reduced-motion:reduce){
-  .mgw-live-reaction{animation:none;opacity:1}
-  .mgw-reaction-palette button:active{transform:none}
+  .mgw-live-reaction{animation:mgwReactionReduced 1.25s ease both}
+  .mgw-reaction-trigger:active,.mgw-reaction-palette button:active{transform:none}
+}
+@keyframes mgwReactionReduced{
+  0%{opacity:0;transform:translate(-50%,-118%) scale(.94)}
+  15%,75%{opacity:1;transform:translate(-50%,-128%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-128%) scale(1)}
 }
