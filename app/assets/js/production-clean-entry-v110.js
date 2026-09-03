@@ -56,6 +56,7 @@ let storeAvatarObserver = null;
 let storeAvatarDecorateScheduled = false;
 let storeAvatarRuntime = null;
 let storeAvatarStarted = false;
+const DEFAULT_AVATAR_ITEM_ID = 'starter-default-01';
 
 function initStoreAvatarSelection(){
   document.addEventListener('mgw:app-ready', () => {
@@ -67,13 +68,14 @@ async function startStoreAvatarSelection(){
   if (storeAvatarStarted) return;
   storeAvatarStarted = true;
   try {
-    const [apiModule, stateModule, toastModule, uiModule, telegramModule, profileModelModule] = await Promise.all([
+    const [apiModule, stateModule, toastModule, uiModule, telegramModule, profileModelModule, sheetModule] = await Promise.all([
       import('./api/client.js?v=47'),
       import('./state.js?v=27'),
       import('./components/toast.js?v=27'),
       import('./ui.js?v=89'),
       import('./telegram/telegram-app.js?v=27'),
       import('./profile/mgw-profile-model.js?v=1'),
+      import('./components/sheet.js?v=68'),
     ]);
     storeAvatarRuntime = {
       api:apiModule.api,
@@ -82,6 +84,7 @@ async function startStoreAvatarSelection(){
       renderUser:uiModule.renderUser,
       haptic:telegramModule.haptic,
       mergeCanonicalMgwUser:profileModelModule.mergeCanonicalMgwUser,
+      closeSheet:sheetModule.closeSheet,
     };
   } catch (_) {
     storeAvatarStarted = false;
@@ -117,12 +120,15 @@ function decorateStoreAvatarCards(){
   const state = storeAvatarRuntime?.state;
   if (!state) return;
 
-  // This function mutates the same Store subtree that the observer watches.
+  // This function mutates Store/sheet subtrees watched by the same observer.
   // Pause observation while applying our own decoration so those mutations can
   // never feed back into an endless observer -> microtask -> DOM loop.
   storeAvatarObserver?.disconnect();
   try {
-    document.querySelectorAll('.store-v2-product.owned .store-v2-avatar-preview[data-avatar-item-id]').forEach(preview => {
+    // Real Store avatars live only in the top-level avatar grid. Frame previews
+    // intentionally reuse starter-default-01 as demo artwork and must never be
+    // mistaken for selectable avatar products.
+    document.querySelectorAll('.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product.owned .store-v2-avatar-preview[data-avatar-item-id]').forEach(preview => {
       if (!(preview instanceof HTMLElement)) return;
       const card = preview.closest('.store-v2-product');
       const foot = card?.querySelector(':scope > .store-v2-product-foot');
@@ -131,10 +137,15 @@ function decorateStoreAvatarCards(){
 
       const selectedItemId = String(state.selectedAvatarId || '').trim();
       const active = selectedItemId ? selectedItemId === itemId : card.classList.contains('equipped');
+      const removable = active && itemId !== DEFAULT_AVATAR_ITEM_ID;
       card.classList.toggle('equipped', active);
 
       const boughtLabel = foot.querySelector(':scope > b');
-      if (boughtLabel instanceof HTMLElement) boughtLabel.hidden = true;
+      if (boughtLabel instanceof HTMLElement) {
+        boughtLabel.hidden = false;
+        const nextStatus = active ? 'Выбрано' : 'В коллекции';
+        if (boughtLabel.textContent !== nextStatus) boughtLabel.textContent = nextStatus;
+      }
 
       let action = foot.querySelector(':scope > [data-mgw-store-avatar-select]');
       if (!(action instanceof HTMLButtonElement)) {
@@ -145,9 +156,9 @@ function decorateStoreAvatarCards(){
       action.dataset.mgwStoreAvatarSelect = itemId;
       const nextClassName = `store-v2-equip store-v2-avatar-select${active ? ' active' : ''}`;
       if (action.className !== nextClassName) action.className = nextClassName;
-      const nextLabel = active ? 'Выбрана' : 'Выбрать';
+      const nextLabel = active ? (removable ? 'Снять' : 'Выбрана') : 'Выбрать';
       if (action.textContent !== nextLabel) action.textContent = nextLabel;
-      action.disabled = active;
+      action.disabled = active && !removable;
       action.setAttribute('aria-pressed', active ? 'true' : 'false');
 
       const existingCheck = preview.querySelector(':scope > .store-v2-selected-check');
@@ -161,8 +172,50 @@ function decorateStoreAvatarCards(){
         existingCheck.remove();
       }
     });
+
+    decorateStoreFrameCards();
+    decorateProfileAvatarSheetAction();
   } finally {
     observeStoreAvatarRoots();
+  }
+}
+
+function decorateStoreFrameCards(){
+  document.querySelectorAll('[data-profile-frame-store-section] .store-v2-product').forEach(card => {
+    if (!(card instanceof HTMLElement)) return;
+    card.classList.add('store-v2-profile-frame-card');
+    const foot = card.querySelector(':scope > .store-v2-product-foot');
+    if (!(foot instanceof HTMLElement) || !card.classList.contains('owned')) return;
+
+    let status = foot.querySelector(':scope > [data-mgw-frame-card-status]');
+    if (!(status instanceof HTMLElement)) {
+      status = document.createElement('b');
+      status.dataset.mgwFrameCardStatus = '1';
+      foot.prepend(status);
+    }
+    const nextStatus = card.classList.contains('equipped') ? 'Выбрано' : 'В коллекции';
+    if (status.textContent !== nextStatus) status.textContent = nextStatus;
+  });
+}
+
+function decorateProfileAvatarSheetAction(){
+  const runtime = storeAvatarRuntime;
+  if (!runtime) return;
+  const preview = document.querySelector('#sheet .profile-v2-avatar-preview[data-avatar-item-id]');
+  const action = document.querySelector('#sheet #mgwAvatarEquip');
+  if (!(preview instanceof HTMLElement) || !(action instanceof HTMLButtonElement)) return;
+
+  const itemId = String(preview.dataset.avatarItemId || '').trim();
+  const active = itemId !== '' && itemId === String(runtime.state.selectedAvatarId || '').trim();
+  const removable = active && itemId !== DEFAULT_AVATAR_ITEM_ID;
+  if (removable) {
+    action.dataset.mgwStoreAvatarSelect = itemId;
+    action.disabled = false;
+    if (action.textContent !== 'Снять') action.textContent = 'Снять';
+    action.classList.remove('primary');
+    action.classList.add('ghost');
+  } else {
+    delete action.dataset.mgwStoreAvatarSelect;
   }
 }
 
@@ -173,22 +226,29 @@ function handleStoreAvatarSelection(event){
   if (!(action instanceof HTMLButtonElement)) return;
   event.preventDefault();
   event.stopPropagation();
+
   const itemId = String(action.dataset.mgwStoreAvatarSelect || '').trim();
-  if (!itemId || action.disabled || storeAvatarSaving || itemId === String(runtime.state.selectedAvatarId || '')) return;
-  if (!(action.closest('.store-v2-product.owned') instanceof HTMLElement)) return;
-  void selectOwnedStoreAvatar(itemId);
+  const selectedItemId = String(runtime.state.selectedAvatarId || '').trim();
+  const remove = itemId !== '' && itemId === selectedItemId && itemId !== DEFAULT_AVATAR_ITEM_ID;
+  const nextItemId = remove ? DEFAULT_AVATAR_ITEM_ID : itemId;
+  if (!nextItemId || action.disabled || storeAvatarSaving || (!remove && itemId === selectedItemId)) return;
+
+  const fromProfileSheet = action.id === 'mgwAvatarEquip' && action.closest('#sheet');
+  if (!fromProfileSheet && !(action.closest('.store-v2-product.owned') instanceof HTMLElement)) return;
+  void selectOwnedStoreAvatar(nextItemId, { removed:remove, closePreview:Boolean(fromProfileSheet) });
 }
 
-async function selectOwnedStoreAvatar(itemId){
+async function selectOwnedStoreAvatar(itemId, { removed = false, closePreview = false } = {}){
   const runtime = storeAvatarRuntime;
   if (!runtime || storeAvatarSaving) return;
-  const { api, state, toast, renderUser, haptic, mergeCanonicalMgwUser } = runtime;
+  const { api, state, toast, renderUser, haptic, mergeCanonicalMgwUser, closeSheet } = runtime;
   const previousSelectedAvatarId = state.selectedAvatarId;
   storeAvatarSaving = true;
   state.selectedAvatarId = itemId;
   decorateStoreAvatarCards();
   if (state.user) renderUser(state.user);
   haptic('light');
+  if (closePreview) closeSheet();
 
   try {
     const result = await api.profileV2({ avatar_item_id:itemId });
@@ -201,13 +261,13 @@ async function selectOwnedStoreAvatar(itemId){
     decorateStoreAvatarCards();
     if (state.user) renderUser(state.user);
     haptic('success');
-    toast('Аватарка выбрана.');
+    toast(removed ? 'Аватарка снята.' : 'Аватарка выбрана.');
   } catch (error) {
     state.selectedAvatarId = previousSelectedAvatarId;
     decorateStoreAvatarCards();
     if (state.user) renderUser(state.user);
     haptic('error');
-    toast(error?.message || 'Не удалось выбрать аватарку.');
+    toast(error?.message || (removed ? 'Не удалось снять аватарку.' : 'Не удалось выбрать аватарку.'));
   } finally {
     storeAvatarSaving = false;
   }
