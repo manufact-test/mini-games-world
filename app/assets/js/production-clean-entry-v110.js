@@ -90,12 +90,18 @@ async function startStoreAvatarSelection(){
 
   storeAvatarObserver?.disconnect();
   storeAvatarObserver = new MutationObserver(scheduleStoreAvatarDecoration);
-  [document.getElementById('storeTabSurface'), document.getElementById('sheet')].forEach(root => {
-    if (root) storeAvatarObserver.observe(root, { childList:true, subtree:true });
-  });
+  observeStoreAvatarRoots();
   document.addEventListener('click', handleStoreAvatarSelection, true);
   document.addEventListener('mgw:screen-changed', scheduleStoreAvatarDecoration);
   decorateStoreAvatarCards();
+}
+
+function observeStoreAvatarRoots(){
+  if (!storeAvatarObserver) return;
+  storeAvatarObserver.disconnect();
+  [document.getElementById('storeTabSurface'), document.getElementById('sheet')].forEach(root => {
+    if (root) storeAvatarObserver.observe(root, { childList:true, subtree:true });
+  });
 }
 
 function scheduleStoreAvatarDecoration(){
@@ -110,43 +116,54 @@ function scheduleStoreAvatarDecoration(){
 function decorateStoreAvatarCards(){
   const state = storeAvatarRuntime?.state;
   if (!state) return;
-  document.querySelectorAll('.store-v2-product.owned .store-v2-avatar-preview[data-avatar-item-id]').forEach(preview => {
-    if (!(preview instanceof HTMLElement)) return;
-    const card = preview.closest('.store-v2-product');
-    const foot = card?.querySelector(':scope > .store-v2-product-foot');
-    const itemId = String(preview.dataset.avatarItemId || '').trim();
-    if (!(card instanceof HTMLElement) || !(foot instanceof HTMLElement) || !itemId) return;
 
-    const selectedItemId = String(state.selectedAvatarId || '').trim();
-    const active = selectedItemId ? selectedItemId === itemId : card.classList.contains('equipped');
-    card.classList.toggle('equipped', active);
+  // This function mutates the same Store subtree that the observer watches.
+  // Pause observation while applying our own decoration so those mutations can
+  // never feed back into an endless observer -> microtask -> DOM loop.
+  storeAvatarObserver?.disconnect();
+  try {
+    document.querySelectorAll('.store-v2-product.owned .store-v2-avatar-preview[data-avatar-item-id]').forEach(preview => {
+      if (!(preview instanceof HTMLElement)) return;
+      const card = preview.closest('.store-v2-product');
+      const foot = card?.querySelector(':scope > .store-v2-product-foot');
+      const itemId = String(preview.dataset.avatarItemId || '').trim();
+      if (!(card instanceof HTMLElement) || !(foot instanceof HTMLElement) || !itemId) return;
 
-    const boughtLabel = foot.querySelector(':scope > b');
-    if (boughtLabel instanceof HTMLElement) boughtLabel.hidden = true;
+      const selectedItemId = String(state.selectedAvatarId || '').trim();
+      const active = selectedItemId ? selectedItemId === itemId : card.classList.contains('equipped');
+      card.classList.toggle('equipped', active);
 
-    let action = foot.querySelector(':scope > [data-mgw-store-avatar-select]');
-    if (!(action instanceof HTMLButtonElement)) {
-      action = document.createElement('button');
-      action.type = 'button';
-      foot.append(action);
-    }
-    action.dataset.mgwStoreAvatarSelect = itemId;
-    action.className = `store-v2-equip store-v2-avatar-select${active ? ' active' : ''}`;
-    action.textContent = active ? 'Выбрана' : 'Выбрать';
-    action.disabled = active;
-    action.setAttribute('aria-pressed', active ? 'true' : 'false');
+      const boughtLabel = foot.querySelector(':scope > b');
+      if (boughtLabel instanceof HTMLElement) boughtLabel.hidden = true;
 
-    const existingCheck = preview.querySelector(':scope > .store-v2-selected-check');
-    if (active && !(existingCheck instanceof HTMLElement)) {
-      const check = document.createElement('i');
-      check.className = 'store-v2-selected-check';
-      check.setAttribute('aria-label', 'Выбрана');
-      check.textContent = '✓';
-      preview.append(check);
-    } else if (!active && existingCheck instanceof HTMLElement) {
-      existingCheck.remove();
-    }
-  });
+      let action = foot.querySelector(':scope > [data-mgw-store-avatar-select]');
+      if (!(action instanceof HTMLButtonElement)) {
+        action = document.createElement('button');
+        action.type = 'button';
+        foot.append(action);
+      }
+      action.dataset.mgwStoreAvatarSelect = itemId;
+      const nextClassName = `store-v2-equip store-v2-avatar-select${active ? ' active' : ''}`;
+      if (action.className !== nextClassName) action.className = nextClassName;
+      const nextLabel = active ? 'Выбрана' : 'Выбрать';
+      if (action.textContent !== nextLabel) action.textContent = nextLabel;
+      action.disabled = active;
+      action.setAttribute('aria-pressed', active ? 'true' : 'false');
+
+      const existingCheck = preview.querySelector(':scope > .store-v2-selected-check');
+      if (active && !(existingCheck instanceof HTMLElement)) {
+        const check = document.createElement('i');
+        check.className = 'store-v2-selected-check';
+        check.setAttribute('aria-label', 'Выбрана');
+        check.textContent = '✓';
+        preview.append(check);
+      } else if (!active && existingCheck instanceof HTMLElement) {
+        existingCheck.remove();
+      }
+    });
+  } finally {
+    observeStoreAvatarRoots();
+  }
 }
 
 function handleStoreAvatarSelection(event){
