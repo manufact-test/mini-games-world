@@ -13,10 +13,13 @@ on:
       - 'app/assets/js/production-v110-readonly-game-sync.js'
       - 'app/assets/js/profile/mgw-profile-reactions.js'
       - 'app/assets/js/profile/mgw-profile-reactions-header.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/css/production-v97-reactions.css'
       - 'app/assets/css/production-v98-mobile-profile-perf.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
+      - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
+      - 'bot/tests/Mvp19_3ProfileNameColorsTest.php'
       - '.github/workflows/mvp19-3-profile-reactions.yml'
   workflow_dispatch:
 
@@ -60,6 +63,7 @@ jobs:
           node --check app/assets/js/production-v110-readonly-game-sync.js
           node --check app/assets/js/profile/mgw-profile-reactions.js
           node --check app/assets/js/profile/mgw-profile-reactions-header.js
+          node --check app/assets/js/screens/profile-screen-v110.js
 
       - name: Run focused reaction contract
         run: php bot/tests/Mvp19_3ProfileReactionsTest.php
@@ -139,10 +143,13 @@ jobs:
               app/assets/js/production-v110-readonly-game-sync.js|\
               app/assets/js/profile/mgw-profile-reactions.js|\
               app/assets/js/profile/mgw-profile-reactions-header.js|\
+              app/assets/js/screens/profile-screen-v110.js|\
               app/assets/css/production-v97-reactions.css|\
               app/assets/css/production-v98-mobile-profile-perf.css|\
               app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp19_3ProfileReactionsTest.php)
+              bot/tests/Mvp19_3ProfileReactionsTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              bot/tests/Mvp19_3ProfileNameColorsTest.php)
                 ;;
               *)
                 echo "Unexpected Profile reaction path: $path" >&2
