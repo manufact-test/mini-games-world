@@ -304,7 +304,7 @@ test('STORE SMOKE: avatar decorator cannot freeze bottom navigation', async ({ b
     const action = A.page.locator('#stagingOwnedAvatarObserverProbe [data-mgw-store-avatar-select="store-avatar-01"]');
     await expect(action).toBeVisible({ timeout:5_000 });
     await expect(action).toHaveText(/^(Выбрать|Снять)$/);
-    await expect(A.page.locator('#stagingOwnedAvatarObserverProbe .store-v2-product-foot > b')).toHaveText(/^(В коллекции|Выбрано)$/);
+    await expect(A.page.locator('#stagingOwnedAvatarObserverProbe .store-v2-product-foot > b')).toHaveText(/^(В\s+коллекции|Выбрано)$/u);
 
     // Frame previews deliberately reuse starter-default-01 as artwork. They must
     // remain outside the avatar action owner or the duplicate frame button bug
