@@ -1,0 +1,68 @@
+@import url('./production-v97-reactions.css?v=2&mvp19_3=ingame-corrective');
+
+/* v98: keep reaction control inside the existing turn header so it owns no board height. */
+#screen-game .turn-actions{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  min-width:0;
+}
+#screen-game .turn-actions > .mgw-reaction-toolbar{
+  flex:0 0 28px;
+  width:28px;
+  height:28px;
+  margin:0;
+  align-self:center;
+  z-index:55;
+}
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-palette{
+  z-index:120;
+  max-width:calc(100vw - 16px);
+}
+
+/* Mobile Profile performance corrective.
+   Keep the accepted artwork, but remove the expensive background-position /
+   blend/filter animation path from narrow Telegram WebViews. Premium profiles
+   retain a restrained compositor-only drift instead of repainting multi-layer
+   gradients on every frame. */
+@media (max-width:640px), (pointer:coarse){
+  #screen-profile.active > .content > .profile-v2{
+    contain:layout style;
+  }
+
+  #screen-profile.active,
+  #screen-profile.active::after,
+  #screen-profile.active .profile-v2-background-card-preview,
+  #screen-profile.active .profile-v2-background-preview,
+  #screen-profile.active .store-v2-game-preview,
+  #screen-profile.active .ttt-effect-mark{
+    animation:none !important;
+  }
+
+  #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
+    mix-blend-mode:normal !important;
+    filter:none !important;
+    animation:mgwMobileProfileAtmosphere 14s ease-in-out infinite alternate !important;
+    will-change:transform,opacity;
+  }
+
+  #screen-profile.active .profile-v2-collection-section{
+    contain:layout style;
+  }
+}
+
+@keyframes mgwMobileProfileAtmosphere{
+  from{transform:translate3d(-1.2%,-.5%,0) scale(1.015);opacity:.82}
+  to{transform:translate3d(1.2%,.7%,0) scale(1.025);opacity:.96}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
+    animation:none !important;
+    will-change:auto;
+  }
+}
