@@ -37,7 +37,7 @@ final class GameReactionService
             throw new GameReactionException(422, 'Некорректная реакция.');
         }
 
-        $game = $this->activeHumanGameForParticipant($gameId, $providerUserId);
+        $this->activeGameForParticipant($gameId, $providerUserId);
         $allowed = $this->allowedReactionCodes($mgwId);
         if (!in_array($code, $allowed, true)) {
             throw new GameReactionException(403, 'Эта реакция не входит в выбранный набор.');
@@ -137,7 +137,7 @@ final class GameReactionService
         return [];
     }
 
-    private function activeHumanGameForParticipant(string $gameId, string $providerUserId): array
+    private function activeGameForParticipant(string $gameId, string $providerUserId): array
     {
         $storage = new JsonStorageAdapter((string)($this->config['data_dir'] ?? ''));
         $game = $storage->readOnlySections(['games'], static function (array $data) use ($gameId): ?array {
@@ -149,9 +149,6 @@ final class GameReactionService
         }
         if (!in_array($providerUserId, array_map('strval', (array)($game['player_ids'] ?? [])), true)) {
             throw new GameReactionException(403, 'Вы не участвуете в этой игре.');
-        }
-        if (!empty($game['is_bot_game'])) {
-            throw new GameReactionException(409, 'Реакции доступны в матчах с игроками.');
         }
         return $game;
     }
