@@ -111,3 +111,22 @@
   height:calc(100% - 6px);
   margin:3px auto;
 }
+
+/* One selected/equipped language for all Profile cosmetics: canonical green, matching avatars. */
+.store-v2-name-color-card.equipped,
+.profile-v2-name-color-card.active,
+.store-v2-profile-badge-card.equipped,
+.profile-v2-badge-card.active,
+.store-v2-profile-frame-card.equipped,
+.profile-v2-frame-card.active{
+  border-color:rgba(96,214,147,.72)!important;
+  box-shadow:inset 0 0 0 1px rgba(96,214,147,.18),0 6px 16px rgba(0,0,0,.08)!important;
+}
+
+/* Frame product cards reserve the same footer geometry in every ownership state. */
+.store-v2-profile-frame-card{min-height:188px!important}
+.store-v2-profile-frame-copy{min-height:31px!important;align-content:start!important}
+.store-v2-profile-frame-foot{min-height:49px!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-end!important;gap:6px!important;margin-top:auto!important}
+.store-v2-profile-frame-foot b{display:block;min-height:10px!important;line-height:1!important}
+.store-v2-profile-frame-foot .store-v2-buy,
+.store-v2-profile-frame-foot .store-v2-equip{width:100%!important;height:31px!important;min-height:31px!important;padding:0 6px!important;margin:0!important}
