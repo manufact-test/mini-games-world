@@ -1,0 +1,145 @@
+name: MVP-19.3 Profile reactions
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260903_0024_add_profile_reactions.php'
+      - 'bot/services/GameReactionService.php'
+      - 'bot/game-reaction.php'
+      - 'bot/game-watch.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/production-v110-readonly-game-sync.js'
+      - 'app/assets/js/profile/mgw-profile-reactions.js'
+      - 'app/assets/css/production-v97-reactions.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
+      - '.github/workflows/mvp19-3-profile-reactions.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-profile-reactions-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile-reactions:
+    name: Purchase equip and live reaction projection
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/database/migrations/20260903_0024_add_profile_reactions.php
+          php -l bot/services/GameReactionService.php
+          php -l bot/game-reaction.php
+          php -l bot/game-watch.php
+          php -l bot/tests/Mvp19_3ProfileReactionsTest.php
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/production-v110-readonly-game-sync.js
+          node --check app/assets/js/profile/mgw-profile-reactions.js
+
+      - name: Run focused reaction contract
+        run: php bot/tests/Mvp19_3ProfileReactionsTest.php
+
+      - name: Preserve accepted cosmetic and game contracts
+        run: |
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_3ProfileNameColorsTest.php
+          php bot/tests/Mvp19_3ProfileBadgesTest.php
+          php bot/tests/Mvp19_3ProfileFramesTest.php
+          php bot/tests/Mvp19_3ProfileBackgroundsTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
+          php bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php
+
+      - name: Guard canonical reaction semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -Fc "'price' => 500" bot/database/migrations/20260903_0024_add_profile_reactions.php)" -eq 4
+          grep -F "'price' => 1500" bot/database/migrations/20260903_0024_add_profile_reactions.php
+          grep -F "'price' => 3500" bot/database/migrations/20260903_0024_add_profile_reactions.php
+          grep -F "private const SLOT = 'profile_reaction_set'" bot/database/migrations/20260903_0024_add_profile_reactions.php
+          grep -F "public const SLOT = 'profile_reaction_set'" bot/services/GameReactionService.php
+          grep -F 'ProductInventoryService' bot/services/GameReactionService.php
+          grep -F "action:'send'" app/assets/js/api/client.js
+          grep -F 'profileReactionEquip' app/assets/js/api/client.js
+          grep -F 'profileReactionUnequip' app/assets/js/api/client.js
+          grep -F 'data-profile-reaction-store-section' app/assets/js/profile/mgw-profile-reactions.js
+          grep -F 'data-profile-reaction-collection' app/assets/js/profile/mgw-profile-reactions.js
+          grep -F "document.addEventListener('mgw:app-ready', initMgwProfileReactions" app/assets/js/production-v110-readonly-game-sync.js
+          grep -F "new CustomEvent('mgw:game-reaction'" app/assets/js/production-v110-readonly-game-sync.js
+          grep -F "'reaction' => \$reaction" bot/game-watch.php
+          grep -F 'production-v97-reactions.css' app/runtime/client/version-manifest.php
+
+      - name: Guard frozen engines and bounded reaction slice
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/catalog/ProductInventoryService.php \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/services/GameInviteService.php \
+            bot/services/FriendGraphService.php \
+            bot/services/ReconnectLifecycleService.php \
+            app/assets/js/screens/game-screen-v102.js \
+            app/assets/js/games \
+            cron \
+            config/private.php
+
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp19-3-profile-reactions.yml|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-backgrounds.yml|\
+              .github/workflows/mvp19-3-profile-badges.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml|\
+              .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
+              .github/workflows/mvp19-3-profile-name-colors.yml|\
+              bot/database/migrations/20260903_0024_add_profile_reactions.php|\
+              bot/services/GameReactionService.php|\
+              bot/game-reaction.php|\
+              bot/game-watch.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/production-v110-readonly-game-sync.js|\
+              app/assets/js/profile/mgw-profile-reactions.js|\
+              app/assets/css/production-v97-reactions.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp19_3ProfileReactionsTest.php)
+                ;;
+              *)
+                echo "Unexpected Profile reaction path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0

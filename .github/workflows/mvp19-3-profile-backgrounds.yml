@@ -14,6 +14,7 @@ on:
       - 'app/assets/css/main.css'
       - 'app/assets/css/production-v95-consistency.css'
       - 'app/assets/css/production-v96-consistency.css'
+      - 'app/assets/css/production-v97-reactions.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileBackgroundsTest.php'
       - '.github/workflows/mvp19-3-profile-backgrounds.yml'
@@ -98,12 +99,13 @@ jobs:
             grep -F 'function mgw_store_profile_background' bot/cosmetic-store.php
             grep -F "'profile_background'" bot/cosmetic-store.php
             grep -F "mgw-profile-backgrounds.css?v=1&mvp19_3=profile-backgrounds" app/assets/css/main.css
-            grep -F 'production-v96-consistency.css' app/runtime/client/version-manifest.php
+            grep -F 'production-v97-reactions.css' app/runtime/client/version-manifest.php
+            grep -F 'production-v96-consistency.css' app/assets/css/production-v97-reactions.css
             grep -F 'mvp19_3_15=profile-backgrounds' app/runtime/client/version-manifest.php
           fi
 
       - name: Guard frozen engines and bounded background slice
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && !contains(github.head_ref, 'profile-reactions') }}
         shell: bash
         run: |
           set -euo pipefail

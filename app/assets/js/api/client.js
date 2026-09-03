@@ -7,6 +7,7 @@ const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const FRIENDS_URL = `${window.location.origin}/bot/friends.php`;
 const COSMETIC_STORE_URL = `${window.location.origin}/bot/cosmetic-store.php`;
 const PROFILE_V2_URL = `${window.location.origin}/bot/profile-v2.php`;
+const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 
 let profileV2ReadPromise = null;
 
@@ -81,6 +82,9 @@ export const api = {
   gameAction: (gameId, gameAction) => request('game_action', { gameId, gameAction }),
   makeMove: (gameId, cell) => request('make_move', { gameId, cell }),
   leaveGame: (gameId) => request('leave_game', { gameId }),
+  gameReaction: (gameId, reaction) => requestUrl(GAME_REACTION_URL, { action:'send', gameId, reaction }),
+  profileReactionEquip: itemId => requestUrl(GAME_REACTION_URL, { action:'equip', item_id:itemId }),
+  profileReactionUnequip: () => requestUrl(GAME_REACTION_URL, { action:'unequip' }),
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestProfileV2(profileUpdate),
   mgwProfile: () => requestMgwProfile(),
