@@ -95,10 +95,13 @@ $inventory->unequip($mgwId, 'profile_background');
 $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['profile_background']), 'Background slot must allow the default no-background state');
 
 $source = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-backgrounds.js');
+$entry = (string)file_get_contents($root . '/app/assets/js/production-clean-entry-v110.js');
 $css = (string)file_get_contents($root . '/app/assets/css/components/mgw-profile-backgrounds.css');
 $assertTrue(str_contains($source, "const BACKGROUND_SLOT = 'profile_background'") && str_contains($source, 'api.cosmeticStorePurchase') && str_contains($source, 'api.cosmeticStoreEquip') && str_contains($source, 'api.cosmeticStoreUnequip'), 'Background UX must use canonical purchase/equip transports');
 $assertTrue(str_contains($source, 'data-profile-background-store-section') && str_contains($source, 'data-profile-background-collection'), 'Background UX must own Store discovery and Profile collection surfaces');
 $assertTrue(str_contains($source, "document.addEventListener('mgw:app-ready'") && str_contains($source, "getElementById('screen-profile')"), 'Background fallback hydration must wait for app-ready and project to Profile only');
+$assertTrue(str_contains($entry, 'initMgwProfileBackgroundsOnDemand') && str_contains($entry, "document.addEventListener('mgw:screen-changed'") && str_contains($entry, "screen === 'store' || screen === 'profile'"), 'Background runtime must be route-gated to Store/Profile surfaces');
+$assertSame(1, substr_count($entry, 'initMgwProfileBackgrounds();'), 'Background runtime must not have an eager startup initializer outside the on-demand wrapper');
 $assertTrue(str_contains($css, '#screen-profile[data-profile-background-item-id]') && str_contains($css, 'profile-background-04'), 'Background CSS must define all four Profile variants');
 
 fwrite(STDOUT, "MVP-19.3 profile backgrounds passed ({$assertions} assertions).\n");
