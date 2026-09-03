@@ -94,8 +94,10 @@ $inventory->unequip($mgwId, 'profile_reaction_set');
 $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['profile_reaction_set']), 'Reaction set must allow an explicit no-reactions state');
 
 $reactionUi = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-reactions.js');
+$reactionCss = (string)file_get_contents($root . '/app/assets/css/production-v97-reactions.css');
 $reactionService = (string)file_get_contents($root . '/bot/services/GameReactionService.php');
 $watcher = (string)file_get_contents($root . '/app/assets/js/production-v110-readonly-game-sync.js');
+$manifest = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $assertTrue(str_contains($reactionUi, "const REACTION_SLOT = 'profile_reaction_set'") && str_contains($reactionUi, 'api.cosmeticStorePurchase'), 'Reaction UI must reuse canonical Store purchase flow');
 $assertTrue(str_contains($reactionUi, 'api.profileReactionEquip') && str_contains($reactionUi, 'api.profileReactionUnequip'), 'Reaction UI must route selection to the inventory-backed reaction endpoint');
 $assertTrue(str_contains($reactionUi, 'data-profile-reaction-store-section') && str_contains($reactionUi, 'data-profile-reaction-collection'), 'Reaction UI must provide Store and Profile collection surfaces');
@@ -103,5 +105,11 @@ $assertTrue(str_contains($reactionUi, 'data-send-reaction') && str_contains($rea
 $assertTrue(str_contains($reactionService, "public const SLOT = 'profile_reaction_set'") && str_contains($reactionService, 'ProductInventoryService'), 'Reaction delivery must validate the selected set through canonical inventory');
 $assertTrue(str_contains($reactionService, 'COOLDOWN_MS = 900') && str_contains($reactionService, 'EVENT_TTL_MS = 5000'), 'Reaction delivery must be bounded and ephemeral');
 $assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileReactions") && str_contains($watcher, "new CustomEvent('mgw:game-reaction'"), 'Reaction UI must initialize after app-ready and reuse the existing read-only watcher');
+$assertTrue(!str_contains($reactionUi, '!game?.is_bot_game') && !str_contains($reactionService, "if (!empty(\$game['is_bot_game']))"), 'Owned reactions must remain available in active bot matches without adding bot response ownership');
+$assertTrue(str_contains($reactionService, 'activeGameForParticipant') && !str_contains($reactionService, 'activeHumanGameForParticipant'), 'Reaction participant validation must no longer encode a human-only product restriction');
+$assertTrue(str_contains($reactionUi, 'aria-label="Реакции"') && !str_contains($reactionUi, '> Реакция</button>'), 'Match launcher must be an icon-only compact reaction control');
+$assertTrue(str_contains($reactionUi, ':scope > .game-player-avatar') && str_contains($reactionUi, '--mgw-reaction-origin-x'), 'Live reaction must calculate its visual origin from the sender avatar when present');
+$assertTrue(str_contains($reactionCss, 'width:28px') && str_contains($reactionCss, 'width:31px') && str_contains($reactionCss, 'mgwReactionFromSender'), 'Match reaction trigger, palette items and sender-origin animation must stay compact');
+$assertTrue(str_contains($manifest, 'mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective') && str_contains($manifest, 'production-v97-reactions.css?v=2&mvp19_3=ingame-corrective'), 'Corrected reaction JS and CSS must be cache-published through the active manifest');
 
 fwrite(STDOUT, "MVP-19.3 profile reactions passed ({$assertions} assertions).\n");
