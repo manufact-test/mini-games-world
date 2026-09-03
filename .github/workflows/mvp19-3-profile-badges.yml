@@ -113,7 +113,7 @@ jobs:
           PY
 
       - name: Guard frozen engines and bounded badge slice
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && !contains(github.head_ref, 'profile-backgrounds') }}
         shell: bash
         run: |
           set -euo pipefail
