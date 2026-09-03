@@ -119,12 +119,19 @@ function backgroundTierLabel(item){
 function decorateProfileSurface(){
   const screen = document.getElementById('screen-profile');
   if (!(screen instanceof HTMLElement)) return;
-  if (screen.dataset.profileBackgroundItemId) delete screen.dataset.profileBackgroundItemId;
-  const identity = screen.querySelector('.profile-v2-identity');
-  if (!(identity instanceof HTMLElement)) return;
   const itemId = currentBackgroundItemId();
-  if (itemId) identity.dataset.profileBackgroundItemId = itemId;
-  else if (identity.dataset.profileBackgroundItemId) delete identity.dataset.profileBackgroundItemId;
+  if (itemId) {
+    if (screen.dataset.profileBackgroundItemId !== itemId) screen.dataset.profileBackgroundItemId = itemId;
+  } else if (screen.dataset.profileBackgroundItemId) {
+    delete screen.dataset.profileBackgroundItemId;
+  }
+
+  // The screen is the only live presentation owner. Remove the historical
+  // identity-card projection if an older render left it behind.
+  const identity = screen.querySelector('.profile-v2-identity');
+  if (identity instanceof HTMLElement && identity.dataset.profileBackgroundItemId) {
+    delete identity.dataset.profileBackgroundItemId;
+  }
 }
 
 function backgroundPreviewMarkup(itemId, surfaceClass, selected = false){
@@ -168,19 +175,20 @@ function storeBackgroundCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const owned = item.owned === true;
   const active = owned && itemId === activeItemId;
+  const stateName = active ? 'selected' : (owned ? 'owned' : 'available');
   return `
-    <article class="store-v2-product store-v2-profile-background-card${owned ? ' owned' : ''}${active ? ' equipped' : ''}">
+    <article class="store-v2-product store-v2-profile-background-card mgw-profile-cosmetic-card${owned ? ' owned' : ''}${active ? ' equipped' : ''}" data-mgw-profile-cosmetic-state="${stateName}">
       ${backgroundPreviewMarkup(itemId, 'store-v2-profile-background-preview', active)}
       <div class="store-v2-profile-background-copy">
         <strong class="store-v2-product-name">${escapeHtml(backgroundName(item))}</strong>
         <small>${escapeHtml(backgroundTierLabel(item))}</small>
       </div>
-      <div class="store-v2-product-foot store-v2-profile-background-foot">
+      <div class="store-v2-product-foot store-v2-profile-background-foot mgw-profile-cosmetic-foot">
         ${owned
           ? (active
-            ? `<span class="store-v2-profile-background-owned">Выбран</span><button class="store-v2-equip active" data-profile-background-unequip type="button">Снять</button>`
-            : `<span class="store-v2-profile-background-owned">В коллекции</span><button class="store-v2-equip" data-profile-background-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-          : `<b>${formatNumber(backgroundPrice(item))}</b><button class="store-v2-buy" data-profile-background-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
+            ? `<b class="store-v2-profile-background-owned" data-mgw-profile-cosmetic-status>Выбрано</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-profile-background-unequip type="button">Снять</button>`
+            : `<b class="store-v2-profile-background-owned" data-mgw-profile-cosmetic-status>В коллекции</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-profile-background-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
+          : `<b>${formatNumber(backgroundPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-profile-background-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
       </div>
     </article>
   `;
@@ -242,10 +250,10 @@ function renderProfileBackgroundCollection(catalog){
 function profileBackgroundCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
-  return `<button class="profile-v2-background-card${active ? ' active' : ''}" type="button" data-profile-background-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(backgroundName(item))}" aria-pressed="${active ? 'true' : 'false'}">
+  return `<button class="profile-v2-background-card${active ? ' active' : ''}" type="button" data-profile-background-preview="${escapeAttr(itemId)}" data-mgw-profile-cosmetic-state="${active ? 'selected' : 'owned'}" aria-label="${escapeAttr(backgroundName(item))}" aria-pressed="${active ? 'true' : 'false'}">
     ${backgroundPreviewMarkup(itemId, 'profile-v2-background-card-preview')}
     <span class="profile-v2-background-card-copy"><b>${escapeHtml(backgroundName(item))}</b><small>${escapeHtml(backgroundTierLabel(item))}</small></span>
-    <span class="profile-v2-background-card-status">${active ? 'Выбран' : 'Выбрать'}</span>
+    <span class="profile-v2-background-card-status">${active ? 'Выбрано' : 'В коллекции'}</span>
     ${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}
   </button>`;
 }
@@ -316,7 +324,8 @@ function openBackgroundPreview(itemId){
     <div class="sheet-head"><div><h2>${escapeHtml(backgroundName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="profile-v2-background-preview-wrap">${backgroundPreviewMarkup(itemId, 'profile-v2-background-preview')}</div>
     <div class="profile-v2-background-preview-meta"><strong>Фон профиля</strong><small>${escapeHtml(backgroundTierLabel(item))}</small></div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileBackgroundEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
+    <div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwProfileBackgroundEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
   `);
   document.getElementById('mgwProfileBackgroundEquip')?.addEventListener('click', () => void saveBackground(itemId, active));
 }
