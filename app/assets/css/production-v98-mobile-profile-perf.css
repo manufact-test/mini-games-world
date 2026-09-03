@@ -23,36 +23,46 @@
 }
 
 /* Mobile Profile performance corrective.
-   The accepted visuals stay intact, but expensive continuous cosmetic animation
-   is paused while the Profile is active on narrow/coarse-pointer devices.
-   Lower sections use content-visibility so the WebView does not paint the full
-   long Profile during the first frame. */
+   Keep the accepted artwork, but remove the expensive background-position /
+   blend/filter animation path from narrow Telegram WebViews. Premium profiles
+   retain a restrained compositor-only drift instead of repainting multi-layer
+   gradients on every frame. */
 @media (max-width:640px), (pointer:coarse){
+  #screen-profile.active > .content > .profile-v2{
+    contain:layout style;
+  }
+
   #screen-profile.active,
-  #screen-profile.active::before,
   #screen-profile.active::after,
   #screen-profile.active .profile-v2-background-card-preview,
   #screen-profile.active .profile-v2-background-preview,
-  #screen-profile.active .profile-v2-game-card,
-  #screen-profile.active .profile-v2-collection-card,
-  #screen-profile.active .profile-v2-reaction-card,
-  #screen-profile.active .profile-v2-name-color-card{
-    animation-play-state:paused !important;
-  }
-
-  #screen-profile.active > .content > .profile-v2-root > .profile-v2-section,
-  #screen-profile.active > .content > .profile-v2-root > .profile-v2-balance{
-    content-visibility:auto;
-    contain-intrinsic-size:1px 240px;
-  }
-
-  #screen-profile.active .profile-v2-collection-section{
-    contain:layout style;
+  #screen-profile.active .store-v2-game-preview,
+  #screen-profile.active .ttt-effect-mark{
+    animation:none !important;
   }
 
   #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
   #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
     mix-blend-mode:normal !important;
     filter:none !important;
+    animation:mgwMobileProfileAtmosphere 14s ease-in-out infinite alternate !important;
+    will-change:transform,opacity;
+  }
+
+  #screen-profile.active .profile-v2-collection-section{
+    contain:layout style;
+  }
+}
+
+@keyframes mgwMobileProfileAtmosphere{
+  from{transform:translate3d(-1.2%,-.5%,0) scale(1.015);opacity:.82}
+  to{transform:translate3d(1.2%,.7%,0) scale(1.025);opacity:.96}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
+    animation:none !important;
+    will-change:auto;
   }
 }
