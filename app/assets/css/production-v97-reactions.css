@@ -1,0 +1,304 @@
+@import url('./production-v96-consistency.css?v=1&mvp19_3=final-spacing-background-tier-upgrade');
+
+/* MVP-19.3 reactions: additive presentation layer only. */
+.store-v2-reaction-section,
+.profile-v2-reaction-collection{
+  margin-top:18px;
+}
+.store-v2-reaction-grid,
+.profile-v2-reaction-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  align-items:stretch;
+}
+.store-v2-reaction-card,
+.profile-v2-reaction-card{
+  box-sizing:border-box;
+  min-width:0;
+  border:1px solid rgba(137,148,184,.38);
+  background:rgba(8,11,22,.72);
+  border-radius:var(--mgw-cos-card-radius,14px);
+  color:var(--text);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.store-v2-reaction-card{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:4px;
+  min-height:148px;
+  padding:var(--mgw-cos-card-pad,6px);
+}
+.store-v2-reaction-card.equipped,
+.profile-v2-reaction-card.active{
+  border-color:#52df98 !important;
+  box-shadow:0 0 0 1px rgba(82,223,152,.18),inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+.store-v2-reaction-preview,
+.profile-v2-reaction-card-preview{
+  position:relative;
+  box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:52px;
+  height:52px;
+  padding:6px;
+  margin:0;
+  overflow:hidden;
+  border:1px solid var(--mgw-cos-preview-border,rgba(116,196,255,.34));
+  border-radius:var(--mgw-cos-preview-radius,10px);
+  background:var(--mgw-cos-preview-bg,rgba(7,11,23,.50));
+}
+.mgw-reaction-preview{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  width:100%;
+  min-width:0;
+  flex-wrap:wrap;
+}
+.mgw-reaction-preview i{
+  display:grid;
+  place-items:center;
+  flex:0 0 27px;
+  width:27px;
+  height:27px;
+  margin:0;
+  border:1px solid rgba(153,170,215,.28);
+  border-radius:9px;
+  background:linear-gradient(145deg,rgba(84,105,180,.22),rgba(25,30,57,.62));
+  font-style:normal;
+  font-size:17px;
+  line-height:1;
+  filter:saturate(1.08);
+}
+.mgw-reaction-preview.compact i{
+  flex-basis:23px;
+  width:23px;
+  height:23px;
+  border-radius:8px;
+  font-size:15px;
+}
+.store-v2-reaction-copy{
+  box-sizing:border-box;
+  display:grid;
+  grid-template-rows:auto auto;
+  align-content:start;
+  gap:2px;
+  height:25px;
+  min-height:25px;
+  margin:0 1px;
+  overflow:hidden;
+}
+.store-v2-reaction-copy strong,
+.profile-v2-reaction-card > strong{
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--text);
+  font-size:var(--mgw-cos-title-size,9.5px);
+  line-height:1.12;
+  font-weight:900;
+}
+.store-v2-reaction-copy small,
+.profile-v2-reaction-card > small{
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--muted);
+  font-size:var(--mgw-cos-subtitle-size,8px);
+  line-height:1.12;
+  font-weight:650;
+}
+.store-v2-reaction-foot{
+  box-sizing:border-box;
+  min-height:44px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap:4px;
+  margin-top:0;
+  padding:0;
+}
+.store-v2-reaction-foot > b{
+  display:block;
+  min-height:10px;
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--soft);
+  font-size:var(--mgw-cos-meta-size,8.5px);
+  line-height:10px;
+  font-weight:800;
+}
+.store-v2-reaction-foot > button{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  height:var(--mgw-cos-action-height,30px) !important;
+  min-height:var(--mgw-cos-action-height,30px) !important;
+  margin:0 !important;
+  padding:0 5px !important;
+  border-radius:9px !important;
+  font-size:var(--mgw-cos-action-size,9px) !important;
+  line-height:1 !important;
+  font-weight:950 !important;
+}
+.profile-v2-reaction-card{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:4px;
+  min-height:94px;
+  padding:var(--mgw-cos-card-pad,6px);
+  text-align:left;
+  cursor:pointer;
+}
+.profile-v2-reaction-card .profile-v2-selected-check{
+  position:absolute;
+  top:5px;
+  right:5px;
+  z-index:3;
+}
+.mgw-reaction-sheet-preview{
+  display:grid;
+  place-items:center;
+  min-height:104px;
+  margin:8px 0 12px;
+  padding:14px;
+  border:1px solid rgba(131,151,205,.30);
+  border-radius:16px;
+  background:radial-gradient(circle at 50% 20%,rgba(111,83,255,.18),transparent 56%),rgba(7,10,21,.74);
+}
+.mgw-reaction-sheet-preview .mgw-reaction-preview i{
+  flex-basis:38px;
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  font-size:23px;
+}
+.profile-v2-reaction-preview-meta{
+  display:grid;
+  gap:2px;
+  margin:0 0 12px;
+}
+.profile-v2-reaction-preview-meta small{color:var(--muted)}
+
+/* Match composer stays outside the board/action tree, so it never owns a game move. */
+#screen-game .game-player{position:relative}
+.mgw-reaction-toolbar{
+  position:relative;
+  z-index:15;
+  display:flex;
+  justify-content:center;
+  margin:8px auto 6px;
+  width:min(100%,360px);
+}
+.mgw-reaction-trigger{
+  min-height:34px;
+  padding:0 13px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border:1px solid rgba(137,153,205,.34);
+  border-radius:999px;
+  background:rgba(10,13,26,.86);
+  color:var(--text);
+  font-size:11px;
+  font-weight:850;
+  box-shadow:0 7px 22px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.045);
+}
+.mgw-reaction-trigger > span{font-size:17px;line-height:1}
+.mgw-reaction-palette{
+  position:absolute;
+  left:50%;
+  top:42px;
+  z-index:30;
+  width:min(332px,calc(100vw - 28px));
+  transform:translateX(-50%);
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  padding:8px;
+  border:1px solid rgba(145,159,206,.40);
+  border-radius:16px;
+  background:rgba(7,9,19,.96);
+  box-shadow:0 18px 48px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter:blur(14px);
+}
+.mgw-reaction-palette button{
+  min-width:0;
+  min-height:62px;
+  padding:6px 3px;
+  display:grid;
+  place-items:center;
+  gap:3px;
+  border:1px solid rgba(126,145,202,.28);
+  border-radius:11px;
+  background:linear-gradient(150deg,rgba(101,77,220,.19),rgba(17,23,45,.72));
+  color:var(--text);
+}
+.mgw-reaction-palette button:active{transform:scale(.96)}
+.mgw-reaction-palette button > span{font-size:25px;line-height:1}
+.mgw-reaction-palette button > small{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--soft);
+  font-size:8px;
+  font-weight:800;
+}
+.mgw-live-reaction{
+  position:absolute;
+  left:50%;
+  top:-8px;
+  z-index:40;
+  transform:translate(-50%,-100%);
+  min-width:60px;
+  max-width:120px;
+  display:grid;
+  place-items:center;
+  gap:2px;
+  padding:8px 10px 7px;
+  pointer-events:none;
+  border:1px solid rgba(190,205,255,.42);
+  border-radius:16px 16px 16px 5px;
+  background:rgba(8,11,24,.95);
+  box-shadow:0 12px 32px rgba(0,0,0,.38),0 0 22px rgba(123,94,255,.18);
+  animation:mgwReactionPop 2.3s cubic-bezier(.2,.8,.2,1) both;
+}
+.mgw-live-reaction > span{font-size:30px;line-height:1}
+.mgw-live-reaction > small{
+  overflow:hidden;
+  max-width:100%;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--soft);
+  font-size:8px;
+  font-weight:850;
+}
+@keyframes mgwReactionPop{
+  0%{opacity:0;transform:translate(-50%,-80%) scale(.55) rotate(-4deg)}
+  12%{opacity:1;transform:translate(-50%,-105%) scale(1.08) rotate(1deg)}
+  23%,76%{opacity:1;transform:translate(-50%,-100%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-128%) scale(.92)}
+}
+@media(max-width:360px){
+  .store-v2-reaction-grid,.profile-v2-reaction-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mgw-reaction-palette{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+  .mgw-live-reaction{animation:none;opacity:1}
+  .mgw-reaction-palette button:active{transform:none}
+}
