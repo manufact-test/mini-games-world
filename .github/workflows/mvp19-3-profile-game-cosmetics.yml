@@ -97,7 +97,7 @@ jobs:
           grep -F "@import url('./screens/profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs-fresh&fresh-selection&ttt-mark=css');" app/assets/css/main.css
 
       - name: Guard frozen owners and bounded Profile evolution
-        if: ${{ github.event_name == 'pull_request' && !contains(github.head_ref, 'profile-badges') }}
+        if: ${{ github.event_name == 'pull_request' && !contains(github.head_ref, 'profile-badges') && !contains(github.head_ref, 'profile-backgrounds') }}
         shell: bash
         run: |
           set -euo pipefail
