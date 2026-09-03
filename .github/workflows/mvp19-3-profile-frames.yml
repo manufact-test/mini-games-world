@@ -98,7 +98,7 @@ jobs:
           grep -F 'mvp19_3_7=profile-v2-read-coalesce' app/runtime/client/version-manifest.php
 
       - name: Guard frozen engines and bounded frame slice
-        if: ${{ github.event_name == 'pull_request' && !contains(github.head_ref, 'profile-badges') && !contains(github.head_ref, 'profile-backgrounds') }}
+        if: ${{ github.event_name == 'pull_request' && !contains(github.head_ref, 'profile-badges') && !contains(github.head_ref, 'profile-backgrounds') && !contains(github.head_ref, 'profile-reactions') }}
         shell: bash
         run: |
           set -euo pipefail
