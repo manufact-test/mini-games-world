@@ -38,6 +38,7 @@ const visibleProfile = profile.indexOf('showProfileImmediately();', openProfileS
 const backgroundHydration = profile.indexOf('applyProfileResponse(await api.profileV2());', visibleProfile);
 expect(openProfileStart >= 0 && visibleProfile > openProfileStart && backgroundHydration > visibleProfile, 'Profile must paint shared state immediately and refresh authoritatively in the background');
 expect(profile.includes('function warmProfileSnapshot()') && profile.includes('requestIdleCallback(warm, { timeout:700 })'), 'Profile must warm its authoritative snapshot before likely navigation');
+expect(profile.includes('lastProfileRenderSignature') && profile.includes('renderSignature === lastProfileRenderSignature'), 'Profile must skip redundant full DOM rebuilds when authoritative state is unchanged');
 
 expect(profileCss.includes('.profile-v2-game-collection'), 'Profile game collection layout must exist');
 expect(profileCss.includes('.profile-v2-game-tabs{display:flex'), 'Profile must keep games in one horizontal selector row');
@@ -48,7 +49,7 @@ expect(profileCss.includes('.profile-v2-game-grid{display:grid;grid-template-col
 expect(profileCss.includes('.store-v2-game-preview'), 'Profile layout may size but must not duplicate Store cosmetic artwork');
 expect(mainCss.includes('profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs-fresh&fresh-selection&ttt-mark=css'), 'active CSS graph must publish compact game tabs and stable Tic Tac Toe mark geometry');
 expect(manifest.includes('mvp19_3_3=game-tabs-fresh'), 'active Profile runtime identity must publish fresh game-tab collection');
-expect(manifest.includes('perf=instant-open-refresh'), 'active Profile runtime must publish instant-open background refresh behavior');
+expect(manifest.includes('perf=stable-render-cache'), 'active Profile runtime must publish stable render-cache behavior while preserving immediate open/background refresh');
 expect(manifest.includes('mvp19_3=profile-game-tabs-fresh'), 'active main CSS identity must publish Profile game-tab polish');
 
 expect(inventory.includes('public function equip(string $mgwId, string $itemId): array'), 'ProductInventoryService must remain the equip owner');
