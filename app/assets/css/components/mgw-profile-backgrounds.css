@@ -1,15 +1,29 @@
-/* MVP-19.3 — canonical Profile background cosmetics, full-Profile surface corrective. */
+/* MVP-19.3 — canonical Profile background cosmetics + Profile collection presentation polish. */
 .store-v2-profile-background-section{margin-top:18px;display:flex;flex-direction:column;gap:9px;overflow:visible}
 .store-v2-profile-background-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important}
 .store-v2-profile-background-card{min-width:0!important;min-height:184px!important;padding:8px!important;gap:7px!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;border-radius:14px!important}
 .store-v2-profile-background-card.equipped{border-color:rgba(96,214,147,.72)!important;box-shadow:inset 0 0 0 1px rgba(96,214,147,.18),0 6px 16px rgba(0,0,0,.08)!important}
 .store-v2-profile-background-preview,.profile-v2-background-preview,.profile-v2-background-card-preview{position:relative;isolation:isolate;display:block;width:100%;aspect-ratio:1.58/1;border-radius:11px;border:1px solid rgba(255,255,255,.14);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 7px 18px rgba(0,0,0,.16);background-color:#0d111d;background-image:var(--mgw-profile-background);background-size:cover;background-position:center}
-/* Store/Profile previews honestly show the same wallpaper plus the translucent card treatment used by the live Profile surface. */
-.store-v2-profile-background-preview::before,.profile-v2-background-preview::before,.profile-v2-background-card-preview::before{content:"";position:absolute;z-index:0;left:7%;right:7%;top:9%;height:28%;pointer-events:none;border:1px solid rgba(255,255,255,.17);border-radius:7px;background:linear-gradient(145deg,rgba(13,17,29,.58),rgba(19,22,34,.38));box-shadow:0 31px 0 -2px rgba(12,16,27,.48),0 31px 0 -1px rgba(255,255,255,.07)}
-.store-v2-profile-background-preview::after,.profile-v2-background-preview::after,.profile-v2-background-card-preview::after{content:"";position:absolute;z-index:0;right:7%;bottom:8%;width:28%;height:31%;pointer-events:none;border:1px solid rgba(255,255,255,.13);border-radius:7px;background:rgba(8,12,22,.44);box-shadow:-42px 0 0 -2px rgba(10,14,25,.42)}
+
+/* The miniature Profile preview has three clean, non-overlapping content rows:
+   one identity panel, one utility strip and a separated two-card bottom row. */
+.store-v2-profile-background-preview::before,.profile-v2-background-preview::before,.profile-v2-background-card-preview::before{
+  content:"";position:absolute;z-index:0;left:7%;right:7%;top:9%;height:49%;pointer-events:none;border:0;border-radius:0;box-shadow:none;
+  background:
+    linear-gradient(145deg,rgba(15,21,38,.68),rgba(12,17,31,.48)) 0 0/100% 43% no-repeat,
+    linear-gradient(145deg,rgba(12,18,33,.58),rgba(16,20,34,.42)) 0 100%/100% 29% no-repeat;
+  filter:drop-shadow(0 0 0 rgba(0,0,0,0));
+}
+.store-v2-profile-background-preview::after,.profile-v2-background-preview::after,.profile-v2-background-card-preview::after{
+  content:"";position:absolute;z-index:0;left:7%;right:7%;bottom:8%;width:auto;height:23%;pointer-events:none;border:0;border-radius:0;box-shadow:none;
+  background:
+    linear-gradient(145deg,rgba(10,15,27,.58),rgba(15,19,31,.40)) left center/47% 100% no-repeat,
+    linear-gradient(145deg,rgba(10,15,27,.58),rgba(15,19,31,.40)) right center/47% 100% no-repeat;
+}
 .store-v2-profile-background-preview>.store-v2-selected-check{z-index:3}
 /* A background product reads as the Profile surface itself, not as a second avatar/profile owner. */
 .store-v2-profile-background-preview .mgw-profile-background-mini-avatar,.store-v2-profile-background-preview .mgw-profile-background-mini-copy,.profile-v2-background-preview .mgw-profile-background-mini-avatar,.profile-v2-background-preview .mgw-profile-background-mini-copy,.profile-v2-background-card-preview .mgw-profile-background-mini-avatar,.profile-v2-background-card-preview .mgw-profile-background-mini-copy{display:none!important}
+
 .store-v2-profile-background-copy{display:grid;gap:2px;min-width:0;align-content:start;min-height:29px}
 .store-v2-profile-background-copy .store-v2-product-name{margin:0;font-size:11px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .store-v2-profile-background-copy small{font-size:8.5px;color:var(--muted);line-height:1.1;white-space:nowrap}
@@ -20,27 +34,80 @@
 
 .profile-v2-background-collection{margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:8px}
 .profile-v2-background-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;align-items:stretch}
-.profile-v2-background-card{position:relative;box-sizing:border-box;min-width:0;min-height:158px;height:100%;display:flex;flex-direction:column;gap:7px;align-items:stretch;padding:8px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.022));color:inherit;text-align:left;overflow:hidden}
+.profile-v2-background-card{position:relative;box-sizing:border-box;min-width:0;min-height:126px;height:100%;display:flex;flex-direction:column;gap:7px;align-items:stretch;padding:8px;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.022));color:inherit;text-align:left;overflow:hidden}
 .profile-v2-background-card.active{border-color:rgba(96,214,147,.72)!important;box-shadow:inset 0 0 0 1px rgba(96,214,147,.18),0 6px 16px rgba(0,0,0,.08)!important}
 .profile-v2-background-card-preview{flex:0 0 auto;aspect-ratio:1.58/1;min-height:72px}
-.profile-v2-background-card-copy{display:grid;gap:2px;min-width:0;min-height:28px;align-content:start}
-.profile-v2-background-card-copy b{font-size:10.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.profile-v2-background-card-copy small{font-size:8.5px;color:var(--muted);white-space:nowrap}
-.profile-v2-background-card-status{display:grid;place-items:center;width:100%;min-height:24px;margin-top:auto;border:1px solid rgba(96,214,147,.20);border-radius:9px;background:rgba(96,214,147,.065);font-size:9px;font-weight:900;color:#aef2c8;white-space:nowrap}
-.profile-v2-background-card.active .profile-v2-background-card-status{border-color:rgba(96,214,147,.34);background:rgba(96,214,147,.11);color:#c9f8da}
+.profile-v2-background-card-copy{display:grid;gap:2px;min-width:0;min-height:28px;align-content:start;margin-top:auto}
+.profile-v2-background-card-copy b{font-size:10.5px;line-height:1.12;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.profile-v2-background-card-copy small{font-size:8.5px;line-height:1.15;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-v2-background-card-status{display:none!important}
 .profile-v2-background-card>.profile-v2-selected-check{top:12px;right:12px}
 
 .profile-v2-background-preview-wrap{display:grid;place-items:center;padding:4px 0 10px}
 .profile-v2-background-preview-wrap .profile-v2-background-preview{width:min(100%,280px);height:auto;aspect-ratio:1.58/1;border-radius:18px;box-shadow:0 18px 38px rgba(0,0,0,.28)}
-.profile-v2-background-preview-meta{display:grid;gap:3px;margin:-2px 0 10px;text-align:center}.profile-v2-background-preview-meta strong{font-size:15px}.profile-v2-background-preview-meta small{color:var(--muted);font-size:10px}
+.profile-v2-background-preview-meta{display:grid;gap:3px;margin:-2px 0 10px;text-align:center}
+.profile-v2-background-preview-meta strong{font-size:15px}
+.profile-v2-background-preview-meta small{color:var(--muted);font-size:10px}
+/* The Profile collection already communicates selection with the green edge/check;
+   the preview sheet therefore keeps only its real Выбрать / Снять action. */
+.profile-v2-background-preview-meta + .mgw-profile-cosmetic-sheet-status{display:none!important}
 
 /* The catalogue and the live screen share these exact visual recipes. */
-[data-profile-background-item-id="profile-background-01"]{--mgw-profile-background:radial-gradient(circle at 17% 16%,rgba(126,128,255,.72),transparent 31%),radial-gradient(circle at 84% 80%,rgba(193,91,255,.50),transparent 37%),linear-gradient(145deg,#202653 0%,#111831 49%,#080b18 100%);--mgw-profile-atmosphere:radial-gradient(circle at 24% 21%,rgba(162,137,255,.20),transparent 34%),radial-gradient(circle at 81% 75%,rgba(187,94,255,.15),transparent 38%);--mgw-profile-glass:rgba(12,16,31,.78)}
-[data-profile-background-item-id="profile-background-02"]{--mgw-profile-background:radial-gradient(ellipse at 54% -8%,rgba(125,246,255,.70),transparent 42%),radial-gradient(ellipse at 8% 72%,rgba(66,153,255,.48),transparent 36%),radial-gradient(ellipse at 91% 87%,rgba(93,255,205,.18),transparent 34%),linear-gradient(155deg,#174055 0%,#0c2137 49%,#07111f 100%);--mgw-profile-atmosphere:linear-gradient(116deg,transparent 8%,rgba(97,232,255,.10) 31%,rgba(116,255,210,.08) 48%,transparent 67%),radial-gradient(ellipse at 50% -8%,rgba(128,241,255,.22),transparent 46%);--mgw-profile-glass:rgba(8,23,35,.73)}
-[data-profile-background-item-id="profile-background-03"]{--mgw-profile-background:linear-gradient(116deg,transparent 0 35%,rgba(255,82,213,.32) 36% 39%,transparent 40% 55%,rgba(65,229,255,.34) 56% 59%,transparent 60%),radial-gradient(circle at 79% 18%,rgba(255,70,205,.62),transparent 31%),radial-gradient(circle at 16% 85%,rgba(55,221,255,.57),transparent 34%),linear-gradient(145deg,#321047 0%,#10192f 54%,#07101d 100%);--mgw-profile-atmosphere:linear-gradient(122deg,transparent 14%,rgba(255,72,213,.11) 34%,transparent 45%,rgba(61,230,255,.13) 60%,transparent 72%),radial-gradient(circle at 73% 22%,rgba(255,70,210,.20),transparent 31%),radial-gradient(circle at 19% 82%,rgba(60,225,255,.18),transparent 32%);--mgw-profile-glass:rgba(13,14,31,.68)}
-[data-profile-background-item-id="profile-background-04"]{--mgw-profile-background:radial-gradient(circle at 50% 34%,rgba(164,101,255,.62),transparent 23%),radial-gradient(circle at 18% 18%,rgba(67,218,255,.27),transparent 29%),radial-gradient(circle at 84% 84%,rgba(230,86,255,.28),transparent 31%),radial-gradient(circle at 50% 34%,transparent 0 16%,rgba(218,143,255,.30) 17% 19%,transparent 20% 29%,rgba(78,229,255,.20) 30% 32%,transparent 33%),linear-gradient(155deg,#27123f 0%,#0b0f1e 52%,#03050b 100%);--mgw-profile-atmosphere:repeating-radial-gradient(circle at 50% 34%,rgba(223,183,255,.11) 0 1px,transparent 1.5px 28px),conic-gradient(from 210deg at 50% 34%,transparent,rgba(135,96,255,.14),transparent 28%,rgba(70,222,255,.12),transparent 62%,rgba(235,90,255,.11),transparent);--mgw-profile-glass:rgba(9,10,22,.62)}
+[data-profile-background-item-id="profile-background-01"]{
+  --mgw-profile-background:
+    radial-gradient(circle at 17% 16%,rgba(126,128,255,.72),transparent 31%),
+    radial-gradient(circle at 84% 80%,rgba(193,91,255,.50),transparent 37%),
+    linear-gradient(145deg,#202653 0%,#111831 49%,#080b18 100%);
+  --mgw-profile-atmosphere:
+    radial-gradient(circle at 24% 21%,rgba(162,137,255,.20),transparent 34%),
+    radial-gradient(circle at 81% 75%,rgba(187,94,255,.15),transparent 38%);
+  --mgw-profile-glass:rgba(12,16,31,.78)
+}
+[data-profile-background-item-id="profile-background-02"]{
+  --mgw-profile-background:
+    radial-gradient(ellipse at 54% -8%,rgba(125,246,255,.70),transparent 42%),
+    radial-gradient(ellipse at 8% 72%,rgba(66,153,255,.48),transparent 36%),
+    radial-gradient(ellipse at 91% 87%,rgba(93,255,205,.18),transparent 34%),
+    linear-gradient(155deg,#174055 0%,#0c2137 49%,#07111f 100%);
+  --mgw-profile-atmosphere:
+    linear-gradient(116deg,transparent 8%,rgba(97,232,255,.10) 31%,rgba(116,255,210,.08) 48%,transparent 67%),
+    radial-gradient(ellipse at 50% -8%,rgba(128,241,255,.22),transparent 46%);
+  --mgw-profile-glass:rgba(8,23,35,.73)
+}
 
-/* Live owner: one equipped background now owns the whole Profile surface. */
+/* 7 500 — Neon: luminous aurora lanes with clearly visible flowing motion. */
+[data-profile-background-item-id="profile-background-03"]{
+  --mgw-profile-background:
+    radial-gradient(circle at 14% 20%,rgba(67,239,255,.88) 0 3%,rgba(40,210,255,.38) 8%,transparent 28%),
+    radial-gradient(circle at 86% 24%,rgba(255,70,220,.88) 0 3%,rgba(255,57,208,.38) 9%,transparent 30%),
+    linear-gradient(118deg,transparent 0 20%,rgba(63,236,255,.48) 21% 23%,transparent 24% 46%,rgba(255,70,218,.44) 47% 50%,transparent 51% 70%,rgba(137,94,255,.36) 71% 74%,transparent 75%),
+    radial-gradient(ellipse at 54% 88%,rgba(71,132,255,.34),transparent 44%),
+    linear-gradient(155deg,#22092e 0%,#0b1930 48%,#04131b 100%);
+  --mgw-profile-atmosphere:
+    repeating-linear-gradient(118deg,transparent 0 42px,rgba(70,230,255,.075) 43px 45px,transparent 46px 88px),
+    conic-gradient(from 205deg at 52% 45%,rgba(255,65,216,.15),transparent 19%,rgba(67,233,255,.16),transparent 42%,rgba(143,91,255,.16),transparent 67%,rgba(255,86,190,.11),transparent);
+  --mgw-profile-glass:rgba(10,14,30,.62)
+}
+
+/* 12 500 — Abyss: gravitational lens, star points and a slow orbital energy field. */
+[data-profile-background-item-id="profile-background-04"]{
+  --mgw-profile-background:
+    radial-gradient(circle at 50% 35%,rgba(255,255,255,.96) 0 .6%,rgba(211,185,255,.92) 1.1%,rgba(151,102,255,.64) 2.3%,rgba(99,58,190,.34) 5%,transparent 13%),
+    radial-gradient(circle at 50% 35%,transparent 0 15%,rgba(191,139,255,.54) 16% 17.5%,transparent 19% 26%,rgba(73,221,255,.28) 27% 28.5%,transparent 30% 38%,rgba(255,86,220,.16) 39% 40%,transparent 42%),
+    radial-gradient(circle at 12% 18%,rgba(255,255,255,.88) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 82% 16%,rgba(171,226,255,.80) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 76% 73%,rgba(255,189,246,.72) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 24% 82%,rgba(201,211,255,.76) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 88% 47%,rgba(255,255,255,.58) 0 1px,transparent 1.5px),
+    radial-gradient(circle at 31% 45%,rgba(124,84,255,.27),transparent 30%),
+    linear-gradient(155deg,#13081f 0%,#080d1d 48%,#02040a 100%);
+  --mgw-profile-atmosphere:
+    repeating-radial-gradient(circle at 50% 35%,rgba(225,201,255,.08) 0 1px,transparent 1.5px 24px),
+    conic-gradient(from 205deg at 50% 35%,transparent 0 10%,rgba(150,93,255,.18) 18%,transparent 29%,rgba(58,220,255,.16) 42%,transparent 56%,rgba(255,76,215,.14) 69%,transparent 82%);
+  --mgw-profile-glass:rgba(7,9,20,.56)
+}
+
+/* Live owner: one equipped background owns the whole Profile surface. */
 #screen-profile[data-profile-background-item-id]{position:absolute;isolation:isolate;overflow:hidden;background-color:#070a12;background-image:var(--mgw-profile-background);background-size:cover;background-position:center}
 #screen-profile[data-profile-background-item-id]::before{content:"";position:absolute;z-index:0;inset:-8%;pointer-events:none;background:var(--mgw-profile-atmosphere);background-size:cover;opacity:.92;transform:translate3d(0,0,0) scale(1.02)}
 #screen-profile[data-profile-background-item-id]::after{content:"";position:absolute;z-index:0;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(4,7,13,.16),rgba(4,7,13,.30) 58%,rgba(4,7,13,.50)),linear-gradient(90deg,rgba(255,255,255,.018),transparent 30%,transparent 70%,rgba(255,255,255,.012))}
@@ -69,20 +136,180 @@
 #screen-profile[data-profile-background-item-id] .profile-v2-person small,
 #screen-profile[data-profile-background-item-id] .profile-v2-section-head p{text-shadow:0 1px 4px rgba(0,0,0,.55)}
 
-/* Premium tiers carry progressively richer motion; ownership/equip semantics stay untouched. */
-#screen-profile[data-profile-background-item-id="profile-background-03"]::before{animation:mgw-profile-background-drift 12s ease-in-out infinite alternate}
-#screen-profile[data-profile-background-item-id="profile-background-04"]::before{animation:mgw-profile-background-orbit 14s ease-in-out infinite alternate}
-#screen-profile[data-profile-background-item-id="profile-background-04"]::after{animation:mgw-profile-background-breathe 6.5s ease-in-out infinite}
-.store-v2-profile-background-preview[data-profile-background-item-id="profile-background-03"],.profile-v2-background-preview[data-profile-background-item-id="profile-background-03"],.profile-v2-background-card-preview[data-profile-background-item-id="profile-background-03"]{animation:mgw-profile-preview-drift 10s ease-in-out infinite alternate}
-.store-v2-profile-background-preview[data-profile-background-item-id="profile-background-04"],.profile-v2-background-preview[data-profile-background-item-id="profile-background-04"],.profile-v2-background-card-preview[data-profile-background-item-id="profile-background-04"]{animation:mgw-profile-preview-drift 7s ease-in-out infinite alternate}
-@keyframes mgw-profile-background-drift{0%{transform:translate3d(-1.2%,-.6%,0) scale(1.025)}100%{transform:translate3d(1.4%,.9%,0) scale(1.06)}}
-@keyframes mgw-profile-background-orbit{0%{transform:translate3d(-1.5%,-1%,0) rotate(-1deg) scale(1.035)}100%{transform:translate3d(1.6%,1.1%,0) rotate(1.2deg) scale(1.08)}}
-@keyframes mgw-profile-background-breathe{0%,100%{opacity:.86}50%{opacity:1}}
-@keyframes mgw-profile-preview-drift{0%{background-position:46% 48%}100%{background-position:56% 52%}}
+/* Premium motion is visible in both Store/Profile previews and on the live surface. */
+#screen-profile[data-profile-background-item-id="profile-background-03"],
+.store-v2-profile-background-preview[data-profile-background-item-id="profile-background-03"],
+.profile-v2-background-preview[data-profile-background-item-id="profile-background-03"],
+.profile-v2-background-card-preview[data-profile-background-item-id="profile-background-03"]{
+  background-size:150% 150%,150% 150%,220% 190%,165% 150%,cover;
+  animation:mgwProfileNeonFlow 8.5s ease-in-out infinite alternate;
+}
+#screen-profile[data-profile-background-item-id="profile-background-03"]::before{animation:mgwProfileNeonAtmosphere 10s ease-in-out infinite alternate;filter:saturate(1.16) brightness(1.05)}
+
+#screen-profile[data-profile-background-item-id="profile-background-04"],
+.store-v2-profile-background-preview[data-profile-background-item-id="profile-background-04"],
+.profile-v2-background-preview[data-profile-background-item-id="profile-background-04"],
+.profile-v2-background-card-preview[data-profile-background-item-id="profile-background-04"]{
+  background-size:125% 125%,128% 128%,auto,auto,auto,auto,auto,155% 155%,cover;
+  animation:mgwProfileAbyssDepth 11s ease-in-out infinite alternate;
+}
+#screen-profile[data-profile-background-item-id="profile-background-04"]::before{animation:mgwProfileAbyssOrbit 18s linear infinite;transform-origin:50% 35%;filter:saturate(1.12)}
+#screen-profile[data-profile-background-item-id="profile-background-04"]::after{animation:mgwProfileAbyssBreathe 5.4s ease-in-out infinite}
+
+@keyframes mgwProfileNeonFlow{
+  0%{background-position:0% 8%,100% 5%,12% 50%,45% 100%,center}
+  50%{background-position:16% 18%,84% 12%,62% 48%,58% 88%,center}
+  100%{background-position:28% 5%,72% 20%,112% 52%,52% 95%,center}
+}
+@keyframes mgwProfileNeonAtmosphere{
+  0%{transform:translate3d(-2%,-1%,0) scale(1.035);opacity:.78}
+  100%{transform:translate3d(2%,1.5%,0) scale(1.09);opacity:1}
+}
+@keyframes mgwProfileAbyssDepth{
+  0%{background-position:50% 34%,50% 34%,12% 18%,82% 16%,76% 73%,24% 82%,88% 47%,42% 42%,center}
+  50%{background-position:51% 36%,49% 36%,12% 18%,82% 16%,76% 73%,24% 82%,88% 47%,58% 50%,center}
+  100%{background-position:49% 34%,51% 34%,12% 18%,82% 16%,76% 73%,24% 82%,88% 47%,46% 58%,center}
+}
+@keyframes mgwProfileAbyssOrbit{
+  0%{transform:rotate(0deg) scale(1.035);opacity:.78}
+  50%{opacity:1}
+  100%{transform:rotate(360deg) scale(1.085);opacity:.82}
+}
+@keyframes mgwProfileAbyssBreathe{0%,100%{opacity:.78}50%{opacity:1}}
+
+/* Unified Profile collection copy: every cosmetic card shows a clear title + subtitle.
+   This is presentation-only; click/equip owners remain in their existing modules. */
+#screen-profile .profile-v2-collection-section>.profile-v2-collection-grid,
+#screen-profile [data-profile-frame-grid],
+#screen-profile .profile-v2-name-color-grid,
+#screen-profile .profile-v2-badge-grid,
+#screen-profile .profile-v2-game-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;align-items:stretch!important}
+
+#screen-profile [data-profile-avatar-preview],
+#screen-profile [data-profile-frame-preview],
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview],
+#screen-profile [data-profile-game-cosmetic]{
+  --mgw-profile-card-subtitle:"Оформление";
+  box-sizing:border-box!important;
+  height:100%!important;
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  gap:5px!important;
+  padding:8px!important;
+  text-align:left!important;
+  aspect-ratio:auto!important;
+  overflow:hidden;
+}
+#screen-profile [data-profile-avatar-preview],
+#screen-profile [data-profile-frame-preview]{min-height:130px!important}
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview]{min-height:116px!important}
+#screen-profile [data-profile-game-cosmetic]{min-height:118px!important}
+
+#screen-profile [data-profile-avatar-preview]>.profile-v2-collection-avatar,
+#screen-profile [data-profile-frame-preview]>.profile-v2-collection-avatar{
+  order:1!important;
+  flex:0 0 78px!important;
+  align-self:center!important;
+  width:78px!important;
+  height:78px!important;
+  margin:1px auto 2px!important;
+  border-radius:15px!important;
+}
+#screen-profile [data-profile-name-color]>.profile-v2-name-color-sample{
+  order:1!important;flex:0 0 54px!important;min-height:54px!important;max-width:100%!important;display:flex!important;align-items:center!important;padding:0 4px!important
+}
+#screen-profile [data-profile-badge-preview]>.mgw-profile-badge-demo{
+  order:1!important;flex:0 0 54px!important;min-height:54px!important;padding:4px 3px!important
+}
+#screen-profile [data-profile-game-cosmetic]>.store-v2-game-preview{order:1!important;flex:0 0 76px!important;margin-bottom:1px!important}
+
+#screen-profile [data-profile-name-color]>small,
+#screen-profile [data-profile-badge-preview]>small,
+#screen-profile .profile-v2-game-card-name{display:none!important}
+
+#screen-profile [data-profile-avatar-preview]::before,
+#screen-profile [data-profile-frame-preview]::before,
+#screen-profile [data-profile-name-color]::before,
+#screen-profile [data-profile-badge-preview]::before,
+#screen-profile [data-profile-game-cosmetic]::before{
+  content:attr(aria-label);
+  order:2;
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--text);
+  font-size:10.5px;
+  font-weight:900;
+  line-height:1.12;
+}
+#screen-profile [data-profile-avatar-preview]::after,
+#screen-profile [data-profile-frame-preview]::after,
+#screen-profile [data-profile-name-color]::after,
+#screen-profile [data-profile-badge-preview]::after,
+#screen-profile [data-profile-game-cosmetic]::after{
+  content:var(--mgw-profile-card-subtitle);
+  order:3;
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--muted);
+  font-size:8.5px;
+  font-weight:650;
+  line-height:1.15;
+}
+
+/* Card subtitles use the same catalogue language already exposed in Store/sheets. */
+#screen-profile [data-profile-avatar-preview^="starter-default-"]{--mgw-profile-card-subtitle:"Стартовый"}
+#screen-profile [data-profile-avatar-preview^="store-avatar-"]{--mgw-profile-card-subtitle:"Аватар"}
+
+#screen-profile [data-profile-name-color="profile-name-color-sky"]{--mgw-profile-card-subtitle:"Обычный"}
+#screen-profile [data-profile-name-color="profile-name-color-gold"]{--mgw-profile-card-subtitle:"Редкий"}
+#screen-profile [data-profile-name-color="profile-name-color-aurora"]{--mgw-profile-card-subtitle:"Градиент"}
+
+#screen-profile [data-profile-badge-preview="profile-badge-spark"]{--mgw-profile-card-subtitle:"Обычный"}
+#screen-profile [data-profile-badge-preview="profile-badge-crest"]{--mgw-profile-card-subtitle:"Редкий"}
+#screen-profile [data-profile-badge-preview="profile-badge-pulse"]{--mgw-profile-card-subtitle:"Анимированный"}
+
+#screen-profile [data-profile-frame-preview="profile-frame-01"]{--mgw-profile-card-subtitle:"Обычная"}
+#screen-profile [data-profile-frame-preview="profile-frame-02"]{--mgw-profile-card-subtitle:"Редкая"}
+#screen-profile [data-profile-frame-preview="profile-frame-03"]{--mgw-profile-card-subtitle:"Эпическая"}
+#screen-profile [data-profile-frame-preview="profile-frame-animated"]{--mgw-profile-card-subtitle:"Анимированная"}
+
+#screen-profile [data-profile-game-cosmetic*="-field-"],
+#screen-profile [data-profile-game-cosmetic*="-theme-"]{--mgw-profile-card-subtitle:"Поле"}
+#screen-profile [data-profile-game-cosmetic*="-marks-"],
+#screen-profile [data-profile-game-cosmetic*="-elements-"]{--mgw-profile-card-subtitle:"Знаки"}
+#screen-profile [data-profile-game-cosmetic*="-effect-"]{--mgw-profile-card-subtitle:"Эффект"}
 
 /* Fixed shell nav must never cover the last Store/Profile collection rows. */
 .has-shell-chrome .screen[data-screen="store"] .content,
 .has-shell-chrome .screen[data-screen="profile"] .content{padding-bottom:calc(86px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(86px + env(safe-area-inset-bottom))}
 
-@media (max-width:360px){.store-v2-profile-background-grid,.profile-v2-background-grid{gap:7px!important}.store-v2-profile-background-card,.profile-v2-background-card{padding:7px!important}.store-v2-profile-background-card{min-height:176px!important}.profile-v2-background-card{min-height:151px}.store-v2-profile-background-foot .store-v2-buy,.store-v2-profile-background-foot .store-v2-equip{padding:0 5px!important}}
-@media (prefers-reduced-motion:reduce){[data-profile-background-item-id],#screen-profile[data-profile-background-item-id]::before,#screen-profile[data-profile-background-item-id]::after{transition:none!important;animation:none!important}#screen-profile[data-profile-background-item-id]::before{transform:none!important}.store-v2-profile-background-preview,.profile-v2-background-preview,.profile-v2-background-card-preview{animation:none!important}}
+@media (max-width:360px){
+  .store-v2-profile-background-grid,.profile-v2-background-grid{gap:7px!important}
+  .store-v2-profile-background-card,.profile-v2-background-card{padding:7px!important}
+  .store-v2-profile-background-card{min-height:176px!important}
+  .profile-v2-background-card{min-height:120px}
+  .store-v2-profile-background-foot .store-v2-buy,.store-v2-profile-background-foot .store-v2-equip{padding:0 5px!important}
+  #screen-profile [data-profile-avatar-preview],
+  #screen-profile [data-profile-frame-preview],
+  #screen-profile [data-profile-name-color],
+  #screen-profile [data-profile-badge-preview],
+  #screen-profile [data-profile-game-cosmetic]{padding:7px!important}
+  #screen-profile [data-profile-avatar-preview]>.profile-v2-collection-avatar,
+  #screen-profile [data-profile-frame-preview]>.profile-v2-collection-avatar{width:72px!important;height:72px!important;flex-basis:72px!important}
+}
+@media (prefers-reduced-motion:reduce){
+  [data-profile-background-item-id],#screen-profile[data-profile-background-item-id]::before,#screen-profile[data-profile-background-item-id]::after{transition:none!important;animation:none!important;filter:none!important}
+  #screen-profile[data-profile-background-item-id]::before{transform:none!important}
+  .store-v2-profile-background-preview,.profile-v2-background-preview,.profile-v2-background-card-preview{animation:none!important;filter:none!important}
+}
