@@ -25,6 +25,7 @@ return [
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
         './assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=3&mvp19_3=full-profile-surface',
         './assets/js/profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions' => './assets/js/profile/mgw-profile-reactions-header.js?v=1&mvp19_3=header-slot',
+        './assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective-base' => './assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1154&mvp18=friend-request-lifecycle&store=post-boot-warm',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
         './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=4&mvp16=setup-subtitle-width',
