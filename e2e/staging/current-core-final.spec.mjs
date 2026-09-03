@@ -260,6 +260,56 @@ function assertDiagnostics(player) {
   for (const status of player.report.presenceStatuses) expect(status).toBeLessThan(500);
 }
 
+test('STORE SMOKE: avatar decorator cannot freeze bottom navigation', async ({ browser }) => {
+  let A;
+  try {
+    A = await openPlayer(browser, 'A');
+    const storeNav = A.page.locator('[data-shell-nav="store"]');
+    const homeNav = A.page.locator('[data-shell-nav="home"]');
+
+    await expect(storeNav).toBeVisible();
+    await storeNav.click({ timeout:5_000 });
+    await expect(A.page.locator('#screen-store')).toHaveClass(/active/, { timeout:10_000 });
+    await expect(A.page.locator('#storeTabSurface .store-v2-shell:not(.is-pending)')).toBeVisible({ timeout:20_000 });
+
+    const injected = await A.page.evaluate(() => {
+      const root = document.querySelector('#storeTabSurface .store-v2-content');
+      if (!(root instanceof HTMLElement)) return false;
+      const card = document.createElement('article');
+      card.id = 'stagingOwnedAvatarObserverProbe';
+      card.className = 'store-v2-product owned';
+      card.innerHTML = `
+        <div class="store-v2-avatar-preview" data-avatar-item-id="store-avatar-01" data-avatar-preview="1"><span>01</span></div>
+        <strong class="store-v2-product-name">Observer probe</strong>
+        <div class="store-v2-product-foot"><b>Куплено</b></div>
+      `;
+      root.append(card);
+      return true;
+    });
+    expect(injected).toBe(true);
+
+    const action = A.page.locator('#stagingOwnedAvatarObserverProbe [data-mgw-store-avatar-select="store-avatar-01"]');
+    await expect(action).toBeVisible({ timeout:5_000 });
+    await expect(action).toHaveText(/^(Выбрать|Выбрана)$/);
+
+    // The historical regression endlessly rewrote button textContent from the
+    // observer callback. If that feedback loop returns, the browser main thread
+    // cannot process the following navigation click within this short timeout.
+    await A.page.waitForTimeout(350);
+    await homeNav.click({ timeout:3_000 });
+    await expect(A.page.locator('#screen-home')).toHaveClass(/active/, { timeout:3_000 });
+
+    await storeNav.click({ timeout:3_000 });
+    await expect(A.page.locator('#screen-store')).toHaveClass(/active/, { timeout:3_000 });
+    await homeNav.click({ timeout:3_000 });
+    await expect(A.page.locator('#screen-home')).toHaveClass(/active/, { timeout:3_000 });
+    assertDiagnostics(A);
+  } finally {
+    if (A?.context) await A.context.close().catch(() => null);
+    await resetPlayers();
+  }
+});
+
 test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', async ({ browser }) => {
   let A;
   let B;
@@ -297,8 +347,8 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
     expect(Number(started.game?.bet || 0)).toBe(entryCost);
 
     await Promise.all([reload(A), reload(B)]);
-    await expect(A.page.locator('#screen-game')).toHaveClass(/active/, { timeout: 25_000 });
-    await expect(B.page.locator('#screen-game')).toHaveClass(/active/, { timeout: 25_000 });
+    await expect(A.page.locator('#screen-game')).toHaveClass(/active/, { timeout:25_000 });
+    await expect(B.page.locator('#screen-game')).toHaveClass(/active/, { timeout:25_000 });
     await expect(A.page.locator('#screen-game [data-game-cell]')).toHaveCount(9);
     await expect(B.page.locator('#screen-game [data-game-cell]')).toHaveCount(9);
 
@@ -319,8 +369,8 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
     const loserId = winnerId === 'stg_test_player_a' ? 'stg_test_player_b' : 'stg_test_player_a';
 
     await Promise.all([
-      expect(A.page.locator('#resultSummary')).toBeVisible({ timeout: 30_000 }),
-      expect(B.page.locator('#resultSummary')).toBeVisible({ timeout: 30_000 }),
+      expect(A.page.locator('#resultSummary')).toBeVisible({ timeout:30_000 }),
+      expect(B.page.locator('#resultSummary')).toBeVisible({ timeout:30_000 }),
     ]);
     for (const player of [A, B]) {
       await expect(player.page.locator('#resultSummary')).toContainText('Баланс:');
@@ -348,7 +398,7 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
       return winnerHistory?.economy && loserHistory?.economy
         ? `${winnerHistory.economy.ledger_delta}:${loserHistory.economy.ledger_delta}`
         : 'missing';
-    }, { timeout: 15_000, intervals: [100, 200, 400, 800] }).toBe(`${winnerDelta}:${loserDelta}`);
+    }, { timeout:15_000, intervals:[100, 200, 400, 800] }).toBe(`${winnerDelta}:${loserDelta}`);
     expect(Number(winnerHistory.economy.new_balance)).toBe(after[winnerId]);
     expect(Number(loserHistory.economy.new_balance)).toBe(after[loserId]);
 
