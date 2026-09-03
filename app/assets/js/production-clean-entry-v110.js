@@ -175,6 +175,8 @@ function decorateStoreAvatarCards(){
 
     decorateStoreFrameCards();
     decorateProfileAvatarSheetAction();
+    decorateStoreProfileCosmeticCardParity();
+    decorateProfileCosmeticSheetState();
   } finally {
     observeStoreAvatarRoots();
   }
@@ -196,6 +198,91 @@ function decorateStoreFrameCards(){
     const nextStatus = card.classList.contains('equipped') ? 'Выбрано' : 'В коллекции';
     if (status.textContent !== nextStatus) status.textContent = nextStatus;
   });
+}
+
+// Presentation-only parity layer for the four completed Profile cosmetic
+// families. It never buys, equips or mutates inventory; each existing owner
+// keeps its action handlers. This layer only gives every Store card the same
+// visible state language and stable footer geometry hooks.
+function decorateStoreProfileCosmeticCardParity(){
+  const specs = [
+    {
+      selector:'.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product',
+      foot:':scope > .store-v2-product-foot',
+    },
+    {
+      selector:'.store-v2-content[data-store-v2-panel="profile"] .store-v2-name-color-card',
+      foot:':scope > .store-v2-name-color-foot',
+    },
+    {
+      selector:'[data-profile-badge-store-section] .store-v2-profile-badge-card',
+      foot:':scope > .store-v2-profile-badge-foot',
+    },
+    {
+      selector:'[data-profile-frame-store-section] .store-v2-product',
+      foot:':scope > .store-v2-product-foot',
+    },
+  ];
+
+  specs.forEach(spec => {
+    document.querySelectorAll(spec.selector).forEach(card => {
+      if (!(card instanceof HTMLElement)) return;
+      const foot = card.querySelector(spec.foot);
+      if (!(foot instanceof HTMLElement)) return;
+
+      const owned = card.classList.contains('owned');
+      const selected = owned && card.classList.contains('equipped');
+      card.classList.add('mgw-profile-cosmetic-card');
+      card.dataset.mgwProfileCosmeticState = owned ? (selected ? 'selected' : 'owned') : 'available';
+      foot.classList.add('mgw-profile-cosmetic-foot');
+
+      foot.querySelectorAll(':scope > button').forEach(button => {
+        if (button instanceof HTMLButtonElement) button.classList.add('mgw-profile-cosmetic-action');
+      });
+
+      if (!owned) {
+        foot.querySelector(':scope > [data-mgw-profile-cosmetic-status]')?.remove();
+        return;
+      }
+
+      let status = foot.querySelector(':scope > [data-mgw-profile-cosmetic-status]');
+      if (!(status instanceof HTMLElement)) {
+        status = foot.querySelector(':scope > [data-mgw-frame-card-status], :scope > b');
+      }
+      if (!(status instanceof HTMLElement)) {
+        status = document.createElement('b');
+        foot.prepend(status);
+      }
+      status.dataset.mgwProfileCosmeticStatus = '1';
+      status.hidden = false;
+      const nextStatus = selected ? 'Выбрано' : 'В коллекции';
+      if (status.textContent !== nextStatus) status.textContent = nextStatus;
+    });
+  });
+}
+
+function decorateProfileCosmeticSheetState(){
+  const sheet = document.getElementById('sheet');
+  if (!(sheet instanceof HTMLElement)) return;
+  const action = sheet.querySelector('#mgwAvatarEquip, #mgwNameColorEquip, #mgwProfileBadgeEquip, #mgwProfileFrameEquip');
+  const existing = sheet.querySelector('[data-mgw-profile-cosmetic-sheet-status]');
+  if (!(action instanceof HTMLButtonElement)) {
+    existing?.remove();
+    return;
+  }
+
+  const actionLabel = String(action.textContent || '').replace(/\s+/gu, ' ').trim();
+  const selected = actionLabel === 'Снять' || actionLabel === 'Выбрана' || actionLabel === 'Выбрано';
+  let status = existing;
+  if (!(status instanceof HTMLElement)) {
+    status = document.createElement('div');
+    status.dataset.mgwProfileCosmeticSheetStatus = '1';
+    status.className = 'mgw-profile-cosmetic-sheet-status';
+    action.insertAdjacentElement('beforebegin', status);
+  }
+  const nextStatus = selected ? 'Выбрано' : 'В коллекции';
+  if (status.textContent !== nextStatus) status.textContent = nextStatus;
+  action.classList.add('mgw-profile-cosmetic-sheet-action');
 }
 
 function decorateProfileAvatarSheetAction(){
