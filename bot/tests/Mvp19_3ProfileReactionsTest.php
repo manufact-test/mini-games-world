@@ -95,6 +95,7 @@ $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['profile_reaction_se
 
 $reactionUi = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-reactions.js');
 $reactionCss = (string)file_get_contents($root . '/app/assets/css/production-v97-reactions.css');
+$reactionPerfCss = (string)file_get_contents($root . '/app/assets/css/production-v98-mobile-profile-perf.css');
 $reactionService = (string)file_get_contents($root . '/bot/services/GameReactionService.php');
 $watcher = (string)file_get_contents($root . '/app/assets/js/production-v110-readonly-game-sync.js');
 $manifest = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
@@ -109,7 +110,9 @@ $assertTrue(!str_contains($reactionUi, '!game?.is_bot_game') && !str_contains($r
 $assertTrue(str_contains($reactionService, 'activeGameForParticipant') && !str_contains($reactionService, 'activeHumanGameForParticipant'), 'Reaction participant validation must no longer encode a human-only product restriction');
 $assertTrue(str_contains($reactionUi, 'aria-label="Реакции"') && !str_contains($reactionUi, '> Реакция</button>'), 'Match launcher must be an icon-only compact reaction control');
 $assertTrue(str_contains($reactionUi, ':scope > .game-player-avatar') && str_contains($reactionUi, '--mgw-reaction-origin-x'), 'Live reaction must calculate its visual origin from the sender avatar when present');
-$assertTrue(str_contains($reactionCss, 'width:28px') && str_contains($reactionCss, 'width:31px') && str_contains($reactionCss, 'mgwReactionFromSender'), 'Match reaction trigger, palette items and sender-origin animation must stay compact');
-$assertTrue(str_contains($manifest, 'mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective') && str_contains($manifest, 'production-v97-reactions.css?v=2&mvp19_3=ingame-corrective'), 'Corrected reaction JS and CSS must be cache-published through the active manifest');
+$assertTrue(str_contains($reactionUi, 'lastReactionFingerprint') && str_contains($reactionUi, 'bubble.remove(), 2400'), 'Live reaction delivery must suppress duplicate projection and keep the bubble readable long enough');
+$assertTrue(str_contains($reactionCss, 'width:28px') && str_contains($reactionCss, 'width:31px') && str_contains($reactionCss, 'mgwReactionFromSender'), 'Base match reaction trigger, palette items and sender-origin animation must stay compact');
+$assertTrue(str_contains($reactionPerfCss, 'width:32px') && str_contains($reactionPerfCss, 'border-radius:10px') && str_contains($reactionPerfCss, '2.35s') && str_contains($reactionPerfCss, 'content-visibility:auto'), 'Header reaction framing, smooth motion and mobile Profile paint containment must stay published');
+$assertTrue(str_contains($manifest, 'mgw-profile-reactions.js?v=3&mvp19_3=ingame-smooth-corrective') && str_contains($manifest, 'production-v98-mobile-profile-perf.css?v=2&mvp19_3=reaction-header-square-smooth&profile=mobile-perf-v2'), 'Corrected reaction JS and mobile performance CSS must be cache-published through the active manifest');
 
 fwrite(STDOUT, "MVP-19.3 profile reactions passed ({$assertions} assertions).\n");
