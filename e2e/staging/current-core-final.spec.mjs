@@ -273,29 +273,49 @@ test('STORE SMOKE: avatar decorator cannot freeze bottom navigation', async ({ b
     await expect(A.page.locator('#storeTabSurface .store-v2-shell:not(.is-pending)')).toBeVisible({ timeout:20_000 });
 
     const injected = await A.page.evaluate(() => {
-      const root = document.querySelector('#storeTabSurface .store-v2-content');
-      if (!(root instanceof HTMLElement)) return false;
-      const card = document.createElement('article');
-      card.id = 'stagingOwnedAvatarObserverProbe';
-      card.className = 'store-v2-product owned';
-      card.innerHTML = `
+      const panel = document.querySelector('#storeTabSurface .store-v2-content[data-store-v2-panel="profile"]');
+      const avatarGrid = panel?.querySelector(':scope > .store-v2-product-grid');
+      if (!(panel instanceof HTMLElement) || !(avatarGrid instanceof HTMLElement)) return false;
+
+      const avatarCard = document.createElement('article');
+      avatarCard.id = 'stagingOwnedAvatarObserverProbe';
+      avatarCard.className = 'store-v2-product owned';
+      avatarCard.innerHTML = `
         <div class="store-v2-avatar-preview" data-avatar-item-id="store-avatar-01" data-avatar-preview="1"><span>01</span></div>
-        <strong class="store-v2-product-name">Observer probe</strong>
+        <strong class="store-v2-product-name">Avatar probe</strong>
         <div class="store-v2-product-foot"><b>Куплено</b></div>
       `;
-      root.append(card);
+      avatarGrid.append(avatarCard);
+
+      const frameLikeSection = document.createElement('section');
+      frameLikeSection.id = 'stagingFrameAvatarCollisionProbe';
+      frameLikeSection.innerHTML = `
+        <article class="store-v2-product owned">
+          <span class="store-v2-avatar-preview" data-avatar-item-id="starter-default-01" data-profile-frame-avatar-item-id="profile-frame-01"></span>
+          <strong class="store-v2-product-name">Frame collision probe</strong>
+          <div class="store-v2-product-foot"><button type="button" data-profile-frame-equip="profile-frame-01">Выбрать</button></div>
+        </article>
+      `;
+      panel.append(frameLikeSection);
       return true;
     });
     expect(injected).toBe(true);
 
     const action = A.page.locator('#stagingOwnedAvatarObserverProbe [data-mgw-store-avatar-select="store-avatar-01"]');
     await expect(action).toBeVisible({ timeout:5_000 });
-    await expect(action).toHaveText(/^(Выбрать|Выбрана)$/);
+    await expect(action).toHaveText(/^(Выбрать|Снять)$/);
+    await expect(A.page.locator('#stagingOwnedAvatarObserverProbe .store-v2-product-foot > b')).toHaveText(/^(В коллекции|Выбрано)$/);
+
+    // Frame previews deliberately reuse starter-default-01 as artwork. They must
+    // remain outside the avatar action owner or the duplicate frame button bug
+    // returns immediately.
+    await A.page.waitForTimeout(350);
+    await expect(A.page.locator('#stagingFrameAvatarCollisionProbe [data-mgw-store-avatar-select]')).toHaveCount(0);
+    await expect(A.page.locator('#stagingFrameAvatarCollisionProbe button')).toHaveCount(1);
 
     // The historical regression endlessly rewrote button textContent from the
     // observer callback. If that feedback loop returns, the browser main thread
     // cannot process the following navigation click within this short timeout.
-    await A.page.waitForTimeout(350);
     await homeNav.click({ timeout:3_000 });
     await expect(A.page.locator('#screen-home')).toHaveClass(/active/, { timeout:3_000 });
 
