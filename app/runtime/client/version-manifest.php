@@ -24,6 +24,7 @@ return [
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1123&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync&mvp19_3_2=game-cosmetics&mvp19_3_3=game-tabs-fresh&mvp19_3_4=name-colors&perf=instant-open-refresh',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
         './assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=3&mvp19_3=full-profile-surface',
+        './assets/js/profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions' => './assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1154&mvp18=friend-request-lifecycle&store=post-boot-warm',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
         './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=4&mvp16=setup-subtitle-width',
@@ -51,7 +52,7 @@ return [
     ],
     'assets' => [
         'main_css' => './assets/css/main.css?v=190&sk=3&icons=c1efd5af&render=42&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity&store=compact-tail&c2_5=visible-mark-layer&c2_6=cell-native-dom-fx&mvp19_3=profile-game-tabs-fresh&mvp19_3_4=name-colors-polish&mvp19_3_5=compact-name-colors-instant-profile&spacing=name-color-price-button&mvp19_3_6=profile-badge-avatar-overlay&badge_position=bottom-right&badge_collection=fit&badge_store=avatar-card&mvp19_3_7=profile-frames&frame_preview=avatar-card&mvp19_3_9=badge-avatar-card&frame_names=polish&mvp19_3_13=badge-frame-final-polish&mvp19_3_14=final-spacing-parity&mvp19_3_15=profile-backgrounds&mvp19_3_16=profile-backgrounds-ux-corrective&mvp19_3_18=background-final-card-grid&mvp19_3_19=selected-green-frame-align&mvp19_3_20=avatar-store-action&mvp19_3_24=profile-card-parity&mvp19_3_25=profile-background-full-surface&mvp19_3_26=profile-card-copy-premium-bg&mvp19_3_27=profile-density-abyss-frame-polish',
-        'consistency_css' => './assets/css/production-v97-reactions.css?v=1&mvp19_3=profile-reactions',
+        'consistency_css' => './assets/css/production-v97-reactions.css?v=2&mvp19_3=ingame-corrective',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
     'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
