@@ -5,6 +5,7 @@ import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 
 const BACKGROUND_SLOT = 'profile_background';
+const BACKGROUND_PREVIEW_AVATAR = 'starter-default-01';
 const BACKGROUND_ITEM_IDS = Object.freeze([
   'profile-background-01',
   'profile-background-02',
@@ -17,7 +18,8 @@ let observer = null;
 let scheduled = false;
 let refreshPromise = null;
 let initialSnapshotAttempted = false;
-let backgroundBusy = false;
+let equipBusy = false;
+const purchasePending = new Set();
 
 export function initMgwProfileBackgrounds(){
   if (initialized) return;
@@ -117,13 +119,20 @@ function backgroundTierLabel(item){
 function decorateProfileSurface(){
   const screen = document.getElementById('screen-profile');
   if (!(screen instanceof HTMLElement)) return;
+  if (screen.dataset.profileBackgroundItemId) delete screen.dataset.profileBackgroundItemId;
+  const identity = screen.querySelector('.profile-v2-identity');
+  if (!(identity instanceof HTMLElement)) return;
   const itemId = currentBackgroundItemId();
-  if (itemId) screen.dataset.profileBackgroundItemId = itemId;
-  else delete screen.dataset.profileBackgroundItemId;
+  if (itemId) identity.dataset.profileBackgroundItemId = itemId;
+  else if (identity.dataset.profileBackgroundItemId) delete identity.dataset.profileBackgroundItemId;
 }
 
 function backgroundPreviewMarkup(itemId, surfaceClass, selected = false){
-  return `<span class="${surfaceClass}" data-profile-background-item-id="${escapeAttr(itemId)}" aria-hidden="true">${selected ? '<i class="store-v2-selected-check" aria-hidden="true">✓</i>' : ''}</span>`;
+  return `<span class="${surfaceClass}" data-profile-background-item-id="${escapeAttr(itemId)}" role="img" aria-label="Пример фона профиля">
+    <span class="mgw-profile-background-mini-avatar" data-avatar-item-id="${BACKGROUND_PREVIEW_AVATAR}" aria-hidden="true">MG</span>
+    <span class="mgw-profile-background-mini-copy"><b>Mini Games</b><small>Профиль</small></span>
+    ${selected ? '<i class="store-v2-selected-check" aria-hidden="true">✓</i>' : ''}
+  </span>`;
 }
 
 function renderStoreBackgroundSection(catalog){
@@ -143,7 +152,7 @@ function renderStoreBackgroundSection(catalog){
   const markup = `
     <section class="store-v2-profile-background-section" data-profile-background-store-section data-profile-background-signature="${escapeAttr(signature)}">
       <div class="store-v2-title-row"><h2>Фоны профиля</h2></div>
-      <div class="store-v2-product-grid" data-profile-background-grid>
+      <div class="store-v2-profile-background-grid" data-profile-background-grid>
         ${catalog.map(item => storeBackgroundCard(item, active)).join('')}
       </div>
     </section>
@@ -160,14 +169,17 @@ function storeBackgroundCard(item, activeItemId){
   const owned = item.owned === true;
   const active = owned && itemId === activeItemId;
   return `
-    <article class="store-v2-product ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
+    <article class="store-v2-product store-v2-profile-background-card${owned ? ' owned' : ''}${active ? ' equipped' : ''}">
       ${backgroundPreviewMarkup(itemId, 'store-v2-profile-background-preview', active)}
-      <strong class="store-v2-product-name">${escapeHtml(backgroundName(item))}</strong>
+      <div class="store-v2-profile-background-copy">
+        <strong class="store-v2-product-name">${escapeHtml(backgroundName(item))}</strong>
+        <small>${escapeHtml(backgroundTierLabel(item))}</small>
+      </div>
       <div class="store-v2-product-foot store-v2-profile-background-foot">
         ${owned
           ? (active
-            ? `<button class="store-v2-equip active" data-profile-background-unequip type="button">Снять</button>`
-            : `<button class="store-v2-equip" data-profile-background-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
+            ? `<span class="store-v2-profile-background-owned">Выбран</span><button class="store-v2-equip active" data-profile-background-unequip type="button">Снять</button>`
+            : `<span class="store-v2-profile-background-owned">В коллекции</span><button class="store-v2-equip" data-profile-background-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
           : `<b>${formatNumber(backgroundPrice(item))}</b><button class="store-v2-buy" data-profile-background-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
       </div>
     </article>
@@ -209,7 +221,7 @@ function renderProfileBackgroundCollection(catalog){
   const markup = `
     <div class="profile-v2-background-collection" data-profile-background-collection data-profile-background-signature="${escapeAttr(signature)}" aria-label="Фоны профиля">
       <div class="profile-v2-collection-title">Фоны профиля</div>
-      <div class="profile-v2-collection-grid" data-profile-background-grid>
+      <div class="profile-v2-background-grid" data-profile-background-grid>
         ${owned.map(item => profileBackgroundCard(item, active)).join('')}
       </div>
     </div>
@@ -230,12 +242,17 @@ function renderProfileBackgroundCollection(catalog){
 function profileBackgroundCard(item, activeItemId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeItemId;
-  return `<button class="profile-v2-collection-card${active ? ' active' : ''}" type="button" data-profile-background-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(backgroundName(item))}" aria-pressed="${active ? 'true' : 'false'}">${backgroundPreviewMarkup(itemId, 'profile-v2-collection-avatar profile-v2-background-preview')}${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
+  return `<button class="profile-v2-background-card${active ? ' active' : ''}" type="button" data-profile-background-preview="${escapeAttr(itemId)}" aria-label="${escapeAttr(backgroundName(item))}" aria-pressed="${active ? 'true' : 'false'}">
+    ${backgroundPreviewMarkup(itemId, 'profile-v2-background-card-preview')}
+    <span class="profile-v2-background-card-copy"><b>${escapeHtml(backgroundName(item))}</b><small>${escapeHtml(backgroundTierLabel(item))}</small></span>
+    <span class="profile-v2-background-card-status">${active ? 'Выбран' : 'Выбрать'}</span>
+    ${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}
+  </button>`;
 }
 
 function openBackgroundPurchase(itemId){
   const item = backgroundCatalog().find(candidate => candidate.item_id === itemId && candidate.owned !== true);
-  if (!item || backgroundBusy) return;
+  if (!item || purchasePending.has(itemId)) return;
   const price = backgroundPrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
@@ -245,21 +262,25 @@ function openBackgroundPurchase(itemId){
     '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
     '<div class="store-v2-confirm">' +
       '<div class="profile-v2-background-preview-wrap">' + backgroundPreviewMarkup(itemId, 'profile-v2-background-preview') + '</div>' +
-      '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(backgroundName(item)) + '</strong></div>' +
+      '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(backgroundName(item)) + '</strong><small>Фон профиля · ' + escapeHtml(backgroundTierLabel(item)) + '</small></div>' +
       '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
       '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
       '<button class="btn primary full" id="mgwProfileBackgroundConfirmBuy" type="button"' + disabled + '>' + escapeHtml(label) + '</button>' +
     '</div>'
   );
-  document.getElementById('mgwProfileBackgroundConfirmBuy')?.addEventListener('click', event => {
-    void purchaseBackground(item, event.currentTarget);
+  document.getElementById('mgwProfileBackgroundConfirmBuy')?.addEventListener('click', () => {
+    void purchaseBackground(item);
   });
 }
 
-async function purchaseBackground(item, button){
-  if (backgroundBusy || !(button instanceof HTMLButtonElement) || button.disabled) return;
-  backgroundBusy = true;
-  button.disabled = true;
+async function purchaseBackground(item){
+  const itemId = String(item?.item_id || '');
+  if (!itemId || purchasePending.has(itemId)) return;
+  purchasePending.add(itemId);
+  const previousInventory = cloneObject(state.profileInventory);
+  applyOptimisticPurchase(itemId);
+  closeSheet();
+  scheduleDecorate();
   try {
     const result = await api.cosmeticStorePurchase(backgroundOfferId(item), purchaseToken());
     const nextBalance = Number(result?.store?.balance);
@@ -267,14 +288,24 @@ async function purchaseBackground(item, button){
       state.user = { ...state.user, balance:nextBalance };
       renderBalances(state.user);
     }
-    closeSheet();
     await refreshBackgroundSnapshot();
     toast('Фон добавлен в коллекцию.');
   } catch (error) {
+    state.profileInventory = previousInventory;
+    scheduleDecorate();
     toast(error?.message || 'Не удалось купить фон.');
   } finally {
-    backgroundBusy = false;
+    purchasePending.delete(itemId);
   }
+}
+
+function applyOptimisticPurchase(itemId){
+  const inventory = cloneObject(state.profileInventory) || { catalog:[], owned:[], equipped:{} };
+  if (Array.isArray(inventory.catalog)) {
+    inventory.catalog = inventory.catalog.map(item => String(item?.item_id || '') === itemId ? { ...item, owned:true } : item);
+  }
+  state.profileInventory = inventory;
+  document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ family:'background', item_id:itemId, reason:'purchase-optimistic' } }));
 }
 
 function openBackgroundPreview(itemId){
@@ -291,13 +322,13 @@ function openBackgroundPreview(itemId){
 }
 
 async function saveBackground(itemId, remove){
-  if (backgroundBusy) return;
+  if (equipBusy) return;
   const item = backgroundCatalog().find(candidate => candidate.item_id === itemId && candidate.owned === true);
   const active = itemId === currentBackgroundItemId();
   if (!item || (remove && !active) || (!remove && active)) return;
 
   const previousInventory = cloneObject(state.profileInventory);
-  backgroundBusy = true;
+  equipBusy = true;
   applyOptimisticBackground(itemId, !remove);
   closeSheet();
   scheduleDecorate();
@@ -311,7 +342,7 @@ async function saveBackground(itemId, remove){
     scheduleDecorate();
     toast(error?.message || (remove ? 'Не удалось снять фон.' : 'Не удалось выбрать фон.'));
   } finally {
-    backgroundBusy = false;
+    equipBusy = false;
   }
 }
 
