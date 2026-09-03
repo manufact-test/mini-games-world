@@ -31,6 +31,7 @@ let avatarSaving = false;
 let nameColorSaving = false;
 let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
+let lastProfileRenderSignature = '';
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -270,6 +271,8 @@ function renderProfileV2(){
   const user = state.user && typeof state.user === 'object' ? state.user : {};
   const stats = state.profileStats && typeof state.profileStats === 'object' ? state.profileStats : loadCachedProfileStats();
   const history = state.profileHistory && typeof state.profileHistory === 'object' ? state.profileHistory : {};
+  const renderSignature = profileRenderSignature(profile, user, stats, history);
+  if (root.childElementCount > 0 && renderSignature === lastProfileRenderSignature) return;
   const nickname = String(profile.nickname || user.display_name || t('profile.player')).trim();
   const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
   const balance = Number(user.balance || 0);
@@ -316,6 +319,7 @@ function renderProfileV2(){
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
     </div></section>
   `;
+  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history);
 }
 
 function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
@@ -678,6 +682,26 @@ function currentAvatarItemId(){
 }
 function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
+function profileRenderSignature(profile, user, stats, history){
+  return JSON.stringify({
+    profile,
+    inventory:state.profileInventory || null,
+    user:{
+      id:user?.id || null,
+      display_name:user?.display_name || '',
+      avatar_item_id:user?.avatar_item_id || '',
+      balance:Number(user?.balance || 0),
+      registered_at:user?.registered_at || null,
+      public_mgw_id:user?.public_mgw_id || '',
+      mgw_id:user?.mgw_id || '',
+    },
+    stats:stats || null,
+    history:history || null,
+    auth:state.profileAuth || null,
+    selected_avatar:String(state.selectedAvatarId || ''),
+    active_collection_game:activeCollectionGame,
+  });
+}
 function ensureProfileRoot(){
   const content = document.querySelector('#screen-profile .content');
   if (!content) return null;
