@@ -17,12 +17,6 @@ import { initMgwAvatarPresentation } from './profile/mgw-avatar-presentation.js?
 import { initMgwProfileBadges } from './profile/mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape';
 import { initMgwProfileFrames } from './profile/mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity';
 import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
-import { api } from './api/client.js?v=47';
-import { state } from './state.js?v=27';
-import { toast } from './components/toast.js?v=27';
-import { renderUser } from './ui.js?v=89';
-import { haptic } from './telegram/telegram-app.js?v=27';
-import { mergeCanonicalMgwUser } from './profile/mgw-profile-model.js?v=1';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
 
@@ -53,29 +47,59 @@ initMgwProfileFrames();
 initStoreAvatarSelection();
 
 // Store owns discovery/purchase, while Profile remains the canonical avatar
-// selection owner. This integration only exposes that existing Profile action
-// directly on already-owned Store avatar cards; it never adds a second equip API.
+// selection owner. Keep this integration completely outside the critical
+// pre-bootstrap module graph: app-bootstrap-v2 awaits clean-entry before loading
+// main, and main owns api.bootstrap(). Dependencies are therefore resolved only
+// after the authoritative app-ready signal has already been dispatched.
 let storeAvatarSaving = false;
 let storeAvatarObserver = null;
 let storeAvatarDecorateScheduled = false;
+let storeAvatarRuntime = null;
+let storeAvatarStarted = false;
 
 function initStoreAvatarSelection(){
-  const start = () => {
-    storeAvatarObserver?.disconnect();
-    storeAvatarObserver = new MutationObserver(scheduleStoreAvatarDecoration);
-    [document.getElementById('storeTabSurface'), document.getElementById('sheet')].forEach(root => {
-      if (root) storeAvatarObserver.observe(root, { childList:true, subtree:true });
-    });
-    document.addEventListener('click', handleStoreAvatarSelection, true);
-    document.addEventListener('mgw:screen-changed', scheduleStoreAvatarDecoration);
-    decorateStoreAvatarCards();
-  };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
-  else start();
+  document.addEventListener('mgw:app-ready', () => {
+    void startStoreAvatarSelection();
+  }, { once:true });
+}
+
+async function startStoreAvatarSelection(){
+  if (storeAvatarStarted) return;
+  storeAvatarStarted = true;
+  try {
+    const [apiModule, stateModule, toastModule, uiModule, telegramModule, profileModelModule] = await Promise.all([
+      import('./api/client.js?v=47'),
+      import('./state.js?v=27'),
+      import('./components/toast.js?v=27'),
+      import('./ui.js?v=89'),
+      import('./telegram/telegram-app.js?v=27'),
+      import('./profile/mgw-profile-model.js?v=1'),
+    ]);
+    storeAvatarRuntime = {
+      api:apiModule.api,
+      state:stateModule.state,
+      toast:toastModule.toast,
+      renderUser:uiModule.renderUser,
+      haptic:telegramModule.haptic,
+      mergeCanonicalMgwUser:profileModelModule.mergeCanonicalMgwUser,
+    };
+  } catch (_) {
+    storeAvatarStarted = false;
+    return;
+  }
+
+  storeAvatarObserver?.disconnect();
+  storeAvatarObserver = new MutationObserver(scheduleStoreAvatarDecoration);
+  [document.getElementById('storeTabSurface'), document.getElementById('sheet')].forEach(root => {
+    if (root) storeAvatarObserver.observe(root, { childList:true, subtree:true });
+  });
+  document.addEventListener('click', handleStoreAvatarSelection, true);
+  document.addEventListener('mgw:screen-changed', scheduleStoreAvatarDecoration);
+  decorateStoreAvatarCards();
 }
 
 function scheduleStoreAvatarDecoration(){
-  if (storeAvatarDecorateScheduled) return;
+  if (!storeAvatarRuntime || storeAvatarDecorateScheduled) return;
   storeAvatarDecorateScheduled = true;
   queueMicrotask(() => {
     storeAvatarDecorateScheduled = false;
@@ -84,6 +108,8 @@ function scheduleStoreAvatarDecoration(){
 }
 
 function decorateStoreAvatarCards(){
+  const state = storeAvatarRuntime?.state;
+  if (!state) return;
   document.querySelectorAll('.store-v2-product.owned .store-v2-avatar-preview[data-avatar-item-id]').forEach(preview => {
     if (!(preview instanceof HTMLElement)) return;
     const card = preview.closest('.store-v2-product');
@@ -124,18 +150,22 @@ function decorateStoreAvatarCards(){
 }
 
 function handleStoreAvatarSelection(event){
+  const runtime = storeAvatarRuntime;
+  if (!runtime) return;
   const action = event.target instanceof Element ? event.target.closest('[data-mgw-store-avatar-select]') : null;
   if (!(action instanceof HTMLButtonElement)) return;
   event.preventDefault();
   event.stopPropagation();
   const itemId = String(action.dataset.mgwStoreAvatarSelect || '').trim();
-  if (!itemId || action.disabled || storeAvatarSaving || itemId === String(state.selectedAvatarId || '')) return;
+  if (!itemId || action.disabled || storeAvatarSaving || itemId === String(runtime.state.selectedAvatarId || '')) return;
   if (!(action.closest('.store-v2-product.owned') instanceof HTMLElement)) return;
   void selectOwnedStoreAvatar(itemId);
 }
 
 async function selectOwnedStoreAvatar(itemId){
-  if (storeAvatarSaving) return;
+  const runtime = storeAvatarRuntime;
+  if (!runtime || storeAvatarSaving) return;
+  const { api, state, toast, renderUser, haptic, mergeCanonicalMgwUser } = runtime;
   const previousSelectedAvatarId = state.selectedAvatarId;
   storeAvatarSaving = true;
   state.selectedAvatarId = itemId;
