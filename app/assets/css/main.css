@@ -146,3 +146,88 @@
   background:#63dc98;
   border-color:#63dc98;
 }
+
+/* MVP-19.3 card parity: one state rhythm and one footer/action geometry for the
+   completed Profile cosmetic families. Backgrounds intentionally stay outside
+   this slice. */
+.store-v2-content[data-store-v2-panel="profile"] .mgw-profile-cosmetic-card{
+  box-sizing:border-box;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-name-color-grid,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-profile-badge-grid,
+[data-profile-frame-store-section] [data-profile-frame-grid]{align-items:stretch}
+.store-v2-content[data-store-v2-panel="profile"] .mgw-profile-cosmetic-foot{
+  min-height:45px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-end!important;
+  gap:5px!important;
+  margin-top:auto!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .mgw-profile-cosmetic-foot > b{
+  display:block;
+  min-height:10px!important;
+  margin:0!important;
+  color:var(--soft);
+  font-size:8.5px;
+  line-height:10px!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.store-v2-content[data-store-v2-panel="profile"] .mgw-profile-cosmetic-action{
+  width:100%!important;
+  min-width:0!important;
+  min-height:30px!important;
+  height:30px!important;
+  margin:0!important;
+  padding:0 5px!important;
+  border-radius:9px!important;
+  font-size:9px!important;
+  line-height:1!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .mgw-profile-cosmetic-card[data-mgw-profile-cosmetic-state="selected"]{
+  border-color:rgba(96,214,147,.72)!important;
+  box-shadow:inset 0 0 0 1px rgba(96,214,147,.18),0 6px 16px rgba(0,0,0,.08)!important;
+}
+
+/* Profile collection keeps each family on its accepted grid, but every card now
+   stretches consistently inside that grid and uses the same selected edge. */
+#screen-profile .profile-v2-collection-grid,
+#screen-profile .profile-v2-name-color-grid,
+#screen-profile .profile-v2-badge-grid,
+#screen-profile [data-profile-frame-grid]{align-items:stretch}
+#screen-profile [data-profile-avatar-preview],
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview],
+#screen-profile [data-profile-frame-preview]{box-sizing:border-box;height:100%}
+#screen-profile [data-profile-avatar-preview].active,
+#screen-profile [data-profile-name-color].active,
+#screen-profile [data-profile-badge-preview].active,
+#screen-profile [data-profile-frame-preview].active{
+  border-color:rgba(96,214,147,.72)!important;
+  box-shadow:inset 0 0 0 1px rgba(96,214,147,.18),0 6px 16px rgba(0,0,0,.08)!important;
+}
+
+/* The collection preview sheet states the same thing as Store before the single
+   existing owner button. No additional action handler is introduced. */
+.mgw-profile-cosmetic-sheet-status{
+  min-height:24px;
+  margin:4px 0 8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(96,214,147,.22);
+  border-radius:9px;
+  background:rgba(96,214,147,.07);
+  color:#aef2c8;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.01em;
+}
+.mgw-profile-cosmetic-sheet-action{margin-top:0!important}
