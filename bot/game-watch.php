@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/services/GameReactionService.php';
 
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
@@ -13,13 +14,10 @@ function mgw_game_watch_load_games(array $config): array
     $driver = strtolower(trim((string)($config['storage_driver'] ?? 'json')));
     if ($driver === '') $driver = 'json';
 
-    // Production currently uses JSON. Read only games.json under that file's own
-    // shared lock, never the global transaction lock used by write operations.
     if ($driver === 'json') {
         return mgw_game_watch_read_json_games($config);
     }
 
-    // Database-primary remains a guarded fallback; no routing/config is changed.
     $storage = StorageFactory::create($config);
     return $storage->readOnly(static function (array $data): array {
         return is_array($data['games'] ?? null) ? $data['games'] : [];
@@ -36,11 +34,6 @@ function mgw_game_watch_read_json_games(array $config): array
 
     $locked = false;
     try {
-        // The browser already retries this read-only watcher every 250 ms. Never
-        // let one request sit behind a game_action writer lock for seconds,
-        // because the serial watcher cannot schedule its next freshness read
-        // until the blocked request returns. Skip the busy snapshot instead and
-        // let the existing cadence read the just-committed state immediately.
         $locked = flock($handle, LOCK_SH | LOCK_NB);
         if (!$locked) throw new RuntimeException('Состояние игры обновляется.');
 
@@ -71,11 +64,6 @@ function mgw_game_watch_result_history(array $config, string $userId, string $ga
                 throw new RuntimeException('Матч ещё не завершён.');
             }
 
-            // Keep Result on the same server-side presentation owner as History,
-            // but build it from one coherent JSON projection snapshot. The fast
-            // watcher can observe games.json before a multi-file projection has
-            // finished; this shared app.lock read waits until games + ledger are
-            // published together instead of retrying arbitrary client timers.
             $formatter = new HistoryService($config, new UserService($config));
             $resultSnapshot = [
                 'users' => is_array($data['users'] ?? null) ? $data['users'] : [],
@@ -99,14 +87,22 @@ function mgw_game_watch_result_history(array $config, string $userId, string $ga
     );
 }
 
+function mgw_game_watch_latest_reaction(array $config, string $gameId): ?array
+{
+    try {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if (!$databaseConfig->enabled()) return null;
+        $database = PdoConnectionFactory::create($databaseConfig);
+        return (new GameReactionService($config, $database))->latest($gameId);
+    } catch (Throwable $error) {
+        return null;
+    }
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
 
-    // The watch endpoint still performs the same Telegram/staging/dev
-    // authentication and only resolves the verified provider id for authorization.
-    // Canonical MGW visible identity is applied later by the same response-only
-    // projection used by normal game API responses, never by mutating auth state.
     $tgUser = (new AuthService($config))->getUserFromRequest($payload, false);
     $userId = trim((string)($tgUser['id'] ?? ''));
     $gameId = clean_string($payload['gameId'] ?? '', 80);
@@ -124,18 +120,18 @@ try {
     $candidate = $storedGames[$gameId] ?? null;
 
     $game = null;
+    $reaction = null;
     if (is_array($candidate)) {
         $participants = array_map('strval', $candidate['player_ids'] ?? []);
         if (in_array($userId, $participants, true)) {
             $game = $games->publicGame($candidate, $userId);
+            $reaction = mgw_game_watch_latest_reaction($config, $gameId);
         }
     }
 
-    // Keep the high-frequency watcher on the exact same public response pipeline
-    // as action/bootstrap game payloads. This prevents alternating legacy and MGW
-    // player names from producing two different snapshots of the same game.
     api_ok([
         'game' => $game,
+        'reaction' => $reaction,
         'me' => ['id' => $userId],
     ]);
 } catch (Throwable $e) {
