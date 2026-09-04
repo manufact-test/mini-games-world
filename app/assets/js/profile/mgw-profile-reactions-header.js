@@ -3,8 +3,7 @@ import { initMgwProfileReactions as initBaseReactions } from './mgw-profile-reac
 let initialized = false;
 let observer = null;
 let resizeBound = false;
-let mobileNavBound = false;
-let profileNavigationEpoch = 0;
+let mobileProfilePressBoundaryBound = false;
 
 export function initMgwProfileReactions(){
   initBaseReactions();
@@ -26,9 +25,9 @@ export function initMgwProfileReactions(){
     resizeBound = true;
     window.addEventListener('resize', () => queueMicrotask(positionPalette), { passive:true });
   }
-  if (!mobileNavBound) {
-    mobileNavBound = true;
-    window.addEventListener('click', handleMobileShellNavigation, true);
+  if (!mobileProfilePressBoundaryBound) {
+    mobileProfilePressBoundaryBound = true;
+    window.addEventListener('pointerdown', suppressLegacyMobileProfilePressFeedback, true);
   }
 
   queueMicrotask(syncReactionHeader);
@@ -76,62 +75,21 @@ function stabilizeMobileReactionBubbles(records){
   }
 }
 
-function handleMobileShellNavigation(event){
+function suppressLegacyMobileProfilePressFeedback(event){
   if (!isMobilePresentation()) return;
   const target = event.target instanceof Element
-    ? event.target.closest('#appBottomNav [data-shell-nav]')
+    ? event.target.closest('#appBottomNav [data-shell-nav="profile"]')
     : null;
-  if (!(target instanceof HTMLButtonElement)) return;
-
-  const route = String(target.dataset.shellNav || '');
-  if (route !== 'profile') {
-    profileNavigationEpoch++;
-    return;
-  }
-  if (target.disabled) return;
+  if (!(target instanceof HTMLButtonElement) || target.disabled) return;
   if (String(document.querySelector('.screen.active')?.dataset.screen || '') === 'profile') return;
 
-  // Telegram mobile can run the Profile click handler and the long route style
-  // recalculation in the same frame. Intercept only this mobile bottom-nav click,
-  // paint the pressed/selected state first, then enter Profile on the following
-  // frame. Desktop keeps the canonical synchronous shell path unchanged.
-  event.preventDefault();
-  event.stopImmediatePropagation();
-
-  const epoch = ++profileNavigationEpoch;
-  paintShellNavSelection(target);
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(() => {
-      if (epoch !== profileNavigationEpoch || !target.isConnected || target.disabled) {
-        restoreShellNavSelection();
-        return;
-      }
-      document.dispatchEvent(new CustomEvent('mgw:open-profile'));
-    });
-  });
-}
-
-function paintShellNavSelection(target){
-  const nav = target.closest('#appBottomNav');
-  if (!(nav instanceof HTMLElement)) return;
-  nav.querySelectorAll('[data-shell-nav]').forEach(button => {
-    const active = button === target;
-    button.classList.toggle('active', active);
-    if (active) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
-  });
-}
-
-function restoreShellNavSelection(){
-  const nav = document.getElementById('appBottomNav');
-  if (!(nav instanceof HTMLElement)) return;
-  const screen = String(document.querySelector('.screen.active')?.dataset.screen || '');
-  nav.querySelectorAll('[data-shell-nav]').forEach(button => {
-    const active = String(button.dataset.shellNav || '') === screen;
-    button.classList.toggle('active', active);
-    if (active) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
-  });
+  // The earlier reaction corrective painted Profile selection on pointerdown and
+  // another capture listener then delayed the real route by two animation frames.
+  // On Telegram mobile that produced a sticky button plus a one-frame flash.
+  // Stop only that legacy pointerdown helper; do not preventDefault and do not
+  // touch click, so the canonical shell click handler owns navigation exactly as
+  // it does on desktop and the browser keeps its native pressed-state feedback.
+  event.stopPropagation();
 }
 
 function syncReactionHeader(){
