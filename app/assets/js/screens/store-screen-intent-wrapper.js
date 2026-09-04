@@ -10,12 +10,13 @@ export function initStoreScreen(){
   if (initialized) return;
   initialized = true;
 
-  // The canonical shell now calls this owner only after the mobile Profile raster
-  // warm has completed. That makes the accepted idle Store status warm safe again
-  // on the normal shell route and removes the cold first-open replacement frame.
-  // Keep active-game mobile reloads intent-only: warming Store there can still
-  // compete with the authoritative game/bootstrap worker burst for no user value.
-  if (!keepsMobileIntentOnlyStore()) {
+  // Mobile Store stays intent-only. The shell owns the hidden first-paint gate:
+  // on the first Store tap it lets the canonical Store owner render/load while
+  // screen-store is still hidden, then publishes the route only after that await
+  // completes. Keeping the idle Store warm disabled on mobile avoids the second
+  // silent refresh/render racing immediately after first presentation and wiping
+  // decorator-owned avatar/frame DOM. Desktop keeps the accepted idle warm path.
+  if (!usesMobileIntentOnlyStore()) {
     initBaseStoreScreen();
     return;
   }
@@ -28,12 +29,6 @@ export function initStoreScreen(){
     event.stopImmediatePropagation();
     void openStoreTab();
   }, true);
-}
-
-function keepsMobileIntentOnlyStore(){
-  if (!usesMobileIntentOnlyStore()) return false;
-  const active = document.querySelector('.screen.active');
-  return String(active?.dataset.screen || '') === 'game';
 }
 
 function usesMobileIntentOnlyStore(){
