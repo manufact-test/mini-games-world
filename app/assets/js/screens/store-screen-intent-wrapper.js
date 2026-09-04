@@ -10,7 +10,7 @@ export function initStoreScreen(){
   if (initialized) return;
   initialized = true;
 
-  // Mobile Store stays intent-only. The shell now owns a hidden first-paint gate:
+  // Mobile Store stays intent-only. The shell owns the hidden first-paint gate:
   // on the first Store tap it lets the canonical Store owner render/load while
   // screen-store is still hidden, then publishes the route only after that await
   // completes. Keeping the idle Store warm disabled on mobile avoids the second
