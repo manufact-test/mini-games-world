@@ -109,11 +109,20 @@ function flushDeferredProfileRender(event){
 }
 
 function showProfileImmediately(){
+  const root = document.getElementById('profileV2Root');
+  const hasCachedProfileDom = root instanceof HTMLElement && root.childElementCount > 0;
+
+  // Profile is pre-rendered while hidden. Paint that existing DOM first so the
+  // navigation tap never waits on the long render signature / collection build.
+  // The authoritative profileV2 refresh still starts immediately afterwards and
+  // #1173 keeps any changed remount deferred until this route is hidden again.
+  showScreen('profile');
+  if (hasCachedProfileDom) return;
+
   if (state.mgwProfile) state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
   currentAvatarItemId();
   if (state.user) { renderUser(state.user); renderBalances(state.user); }
   renderProfileV2();
-  showScreen('profile');
 }
 
 function bindProfileActions(){

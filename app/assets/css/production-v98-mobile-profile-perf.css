@@ -198,3 +198,44 @@
   padding-bottom:0;
   line-height:1;
 }
+
+/* v98.4: final turn-header parity after desktop + mobile manual review.
+   Reaction, rules and timer now share one dark metallic material and silver
+   border. The two square icon controls use the same less-rounded geometry, and
+   the rules WebP gets one deterministic optical offset on every pointer type so
+   mobile can no longer paint it lower than desktop. */
+#screen-game .turn-actions > .game-rules-button,
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger,
+#screen-game .turn-actions > .timer{
+  border-color:rgba(233,236,244,.32);
+  background:linear-gradient(180deg,#25202D,#12151C);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055);
+}
+#screen-game .turn-actions > .game-rules-button,
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger{
+  border-radius:8px;
+}
+#screen-game .turn-actions > .game-rules-button{
+  display:grid;
+  place-items:center;
+  line-height:0;
+}
+#screen-game .turn-actions > .game-rules-button > img[data-sk-asset="ui/actions/rules.webp"]{
+  display:block;
+  width:18px;
+  height:18px;
+  margin:0;
+  object-fit:contain;
+  transform:translate(-1px,-1px) !important;
+}
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger{
+  color:var(--sk-silver-bright,#f1f2f6);
+  padding:0;
+  display:grid;
+  place-items:center;
+  line-height:1;
+}
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger > span{
+  display:block;
+  line-height:1;
+}
