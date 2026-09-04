@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1156';
+window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1157';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -109,7 +109,15 @@ async function boot(){
     // browser could paint the route transition. Prime that existing owner while
     // the preloader still covers the app, but keep active-game reloads untouched.
     const primeMobileProfile = shouldPrimeMobileProfile(result);
-    if (primeMobileProfile) initMgwProfileBackgrounds();
+    if (primeMobileProfile) {
+      // Keep Store initialization ahead of the awaited Profile raster warmup.
+      // Otherwise the shell can become observable while Store's first idle warm
+      // is still registering and a later Store render can replace DOM inserted by
+      // the accepted avatar/frame decorators. Active-match reloads retain the
+      // historical late Store init below.
+      initStoreScreen();
+      initMgwProfileBackgrounds();
+    }
     dispatchAppReady();
     if (primeMobileProfile) await primeMobileProfileFirstPresentation();
 
@@ -125,7 +133,7 @@ async function boot(){
     // During an active-match reload the previous eager idle warm raced the
     // bootstrap/history/presence burst and could exhaust the staging PHP worker
     // window, producing an empty cosmetic-store 500 despite no Store intent.
-    initStoreScreen();
+    if (!primeMobileProfile) initStoreScreen();
   } catch (error) {
     showBootFailure();
     toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
