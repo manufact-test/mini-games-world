@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1155';
+window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1156';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -25,6 +25,7 @@ import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { applyCanonicalMgwProfile } from './profile/mgw-profile-model.js?v=1';
+import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static';
 import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
@@ -101,7 +102,16 @@ async function boot(){
     initProfileScreen();
     showHomeActivity();
     syncWeeklyMatchButton(result.weekly_match || null);
+
+    // Profile backgrounds used to initialize only from the first Store/Profile
+    // screen-changed event. On mobile that meant the first Profile tap paid the
+    // background collection + premium surface decoration microtask before the
+    // browser could paint the route transition. Prime that existing owner while
+    // the preloader still covers the app, but keep active-game reloads untouched.
+    const primeMobileProfile = shouldPrimeMobileProfile(result);
+    if (primeMobileProfile) initMgwProfileBackgrounds();
     dispatchAppReady();
+    if (primeMobileProfile) await primeMobileProfileFirstPresentation();
 
     if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
       enterGame(result.active_game, result.me || null);
@@ -122,6 +132,36 @@ async function boot(){
   } finally {
     hidePreloader();
   }
+}
+
+function shouldPrimeMobileProfile(result){
+  if (String(result?.active_game?.id || '').trim()) return false;
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 640px), (pointer: coarse)').matches;
+}
+
+async function primeMobileProfileFirstPresentation(){
+  // Frames/badges may already own an in-flight profileV2 read from clean-entry.
+  // The API coalesces read-only profileV2 requests, so awaiting it here does not
+  // add another request; it simply keeps its final cosmetic DOM work underneath
+  // the already-visible preloader instead of letting that work race the first tap.
+  try { await api.profileV2(); } catch (_) {}
+  await Promise.resolve();
+
+  const screen = document.getElementById('screen-profile');
+  const preloader = document.getElementById('preloader');
+  if (!(screen instanceof HTMLElement) || !(preloader instanceof HTMLElement) || preloader.classList.contains('hidden')) return;
+
+  // A non-zero hidden Profile was enough to keep later transitions warm, but
+  // Chromium can still skip the very first raster for a fully occluded layer.
+  // Promote the final decorated Profile for two real frames under the z=100
+  // preloader, then return it to its accepted invisible warm state.
+  screen.classList.add('mgw-profile-prewarm-pass');
+  void screen.offsetHeight;
+  await new Promise(resolve => window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(resolve);
+  }));
+  screen.classList.remove('mgw-profile-prewarm-pass');
 }
 
 function initAppShellChrome(){
