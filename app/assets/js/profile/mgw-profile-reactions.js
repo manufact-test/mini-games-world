@@ -393,9 +393,22 @@ function showReaction(reaction){
     bubble.classList.add('from-card');
   }
 
+  // Telegram WebView can skip the compositor's very first animation frame on a
+  // freshly inserted node. Prime the exact sender-origin bubble while paused,
+  // let one real paint happen, then start the same accepted animation. This is
+  // deterministic for the first reaction as well as all later deliveries.
+  bubble.style.animationPlayState = 'paused';
   card.append(bubble);
+  void bubble.offsetWidth;
   window.clearTimeout(reactionHideTimer);
-  reactionHideTimer = window.setTimeout(() => bubble.remove(), 2400);
+  reactionHideTimer = null;
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      if (!bubble.isConnected) return;
+      bubble.style.animationPlayState = 'running';
+      reactionHideTimer = window.setTimeout(() => bubble.remove(), 2400);
+    });
+  });
 }
 
 function handleOutsideClick(event){
