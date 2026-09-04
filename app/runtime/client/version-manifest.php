@@ -24,7 +24,7 @@ return [
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1125&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync&mvp19_3_2=game-cosmetics&mvp19_3_3=game-tabs-fresh&mvp19_3_4=name-colors&perf=stable-render-cache&active_refresh=deferred-remount-v1&entry=paint-cached-first-v1',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
         './assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=3&mvp19_3=full-profile-surface',
-        './assets/js/profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions' => './assets/js/profile/mgw-profile-reactions-header.js?v=2&mvp19_3=header-square-smooth',
+        './assets/js/profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions' => './assets/js/profile/mgw-profile-reactions-header.js?v=3&mvp19_3=header-square-smooth&mobile=stable-bubble-profile-phased-tap',
         './assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective-base' => './assets/js/profile/mgw-profile-reactions.js?v=4&mvp19_3=ingame-smooth-corrective&first_frame=primed-v4&profile_nav=press-feedback-v1',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1154&mvp18=friend-request-lifecycle&store=post-boot-warm',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=78&mvp16=all-variant-rules',
