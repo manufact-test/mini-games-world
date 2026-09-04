@@ -149,7 +149,9 @@ jobs:
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileReactionsTest.php|\
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
-              bot/tests/Mvp19_3ProfileNameColorsTest.php)
+              bot/tests/Mvp19_3ProfileNameColorsTest.php|\
+              docs/MGW_CANONICAL_DELTA_2026-09-04_MVP19_3_PROFILE_COSMETICS_REACTIONS.md|\
+              docs/MGW_CURRENT_SHORT_ROADMAP_2026-09-04.md)
                 ;;
               *)
                 echo "Unexpected Profile reaction path: $path" >&2

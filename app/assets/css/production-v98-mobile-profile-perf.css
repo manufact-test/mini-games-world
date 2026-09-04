@@ -51,48 +51,108 @@
   100%{opacity:0;transform:translate3d(-50%,-190%,0) scale(.96)}
 }
 
+/* v98.5: Profile is a normal shell route again. A previous mobile corrective
+   disabled its transform/transition entirely, while the premium background's
+   reduced-motion rule could also force transform:none on desktop. That made
+   Profile snap in while Home/Store/Tournaments used the canonical 240ms rise.
+   Give the router transform ownership back explicitly and keep the exact shell
+   timing/geometry on every pointer type. */
+#app #screen-profile.screen{
+  backface-visibility:hidden;
+  transform:translateY(10px)!important;
+  transition:opacity .24s var(--sk-ease-standard),transform .24s var(--sk-ease-standard)!important;
+}
+#app #screen-profile.screen.active{
+  transform:translateY(0)!important;
+}
+
+/* The flagship background may animate background-position, but filtering the
+   entire Profile surface creates a very large compositor/raster layer. Keep the
+   visual motion and remove only that whole-screen filter owner. */
+#screen-profile[data-profile-background-item-id="profile-background-04"]{
+  filter:none!important;
+}
+
 /* Mobile Profile performance corrective.
    Keep the accepted artwork, but remove the expensive background-position /
    blend/filter animation path from narrow Telegram WebViews. Premium profiles
    retain a restrained compositor-only drift instead of repainting multi-layer
    gradients on every frame. */
 @media (max-width:640px), (pointer:coarse){
-  #screen-profile.active > .content > .profile-v2{
+  #screen-profile > .content > .profile-v2{
     contain:layout style;
   }
 
-  #screen-profile.active,
-  #screen-profile.active::after,
-  #screen-profile.active .profile-v2-background-card-preview,
-  #screen-profile.active .profile-v2-background-preview,
-  #screen-profile.active .store-v2-game-preview,
-  #screen-profile.active .ttt-effect-mark{
+  #screen-profile,
+  #screen-profile::after,
+  #screen-profile .profile-v2-background-card-preview,
+  #screen-profile .profile-v2-background-preview,
+  #screen-profile .store-v2-game-preview,
+  #screen-profile .ttt-effect-mark{
     animation:none !important;
   }
 
-  #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
-  #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
+  #screen-profile[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile[data-profile-background-item-id="profile-background-04"]::before{
     mix-blend-mode:normal !important;
     filter:none !important;
+    animation:none !important;
+    will-change:auto;
+  }
+  #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
     animation:mgwMobileProfileAtmosphere 14s ease-in-out infinite alternate !important;
     will-change:transform,opacity;
   }
 
-  #screen-profile.active .profile-v2-collection-section{
+  #screen-profile .profile-v2-collection-section{
     contain:layout style;
   }
 
-  /* Long Profile screens should not continuously style/layout off-screen
-     sections while the user is scrolling or trying to leave the route. Chrome
-     remembers the real size after first layout, so this does not collapse the
-     page or change the accepted visual order. */
+  /* Keep the already rendered long Profile laid out so the first scroll does
+     not have to catch up after navigation. Section containment bounds later work. */
   #screen-profile.active .profile-v2 > .profile-v2-section,
   #screen-profile.active .profile-v2 > .profile-v2-balance{
-    content-visibility:auto;
-    contain-intrinsic-size:auto 280px;
+    content-visibility:visible !important;
+    contain-intrinsic-size:none !important;
+    contain:layout style;
   }
-  #screen-profile.active .profile-v2 > .profile-v2-collection-section{
-    contain-intrinsic-size:auto 760px;
+
+  /* Fixed shell glass has to continuously blur whatever moves underneath it.
+     Preserve the same dark glass look with an opaque mobile fallback. */
+  #app[data-shell-screen="profile"] .app-shell-topbar,
+  #app[data-shell-screen="profile"] .app-bottom-nav{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  #app[data-shell-screen="profile"] .app-shell-topbar{
+    background:linear-gradient(180deg,rgba(16,19,27,.985),rgba(16,19,27,.94) 78%,rgba(16,19,27,.86));
+  }
+  #app[data-shell-screen="profile"] .app-bottom-nav{
+    background:rgba(20,22,30,.985);
+  }
+
+  /* Profile owns many translucent collection cards. Blurring the animated
+     background separately behind every one of them is the remaining mobile
+     entry spike. Remove only the live blur; their existing translucent glass
+     backgrounds/borders remain visually intact. */
+  #screen-profile[data-profile-background-item-id] .profile-v2-identity,
+  #screen-profile[data-profile-background-item-id] .profile-v2-balance,
+  #screen-profile[data-profile-background-item-id] .profile-v2-summary-stat,
+  #screen-profile[data-profile-background-item-id] .profile-v2-game-stat,
+  #screen-profile[data-profile-background-item-id] .profile-v2-history-row,
+  #screen-profile[data-profile-background-item-id] .profile-v2-achievement,
+  #screen-profile[data-profile-background-item-id] .profile-v2-account-card,
+  #screen-profile[data-profile-background-item-id] .profile-v2-collection-card,
+  #screen-profile[data-profile-background-item-id] .profile-v2-name-color-card,
+  #screen-profile[data-profile-background-item-id] .profile-v2-badge-card,
+  #screen-profile[data-profile-background-item-id] .profile-v2-frame-card,
+  #screen-profile[data-profile-background-item-id] .profile-v2-background-card,
+  #screen-profile[data-profile-background-item-id] .profile-v2-game-card,
+  #screen-profile[data-profile-background-item-id] .profile-v2-game-tab,
+  #screen-profile[data-profile-background-item-id] .profile-v2-id-card button{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
   }
 }
 
@@ -113,7 +173,7 @@
   }
 }
 
-/* v98.2: first-frame and route-transition corrective after Telegram mobile review.
+/* v98.2: first-frame corrective after Telegram mobile review.
    Keep the reaction control 32x32 even during the brief frame before the header
    relocation helper runs, so it never flashes at the historical 28px size. */
 #screen-game .mgw-reaction-toolbar{
@@ -134,44 +194,6 @@
    one frame to establish the sender-origin bubble before motion starts. */
 #screen-game .mgw-live-reaction{
   animation-delay:48ms;
-}
-
-@media (max-width:640px), (pointer:coarse){
-  /* Profile is substantially heavier than the other shell routes. The generic
-     240ms opacity/translate screen transition forces the WebView to composite
-     the full Profile while entering and leaving, which is exactly where bottom
-     navigation taps were stalling. Make this route switch atomic on mobile. */
-  #screen-profile{
-    transition:none !important;
-    transform:none !important;
-  }
-
-  /* v98.1 content-visibility deferred layout work until the first Profile scroll.
-     That moved the cost into the user's gesture and created the visible "loading"
-     catch-up. Keep sections laid out while the hidden absolute screen is idle,
-     then contain each section so later scrolls stay cheap and deterministic. */
-  #screen-profile.active .profile-v2 > .profile-v2-section,
-  #screen-profile.active .profile-v2 > .profile-v2-balance{
-    content-visibility:visible !important;
-    contain-intrinsic-size:none !important;
-    contain:layout style;
-  }
-
-  /* Fixed shell glass has to continuously blur whatever moves underneath it.
-     Over the premium Profile background and long collection this turns every
-     scroll/route change into a large repaint. Preserve the same dark glass look
-     with an opaque mobile fallback and remove the live blur only on Profile. */
-  #app[data-shell-screen="profile"] .app-shell-topbar,
-  #app[data-shell-screen="profile"] .app-bottom-nav{
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-  }
-  #app[data-shell-screen="profile"] .app-shell-topbar{
-    background:linear-gradient(180deg,rgba(16,19,27,.985),rgba(16,19,27,.94) 78%,rgba(16,19,27,.86));
-  }
-  #app[data-shell-screen="profile"] .app-bottom-nav{
-    background:rgba(20,22,30,.985);
-  }
 }
 
 /* v98.3: the rules/book control was still using content-box while the reaction
