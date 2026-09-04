@@ -1,6 +1,6 @@
 @import url('./production-v98-mobile-profile-perf.css?v=6&mvp19_3=reaction-header-square-smooth&profile=mobile-perf-v2&profile2=route-first-frame-v3&reaction=first-frame-v3&profile3=active-refresh-remount-v4&profile4=paint-cached-first-v5&profile5=route-transition-parity-v1&profile6=warm-compositor-v1&profile7=stable-shell-offscreen-v1&profile8=scroll-layer-route-v1&profile9=no-active-subtree-invalidation-v1&profile10=idle-prepaint-first-viewport-v1&profile11=covered-active-raster-prewarm-v1&header=metal-parity-v2');
 
-/* Reactions Store/Profile presentation only. Ownership/equip/purchase semantics stay in JS owners. */
+/* Reactions Store/Profile presentation only. Purchased reactions are cumulative. */
 .store-v2-reaction-grid,
 .profile-v2-reaction-grid {
   align-items: stretch;
@@ -9,62 +9,111 @@
 .store-v2-reaction-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
+  min-width: 0;
   min-height: 0;
 }
 
 .store-v2-reaction-card .store-v2-reaction-copy {
   display: grid;
-  gap: 4px;
+  grid-template-rows: auto;
+  gap: 3px;
+  height: auto;
+  min-height: 11px;
+  overflow: visible;
+}
+
+.store-v2-reaction-card[data-reaction-count="4"] .store-v2-reaction-copy,
+.store-v2-reaction-card[data-reaction-count="8"] .store-v2-reaction-copy {
+  grid-template-rows: auto auto;
+  min-height: 25px;
 }
 
 .store-v2-reaction-card .store-v2-reaction-foot {
   margin-top: auto;
 }
 
-.store-v2-reaction-card:has(.mgw-reaction-preview > i:only-child) .store-v2-reaction-copy small,
-.profile-v2-reaction-card:has(.mgw-reaction-preview > i:only-child) > small {
-  display: none;
+.store-v2-reaction-owned {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: var(--mgw-cos-action-height,30px);
+  min-height: var(--mgw-cos-action-height,30px);
+  padding: 0 6px;
+  border: 1px solid rgba(82,223,152,.44);
+  border-radius: 9px;
+  background: rgba(28,104,74,.28);
+  color: #72e6aa;
+  font-size: var(--mgw-cos-action-size,9px);
+  line-height: 1;
+  font-weight: 950;
+  pointer-events: none;
 }
 
 .mgw-reaction-preview {
-  display: inline-grid;
+  box-sizing: border-box;
+  display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(30px, 1fr);
+  grid-auto-columns: minmax(0, 1fr);
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 5px;
   width: 100%;
-  max-width: 220px;
+  max-width: 100%;
   margin-inline: auto;
 }
 
 .mgw-reaction-preview > i {
   display: grid;
   place-items: center;
-  min-width: 30px;
-  min-height: 30px;
+  width: 27px;
+  min-width: 0;
+  height: 27px;
+  min-height: 27px;
+  margin-inline: auto;
   line-height: 1;
   font-style: normal;
 }
 
-.mgw-reaction-preview:has(> i:nth-child(4):last-child) {
-  grid-template-columns: repeat(2, minmax(32px, 1fr));
+.mgw-reaction-preview[data-reaction-count="4"] {
+  grid-template-columns: repeat(2, 30px);
   grid-auto-flow: row;
-  max-width: 104px;
+  width: auto;
+  max-width: 68px;
+  gap: 4px;
 }
 
-.mgw-reaction-preview:has(> i:nth-child(5)) {
-  grid-template-columns: repeat(4, minmax(28px, 1fr));
+.mgw-reaction-preview[data-reaction-count="8"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-auto-flow: row;
-  max-width: 184px;
-  gap: 6px;
+  width: 100%;
+  max-width: 112px;
+  gap: 3px;
+}
+
+.mgw-reaction-preview[data-reaction-count="8"] > i {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  font-size: 15px;
+}
+
+.store-v2-reaction-preview[data-reaction-count="4"],
+.store-v2-reaction-preview[data-reaction-count="8"],
+.profile-v2-reaction-card-preview[data-reaction-count="4"],
+.profile-v2-reaction-card-preview[data-reaction-count="8"] {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  padding-inline: 2px;
+  overflow: hidden;
 }
 
 .store-v2-reaction-preview,
 .profile-v2-reaction-card-preview,
 .mgw-reaction-sheet-preview {
-  overflow: visible;
+  min-width: 0;
 }
 
 .profile-v2-reaction-collection {
@@ -78,12 +127,14 @@
 .profile-v2-reaction-card {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 7px;
+  min-width: 0;
   min-height: 0;
+  cursor: default;
 }
 
 .profile-v2-reaction-card .mgw-reaction-preview.compact {
-  min-height: 68px;
+  min-height: 0;
 }
 
 .mgw-purchase-pending {
@@ -92,21 +143,43 @@
 
 @media (max-width: 640px) {
   .store-v2-reaction-card {
-    gap: 10px;
+    gap: 5px;
   }
 
-  .mgw-reaction-preview:has(> i:nth-child(5)) {
-    grid-template-columns: repeat(4, minmax(24px, 1fr));
-    max-width: 156px;
-    gap: 4px;
+  .store-v2-reaction-grid,
+  .profile-v2-reaction-grid {
+    gap: 6px;
   }
 
-  .mgw-reaction-preview > i {
-    min-width: 26px;
-    min-height: 26px;
+  .mgw-reaction-preview[data-reaction-count="4"] {
+    grid-template-columns: repeat(2, 28px);
+    max-width: 64px;
+  }
+
+  .mgw-reaction-preview[data-reaction-count="8"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 100%;
+    gap: 2px;
+  }
+
+  .mgw-reaction-preview[data-reaction-count="8"] > i {
+    width: 22px;
+    height: 22px;
+    min-height: 22px;
+    font-size: 14px;
   }
 
   .profile-v2-reaction-collection {
     margin-top: 18px;
+  }
+}
+
+@media (max-width: 390px) {
+  .mgw-reaction-preview[data-reaction-count="8"] > i {
+    width: 20px;
+    height: 20px;
+    min-height: 20px;
+    font-size: 13px;
+    border-radius: 7px;
   }
 }

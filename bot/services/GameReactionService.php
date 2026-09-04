@@ -40,7 +40,7 @@ final class GameReactionService
         $this->activeGameForParticipant($gameId, $providerUserId);
         $allowed = $this->allowedReactionCodes($mgwId);
         if (!in_array($code, $allowed, true)) {
-            throw new GameReactionException(403, 'Эта реакция не входит в выбранный набор.');
+            throw new GameReactionException(403, 'Эта реакция ещё не куплена.');
         }
 
         $now = (int)floor(microtime(true) * 1000);
@@ -120,21 +120,21 @@ final class GameReactionService
     public function allowedReactionCodes(string $mgwId): array
     {
         $inventory = (new ProductInventoryService($this->database))->snapshot($mgwId);
-        $itemId = strtolower(trim((string)($inventory['equipped'][self::SLOT] ?? '')));
-        if ($itemId === '') return [];
+        $allowed = [];
         foreach ((array)($inventory['catalog'] ?? []) as $item) {
-            if (!is_array($item) || (string)($item['item_id'] ?? '') !== $itemId) continue;
-            if ((string)($item['item_type'] ?? '') !== 'profile'
+            if (!is_array($item)
+                || (string)($item['item_type'] ?? '') !== 'profile'
                 || (string)($item['item_family'] ?? '') !== 'reaction'
                 || (string)($item['equip_slot'] ?? '') !== self::SLOT
-                || empty($item['owned'])) return [];
+                || empty($item['owned'])) continue;
+
             $codes = is_array($item['metadata']['reactions'] ?? null) ? $item['metadata']['reactions'] : [];
-            return array_values(array_filter(array_map(
-                static fn($value): string => strtolower(trim((string)$value)),
-                $codes
-            ), static fn(string $value): bool => isset(self::REACTIONS[$value])));
+            foreach ($codes as $value) {
+                $code = strtolower(trim((string)$value));
+                if ($code !== '' && isset(self::REACTIONS[$code])) $allowed[$code] = true;
+            }
         }
-        return [];
+        return array_keys($allowed);
     }
 
     private function activeGameForParticipant(string $gameId, string $providerUserId): array

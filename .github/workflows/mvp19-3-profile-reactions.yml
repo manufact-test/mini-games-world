@@ -110,19 +110,28 @@ jobs:
           grep -F "private const SLOT = 'profile_reaction_set'" bot/database/migrations/20260903_0024_add_profile_reactions.php
           grep -F "public const SLOT = 'profile_reaction_set'" bot/services/GameReactionService.php
           grep -F 'ProductInventoryService' bot/services/GameReactionService.php
+          grep -F '$allowed[$code] = true' bot/services/GameReactionService.php
           grep -F "action:'send'" app/assets/js/api/client.js
           grep -F 'profileReactionEquip' app/assets/js/api/client.js
           grep -F 'profileReactionUnequip' app/assets/js/api/client.js
+          grep -F 'ownedReactionCodes' app/assets/js/profile/mgw-profile-reactions.js
+          grep -F 'store-v2-reaction-owned' app/assets/js/profile/mgw-profile-reactions.js
           grep -F 'data-profile-reaction-store-section' app/assets/js/profile/mgw-profile-reactions.js
           grep -F 'data-profile-reaction-collection' app/assets/js/profile/mgw-profile-reactions.js
+          ! grep -F 'data-reaction-equip' app/assets/js/profile/mgw-profile-reactions.js
+          ! grep -F 'data-reaction-unequip' app/assets/js/profile/mgw-profile-reactions.js
           grep -F "document.addEventListener('mgw:app-ready', initMgwProfileReactions" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "new CustomEvent('mgw:game-reaction'" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "'reaction' => \$reaction" bot/game-watch.php
           grep -F "host.insertBefore(toolbar" app/assets/js/profile/mgw-profile-reactions-header.js
           grep -F "positionPalette" app/assets/js/profile/mgw-profile-reactions-header.js
           grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
-          grep -F 'production-v98-mobile-profile-perf.css' app/runtime/client/version-manifest.php
-          grep -F 'production-v97-reactions.css' app/runtime/client/version-manifest.php
+          grep -F "dispatchScreenChanged({ from:previous, to:next });" app/assets/js/router.js
+          ! grep -F 'deferProfileTransition' app/assets/js/router.js
+          grep -F 'production-v99-profile-reaction-polish.css?v=2&mvp19_3=cumulative-reaction-cards' app/runtime/client/version-manifest.php
+          grep -F 'production-v97-reactions.css?v=2&mvp19_3=ingame-corrective' app/runtime/client/version-manifest.php
+          grep -F 'router.js?v=32&profile_nav=direct-sync-v2' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-reactions.js?v=6&mvp19_3=cumulative-owned-reactions' app/runtime/client/version-manifest.php
 
       - name: Guard frozen engines and bounded reaction slice
         if: ${{ github.event_name == 'pull_request' }}
