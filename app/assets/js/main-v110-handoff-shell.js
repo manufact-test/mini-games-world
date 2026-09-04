@@ -67,7 +67,6 @@ initStoreOrders();
 initWeeklyMatchInfo();
 initHomeScreen();
 initAccountShortcuts();
-initProfileScreen();
 initGameRules();
 initStatsRouteLifecycle();
 
@@ -96,6 +95,10 @@ async function boot(){
     renderUser(state.user);
     renderBalances(state.user);
     applyStatsSnapshot(statsTicket, result.stats);
+    // Profile is intentionally initialized only after the authoritative boot/profile
+    // snapshot exists. This keeps its first hidden render and idle profileV2 warm
+    // work behind the preloader instead of racing the first user navigation tap.
+    initProfileScreen();
     showHomeActivity();
     syncWeeklyMatchButton(result.weekly_match || null);
     dispatchAppReady();
@@ -247,11 +250,9 @@ function handleShellNavigation(event){
   const route = String(target.dataset.shellNav || 'home');
   if (!SHELL_ROUTES.has(route)) return;
 
-  if (route === 'profile') {
-    document.dispatchEvent(new CustomEvent('mgw:open-profile'));
-    return;
-  }
-
+  // Profile now follows the exact same shell route owner as Home/Tournaments/Store.
+  // The historical custom event started Profile-only refresh work from the tap
+  // path and could occasionally contend with the heavy Profile compositor layer.
   showScreen(route);
   if (route === 'store') queueMicrotask(() => void openStoreTab());
 }
