@@ -274,4 +274,25 @@
     transition: none !important;
     will-change: auto !important;
   }
+
+  /* Match Profile's pleasant bottom-up feel without bringing the expensive
+     full-screen crossfade back. Only the entering content layer moves a few pixels;
+     the outgoing route still switches atomically, so there is never a two-screen
+     opacity blend for Telegram WebView to double-paint. */
+  #app.has-shell-chrome > .screen[data-screen="tournaments"].active > .content,
+  #app.has-shell-chrome > .screen[data-screen="store"].active > .content {
+    animation: mgw-shell-content-rise-in .20s var(--sk-ease-standard) both;
+  }
+}
+
+@keyframes mgw-shell-content-rise-in {
+  from { transform: translate3d(0, 7px, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app.has-shell-chrome > .screen[data-screen="tournaments"].active > .content,
+  #app.has-shell-chrome > .screen[data-screen="store"].active > .content {
+    animation: none !important;
+  }
 }
