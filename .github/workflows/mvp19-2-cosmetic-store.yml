@@ -12,6 +12,7 @@ on:
       - 'bot/tests/Mvp19_2CosmeticStoreTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/screens/store-screen-intent-wrapper.js'
       - 'app/assets/css/screens/store-v2.css'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
@@ -67,6 +68,7 @@ jobs:
         run: |
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/screens/store-screen-intent-wrapper.js
 
       - name: Guard canonical Store product decisions
         shell: bash
@@ -87,7 +89,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"mvp19=store-v2") || !str_contains($s,"corrective=2")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2") || !str_contains($css,"corrective=2")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-intent-wrapper.js?v=1") || !str_contains($s,"mobile=intent-only")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2") || !str_contains($css,"corrective=2")) exit(3);'
+          grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
+          grep -F 'void openStoreTab();' app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');" app/assets/css/main.css
           grep -F 'cosmeticStoreStatus' app/assets/js/api/client.js
           grep -F 'cosmeticStorePurchase' app/assets/js/api/client.js
@@ -170,6 +174,7 @@ jobs:
               bot/tests/Mvp19_2CosmeticStoreTest.php|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/store-screen.js|\
+              app/assets/js/screens/store-screen-intent-wrapper.js|\
               app/assets/css/screens/store-v2.css|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php)

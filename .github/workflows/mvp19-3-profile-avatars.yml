@@ -17,6 +17,7 @@ on:
       - 'app/assets/js/ui.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/screens/store-screen-intent-wrapper.js'
       - 'app/assets/js/profile/mgw-profile-model.js'
       - 'app/assets/js/profile/mgw-avatar-presentation.js'
       - 'app/assets/js/profile/mgw-avatar-registry.js'
@@ -75,6 +76,7 @@ jobs:
           node --check app/assets/js/ui.js
           node --check app/assets/js/screens/profile-screen-v110.js
           node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/screens/store-screen-intent-wrapper.js
           node --check app/assets/js/profile/mgw-profile-model.js
           node --check app/assets/js/profile/mgw-avatar-presentation.js
           node --check app/assets/js/profile/mgw-avatar-registry.js
@@ -121,6 +123,7 @@ jobs:
           grep -F 'state.selectedAvatarId = previousSelectedAvatarId;' app/assets/js/screens/profile-screen-v110.js
           grep -F 'applyOptimisticPurchase(offer);' app/assets/js/screens/store-screen.js
           grep -F 'if (!purchaseBusy && !equipBusy) applyStoreResponse(result);' app/assets/js/screens/store-screen.js
+          grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
           if grep -Fq 'STARTER_AVATAR_ITEM_IDS' app/assets/js/profile/mgw-profile-model.js; then
             echo 'Starter-only canonical avatar gate returned.' >&2
             exit 1
@@ -153,7 +156,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19_4=character-identity")) exit(2); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","roster=portrait-v5")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","avatar=character-v2")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","roster=portrait-v5")) exit(6); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","mvp19_3_1=optimistic-purchase")) exit(7); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(8);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19_4=character-identity")) exit(2); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","roster=portrait-v5")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","avatar=character-v2")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","roster=portrait-v5")) exit(6); $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-intent-wrapper.js?v=1") || !str_contains($s,"mobile=intent-only")) exit(7); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(8);'
+          grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
+          grep -F 'applyOptimisticPurchase(offer);' app/assets/js/screens/store-screen.js
           grep -F "@import url('./components/mgw-avatars.css?v=5&mvp19_4=illustrated-raster-roster-v5');" app/assets/css/main.css
           grep -F "./profile/mgw-avatar-presentation.js?v=6&mvp19_4=illustrated-raster-roster-v5&mvp19_3=name-colors" app/assets/js/production-clean-entry-v110.js
           grep -F "./mgw-avatar-registry.js?v=4" app/assets/js/profile/mgw-avatar-presentation.js
@@ -199,6 +204,7 @@ jobs:
               app/assets/js/ui.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/screens/store-screen.js|\
+              app/assets/js/screens/store-screen-intent-wrapper.js|\
               app/assets/js/profile/mgw-profile-model.js|\
               app/assets/js/profile/mgw-avatar-presentation.js|\
               app/assets/js/profile/mgw-avatar-registry.js|\
