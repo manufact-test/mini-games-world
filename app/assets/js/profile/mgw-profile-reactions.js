@@ -38,9 +38,13 @@ export function initMgwProfileReactions(){
     observer = new MutationObserver(scheduleDecorate);
     observer.observe(document.body, { childList:true, subtree:true });
     document.addEventListener('mgw:cosmetic-inventory-changed', scheduleDecorate);
-    document.addEventListener('mgw:screen-changed', () => { paletteOpen = false; scheduleDecorate(); });
+    document.addEventListener('mgw:screen-changed', event => {
+      paletteOpen = false;
+      const from = String(event?.detail?.from || '');
+      const to = String(event?.detail?.to || '');
+      if (from === 'game' || to === 'game') scheduleDecorate();
+    });
     document.addEventListener('mgw:game-reaction', event => showReaction(event.detail?.reaction || null));
-    document.addEventListener('pointerdown', primeProfileNavPressFeedback, true);
     document.addEventListener('click', handleOutsideClick, true);
     scheduleDecorate();
     void ensureSnapshot();
@@ -394,10 +398,6 @@ function showReaction(reaction){
     bubble.classList.add('from-card');
   }
 
-  // Telegram WebView can skip the compositor's very first animation frame on a
-  // freshly inserted node. Prime the exact sender-origin bubble while paused,
-  // let one real paint happen, then start the same accepted animation. This is
-  // deterministic for the first reaction as well as all later deliveries.
   bubble.style.animationPlayState = 'paused';
   card.append(bubble);
   void bubble.offsetWidth;
@@ -410,40 +410,6 @@ function showReaction(reaction){
       reactionHideTimer = window.setTimeout(() => bubble.remove(), 2400);
     });
   });
-}
-
-function primeProfileNavPressFeedback(event){
-  const target = event.target instanceof Element
-    ? event.target.closest('#appBottomNav [data-shell-nav="profile"]')
-    : null;
-  if (!(target instanceof HTMLButtonElement) || target.disabled) return;
-  if (String(document.querySelector('.screen.active')?.dataset.screen || '') === 'profile') return;
-  const nav = target.closest('#appBottomNav');
-  if (!(nav instanceof HTMLElement)) return;
-
-  // Pointerdown is a separate browser task before the shell's click handler.
-  // Paint the same active state immediately, so even if Profile route listeners
-  // are busy for a moment the tap feedback never appears frozen and then snaps.
-  nav.querySelectorAll('[data-shell-nav]').forEach(button => {
-    const active = button === target;
-    button.classList.toggle('active', active);
-    if (active) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
-  });
-
-  // If the pointer sequence is cancelled and no navigation follows, restore the
-  // visual state from the actual active route. Normal Profile navigation reaches
-  // the route long before this bounded fallback runs.
-  window.setTimeout(() => {
-    const screen = String(document.querySelector('.screen.active')?.dataset.screen || '');
-    if (screen === 'profile') return;
-    nav.querySelectorAll('[data-shell-nav]').forEach(button => {
-      const active = String(button.dataset.shellNav || '') === screen;
-      button.classList.toggle('active', active);
-      if (active) button.setAttribute('aria-current', 'page');
-      else button.removeAttribute('aria-current');
-    });
-  }, 700);
 }
 
 function handleOutsideClick(event){
