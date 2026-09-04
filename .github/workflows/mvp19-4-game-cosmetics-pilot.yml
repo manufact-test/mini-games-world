@@ -19,6 +19,7 @@ on:
       - 'bot/tests/TicTacToeSingleEffectMigrationTest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/screens/store-screen-intent-wrapper.js'
       - 'app/assets/js/games/tictactoe/renderer.js'
       - 'app/assets/css/games/tictactoe/cosmetics.css'
       - 'app/assets/css/screens/store-v2.css'
@@ -86,6 +87,7 @@ jobs:
         run: |
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/screens/store-screen-intent-wrapper.js
           node --check app/assets/js/games/tictactoe/renderer.js
 
       - name: Guard exact pilot catalogue and pricing
@@ -112,6 +114,7 @@ jobs:
           grep -F 'gameCosmeticPreview' app/assets/js/screens/store-screen.js
           grep -F 'equipStoreItem' app/assets/js/screens/store-screen.js
           grep -F 'unequipStoreSlot' app/assets/js/screens/store-screen.js
+          grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "\$player['game_cosmetics']" bot/helpers/response.php
           grep -F 'player?.game_cosmetics?.slots' app/assets/js/games/tictactoe/renderer.js
           grep -F 'slots.game_tictactoe_effect' app/assets/js/games/tictactoe/renderer.js
@@ -126,7 +129,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","game_cosmetics=pilot")) exit(1); if(!str_contains($m["imports"]["./assets/js/screens/store-screen.js?v=34"]??"","c2_1=single-effect")) exit(2); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_1=mark-owned")) exit(3); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_5=visible-mark-layer")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","c2_1=single-slot-parity")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","c2_5=visible-mark-layer")) exit(6);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-intent-wrapper.js?v=1") || !str_contains($s,"mobile=intent-only")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_1=mark-owned")) exit(2); if(!str_contains($m["imports"]["./assets/js/games/tictactoe/renderer.js?v=53"]??"","c2_5=visible-mark-layer")) exit(3); if(!str_contains($m["assets"]["main_css"]??"","c2_1=single-slot-parity")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","c2_5=visible-mark-layer")) exit(5);'
+          grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
+          grep -F 'gameCosmeticPreview' app/assets/js/screens/store-screen.js
+          grep -F 'data-store-v2-unequip' app/assets/js/screens/store-screen.js
+          grep -F 'Один выбранный эффект срабатывает при каждом ходе' app/assets/js/screens/store-screen.js
           grep -F "@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');" app/assets/css/main.css
           grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2&c2_1=single-slot-parity&c2_5=visible-mark-layer');" app/assets/css/main.css
 
