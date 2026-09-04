@@ -282,4 +282,17 @@
   #app #screen-profile.screen:not(.active) > .content{
     transform:translate3d(0,10px,0);
   }
+
+  /* v98.9: first-open-only covered raster pass. The preloader is z-index:100,
+     so the prepared Profile can be promoted above Home for two real frames
+     without becoming visible or interactive to the player. This forces Chromium
+     WebView to raster the final decorated first viewport before the first tap. */
+  #app #screen-profile.screen.mgw-profile-prewarm-pass:not(.active){
+    opacity:1!important;
+    pointer-events:none!important;
+    z-index:3!important;
+  }
+  #app #screen-profile.screen.mgw-profile-prewarm-pass:not(.active) > .content{
+    transform:translate3d(0,0,0)!important;
+  }
 }
