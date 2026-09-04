@@ -250,4 +250,28 @@
     animation: none !important;
     will-change: auto !important;
   }
+
+  /* The old persistent 0.001-opacity Profile warm layer remained in the compositor
+     during Home/Tournament/Store navigation. Telegram WebView could keep paying
+     for that hidden full-screen surface until a later Profile/Store visit finally
+     rasterized it, which presented as the route appearing, blanking, then appearing
+     again. The covered prewarm pass already owns Profile first-raster preparation,
+     so once boot is visible the inactive Profile must be genuinely absent. */
+  #app #screen-profile.screen:not(.active) {
+    opacity: 0 !important;
+    z-index: auto !important;
+  }
+
+  /* Home, Tournament and Store are primary shell surfaces. Their simultaneous
+     opacity/translate crossfade made the first heavy compositor frame observable
+     as a double-paint on coarse-pointer Telegram clients. Switch those three
+     lightweight shell routes atomically on mobile; Profile keeps its separately
+     accepted guarded transition and games/non-shell routes are unchanged. */
+  #app.has-shell-chrome > .screen[data-screen="home"],
+  #app.has-shell-chrome > .screen[data-screen="tournaments"],
+  #app.has-shell-chrome > .screen[data-screen="store"] {
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
 }
