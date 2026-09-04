@@ -116,10 +116,6 @@ function reactionSort(item){
   return ['profile-reaction-wave','profile-reaction-clap','profile-reaction-heart','profile-reaction-fire','profile-reaction-pack-4','profile-reaction-pack-large'].indexOf(id);
 }
 
-function currentItemId(){
-  return String(state.profileInventory?.equipped?.[REACTION_SLOT] || '').trim();
-}
-
 function meta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
 function itemName(item){ return String(meta(item).display_name || 'Реакции'); }
 function itemSubtitle(item){ return String(meta(item).subtitle || 'Набор реакций'); }
@@ -130,16 +126,29 @@ function itemCodes(item){
   return codes.map(code => String(code || '').trim().toLowerCase()).filter(code => REACTION_CODES[code]);
 }
 
+function ownedReactionCodes(){
+  const seen = new Set();
+  const codes = [];
+  for (const item of reactionCatalog()) {
+    if (item.owned !== true) continue;
+    for (const code of itemCodes(item)) {
+      if (seen.has(code)) continue;
+      seen.add(code);
+      codes.push(code);
+    }
+  }
+  return codes;
+}
+
 function previewMarkup(item, compact = false){
   const codes = itemCodes(item);
-  return `<span class="mgw-reaction-preview${compact ? ' compact' : ''}">${codes.map(code => `<i title="${escapeAttr(REACTION_CODES[code].label)}">${REACTION_CODES[code].glyph}</i>`).join('')}</span>`;
+  return `<span class="mgw-reaction-preview${compact ? ' compact' : ''}" data-reaction-count="${codes.length}">${codes.map(code => `<i title="${escapeAttr(REACTION_CODES[code].label)}">${REACTION_CODES[code].glyph}</i>`).join('')}</span>`;
 }
 
 function renderStoreSection(catalog){
   const panel = document.querySelector('.store-v2-content[data-store-v2-panel="profile"]');
   if (!(panel instanceof HTMLElement)) return;
-  const active = currentItemId();
-  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|') + `|${active}`;
+  const signature = catalog.map(item => `${item.item_id}:${item.owned === true ? 1 : 0}`).join('|');
   let section = panel.querySelector('[data-profile-reaction-store-section]');
   if (section instanceof HTMLElement && section.dataset.profileReactionSignature === signature) return;
 
@@ -147,7 +156,7 @@ function renderStoreSection(catalog){
     <section class="store-v2-reaction-section" data-profile-reaction-store-section data-profile-reaction-signature="${escapeAttr(signature)}">
       <div class="store-v2-title-row"><h2>Реакции</h2></div>
       <div class="store-v2-reaction-grid">
-        ${catalog.map(item => storeCard(item, active)).join('')}
+        ${catalog.map(storeCard).join('')}
       </div>
     </section>
   `;
@@ -157,21 +166,18 @@ function renderStoreSection(catalog){
   bindStoreActions(section);
 }
 
-function storeCard(item, activeItemId){
+function storeCard(item){
   const itemId = String(item.item_id || '');
   const owned = item.owned === true;
-  const active = owned && itemId === activeItemId;
+  const count = itemCodes(item).length;
   return `
-    <article class="store-v2-reaction-card mgw-profile-cosmetic-card ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}" data-mgw-profile-cosmetic-state="${owned ? (active ? 'selected' : 'owned') : 'available'}">
-      <div class="store-v2-reaction-preview">${previewMarkup(item)}${active ? '<i class="store-v2-selected-check" aria-label="Выбран">✓</i>' : ''}</div>
-      <div class="store-v2-reaction-copy"><strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(itemSubtitle(item))}</small></div>
+    <article class="store-v2-reaction-card mgw-profile-cosmetic-card ${owned ? 'owned' : ''}" data-reaction-count="${count}" data-mgw-profile-cosmetic-state="${owned ? 'owned' : 'available'}">
+      <div class="store-v2-reaction-preview" data-reaction-count="${count}">${previewMarkup(item)}</div>
+      <div class="store-v2-reaction-copy"><strong>${escapeHtml(itemName(item))}</strong>${count > 1 ? `<small>${escapeHtml(itemSubtitle(item))}</small>` : ''}</div>
       <div class="store-v2-reaction-foot mgw-profile-cosmetic-foot">
-        ${owned ? `<b>${active ? 'Выбрано' : 'В коллекции'}</b>` : `<b>${formatNumber(itemPrice(item))}</b>`}
         ${owned
-          ? (active
-            ? '<button class="store-v2-equip active mgw-profile-cosmetic-action" data-reaction-unequip type="button">Снять</button>'
-            : `<button class="store-v2-equip mgw-profile-cosmetic-action" data-reaction-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-          : `<button class="store-v2-buy mgw-profile-cosmetic-action" data-reaction-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
+          ? '<span class="store-v2-reaction-owned" aria-label="В коллекции">В коллекции</span>'
+          : `<b>${formatNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-reaction-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
       </div>
     </article>`;
 }
@@ -179,8 +185,6 @@ function storeCard(item, activeItemId){
 function bindStoreActions(section){
   if (!(section instanceof HTMLElement)) return;
   section.querySelectorAll('[data-reaction-buy]').forEach(button => button.addEventListener('click', () => openPurchase(String(button.dataset.reactionBuy || ''))));
-  section.querySelectorAll('[data-reaction-equip]').forEach(button => button.addEventListener('click', () => void saveSelection(String(button.dataset.reactionEquip || ''), false)));
-  section.querySelectorAll('[data-reaction-unequip]').forEach(button => button.addEventListener('click', () => void saveSelection(currentItemId(), true)));
 }
 
 function renderProfileCollection(catalog){
@@ -190,14 +194,13 @@ function renderProfileCollection(catalog){
   let section = collection.querySelector('[data-profile-reaction-collection]');
   if (!owned.length) { section?.remove(); return; }
 
-  const active = currentItemId();
-  const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
+  const signature = owned.map(item => item.item_id).join('|');
   if (section instanceof HTMLElement && section.dataset.profileReactionSignature === signature) return;
   const markup = `
     <div class="profile-v2-reaction-collection" data-profile-reaction-collection data-profile-reaction-signature="${escapeAttr(signature)}" aria-label="Реакции">
       <div class="profile-v2-collection-title">Реакции</div>
       <div class="profile-v2-reaction-grid">
-        ${owned.map(item => profileCard(item, active)).join('')}
+        ${owned.map(profileCard).join('')}
       </div>
     </div>`;
   if (section instanceof HTMLElement) section.outerHTML = markup;
@@ -206,18 +209,14 @@ function renderProfileCollection(catalog){
     if (gameCollection) gameCollection.insertAdjacentHTML('beforebegin', markup);
     else collection.insertAdjacentHTML('beforeend', markup);
   }
-  section = collection.querySelector('[data-profile-reaction-collection]');
-  section?.querySelectorAll('[data-reaction-preview]').forEach(button => button.addEventListener('click', () => openPreview(String(button.dataset.reactionPreview || ''))));
 }
 
-function profileCard(item, activeItemId){
-  const itemId = String(item.item_id || '');
-  const active = itemId === activeItemId;
-  return `<button class="profile-v2-reaction-card${active ? ' active' : ''}" type="button" data-reaction-preview="${escapeAttr(itemId)}" aria-pressed="${active ? 'true' : 'false'}">
-    <span class="profile-v2-reaction-card-preview">${previewMarkup(item, true)}</span>
-    <strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(itemSubtitle(item))}</small>
-    ${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}
-  </button>`;
+function profileCard(item){
+  const count = itemCodes(item).length;
+  return `<article class="profile-v2-reaction-card" data-reaction-count="${count}">
+    <span class="profile-v2-reaction-card-preview" data-reaction-count="${count}">${previewMarkup(item, true)}</span>
+    <strong>${escapeHtml(itemName(item))}</strong>${count > 1 ? `<small>${escapeHtml(itemSubtitle(item))}</small>` : ''}
+  </article>`;
 }
 
 function openPurchase(itemId){
@@ -230,7 +229,7 @@ function openPurchase(itemId){
     <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="store-v2-confirm">
       <div class="mgw-reaction-sheet-preview">${previewMarkup(item)}</div>
-      <div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(itemSubtitle(item))}</small></div>
+      <div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong>${itemCodes(item).length > 1 ? `<small>${escapeHtml(itemSubtitle(item))}</small>` : ''}</div>
       <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
       <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
       <button class="btn primary full" id="mgwReactionConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
@@ -251,6 +250,7 @@ async function purchase(item, button){
     }
     closeSheet();
     await refreshSnapshot();
+    document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ family:'reaction' } }));
     toast('Реакции добавлены в коллекцию.');
   } catch (error) {
     toast(error?.message || 'Не удалось купить реакции.');
@@ -259,74 +259,19 @@ async function purchase(item, button){
   }
 }
 
-function openPreview(itemId){
-  const item = reactionCatalog().find(candidate => candidate.item_id === itemId && candidate.owned === true);
-  if (!item) return;
-  const active = itemId === currentItemId();
-  openSheet(`
-    <div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="mgw-reaction-sheet-preview">${previewMarkup(item)}</div>
-    <div class="profile-v2-reaction-preview-meta"><strong>Реакции</strong><small>${escapeHtml(itemSubtitle(item))}</small></div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwReactionEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
-  document.getElementById('mgwReactionEquip')?.addEventListener('click', () => void saveSelection(itemId, active));
-}
-
-async function saveSelection(itemId, remove){
-  if (busy) return;
-  const item = reactionCatalog().find(candidate => candidate.item_id === itemId && candidate.owned === true);
-  if (!item) return;
-  const previous = cloneObject(state.profileInventory);
-  busy = true;
-  applyOptimistic(itemId, !remove);
-  closeSheet();
-  scheduleDecorate();
-  try {
-    haptic('light');
-    const result = remove ? await api.profileReactionUnequip() : await api.profileReactionEquip(itemId);
-    if (result?.inventory && typeof result.inventory === 'object') state.profileInventory = result.inventory;
-    document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ equipped:{ ...(state.profileInventory?.equipped || {}) } } }));
-    scheduleDecorate();
-  } catch (error) {
-    state.profileInventory = previous;
-    scheduleDecorate();
-    toast(error?.message || 'Не удалось изменить набор реакций.');
-  } finally {
-    busy = false;
-  }
-}
-
-function applyOptimistic(itemId, selected){
-  const inventory = cloneObject(state.profileInventory) || { catalog:[], owned:[], equipped:{} };
-  inventory.equipped = { ...(inventory.equipped || {}) };
-  if (selected) inventory.equipped[REACTION_SLOT] = itemId;
-  else delete inventory.equipped[REACTION_SLOT];
-  if (Array.isArray(inventory.catalog)) {
-    inventory.catalog = inventory.catalog.map(item => item && item.item_family === 'reaction'
-      ? { ...item, equipped:selected && String(item.item_id || '') === itemId }
-      : item);
-  }
-  state.profileInventory = inventory;
-}
-
-function equippedItem(){
-  const id = currentItemId();
-  return id ? reactionCatalog().find(item => item.item_id === id && item.owned === true) || null : null;
-}
-
 function renderGameComposer(){
   const row = document.getElementById('playersRow');
   const screen = document.getElementById('screen-game');
   let toolbar = document.getElementById('mgwReactionToolbar');
   const game = state.activeGame;
-  const item = equippedItem();
-  const codes = item ? itemCodes(item) : [];
+  const codes = ownedReactionCodes();
   const eligible = row instanceof HTMLElement
     && screen?.classList.contains('active')
     && String(game?.status || '') === 'active'
     && codes.length > 0;
   if (!eligible) { toolbar?.remove(); paletteOpen = false; return; }
 
-  const signature = `${String(game.id || '')}|${String(item.item_id || '')}|${codes.join(',')}|${paletteOpen ? 1 : 0}`;
+  const signature = `${String(game.id || '')}|${codes.join(',')}|${paletteOpen ? 1 : 0}`;
   if (toolbar instanceof HTMLElement && toolbar.dataset.signature === signature) return;
   const markup = `<div class="mgw-reaction-toolbar" id="mgwReactionToolbar" data-signature="${escapeAttr(signature)}">
     <button class="mgw-reaction-trigger" id="mgwReactionTrigger" type="button" aria-label="Реакции" title="Реакции" aria-expanded="${paletteOpen ? 'true' : 'false'}"><span aria-hidden="true">🙂</span></button>
@@ -424,10 +369,6 @@ function purchaseToken(){
   return `reaction-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 function formatNumber(value){ return Math.max(0, Number(value || 0)).toLocaleString('ru-RU'); }
-function cloneObject(value){
-  if (!value || typeof value !== 'object') return value;
-  try { return structuredClone(value); } catch (_) { return JSON.parse(JSON.stringify(value)); }
-}
 function escapeHtml(value){
   return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
 }
