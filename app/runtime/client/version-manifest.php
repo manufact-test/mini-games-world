@@ -4,7 +4,7 @@ declare(strict_types=1);
 return [
     'version' => 'v2-route-scoped-polling',
     'imports' => [
-        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110.js?v=1131&mvp16=canonical-avatar-owner&mvp17=history-single-owner&mvp19=avatar-presentation&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&mvp19_3=name-colors&mvp19_3_6=profile-badge-avatar-overlay&mvp19_3_7=profile-frames&mvp19_3_8=profile-frame-preview-polish&mvp19_3_9=badge-avatar-card&mvp19_3_10=profile-frame-name-polish&mvp19_3_11=profile-badge-avatar-shape&mvp19_3_12=profile-frame-avatar-card-parity&mvp19_3_15=profile-backgrounds&mvp19_3_16=profile-backgrounds-ux-corrective&mvp19_3_17=background-route-hydration&mvp19_3_20=avatar-store-action&mvp19_3_21=avatar-store-action-post-app-ready&mvp19_3_22=store-freeze-idempotent-decorator&mvp19_3_23=frame-avatar-actions&mvp19_3_24=profile-card-parity',
+        '@mgw/clean-entry' => './assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1&profile_first=post-paint-effects&purchase=immediate-feedback',
         '@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2',
         '@mgw/i18n' => './assets/js/localization/i18n.js?v=2&mvp16=account-locale-precedence',
         './assets/js/api/client.js?v=34' => './assets/js/api/client.js?v=1135&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch&mvp18=friends&mvp19=store-v2&mvp19_4=game-cosmetics-pilot&c7=avatar-bootstrap-inventory&c2_1=effect-unequip&mvp19_3_4=name-color-live-projection&mvp19_3_7=profile-v2-read-coalesce&mvp19_3_28=reactions',
@@ -13,7 +13,7 @@ return [
         './assets/js/api/client.js?v=47' => './assets/js/api/client.js?v=1135&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch&mvp18=friends&mvp19=store-v2&mvp19_4=game-cosmetics-pilot&c7=avatar-bootstrap-inventory&c2_1=effect-unequip&mvp19_3_4=name-color-live-projection&mvp19_3_7=profile-v2-read-coalesce&mvp19_3_28=reactions',
         './assets/js/config.js?v=38' => './assets/js/config.js?v=39&mvp15=match-economy',
         './assets/js/state.js?v=27' => './assets/js/state.js?v=31&mvp16=router-lifecycle&mvp19=profile-inventory&mvp19_3_1=avatar-owner',
-        './assets/js/router.js?v=27' => './assets/js/router.js?v=30&b=871cb833d99d&mvp16=route-registry&mvp18=friends',
+        './assets/js/router.js?v=27' => './assets/js/router.js?v=31&profile_first=post-paint-effects-v1',
         './assets/js/ui.js?v=89' => './assets/js/ui.js?v=97&mvp16=canonical-profile-display-owner&mvp19=mgw-avatar-only&mvp19_3_1=selected-avatar-owner&c7=no-false-starter&mvp19_3_4=name-color-chrome',
         './assets/js/components/sheet.js?v=68' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
         './assets/js/components/sheet.js?v=1109' => './assets/js/components/sheet.js?v=1110&mvp16=nested-return',
@@ -53,7 +53,7 @@ return [
     ],
     'assets' => [
         'main_css' => './assets/css/main.css?v=190&sk=3&icons=c1efd5af&render=42&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity&store=compact-tail&c2_5=visible-mark-layer&c2_6=cell-native-dom-fx&mvp19_3=profile-game-tabs-fresh&mvp19_3_4=name-colors-polish&mvp19_3_5=compact-name-colors-instant-profile&spacing=name-color-price-button&mvp19_3_6=profile-badge-avatar-overlay&badge_position=bottom-right&badge_collection=fit&badge_store=avatar-card&mvp19_3_7=profile-frames&frame_preview=avatar-card&mvp19_3_9=badge-avatar-card&frame_names=polish&mvp19_3_13=badge-frame-final-polish&mvp19_3_14=final-spacing-parity&mvp19_3_15=profile-backgrounds&mvp19_3_16=profile-backgrounds-ux-corrective&mvp19_3_18=background-final-card-grid&mvp19_3_19=selected-green-frame-align&mvp19_3_20=avatar-store-action&mvp19_3_24=profile-card-parity&mvp19_3_25=profile-background-full-surface&mvp19_3_26=profile-card-copy-premium-bg&mvp19_3_27=profile-density-abyss-frame-polish',
-        'consistency_css' => './assets/css/production-v98-mobile-profile-perf.css?v=6&mvp19_3=reaction-header-square-smooth&profile=mobile-perf-v2&profile2=route-first-frame-v3&reaction=first-frame-v3&profile3=active-refresh-remount-v4&profile4=paint-cached-first-v5&profile5=route-transition-parity-v1&profile6=warm-compositor-v1&profile7=stable-shell-offscreen-v1&profile8=scroll-layer-route-v1&profile9=no-active-subtree-invalidation-v1&profile10=idle-prepaint-first-viewport-v1&profile11=covered-active-raster-prewarm-v1&header=metal-parity-v2',
+        'consistency_css' => './assets/css/production-v99-profile-reaction-polish.css?v=1&mvp19_3=reaction-card-polish&purchase=pending-feedback',
         'consistency_css_base' => './assets/css/production-v97-reactions.css?v=2&mvp19_3=ingame-corrective',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
