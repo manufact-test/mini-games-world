@@ -1,0 +1,112 @@
+@import url('./production-v98-mobile-profile-perf.css?v=6&mvp19_3=reaction-header-square-smooth&profile=mobile-perf-v2&profile2=route-first-frame-v3&reaction=first-frame-v3&profile3=active-refresh-remount-v4&profile4=paint-cached-first-v5&profile5=route-transition-parity-v1&profile6=warm-compositor-v1&profile7=stable-shell-offscreen-v1&profile8=scroll-layer-route-v1&profile9=no-active-subtree-invalidation-v1&profile10=idle-prepaint-first-viewport-v1&profile11=covered-active-raster-prewarm-v1&header=metal-parity-v2');
+
+/* Reactions Store/Profile presentation only. Ownership/equip/purchase semantics stay in JS owners. */
+.store-v2-reaction-grid,
+.profile-v2-reaction-grid {
+  align-items: stretch;
+}
+
+.store-v2-reaction-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.store-v2-reaction-card .store-v2-reaction-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.store-v2-reaction-card .store-v2-reaction-foot {
+  margin-top: auto;
+}
+
+.store-v2-reaction-card:has(.mgw-reaction-preview > i:only-child) .store-v2-reaction-copy small,
+.profile-v2-reaction-card:has(.mgw-reaction-preview > i:only-child) > small {
+  display: none;
+}
+
+.mgw-reaction-preview {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(30px, 1fr);
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  max-width: 220px;
+  margin-inline: auto;
+}
+
+.mgw-reaction-preview > i {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  min-height: 30px;
+  line-height: 1;
+  font-style: normal;
+}
+
+.mgw-reaction-preview:has(> i:nth-child(4):last-child) {
+  grid-template-columns: repeat(2, minmax(32px, 1fr));
+  grid-auto-flow: row;
+  max-width: 104px;
+}
+
+.mgw-reaction-preview:has(> i:nth-child(5)) {
+  grid-template-columns: repeat(4, minmax(28px, 1fr));
+  grid-auto-flow: row;
+  max-width: 184px;
+  gap: 6px;
+}
+
+.store-v2-reaction-preview,
+.profile-v2-reaction-card-preview,
+.mgw-reaction-sheet-preview {
+  overflow: visible;
+}
+
+.profile-v2-reaction-collection {
+  margin-top: 22px;
+}
+
+.profile-v2-reaction-collection > .profile-v2-collection-title {
+  margin-bottom: 12px;
+}
+
+.profile-v2-reaction-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+}
+
+.profile-v2-reaction-card .mgw-reaction-preview.compact {
+  min-height: 68px;
+}
+
+.mgw-purchase-pending {
+  cursor: progress;
+}
+
+@media (max-width: 640px) {
+  .store-v2-reaction-card {
+    gap: 10px;
+  }
+
+  .mgw-reaction-preview:has(> i:nth-child(5)) {
+    grid-template-columns: repeat(4, minmax(24px, 1fr));
+    max-width: 156px;
+    gap: 4px;
+  }
+
+  .mgw-reaction-preview > i {
+    min-width: 26px;
+    min-height: 26px;
+  }
+
+  .profile-v2-reaction-collection {
+    margin-top: 18px;
+  }
+}
