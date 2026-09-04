@@ -14,6 +14,7 @@ on:
       - 'app/assets/js/profile/mgw-profile-reactions.js'
       - 'app/assets/js/profile/mgw-profile-reactions-header.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/css/production-v97-reactions.css'
       - 'app/assets/css/production-v98-mobile-profile-perf.css'
       - 'app/runtime/client/version-manifest.php'
@@ -64,6 +65,7 @@ jobs:
           node --check app/assets/js/profile/mgw-profile-reactions.js
           node --check app/assets/js/profile/mgw-profile-reactions-header.js
           node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
 
       - name: Run focused reaction contract
         run: php bot/tests/Mvp19_3ProfileReactionsTest.php
@@ -144,6 +146,7 @@ jobs:
               app/assets/js/profile/mgw-profile-reactions.js|\
               app/assets/js/profile/mgw-profile-reactions-header.js|\
               app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/css/production-v97-reactions.css|\
               app/assets/css/production-v98-mobile-profile-perf.css|\
               app/runtime/client/version-manifest.php|\
