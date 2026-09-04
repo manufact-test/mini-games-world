@@ -19,6 +19,8 @@ on:
       - 'app/assets/js/router.js'
       - 'app/assets/js/commerce/mgw-purchase-feedback.js'
       - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+      - 'app/assets/js/components/preloader.js'
+      - 'app/assets/js/telegram/telegram-app.js'
       - 'app/assets/css/production-v97-reactions.css'
       - 'app/assets/css/production-v98-mobile-profile-perf.css'
       - 'app/assets/css/production-v99-profile-reaction-polish.css'
@@ -81,6 +83,8 @@ jobs:
           node --check app/assets/js/router.js
           node --check app/assets/js/commerce/mgw-purchase-feedback.js
           node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          node --check app/assets/js/components/preloader.js
+          node --check app/assets/js/telegram/telegram-app.js
 
       - name: Run focused reaction contract
         run: php bot/tests/Mvp19_3ProfileReactionsTest.php
@@ -180,6 +184,8 @@ jobs:
               app/assets/js/router.js|\
               app/assets/js/commerce/mgw-purchase-feedback.js|\
               app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js|\
+              app/assets/js/components/preloader.js|\
+              app/assets/js/telegram/telegram-app.js|\
               app/assets/css/production-v97-reactions.css|\
               app/assets/css/production-v98-mobile-profile-perf.css|\
               app/assets/css/production-v99-profile-reaction-polish.css|\
