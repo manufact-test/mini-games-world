@@ -270,3 +270,52 @@
   display:block;
   line-height:1;
 }
+
+/* v98.6: remaining Telegram mobile Profile stall.
+   Two Profile-only compositor switches were still happening in the exact route
+   task: shell chrome toggled blur material when data-shell-screen became profile,
+   and every long Profile section was forced fully visible on .active. Keep both
+   computed paths stable across shell routes and let Chromium skip genuinely
+   offscreen Profile blocks while preserving their measured scroll geometry. */
+@media (max-width:640px), (pointer:coarse){
+  /* One mobile shell material for every primary route. Profile entry/exit no
+     longer destroys/recreates the topbar or bottom-nav backdrop compositor. */
+  #app.has-shell-chrome .app-shell-topbar,
+  #app.has-shell-chrome .app-bottom-nav{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  #app.has-shell-chrome .app-shell-topbar{
+    background:linear-gradient(180deg,rgba(16,19,27,.985),rgba(16,19,27,.94) 78%,rgba(16,19,27,.86));
+  }
+  #app.has-shell-chrome .app-bottom-nav{
+    background:rgba(20,22,30,.985);
+  }
+
+  /* The first identity/avatar area stays eagerly painted. Everything below it
+     can keep real intrinsic geometry but skip offscreen style/paint work. The
+     active-state override intentionally computes to the same values, so adding
+     or removing .active does not expand the entire long Profile in one frame. */
+  #screen-profile .profile-v2 > .profile-v2-balance,
+  #screen-profile .profile-v2 > .profile-v2-section:not(.profile-v2-collection-section),
+  #screen-profile .profile-v2-collection-section > .profile-v2-name-color-collection,
+  #screen-profile .profile-v2-collection-section > .profile-v2-reaction-collection,
+  #screen-profile .profile-v2-collection-section > .profile-v2-badge-collection,
+  #screen-profile .profile-v2-collection-section > .profile-v2-frame-collection,
+  #screen-profile .profile-v2-collection-section > .profile-v2-background-collection,
+  #screen-profile .profile-v2-collection-section > .profile-v2-game-collection{
+    content-visibility:auto !important;
+    contain-intrinsic-block-size:auto 180px !important;
+  }
+  #screen-profile.active .profile-v2 > .profile-v2-balance,
+  #screen-profile.active .profile-v2 > .profile-v2-section:not(.profile-v2-collection-section),
+  #screen-profile.active .profile-v2-collection-section > .profile-v2-name-color-collection,
+  #screen-profile.active .profile-v2-collection-section > .profile-v2-reaction-collection,
+  #screen-profile.active .profile-v2-collection-section > .profile-v2-badge-collection,
+  #screen-profile.active .profile-v2-collection-section > .profile-v2-frame-collection,
+  #screen-profile.active .profile-v2-collection-section > .profile-v2-background-collection,
+  #screen-profile.active .profile-v2-collection-section > .profile-v2-game-collection{
+    content-visibility:auto !important;
+    contain-intrinsic-block-size:auto 180px !important;
+  }
+}
