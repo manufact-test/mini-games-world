@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1157';
+window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1158';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -44,6 +44,9 @@ let statsRefreshing = false;
 let statsRouteLifecycleInitialized = false;
 let shellChromeInitialized = false;
 let balanceObserver = null;
+let shellNavigationIntent = 0;
+let storeFirstPresentationReady = false;
+let storeFirstPresentationPromise = null;
 
 initTelegramApp();
 initV110Presence();
@@ -109,17 +112,14 @@ async function boot(){
     // browser could paint the route transition. Prime that existing owner while
     // the preloader still covers the app, but keep active-game reloads untouched.
     const primeMobileProfile = shouldPrimeMobileProfile(result);
-    if (primeMobileProfile) {
-      // Keep Store initialization ahead of the awaited Profile raster warmup.
-      // Otherwise the shell can become observable while Store's first idle warm
-      // is still registering and a later Store render can replace DOM inserted by
-      // the accepted avatar/frame decorators. Active-match reloads retain the
-      // historical late Store init below.
-      initStoreScreen();
-      initMgwProfileBackgrounds();
-    }
+    if (primeMobileProfile) initMgwProfileBackgrounds();
     dispatchAppReady();
     if (primeMobileProfile) await primeMobileProfileFirstPresentation();
+
+    // Tournament is shell-static, but its first `.active` frame used to be the
+    // first time Chromium rasterized both the route surface and the metallic
+    // active-nav filter. Paint that exact final state once underneath preloader.
+    if (!result.active_game?.id) await primeTournamentFirstPresentation();
 
     if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
       enterGame(result.active_game, result.me || null);
@@ -129,11 +129,10 @@ async function boot(){
 
     startStatsPolling();
     syncAppShellChrome();
-    // Store prewarm is intentionally registered only after authoritative boot.
-    // During an active-match reload the previous eager idle warm raced the
-    // bootstrap/history/presence burst and could exhaust the staging PHP worker
-    // window, producing an empty cosmetic-store 500 despite no Store intent.
-    if (!primeMobileProfile) initStoreScreen();
+    // Register Store warm only after Profile/Tournament first-raster work and the
+    // authoritative boot/invite path have settled. The wrapper keeps mobile active
+    // games intent-only, while normal shell starts the accepted idle Store warm.
+    initStoreScreen();
   } catch (error) {
     showBootFailure();
     toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
@@ -170,6 +169,41 @@ async function primeMobileProfileFirstPresentation(){
     window.requestAnimationFrame(resolve);
   }));
   screen.classList.remove('mgw-profile-prewarm-pass');
+}
+
+async function primeTournamentFirstPresentation(){
+  const screen = document.getElementById('screen-tournaments');
+  const navButton = document.querySelector('[data-shell-nav="tournaments"]');
+  const preloader = document.getElementById('preloader');
+  if (!(screen instanceof HTMLElement) || !(navButton instanceof HTMLElement) || !(preloader instanceof HTMLElement) || preloader.classList.contains('hidden')) return;
+
+  const wasScreenActive = screen.classList.contains('active');
+  const wasNavActive = navButton.classList.contains('active');
+  const previousTransition = screen.style.transition;
+  const icon = navButton.querySelector('img');
+
+  if (icon instanceof HTMLImageElement && !icon.complete && typeof icon.decode === 'function') {
+    await Promise.race([
+      icon.decode().catch(() => {}),
+      new Promise(resolve => window.setTimeout(resolve, 120)),
+    ]);
+  }
+
+  // Do not route or dispatch lifecycle events during the warm. Home stays the
+  // canonical active route; Tournament is simply composited once behind preloader.
+  screen.style.transition = 'none';
+  screen.classList.add('active');
+  navButton.classList.add('active');
+  void screen.offsetHeight;
+  void navButton.offsetHeight;
+
+  await new Promise(resolve => window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(resolve);
+  }));
+
+  if (!wasScreenActive) screen.classList.remove('active');
+  if (!wasNavActive) navButton.classList.remove('active');
+  screen.style.transition = previousTransition;
 }
 
 function initAppShellChrome(){
@@ -289,6 +323,8 @@ function handleShellNavigation(event){
   event.stopImmediatePropagation();
   if (target.disabled) return;
 
+  const navigationIntent = ++shellNavigationIntent;
+
   if (activeMatchLocksShell()) {
     showScreen('game');
     syncAppShellChrome('game');
@@ -298,11 +334,39 @@ function handleShellNavigation(event){
   const route = String(target.dataset.shellNav || 'home');
   if (!SHELL_ROUTES.has(route)) return;
 
+  // A cold Store used to expose the shell placeholder (and then its pending
+  // skeleton) before the real Store DOM arrived. Prepare the first Store surface
+  // while it is still hidden; only publish the route when that presentation is
+  // complete. Later Store entries retain the accepted synchronous shell route.
+  if (route === 'store' && !storeFirstPresentationReady) {
+    void showStoreWhenFirstPresentationReady(navigationIntent);
+    return;
+  }
+
   // Profile now follows the exact same shell route owner as Home/Tournaments/Store.
   // The historical custom event started Profile-only refresh work from the tap
   // path and could occasionally contend with the heavy Profile compositor layer.
   showScreen(route);
   if (route === 'store') queueMicrotask(() => void openStoreTab());
+}
+
+async function showStoreWhenFirstPresentationReady(navigationIntent){
+  if (!storeFirstPresentationPromise) {
+    storeFirstPresentationPromise = openStoreTab()
+      .then(() => { storeFirstPresentationReady = true; })
+      .finally(() => { storeFirstPresentationPromise = null; });
+  }
+
+  try {
+    await storeFirstPresentationPromise;
+  } catch (_) {
+    // openStoreTab normally renders its own error state. If an unexpected error
+    // escapes, keep the current route stable and let the next Store intent retry.
+    return;
+  }
+
+  if (navigationIntent !== shellNavigationIntent) return;
+  showScreen('store');
 }
 
 function syncAppShellChrome(forcedScreen = null){
