@@ -44,9 +44,6 @@ let statsRefreshing = false;
 let statsRouteLifecycleInitialized = false;
 let shellChromeInitialized = false;
 let balanceObserver = null;
-let shellNavigationIntent = 0;
-let storeFirstPresentationReady = false;
-let storeFirstPresentationPromise = null;
 
 initTelegramApp();
 initV110Presence();
@@ -323,8 +320,6 @@ function handleShellNavigation(event){
   event.stopImmediatePropagation();
   if (target.disabled) return;
 
-  const navigationIntent = ++shellNavigationIntent;
-
   if (activeMatchLocksShell()) {
     showScreen('game');
     syncAppShellChrome('game');
@@ -334,39 +329,21 @@ function handleShellNavigation(event){
   const route = String(target.dataset.shellNav || 'home');
   if (!SHELL_ROUTES.has(route)) return;
 
-  // A cold Store used to expose the shell placeholder (and then its pending
-  // skeleton) before the real Store DOM arrived. Prepare the first Store surface
-  // while it is still hidden; only publish the route when that presentation is
-  // complete. Later Store entries retain the accepted synchronous shell route.
-  if (route === 'store' && !storeFirstPresentationReady) {
-    void showStoreWhenFirstPresentationReady(navigationIntent);
+  // Store must never make the navigation button wait for its network read.
+  // openStoreTab paints either the warmed Store or its canonical pending skeleton
+  // synchronously before its first await, so prepare that hidden DOM first and then
+  // publish the route immediately. The same in-flight promise continues loading in
+  // the background; there is no second Store open/refresh from this navigation.
+  if (route === 'store') {
+    const opening = openStoreTab();
+    showScreen('store');
+    void opening.catch(() => {});
     return;
   }
 
-  // Profile now follows the exact same shell route owner as Home/Tournaments/Store.
-  // The historical custom event started Profile-only refresh work from the tap
-  // path and could occasionally contend with the heavy Profile compositor layer.
+  // Profile follows the same synchronous shell route owner. Its accepted mobile
+  // compositor guard remains presentation-only and does not defer this route.
   showScreen(route);
-  if (route === 'store') queueMicrotask(() => void openStoreTab());
-}
-
-async function showStoreWhenFirstPresentationReady(navigationIntent){
-  if (!storeFirstPresentationPromise) {
-    storeFirstPresentationPromise = openStoreTab()
-      .then(() => { storeFirstPresentationReady = true; })
-      .finally(() => { storeFirstPresentationPromise = null; });
-  }
-
-  try {
-    await storeFirstPresentationPromise;
-  } catch (_) {
-    // openStoreTab normally renders its own error state. If an unexpected error
-    // escapes, keep the current route stable and let the next Store intent retry.
-    return;
-  }
-
-  if (navigationIntent !== shellNavigationIntent) return;
-  showScreen('store');
 }
 
 function syncAppShellChrome(forcedScreen = null){
