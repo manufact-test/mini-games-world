@@ -79,6 +79,13 @@
    retain a restrained compositor-only drift instead of repainting multi-layer
    gradients on every frame. */
 @media (max-width:640px), (pointer:coarse){
+  /* Profile is the only shell route with a long cosmetic surface. Keep the
+     viewport transition layer promoted while hidden so the first tap does not
+     pay the compositor allocation/raster cost before the 240 ms rise begins. */
+  #app #screen-profile.screen{
+    will-change:opacity,transform;
+  }
+
   #screen-profile > .content > .profile-v2{
     contain:layout style;
   }
@@ -92,17 +99,19 @@
     animation:none !important;
   }
 
+  /* Keep premium atmosphere layers compositor-ready even while Profile is
+     hidden. Starting/stopping their accepted transform-only motion then does not
+     allocate a brand-new layer in the same frame as route entry/exit. */
   #screen-profile[data-profile-background-item-id="profile-background-03"]::before,
   #screen-profile[data-profile-background-item-id="profile-background-04"]::before{
     mix-blend-mode:normal !important;
     filter:none !important;
     animation:none !important;
-    will-change:auto;
+    will-change:transform,opacity;
   }
   #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
   #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
     animation:mgwMobileProfileAtmosphere 14s ease-in-out infinite alternate !important;
-    will-change:transform,opacity;
   }
 
   #screen-profile .profile-v2-collection-section{

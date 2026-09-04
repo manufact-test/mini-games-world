@@ -33,10 +33,12 @@ expect(profile.includes("'winning-line':'sparks'"), 'Profile preview must tolera
 expect(profile.includes("'move-pulse':'wave'"), 'Profile preview must tolerate rollout-era Wave metadata');
 expect(!profile.includes('Игровая косметика'), 'unclear game-cosmetics wording must not be visible in Profile');
 
-const openProfileStart = profile.indexOf('export async function openProfile()');
+const openProfileStart = profile.indexOf('export function openProfile()');
 const visibleProfile = profile.indexOf('showProfileImmediately();', openProfileStart);
-const backgroundHydration = profile.indexOf('applyProfileResponse(await api.profileV2());', visibleProfile);
-expect(openProfileStart >= 0 && visibleProfile > openProfileStart && backgroundHydration > visibleProfile, 'Profile must paint shared state immediately and refresh authoritatively in the background');
+const scheduledRefresh = profile.indexOf('scheduleProfileRefreshAfterEntry();', visibleProfile);
+const refreshHelper = profile.indexOf('function scheduleProfileRefreshAfterEntry()');
+const backgroundHydration = profile.indexOf('api.profileV2()', refreshHelper);
+expect(openProfileStart >= 0 && visibleProfile > openProfileStart && scheduledRefresh > visibleProfile && refreshHelper >= 0 && backgroundHydration > refreshHelper, 'Profile must paint shared state immediately and schedule authoritative hydration after the route first frame');
 expect(profile.includes('function warmProfileSnapshot()') && profile.includes('requestIdleCallback(warm, { timeout:700 })'), 'Profile must warm its authoritative snapshot before likely navigation');
 expect(profile.includes('lastProfileRenderSignature') && profile.includes('renderSignature === lastProfileRenderSignature'), 'Profile must skip redundant full DOM rebuilds when authoritative state is unchanged');
 
