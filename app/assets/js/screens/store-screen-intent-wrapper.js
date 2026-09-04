@@ -1,7 +1,7 @@
 import {
   initStoreScreen as initBaseStoreScreen,
-  openStoreTab as openBaseStoreTab,
-  openStoreSheet as openBaseStoreSheet,
+  openStoreTab,
+  openStoreSheet,
 } from './store-screen.js?v=44&intent_base=1';
 
 let initialized = false;
@@ -28,24 +28,17 @@ export function initStoreScreen(){
   }
 
   // The first visible Store used to expose its stable head/tabs while the lower
-  // catalogue replaced a pending skeleton. Prime the canonical Store owner once
-  // under the intro preloader instead. This loads and renders the real catalogue
-  // before the user can navigate there, without changing purchase/equip semantics.
+  // catalogue replaced a pending skeleton. Prime the accepted base Store owner
+  // once under the intro preloader so its first visible frame is already complete.
   firstOpenPrimePromise = canPrimeStoreUnderPreloader()
-    ? Promise.resolve(openBaseStoreTab()).catch(() => {})
+    ? Promise.resolve(openStoreTab()).catch(() => {})
     : Promise.resolve();
   globalThis.__MGW_STORE_FIRST_OPEN_READY__ = firstOpenPrimePromise;
 
   return firstOpenPrimePromise;
 }
 
-export function openStoreTab(){
-  return openBaseStoreTab();
-}
-
-export function openStoreSheet(){
-  return openBaseStoreSheet();
-}
+export { openStoreTab, openStoreSheet };
 
 function canPrimeStoreUnderPreloader(){
   const preloader = document.getElementById('preloader');
