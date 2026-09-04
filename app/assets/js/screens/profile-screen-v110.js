@@ -32,6 +32,7 @@ let nameColorSaving = false;
 let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
 let lastProfileRenderSignature = '';
+let deferredProfileRender = false;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -42,6 +43,7 @@ export function initProfileScreen(){
   bindProfileActions();
   renderProfileV2();
   document.addEventListener('mgw:open-profile', openProfile);
+  document.addEventListener('mgw:screen-changed', flushDeferredProfileRender);
   const warm = () => warmProfileSnapshot();
   if (typeof globalThis.requestIdleCallback === 'function') {
     globalThis.requestIdleCallback(warm, { timeout:700 });
@@ -54,7 +56,7 @@ function warmProfileSnapshot(){
   if (profileLoading) return;
   profileLoading = true;
   void api.profileV2()
-    .then(applyProfileResponse)
+    .then(result => applyProfileResponse(result, { deferWhileActive:true }))
     .catch(() => {})
     .finally(() => { profileLoading = false; });
 }
@@ -65,7 +67,7 @@ export async function openProfile(){
   if (profileLoading) return;
   profileLoading = true;
   try {
-    applyProfileResponse(await api.profileV2());
+    applyProfileResponse(await api.profileV2(), { deferWhileActive:true });
   } catch (error) {
     if (currentScreen() === 'profile') toast(error.message || t('profile.load_error'));
   } finally {
@@ -73,7 +75,7 @@ export async function openProfile(){
   }
 }
 
-function applyProfileResponse(result){
+function applyProfileResponse(result, options = {}){
   state.mgwProfile = result.profile || state.mgwProfile || null;
   state.profileInventory = result.inventory || state.profileInventory || null;
   state.user = mergeCanonicalMgwUser(state.user, result.user, state.mgwProfile);
@@ -85,6 +87,24 @@ function applyProfileResponse(result){
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
   renderUser(state.user);
   renderBalances(state.user);
+  if (options.deferWhileActive === true && shouldDeferActiveProfileRender()) {
+    deferredProfileRender = true;
+    return;
+  }
+  deferredProfileRender = false;
+  renderProfileV2();
+}
+
+function shouldDeferActiveProfileRender(){
+  const root = document.getElementById('profileV2Root');
+  return currentScreen() === 'profile'
+    && root instanceof HTMLElement
+    && root.childElementCount > 0;
+}
+
+function flushDeferredProfileRender(event){
+  if (event?.detail?.from !== 'profile' || !deferredProfileRender) return;
+  deferredProfileRender = false;
   renderProfileV2();
 }
 
@@ -577,7 +597,7 @@ function openGameCosmeticPreview(itemId){
   const item = ownedGameCosmeticItems().find(candidate => candidate.item_id === itemId);
   if (!item) return;
   const active = isGameCosmeticEquipped(item);
-  const available = String(item?.catalog_status || '') === 'active';
+  const available = String(item.catalog_status || '') === 'active';
   const group = GAME_COSMETIC_GROUPS.find(candidate => candidate.layer === gameCosmeticLayer(item));
   const gameType = gameCosmeticGameType(item);
   const buttonLabel = available ? (active ? 'Снять' : 'Выбрать') : 'Недоступно';
