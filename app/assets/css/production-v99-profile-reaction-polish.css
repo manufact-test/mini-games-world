@@ -275,3 +275,19 @@
     will-change: auto !important;
   }
 }
+
+/* Final shell parity: Profile now appears atomically like the other accepted
+   primary shell routes. Keep all Profile data/background owners and prewarm work;
+   only remove the remaining screen/content entrance motion. */
+#app #screen-profile.screen,
+#app #screen-profile.screen.active {
+  transform: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+#app #screen-profile.screen > .content,
+#app #screen-profile.screen.active > .content {
+  transform: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
