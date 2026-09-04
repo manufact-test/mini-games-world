@@ -265,4 +265,21 @@
     contain-intrinsic-block-size:auto 180px !important;
     contain:layout style;
   }
+
+  /* v98.8: keep the expensive first Profile viewport rasterized while hidden.
+     Chromium/WebView is free to skip an opacity:0 subtree completely; that means
+     the first real tap can pay the raster cost for the premium background and
+     visible cards before the transition even starts. A practically invisible
+     non-zero layer keeps that viewport warm without changing hit-testing or UX. */
+  #app > .screen.active{
+    z-index:2;
+  }
+  #app #screen-profile.screen:not(.active){
+    opacity:.001!important;
+    pointer-events:none!important;
+    z-index:0;
+  }
+  #app #screen-profile.screen:not(.active) > .content{
+    transform:translate3d(0,10px,0);
+  }
 }
