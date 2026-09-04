@@ -43,7 +43,6 @@ let statsRefreshing = false;
 let statsRouteLifecycleInitialized = false;
 let shellChromeInitialized = false;
 let balanceObserver = null;
-let profileNavigationEpoch = 0;
 
 initTelegramApp();
 initV110Presence();
@@ -240,7 +239,6 @@ function handleShellNavigation(event){
   if (target.disabled) return;
 
   if (activeMatchLocksShell()) {
-    profileNavigationEpoch += 1;
     showScreen('game');
     syncAppShellChrome('game');
     return;
@@ -250,36 +248,12 @@ function handleShellNavigation(event){
   if (!SHELL_ROUTES.has(route)) return;
 
   if (route === 'profile') {
-    primeProfileNavigation(target);
+    document.dispatchEvent(new CustomEvent('mgw:open-profile'));
     return;
   }
 
-  profileNavigationEpoch += 1;
   showScreen(route);
   if (route === 'store') queueMicrotask(() => void openStoreTab());
-}
-
-function primeProfileNavigation(target){
-  const epoch = ++profileNavigationEpoch;
-  const nav = document.getElementById('appBottomNav');
-
-  // Profile is the only shell route heavy enough to delay the click-release
-  // paint in Telegram. Project the intended active tab first, let that feedback
-  // complete a real frame, then activate the already-cached Profile DOM.
-  nav?.querySelectorAll('[data-shell-nav]').forEach(button => {
-    const pending = button === target;
-    button.classList.toggle('active', pending);
-    if (pending) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
-  });
-
-  window.requestAnimationFrame(() => {
-    if (epoch !== profileNavigationEpoch) return;
-    window.requestAnimationFrame(() => {
-      if (epoch !== profileNavigationEpoch) return;
-      document.dispatchEvent(new CustomEvent('mgw:open-profile'));
-    });
-  });
 }
 
 function syncAppShellChrome(forcedScreen = null){
