@@ -51,12 +51,7 @@
   100%{opacity:0;transform:translate3d(-50%,-190%,0) scale(.96)}
 }
 
-/* v98.5: Profile is a normal shell route again. A previous mobile corrective
-   disabled its transform/transition entirely, while the premium background's
-   reduced-motion rule could also force transform:none on desktop. That made
-   Profile snap in while Home/Store/Tournaments used the canonical 240ms rise.
-   Give the router transform ownership back explicitly and keep the exact shell
-   timing/geometry on every pointer type. */
+/* v98.5: Profile is a normal shell route again on desktop. */
 #app #screen-profile.screen{
   backface-visibility:hidden;
   transform:translateY(10px)!important;
@@ -67,23 +62,33 @@
 }
 
 /* The flagship background may animate background-position, but filtering the
-   entire Profile surface creates a very large compositor/raster layer. Keep the
-   visual motion and remove only that whole-screen filter owner. */
+   entire Profile surface creates a very large compositor/raster layer. */
 #screen-profile[data-profile-background-item-id="profile-background-04"]{
   filter:none!important;
 }
 
-/* Mobile Profile performance corrective.
-   Keep the accepted artwork, but remove the expensive background-position /
-   blend/filter animation path from narrow Telegram WebViews. Premium profiles
-   retain a restrained compositor-only drift instead of repainting multi-layer
-   gradients on every frame. */
+/* Mobile Profile performance corrective. */
 @media (max-width:640px), (pointer:coarse){
-  /* Profile is the only shell route with a long cosmetic surface. Keep the
-     viewport transition layer promoted while hidden so the first tap does not
-     pay the compositor allocation/raster cost before the 240 ms rise begins. */
+  /* v98.7: the heavy Profile screen itself no longer owns the 10px route move.
+     It contains the full premium background, pseudo atmosphere and a long scroll
+     tree; translating that whole surface was the remaining Profile-only hitch.
+     Keep the screen fixed and animate the existing scroll viewport instead. */
+  #app #screen-profile.screen,
+  #app #screen-profile.screen.active{
+    transform:none!important;
+  }
   #app #screen-profile.screen{
-    will-change:opacity,transform;
+    will-change:opacity;
+    transition:opacity .24s var(--sk-ease-standard)!important;
+  }
+  #app #screen-profile.screen > .content{
+    transform:translate3d(0,10px,0);
+    transition:transform .24s var(--sk-ease-standard);
+    will-change:transform;
+    backface-visibility:hidden;
+  }
+  #app #screen-profile.screen.active > .content{
+    transform:translate3d(0,0,0);
   }
 
   #screen-profile > .content > .profile-v2{
@@ -99,52 +104,23 @@
     animation:none !important;
   }
 
-  /* Keep premium atmosphere layers compositor-ready even while Profile is
-     hidden. Starting/stopping their accepted transform-only motion then does not
-     allocate a brand-new layer in the same frame as route entry/exit. */
+  /* Premium atmosphere stays compositor-ready and running while the hidden
+     Profile is transparent. Enter/leave no longer starts or stops a Profile-only
+     animation in the same frame as navigation. */
   #screen-profile[data-profile-background-item-id="profile-background-03"]::before,
   #screen-profile[data-profile-background-item-id="profile-background-04"]::before{
     mix-blend-mode:normal !important;
     filter:none !important;
-    animation:none !important;
-    will-change:transform,opacity;
-  }
-  #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
-  #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
     animation:mgwMobileProfileAtmosphere 14s ease-in-out infinite alternate !important;
+    will-change:transform,opacity;
   }
 
   #screen-profile .profile-v2-collection-section{
     contain:layout style;
   }
 
-  /* Keep the already rendered long Profile laid out so the first scroll does
-     not have to catch up after navigation. Section containment bounds later work. */
-  #screen-profile.active .profile-v2 > .profile-v2-section,
-  #screen-profile.active .profile-v2 > .profile-v2-balance{
-    content-visibility:visible !important;
-    contain-intrinsic-size:none !important;
-    contain:layout style;
-  }
-
-  /* Fixed shell glass has to continuously blur whatever moves underneath it.
-     Preserve the same dark glass look with an opaque mobile fallback. */
-  #app[data-shell-screen="profile"] .app-shell-topbar,
-  #app[data-shell-screen="profile"] .app-bottom-nav{
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-  }
-  #app[data-shell-screen="profile"] .app-shell-topbar{
-    background:linear-gradient(180deg,rgba(16,19,27,.985),rgba(16,19,27,.94) 78%,rgba(16,19,27,.86));
-  }
-  #app[data-shell-screen="profile"] .app-bottom-nav{
-    background:rgba(20,22,30,.985);
-  }
-
   /* Profile owns many translucent collection cards. Blurring the animated
-     background separately behind every one of them is the remaining mobile
-     entry spike. Remove only the live blur; their existing translucent glass
-     backgrounds/borders remain visually intact. */
+     background separately behind every one of them is too expensive on mobile. */
   #screen-profile[data-profile-background-item-id] .profile-v2-identity,
   #screen-profile[data-profile-background-item-id] .profile-v2-balance,
   #screen-profile[data-profile-background-item-id] .profile-v2-summary-stat,
@@ -171,8 +147,8 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  #screen-profile.active[data-profile-background-item-id="profile-background-03"]::before,
-  #screen-profile.active[data-profile-background-item-id="profile-background-04"]::before{
+  #screen-profile[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile[data-profile-background-item-id="profile-background-04"]::before{
     animation:none !important;
     will-change:auto;
   }
@@ -182,9 +158,7 @@
   }
 }
 
-/* v98.2: first-frame corrective after Telegram mobile review.
-   Keep the reaction control 32x32 even during the brief frame before the header
-   relocation helper runs, so it never flashes at the historical 28px size. */
+/* v98.2: first-frame corrective after Telegram mobile review. */
 #screen-game .mgw-reaction-toolbar{
   width:32px;
   min-width:32px;
@@ -198,16 +172,11 @@
   min-height:32px;
 }
 
-/* Telegram WebView can skip the first painted animation frame when a freshly
-   inserted reaction starts immediately. A tiny filled delay gives the compositor
-   one frame to establish the sender-origin bubble before motion starts. */
 #screen-game .mgw-live-reaction{
   animation-delay:48ms;
 }
 
-/* v98.3: the rules/book control was still using content-box while the reaction
-   trigger and timer use border-box. Its 32px declaration therefore painted as
-   34px with the 1px border. Keep all three turn-header controls exactly 32px tall. */
+/* v98.3: keep turn-header controls exactly 32px tall. */
 #screen-game .turn-actions > .game-rules-button,
 #screen-game .turn-actions > .mgw-reaction-toolbar,
 #screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger,
@@ -230,11 +199,7 @@
   line-height:1;
 }
 
-/* v98.4: final turn-header parity after desktop + mobile manual review.
-   Reaction, rules and timer now share one dark metallic material and silver
-   border. The two square icon controls use the same less-rounded geometry, and
-   the rules WebP gets one deterministic optical offset on every pointer type so
-   mobile can no longer paint it lower than desktop. */
+/* v98.4: final turn-header parity. */
 #screen-game .turn-actions > .game-rules-button,
 #screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger,
 #screen-game .turn-actions > .timer{
@@ -271,15 +236,11 @@
   line-height:1;
 }
 
-/* v98.6: remaining Telegram mobile Profile stall.
-   Two Profile-only compositor switches were still happening in the exact route
-   task: shell chrome toggled blur material when data-shell-screen became profile,
-   and every long Profile section was forced fully visible on .active. Keep both
-   computed paths stable across shell routes and let Chromium skip genuinely
-   offscreen Profile blocks while preserving their measured scroll geometry. */
+/* v98.6/v98.7: one stable mobile shell material and route-independent offscreen
+   Profile containment. There are intentionally no #screen-profile.active
+   descendant selectors here: toggling the route class must not invalidate the
+   whole long Profile subtree before the first animation frame. */
 @media (max-width:640px), (pointer:coarse){
-  /* One mobile shell material for every primary route. Profile entry/exit no
-     longer destroys/recreates the topbar or bottom-nav backdrop compositor. */
   #app.has-shell-chrome .app-shell-topbar,
   #app.has-shell-chrome .app-bottom-nav{
     backdrop-filter:none !important;
@@ -292,10 +253,6 @@
     background:rgba(20,22,30,.985);
   }
 
-  /* The first identity/avatar area stays eagerly painted. Everything below it
-     can keep real intrinsic geometry but skip offscreen style/paint work. The
-     active-state override intentionally computes to the same values, so adding
-     or removing .active does not expand the entire long Profile in one frame. */
   #screen-profile .profile-v2 > .profile-v2-balance,
   #screen-profile .profile-v2 > .profile-v2-section:not(.profile-v2-collection-section),
   #screen-profile .profile-v2-collection-section > .profile-v2-name-color-collection,
@@ -306,16 +263,6 @@
   #screen-profile .profile-v2-collection-section > .profile-v2-game-collection{
     content-visibility:auto !important;
     contain-intrinsic-block-size:auto 180px !important;
-  }
-  #screen-profile.active .profile-v2 > .profile-v2-balance,
-  #screen-profile.active .profile-v2 > .profile-v2-section:not(.profile-v2-collection-section),
-  #screen-profile.active .profile-v2-collection-section > .profile-v2-name-color-collection,
-  #screen-profile.active .profile-v2-collection-section > .profile-v2-reaction-collection,
-  #screen-profile.active .profile-v2-collection-section > .profile-v2-badge-collection,
-  #screen-profile.active .profile-v2-collection-section > .profile-v2-frame-collection,
-  #screen-profile.active .profile-v2-collection-section > .profile-v2-background-collection,
-  #screen-profile.active .profile-v2-collection-section > .profile-v2-game-collection{
-    content-visibility:auto !important;
-    contain-intrinsic-block-size:auto 180px !important;
+    contain:layout style;
   }
 }

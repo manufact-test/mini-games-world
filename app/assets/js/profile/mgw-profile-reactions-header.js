@@ -3,7 +3,6 @@ import { initMgwProfileReactions as initBaseReactions } from './mgw-profile-reac
 let initialized = false;
 let observer = null;
 let resizeBound = false;
-let mobileProfilePressBoundaryBound = false;
 
 export function initMgwProfileReactions(){
   initBaseReactions();
@@ -20,14 +19,14 @@ export function initMgwProfileReactions(){
   });
   observer.observe(screen, { childList:true, subtree:true });
 
-  document.addEventListener('mgw:screen-changed', () => queueMicrotask(syncReactionHeader));
+  document.addEventListener('mgw:screen-changed', event => {
+    const from = String(event?.detail?.from || '');
+    const to = String(event?.detail?.to || '');
+    if (from === 'game' || to === 'game') queueMicrotask(syncReactionHeader);
+  });
   if (!resizeBound) {
     resizeBound = true;
     window.addEventListener('resize', () => queueMicrotask(positionPalette), { passive:true });
-  }
-  if (!mobileProfilePressBoundaryBound) {
-    mobileProfilePressBoundaryBound = true;
-    window.addEventListener('pointerdown', suppressLegacyMobileProfilePressFeedback, true);
   }
 
   queueMicrotask(syncReactionHeader);
@@ -73,23 +72,6 @@ function stabilizeMobileReactionBubbles(records){
     bubble.style.setProperty('--mgw-reaction-origin-y', `${Math.round(originRect.top - screenRect.top + originRect.height / 2)}px`);
     screen.append(bubble);
   }
-}
-
-function suppressLegacyMobileProfilePressFeedback(event){
-  if (!isMobilePresentation()) return;
-  const target = event.target instanceof Element
-    ? event.target.closest('#appBottomNav [data-shell-nav="profile"]')
-    : null;
-  if (!(target instanceof HTMLButtonElement) || target.disabled) return;
-  if (String(document.querySelector('.screen.active')?.dataset.screen || '') === 'profile') return;
-
-  // The earlier reaction corrective painted Profile selection on pointerdown and
-  // another capture listener then delayed the real route by two animation frames.
-  // On Telegram mobile that produced a sticky button plus a one-frame flash.
-  // Stop only that legacy pointerdown helper; do not preventDefault and do not
-  // touch click, so the canonical shell click handler owns navigation exactly as
-  // it does on desktop and the browser keeps its native pressed-state feedback.
-  event.stopPropagation();
 }
 
 function syncReactionHeader(){
