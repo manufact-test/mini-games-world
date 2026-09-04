@@ -21,6 +21,7 @@ on:
       - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
       - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
       - 'bot/tests/Mvp19_3ProfileNameColorsTest.php'
+      - '.github/workflows/mvp16-6-notification-center-v2.yml'
       - '.github/workflows/mvp19-3-profile-reactions.yml'
   workflow_dispatch:
 
@@ -130,6 +131,7 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp16-6-notification-center-v2.yml|\
               .github/workflows/mvp19-3-profile-reactions.yml|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
               .github/workflows/mvp19-3-profile-backgrounds.yml|\
