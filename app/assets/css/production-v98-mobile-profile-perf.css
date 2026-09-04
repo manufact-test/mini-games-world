@@ -173,3 +173,28 @@
     background:rgba(20,22,30,.985);
   }
 }
+
+/* v98.3: the rules/book control was still using content-box while the reaction
+   trigger and timer use border-box. Its 32px declaration therefore painted as
+   34px with the 1px border. Keep all three turn-header controls exactly 32px tall. */
+#screen-game .turn-actions > .game-rules-button,
+#screen-game .turn-actions > .mgw-reaction-toolbar,
+#screen-game .turn-actions > .mgw-reaction-toolbar .mgw-reaction-trigger,
+#screen-game .turn-actions > .timer{
+  box-sizing:border-box;
+  height:32px;
+  min-height:32px;
+}
+#screen-game .turn-actions > .game-rules-button{
+  width:32px;
+  min-width:32px;
+  padding:0;
+}
+#screen-game .turn-actions > .timer{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  padding-top:0;
+  padding-bottom:0;
+  line-height:1;
+}
