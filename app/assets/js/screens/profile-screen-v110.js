@@ -8,6 +8,8 @@ import { canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../pr
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
+const PROFILE_ROUTE_TRANSITION_MS = 240;
+const PROFILE_MOBILE_REFRESH_DELAY_MS = PROFILE_ROUTE_TRANSITION_MS + 90;
 const GAME_TYPES = Object.freeze(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
 const LAUNCH_AVATARS = Object.freeze([
   'starter-default-01','starter-default-02','starter-default-03',
@@ -26,6 +28,8 @@ const GAME_COSMETIC_GROUPS = Object.freeze([
 ]);
 const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
+let profileRefreshTask = null;
+let deferredProfileRenderTask = null;
 let nicknameSaving = false;
 let avatarSaving = false;
 let nameColorSaving = false;
@@ -52,6 +56,11 @@ export function initProfileScreen(){
   }
 }
 
+function isMobileProfilePresentation(){
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 640px), (pointer: coarse)').matches;
+}
+
 function warmProfileSnapshot(){
   if (profileLoading) return;
   profileLoading = true;
@@ -61,21 +70,37 @@ function warmProfileSnapshot(){
     .finally(() => { profileLoading = false; });
 }
 
-export async function openProfile(){
+export function openProfile(){
   if (currentScreen() === 'profile') return;
+
+  // Route ownership stays with the canonical shell. Paint the already prepared
+  // Profile immediately and let the browser begin the accepted 240 ms rise before
+  // starting any refresh work. On Android Telegram WebView the old same-task
+  // profileV2 start/response path could steal the first route frame.
   showProfileImmediately();
-  if (profileLoading) return;
-  profileLoading = true;
-  try {
-    applyProfileResponse(await api.profileV2(), { deferWhileActive:true });
-  } catch (error) {
-    if (currentScreen() === 'profile') toast(error.message || t('profile.load_error'));
-  } finally {
-    profileLoading = false;
-  }
+  scheduleProfileRefreshAfterEntry();
+}
+
+function scheduleProfileRefreshAfterEntry(){
+  if (profileLoading || profileRefreshTask !== null) return;
+  const delay = isMobileProfilePresentation() ? PROFILE_MOBILE_REFRESH_DELAY_MS : 0;
+  profileRefreshTask = window.setTimeout(() => {
+    profileRefreshTask = null;
+    if (currentScreen() !== 'profile' || profileLoading) return;
+    profileLoading = true;
+    void api.profileV2()
+      .then(result => applyProfileResponse(result, { deferWhileActive:true }))
+      .catch(error => {
+        if (currentScreen() === 'profile') toast(error?.message || t('profile.load_error'));
+      })
+      .finally(() => { profileLoading = false; });
+  }, delay);
 }
 
 function applyProfileResponse(result, options = {}){
+  const previousChromeSignature = profileChromeSignature();
+  const previousBalance = Number(state.user?.balance || 0);
+
   state.mgwProfile = result.profile || state.mgwProfile || null;
   state.profileInventory = result.inventory || state.profileInventory || null;
   state.user = mergeCanonicalMgwUser(state.user, result.user, state.mgwProfile);
@@ -85,14 +110,31 @@ function applyProfileResponse(result, options = {}){
   state.profileHistory = result.history || state.profileHistory || null;
   state.profileAuth = result.auth || state.profileAuth || null;
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
-  renderUser(state.user);
-  renderBalances(state.user);
+
+  // renderUser/renderBalances write into shared shell nodes. Rewriting identical
+  // text/avatars creates childList mutations which wake every Profile cosmetic
+  // MutationObserver. Keep those writes idempotent on background refreshes.
+  if (profileChromeSignature() !== previousChromeSignature) renderUser(state.user);
+  if (Number(state.user?.balance || 0) !== previousBalance) renderBalances(state.user);
+
   if (options.deferWhileActive === true && shouldDeferActiveProfileRender()) {
     deferredProfileRender = true;
     return;
   }
   deferredProfileRender = false;
   renderProfileV2();
+}
+
+function profileChromeSignature(){
+  const equipped = state.profileInventory && typeof state.profileInventory === 'object' && state.profileInventory.equipped && typeof state.profileInventory.equipped === 'object'
+    ? state.profileInventory.equipped
+    : {};
+  return [
+    String(state.mgwProfile?.nickname || state.mgwProfile?.display_name || state.user?.display_name || ''),
+    String(state.selectedAvatarId || state.mgwProfile?.avatar?.item_id || state.user?.avatar_item_id || ''),
+    String(equipped.profile_name_color || state.mgwProfile?.name_color_item_id || state.user?.name_color_item_id || ''),
+    String(state.user?.registered_at || ''),
+  ].join('|');
 }
 
 function shouldDeferActiveProfileRender(){
@@ -105,7 +147,20 @@ function shouldDeferActiveProfileRender(){
 function flushDeferredProfileRender(event){
   if (event?.detail?.from !== 'profile' || !deferredProfileRender) return;
   deferredProfileRender = false;
-  renderProfileV2();
+  if (deferredProfileRenderTask !== null) window.clearTimeout(deferredProfileRenderTask);
+
+  // The refreshed long collection is hidden after route leave, so rebuilding it
+  // inside the synchronous screen-changed dispatch only blocks the destination
+  // button/transition. Wait until the 240 ms shell transition is over; then the
+  // hidden DOM can be refreshed without stealing the outgoing mobile frame.
+  deferredProfileRenderTask = window.setTimeout(() => {
+    deferredProfileRenderTask = null;
+    if (currentScreen() === 'profile') {
+      deferredProfileRender = true;
+      return;
+    }
+    renderProfileV2();
+  }, PROFILE_MOBILE_REFRESH_DELAY_MS);
 }
 
 function showProfileImmediately(){
@@ -114,8 +169,6 @@ function showProfileImmediately(){
 
   // Profile is pre-rendered while hidden. Paint that existing DOM first so the
   // navigation tap never waits on the long render signature / collection build.
-  // The authoritative profileV2 refresh still starts immediately afterwards and
-  // #1173 keeps any changed remount deferred until this route is hidden again.
   showScreen('profile');
   if (hasCachedProfileDom) return;
 
@@ -363,9 +416,6 @@ function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
     return owned.sort((a,b) => LAUNCH_AVATARS.indexOf(a.item_id) - LAUNCH_AVATARS.indexOf(b.item_id));
   }
 
-  // Every canonical account owns all three starter avatars. This fallback only
-  // prevents a blank collection during the first profile request; DB inventory
-  // replaces it as soon as the authoritative snapshot arrives.
   const fallbackIds = ['starter-default-01','starter-default-02','starter-default-03'];
   if (LAUNCH_AVATARS.includes(activeAvatar) && !fallbackIds.includes(activeAvatar)) fallbackIds.push(activeAvatar);
   return fallbackIds.map(itemId => ({ item_id:itemId, item_family:'avatar', owned:true }));
