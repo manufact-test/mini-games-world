@@ -183,3 +183,71 @@
     border-radius: 7px;
   }
 }
+
+/* Manual-review corrective: footer alignment is row-driven, not subtitle-driven.
+   v96 has an !important margin-top:0 parity rule; reactions intentionally override
+   it here so a single reaction can collapse its missing subtitle while its footer
+   still lands on the same baseline as a pack in the same stretched grid row. */
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-reaction-card .store-v2-reaction-foot {
+  margin-top: auto !important;
+}
+
+/* Four reactions fit cleanly in one row. The former 2x2 geometry was taller than
+   the fixed 52px preview surface and therefore clipped the top/bottom chips. */
+.mgw-reaction-preview[data-reaction-count="4"] {
+  grid-template-columns: repeat(4, 24px);
+  grid-template-rows: 24px;
+  grid-auto-flow: row;
+  width: auto;
+  max-width: 108px;
+  gap: 3px;
+}
+.mgw-reaction-preview[data-reaction-count="4"] > i {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  font-size: 15px;
+}
+
+@media (max-width: 640px) {
+  .mgw-reaction-preview[data-reaction-count="4"] {
+    grid-template-columns: repeat(4, 23px);
+    grid-template-rows: 23px;
+    max-width: 101px;
+    gap: 3px;
+  }
+  .mgw-reaction-preview[data-reaction-count="4"] > i {
+    width: 23px;
+    height: 23px;
+    min-height: 23px;
+    font-size: 14px;
+  }
+}
+
+/* Mobile Profile route: stop asking the expensive full-screen Profile surface to
+   own the navigation frame. The shell still changes route synchronously; during
+   the 360ms intent window only Profile's screen-level opacity transition is
+   removed, while the existing content translate remains the lightweight motion.
+   Premium background atmosphere is paused while hidden and fully suppressed only
+   during enter/leave, then resumes after the route has settled. */
+@media (max-width: 640px), (pointer: coarse) {
+  #screen-profile.screen:not(.active)[data-profile-background-item-id="profile-background-03"]::before,
+  #screen-profile.screen:not(.active)[data-profile-background-item-id="profile-background-04"]::before {
+    animation-play-state: paused !important;
+  }
+
+  html.mgw-profile-route-settling #app #screen-profile.screen {
+    transition: none !important;
+    will-change: auto !important;
+  }
+
+  html.mgw-profile-route-settling #app #screen-profile.screen > .content {
+    transition: transform .24s var(--sk-ease-standard) !important;
+  }
+
+  html.mgw-profile-route-settling #screen-profile[data-profile-background-item-id="profile-background-03"]::before,
+  html.mgw-profile-route-settling #screen-profile[data-profile-background-item-id="profile-background-04"]::before {
+    animation: none !important;
+    will-change: auto !important;
+  }
+}
