@@ -10,12 +10,12 @@ export function initStoreScreen(){
   if (initialized) return;
   initialized = true;
 
-  // Mobile Profile first-frame warmup owns the preloader window. Do not start
-  // Store's idle network/render warm in parallel with that work: it can finish
-  // immediately after first Store intent and replace decorator-owned DOM, and it
-  // also competes with the exact first Profile raster we are trying to prewarm.
-  // Desktop keeps the accepted eager Store warm path unchanged.
-  if (!usesMobileIntentOnlyStore()) {
+  // The canonical shell now calls this owner only after the mobile Profile raster
+  // warm has completed. That makes the accepted idle Store status warm safe again
+  // on the normal shell route and removes the cold first-open replacement frame.
+  // Keep active-game mobile reloads intent-only: warming Store there can still
+  // compete with the authoritative game/bootstrap worker burst for no user value.
+  if (!keepsMobileIntentOnlyStore()) {
     initBaseStoreScreen();
     return;
   }
@@ -28,6 +28,12 @@ export function initStoreScreen(){
     event.stopImmediatePropagation();
     void openStoreTab();
   }, true);
+}
+
+function keepsMobileIntentOnlyStore(){
+  if (!usesMobileIntentOnlyStore()) return false;
+  const active = document.querySelector('.screen.active');
+  return String(active?.dataset.screen || '') === 'game';
 }
 
 function usesMobileIntentOnlyStore(){
