@@ -11,9 +11,6 @@ const ROUTES = Object.freeze({
 });
 const KNOWN_SCREENS = new Set(Object.keys(ROUTES));
 const cleanupOwners = new Map();
-let deferredProfileTransition = null;
-let deferredProfileRaf = 0;
-let deferredProfilePaintRaf = 0;
 
 export function routeRegistry(){
   return ROUTES;
@@ -57,8 +54,6 @@ export function showScreen(name){
   const next = String(name || '').trim();
   if (!KNOWN_SCREENS.has(next)) return currentScreen();
 
-  flushDeferredProfileTransition();
-
   const previous = currentScreen();
   if (previous !== next) runScreenCleanups(previous, next);
 
@@ -67,11 +62,7 @@ export function showScreen(name){
   });
   state.screen = next;
 
-  if (previous !== next) {
-    const detail = { from:previous, to:next };
-    if (shouldYieldProfileEffects(next)) deferProfileTransition(detail);
-    else dispatchScreenChanged(detail);
-  }
+  if (previous !== next) dispatchScreenChanged({ from:previous, to:next });
 
   return next;
 }
@@ -94,42 +85,6 @@ export function onScreenLeave(name, listener){
   };
   document.addEventListener('mgw:screen-changed', handler);
   return () => document.removeEventListener('mgw:screen-changed', handler);
-}
-
-function shouldYieldProfileEffects(next){
-  if (next !== 'profile' || typeof window === 'undefined') return false;
-  try {
-    return window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(max-width: 900px)').matches;
-  } catch (_) {
-    return false;
-  }
-}
-
-function deferProfileTransition(detail){
-  deferredProfileTransition = detail;
-  if (typeof requestAnimationFrame !== 'function') {
-    queueMicrotask(flushDeferredProfileTransition);
-    return;
-  }
-
-  deferredProfileRaf = requestAnimationFrame(() => {
-    deferredProfileRaf = 0;
-    deferredProfilePaintRaf = requestAnimationFrame(() => {
-      deferredProfilePaintRaf = 0;
-      flushDeferredProfileTransition();
-    });
-  });
-}
-
-function flushDeferredProfileTransition(){
-  if (!deferredProfileTransition) return;
-  if (deferredProfileRaf) cancelAnimationFrame(deferredProfileRaf);
-  if (deferredProfilePaintRaf) cancelAnimationFrame(deferredProfilePaintRaf);
-  deferredProfileRaf = 0;
-  deferredProfilePaintRaf = 0;
-  const detail = deferredProfileTransition;
-  deferredProfileTransition = null;
-  dispatchScreenChanged(detail);
 }
 
 function dispatchScreenChanged(detail){
