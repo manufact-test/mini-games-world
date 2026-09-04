@@ -18,5 +18,10 @@ export function initTelegramApp(){
 }
 export function getInitData(){ return getTelegram()?.initData || ''; }
 export function haptic(type = 'light'){
+  // Startup preparation may intentionally render hidden Store/Profile surfaces
+  // underneath the intro preloader. Those programmatic paints must never feel
+  // like a user action on the phone, so suppress haptics until the app is visible.
+  const preloader = document.getElementById('preloader');
+  if (preloader instanceof HTMLElement && !preloader.classList.contains('hidden')) return;
   try { getTelegram()?.HapticFeedback?.impactOccurred?.(type); } catch(e) {}
 }
