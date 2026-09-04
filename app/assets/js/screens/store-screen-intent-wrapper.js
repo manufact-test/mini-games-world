@@ -30,9 +30,9 @@ export function initStoreScreen(){
     }, true);
   }
 
-  // Prime the canonical Store owner once under the intro preloader. The first
-  // real shell tap will consume this exact completed DOM instead of calling the
-  // base owner again and starting an immediate silent refresh/render.
+  // The accepted base Store owner still performs the actual render/load work.
+  // Prime it once under the intro preloader, then remember only whether that
+  // completed presentation is safe to publish on the first real Store tap.
   firstOpenPrimePromise = canPrimeStoreUnderPreloader()
     ? Promise.resolve(openBaseStoreTab())
       .then(() => {
@@ -47,11 +47,10 @@ export function initStoreScreen(){
   return firstOpenPrimePromise;
 }
 
-export async function openStoreTab(){
-  // Once startup produced the complete Store under the preloader, the first
-  // visible shell entry must publish that exact DOM as-is. Calling the base
-  // openStoreTab here would see warmed storeState and immediately launch
-  // refreshStoreSilently(), allowing a second render to land after first paint.
+async function openStoreTab(){
+  // This wrapper owns no Store state, catalogue, purchase or equipment logic.
+  // It only avoids asking the accepted base owner to open the exact same primed
+  // DOM twice before the first visible paint; later opens delegate normally.
   if (canConsumePrimedFirstPresentation()) {
     firstVisiblePrimeConsumed = true;
     haptic('light');
@@ -61,7 +60,7 @@ export async function openStoreTab(){
   return openBaseStoreTab();
 }
 
-export { openStoreSheet };
+export { openStoreTab, openStoreSheet };
 
 function canConsumePrimedFirstPresentation(){
   if (!firstOpenPrimeReady || firstVisiblePrimeConsumed) return false;
