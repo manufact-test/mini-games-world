@@ -1,30 +1,72 @@
 @import url('./production-v100-entry-effects.css?v=1&mvp19_3=entry-effects');
 
-/* Manual-acceptance spacing parity: Reactions and Entry Effects use the same
- * breathing room as the accepted Frames / Profile Background collections. */
+/* Store corrective from the first manual-review pass stays scoped to Store. */
 .store-v2-reaction-section > .store-v2-title-row,
-.store-v2-entry-effect-section > .store-v2-title-row,
-.profile-v2-reaction-collection > .profile-v2-collection-title,
-.profile-v2-entry-effect-collection > .profile-v2-collection-title{
+.store-v2-entry-effect-section > .store-v2-title-row{
   margin-bottom:12px !important;
 }
-
 .store-v2-reaction-grid,
-.store-v2-entry-effect-grid,
-.profile-v2-reaction-grid,
-.profile-v2-entry-effect-grid{
+.store-v2-entry-effect-grid{
   margin-top:0 !important;
 }
-
 .store-v2-reaction-card,
-.profile-v2-reaction-card,
-.store-v2-entry-effect-card,
-.profile-v2-entry-effect-card{
+.store-v2-entry-effect-card{
   padding-bottom:12px !important;
 }
-
 .store-v2-entry-effect-foot,
 .store-v2-reaction-card .store-v2-product-foot,
 .store-v2-reaction-card .store-v2-reaction-foot{
   margin-top:auto;
+}
+
+/* Profile manual-acceptance corrective.
+ * Avatars are the spacing reference. Every cosmetic collection below them uses
+ * the same section rhythm: 20px separation, 14px after the divider, then the
+ * same 8px title-to-grid gap. No family owns an extra title/grid margin. */
+#screen-profile .profile-v2-name-color-collection,
+#screen-profile .profile-v2-badge-collection,
+#screen-profile .profile-v2-frame-collection,
+#screen-profile .profile-v2-background-collection,
+#screen-profile .profile-v2-reaction-collection,
+#screen-profile .profile-v2-entry-effect-collection{
+  margin-top:20px !important;
+  padding-top:14px !important;
+  border-top:1px solid rgba(255,255,255,.08) !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:8px !important;
+}
+
+#screen-profile .profile-v2-collection-section > .profile-v2-collection-title,
+#screen-profile .profile-v2-name-color-collection > .profile-v2-collection-title,
+#screen-profile .profile-v2-badge-collection > .profile-v2-collection-title,
+#screen-profile .profile-v2-frame-collection > .profile-v2-collection-title,
+#screen-profile .profile-v2-background-collection > .profile-v2-collection-title,
+#screen-profile .profile-v2-reaction-collection > .profile-v2-collection-title,
+#screen-profile .profile-v2-entry-effect-collection > .profile-v2-collection-title{
+  margin:0 !important;
+  padding:0 1px !important;
+}
+
+#screen-profile .profile-v2-collection-section > .profile-v2-collection-grid,
+#screen-profile .profile-v2-name-color-grid,
+#screen-profile .profile-v2-badge-grid,
+#screen-profile .profile-v2-frame-grid,
+#screen-profile .profile-v2-background-grid,
+#screen-profile .profile-v2-reaction-grid,
+#screen-profile .profile-v2-entry-effect-grid{
+  margin:0 !important;
+}
+
+/* Avatar cards already use a clean 5px edge. Apply that exact edge to every
+ * Profile cosmetic card so top/right/bottom/left never vary by family. */
+#screen-profile [data-profile-avatar-preview],
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview],
+#screen-profile [data-profile-frame-preview],
+#screen-profile .profile-v2-background-card,
+#screen-profile .profile-v2-reaction-card,
+#screen-profile .profile-v2-entry-effect-card{
+  box-sizing:border-box !important;
+  padding:5px !important;
 }
