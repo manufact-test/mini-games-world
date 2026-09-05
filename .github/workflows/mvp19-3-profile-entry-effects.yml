@@ -1,0 +1,132 @@
+name: MVP-19.3 Profile Entry Effects
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260905_0025_add_profile_entry_effects.php'
+      - 'bot/cosmetic-store.php'
+      - 'bot/helpers/response.php'
+      - 'app/assets/js/profile/mgw-profile-entry-effects.js'
+      - 'app/assets/js/production-v110-readonly-game-sync.js'
+      - 'app/assets/css/components/mgw-profile-entry-effects.css'
+      - 'app/assets/css/production-v100-entry-effects.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
+      - '.github/workflows/mvp19-3-profile-entry-effects.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-profile-entry-effects-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile-entry-effects:
+    name: Purchase equip projection and nonblocking presentation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          php -l bot/cosmetic-store.php
+          php -l bot/helpers/response.php
+          php -l bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+          node --check app/assets/js/profile/mgw-profile-entry-effects.js
+          node --check app/assets/js/production-v110-readonly-game-sync.js
+
+      - name: Run focused Entry Effects contract
+        run: php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+
+      - name: Preserve accepted cosmetic contracts
+        run: |
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_3ProfileNameColorsTest.php
+          php bot/tests/Mvp19_3ProfileBadgesTest.php
+          php bot/tests/Mvp19_3ProfileFramesTest.php
+          php bot/tests/Mvp19_3ProfileBackgroundsTest.php
+          php bot/tests/Mvp19_3ProfileReactionsTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+
+      - name: Guard canonical Entry Effect semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "private const SLOT = 'profile_entry_effect'" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          grep -F "'price' => 4000" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          grep -F "'price' => 7500" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          grep -F "'price' => 12000" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          grep -F "'duration_ms' => 2400" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          grep -F "'duration_ms' => 3000" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          grep -F "'duration_ms' => 3600" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
+          grep -F 'function mgw_store_profile_entry_effect' bot/cosmetic-store.php
+          grep -F 'entry_effect_item_id' bot/helpers/response.php
+          grep -F 'mgw-entry-effect-skip' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-entry-effects.css
+          grep -F 'production-v100-entry-effects.css' app/runtime/client/version-manifest.php
+          grep -F 'entry_effects=1' app/runtime/client/version-manifest.php
+
+      - name: Guard frozen engines and bounded Entry Effect slice
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/services/GameInviteService.php \
+            bot/services/FriendGraphService.php \
+            bot/services/ReconnectLifecycleService.php \
+            app/assets/js/screens/game-screen-v102.js \
+            app/assets/js/games \
+            cron \
+            config/private.php
+
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp19-3-profile-entry-effects.yml|\
+              .github/workflows/mvp19-3-profile-reactions.yml|\
+              bot/database/migrations/20260905_0025_add_profile_entry_effects.php|\
+              bot/cosmetic-store.php|\
+              bot/helpers/response.php|\
+              app/assets/js/profile/mgw-profile-entry-effects.js|\
+              app/assets/js/production-v110-readonly-game-sync.js|\
+              app/assets/css/components/mgw-profile-entry-effects.css|\
+              app/assets/css/production-v100-entry-effects.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp19_3ProfileEntryEffectsTest.php)
+                ;;
+              *)
+                echo "Unexpected Entry Effects path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0

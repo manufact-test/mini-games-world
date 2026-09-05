@@ -4,6 +4,7 @@ import { getInitData } from './telegram/telegram-app.js?v=27';
 import { getSessionId } from './session.js?v=27';
 import { enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initMgwProfileReactions } from './profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions';
+import { initMgwProfileEntryEffects } from './profile/mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects';
 
 const WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const WATCH_INTERVAL_MS = 250;
@@ -42,6 +43,7 @@ export function initV110ReadonlyGameSync(){
 
   document.addEventListener('mgw:app-ready', () => scheduleWatch(0), { once:true });
   document.addEventListener('mgw:app-ready', initMgwProfileReactions, { once:true });
+  document.addEventListener('mgw:app-ready', initMgwProfileEntryEffects, { once:true });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') scheduleWatch(0);
   });
