@@ -163,6 +163,7 @@ jobs:
               .github/workflows/mvp16-6-notification-center-v2.yml|\
               .github/workflows/mvp19-2-cosmetic-store.yml|\
               .github/workflows/mvp19-3-profile-reactions.yml|\
+              .github/workflows/mvp19-3-profile-entry-effects.yml|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
               .github/workflows/mvp19-3-profile-backgrounds.yml|\
               .github/workflows/mvp19-3-profile-badges.yml|\
@@ -171,13 +172,17 @@ jobs:
               .github/workflows/mvp19-3-profile-name-colors.yml|\
               .github/workflows/mvp19-4-game-cosmetics-pilot.yml|\
               bot/database/migrations/20260903_0024_add_profile_reactions.php|\
+              bot/database/migrations/20260905_0025_add_profile_entry_effects.php|\
               bot/services/GameReactionService.php|\
               bot/game-reaction.php|\
               bot/game-watch.php|\
+              bot/cosmetic-store.php|\
+              bot/helpers/response.php|\
               app/assets/js/api/client.js|\
               app/assets/js/production-v110-readonly-game-sync.js|\
               app/assets/js/profile/mgw-profile-reactions.js|\
               app/assets/js/profile/mgw-profile-reactions-header.js|\
+              app/assets/js/profile/mgw-profile-entry-effects.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/screens/store-screen-intent-wrapper.js|\
               app/assets/js/main-v110-handoff-shell.js|\
@@ -189,8 +194,11 @@ jobs:
               app/assets/css/production-v97-reactions.css|\
               app/assets/css/production-v98-mobile-profile-perf.css|\
               app/assets/css/production-v99-profile-reaction-polish.css|\
+              app/assets/css/production-v100-entry-effects.css|\
+              app/assets/css/components/mgw-profile-entry-effects.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileReactionsTest.php|\
+              bot/tests/Mvp19_3ProfileEntryEffectsTest.php|\
               bot/tests/Mvp19_3ProfileAvatarsTest.php|\
               bot/tests/Mvp19_4EffectsV2ContractTest.mjs|\
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
