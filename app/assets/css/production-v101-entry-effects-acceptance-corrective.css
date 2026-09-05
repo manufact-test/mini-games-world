@@ -1,0 +1,30 @@
+@import url('./production-v100-entry-effects.css?v=1&mvp19_3=entry-effects');
+
+/* Manual-acceptance spacing parity: Reactions and Entry Effects use the same
+ * breathing room as the accepted Frames / Profile Background collections. */
+.store-v2-reaction-section > .store-v2-title-row,
+.store-v2-entry-effect-section > .store-v2-title-row,
+.profile-v2-reaction-collection > .profile-v2-collection-title,
+.profile-v2-entry-effect-collection > .profile-v2-collection-title{
+  margin-bottom:12px !important;
+}
+
+.store-v2-reaction-grid,
+.store-v2-entry-effect-grid,
+.profile-v2-reaction-grid,
+.profile-v2-entry-effect-grid{
+  margin-top:0 !important;
+}
+
+.store-v2-reaction-card,
+.profile-v2-reaction-card,
+.store-v2-entry-effect-card,
+.profile-v2-entry-effect-card{
+  padding-bottom:12px !important;
+}
+
+.store-v2-entry-effect-foot,
+.store-v2-reaction-card .store-v2-product-foot,
+.store-v2-reaction-card .store-v2-reaction-foot{
+  margin-top:auto;
+}
