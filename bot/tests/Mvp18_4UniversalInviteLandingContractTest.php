@@ -173,7 +173,10 @@ $assertTrue(
     'Invite Telegram start must register its recipient before replying'
 );
 $assertTrue(
-    str_contains($welcomeSource, "$invites->bindFromLink($data, $data['users'][$userId], $token, false, false);"),
+    str_contains(
+        $welcomeSource,
+        '$invites->bindFromLink($data, $data[\'users\'][$userId], $token, false, false);'
+    ),
     'Telegram start binding must leave the received notification visible for normal-launch hydration'
 );
 $assertTrue(
