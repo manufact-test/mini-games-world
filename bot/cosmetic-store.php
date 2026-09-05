@@ -219,8 +219,11 @@ try {
                 || mgw_store_profile_name_color($catalogItem)
                 || mgw_store_profile_badge($catalogItem)
                 || mgw_store_profile_frame($catalogItem)
-                || mgw_store_profile_background($catalogItem)
-                || mgw_store_profile_entry_effect($catalogItem)) {
+                || mgw_store_profile_background($catalogItem)) {
+                $knownSlot = true;
+                break;
+            }
+            if (mgw_store_profile_entry_effect($catalogItem)) {
                 $knownSlot = true;
                 break;
             }
