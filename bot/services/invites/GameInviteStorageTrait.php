@@ -107,6 +107,38 @@ trait GameInviteStorageTrait
         }
     }
 
+    /**
+     * Repair only a missing canonical received card for a still-valid pending
+     * invite that is already bound to this recipient. This is intentionally
+     * idempotent: an existing row, including a deliberately read/hidden row,
+     * remains authoritative and is never recreated or resurrected.
+     */
+    public function hydratePendingReceivedNotifications(array &$db, string $userId): int
+    {
+        $userId = trim($userId);
+        if ($userId === '') return 0;
+
+        $created = 0;
+        $now = time();
+        foreach ($db['invites'] ?? [] as $invite) {
+            if (!is_array($invite)) continue;
+            if ((string)($invite['status'] ?? '') !== 'pending') continue;
+            if ((string)($invite['invitee_id'] ?? '') !== $userId) continue;
+
+            $token = trim((string)($invite['token'] ?? ''));
+            if ($token === '') continue;
+            $expiresAt = strtotime((string)($invite['expires_at'] ?? '')) ?: 0;
+            if ($expiresAt > 0 && $expiresAt <= $now) continue;
+
+            $before = is_array($db['notifications'] ?? null) ? count($db['notifications']) : 0;
+            $this->addReceivedNotification($db, $invite);
+            $after = is_array($db['notifications'] ?? null) ? count($db['notifications']) : 0;
+            if ($after > $before) $created++;
+        }
+
+        return $created;
+    }
+
     private function addReceivedNotification(array &$db, array $invite): void
     {
         $inviteeId = (string)($invite['invitee_id'] ?? '');

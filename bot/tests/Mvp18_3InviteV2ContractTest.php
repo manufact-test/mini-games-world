@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
 
+if (!function_exists('now_iso')) {
+    function now_iso(): string { return gmdate('c'); }
+}
+if (!function_exists('make_id')) {
+    function make_id(string $prefix = 'id'): string {
+        static $sequence = 0;
+        $sequence++;
+        return $prefix . '_invite_hydration_' . $sequence;
+    }
+}
+
 $root = dirname(__DIR__);
 require_once $root . '/services/GameInviteService.php';
 
@@ -32,11 +43,14 @@ $assertSame(90, $reflection->getConstant('READY_TTL_SEC'), 'Accepted ready TTL m
 $now = time();
 $pendingExpiry = gmdate('c', $now + 120);
 $pending = [
+    'id' => 'invite-normal-launch',
     'token' => str_repeat('a', 24),
     'status' => 'pending',
     'source' => 'direct',
     'inviter_id' => '1001',
+    'inviter_name' => 'Sender',
     'invitee_id' => '1002',
+    'invitee_name' => 'Recipient',
     'game_type' => 'tictactoe',
     'game_title' => 'Крестики-нолики',
     'room' => 'match',
@@ -92,12 +106,76 @@ $directDb = [
 $assertSame(1, $invokePrivate('findOpenDirectIndex', [$directDb, '1001', '1002']), 'Pending direct pair must have one authoritative dedupe owner');
 $assertSame(null, $invokePrivate('findOpenDirectIndex', [$directDb, '1002', '1001']), 'Reverse direction must not be confused with the existing outgoing request');
 
+// A direct invite is already bound to its recipient before any Telegram deep-link
+// is opened. A normal Mini App launch must therefore be able to repair a missing
+// received card from canonical invite state without creating a second invite owner.
+$hydrationDb = ['invites' => [$pending], 'notifications' => []];
+$assertSame(
+    1,
+    $service->hydratePendingReceivedNotifications($hydrationDb, '1002'),
+    'A still-valid pending direct invite must hydrate one missing received notification'
+);
+$assertSame(1, count($hydrationDb['notifications']), 'Normal-launch hydration must create exactly one notification card');
+$hydrated = $hydrationDb['notifications'][0];
+$assertSame('1002', $hydrated['user_id'], 'Hydrated invite notification must belong to the bound recipient');
+$assertSame('invite_received', $hydrated['type'], 'Hydrated direct invite must use the canonical received type');
+$assertSame($pending['token'], $hydrated['invite_token'], 'Hydrated notification must retain the canonical invite token');
+$assertSame(
+    0,
+    $service->hydratePendingReceivedNotifications($hydrationDb, '1002'),
+    'Repeated normal-launch hydration must be idempotent'
+);
+$assertSame(1, count($hydrationDb['notifications']), 'Repeated hydration must never duplicate the received card');
+
+$hiddenDb = $hydrationDb;
+$hiddenDb['notifications'][0]['read_at'] = gmdate('c', $now);
+$hiddenDb['notifications'][0]['hidden_at'] = gmdate('c', $now);
+$hiddenAt = $hiddenDb['notifications'][0]['hidden_at'];
+$assertSame(
+    0,
+    $service->hydratePendingReceivedNotifications($hiddenDb, '1002'),
+    'A deliberately consumed invite card must remain authoritative'
+);
+$assertSame(1, count($hiddenDb['notifications']), 'Consumed invite hydration must not create a replacement card');
+$assertSame($hiddenAt, $hiddenDb['notifications'][0]['hidden_at'], 'Consumed invite hydration must not resurrect the hidden row');
+
+$expiredPending = $pending;
+$expiredPending['id'] = 'invite-expired';
+$expiredPending['token'] = str_repeat('b', 24);
+$expiredPending['expires_at'] = gmdate('c', $now - 1);
+$expiredDb = ['invites' => [$expiredPending], 'notifications' => []];
+$assertSame(
+    0,
+    $service->hydratePendingReceivedNotifications($expiredDb, '1002'),
+    'Expired pending invites must never hydrate on a later normal launch'
+);
+$assertSame([], $expiredDb['notifications'], 'Expired pending invite must not create a notification');
+
+$acceptedDb = ['invites' => [$accepted], 'notifications' => []];
+$assertSame(
+    0,
+    $service->hydratePendingReceivedNotifications($acceptedDb, '1002'),
+    'Accepted invites must not be recreated as pending received cards'
+);
+
+$otherRecipient = $pending;
+$otherRecipient['id'] = 'invite-other-recipient';
+$otherRecipient['token'] = str_repeat('c', 24);
+$otherRecipient['invitee_id'] = '1003';
+$otherDb = ['invites' => [$otherRecipient], 'notifications' => []];
+$assertSame(
+    0,
+    $service->hydratePendingReceivedNotifications($otherDb, '1002'),
+    'Normal launch must never hydrate another player\'s pending invite'
+);
+
 $creationSource = file_get_contents($root . '/services/invites/GameInviteCreationTrait.php');
 $validationSource = file_get_contents($root . '/services/invites/GameInviteValidationTrait.php');
 $storageSource = file_get_contents($root . '/services/invites/GameInviteStorageTrait.php');
 $endpointSource = file_get_contents($root . '/invites.php');
+$notificationEndpointSource = file_get_contents($root . '/notifications.php');
 $clientSource = file_get_contents(dirname($root) . '/app/assets/js/games/game-invites-v110.js');
-foreach ([$creationSource, $validationSource, $storageSource, $endpointSource, $clientSource] as $source) {
+foreach ([$creationSource, $validationSource, $storageSource, $endpointSource, $notificationEndpointSource, $clientSource] as $source) {
     if (!is_string($source)) throw new RuntimeException('Invite v2 contract source is unavailable.');
 }
 
@@ -105,6 +183,9 @@ $assertTrue(str_contains($creationSource, 'if ($sameContext) return $this->publi
 $assertTrue(str_contains($creationSource, "Этому игроку уже отправлено другое приглашение."), 'Conflicting second direct invite must be rejected instead of duplicated');
 $assertTrue(str_contains($creationSource, "['expires_at'] = gmdate('c', time() + self::INVITE_TTL_SEC)"), 'Draft-to-pending transitions must restart the 120-second window');
 $assertTrue(!str_contains($storageSource, '$inviteExpiry > $deadline'), 'Accepted ready window must not be extended by legacy pending expiry');
+$assertTrue(str_contains($storageSource, 'public function hydratePendingReceivedNotifications'), 'Invite owner must expose bounded normal-launch notification hydration');
+$assertTrue(str_contains($notificationEndpointSource, 'hydratePendingReceivedNotifications($snapshot, $userId)'), 'Notification Center must detect missing pending invite cards from a read-only snapshot');
+$assertTrue(str_contains($notificationEndpointSource, 'hydratePendingReceivedNotifications($data, $userId)'), 'Notification Center must persist the missing pending invite card before listing');
 $assertTrue(str_contains($validationSource, '$activeGame !== null || $queued'), 'Busy/searching availability must remain an explicit blocker');
 $assertTrue(!str_contains($endpointSource, 'leaveSearch('), 'Invite endpoint must not auto-cancel public matchmaking search');
 $assertTrue(str_contains($clientSource, 'data-invite-countdown'), 'Invite modal must expose the canonical countdown surface');

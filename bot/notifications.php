@@ -298,6 +298,23 @@ try {
         error_log('[MiniGamesWorld Notification friend reconciliation] ' . $socialNotificationError->getMessage());
     }
 
+    // Direct/rematch invitations already know their recipient before any Telegram
+    // deep-link is opened. If a historical/runtime gap left the canonical pending
+    // invite without its received bell row, repair that one row on ordinary
+    // Notification Center hydration. The read-only probe keeps normal 30s polls
+    // write-free; the transaction runs only when a repair is actually required.
+    $pendingInviteNotificationMissing = $db->readOnlySections(
+        ['invites', 'notifications'],
+        static function (array $snapshot) use ($inviteViews, $userId): bool {
+            return $inviteViews->hydratePendingReceivedNotifications($snapshot, $userId) > 0;
+        }
+    );
+    if ($pendingInviteNotificationMissing) {
+        $db->transaction(static function (array &$data) use ($inviteViews, $userId): void {
+            $inviteViews->hydratePendingReceivedNotifications($data, $userId);
+        });
+    }
+
     $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
 
     if ($legacyBridgeAllowed
