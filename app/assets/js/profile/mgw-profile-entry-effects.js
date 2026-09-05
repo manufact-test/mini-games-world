@@ -26,6 +26,7 @@ const purchasePending = new Set();
 const playedGames = new Set();
 let liveHideTimer = 0;
 let liveProbeTimer = 0;
+let lastViewerId = '';
 
 export function initMgwProfileEntryEffects(){
   if (initialized) return;
@@ -39,10 +40,25 @@ export function initMgwProfileEntryEffects(){
     document.addEventListener('mgw:cosmetic-inventory-changed', event => {
       scheduleDecorate();
       if (String(event?.detail?.slot || '').trim() !== ENTRY_EFFECT_SLOT) return;
-      applyLocalEntryEffectProjection(state.activeGame);
+      applyLocalEntryEffectProjection(state.activeGame, lastViewerId);
       const active = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
-      if (active === 'game') armLiveEntryEffectProbe();
+      if (active === 'game') armLiveEntryEffectProbe(lastViewerId);
     });
+
+    /* The game owner publishes this only after it has adopted state.activeGame
+     * and activated #screen-game. This is the authoritative presentation handoff:
+     * exact game payload plus exact viewer id, no inference from shell timing. */
+    document.addEventListener('mgw:game-entered', event => {
+      const game = event?.detail?.game || state.activeGame;
+      const viewerId = String(event?.detail?.me?.id || '').trim();
+      if (viewerId) lastViewerId = viewerId;
+      applyLocalEntryEffectProjection(game, viewerId || lastViewerId);
+      playLiveEntryEffectsIfNeeded(game, viewerId || lastViewerId);
+      if (!playedGames.has(String(game?.id || '').trim())) {
+        armLiveEntryEffectProbe(viewerId || lastViewerId);
+      }
+    });
+
     document.addEventListener('mgw:screen-changed', event => {
       const next = String(event?.detail?.to || '').trim();
       if (next === 'profile' || next === 'store') {
@@ -50,24 +66,25 @@ export function initMgwProfileEntryEffects(){
         void ensureSnapshot();
       }
       if (next === 'game') {
-        applyLocalEntryEffectProjection(state.activeGame);
-        armLiveEntryEffectProbe();
+        applyLocalEntryEffectProjection(state.activeGame, lastViewerId);
+        armLiveEntryEffectProbe(lastViewerId);
       }
       if (String(event?.detail?.from || '') === 'game' && next !== 'game') removeLiveEntryEffects();
     });
+
     document.addEventListener('mgw:phase-b-game-entering', event => {
-      applyLocalEntryEffectProjection(event?.detail?.game);
+      applyLocalEntryEffectProjection(event?.detail?.game, lastViewerId);
       queueMicrotask(() => {
-        applyLocalEntryEffectProjection(state.activeGame);
-        armLiveEntryEffectProbe();
+        applyLocalEntryEffectProjection(state.activeGame, lastViewerId);
+        armLiveEntryEffectProbe(lastViewerId);
       });
     });
 
     const active = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
     if (active === 'profile' || active === 'store') void ensureSnapshot();
     if (active === 'game') {
-      applyLocalEntryEffectProjection(state.activeGame);
-      armLiveEntryEffectProbe();
+      applyLocalEntryEffectProjection(state.activeGame, lastViewerId);
+      armLiveEntryEffectProbe(lastViewerId);
     }
     scheduleDecorate();
   };
@@ -252,7 +269,6 @@ function profileCard(item, activeId){
   return `<button class="profile-v2-entry-effect-card${active ? ' active' : ''}" type="button" data-entry-effect-preview="${escapeAttr(itemId)}" data-mgw-profile-cosmetic-state="${active ? 'selected' : 'owned'}" aria-pressed="${active ? 'true' : 'false'}">
     ${previewMarkup(itemId, false, 'profile-v2-entry-effect-preview')}
     <span class="profile-v2-entry-effect-copy"><b>${escapeHtml(itemName(item))}</b><small>${escapeHtml(itemTier(item))}</small></span>
-    <span class="profile-v2-entry-effect-status">${active ? 'Выбрано' : 'В коллекции'}</span>
     ${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}
   </button>`;
 }
@@ -359,9 +375,10 @@ function applyOptimisticSelection(itemId, equipped){
   document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ slot:ENTRY_EFFECT_SLOT } }));
 }
 
-function localEntryEffectPlayerIds(){
+function localEntryEffectPlayerIds(viewerId = ''){
   const telegramId = globalThis.Telegram?.WebApp?.initDataUnsafe?.user?.id;
   return new Set([
+    viewerId,
     state.user?.id,
     state.user?.provider_subject,
     state.user?.telegram_id,
@@ -378,13 +395,13 @@ function isLocalEntryEffectPlayer(player, ids){
   return playerId !== '' && ids.has(playerId);
 }
 
-function applyLocalEntryEffectProjection(game){
+function applyLocalEntryEffectProjection(game, viewerId = ''){
   if (!game || typeof game !== 'object') return false;
   const selected = currentEntryEffectId();
   if (!presentationFor(selected)) return false;
   const players = Array.isArray(game.players) ? game.players : [];
   if (!players.length) return false;
-  const localIds = localEntryEffectPlayerIds();
+  const localIds = localEntryEffectPlayerIds(viewerId);
 
   for (const player of players) {
     if (!isLocalEntryEffectPlayer(player, localIds)) continue;
@@ -396,21 +413,21 @@ function applyLocalEntryEffectProjection(game){
   return false;
 }
 
-function entryEffectIdForPlayer(player){
+function entryEffectIdForPlayer(player, viewerId = ''){
   const projected = String(player?.entry_effect_item_id || '').trim();
   if (presentationFor(projected)) return projected;
-  const localIds = localEntryEffectPlayerIds();
+  const localIds = localEntryEffectPlayerIds(viewerId);
   if (!isLocalEntryEffectPlayer(player, localIds)) return '';
   const selected = currentEntryEffectId();
   return presentationFor(selected) ? selected : '';
 }
 
-function armLiveEntryEffectProbe(){
+function armLiveEntryEffectProbe(viewerId = ''){
   window.clearTimeout(liveProbeTimer);
-  const deadline = Date.now() + 5000;
+  const deadline = Date.now() + 7000;
   const probe = () => {
     liveProbeTimer = 0;
-    playLiveEntryEffectsIfNeeded();
+    playLiveEntryEffectsIfNeeded(state.activeGame, viewerId);
     const screen = document.getElementById('screen-game');
     const gameId = String(state.activeGame?.id || '').trim();
     if (!(screen instanceof HTMLElement) || !screen.classList.contains('active') || !gameId || playedGames.has(gameId)) return;
@@ -420,16 +437,15 @@ function armLiveEntryEffectProbe(){
   queueMicrotask(probe);
 }
 
-function playLiveEntryEffectsIfNeeded(){
+function playLiveEntryEffectsIfNeeded(game = state.activeGame, viewerId = ''){
   const screen = document.getElementById('screen-game');
-  const game = state.activeGame;
   const gameId = String(game?.id || '').trim();
   if (!(screen instanceof HTMLElement) || !screen.classList.contains('active') || !gameId || playedGames.has(gameId)) return;
   if (String(game?.status || '') !== 'active') return;
 
   const players = Array.isArray(game?.players) ? game.players : [];
   const entries = players.map((player, index) => {
-    const itemId = entryEffectIdForPlayer(player);
+    const itemId = entryEffectIdForPlayer(player, viewerId);
     const spec = presentationFor(itemId);
     if (!spec) return null;
     return {
