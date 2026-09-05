@@ -93,7 +93,24 @@ $serviceSource = file_get_contents($root . '/services/GameInviteService.php');
 $siteSource = file_get_contents(dirname($root) . '/site/invite.php');
 $rewriteSource = file_get_contents(dirname($root) . '/.htaccess');
 $launchSource = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
-foreach ([$endpointSource, $creationSource, $serviceSource, $siteSource, $rewriteSource, $launchSource] as $source) {
+$webhookSource = file_get_contents($root . '/webhook.php');
+$welcomeSource = file_get_contents($root . '/helpers/UserWelcomeGuard.php');
+$homeDeclutterSource = file_get_contents(dirname($root) . '/app/assets/css/production-v100-home-declutter.css');
+$manifestSource = file_get_contents(dirname($root) . '/app/runtime/client/version-manifest.php');
+$inviteClientSource = file_get_contents(dirname($root) . '/app/assets/js/games/game-invites-v110.js');
+foreach ([
+    $endpointSource,
+    $creationSource,
+    $serviceSource,
+    $siteSource,
+    $rewriteSource,
+    $launchSource,
+    $webhookSource,
+    $welcomeSource,
+    $homeDeclutterSource,
+    $manifestSource,
+    $inviteClientSource,
+] as $source) {
     if (!is_string($source)) throw new RuntimeException('MVP-18.4 contract source is unavailable.');
 }
 
@@ -134,6 +151,55 @@ $assertTrue(
 $assertTrue(
     str_contains($launchSource, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
     'MVP-18.4 must preserve the frozen Telegram Mini App entry identity'
+);
+
+// A Telegram /start invite_TOKEN must persist the recipient before the Mini App
+// is opened. The old InviteStartGuard returned early after only sending a button,
+// so normal later launches had no bound recipient and no bell card to hydrate.
+$assertTrue(
+    !str_contains($webhookSource, "require_once __DIR__ . '/helpers/InviteStartGuard.php';")
+        && !str_contains($webhookSource, '$inviteStartGuard = new InviteStartGuard')
+        && !str_contains($webhookSource, '$inviteStartGuard->handle($update)'),
+    'InviteStartGuard must not shadow the persistent /start owner'
+);
+$assertTrue(
+    str_contains($webhookSource, '$welcomeGuard = new UserWelcomeGuard($telegram, $config);')
+        && str_contains($webhookSource, '&& !$welcomeGuard->handle($update)'),
+    'UserWelcomeGuard must own private-chat /start dispatch'
+);
+$assertTrue(
+    str_contains($welcomeSource, 'invite_([a-f0-9]{24})')
+        && str_contains($welcomeSource, '$this->registerInviteRecipient($message, $inviteToken);'),
+    'Invite Telegram start must register its recipient before replying'
+);
+$assertTrue(
+    str_contains($welcomeSource, "$invites->bindFromLink($data, $data['users'][$userId], $token, false, false);"),
+    'Telegram start binding must leave the received notification visible for normal-launch hydration'
+);
+$assertTrue(
+    str_contains($welcomeSource, 'SocialInviteGuard')
+        && str_contains($welcomeSource, 'assertRuntimeSubjectNotBlocked('),
+    'Telegram start binding must preserve the canonical blocked-user boundary'
+);
+
+// Home keeps only Play; invite/share remain owned by the Play setup.
+$assertTrue(
+    str_contains($homeDeclutterSource, '#screen-home .game-card > .btn-row > [data-invite-friend]')
+        && str_contains($homeDeclutterSource, 'display: none !important;'),
+    'Home cards must hide the redundant top-level invite action'
+);
+$assertTrue(
+    str_contains($homeDeclutterSource, 'grid-template-columns: minmax(0, 1fr) !important;'),
+    'Home Play action must expand to the full card width'
+);
+$assertTrue(
+    str_contains($manifestSource, 'production-v100-home-declutter.css?v=1&home=play-only-v1&invite=inside-play-v1'),
+    'Home declutter presentation must be cache-busted through the v110 manifest'
+);
+$assertTrue(
+    str_contains($inviteClientSource, 'data-open-player-picker')
+        && str_contains($inviteClientSource, 'data-create-link-invite'),
+    'Invite player/link actions must remain available inside the canonical Play setup'
 );
 
 fwrite(STDOUT, 'PASS: MVP-18.4 universal invite landing contract (' . $assertions . " assertions)\n");
