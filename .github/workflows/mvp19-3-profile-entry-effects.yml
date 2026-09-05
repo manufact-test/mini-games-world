@@ -16,6 +16,7 @@ on:
       - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
       - '.github/workflows/mvp19-3-profile-entry-effects.yml'
   workflow_dispatch:
 
@@ -54,6 +55,7 @@ jobs:
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+          node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           node --check app/assets/js/profile/mgw-profile-entry-effects.js
           node --check app/assets/js/production-v110-readonly-game-sync.js
           node --check app/assets/js/components/toast.js
@@ -72,6 +74,7 @@ jobs:
           php bot/tests/Mvp19_3ProfileBackgroundsTest.php
           php bot/tests/Mvp19_3ProfileReactionsTest.php
           node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
 
       - name: Guard canonical Entry Effect semantics
@@ -129,7 +132,8 @@ jobs:
               app/assets/css/production-v100-entry-effects.css|\
               app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
               app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp19_3ProfileEntryEffectsTest.php)
+              bot/tests/Mvp19_3ProfileEntryEffectsTest.php|\
+              bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
                 ;;
               *)
                 echo "Unexpected Entry Effects path: $path" >&2
