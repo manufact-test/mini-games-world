@@ -1,0 +1,307 @@
+@import url('./production-v101-entry-effects-acceptance-corrective.css?v=6&mvp19_3=profile-bottom-spacing-parity-v3&profile_card_inset=12&entry_visual=tiered-v2&art_ref=approved-fantasy-png-reference-v1');
+
+/* Store purchase UX — insufficient balance must be obvious, readable and global.
+ * The exact deficit is already rendered by every canonical Store confirm owner;
+ * this layer makes that state visually unmistakable instead of looking broken. */
+.store-v2-confirm:has(.btn:disabled) .store-v2-confirm-balance{
+  border-color:rgba(255,104,128,.58) !important;
+  background:linear-gradient(135deg,rgba(122,35,54,.24),rgba(255,255,255,.025)) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,104,128,.08) !important;
+}
+.store-v2-confirm:has(.btn:disabled) .store-v2-confirm-balance span{
+  color:#ffb6c2 !important;
+}
+.store-v2-confirm:has(.btn:disabled) .store-v2-confirm-balance b{
+  color:#fff !important;
+}
+.store-v2-confirm .btn:disabled{
+  opacity:1 !important;
+  color:#fff !important;
+  background:linear-gradient(135deg,#7d2940,#512033) !important;
+  border-color:rgba(255,115,139,.72) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(255,80,111,.08) !important;
+  text-shadow:0 1px 2px rgba(0,0,0,.36) !important;
+  font-weight:950 !important;
+}
+.store-v2-confirm .btn:disabled::before{
+  content:'!';
+  display:grid;
+  place-items:center;
+  flex:0 0 22px;
+  width:22px;
+  height:22px;
+  margin-right:2px;
+  border-radius:50%;
+  background:#ff6f8a;
+  color:#2a0911;
+  font-size:14px;
+  line-height:1;
+  font-weight:1000;
+}
+.store-v2-confirm:has(.btn:disabled)::after{
+  content:'Недостаточно коинов для покупки';
+  display:block;
+  margin-top:-1px;
+  padding:8px 10px;
+  border:1px solid rgba(255,104,128,.36);
+  border-radius:12px;
+  background:rgba(118,30,48,.15);
+  color:#ffc2cc;
+  font-size:10.5px;
+  line-height:1.25;
+  font-weight:900;
+  text-align:center;
+}
+
+/* Tier II — closer to the approved portal reference: the character is no longer
+ * a tiny badge inside geometry. It is the focal point inside a layered portal. */
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]{
+  background:
+    radial-gradient(ellipse at 50% 72%,rgba(83,238,255,.30),transparent 32%),
+    radial-gradient(circle at 50% 33%,rgba(126,94,255,.25),transparent 44%),
+    linear-gradient(180deg,#11182b,#070b16 82%) !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]::before{
+  inset:4px 11% 4px !important;
+  border-width:2px !important;
+  border-color:rgba(113,235,255,.84) !important;
+  border-bottom-color:rgba(255,218,132,.65) !important;
+  border-radius:52% 52% 23px 23px !important;
+  box-shadow:0 0 26px rgba(69,224,255,.38),inset 0 0 24px rgba(86,215,255,.15) !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]::after{
+  left:7% !important;
+  right:7% !important;
+  bottom:7px !important;
+  height:4px !important;
+  border-radius:50% !important;
+  background:linear-gradient(90deg,transparent,#75f2ff 18%,#fff1b7 50%,#75f2ff 82%,transparent) !important;
+  box-shadow:0 0 18px rgba(82,230,255,.78) !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"] .mgw-entry-effect-preview-core b{
+  width:66px !important;
+  height:78px !important;
+  border-radius:22px 22px 31px 31px !important;
+  border:0 !important;
+  background-color:transparent !important;
+  box-shadow:0 9px 22px rgba(0,0,0,.44),0 0 28px rgba(78,227,255,.32) !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"] .mgw-entry-effect-preview-core i{
+  width:31px !important;
+  height:2px !important;
+  background:linear-gradient(90deg,transparent,#6cecff,#ffe5a5) !important;
+  box-shadow:0 0 10px rgba(85,229,255,.68) !important;
+}
+
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]{
+  width:min(94vw,390px) !important;
+  min-height:286px !important;
+  background:
+    radial-gradient(ellipse at 50% 76%,rgba(63,224,255,.19),transparent 34%),
+    radial-gradient(circle at 50% 40%,rgba(101,76,255,.13),transparent 48%) !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]::before{
+  top:0 !important;
+  width:232px !important;
+  height:238px !important;
+  border-width:3px !important;
+  border-color:rgba(103,238,255,.84) !important;
+  border-bottom-color:rgba(255,220,128,.64) !important;
+  box-shadow:0 0 44px rgba(57,224,255,.42),inset 0 0 38px rgba(91,225,255,.16) !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]::after{
+  bottom:48px !important;
+  width:310px !important;
+  height:68px !important;
+  border-color:rgba(112,241,255,.86) !important;
+  background:radial-gradient(ellipse,rgba(83,233,255,.15),transparent 67%) !important;
+  box-shadow:0 0 34px rgba(76,230,255,.66),inset 0 0 20px rgba(255,219,128,.12) !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"] .mgw-entry-effect-live-emblem{
+  width:222px !important;
+  height:218px !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"] .mgw-entry-effect-live-emblem b{
+  width:154px !important;
+  height:190px !important;
+  border:0 !important;
+  border-radius:40px 40px 56px 56px !important;
+  box-shadow:0 18px 42px rgba(0,0,0,.48),0 0 42px rgba(67,226,255,.28) !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"] .mgw-entry-effect-live-emblem i{
+  width:4px !important;
+  height:166px !important;
+  background:linear-gradient(transparent,#84f4ff 20%,#fff0ad 52%,#83eaff 78%,transparent) !important;
+  box-shadow:0 0 16px rgba(83,231,255,.82) !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"] strong{
+  margin-top:-8px !important;
+  font-size:21px !important;
+}
+
+/* Tier III — legendary knight strike rebuilt to read as a weapon impact rather
+ * than three gold sticks. One silver sword swings across the hero; a curved
+ * light shockwave and radial burst sell the hit while the composition stays
+ * frame-free over the board. */
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]{
+  width:min(100vw,430px) !important;
+  min-height:322px !important;
+  background:
+    radial-gradient(circle at 48% 58%,rgba(255,206,95,.22) 0 5%,rgba(255,167,44,.09) 19%,transparent 45%),
+    radial-gradient(circle at 22% 46%,rgba(118,183,255,.08),transparent 31%) !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]::before{
+  left:50% !important;
+  bottom:34px !important;
+  width:min(98vw,420px) !important;
+  height:160px !important;
+  border:0 !important;
+  border-top:7px solid rgba(255,235,166,.95) !important;
+  border-radius:50% !important;
+  background:
+    radial-gradient(ellipse at 50% 66%,rgba(255,179,48,.28),transparent 50%),
+    radial-gradient(circle at 50% 50%,rgba(255,239,181,.28),transparent 18%) !important;
+  box-shadow:0 -8px 24px rgba(255,197,74,.72),0 0 46px rgba(255,151,34,.38) !important;
+  transform:translateX(-50%) rotate(-12deg) scale(.10) !important;
+  animation:mgwEntryLegendArcImpact 3.6s cubic-bezier(.14,.88,.2,1) both !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]::after{
+  content:'' !important;
+  left:52% !important;
+  top:-4px !important;
+  width:40px !important;
+  height:278px !important;
+  border-radius:0 !important;
+  background:
+    linear-gradient(90deg,transparent 0 26%,rgba(92,61,24,.96) 27% 38%,transparent 39% 61%,rgba(92,61,24,.96) 62% 73%,transparent 74%) 50% 79%/100% 18px no-repeat,
+    linear-gradient(90deg,transparent 0 37%,#47311e 38% 62%,transparent 63%) 50% 91%/100% 44px no-repeat,
+    linear-gradient(90deg,transparent 0 43%,#e7edf3 44% 55%,transparent 56%) 50% 4%/100% 204px no-repeat,
+    linear-gradient(90deg,transparent 0 45%,#fff 46% 51%,#aab7c5 52% 57%,transparent 58%) 50% 4%/100% 204px no-repeat !important;
+  box-shadow:none !important;
+  clip-path:polygon(45% 0,55% 0,59% 70%,86% 75%,84% 82%,59% 79%,58% 95%,50% 100%,42% 95%,41% 79%,16% 82%,14% 75%,41% 70%) !important;
+  filter:drop-shadow(0 0 8px rgba(234,244,255,.92)) drop-shadow(0 0 18px rgba(255,185,62,.58)) !important;
+  transform-origin:50% 82% !important;
+  animation:mgwEntryLegendRealSword 3.6s cubic-bezier(.10,.90,.18,1) both !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] .mgw-entry-effect-live-emblem{
+  width:300px !important;
+  height:276px !important;
+  margin-left:-34px !important;
+  margin-top:-20px !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] .mgw-entry-effect-live-emblem b{
+  width:220px !important;
+  height:264px !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  filter:drop-shadow(0 22px 22px rgba(0,0,0,.58)) drop-shadow(0 0 28px rgba(255,188,63,.24)) !important;
+  animation:mgwEntryLegendHeroCharge 3.6s cubic-bezier(.12,.88,.2,1) both !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] .mgw-entry-effect-live-emblem i{
+  display:none !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] strong{
+  right:4% !important;
+  bottom:54px !important;
+  max-width:60% !important;
+  font-size:23px !important;
+  color:#fff7dc !important;
+  text-shadow:0 0 16px rgba(255,192,72,.72),0 3px 8px rgba(0,0,0,.94) !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] small{
+  right:4% !important;
+  bottom:33px !important;
+  color:#ffd778 !important;
+}
+
+/* Tier III Store/Profile preview — actual sword silhouette instead of a gold bar. */
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]::before{
+  left:5% !important;
+  right:5% !important;
+  bottom:8px !important;
+  height:18px !important;
+  border:0 !important;
+  border-top:3px solid rgba(255,235,166,.9) !important;
+  border-radius:50% !important;
+  background:radial-gradient(ellipse,rgba(255,183,47,.24),transparent 67%) !important;
+  box-shadow:0 -3px 13px rgba(255,187,54,.78) !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]::after{
+  left:54% !important;
+  top:-2px !important;
+  width:18px !important;
+  height:104% !important;
+  border-radius:0 !important;
+  background:
+    linear-gradient(90deg,transparent 0 25%,#704a21 26% 40%,transparent 41% 59%,#704a21 60% 74%,transparent 75%) 50% 78%/100% 9px no-repeat,
+    linear-gradient(90deg,transparent 0 42%,#e9eef4 43% 57%,transparent 58%) 50% 0/100% 78% no-repeat !important;
+  box-shadow:none !important;
+  clip-path:polygon(45% 0,55% 0,59% 70%,88% 76%,84% 83%,59% 80%,57% 96%,50% 100%,43% 96%,41% 80%,16% 83%,12% 76%,41% 70%) !important;
+  filter:drop-shadow(0 0 5px rgba(242,247,255,.9)) drop-shadow(0 0 9px rgba(255,188,66,.58)) !important;
+  transform-origin:50% 82% !important;
+  animation:mgwEntryLegendPreviewSword 1.8s cubic-bezier(.12,.9,.18,1) infinite !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-03"] .mgw-entry-effect-preview-core b{
+  width:66px !important;
+  height:78px !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  filter:drop-shadow(0 8px 8px rgba(0,0,0,.48)) drop-shadow(0 0 13px rgba(255,188,62,.24)) !important;
+}
+
+@keyframes mgwEntryLegendRealSword{
+  0%,20%{opacity:0;transform:translate(112px,-100px) rotate(-34deg) scale(.72)}
+  31%{opacity:1}
+  49%{opacity:1;transform:translate(-42px,26px) rotate(58deg) scale(1.03)}
+  67%,100%{opacity:0;transform:translate(-62px,42px) rotate(65deg) scale(1.08)}
+}
+@keyframes mgwEntryLegendArcImpact{
+  0%,38%{opacity:0;transform:translateX(-50%) rotate(-12deg) scale(.08)}
+  50%{opacity:1;transform:translateX(-50%) rotate(-12deg) scale(.9)}
+  68%{opacity:.82;transform:translateX(-50%) rotate(-12deg) scale(1.15)}
+  100%{opacity:0;transform:translateX(-50%) rotate(-12deg) scale(1.42)}
+}
+@keyframes mgwEntryLegendHeroCharge{
+  0%,12%{opacity:0;transform:translate(-54px,28px) scale(.72) rotate(-5deg)}
+  28%,72%{opacity:1;transform:translate(0,0) scale(1) rotate(0)}
+  100%{opacity:0;transform:translate(12px,-7px) scale(1.04)}
+}
+@keyframes mgwEntryLegendPreviewSword{
+  0%,30%{opacity:.12;transform:translate(28px,-22px) rotate(-28deg) scale(.72)}
+  48%{opacity:1}
+  68%,100%{opacity:.12;transform:translate(-13px,10px) rotate(57deg) scale(1.05)}
+}
+
+@media(max-width:360px){
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]{
+    min-height:270px !important;
+  }
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]::before{
+    width:210px !important;
+    height:224px !important;
+  }
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]{
+    width:100vw !important;
+    min-height:305px !important;
+  }
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] .mgw-entry-effect-live-emblem{
+    transform:scale(.91) !important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]::before,
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]::after,
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] .mgw-entry-effect-live-emblem b,
+  .mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]::after{
+    animation:none !important;
+  }
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]::before{
+    opacity:.82 !important;
+    transform:translateX(-50%) rotate(-12deg) scale(1) !important;
+  }
+  .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]::after{
+    opacity:1 !important;
+    transform:translate(-16px,2px) rotate(52deg) !important;
+  }
+}
