@@ -15,6 +15,7 @@ on:
       - 'app/assets/css/components/mgw-profile-entry-effects.css'
       - 'app/assets/css/production-v100-entry-effects.css'
       - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
+      - 'app/assets/css/production-v102-entry-effects-showcase.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
       - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
@@ -115,10 +116,16 @@ jobs:
           grep -F 'mgwEntryLiveImpact' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
           grep -F 'mgw-avatar-characters-v2.webp' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
           grep -F 'margin-bottom:0 !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
+          grep -F '.store-v2-confirm .btn:disabled' app/assets/css/production-v102-entry-effects-showcase.css
+          grep -F 'Недостаточно коинов для покупки' app/assets/css/production-v102-entry-effects-showcase.css
+          grep -F 'mgwEntryLegendRealSword' app/assets/css/production-v102-entry-effects-showcase.css
+          grep -F 'mgwEntryLegendArcImpact' app/assets/css/production-v102-entry-effects-showcase.css
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-entry-effects.css
           grep -F 'profile-bottom-spacing-parity-v3' app/runtime/client/version-manifest.php
           grep -F 'profile_card_inset=12' app/runtime/client/version-manifest.php
-          grep -F 'entry_visual=tiered-v2' app/runtime/client/version-manifest.php
+          grep -F 'entry_visual=fantasy-showcase-v3' app/runtime/client/version-manifest.php
+          grep -F 'purchase=insufficient-explicit-v1' app/runtime/client/version-manifest.php
+          grep -F 'production-v102-entry-effects-showcase.css' app/runtime/client/version-manifest.php
           grep -F 'mgw-profile-entry-effects.js?v=5&mvp19_3=launch-overlay-gated' app/runtime/client/version-manifest.php
           grep -F 'entry_effect_handoff=1' app/runtime/client/version-manifest.php
           grep -F 'quiet-cosmetic-equip-all' app/runtime/client/version-manifest.php
@@ -158,6 +165,7 @@ jobs:
               app/assets/css/components/mgw-profile-entry-effects.css|\
               app/assets/css/production-v100-entry-effects.css|\
               app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
+              app/assets/css/production-v102-entry-effects-showcase.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileEntryEffectsTest.php|\
               bot/tests/Mvp19_4EffectsV2ContractTest.mjs)

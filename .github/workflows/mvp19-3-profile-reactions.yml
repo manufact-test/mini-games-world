@@ -26,6 +26,7 @@ on:
       - 'app/assets/css/production-v98-mobile-profile-perf.css'
       - 'app/assets/css/production-v99-profile-reaction-polish.css'
       - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
+      - 'app/assets/css/production-v102-entry-effects-showcase.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
       - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
@@ -201,6 +202,7 @@ jobs:
               app/assets/css/production-v99-profile-reaction-polish.css|\
               app/assets/css/production-v100-entry-effects.css|\
               app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
+              app/assets/css/production-v102-entry-effects-showcase.css|\
               app/assets/css/components/mgw-profile-entry-effects.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileReactionsTest.php|\
