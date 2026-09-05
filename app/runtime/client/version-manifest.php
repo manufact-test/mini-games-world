@@ -36,7 +36,7 @@ return [
         './assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=106&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1',
         './assets/js/production-v100-optimistic-models.js?v=102' => './assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner',
         './assets/js/production-v102-battleship-models.js?v=102' => './assets/js/production-v102-battleship-models.js?v=103&ready=authoritative-reset',
-        './assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a' => './assets/js/production-v110-readonly-game-sync.js?v=1113&terminal=nonblocking-watch&mvp19_3=reactions',
+        './assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a' => './assets/js/production-v110-readonly-game-sync.js?v=1114&terminal=nonblocking-watch&mvp19_3=reactions&entry_effects=1',
         './assets/js/production-v110-targeted-interactions.js?v=1102' => './assets/js/production-v110-targeted-interactions.js?v=1105&zone=unified&ttt=single-owner',
         './assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69' => './assets/js/production-v110-presence.js?v=1124&mvp17=reconnect-v2&heartbeat=lease-phase',
         './assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110-rematch-policy-v175.js?v=1&fp=2',
@@ -54,7 +54,7 @@ return [
     ],
     'assets' => [
         'main_css' => './assets/css/main.css?v=190&sk=3&icons=c1efd5af&render=42&mvp16=notification-center-v2-desktop-cache&mvp18=friends-corrective&mvp19=store-v2&corrective=2&avatar=profile-v1&avatar=character-v2&mvp19_4=character-identity&art=illustrated-raster&roster=portrait-v5&game_cosmetics=pilot-polish-v3&four=ios-fit&c1=ttt-field-parity&c2=effects-v2&c2_1=single-slot-parity&store=compact-tail&c2_5=visible-mark-layer&c2_6=cell-native-dom-fx&mvp19_3=profile-game-tabs-fresh&mvp19_3_4=name-colors-polish&mvp19_3_5=compact-name-colors-instant-profile&spacing=name-color-price-button&mvp19_3_6=profile-badge-avatar-overlay&badge_position=bottom-right&badge_collection=fit&badge_store=avatar-card&mvp19_3_7=profile-frames&frame_preview=avatar-card&mvp19_3_9=badge-avatar-card&frame_names=polish&mvp19_3_13=badge-frame-final-polish&mvp19_3_14=final-spacing-parity&mvp19_3_15=profile-backgrounds&mvp19_3_16=profile-backgrounds-ux-corrective&mvp19_3_18=background-final-card-grid&mvp19_3_19=selected-green-frame-align&mvp19_3_20=avatar-store-action&mvp19_3_24=profile-card-parity&mvp19_3_25=profile-background-full-surface&mvp19_3_26=profile-card-copy-premium-bg&mvp19_3_27=profile-density-abyss-frame-polish',
-        'consistency_css' => './assets/css/production-v99-profile-reaction-polish.css?v=2&mvp19_3=cumulative-reaction-cards&layout=bounded-packs&owned=passive-status&profile_nav=direct-sync-v2&row_footer=stretch-v1&pack4=single-row-v1&profile_first=structural-route-guard-v1&shell_mobile=atomic-v1&profile_hidden=zero-v1&shell_motion=atomic-restored-v2&profile_motion=atomic-none-v1',
+        'consistency_css' => './assets/css/production-v100-entry-effects.css?v=1&mvp19_3=entry-effects',
         'consistency_css_base' => './assets/css/production-v97-reactions.css?v=2&mvp19_3=ingame-corrective',
         'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',
     ],
