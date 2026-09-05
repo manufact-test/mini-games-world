@@ -48,5 +48,20 @@ export function enterGame(game, me = null){
       detail:{ game },
     }));
   }
+
   enterBaseGame(game, me);
+
+  /* Presentation-only lifecycle handoff. The canonical game owner has now
+   * adopted state.activeGame and activated #screen-game, so cosmetics can
+   * consume the exact game + viewer identity without guessing from unrelated
+   * shell state. No rules/actions/turns/timers are owned here. */
+  const adopted = state.activeGame;
+  if (String(adopted?.id || '') === id && String(adopted?.status || '') === 'active') {
+    queueMicrotask(() => {
+      if (String(state.activeGame?.id || '') !== id) return;
+      document.dispatchEvent(new CustomEvent('mgw:game-entered', {
+        detail:{ game:state.activeGame, me },
+      }));
+    });
+  }
 }
