@@ -112,6 +112,7 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp19-3-profile-entry-effects.yml|\
+              .github/workflows/mvp19-3-profile-reactions.yml|\
               bot/database/migrations/20260905_0025_add_profile_entry_effects.php|\
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
