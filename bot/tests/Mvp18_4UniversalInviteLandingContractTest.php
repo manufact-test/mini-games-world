@@ -95,8 +95,7 @@ $rewriteSource = file_get_contents(dirname($root) . '/.htaccess');
 $launchSource = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
 $webhookSource = file_get_contents($root . '/webhook.php');
 $welcomeSource = file_get_contents($root . '/helpers/UserWelcomeGuard.php');
-$homeDeclutterSource = file_get_contents(dirname($root) . '/app/assets/css/production-v100-home-declutter.css');
-$manifestSource = file_get_contents(dirname($root) . '/app/runtime/client/version-manifest.php');
+$homeSource = file_get_contents(dirname($root) . '/app/index.html');
 $inviteClientSource = file_get_contents(dirname($root) . '/app/assets/js/games/game-invites-v110.js');
 foreach ([
     $endpointSource,
@@ -107,8 +106,7 @@ foreach ([
     $launchSource,
     $webhookSource,
     $welcomeSource,
-    $homeDeclutterSource,
-    $manifestSource,
+    $homeSource,
     $inviteClientSource,
 ] as $source) {
     if (!is_string($source)) throw new RuntimeException('MVP-18.4 contract source is unavailable.');
@@ -185,20 +183,12 @@ $assertTrue(
     'Telegram start binding must preserve the canonical blocked-user boundary'
 );
 
-// Home keeps only Play; invite/share remain owned by the Play setup.
-$assertTrue(
-    str_contains($homeDeclutterSource, '#screen-home .game-card > .btn-row > [data-invite-friend]')
-        && str_contains($homeDeclutterSource, 'display: none !important;'),
-    'Home cards must hide the redundant top-level invite action'
-);
-$assertTrue(
-    str_contains($homeDeclutterSource, 'grid-template-columns: minmax(0, 1fr) !important;'),
-    'Home Play action must expand to the full card width'
-);
-$assertTrue(
-    str_contains($manifestSource, 'production-v100-home-declutter.css?v=1&home=play-only-v1&invite=inside-play-v1'),
-    'Home declutter presentation must be cache-busted through the v110 manifest'
-);
+// The redundant card-level invite controls are removed from the source, not
+// hidden by a later CSS/JS layer. Invite/share remain owned inside Play setup.
+$assertSame(8, substr_count($homeSource, 'class="game-card has-rules"'), 'Home must retain all eight game cards');
+$assertSame(0, substr_count($homeSource, 'data-invite-friend'), 'Home source must contain no redundant invite controls');
+$assertSame(8, substr_count($homeSource, 'class="btn-row room-actions single"'), 'Every home game card must keep one full-width action row');
+$assertSame(8, substr_count($homeSource, '>Играть</button>'), 'Every home game card must retain its Play action');
 $assertTrue(
     str_contains($inviteClientSource, 'data-open-player-picker')
         && str_contains($inviteClientSource, 'data-create-link-invite'),
