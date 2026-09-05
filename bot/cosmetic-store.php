@@ -215,11 +215,7 @@ try {
             if ((string)($catalogItem['catalog_status'] ?? '') !== 'active') continue;
             if ((string)($catalogItem['equip_slot'] ?? '') !== $equipSlot) continue;
             $isGameSlot = (string)($catalogItem['item_type'] ?? '') === 'game' && str_starts_with($equipSlot, 'game_');
-            if ($isGameSlot
-                || mgw_store_profile_name_color($catalogItem)
-                || mgw_store_profile_badge($catalogItem)
-                || mgw_store_profile_frame($catalogItem)
-                || mgw_store_profile_background($catalogItem)) {
+            if ($isGameSlot || mgw_store_profile_name_color($catalogItem) || mgw_store_profile_badge($catalogItem) || mgw_store_profile_frame($catalogItem) || mgw_store_profile_background($catalogItem)) {
                 $knownSlot = true;
                 break;
             }
