@@ -3,7 +3,6 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const TEST_ONLY_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-only-invite-recovery.php`;
 const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
-const ENTRY_EFFECTS_MIGRATION_ROUTE = `${STAGING_ORIGIN}/bot/staging-entry-effects-migrate.php`;
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 
 async function requestOidcToken(){
@@ -24,34 +23,6 @@ async function requestOidcToken(){
     throw new Error('GitHub Actions OIDC reset response did not contain a JWT.');
   }
   return payload.value;
-}
-
-async function applyEntryEffectsMigration(){
-  const oidcToken = await requestOidcToken();
-  const response = await fetch(ENTRY_EFFECTS_MIGRATION_ROUTE, {
-    method:'POST',
-    headers:{
-      Authorization:`Bearer ${oidcToken}`,
-      Accept:'application/json',
-      'Content-Type':'application/json',
-    },
-    body:'{}',
-  });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok
-      || payload?.ok !== true
-      || !['applied', 'already_applied'].includes(payload?.status)
-      || payload?.migration !== '20260905_0025_add_profile_entry_effects'
-      || !Array.isArray(payload?.pending_after)
-      || payload.pending_after.length !== 0) {
-    throw new Error(`Staging Entry Effects migration failed: ${response.status} ${payload?.error || 'unknown_error'}`);
-  }
-  console.log('[MGW_STAGING_ENTRY_EFFECTS_MIGRATION]', JSON.stringify({
-    status:payload.status,
-    migration:payload.migration,
-    pending_before:payload.pending_before,
-    pending_after:payload.pending_after,
-  }));
 }
 
 async function diagnoseInviteMismatch(){
@@ -145,10 +116,6 @@ async function resetTestPlayers(){
 }
 
 export default async function stagingGlobalSetup(){
-  // The only schema mutation allowed here is the one-purpose Entry Effects
-  // migration above, authenticated by the existing staging Playwright OIDC
-  // identity and hard-bounded server-side to exactly migration 0025.
-  await applyEntryEffectsMigration();
   // Read-only global diagnostics are useful evidence, but the executable A/B
   // pre-suite owns only the two dedicated technical identities. Real-user
   // residual recovery stays available as an explicit OIDC/admin operation and
