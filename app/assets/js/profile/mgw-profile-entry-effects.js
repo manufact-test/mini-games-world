@@ -36,20 +36,39 @@ export function initMgwProfileEntryEffects(){
     observer = new MutationObserver(scheduleDecorate);
     observeRoots();
 
-    document.addEventListener('mgw:cosmetic-inventory-changed', scheduleDecorate);
+    document.addEventListener('mgw:cosmetic-inventory-changed', event => {
+      scheduleDecorate();
+      if (String(event?.detail?.slot || '').trim() !== ENTRY_EFFECT_SLOT) return;
+      applyLocalEntryEffectProjection(state.activeGame);
+      const active = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
+      if (active === 'game') armLiveEntryEffectProbe();
+    });
     document.addEventListener('mgw:screen-changed', event => {
       const next = String(event?.detail?.to || '').trim();
       if (next === 'profile' || next === 'store') {
         scheduleDecorate();
         void ensureSnapshot();
       }
-      if (next === 'game') armLiveEntryEffectProbe();
+      if (next === 'game') {
+        applyLocalEntryEffectProjection(state.activeGame);
+        armLiveEntryEffectProbe();
+      }
       if (String(event?.detail?.from || '') === 'game' && next !== 'game') removeLiveEntryEffects();
+    });
+    document.addEventListener('mgw:phase-b-game-entering', event => {
+      applyLocalEntryEffectProjection(event?.detail?.game);
+      queueMicrotask(() => {
+        applyLocalEntryEffectProjection(state.activeGame);
+        armLiveEntryEffectProbe();
+      });
     });
 
     const active = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
     if (active === 'profile' || active === 'store') void ensureSnapshot();
-    if (active === 'game') armLiveEntryEffectProbe();
+    if (active === 'game') {
+      applyLocalEntryEffectProjection(state.activeGame);
+      armLiveEntryEffectProbe();
+    }
     scheduleDecorate();
   };
 
@@ -340,6 +359,52 @@ function applyOptimisticSelection(itemId, equipped){
   document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ slot:ENTRY_EFFECT_SLOT } }));
 }
 
+function localEntryEffectPlayerIds(){
+  const telegramId = globalThis.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  return new Set([
+    state.user?.id,
+    state.user?.provider_subject,
+    state.user?.telegram_id,
+    state.session?.user_id,
+    state.session?.provider_subject,
+    telegramId,
+  ].map(value => String(value ?? '').trim()).filter(Boolean));
+}
+
+function isLocalEntryEffectPlayer(player, ids){
+  if (!player || typeof player !== 'object') return false;
+  if (player.is_me === true || player.me === true || player.viewer === true) return true;
+  const playerId = String(player.id ?? '').trim();
+  return playerId !== '' && ids.has(playerId);
+}
+
+function applyLocalEntryEffectProjection(game){
+  if (!game || typeof game !== 'object') return false;
+  const selected = currentEntryEffectId();
+  if (!presentationFor(selected)) return false;
+  const players = Array.isArray(game.players) ? game.players : [];
+  if (!players.length) return false;
+  const localIds = localEntryEffectPlayerIds();
+
+  for (const player of players) {
+    if (!isLocalEntryEffectPlayer(player, localIds)) continue;
+    const projected = String(player?.entry_effect_item_id || '').trim();
+    if (presentationFor(projected)) return false;
+    player.entry_effect_item_id = selected;
+    return true;
+  }
+  return false;
+}
+
+function entryEffectIdForPlayer(player){
+  const projected = String(player?.entry_effect_item_id || '').trim();
+  if (presentationFor(projected)) return projected;
+  const localIds = localEntryEffectPlayerIds();
+  if (!isLocalEntryEffectPlayer(player, localIds)) return '';
+  const selected = currentEntryEffectId();
+  return presentationFor(selected) ? selected : '';
+}
+
 function armLiveEntryEffectProbe(){
   window.clearTimeout(liveProbeTimer);
   const deadline = Date.now() + 5000;
@@ -364,7 +429,7 @@ function playLiveEntryEffectsIfNeeded(){
 
   const players = Array.isArray(game?.players) ? game.players : [];
   const entries = players.map((player, index) => {
-    const itemId = String(player?.entry_effect_item_id || '').trim();
+    const itemId = entryEffectIdForPlayer(player);
     const spec = presentationFor(itemId);
     if (!spec) return null;
     return {
