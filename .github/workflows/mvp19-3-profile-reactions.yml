@@ -187,6 +187,7 @@ jobs:
               app/assets/js/profile/mgw-profile-reactions.js|\
               app/assets/js/profile/mgw-profile-reactions-header.js|\
               app/assets/js/profile/mgw-profile-entry-effects.js|\
+              app/assets/js/screens/game-screen-v102-safe.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/screens/store-screen-intent-wrapper.js|\
               app/assets/js/main-v110-handoff-shell.js|\
