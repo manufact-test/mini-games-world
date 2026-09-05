@@ -93,7 +93,22 @@ $serviceSource = file_get_contents($root . '/services/GameInviteService.php');
 $siteSource = file_get_contents(dirname($root) . '/site/invite.php');
 $rewriteSource = file_get_contents(dirname($root) . '/.htaccess');
 $launchSource = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
-foreach ([$endpointSource, $creationSource, $serviceSource, $siteSource, $rewriteSource, $launchSource] as $source) {
+$webhookSource = file_get_contents($root . '/webhook.php');
+$welcomeSource = file_get_contents($root . '/helpers/UserWelcomeGuard.php');
+$homeSource = file_get_contents(dirname($root) . '/app/index.html');
+$inviteClientSource = file_get_contents(dirname($root) . '/app/assets/js/games/game-invites-v110.js');
+foreach ([
+    $endpointSource,
+    $creationSource,
+    $serviceSource,
+    $siteSource,
+    $rewriteSource,
+    $launchSource,
+    $webhookSource,
+    $welcomeSource,
+    $homeSource,
+    $inviteClientSource,
+] as $source) {
     if (!is_string($source)) throw new RuntimeException('MVP-18.4 contract source is unavailable.');
 }
 
@@ -134,6 +149,50 @@ $assertTrue(
 $assertTrue(
     str_contains($launchSource, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
     'MVP-18.4 must preserve the frozen Telegram Mini App entry identity'
+);
+
+// A Telegram /start invite_TOKEN must persist the recipient before the Mini App
+// is opened. The old InviteStartGuard returned early after only sending a button,
+// so normal later launches had no bound recipient and no bell card to hydrate.
+$assertTrue(
+    !str_contains($webhookSource, "require_once __DIR__ . '/helpers/InviteStartGuard.php';")
+        && !str_contains($webhookSource, '$inviteStartGuard = new InviteStartGuard')
+        && !str_contains($webhookSource, '$inviteStartGuard->handle($update)'),
+    'InviteStartGuard must not shadow the persistent /start owner'
+);
+$assertTrue(
+    str_contains($webhookSource, '$welcomeGuard = new UserWelcomeGuard($telegram, $config);')
+        && str_contains($webhookSource, '&& !$welcomeGuard->handle($update)'),
+    'UserWelcomeGuard must own private-chat /start dispatch'
+);
+$assertTrue(
+    str_contains($welcomeSource, 'invite_([a-f0-9]{24})')
+        && str_contains($welcomeSource, '$this->registerInviteRecipient($message, $inviteToken);'),
+    'Invite Telegram start must register its recipient before replying'
+);
+$assertTrue(
+    str_contains(
+        $welcomeSource,
+        '$invites->bindFromLink($data, $data[\'users\'][$userId], $token, false, false);'
+    ),
+    'Telegram start binding must leave the received notification visible for normal-launch hydration'
+);
+$assertTrue(
+    str_contains($welcomeSource, 'SocialInviteGuard')
+        && str_contains($welcomeSource, 'assertRuntimeSubjectNotBlocked('),
+    'Telegram start binding must preserve the canonical blocked-user boundary'
+);
+
+// The redundant card-level invite controls are removed from the source, not
+// hidden by a later CSS/JS layer. Invite/share remain owned inside Play setup.
+$assertSame(8, substr_count($homeSource, 'class="game-card has-rules"'), 'Home must retain all eight game cards');
+$assertSame(0, substr_count($homeSource, 'data-invite-friend'), 'Home source must contain no redundant invite controls');
+$assertSame(8, substr_count($homeSource, 'class="btn-row room-actions single"'), 'Every home game card must keep one full-width action row');
+$assertSame(8, substr_count($homeSource, '>Играть</button>'), 'Every home game card must retain its Play action');
+$assertTrue(
+    str_contains($inviteClientSource, 'data-open-player-picker')
+        && str_contains($inviteClientSource, 'data-create-link-invite'),
+    'Invite player/link actions must remain available inside the canonical Play setup'
 );
 
 fwrite(STDOUT, 'PASS: MVP-18.4 universal invite landing contract (' . $assertions . " assertions)\n");

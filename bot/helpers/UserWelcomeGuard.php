@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/WebAppLaunchUrl.php';
 require_once dirname(__DIR__) . '/services/GameInviteService.php';
+require_once dirname(__DIR__) . '/social/SocialInviteGuard.php';
 
 final class UserWelcomeGuard
 {
@@ -85,16 +86,65 @@ final class UserWelcomeGuard
             $catalog = new GameCatalogService($this->config);
             $games = new ChessRuntimeService($this->config, $catalog, new GameService($this->config));
             $invites = new GameInviteService($this->config, $catalog, $games);
+            $socialInviteGuard = $this->socialInviteGuard();
 
-            $db->transaction(function (array &$data) use ($users, $invites, $telegramUser, $token): void {
+            $db->transaction(function (array &$data) use (
+                $users,
+                $invites,
+                $socialInviteGuard,
+                $telegramUser,
+                $token
+            ): void {
                 $user = $users->ensureUser($data, $telegramUser);
                 $userId = (string)($user['id'] ?? '');
                 if ($userId === '') return;
                 $data['users'][$userId] = $user;
+
+                // The bot /start transport must enforce the same canonical social
+                // block boundary as the authenticated Mini App open_link action.
+                // A brand-new Telegram user may not have a DB identity yet; in
+                // that case there cannot be an existing canonical block pair.
+                if ($socialInviteGuard instanceof SocialInviteGuard) {
+                    $actorMgwId = $socialInviteGuard->mgwIdForRuntimeSubject($userId, 'telegram');
+                    if ($actorMgwId !== '') {
+                        foreach ($data['invites'] ?? [] as $storedInvite) {
+                            if (!is_array($storedInvite)
+                                || (string)($storedInvite['token'] ?? '') !== $token) {
+                                continue;
+                            }
+                            $inviterRuntimeId = trim((string)($storedInvite['inviter_id'] ?? ''));
+                            if ($inviterRuntimeId !== '') {
+                                $socialInviteGuard->assertRuntimeSubjectNotBlocked(
+                                    $actorMgwId,
+                                    $inviterRuntimeId,
+                                    'telegram'
+                                );
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // Bind without requesting an immediate modal open. The resulting
+                // canonical invite_received row is intentionally left unread and
+                // visible so a later ordinary Start launch hydrates the bell.
                 $invites->bindFromLink($data, $data['users'][$userId], $token, false, false);
             });
         } catch (Throwable $e) {
             error_log('Mini Games World invite recipient registration failed: ' . $e->getMessage());
         }
+    }
+
+    private function socialInviteGuard(): ?SocialInviteGuard
+    {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        $router = new RuntimeStorageRouter($this->config);
+        if (!$databaseConfig->enabled()
+            || ($router->enabled()
+                && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
+            return null;
+        }
+
+        return new SocialInviteGuard(PdoConnectionFactory::create($databaseConfig));
     }
 }
