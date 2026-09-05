@@ -108,10 +108,17 @@ jobs:
           ! grep -Fq 'profile-v2-entry-effect-status' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F '#screen-profile .profile-v2-game-collection' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
           grep -F '#screen-profile .profile-v2-game-card' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F 'padding:5px 5px 10px !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
+          grep -F 'padding:12px !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
+          grep -F '.profile-v2-frame-card .mgw-profile-frame-preview::before' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
+          grep -F 'inset:0 !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
+          grep -F 'mgwEntryLiveSword' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
+          grep -F 'mgwEntryLiveImpact' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
+          grep -F 'mgw-avatar-characters-v2.webp' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
           grep -F 'margin-bottom:0 !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-entry-effects.css
           grep -F 'profile-bottom-spacing-parity-v3' app/runtime/client/version-manifest.php
+          grep -F 'profile_card_inset=12' app/runtime/client/version-manifest.php
+          grep -F 'entry_visual=tiered-v2' app/runtime/client/version-manifest.php
           grep -F 'mgw-profile-entry-effects.js?v=5&mvp19_3=launch-overlay-gated' app/runtime/client/version-manifest.php
           grep -F 'entry_effect_handoff=1' app/runtime/client/version-manifest.php
           grep -F 'quiet-cosmetic-equip-all' app/runtime/client/version-manifest.php
