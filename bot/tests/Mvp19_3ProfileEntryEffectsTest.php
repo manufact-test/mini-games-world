@@ -93,7 +93,6 @@ $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['profile_entry_effec
 $storeEndpoint = (string)file_get_contents($root . '/bot/cosmetic-store.php');
 $responseProjection = (string)file_get_contents($root . '/bot/helpers/response.php');
 $entryUi = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-entry-effects.js');
-$entryVisible = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-entry-effects-visible.js');
 $entryCss = (string)file_get_contents($root . '/app/assets/css/components/mgw-profile-entry-effects.css');
 $acceptanceCss = (string)file_get_contents($root . '/app/assets/css/production-v101-entry-effects-acceptance-corrective.css');
 $watcher = (string)file_get_contents($root . '/app/assets/js/production-v110-readonly-game-sync.js');
@@ -103,12 +102,11 @@ $assertTrue(str_contains($storeEndpoint, 'function mgw_store_profile_entry_effec
 $assertTrue(str_contains($responseProjection, 'entry_effect_item_id') && str_contains($responseProjection, "e.equip_slot = \\'profile_entry_effect\\'"), 'Public game identity projection must carry equipped Entry Effects for player presentation');
 $assertTrue(str_contains($entryUi, "const ENTRY_EFFECT_SLOT = 'profile_entry_effect'") && str_contains($entryUi, 'api.cosmeticStorePurchase') && str_contains($entryUi, 'api.cosmeticStoreEquip'), 'Entry Effect UI must reuse canonical Store purchase/equip owners');
 $assertTrue(str_contains($entryUi, 'playedGames') && str_contains($entryUi, 'mgw-entry-effect-skip') && str_contains($entryUi, 'Math.min(4000, Math.max(2000, duration))'), 'Live Entry Effects must be once-per-game, skippable and bounded to 2-4 seconds');
-$assertTrue(str_contains($entryVisible, 'selectedLocalEntryEffectId') && str_contains($entryVisible, 'player.entry_effect_item_id = selected'), 'Visible corrective must repair a missing local Entry Effect from the already-selected canonical Profile inventory');
-$assertTrue(str_contains($entryVisible, "mgw:phase-b-game-entering") && str_contains($entryVisible, "mgw:screen-changed"), 'Visible corrective must cover both same-route Phase-B entry and ordinary game route entry');
-$assertTrue(str_contains($entryVisible, 'initBaseMgwProfileEntryEffects()'), 'Projection adapter must delegate all actual live DOM presentation to the existing Entry Effect owner');
+$assertTrue(str_contains($entryUi, 'applyLocalEntryEffectProjection') && str_contains($entryUi, 'player.entry_effect_item_id = selected') && str_contains($entryUi, 'entryEffectIdForPlayer'), 'Canonical Entry Effect owner must repair a missing local projection from the selected Profile inventory before presentation');
+$assertTrue(str_contains($entryUi, "mgw:phase-b-game-entering") && str_contains($entryUi, "mgw:screen-changed"), 'Canonical Entry Effect owner must cover both same-route Phase-B entry and ordinary game route entry');
 $assertTrue(str_contains($entryCss, '@media(prefers-reduced-motion:reduce)') && str_contains($entryCss, 'pointer-events:none'), 'Entry Effect presentation must be reduced-motion safe and non-blocking');
 $assertTrue(str_contains($acceptanceCss, '#screen-profile .profile-v2-name-color-collection') && str_contains($acceptanceCss, 'padding:5px !important'), 'Profile corrective must use one Avatar-referenced section/card spacing rhythm');
 $assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileEntryEffects") && str_contains($watcher, "mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects"), 'Shared runtime must initialize Entry Effects after app-ready');
-$assertTrue(str_contains($manifest, 'mgw-profile-entry-effects-visible.js?v=1') && str_contains($manifest, 'profile-avatar-spacing-parity'), 'Active v110 manifest must cache-publish both the visible Entry Effect adapter and final Profile spacing corrective');
+$assertTrue(str_contains($manifest, 'mgw-profile-entry-effects.js?v=3&mvp19_3=visible-local-projection') && str_contains($manifest, 'profile-avatar-spacing-parity'), 'Active v110 manifest must cache-publish the canonical Entry Effect owner and final Profile spacing corrective');
 
 fwrite(STDOUT, "MVP-19.3 Profile Entry Effects passed ({$assertions} assertions).\n");
