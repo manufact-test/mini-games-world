@@ -10,10 +10,13 @@ on:
       - 'bot/helpers/response.php'
       - 'app/assets/js/profile/mgw-profile-entry-effects.js'
       - 'app/assets/js/production-v110-readonly-game-sync.js'
+      - 'app/assets/js/components/toast.js'
       - 'app/assets/css/components/mgw-profile-entry-effects.css'
       - 'app/assets/css/production-v100-entry-effects.css'
+      - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
+      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
       - '.github/workflows/mvp19-3-profile-entry-effects.yml'
   workflow_dispatch:
 
@@ -52,8 +55,10 @@ jobs:
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+          node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           node --check app/assets/js/profile/mgw-profile-entry-effects.js
           node --check app/assets/js/production-v110-readonly-game-sync.js
+          node --check app/assets/js/components/toast.js
 
       - name: Run focused Entry Effects contract
         run: php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
@@ -69,6 +74,7 @@ jobs:
           php bot/tests/Mvp19_3ProfileBackgroundsTest.php
           php bot/tests/Mvp19_3ProfileReactionsTest.php
           node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
 
       - name: Guard canonical Entry Effect semantics
@@ -84,9 +90,12 @@ jobs:
           grep -F "'duration_ms' => 3600" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
           grep -F 'function mgw_store_profile_entry_effect' bot/cosmetic-store.php
           grep -F 'entry_effect_item_id' bot/helpers/response.php
+          grep -F 'armLiveEntryEffectProbe' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'if (!entries.length) return;' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-skip' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-entry-effects.css
-          grep -F 'production-v100-entry-effects.css' app/runtime/client/version-manifest.php
+          grep -F 'production-v101-entry-effects-acceptance-corrective.css' app/runtime/client/version-manifest.php
+          grep -F 'quiet-cosmetic-equip-all' app/runtime/client/version-manifest.php
           grep -F 'entry_effects=1' app/runtime/client/version-manifest.php
 
       - name: Guard frozen engines and bounded Entry Effect slice
@@ -118,10 +127,13 @@ jobs:
               bot/helpers/response.php|\
               app/assets/js/profile/mgw-profile-entry-effects.js|\
               app/assets/js/production-v110-readonly-game-sync.js|\
+              app/assets/js/components/toast.js|\
               app/assets/css/components/mgw-profile-entry-effects.css|\
               app/assets/css/production-v100-entry-effects.css|\
+              app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
               app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp19_3ProfileEntryEffectsTest.php)
+              bot/tests/Mvp19_3ProfileEntryEffectsTest.php|\
+              bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
                 ;;
               *)
                 echo "Unexpected Entry Effects path: $path" >&2

@@ -20,10 +20,12 @@ on:
       - 'app/assets/js/commerce/mgw-purchase-feedback.js'
       - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
       - 'app/assets/js/components/preloader.js'
+      - 'app/assets/js/components/toast.js'
       - 'app/assets/js/telegram/telegram-app.js'
       - 'app/assets/css/production-v97-reactions.css'
       - 'app/assets/css/production-v98-mobile-profile-perf.css'
       - 'app/assets/css/production-v99-profile-reaction-polish.css'
+      - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
       - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
@@ -84,6 +86,7 @@ jobs:
           node --check app/assets/js/commerce/mgw-purchase-feedback.js
           node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           node --check app/assets/js/components/preloader.js
+          node --check app/assets/js/components/toast.js
           node --check app/assets/js/telegram/telegram-app.js
 
       - name: Run focused reaction contract
@@ -180,6 +183,7 @@ jobs:
               bot/helpers/response.php|\
               app/assets/js/api/client.js|\
               app/assets/js/production-v110-readonly-game-sync.js|\
+              app/assets/js/components/toast.js|\
               app/assets/js/profile/mgw-profile-reactions.js|\
               app/assets/js/profile/mgw-profile-reactions-header.js|\
               app/assets/js/profile/mgw-profile-entry-effects.js|\
@@ -195,6 +199,7 @@ jobs:
               app/assets/css/production-v98-mobile-profile-perf.css|\
               app/assets/css/production-v99-profile-reaction-polish.css|\
               app/assets/css/production-v100-entry-effects.css|\
+              app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
               app/assets/css/components/mgw-profile-entry-effects.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileReactionsTest.php|\

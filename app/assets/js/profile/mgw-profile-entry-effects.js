@@ -25,6 +25,7 @@ let equipBusy = false;
 const purchasePending = new Set();
 const playedGames = new Set();
 let liveHideTimer = 0;
+let liveProbeTimer = 0;
 
 export function initMgwProfileEntryEffects(){
   if (initialized) return;
@@ -42,13 +43,13 @@ export function initMgwProfileEntryEffects(){
         scheduleDecorate();
         void ensureSnapshot();
       }
-      if (next === 'game') queueMicrotask(playLiveEntryEffectsIfNeeded);
+      if (next === 'game') armLiveEntryEffectProbe();
       if (String(event?.detail?.from || '') === 'game' && next !== 'game') removeLiveEntryEffects();
     });
 
     const active = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
     if (active === 'profile' || active === 'store') void ensureSnapshot();
-    if (active === 'game') queueMicrotask(playLiveEntryEffectsIfNeeded);
+    if (active === 'game') armLiveEntryEffectProbe();
     scheduleDecorate();
   };
 
@@ -316,7 +317,6 @@ async function saveSelection(itemId, remove){
     if (remove) await api.cosmeticStoreUnequip(ENTRY_EFFECT_SLOT);
     else await api.cosmeticStoreEquip(itemId);
     await refreshSnapshot();
-    toast(remove ? 'Эффект входа снят.' : 'Эффект входа выбран.');
   } catch (error) {
     state.profileInventory = previous;
     scheduleDecorate();
@@ -340,6 +340,21 @@ function applyOptimisticSelection(itemId, equipped){
   document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ slot:ENTRY_EFFECT_SLOT } }));
 }
 
+function armLiveEntryEffectProbe(){
+  window.clearTimeout(liveProbeTimer);
+  const deadline = Date.now() + 5000;
+  const probe = () => {
+    liveProbeTimer = 0;
+    playLiveEntryEffectsIfNeeded();
+    const screen = document.getElementById('screen-game');
+    const gameId = String(state.activeGame?.id || '').trim();
+    if (!(screen instanceof HTMLElement) || !screen.classList.contains('active') || !gameId || playedGames.has(gameId)) return;
+    if (Date.now() >= deadline) return;
+    liveProbeTimer = window.setTimeout(probe, 120);
+  };
+  queueMicrotask(probe);
+}
+
 function playLiveEntryEffectsIfNeeded(){
   const screen = document.getElementById('screen-game');
   const game = state.activeGame;
@@ -360,9 +375,8 @@ function playLiveEntryEffectsIfNeeded(){
     };
   }).filter(Boolean);
 
-  playedGames.add(gameId);
   if (!entries.length) return;
-
+  playedGames.add(gameId);
   removeLiveEntryEffects();
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
   const duration = reduced ? 2000 : Math.max(...entries.map(entry => entry.spec.duration));
@@ -382,6 +396,8 @@ function playLiveEntryEffectsIfNeeded(){
 }
 
 function removeLiveEntryEffects(){
+  window.clearTimeout(liveProbeTimer);
+  liveProbeTimer = 0;
   window.clearTimeout(liveHideTimer);
   liveHideTimer = 0;
   document.querySelectorAll('.mgw-entry-effect-layer').forEach(node => node.remove());

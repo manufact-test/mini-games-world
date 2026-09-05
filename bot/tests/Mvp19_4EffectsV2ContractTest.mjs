@@ -119,7 +119,7 @@ expect(manifest.includes('c2_5=visible-mark-layer'), 'active runtime manifest mu
 expect(manifest.includes('c2_6=cell-native-dom-fx'), 'active runtime manifest must publish C2.6 cell-native DOM FX');
 expect(manifest.includes("renderer.js?v=58"), 'active renderer identity must preserve C2.6');
 expect(/main\.css\?v=\d+/.test(manifest), 'active main CSS identity must remain versioned after later bounded UI work');
-expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=28&store=quiet-equip'"), 'active runtime manifest must cache-bust quiet Store acknowledgements');
+expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=29&store=quiet-cosmetic-equip-all'"), 'active runtime manifest must cache-bust all redundant cosmetic equip/unequip acknowledgements');
 expect(manifest.includes('store=compact-tail'), 'active runtime manifest must cache-bust compact Store bottom spacing');
 
 console.log('MVP-19.4 effects C2.6 cell-native DOM FX contract: OK');
