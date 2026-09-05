@@ -23,8 +23,8 @@
  * Avatars are the visual reference. Every collection that follows the avatar
  * grid, including the canonical Games collection, uses the same section rhythm:
  * 20px separation, 14px after the divider and 8px from title to its content.
- * This deliberately overrides older family-specific 5/12, 18/14 and 22px
- * combinations which made adjacent sections visibly uneven. */
+ * The next section owns the vertical separation; completed families must not
+ * add their own bottom margin/padding on top of it. */
 #screen-profile .profile-v2-name-color-collection,
 #screen-profile .profile-v2-badge-collection,
 #screen-profile .profile-v2-frame-collection,
@@ -33,7 +33,9 @@
 #screen-profile .profile-v2-entry-effect-collection,
 #screen-profile .profile-v2-game-collection{
   margin-top:20px !important;
+  margin-bottom:0 !important;
   padding-top:14px !important;
+  padding-bottom:0 !important;
   border-top:1px solid rgba(255,255,255,.08) !important;
   display:flex !important;
   flex-direction:column !important;
@@ -59,14 +61,22 @@
 #screen-profile .profile-v2-background-grid,
 #screen-profile .profile-v2-reaction-grid,
 #screen-profile .profile-v2-entry-effect-grid,
-#screen-profile .profile-v2-game-tabs{
-  margin:0 !important;
+#screen-profile .profile-v2-game-tabs,
+#screen-profile .profile-v2-game-panel,
+#screen-profile .profile-v2-game-grid{
+  margin-top:0 !important;
+  margin-bottom:0 !important;
 }
 
-/* Avatar cards use a clean 5px edge. Apply that exact edge to every card in the
- * Profile collection, including game-cosmetic cards, so no family has a unique
- * top/right/bottom/left inset. */
-#screen-profile [data-profile-avatar-preview],
+/* One visible bottom breathing room for every text-bearing Profile cosmetic card.
+ * The previous blanket 5px edge made short frame/reaction copy look almost glued
+ * to the selected border while background cards happened to retain more visual
+ * air through their copy layout. Keep the Avatar portrait square untouched and
+ * give every card with copy the same explicit 10px bottom inset. */
+#screen-profile [data-profile-avatar-preview]{
+  box-sizing:border-box !important;
+  padding:5px !important;
+}
 #screen-profile [data-profile-name-color],
 #screen-profile [data-profile-badge-preview],
 #screen-profile [data-profile-frame-preview],
@@ -75,5 +85,6 @@
 #screen-profile .profile-v2-entry-effect-card,
 #screen-profile .profile-v2-game-card{
   box-sizing:border-box !important;
-  padding:5px !important;
+  padding:5px 5px 10px !important;
+  margin-bottom:0 !important;
 }
