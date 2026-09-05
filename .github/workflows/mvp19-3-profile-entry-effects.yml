@@ -9,7 +9,6 @@ on:
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
       - 'app/assets/js/profile/mgw-profile-entry-effects.js'
-      - 'app/assets/js/profile/mgw-profile-entry-effects-visible.js'
       - 'app/assets/js/production-v110-readonly-game-sync.js'
       - 'app/assets/js/components/toast.js'
       - 'app/assets/css/components/mgw-profile-entry-effects.css'
@@ -58,7 +57,6 @@ jobs:
           php -l bot/tests/Mvp19_3ProfileEntryEffectsTest.php
           node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           node --check app/assets/js/profile/mgw-profile-entry-effects.js
-          node --check app/assets/js/profile/mgw-profile-entry-effects-visible.js
           node --check app/assets/js/production-v110-readonly-game-sync.js
           node --check app/assets/js/components/toast.js
 
@@ -93,13 +91,14 @@ jobs:
           grep -F 'function mgw_store_profile_entry_effect' bot/cosmetic-store.php
           grep -F 'entry_effect_item_id' bot/helpers/response.php
           grep -F 'armLiveEntryEffectProbe' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'applyLocalEntryEffectProjection' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'entryEffectIdForPlayer' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'mgw:phase-b-game-entering' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'if (!entries.length) return;' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-skip' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'selectedLocalEntryEffectId' app/assets/js/profile/mgw-profile-entry-effects-visible.js
-          grep -F 'mgw:phase-b-game-entering' app/assets/js/profile/mgw-profile-entry-effects-visible.js
           grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-profile-entry-effects.css
           grep -F 'profile-avatar-spacing-parity' app/runtime/client/version-manifest.php
-          grep -F 'mgw-profile-entry-effects-visible.js?v=1' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-entry-effects.js?v=3&mvp19_3=visible-local-projection' app/runtime/client/version-manifest.php
           grep -F 'quiet-cosmetic-equip-all' app/runtime/client/version-manifest.php
           grep -F 'entry_effects=1' app/runtime/client/version-manifest.php
 
@@ -131,7 +130,6 @@ jobs:
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
               app/assets/js/profile/mgw-profile-entry-effects.js|\
-              app/assets/js/profile/mgw-profile-entry-effects-visible.js|\
               app/assets/js/production-v110-readonly-game-sync.js|\
               app/assets/js/components/toast.js|\
               app/assets/css/components/mgw-profile-entry-effects.css|\
