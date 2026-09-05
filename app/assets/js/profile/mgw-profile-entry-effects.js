@@ -422,16 +422,22 @@ function entryEffectIdForPlayer(player, viewerId = ''){
   return presentationFor(selected) ? selected : '';
 }
 
+function launchOverlayVisible(){
+  const overlay = document.querySelector('.mgw-phase-b-launch-overlay');
+  return overlay instanceof HTMLElement && overlay.hidden !== true;
+}
+
 function armLiveEntryEffectProbe(viewerId = ''){
   window.clearTimeout(liveProbeTimer);
   const deadline = Date.now() + 7000;
   const probe = () => {
     liveProbeTimer = 0;
+    const waitingForLaunch = launchOverlayVisible();
     playLiveEntryEffectsIfNeeded(state.activeGame, viewerId);
     const screen = document.getElementById('screen-game');
     const gameId = String(state.activeGame?.id || '').trim();
     if (!(screen instanceof HTMLElement) || !screen.classList.contains('active') || !gameId || playedGames.has(gameId)) return;
-    if (Date.now() >= deadline) return;
+    if (Date.now() >= deadline && !waitingForLaunch) return;
     liveProbeTimer = window.setTimeout(probe, 120);
   };
   queueMicrotask(probe);
@@ -442,6 +448,13 @@ function playLiveEntryEffectsIfNeeded(game = state.activeGame, viewerId = ''){
   const gameId = String(game?.id || '').trim();
   if (!(screen instanceof HTMLElement) || !screen.classList.contains('active') || !gameId || playedGames.has(gameId)) return;
   if (String(game?.status || '') !== 'active') return;
+
+  /* The accepted Phase-B launch/countdown overlay is fixed above the game at
+   * z-index 10000. Entry Effects must never start underneath it: otherwise the
+   * 2–4 second effect can fully expire before the player can see it. Keep probing
+   * the same in-memory game until the launch owner hides its overlay, and only
+   * then consume the once-per-game presentation. */
+  if (launchOverlayVisible()) return;
 
   const players = Array.isArray(game?.players) ? game.players : [];
   const entries = players.map((player, index) => {
