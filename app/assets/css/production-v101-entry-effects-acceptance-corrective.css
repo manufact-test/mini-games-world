@@ -20,15 +20,18 @@
 }
 
 /* Profile manual-acceptance corrective.
- * Avatars are the spacing reference. Every cosmetic collection below them uses
- * the same section rhythm: 20px separation, 14px after the divider, then the
- * same 8px title-to-grid gap. No family owns an extra title/grid margin. */
+ * Avatars are the visual reference. Every collection that follows the avatar
+ * grid, including the canonical Games collection, uses the same section rhythm:
+ * 20px separation, 14px after the divider and 8px from title to its content.
+ * This deliberately overrides older family-specific 5/12, 18/14 and 22px
+ * combinations which made adjacent sections visibly uneven. */
 #screen-profile .profile-v2-name-color-collection,
 #screen-profile .profile-v2-badge-collection,
 #screen-profile .profile-v2-frame-collection,
 #screen-profile .profile-v2-background-collection,
 #screen-profile .profile-v2-reaction-collection,
-#screen-profile .profile-v2-entry-effect-collection{
+#screen-profile .profile-v2-entry-effect-collection,
+#screen-profile .profile-v2-game-collection{
   margin-top:20px !important;
   padding-top:14px !important;
   border-top:1px solid rgba(255,255,255,.08) !important;
@@ -43,7 +46,8 @@
 #screen-profile .profile-v2-frame-collection > .profile-v2-collection-title,
 #screen-profile .profile-v2-background-collection > .profile-v2-collection-title,
 #screen-profile .profile-v2-reaction-collection > .profile-v2-collection-title,
-#screen-profile .profile-v2-entry-effect-collection > .profile-v2-collection-title{
+#screen-profile .profile-v2-entry-effect-collection > .profile-v2-collection-title,
+#screen-profile .profile-v2-game-collection > .profile-v2-collection-title{
   margin:0 !important;
   padding:0 1px !important;
 }
@@ -54,19 +58,22 @@
 #screen-profile .profile-v2-frame-grid,
 #screen-profile .profile-v2-background-grid,
 #screen-profile .profile-v2-reaction-grid,
-#screen-profile .profile-v2-entry-effect-grid{
+#screen-profile .profile-v2-entry-effect-grid,
+#screen-profile .profile-v2-game-tabs{
   margin:0 !important;
 }
 
-/* Avatar cards already use a clean 5px edge. Apply that exact edge to every
- * Profile cosmetic card so top/right/bottom/left never vary by family. */
+/* Avatar cards use a clean 5px edge. Apply that exact edge to every card in the
+ * Profile collection, including game-cosmetic cards, so no family has a unique
+ * top/right/bottom/left inset. */
 #screen-profile [data-profile-avatar-preview],
 #screen-profile [data-profile-name-color],
 #screen-profile [data-profile-badge-preview],
 #screen-profile [data-profile-frame-preview],
 #screen-profile .profile-v2-background-card,
 #screen-profile .profile-v2-reaction-card,
-#screen-profile .profile-v2-entry-effect-card{
+#screen-profile .profile-v2-entry-effect-card,
+#screen-profile .profile-v2-game-card{
   box-sizing:border-box !important;
   padding:5px !important;
 }
