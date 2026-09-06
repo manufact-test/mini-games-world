@@ -129,6 +129,7 @@ jobs:
             case "$path" in
               .github/workflows/mvp19-3-profile-*.yml|\
               app/assets/css/production-v105-store-entry-effects-polish.css|\
+              app/assets/css/production-v106-store-avatar-frame-density.css|\
               app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
               bot/database/migrations/20260903_0022_add_profile_backgrounds.php|\
               bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php|\
