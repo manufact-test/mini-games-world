@@ -105,6 +105,7 @@ $html = str_replace($headClose, "  " . $localizationTag . "\n  " . $importMap . 
 
 $cssTarget = $assets['main_css'];
 $consistencyCssTarget = $assets['consistency_css'];
+$consistencyCssTarget .= '&store_stage_a=badge-parity-svg-v1';
 $bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
 
