@@ -1,4 +1,5 @@
 @import url('./production-v105-store-entry-effects-polish.css?v=6&mvp19_3=store-entry-effects-polish&store_stage_a=avatar-frame-gap-v2');
+@import url('./production-v107-entry-effects-live-reference-art.css?v=1&mvp19_3=live-reference-art-v1');
 
 /* MVP-19.3 Store Stage A — avatar/frame spacing parity corrective.
  * Manual review after PR #1227 showed that replacing the established flex cards
