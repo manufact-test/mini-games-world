@@ -346,3 +346,58 @@
 @media(prefers-reduced-motion:reduce){
   .store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant]::before{animation:none!important;display:none!important}
 }
+
+/* ========================================================================== */
+/* STORE TYPOGRAPHY / AVATAR COPY CORRECTIVE v2 — manual screenshot follow-up. */
+/* Keep Entry Effect artwork untouched; this block only normalizes Store copy. */
+/* ========================================================================== */
+
+/* Exact Badge-card title token for every cosmetic product title in Store. */
+.store-v2-content[data-store-v2-panel] .store-v2-name-color-copy>strong,
+.store-v2-content[data-store-v2-panel] .store-v2-profile-badge-copy>strong,
+.store-v2-content[data-store-v2-panel] .store-v2-profile-frame-copy>strong,
+.store-v2-content[data-store-v2-panel] .store-v2-profile-background-copy .store-v2-product-name,
+.store-v2-content[data-store-v2-panel] .store-v2-reaction-copy>strong,
+.store-v2-content[data-store-v2-panel] .store-v2-game-product-copy>strong{
+  font-family:inherit!important;
+  font-size:10.5px!important;
+  line-height:1.12!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+}
+
+/* Avatar cards show exactly one product name. Hide the legacy text node and old subtitle. */
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name{
+  min-height:12px!important;
+  margin:5px 1px 3px!important;
+  padding:0!important;
+  font-size:0!important;
+  line-height:0!important;
+  color:transparent!important;
+  text-shadow:none!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name::before{
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+  font-family:inherit!important;
+  font-size:10.5px!important;
+  line-height:1.12!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+  color:var(--text)!important;
+  text-shadow:none!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-product>.store-v2-avatar-preview+.store-v2-product-name::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Entry Effect titles use the same Badge-card token while preserving the accepted names/art. */
+.store-v2-content[data-store-v2-panel] .store-v2-entry-effect-copy>strong::after{
+  font-family:inherit!important;
+  font-size:10.5px!important;
+  line-height:1.12!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+}
