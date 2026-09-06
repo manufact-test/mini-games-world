@@ -401,3 +401,50 @@
   font-weight:800!important;
   letter-spacing:0!important;
 }
+
+/* ========================================================================== */
+/* STORE FRAME NAME / TITLE-ONLY SPACING CORRECTIVE — manual screenshot pass. */
+/* ========================================================================== */
+
+/* Frame cards intentionally reuse .store-v2-avatar-preview for their portrait demo.
+ * They are not avatar products: keep the real frame name from mgw-profile-frames.js. */
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product>.store-v2-product-name{
+  display:block!important;
+  min-height:0!important;
+  margin:5px 1px 0!important;
+  padding:0!important;
+  font-family:inherit!important;
+  font-size:10.5px!important;
+  line-height:1.12!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+  color:var(--text)!important;
+  text-shadow:none!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product>.store-v2-product-name::before,
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product>.store-v2-product-name::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Subtitle-free avatar cards must not preserve the old subtitle slot. */
+.store-v2-content[data-store-v2-panel="profile"]>.store-v2-product-grid>.store-v2-product{
+  min-height:0!important;
+}
+.store-v2-content[data-store-v2-panel="profile"]>.store-v2-product-grid>.store-v2-product>.store-v2-avatar-preview+.store-v2-product-name{
+  min-height:0!important;
+  margin:5px 1px 0!important;
+  padding:0!important;
+}
+
+/* Same compact title-to-price/action rhythm for frame cards. */
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product{
+  min-height:0!important;
+}
+.store-v2-content[data-store-v2-panel="profile"]>.store-v2-product-grid>.store-v2-product>.store-v2-product-foot,
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product>.store-v2-product-foot{
+  min-height:0!important;
+  margin-top:auto!important;
+  padding-top:4px!important;
+  gap:5px!important;
+}
