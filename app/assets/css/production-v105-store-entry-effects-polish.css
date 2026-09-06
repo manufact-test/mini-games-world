@@ -148,3 +148,201 @@
   .store-v2-title-row h2,.store-v2-game-head h2,.store-v2-game-title-row h2{font-size:15px!important}
   .store-v2-entry-effect-copy strong,.store-v2-product-name,.store-v2-name-color-copy strong,.store-v2-game-product-copy strong{font-size:11px!important}
 }
+
+/* ========================================================================== */
+/* MVP-19.3 STAGE A — STORE ONLY, manual acceptance pass after PR #1221.      */
+/* No selector below this line targets #screen-game or live Entry Effects.     */
+/* Badge cards are the canonical Store typography/spacing reference.           */
+/* ========================================================================== */
+
+/* One section-heading scale throughout Store. */
+.store-v2-content .store-v2-title-row h2,
+.store-v2-content .store-v2-game-title-row h2,
+.store-v2-content .store-v2-game-head h2{
+  font-size:15px!important;
+  line-height:1.15!important;
+  font-weight:900!important;
+  letter-spacing:-.025em!important;
+}
+
+/* One product-title scale throughout cosmetic Store cards. */
+.store-v2-content .store-v2-product-name,
+.store-v2-content .store-v2-name-color-copy strong,
+.store-v2-content .store-v2-profile-badge-copy strong,
+.store-v2-content .store-v2-profile-frame-copy strong,
+.store-v2-content .store-v2-profile-background-copy .store-v2-product-name,
+.store-v2-content .store-v2-reaction-copy strong,
+.store-v2-content .store-v2-entry-effect-copy strong,
+.store-v2-content .store-v2-game-product-copy>strong{
+  font-size:10.5px!important;
+  line-height:1.12!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+}
+
+/* One subtitle/meta scale. */
+.store-v2-content .store-v2-name-color-copy small,
+.store-v2-content .store-v2-profile-badge-copy small,
+.store-v2-content .store-v2-profile-frame-copy small,
+.store-v2-content .store-v2-profile-background-copy small,
+.store-v2-content .store-v2-reaction-copy small,
+.store-v2-content .store-v2-game-product-copy>p{
+  font-size:8.5px!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+  color:var(--muted)!important;
+}
+
+/* Prices/status and all cosmetic action buttons share Badge-card rhythm. */
+.store-v2-content .store-v2-product-foot>b,
+.store-v2-content .store-v2-name-color-foot>b,
+.store-v2-content .store-v2-profile-badge-foot>b,
+.store-v2-content .store-v2-profile-frame-foot>b,
+.store-v2-content .store-v2-profile-background-foot>b,
+.store-v2-content .store-v2-reaction-foot>b,
+.store-v2-content .store-v2-reaction-owned{
+  font-size:9px!important;
+  line-height:1!important;
+}
+.store-v2-content .store-v2-buy,
+.store-v2-content .store-v2-equip,
+.store-v2-content .mgw-profile-cosmetic-action,
+.store-v2-content .store-v2-reaction-owned{
+  min-height:30px!important;
+  padding:0 5px!important;
+  border-radius:9px!important;
+  font-size:9px!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+
+/* The button row stays on one baseline inside each product row. */
+.store-v2-content[data-store-v2-panel="profile"]>.store-v2-product-grid>.store-v2-product,
+.store-v2-content .store-v2-entry-effect-card,
+.store-v2-content .store-v2-name-color-card,
+.store-v2-content .store-v2-profile-badge-card,
+.store-v2-content .store-v2-profile-frame-card,
+.store-v2-content .store-v2-profile-background-card,
+.store-v2-content .store-v2-reaction-card{
+  display:flex!important;
+  flex-direction:column!important;
+}
+.store-v2-content .store-v2-product-foot,
+.store-v2-content .store-v2-entry-effect-foot,
+.store-v2-content .store-v2-name-color-foot,
+.store-v2-content .store-v2-profile-badge-foot,
+.store-v2-content .store-v2-profile-frame-foot,
+.store-v2-content .store-v2-profile-background-foot,
+.store-v2-content .store-v2-reaction-foot{
+  min-height:40px!important;
+  margin-top:auto!important;
+  padding-top:7px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-end!important;
+  gap:7px!important;
+}
+
+/* Avatar names: remove the technical numbered copy with a selector that does not rely on :has(). */
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-avatar-preview+.store-v2-product-name{
+  min-height:29px!important;
+  margin:5px 1px 3px!important;
+  font-size:0!important;
+  line-height:1!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-avatar-preview+.store-v2-product-name::before{
+  display:block!important;
+  font-size:10.5px!important;
+  line-height:1.12!important;
+  font-weight:800!important;
+  color:var(--text)!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-avatar-preview+.store-v2-product-name::after{
+  content:'Аватар'!important;
+  display:block!important;
+  margin-top:2px!important;
+  font-size:8.5px!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+  color:var(--muted)!important;
+}
+.store-v2-avatar-preview[data-avatar-item-id="starter-default-01"]+.store-v2-product-name::before{content:'Брам'!important}
+.store-v2-avatar-preview[data-avatar-item-id="starter-default-02"]+.store-v2-product-name::before{content:'Мира'!important}
+.store-v2-avatar-preview[data-avatar-item-id="starter-default-03"]+.store-v2-product-name::before{content:'Тобин'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-01"]+.store-v2-product-name::before{content:'Сайлас'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-02"]+.store-v2-product-name::before{content:'Каэл'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-03"]+.store-v2-product-name::before{content:'Рук'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-04"]+.store-v2-product-name::before{content:'Вейр'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]+.store-v2-product-name::before{content:'Аурекс'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]+.store-v2-product-name::before{content:'Эйра'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]+.store-v2-product-name::before{content:'Ноктар'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]+.store-v2-product-name::before{content:'Соларис'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]+.store-v2-product-name::before{content:'Дракс'!important}
+
+/* Entry Effects: Store exposes only the real product names, never technical tier labels. */
+.store-v2-content .store-v2-entry-effect-copy{
+  min-height:26px!important;
+  display:flex!important;
+  align-items:flex-start!important;
+}
+.store-v2-content .store-v2-entry-effect-copy small{display:none!important}
+.store-v2-content .store-v2-entry-effect-copy strong{
+  display:block!important;
+  width:100%!important;
+  min-height:24px!important;
+  font-size:0!important;
+  line-height:1.12!important;
+}
+.store-v2-content .store-v2-entry-effect-copy strong::before{content:none!important;display:none!important}
+.store-v2-content .store-v2-entry-effect-copy strong::after{
+  display:block!important;
+  font-size:10.5px!important;
+  line-height:1.12!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+  color:var(--text)!important;
+  white-space:normal!important;
+}
+.store-v2-entry-effect-preview[data-entry-effect-variant="entry-01"]+.store-v2-entry-effect-copy strong::after{content:'Небесные врата'!important}
+.store-v2-entry-effect-preview[data-entry-effect-variant="entry-02"]+.store-v2-entry-effect-copy strong::after{content:'Восхождение короля'!important}
+.store-v2-entry-effect-preview[data-entry-effect-variant="entry-03"]+.store-v2-entry-effect-copy strong::after{content:'Клинок владыки'!important}
+
+/* Store-only artwork. These SVGs are valid browser assets and intentionally do not touch live-game art. */
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant]{
+  isolation:isolate!important;
+  overflow:hidden!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:cover!important;
+}
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant] .mgw-entry-effect-preview-core{display:none!important}
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant="entry-01"]{
+  background-image:url('../media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'),radial-gradient(circle at 50% 56%,rgba(80,162,255,.25),transparent 60%),linear-gradient(180deg,#101b34,#080b15)!important;
+}
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant="entry-02"]{
+  background-image:url('../media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'),radial-gradient(circle at 50% 50%,rgba(255,185,48,.25),transparent 60%),linear-gradient(180deg,#1b130d,#09090c)!important;
+}
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant="entry-03"]{
+  background-image:url('../media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'),radial-gradient(circle at 50% 50%,rgba(255,154,35,.27),transparent 60%),linear-gradient(180deg,#1d100b,#09080a)!important;
+}
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant]::before{
+  content:''!important;
+  position:absolute!important;
+  inset:-20%!important;
+  z-index:1!important;
+  pointer-events:none!important;
+  background:linear-gradient(115deg,transparent 36%,rgba(255,255,255,.16) 49%,transparent 62%)!important;
+  transform:translateX(-70%) rotate(5deg)!important;
+  animation:mgwStoreEntryShimmer 3.4s ease-in-out infinite!important;
+}
+.store-v2-content .store-v2-entry-effect-preview .store-v2-selected-check{z-index:8!important}
+@keyframes mgwStoreEntryShimmer{0%,58%{transform:translateX(-72%) rotate(5deg);opacity:0}72%{opacity:.8}100%{transform:translateX(72%) rotate(5deg);opacity:0}}
+
+@media(prefers-reduced-motion:reduce){
+  .store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant]::before{animation:none!important;display:none!important}
+}
