@@ -281,8 +281,8 @@
 .store-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]+.store-v2-product-name::before{content:'Аурекс'!important}
 .store-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]+.store-v2-product-name::before{content:'Эйра'!important}
 .store-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]+.store-v2-product-name::before{content:'Ноктар'!important}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]+.store-v2-product-name::before{content:'Соларис'}
-.store-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]+.store-v2-product-name::before{content:'Дракс'}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]+.store-v2-product-name::before{content:'Соларис'!important}
+.store-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]+.store-v2-product-name::before{content:'Дракс'!important}
 
 /* Entry Effects: Store exposes only the real product names, never technical tier labels. */
 .store-v2-content .store-v2-entry-effect-copy{
@@ -437,8 +437,13 @@
   padding:0!important;
 }
 
-/* Same compact title-to-price/action rhythm for avatar and frame cards.
- * Do not push the footer to the bottom of a stretched grid cell. */
+/* Same compact title-to-price/action rhythm for frame cards. */
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product{
+  min-height:0!important;
+}
+
+/* Avatar and frame cards no longer reserve subtitle-era empty space.
+ * Keep the action block close to the title instead of auto-pushing it down. */
 .store-v2-content[data-store-v2-panel="profile"]>.store-v2-product-grid>.store-v2-product>.store-v2-product-foot,
 .store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product>.store-v2-product-foot{
   min-height:0!important;
