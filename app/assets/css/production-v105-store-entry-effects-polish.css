@@ -1,0 +1,150 @@
+@import url('./production-v104-entry-effects-public-assets.css?v=2&mvp19_3=reference-trio-v1');
+
+/* Manual corrective after staging review 2026-09-06.
+ * Presentation-only: normalize Store typography/spacing, give avatars real names,
+ * and make Entry Effect artwork visible even if legacy inner placeholder layers fail. */
+
+/* --- Store typography parity --- */
+.store-v2-title-row h2,
+.store-v2-game-head h2,
+.store-v2-game-title-row h2,
+.store-v2-entry-effect-section .store-v2-title-row h2,
+.store-v2-name-color-section .store-v2-title-row h2,
+[data-profile-frame-store-section] .store-v2-title-row h2,
+[data-profile-background-store-section] .store-v2-title-row h2,
+[data-profile-reaction-store-section] .store-v2-title-row h2{
+  font-size:16px!important;
+  line-height:1.15!important;
+  font-weight:900!important;
+  letter-spacing:-.02em!important;
+}
+
+.store-v2-entry-effect-copy strong,
+.store-v2-product-name,
+.store-v2-name-color-copy strong,
+.store-v2-game-product-copy strong{
+  font-size:12px!important;
+  line-height:1.12!important;
+  font-weight:900!important;
+  letter-spacing:-.015em!important;
+}
+
+/* Long cosmetic names must never be clipped into unreadable fragments. */
+.store-v2-entry-effect-copy strong,
+.store-v2-name-color-copy strong,
+.store-v2-game-product-copy strong{
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  overflow-wrap:anywhere!important;
+}
+
+/* A little more air before actions across Store cards. */
+.store-v2-product-foot,
+.store-v2-entry-effect-foot,
+.store-v2-name-color-foot,
+.store-v2-game-product-foot,
+.mgw-profile-cosmetic-foot{
+  margin-top:9px!important;
+}
+
+.store-v2-entry-effect-card,
+.store-v2-product,
+.store-v2-name-color-card,
+.store-v2-game-product{
+  row-gap:6px!important;
+}
+
+/* --- Avatars: one-word fantasy names + useful subtitle --- */
+.store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name{
+  font-size:0!important;
+  line-height:1.1!important;
+  min-height:27px!important;
+}
+.store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name::before{
+  display:block;
+  font-size:12px;
+  line-height:1.05;
+  font-weight:900;
+  color:inherit;
+}
+.store-v2-product:has(.store-v2-avatar-preview) .store-v2-product-name::after{
+  content:'Аватар';
+  display:block;
+  margin-top:3px;
+  font-size:9px;
+  line-height:1;
+  font-weight:700;
+  color:rgba(255,255,255,.58);
+}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="starter-default-01"]) .store-v2-product-name::before{content:'Брам'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="starter-default-02"]) .store-v2-product-name::before{content:'Мира'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="starter-default-03"]) .store-v2-product-name::before{content:'Тобин'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-01"]) .store-v2-product-name::before{content:'Сайлас'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-02"]) .store-v2-product-name::before{content:'Каэл'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-03"]) .store-v2-product-name::before{content:'Рук'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-04"]) .store-v2-product-name::before{content:'Вейр'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]) .store-v2-product-name::before{content:'Аурекс'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]) .store-v2-product-name::before{content:'Эйра'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]) .store-v2-product-name::before{content:'Ноктар'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]) .store-v2-product-name::before{content:'Соларис'}
+.store-v2-product:has(.store-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]) .store-v2-product-name::before{content:'Дракс'}
+
+/* --- Entry Effect Store previews: artwork on the stage itself, not only a legacy inner <b>. --- */
+.mgw-entry-effect-preview[data-entry-effect-variant]{
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:contain!important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-01"]{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'),radial-gradient(circle at 50% 55%,rgba(80,162,255,.30),transparent 58%),linear-gradient(180deg,#101b34,#080b15)!important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),radial-gradient(circle at 50% 52%,rgba(255,185,48,.30),transparent 58%),linear-gradient(180deg,#1b130d,#09090c)!important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),radial-gradient(circle at 50% 52%,rgba(255,173,35,.32),transparent 58%),linear-gradient(180deg,#1d100b,#09080a)!important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant] .mgw-entry-effect-preview-core b{
+  opacity:0!important;
+}
+
+/* --- Live game presentation: same direct-art fallback. --- */
+.mgw-entry-effect-live-card[data-entry-effect-variant] .mgw-entry-effect-live-emblem{
+  z-index:5!important;
+  opacity:1!important;
+  visibility:visible!important;
+  background-repeat:no-repeat!important;
+  background-position:center 48%!important;
+  background-size:contain!important;
+  filter:drop-shadow(0 18px 30px rgba(0,0,0,.55))!important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-01"] .mgw-entry-effect-live-emblem{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp')!important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"] .mgw-entry-effect-live-emblem{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp')!important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] .mgw-entry-effect-live-emblem{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp')!important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant] .mgw-entry-effect-live-emblem b{
+  opacity:0!important;
+}
+
+/* Keep the name/status readable without covering the artwork. */
+.mgw-entry-effect-live-card[data-entry-effect-variant] strong{
+  bottom:24px!important;
+  font-size:20px!important;
+  line-height:1.05!important;
+  white-space:normal!important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant] small{
+  bottom:6px!important;
+  font-size:10px!important;
+}
+
+@media (max-width:380px){
+  .store-v2-title-row h2,.store-v2-game-head h2,.store-v2-game-title-row h2{font-size:15px!important}
+  .store-v2-entry-effect-copy strong,.store-v2-product-name,.store-v2-name-color-copy strong,.store-v2-game-product-copy strong{font-size:11px!important}
+}
