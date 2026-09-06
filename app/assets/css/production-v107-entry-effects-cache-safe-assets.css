@@ -1,0 +1,15 @@
+@import url('./production-v106-store-avatar-frame-density.css?v=6&mvp19_3=store-avatar-frame-flex-parity&live_entry=visible-direct-card-v2');
+
+/* MVP-19.3 live Entry Effects — cache-safe artwork URLs.
+ * The prior corrupted binaries were replaced under the same URLs, which can leave
+ * Telegram WebView/CDN serving stale undecodable responses. Use new filenames so
+ * live artwork is guaranteed to be fetched as a new resource. Store geometry is untouched. */
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-01"]{
+  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate-v2.webp')!important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]{
+  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight-v2.webp')!important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]{
+  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike-v2.webp')!important;
+}
