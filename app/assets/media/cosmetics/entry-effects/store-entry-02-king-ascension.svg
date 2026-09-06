@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="">
+<defs>
+ <radialGradient id="halo" cx="50%" cy="42%" r="52%"><stop stop-color="#fff6bd"/><stop offset=".25" stop-color="#ffc94a" stop-opacity=".95"/><stop offset=".55" stop-color="#cf6d18" stop-opacity=".38"/><stop offset="1" stop-color="#08080b" stop-opacity="0"/></radialGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff1a0"/><stop offset=".3" stop-color="#d78a25"/><stop offset=".62" stop-color="#71340d"/><stop offset=".82" stop-color="#ffd96b"/><stop offset="1" stop-color="#8b4912"/></linearGradient>
+ <linearGradient id="armor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#384050"/><stop offset=".28" stop-color="#101419"/><stop offset=".54" stop-color="#2b2118"/><stop offset=".8" stop-color="#090b0e"/><stop offset="1" stop-color="#75501d"/></linearGradient>
+ <linearGradient id="cape" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a61925"/><stop offset=".55" stop-color="#5b0d17"/><stop offset="1" stop-color="#22080c"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="200" cy="144" rx="176" ry="134" fill="url(#halo)"/>
+<path d="M82 229V107Q82 46 200 28Q318 46 318 107V229" fill="#090b0e" fill-opacity=".4" stroke="url(#gold)" stroke-width="9"/>
+<path d="M104 224V117Q104 72 200 54Q296 72 296 117V224" fill="none" stroke="#ffd263" stroke-width="3" opacity=".8"/>
+<path d="M200 20l13 25 28 5-20 17 5 28-26-13-26 13 5-28-20-17 28-5z" fill="url(#gold)" filter="url(#glow)"/>
+<path d="M70 228l24-28-13-98 22-29 13 31-8 101 24 23zM330 228l-24-28 13-98-22-29-13 31 8 101-24 23z" fill="#261515" stroke="url(#gold)" stroke-width="4"/>
+<path d="M118 109l-47 28 4 92 71-22-12-42zM282 109l47 28-4 92-71-22 12-42z" fill="url(#cape)" stroke="#d78a25" stroke-width="2"/>
+<path d="M116 132l-24 15 5 12 28-11zM284 132l24 15-5 12-28-11z" fill="#d2a44a" opacity=".8"/>
+<!-- central king -->
+<path d="M200 66l25 18-8 37-17 13-17-13-8-37z" fill="#080a0d" stroke="url(#gold)" stroke-width="5"/>
+<path d="M180 80l8-25 12 12 12-12 8 25-20-8z" fill="url(#gold)"/>
+<path d="M190 92h20l-4 7h-12z" fill="#ffad32" filter="url(#glow)"/>
+<path d="M158 130l42-15 42 15 17 75-31 27h-56l-31-27z" fill="url(#armor)" stroke="url(#gold)" stroke-width="5"/>
+<path d="M162 135l-42 31 17 28 34-31zM238 135l42 31-17 28-34-31z" fill="url(#armor)" stroke="url(#gold)" stroke-width="4"/>
+<path d="M180 140l20 17 20-17-8 43h-24z" fill="#a65c17" stroke="#ffd66a" stroke-width="2"/>
+<path d="M176 200l-12 71 29 0 7-57 7 57h29l-12-71z" fill="url(#armor)" stroke="url(#gold)" stroke-width="4"/>
+<!-- sword -->
+<path d="M126 183l16-8 73 94-14 11z" fill="#fff6c8" stroke="#d99a32" stroke-width="3" filter="url(#glow)"/>
+<path d="M121 178l28-17 5 9-28 18z" fill="url(#gold)"/>
+<g fill="#d59b3b" opacity=".9"><circle cx="93" cy="196" r="3"/><circle cx="301" cy="188" r="3"/><circle cx="131" cy="222" r="2"/><circle cx="275" cy="225" r="2"/></g>
+<g fill="#342515" stroke="#d9912c" stroke-width="2"><path d="M66 235l-13-14 11-17 17 12z"/><path d="M335 236l14-18-13-14-17 13z"/><path d="M118 250l-10-14 14-12 13 15z"/><path d="M284 247l12-16-13-11-14 16z"/></g>
+<ellipse cx="200" cy="265" rx="132" ry="24" fill="#4e230d" fill-opacity=".45" stroke="#f0b642" stroke-width="3"/>
+<path d="M56 250Q200 204 344 250" fill="none" stroke="#ffd75f" stroke-width="4" opacity=".75" filter="url(#glow)"/>
+</svg>

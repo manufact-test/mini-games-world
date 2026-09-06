@@ -191,7 +191,9 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-*.yml|\
+              app/assets/css/production-v105-store-entry-effects-polish.css|\
+              app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
               bot/profile-v2.php|\
               bot/helpers/response.php|\
               bot/tests/Mvp19_3ProfileAvatarsTest.php|\

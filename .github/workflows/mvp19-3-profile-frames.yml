@@ -120,11 +120,9 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/mvp19-3-profile-frames.yml|\
-              .github/workflows/mvp19-3-profile-badges.yml|\
-              .github/workflows/mvp19-3-profile-name-colors.yml|\
-              .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
-              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-*.yml|\
+              app/assets/css/production-v105-store-entry-effects-polish.css|\
+              app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
               bot/database/migrations/20260902_0021_add_profile_frames.php|\
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
