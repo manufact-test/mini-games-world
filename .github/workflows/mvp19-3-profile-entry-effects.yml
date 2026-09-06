@@ -189,6 +189,7 @@ jobs:
               app/assets/css/production-v105-store-entry-effects-polish.css|\
               app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
               app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
+              app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
               app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
               app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
               app/runtime/client/version-manifest.php|\
