@@ -18,6 +18,7 @@ on:
       - 'app/assets/css/production-v102-entry-effects-showcase.css'
       - 'app/assets/css/production-v103-entry-effects-cinematic-assets.css'
       - 'app/assets/css/production-v104-entry-effects-public-assets.css'
+      - 'app/assets/css/production-v105-store-entry-effects-polish.css'
       - 'app/assets/media/cosmetics/entry-effects/**'
       - 'app/media/cosmetics/entry-effects/**'
       - 'app/runtime/client/version-manifest.php'
@@ -185,6 +186,7 @@ jobs:
               app/assets/css/production-v102-entry-effects-showcase.css|\
               app/assets/css/production-v103-entry-effects-cinematic-assets.css|\
               app/assets/css/production-v104-entry-effects-public-assets.css|\
+              app/assets/css/production-v105-store-entry-effects-polish.css|\
               app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
               app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
               app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
