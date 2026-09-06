@@ -132,6 +132,7 @@ jobs:
               app/assets/js/screens/store-screen.js|\
               app/assets/js/profile/mgw-avatar-presentation.js|\
               app/assets/js/production-clean-entry-v110.js|\
+              app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js|\
               app/assets/css/screens/profile-corrective.css|\
               app/assets/css/components/mgw-name-colors.css|\
               app/assets/css/main.css|\

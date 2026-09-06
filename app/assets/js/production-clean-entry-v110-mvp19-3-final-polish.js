@@ -3,6 +3,112 @@ import { initMgwPurchaseFeedback } from './commerce/mgw-purchase-feedback.js?v=1
 
 initMgwPurchaseFeedback();
 
+/* MVP-19.3 Entry Effects — live image owner.
+   Telegram/WebView manual review proved the live layer, text and Skip button render,
+   while CSS background-image artwork does not. Mount the art as a real image node
+   directly under the live overlay so it is independent of legacy card backgrounds,
+   emblem markup and clip-path rules. Store presentation is not touched here. */
+const MGW_ENTRY_LIVE_ART = Object.freeze({
+  'entry-01':'/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp?asset=live-img-v1',
+  'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=live-img-v1',
+  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=live-img-v1',
+});
+
+function mountMgwEntryLiveArt(layer){
+  if (!(layer instanceof HTMLElement) || !layer.classList.contains('mgw-entry-effect-layer')) return;
+  const cards = [...layer.querySelectorAll('.mgw-entry-effect-live-card[data-entry-effect-variant]')];
+  for (const card of cards) {
+    const variant = String(card.dataset.entryEffectVariant || '').trim();
+    const src = MGW_ENTRY_LIVE_ART[variant];
+    if (!src) continue;
+    const playerIndex = String(card.dataset.playerIndex || '0');
+    const key = `${variant}:${playerIndex}`;
+    if (layer.querySelector(`.mgw-entry-effect-live-art[data-entry-live-art-key="${key}"]`)) continue;
+
+    const image = document.createElement('img');
+    image.className = 'mgw-entry-effect-live-art';
+    image.dataset.entryLiveArtKey = key;
+    image.dataset.entryEffectVariant = variant;
+    image.alt = '';
+    image.setAttribute('aria-hidden', 'true');
+    image.decoding = 'async';
+    image.loading = 'eager';
+    image.fetchPriority = 'high';
+    image.src = src;
+    Object.assign(image.style, {
+      position:'absolute',
+      left:'50%',
+      top:'50%',
+      zIndex:'1',
+      display:'block',
+      width:variant === 'entry-03' ? 'min(144vw, 720px)' : (variant === 'entry-02' ? 'min(136vw, 680px)' : 'min(132vw, 640px)'),
+      height:variant === 'entry-03' ? 'min(88vh, 620px)' : (variant === 'entry-02' ? 'min(86vh, 590px)' : 'min(82vh, 560px)'),
+      maxWidth:'none',
+      objectFit:'contain',
+      objectPosition:'center',
+      opacity:'1',
+      visibility:'visible',
+      pointerEvents:'none',
+      transform:'translate(-50%, -50%) scale(.86)',
+      transformOrigin:'50% 55%',
+      filter:variant === 'entry-01'
+        ? 'drop-shadow(0 20px 34px rgba(0,0,0,.58)) drop-shadow(0 0 38px rgba(92,173,255,.42))'
+        : 'drop-shadow(0 24px 38px rgba(0,0,0,.62)) drop-shadow(0 0 44px rgba(255,181,55,.44))',
+    });
+    const grid = layer.querySelector('.mgw-entry-effect-live-grid');
+    if (grid instanceof HTMLElement) layer.insertBefore(image, grid);
+    else layer.append(image);
+
+    if (!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches && typeof image.animate === 'function') {
+      const frames = variant === 'entry-03'
+        ? [
+            { opacity:0, transform:'translate(-50%, -50%) scale(.72) rotate(-5deg)' },
+            { opacity:1, offset:.24, transform:'translate(-50%, -50%) scale(1.03) rotate(1deg)' },
+            { opacity:1, transform:'translate(-50%, -50%) scale(1) rotate(0deg)' },
+          ]
+        : variant === 'entry-02'
+          ? [
+              { opacity:0, transform:'translate(-50%, -42%) scale(.76)' },
+              { opacity:1, offset:.3, transform:'translate(-50%, -50%) scale(1.03)' },
+              { opacity:1, transform:'translate(-50%, -50%) scale(1)' },
+            ]
+          : [
+              { opacity:0, transform:'translate(-50%, -50%) scale(.68)' },
+              { opacity:1, offset:.32, transform:'translate(-50%, -50%) scale(1.04)' },
+              { opacity:1, transform:'translate(-50%, -50%) scale(1)' },
+            ];
+      image.animate(frames, {
+        duration:variant === 'entry-03' ? 3600 : (variant === 'entry-02' ? 3000 : 2400),
+        easing:'cubic-bezier(.16,.84,.18,1)',
+        fill:'both',
+      });
+    } else {
+      image.style.transform = 'translate(-50%, -50%) scale(1)';
+    }
+  }
+}
+
+function scanMgwEntryLiveArt(root = document){
+  if (root instanceof HTMLElement && root.classList.contains('mgw-entry-effect-layer')) mountMgwEntryLiveArt(root);
+  root.querySelectorAll?.('.mgw-entry-effect-layer').forEach(mountMgwEntryLiveArt);
+}
+
+function armMgwEntryLiveArtOwner(){
+  scanMgwEntryLiveArt(document);
+  const observer = new MutationObserver(records => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+        scanMgwEntryLiveArt(node);
+      }
+    }
+  });
+  observer.observe(document.documentElement, { childList:true, subtree:true });
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', armMgwEntryLiveArtOwner, { once:true });
+else armMgwEntryLiveArtOwner();
+
 /* Mobile Profile first-route stabilizer.
    The canonical boot already prepares Profile under the preloader. The remaining
    Android/Telegram hitch is the first *real* compositor state change: Profile and

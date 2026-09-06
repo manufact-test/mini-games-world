@@ -9,6 +9,7 @@ on:
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
       - 'app/assets/js/profile/mgw-profile-entry-effects.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
       - 'app/assets/js/production-v110-readonly-game-sync.js'
       - 'app/assets/js/screens/game-screen-v102-safe.js'
       - 'app/assets/js/components/toast.js'
@@ -65,6 +66,7 @@ jobs:
           php -l bot/tests/Mvp19_3ProfileEntryEffectsTest.php
           node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           node --check app/assets/js/profile/mgw-profile-entry-effects.js
+          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           node --check app/assets/js/production-v110-readonly-game-sync.js
           node --check app/assets/js/screens/game-screen-v102-safe.js
           node --check app/assets/js/components/toast.js
@@ -112,6 +114,9 @@ jobs:
           grep -F 'Date.now() >= deadline && !waitingForLaunch' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'if (!entries.length) return;' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-skip' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'mgw-entry-effect-live-art' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "asset=live-img-v1" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F 'entry_live_img=dom-sibling-v1' app/runtime/client/version-manifest.php
           ! grep -Fq 'profile-v2-entry-effect-status' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F '#screen-profile .profile-v2-game-collection' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
           grep -F '#screen-profile .profile-v2-game-card' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
@@ -190,6 +195,7 @@ jobs:
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
               app/assets/js/profile/mgw-profile-entry-effects.js|\
+              app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js|\
               app/assets/js/production-v110-readonly-game-sync.js|\
               app/assets/js/screens/game-screen-v102-safe.js|\
               app/assets/js/components/toast.js|\

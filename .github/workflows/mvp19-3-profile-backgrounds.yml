@@ -135,6 +135,7 @@ jobs:
               bot/database/migrations/20260903_0023_upgrade_profile_background_tiers.php|\
               bot/cosmetic-store.php|\
               app/assets/js/production-clean-entry-v110.js|\
+              app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js|\
               app/assets/js/profile/mgw-profile-backgrounds.js|\
               app/assets/css/components/mgw-profile-backgrounds.css|\
               app/assets/css/main.css|\
