@@ -28,6 +28,8 @@ on:
       - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
       - 'app/assets/css/production-v102-entry-effects-showcase.css'
       - 'app/assets/css/production-v103-entry-effects-cinematic-assets.css'
+      - 'app/assets/css/production-v104-entry-effects-public-assets.css'
+      - 'app/assets/media/cosmetics/entry-effects/**'
       - 'app/media/cosmetics/entry-effects/**'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
@@ -207,7 +209,10 @@ jobs:
               app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
               app/assets/css/production-v102-entry-effects-showcase.css|\
               app/assets/css/production-v103-entry-effects-cinematic-assets.css|\
+              app/assets/css/production-v104-entry-effects-public-assets.css|\
               app/assets/css/components/mgw-profile-entry-effects.css|\
+              app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
+              app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
               app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
               app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
               app/runtime/client/version-manifest.php|\
