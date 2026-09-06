@@ -88,19 +88,19 @@
   isolation:isolate!important;
 }
 .mgw-entry-effect-live-card[data-entry-effect-variant="entry-01"]{
-  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp')!important;
+  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp?asset=real-webp-v2')!important;
   filter:drop-shadow(0 24px 34px rgba(0,0,0,.58)) drop-shadow(0 0 36px rgba(92,173,255,.38))!important;
   animation:mgwEntryVisibleGate 2.4s cubic-bezier(.18,.84,.2,1) both!important;
 }
 .mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]{
   width:min(128vw,650px)!important;height:min(90vh,560px)!important;
-  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp')!important;
+  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=real-webp-v2')!important;
   filter:drop-shadow(0 28px 38px rgba(0,0,0,.64)) drop-shadow(0 0 42px rgba(255,188,55,.42))!important;
   animation:mgwEntryVisibleKing 3s cubic-bezier(.12,.86,.18,1) both!important;
 }
 .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]{
   width:min(136vw,690px)!important;height:min(92vh,590px)!important;
-  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp')!important;
+  background-image:url('/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=real-webp-v2')!important;
   filter:drop-shadow(0 30px 40px rgba(0,0,0,.66)) drop-shadow(0 0 46px rgba(255,151,31,.44))!important;
   animation:mgwEntryVisibleBlade 3.6s cubic-bezier(.10,.88,.16,1) both!important;
 }
