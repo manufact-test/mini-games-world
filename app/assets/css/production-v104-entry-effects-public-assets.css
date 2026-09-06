@@ -1,0 +1,20 @@
+@import url('./production-v103-entry-effects-cinematic-assets.css?v=1&mvp19_3=cinematic-assets-v1');
+
+/* MVP-19.3 Entry Effects — public asset-root corrective.
+ * v103's visual design stays authoritative. This layer only points the same
+ * approved Tier II/III artwork at the application's established public media
+ * root under app/assets/media so Store/Profile previews and live effects use
+ * the files that are actually served with the rest of the client assets. */
+
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"] .mgw-entry-effect-live-emblem b{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp') !important;
+}
+.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"] .mgw-entry-effect-live-emblem b{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp') !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-02"] .mgw-entry-effect-preview-core b{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp') !important;
+}
+.mgw-entry-effect-preview[data-entry-effect-variant="entry-03"] .mgw-entry-effect-preview-core b{
+  background-image:url('../media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp') !important;
+}
