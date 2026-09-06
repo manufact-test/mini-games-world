@@ -441,10 +441,13 @@
 .store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product{
   min-height:0!important;
 }
+
+/* Avatar and frame cards no longer reserve subtitle-era empty space.
+ * Keep the action block close to the title instead of auto-pushing it down. */
 .store-v2-content[data-store-v2-panel="profile"]>.store-v2-product-grid>.store-v2-product>.store-v2-product-foot,
 .store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product>.store-v2-product-foot{
   min-height:0!important;
-  margin-top:auto!important;
-  padding-top:4px!important;
+  margin-top:4px!important;
+  padding-top:0!important;
   gap:5px!important;
 }
