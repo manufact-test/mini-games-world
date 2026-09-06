@@ -124,6 +124,7 @@ jobs:
               .github/workflows/mvp19-3-profile-*.yml|\
               .github/workflows/mvp19-4-game-cosmetics-pilot.yml|\
               app/assets/css/production-v105-store-entry-effects-polish.css|\
+              app/assets/css/production-v106-store-avatar-frame-density.css|\
               app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
               app/assets/js/api/client.js|\
               app/assets/js/ui.js|\
