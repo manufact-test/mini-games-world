@@ -1,43 +1,93 @@
 @import url('./production-v105-store-entry-effects-polish.css?v=6&mvp19_3=store-entry-effects-polish&store_stage_a=avatar-frame-gap-v2');
 
 /* MVP-19.3 Store Stage A — avatar/frame density root-cause corrective.
- * Manual screenshots after PR #1225 proved the visible gap was not the title margin.
- * The real owners are the base Store/Profile stretch rules and fixed frame geometry.
+ * Manual screenshots after PR #1225/#1226 proved that cancelling individual
+ * min-heights was not enough: legacy flex owners could still reserve a free row
+ * between the title and the action/status block.
+ *
  * Scope: Store avatars + Store frames only. No live-game selectors. */
 
-/* AVATARS: stop stretching each product to the tallest grid cell. */
+/* AVATARS: make the card geometry explicit: preview -> title -> footer.
+ * There is no subtitle row, so there is physically no track that can reserve it. */
 .store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid{
   align-items:start!important;
 }
 .store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product{
+  display:grid!important;
+  grid-template-rows:auto auto auto!important;
+  grid-auto-rows:max-content!important;
+  align-content:start!important;
+  align-items:start!important;
+  row-gap:0!important;
   height:auto!important;
   min-height:0!important;
   align-self:start!important;
 }
+.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product > .store-v2-avatar-preview{
+  align-self:start!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product > .store-v2-avatar-preview + .store-v2-product-name{
+  display:block!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:5px 1px 0!important;
+  padding:0!important;
+  align-self:start!important;
+}
 .store-v2-content[data-store-v2-panel="profile"] > .store-v2-product-grid > .store-v2-product > .store-v2-product-foot{
-  flex:0 0 auto!important;
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  align-content:start!important;
+  align-items:stretch!important;
+  row-gap:5px!important;
+  flex:none!important;
+  height:auto!important;
   min-height:0!important;
   margin:4px 0 0!important;
   padding:0!important;
-  justify-content:flex-start!important;
+  justify-content:stretch!important;
+  align-self:stretch!important;
 }
 
-/* FRAMES: override the legacy 188/31/49px reserved geometry from main.css. */
+/* FRAMES: same explicit three-track geometry. This also overrides the old
+ * 188/31/49px frame reservation and every margin-top:auto owner. */
 .store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] [data-profile-frame-grid]{
   align-items:start!important;
 }
-.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-profile-frame-card{
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product.store-v2-profile-frame-card{
+  display:grid!important;
+  grid-template-rows:auto auto auto!important;
+  grid-auto-rows:max-content!important;
+  align-content:start!important;
+  align-items:start!important;
+  row-gap:0!important;
   height:auto!important;
   min-height:0!important;
+  align-self:start!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product.store-v2-profile-frame-card > .store-v2-avatar-preview + .store-v2-product-name{
+  display:block!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:5px 1px 0!important;
+  padding:0!important;
   align-self:start!important;
 }
 .store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-profile-frame-copy{
   min-height:0!important;
+  height:auto!important;
 }
-.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-profile-frame-foot{
-  flex:0 0 auto!important;
+.store-v2-content[data-store-v2-panel="profile"] [data-profile-frame-store-section] .store-v2-product.store-v2-profile-frame-card > .store-v2-product-foot.store-v2-profile-frame-foot{
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  align-content:start!important;
+  align-items:stretch!important;
+  row-gap:5px!important;
+  flex:none!important;
+  height:auto!important;
   min-height:0!important;
   margin:4px 0 0!important;
   padding:0!important;
-  justify-content:flex-start!important;
+  justify-content:stretch!important;
+  align-self:stretch!important;
 }
