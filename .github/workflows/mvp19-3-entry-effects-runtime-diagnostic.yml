@@ -1,0 +1,66 @@
+name: MVP-19.3 Entry Effects runtime diagnostic
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
+      - 'e2e/playwright.entry-effects-diagnostic.config.mjs'
+      - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  runtime-diagnostic:
+    name: Probe live Entry Effect img on current staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+    steps:
+      - name: Checkout diagnostic candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Preflight current staging
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          import stagingGlobalSetup from './e2e/staging-global-setup.mjs';
+          await stagingGlobalSetup();
+          NODE
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Run Entry Effect runtime diagnostic
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --no-install playwright test --config=e2e/playwright.entry-effects-diagnostic.config.mjs
+
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-effects-runtime-diagnostic-${{ github.run_id }}
+          path: artifacts/playwright-entry-effects-diagnostic
+          if-no-files-found: warn
+          retention-days: 7
