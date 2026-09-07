@@ -1,0 +1,158 @@
+name: Temporary Entry Effects cinematic WebP patch
+
+on:
+  push:
+    branches:
+      - agent/mvp19-3-entry-effects-live-cinematic-webp-v4
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mvp19-3-entry-effects-live-cinematic-webp-v4
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Patch canonical live owner to cinematic WebP
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one occurrence, found {count}: {old!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          js = 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+          replace_once(
+              js,
+              "   Store already proves the canonical SVG artwork is loadable. Telegram manual\n   review showed the live card-background path can render the overlay/text while\n   omitting the artwork, so live presentation must have one concrete replaced\n   element owner. Mount the same canonical SVGs as real <img> nodes directly under\n   the overlay. Store presentation, lifecycle, equip, skip and game state are not\n   changed here. */",
+              "   Telegram manual review proved the real <img> owner is loadable, but the first\n   corrective accidentally mounted Store preview SVGs as the live Tier II/III art.\n   Keep Tier I on its accepted ceremonial SVG and mount the dedicated cinematic\n   WebP assets for Tier II/III as real <img> nodes. Store presentation, lifecycle,\n   equip, skip and game state are not changed here. */"
+          )
+          replace_once(
+              js,
+              "  'entry-02':'/app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg?asset=reference-art-v3',",
+              "  'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4',"
+          )
+          replace_once(
+              js,
+              "  'entry-03':'/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=reference-art-v3',",
+              "  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4',"
+          )
+
+          manifest = 'app/runtime/client/version-manifest.php'
+          replace_once(
+              manifest,
+              'production-clean-entry-v110-mvp19-3-final-polish.js?v=1134',
+              'production-clean-entry-v110-mvp19-3-final-polish.js?v=1135'
+          )
+          replace_once(
+              manifest,
+              'entry_live_img=reference-art-v3',
+              'entry_live_img=cinematic-webp-v4'
+          )
+
+          spec = 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
+          replace_once(
+              spec,
+              "const ART_PATH = '/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=reference-art-v3';",
+              "const ART_PATH = '/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4';"
+          )
+          replace_once(
+              spec,
+              "const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1134&entry_live_img=reference-art-v3';",
+              "const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1135&entry_live_img=cinematic-webp-v4';"
+          )
+          replace_once(
+              spec,
+              "test('ENTRY EFFECT DIAGNOSTIC: deployed canonical SVG real-img owner is visible', async ({ browser }, testInfo) => {",
+              "test('ENTRY EFFECT DIAGNOSTIC: deployed cinematic WebP real-img owner is visible', async ({ browser }, testInfo) => {"
+          )
+          replace_once(
+              spec,
+              "    const artText = await bodyText(artResponse);\n    const jsText = await bodyText(jsResponse);\n    const cssText = await bodyText(cssResponse);\n\n    expect(artResponse.headers()['content-type'] || '').toContain('image/svg+xml');\n    expect(artText).toMatch(/<svg\\b/i);\n    expect(artText).not.toMatch(/<text\\b/i);\n    expect(artText.length).toBeGreaterThan(1000);",
+              "    const artBody = await artResponse.body();\n    const jsText = await bodyText(jsResponse);\n    const cssText = await bodyText(cssResponse);\n\n    expect(artResponse.headers()['content-type'] || '').toContain('image/webp');\n    expect(artBody.length).toBeGreaterThan(1000);\n    expect(artBody.subarray(0, 4).toString('ascii')).toBe('RIFF');\n    expect(artBody.subarray(8, 12).toString('ascii')).toBe('WEBP');"
+          )
+          replace_once(
+              spec,
+              "    expect(jsText).toContain('store-entry-02-king-ascension.svg?asset=reference-art-v3');",
+              "    expect(jsText).toContain('entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4');"
+          )
+          replace_once(
+              spec,
+              "    expect(jsText).toContain('store-entry-03-lord-blade.svg?asset=reference-art-v3');",
+              "    expect(jsText).toContain('entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4');"
+          )
+          replace_once(
+              spec,
+              "    expect(diagnostic.src).toContain('store-entry-03-lord-blade.svg');\n    expect(diagnostic.src).toContain('asset=reference-art-v3');",
+              "    expect(diagnostic.src).toContain('entry-effect-03-knight-strike.webp');\n    expect(diagnostic.src).toContain('asset=cinematic-webp-v4');"
+          )
+
+          runtime = '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
+          replace_once(
+              runtime,
+              "      - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'",
+              "      - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'\n      - 'app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'\n      - 'app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'"
+          )
+          replace_once(
+              runtime,
+              '      - name: Verify candidate SVG assets and single-owner wiring',
+              '      - name: Verify candidate Entry Effect assets and single-owner wiring'
+          )
+          replace_once(
+              runtime,
+              "          grep -F \"store-entry-02-king-ascension.svg?asset=reference-art-v3\" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js\n          grep -F \"store-entry-03-lord-blade.svg?asset=reference-art-v3\" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js",
+              "          python3 - <<'PY'\n          from pathlib import Path\n          for path in [\n              Path('app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),\n              Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),\n          ]:\n              data = path.read_bytes()\n              assert len(data) > 1000, f'{path}: unexpectedly small cinematic asset'\n              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', f'{path}: not a real WebP file'\n              print(f'{path}: ok bytes={len(data)}')\n          PY\n          grep -F \"entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4\" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js\n          grep -F \"entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4\" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js"
+          )
+          replace_once(
+              runtime,
+              "          grep -F 'entry_live_img=reference-art-v3' app/runtime/client/version-manifest.php",
+              "          grep -F 'entry_live_img=cinematic-webp-v4' app/runtime/client/version-manifest.php"
+          )
+          replace_once(
+              runtime,
+              '      - name: Probe deployed real-img SVG owner',
+              '      - name: Probe deployed real-img cinematic owner'
+          )
+
+          profile = '.github/workflows/mvp19-3-profile-entry-effects.yml'
+          replace_once(
+              profile,
+              "          grep -F 'asset=reference-art-v3' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js",
+              "          grep -F 'entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js\n          grep -F 'entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js"
+          )
+          replace_once(
+              profile,
+              "          grep -F 'entry_live_img=reference-art-v3' app/runtime/client/version-manifest.php",
+              "          grep -F 'entry_live_img=cinematic-webp-v4' app/runtime/client/version-manifest.php"
+          )
+
+          Path('.github/workflows/tmp-entry-effects-webp-patch.yml').unlink()
+          PY
+
+          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          node --check e2e/staging/entry-effects-runtime-diagnostic.spec.mjs
+          php -l app/runtime/client/version-manifest.php
+          git diff --check
+          git diff -- app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js app/runtime/client/version-manifest.php e2e/staging/entry-effects-runtime-diagnostic.spec.mjs .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml .github/workflows/mvp19-3-profile-entry-effects.yml
+
+      - name: Commit corrective
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add -A
+          git commit -m 'MVP-19.3: restore cinematic WebP live Entry Effects'
+          git push origin HEAD:agent/mvp19-3-entry-effects-live-cinematic-webp-v4
