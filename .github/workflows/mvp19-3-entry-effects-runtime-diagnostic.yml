@@ -11,6 +11,7 @@ on:
       - 'app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'
       - 'app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'
       - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'
+      - 'app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'
       - 'app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'
       - 'app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'
       - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
@@ -38,6 +39,88 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
+
+      - name: Forensic-decode cinematic WebP assets
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --quiet pillow
+          mkdir -p artifacts/entry-webp-forensic
+          python3 - <<'PY'
+          from PIL import Image, ImageStat
+          from pathlib import Path
+          import hashlib, json
+
+          paths = [
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'),
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),
+          ]
+          report = []
+          for path in paths:
+              img = Image.open(path)
+              img.load()
+              rgba = img.convert('RGBA')
+              alpha = rgba.getchannel('A')
+              rgb = rgba.convert('RGB')
+              ah = alpha.histogram()
+              total = rgba.width * rgba.height
+              transparent = ah[0]
+              opaque = ah[255]
+              partial = total - transparent - opaque
+              nonzero = total - transparent
+              bbox = alpha.getbbox()
+              alpha_bytes = alpha.tobytes()
+              rgb_bytes = rgb.tobytes()
+              extrema = rgba.getextrema()
+              stat = ImageStat.Stat(rgba)
+
+              # Checker composite makes transparency visually inspectable as an artifact.
+              checker = Image.new('RGBA', rgba.size, (42, 46, 54, 255))
+              px = checker.load()
+              for y in range(0, rgba.height, 24):
+                  for x in range(0, rgba.width, 24):
+                      if ((x // 24) + (y // 24)) % 2:
+                          for yy in range(y, min(y + 24, rgba.height)):
+                              for xx in range(x, min(x + 24, rgba.width)):
+                                  px[xx, yy] = (88, 94, 106, 255)
+              composite = Image.alpha_composite(checker, rgba)
+              composite.save(Path('artifacts/entry-webp-forensic') / f'{path.stem}-checker.png')
+              rgba.save(Path('artifacts/entry-webp-forensic') / f'{path.stem}-rgba.png')
+
+              item = {
+                  'file': str(path),
+                  'format': img.format,
+                  'source_mode': img.mode,
+                  'size': list(img.size),
+                  'file_bytes': path.stat().st_size,
+                  'alpha_extrema': list(alpha.getextrema()),
+                  'rgba_extrema': [list(v) for v in extrema],
+                  'transparent_pixels': transparent,
+                  'partial_alpha_pixels': partial,
+                  'opaque_pixels': opaque,
+                  'nonzero_alpha_pixels': nonzero,
+                  'nonzero_alpha_ratio': round(nonzero / total, 6),
+                  'alpha_bbox': list(bbox) if bbox else None,
+                  'alpha_sha256': hashlib.sha256(alpha_bytes).hexdigest(),
+                  'rgb_sha256': hashlib.sha256(rgb_bytes).hexdigest(),
+                  'rgba_mean': [round(v, 3) for v in stat.mean],
+              }
+              report.append(item)
+              print('ENTRY_WEBP_FORENSIC=' + json.dumps(item, separators=(',', ':')))
+
+          Path('artifacts/entry-webp-forensic/report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          PY
+
+      - name: Upload WebP forensic evidence
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-webp-forensic-${{ github.run_id }}
+          path: artifacts/entry-webp-forensic
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Verify candidate Entry Effect assets and single-owner wiring
         shell: bash
