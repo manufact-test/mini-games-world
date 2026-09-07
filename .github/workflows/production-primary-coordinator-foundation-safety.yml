@@ -1,48 +1,98 @@
-name: Production Primary Coordinator Foundation Safety
+name: Temporary valid Tier III WebP probe builder
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
-      - agent/mvp-14-release-integration
-    paths:
-      - 'bot/runtime/ProductionPrimaryRuntimeActivationContract.php'
-      - 'bot/runtime/ProductionPrimaryRuntimeCoordinator.php'
-      - 'bot/tests/ProductionPrimaryRuntimeCoordinatorFoundationTest.php'
-      - 'ops/checks/production-primary-coordinator-foundation-local.sh'
-      - 'ops/runtime/PRODUCTION_PRIMARY_COORDINATOR_FOUNDATION.md'
-      - '.github/workflows/production-primary-coordinator-foundation-safety.yml'
-  workflow_dispatch:
+      - agent/mvp19-3-entry-valid-webp-probe-v5
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: mgw-production-primary-coordinator-foundation-${{ github.ref }}
+  group: mgw-valid-entry-webp-probe-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  focused:
-    name: Verify inactive production coordinator foundation
+  build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout exact candidate revision
+      - name: Checkout corrective branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          clean: true
+          ref: agent/mvp19-3-entry-valid-webp-probe-v5
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Set up PHP 8.3
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          coverage: none
+      - name: Generate valid Tier III WebP and wire fresh cache identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin agent/mvp-13-2-staging
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from PIL import Image, ImageDraw
+          from pathlib import Path
+          import struct
 
-      - name: Verify exact PHP runtime
-        run: php -r 'printf("PHP_VERSION=%s\n", PHP_VERSION); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
+          path = Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp')
+          im = Image.new('RGBA', (640, 480), (0, 0, 0, 0))
+          d = ImageDraw.Draw(im)
+          d.rounded_rectangle((18, 18, 622, 462), radius=52, fill=(28, 16, 14, 238), outline=(255, 185, 45, 255), width=7)
+          d.ellipse((208, 54, 432, 278), fill=(255, 157, 18, 218), outline=(255, 235, 160, 255), width=10)
+          d.polygon([(34, 118), (248, 78), (208, 226), (52, 268)], fill=(178, 15, 34, 245))
+          d.polygon([(606, 118), (392, 78), (432, 226), (588, 268)], fill=(178, 15, 34, 245))
+          d.polygon([(260, 140), (334, 112), (384, 212), (354, 352), (278, 352), (246, 220)], fill=(20, 23, 27, 255), outline=(255, 185, 45, 255))
+          d.line((72, 392, 572, 102), fill=(255, 244, 210, 255), width=38)
+          d.line((82, 402, 582, 112), fill=(255, 178, 28, 255), width=12)
+          d.ellipse((164, 340, 476, 430), outline=(255, 182, 35, 255), width=12)
+          im.save(path, 'WEBP', quality=88, method=4, exact=True)
 
-      - name: Run focused coordinator foundation checks
-        run: bash ops/checks/production-primary-coordinator-foundation-local.sh
+          check = Image.open(path)
+          check.load()
+          assert check.size == (640, 480)
+          rgba = check.convert('RGBA')
+          assert rgba.getchannel('A').getbbox() is not None
+          data = path.read_bytes()
+          assert data[:4] == b'RIFF' and data[8:12] == b'WEBP'
+          declared_total = struct.unpack('<I', data[4:8])[0] + 8
+          assert declared_total == len(data), (declared_total, len(data))
+          print(f'VALID_WEBP_PROBE bytes={len(data)} declared_total={declared_total} mode={check.mode} size={check.size}')
+          PY
+
+          python3 - <<'PY'
+          from pathlib import Path
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{path}: expected one {old!r}, found {n}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          js = 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+          replace_once(js,
+              "  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4',",
+              "  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=valid-webp-v5',")
+          manifest = 'app/runtime/client/version-manifest.php'
+          replace_once(manifest, 'production-clean-entry-v110-mvp19-3-final-polish.js?v=1135', 'production-clean-entry-v110-mvp19-3-final-polish.js?v=1136')
+          replace_once(manifest, 'entry_live_img=cinematic-webp-v4', 'entry_live_img=valid-webp-v5')
+          PY
+
+          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          php -l app/runtime/client/version-manifest.php
+          git diff --check
+
+          # Remove both temporary workflow edits from the final corrective diff.
+          git show origin/agent/mvp-13-2-staging:.github/workflows/production-primary-coordinator-foundation-safety.yml > .github/workflows/production-primary-coordinator-foundation-safety.yml
+          git show origin/agent/mvp-13-2-staging:.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml > .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml
+
+      - name: Commit generated binary corrective
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add -A
+          git commit -m 'MVP-19.3: replace malformed Tier III WebP with valid probe'
+          git push origin HEAD:agent/mvp19-3-entry-valid-webp-probe-v5
