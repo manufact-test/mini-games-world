@@ -192,8 +192,6 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp19-3-profile-*.yml|\
-              .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml|\
-              e2e/staging/entry-effects-runtime-diagnostic.spec.mjs|\
               app/assets/css/production-v105-store-entry-effects-polish.css|\
               app/assets/css/production-v106-store-avatar-frame-density.css|\
               app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\

@@ -1,13 +1,11 @@
-name: MVP-19.3 Entry Effects canonical live-owner integrity
+name: MVP-19.3 Entry Effects canonical art integrity
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
       - 'app/assets/css/production-v106-store-avatar-frame-density.css'
-      - 'app/runtime/client/version-manifest.php'
       - 'app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'
       - 'app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'
       - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'
@@ -21,10 +19,11 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   asset-integrity:
-    name: Verify canonical Entry Effect real-img owner
+    name: Verify canonical Entry Effect SVG art
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -37,7 +36,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
 
-      - name: Verify candidate SVG assets and single-owner wiring
+      - name: Verify candidate SVG assets and CSS ownership
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -61,19 +60,10 @@ jobs:
               assert visible >= 10, f'{path}: artwork has too few visible primitives ({visible})'
               print(f'{path}: ok primitives={visible} bytes={len(data.encode("utf-8"))}')
           PY
-          grep -F "store-entry-01-celestial-gate.svg?asset=live-node-svg-v2" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "store-entry-02-king-ascension.svg?asset=live-node-svg-v2" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "store-entry-03-lord-blade.svg?asset=live-node-svg-v2" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "image.className = 'mgw-entry-effect-live-art'" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F 'background-color:transparent!important;background-image:none!important;' app/assets/css/production-v106-store-avatar-frame-density.css
-          grep -F '.mgw-entry-effect-live-art{' app/assets/css/production-v106-store-avatar-frame-density.css
-          grep -F 'display:block!important;' app/assets/css/production-v106-store-avatar-frame-density.css
-          if grep -F '.mgw-entry-effect-live-art{display:none!important}' app/assets/css/production-v106-store-avatar-frame-density.css; then
-            echo 'obsolete hidden live image owner is still present' >&2
-            exit 1
-          fi
-          grep -F 'entry_live_img=canonical-svg-node-v2' app/runtime/client/version-manifest.php
-          grep -F 'live_entry=canonical-svg-node-v2' app/runtime/client/version-manifest.php
+          grep -F 'store-entry-01-celestial-gate.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F 'store-entry-02-king-ascension.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F 'store-entry-03-lord-blade.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F '.mgw-entry-effect-live-art{display:none!important}' app/assets/css/production-v106-store-avatar-frame-density.css
 
       - name: Wait for exact staging deployment
         if: github.event_name != 'pull_request'
@@ -122,7 +112,7 @@ jobs:
           npm install --no-save --package-lock=false @playwright/test@1.62.0
           npx --no-install playwright install chromium
 
-      - name: Probe deployed real-img SVG owner
+      - name: Probe deployed canonical SVG pixels
         if: github.event_name != 'pull_request'
         shell: bash
         run: |
