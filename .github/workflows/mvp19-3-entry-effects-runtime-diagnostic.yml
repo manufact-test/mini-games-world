@@ -1,14 +1,14 @@
-name: MVP-19.3 Entry Effects asset integrity
+name: MVP-19.3 Entry Effects canonical art integrity
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'
-      - 'app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'
-      - 'app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'
-      - 'scripts/ci/check-entry-effect-alpha.py'
+      - 'app/assets/css/production-v106-store-avatar-frame-density.css'
+      - 'app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'
+      - 'app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'
+      - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'
       - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
       - 'e2e/playwright.entry-effects-diagnostic.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
@@ -19,10 +19,11 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   asset-integrity:
-    name: Verify Entry Effect WebP pixels
+    name: Verify canonical Entry Effect SVG art
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -35,17 +36,34 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Verify candidate WebP alpha/content
+      - name: Verify candidate SVG assets and CSS ownership
         shell: bash
         run: |
           set -Eeuo pipefail
-          python -m pip install --disable-pip-version-check --no-input pillow==11.3.0
-          python scripts/ci/check-entry-effect-alpha.py
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+
+          paths = [
+              Path('app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'),
+              Path('app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'),
+              Path('app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'),
+          ]
+          for path in paths:
+              data = path.read_text(encoding='utf-8')
+              assert len(data) > 1000, f'{path}: unexpectedly small artwork'
+              root = ET.fromstring(data)
+              assert root.tag.endswith('svg'), f'{path}: root is not svg'
+              assert root.attrib.get('viewBox') == '0 0 400 300', f'{path}: unexpected viewBox'
+              assert '<text' not in data.lower(), f'{path}: readable text is not allowed in artwork'
+              visible = sum(1 for node in root.iter() if node.tag.rsplit('}', 1)[-1] in {'path','ellipse','circle','rect','polygon','polyline','line'})
+              assert visible >= 10, f'{path}: artwork has too few visible primitives ({visible})'
+              print(f'{path}: ok primitives={visible} bytes={len(data.encode("utf-8"))}')
+          PY
+          grep -F 'store-entry-01-celestial-gate.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F 'store-entry-02-king-ascension.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F 'store-entry-03-lord-blade.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F '.mgw-entry-effect-live-art{display:none!important}' app/assets/css/production-v106-store-avatar-frame-density.css
 
       - name: Wait for exact staging deployment
         if: github.event_name != 'pull_request'
@@ -94,7 +112,7 @@ jobs:
           npm install --no-save --package-lock=false @playwright/test@1.62.0
           npx --no-install playwright install chromium
 
-      - name: Probe deployed Hostinger WebP pixels
+      - name: Probe deployed canonical SVG pixels
         if: github.event_name != 'pull_request'
         shell: bash
         run: |
