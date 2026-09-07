@@ -11,7 +11,7 @@ const launchSource = readFileSync(resolve(repoRoot, 'bot/helpers/WebAppLaunchUrl
 const entryMatch = launchSource.match(/^\s*private const ENTRY_PATH = '([^']+)';/m);
 if (!entryMatch) throw new Error('Canonical WebAppLaunchUrl ENTRY_PATH is unavailable.');
 const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
-const ART_PATH = '/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=canonical-svg-v1';
+const ART_PATH = '/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=live-img-v1';
 
 async function requestOidcToken() {
   const source = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
@@ -47,7 +47,7 @@ function requestAction(request) {
   try { return String(request.postDataJSON()?.action || ''); } catch { return ''; }
 }
 
-test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentation', async ({ browser }, testInfo) => {
+test('ENTRY EFFECT DIAGNOSTIC: real img load, pixels and computed geometry', async ({ browser }, testInfo) => {
   const context = await browser.newContext({
     locale: 'ru-RU',
     timezoneId: 'Europe/Vilnius',
@@ -62,14 +62,14 @@ test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentati
     const assetResponse = await context.request.get(`${ORIGIN}${ART_PATH}`, { timeout: 35_000 });
     const assetBody = await assetResponse.body();
     const assetHeaders = assetResponse.headers();
-    const assetText = assetBody.toString('utf8');
+    const header = assetBody.subarray(0, 12);
     const assetDiagnostic = {
       status: assetResponse.status(),
       contentType: assetHeaders['content-type'] || '',
       contentLengthHeader: assetHeaders['content-length'] || '',
       byteLength: assetBody.length,
-      hasSvgRoot: /<svg\b/i.test(assetText),
-      hasReadableTextNode: /<text\b/i.test(assetText),
+      riff: header.subarray(0, 4).toString('ascii'),
+      webp: header.subarray(8, 12).toString('ascii'),
     };
 
     const page = await context.newPage();
@@ -85,8 +85,7 @@ test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentati
     await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
 
     await page.evaluate(() => {
-      document.querySelectorAll('#stagingEntryEffectDiagnosticLayer,#stagingEntryEffectPreviewDiagnostic').forEach(node => node.remove());
-
+      document.querySelectorAll('.mgw-entry-effect-layer').forEach(node => node.remove());
       const layer = document.createElement('div');
       layer.className = 'mgw-entry-effect-layer';
       layer.id = 'stagingEntryEffectDiagnosticLayer';
@@ -97,46 +96,34 @@ test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentati
         </div>
       </div>`;
       document.body.append(layer);
-
-      const preview = document.createElement('div');
-      preview.id = 'stagingEntryEffectPreviewDiagnostic';
-      preview.className = 'mgw-entry-effect-preview';
-      preview.dataset.entryEffectVariant = 'entry-03';
-      preview.innerHTML = '<span class="mgw-entry-effect-preview-core"><i></i><b>MG</b><i></i></span>';
-      Object.assign(preview.style, { position:'fixed', left:'8px', bottom:'8px', width:'120px', height:'90px', zIndex:'2147483300' });
-      document.body.append(preview);
     });
 
+    const image = page.locator('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
+    await expect(image).toHaveCount(1, { timeout: 5_000 });
     await page.waitForFunction(() => {
-      const card = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-card');
-      const preview = document.querySelector('#stagingEntryEffectPreviewDiagnostic');
-      return card instanceof HTMLElement
-        && preview instanceof HTMLElement
-        && getComputedStyle(card).backgroundImage.includes('store-entry-03-lord-blade.svg')
-        && getComputedStyle(preview).backgroundImage.includes('store-entry-03-lord-blade.svg');
+      const img = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
+      return img instanceof HTMLImageElement && img.complete;
     }, null, { timeout: 10_000 });
 
-    const diagnostic = await page.evaluate(async (artUrl) => {
-      const card = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-card');
-      const preview = document.querySelector('#stagingEntryEffectPreviewDiagnostic');
-      const emblem = card?.querySelector('.mgw-entry-effect-live-emblem');
-      const oldImg = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
-      const previewCore = preview?.querySelector('.mgw-entry-effect-preview-core b');
-
-      const image = new Image();
-      image.decoding = 'async';
-      image.src = artUrl;
-      try { await image.decode(); } catch {}
+    const domDiagnostic = await page.evaluate(async () => {
+      const img = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
+      if (!(img instanceof HTMLImageElement)) return { exists:false };
+      try { await img.decode(); } catch {}
+      const style = getComputedStyle(img);
+      const rect = img.getBoundingClientRect();
+      const cx = Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2));
+      const cy = Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2));
+      const top = document.elementFromPoint(cx, cy);
 
       let pixels = null;
-      if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
         const canvas = document.createElement('canvas');
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d', { willReadFrequently:true });
         if (ctx) {
           ctx.clearRect(0, 0, 64, 64);
-          ctx.drawImage(image, 0, 0, 64, 64);
+          ctx.drawImage(img, 0, 0, 64, 64);
           const data = ctx.getImageData(0, 0, 64, 64).data;
           let alphaSum = 0;
           let nonTransparent = 0;
@@ -146,8 +133,8 @@ test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentati
           for (let i = 0; i < data.length; i += 4) {
             const a = data[i + 3];
             alphaSum += a;
+            if (a > 8) nonTransparent += 1;
             if (a > 8) {
-              nonTransparent += 1;
               const lum = (data[i] + data[i + 1] + data[i + 2]) / 3;
               rgbSum += lum;
               rgbSqSum += lum * lum;
@@ -164,44 +151,35 @@ test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentati
         }
       }
 
-      const cardStyle = card instanceof HTMLElement ? getComputedStyle(card) : null;
-      const previewStyle = preview instanceof HTMLElement ? getComputedStyle(preview) : null;
-      const cardRect = card instanceof HTMLElement ? card.getBoundingClientRect() : null;
-      const previewRect = preview instanceof HTMLElement ? preview.getBoundingClientRect() : null;
-
       return {
-        art:{
-          complete:image.complete,
-          naturalWidth:image.naturalWidth,
-          naturalHeight:image.naturalHeight,
-          pixels,
+        exists:true,
+        connected:img.isConnected,
+        complete:img.complete,
+        src:img.src,
+        currentSrc:img.currentSrc,
+        naturalWidth:img.naturalWidth,
+        naturalHeight:img.naturalHeight,
+        rect:{ x:rect.x, y:rect.y, width:rect.width, height:rect.height },
+        style:{
+          display:style.display,
+          visibility:style.visibility,
+          opacity:style.opacity,
+          position:style.position,
+          zIndex:style.zIndex,
+          transform:style.transform,
+          filter:style.filter,
+          objectFit:style.objectFit,
         },
-        card:cardStyle && cardRect ? {
-          backgroundImage:cardStyle.backgroundImage,
-          display:cardStyle.display,
-          visibility:cardStyle.visibility,
-          opacity:cardStyle.opacity,
-          width:cardRect.width,
-          height:cardRect.height,
-        } : null,
-        preview:previewStyle && previewRect ? {
-          backgroundImage:previewStyle.backgroundImage,
-          display:previewStyle.display,
-          visibility:previewStyle.visibility,
-          opacity:previewStyle.opacity,
-          width:previewRect.width,
-          height:previewRect.height,
-        } : null,
-        legacyMgDisplay:emblem instanceof HTMLElement ? getComputedStyle(emblem).display : null,
-        previewMgOpacity:previewCore instanceof HTMLElement ? getComputedStyle(previewCore).opacity : null,
-        oldWebpSiblingDisplay:oldImg instanceof HTMLElement ? getComputedStyle(oldImg).display : 'absent',
+        topElementAtCenter:top ? `${top.tagName}.${top.className || ''}` : '',
+        parentClass:img.parentElement?.className || '',
+        pixels,
       };
-    }, `${ORIGIN}${ART_PATH}`);
+    });
 
-    const evidence = { asset:assetDiagnostic, presentation:diagnostic };
-    console.log('ENTRY_EFFECT_RUNTIME_DIAGNOSTIC=' + JSON.stringify(evidence));
+    const diagnostic = { asset:assetDiagnostic, dom:domDiagnostic };
+    console.log('ENTRY_EFFECT_RUNTIME_DIAGNOSTIC=' + JSON.stringify(diagnostic));
     await testInfo.attach('entry-effect-runtime-diagnostic.json', {
-      body: Buffer.from(JSON.stringify(evidence, null, 2)),
+      body: Buffer.from(JSON.stringify(diagnostic, null, 2)),
       contentType: 'application/json',
     });
     await testInfo.attach('entry-effect-runtime-diagnostic.png', {
@@ -210,30 +188,19 @@ test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentati
     });
 
     expect(assetDiagnostic.status).toBe(200);
-    expect(assetDiagnostic.contentType).toContain('image/svg+xml');
-    expect(assetDiagnostic.byteLength).toBeGreaterThan(1000);
-    expect(assetDiagnostic.hasSvgRoot).toBe(true);
-    expect(assetDiagnostic.hasReadableTextNode).toBe(false);
-
-    expect(diagnostic.art.complete).toBe(true);
-    expect(diagnostic.art.naturalWidth).toBeGreaterThan(0);
-    expect(diagnostic.art.naturalHeight).toBeGreaterThan(0);
-    expect(diagnostic.art.pixels?.nonTransparentFraction || 0).toBeGreaterThan(0.05);
-    expect(diagnostic.art.pixels?.rgbStdDev || 0).toBeGreaterThan(5);
-
-    expect(diagnostic.card?.backgroundImage || '').toContain('store-entry-03-lord-blade.svg');
-    expect(diagnostic.card?.width || 0).toBeGreaterThan(100);
-    expect(diagnostic.card?.height || 0).toBeGreaterThan(100);
-    expect(Number(diagnostic.card?.opacity || 0)).toBeGreaterThan(0);
-    expect(diagnostic.card?.display).not.toBe('none');
-    expect(diagnostic.card?.visibility).not.toBe('hidden');
-
-    expect(diagnostic.preview?.backgroundImage || '').toContain('store-entry-03-lord-blade.svg');
-    expect(diagnostic.preview?.width || 0).toBeGreaterThan(80);
-    expect(diagnostic.preview?.height || 0).toBeGreaterThan(60);
-    expect(diagnostic.legacyMgDisplay).toBe('none');
-    expect(Number(diagnostic.previewMgOpacity || 1)).toBe(0);
-    expect(['none','absent']).toContain(diagnostic.oldWebpSiblingDisplay);
+    expect(assetDiagnostic.contentType).toContain('image/webp');
+    expect(assetDiagnostic.riff).toBe('RIFF');
+    expect(assetDiagnostic.webp).toBe('WEBP');
+    expect(domDiagnostic.exists).toBe(true);
+    expect(domDiagnostic.complete).toBe(true);
+    expect(domDiagnostic.naturalWidth).toBeGreaterThan(0);
+    expect(domDiagnostic.naturalHeight).toBeGreaterThan(0);
+    expect(domDiagnostic.rect?.width || 0).toBeGreaterThan(100);
+    expect(domDiagnostic.rect?.height || 0).toBeGreaterThan(100);
+    expect(Number(domDiagnostic.style?.opacity || 0)).toBeGreaterThan(0);
+    expect(domDiagnostic.style?.display).not.toBe('none');
+    expect(domDiagnostic.style?.visibility).not.toBe('hidden');
+    expect(domDiagnostic.pixels?.nonTransparentFraction || 0).toBeGreaterThan(0.05);
   } finally {
     await context.close().catch(() => null);
   }
