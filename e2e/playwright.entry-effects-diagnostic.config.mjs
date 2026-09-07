@@ -3,7 +3,6 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './staging',
   testMatch: 'entry-effects-runtime-diagnostic.spec.mjs',
-  globalSetup: './staging-global-setup.mjs',
   outputDir: 'artifacts/playwright-entry-effects-diagnostic/test-results',
   fullyParallel: false,
   workers: 1,
