@@ -26,6 +26,8 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
       - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
+      - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
+      - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
       - '.github/workflows/mvp19-3-profile-entry-effects.yml'
   workflow_dispatch:
 
@@ -70,6 +72,7 @@ jobs:
           node --check app/assets/js/production-v110-readonly-game-sync.js
           node --check app/assets/js/screens/game-screen-v102-safe.js
           node --check app/assets/js/components/toast.js
+          node --check e2e/staging/entry-effects-runtime-diagnostic.spec.mjs
 
       - name: Run focused Entry Effects contract
         run: php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
@@ -115,8 +118,13 @@ jobs:
           grep -F 'if (!entries.length) return;' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-skip' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-live-art' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "asset=live-img-v1" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F 'entry_live_img=dom-sibling-v1' app/runtime/client/version-manifest.php
+          grep -F 'asset=live-node-svg-v2' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F 'entry_live_img=canonical-svg-node-v2' app/runtime/client/version-manifest.php
+          grep -F 'live_entry=canonical-svg-node-v2' app/runtime/client/version-manifest.php
+          grep -F 'background-color:transparent!important;background-image:none!important;' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F '.mgw-entry-effect-live-art{' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F 'display:block!important;' app/assets/css/production-v106-store-avatar-frame-density.css
+          ! grep -Fq '.mgw-entry-effect-live-art{display:none!important}' app/assets/css/production-v106-store-avatar-frame-density.css
           ! grep -Fq 'profile-v2-entry-effect-status' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F '#screen-profile .profile-v2-game-collection' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
           grep -F '#screen-profile .profile-v2-game-card' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
@@ -144,6 +152,9 @@ jobs:
           test -s app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp
           test -s app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp
           test -s app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp
+          test -s app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg
+          test -s app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg
+          test -s app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg
           python3 - <<'PY'
           from pathlib import Path
           paths = [
@@ -191,6 +202,8 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp19-3-profile-*.yml|\
+              .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml|\
+              e2e/staging/entry-effects-runtime-diagnostic.spec.mjs|\
               bot/database/migrations/20260905_0025_add_profile_entry_effects.php|\
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
