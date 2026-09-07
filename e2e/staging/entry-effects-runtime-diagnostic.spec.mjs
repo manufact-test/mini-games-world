@@ -1,147 +1,239 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test, expect } from '@playwright/test';
 
 const ORIGIN = process.env.MGW_STAGING_ORIGIN || 'https://seashell-okapi-889488.hostingersite.com';
-const ASSETS = Object.freeze([
-  ['entry-01', '/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp?asset=live-img-v1'],
-  ['entry-02', '/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=live-img-v1'],
-  ['entry-03', '/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=live-img-v1'],
-]);
+const AUTH_URL = `${ORIGIN}/bot/staging-test-auth.php`;
+const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const launchSource = readFileSync(resolve(repoRoot, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
+const entryMatch = launchSource.match(/^\s*private const ENTRY_PATH = '([^']+)';/m);
+if (!entryMatch) throw new Error('Canonical WebAppLaunchUrl ENTRY_PATH is unavailable.');
+const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
+const ART_PATH = '/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=canonical-svg-v1';
 
-async function inspectAsset(context, browser, label, path, testInfo) {
-  const url = `${ORIGIN}${path}`;
-  const response = await context.request.get(url, { timeout: 35_000 });
-  const body = await response.body();
-  const headers = response.headers();
-  const header = body.subarray(0, 12);
+async function requestOidcToken() {
+  const source = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
+  const bearer = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || '';
+  if (!source || !bearer) throw new Error('GitHub Actions OIDC environment is unavailable.');
+  const url = new URL(source);
+  url.searchParams.set('audience', OIDC_AUDIENCE);
+  const response = await fetch(url, {
+    headers: { Authorization: `bearer ${bearer}`, Accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error(`OIDC request failed: ${response.status}`);
+  const payload = await response.json();
+  if (typeof payload?.value !== 'string') throw new Error('OIDC JWT is unavailable.');
+  return payload.value;
+}
 
-  const network = {
-    label,
-    url,
-    status: response.status(),
-    contentType: headers['content-type'] || '',
-    contentLengthHeader: headers['content-length'] || '',
-    cacheControl: headers['cache-control'] || '',
-    byteLength: body.length,
-    riff: header.subarray(0, 4).toString('ascii'),
-    webp: header.subarray(8, 12).toString('ascii'),
-  };
+async function authorize(context) {
+  const response = await context.request.post(AUTH_URL, {
+    headers: {
+      Authorization: `Bearer ${await requestOidcToken()}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    data: { action: 'issue', slot: 'A' },
+    timeout: 35_000,
+  });
+  expect(response.status()).toBe(200);
+  const payload = await response.json();
+  expect(payload?.ok).toBe(true);
+}
 
-  const imageContext = await browser.newContext({
+function requestAction(request) {
+  try { return String(request.postDataJSON()?.action || ''); } catch { return ''; }
+}
+
+test('ENTRY EFFECT DIAGNOSTIC: canonical SVG is visible in Store/live presentation', async ({ browser }, testInfo) => {
+  const context = await browser.newContext({
+    locale: 'ru-RU',
+    timezoneId: 'Europe/Vilnius',
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
   });
-  const page = await imageContext.newPage();
 
   try {
-    const navigation = await page.goto(url, { waitUntil: 'load', timeout: 35_000 });
-    const browserStatus = navigation?.status() || 0;
+    await authorize(context);
+
+    const assetResponse = await context.request.get(`${ORIGIN}${ART_PATH}`, { timeout: 35_000 });
+    const assetBody = await assetResponse.body();
+    const assetHeaders = assetResponse.headers();
+    const assetText = assetBody.toString('utf8');
+    const assetDiagnostic = {
+      status: assetResponse.status(),
+      contentType: assetHeaders['content-type'] || '',
+      contentLengthHeader: assetHeaders['content-length'] || '',
+      byteLength: assetBody.length,
+      hasSvgRoot: /<svg\b/i.test(assetText),
+      hasReadableTextNode: /<text\b/i.test(assetText),
+    };
+
+    const page = await context.newPage();
+    const bootstrapPromise = page.waitForResponse(response => (
+      response.url() === `${ORIGIN}/bot/api.php`
+      && response.request().method() === 'POST'
+      && requestAction(response.request()) === 'bootstrap'
+    ), { timeout: 35_000 });
+
+    const entry = await page.goto(ENTRY_URL, { waitUntil: 'domcontentloaded' });
+    expect(entry?.ok()).toBe(true);
+    expect((await bootstrapPromise).status()).toBe(200);
+    await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
+
+    await page.evaluate(() => {
+      document.querySelectorAll('#stagingEntryEffectDiagnosticLayer,#stagingEntryEffectPreviewDiagnostic').forEach(node => node.remove());
+
+      const layer = document.createElement('div');
+      layer.className = 'mgw-entry-effect-layer';
+      layer.id = 'stagingEntryEffectDiagnosticLayer';
+      layer.innerHTML = `<button class="mgw-entry-effect-skip" type="button">Пропустить</button><div class="mgw-entry-effect-live-grid">
+        <div class="mgw-entry-effect-live-card" data-entry-effect-variant="entry-03" data-player-index="0">
+          <div class="mgw-entry-effect-live-emblem"><i></i><b>MG</b><i></i></div>
+          <strong>Runtime diagnostic</strong><small>вступает в игру</small>
+        </div>
+      </div>`;
+      document.body.append(layer);
+
+      const preview = document.createElement('div');
+      preview.id = 'stagingEntryEffectPreviewDiagnostic';
+      preview.className = 'mgw-entry-effect-preview';
+      preview.dataset.entryEffectVariant = 'entry-03';
+      preview.innerHTML = '<span class="mgw-entry-effect-preview-core"><i></i><b>MG</b><i></i></span>';
+      Object.assign(preview.style, { position:'fixed', left:'8px', bottom:'8px', width:'120px', height:'90px', zIndex:'2147483300' });
+      document.body.append(preview);
+    });
+
     await page.waitForFunction(() => {
-      const img = document.querySelector('img');
-      return img instanceof HTMLImageElement && img.complete;
+      const card = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-card');
+      const preview = document.querySelector('#stagingEntryEffectPreviewDiagnostic');
+      return card instanceof HTMLElement
+        && preview instanceof HTMLElement
+        && getComputedStyle(card).backgroundImage.includes('store-entry-03-lord-blade.svg')
+        && getComputedStyle(preview).backgroundImage.includes('store-entry-03-lord-blade.svg');
     }, null, { timeout: 10_000 });
 
-    const browserImage = await page.evaluate(async () => {
-      const img = document.querySelector('img');
-      if (!(img instanceof HTMLImageElement)) return { exists:false };
-      try { await img.decode(); } catch {}
-      const style = getComputedStyle(img);
-      const rect = img.getBoundingClientRect();
+    const diagnostic = await page.evaluate(async (artUrl) => {
+      const card = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-card');
+      const preview = document.querySelector('#stagingEntryEffectPreviewDiagnostic');
+      const emblem = card?.querySelector('.mgw-entry-effect-live-emblem');
+      const oldImg = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
+      const previewCore = preview?.querySelector('.mgw-entry-effect-preview-core b');
 
-      const canvas = document.createElement('canvas');
-      canvas.width = 96;
-      canvas.height = 72;
-      const ctx = canvas.getContext('2d', { willReadFrequently:true });
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = artUrl;
+      try { await image.decode(); } catch {}
+
       let pixels = null;
-      if (ctx && img.naturalWidth > 0 && img.naturalHeight > 0) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let alphaSum = 0;
-        let nonTransparent = 0;
-        let opaque = 0;
-        let rgbSum = 0;
-        let rgbSqSum = 0;
-        let coloredSamples = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          const a = data[i + 3];
-          alphaSum += a;
-          if (a > 8) nonTransparent += 1;
-          if (a > 240) opaque += 1;
-          if (a > 8) {
-            const lum = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            rgbSum += lum;
-            rgbSqSum += lum * lum;
-            coloredSamples += 1;
+      if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d', { willReadFrequently:true });
+        if (ctx) {
+          ctx.clearRect(0, 0, 64, 64);
+          ctx.drawImage(image, 0, 0, 64, 64);
+          const data = ctx.getImageData(0, 0, 64, 64).data;
+          let alphaSum = 0;
+          let nonTransparent = 0;
+          let rgbSum = 0;
+          let rgbSqSum = 0;
+          let samples = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const a = data[i + 3];
+            alphaSum += a;
+            if (a > 8) {
+              nonTransparent += 1;
+              const lum = (data[i] + data[i + 1] + data[i + 2]) / 3;
+              rgbSum += lum;
+              rgbSqSum += lum * lum;
+              samples += 1;
+            }
           }
+          const mean = samples ? rgbSum / samples : 0;
+          pixels = {
+            meanAlpha: alphaSum / (64 * 64),
+            nonTransparentFraction: nonTransparent / (64 * 64),
+            meanRgb: mean,
+            rgbStdDev: samples ? Math.sqrt(Math.max(0, rgbSqSum / samples - mean * mean)) : 0,
+          };
         }
-        const total = canvas.width * canvas.height;
-        const mean = coloredSamples ? rgbSum / coloredSamples : 0;
-        pixels = {
-          meanAlpha: alphaSum / total,
-          nonTransparentFraction: nonTransparent / total,
-          opaqueFraction: opaque / total,
-          meanRgb: mean,
-          rgbStdDev: coloredSamples
-            ? Math.sqrt(Math.max(0, rgbSqSum / coloredSamples - mean * mean))
-            : 0,
-        };
       }
 
+      const cardStyle = card instanceof HTMLElement ? getComputedStyle(card) : null;
+      const previewStyle = preview instanceof HTMLElement ? getComputedStyle(preview) : null;
+      const cardRect = card instanceof HTMLElement ? card.getBoundingClientRect() : null;
+      const previewRect = preview instanceof HTMLElement ? preview.getBoundingClientRect() : null;
+
       return {
-        exists:true,
-        complete:img.complete,
-        src:img.src,
-        currentSrc:img.currentSrc,
-        naturalWidth:img.naturalWidth,
-        naturalHeight:img.naturalHeight,
-        rect:{ x:rect.x, y:rect.y, width:rect.width, height:rect.height },
-        style:{
-          display:style.display,
-          visibility:style.visibility,
-          opacity:style.opacity,
-          objectFit:style.objectFit,
+        art:{
+          complete:image.complete,
+          naturalWidth:image.naturalWidth,
+          naturalHeight:image.naturalHeight,
+          pixels,
         },
-        pixels,
+        card:cardStyle && cardRect ? {
+          backgroundImage:cardStyle.backgroundImage,
+          display:cardStyle.display,
+          visibility:cardStyle.visibility,
+          opacity:cardStyle.opacity,
+          width:cardRect.width,
+          height:cardRect.height,
+        } : null,
+        preview:previewStyle && previewRect ? {
+          backgroundImage:previewStyle.backgroundImage,
+          display:previewStyle.display,
+          visibility:previewStyle.visibility,
+          opacity:previewStyle.opacity,
+          width:previewRect.width,
+          height:previewRect.height,
+        } : null,
+        legacyMgDisplay:emblem instanceof HTMLElement ? getComputedStyle(emblem).display : null,
+        previewMgOpacity:previewCore instanceof HTMLElement ? getComputedStyle(previewCore).opacity : null,
+        oldWebpSiblingDisplay:oldImg instanceof HTMLElement ? getComputedStyle(oldImg).display : 'absent',
       };
+    }, `${ORIGIN}${ART_PATH}`);
+
+    const evidence = { asset:assetDiagnostic, presentation:diagnostic };
+    console.log('ENTRY_EFFECT_RUNTIME_DIAGNOSTIC=' + JSON.stringify(evidence));
+    await testInfo.attach('entry-effect-runtime-diagnostic.json', {
+      body: Buffer.from(JSON.stringify(evidence, null, 2)),
+      contentType: 'application/json',
+    });
+    await testInfo.attach('entry-effect-runtime-diagnostic.png', {
+      body: await page.screenshot({ fullPage:true }),
+      contentType: 'image/png',
     });
 
-    const screenshot = await page.screenshot({ fullPage:true });
-    await testInfo.attach(`${label}.png`, { body:screenshot, contentType:'image/png' });
+    expect(assetDiagnostic.status).toBe(200);
+    expect(assetDiagnostic.contentType).toContain('image/svg+xml');
+    expect(assetDiagnostic.byteLength).toBeGreaterThan(1000);
+    expect(assetDiagnostic.hasSvgRoot).toBe(true);
+    expect(assetDiagnostic.hasReadableTextNode).toBe(false);
 
-    return { network, browserStatus, browserImage };
-  } finally {
-    await imageContext.close().catch(() => null);
-  }
-}
+    expect(diagnostic.art.complete).toBe(true);
+    expect(diagnostic.art.naturalWidth).toBeGreaterThan(0);
+    expect(diagnostic.art.naturalHeight).toBeGreaterThan(0);
+    expect(diagnostic.art.pixels?.nonTransparentFraction || 0).toBeGreaterThan(0.05);
+    expect(diagnostic.art.pixels?.rgbStdDev || 0).toBeGreaterThan(5);
 
-test('ENTRY EFFECT ASSET DIAGNOSTIC: Hostinger serves visible WebP pixels', async ({ browser }, testInfo) => {
-  const context = await browser.newContext();
-  try {
-    const diagnostics = [];
-    for (const [label, path] of ASSETS) {
-      diagnostics.push(await inspectAsset(context, browser, label, path, testInfo));
-    }
+    expect(diagnostic.card?.backgroundImage || '').toContain('store-entry-03-lord-blade.svg');
+    expect(diagnostic.card?.width || 0).toBeGreaterThan(100);
+    expect(diagnostic.card?.height || 0).toBeGreaterThan(100);
+    expect(Number(diagnostic.card?.opacity || 0)).toBeGreaterThan(0);
+    expect(diagnostic.card?.display).not.toBe('none');
+    expect(diagnostic.card?.visibility).not.toBe('hidden');
 
-    console.log('ENTRY_EFFECT_ASSET_DIAGNOSTIC=' + JSON.stringify(diagnostics));
-    await testInfo.attach('entry-effect-asset-diagnostic.json', {
-      body:Buffer.from(JSON.stringify(diagnostics, null, 2)),
-      contentType:'application/json',
-    });
-
-    for (const diagnostic of diagnostics) {
-      expect(diagnostic.network.status, `${diagnostic.network.label} HTTP`).toBe(200);
-      expect(diagnostic.network.contentType, `${diagnostic.network.label} content-type`).toContain('image/webp');
-      expect(diagnostic.network.riff, `${diagnostic.network.label} RIFF`).toBe('RIFF');
-      expect(diagnostic.network.webp, `${diagnostic.network.label} WEBP`).toBe('WEBP');
-      expect(diagnostic.browserStatus, `${diagnostic.network.label} browser HTTP`).toBe(200);
-      expect(diagnostic.browserImage.exists, `${diagnostic.network.label} browser img`).toBe(true);
-      expect(diagnostic.browserImage.complete, `${diagnostic.network.label} complete`).toBe(true);
-      expect(diagnostic.browserImage.naturalWidth, `${diagnostic.network.label} naturalWidth`).toBeGreaterThan(0);
-      expect(diagnostic.browserImage.naturalHeight, `${diagnostic.network.label} naturalHeight`).toBeGreaterThan(0);
-      expect(diagnostic.browserImage.pixels?.nonTransparentFraction || 0, `${diagnostic.network.label} visible alpha`).toBeGreaterThan(0.05);
-      expect(diagnostic.browserImage.pixels?.rgbStdDev || 0, `${diagnostic.network.label} visual detail`).toBeGreaterThan(4);
-    }
+    expect(diagnostic.preview?.backgroundImage || '').toContain('store-entry-03-lord-blade.svg');
+    expect(diagnostic.preview?.width || 0).toBeGreaterThan(80);
+    expect(diagnostic.preview?.height || 0).toBeGreaterThan(60);
+    expect(diagnostic.legacyMgDisplay).toBe('none');
+    expect(Number(diagnostic.previewMgOpacity || 1)).toBe(0);
+    expect(['none','absent']).toContain(diagnostic.oldWebpSiblingDisplay);
   } finally {
     await context.close().catch(() => null);
   }
