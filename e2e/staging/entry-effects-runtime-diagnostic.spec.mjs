@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 const ORIGIN = process.env.MGW_STAGING_ORIGIN || 'https://seashell-okapi-889488.hostingersite.com';
-const ART_PATH = '/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=valid-webp-v5';
-const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1136&entry_live_img=valid-webp-v5';
+const ART_PATH = '/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=reference-raster-v6';
+const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1137&entry_live_img=reference-raster-v6';
 const LIVE_CSS_PATH = '/app/assets/css/production-v106-store-avatar-frame-density.css?v=9&live_entry=reference-art-v3';
 
 async function bodyText(response) {
@@ -41,8 +41,8 @@ test('ENTRY EFFECT DIAGNOSTIC: deployed decoder-valid WebP real-img owner paints
     expect(declaredRiffTotal).toBe(artBody.length);
 
     expect(jsText).toContain('store-entry-01-celestial-gate.svg?asset=reference-art-v3');
-    expect(jsText).toContain('entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4');
-    expect(jsText).toContain('entry-effect-03-knight-strike.webp?asset=valid-webp-v5');
+    expect(jsText).toContain('entry-effect-02-portal-knight.webp?asset=reference-raster-v6');
+    expect(jsText).toContain('entry-effect-03-knight-strike.webp?asset=reference-raster-v6');
     expect(jsText).toContain("image.className = 'mgw-entry-effect-live-art'");
 
     expect(cssText).toContain('background-color:transparent!important;background-image:none!important;');
@@ -144,7 +144,7 @@ test('ENTRY EFFECT DIAGNOSTIC: deployed decoder-valid WebP real-img owner paints
 
     expect(diagnostic).not.toBeNull();
     expect(diagnostic.src).toContain('entry-effect-03-knight-strike.webp');
-    expect(diagnostic.src).toContain('asset=valid-webp-v5');
+    expect(diagnostic.src).toContain('asset=reference-raster-v6');
     expect(diagnostic.complete).toBe(true);
     expect(diagnostic.naturalWidth).toBe(640);
     expect(diagnostic.naturalHeight).toBe(480);
