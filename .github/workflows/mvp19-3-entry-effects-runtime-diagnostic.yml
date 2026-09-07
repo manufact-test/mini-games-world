@@ -1,0 +1,86 @@
+name: MVP-19.3 Entry Effects runtime diagnostic
+
+on:
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  runtime-diagnostic:
+    name: Probe live Entry Effect img on current staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
+    steps:
+      - name: Checkout exact staging commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Wait for exact staging deployment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          test "${#expected_fingerprint}" = '64'
+          ready=0
+          for attempt in $(seq 1 24); do
+            rm -f entry-effect-diagnostic-readiness.json
+            if curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+              --retry 1 --retry-delay 2 --retry-connrefused \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              --output entry-effect-diagnostic-readiness.json; then
+              if python3 - entry-effect-diagnostic-readiness.json "${expected_fingerprint}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('environment') == 'staging'
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            if [[ "$attempt" -lt 24 ]]; then sleep 15; fi
+          done
+          test "$ready" = '1'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Run Entry Effect runtime diagnostic
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --no-install playwright test --config=e2e/playwright.entry-effects-diagnostic.config.mjs
+
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-effects-runtime-diagnostic-${{ github.run_id }}
+          path: |
+            artifacts/playwright-entry-effects-diagnostic
+            entry-effect-diagnostic-readiness.json
+          if-no-files-found: warn
+          retention-days: 7
