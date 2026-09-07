@@ -1,34 +1,86 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="">
 <defs>
- <radialGradient id="sun" cx="50%" cy="45%" r="52%"><stop stop-color="#fff9ce"/><stop offset=".22" stop-color="#ffd25f"/><stop offset=".5" stop-color="#ff8a1d" stop-opacity=".48"/><stop offset="1" stop-color="#10070a" stop-opacity="0"/></radialGradient>
- <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff1a3"/><stop offset=".25" stop-color="#d98922"/><stop offset=".58" stop-color="#6d2b0e"/><stop offset=".8" stop-color="#ffd66e"/><stop offset="1" stop-color="#8a400e"/></linearGradient>
- <linearGradient id="armor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4b4c50"/><stop offset=".3" stop-color="#121416"/><stop offset=".62" stop-color="#302117"/><stop offset="1" stop-color="#08090b"/></linearGradient>
- <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d22b29"/><stop offset=".55" stop-color="#7c1118"/><stop offset="1" stop-color="#27070b"/></linearGradient>
- <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="sun" cx="62%" cy="37%" r="54%"><stop stop-color="#fffde0"/><stop offset=".12" stop-color="#ffe98d"/><stop offset=".29" stop-color="#ffc348"/><stop offset=".53" stop-color="#df6d18" stop-opacity=".5"/><stop offset="1" stop-color="#1a0809" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff4b3"/><stop offset=".16" stop-color="#e7ad43"/><stop offset=".36" stop-color="#8b4514"/><stop offset=".57" stop-color="#4f2209"/><stop offset=".77" stop-color="#d58d2e"/><stop offset="1" stop-color="#fff0a0"/></linearGradient>
+  <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#646a70"/><stop offset=".18" stop-color="#25292e"/><stop offset=".42" stop-color="#090b0d"/><stop offset=".62" stop-color="#2d241c"/><stop offset=".83" stop-color="#121417"/><stop offset="1" stop-color="#77522b"/></linearGradient>
+  <linearGradient id="steel2" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#07080a"/><stop offset=".3" stop-color="#34383d"/><stop offset=".55" stop-color="#111216"/><stop offset=".82" stop-color="#695034"/><stop offset="1" stop-color="#181a1d"/></linearGradient>
+  <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dc3132"/><stop offset=".32" stop-color="#a0161d"/><stop offset=".66" stop-color="#5d0c13"/><stop offset="1" stop-color="#1d0509"/></linearGradient>
+  <linearGradient id="slash" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffef0"/><stop offset=".22" stop-color="#fff3a8"/><stop offset=".52" stop-color="#ffc54a"/><stop offset=".78" stop-color="#ff8b20"/><stop offset="1" stop-color="#fffbd5"/></linearGradient>
+  <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="spark" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="1.7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>
-<ellipse cx="222" cy="137" rx="166" ry="125" fill="url(#sun)"/>
-<circle cx="255" cy="86" r="53" fill="none" stroke="#ffd05c" stroke-width="7" opacity=".85" filter="url(#glow)"/>
-<g stroke="url(#gold)" stroke-width="4" opacity=".8"><path d="M255 18v27M255 127v26M187 86h28M295 86h28M207 38l19 20M285 114l19 20M303 38l-19 20M226 114l-19 20"/></g>
-<!-- red banners/ribbons -->
-<path d="M48 60Q130 38 188 89Q123 80 68 123Q100 129 134 157Q79 142 34 173Q70 112 48 60z" fill="url(#red)" opacity=".94"/>
-<path d="M286 83Q353 91 382 62Q355 113 388 137Q350 126 316 155Q351 169 373 206Q326 181 283 186z" fill="url(#red)" opacity=".9"/>
-<!-- knight body, leaning into slash -->
-<path d="M225 81l27 13 6 29-22 22-30-6-10-30z" fill="#080a0d" stroke="url(#gold)" stroke-width="5"/>
-<path d="M218 92l5-27 11 12 15-17 1 31-17-7z" fill="url(#gold)"/>
-<path d="M219 107h23l-5 8h-14z" fill="#ffae32" filter="url(#glow)"/>
-<path d="M182 138l55-15 47 31-8 69-57 28-61-27-17-55z" fill="url(#armor)" stroke="url(#gold)" stroke-width="5"/>
-<path d="M185 146l-63-20-11 28 59 35z" fill="url(#armor)" stroke="url(#gold)" stroke-width="4"/>
-<path d="M276 157l53 10-5 28-51 7z" fill="url(#armor)" stroke="url(#gold)" stroke-width="4"/>
-<path d="M193 156l27 15 25-21-6 45-28 14-22-18z" fill="#974b13" stroke="#ffd269" stroke-width="2"/>
-<path d="M172 211l-18 67h32l24-51 10 51h34l-13-71z" fill="url(#armor)" stroke="url(#gold)" stroke-width="4"/>
-<!-- huge sword -->
-<path d="M92 118l18-12 201 151-15 18z" fill="#fff7d2" stroke="#e4a637" stroke-width="4" filter="url(#glow)"/>
-<path d="M84 115l39-26 9 12-39 27z" fill="url(#gold)"/>
-<!-- slash arc -->
-<path d="M27 54Q205 3 373 251" fill="none" stroke="#fff9d5" stroke-width="13" stroke-linecap="round" opacity=".96" filter="url(#glow)"/>
-<path d="M31 62Q205 11 364 250" fill="none" stroke="#ff9e24" stroke-width="5" stroke-linecap="round" opacity=".88"/>
-<path d="M40 71Q201 27 347 246" fill="none" stroke="#ffdf72" stroke-width="2" stroke-linecap="round" opacity=".9"/>
-<g fill="#3a2716" stroke="#e29b31" stroke-width="2"><path d="M42 228l-16-17 14-18 20 14z"/><path d="M352 238l17-20-14-17-20 14z"/><path d="M112 256l-12-16 15-15 16 16z"/><path d="M300 257l14-18-16-14-17 18z"/></g>
-<g fill="#ffd06a"><circle cx="64" cy="191" r="3"/><circle cx="341" cy="177" r="3"/><circle cx="125" cy="206" r="2.5"/><circle cx="303" cy="217" r="2.5"/></g>
-<ellipse cx="208" cy="269" rx="135" ry="19" fill="#5a210e" fill-opacity=".48" stroke="#efaa32" stroke-width="3"/>
+
+<ellipse cx="238" cy="130" rx="172" ry="126" fill="url(#sun)"/>
+<circle cx="265" cy="77" r="48" fill="none" stroke="#ffd057" stroke-width="6.5" opacity=".92" filter="url(#glow)"/>
+<circle cx="265" cy="77" r="34" fill="none" stroke="#fff2a7" stroke-width="1.6" opacity=".72"/>
+<g stroke="url(#gold)" stroke-width="3.6" opacity=".9">
+  <path d="M265 13V37"/><path d="M265 117V143"/><path d="M201 77H225"/><path d="M305 77H329"/><path d="M218 31L235 48"/><path d="M295 108L312 125"/><path d="M312 31L295 48"/><path d="M235 108L218 125"/>
+</g>
+<g fill="url(#gold)"><path d="M265 5L272 22L265 39L258 22Z"/><path d="M334 77L346 83L334 89L322 83Z"/><path d="M196 77L208 83L196 89L184 83Z"/></g>
+
+<!-- sweeping red ceremonial ribbons -->
+<path d="M18 53C85 25 159 45 213 96C165 76 123 74 83 91C103 97 128 109 149 129C96 113 58 120 22 146C46 107 43 81 18 53Z" fill="url(#red)" opacity=".97"/>
+<path d="M40 177C95 144 145 145 194 171C153 166 120 176 91 198C115 196 139 202 158 217C108 207 67 216 32 247C55 217 58 196 40 177Z" fill="url(#red)" opacity=".9"/>
+<path d="M283 74C329 73 365 60 389 37C378 78 380 105 398 126C366 115 340 118 318 137C348 145 371 162 389 190C352 172 322 170 293 181Z" fill="url(#red)" opacity=".95"/>
+<path d="M259 206C307 193 351 201 389 229C350 221 321 226 292 245C313 246 335 253 351 267C313 257 282 258 252 274Z" fill="url(#red)" opacity=".87"/>
+<path d="M83 59C97 58 111 61 124 67" fill="none" stroke="#f2b44d" stroke-width="1.5" opacity=".6"/>
+<path d="M329 102C344 105 356 112 366 121" fill="none" stroke="#f0ad44" stroke-width="1.5" opacity=".6"/>
+
+<!-- dynamic cape behind knight -->
+<path d="M181 108C142 121 122 147 119 184C143 175 165 175 183 186L210 130Z" fill="url(#red)" stroke="#a52c20" stroke-width="1.8"/>
+<path d="M228 121C263 125 291 142 315 172C282 166 258 171 238 189L209 140Z" fill="url(#red)" stroke="#a52c20" stroke-width="1.8"/>
+
+<!-- helmet / crown -->
+<path d="M202 65C214 55 229 55 242 64L251 89L241 111L221 123L202 112L192 91Z" fill="url(#steel)" stroke="url(#gold)" stroke-width="4"/>
+<path d="M204 70L205 44L218 57L225 34L233 57L247 43L244 73L225 62Z" fill="url(#gold)" stroke="#ffe696" stroke-width="1.2"/>
+<path d="M207 84L225 77L242 84L237 95L225 91L213 96Z" fill="#050608"/>
+<path d="M218 87L225 83L232 87L229 92H221Z" fill="#ffad2d" filter="url(#spark)"/>
+
+<!-- shoulder armor -->
+<path d="M181 111C156 113 139 124 126 141L145 155L174 146L194 122Z" fill="url(#steel2)" stroke="url(#gold)" stroke-width="3.3"/>
+<path d="M245 111C269 113 287 125 302 143L280 157L252 147L231 123Z" fill="url(#steel2)" stroke="url(#gold)" stroke-width="3.3"/>
+<path d="M135 138L157 126L173 137L150 149Z" fill="#383b40" stroke="#d39434" stroke-width="1.5"/>
+<path d="M293 140L272 126L255 137L278 151Z" fill="#383b40" stroke="#d39434" stroke-width="1.5"/>
+
+<!-- torso, twisted pose -->
+<path d="M180 116L207 105L235 115L257 149L246 198L216 220L175 207L156 165Z" fill="url(#steel)" stroke="url(#gold)" stroke-width="4"/>
+<path d="M189 127L214 137L238 124L235 163L216 182L191 168Z" fill="#17191b" stroke="#ca8730" stroke-width="2"/>
+<path d="M196 133L215 142L232 132L227 151L215 160L201 153Z" fill="#793b11" stroke="#efb84e" stroke-width="1.5"/>
+<path d="M169 159L190 169L185 194L164 184Z" fill="#2d3034" stroke="#865a21" stroke-width="1.1"/>
+<path d="M242 157L226 171L233 192L251 181Z" fill="#2d3034" stroke="#865a21" stroke-width="1.1"/>
+
+<!-- sword arm extended -->
+<path d="M156 139C135 138 117 131 98 116L88 128C107 151 131 163 154 166L177 150Z" fill="url(#steel2)" stroke="url(#gold)" stroke-width="3"/>
+<path d="M101 114L85 101L75 112L90 131Z" fill="#111317" stroke="#bd7b2d" stroke-width="2"/>
+<path d="M83 103L71 96L62 104L76 116Z" fill="#090a0c" stroke="#c98731" stroke-width="2"/>
+
+<!-- open off hand -->
+<path d="M257 148C278 151 296 160 311 175L301 189L279 181L246 169Z" fill="url(#steel2)" stroke="url(#gold)" stroke-width="3"/>
+<path d="M310 173L328 181L325 190L307 190Z" fill="#101215" stroke="#bd7a2c" stroke-width="2"/>
+<path d="M328 181L340 177L343 183L333 188L345 190L343 197L329 192L335 203L329 206L320 192Z" fill="#090a0c" stroke="#b9792b" stroke-width="1.5"/>
+
+<!-- legs in motion -->
+<path d="M176 199L197 211L207 214L185 275H152Z" fill="url(#steel2)" stroke="url(#gold)" stroke-width="3.2"/>
+<path d="M222 207L238 196L246 201L267 257L241 270L213 226Z" fill="url(#steel2)" stroke="url(#gold)" stroke-width="3.2"/>
+<path d="M151 271L188 271L179 281H145Z" fill="#08090b" stroke="#d39a39" stroke-width="2"/>
+<path d="M239 267L269 254L271 266L246 279Z" fill="#08090b" stroke="#d39a39" stroke-width="2"/>
+
+<!-- enormous blade -->
+<path d="M61 96L71 86L302 263L288 279Z" fill="#fffde7" stroke="#df9c33" stroke-width="3.5" filter="url(#glow)"/>
+<path d="M53 101L82 76L94 89L66 113Z" fill="url(#gold)" stroke="#ffe59b" stroke-width="1"/>
+<path d="M72 84L80 68L91 84L81 97Z" fill="#f4ce68"/>
+
+<!-- cinematic slash crescents -->
+<path d="M22 46C140 12 265 65 386 233" fill="none" stroke="url(#slash)" stroke-width="14" stroke-linecap="round" opacity=".98" filter="url(#glow)"/>
+<path d="M27 54C145 24 262 77 374 235" fill="none" stroke="#ffae30" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+<path d="M35 63C149 37 257 90 360 236" fill="none" stroke="#fff3a4" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+<path d="M18 216C117 262 235 271 378 234" fill="none" stroke="#ffba35" stroke-width="4" stroke-linecap="round" opacity=".72" filter="url(#glow)"/>
+<path d="M39 225C137 258 244 261 357 232" fill="none" stroke="#ffe17f" stroke-width="1.8" opacity=".82"/>
+
+<!-- rock explosion -->
+<g fill="#342416" stroke="#dc9631" stroke-width="1.5">
+  <path d="M34 224L20 208L30 187L50 202Z"/><path d="M68 253L56 237L70 222L84 240Z"/><path d="M106 228L96 215L109 202L122 218Z"/><path d="M140 263L129 247L143 234L157 250Z"/>
+  <path d="M365 224L382 208L370 189L350 202Z"/><path d="M331 254L343 238L329 223L315 240Z"/><path d="M294 230L304 215L291 203L278 219Z"/><path d="M259 263L271 247L257 234L243 251Z"/>
+</g>
+<g fill="#ffd264" filter="url(#spark)"><circle cx="53" cy="181" r="2.3"/><circle cx="94" cy="193" r="1.8"/><circle cx="129" cy="181" r="2.2"/><circle cx="287" cy="192" r="2.1"/><circle cx="333" cy="178" r="2.2"/><circle cx="367" cy="204" r="1.8"/><circle cx="236" cy="31" r="2"/></g>
 </svg>
