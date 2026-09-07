@@ -1,0 +1,140 @@
+name: Temporary Entry Effect live pixel probe v6
+
+on:
+  push:
+    branches:
+      - agent/mvp19-3-entry-valid-webp-live-pixel-probe-v6
+
+permissions:
+  contents: read
+
+jobs:
+  probe-linux:
+    name: Live pixel probe — Linux route
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      result: ${{ steps.classify.outputs.result }}
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+    steps:
+      - name: Checkout exact diagnostic revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Probe deployed Tier III painted pixels
+        id: probe
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --no-install playwright test --config=e2e/playwright.entry-effects-diagnostic.config.mjs
+
+      - name: Classify Linux route
+        id: classify
+        if: always()
+        shell: bash
+        env:
+          PROBE_OUTCOME: ${{ steps.probe.outcome }}
+        run: |
+          printf 'result=%s\n' "${PROBE_OUTCOME}" >> "${GITHUB_OUTPUT}"
+          printf 'Linux live-pixel probe: %s\n' "${PROBE_OUTCOME}"
+
+      - name: Upload Linux evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-effect-live-pixel-linux-${{ github.run_id }}
+          path: artifacts/playwright-entry-effects-diagnostic
+          if-no-files-found: warn
+          retention-days: 7
+
+  probe-macos:
+    name: Live pixel probe — macOS route
+    runs-on: macos-15
+    timeout-minutes: 10
+    outputs:
+      result: ${{ steps.classify.outputs.result }}
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+    steps:
+      - name: Checkout exact diagnostic revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Probe deployed Tier III painted pixels
+        id: probe
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --no-install playwright test --config=e2e/playwright.entry-effects-diagnostic.config.mjs
+
+      - name: Classify macOS route
+        id: classify
+        if: always()
+        shell: bash
+        env:
+          PROBE_OUTCOME: ${{ steps.probe.outcome }}
+        run: |
+          printf 'result=%s\n' "${PROBE_OUTCOME}" >> "${GITHUB_OUTPUT}"
+          printf 'macOS live-pixel probe: %s\n' "${PROBE_OUTCOME}"
+
+      - name: Upload macOS evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-effect-live-pixel-macos-${{ github.run_id }}
+          path: artifacts/playwright-entry-effects-diagnostic
+          if-no-files-found: warn
+          retention-days: 7
+
+  require-one-live-route:
+    name: Require at least one live pixel route
+    needs:
+      - probe-linux
+      - probe-macos
+    if: always()
+    runs-on: ubuntu-24.04
+    env:
+      LINUX_RESULT: ${{ needs.probe-linux.outputs.result }}
+      MACOS_RESULT: ${{ needs.probe-macos.outputs.result }}
+    steps:
+      - name: Gate on real painted-pixel evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "Linux=${LINUX_RESULT} macOS=${MACOS_RESULT}"
+          if [[ "${LINUX_RESULT}" == 'success' || "${MACOS_RESULT}" == 'success' ]]; then
+            exit 0
+          fi
+          echo 'No runner route proved deployed painted pixels.' >&2
+          exit 1
