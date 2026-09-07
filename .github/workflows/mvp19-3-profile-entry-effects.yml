@@ -118,9 +118,9 @@ jobs:
           grep -F 'if (!entries.length) return;' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-skip' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-live-art' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F 'asset=live-node-svg-v2' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F 'entry_live_img=canonical-svg-node-v2' app/runtime/client/version-manifest.php
-          grep -F 'live_entry=canonical-svg-node-v2' app/runtime/client/version-manifest.php
+          grep -F 'asset=reference-art-v3' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F 'entry_live_img=reference-art-v3' app/runtime/client/version-manifest.php
+          grep -F 'live_entry=reference-art-v3' app/runtime/client/version-manifest.php
           grep -F 'background-color:transparent!important;background-image:none!important;' app/assets/css/production-v106-store-avatar-frame-density.css
           grep -F '.mgw-entry-effect-live-art{' app/assets/css/production-v106-store-avatar-frame-density.css
           grep -F 'display:block!important;' app/assets/css/production-v106-store-avatar-frame-density.css

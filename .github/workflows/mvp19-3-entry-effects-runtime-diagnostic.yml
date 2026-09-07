@@ -61,9 +61,9 @@ jobs:
               assert visible >= 10, f'{path}: artwork has too few visible primitives ({visible})'
               print(f'{path}: ok primitives={visible} bytes={len(data.encode("utf-8"))}')
           PY
-          grep -F "store-entry-01-celestial-gate.svg?asset=live-node-svg-v2" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "store-entry-02-king-ascension.svg?asset=live-node-svg-v2" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "store-entry-03-lord-blade.svg?asset=live-node-svg-v2" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "store-entry-01-celestial-gate.svg?asset=reference-art-v3" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "store-entry-02-king-ascension.svg?asset=reference-art-v3" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "store-entry-03-lord-blade.svg?asset=reference-art-v3" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           grep -F "image.className = 'mgw-entry-effect-live-art'" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           grep -F 'background-color:transparent!important;background-image:none!important;' app/assets/css/production-v106-store-avatar-frame-density.css
           grep -F '.mgw-entry-effect-live-art{' app/assets/css/production-v106-store-avatar-frame-density.css
@@ -72,8 +72,8 @@ jobs:
             echo 'obsolete hidden live image owner is still present' >&2
             exit 1
           fi
-          grep -F 'entry_live_img=canonical-svg-node-v2' app/runtime/client/version-manifest.php
-          grep -F 'live_entry=canonical-svg-node-v2' app/runtime/client/version-manifest.php
+          grep -F 'entry_live_img=reference-art-v3' app/runtime/client/version-manifest.php
+          grep -F 'live_entry=reference-art-v3' app/runtime/client/version-manifest.php
 
       - name: Wait for exact staging deployment
         if: github.event_name != 'pull_request'

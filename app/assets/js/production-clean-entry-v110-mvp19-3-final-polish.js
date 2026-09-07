@@ -11,9 +11,9 @@ initMgwPurchaseFeedback();
    the overlay. Store presentation, lifecycle, equip, skip and game state are not
    changed here. */
 const MGW_ENTRY_LIVE_ART = Object.freeze({
-  'entry-01':'/app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=live-node-svg-v2',
-  'entry-02':'/app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg?asset=live-node-svg-v2',
-  'entry-03':'/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=live-node-svg-v2',
+  'entry-01':'/app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=reference-art-v3',
+  'entry-02':'/app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg?asset=reference-art-v3',
+  'entry-03':'/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=reference-art-v3',
 });
 
 function mountMgwEntryLiveArt(layer){

@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 const ORIGIN = process.env.MGW_STAGING_ORIGIN || 'https://seashell-okapi-889488.hostingersite.com';
-const ART_PATH = '/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=live-node-svg-v2';
-const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1133&entry_live_img=canonical-svg-node-v2';
-const LIVE_CSS_PATH = '/app/assets/css/production-v106-store-avatar-frame-density.css?v=7&live_entry=canonical-svg-node-v2';
+const ART_PATH = '/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=reference-art-v3';
+const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1134&entry_live_img=reference-art-v3';
+const LIVE_CSS_PATH = '/app/assets/css/production-v106-store-avatar-frame-density.css?v=9&live_entry=reference-art-v3';
 
 async function bodyText(response) {
   return (await response.body()).toString('utf8');
@@ -38,9 +38,9 @@ test('ENTRY EFFECT DIAGNOSTIC: deployed canonical SVG real-img owner is visible'
     expect(artText).not.toMatch(/<text\b/i);
     expect(artText.length).toBeGreaterThan(1000);
 
-    expect(jsText).toContain('store-entry-01-celestial-gate.svg?asset=live-node-svg-v2');
-    expect(jsText).toContain('store-entry-02-king-ascension.svg?asset=live-node-svg-v2');
-    expect(jsText).toContain('store-entry-03-lord-blade.svg?asset=live-node-svg-v2');
+    expect(jsText).toContain('store-entry-01-celestial-gate.svg?asset=reference-art-v3');
+    expect(jsText).toContain('store-entry-02-king-ascension.svg?asset=reference-art-v3');
+    expect(jsText).toContain('store-entry-03-lord-blade.svg?asset=reference-art-v3');
     expect(jsText).toContain("image.className = 'mgw-entry-effect-live-art'");
 
     expect(cssText).toContain('background-color:transparent!important;background-image:none!important;');
@@ -109,6 +109,7 @@ test('ENTRY EFFECT DIAGNOSTIC: deployed canonical SVG real-img owner is visible'
 
     expect(diagnostic).not.toBeNull();
     expect(diagnostic.src).toContain('store-entry-03-lord-blade.svg');
+    expect(diagnostic.src).toContain('asset=reference-art-v3');
     expect(diagnostic.complete).toBe(true);
     expect(diagnostic.naturalWidth).toBeGreaterThan(0);
     expect(diagnostic.naturalHeight).toBeGreaterThan(0);
