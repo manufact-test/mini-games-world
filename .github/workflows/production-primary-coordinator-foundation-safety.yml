@@ -1,127 +1,48 @@
-name: Temporary premium Entry Effect v7 binary assembler
+name: Production Primary Coordinator Foundation Safety
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/mvp19-3-premium-entry-art-v7-transfer
+      - main
+      - agent/mvp-14-release-integration
+    paths:
+      - 'bot/runtime/ProductionPrimaryRuntimeActivationContract.php'
+      - 'bot/runtime/ProductionPrimaryRuntimeCoordinator.php'
+      - 'bot/tests/ProductionPrimaryRuntimeCoordinatorFoundationTest.php'
+      - 'ops/checks/production-primary-coordinator-foundation-local.sh'
+      - 'ops/runtime/PRODUCTION_PRIMARY_COORDINATOR_FOUNDATION.md'
+      - '.github/workflows/production-primary-coordinator-foundation-safety.yml'
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: mgw-premium-entry-v7-transfer-${{ github.ref }}
+  group: mgw-production-primary-coordinator-foundation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  assemble:
+  focused:
+    name: Verify inactive production coordinator foundation
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 20
+
     steps:
-      - name: Checkout transfer branch
+      - name: Checkout exact candidate revision
         uses: actions/checkout@v4
         with:
-          ref: agent/mvp19-3-premium-entry-art-v7-transfer
-          fetch-depth: 0
-          persist-credentials: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
 
-      - name: Reconstruct validate and commit exact premium rasters
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git fetch origin agent/mvp-13-2-staging
-          python3 -m pip install --quiet pillow
-          python3 - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-          import base64, hashlib, struct
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
 
-          root = Path('tmp/premium-v7-final')
-          specs = {
-              'entry1': {
-                  'chunks': ['entry1.00.b64', 'entry1.01.b64'],
-                  'sizes': [18000, 13872],
-                  'bytes': 23902,
-                  'sha256': 'a5fede1e8fa99d2c370ef76512ea9beafe922853b1b00f7c4b70acaeb2e539d8',
-                  'targets': [Path('app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp')],
-              },
-              'entry2': {
-                  'chunks': ['entry2.00.b64', 'entry2.01.b64', 'entry2.02.b64'],
-                  'sizes': [18000, 18000, 9444],
-                  'bytes': 34082,
-                  'sha256': '4867d6287f5d90c499449097d2682dc8a43f634926ff5c93d817d69cc8ffe1d4',
-                  'targets': [
-                      Path('app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),
-                      Path('app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),
-                  ],
-              },
-              'entry3': {
-                  'chunks': ['entry3.00.b64', 'entry3.01.b64', 'entry3.02.b64', 'entry3.03.b64'],
-                  'sizes': [18000, 18000, 18000, 80],
-                  'bytes': 40558,
-                  'sha256': '031f32eeb353adcc0fea6a73dd99a737fb6f019a3cc8bce025897e39bb1d357b',
-                  'targets': [
-                      Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),
-                      Path('app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),
-                  ],
-              },
-          }
+      - name: Verify exact PHP runtime
+        run: php -r 'printf("PHP_VERSION=%s\n", PHP_VERSION); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
 
-          for name, spec in specs.items():
-              parts = []
-              for filename, expected_size in zip(spec['chunks'], spec['sizes']):
-                  text = (root / filename).read_text(encoding='ascii').strip()
-                  assert len(text) == expected_size, f'{filename}: chunk size {len(text)} != {expected_size}'
-                  parts.append(text)
-              encoded = ''.join(parts)
-              data = base64.b64decode(encoded, validate=True)
-              digest = hashlib.sha256(data).hexdigest()
-              assert len(data) == spec['bytes'], f'{name}: bytes {len(data)} != {spec["bytes"]}'
-              assert digest == spec['sha256'], f'{name}: sha256 {digest} != {spec["sha256"]}'
-              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', f'{name}: not WebP'
-              declared = struct.unpack('<I', data[4:8])[0] + 8
-              assert declared == len(data), f'{name}: RIFF declared {declared} != actual {len(data)}'
-              for target in spec['targets']:
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  target.write_bytes(data)
-                  with Image.open(target) as image:
-                      image.load()
-                      assert image.size == (640, 480), f'{target}: decoded size {image.size}'
-                      assert image.mode in {'RGB', 'RGBA'}, f'{target}: unexpected mode {image.mode}'
-                  assert hashlib.sha256(target.read_bytes()).hexdigest() == spec['sha256']
-                  print(f'{target}: decoder-valid bytes={len(data)} sha256={digest} size=640x480')
-          PY
-
-          rm -rf tmp/premium-v7-final
-          git show origin/agent/mvp-13-2-staging:.github/workflows/production-primary-coordinator-foundation-safety.yml > .github/workflows/production-primary-coordinator-foundation-safety.yml
-
-          python3 - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-          import hashlib, struct
-          expected = {
-              'app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp': 'a5fede1e8fa99d2c370ef76512ea9beafe922853b1b00f7c4b70acaeb2e539d8',
-              'app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp': '4867d6287f5d90c499449097d2682dc8a43f634926ff5c93d817d69cc8ffe1d4',
-              'app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp': '031f32eeb353adcc0fea6a73dd99a737fb6f019a3cc8bce025897e39bb1d357b',
-              'app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp': '4867d6287f5d90c499449097d2682dc8a43f634926ff5c93d817d69cc8ffe1d4',
-              'app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp': '031f32eeb353adcc0fea6a73dd99a737fb6f019a3cc8bce025897e39bb1d357b',
-          }
-          for filename, digest in expected.items():
-              path = Path(filename)
-              data = path.read_bytes()
-              assert hashlib.sha256(data).hexdigest() == digest
-              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP'
-              assert struct.unpack('<I', data[4:8])[0] + 8 == len(data)
-              with Image.open(path) as im:
-                  im.load()
-                  assert im.size == (640, 480)
-          PY
-
-          git diff --check
-          test ! -e tmp/premium-v7-final
-          git diff --exit-code origin/agent/mvp-13-2-staging -- .github/workflows/production-primary-coordinator-foundation-safety.yml
-
-          git config user.name 'manufact-test'
-          git config user.email 'manufact.test@gmail.com'
-          git add -A
-          git commit -m 'MVP-19.3: install exact premium Entry Effect v7 rasters'
-          git push origin HEAD:agent/mvp19-3-premium-entry-art-v7-transfer
+      - name: Run focused coordinator foundation checks
+        run: bash ops/checks/production-primary-coordinator-foundation-local.sh
