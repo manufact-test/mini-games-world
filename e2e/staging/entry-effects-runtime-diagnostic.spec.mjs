@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
 
 const ORIGIN = process.env.MGW_STAGING_ORIGIN || 'https://seashell-okapi-889488.hostingersite.com';
-const ART_PATH = '/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=reference-art-v3';
-const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1134&entry_live_img=reference-art-v3';
+const ART_PATH = '/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4';
+const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1135&entry_live_img=cinematic-webp-v4';
 const LIVE_CSS_PATH = '/app/assets/css/production-v106-store-avatar-frame-density.css?v=9&live_entry=reference-art-v3';
 
 async function bodyText(response) {
   return (await response.body()).toString('utf8');
 }
 
-test('ENTRY EFFECT DIAGNOSTIC: deployed canonical SVG real-img owner is visible', async ({ browser }, testInfo) => {
+test('ENTRY EFFECT DIAGNOSTIC: deployed cinematic WebP real-img owner is visible', async ({ browser }, testInfo) => {
   const context = await browser.newContext({
     locale: 'ru-RU',
     timezoneId: 'Europe/Vilnius',
@@ -29,18 +29,18 @@ test('ENTRY EFFECT DIAGNOSTIC: deployed canonical SVG real-img owner is visible'
     expect(jsResponse.status()).toBe(200);
     expect(cssResponse.status()).toBe(200);
 
-    const artText = await bodyText(artResponse);
+    const artBody = await artResponse.body();
     const jsText = await bodyText(jsResponse);
     const cssText = await bodyText(cssResponse);
 
-    expect(artResponse.headers()['content-type'] || '').toContain('image/svg+xml');
-    expect(artText).toMatch(/<svg\b/i);
-    expect(artText).not.toMatch(/<text\b/i);
-    expect(artText.length).toBeGreaterThan(1000);
+    expect(artResponse.headers()['content-type'] || '').toContain('image/webp');
+    expect(artBody.length).toBeGreaterThan(1000);
+    expect(artBody.subarray(0, 4).toString('ascii')).toBe('RIFF');
+    expect(artBody.subarray(8, 12).toString('ascii')).toBe('WEBP');
 
     expect(jsText).toContain('store-entry-01-celestial-gate.svg?asset=reference-art-v3');
-    expect(jsText).toContain('store-entry-02-king-ascension.svg?asset=reference-art-v3');
-    expect(jsText).toContain('store-entry-03-lord-blade.svg?asset=reference-art-v3');
+    expect(jsText).toContain('entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4');
+    expect(jsText).toContain('entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4');
     expect(jsText).toContain("image.className = 'mgw-entry-effect-live-art'");
 
     expect(cssText).toContain('background-color:transparent!important;background-image:none!important;');
@@ -108,8 +108,8 @@ test('ENTRY EFFECT DIAGNOSTIC: deployed canonical SVG real-img owner is visible'
     });
 
     expect(diagnostic).not.toBeNull();
-    expect(diagnostic.src).toContain('store-entry-03-lord-blade.svg');
-    expect(diagnostic.src).toContain('asset=reference-art-v3');
+    expect(diagnostic.src).toContain('entry-effect-03-knight-strike.webp');
+    expect(diagnostic.src).toContain('asset=cinematic-webp-v4');
     expect(diagnostic.complete).toBe(true);
     expect(diagnostic.naturalWidth).toBeGreaterThan(0);
     expect(diagnostic.naturalHeight).toBeGreaterThan(0);
