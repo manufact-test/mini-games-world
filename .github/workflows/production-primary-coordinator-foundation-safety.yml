@@ -1,48 +1,95 @@
-name: Production Primary Coordinator Foundation Safety
+name: Temporary premium Entry Effect binary finalizer
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
-      - agent/mvp-14-release-integration
-    paths:
-      - 'bot/runtime/ProductionPrimaryRuntimeActivationContract.php'
-      - 'bot/runtime/ProductionPrimaryRuntimeCoordinator.php'
-      - 'bot/tests/ProductionPrimaryRuntimeCoordinatorFoundationTest.php'
-      - 'ops/checks/production-primary-coordinator-foundation-local.sh'
-      - 'ops/runtime/PRODUCTION_PRIMARY_COORDINATOR_FOUNDATION.md'
-      - '.github/workflows/production-primary-coordinator-foundation-safety.yml'
-  workflow_dispatch:
+      - agent/mvp19-3-premium-entry-art-v7-binaryfix-2
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: mgw-production-primary-coordinator-foundation-${{ github.ref }}
+  group: mgw-premium-entry-binary-finalizer-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  focused:
-    name: Verify inactive production coordinator foundation
+  finalize:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-
+    timeout-minutes: 15
     steps:
-      - name: Checkout exact candidate revision
+      - name: Checkout corrective branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          clean: true
+          ref: agent/mvp19-3-premium-entry-art-v7-binaryfix-2
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Set up PHP 8.3
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          coverage: none
+      - name: Reconstruct and verify exact premium WebPs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch origin agent/mvp-13-2-staging
 
-      - name: Verify exact PHP runtime
-        run: php -r 'printf("PHP_VERSION=%s\n", PHP_VERSION); exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80400 ? 0 : 1);'
+          cat tmp/premium-q30-v7/e1.*.b64 | tr -d '\r\n' | base64 -d > /tmp/e1.webp
+          cat tmp/premium-q30-v7/e2.*.b64 | tr -d '\r\n' | base64 -d > /tmp/e2.webp
+          cat tmp/premium-q30-v7/e3.*.b64 | tr -d '\r\n' | base64 -d > /tmp/e3.webp
 
-      - name: Run focused coordinator foundation checks
-        run: bash ops/checks/production-primary-coordinator-foundation-local.sh
+          echo '2e71a980cc92998bfee054de2553d58c9989b041a7228589d0fcac4e51b1f9ef  /tmp/e1.webp' | sha256sum -c -
+          echo 'c94e4427ec80e301f545c5a30c53a7c11d372fd3f7182ef949a088885c2afc9a  /tmp/e2.webp' | sha256sum -c -
+          echo 'd3792ddeb00ebddc37369b006adce830963a542877a3ce3a56400519fc4c69f2  /tmp/e3.webp' | sha256sum -c -
+
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import hashlib, struct
+
+          expected = {
+              '/tmp/e1.webp': ('2e71a980cc92998bfee054de2553d58c9989b041a7228589d0fcac4e51b1f9ef', 29344),
+              '/tmp/e2.webp': ('c94e4427ec80e301f545c5a30c53a7c11d372fd3f7182ef949a088885c2afc9a', 42942),
+              '/tmp/e3.webp': ('d3792ddeb00ebddc37369b006adce830963a542877a3ce3a56400519fc4c69f2', 50662),
+          }
+          for raw, (sha, size) in expected.items():
+              path = Path(raw)
+              data = path.read_bytes()
+              assert len(data) == size, (path, len(data), size)
+              assert hashlib.sha256(data).hexdigest() == sha, path
+              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', path
+              assert struct.unpack('<I', data[4:8])[0] + 8 == len(data), f'{path}: RIFF length mismatch'
+              image = Image.open(path)
+              image.load()
+              assert image.size == (640, 480), (path, image.size)
+              rgba = image.convert('RGBA')
+              alpha = rgba.getchannel('A')
+              assert alpha.getbbox() is not None, f'{path}: fully transparent'
+              visible = sum(1 for a in alpha.getdata() if a > 8)
+              assert visible > 5000, f'{path}: too few visible pixels {visible}'
+              print(f'{path}: PASS size={len(data)} sha={sha} decoded={image.size} visible={visible}')
+          PY
+
+          cp /tmp/e1.webp app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp
+          cp /tmp/e2.webp app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp
+          cp /tmp/e3.webp app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp
+          cp /tmp/e2.webp app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp
+          cp /tmp/e3.webp app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp
+
+          rm -rf tmp/premium-q30-v7
+          git show origin/agent/mvp-13-2-staging:.github/workflows/production-primary-coordinator-foundation-safety.yml > .github/workflows/production-primary-coordinator-foundation-safety.yml
+
+          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          php -l app/runtime/client/version-manifest.php
+          git diff --check
+
+          grep -F 'asset=premium-art-v7' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F 'entry_live_img=premium-art-v7' app/runtime/client/version-manifest.php
+          grep -F 'mvp19=store-v2' app/runtime/client/version-manifest.php
+
+      - name: Commit exact binaries and cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add -A
+          git commit -m 'MVP-19.3: install exact premium Entry Effect WebPs'
+          git push origin HEAD:agent/mvp19-3-premium-entry-art-v7-binaryfix-2
