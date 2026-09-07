@@ -3,15 +3,17 @@ import { initMgwPurchaseFeedback } from './commerce/mgw-purchase-feedback.js?v=1
 
 initMgwPurchaseFeedback();
 
-/* MVP-19.3 Entry Effects — live image owner.
-   Telegram/WebView manual review proved the live layer, text and Skip button render,
-   while CSS background-image artwork does not. Mount the art as a real image node
-   directly under the live overlay so it is independent of legacy card backgrounds,
-   emblem markup and clip-path rules. Store presentation is not touched here. */
+/* MVP-19.3 Entry Effects — authoritative live image owner.
+   Store already proves the canonical SVG artwork is loadable. Telegram manual
+   review showed the live card-background path can render the overlay/text while
+   omitting the artwork, so live presentation must have one concrete replaced
+   element owner. Mount the same canonical SVGs as real <img> nodes directly under
+   the overlay. Store presentation, lifecycle, equip, skip and game state are not
+   changed here. */
 const MGW_ENTRY_LIVE_ART = Object.freeze({
-  'entry-01':'/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp?asset=live-img-v1',
-  'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=live-img-v1',
-  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=live-img-v1',
+  'entry-01':'/app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=live-node-svg-v2',
+  'entry-02':'/app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg?asset=live-node-svg-v2',
+  'entry-03':'/app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=live-node-svg-v2',
 });
 
 function mountMgwEntryLiveArt(layer){
