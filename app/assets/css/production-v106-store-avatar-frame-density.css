@@ -74,13 +74,13 @@
   background-size:contain!important;
 }
 .mgw-entry-effect-preview[data-entry-effect-variant="entry-01"]{
-  background-image:url('../media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=canonical-svg-v1'),radial-gradient(circle at 50% 55%,rgba(80,162,255,.30),transparent 58%),linear-gradient(180deg,#101b34,#080b15)!important;
+  background-image:url('../media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=reference-art-v3'),radial-gradient(circle at 50% 55%,rgba(80,162,255,.30),transparent 58%),linear-gradient(180deg,#101b34,#080b15)!important;
 }
 .mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]{
-  background-image:url('../media/cosmetics/entry-effects/store-entry-02-king-ascension.svg?asset=canonical-svg-v1'),radial-gradient(circle at 50% 52%,rgba(255,185,48,.30),transparent 58%),linear-gradient(180deg,#1b130d,#09090c)!important;
+  background-image:url('../media/cosmetics/entry-effects/store-entry-02-king-ascension.svg?asset=reference-art-v3'),radial-gradient(circle at 50% 52%,rgba(255,185,48,.30),transparent 58%),linear-gradient(180deg,#1b130d,#09090c)!important;
 }
 .mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]{
-  background-image:url('../media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=canonical-svg-v1'),radial-gradient(circle at 50% 52%,rgba(255,173,35,.32),transparent 58%),linear-gradient(180deg,#1d100b,#09080a)!important;
+  background-image:url('../media/cosmetics/entry-effects/store-entry-03-lord-blade.svg?asset=reference-art-v3'),radial-gradient(circle at 50% 52%,rgba(255,173,35,.32),transparent 58%),linear-gradient(180deg,#1d100b,#09080a)!important;
 }
 .mgw-entry-effect-preview[data-entry-effect-variant] .mgw-entry-effect-preview-core b{
   opacity:0!important;
