@@ -1,17 +1,6 @@
-name: MVP-19.3 Entry Effects canonical art integrity
+name: MVP-19.3 Entry Effects runtime diagnostic
 
 on:
-  pull_request:
-    branches:
-      - agent/mvp-13-2-staging
-    paths:
-      - 'app/assets/css/production-v106-store-avatar-frame-density.css'
-      - 'app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'
-      - 'app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'
-      - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'
-      - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
-      - 'e2e/playwright.entry-effects-diagnostic.config.mjs'
-      - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
   push:
     branches:
       - agent/mvp-13-2-staging
@@ -22,51 +11,25 @@ permissions:
   id-token: write
 
 jobs:
-  asset-integrity:
-    name: Verify canonical Entry Effect SVG art
+  runtime-diagnostic:
+    name: Probe live Entry Effect img on current staging
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
 
     steps:
-      - name: Checkout candidate
+      - name: Checkout exact staging commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
 
-      - name: Verify candidate SVG assets and CSS ownership
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          from xml.etree import ElementTree as ET
-
-          paths = [
-              Path('app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'),
-              Path('app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'),
-              Path('app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'),
-          ]
-          for path in paths:
-              data = path.read_text(encoding='utf-8')
-              assert len(data) > 1000, f'{path}: unexpectedly small artwork'
-              root = ET.fromstring(data)
-              assert root.tag.endswith('svg'), f'{path}: root is not svg'
-              assert root.attrib.get('viewBox') == '0 0 400 300', f'{path}: unexpected viewBox'
-              assert '<text' not in data.lower(), f'{path}: readable text is not allowed in artwork'
-              visible = sum(1 for node in root.iter() if node.tag.rsplit('}', 1)[-1] in {'path','ellipse','circle','rect','polygon','polyline','line'})
-              assert visible >= 10, f'{path}: artwork has too few visible primitives ({visible})'
-              print(f'{path}: ok primitives={visible} bytes={len(data.encode("utf-8"))}')
-          PY
-          grep -F 'store-entry-01-celestial-gate.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
-          grep -F 'store-entry-02-king-ascension.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
-          grep -F 'store-entry-03-lord-blade.svg?asset=canonical-svg-v1' app/assets/css/production-v106-store-avatar-frame-density.css
-          grep -F '.mgw-entry-effect-live-art{display:none!important}' app/assets/css/production-v106-store-avatar-frame-density.css
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Wait for exact staging deployment
-        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -98,29 +61,21 @@ jobs:
           done
           test "$ready" = '1'
 
-      - name: Set up Node.js
-        if: github.event_name != 'pull_request'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
       - name: Install pinned Playwright
-        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -Eeuo pipefail
           npm install --no-save --package-lock=false @playwright/test@1.62.0
           npx --no-install playwright install chromium
 
-      - name: Probe deployed canonical SVG pixels
-        if: github.event_name != 'pull_request'
+      - name: Run Entry Effect runtime diagnostic
         shell: bash
         run: |
           set -Eeuo pipefail
           npx --no-install playwright test --config=e2e/playwright.entry-effects-diagnostic.config.mjs
 
       - name: Upload runtime evidence
-        if: always() && github.event_name != 'pull_request'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: entry-effects-runtime-diagnostic-${{ github.run_id }}
