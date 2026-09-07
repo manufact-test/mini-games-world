@@ -11,8 +11,8 @@ initMgwPurchaseFeedback();
    equip, skip and game state are not changed here. */
 const MGW_ENTRY_LIVE_ART = Object.freeze({
   'entry-01':'/app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=reference-art-v3',
-  'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4',
-  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=valid-webp-v5',
+  'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=reference-raster-v6',
+  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=reference-raster-v6',
 });
 
 function mountMgwEntryLiveArt(layer){

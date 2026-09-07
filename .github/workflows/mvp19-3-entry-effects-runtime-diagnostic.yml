@@ -11,8 +11,11 @@ on:
       - 'app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'
       - 'app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'
       - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'
+      - 'app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'
       - 'app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'
       - 'app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'
+      - 'app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'
+      - 'app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'
       - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
       - 'e2e/playwright.entry-effects-diagnostic.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
@@ -66,29 +69,31 @@ jobs:
               assert visible >= 10, f'{path}: artwork has too few visible primitives ({visible})'
               print(f'{path}: ok primitives={visible} bytes={len(data.encode("utf-8"))}')
 
-          # Tier II is still the pre-existing cinematic asset and is not broadened by this Tier III probe.
-          tier2 = Path('app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp')
-          tier2_data = tier2.read_bytes()
-          assert len(tier2_data) > 1000, f'{tier2}: unexpectedly small cinematic asset'
-          assert tier2_data[:4] == b'RIFF' and tier2_data[8:12] == b'WEBP', f'{tier2}: not WebP-shaped bytes'
-
-          # Tier III MUST be fully standards-valid. Magic bytes/dimensions alone previously allowed a truncated file to pass.
-          tier3 = Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp')
-          tier3_data = tier3.read_bytes()
-          assert len(tier3_data) > 1000, f'{tier3}: unexpectedly small cinematic asset'
-          assert tier3_data[:4] == b'RIFF' and tier3_data[8:12] == b'WEBP', f'{tier3}: not a WebP file'
-          declared_total = struct.unpack('<I', tier3_data[4:8])[0] + 8
-          assert declared_total == len(tier3_data), f'{tier3}: truncated RIFF declared={declared_total} actual={len(tier3_data)}'
-          image = Image.open(tier3)
-          image.load()
-          assert image.size == (640, 480), f'{tier3}: unexpected decoded size {image.size}'
-          alpha = image.convert('RGBA').getchannel('A')
-          assert alpha.getbbox() is not None, f'{tier3}: decoded image is fully transparent'
-          print(f'{tier3}: decoder-valid bytes={len(tier3_data)} size={image.size} mode={image.mode}')
+          webp_paths = [
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'),
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),
+              Path('app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),
+              Path('app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),
+          ]
+          for path in webp_paths:
+              data = path.read_bytes()
+              assert len(data) > 1000, f'{path}: unexpectedly small reference raster'
+              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', f'{path}: not a WebP file'
+              declared_total = struct.unpack('<I', data[4:8])[0] + 8
+              assert declared_total == len(data), f'{path}: truncated RIFF declared={declared_total} actual={len(data)}'
+              image = Image.open(path)
+              image.load()
+              assert image.size == (640, 480), f'{path}: unexpected decoded size {image.size}'
+              alpha = image.convert('RGBA').getchannel('A')
+              assert alpha.getbbox() is not None, f'{path}: decoded image is fully transparent'
+              visible = sum(1 for value in alpha.getdata() if value > 8)
+              assert visible > 5000, f'{path}: too few visible pixels ({visible})'
+              print(f'{path}: decoder-valid bytes={len(data)} size={image.size} visible_alpha_pixels={visible}')
           PY
           grep -F "store-entry-01-celestial-gate.svg?asset=reference-art-v3" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F "entry-effect-03-knight-strike.webp?asset=valid-webp-v5" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "entry-effect-02-portal-knight.webp?asset=reference-raster-v6" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "entry-effect-03-knight-strike.webp?asset=reference-raster-v6" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           grep -F "image.className = 'mgw-entry-effect-live-art'" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           grep -F 'background-color:transparent!important;background-image:none!important;' app/assets/css/production-v106-store-avatar-frame-density.css
           grep -F '.mgw-entry-effect-live-art{' app/assets/css/production-v106-store-avatar-frame-density.css
@@ -97,7 +102,7 @@ jobs:
             echo 'obsolete hidden live image owner is still present' >&2
             exit 1
           fi
-          grep -F 'entry_live_img=valid-webp-v5' app/runtime/client/version-manifest.php
+          grep -F 'entry_live_img=reference-raster-v6' app/runtime/client/version-manifest.php
           grep -F 'live_entry=reference-art-v3' app/runtime/client/version-manifest.php
 
       - name: Wait for exact staging deployment
@@ -147,7 +152,7 @@ jobs:
           npm install --no-save --package-lock=false @playwright/test@1.62.0
           npx --no-install playwright install chromium
 
-      - name: Probe deployed real-img cinematic owner
+      - name: Probe deployed real-img reference-raster owners
         if: github.event_name != 'pull_request'
         shell: bash
         run: |
