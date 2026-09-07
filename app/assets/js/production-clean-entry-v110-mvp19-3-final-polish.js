@@ -12,7 +12,7 @@ initMgwPurchaseFeedback();
 const MGW_ENTRY_LIVE_ART = Object.freeze({
   'entry-01':'/app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=reference-art-v3',
   'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4',
-  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4',
+  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=valid-webp-v5',
 });
 
 function mountMgwEntryLiveArt(layer){

@@ -1,111 +1,154 @@
-name: Temporary known-valid Entry Effect WebP probe
+name: MVP-19.3 Entry Effects canonical live-owner integrity
 
 on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+      - 'app/assets/css/production-v106-store-avatar-frame-density.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'
+      - 'app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'
+      - 'app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'
+      - 'app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'
+      - 'app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'
+      - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
+      - 'e2e/playwright.entry-effects-diagnostic.config.mjs'
+      - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
   push:
     branches:
-      - agent/mvp19-3-entry-valid-webp-probe-v5
+      - agent/mvp-13-2-staging
+  workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: mgw-entry-valid-webp-probe-${{ github.ref }}
-  cancel-in-progress: true
+  contents: read
 
 jobs:
-  build-probe:
+  asset-integrity:
+    name: Verify canonical Entry Effect real-img owner
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+
     steps:
-      - name: Checkout corrective branch
+      - name: Checkout candidate
         uses: actions/checkout@v4
         with:
-          ref: agent/mvp19-3-entry-valid-webp-probe-v5
-          fetch-depth: 0
-          persist-credentials: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
 
-      - name: Generate and verify a standards-valid Tier III WebP
+      - name: Verify candidate Entry Effect assets and single-owner wiring
         shell: bash
         run: |
           set -Eeuo pipefail
-          git fetch origin agent/mvp-13-2-staging
-          python3 -m pip install --quiet pillow
-          python3 - <<'PY'
-          from PIL import Image, ImageDraw
-          from pathlib import Path
-          import struct
-
-          path = Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp')
-          w, h = 640, 480
-          im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-          d = ImageDraw.Draw(im)
-
-          # Diagnostic artwork only: intentionally obvious, high-contrast and non-empty.
-          d.rounded_rectangle((18, 18, 622, 462), radius=52, fill=(28, 16, 14, 238), outline=(255, 185, 45, 255), width=7)
-          d.ellipse((208, 54, 432, 278), fill=(255, 157, 18, 218), outline=(255, 235, 160, 255), width=10)
-          d.polygon([(34, 118), (248, 78), (208, 226), (52, 268)], fill=(178, 15, 34, 245))
-          d.polygon([(606, 118), (392, 78), (432, 226), (588, 268)], fill=(178, 15, 34, 245))
-          d.polygon([(260, 140), (334, 112), (384, 212), (354, 352), (278, 352), (246, 220)], fill=(20, 23, 27, 255), outline=(255, 185, 45, 255))
-          d.line((72, 392, 572, 102), fill=(255, 244, 210, 255), width=38)
-          d.line((82, 402, 582, 112), fill=(255, 178, 28, 255), width=12)
-          d.ellipse((164, 340, 476, 430), outline=(255, 182, 35, 255), width=12)
-
-          im.save(path, 'WEBP', quality=88, method=4, exact=True)
-
-          # Re-open with libwebp through Pillow: this MUST work, unlike the broken current files.
-          check = Image.open(path)
-          check.load()
-          assert check.size == (640, 480), check.size
-          rgba = check.convert('RGBA')
-          assert rgba.getchannel('A').getbbox() is not None
-
-          data = path.read_bytes()
-          assert data[:4] == b'RIFF' and data[8:12] == b'WEBP'
-          declared_total = struct.unpack('<I', data[4:8])[0] + 8
-          assert declared_total == len(data), (declared_total, len(data))
-          print(f'VALID_WEBP_PROBE bytes={len(data)} declared_total={declared_total} mode={check.mode} size={check.size}')
-          PY
-
           python3 - <<'PY'
           from pathlib import Path
+          from xml.etree import ElementTree as ET
 
-          def replace_once(path, old, new):
-              p = Path(path)
-              text = p.read_text(encoding='utf-8')
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected one occurrence of {old!r}, found {count}')
-              p.write_text(text.replace(old, new, 1), encoding='utf-8')
-
-          js = 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
-          replace_once(
-              js,
-              "  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4',",
-              "  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=valid-webp-v5',"
-          )
-
-          manifest = 'app/runtime/client/version-manifest.php'
-          replace_once(manifest, 'production-clean-entry-v110-mvp19-3-final-polish.js?v=1135', 'production-clean-entry-v110-mvp19-3-final-polish.js?v=1136')
-          replace_once(manifest, 'entry_live_img=cinematic-webp-v4', 'entry_live_img=valid-webp-v5')
+          paths = [
+              Path('app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg'),
+              Path('app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg'),
+              Path('app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg'),
+          ]
+          for path in paths:
+              data = path.read_text(encoding='utf-8')
+              assert len(data) > 1000, f'{path}: unexpectedly small artwork'
+              root = ET.fromstring(data)
+              assert root.tag.endswith('svg'), f'{path}: root is not svg'
+              assert root.attrib.get('viewBox') == '0 0 400 300', f'{path}: unexpected viewBox'
+              assert '<text' not in data.lower(), f'{path}: readable text is not allowed in artwork'
+              visible = sum(1 for node in root.iter() if node.tag.rsplit('}', 1)[-1] in {'path','ellipse','circle','rect','polygon','polyline','line'})
+              assert visible >= 10, f'{path}: artwork has too few visible primitives ({visible})'
+              print(f'{path}: ok primitives={visible} bytes={len(data.encode("utf-8"))}')
           PY
+          grep -F "store-entry-01-celestial-gate.svg?asset=reference-art-v3" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in [
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),
+              Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),
+          ]:
+              data = path.read_bytes()
+              assert len(data) > 1000, f'{path}: unexpectedly small cinematic asset'
+              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', f'{path}: not a real WebP file'
+              print(f'{path}: ok bytes={len(data)}')
+          PY
+          grep -F "entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F "image.className = 'mgw-entry-effect-live-art'" app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F 'background-color:transparent!important;background-image:none!important;' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F '.mgw-entry-effect-live-art{' app/assets/css/production-v106-store-avatar-frame-density.css
+          grep -F 'display:block!important;' app/assets/css/production-v106-store-avatar-frame-density.css
+          if grep -F '.mgw-entry-effect-live-art{display:none!important}' app/assets/css/production-v106-store-avatar-frame-density.css; then
+            echo 'obsolete hidden live image owner is still present' >&2
+            exit 1
+          fi
+          grep -F 'entry_live_img=cinematic-webp-v4' app/runtime/client/version-manifest.php
+          grep -F 'live_entry=reference-art-v3' app/runtime/client/version-manifest.php
 
-          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          php -l app/runtime/client/version-manifest.php
-          git diff --check
-
-          # Restore the canonical workflow itself; do not carry this temporary generator into the PR.
-          git show origin/agent/mvp-13-2-staging:.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml > .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml
-
-      - name: Commit generated probe corrective
+      - name: Wait for exact staging deployment
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -Eeuo pipefail
-          git config user.name 'manufact-test'
-          git config user.email 'manufact.test@gmail.com'
-          git add \
-            app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp \
-            app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js \
-            app/runtime/client/version-manifest.php \
-            .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml
-          git commit -m 'MVP-19.3: replace malformed Tier III WebP with valid probe'
-          git push origin HEAD:agent/mvp19-3-entry-valid-webp-probe-v5
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          test "${#expected_fingerprint}" = '64'
+          ready=0
+          for attempt in $(seq 1 24); do
+            rm -f entry-effect-diagnostic-readiness.json
+            if curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+              --retry 1 --retry-delay 2 --retry-connrefused \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              --output entry-effect-diagnostic-readiness.json; then
+              if python3 - entry-effect-diagnostic-readiness.json "${expected_fingerprint}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('environment') == 'staging'
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            if [[ "$attempt" -lt 24 ]]; then sleep 15; fi
+          done
+          test "$ready" = '1'
+
+      - name: Set up Node.js
+        if: github.event_name != 'pull_request'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Probe deployed real-img cinematic owner
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --no-install playwright test --config=e2e/playwright.entry-effects-diagnostic.config.mjs
+
+      - name: Upload runtime evidence
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-effects-runtime-diagnostic-${{ github.run_id }}
+          path: |
+            artifacts/playwright-entry-effects-diagnostic
+            entry-effect-diagnostic-readiness.json
+          if-no-files-found: warn
+          retention-days: 7
