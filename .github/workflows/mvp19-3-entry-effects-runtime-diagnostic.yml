@@ -34,15 +34,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Preflight current staging
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          node --input-type=module <<'NODE'
-          import stagingGlobalSetup from './e2e/staging-global-setup.mjs';
-          await stagingGlobalSetup();
-          NODE
-
       - name: Install pinned Playwright
         shell: bash
         run: |
