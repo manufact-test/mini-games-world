@@ -1,0 +1,141 @@
+name: Temporary Entry Effect reference raster v6 builder
+
+on:
+  push:
+    branches:
+      - agent/mvp19-3-entry-reference-raster-v6
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout corrective branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp19-3-entry-reference-raster-v6
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Render canonical Store reference SVGs to decoder-valid WebP assets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --quiet pillow cairosvg
+          python3 - <<'PY'
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          import cairosvg
+          import struct
+
+          root = Path('app/assets/media/cosmetics/entry-effects')
+          mapping = [
+              ('store-entry-01-celestial-gate.svg', 'entry-effect-01-celestial-gate.webp'),
+              ('store-entry-02-king-ascension.svg', 'entry-effect-02-portal-knight.webp'),
+              ('store-entry-03-lord-blade.svg', 'entry-effect-03-knight-strike.webp'),
+          ]
+
+          rendered = {}
+          for svg_name, webp_name in mapping:
+              svg = root / svg_name
+              target = root / webp_name
+              png = cairosvg.svg2png(bytestring=svg.read_bytes(), output_width=640, output_height=480)
+              image = Image.open(BytesIO(png)).convert('RGBA')
+              assert image.size == (640, 480)
+              assert image.getchannel('A').getbbox() is not None
+              image.save(target, 'WEBP', quality=94, method=6, exact=True)
+
+              check = Image.open(target)
+              check.load()
+              assert check.size == (640, 480)
+              rgba = check.convert('RGBA')
+              alpha = rgba.getchannel('A')
+              assert alpha.getbbox() is not None
+              data = target.read_bytes()
+              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP'
+              declared_total = struct.unpack('<I', data[4:8])[0] + 8
+              assert declared_total == len(data), (target, declared_total, len(data))
+              visible = sum(1 for a in alpha.getdata() if a > 8)
+              assert visible > 5000, (target, visible)
+              rendered[webp_name] = data
+              print(f'VALID_REFERENCE_RASTER {target} bytes={len(data)} visible_alpha_pixels={visible}')
+
+          public = Path('app/media/cosmetics/entry-effects')
+          public.mkdir(parents=True, exist_ok=True)
+          for name in ('entry-effect-02-portal-knight.webp', 'entry-effect-03-knight-strike.webp'):
+              (public / name).write_bytes(rendered[name])
+          PY
+
+      - name: Wire fresh reference-raster cache identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js': [
+                  ("entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4", "entry-effect-02-portal-knight.webp?asset=reference-raster-v6"),
+                  ("entry-effect-03-knight-strike.webp?asset=valid-webp-v5", "entry-effect-03-knight-strike.webp?asset=reference-raster-v6"),
+              ],
+              'app/runtime/client/version-manifest.php': [
+                  ('production-clean-entry-v110-mvp19-3-final-polish.js?v=1136', 'production-clean-entry-v110-mvp19-3-final-polish.js?v=1137'),
+                  ('entry_live_img=valid-webp-v5', 'entry_live_img=reference-raster-v6'),
+              ],
+              'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs': [
+                  ('asset=valid-webp-v5', 'asset=reference-raster-v6'),
+                  ('v=1136&entry_live_img=valid-webp-v5', 'v=1137&entry_live_img=reference-raster-v6'),
+              ],
+              '.github/workflows/mvp19-3-profile-entry-effects.yml': [
+                  ('entry-effect-02-portal-knight.webp?asset=cinematic-webp-v4', 'entry-effect-02-portal-knight.webp?asset=reference-raster-v6'),
+                  ('entry-effect-03-knight-strike.webp?asset=cinematic-webp-v4', 'entry-effect-03-knight-strike.webp?asset=reference-raster-v6'),
+                  ('entry_live_img=cinematic-webp-v4', 'entry_live_img=reference-raster-v6'),
+              ],
+          }
+
+          for filename, pairs in replacements.items():
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              changed = False
+              for old, new in pairs:
+                  if old in text:
+                      text = text.replace(old, new)
+                      changed = True
+              if changed:
+                  path.write_text(text, encoding='utf-8')
+
+          # The e2e path replacement above changes the asset token before the compound JS URL token.
+          spec = Path('e2e/staging/entry-effects-runtime-diagnostic.spec.mjs')
+          text = spec.read_text(encoding='utf-8')
+          text = text.replace('v=1136&entry_live_img=reference-raster-v6', 'v=1137&entry_live_img=reference-raster-v6')
+          spec.write_text(text, encoding='utf-8')
+          PY
+
+          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          node --check e2e/staging/entry-effects-runtime-diagnostic.spec.mjs
+          php -l app/runtime/client/version-manifest.php
+          git diff --check
+
+          if grep -R -n -E 'cinematic-webp-v4|valid-webp-v5' \
+              app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js \
+              app/runtime/client/version-manifest.php \
+              e2e/staging/entry-effects-runtime-diagnostic.spec.mjs \
+              .github/workflows/mvp19-3-profile-entry-effects.yml; then
+            echo 'stale live Entry Effect asset identity remains in active files' >&2
+            exit 1
+          fi
+
+      - name: Remove temporary builder and commit generated corrective
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f .github/workflows/temporary-entry-reference-raster-v6-builder.yml
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add -A
+          git commit -m 'MVP-19.3: rebuild Entry Effect WebPs from canonical reference art'
+          git push origin HEAD:agent/mvp19-3-entry-reference-raster-v6
