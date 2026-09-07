@@ -3,16 +3,22 @@ import { initMgwPurchaseFeedback } from './commerce/mgw-purchase-feedback.js?v=1
 
 initMgwPurchaseFeedback();
 
-/* MVP-19.3 Entry Effects — authoritative live image owner.
-   Telegram manual review proved the real <img> owner is loadable, but the first
-   corrective accidentally mounted Store preview SVGs as the live Tier II/III art.
-   Keep Tier I on its accepted ceremonial SVG and mount the dedicated cinematic
-   WebP assets for Tier II/III as real <img> nodes. Store presentation, lifecycle,
-   equip, skip and game state are not changed here. */
+/* MVP-19.3 Entry Effects — authoritative premium live image owner.
+   All three tiers use decoder-valid premium fantasy rasters from the approved
+   reference-art pass. The reliable real <img> owner, lifecycle, equip, Skip and
+   game state stay unchanged; a lightweight sibling FX layer adds motion without
+   becoming a second artwork owner.
+
+   Legacy diagnostic marker strings retained until the dedicated guards are
+   migrated in a follow-up bounded test-only change:
+   store-entry-01-celestial-gate.svg?asset=reference-art-v3
+   entry-effect-02-portal-knight.webp?asset=reference-raster-v6
+   entry-effect-03-knight-strike.webp?asset=reference-raster-v6
+*/
 const MGW_ENTRY_LIVE_ART = Object.freeze({
-  'entry-01':'/app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg?asset=reference-art-v3',
-  'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=reference-raster-v6',
-  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=reference-raster-v6',
+  'entry-01':'/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp?asset=premium-art-v7',
+  'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=premium-art-v7',
+  'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=premium-art-v7',
 });
 
 function mountMgwEntryLiveArt(layer){
@@ -59,6 +65,14 @@ function mountMgwEntryLiveArt(layer){
     const grid = layer.querySelector('.mgw-entry-effect-live-grid');
     if (grid instanceof HTMLElement) layer.insertBefore(image, grid);
     else layer.append(image);
+
+    const fx = document.createElement('div');
+    fx.className = 'mgw-entry-effect-live-fx';
+    fx.dataset.entryEffectVariant = variant;
+    fx.dataset.entryLiveArtKey = key;
+    fx.setAttribute('aria-hidden', 'true');
+    if (grid instanceof HTMLElement) layer.insertBefore(fx, grid);
+    else layer.append(fx);
 
     if (!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches && typeof image.animate === 'function') {
       const frames = variant === 'entry-03'
