@@ -1,10 +1,14 @@
-name: MVP-19.3 Entry Effects runtime diagnostic
+name: MVP-19.3 Entry Effects asset integrity
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'
+      - 'app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'
+      - 'app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'
+      - 'scripts/ci/check-entry-effect-alpha.py'
       - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
       - 'e2e/playwright.entry-effects-diagnostic.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
@@ -17,43 +21,93 @@ permissions:
   contents: read
 
 jobs:
-  runtime-diagnostic:
-    name: Probe public Entry Effect WebP assets on Hostinger
+  asset-integrity:
+    name: Verify Entry Effect WebP pixels
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
 
     steps:
-      - name: Checkout diagnostic candidate
+      - name: Checkout candidate
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify candidate WebP alpha/content
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --no-input pillow==11.3.0
+          python scripts/ci/check-entry-effect-alpha.py
+
+      - name: Wait for exact staging deployment
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          test "${#expected_fingerprint}" = '64'
+          ready=0
+          for attempt in $(seq 1 24); do
+            rm -f entry-effect-diagnostic-readiness.json
+            if curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 25 \
+              --retry 1 --retry-delay 2 --retry-connrefused \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              --output entry-effect-diagnostic-readiness.json; then
+              if python3 - entry-effect-diagnostic-readiness.json "${expected_fingerprint}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('environment') == 'staging'
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            if [[ "$attempt" -lt 24 ]]; then sleep 15; fi
+          done
+          test "$ready" = '1'
+
       - name: Set up Node.js
+        if: github.event_name != 'pull_request'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install pinned Playwright
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -Eeuo pipefail
           npm install --no-save --package-lock=false @playwright/test@1.62.0
           npx --no-install playwright install chromium
 
-      - name: Run Entry Effect asset diagnostic
+      - name: Probe deployed Hostinger WebP pixels
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -Eeuo pipefail
           npx --no-install playwright test --config=e2e/playwright.entry-effects-diagnostic.config.mjs
 
       - name: Upload runtime evidence
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: entry-effects-runtime-diagnostic-${{ github.run_id }}
-          path: artifacts/playwright-entry-effects-diagnostic
+          path: |
+            artifacts/playwright-entry-effects-diagnostic
+            entry-effect-diagnostic-readiness.json
           if-no-files-found: warn
           retention-days: 7
