@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   focused:
-    name: Verify real animated Legendary Strike scene
+    name: Verify transferred Entry 01 V8 strike scene
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -65,11 +65,15 @@ jobs:
           css = Path('app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css').read_text(encoding='utf-8')
           manifest = Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
 
-          assert "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=1';" in wrapper
+          assert "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2';" in wrapper
           assert "await import('@mgw/clean-entry');" in core
           assert "await import('@mgw/main');" in core
           assert "entry_v8=legendary-strike-v1" in manifest
           assert "data-entry-v8-legendary-strike" in css
+          assert 'data-entry-effect-variant="entry-01"' in module
+          assert 'data-entry-effect-variant="entry-03"' not in module
+          assert 'data-entry-effect-variant="entry-01"' in css
+          assert 'data-entry-effect-variant="entry-03"' not in css
           assert ':has(' not in css
           assert "scale(calc(" not in css
           assert "var(--sx) *" not in css
@@ -114,7 +118,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: entry-v8-legendary-strike-${{ github.run_id }}
+          name: entry-v8-entry01-transfer-${{ github.run_id }}
           path: test-results
           if-no-files-found: warn
           retention-days: 7
