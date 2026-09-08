@@ -1,9 +1,7 @@
 const STYLE_ID = 'mgw-entry-v8-royal-ascension-style';
-const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css?v=3';
+const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css?v=4';
 const ASSET_BASE = '/app/assets/media/cosmetics/entry-effects/v8/';
-const FALLBACK_BODY = `${ASSET_BASE}entry-02-royal-ascension-body.svg?asset=royal-ascension-v3`;
-const GUARDIAN_B64 = `${ASSET_BASE}entry-02-royal-ascension-guardian.webp.b64?asset=royal-ascension-guardian-v1`;
-let guardianSrc = FALLBACK_BODY;
+const GUARDIAN_SRC = `${ASSET_BASE}entry-02-royal-ascension-guardian.webp?asset=royal-ascension-guardian-v2`;
 
 function ensureStyle(){
   const existing = document.getElementById(STYLE_ID);
@@ -25,21 +23,6 @@ function ensureStyle(){
   });
 }
 
-async function loadEncodedGuardian(){
-  const response = await fetch(GUARDIAN_B64, { cache:'force-cache' });
-  if (!response.ok) throw new Error(`guardian payload ${response.status}`);
-  const encoded = (await response.text()).trim();
-  if (!encoded.startsWith('kwfK') && !encoded.startsWith('UklG')) {
-    throw new Error('guardian payload is not recognized WebP base64');
-  }
-  const raw = atob(encoded);
-  const bytes = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
-  const blob = new Blob([bytes], { type:'image/webp' });
-  if (blob.size < 30_000) throw new Error('guardian payload unexpectedly small');
-  return URL.createObjectURL(blob);
-}
-
 function img(className, src){
   const node = document.createElement('img');
   node.className = className;
@@ -47,8 +30,23 @@ function img(className, src){
   node.alt = '';
   node.decoding = 'async';
   node.loading = 'eager';
+  node.fetchPriority = 'high';
   node.setAttribute('aria-hidden', 'true');
   return node;
+}
+
+async function ensureGuardian(){
+  const preload = new Image();
+  preload.decoding = 'async';
+  preload.src = GUARDIAN_SRC;
+  if (typeof preload.decode === 'function') await preload.decode();
+  else await new Promise((resolve, reject) => {
+    preload.addEventListener('load', resolve, { once:true });
+    preload.addEventListener('error', reject, { once:true });
+  });
+  if (preload.naturalWidth < 320 || preload.naturalHeight < 320) {
+    throw new Error(`Royal Ascension guardian decode ${preload.naturalWidth}x${preload.naturalHeight}`);
+  }
 }
 
 function appendMany(parent, className, count){
@@ -80,17 +78,11 @@ function mountRoyalAscension(layer){
   const stage = document.createElement('div');
   stage.className = 'mgw-entry-v8-ra-stage';
 
-  const veil = document.createElement('div');
-  veil.className = 'mgw-entry-v8-ra-veil';
-  stage.append(veil);
-
-  const beam = document.createElement('div');
-  beam.className = 'mgw-entry-v8-ra-beam';
-  stage.append(beam);
-
-  const halo = document.createElement('div');
-  halo.className = 'mgw-entry-v8-ra-halo';
-  stage.append(halo);
+  for (const className of ['mgw-entry-v8-ra-veil','mgw-entry-v8-ra-beam','mgw-entry-v8-ra-halo']) {
+    const el = document.createElement('div');
+    el.className = className;
+    stage.append(el);
+  }
 
   const sigil = document.createElement('div');
   sigil.className = 'mgw-entry-v8-ra-sigil';
@@ -116,7 +108,7 @@ function mountRoyalAscension(layer){
 
   const figure = document.createElement('div');
   figure.className = 'mgw-entry-v8-ra-figure';
-  figure.append(img('mgw-entry-v8-ra-guardian', guardianSrc));
+  figure.append(img('mgw-entry-v8-ra-guardian', GUARDIAN_SRC));
   const sweep = document.createElement('div');
   sweep.className = 'mgw-entry-v8-ra-armor-sweep';
   const crownFlare = document.createElement('div');
@@ -150,15 +142,7 @@ function scan(root = document){
   root.querySelectorAll?.('.mgw-entry-effect-layer').forEach(mountRoyalAscension);
 }
 
-async function arm(){
-  try {
-    guardianSrc = await loadEncodedGuardian();
-  } catch (_) {
-    guardianSrc = FALLBACK_BODY;
-  }
-  const preload = new Image();
-  preload.decoding = 'async';
-  preload.src = guardianSrc;
+function arm(){
   scan(document);
   const observer = new MutationObserver(records => {
     for (const record of records) {
@@ -168,6 +152,6 @@ async function arm(){
   observer.observe(document.documentElement, { childList:true, subtree:true });
 }
 
-ensureStyle().then(arm).catch(() => {
-  // Preserve current v7 Entry 02 if the Royal Ascension presentation cannot load.
+Promise.all([ensureStyle(), ensureGuardian()]).then(arm).catch(() => {
+  // Keep the existing v7 Entry 02 intact if the V8 art or stylesheet cannot load.
 });
