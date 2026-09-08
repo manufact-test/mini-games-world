@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=2';
+const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=3';
 
 async function mountFixture(page, variant = 'entry-02') {
   await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
@@ -15,20 +15,23 @@ async function mountFixture(page, variant = 'entry-02') {
   await page.evaluate(async modulePath => { await import(modulePath); }, MODULE);
 }
 
-test('Entry 02 Royal Ascension mounts only on medium tier and uses independent ceremonial layers', async ({ page }, testInfo) => {
+test('Entry 02 Royal Ascension mounts only on medium tier with real illustrated guardian and independent ceremony layers', async ({ page }, testInfo) => {
   await mountFixture(page, 'entry-02');
   await page.waitForSelector('.mgw-entry-v8-royal-ascension', { state: 'attached' });
   await page.waitForFunction(() => document.getElementById('mgw-entry-v8-royal-ascension-style')?.sheet, null, { timeout: 10_000 });
+  await page.waitForFunction(() => {
+    const img = document.querySelector('.mgw-entry-v8-ra-guardian');
+    return img instanceof HTMLImageElement && img.complete && img.naturalWidth >= 320 && img.naturalHeight >= 320;
+  }, null, { timeout: 10_000 });
 
   const layer = page.locator('#fixture');
   await expect(layer).toHaveAttribute('data-entry-v8-royal-ascension', '1');
   await expect(page.locator('.mgw-entry-v8-ra-sigil')).toHaveCount(1);
-  await expect(page.locator('.mgw-entry-v8-ra-body')).toHaveCount(1);
-  await expect(page.locator('.mgw-entry-v8-ra-crown')).toHaveCount(1);
-  await expect(page.locator('.mgw-entry-v8-ra-cape')).toHaveCount(1);
+  await expect(page.locator('.mgw-entry-v8-ra-guardian')).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-ra-banner')).toHaveCount(2);
   await expect(page.locator('.mgw-entry-v8-ra-beam')).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-ra-halo')).toHaveCount(1);
+  await expect(page.locator('.mgw-entry-v8-ra-crown-flare')).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-ra-pulse')).toHaveCount(1);
   expect(await page.locator('.mgw-entry-v8-ra-ray').count()).toBeGreaterThanOrEqual(8);
   expect(await page.locator('.mgw-entry-v8-ra-particle').count()).toBeGreaterThanOrEqual(12);
@@ -38,12 +41,17 @@ test('Entry 02 Royal Ascension mounts only on medium tier and uses independent c
     const oldFx = document.querySelector('.mgw-entry-effect-live-fx[data-entry-effect-variant="entry-02"]');
     const figure = document.querySelector('.mgw-entry-v8-ra-figure');
     const sigil = document.querySelector('.mgw-entry-v8-ra-sigil');
+    const guardian = document.querySelector('.mgw-entry-v8-ra-guardian');
     const skip = document.getElementById('skip');
     return {
       oldArtDisplay: oldArt ? getComputedStyle(oldArt).display : null,
       oldFxDisplay: oldFx ? getComputedStyle(oldFx).display : null,
       figureAnimation: figure ? getComputedStyle(figure).animationName : null,
       sigilAnimation: sigil ? getComputedStyle(sigil).animationName : null,
+      guardianAnimation: guardian ? getComputedStyle(guardian).animationName : null,
+      guardianWidth: guardian instanceof HTMLImageElement ? guardian.naturalWidth : 0,
+      guardianHeight: guardian instanceof HTMLImageElement ? guardian.naturalHeight : 0,
+      guardianSrc: guardian instanceof HTMLImageElement ? guardian.currentSrc : '',
       skipStillPresent: skip instanceof HTMLButtonElement && skip.textContent === 'Пропустить',
     };
   });
@@ -51,6 +59,10 @@ test('Entry 02 Royal Ascension mounts only on medium tier and uses independent c
   expect(state.oldFxDisplay).toBe('none');
   expect(state.figureAnimation).toContain('mgwRaFigure');
   expect(state.sigilAnimation).toContain('mgwRaSigil');
+  expect(state.guardianAnimation).toContain('mgwRaGuardianLight');
+  expect(state.guardianWidth).toBeGreaterThanOrEqual(320);
+  expect(state.guardianHeight).toBeGreaterThanOrEqual(320);
+  expect(state.guardianSrc).toContain('entry-02-royal-ascension-guardian.webp');
   expect(state.skipStillPresent).toBe(true);
 
   await page.waitForTimeout(1_950);
@@ -68,21 +80,25 @@ test('Royal Ascension does not mount on Entry 01 or Entry 03', async ({ page }) 
   }
 });
 
-test('Royal Ascension reduced motion preserves the final ceremonial composition', async ({ browser }) => {
+test('Royal Ascension reduced motion preserves the illustrated ceremonial composition', async ({ browser }) => {
   const context = await browser.newContext({ viewport:{ width:390, height:844 }, reducedMotion:'reduce' });
   try {
     const page = await context.newPage();
     await mountFixture(page, 'entry-02');
     await page.waitForSelector('.mgw-entry-v8-royal-ascension');
+    await page.waitForFunction(() => {
+      const img = document.querySelector('.mgw-entry-v8-ra-guardian');
+      return img instanceof HTMLImageElement && img.complete && img.naturalWidth >= 320;
+    });
     const reduced = await page.evaluate(() => ({
       figureOpacity:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-figure')).opacity,
-      crownOpacity:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-crown')).opacity,
+      guardianAnimation:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-guardian')).animationName,
       banners:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-banner')).opacity,
       pulseDisplay:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-pulse')).display,
       figureAnimation:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-figure')).animationName,
     }));
     expect(reduced.figureOpacity).toBe('1');
-    expect(reduced.crownOpacity).toBe('1');
+    expect(reduced.guardianAnimation).toBe('none');
     expect(Number(reduced.banners)).toBeGreaterThan(0);
     expect(reduced.pulseDisplay).toBe('none');
     expect(reduced.figureAnimation).toBe('none');
