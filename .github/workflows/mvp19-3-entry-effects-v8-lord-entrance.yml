@@ -1,0 +1,97 @@
+name: MVP-19.3 Entry Effects V8 Lord Entrance
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/app-bootstrap-v2.js'
+      - 'app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js'
+      - 'app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css'
+      - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.svg'
+      - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-sword.svg'
+      - 'e2e/staging/entry-effects-v8-lord-entrance.spec.mjs'
+      - 'e2e/playwright.entry-effects-v8-lord-entrance.config.mjs'
+      - '.github/workflows/mvp19-3-entry-effects-v8-lord-entrance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    name: Verify premium Entry 03 Lord Entrance scene
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify bounded premium assets and nonblocking wiring
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          for name in ['entry-03-lord-entrance-body.svg','entry-03-lord-entrance-sword.svg']:
+              p=Path('app/assets/media/cosmetics/entry-effects/v8')/name
+              text=p.read_text(encoding='utf-8')
+              root=ET.fromstring(text)
+              assert root.tag.endswith('svg')
+              assert '<text' not in text.lower()
+          body=Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.svg').read_text(encoding='utf-8')
+          assert 'open face' in body.lower()
+          wrapper=Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
+          module=Path('app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js').read_text(encoding='utf-8')
+          css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css').read_text(encoding='utf-8')
+          core_pos=wrapper.index("await import('./app-bootstrap-v2-core.js")
+          lord_pos=wrapper.index("void import('./entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=1')")
+          assert core_pos < lord_pos
+          assert 'entry-03' in module and 'entry-01' not in module and 'entry-02' not in module
+          for token in ['mgw-entry-v8-le-portal','mgw-entry-v8-le-lord','mgw-entry-v8-le-sword-wrap','mgw-entry-v8-le-slash','mgw-entry-v8-le-shock','mgw-entry-v8-le-cloth','mgw-entry-v8-le-cape']:
+              assert token in module or token in css
+          assert 'prefers-reduced-motion:reduce' in css
+          assert ':has(' not in css
+          PY
+          git diff --check
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Start local candidate server
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/mgw-entry03-http.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/app/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mgw-entry03-http.log
+          exit 1
+
+      - name: Run focused browser animation checks
+        shell: bash
+        run: npx --no-install playwright test --config=e2e/playwright.entry-effects-v8-lord-entrance.config.mjs
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-v8-lord-entrance-${{ github.run_id }}
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
