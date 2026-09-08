@@ -37,10 +37,13 @@ jobs:
           from pathlib import Path
           p=Path('app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp')
           b=p.read_bytes()
-          assert len(b) > 30000, len(b)
           assert b[:4] == b'RIFF', b[:12]
           assert b[8:12] == b'WEBP', b[:12]
           assert int.from_bytes(b[4:8], 'little') + 8 == len(b)
+          assert b[12:16] == b'VP8X', b[:20]
+          width = 1 + int.from_bytes(b[24:27], 'little')
+          height = 1 + int.from_bytes(b[27:30], 'little')
+          assert width >= 360 and height >= 300, (width, height)
           transfer=list(p.parent.glob('entry-02-royal-ascension-guardian.part*'))
           assert not transfer, transfer
           assert not (p.parent / 'entry-02-royal-ascension-guardian.webp.b64').exists()
