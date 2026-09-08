@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" fill="none">
+<defs>
+  <linearGradient id="steel" x1="180" y1="150" x2="470" y2="590" gradientUnits="userSpaceOnUse"><stop stop-color="#252A33"/><stop offset=".24" stop-color="#090B10"/><stop offset=".55" stop-color="#303642"/><stop offset=".78" stop-color="#0B0D12"/><stop offset="1" stop-color="#1B202A"/></linearGradient>
+  <linearGradient id="gold" x1="220" y1="120" x2="430" y2="565" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF0A6"/><stop offset=".18" stop-color="#D7A93B"/><stop offset=".5" stop-color="#81500E"/><stop offset=".72" stop-color="#F0C75A"/><stop offset="1" stop-color="#6B3D08"/></linearGradient>
+  <linearGradient id="skin" x1="270" y1="180" x2="370" y2="318" gradientUnits="userSpaceOnUse"><stop stop-color="#E9C3A3"/><stop offset=".52" stop-color="#B77B58"/><stop offset="1" stop-color="#70442F"/></linearGradient>
+  <linearGradient id="beard" x1="292" y1="245" x2="358" y2="326" gradientUnits="userSpaceOnUse"><stop stop-color="#33251E"/><stop offset="1" stop-color="#140F0D"/></linearGradient>
+  <filter id="shadow" x="80" y="80" width="500" height="560" filterUnits="userSpaceOnUse"><feGaussianBlur in="SourceAlpha" stdDeviation="14" result="b"/><feOffset dy="18"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .7 0"/><feBlend in="SourceGraphic"/></filter>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g filter="url(#shadow)">
+  <!-- back silhouette -->
+  <path d="M154 590C162 487 183 405 220 354C245 320 279 302 320 302C361 302 395 320 420 354C457 405 478 487 486 590H154Z" fill="#05070A"/>
+  <!-- pauldrons -->
+  <path d="M134 420C148 374 184 339 238 326L273 363L244 434L159 462L134 420Z" fill="url(#steel)" stroke="url(#gold)" stroke-width="8"/>
+  <path d="M506 420C492 374 456 339 402 326L367 363L396 434L481 462L506 420Z" fill="url(#steel)" stroke="url(#gold)" stroke-width="8"/>
+  <path d="M153 412C174 384 197 371 229 360L244 375L210 392L180 438L153 412Z" fill="#C9942D" opacity=".7"/>
+  <path d="M487 412C466 384 443 371 411 360L396 375L430 392L460 438L487 412Z" fill="#C9942D" opacity=".7"/>
+  <!-- torso plate -->
+  <path d="M246 346C270 330 293 323 320 323C347 323 370 330 394 346L423 566C389 584 355 592 320 592C285 592 251 584 217 566L246 346Z" fill="url(#steel)" stroke="#9C6C1B" stroke-width="7"/>
+  <path d="M320 347L365 385L349 560H291L275 385L320 347Z" fill="#10141C" stroke="url(#gold)" stroke-width="5"/>
+  <path d="M320 374L344 404L333 442H307L296 404L320 374Z" fill="#D9AA39" opacity=".9"/>
+  <path d="M306 452H334L340 558H300L306 452Z" fill="#171C24" stroke="#8E6117" stroke-width="4"/>
+  <path d="M250 388L286 414L273 546L235 555L250 388Z" fill="#202631" opacity=".8"/>
+  <path d="M390 388L354 414L367 546L405 555L390 388Z" fill="#202631" opacity=".8"/>
+  <!-- gorget -->
+  <path d="M259 323C272 306 293 296 320 296C347 296 368 306 381 323L365 360H275L259 323Z" fill="#0A0D12" stroke="url(#gold)" stroke-width="6"/>
+  <!-- helmet open-face shell -->
+  <path d="M248 208C249 151 279 112 320 112C361 112 391 151 392 208L373 279L350 311H290L267 279L248 208Z" fill="url(#steel)" stroke="url(#gold)" stroke-width="7"/>
+  <!-- crown crest -->
+  <path d="M258 160L271 100L301 132L320 72L339 132L369 100L382 160L350 149L320 166L290 149L258 160Z" fill="url(#gold)" stroke="#FFE79B" stroke-width="3" filter="url(#glow)"/>
+  <path d="M274 168H366L356 191H284L274 168Z" fill="#A06B18" stroke="#F7D775" stroke-width="4"/>
+  <!-- open face -->
+  <path d="M281 188C290 170 304 161 320 161C336 161 350 170 359 188L363 230C362 259 348 286 320 297C292 286 278 259 277 230L281 188Z" fill="url(#skin)"/>
+  <!-- cheek guards -->
+  <path d="M256 193L285 181L281 250L268 277L253 237L256 193Z" fill="#161B23" stroke="#B27C21" stroke-width="4"/>
+  <path d="M384 193L355 181L359 250L372 277L387 237L384 193Z" fill="#161B23" stroke="#B27C21" stroke-width="4"/>
+  <!-- brow guard -->
+  <path d="M276 183C292 169 306 164 320 164C334 164 348 169 364 183L355 202C344 196 332 193 320 193C308 193 296 196 285 202L276 183Z" fill="#1B2029" stroke="#C38D2B" stroke-width="4"/>
+  <!-- eyes -->
+  <path d="M292 216C301 209 310 209 316 216C306 220 299 221 292 216Z" fill="#17120F"/>
+  <path d="M348 216C339 209 330 209 324 216C334 220 341 221 348 216Z" fill="#17120F"/>
+  <circle cx="305" cy="216" r="3.2" fill="#E7C16B"/><circle cx="335" cy="216" r="3.2" fill="#E7C16B"/>
+  <!-- nose -->
+  <path d="M320 218L311 246L320 251L329 246" stroke="#74462E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- beard / mouth -->
+  <path d="M288 249C298 247 308 253 320 253C332 253 342 247 352 249C349 278 338 296 320 304C302 296 291 278 288 249Z" fill="url(#beard)" opacity=".96"/>
+  <path d="M306 260C315 264 325 264 334 260" stroke="#C0906D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M320 265V290" stroke="#201611" stroke-width="3" opacity=".8"/>
+  <!-- neck glow lines -->
+  <path d="M284 316H356" stroke="#E9C45B" stroke-width="3" opacity=".65"/>
+  <!-- arm plating -->
+  <path d="M146 436L219 406L239 451L198 563L129 548L146 436Z" fill="url(#steel)" stroke="#8E6117" stroke-width="6"/>
+  <path d="M494 436L421 406L401 451L442 563L511 548L494 436Z" fill="url(#steel)" stroke="#8E6117" stroke-width="6"/>
+  <path d="M151 475L211 456" stroke="#D4A743" stroke-width="5" opacity=".8"/>
+  <path d="M489 475L429 456" stroke="#D4A743" stroke-width="5" opacity=".8"/>
+  <!-- belt -->
+  <path d="M216 541C280 560 360 560 424 541L431 572C361 596 279 596 209 572L216 541Z" fill="#11151C" stroke="url(#gold)" stroke-width="6"/>
+  <path d="M300 544H340V581H300V544Z" rx="6" fill="#9E6C18" stroke="#F3D276" stroke-width="4"/>
+</g>
+</svg>
