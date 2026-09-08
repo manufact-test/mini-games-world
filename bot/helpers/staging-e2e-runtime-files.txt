@@ -11,6 +11,12 @@ app/locales/ru.json
 app/assets/js/localization/i18n.js
 app/index.html
 app/assets/js/app-bootstrap-v2.js
+app/assets/js/app-bootstrap-v2-core.js
+app/assets/js/entry-effects/mgw-entry-effects-v8-legendary-strike.js
+app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css
+app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-arena.webp
+app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-sword.svg
+app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-cracks.svg
 app/assets/js/router.js
 app/assets/js/production-clean-entry-v110.js
 app/assets/js/production-deterministic-icons.js
