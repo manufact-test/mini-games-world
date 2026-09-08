@@ -13,6 +13,8 @@ on:
       - 'app/assets/js/production-v110-readonly-game-sync.js'
       - 'app/assets/js/screens/game-screen-v102-safe.js'
       - 'app/assets/js/components/toast.js'
+      - 'app/assets/js/app-bootstrap-v2.js'
+      - 'app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js'
       - 'app/assets/css/components/mgw-profile-entry-effects.css'
       - 'app/assets/css/production-v100-entry-effects.css'
       - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
@@ -21,13 +23,19 @@ on:
       - 'app/assets/css/production-v104-entry-effects-public-assets.css'
       - 'app/assets/css/production-v105-store-entry-effects-polish.css'
       - 'app/assets/css/production-v106-store-avatar-frame-density.css'
+      - 'app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css'
       - 'app/assets/media/cosmetics/entry-effects/**'
       - 'app/media/cosmetics/entry-effects/**'
       - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
       - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
       - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
+      - 'e2e/staging/entry-effects-v8-royal-ascension.spec.mjs'
+      - 'e2e/playwright.entry-effects-v8-royal-ascension.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
+      - '.github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml'
+      - '.github/workflows/mvp19-3-entry-effects-v8-legendary-strike.yml'
       - '.github/workflows/mvp19-3-profile-entry-effects.yml'
   workflow_dispatch:
 
@@ -204,15 +212,22 @@ jobs:
             case "$path" in
               .github/workflows/mvp19-3-profile-*.yml|\
               .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml|\
+              .github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml|\
+              .github/workflows/mvp19-3-entry-effects-v8-legendary-strike.yml|\
               e2e/staging/entry-effects-runtime-diagnostic.spec.mjs|\
+              e2e/staging/entry-effects-v8-royal-ascension.spec.mjs|\
+              e2e/playwright.entry-effects-v8-royal-ascension.config.mjs|\
               bot/database/migrations/20260905_0025_add_profile_entry_effects.php|\
               bot/cosmetic-store.php|\
               bot/helpers/response.php|\
+              bot/helpers/staging-e2e-runtime-files.txt|\
               app/assets/js/profile/mgw-profile-entry-effects.js|\
               app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js|\
               app/assets/js/production-v110-readonly-game-sync.js|\
               app/assets/js/screens/game-screen-v102-safe.js|\
               app/assets/js/components/toast.js|\
+              app/assets/js/app-bootstrap-v2.js|\
+              app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js|\
               app/assets/css/components/mgw-profile-entry-effects.css|\
               app/assets/css/production-v100-entry-effects.css|\
               app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
@@ -221,10 +236,12 @@ jobs:
               app/assets/css/production-v104-entry-effects-public-assets.css|\
               app/assets/css/production-v105-store-entry-effects-polish.css|\
               app/assets/css/production-v106-store-avatar-frame-density.css|\
+              app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css|\
               app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp|\
               app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
               app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
               app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
+              app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-*|\
               app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
               app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
               app/runtime/client/version-manifest.php|\
