@@ -8,7 +8,6 @@ on:
       - 'app/assets/js/app-bootstrap-v2.js'
       - 'app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js'
       - 'app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css'
-      - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.svg'
       - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-sword.svg'
       - 'e2e/staging/entry-effects-v8-lord-entrance.spec.mjs'
       - 'e2e/playwright.entry-effects-v8-lord-entrance.config.mjs'
@@ -37,21 +36,22 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           from xml.etree import ElementTree as ET
-          for name in ['entry-03-lord-entrance-body.svg','entry-03-lord-entrance-sword.svg']:
-              p=Path('app/assets/media/cosmetics/entry-effects/v8')/name
-              text=p.read_text(encoding='utf-8')
-              root=ET.fromstring(text)
-              assert root.tag.endswith('svg')
-              assert '<text' not in text.lower()
-          body=Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.svg').read_text(encoding='utf-8')
-          assert 'open face' in body.lower()
+          sword=Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-sword.svg')
+          text=sword.read_text(encoding='utf-8')
+          root=ET.fromstring(text)
+          assert root.tag.endswith('svg')
+          assert '<text' not in text.lower()
+          guardian=Path('app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp')
+          raw=guardian.read_bytes()
+          assert raw[:4] == b'RIFF' and raw[8:12] == b'WEBP' and len(raw) > 20000
           wrapper=Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
           module=Path('app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js').read_text(encoding='utf-8')
           css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css').read_text(encoding='utf-8')
           core_pos=wrapper.index("await import('./app-bootstrap-v2-core.js")
-          lord_pos=wrapper.index("void import('./entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=1')")
+          lord_pos=wrapper.index("void import('./entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=2')")
           assert core_pos < lord_pos
-          assert 'entry-03' in module and 'entry-01' not in module and 'entry-02' not in module
+          assert 'entry-03' in module and 'entry-01' not in module
+          assert 'entry-02-royal-ascension-guardian.webp' in module
           for token in ['mgw-entry-v8-le-portal','mgw-entry-v8-le-lord','mgw-entry-v8-le-sword-wrap','mgw-entry-v8-le-slash','mgw-entry-v8-le-shock','mgw-entry-v8-le-cloth','mgw-entry-v8-le-cape']:
               assert token in module or token in css
           assert 'prefers-reduced-motion:reduce' in css
