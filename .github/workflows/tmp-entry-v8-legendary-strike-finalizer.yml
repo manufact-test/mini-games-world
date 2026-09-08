@@ -1,0 +1,87 @@
+name: Temporary Entry V8 Legendary Strike finalizer
+
+on:
+  push:
+    branches:
+      - agent/mvp19-3-entry-effects-v8-legendary-strike
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mgw-entry-v8-legendary-strike-finalizer
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact V8 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp19-3-entry-effects-v8-legendary-strike
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Finalize cache identity and staging fingerprint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          import struct
+
+          manifest = Path('app/runtime/client/version-manifest.php')
+          text = manifest.read_text(encoding='utf-8')
+          old = "'bootstrap' => './assets/js/app-bootstrap-v2.js?v=2&mvp16=version-manifest',"
+          new = "'bootstrap' => './assets/js/app-bootstrap-v2.js?v=3&mvp16=version-manifest&entry_v8=legendary-strike-v1',"
+          assert text.count(old) == 1, 'bootstrap cache identity anchor mismatch'
+          manifest.write_text(text.replace(old, new), encoding='utf-8')
+
+          fingerprint = Path('bot/helpers/staging-e2e-runtime-files.txt')
+          lines = fingerprint.read_text(encoding='utf-8').splitlines()
+          anchor = 'app/assets/js/app-bootstrap-v2.js'
+          assert lines.count(anchor) == 1, 'fingerprint bootstrap anchor mismatch'
+          additions = [
+              'app/assets/js/app-bootstrap-v2-core.js',
+              'app/assets/js/entry-effects/mgw-entry-effects-v8-legendary-strike.js',
+              'app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css',
+              'app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-arena.webp',
+              'app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-sword.svg',
+              'app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-cracks.svg',
+          ]
+          at = lines.index(anchor) + 1
+          for item in reversed(additions):
+              if item not in lines:
+                  lines.insert(at, item)
+          fingerprint.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+          webp = Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-arena.webp').read_bytes()
+          assert webp[:4] == b'RIFF' and webp[8:12] == b'WEBP', 'V8 arena is not WebP'
+          assert struct.unpack('<I', webp[4:8])[0] + 8 == len(webp), 'V8 arena RIFF length mismatch'
+          assert len(webp) > 8000, 'V8 arena unexpectedly small'
+
+          for svg in [
+              Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-sword.svg'),
+              Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-cracks.svg'),
+          ]:
+              root = ET.fromstring(svg.read_text(encoding='utf-8'))
+              assert root.tag.endswith('svg')
+              assert root.attrib.get('viewBox') == '0 0 640 480'
+              assert '<text' not in svg.read_text(encoding='utf-8').lower()
+          PY
+
+          php -l app/runtime/client/version-manifest.php
+          grep -F "entry_v8=legendary-strike-v1" app/runtime/client/version-manifest.php
+          grep -F "mgw-entry-effects-v8-legendary-strike.js" bot/helpers/staging-e2e-runtime-files.txt
+          grep -F "entry-03-legendary-strike-arena.webp" bot/helpers/staging-e2e-runtime-files.txt
+
+          rm -f .github/workflows/tmp-entry-v8-legendary-strike-finalizer.yml
+          git diff --check
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add -A
+          git commit -m 'MVP-19.3: finalize Entry V8 Legendary Strike runtime identity'
+          git push origin HEAD:agent/mvp19-3-entry-effects-v8-legendary-strike
