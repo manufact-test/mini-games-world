@@ -81,6 +81,12 @@ function mountRoyalAscension(layer){
   for (const className of ['mgw-entry-v8-ra-veil','mgw-entry-v8-ra-beam','mgw-entry-v8-ra-halo']) {
     const el = document.createElement('div');
     el.className = className;
+    if (className === 'mgw-entry-v8-ra-halo') {
+      el.style.zIndex = '3';
+      el.style.mixBlendMode = 'screen';
+      el.style.background = 'radial-gradient(circle,rgba(255,246,203,.20) 0 34%,rgba(238,187,72,.11) 50%,transparent 70%)';
+      el.style.boxShadow = '0 0 38px rgba(255,218,116,.34),0 0 74px rgba(201,132,26,.18)';
+    }
     stage.append(el);
   }
 
@@ -99,6 +105,7 @@ function mountRoyalAscension(layer){
 
   const banners = document.createElement('div');
   banners.className = 'mgw-entry-v8-ra-banners';
+  banners.style.display = 'none';
   for (const side of ['left','right']) {
     const banner = document.createElement('div');
     banner.className = `mgw-entry-v8-ra-banner mgw-entry-v8-ra-banner--${side}`;

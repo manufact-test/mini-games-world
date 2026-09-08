@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=3';
+const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=4';
 
 async function mountFixture(page, variant = 'entry-02') {
   await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
@@ -42,6 +42,8 @@ test('Entry 02 Royal Ascension mounts only on medium tier with real illustrated 
     const figure = document.querySelector('.mgw-entry-v8-ra-figure');
     const sigil = document.querySelector('.mgw-entry-v8-ra-sigil');
     const guardian = document.querySelector('.mgw-entry-v8-ra-guardian');
+    const halo = document.querySelector('.mgw-entry-v8-ra-halo');
+    const banners = document.querySelector('.mgw-entry-v8-ra-banners');
     const skip = document.getElementById('skip');
     return {
       oldArtDisplay: oldArt ? getComputedStyle(oldArt).display : null,
@@ -52,6 +54,8 @@ test('Entry 02 Royal Ascension mounts only on medium tier with real illustrated 
       guardianWidth: guardian instanceof HTMLImageElement ? guardian.naturalWidth : 0,
       guardianHeight: guardian instanceof HTMLImageElement ? guardian.naturalHeight : 0,
       guardianSrc: guardian instanceof HTMLImageElement ? guardian.currentSrc : '',
+      haloBlend: halo ? getComputedStyle(halo).mixBlendMode : null,
+      bannersDisplay: banners ? getComputedStyle(banners).display : null,
       skipStillPresent: skip instanceof HTMLButtonElement && skip.textContent === 'Пропустить',
     };
   });
@@ -63,6 +67,8 @@ test('Entry 02 Royal Ascension mounts only on medium tier with real illustrated 
   expect(state.guardianWidth).toBeGreaterThanOrEqual(320);
   expect(state.guardianHeight).toBeGreaterThanOrEqual(320);
   expect(state.guardianSrc).toContain('entry-02-royal-ascension-guardian.webp');
+  expect(state.haloBlend).toBe('screen');
+  expect(state.bannersDisplay).toBe('none');
   expect(state.skipStillPresent).toBe(true);
 
   await page.waitForTimeout(1_950);
@@ -94,12 +100,14 @@ test('Royal Ascension reduced motion preserves the illustrated ceremonial compos
       figureOpacity:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-figure')).opacity,
       guardianAnimation:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-guardian')).animationName,
       banners:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-banner')).opacity,
+      bannersDisplay:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-banners')).display,
       pulseDisplay:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-pulse')).display,
       figureAnimation:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-figure')).animationName,
     }));
     expect(reduced.figureOpacity).toBe('1');
     expect(reduced.guardianAnimation).toBe('none');
     expect(Number(reduced.banners)).toBeGreaterThan(0);
+    expect(reduced.bannersDisplay).toBe('none');
     expect(reduced.pulseDisplay).toBe('none');
     expect(reduced.figureAnimation).toBe('none');
   } finally { await context.close(); }

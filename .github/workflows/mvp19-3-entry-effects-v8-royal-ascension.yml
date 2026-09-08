@@ -51,7 +51,7 @@ jobs:
           module=Path('app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js').read_text(encoding='utf-8')
           css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css').read_text(encoding='utf-8')
           assert "mgw-entry-effects-v8-legendary-strike.js?v=2" in bootstrap
-          assert "mgw-entry-effects-v8-royal-ascension.js?v=3" in bootstrap
+          assert "mgw-entry-effects-v8-royal-ascension.js?v=4" in bootstrap
           assert 'entry-02' in module and 'entry-03' not in module
           assert 'entry-02-royal-ascension-guardian.webp?asset=royal-ascension-guardian-v2' in module
           assert '.webp.b64' not in module and 'atob(' not in module
@@ -59,6 +59,8 @@ jobs:
           assert 'mgw-entry-v8-ra-guardian' in module
           assert 'mgw-entry-v8-ra-sigil' in module
           assert 'mgw-entry-v8-ra-banner' in module
+          assert "banners.style.display = 'none'" in module
+          assert "el.style.mixBlendMode = 'screen'" in module
           assert 'mgw-entry-v8-ra-pulse' in module
           assert 'mgw-entry-v8-ra-guardian' in css
           assert 'data-entry-v8-royal-ascension' in css
