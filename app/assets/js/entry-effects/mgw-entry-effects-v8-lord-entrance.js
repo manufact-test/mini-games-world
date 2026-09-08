@@ -2,7 +2,7 @@ const STYLE_ID='mgw-entry-v8-lord-entrance-style';
 const STYLE_HREF='/app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css?v=3';
 const ASSET_BASE='/app/assets/media/cosmetics/entry-effects/v8/';
 const ASSETS={
-  body:`${ASSET_BASE}entry-02-royal-ascension-guardian.webp?asset=lord-entrance-guardian-v3`,
+  body:`${ASSET_BASE}entry-03-lord-entrance-armor-detail.webp?asset=lord-entrance-armor-v4`,
   face:`${ASSET_BASE}entry-03-lord-entrance-open-face.svg?asset=lord-entrance-face-v3`,
   sword:`${ASSET_BASE}entry-03-lord-entrance-sword.svg?asset=lord-entrance-v3`,
 };
