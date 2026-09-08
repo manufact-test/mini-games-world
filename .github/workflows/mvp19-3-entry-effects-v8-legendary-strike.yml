@@ -1,0 +1,120 @@
+name: MVP-19.3 Entry Effects V8 Legendary Strike
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/app-bootstrap-v2.js'
+      - 'app/assets/js/app-bootstrap-v2-core.js'
+      - 'app/assets/js/entry-effects/mgw-entry-effects-v8-legendary-strike.js'
+      - 'app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css'
+      - 'app/assets/media/cosmetics/entry-effects/v8/**'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'e2e/staging/entry-effects-v8-legendary-strike.spec.mjs'
+      - 'e2e/playwright.entry-effects-v8.config.mjs'
+      - '.github/workflows/mvp19-3-entry-effects-v8-legendary-strike.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    name: Verify real animated Legendary Strike scene
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify bounded assets and runtime wiring
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          from xml.etree import ElementTree as ET
+          import struct
+
+          arena = Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-arena.webp')
+          data = arena.read_bytes()
+          assert data[:4] == b'RIFF' and data[8:12] == b'WEBP'
+          assert struct.unpack('<I', data[4:8])[0] + 8 == len(data)
+          with Image.open(arena) as im:
+              im.load()
+              assert im.size == (640, 480)
+
+          for name in ['entry-03-legendary-strike-sword.svg', 'entry-03-legendary-strike-cracks.svg']:
+              path = Path('app/assets/media/cosmetics/entry-effects/v8') / name
+              text = path.read_text(encoding='utf-8')
+              root = ET.fromstring(text)
+              assert root.tag.endswith('svg')
+              assert root.attrib.get('viewBox') == '0 0 640 480'
+              assert '<text' not in text.lower()
+
+          wrapper = Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
+          core = Path('app/assets/js/app-bootstrap-v2-core.js').read_text(encoding='utf-8')
+          module = Path('app/assets/js/entry-effects/mgw-entry-effects-v8-legendary-strike.js').read_text(encoding='utf-8')
+          css = Path('app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css').read_text(encoding='utf-8')
+          manifest = Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
+
+          assert "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=1';" in wrapper
+          assert "await import('@mgw/clean-entry');" in core
+          assert "await import('@mgw/main');" in core
+          assert "entry_v8=legendary-strike-v1" in manifest
+          assert "data-entry-v8-legendary-strike" in css
+          assert ':has(' not in css
+          assert "scale(calc(" not in css
+          assert "var(--sx) *" not in css
+          assert "var(--sy) *" not in css
+          assert "mgw-entry-v8-debris" in module
+          assert "mgw-entry-v8-shockwave" in module
+          assert "layer.dataset.entryV8LegendaryStrike = '1'" in module
+          PY
+          php -l app/runtime/client/version-manifest.php
+          git diff --check
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Start local candidate server
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/mgw-entry-v8-http.log 2>&1 &
+          echo $! > /tmp/mgw-entry-v8-http.pid
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/app/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mgw-entry-v8-http.log
+          exit 1
+
+      - name: Run focused browser animation checks
+        shell: bash
+        run: npx --no-install playwright test --config=e2e/playwright.entry-effects-v8.config.mjs
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-v8-legendary-strike-${{ github.run_id }}
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
