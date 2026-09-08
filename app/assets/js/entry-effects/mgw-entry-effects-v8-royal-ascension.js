@@ -1,10 +1,10 @@
 const STYLE_ID = 'mgw-entry-v8-royal-ascension-style';
-const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css?v=1';
+const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css?v=2';
 const ASSET_BASE = '/app/assets/media/cosmetics/entry-effects/v8/';
 const ASSETS = Object.freeze({
-  body: `${ASSET_BASE}entry-02-royal-ascension-body.svg?asset=royal-ascension-v2`,
-  crown: `${ASSET_BASE}entry-02-royal-ascension-crown.svg?asset=royal-ascension-v1`,
-  cape: `${ASSET_BASE}entry-02-royal-ascension-cape.svg?asset=royal-ascension-v2`,
+  body: `${ASSET_BASE}entry-02-royal-ascension-body.svg?asset=royal-ascension-v3`,
+  crown: `${ASSET_BASE}entry-02-royal-ascension-crown.svg?asset=royal-ascension-v2`,
+  cape: `${ASSET_BASE}entry-02-royal-ascension-cape.svg?asset=royal-ascension-v3`,
 });
 
 function ensureStyle(){
@@ -93,6 +93,15 @@ function mountRoyalAscension(layer){
   appendMany(sigil, 'mgw-entry-v8-ra-rune', 8);
   stage.append(sigil);
 
+  const banners = document.createElement('div');
+  banners.className = 'mgw-entry-v8-ra-banners';
+  const bannerLeft = document.createElement('div');
+  bannerLeft.className = 'mgw-entry-v8-ra-banner mgw-entry-v8-ra-banner--left';
+  const bannerRight = document.createElement('div');
+  bannerRight.className = 'mgw-entry-v8-ra-banner mgw-entry-v8-ra-banner--right';
+  banners.append(bannerLeft, bannerRight);
+  stage.append(banners);
+
   const figure = document.createElement('div');
   figure.className = 'mgw-entry-v8-ra-figure';
   figure.append(img('mgw-entry-v8-ra-cape', ASSETS.cape));
@@ -114,7 +123,7 @@ function mountRoyalAscension(layer){
 
   const particles = document.createElement('div');
   particles.className = 'mgw-entry-v8-ra-particles';
-  appendMany(particles, 'mgw-entry-v8-ra-particle', 14);
+  appendMany(particles, 'mgw-entry-v8-ra-particle', 16);
   stage.append(particles);
 
   scene.append(stage);
