@@ -1,0 +1,67 @@
+/* MVP-19.3 Entry 02 — Royal Ascension. Ceremonial multi-part scene. */
+.mgw-entry-effect-layer[data-entry-v8-royal-ascension="1"] > .mgw-entry-effect-live-art[data-entry-effect-variant="entry-02"],
+.mgw-entry-effect-layer[data-entry-v8-royal-ascension="1"] > .mgw-entry-effect-live-fx[data-entry-effect-variant="entry-02"]{display:none!important}
+.mgw-entry-effect-layer[data-entry-v8-royal-ascension="1"] .mgw-entry-effect-live-card[data-entry-effect-variant="entry-02"]{animation:none!important;filter:none!important}
+
+.mgw-entry-v8-royal-ascension{position:absolute;inset:0;z-index:1;display:grid;place-items:center;overflow:hidden;pointer-events:none;isolation:isolate}
+.mgw-entry-v8-ra-stage{position:relative;width:min(112vw,720px);height:min(78vh,540px);max-height:82vh;transform-origin:50% 70%}
+.mgw-entry-v8-ra-veil{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(36,25,10,.12),rgba(0,0,0,.76) 72%,rgba(0,0,0,.9));opacity:0;animation:mgwRaVeil 3.3s ease both}
+.mgw-entry-v8-ra-beam{position:absolute;left:50%;top:2%;width:26%;height:86%;transform:translateX(-50%) scaleY(.04);transform-origin:50% 100%;opacity:0;background:linear-gradient(to right,transparent,rgba(255,221,128,.18),rgba(255,248,207,.72),rgba(255,221,128,.18),transparent);filter:blur(4px);mix-blend-mode:screen;animation:mgwRaBeam 3.3s cubic-bezier(.16,.82,.18,1) both}
+.mgw-entry-v8-ra-halo{position:absolute;left:50%;top:36%;width:150px;height:150px;border-radius:50%;transform:translate(-50%,-50%) scale(.2);opacity:0;background:radial-gradient(circle,rgba(255,247,195,.78) 0 10%,rgba(224,175,64,.26) 32%,transparent 68%);box-shadow:0 0 18px rgba(255,222,118,.55),0 0 48px rgba(194,124,24,.24);animation:mgwRaHalo 3.3s ease both}
+
+.mgw-entry-v8-ra-sigil{position:absolute;left:50%;bottom:9%;width:min(58vw,340px);aspect-ratio:1;transform:translateX(-50%) perspective(420px) rotateX(68deg) scale(.18);opacity:0;transform-origin:50% 50%;animation:mgwRaSigil 3.3s cubic-bezier(.14,.8,.14,1) both}
+.mgw-entry-v8-ra-ring,.mgw-entry-v8-ra-core{position:absolute;inset:0;border-radius:50%}
+.mgw-entry-v8-ra-ring{border:2px solid rgba(244,203,96,.9);box-shadow:0 0 8px rgba(255,204,75,.45),inset 0 0 8px rgba(255,204,75,.18)}
+.mgw-entry-v8-ra-ring--outer{animation:mgwRaSpin 5.5s linear infinite}
+.mgw-entry-v8-ra-ring--mid{inset:12%;border-style:dashed;animation:mgwRaSpinReverse 4.2s linear infinite}
+.mgw-entry-v8-ra-ring--inner{inset:27%;border-width:3px;animation:mgwRaSpin 3.3s linear infinite}
+.mgw-entry-v8-ra-core{inset:39%;background:radial-gradient(circle,#fff3b2 0 7%,#d9a43c 20%,rgba(173,112,22,.18) 48%,transparent 70%);filter:drop-shadow(0 0 10px rgba(255,214,100,.7))}
+.mgw-entry-v8-ra-rune{position:absolute;left:50%;top:50%;width:3px;height:36%;background:linear-gradient(#f7d46c,transparent);transform-origin:50% 100%;opacity:.86}
+.mgw-entry-v8-ra-rune:nth-of-type(5){transform:translate(-50%,-100%) rotate(0deg)}
+.mgw-entry-v8-ra-rune:nth-of-type(6){transform:translate(-50%,-100%) rotate(45deg)}
+.mgw-entry-v8-ra-rune:nth-of-type(7){transform:translate(-50%,-100%) rotate(90deg)}
+.mgw-entry-v8-ra-rune:nth-of-type(8){transform:translate(-50%,-100%) rotate(135deg)}
+.mgw-entry-v8-ra-rune:nth-of-type(9){transform:translate(-50%,-100%) rotate(180deg)}
+.mgw-entry-v8-ra-rune:nth-of-type(10){transform:translate(-50%,-100%) rotate(225deg)}
+.mgw-entry-v8-ra-rune:nth-of-type(11){transform:translate(-50%,-100%) rotate(270deg)}
+.mgw-entry-v8-ra-rune:nth-of-type(12){transform:translate(-50%,-100%) rotate(315deg)}
+
+.mgw-entry-v8-ra-figure{position:absolute;left:50%;bottom:4%;width:min(68vw,390px);height:min(62vh,420px);transform:translate(-50%,42px) scale(.84);opacity:0;filter:drop-shadow(0 26px 28px rgba(0,0,0,.62));animation:mgwRaFigure 3.3s cubic-bezier(.16,.84,.16,1) both}
+.mgw-entry-v8-ra-body,.mgw-entry-v8-ra-cape,.mgw-entry-v8-ra-crown{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.mgw-entry-v8-ra-cape{z-index:1;transform:scaleX(.72);opacity:0;animation:mgwRaCape 3.3s cubic-bezier(.18,.8,.18,1) both}
+.mgw-entry-v8-ra-body{z-index:2;filter:brightness(.28) saturate(.55);animation:mgwRaBodyLight 3.3s ease both}
+.mgw-entry-v8-ra-crown{z-index:4;opacity:0;transform:translateY(10px) scale(.82);animation:mgwRaCrown 3.3s cubic-bezier(.14,.82,.14,1) both}
+.mgw-entry-v8-ra-armor-sweep{position:absolute;z-index:3;left:23%;right:23%;top:29%;height:48%;opacity:0;transform:translateY(76%);background:linear-gradient(to bottom,transparent,rgba(255,237,178,.9),rgba(222,166,61,.22),transparent);filter:blur(7px);mix-blend-mode:screen;animation:mgwRaSweep 3.3s ease both}
+
+.mgw-entry-v8-ra-banners{position:absolute;inset:0;z-index:0}
+.mgw-entry-v8-ra-banner{position:absolute;top:35%;width:82px;height:210px;opacity:0;background:linear-gradient(180deg,#7a1d29,#3b0d15 62%,transparent);filter:drop-shadow(0 12px 12px rgba(0,0,0,.4));animation:mgwRaBanner 3.3s ease both}
+.mgw-entry-v8-ra-banner--left{left:15%;clip-path:polygon(15% 0,100% 5%,75% 100%,0 84%);transform:rotate(-7deg) translateX(-20px)}
+.mgw-entry-v8-ra-banner--right{right:15%;clip-path:polygon(0 5%,85% 0,100% 84%,25% 100%);transform:rotate(7deg) translateX(20px)}
+
+.mgw-entry-v8-ra-pulse{position:absolute;left:50%;bottom:13%;width:min(44vw,250px);height:min(13vw,74px);border:3px solid rgba(255,222,133,.95);border-radius:50%;opacity:0;transform:translate(-50%,0) scale(.12);box-shadow:0 0 18px rgba(255,218,112,.58),0 0 42px rgba(181,109,18,.3);animation:mgwRaPulse 3.3s cubic-bezier(.08,.82,.12,1) both}
+.mgw-entry-v8-ra-rays,.mgw-entry-v8-ra-particles{position:absolute;inset:0}
+.mgw-entry-v8-ra-ray{position:absolute;left:50%;bottom:16%;width:2px;height:42%;opacity:0;background:linear-gradient(to top,rgba(255,216,102,.75),transparent);transform-origin:50% 100%;filter:drop-shadow(0 0 4px rgba(255,222,125,.5));animation:mgwRaRay 3.3s ease both}
+.mgw-entry-v8-ra-ray:nth-child(1){transform:translateX(-72px) rotate(-9deg)}.mgw-entry-v8-ra-ray:nth-child(2){transform:translateX(-54px) rotate(-6deg)}.mgw-entry-v8-ra-ray:nth-child(3){transform:translateX(-36px) rotate(-4deg)}.mgw-entry-v8-ra-ray:nth-child(4){transform:translateX(-18px) rotate(-2deg)}.mgw-entry-v8-ra-ray:nth-child(5){transform:translateX(0)}.mgw-entry-v8-ra-ray:nth-child(6){transform:translateX(18px) rotate(2deg)}.mgw-entry-v8-ra-ray:nth-child(7){transform:translateX(36px) rotate(4deg)}.mgw-entry-v8-ra-ray:nth-child(8){transform:translateX(54px) rotate(6deg)}.mgw-entry-v8-ra-ray:nth-child(9){transform:translateX(72px) rotate(9deg)}.mgw-entry-v8-ra-ray:nth-child(10){transform:translateX(90px) rotate(12deg)}
+.mgw-entry-v8-ra-particle{position:absolute;left:50%;bottom:16%;width:4px;height:4px;border-radius:50%;opacity:0;background:#ffe8a1;box-shadow:0 0 8px #ffc85f;animation:mgwRaParticle 1.5s ease-out calc(.9s + var(--i)*35ms) both}
+.mgw-entry-v8-ra-particle:nth-child(3n+1){--dx:-110px;--dy:-190px}.mgw-entry-v8-ra-particle:nth-child(3n+2){--dx:80px;--dy:-220px}.mgw-entry-v8-ra-particle:nth-child(3n){--dx:140px;--dy:-160px}
+
+@keyframes mgwRaVeil{0%{opacity:0}12%{opacity:.9}82%{opacity:.82}100%{opacity:0}}
+@keyframes mgwRaBeam{0%,12%{opacity:0;transform:translateX(-50%) scaleY(.04)}22%{opacity:.34;transform:translateX(-50%) scaleY(.45)}50%{opacity:.48;transform:translateX(-50%) scaleY(.85)}60%{opacity:1;transform:translateX(-50%) scaleY(1)}76%{opacity:.5;transform:translateX(-50%) scaleX(.55) scaleY(1)}100%{opacity:0;transform:translateX(-50%) scaleX(.08) scaleY(1)}}
+@keyframes mgwRaSigil{0%,8%{opacity:0;transform:translateX(-50%) perspective(420px) rotateX(68deg) scale(.18)}20%{opacity:1;transform:translateX(-50%) perspective(420px) rotateX(68deg) scale(.72)}34%,82%{opacity:1;transform:translateX(-50%) perspective(420px) rotateX(68deg) scale(1)}100%{opacity:0;transform:translateX(-50%) perspective(420px) rotateX(68deg) scale(.84)}}
+@keyframes mgwRaFigure{0%,28%{opacity:0;transform:translate(-50%,58px) scale(.82)}38%{opacity:.82}52%,84%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-16px) scale(.98)}}
+@keyframes mgwRaCape{0%,32%{opacity:0;transform:scaleX(.6)}44%{opacity:.85;transform:scaleX(1.12)}57%,86%{opacity:.72;transform:scaleX(1)}100%{opacity:0;transform:scaleX(.86)}}
+@keyframes mgwRaBodyLight{0%,31%{filter:brightness(.22) saturate(.4)}48%{filter:brightness(.48) saturate(.75)}61%{filter:brightness(1.14) saturate(1.05)}70%,90%{filter:brightness(.82) saturate(.9)}100%{filter:brightness(.5) saturate(.6)}}
+@keyframes mgwRaSweep{0%,38%{opacity:0;transform:translateY(76%)}45%{opacity:.95}61%{opacity:.45;transform:translateY(-34%)}68%,100%{opacity:0;transform:translateY(-58%)}}
+@keyframes mgwRaCrown{0%,40%{opacity:0;transform:translateY(12px) scale(.8)}51%{opacity:1;transform:translateY(0) scale(1.08)}62%,86%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-8px) scale(.96)}}
+@keyframes mgwRaHalo{0%,45%{opacity:0;transform:translate(-50%,-50%) scale(.2)}58%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}69%,84%{opacity:.72;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.8)}}
+@keyframes mgwRaPulse{0%,55%{opacity:0;transform:translate(-50%,0) scale(.12)}60%{opacity:.95;transform:translate(-50%,0) scale(.35)}73%{opacity:.2;transform:translate(-50%,0) scale(1.5)}78%,100%{opacity:0;transform:translate(-50%,0) scale(1.8)}}
+@keyframes mgwRaRay{0%,18%{opacity:0}36%{opacity:.45}58%{opacity:.85}74%{opacity:.32}92%,100%{opacity:0}}
+@keyframes mgwRaBanner{0%,36%{opacity:0}49%{opacity:.7}64%{opacity:.58}87%{opacity:.5}100%{opacity:0}}
+@keyframes mgwRaParticle{0%{opacity:0;transform:translate(0,0) scale(.4)}12%{opacity:1}74%{opacity:.8;transform:translate(var(--dx),var(--dy)) scale(1)}100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) - 28px)) scale(.3)}}
+@keyframes mgwRaSpin{to{transform:rotate(360deg)}}@keyframes mgwRaSpinReverse{to{transform:rotate(-360deg)}}
+
+@media (max-width:640px){.mgw-entry-v8-ra-stage{width:118vw;height:min(73vh,520px)}.mgw-entry-v8-ra-figure{width:min(82vw,390px)}}
+@media (prefers-reduced-motion:reduce){
+  .mgw-entry-v8-ra-veil,.mgw-entry-v8-ra-beam,.mgw-entry-v8-ra-halo,.mgw-entry-v8-ra-sigil,.mgw-entry-v8-ra-ring,.mgw-entry-v8-ra-figure,.mgw-entry-v8-ra-cape,.mgw-entry-v8-ra-body,.mgw-entry-v8-ra-crown,.mgw-entry-v8-ra-armor-sweep,.mgw-entry-v8-ra-banner,.mgw-entry-v8-ra-pulse,.mgw-entry-v8-ra-ray,.mgw-entry-v8-ra-particle{animation:none!important}
+  .mgw-entry-v8-ra-veil{opacity:.82!important}.mgw-entry-v8-ra-beam{opacity:.3!important;transform:translateX(-50%) scaleY(1)!important}.mgw-entry-v8-ra-halo{opacity:.6!important;transform:translate(-50%,-50%) scale(1)!important}.mgw-entry-v8-ra-sigil{opacity:1!important;transform:translateX(-50%) perspective(420px) rotateX(68deg) scale(1)!important}.mgw-entry-v8-ra-figure{opacity:1!important;transform:translate(-50%,0) scale(1)!important}.mgw-entry-v8-ra-cape{opacity:.7!important;transform:scaleX(1)!important}.mgw-entry-v8-ra-body{filter:brightness(.82) saturate(.9)!important}.mgw-entry-v8-ra-crown{opacity:1!important;transform:none!important}.mgw-entry-v8-ra-armor-sweep,.mgw-entry-v8-ra-pulse,.mgw-entry-v8-ra-ray,.mgw-entry-v8-ra-particle{display:none!important}.mgw-entry-v8-ra-banner{opacity:.45!important}
+}
