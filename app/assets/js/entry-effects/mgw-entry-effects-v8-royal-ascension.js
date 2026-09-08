@@ -1,11 +1,9 @@
 const STYLE_ID = 'mgw-entry-v8-royal-ascension-style';
-const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css?v=2';
+const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css?v=3';
 const ASSET_BASE = '/app/assets/media/cosmetics/entry-effects/v8/';
-const ASSETS = Object.freeze({
-  body: `${ASSET_BASE}entry-02-royal-ascension-body.svg?asset=royal-ascension-v3`,
-  crown: `${ASSET_BASE}entry-02-royal-ascension-crown.svg?asset=royal-ascension-v2`,
-  cape: `${ASSET_BASE}entry-02-royal-ascension-cape.svg?asset=royal-ascension-v3`,
-});
+const FALLBACK_BODY = `${ASSET_BASE}entry-02-royal-ascension-body.svg?asset=royal-ascension-v3`;
+const GUARDIAN_B64 = `${ASSET_BASE}entry-02-royal-ascension-guardian.webp.b64?asset=royal-ascension-guardian-v1`;
+let guardianSrc = FALLBACK_BODY;
 
 function ensureStyle(){
   const existing = document.getElementById(STYLE_ID);
@@ -25,6 +23,21 @@ function ensureStyle(){
     link.addEventListener('error', reject, { once:true });
     document.head.append(link);
   });
+}
+
+async function loadEncodedGuardian(){
+  const response = await fetch(GUARDIAN_B64, { cache:'force-cache' });
+  if (!response.ok) throw new Error(`guardian payload ${response.status}`);
+  const encoded = (await response.text()).trim();
+  if (!encoded.startsWith('kwfK') && !encoded.startsWith('UklG')) {
+    throw new Error('guardian payload is not recognized WebP base64');
+  }
+  const raw = atob(encoded);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
+  const blob = new Blob([bytes], { type:'image/webp' });
+  if (blob.size < 30_000) throw new Error('guardian payload unexpectedly small');
+  return URL.createObjectURL(blob);
 }
 
 function img(className, src){
@@ -81,35 +94,34 @@ function mountRoyalAscension(layer){
 
   const sigil = document.createElement('div');
   sigil.className = 'mgw-entry-v8-ra-sigil';
-  const ringOuter = document.createElement('div');
-  ringOuter.className = 'mgw-entry-v8-ra-ring mgw-entry-v8-ra-ring--outer';
-  const ringMid = document.createElement('div');
-  ringMid.className = 'mgw-entry-v8-ra-ring mgw-entry-v8-ra-ring--mid';
-  const ringInner = document.createElement('div');
-  ringInner.className = 'mgw-entry-v8-ra-ring mgw-entry-v8-ra-ring--inner';
+  for (const kind of ['outer','mid','inner']) {
+    const ring = document.createElement('div');
+    ring.className = `mgw-entry-v8-ra-ring mgw-entry-v8-ra-ring--${kind}`;
+    sigil.append(ring);
+  }
   const core = document.createElement('div');
   core.className = 'mgw-entry-v8-ra-core';
-  sigil.append(ringOuter, ringMid, ringInner, core);
+  sigil.append(core);
   appendMany(sigil, 'mgw-entry-v8-ra-rune', 8);
   stage.append(sigil);
 
   const banners = document.createElement('div');
   banners.className = 'mgw-entry-v8-ra-banners';
-  const bannerLeft = document.createElement('div');
-  bannerLeft.className = 'mgw-entry-v8-ra-banner mgw-entry-v8-ra-banner--left';
-  const bannerRight = document.createElement('div');
-  bannerRight.className = 'mgw-entry-v8-ra-banner mgw-entry-v8-ra-banner--right';
-  banners.append(bannerLeft, bannerRight);
+  for (const side of ['left','right']) {
+    const banner = document.createElement('div');
+    banner.className = `mgw-entry-v8-ra-banner mgw-entry-v8-ra-banner--${side}`;
+    banners.append(banner);
+  }
   stage.append(banners);
 
   const figure = document.createElement('div');
   figure.className = 'mgw-entry-v8-ra-figure';
-  figure.append(img('mgw-entry-v8-ra-cape', ASSETS.cape));
-  figure.append(img('mgw-entry-v8-ra-body', ASSETS.body));
+  figure.append(img('mgw-entry-v8-ra-guardian', guardianSrc));
   const sweep = document.createElement('div');
   sweep.className = 'mgw-entry-v8-ra-armor-sweep';
-  figure.append(sweep);
-  figure.append(img('mgw-entry-v8-ra-crown', ASSETS.crown));
+  const crownFlare = document.createElement('div');
+  crownFlare.className = 'mgw-entry-v8-ra-crown-flare';
+  figure.append(sweep, crownFlare);
   stage.append(figure);
 
   const pulse = document.createElement('div');
@@ -138,8 +150,15 @@ function scan(root = document){
   root.querySelectorAll?.('.mgw-entry-effect-layer').forEach(mountRoyalAscension);
 }
 
-function arm(){
-  Object.values(ASSETS).forEach(src => { const image = new Image(); image.decoding = 'async'; image.src = src; });
+async function arm(){
+  try {
+    guardianSrc = await loadEncodedGuardian();
+  } catch (_) {
+    guardianSrc = FALLBACK_BODY;
+  }
+  const preload = new Image();
+  preload.decoding = 'async';
+  preload.src = guardianSrc;
   scan(document);
   const observer = new MutationObserver(records => {
     for (const record of records) {
