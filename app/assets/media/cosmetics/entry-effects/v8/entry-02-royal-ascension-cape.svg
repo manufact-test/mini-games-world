@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" fill="none">
+<defs>
+  <linearGradient id="redL" x1="98" y1="196" x2="306" y2="462" gradientUnits="userSpaceOnUse"><stop stop-color="#b23b4d"/><stop offset=".18" stop-color="#7b1f31"/><stop offset=".46" stop-color="#4b101f"/><stop offset=".74" stop-color="#220812"/><stop offset="1" stop-color="#080205"/></linearGradient>
+  <linearGradient id="redR" x1="542" y1="196" x2="334" y2="462" gradientUnits="userSpaceOnUse"><stop stop-color="#b23b4d"/><stop offset=".18" stop-color="#7b1f31"/><stop offset=".46" stop-color="#4b101f"/><stop offset=".74" stop-color="#220812"/><stop offset="1" stop-color="#080205"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-25%" width="160%" height="170%"><feDropShadow dx="0" dy="12" stdDeviation="13" flood-color="#000" flood-opacity=".78"/></filter>
+</defs>
+<g filter="url(#shadow)">
+  <path d="M294 196c-52 2-108 20-151 57-44 38-76 98-87 197 36-28 79-36 127-23 41 11 73 1 96-26 25-43 32-105 15-205Z" fill="url(#redL)" stroke="#7d2331" stroke-width="4"/>
+  <path d="M346 196c52 2 108 20 151 57 44 38 76 98 87 197-36-28-79-36-127-23-41 11-73 1-96-26-25-43-32-105-15-205Z" fill="url(#redR)" stroke="#7d2331" stroke-width="4"/>
+  <path d="M278 222c-46 18-84 48-112 90-21 31-35 70-43 118 25-16 50-20 76-12 33-45 55-108 79-196Z" fill="#561323" opacity=".88"/>
+  <path d="M362 222c46 18 84 48 112 90 21 31 35 70 43 118-25-16-50-20-76-12-33-45-55-108-79-196Z" fill="#561323" opacity=".88"/>
+</g>
+</svg>
