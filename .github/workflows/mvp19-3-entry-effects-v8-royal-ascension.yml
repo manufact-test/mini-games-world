@@ -1,0 +1,98 @@
+name: MVP-19.3 Entry Effects V8 Royal Ascension
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/app-bootstrap-v2.js'
+      - 'app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js'
+      - 'app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css'
+      - 'app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-*.svg'
+      - 'e2e/staging/entry-effects-v8-royal-ascension.spec.mjs'
+      - 'e2e/playwright.entry-effects-v8-royal-ascension.config.mjs'
+      - '.github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    name: Verify Royal Ascension Entry 02 scene
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify bounded assets and wiring
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          for name in [
+              'entry-02-royal-ascension-body.svg',
+              'entry-02-royal-ascension-crown.svg',
+              'entry-02-royal-ascension-cape.svg',
+          ]:
+              p = Path('app/assets/media/cosmetics/entry-effects/v8') / name
+              root = ET.fromstring(p.read_text(encoding='utf-8'))
+              assert root.tag.endswith('svg')
+              assert root.attrib.get('viewBox') == '0 0 640 480'
+              assert '<text' not in p.read_text(encoding='utf-8').lower()
+          bootstrap = Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
+          module = Path('app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js').read_text(encoding='utf-8')
+          css = Path('app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css').read_text(encoding='utf-8')
+          assert "mgw-entry-effects-v8-legendary-strike.js?v=2" in bootstrap
+          assert "mgw-entry-effects-v8-royal-ascension.js?v=1" in bootstrap
+          assert 'entry-02' in module and 'entry-03' not in module
+          assert "layer.dataset.entryV8RoyalAscension = '1'" in module
+          assert 'mgw-entry-v8-ra-sigil' in module
+          assert 'mgw-entry-v8-ra-pulse' in module
+          assert 'data-entry-v8-royal-ascension' in css
+          assert ':has(' not in css
+          PY
+          git diff --check
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Start local candidate server
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/mgw-entry-ra-http.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/app/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/mgw-entry-ra-http.log
+          exit 1
+
+      - name: Run focused browser animation checks
+        shell: bash
+        run: npx --no-install playwright test --config=e2e/playwright.entry-effects-v8-royal-ascension.config.mjs
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-v8-royal-ascension-${{ github.run_id }}
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
