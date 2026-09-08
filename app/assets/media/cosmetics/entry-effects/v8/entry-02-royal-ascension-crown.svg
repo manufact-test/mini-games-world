@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" fill="none">
+<defs>
+  <linearGradient id="g" x1="258" y1="86" x2="381" y2="186" gradientUnits="userSpaceOnUse"><stop stop-color="#fff4b7"/><stop offset=".18" stop-color="#e9bc50"/><stop offset=".48" stop-color="#a4691d"/><stop offset=".8" stop-color="#5c330b"/><stop offset="1" stop-color="#d39a37"/></linearGradient>
+  <radialGradient id="ruby" cx="0" cy="0" r="1" gradientTransform="translate(320 143) rotate(90) scale(12)"><stop stop-color="#ffd1c3"/><stop offset=".22" stop-color="#e85b46"/><stop offset=".7" stop-color="#7e151b"/><stop offset="1" stop-color="#2e070b"/></radialGradient>
+</defs>
+<path d="M258 172 268 112l30 28 22-61 22 61 30-28 10 60-23 20h-78l-23-20Z" fill="url(#g)" stroke="#f4d67e" stroke-width="4"/>
+<path d="M276 180h88" stroke="#f5d476" stroke-width="8" stroke-linecap="round"/>
+<circle cx="320" cy="143" r="9" fill="url(#ruby)"/>
+</svg>
