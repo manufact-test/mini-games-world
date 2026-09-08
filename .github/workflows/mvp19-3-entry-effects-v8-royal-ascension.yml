@@ -8,7 +8,7 @@ on:
       - 'app/assets/js/app-bootstrap-v2.js'
       - 'app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js'
       - 'app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css'
-      - 'app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-*.svg'
+      - 'app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp'
       - 'e2e/staging/entry-effects-v8-royal-ascension.spec.mjs'
       - 'e2e/playwright.entry-effects-v8-royal-ascension.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml'
@@ -29,33 +29,35 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Verify bounded assets and wiring
+      - name: Verify bounded illustrated asset and wiring
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          from xml.etree import ElementTree as ET
-          for name in [
-              'entry-02-royal-ascension-body.svg',
-              'entry-02-royal-ascension-crown.svg',
-              'entry-02-royal-ascension-cape.svg',
-          ]:
-              p = Path('app/assets/media/cosmetics/entry-effects/v8') / name
-              root = ET.fromstring(p.read_text(encoding='utf-8'))
-              assert root.tag.endswith('svg')
-              assert root.attrib.get('viewBox') == '0 0 640 480'
-              assert '<text' not in p.read_text(encoding='utf-8').lower()
-          bootstrap = Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
-          module = Path('app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js').read_text(encoding='utf-8')
-          css = Path('app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css').read_text(encoding='utf-8')
+          p=Path('app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp')
+          b=p.read_bytes()
+          assert len(b) > 30000, len(b)
+          assert b[:4] == b'RIFF', b[:12]
+          assert b[8:12] == b'WEBP', b[:12]
+          assert int.from_bytes(b[4:8], 'little') + 8 == len(b)
+          transfer=list(p.parent.glob('entry-02-royal-ascension-guardian.part*'))
+          assert not transfer, transfer
+          assert not (p.parent / 'entry-02-royal-ascension-guardian.webp.b64').exists()
+          bootstrap=Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
+          module=Path('app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js').read_text(encoding='utf-8')
+          css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css').read_text(encoding='utf-8')
           assert "mgw-entry-effects-v8-legendary-strike.js?v=2" in bootstrap
-          assert "mgw-entry-effects-v8-royal-ascension.js?v=2" in bootstrap
+          assert "mgw-entry-effects-v8-royal-ascension.js?v=3" in bootstrap
           assert 'entry-02' in module and 'entry-03' not in module
+          assert 'entry-02-royal-ascension-guardian.webp?asset=royal-ascension-guardian-v2' in module
+          assert '.webp.b64' not in module and 'atob(' not in module
           assert "layer.dataset.entryV8RoyalAscension = '1'" in module
+          assert 'mgw-entry-v8-ra-guardian' in module
           assert 'mgw-entry-v8-ra-sigil' in module
           assert 'mgw-entry-v8-ra-banner' in module
           assert 'mgw-entry-v8-ra-pulse' in module
+          assert 'mgw-entry-v8-ra-guardian' in css
           assert 'data-entry-v8-royal-ascension' in css
           assert ':has(' not in css
           PY
