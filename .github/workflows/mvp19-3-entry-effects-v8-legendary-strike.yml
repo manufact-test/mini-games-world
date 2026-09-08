@@ -65,11 +65,16 @@ jobs:
           css = Path('app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css').read_text(encoding='utf-8')
           manifest = Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
 
-          assert "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2';" in wrapper
-          assert "import './entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=4';" in wrapper
+          entry01 = "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2';"
+          core_import = "await import('./app-bootstrap-v2-core.js?v=2&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-nonblocking-v1');"
+          royal = "void import('./entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=4').catch"
+          assert entry01 in wrapper
+          assert core_import in wrapper
+          assert royal in wrapper
+          assert wrapper.index(entry01) < wrapper.index(core_import) < wrapper.index(royal)
           assert "await import('@mgw/clean-entry');" in core
           assert "await import('@mgw/main');" in core
-          assert "entry_v8=entry01-strike-entry02-royal-ascension-v1" in manifest
+          assert "app-bootstrap-v2.js?v=6&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-nonblocking-v1" in manifest
           assert "data-entry-v8-legendary-strike" in css
           assert 'data-entry-effect-variant="entry-01"' in module
           assert 'data-entry-effect-variant="entry-03"' not in module
