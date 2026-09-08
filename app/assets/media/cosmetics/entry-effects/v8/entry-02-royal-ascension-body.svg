@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" fill="none">
+<defs>
+  <linearGradient id="armor" x1="210" y1="130" x2="430" y2="420" gradientUnits="userSpaceOnUse"><stop stop-color="#312d33"/><stop offset=".42" stop-color="#0f1015"/><stop offset="1" stop-color="#050609"/></linearGradient>
+  <linearGradient id="gold" x1="250" y1="150" x2="390" y2="420" gradientUnits="userSpaceOnUse"><stop stop-color="#fff0a8"/><stop offset=".22" stop-color="#f0c85f"/><stop offset=".58" stop-color="#b77a22"/><stop offset="1" stop-color="#6d3f10"/></linearGradient>
+  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<path d="M198 442c10-96 24-172 61-220 18-23 41-37 61-37s43 14 61 37c37 48 51 124 61 220H198Z" fill="url(#armor)" stroke="#7c5a25" stroke-width="5"/>
+<path d="M232 330c28-25 56-36 88-36s60 11 88 36l20 112H212l20-112Z" fill="#0a0c11" stroke="#c4953b" stroke-width="4"/>
+<path d="M257 259 320 225l63 34-20 65-43 19-43-19-20-65Z" fill="#11141a" stroke="url(#gold)" stroke-width="6"/>
+<path d="M272 278 320 253l48 25-14 34-34 15-34-15-14-34Z" fill="#07090d" stroke="#8b6325" stroke-width="3"/>
+<path d="M246 345 211 374l-17 68h54l20-94-22-3Zm148 0 35 29 17 68h-54l-20-94 22-3Z" fill="#17151a" stroke="#7b5721" stroke-width="4"/>
+<path d="M263 350h114l-16 92h-82l-16-92Z" fill="#090b10" stroke="url(#gold)" stroke-width="4"/>
+<path d="M294 349h52v93h-52v-93Z" fill="#0d1117" stroke="#b8842d" stroke-width="3"/>
+<path d="M320 367v53" stroke="#f3cf6d" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+<path d="m320 347-16 20 16 19 16-19-16-20Z" fill="#f2cf70" filter="url(#glow)"/>
+<path d="M246 239c-8-34 7-76 30-95 12-10 28-16 44-16s32 6 44 16c23 19 38 61 30 95l-21 12-18-15-35 12-35-12-18 15-21-12Z" fill="url(#armor)" stroke="#9f7229" stroke-width="5"/>
+<path d="M270 190c17-16 33-24 50-24s33 8 50 24l-12 42-38 13-38-13-12-42Z" fill="#05070a" stroke="#b58631" stroke-width="4"/>
+<path d="M288 205h64" stroke="#f2cc64" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+</svg>
