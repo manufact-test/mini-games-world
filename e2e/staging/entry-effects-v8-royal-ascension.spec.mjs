@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=1';
+const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=2';
 
 async function mountFixture(page, variant = 'entry-02') {
   await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
@@ -26,6 +26,7 @@ test('Entry 02 Royal Ascension mounts only on medium tier and uses independent c
   await expect(page.locator('.mgw-entry-v8-ra-body')).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-ra-crown')).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-ra-cape')).toHaveCount(1);
+  await expect(page.locator('.mgw-entry-v8-ra-banner')).toHaveCount(2);
   await expect(page.locator('.mgw-entry-v8-ra-beam')).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-ra-halo')).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-ra-pulse')).toHaveCount(1);
@@ -76,11 +77,13 @@ test('Royal Ascension reduced motion preserves the final ceremonial composition'
     const reduced = await page.evaluate(() => ({
       figureOpacity:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-figure')).opacity,
       crownOpacity:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-crown')).opacity,
+      banners:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-banner')).opacity,
       pulseDisplay:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-pulse')).display,
       figureAnimation:getComputedStyle(document.querySelector('.mgw-entry-v8-ra-figure')).animationName,
     }));
     expect(reduced.figureOpacity).toBe('1');
     expect(reduced.crownOpacity).toBe('1');
+    expect(Number(reduced.banners)).toBeGreaterThan(0);
     expect(reduced.pulseDisplay).toBe('none');
     expect(reduced.figureAnimation).toBe('none');
   } finally { await context.close(); }
