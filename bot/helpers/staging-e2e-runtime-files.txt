@@ -17,6 +17,11 @@ app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css
 app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-arena.webp
 app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-sword.svg
 app/assets/media/cosmetics/entry-effects/v8/entry-03-legendary-strike-cracks.svg
+app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js
+app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css
+app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-body.svg
+app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-crown.svg
+app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-cape.svg
 app/assets/js/router.js
 app/assets/js/production-clean-entry-v110.js
 app/assets/js/production-deterministic-icons.js
