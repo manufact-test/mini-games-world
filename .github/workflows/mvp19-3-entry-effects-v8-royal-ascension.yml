@@ -9,6 +9,7 @@ on:
       - 'app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js'
       - 'app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css'
       - 'app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp'
+      - 'app/runtime/client/version-manifest.php'
       - 'e2e/staging/entry-effects-v8-royal-ascension.spec.mjs'
       - 'e2e/playwright.entry-effects-v8-royal-ascension.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml'
@@ -48,10 +49,17 @@ jobs:
           assert not transfer, transfer
           assert not (p.parent / 'entry-02-royal-ascension-guardian.webp.b64').exists()
           bootstrap=Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
+          manifest=Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
           module=Path('app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js').read_text(encoding='utf-8')
           css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css').read_text(encoding='utf-8')
-          assert "mgw-entry-effects-v8-legendary-strike.js?v=2" in bootstrap
-          assert "mgw-entry-effects-v8-royal-ascension.js?v=4" in bootstrap
+          entry01 = "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2';"
+          core = "await import('./app-bootstrap-v2-core.js?v=2&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-nonblocking-v1');"
+          royal = "void import('./entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=4').catch"
+          assert entry01 in bootstrap
+          assert core in bootstrap
+          assert royal in bootstrap
+          assert bootstrap.index(entry01) < bootstrap.index(core) < bootstrap.index(royal)
+          assert "app-bootstrap-v2.js?v=6&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-nonblocking-v1" in manifest
           assert 'entry-02' in module and 'entry-03' not in module
           assert 'entry-02-royal-ascension-guardian.webp?asset=royal-ascension-guardian-v2' in module
           assert '.webp.b64' not in module and 'atob(' not in module
@@ -66,6 +74,7 @@ jobs:
           assert 'data-entry-v8-royal-ascension' in css
           assert ':has(' not in css
           PY
+          php -l app/runtime/client/version-manifest.php
           git diff --check
 
       - name: Set up Node.js
