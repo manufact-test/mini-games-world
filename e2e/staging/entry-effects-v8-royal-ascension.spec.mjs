@@ -53,14 +53,18 @@ test('Entry 02 Royal Ascension mounts only on medium tier and uses independent c
   expect(state.skipStillPresent).toBe(true);
 
   await page.waitForTimeout(1_950);
-  await testInfo.attach('entry-02-royal-ascension-peak.png', { body: await page.screenshot({ fullPage:true }), contentType:'image/png' });
+  const screenshotPath = testInfo.outputPath('entry-02-royal-ascension-peak.png');
+  await page.screenshot({ path: screenshotPath, fullPage:true });
+  await testInfo.attach('entry-02-royal-ascension-peak.png', { path:screenshotPath, contentType:'image/png' });
 });
 
 test('Royal Ascension does not mount on Entry 01 or Entry 03', async ({ page }) => {
-  await mountFixture(page, 'entry-03');
-  await page.waitForTimeout(250);
-  await expect(page.locator('.mgw-entry-v8-royal-ascension')).toHaveCount(0);
-  await expect(page.locator('#fixture')).not.toHaveAttribute('data-entry-v8-royal-ascension', '1');
+  for (const variant of ['entry-01', 'entry-03']) {
+    await mountFixture(page, variant);
+    await page.waitForTimeout(250);
+    await expect(page.locator('.mgw-entry-v8-royal-ascension')).toHaveCount(0);
+    await expect(page.locator('#fixture')).not.toHaveAttribute('data-entry-v8-royal-ascension', '1');
+  }
 });
 
 test('Royal Ascension reduced motion preserves the final ceremonial composition', async ({ browser }) => {
