@@ -66,9 +66,10 @@ jobs:
           manifest = Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
 
           assert "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2';" in wrapper
+          assert "import './entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=4';" in wrapper
           assert "await import('@mgw/clean-entry');" in core
           assert "await import('@mgw/main');" in core
-          assert "entry_v8=legendary-strike-v1" in manifest
+          assert "entry_v8=entry01-strike-entry02-royal-ascension-v1" in manifest
           assert "data-entry-v8-legendary-strike" in css
           assert 'data-entry-effect-variant="entry-01"' in module
           assert 'data-entry-effect-variant="entry-03"' not in module
