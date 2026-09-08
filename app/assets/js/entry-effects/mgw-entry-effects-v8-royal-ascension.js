@@ -43,6 +43,9 @@ function appendMany(parent, className, count){
     const el = document.createElement('i');
     el.className = className;
     el.style.setProperty('--i', String(i));
+    if (className === 'mgw-entry-v8-ra-rune') {
+      el.style.transform = `translate(-50%,-100%) rotate(${i * 45}deg)`;
+    }
     parent.append(el);
   }
 }
