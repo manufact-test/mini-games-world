@@ -1,5 +1,5 @@
 const STYLE_ID = 'mgw-entry-v8-legendary-strike-style';
-const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css?v=1';
+const STYLE_HREF = '/app/assets/css/entry-effects/mgw-entry-effects-v8-legendary-strike.css?v=2';
 const ASSET_BASE = '/app/assets/media/cosmetics/entry-effects/v8/';
 const ASSETS = Object.freeze({
   arena: `${ASSET_BASE}entry-03-legendary-strike-arena.webp?asset=entry-v8-ls-1`,
@@ -95,13 +95,17 @@ function buildSparks(container){
   });
 }
 
+// The V8 strike scene was visually rejected as the premium Entry 03 treatment.
+// Preserve the implementation, but deliberately reassign it to Entry 01 as the
+// base/cheapest tier while Entry 02 and Entry 03 remain on their existing v7
+// fallback presentation until new storyboards are approved.
 function mountLegendaryStrike(layer){
   if (!(layer instanceof HTMLElement) || !layer.classList.contains('mgw-entry-effect-layer')) return;
-  const card = layer.querySelector('.mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]');
+  const card = layer.querySelector('.mgw-entry-effect-live-card[data-entry-effect-variant="entry-01"]');
   if (!(card instanceof HTMLElement)) return;
 
   const playerIndex = String(card.dataset.playerIndex || '0');
-  const key = `entry-03:${playerIndex}`;
+  const key = `entry-01:${playerIndex}`;
   if (layer.querySelector(`.mgw-entry-v8-legendary-strike[data-entry-v8-key="${key}"]`)) return;
 
   const scene = document.createElement('div');
@@ -171,5 +175,5 @@ function arm(){
 }
 
 ensureStyle().then(arm).catch(() => {
-  // Keep the accepted v7 fallback visible if the V8 presentation stylesheet fails.
+  // Keep the v7 fallback visible if the transferred V8 presentation stylesheet fails.
 });

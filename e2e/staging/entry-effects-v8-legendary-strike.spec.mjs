@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=1';
+const MODULE = '/app/assets/js/entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2';
 
 async function mountFixture(page) {
   await page.goto('/app/index.html', { waitUntil: 'domcontentloaded' });
   await page.setContent(`<!doctype html><html><head></head><body style="margin:0;background:#050508">
     <div class="mgw-entry-effect-layer" id="fixture" style="position:fixed;inset:0;overflow:hidden;background:#050508">
       <button class="mgw-entry-effect-skip" id="skip" type="button">Пропустить</button>
-      <img class="mgw-entry-effect-live-art" data-entry-effect-variant="entry-03" alt="" src="/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=premium-art-v7">
-      <div class="mgw-entry-effect-live-fx" data-entry-effect-variant="entry-03"></div>
+      <img class="mgw-entry-effect-live-art" data-entry-effect-variant="entry-01" alt="" src="/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp?asset=premium-art-v7">
+      <div class="mgw-entry-effect-live-fx" data-entry-effect-variant="entry-01"></div>
       <div class="mgw-entry-effect-live-grid">
-        <div class="mgw-entry-effect-live-card" data-entry-effect-variant="entry-03" data-player-index="0">
+        <div class="mgw-entry-effect-live-card" data-entry-effect-variant="entry-01" data-player-index="0">
           <strong>Царь у дворца</strong><small>вступает в игру</small>
         </div>
       </div>
@@ -21,7 +21,7 @@ async function mountFixture(page) {
   await page.waitForFunction(() => document.getElementById('mgw-entry-v8-legendary-strike-style')?.sheet, null, { timeout: 10_000 });
 }
 
-test('Entry 03 V8 mounts a real multi-part animated strike and replaces only the old visual owner', async ({ page }, testInfo) => {
+test('Entry 01 base tier mounts the transferred V8 strike and replaces only its old visual owner', async ({ page }, testInfo) => {
   await mountFixture(page);
 
   const layer = page.locator('#fixture');
@@ -36,8 +36,8 @@ test('Entry 03 V8 mounts a real multi-part animated strike and replaces only the
   expect(await page.locator('.mgw-entry-v8-spark').count()).toBeGreaterThanOrEqual(10);
 
   const state = await page.evaluate(() => {
-    const oldArt = document.querySelector('.mgw-entry-effect-live-art[data-entry-effect-variant="entry-03"]');
-    const oldFx = document.querySelector('.mgw-entry-effect-live-fx[data-entry-effect-variant="entry-03"]');
+    const oldArt = document.querySelector('.mgw-entry-effect-live-art[data-entry-effect-variant="entry-01"]');
+    const oldFx = document.querySelector('.mgw-entry-effect-live-fx[data-entry-effect-variant="entry-01"]');
     const sword = document.querySelector('.mgw-entry-v8-sword');
     const cracks = document.querySelector('.mgw-entry-v8-cracks');
     const wave = document.querySelector('.mgw-entry-v8-shockwave');
@@ -60,13 +60,13 @@ test('Entry 03 V8 mounts a real multi-part animated strike and replaces only the
   expect(state.skipStillPresent).toBe(true);
 
   await page.waitForTimeout(1_180);
-  await testInfo.attach('entry-v8-legendary-strike-impact.png', {
+  await testInfo.attach('entry-01-v8-base-tier-impact.png', {
     body: await page.screenshot({ fullPage: true }),
     contentType: 'image/png',
   });
 });
 
-test('Entry 03 V8 has a coherent reduced-motion final composition', async ({ browser }) => {
+test('Entry 01 transferred V8 has a coherent reduced-motion final composition', async ({ browser }) => {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     reducedMotion: 'reduce',
