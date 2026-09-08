@@ -3,12 +3,12 @@
  * dust and shockwave are independently animated. The rejected v7 poster/FX
  * remains only as a fallback if this bounded V8 scene cannot mount. */
 
-.mgw-entry-effect-layer:has(.mgw-entry-v8-legendary-strike) > .mgw-entry-effect-live-art[data-entry-effect-variant="entry-03"],
-.mgw-entry-effect-layer:has(.mgw-entry-v8-legendary-strike) > .mgw-entry-effect-live-fx[data-entry-effect-variant="entry-03"]{
+.mgw-entry-effect-layer[data-entry-v8-legendary-strike="1"] > .mgw-entry-effect-live-art[data-entry-effect-variant="entry-03"],
+.mgw-entry-effect-layer[data-entry-v8-legendary-strike="1"] > .mgw-entry-effect-live-fx[data-entry-effect-variant="entry-03"]{
   display:none!important;
 }
 
-.mgw-entry-effect-layer:has(.mgw-entry-v8-legendary-strike) .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]{
+.mgw-entry-effect-layer[data-entry-v8-legendary-strike="1"] .mgw-entry-effect-live-card[data-entry-effect-variant="entry-03"]{
   animation:none!important;
   filter:none!important;
 }
@@ -237,14 +237,14 @@
   8%{opacity:1}
   52%{opacity:1;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(var(--scale)) rotate(var(--rot))}
   76%{opacity:.88;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy) + 14px)) scale(var(--scale)) rotate(calc(var(--rot) + 34deg))}
-  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy) + 46px)) scale(calc(var(--scale) * .82)) rotate(calc(var(--rot) + 62deg))}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy) + 46px)) scale(var(--scale)) rotate(calc(var(--rot) + 62deg))}
 }
 
 @keyframes mgwEntryV8Spark{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
   14%{opacity:1}
   68%{opacity:.85;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(var(--ss))}
-  100%{opacity:0;transform:translate(calc(-50% + var(--sx) * 1.08),calc(-50% + var(--sy) * 1.08 + 18px)) scale(.3)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy) + 18px)) scale(.3)}
 }
 
 @keyframes mgwEntryV8Stage{
