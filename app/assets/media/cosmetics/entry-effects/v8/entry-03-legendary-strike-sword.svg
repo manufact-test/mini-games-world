@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" fill="none">
+  <defs>
+    <linearGradient id="blade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#626a72"/>
+      <stop offset="0.23" stop-color="#f5f1df"/>
+      <stop offset="0.48" stop-color="#aab4be"/>
+      <stop offset="0.72" stop-color="#fff6d5"/>
+      <stop offset="1" stop-color="#6e7780"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe39a"/>
+      <stop offset="0.35" stop-color="#cf8431"/>
+      <stop offset="0.72" stop-color="#7b431f"/>
+      <stop offset="1" stop-color="#3d2118"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feColorMatrix in="b" type="matrix" values="1 0 0 0 1  0 .25 0 0 .18  0 0 .1 0 .03  0 0 0 .55 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g transform="translate(390 254) rotate(-42)" filter="url(#shadow)">
+    <path d="M0 -225 L22 -178 L18 70 L8 92 L-8 92 L-18 70 L-22 -178 Z" fill="#15171a" stroke="#090a0c" stroke-width="7"/>
+    <path d="M0 -218 L14 -176 L12 66 L0 85 L-12 66 L-14 -176 Z" fill="url(#blade)"/>
+    <path d="M0 -211 L3 -176 L3 70 L0 80 Z" fill="#fff9df" fill-opacity=".9"/>
+    <path d="M11 -164 L9 61" stroke="#ff9e40" stroke-width="2.5" stroke-linecap="round" opacity=".78"/>
+    <path d="M-7 -155 L-4 58" stroke="#343b43" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+    <g opacity=".55" stroke="#ffd073" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-5 -120 L7 -110 L-5 -100"/>
+      <path d="M-5 -70 L7 -60 L-5 -50"/>
+      <path d="M-5 -20 L7 -10 L-5 0"/>
+    </g>
+    <path d="M-72 83 Q-72 72 -61 72 H61 Q72 72 72 83 Q72 94 61 94 H-61 Q-72 94 -72 83Z" fill="url(#gold)" stroke="#ffd06d" stroke-width="3"/>
+    <path d="M-70 78 L-94 99 L-53 91 Z" fill="#9b542b" stroke="#d88c3c" stroke-width="2"/>
+    <path d="M70 78 L94 99 L53 91 Z" fill="#9b542b" stroke="#d88c3c" stroke-width="2"/>
+    <rect x="-13" y="91" width="26" height="92" rx="8" fill="#2c1b18" stroke="#84502f" stroke-width="3"/>
+    <path d="M-11 102 L11 111 M-11 118 L11 127 M-11 134 L11 143 M-11 150 L11 159 M-11 166 L9 174" stroke="#a56b38" stroke-width="3"/>
+    <circle cx="0" cy="198" r="19" fill="url(#gold)" stroke="#ffc35b" stroke-width="3"/>
+    <circle cx="0" cy="198" r="8" fill="#df3e24"/>
+  </g>
+</svg>
