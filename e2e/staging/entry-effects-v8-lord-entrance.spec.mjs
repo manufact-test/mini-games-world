@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const MODULE='/app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=3';
+const MODULE='/app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=4';
 
 async function mountFixture(page,variant='entry-03'){
   await page.goto('/app/index.html',{waitUntil:'domcontentloaded'});
@@ -10,7 +10,7 @@ async function mountFixture(page,variant='entry-03'){
 
 async function shot(page,testInfo,name){const p=testInfo.outputPath(name);await page.screenshot({path:p,fullPage:true});await testInfo.attach(name,{path:p,contentType:'image/png'});}
 
-test('Entry 03 Lord Entrance mounts premium portal, open-face lord, actual sword motion and slash layers',async({page},testInfo)=>{
+test('Entry 03 Lord Entrance mounts premium portal, detailed armor, open-face lord, actual sword motion and slash layers',async({page},testInfo)=>{
   await mountFixture(page,'entry-03');
   await page.waitForSelector('.mgw-entry-v8-lord-entrance');
   await page.waitForFunction(()=>document.getElementById('mgw-entry-v8-lord-entrance-style')?.sheet,null,{timeout:10000});
@@ -27,12 +27,15 @@ test('Entry 03 Lord Entrance mounts premium portal, open-face lord, actual sword
     slash:getComputedStyle(document.querySelector('.mgw-entry-v8-le-slash')).animationName,
     stage:getComputedStyle(document.querySelector('.mgw-entry-v8-le-stage')).animationName,
     bodySrc:document.querySelector('.mgw-entry-v8-le-body')?.getAttribute('src')||'',
+    bodyWidth:document.querySelector('.mgw-entry-v8-le-body')?.naturalWidth||0,
+    bodyHeight:document.querySelector('.mgw-entry-v8-le-body')?.naturalHeight||0,
     faceSrc:document.querySelector('.mgw-entry-v8-le-face')?.getAttribute('src')||'',
     skip:document.getElementById('skip')?.textContent,
   }));
   expect(state.oldArt).toBe('none');expect(state.oldFx).toBe('none');
   expect(state.lord).toContain('mgwLeLord');expect(state.face).toContain('mgwLeFace');expect(state.sword).toContain('mgwLeSword');expect(state.slash).toContain('mgwLeSlash');expect(state.stage).toContain('mgwLeStage');expect(state.skip).toBe('Пропустить');
-  expect(state.bodySrc).toContain('entry-02-royal-ascension-guardian.webp');
+  expect(state.bodySrc).toContain('entry-03-lord-entrance-armor-detail.webp');
+  expect(state.bodyWidth).toBeGreaterThanOrEqual(400);expect(state.bodyHeight).toBeGreaterThanOrEqual(400);
   expect(state.faceSrc).toContain('entry-03-lord-entrance-open-face.svg');
 
   await page.waitForTimeout(700);await shot(page,testInfo,'entry-03-lord-entrance-portal-open.png');
@@ -44,5 +47,5 @@ test('Entry 03 Lord Entrance mounts premium portal, open-face lord, actual sword
 test('Lord Entrance does not mount on Entry 01 or Entry 02',async({page})=>{for(const v of ['entry-01','entry-02']){await mountFixture(page,v);await page.waitForTimeout(250);await expect(page.locator('.mgw-entry-v8-lord-entrance')).toHaveCount(0);}});
 
 test('Lord Entrance reduced motion keeps coherent open-face lord and portal but removes slash/shake',async({browser})=>{
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});try{const page=await context.newPage();await mountFixture(page,'entry-03');await page.waitForSelector('.mgw-entry-v8-lord-entrance');await page.waitForFunction(()=>{const f=document.querySelector('.mgw-entry-v8-le-face');return f instanceof HTMLImageElement&&f.complete&&f.naturalWidth>0;});const s=await page.evaluate(()=>({lord:getComputedStyle(document.querySelector('.mgw-entry-v8-le-lord')).opacity,face:getComputedStyle(document.querySelector('.mgw-entry-v8-le-face')).opacity,portal:getComputedStyle(document.querySelector('.mgw-entry-v8-le-portal')).opacity,stageAnim:getComputedStyle(document.querySelector('.mgw-entry-v8-le-stage')).animationName,slash:getComputedStyle(document.querySelector('.mgw-entry-v8-le-slash')).display,sword:getComputedStyle(document.querySelector('.mgw-entry-v8-le-sword-wrap')).display}));expect(s.lord).toBe('1');expect(s.face).toBe('1');expect(Number(s.portal)).toBeGreaterThan(0);expect(s.stageAnim).toBe('none');expect(s.slash).toBe('none');expect(s.sword).toBe('none');}finally{await context.close();}
+  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});try{const page=await context.newPage();await mountFixture(page,'entry-03');await page.waitForSelector('.mgw-entry-v8-lord-entrance');await page.waitForFunction(()=>{const b=document.querySelector('.mgw-entry-v8-le-body');const f=document.querySelector('.mgw-entry-v8-le-face');return [b,f].every(el=>el instanceof HTMLImageElement&&el.complete&&el.naturalWidth>0);});const s=await page.evaluate(()=>({lord:getComputedStyle(document.querySelector('.mgw-entry-v8-le-lord')).opacity,face:getComputedStyle(document.querySelector('.mgw-entry-v8-le-face')).opacity,portal:getComputedStyle(document.querySelector('.mgw-entry-v8-le-portal')).opacity,stageAnim:getComputedStyle(document.querySelector('.mgw-entry-v8-le-stage')).animationName,slash:getComputedStyle(document.querySelector('.mgw-entry-v8-le-slash')).display,sword:getComputedStyle(document.querySelector('.mgw-entry-v8-le-sword-wrap')).display}));expect(s.lord).toBe('1');expect(s.face).toBe('1');expect(Number(s.portal)).toBeGreaterThan(0);expect(s.stageAnim).toBe('none');expect(s.slash).toBe('none');expect(s.sword).toBe('none');}finally{await context.close();}
 });
