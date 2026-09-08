@@ -60,7 +60,7 @@ return [
         'consistency_css_previous' => './assets/css/production-v99-profile-reaction-polish.css?v=2&mvp19_3=cumulative-reaction-cards&layout=bounded-packs&owned=passive-status&profile_nav=direct-sync-v2&row_footer=stretch-v1&pack4=single-row-v1&profile_first=structural-route-guard-v1&shell_mobile=atomic-v1&profile_hidden=zero-v1&shell_motion=atomic-restored-v2&profile_motion=atomic-none-v1',
         'consistency_css_entry_base' => './assets/css/production-v100-entry-effects.css?v=1&mvp19_3=entry-effects',
         'consistency_css_base' => './assets/css/production-v97-reactions.css?v=2&mvp19_3=ingame-corrective',
-        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=7&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v1',
+        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=8&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v4',
     ],
     'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
 ];
