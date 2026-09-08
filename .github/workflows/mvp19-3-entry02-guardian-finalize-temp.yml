@@ -1,0 +1,66 @@
+name: TEMP finalize Entry 02 guardian binary
+
+on:
+  push:
+    branches:
+      - agent/mvp19-3-entry02-guardian-finalizer-run
+    paths:
+      - '.github/workflows/mvp19-3-entry02-guardian-finalize-temp.yml'
+      - 'app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.part*'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout finalizer branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mvp19-3-entry02-guardian-finalizer-run
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Rebuild exact WebP and clean transfer files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          dir='app/assets/media/cosmetics/entry-effects/v8'
+          cat "$dir"/entry-02-royal-ascension-guardian.part00 \
+              "$dir"/entry-02-royal-ascension-guardian.part01 \
+              "$dir"/entry-02-royal-ascension-guardian.part02 \
+              "$dir"/entry-02-royal-ascension-guardian.part03 \
+              "$dir"/entry-02-royal-ascension-guardian.part04 \
+              "$dir"/entry-02-royal-ascension-guardian.part05 > /tmp/guardian.b64
+          base64 --decode /tmp/guardian.b64 > "$dir/entry-02-royal-ascension-guardian.webp"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp')
+          b=p.read_bytes()
+          assert len(b) > 30000, len(b)
+          assert b[:4] == b'RIFF', b[:12]
+          assert b[8:12] == b'WEBP', b[:12]
+          declared=int.from_bytes(b[4:8], 'little') + 8
+          assert declared == len(b), (declared, len(b))
+          print('guardian-webp-bytes', len(b))
+          PY
+          rm -f "$dir"/entry-02-royal-ascension-guardian.part00 \
+                "$dir"/entry-02-royal-ascension-guardian.part01 \
+                "$dir"/entry-02-royal-ascension-guardian.part02 \
+                "$dir"/entry-02-royal-ascension-guardian.part03 \
+                "$dir"/entry-02-royal-ascension-guardian.part04 \
+                "$dir"/entry-02-royal-ascension-guardian.part05 \
+                "$dir"/entry-02-royal-ascension-guardian.webp.b64 \
+                .github/workflows/mvp19-3-entry02-guardian-finalize-temp.yml
+
+      - name: Commit real binary only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'manufact-test'
+          git config user.email 'manufact.test@gmail.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'MVP-19.3: finalize Royal Ascension guardian WebP binary'
+          git push origin HEAD:agent/mvp19-3-entry02-guardian-finalizer-run
