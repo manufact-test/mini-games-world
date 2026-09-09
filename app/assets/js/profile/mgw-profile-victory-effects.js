@@ -33,17 +33,11 @@ export function initMgwProfileVictoryEffects(){
 
   const start = () => {
     observer?.disconnect();
-    const root = document.getElementById('sheet') || document.body;
     observer = new MutationObserver(() => {
       scheduleDecorate();
       scheduleResultProbe();
     });
-    observer.observe(root, {
-      childList:true,
-      subtree:true,
-      attributes:true,
-      attributeFilter:['disabled','aria-busy','class'],
-    });
+    observeRoots();
 
     document.addEventListener('mgw:cosmetic-inventory-changed', event => {
       scheduleDecorate();
@@ -82,12 +76,30 @@ function ensureStylesheet(){
   document.head.append(link);
 }
 
+function observeRoots(){
+  if (!observer) return;
+  observer.disconnect();
+  const profile = document.getElementById('screen-profile');
+  const store = document.getElementById('storeTabSurface');
+  const sheet = document.getElementById('sheet');
+  if (profile) observer.observe(profile, { childList:true, subtree:true });
+  if (store) observer.observe(store, { childList:true, subtree:true });
+  if (sheet) observer.observe(sheet, {
+    childList:true,
+    subtree:true,
+    attributes:true,
+    attributeFilter:['disabled','aria-busy','class'],
+  });
+}
+
 function scheduleDecorate(){
   if (scheduled) return;
   scheduled = true;
   queueMicrotask(() => {
     scheduled = false;
-    decorateCollectionSurfaces();
+    observer?.disconnect();
+    try { decorateCollectionSurfaces(); }
+    finally { observeRoots(); }
   });
 }
 
@@ -385,15 +397,10 @@ function playVictoryEffectIfReady(){
   layer.className = `mgw-victory-effect-layer${reduced ? ' reduced-motion' : ''}`;
   layer.dataset.victoryEffectGameId = gameId;
   layer.dataset.victoryEffectItemId = selection.itemId;
-  layer.setAttribute('aria-hidden', 'true');
-  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="Пропустить эффект победы">Пропустить</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}"><i class="mgw-victory-spark-flash"></i><i class="mgw-victory-spark-ring ring-a"></i><i class="mgw-victory-spark-ring ring-b"></i>${particleMarkup()}</div>`;
+  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="Пропустить эффект победы">Пропустить</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true"><i class="mgw-victory-spark-flash"></i><i class="mgw-victory-spark-ring ring-a"></i><i class="mgw-victory-spark-ring ring-b"></i>${particleMarkup()}</div>`;
   document.body.append(layer);
 
-  const skip = layer.querySelector('.mgw-victory-effect-skip');
-  if (skip instanceof HTMLButtonElement) {
-    skip.removeAttribute('aria-hidden');
-    skip.addEventListener('click', removeLiveVictoryEffect, { once:true });
-  }
+  layer.querySelector('.mgw-victory-effect-skip')?.addEventListener('click', removeLiveVictoryEffect, { once:true });
   window.clearTimeout(liveHideTimer);
   liveHideTimer = window.setTimeout(removeLiveVictoryEffect, duration);
 }
