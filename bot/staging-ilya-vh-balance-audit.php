@@ -54,20 +54,19 @@ try {
         $legacyUserId = trim((string)($user['id'] ?? $user['_storage_key'] ?? ''));
         if ($legacyUserId === '') throw new RuntimeException('Legacy user id is missing.');
 
-        $transactions = [];
-        foreach (array_reverse(array_values($db['transactions'] ?? [])) as $tx) {
-            if (!is_array($tx)) continue;
-            $txUserId = trim((string)($tx['user_id'] ?? $tx['target_user_id'] ?? ''));
-            if ($txUserId !== $legacyUserId) continue;
+        $projectTx = static function (array $tx): array {
             $meta = is_array($tx['meta'] ?? null) ? $tx['meta'] : [];
-            $transactions[] = [
+            return [
                 'id' => (string)($tx['id'] ?? ''),
                 'type' => (string)($tx['type'] ?? ''),
                 'category' => (string)($tx['category'] ?? ''),
                 'amount' => (int)($tx['amount'] ?? 0),
                 'reason' => (string)($tx['reason'] ?? $tx['description'] ?? ''),
+                'balance_before' => array_key_exists('balance_before', $tx) ? (int)$tx['balance_before'] : null,
                 'balance_after' => array_key_exists('balance_after', $tx) ? (int)$tx['balance_after'] : null,
                 'created_at' => (string)($tx['created_at'] ?? ''),
+                'actor_ref' => (string)($tx['actor_ref'] ?? ''),
+                'request_token' => (string)($tx['request_token'] ?? ''),
                 'meta' => array_filter([
                     'balance_before' => array_key_exists('balance_before', $meta) ? (int)$meta['balance_before'] : null,
                     'balance_after' => array_key_exists('balance_after', $meta) ? (int)$meta['balance_after'] : null,
@@ -76,8 +75,20 @@ try {
                     'audit_action' => isset($meta['audit_action']) ? (string)$meta['audit_action'] : null,
                 ], static fn(mixed $value): bool => $value !== null && $value !== ''),
             ];
-            if (count($transactions) >= 20) break;
+        };
+
+        $allUserTransactions = [];
+        foreach (array_values($db['transactions'] ?? []) as $tx) {
+            if (!is_array($tx)) continue;
+            $txUserId = trim((string)($tx['user_id'] ?? $tx['target_user_id'] ?? ''));
+            if ($txUserId !== $legacyUserId) continue;
+            $allUserTransactions[] = $projectTx($tx);
         }
+
+        $adminGrants = array_values(array_filter(
+            $allUserTransactions,
+            static fn(array $tx): bool => (string)($tx['category'] ?? '') === 'admin_test_coin_grant'
+        ));
 
         return [
             'legacy_user_id' => $legacyUserId,
@@ -88,7 +99,10 @@ try {
             'migration' => is_array($user['unified_balance_migration'] ?? null)
                 ? array_intersect_key($user['unified_balance_migration'], array_flip(['target_balance','ran_at','source_balance_match','source_balance_gold']))
                 : null,
-            'recent_transactions' => $transactions,
+            'transaction_count' => count($allUserTransactions),
+            'earliest_transactions' => array_slice($allUserTransactions, 0, 20),
+            'recent_transactions' => array_slice(array_reverse($allUserTransactions), 0, 20),
+            'admin_test_coin_grants' => array_slice($adminGrants, -10),
         ];
     });
 
@@ -117,8 +131,8 @@ try {
         ['account_ref' => $accountRef]
     );
 
-    $entries = $database->fetchAll(
-        "SELECT entry_id, available_delta, available_before, available_after,
+    $recentEntries = $database->fetchAll(
+        "SELECT entry_id, ledger_sequence, available_delta, available_before, available_after,
                 reserved_before, reserved_after, category, source_type, source_ref,
                 metadata_json, created_at_utc
          FROM mgw_ledger_entries
@@ -127,36 +141,50 @@ try {
         ['account_ref' => $accountRef]
     );
 
-    $ledger = [];
-    foreach ($entries as $row) {
-        if (!is_array($row)) continue;
-        $metadata = [];
-        try {
-            $decoded = json_decode((string)($row['metadata_json'] ?? ''), true, 32, JSON_THROW_ON_ERROR);
-            if (is_array($decoded)) {
-                foreach ([
-                    'database_amount','source_amount','database_version','target_asset',
-                    'balance_before','balance_after','requested_amount','audit_action','source',
-                    'offending_entry_id','recovered_from_available_before','stale_runtime_source_amount'
-                ] as $key) {
-                    if (array_key_exists($key, $decoded)) $metadata[$key] = $decoded[$key];
+    $earliestEntries = $database->fetchAll(
+        "SELECT entry_id, ledger_sequence, available_delta, available_before, available_after,
+                reserved_before, reserved_after, category, source_type, source_ref,
+                metadata_json, created_at_utc
+         FROM mgw_ledger_entries
+         WHERE account_ref = :account_ref AND asset_code = 'mgw_coin'
+         ORDER BY ledger_sequence ASC LIMIT 20",
+        ['account_ref' => $accountRef]
+    );
+
+    $projectLedger = static function (array $entries): array {
+        $ledger = [];
+        foreach ($entries as $row) {
+            if (!is_array($row)) continue;
+            $metadata = [];
+            try {
+                $decoded = json_decode((string)($row['metadata_json'] ?? ''), true, 32, JSON_THROW_ON_ERROR);
+                if (is_array($decoded)) {
+                    foreach ([
+                        'database_amount','source_amount','database_version','target_asset',
+                        'balance_before','balance_after','requested_amount','audit_action','source',
+                        'offending_entry_id','recovered_from_available_before','stale_runtime_source_amount'
+                    ] as $key) {
+                        if (array_key_exists($key, $decoded)) $metadata[$key] = $decoded[$key];
+                    }
                 }
-            }
-        } catch (Throwable) {}
-        $ledger[] = [
-            'entry_id' => (string)($row['entry_id'] ?? ''),
-            'delta' => (int)($row['available_delta'] ?? 0),
-            'before' => (int)($row['available_before'] ?? 0),
-            'after' => (int)($row['available_after'] ?? 0),
-            'reserved_before' => (int)($row['reserved_before'] ?? 0),
-            'reserved_after' => (int)($row['reserved_after'] ?? 0),
-            'category' => (string)($row['category'] ?? ''),
-            'source_type' => (string)($row['source_type'] ?? ''),
-            'source_ref' => (string)($row['source_ref'] ?? ''),
-            'metadata' => $metadata,
-            'created_at_utc' => (string)($row['created_at_utc'] ?? ''),
-        ];
-    }
+            } catch (Throwable) {}
+            $ledger[] = [
+                'entry_id' => (string)($row['entry_id'] ?? ''),
+                'sequence' => (int)($row['ledger_sequence'] ?? 0),
+                'delta' => (int)($row['available_delta'] ?? 0),
+                'before' => (int)($row['available_before'] ?? 0),
+                'after' => (int)($row['available_after'] ?? 0),
+                'reserved_before' => (int)($row['reserved_before'] ?? 0),
+                'reserved_after' => (int)($row['reserved_after'] ?? 0),
+                'category' => (string)($row['category'] ?? ''),
+                'source_type' => (string)($row['source_type'] ?? ''),
+                'source_ref' => (string)($row['source_ref'] ?? ''),
+                'metadata' => $metadata,
+                'created_at_utc' => (string)($row['created_at_utc'] ?? ''),
+            ];
+        }
+        return $ledger;
+    };
 
     echo json_encode([
         'ok' => true,
@@ -168,6 +196,7 @@ try {
             'legacy_match_snapshot' => $legacy['legacy_match_snapshot'],
             'legacy_gold_snapshot' => $legacy['legacy_gold_snapshot'],
             'migration' => $legacy['migration'],
+            'transaction_count' => $legacy['transaction_count'],
         ],
         'canonical_balance' => $balances === [] ? null : [
             'available' => (int)$balances[0]['available_amount'],
@@ -175,8 +204,11 @@ try {
             'version' => (int)$balances[0]['version'],
             'updated_at_utc' => (string)$balances[0]['updated_at_utc'],
         ],
+        'earliest_runtime_transactions' => $legacy['earliest_transactions'],
         'recent_runtime_transactions' => $legacy['recent_transactions'],
-        'recent_ledger' => $ledger,
+        'admin_test_coin_grants' => $legacy['admin_test_coin_grants'],
+        'earliest_ledger' => $projectLedger($earliestEntries),
+        'recent_ledger' => $projectLedger($recentEntries),
         'production_changed' => false,
         'live_payments_used' => false,
     ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL;
