@@ -6,7 +6,6 @@ import {
 } from './production-cross-game-coordinator.js?v=96';
 import { initDeterministicGameIcons } from './production-deterministic-icons.js?v=96';
 import { initStandardAvatarPolicy } from './production-standard-avatar.js?v=93';
-import { initPreparedShareFix } from './production-prepared-share-fix.js?v=93';
 import {
   initTicTacToeTurnFixEarly,
   scheduleTicTacToeTurnFixAfter,
@@ -21,6 +20,5 @@ initCrossGameCoordinator();
 scheduleCrossGameCoordinatorAfterMain();
 initDeterministicGameIcons();
 initStandardAvatarPolicy();
-initPreparedShareFix();
 initTicTacToeTurnFixEarly();
 scheduleTicTacToeTurnFixAfter();

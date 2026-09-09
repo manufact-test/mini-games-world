@@ -8,6 +8,7 @@ require_once __DIR__ . '/helpers/AdminSystemCheckGuard.php';
 require_once __DIR__ . '/helpers/UserWelcomeGuard.php';
 require_once __DIR__ . '/helpers/InviteStartGuard.php';
 require_once __DIR__ . '/helpers/MaintenanceWebhookGuard.php';
+require_once __DIR__ . '/helpers/StagingMenuButtonReconciler.php';
 
 try {
     $update = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -17,6 +18,12 @@ try {
     }
 
     $telegram = new TelegramService($config);
+    try {
+        (new StagingMenuButtonReconciler($telegram, $config))->reconcile();
+    } catch (Throwable $menuButtonError) {
+        error_log('[MiniGamesWorld staging menu button] ' . $menuButtonError->getMessage());
+    }
+
     $maintenanceGuard = new MaintenanceWebhookGuard($telegram, $config);
     if ($maintenanceGuard->handle($update)) {
         unset($GLOBALS['mgw_webhook_success_hook']);

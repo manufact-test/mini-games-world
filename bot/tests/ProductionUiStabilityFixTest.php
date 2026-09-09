@@ -24,15 +24,16 @@ $ticTacToe = $read('app/assets/js/production-tictactoe-turn-fix.js');
 $icons = $read('app/assets/js/production-deterministic-icons.js');
 $css = $read('app/assets/css/production-v95-consistency.css');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
-$mainPosition = strpos($index, 'main.js?v=96');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=102');
+$mainPosition = strpos($index, 'main.js?v=98');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
+        && !str_contains($index, 'main.js?v=96')
         && str_contains($index, 'production-v95-consistency.css?v=95')
-        && str_contains($index, 'data-hotfix-build="v96-mvp14-root-cause-stabilization"'),
-    'The v96 stabilization layer and current consistency stylesheet must load before the app starts.'
+        && str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
+    'The retained v96 stabilization layer and current consistency stylesheet must load before the active v97 app entry.'
 );
 
 $sessionInit = strpos($entry, 'initSessionOwnershipFix();');

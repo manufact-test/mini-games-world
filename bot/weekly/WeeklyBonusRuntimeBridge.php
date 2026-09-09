@@ -87,8 +87,54 @@ final class WeeklyBonusRuntimeBridge
 
         $legacyUserId = trim((string)($data['user']['id'] ?? ''));
         if ($legacyUserId === '') return $data;
-        $data['weekly_match'] = $this->repository()->statusForLegacyUser($legacyUserId);
+
+        try {
+            $data['weekly_match'] = $this->repository()->statusForLegacyUser($legacyUserId);
+        } catch (RuntimeException $error) {
+            if ($error->getMessage() !== 'Weekly bonus DB state is missing or ambiguous.') {
+                throw $error;
+            }
+
+            $fallback = $this->statusForExcludedDevelopmentUser($legacyUserId);
+            if ($fallback === null) {
+                throw $error;
+            }
+            $data['weekly_match'] = $fallback;
+        }
         return $data;
+    }
+
+    private function statusForExcludedDevelopmentUser(string $legacyUserId): ?array
+    {
+        $storage = StorageFactory::create($this->config);
+        if ($storage->driver() !== RuntimeStorageRouter::DRIVER_JSON) {
+            throw new RuntimeException('Weekly bonus development fallback requires JSON rollback storage.');
+        }
+        $snapshot = $storage->readOnly(static fn(array $data): array => $data);
+        if (!is_array($snapshot)) {
+            throw new RuntimeException('Weekly bonus development fallback could not read JSON state.');
+        }
+
+        $user = $snapshot['users'][$legacyUserId] ?? null;
+        if (!is_array($user) || (string)($user['id'] ?? $legacyUserId) !== $legacyUserId) {
+            $user = null;
+            foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $candidate) {
+                if (is_array($candidate) && (string)($candidate['id'] ?? '') === $legacyUserId) {
+                    $user = $candidate;
+                    break;
+                }
+            }
+        }
+        if (!is_array($user) || empty($user['is_dev_user'])) {
+            return null;
+        }
+
+        // The API success hook synchronizes and audits the weekly projection
+        // before response filters run. Development users are intentionally
+        // excluded by that projection. Reusing the already-created repository
+        // above avoids opening a second PDO connection solely to prove the same
+        // exclusion again; any stale/extra DB row has already failed parity.
+        return (new WeeklyMatchEconomyService($this->config))->status($snapshot, $user);
     }
 
     private function repository(): RuntimeWeeklyBonusRepository
