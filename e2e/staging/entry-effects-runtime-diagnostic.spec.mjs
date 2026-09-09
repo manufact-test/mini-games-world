@@ -1,27 +1,39 @@
 import { test, expect } from '@playwright/test';
 
 const ORIGIN = process.env.MGW_STAGING_ORIGIN || 'https://seashell-okapi-889488.hostingersite.com';
-const LIVE_JS_PATH = '/app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js?v=1137&entry_live_img=reference-raster-v6';
-const LIVE_CSS_PATH = '/app/assets/css/production-v106-store-avatar-frame-density.css?v=9&live_entry=reference-art-v3';
+
 const EFFECTS = [
   {
+    id: 'entry-01',
+    modulePath: '/app/assets/js/entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2',
+    scene: '.mgw-entry-v8-legendary-strike',
+    ownerAttr: 'data-entry-v8-legendary-strike',
+    art: '.mgw-entry-v8-arena',
+    artFile: 'entry-03-legendary-strike-arena.webp',
+    artToken: 'asset=entry-v8-ls-1',
+  },
+  {
     id: 'entry-02',
-    file: 'entry-effect-02-portal-knight.webp',
-    path: '/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=reference-raster-v6',
+    modulePath: '/app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=4',
+    scene: '.mgw-entry-v8-royal-ascension',
+    ownerAttr: 'data-entry-v8-royal-ascension',
+    art: '.mgw-entry-v8-ra-guardian',
+    artFile: 'entry-02-royal-ascension-guardian.webp',
+    artToken: 'asset=royal-ascension-guardian-v2',
   },
   {
     id: 'entry-03',
-    file: 'entry-effect-03-knight-strike.webp',
-    path: '/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=reference-raster-v6',
+    modulePath: '/app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=6',
+    scene: '.mgw-entry-v8-lord-entrance',
+    ownerAttr: 'data-entry-v8-lord-entrance',
+    art: '.mgw-entry-v8-le-body',
+    artFile: 'entry-03-lord-entrance-body.webp',
+    artToken: 'asset=lord-entrance-open-face-raster-v5',
   },
 ];
 
-async function bodyText(response) {
-  return (await response.body()).toString('utf8');
-}
-
 for (const effect of EFFECTS) {
-  test(`ENTRY EFFECT DIAGNOSTIC: deployed ${effect.id} reference raster paints pixels`, async ({ browser }, testInfo) => {
+  test(`ENTRY EFFECT DIAGNOSTIC: deployed ${effect.id} mounts accepted V8 owner`, async ({ browser }, testInfo) => {
     const context = await browser.newContext({
       locale: 'ru-RU',
       timezoneId: 'Europe/Vilnius',
@@ -31,115 +43,65 @@ for (const effect of EFFECTS) {
     });
 
     try {
-      const [artResponse, jsResponse, cssResponse] = await Promise.all([
-        context.request.get(`${ORIGIN}${effect.path}`, { timeout: 35_000 }),
-        context.request.get(`${ORIGIN}${LIVE_JS_PATH}`, { timeout: 35_000 }),
-        context.request.get(`${ORIGIN}${LIVE_CSS_PATH}`, { timeout: 35_000 }),
-      ]);
-
-      expect(artResponse.status()).toBe(200);
-      expect(jsResponse.status()).toBe(200);
-      expect(cssResponse.status()).toBe(200);
-
-      const artBody = await artResponse.body();
-      const jsText = await bodyText(jsResponse);
-      const cssText = await bodyText(cssResponse);
-
-      expect(artResponse.headers()['content-type'] || '').toContain('image/webp');
-      expect(artBody.length).toBeGreaterThan(1000);
-      expect(artBody.subarray(0, 4).toString('ascii')).toBe('RIFF');
-      expect(artBody.subarray(8, 12).toString('ascii')).toBe('WEBP');
-      expect(artBody.readUInt32LE(4) + 8).toBe(artBody.length);
-
-      expect(jsText).toContain('store-entry-01-celestial-gate.svg?asset=reference-art-v3');
-      expect(jsText).toContain('entry-effect-02-portal-knight.webp?asset=reference-raster-v6');
-      expect(jsText).toContain('entry-effect-03-knight-strike.webp?asset=reference-raster-v6');
-      expect(jsText).toContain("image.className = 'mgw-entry-effect-live-art'");
-
-      expect(cssText).toContain('background-color:transparent!important;background-image:none!important;');
-      expect(cssText).toContain('.mgw-entry-effect-live-art{');
-      expect(cssText).toContain('display:block!important;');
-      expect(cssText).not.toContain('.mgw-entry-effect-live-art{display:none!important}');
+      const moduleResponse = await context.request.get(`${ORIGIN}${effect.modulePath}`, { timeout: 35_000 });
+      expect(moduleResponse.status()).toBe(200);
+      expect((await moduleResponse.text()).length).toBeGreaterThan(1000);
 
       const page = await context.newPage();
-      // Establish a same-origin document so canvas pixel reads are meaningful and not CORS-tainted.
-      await page.goto(`${ORIGIN}/app/v110.php?v=1127`, { waitUntil: 'domcontentloaded', timeout: 35_000 });
-      await page.setContent(`<!doctype html><html><head>
-        <link rel="stylesheet" href="${ORIGIN}${LIVE_CSS_PATH}">
-      </head><body>
-        <div class="mgw-entry-effect-layer" id="stagingEntryEffectDiagnosticLayer">
-          <button class="mgw-entry-effect-skip" type="button">Пропустить</button>
-          <img class="mgw-entry-effect-live-art" data-entry-effect-variant="${effect.id}" alt="" aria-hidden="true" src="${ORIGIN}${effect.path}" style="position:absolute;left:50%;top:50%;z-index:1;display:block;width:min(144vw,720px);height:min(88vh,620px);max-width:none;object-fit:contain;object-position:center;opacity:1;visibility:visible;pointer-events:none;transform:translate(-50%,-50%) scale(1)">
+      await page.goto(`${ORIGIN}/app/__entry_effect_runtime_diagnostic_origin__.html`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 35_000,
+      });
+      await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#050609">
+        <div class="mgw-entry-effect-layer" id="entryDiagnosticLayer" style="position:fixed;inset:0;display:grid;place-items:center;overflow:hidden">
+          <img class="mgw-entry-effect-live-art" data-entry-effect-variant="${effect.id}" alt="" style="display:block;width:240px;height:240px">
+          <div class="mgw-entry-effect-live-fx" data-entry-effect-variant="${effect.id}"></div>
           <div class="mgw-entry-effect-live-grid">
             <div class="mgw-entry-effect-live-card" data-entry-effect-variant="${effect.id}" data-player-index="0">
-              <div class="mgw-entry-effect-live-emblem"><i></i><b>MG</b><i></i></div>
               <strong>Runtime diagnostic</strong><small>вступает в игру</small>
             </div>
           </div>
         </div>
       </body></html>`, { waitUntil: 'load' });
 
-      const image = page.locator('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
-      await expect(image).toHaveCount(1);
-      await page.waitForFunction(() => {
-        const img = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
-        return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
-      }, null, { timeout: 15_000 });
+      await page.evaluate(async ({ modulePath }) => {
+        await import(modulePath);
+      }, { modulePath: effect.modulePath });
 
-      const diagnostic = await page.evaluate(() => {
-        const img = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-art');
-        const card = document.querySelector('#stagingEntryEffectDiagnosticLayer .mgw-entry-effect-live-card');
-        const emblem = card?.querySelector('.mgw-entry-effect-live-emblem');
-        if (!(img instanceof HTMLImageElement) || !(card instanceof HTMLElement)) return null;
+      const layer = page.locator('#entryDiagnosticLayer');
+      await expect(layer).toHaveAttribute(effect.ownerAttr, '1', { timeout: 20_000 });
+      const scene = page.locator(`#entryDiagnosticLayer ${effect.scene}`);
+      await expect(scene).toHaveCount(1);
 
-        const imageStyle = getComputedStyle(img);
-        const cardStyle = getComputedStyle(card);
-        const rect = img.getBoundingClientRect();
-        let paintedPixelCount = 0;
-        let sampledPixelCount = 0;
-        let paintError = null;
+      const genericArt = page.locator('#entryDiagnosticLayer > .mgw-entry-effect-live-art');
+      await expect(genericArt).toHaveCSS('display', 'none');
 
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext('2d', { willReadFrequently: true });
-          if (!ctx) throw new Error('2d canvas unavailable');
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
-          const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-          for (let y = 0; y < canvas.height; y += 16) {
-            for (let x = 0; x < canvas.width; x += 16) {
-              const i = (y * canvas.width + x) * 4;
-              sampledPixelCount += 1;
-              if (pixels[i + 3] > 8 && (pixels[i] + pixels[i + 1] + pixels[i + 2]) > 12) {
-                paintedPixelCount += 1;
-              }
-            }
-          }
-        } catch (error) {
-          paintError = String(error?.message || error);
-        }
+      const art = page.locator(`#entryDiagnosticLayer ${effect.art}`);
+      await expect(art).toHaveCount(1);
+      await page.waitForFunction(({ selector }) => {
+        const image = document.querySelector(selector);
+        return image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+      }, { selector: `#entryDiagnosticLayer ${effect.art}` }, { timeout: 20_000 });
 
+      const diagnostic = await page.evaluate(({ sceneSelector, artSelector }) => {
+        const scene = document.querySelector(sceneSelector);
+        const art = document.querySelector(artSelector);
+        if (!(scene instanceof HTMLElement) || !(art instanceof HTMLImageElement)) return null;
+        const sceneRect = scene.getBoundingClientRect();
+        const style = getComputedStyle(scene);
         return {
-          src: img.currentSrc || img.src,
-          complete: img.complete,
-          naturalWidth: img.naturalWidth,
-          naturalHeight: img.naturalHeight,
-          rect: { width: rect.width, height: rect.height, x: rect.x, y: rect.y },
-          imageStyle: {
-            display: imageStyle.display,
-            visibility: imageStyle.visibility,
-            opacity: imageStyle.opacity,
-            position: imageStyle.position,
-            zIndex: imageStyle.zIndex,
-          },
-          paintedPixelCount,
-          sampledPixelCount,
-          paintError,
-          cardBackgroundImage: cardStyle.backgroundImage,
-          legacyMgDisplay: emblem instanceof HTMLElement ? getComputedStyle(emblem).display : null,
+          sceneRect: { width: sceneRect.width, height: sceneRect.height },
+          sceneDisplay: style.display,
+          sceneVisibility: style.visibility,
+          src: art.currentSrc || art.src,
+          complete: art.complete,
+          naturalWidth: art.naturalWidth,
+          naturalHeight: art.naturalHeight,
+          genericDisplay: getComputedStyle(document.querySelector('#entryDiagnosticLayer > .mgw-entry-effect-live-art')).display,
         };
+      }, {
+        sceneSelector: `#entryDiagnosticLayer ${effect.scene}`,
+        artSelector: `#entryDiagnosticLayer ${effect.art}`,
       });
 
       console.log(`ENTRY_EFFECT_RUNTIME_DIAGNOSTIC_${effect.id}=` + JSON.stringify(diagnostic));
@@ -153,21 +115,16 @@ for (const effect of EFFECTS) {
       });
 
       expect(diagnostic).not.toBeNull();
-      expect(diagnostic.src).toContain(effect.file);
-      expect(diagnostic.src).toContain('asset=reference-raster-v6');
+      expect(diagnostic.src).toContain(effect.artFile);
+      expect(diagnostic.src).toContain(effect.artToken);
       expect(diagnostic.complete).toBe(true);
-      expect(diagnostic.naturalWidth).toBe(640);
-      expect(diagnostic.naturalHeight).toBe(480);
-      expect(diagnostic.rect.width).toBeGreaterThan(100);
-      expect(diagnostic.rect.height).toBeGreaterThan(100);
-      expect(diagnostic.imageStyle.display).toBe('block');
-      expect(diagnostic.imageStyle.visibility).not.toBe('hidden');
-      expect(Number(diagnostic.imageStyle.opacity || 0)).toBeGreaterThan(0);
-      expect(diagnostic.paintError).toBeNull();
-      expect(diagnostic.sampledPixelCount).toBeGreaterThan(100);
-      expect(diagnostic.paintedPixelCount).toBeGreaterThan(100);
-      expect(diagnostic.cardBackgroundImage).toBe('none');
-      expect(diagnostic.legacyMgDisplay).toBe('none');
+      expect(diagnostic.naturalWidth).toBeGreaterThanOrEqual(320);
+      expect(diagnostic.naturalHeight).toBeGreaterThanOrEqual(320);
+      expect(diagnostic.sceneRect.width).toBeGreaterThan(100);
+      expect(diagnostic.sceneRect.height).toBeGreaterThan(100);
+      expect(diagnostic.sceneDisplay).not.toBe('none');
+      expect(diagnostic.sceneVisibility).not.toBe('hidden');
+      expect(diagnostic.genericDisplay).toBe('none');
     } finally {
       await context.close().catch(() => null);
     }
