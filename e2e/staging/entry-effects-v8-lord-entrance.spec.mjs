@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const MODULE='/app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=5';
+const MODULE='/app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=6';
 
 async function mountFixture(page,variant='entry-03'){
   await page.goto('/app/index.html',{waitUntil:'domcontentloaded'});
@@ -10,7 +10,9 @@ async function mountFixture(page,variant='entry-03'){
 
 async function shot(page,testInfo,name){const p=testInfo.outputPath(name);await page.screenshot({path:p,fullPage:true});await testInfo.attach(name,{path:p,contentType:'image/png'});}
 
-test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, actual sword motion and slash layers',async({page},testInfo)=>{
+async function motionState(page){return page.evaluate(()=>{const sword=document.querySelector('.mgw-entry-v8-le-sword-wrap');const slash=document.querySelector('.mgw-entry-v8-le-slash');const r=sword?.getBoundingClientRect();return {swordOpacity:Number(getComputedStyle(sword).opacity),slashOpacity:Number(getComputedStyle(slash).opacity),swordRect:r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom}:null,vw:innerWidth,vh:innerHeight};});}
+
+test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, visible sword preparation and full-screen slash',async({page},testInfo)=>{
   await mountFixture(page,'entry-03');
   await page.waitForSelector('.mgw-entry-v8-lord-entrance');
   await page.waitForFunction(()=>document.getElementById('mgw-entry-v8-lord-entrance-style')?.sheet,null,{timeout:10000});
@@ -37,8 +39,10 @@ test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, actua
   expect(state.bodyWidth).toBeGreaterThanOrEqual(640);expect(state.bodyHeight).toBeGreaterThanOrEqual(640);
 
   await page.waitForTimeout(700);await shot(page,testInfo,'entry-03-lord-entrance-portal-open.png');
-  await page.waitForTimeout(700);await shot(page,testInfo,'entry-03-lord-entrance-lord-step.png');
-  await page.waitForTimeout(500);await shot(page,testInfo,'entry-03-lord-entrance-slash.png');
+  await page.waitForTimeout(650);
+  const prep=await motionState(page);expect(prep.swordOpacity).toBeGreaterThan(.55);expect(prep.swordRect).not.toBeNull();expect(prep.swordRect.right).toBeGreaterThan(0);expect(prep.swordRect.left).toBeLessThan(prep.vw);expect(prep.swordRect.bottom).toBeGreaterThan(0);expect(prep.swordRect.top).toBeLessThan(prep.vh);await shot(page,testInfo,'entry-03-lord-entrance-lord-step.png');
+  await page.waitForTimeout(550);
+  const strike=await motionState(page);expect(strike.swordOpacity).toBeGreaterThan(.65);expect(strike.slashOpacity).toBeGreaterThan(.65);await shot(page,testInfo,'entry-03-lord-entrance-slash.png');
   await page.waitForTimeout(650);await shot(page,testInfo,'entry-03-lord-entrance-settle.png');
 });
 

@@ -53,13 +53,14 @@ jobs:
           css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css').read_text(encoding='utf-8')
           manifest=Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
           core_pos=wrapper.index("await import('./app-bootstrap-v2-core.js")
-          lord_pos=wrapper.index("void import('./entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=5')")
+          lord_pos=wrapper.index("void import('./entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=6')")
           assert core_pos < lord_pos
           assert 'entry-03' in module and 'entry-01' not in module
           assert 'entry-03-lord-entrance-body.webp' in module
           assert 'entry-03-lord-entrance-armor-detail.webp' not in module
           assert 'entry-03-lord-entrance-open-face.svg' not in module
-          assert 'entry03-lord-entrance-v5' in manifest
+          assert 'entry03-lord-entrance-v6' in manifest
+          assert 'mgw-entry-effects-v8-lord-entrance.css?v=4' in module
           for token in ['mgw-entry-v8-le-portal','mgw-entry-v8-le-lord','mgw-entry-v8-le-body','mgw-entry-v8-le-sword-wrap','mgw-entry-v8-le-slash','mgw-entry-v8-le-shock','mgw-entry-v8-le-cloth','mgw-entry-v8-le-cape']:
               assert token in module or token in css
           assert 'prefers-reduced-motion:reduce' in css

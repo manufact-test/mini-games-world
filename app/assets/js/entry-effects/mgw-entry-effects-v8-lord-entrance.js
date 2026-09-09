@@ -1,5 +1,5 @@
 const STYLE_ID='mgw-entry-v8-lord-entrance-style';
-const STYLE_HREF='/app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css?v=3';
+const STYLE_HREF='/app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css?v=4';
 const ASSET_BASE='/app/assets/media/cosmetics/entry-effects/v8/';
 const ASSETS={
   body:`${ASSET_BASE}entry-03-lord-entrance-body.webp?asset=lord-entrance-open-face-raster-v5`,
