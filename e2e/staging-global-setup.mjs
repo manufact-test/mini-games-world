@@ -3,7 +3,6 @@ const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const TEST_ONLY_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-only-invite-recovery.php`;
 const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
-const ILYA_VH_BALANCE_AUDIT_ROUTE = `${STAGING_ORIGIN}/bot/staging-ilya-vh-balance-audit.php`;
 const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 
 async function requestOidcToken(){
@@ -42,29 +41,6 @@ async function diagnoseInviteMismatch(){
     throw new Error(`Staging invite mismatch diagnosis failed: ${response.status} ${payload?.error || 'unknown_error'}`);
   }
   console.log('[MGW_STAGING_INVITE_MISMATCH_DIAGNOSTIC]', JSON.stringify(payload.report));
-}
-
-async function auditIlyaVhBalance(){
-  const oidcToken = await requestOidcToken();
-  const response = await fetch(ILYA_VH_BALANCE_AUDIT_ROUTE, {
-    method:'POST',
-    headers:{
-      Authorization:`Bearer ${oidcToken}`,
-      Accept:'application/json',
-      'Content-Type':'application/json',
-    },
-    body:JSON.stringify({ username:'ilya_vh' }),
-  });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok
-      || payload?.ok !== true
-      || payload?.read_only !== true
-      || payload?.target !== '@ilya_vh'
-      || payload?.production_changed !== false
-      || payload?.live_payments_used !== false) {
-    throw new Error(`Staging ilya_vh balance audit failed: ${response.status} ${payload?.error || 'unknown_error'}`);
-  }
-  console.log('[MGW_STAGING_ILYA_VH_BALANCE_AUDIT]', JSON.stringify(payload));
 }
 
 async function recoverTestOnlyInviteOrphans(){
@@ -145,7 +121,6 @@ export default async function stagingGlobalSetup(){
   // residual recovery stays available as an explicit OIDC/admin operation and
   // must never become a prerequisite for issuing or resetting A/B sessions.
   await diagnoseInviteMismatch();
-  await auditIlyaVhBalance();
   await recoverTestOnlyInviteOrphans();
   await resetTestPlayers();
 }
