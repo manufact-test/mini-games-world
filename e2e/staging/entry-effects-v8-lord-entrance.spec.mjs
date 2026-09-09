@@ -10,6 +10,15 @@ async function mountFixture(page,variant='entry-03'){
 
 async function shot(page,testInfo,name){const p=testInfo.outputPath(name);await page.screenshot({path:p,fullPage:true});await testInfo.attach(name,{path:p,contentType:'image/png'});}
 
+async function decodeSceneImages(page){
+  await page.evaluate(async()=>{
+    const images=[document.querySelector('.mgw-entry-v8-le-body'),document.querySelector('.mgw-entry-v8-le-sword')];
+    if(!images.every(image=>image instanceof HTMLImageElement))throw new Error('Lord Entrance images are missing');
+    await Promise.all(images.map(image=>image.decode()));
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
+  });
+}
+
 async function seekScene(page,timeMs){
   await page.evaluate(async t=>{
     const scene=document.querySelector('.mgw-entry-v8-lord-entrance');
@@ -17,7 +26,7 @@ async function seekScene(page,timeMs){
     const animations=scene.getAnimations({subtree:true});
     if(!animations.length)throw new Error('Lord Entrance animations are missing');
     for(const animation of animations){animation.pause();animation.currentTime=t;}
-    await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
   },timeMs);
 }
 
@@ -28,6 +37,7 @@ test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, visib
   await page.waitForSelector('.mgw-entry-v8-lord-entrance');
   await page.waitForFunction(()=>document.getElementById('mgw-entry-v8-lord-entrance-style')?.sheet,null,{timeout:10000});
   await page.waitForFunction(()=>{const body=document.querySelector('.mgw-entry-v8-le-body');const sword=document.querySelector('.mgw-entry-v8-le-sword');return [body,sword].every(el=>el instanceof HTMLImageElement&&el.complete&&el.naturalWidth>0);});
+  await decodeSceneImages(page);
   await expect(page.locator('#fixture')).toHaveAttribute('data-entry-v8-lord-entrance','1');
   for(const selector of ['.mgw-entry-v8-le-portal','.mgw-entry-v8-le-lord','.mgw-entry-v8-le-body','.mgw-entry-v8-le-sword-wrap','.mgw-entry-v8-le-slash','.mgw-entry-v8-le-shock','.mgw-entry-v8-le-cloth','.mgw-entry-v8-le-cape']) await expect(page.locator(selector)).toHaveCount(1);
   await expect(page.locator('.mgw-entry-v8-le-face')).toHaveCount(0);
@@ -60,5 +70,5 @@ test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, visib
 test('Lord Entrance does not mount on Entry 01 or Entry 02',async({page})=>{for(const v of ['entry-01','entry-02']){await mountFixture(page,v);await page.waitForTimeout(250);await expect(page.locator('.mgw-entry-v8-lord-entrance')).toHaveCount(0);}});
 
 test('Lord Entrance reduced motion keeps coherent open-face raster lord and portal but removes slash/shake',async({browser})=>{
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});try{const page=await context.newPage();await mountFixture(page,'entry-03');await page.waitForSelector('.mgw-entry-v8-lord-entrance');await page.waitForFunction(()=>{const b=document.querySelector('.mgw-entry-v8-le-body');return b instanceof HTMLImageElement&&b.complete&&b.naturalWidth>0;});const s=await page.evaluate(()=>({lord:getComputedStyle(document.querySelector('.mgw-entry-v8-le-lord')).opacity,portal:getComputedStyle(document.querySelector('.mgw-entry-v8-le-portal')).opacity,stageAnim:getComputedStyle(document.querySelector('.mgw-entry-v8-le-stage')).animationName,slash:getComputedStyle(document.querySelector('.mgw-entry-v8-le-slash')).display,sword:getComputedStyle(document.querySelector('.mgw-entry-v8-le-sword-wrap')).display}));expect(s.lord).toBe('1');expect(Number(s.portal)).toBeGreaterThan(0);expect(s.stageAnim).toBe('none');expect(s.slash).toBe('none');expect(s.sword).toBe('none');}finally{await context.close();}
+  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});try{const page=await context.newPage();await mountFixture(page,'entry-03');await page.waitForSelector('.mgw-entry-v8-lord-entrance');await page.waitForFunction(()=>{const b=document.querySelector('.mgw-entry-v8-le-body');return b instanceof HTMLImageElement&&b.complete&&b.naturalWidth>0;});await page.evaluate(async()=>{const b=document.querySelector('.mgw-entry-v8-le-body');if(b instanceof HTMLImageElement)await b.decode();});const s=await page.evaluate(()=>({lord:getComputedStyle(document.querySelector('.mgw-entry-v8-le-lord')).opacity,portal:getComputedStyle(document.querySelector('.mgw-entry-v8-le-portal')).opacity,stageAnim:getComputedStyle(document.querySelector('.mgw-entry-v8-le-stage')).animationName,slash:getComputedStyle(document.querySelector('.mgw-entry-v8-le-slash')).display,sword:getComputedStyle(document.querySelector('.mgw-entry-v8-le-sword-wrap')).display}));expect(s.lord).toBe('1');expect(Number(s.portal)).toBeGreaterThan(0);expect(s.stageAnim).toBe('none');expect(s.slash).toBe('none');expect(s.sword).toBe('none');}finally{await context.close();}
 });
