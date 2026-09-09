@@ -1,0 +1,45 @@
+@import url('./production-v107-four-ios-grid-owned.css?v=1&mvp19_3=profile-entry-preview-accepted&four=ios-grid-owned-v1');
+
+/* Profile Entry Effects: this is the first live-loaded owner for the accepted
+ * Entry 01/02/03 preview identities. The previous corrective lived under
+ * consistency_css_entry_base, which v110.php does not load. */
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant]{
+  background-repeat:no-repeat!important;
+  background-color:#090a0e!important;
+}
+
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-01"],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-01"]{
+  background-image:
+    url('../media/cosmetics/entry-effects/v8/entry-03-legendary-strike-sword.svg?asset=profile-live-v1'),
+    url('../media/cosmetics/entry-effects/v8/entry-03-legendary-strike-cracks.svg?asset=profile-live-v1'),
+    radial-gradient(ellipse at 52% 66%,rgba(255,130,34,.34),transparent 30%),
+    url('../media/cosmetics/entry-effects/v8/entry-03-legendary-strike-arena.webp?asset=profile-live-v1'),
+    linear-gradient(180deg,#15100d,#08090d)!important;
+  background-size:100% 100%,100% 100%,100% 100%,cover,cover!important;
+  background-position:center,center,center,center,center!important;
+}
+
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-02"],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-02"]{
+  background-image:
+    url('../media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp?asset=profile-live-v1'),
+    radial-gradient(ellipse at 50% 82%,rgba(255,214,103,.28) 0 8%,rgba(214,142,30,.15) 20%,transparent 42%),
+    radial-gradient(circle at 50% 46%,rgba(255,245,205,.34) 0 9%,rgba(233,181,61,.16) 31%,transparent 61%),
+    linear-gradient(180deg,#1b150d,#09090b)!important;
+  background-size:82% 96%,100% 100%,100% 100%,cover!important;
+  background-position:50% 58%,center,center,center,center!important;
+}
+
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-03"],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-03"]{
+  background-image:
+    url('../media/cosmetics/entry-effects/v8/entry-03-lord-entrance-sword.svg?asset=profile-live-v1'),
+    url('../media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.webp?asset=profile-live-v1'),
+    radial-gradient(ellipse 18% 70% at 50% 49%,rgba(255,251,224,.72) 0 5%,rgba(255,205,88,.24) 23%,rgba(135,72,9,.10) 48%,transparent 72%),
+    linear-gradient(100deg,transparent 0 7%,rgba(91,7,22,.78) 15%,rgba(33,2,9,.48) 27%,transparent 36% 64%,rgba(33,2,9,.48) 73%,rgba(91,7,22,.78) 85%,transparent 93%),
+    linear-gradient(180deg,#160c08,#07080b)!important;
+  background-size:46% 112%,78% 96%,100% 100%,100% 100%,cover!important;
+  background-position:68% 47%,50% 60%,center,center,center!important;
+}
