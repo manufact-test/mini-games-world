@@ -8,7 +8,8 @@ on:
       - 'bot/helpers/response.php'
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/js/profile/**'
-      - 'bot/tests/Mvp19_3ProfileGameCosmeticsTest.php'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
       - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
   workflow_dispatch:
 
@@ -19,25 +20,37 @@ jobs:
   profile-game-cosmetics:
     name: Preserve accepted game-cosmetics collection
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 14
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: shivammathur/setup-php@v2
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: pdo_sqlite, mbstring
           coverage: none
-      - name: Run Profile game-cosmetics contract
-        run: php bot/tests/Mvp19_3ProfileGameCosmeticsTest.php
+      - name: Run Profile game-cosmetics contracts
+        run: |
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
       - name: Guard accepted game-cosmetics owners
         if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- bot/tests/Mvp19_3ProfileGameCosmeticsTest.php app/assets/js/profile/mgw-profile-game-cosmetics.js
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/screens/profile-screen-v110.js \
+            app/assets/js/games \
+            bot/catalog/ProductInventoryService.php \
+            bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs \
+            bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           git diff --check
