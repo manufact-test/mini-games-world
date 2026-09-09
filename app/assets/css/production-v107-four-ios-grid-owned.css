@@ -1,0 +1,15 @@
+@import url('./production-v106-store-avatar-frame-density.css?v=11&mvp19_3=store-avatar-frame-flex-parity&profile-bottom-spacing-parity-v3&profile_card_inset=12&purchase=insufficient-explicit-v1&entry_visual=cinematic-assets-v1&store_entry_preview=accepted-runtime-v1&live_entry=premium-art-v7');
+
+/* Four in a Row iPhone/Safari corrective: the grid owns vertical geometry.
+ * The frame grows from the rendered grid instead of asking a 100%-height grid
+ * to fit inside an independently aspect-ratio-sized clipping box. */
+.game-board-screen[data-game-type="four_in_a_row"] .four-board-frame{
+  box-sizing:border-box!important;
+  height:auto!important;
+  aspect-ratio:auto!important;
+}
+.game-board-screen[data-game-type="four_in_a_row"] .four-disc-grid{
+  box-sizing:border-box!important;
+  height:auto!important;
+  aspect-ratio:var(--four-columns)/var(--four-rows)!important;
+}
