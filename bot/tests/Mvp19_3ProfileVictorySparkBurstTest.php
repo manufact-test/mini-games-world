@@ -86,7 +86,9 @@ $storeEndpoint = (string)file_get_contents($root . '/bot/cosmetic-store.php');
 $responseProjection = (string)file_get_contents($root . '/bot/helpers/response.php');
 $selector = (string)file_get_contents($root . '/app/assets/js/profile/mgw-victory-effect-selector.js');
 $ui = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-victory-effects.js');
+$wrapper = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-victory-effects-card-parity.js');
 $css = (string)file_get_contents($root . '/app/assets/css/production-v109-victory-effects-spark-burst.css');
+$cardParityCss = (string)file_get_contents($root . '/app/assets/css/production-v110-victory-effects-card-parity.css');
 $watcher = (string)file_get_contents($root . '/app/assets/js/production-v110-readonly-game-sync.js');
 $gameScreen = (string)file_get_contents($root . '/app/assets/js/screens/game-screen-v102.js');
 $manifest = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
@@ -105,8 +107,11 @@ $assertTrue(str_contains($css, 'grid-template-columns:repeat(3,minmax(0,1fr))') 
 $assertTrue(str_contains($ui, 'mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview') && str_contains($css, 'max-width:260px!important;height:112px!important;margin:0 auto!important'), 'Purchase/Profile sheet preview must be centered and use accepted Entry Effect preview geometry');
 $assertTrue(str_contains($ui, "burstMarkup('burst-main',30") && str_contains($ui, "burstMarkup('burst-left',14") && str_contains($ui, "burstMarkup('burst-right',14") && str_contains($ui, 'glitterMarkup(24)') && str_contains($ui, 'confettiMarkup(18)'), 'Spark Burst visual must contain three coordinated bursts plus glitter and confetti, not a single expanding ring');
 $assertTrue(str_contains($ui, '${victoryStageMarkup()}') && substr_count($ui, 'victoryStageMarkup()') >= 3, 'Store/Profile/sheet and live game must share the same Spark Burst scene owner');
+$assertTrue(str_contains($wrapper, 'initBaseVictoryEffects()') && str_contains($wrapper, 'production-v110-victory-effects-card-parity.css'), 'Victory card parity must wrap the accepted live owner instead of replacing it');
+$assertTrue(str_contains($cardParityCss, '.store-v2-entry-effect-card>.mgw-profile-cosmetic-foot') && str_contains($cardParityCss, 'margin-top:4px!important') && str_contains($cardParityCss, 'min-height:0!important'), 'Entry and Victory Store cards must reuse the accepted compact avatar footer rhythm');
+$assertTrue(str_contains($cardParityCss, '#screen-profile .profile-v2-victory-effect-copy') && str_contains($cardParityCss, 'font-size:10.5px!important') && str_contains($cardParityCss, 'visibility:visible!important'), 'Profile Victory card must show the selected effect name below the preview');
 $assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects") && str_contains($watcher, 'mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'), 'Shared runtime must initialize Victory Effects after app-ready');
 $assertTrue(!str_contains($gameScreen, 'victory_effect_item_id') && !str_contains($gameScreen, 'mgw-victory-effect'), 'Frozen result/game owner must not absorb Victory presentation logic');
-$assertTrue(str_contains($manifest, 'mgw-profile-victory-effects.js?v=2&mvp19_3=spark-burst-visual-parity-v2') && str_contains($manifest, 'victory_effects=spark-burst-v2'), 'Active v110 manifest must cache-publish Spark Burst visual corrective');
+$assertTrue(str_contains($manifest, 'mgw-profile-victory-effects-card-parity.js?v=1&mvp19_3=spark-burst-card-parity-v3') && str_contains($manifest, 'victory_effects=spark-burst-card-parity-v3'), 'Active v110 manifest must cache-publish Spark Burst card parity corrective');
 
 fwrite(STDOUT, "MVP-19.3 Victory Spark Burst passed ({$assertions} assertions).\n");
