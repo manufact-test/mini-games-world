@@ -1,0 +1,84 @@
+name: MVP-19.3 Victory Effects foundation
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/profile/mgw-victory-effect-selector.js'
+      - 'tests/mvp19-3-victory-effect-selector.mjs'
+      - '.github/workflows/mvp19-3-victory-effects-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-3-victory-effects-foundation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  foundation:
+    name: Winner-owned viewer-independent selector
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Validate selector syntax
+        run: node --check app/assets/js/profile/mgw-victory-effect-selector.js
+
+      - name: Run focused Victory Effect contract
+        run: node tests/mvp19-3-victory-effect-selector.mjs
+
+      - name: Guard presentation-only bounded foundation
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "'profile-victory-effect-01'" app/assets/js/profile/mgw-victory-effect-selector.js
+          grep -F "'profile-victory-effect-02'" app/assets/js/profile/mgw-victory-effect-selector.js
+          grep -F "'profile-victory-effect-03'" app/assets/js/profile/mgw-victory-effect-selector.js
+          grep -F "String(game.status || '') !== 'finished'" app/assets/js/profile/mgw-victory-effect-selector.js
+          grep -F 'winner?.victory_effect_item_id' app/assets/js/profile/mgw-victory-effect-selector.js
+          ! grep -Eq 'gameAction\(|openSheet\(|setTimeout\(|setInterval\(|fetch\(|api\.' app/assets/js/profile/mgw-victory-effect-selector.js
+          git diff --check
+
+      - name: Guard frozen runtime and zero activation
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/services \
+            bot/database/migrations \
+            bot/cosmetic-store.php \
+            bot/helpers/response.php \
+            app/assets/js/screens \
+            app/runtime/client/version-manifest.php \
+            cron \
+            config/private.php
+
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              app/assets/js/profile/mgw-victory-effect-selector.js|\
+              tests/mvp19-3-victory-effect-selector.mjs|\
+              .github/workflows/mvp19-3-victory-effects-foundation.yml)
+                ;;
+              *)
+                echo "Unexpected Victory Effects foundation path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
