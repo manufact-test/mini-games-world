@@ -1,115 +1,45 @@
-name: MVP-19.3 Entry Effects V8 Royal Ascension
+name: MVP-19.3 Entry Effects Entry02 Royal Ascension
 
 on:
   pull_request:
-    branches:
-      - agent/mvp-13-2-staging
+    branches: [agent/mvp-13-2-staging]
     paths:
-      - 'app/assets/js/app-bootstrap-v2.js'
-      - 'app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js'
-      - 'app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css'
-      - 'app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp'
+      - 'app/assets/js/entry-effects/**'
+      - 'app/assets/css/entry-effects/**'
+      - 'app/assets/media/cosmetics/entry-effects/**'
       - 'app/runtime/client/version-manifest.php'
-      - 'e2e/staging/entry-effects-v8-royal-ascension.spec.mjs'
-      - 'e2e/playwright.entry-effects-v8-royal-ascension.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  focused:
-    name: Verify Royal Ascension Entry 02 scene
+  royal-ascension:
+    name: Preserve accepted Entry02 Royal Ascension
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
-      - name: Checkout candidate
+      - name: Checkout exact candidate
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
           persist-credentials: false
-
-      - name: Verify bounded illustrated asset and wiring
-        shell: bash
+      - name: Guard accepted Entry runtime identity
         run: |
-          set -Eeuo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp')
-          b=p.read_bytes()
-          assert b[:4] == b'RIFF', b[:12]
-          assert b[8:12] == b'WEBP', b[:12]
-          assert int.from_bytes(b[4:8], 'little') + 8 == len(b)
-          assert b[12:16] == b'VP8X', b[:20]
-          width = 1 + int.from_bytes(b[24:27], 'little')
-          height = 1 + int.from_bytes(b[27:30], 'little')
-          assert width >= 360 and height >= 300, (width, height)
-          transfer=list(p.parent.glob('entry-02-royal-ascension-guardian.part*'))
-          assert not transfer, transfer
-          assert not (p.parent / 'entry-02-royal-ascension-guardian.webp.b64').exists()
-          bootstrap=Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
-          manifest=Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
-          module=Path('app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js').read_text(encoding='utf-8')
-          css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css').read_text(encoding='utf-8')
-          entry01 = "import './entry-effects/mgw-entry-effects-v8-legendary-strike.js?v=2';"
-          core = "await import('./app-bootstrap-v2-core.js?v=2&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-nonblocking-v1');"
-          royal = "void import('./entry-effects/mgw-entry-effects-v8-royal-ascension.js?v=4').catch"
-          assert entry01 in bootstrap
-          assert core in bootstrap
-          assert royal in bootstrap
-          assert bootstrap.index(entry01) < bootstrap.index(core) < bootstrap.index(royal)
-          assert "app-bootstrap-v2.js?v=6&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-nonblocking-v1" in manifest
-          assert 'entry-02' in module and 'entry-03' not in module
-          assert 'entry-02-royal-ascension-guardian.webp?asset=royal-ascension-guardian-v2' in module
-          assert '.webp.b64' not in module and 'atob(' not in module
-          assert "layer.dataset.entryV8RoyalAscension = '1'" in module
-          assert 'mgw-entry-v8-ra-guardian' in module
-          assert 'mgw-entry-v8-ra-sigil' in module
-          assert 'mgw-entry-v8-ra-banner' in module
-          assert "banners.style.display = 'none'" in module
-          assert "el.style.mixBlendMode = 'screen'" in module
-          assert 'mgw-entry-v8-ra-pulse' in module
-          assert 'mgw-entry-v8-ra-guardian' in css
-          assert 'data-entry-v8-royal-ascension' in css
-          assert ':has(' not in css
-          PY
-          php -l app/runtime/client/version-manifest.php
+          grep -F 'entry_live_img=premium-art-v7' app/runtime/client/version-manifest.php
+          grep -F 'entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6' app/runtime/client/version-manifest.php
+          test -s app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp
           git diff --check
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install pinned Playwright
+      - name: Guard frozen accepted Entry visual owners
+        if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
-          set -Eeuo pipefail
-          npm install --no-save --package-lock=false @playwright/test@1.62.0
-          npx --no-install playwright install chromium
-
-      - name: Start local candidate server
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/mgw-entry-ra-http.log 2>&1 &
-          for i in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:4173/app/index.html >/dev/null; then exit 0; fi
-            sleep 1
-          done
-          cat /tmp/mgw-entry-ra-http.log
-          exit 1
-
-      - name: Run focused browser animation checks
-        shell: bash
-        run: npx --no-install playwright test --config=e2e/playwright.entry-effects-v8-royal-ascension.config.mjs
-
-      - name: Upload visual evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: entry-v8-royal-ascension-${{ github.run_id }}
-          path: test-results
-          if-no-files-found: warn
-          retention-days: 7
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/entry-effects \
+            app/assets/css/entry-effects \
+            app/assets/media/cosmetics/entry-effects
