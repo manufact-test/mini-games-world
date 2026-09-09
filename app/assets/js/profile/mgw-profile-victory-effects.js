@@ -71,8 +71,8 @@ function ensureStylesheet(){
   if (document.querySelector('link[data-mgw-victory-effects-css]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwVictoryEffectsCss = 'spark-burst-v1';
-  link.href = new URL('../../css/production-v109-victory-effects-spark-burst.css?v=1&mvp19_3=spark-burst', import.meta.url).href;
+  link.dataset.mgwVictoryEffectsCss = 'spark-burst-v2';
+  link.href = new URL('../../css/production-v109-victory-effects-spark-burst.css?v=2&mvp19_3=spark-burst-visual-parity', import.meta.url).href;
   document.head.append(link);
 }
 
@@ -160,17 +160,63 @@ function itemOfferId(item){ return String(meta(item).offer_id || String(item?.it
 function itemTier(item){ return String(VICTORY_PRESENTATION[item?.item_id]?.tier || 'Эффект победы'); }
 function presentationFor(itemId){ return VICTORY_PRESENTATION[String(itemId || '')] || null; }
 
-function particleMarkup(){
-  return `<span class="mgw-victory-spark-particles">${'<i></i>'.repeat(24)}</span><span class="mgw-victory-spark-confetti">${'<b></b>'.repeat(12)}</span>`;
+function burstMarkup(kind, count, previewDistance, liveDistance, baseDelay){
+  const rays = Array.from({ length:count }, (_, index) => {
+    const angle = Math.round((360 / count) * index + (kind === 'burst-main' ? 0 : 360 / count / 2));
+    const distanceScale = 0.78 + ((index * 7) % 6) * 0.055;
+    const pd = Math.round(previewDistance * distanceScale);
+    const ld = Math.round(liveDistance * distanceScale);
+    const delay = (baseDelay + (index % 5) * 0.014).toFixed(3);
+    return `<i style="--a:${angle}deg;--pd:${pd}px;--ld:${ld}px;--delay:${delay}s"></i>`;
+  }).join('');
+  return `<span class="mgw-victory-burst ${kind}"><i class="mgw-victory-spark-flash"></i><i class="mgw-victory-spark-ring ring-a"></i><i class="mgw-victory-spark-ring ring-b"></i><i class="mgw-victory-spark-ring ring-c"></i><span class="mgw-victory-spark-rays">${rays}</span></span>`;
+}
+
+function confettiMarkup(count){
+  return `<span class="mgw-victory-spark-confetti">${Array.from({ length:count }, (_, index) => {
+    const angle = ((index * 137.5) + 18) * Math.PI / 180;
+    const previewRadius = 34 + (index % 5) * 7;
+    const liveRadiusX = 170 + (index % 5) * 34;
+    const liveRadiusY = 110 + (index % 4) * 29;
+    const px = Math.round(Math.cos(angle) * previewRadius);
+    const py = Math.round(Math.sin(angle) * previewRadius * 0.72);
+    const lx = Math.round(Math.cos(angle) * liveRadiusX);
+    const ly = Math.round(Math.sin(angle) * liveRadiusY);
+    const rotation = ((index * 83) % 420) - 210;
+    const delay = (0.08 + (index % 6) * 0.025).toFixed(3);
+    return `<b style="--px:${px}px;--py:${py}px;--lx:${lx}px;--ly:${ly}px;--r:${rotation}deg;--delay:${delay}s"></b>`;
+  }).join('')}</span>`;
+}
+
+function glitterMarkup(count){
+  return `<span class="mgw-victory-spark-glitter">${Array.from({ length:count }, (_, index) => {
+    const angle = ((index * 151) + 9) * Math.PI / 180;
+    const previewRadius = 24 + (index % 7) * 7;
+    const liveRadius = 120 + (index % 7) * 31;
+    const px = Math.round(Math.cos(angle) * previewRadius);
+    const py = Math.round(Math.sin(angle) * previewRadius);
+    const lx = Math.round(Math.cos(angle) * liveRadius);
+    const ly = Math.round(Math.sin(angle) * liveRadius * 0.8);
+    const delay = (0.16 + (index % 8) * 0.028).toFixed(3);
+    return `<em style="--px:${px}px;--py:${py}px;--lx:${lx}px;--ly:${ly}px;--delay:${delay}s"></em>`;
+  }).join('')}</span>`;
+}
+
+function starMarkup(){
+  const stars = [
+    [22,28,.12],[76,24,.28],[17,67,.36],[82,70,.18],[36,16,.42],[64,82,.32],[49,72,.52],[70,52,.46],
+  ];
+  return `<span class="mgw-victory-spark-stars">${stars.map(([x,y,delay]) => `<i style="--x:${x}%;--y:${y}%;--delay:${delay}s"></i>`).join('')}</span>`;
+}
+
+function victoryStageMarkup(){
+  return `<span class="mgw-victory-spark-scene">${burstMarkup('burst-main',30,58,300,0)}${burstMarkup('burst-left',14,34,150,.18)}${burstMarkup('burst-right',14,34,150,.26)}${confettiMarkup(18)}${glitterMarkup(24)}${starMarkup()}</span>`;
 }
 
 function previewMarkup(itemId, selected = false, extraClass = ''){
   const spec = presentationFor(itemId);
   if (!spec) return '';
-  return `<span class="mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">
-    <span class="mgw-victory-effect-preview-stage"><i class="mgw-victory-spark-flash"></i><i class="mgw-victory-spark-ring ring-a"></i><i class="mgw-victory-spark-ring ring-b"></i>${particleMarkup()}</span>
-    ${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}
-  </span>`;
+  return `<span class="mgw-entry-effect-preview mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup()}${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}</span>`;
 }
 
 function renderStoreSection(catalog){
@@ -183,15 +229,10 @@ function renderStoreSection(catalog){
     || panel.querySelector('[data-profile-reaction-store-section]')
     || panel.querySelector('[data-profile-background-store-section]');
 
-  if (section instanceof HTMLElement && anchor instanceof HTMLElement && section.previousElementSibling !== anchor) {
-    anchor.insertAdjacentElement('afterend', section);
-  }
+  if (section instanceof HTMLElement && anchor instanceof HTMLElement && section.previousElementSibling !== anchor) anchor.insertAdjacentElement('afterend', section);
   if (section instanceof HTMLElement && section.dataset.profileVictoryEffectSignature === signature) return;
 
-  const markup = `<section class="store-v2-victory-effect-section" data-profile-victory-effect-store-section data-profile-victory-effect-signature="${escapeAttr(signature)}">
-    <div class="store-v2-title-row"><h2>Эффекты победы</h2></div>
-    <div class="store-v2-victory-effect-grid">${catalog.map(item => storeCard(item, active)).join('')}</div>
-  </section>`;
+  const markup = `<section class="store-v2-entry-effect-section store-v2-victory-effect-section" data-profile-victory-effect-store-section data-profile-victory-effect-signature="${escapeAttr(signature)}"><div class="store-v2-title-row"><h2>Эффекты победы</h2></div><div class="store-v2-entry-effect-grid store-v2-victory-effect-grid">${catalog.map(item => storeCard(item, active)).join('')}</div></section>`;
 
   if (section instanceof HTMLElement) section.outerHTML = markup;
   else if (anchor instanceof HTMLElement) anchor.insertAdjacentHTML('afterend', markup);
@@ -205,17 +246,7 @@ function storeCard(item, activeId){
   const owned = item.owned === true;
   const active = owned && itemId === activeId;
   const stateName = active ? 'selected' : (owned ? 'owned' : 'available');
-  return `<article class="store-v2-product store-v2-victory-effect-card mgw-profile-cosmetic-card${owned ? ' owned' : ''}${active ? ' equipped' : ''}" data-mgw-profile-cosmetic-state="${stateName}">
-    ${previewMarkup(itemId, active, 'store-v2-victory-effect-preview')}
-    <div class="store-v2-victory-effect-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект победы · ${escapeHtml(itemTier(item))}</small></div>
-    <div class="store-v2-product-foot store-v2-victory-effect-foot mgw-profile-cosmetic-foot">
-      ${owned
-        ? (active
-          ? '<b data-mgw-profile-cosmetic-status>Выбрано</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-victory-effect-unequip type="button">Снять</button>'
-          : `<b data-mgw-profile-cosmetic-status>В коллекции</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-victory-effect-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-        : `<b>${formatNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-victory-effect-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
-    </div>
-  </article>`;
+  return `<article class="store-v2-product store-v2-entry-effect-card store-v2-victory-effect-card mgw-profile-cosmetic-card${owned ? ' owned' : ''}${active ? ' equipped' : ''}" data-mgw-profile-cosmetic-state="${stateName}">${previewMarkup(itemId, active, 'store-v2-victory-effect-preview')}<div class="store-v2-victory-effect-copy"><strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(itemTier(item))}</small></div><div class="store-v2-product-foot store-v2-entry-effect-foot store-v2-victory-effect-foot mgw-profile-cosmetic-foot">${owned ? (active ? '<b data-mgw-profile-cosmetic-status>Выбрано</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-victory-effect-unequip type="button">Снять</button>' : `<b data-mgw-profile-cosmetic-status>В коллекции</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-victory-effect-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`) : `<b>${formatNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-victory-effect-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}</div></article>`;
 }
 
 function bindStoreActions(section){
@@ -235,17 +266,12 @@ function renderProfileCollection(catalog){
   const anchor = collection.querySelector('[data-profile-entry-effect-collection]')
     || collection.querySelector('[data-profile-reaction-collection]')
     || collection.querySelector('[data-profile-background-collection]');
-  if (section instanceof HTMLElement && anchor instanceof HTMLElement && section.previousElementSibling !== anchor) {
-    anchor.insertAdjacentElement('afterend', section);
-  }
+  if (section instanceof HTMLElement && anchor instanceof HTMLElement && section.previousElementSibling !== anchor) anchor.insertAdjacentElement('afterend', section);
 
   const active = currentVictoryEffectId();
   const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
   if (section instanceof HTMLElement && section.dataset.profileVictoryEffectSignature === signature) return;
-  const markup = `<div class="profile-v2-victory-effect-collection" data-profile-victory-effect-collection data-profile-victory-effect-signature="${escapeAttr(signature)}" aria-label="Эффекты победы">
-    <div class="profile-v2-collection-title">Эффекты победы</div>
-    <div class="profile-v2-victory-effect-grid">${owned.map(item => profileCard(item, active)).join('')}</div>
-  </div>`;
+  const markup = `<div class="profile-v2-entry-effect-collection profile-v2-victory-effect-collection" data-profile-victory-effect-collection data-profile-victory-effect-signature="${escapeAttr(signature)}" aria-label="Эффекты победы"><div class="profile-v2-collection-title">Эффекты победы</div><div class="profile-v2-entry-effect-grid profile-v2-victory-effect-grid">${owned.map(item => profileCard(item, active)).join('')}</div></div>`;
 
   if (section instanceof HTMLElement) section.outerHTML = markup;
   else if (anchor instanceof HTMLElement) anchor.insertAdjacentHTML('afterend', markup);
@@ -257,11 +283,7 @@ function renderProfileCollection(catalog){
 function profileCard(item, activeId){
   const itemId = String(item.item_id || '');
   const active = itemId === activeId;
-  return `<button class="profile-v2-victory-effect-card${active ? ' active' : ''}" type="button" data-victory-effect-preview="${escapeAttr(itemId)}" data-mgw-profile-cosmetic-state="${active ? 'selected' : 'owned'}" aria-pressed="${active ? 'true' : 'false'}">
-    ${previewMarkup(itemId, false, 'profile-v2-victory-effect-preview')}
-    <span class="profile-v2-victory-effect-copy"><b>${escapeHtml(itemName(item))}</b><small>${escapeHtml(itemTier(item))}</small></span>
-    ${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}
-  </button>`;
+  return `<button class="profile-v2-entry-effect-card profile-v2-victory-effect-card${active ? ' active' : ''}" type="button" data-victory-effect-preview="${escapeAttr(itemId)}" data-mgw-profile-cosmetic-state="${active ? 'selected' : 'owned'}" aria-pressed="${active ? 'true' : 'false'}">${previewMarkup(itemId, false, 'profile-v2-victory-effect-preview')}<span class="profile-v2-entry-effect-copy profile-v2-victory-effect-copy"><b>${escapeHtml(itemName(item))}</b><small>${escapeHtml(itemTier(item))}</small></span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
 function openPurchase(itemId){
@@ -270,14 +292,7 @@ function openPurchase(itemId){
   const price = itemPrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
-  openSheet(`<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="store-v2-confirm">
-      <div class="mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'profile-v2-victory-effect-preview')}</div>
-      <div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект победы · ${escapeHtml(itemTier(item))}</small></div>
-      <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
-      <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
-      <button class="btn primary full" id="mgwVictoryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
-    </div>`);
+  openSheet(`<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="store-v2-confirm"><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект победы · ${escapeHtml(itemTier(item))}</small></div><div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div><div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div><button class="btn primary full" id="mgwVictoryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button></div>`);
   document.getElementById('mgwVictoryEffectConfirmBuy')?.addEventListener('click', () => void purchase(item));
 }
 
@@ -309,9 +324,7 @@ async function purchase(item){
 
 function applyOptimisticPurchase(itemId){
   const inventory = cloneObject(state.profileInventory) || { catalog:[], owned:[], equipped:{} };
-  if (Array.isArray(inventory.catalog)) {
-    inventory.catalog = inventory.catalog.map(item => String(item?.item_id || '') === itemId ? { ...item, owned:true } : item);
-  }
+  if (Array.isArray(inventory.catalog)) inventory.catalog = inventory.catalog.map(item => String(item?.item_id || '') === itemId ? { ...item, owned:true } : item);
   state.profileInventory = inventory;
   document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ family:'victory_effect', item_id:itemId, reason:'purchase-optimistic' } }));
 }
@@ -320,11 +333,7 @@ function openPreview(itemId){
   const item = victoryEffectCatalog().find(candidate => candidate.item_id === itemId && candidate.owned === true);
   if (!item) return;
   const active = itemId === currentVictoryEffectId();
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'profile-v2-victory-effect-preview')}</div>
-    <div class="profile-v2-entry-effect-preview-meta"><strong>Эффект победы</strong><small>${escapeHtml(itemTier(item))}</small></div>
-    <div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwVictoryEffectEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="profile-v2-entry-effect-preview-meta"><strong>Эффект победы</strong><small>${escapeHtml(itemTier(item))}</small></div><div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div><button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwVictoryEffectEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
   document.getElementById('mgwVictoryEffectEquip')?.addEventListener('click', () => void saveSelection(itemId, active));
 }
 
@@ -357,18 +366,12 @@ function applyOptimisticSelection(itemId, equipped){
   inventory.equipped = { ...(inventory.equipped || {}) };
   if (equipped) inventory.equipped[VICTORY_EFFECT_SLOT] = itemId;
   else delete inventory.equipped[VICTORY_EFFECT_SLOT];
-  if (Array.isArray(inventory.catalog)) {
-    inventory.catalog = inventory.catalog.map(item => String(item?.equip_slot || '') === VICTORY_EFFECT_SLOT
-      ? { ...item, equipped:equipped && String(item.item_id || '') === itemId }
-      : item);
-  }
+  if (Array.isArray(inventory.catalog)) inventory.catalog = inventory.catalog.map(item => String(item?.equip_slot || '') === VICTORY_EFFECT_SLOT ? { ...item, equipped:equipped && String(item.item_id || '') === itemId } : item);
   state.profileInventory = inventory;
   document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ slot:VICTORY_EFFECT_SLOT } }));
 }
 
-function scheduleResultProbe(){
-  queueMicrotask(playVictoryEffectIfReady);
-}
+function scheduleResultProbe(){ queueMicrotask(playVictoryEffectIfReady); }
 
 function playVictoryEffectIfReady(){
   const summary = document.querySelector('#resultSummary[data-result-game-id]');
@@ -397,7 +400,7 @@ function playVictoryEffectIfReady(){
   layer.className = `mgw-victory-effect-layer${reduced ? ' reduced-motion' : ''}`;
   layer.dataset.victoryEffectGameId = gameId;
   layer.dataset.victoryEffectItemId = selection.itemId;
-  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="Пропустить эффект победы">Пропустить</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true"><i class="mgw-victory-spark-flash"></i><i class="mgw-victory-spark-ring ring-a"></i><i class="mgw-victory-spark-ring ring-b"></i>${particleMarkup()}</div>`;
+  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="Пропустить эффект победы">Пропустить</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup()}</div>`;
   document.body.append(layer);
 
   layer.querySelector('.mgw-victory-effect-skip')?.addEventListener('click', removeLiveVictoryEffect, { once:true });
