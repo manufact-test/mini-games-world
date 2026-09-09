@@ -124,6 +124,14 @@ $assertTrue(str_contains($cinematicCss, 'entry-effect-02-portal-knight.webp') &&
 $assertTrue(str_contains($cinematicCss, 'entry-effect-03-knight-strike.webp') && str_contains($cinematicCss, 'mgwEntryLegendaryKnightSlash') && str_contains($cinematicCss, 'mgwEntryLegendarySlashArc') && str_contains($cinematicCss, 'mgwEntryLegendaryShockwave'), 'Legendary Entry Effect must use the dedicated cinematic strike asset with synchronized slash and shockwave motion');
 $assertTrue(str_contains($cinematicCss, '@media(prefers-reduced-motion:reduce)') && is_file($root . '/app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp') && is_file($root . '/app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'), 'Cinematic Entry Effects must preserve reduced-motion support and ship both dedicated media assets');
 $assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileEntryEffects") && str_contains($watcher, "mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects"), 'Shared runtime must initialize Entry Effects after app-ready');
-$assertTrue(str_contains($manifest, 'mgw-profile-entry-effects.js?v=5&mvp19_3=launch-overlay-gated') && str_contains($manifest, 'entry_effect_handoff=1') && str_contains($manifest, 'profile-bottom-spacing-parity-v3') && str_contains($manifest, 'profile_card_inset=12') && str_contains($manifest, 'entry_visual=cinematic-assets-v1') && str_contains($manifest, 'purchase=insufficient-explicit-v1') && str_contains($manifest, 'production-v103-entry-effects-cinematic-assets.css'), 'Active v110 manifest must cache-publish launch-gated Entry Effects, canonical Profile spacing, cinematic assets and explicit insufficient-funds UX');
+$assertTrue(
+    str_contains($manifest, 'mgw-profile-entry-effects.js?v=6&mvp19_3=player-arbitration')
+    && str_contains($manifest, 'entry_effect_handoff=1')
+    && str_contains($manifest, 'quiet-cosmetic-equip-all')
+    && str_contains($manifest, 'entry_effects=1')
+    && str_contains($manifest, 'entry_live_img=premium-art-v7')
+    && str_contains($manifest, 'entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6'),
+    'Active v110 manifest must preserve the accepted V8 Entry Effects player-arbitration runtime.'
+);
 
 fwrite(STDOUT, "MVP-19.3 Profile Entry Effects passed ({$assertions} assertions).\n");
