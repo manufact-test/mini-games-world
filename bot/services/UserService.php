@@ -16,6 +16,9 @@ final class UserService
     {
         $id = (string)$tgUser['id'];
         $now = now_iso();
+        $runtimeBalanceInitialized = isset($db['users'][$id])
+            && is_array($db['users'][$id])
+            && array_key_exists(UnifiedBalanceRuntimeState::FIELD, $db['users'][$id]);
         $createdRuntimeUser = !isset($db['users'][$id]);
         if ($createdRuntimeUser) {
             $isDevUser = !empty($tgUser['is_dev_user']);
@@ -80,7 +83,7 @@ final class UserService
         $this->syncCanonicalGameIdentity($db, $db['users'][$id]);
 
         UnifiedBalanceRuntimeState::ensureUser($db['users'][$id]);
-        if ($createdRuntimeUser) {
+        if (!$runtimeBalanceInitialized) {
             $this->rehydratePostCutoverBalance($db['users'][$id]);
         }
         return $db['users'][$id];
