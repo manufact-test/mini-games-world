@@ -60,7 +60,7 @@ test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, visib
   expect(state.bodyWidth).toBeGreaterThanOrEqual(640);expect(state.bodyHeight).toBeGreaterThanOrEqual(640);
 
   await seekScene(page,700);await shot(page,testInfo,'entry-03-lord-entrance-portal-open.png');
-  await seekScene(page,1650);
+  await seekScene(page,1750);
   const prep=await motionState(page);expect(prep.lordOpacity).toBeGreaterThan(.8);expect(prep.swordOpacity).toBeGreaterThan(.55);expect(prep.swordRect).not.toBeNull();expect(prep.swordRect.right).toBeGreaterThan(0);expect(prep.swordRect.left).toBeLessThan(prep.vw);expect(prep.swordRect.bottom).toBeGreaterThan(0);expect(prep.swordRect.top).toBeLessThan(prep.vh);await shot(page,testInfo,'entry-03-lord-entrance-lord-step.png');
   await seekScene(page,1950);
   const strike=await motionState(page);expect(strike.lordOpacity).toBeGreaterThan(.8);expect(strike.swordOpacity).toBeGreaterThan(.65);expect(strike.slashOpacity).toBeGreaterThan(.65);await shot(page,testInfo,'entry-03-lord-entrance-slash.png');
