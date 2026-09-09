@@ -1,6 +1,10 @@
 @import url('./production-v109-victory-effects-spark-burst.css?v=2&mvp19_3=spark-burst-visual-parity');
 
-/* Manual review corrective: reuse the compact avatar-card footer rhythm for Entry/Victory effects. */
+/* Manual review corrective: reuse the compact avatar-card rhythm for Entry/Victory effects. */
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-card,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-card{
+  min-height:0!important;
+}
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-card>.mgw-profile-cosmetic-foot,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-card>.mgw-profile-cosmetic-foot{
   min-height:0!important;
