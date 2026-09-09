@@ -1,0 +1,61 @@
+@import url('./production-v106-store-avatar-frame-density.css?v=11&mvp19_3=store-avatar-frame-flex-parity&profile-bottom-spacing-parity-v3&profile_card_inset=12&purchase=insufficient-explicit-v1&entry_visual=cinematic-assets-v1&cinematic=production-v103-entry-effects-cinematic-assets.css&previous=production-v104-entry-effects-public-assets.css&public_base=entry-effects-public-assets-v1&base=production-v105-store-entry-effects-polish.css&store_stage_a=avatar-frame-gap-flex-v1&store_entry_preview=accepted-runtime-v1&live_entry=premium-art-v7&entry_motion=premium-cinematic-v1&legacy_live_entry=reference-art-v3&entry_modal=viewport-safe-v1');
+
+/* MVP-19.3 final Entry Effect preview owner.
+ * app/v110.php loads consistency_css, so Store, Profile and sheet previews are
+ * aligned here in the live stylesheet chain. Geometry and actions are unchanged. */
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant],
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant]{
+  background-repeat:no-repeat!important;
+  background-color:#090a0e!important;
+}
+
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant]::before,
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant]::after,
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant] .mgw-entry-effect-preview-core,
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant]::before,
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant]::after,
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant] .mgw-entry-effect-preview-core,
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant]::before,
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant]::after,
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant] .mgw-entry-effect-preview-core{
+  display:none!important;
+}
+
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant="entry-01"],
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-01"],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-01"]{
+  background-image:
+    url('../media/cosmetics/entry-effects/v8/entry-03-legendary-strike-sword.svg?asset=preview-live-owner-v1'),
+    url('../media/cosmetics/entry-effects/v8/entry-03-legendary-strike-cracks.svg?asset=preview-live-owner-v1'),
+    radial-gradient(ellipse at 52% 66%,rgba(255,130,34,.34),transparent 30%),
+    url('../media/cosmetics/entry-effects/v8/entry-03-legendary-strike-arena.webp?asset=preview-live-owner-v1'),
+    linear-gradient(180deg,#15100d,#08090d)!important;
+  background-size:100% 100%,100% 100%,100% 100%,cover,cover!important;
+  background-position:center,center,center,center,center!important;
+}
+
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant="entry-02"],
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-02"],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-02"]{
+  background-image:
+    url('../media/cosmetics/entry-effects/v8/entry-02-royal-ascension-guardian.webp?asset=preview-live-owner-v1'),
+    radial-gradient(ellipse at 50% 82%,rgba(255,214,103,.28) 0 8%,rgba(214,142,30,.15) 20%,transparent 42%),
+    radial-gradient(circle at 50% 46%,rgba(255,245,205,.34) 0 9%,rgba(233,181,61,.16) 31%,transparent 61%),
+    linear-gradient(180deg,#1b150d,#09090b)!important;
+  background-size:82% 96%,100% 100%,100% 100%,cover!important;
+  background-position:50% 58%,center,center,center!important;
+}
+
+.store-v2-content .store-v2-entry-effect-preview[data-entry-effect-variant="entry-03"],
+#screen-profile .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-03"],
+#sheet .profile-v2-entry-effect-preview[data-entry-effect-variant="entry-03"]{
+  background-image:
+    url('../media/cosmetics/entry-effects/v8/entry-03-lord-entrance-sword.svg?asset=preview-live-owner-v1'),
+    url('../media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.webp?asset=preview-live-owner-v1'),
+    radial-gradient(ellipse 18% 70% at 50% 49%,rgba(255,251,224,.72) 0 5%,rgba(255,205,88,.24) 23%,rgba(135,72,9,.10) 48%,transparent 72%),
+    linear-gradient(100deg,transparent 0 7%,rgba(91,7,22,.78) 15%,rgba(33,2,9,.48) 27%,transparent 36% 64%,rgba(33,2,9,.48) 73%,rgba(91,7,22,.78) 85%,transparent 93%),
+    linear-gradient(180deg,#160c08,#07080b)!important;
+  background-size:46% 112%,78% 96%,100% 100%,100% 100%,cover!important;
+  background-position:68% 47%,50% 60%,center,center,center!important;
+}
