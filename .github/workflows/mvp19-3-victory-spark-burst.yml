@@ -1,0 +1,141 @@
+name: MVP-19.3 Victory Spark Burst
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php'
+      - 'bot/cosmetic-store.php'
+      - 'bot/helpers/response.php'
+      - 'app/assets/js/profile/mgw-victory-effect-selector.js'
+      - 'app/assets/js/profile/mgw-profile-victory-effects.js'
+      - 'app/assets/css/production-v109-victory-effects-spark-burst.css'
+      - 'app/assets/js/production-v110-readonly-game-sync.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php'
+      - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
+      - '.github/workflows/mvp19-3-profile-entry-effects.yml'
+      - '.github/workflows/mvp19-3-victory-spark-burst.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-3-victory-spark-burst-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  spark-burst:
+    name: Store Profile winner presentation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          php -l bot/cosmetic-store.php
+          php -l bot/helpers/response.php
+          php -l bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php
+          node --check app/assets/js/profile/mgw-victory-effect-selector.js
+          node --check app/assets/js/profile/mgw-profile-victory-effects.js
+          node --check app/assets/js/production-v110-readonly-game-sync.js
+          php -l app/runtime/client/version-manifest.php
+
+      - name: Run Spark Burst vertical-slice contract
+        run: php bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php
+
+      - name: Preserve winner selector contract
+        run: node tests/mvp19-3-victory-effect-selector.mjs
+
+      - name: Preserve accepted inventory and Entry Effects
+        run: |
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+          node tests/mvp19-3-entry-effect-player-arbitration.mjs
+
+      - name: Guard approved Spark Burst product contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "private const SLOT = 'profile_victory_effect'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          grep -F "private const ITEM_ID = 'profile-victory-effect-01'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          grep -F 'private const PRICE = 5000' bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          grep -F 'private const DURATION_MS = 2200' bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          grep -F "'display_name' => 'Искровой залп'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          grep -F "'variant' => 'spark-burst'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          grep -F 'function mgw_store_profile_victory_effect' bot/cosmetic-store.php
+          grep -F 'victory_effect_item_id' bot/helpers/response.php
+          grep -F 'selectWinnerVictoryEffect(game)' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F '#resultSummary[data-result-game-id]' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F '#sheet [aria-busy="true"],#sheet button:disabled' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F 'mgw-victory-effect-skip' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F 'playedGames' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F 'pointer-events:none' app/assets/css/production-v109-victory-effects-spark-burst.css
+          grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v109-victory-effects-spark-burst.css
+          grep -F 'mgwVictorySparkRay' app/assets/css/production-v109-victory-effects-spark-burst.css
+          ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects.js
+          ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F "initMgwProfileVictoryEffects } from './profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'" app/assets/js/production-v110-readonly-game-sync.js
+          grep -F "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects" app/assets/js/production-v110-readonly-game-sync.js
+          grep -F 'mgw-profile-victory-effects.js?v=1&mvp19_3=spark-burst-v1' app/runtime/client/version-manifest.php
+          grep -F 'victory_effects=spark-burst-v1' app/runtime/client/version-manifest.php
+          git diff --check
+
+      - name: Guard frozen engines and bounded Victory slice
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/services/GameInviteService.php \
+            app/assets/js/screens/game-screen-v102.js \
+            app/assets/js/games \
+            cron \
+            config/private.php
+
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php|\
+              bot/cosmetic-store.php|\
+              bot/helpers/response.php|\
+              app/assets/js/profile/mgw-profile-victory-effects.js|\
+              app/assets/css/production-v109-victory-effects-spark-burst.css|\
+              app/assets/js/production-v110-readonly-game-sync.js|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php|\
+              bot/tests/Mvp19_3ProfileEntryEffectsTest.php|\
+              .github/workflows/mvp19-3-profile-entry-effects.yml|\
+              .github/workflows/mvp19-3-victory-spark-burst.yml)
+                ;;
+              *)
+                echo "Unexpected path in Spark Burst slice: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
