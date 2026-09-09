@@ -10,6 +10,17 @@ async function mountFixture(page,variant='entry-03'){
 
 async function shot(page,testInfo,name){const p=testInfo.outputPath(name);await page.screenshot({path:p,fullPage:true});await testInfo.attach(name,{path:p,contentType:'image/png'});}
 
+async function seekScene(page,timeMs){
+  await page.evaluate(async t=>{
+    const scene=document.querySelector('.mgw-entry-v8-lord-entrance');
+    if(!(scene instanceof HTMLElement))throw new Error('Lord Entrance scene is missing');
+    const animations=scene.getAnimations({subtree:true});
+    if(!animations.length)throw new Error('Lord Entrance animations are missing');
+    for(const animation of animations){animation.pause();animation.currentTime=t;}
+    await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+  },timeMs);
+}
+
 async function motionState(page){return page.evaluate(()=>{const sword=document.querySelector('.mgw-entry-v8-le-sword-wrap');const slash=document.querySelector('.mgw-entry-v8-le-slash');const r=sword?.getBoundingClientRect();return {swordOpacity:Number(getComputedStyle(sword).opacity),slashOpacity:Number(getComputedStyle(slash).opacity),swordRect:r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom}:null,vw:innerWidth,vh:innerHeight};});}
 
 test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, visible sword preparation and full-screen slash',async({page},testInfo)=>{
@@ -38,12 +49,12 @@ test('Entry 03 Lord Entrance mounts premium portal, open-face raster lord, visib
   expect(state.bodySrc).toContain('entry-03-lord-entrance-body.webp');
   expect(state.bodyWidth).toBeGreaterThanOrEqual(640);expect(state.bodyHeight).toBeGreaterThanOrEqual(640);
 
-  await page.waitForTimeout(700);await shot(page,testInfo,'entry-03-lord-entrance-portal-open.png');
-  await page.waitForTimeout(650);
+  await seekScene(page,700);await shot(page,testInfo,'entry-03-lord-entrance-portal-open.png');
+  await seekScene(page,1400);
   const prep=await motionState(page);expect(prep.swordOpacity).toBeGreaterThan(.55);expect(prep.swordRect).not.toBeNull();expect(prep.swordRect.right).toBeGreaterThan(0);expect(prep.swordRect.left).toBeLessThan(prep.vw);expect(prep.swordRect.bottom).toBeGreaterThan(0);expect(prep.swordRect.top).toBeLessThan(prep.vh);await shot(page,testInfo,'entry-03-lord-entrance-lord-step.png');
-  await page.waitForTimeout(550);
+  await seekScene(page,1950);
   const strike=await motionState(page);expect(strike.swordOpacity).toBeGreaterThan(.65);expect(strike.slashOpacity).toBeGreaterThan(.65);await shot(page,testInfo,'entry-03-lord-entrance-slash.png');
-  await page.waitForTimeout(650);await shot(page,testInfo,'entry-03-lord-entrance-settle.png');
+  await seekScene(page,2650);await shot(page,testInfo,'entry-03-lord-entrance-settle.png');
 });
 
 test('Lord Entrance does not mount on Entry 01 or Entry 02',async({page})=>{for(const v of ['entry-01','entry-02']){await mountFixture(page,v);await page.waitForTimeout(250);await expect(page.locator('.mgw-entry-v8-lord-entrance')).toHaveCount(0);}});
