@@ -19,16 +19,18 @@ $index = $read('app/index.html');
 $entry = $read('app/assets/js/production-regression-fix-entry.js');
 $avatar = $read('app/assets/js/production-standard-avatar.js');
 $share = $read('app/assets/js/production-prepared-share-fix.js');
+$invites = $read('app/assets/js/games/game-invites.js');
 $game = $read('app/assets/js/production-tictactoe-turn-fix.js');
 
-$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=96');
-$mainPosition = strpos($index, 'main.js?v=96');
+$entryPosition = strpos($index, 'production-regression-fix-entry.js?v=102');
+$mainPosition = strpos($index, 'main.js?v=98');
 $assert(
     $entryPosition !== false
         && $mainPosition !== false
         && $entryPosition < $mainPosition
-        && str_contains($index, 'data-hotfix-build="v96-mvp14-root-cause-stabilization"'),
-    'The current v96 regression layer must load before the application entrypoint.'
+        && !str_contains($index, 'main.js?v=96')
+        && str_contains($index, 'data-hotfix-build="v98-mvp14-notification-canonical-owner"'),
+    'The retained v96 regression layer must load before the active v97 application entrypoint.'
 );
 
 $assert(
@@ -38,7 +40,6 @@ $assert(
         && str_contains($entry, 'scheduleCrossGameCoordinatorAfterMain();')
         && str_contains($entry, 'initDeterministicGameIcons();')
         && str_contains($entry, 'initStandardAvatarPolicy();')
-        && str_contains($entry, 'initPreparedShareFix();')
         && str_contains($entry, 'initTicTacToeTurnFixEarly();')
         && str_contains($entry, 'scheduleTicTacToeTurnFixAfter();'),
     'The current entrypoint must retain session, stability, game, icon, avatar, share and turn ownership repairs.'
@@ -61,6 +62,17 @@ $assert(
         && str_contains($share, "sent === false ? 'Отправка отменена.'")
         && str_contains($share, "inviteRequest('confirm_shared', { token })"),
     'Prepared-message send/cancel semantics must remain intact.'
+);
+
+$assert(
+    !str_contains($entry, 'initPreparedShareFix();')
+        && !str_contains($entry, 'production-prepared-share-fix.js')
+        && str_contains($invites, 'async function createLinkDraft(context, button)')
+        && str_contains($invites, 'showPreparedLink(draftInvite, context);')
+        && str_contains($invites, 'data-fallback-share')
+        && str_contains($invites, 'data-copy-invite-link')
+        && str_contains($invites, 'data-discard-draft'),
+    'The active application must use one canonical Share owner with prepared-message and link fallback paths.'
 );
 
 $assert(

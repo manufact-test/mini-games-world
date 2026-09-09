@@ -1,9 +1,11 @@
 window.__MGW_BUILD__ = 'v96-mvp14-root-cause-stabilization';
-import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness.js?v=92';
+window.__MGW_HOTFIX_BUILD__ = 'v115-mvp14-d1-feedback-integration';
+import { initFirstInteractionReadinessEarly, warmFirstInteractionData } from './first-interaction-readiness-v103.js?v=103';
 import { initRequestGuard } from './api/request-guard.js?v=88';
 import { initResidualUiGameRaceFixEarly, initResidualUiGameRaceFixAfter } from './residual-ui-game-race-fix.js?v=91';
-import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator.js?v=90';
+import { initInteractionLatencyCoordinator } from './interaction-latency-coordinator-v101.js?v=101';
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
+import { initV115Presence } from './presence-v115.js?v=115';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
 import { api } from './api/client.js?v=47';
 import { state } from './state.js?v=27';
@@ -20,14 +22,16 @@ import { renderRoomCard, initHomeScreen, setRoom, renderStats } from './screens/
 import { initStoreScreen } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen.js?v=85';
+import { initNotificationsScreen } from './screens/notifications-screen-v99.js?v=99';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=74';
 import { initSearchScreen } from './screens/search-screen.js?v=74';
 import { initGameScreen, startGamePolling } from './screens/game-screen.js?v=74';
 import { initProfileScreen } from './screens/profile-screen.js?v=92';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=80';
-import { initGameInvites, openIncomingInviteIfPresent } from './games/game-invites.js?v=85';
+import { initInviteTerminalActions } from './games/invite-terminal-actions-v115.js?v=115';
+import { initGameInvites } from './games/game-invites.js?v=85';
+import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v115.js?v=115';
 import { initGameFinishStability } from './games/game-finish-stability.js?v=80';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { initTicTacToeEntry } from './games/tictactoe/entry.js?v=74';
@@ -43,20 +47,24 @@ import { isSessionLocked, sessionMessage } from './session.js?v=27';
 
 let statsRefreshing = false;
 
+/* The canonical notifications screen remains the only bell/network renderer. */
+initNotificationsScreen();
 initFirstInteractionReadinessEarly();
 initRequestGuard();
 initResidualUiGameRaceFixEarly();
 initInteractionLatencyCoordinator();
 initResidualUiGameRaceFixAfter();
 initTelegramApp();
+/* Presence starts before bootstrap for both ordinary and invitation launches. */
+initV115Presence();
 initRuntimeStatus();
 initTypography();
 initSheet();
 initUserCopy();
 initGameCardCopy();
-/* Notification baseline must exist before the invitation synchronizer starts. */
-initNotificationsScreen();
-/* One coordinator owns links, direct invitations, notification actions and rematches. */
+/* Decline/cancel owns the earliest capture boundary and succeeds silently. */
+initInviteTerminalActions();
+/* The canonical coordinator owns direct invitations, accept/start and Share. */
 initGameInvites();
 initGameFinishStability();
 initDominoChainLayout();
@@ -85,7 +93,7 @@ async function boot(){
     setRoom(APP_CONFIG.defaultRoom);
     const result = await api.bootstrap();
     state.user = result.user;
-    state.stats = result.stats;
+    state.stats = mergePresenceOnline(result.stats);
     state.session = result.session || state.session;
     renderUser(state.user);
     renderBalances(state.user);
@@ -94,8 +102,6 @@ async function boot(){
     renderRoomCard();
     syncWeeklyMatchButton(result.weekly_match || null);
 
-    /* Profile, history, notifications and opponents improve the first click, but
-     * none of them may invalidate an otherwise authenticated application boot. */
     const firstInteraction = await warmFirstInteractionData().catch(() => ({
       profileReady:false,
       historyReady:false,
@@ -113,7 +119,7 @@ async function boot(){
       showScreen('game');
       startGamePolling(result.active_game.id);
     } else {
-      await openIncomingInviteIfPresent();
+      await openIncomingInviteFromTelegram();
     }
 
     startStatsPolling();
@@ -135,7 +141,7 @@ async function refreshStatsIfVisible(){
   statsRefreshing = true;
   try {
     const result = await api.stats();
-    state.stats = result.stats;
+    state.stats = mergePresenceOnline(result.stats);
     state.session = result.session || state.session;
     renderStats(state.stats);
   } catch (error) {
@@ -143,6 +149,13 @@ async function refreshStatsIfVisible(){
   } finally {
     statsRefreshing = false;
   }
+}
+
+function mergePresenceOnline(stats){
+  const next = stats && typeof stats === 'object' ? { ...stats } : {};
+  const ownedOnline = Number(window.__MGW_V115_PRESENCE_ONLINE__);
+  if (Number.isFinite(ownedOnline)) next.online_players = ownedOnline;
+  return next;
 }
 
 function canRefreshHomeStats(){
