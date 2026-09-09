@@ -2,8 +2,7 @@ const STYLE_ID='mgw-entry-v8-lord-entrance-style';
 const STYLE_HREF='/app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css?v=3';
 const ASSET_BASE='/app/assets/media/cosmetics/entry-effects/v8/';
 const ASSETS={
-  body:`${ASSET_BASE}entry-03-lord-entrance-armor-detail.webp?asset=lord-entrance-armor-v4`,
-  face:`${ASSET_BASE}entry-03-lord-entrance-open-face.svg?asset=lord-entrance-face-v3`,
+  body:`${ASSET_BASE}entry-03-lord-entrance-body.webp?asset=lord-entrance-open-face-raster-v5`,
   sword:`${ASSET_BASE}entry-03-lord-entrance-sword.svg?asset=lord-entrance-v3`,
 };
 function ensureStyle(){
@@ -27,7 +26,6 @@ function mount(layer){
   const cloth=document.createElement('div');cloth.className='mgw-entry-v8-le-cloth';cloth.innerHTML='<i class="left"></i><i class="right"></i>';stage.append(cloth);
   const lord=document.createElement('div');lord.className='mgw-entry-v8-le-lord';
   lord.append(image('mgw-entry-v8-le-body',ASSETS.body));
-  lord.append(image('mgw-entry-v8-le-face',ASSETS.face));
   const cape=document.createElement('div');cape.className='mgw-entry-v8-le-cape';cape.innerHTML='<i class="left"></i><i class="right"></i>';lord.prepend(cape);
   stage.append(lord);
   const sword=document.createElement('div');sword.className='mgw-entry-v8-le-sword-wrap';sword.append(image('mgw-entry-v8-le-sword',ASSETS.sword));stage.append(sword);

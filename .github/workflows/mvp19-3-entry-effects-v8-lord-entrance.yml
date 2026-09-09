@@ -8,9 +8,9 @@ on:
       - 'app/assets/js/app-bootstrap-v2.js'
       - 'app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js'
       - 'app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css'
-      - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-armor-detail.webp'
-      - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-open-face.svg'
+      - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.webp'
       - 'app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-sword.svg'
+      - 'app/runtime/client/version-manifest.php'
       - 'e2e/staging/entry-effects-v8-lord-entrance.spec.mjs'
       - 'e2e/playwright.entry-effects-v8-lord-entrance.config.mjs'
       - '.github/workflows/mvp19-3-entry-effects-v8-lord-entrance.yml'
@@ -39,26 +39,28 @@ jobs:
           from pathlib import Path
           from xml.etree import ElementTree as ET
           sword=Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-sword.svg')
-          face=Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-open-face.svg')
-          for asset in (sword, face):
-              text=asset.read_text(encoding='utf-8')
-              root=ET.fromstring(text)
-              assert root.tag.endswith('svg')
-              assert '<text' not in text.lower()
-          armor=Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-armor-detail.webp')
-          raw=armor.read_bytes()
-          assert raw[:4] == b'RIFF' and raw[8:12] == b'WEBP' and len(raw) > 25000
+          sword_text=sword.read_text(encoding='utf-8')
+          sword_root=ET.fromstring(sword_text)
+          assert sword_root.tag.endswith('svg')
+          assert '<text' not in sword_text.lower()
+          body=Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.webp')
+          raw=body.read_bytes()
+          assert raw[:4] == b'RIFF' and raw[8:12] == b'WEBP' and len(raw) > 50000
           assert int.from_bytes(raw[4:8],'little') + 8 == len(raw)
+          assert not Path('app/assets/media/cosmetics/entry-effects/v8/entry-03-lord-entrance-body.svg').exists()
           wrapper=Path('app/assets/js/app-bootstrap-v2.js').read_text(encoding='utf-8')
           module=Path('app/assets/js/entry-effects/mgw-entry-effects-v8-lord-entrance.js').read_text(encoding='utf-8')
           css=Path('app/assets/css/entry-effects/mgw-entry-effects-v8-lord-entrance.css').read_text(encoding='utf-8')
+          manifest=Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
           core_pos=wrapper.index("await import('./app-bootstrap-v2-core.js")
-          lord_pos=wrapper.index("void import('./entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=4')")
+          lord_pos=wrapper.index("void import('./entry-effects/mgw-entry-effects-v8-lord-entrance.js?v=5')")
           assert core_pos < lord_pos
           assert 'entry-03' in module and 'entry-01' not in module
-          assert 'entry-03-lord-entrance-armor-detail.webp' in module
-          assert 'entry-03-lord-entrance-open-face.svg' in module
-          for token in ['mgw-entry-v8-le-portal','mgw-entry-v8-le-lord','mgw-entry-v8-le-face','mgw-entry-v8-le-sword-wrap','mgw-entry-v8-le-slash','mgw-entry-v8-le-shock','mgw-entry-v8-le-cloth','mgw-entry-v8-le-cape']:
+          assert 'entry-03-lord-entrance-body.webp' in module
+          assert 'entry-03-lord-entrance-armor-detail.webp' not in module
+          assert 'entry-03-lord-entrance-open-face.svg' not in module
+          assert 'entry03-lord-entrance-v5' in manifest
+          for token in ['mgw-entry-v8-le-portal','mgw-entry-v8-le-lord','mgw-entry-v8-le-body','mgw-entry-v8-le-sword-wrap','mgw-entry-v8-le-slash','mgw-entry-v8-le-shock','mgw-entry-v8-le-cloth','mgw-entry-v8-le-cape']:
               assert token in module or token in css
           assert 'prefers-reduced-motion:reduce' in css
           assert ':has(' not in css
