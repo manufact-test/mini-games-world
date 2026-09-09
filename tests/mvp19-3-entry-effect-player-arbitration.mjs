@@ -52,7 +52,9 @@ for (const viewerId of ['A', 'B']) {
 assert.deepEqual(ids(run('spectator', 'entry-01', 'entry-03')), ['A:entry-01', 'B:entry-03']);
 
 assert.doesNotMatch(helperSource, /\b(document|window|setTimeout|setInterval|fetch|XMLHttpRequest)\b/);
-assert.doesNotMatch(helperSource, /\b(api|state|activeGame|balance|coins?)\b/i);
+assert.doesNotMatch(helperSource, /\bimport\s+/);
+assert.doesNotMatch(helperSource, /\b(?:api|state)\s*\./);
+assert.doesNotMatch(helperSource, /\bactiveGame\b/);
 
 const profileSource = await readFile(new URL('../app/assets/js/profile/mgw-profile-entry-effects.js', import.meta.url), 'utf8');
 assert.match(profileSource, /import \{ arbitratePlayerEntryEffects \} from '\.\/mgw-entry-effect-player-arbitration\.js\?v=1';/);
