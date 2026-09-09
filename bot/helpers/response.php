@@ -102,6 +102,7 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
                     pb.item_id AS badge_item_id,
                     pf.item_id AS frame_item_id,
                     pe.item_id AS entry_effect_item_id,
+                    pv.item_id AS victory_effect_item_id,
                     ge.equip_slot AS game_equip_slot, ge.item_id AS game_item_id
              FROM mgw_identities i
              INNER JOIN mgw_users u ON u.mgw_id = i.mgw_id
@@ -142,6 +143,15 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
                    AND c.catalog_status = \'active\'
              ) pe ON pe.mgw_id = i.mgw_id
              LEFT JOIN (
+                 SELECT e.mgw_id, e.item_id
+                 FROM mgw_equipped_items e
+                 INNER JOIN mgw_product_catalog c ON c.item_id = e.item_id
+                 WHERE e.equip_slot = \'profile_victory_effect\'
+                   AND c.item_type = \'profile\'
+                   AND c.item_family = \'victory_effect\'
+                   AND c.catalog_status = \'active\'
+             ) pv ON pv.mgw_id = i.mgw_id
+             LEFT JOIN (
                  SELECT e.mgw_id, e.equip_slot, e.item_id
                  FROM mgw_equipped_items e
                  INNER JOIN mgw_product_catalog c ON c.item_id = e.item_id
@@ -171,6 +181,7 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
         $badgeItemId = strtolower(trim((string)($row['badge_item_id'] ?? '')));
         $frameItemId = strtolower(trim((string)($row['frame_item_id'] ?? '')));
         $entryEffectItemId = strtolower(trim((string)($row['entry_effect_item_id'] ?? '')));
+        $victoryEffectItemId = strtolower(trim((string)($row['victory_effect_item_id'] ?? '')));
         if ($subject === '' || $mgwId === '' || $nickname === '') continue;
         if ($avatarItemId === '') $avatarItemId = 'starter-default-01';
         if (!isset($owners[$subject][$mgwId])) {
@@ -181,6 +192,7 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
                 'badge_item_id' => $badgeItemId !== '' ? $badgeItemId : null,
                 'frame_item_id' => $frameItemId !== '' ? $frameItemId : null,
                 'entry_effect_item_id' => $entryEffectItemId !== '' ? $entryEffectItemId : null,
+                'victory_effect_item_id' => $victoryEffectItemId !== '' ? $victoryEffectItemId : null,
                 'game_cosmetics' => ['slots' => []],
             ];
         }
@@ -247,6 +259,7 @@ function mgw_project_canonical_game_identity(array $data): array {
             $badgeItemId = trim((string)($profile['badge_item_id'] ?? ''));
             $frameItemId = trim((string)($profile['frame_item_id'] ?? ''));
             $entryEffectItemId = trim((string)($profile['entry_effect_item_id'] ?? ''));
+            $victoryEffectItemId = trim((string)($profile['victory_effect_item_id'] ?? ''));
             $gameCosmetics = is_array($profile['game_cosmetics'] ?? null)
                 ? $profile['game_cosmetics']
                 : ['slots' => []];
@@ -256,6 +269,7 @@ function mgw_project_canonical_game_identity(array $data): array {
             if ($badgeItemId !== '') $player['badge_item_id'] = $badgeItemId;
             if ($frameItemId !== '') $player['frame_item_id'] = $frameItemId;
             if ($entryEffectItemId !== '') $player['entry_effect_item_id'] = $entryEffectItemId;
+            if ($victoryEffectItemId !== '') $player['victory_effect_item_id'] = $victoryEffectItemId;
             $player['game_cosmetics'] = $gameCosmetics;
         }
         unset($player);
