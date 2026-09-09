@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 190" fill="none">
+  <defs>
+    <linearGradient id="skin" x1="50" y1="36" x2="112" y2="150" gradientUnits="userSpaceOnUse"><stop stop-color="#D9A77E"/><stop offset=".45" stop-color="#A96F52"/><stop offset="1" stop-color="#5E382D"/></linearGradient>
+    <radialGradient id="skinLight" cx="0" cy="0" r="1" gradientTransform="translate(78 74) rotate(88) scale(84 58)" gradientUnits="userSpaceOnUse"><stop stop-color="#F3C7A0" stop-opacity=".7"/><stop offset="1" stop-color="#F3C7A0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="metal" x1="18" y1="18" x2="141" y2="175" gradientUnits="userSpaceOnUse"><stop stop-color="#2C323A"/><stop offset=".3" stop-color="#090B0E"/><stop offset=".65" stop-color="#1D2229"/><stop offset="1" stop-color="#050607"/></linearGradient>
+    <linearGradient id="gold" x1="26" y1="18" x2="135" y2="176" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE9A0"/><stop offset=".26" stop-color="#D3A33B"/><stop offset=".55" stop-color="#80500E"/><stop offset=".78" stop-color="#E6BE58"/><stop offset="1" stop-color="#583308"/></linearGradient>
+    <linearGradient id="beard" x1="53" y1="101" x2="108" y2="164" gradientUnits="userSpaceOnUse"><stop stop-color="#3B2922"/><stop offset=".5" stop-color="#181210"/><stop offset="1" stop-color="#080707"/></linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <path d="M30 42C37 21 55 8 80 8C105 8 123 21 130 42L126 129C117 151 101 169 80 178C59 169 43 151 34 129L30 42Z" fill="#050608" opacity=".98"/>
+  <path d="M48 48C55 35 66 29 80 29C94 29 105 35 112 48L116 87C115 111 105 133 80 145C55 133 45 111 44 87L48 48Z" fill="url(#skin)"/>
+  <path d="M48 48C55 35 66 29 80 29C94 29 105 35 112 48L116 87C115 111 105 133 80 145C55 133 45 111 44 87L48 48Z" fill="url(#skinLight)"/>
+  <path d="M47 51C54 38 66 31 80 31C94 31 106 38 113 51L106 58C98 53 90 51 80 51C70 51 62 53 54 58L47 51Z" fill="#39271F" opacity=".72"/>
+  <path d="M55 70C62 65 69 64 75 68M105 70C98 65 91 64 85 68" stroke="#3D2A22" stroke-width="5" stroke-linecap="round"/>
+  <path d="M56 78C63 73 70 73 76 78C69 82 62 82 56 78ZM104 78C97 73 90 73 84 78C91 82 98 82 104 78Z" fill="#D8C2A4"/>
+  <ellipse cx="68" cy="78.2" rx="3.2" ry="3.8" fill="#5B412B"/><ellipse cx="92" cy="78.2" rx="3.2" ry="3.8" fill="#5B412B"/>
+  <circle cx="68" cy="78" r="1.4" fill="#0B0A09"/><circle cx="92" cy="78" r="1.4" fill="#0B0A09"/>
+  <circle cx="69" cy="77" r=".7" fill="#FFF1CD" opacity=".7"/><circle cx="93" cy="77" r=".7" fill="#FFF1CD" opacity=".7"/>
+  <path d="M80 80L73 100L80 105L87 100" stroke="#6A4032" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M81 82L79 99" stroke="#E9B189" stroke-opacity=".42" stroke-width="2" stroke-linecap="round"/>
+  <path d="M58 91C61 94 63 96 65 100M102 91C99 94 97 96 95 100" stroke="#6B4438" stroke-opacity=".4" stroke-width="2"/>
+  <path d="M55 105C62 101 70 103 80 107C90 103 98 101 105 105C102 123 94 140 80 149C66 140 58 123 55 105Z" fill="url(#beard)"/>
+  <path d="M62 108C69 104 75 105 80 110C85 105 91 104 98 108C93 114 87 116 80 114C73 116 67 114 62 108Z" fill="#251915"/>
+  <path d="M71 117C76 120 84 120 89 117" stroke="#A86E59" stroke-opacity=".55" stroke-width="2.4" stroke-linecap="round"/>
+  <g opacity=".52" stroke="#7D5843" stroke-width="1.2" stroke-linecap="round"><path d="M61 116L64 127"/><path d="M66 114L68 132"/><path d="M71 115L72 136"/><path d="M76 116L76 141"/><path d="M84 116L84 141"/><path d="M89 115L88 136"/><path d="M94 114L92 132"/><path d="M99 116L96 127"/></g>
+  <path d="M24 43L48 34L48 122L36 144L25 120L24 43Z" fill="url(#metal)" stroke="url(#gold)" stroke-width="5"/>
+  <path d="M136 43L112 34L112 122L124 144L135 120L136 43Z" fill="url(#metal)" stroke="url(#gold)" stroke-width="5"/>
+  <path d="M28 42C41 27 58 18 80 18C102 18 119 27 132 42L122 56C109 48 95 44 80 44C65 44 51 48 38 56L28 42Z" fill="url(#metal)" stroke="url(#gold)" stroke-width="5"/>
+  <path d="M38 57C49 49 64 45 80 45C96 45 111 49 122 57" stroke="#F6D87B" stroke-opacity=".72" stroke-width="2.5" filter="url(#glow)"/>
+  <path d="M37 126C47 146 61 161 80 170C99 161 113 146 123 126L116 153C105 168 93 178 80 184C67 178 55 168 44 153L37 126Z" fill="url(#metal)" fill-opacity=".9" stroke="url(#gold)" stroke-width="4"/>
+</svg>
