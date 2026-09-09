@@ -1,0 +1,39 @@
+name: Balance uninitialized runtime hydration focused
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/services/UserService.php'
+      - 'bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php'
+      - '.github/workflows/balance-uninitialized-runtime-hydration-focused.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    name: Uninitialized runtime balance hydration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite
+          coverage: none
+
+      - name: Lint balance owner and regression
+        run: |
+          php -l bot/services/UserService.php
+          php -l bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
+
+      - name: Prove missing versus explicit zero semantics
+        run: php bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
