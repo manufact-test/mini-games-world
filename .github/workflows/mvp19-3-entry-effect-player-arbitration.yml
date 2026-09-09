@@ -2,8 +2,7 @@ name: MVP-19.3 Entry Effects player arbitration
 
 on:
   pull_request:
-    branches:
-      - agent/mvp-13-2-staging
+    branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/assets/js/profile/mgw-profile-entry-effects.js'
       - 'app/assets/js/profile/mgw-entry-effect-player-arbitration.js'
@@ -17,48 +16,34 @@ permissions:
 
 jobs:
   focused-player-arbitration:
-    runs-on: ubuntu-latest
+    name: Preserve accepted player arbitration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-
+          persist-credentials: false
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Run four-combination arbitration acceptance
         run: node tests/mvp19-3-entry-effect-player-arbitration.mjs
-
-      - name: Enforce bounded slice
+      - name: Guard accepted runtime identity
+        run: |
+          grep -F 'mgw-profile-entry-effects.js?v=6&mvp19_3=player-arbitration' app/runtime/client/version-manifest.php
+          git diff --check
+      - name: Guard frozen Entry arbitration owners
+        if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            base="${{ github.event.pull_request.base.sha }}"
-          else
-            git fetch origin agent/mvp-13-2-staging
-            base="origin/agent/mvp-13-2-staging"
-          fi
-
-          mapfile -t changed < <(git diff --name-only "$base"...HEAD)
-          printf 'Changed files:\n%s\n' "${changed[*]}"
-          for path in "${changed[@]}"; do
-            case "$path" in
-              app/assets/js/profile/mgw-profile-entry-effects.js|\
-              app/assets/js/profile/mgw-entry-effect-player-arbitration.js|\
-              app/runtime/client/version-manifest.php|\
-              tests/mvp19-3-entry-effect-player-arbitration.mjs|\
-              .github/workflows/mvp19-3-entry-effect-player-arbitration.yml)
-                ;;
-              *)
-                echo "Unexpected path in bounded Entry Effect arbitration slice: $path" >&2
-                exit 1
-                ;;
-            esac
-          done
-
-          test "${#changed[@]}" -gt 0
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/profile/mgw-profile-entry-effects.js \
+            app/assets/js/profile/mgw-entry-effect-player-arbitration.js \
+            tests/mvp19-3-entry-effect-player-arbitration.mjs
