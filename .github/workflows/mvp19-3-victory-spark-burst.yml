@@ -15,8 +15,7 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
-      - '.github/workflows/mvp19-3-profile-entry-effects.yml'
-      - '.github/workflows/mvp19-3-victory-spark-burst.yml'
+      - '.github/workflows/mvp19-3-*.yml'
   workflow_dispatch:
 
 permissions:
@@ -129,8 +128,7 @@ jobs:
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php|\
               bot/tests/Mvp19_3ProfileEntryEffectsTest.php|\
-              .github/workflows/mvp19-3-profile-entry-effects.yml|\
-              .github/workflows/mvp19-3-victory-spark-burst.yml)
+              .github/workflows/mvp19-3-*.yml)
                 ;;
               *)
                 echo "Unexpected path in Spark Burst slice: $path" >&2
