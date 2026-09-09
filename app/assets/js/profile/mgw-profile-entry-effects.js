@@ -3,6 +3,7 @@ import { state } from '../state.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
+import { arbitratePlayerEntryEffects } from './mgw-entry-effect-player-arbitration.js?v=1';
 
 const ENTRY_EFFECT_SLOT = 'profile_entry_effect';
 const ENTRY_EFFECT_IDS = Object.freeze([
@@ -457,17 +458,21 @@ function playLiveEntryEffectsIfNeeded(game = state.activeGame, viewerId = ''){
   if (launchOverlayVisible()) return;
 
   const players = Array.isArray(game?.players) ? game.players : [];
-  const entries = players.map((player, index) => {
-    const itemId = entryEffectIdForPlayer(player, viewerId);
-    const spec = presentationFor(itemId);
-    if (!spec) return null;
-    return {
-      itemId,
-      spec,
-      index,
-      name:String(player?.name || `Игрок ${index + 1}`),
-    };
-  }).filter(Boolean);
+  const localIds = localEntryEffectPlayerIds(viewerId);
+  const entries = arbitratePlayerEntryEffects(players, {
+    isLocalPlayer: player => isLocalEntryEffectPlayer(player, localIds),
+    resolveEntry: (player, index) => {
+      const itemId = entryEffectIdForPlayer(player, viewerId);
+      const spec = presentationFor(itemId);
+      if (!spec) return null;
+      return {
+        itemId,
+        spec,
+        index,
+        name:String(player?.name || `Игрок ${index + 1}`),
+      };
+    },
+  });
 
   if (!entries.length) return;
   playedGames.add(gameId);
