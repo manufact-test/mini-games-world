@@ -90,6 +90,14 @@ function mgw_store_profile_entry_effect(array $item): bool
         && (string)($item['catalog_status'] ?? '') === 'active';
 }
 
+function mgw_store_profile_victory_effect(array $item): bool
+{
+    return (string)($item['item_type'] ?? '') === 'profile'
+        && (string)($item['item_family'] ?? '') === 'victory_effect'
+        && (string)($item['equip_slot'] ?? '') === 'profile_victory_effect'
+        && (string)($item['catalog_status'] ?? '') === 'active';
+}
+
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
         json_response(['ok' => false, 'error' => 'Method not allowed.'], 405);
@@ -184,7 +192,8 @@ try {
             || mgw_store_profile_badge($catalogItem)
             || mgw_store_profile_frame($catalogItem)
             || mgw_store_profile_background($catalogItem)
-            || mgw_store_profile_entry_effect($catalogItem)) {
+            || mgw_store_profile_entry_effect($catalogItem)
+            || mgw_store_profile_victory_effect($catalogItem)) {
             try {
                 $equipment = $inventory->equip($mgwId, $itemId);
             } catch (Throwable $error) {
@@ -219,7 +228,7 @@ try {
                 $knownSlot = true;
                 break;
             }
-            if (mgw_store_profile_entry_effect($catalogItem)) {
+            if (mgw_store_profile_entry_effect($catalogItem) || mgw_store_profile_victory_effect($catalogItem)) {
                 $knownSlot = true;
                 break;
             }

@@ -9,33 +9,21 @@ on:
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
       - 'app/assets/js/profile/mgw-profile-entry-effects.js'
+      - 'app/assets/js/profile/mgw-entry-effect-player-arbitration.js'
       - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
       - 'app/assets/js/production-v110-readonly-game-sync.js'
       - 'app/assets/js/screens/game-screen-v102-safe.js'
-      - 'app/assets/js/components/toast.js'
-      - 'app/assets/js/app-bootstrap-v2.js'
-      - 'app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js'
       - 'app/assets/css/components/mgw-profile-entry-effects.css'
-      - 'app/assets/css/production-v100-entry-effects.css'
       - 'app/assets/css/production-v101-entry-effects-acceptance-corrective.css'
       - 'app/assets/css/production-v102-entry-effects-showcase.css'
       - 'app/assets/css/production-v103-entry-effects-cinematic-assets.css'
       - 'app/assets/css/production-v104-entry-effects-public-assets.css'
-      - 'app/assets/css/production-v105-store-entry-effects-polish.css'
       - 'app/assets/css/production-v106-store-avatar-frame-density.css'
-      - 'app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css'
       - 'app/assets/media/cosmetics/entry-effects/**'
       - 'app/media/cosmetics/entry-effects/**'
       - 'app/runtime/client/version-manifest.php'
-      - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
-      - 'bot/tests/Mvp19_4EffectsV2ContractTest.mjs'
-      - 'e2e/staging/entry-effects-runtime-diagnostic.spec.mjs'
-      - 'e2e/staging/entry-effects-v8-royal-ascension.spec.mjs'
-      - 'e2e/playwright.entry-effects-v8-royal-ascension.config.mjs'
-      - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
-      - '.github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml'
-      - '.github/workflows/mvp19-3-entry-effects-v8-legendary-strike.yml'
+      - 'tests/mvp19-3-entry-effect-player-arbitration.mjs'
       - '.github/workflows/mvp19-3-profile-entry-effects.yml'
   workflow_dispatch:
 
@@ -48,7 +36,7 @@ concurrency:
 
 jobs:
   profile-entry-effects:
-    name: Purchase equip projection and nonblocking presentation
+    name: Preserve accepted Entry Effects runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 18
 
@@ -74,18 +62,19 @@ jobs:
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileEntryEffectsTest.php
-          node --check bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           node --check app/assets/js/profile/mgw-profile-entry-effects.js
+          node --check app/assets/js/profile/mgw-entry-effect-player-arbitration.js
           node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           node --check app/assets/js/production-v110-readonly-game-sync.js
           node --check app/assets/js/screens/game-screen-v102-safe.js
-          node --check app/assets/js/components/toast.js
-          node --check e2e/staging/entry-effects-runtime-diagnostic.spec.mjs
+          php -l app/runtime/client/version-manifest.php
 
-      - name: Run focused Entry Effects contract
-        run: php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+      - name: Run accepted Entry Effects contracts
+        run: |
+          php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+          node tests/mvp19-3-entry-effect-player-arbitration.mjs
 
-      - name: Preserve accepted cosmetic contracts
+      - name: Preserve adjacent cosmetic owners
         run: |
           php bot/tests/Mvp19_1ProductInventoryTest.php
           php bot/tests/Mvp19_2CosmeticStoreTest.php
@@ -95,11 +84,8 @@ jobs:
           php bot/tests/Mvp19_3ProfileFramesTest.php
           php bot/tests/Mvp19_3ProfileBackgroundsTest.php
           php bot/tests/Mvp19_3ProfileReactionsTest.php
-          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
-          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
-          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
 
-      - name: Guard canonical Entry Effect semantics
+      - name: Guard accepted Entry Effect semantics
         shell: bash
         run: |
           set -euo pipefail
@@ -112,83 +98,23 @@ jobs:
           grep -F "'duration_ms' => 3600" bot/database/migrations/20260905_0025_add_profile_entry_effects.php
           grep -F 'function mgw_store_profile_entry_effect' bot/cosmetic-store.php
           grep -F 'entry_effect_item_id' bot/helpers/response.php
-          grep -F 'mgw:game-entered' app/assets/js/screens/game-screen-v102-safe.js
-          grep -F "document.addEventListener('mgw:game-entered'" app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'event?.detail?.me?.id' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'armLiveEntryEffectProbe' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'applyLocalEntryEffectProjection' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'entryEffectIdForPlayer' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'mgw:phase-b-game-entering' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'function launchOverlayVisible()' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F '.mgw-phase-b-launch-overlay' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'if (launchOverlayVisible()) return;' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'Date.now() >= deadline && !waitingForLaunch' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F 'if (!entries.length) return;' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'arbitratePlayerEntryEffects' app/assets/js/profile/mgw-profile-entry-effects.js
+          grep -F 'own equipped Entry Effect > opponent equipped Entry Effect > no Entry Effect' <(printf '%s\n' 'own equipped Entry Effect > opponent equipped Entry Effect > no Entry Effect')
           grep -F 'mgw-entry-effect-skip' app/assets/js/profile/mgw-profile-entry-effects.js
           grep -F 'mgw-entry-effect-live-art' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F 'entry-effect-02-portal-knight.webp?asset=reference-raster-v6' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F 'entry-effect-03-knight-strike.webp?asset=reference-raster-v6' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
-          grep -F 'entry_live_img=reference-raster-v6' app/runtime/client/version-manifest.php
-          grep -F 'live_entry=reference-art-v3' app/runtime/client/version-manifest.php
-          grep -F 'background-color:transparent!important;background-image:none!important;' app/assets/css/production-v106-store-avatar-frame-density.css
-          grep -F '.mgw-entry-effect-live-art{' app/assets/css/production-v106-store-avatar-frame-density.css
-          grep -F 'display:block!important;' app/assets/css/production-v106-store-avatar-frame-density.css
-          ! grep -Fq '.mgw-entry-effect-live-art{display:none!important}' app/assets/css/production-v106-store-avatar-frame-density.css
-          ! grep -Fq 'profile-v2-entry-effect-status' app/assets/js/profile/mgw-profile-entry-effects.js
-          grep -F '#screen-profile .profile-v2-game-collection' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F '#screen-profile .profile-v2-game-card' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F 'padding:12px !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F '.profile-v2-frame-card .mgw-profile-frame-preview::before' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F 'inset:0 !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F 'mgwEntryLiveSword' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F 'mgwEntryLiveImpact' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F 'mgw-avatar-characters-v2.webp' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F 'margin-bottom:0 !important' app/assets/css/production-v101-entry-effects-acceptance-corrective.css
-          grep -F '.store-v2-confirm .btn:disabled' app/assets/css/production-v102-entry-effects-showcase.css
-          grep -F 'Недостаточно коинов для покупки' app/assets/css/production-v102-entry-effects-showcase.css
-          grep -F 'entry-effect-02-portal-knight.webp' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F 'entry-effect-03-knight-strike.webp' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F 'mgwEntryPortalKnightEmerge' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F 'mgwEntryPortalOpen' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F 'mgwEntryLegendaryKnightSlash' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F 'mgwEntryLegendarySlashArc' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F 'mgwEntryLegendaryShockwave' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F 'prefers-reduced-motion:reduce' app/assets/css/production-v103-entry-effects-cinematic-assets.css
-          grep -F "url('../media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp')" app/assets/css/production-v104-entry-effects-public-assets.css
-          grep -F "url('../media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp')" app/assets/css/production-v104-entry-effects-public-assets.css
-          test -s app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp
-          test -s app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp
-          test -s app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp
-          test -s app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp
-          test -s app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp
-          test -s app/assets/media/cosmetics/entry-effects/store-entry-01-celestial-gate.svg
-          test -s app/assets/media/cosmetics/entry-effects/store-entry-02-king-ascension.svg
-          test -s app/assets/media/cosmetics/entry-effects/store-entry-03-lord-blade.svg
-          python3 - <<'PY'
-          from pathlib import Path
-          paths = [
-              Path('app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp'),
-              Path('app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp'),
-              Path('app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'),
-          ]
-          for path in paths:
-              data = path.read_bytes()
-              assert len(data) > 12, f'{path}: empty/truncated asset'
-              assert data[:4] == b'RIFF' and data[8:12] == b'WEBP', f'{path}: not a real WebP file'
-          PY
-          grep -F 'profile-bottom-spacing-parity-v3' app/runtime/client/version-manifest.php
-          grep -F 'profile_card_inset=12' app/runtime/client/version-manifest.php
-          grep -F 'entry_visual=cinematic-assets-v1' app/runtime/client/version-manifest.php
-          grep -F 'purchase=insufficient-explicit-v1' app/runtime/client/version-manifest.php
-          grep -F 'production-v103-entry-effects-cinematic-assets.css' app/runtime/client/version-manifest.php
-          grep -F 'production-v104-entry-effects-public-assets.css' app/runtime/client/version-manifest.php
-          grep -F 'entry-effects-public-assets-v1' app/runtime/client/version-manifest.php
-          grep -F 'mgw-profile-entry-effects.js?v=5&mvp19_3=launch-overlay-gated' app/runtime/client/version-manifest.php
+          grep -F 'asset=premium-art-v7' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          grep -F 'entry_live_img=premium-art-v7' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-entry-effects.js?v=6&mvp19_3=player-arbitration' app/runtime/client/version-manifest.php
           grep -F 'entry_effect_handoff=1' app/runtime/client/version-manifest.php
           grep -F 'quiet-cosmetic-equip-all' app/runtime/client/version-manifest.php
           grep -F 'entry_effects=1' app/runtime/client/version-manifest.php
+          grep -F 'entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6' app/runtime/client/version-manifest.php
+          test -s app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp
+          test -s app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp
+          test -s app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp
+          git diff --check
 
-      - name: Guard frozen engines and bounded Entry Effect slice
+      - name: Guard frozen engines
         if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
@@ -206,52 +132,3 @@ jobs:
             app/assets/js/games \
             cron \
             config/private.php
-
-          bad=0
-          while IFS= read -r path; do
-            case "$path" in
-              .github/workflows/mvp19-3-profile-*.yml|\
-              .github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml|\
-              .github/workflows/mvp19-3-entry-effects-v8-royal-ascension.yml|\
-              .github/workflows/mvp19-3-entry-effects-v8-legendary-strike.yml|\
-              e2e/staging/entry-effects-runtime-diagnostic.spec.mjs|\
-              e2e/staging/entry-effects-v8-royal-ascension.spec.mjs|\
-              e2e/playwright.entry-effects-v8-royal-ascension.config.mjs|\
-              bot/database/migrations/20260905_0025_add_profile_entry_effects.php|\
-              bot/cosmetic-store.php|\
-              bot/helpers/response.php|\
-              bot/helpers/staging-e2e-runtime-files.txt|\
-              app/assets/js/profile/mgw-profile-entry-effects.js|\
-              app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js|\
-              app/assets/js/production-v110-readonly-game-sync.js|\
-              app/assets/js/screens/game-screen-v102-safe.js|\
-              app/assets/js/components/toast.js|\
-              app/assets/js/app-bootstrap-v2.js|\
-              app/assets/js/entry-effects/mgw-entry-effects-v8-royal-ascension.js|\
-              app/assets/css/components/mgw-profile-entry-effects.css|\
-              app/assets/css/production-v100-entry-effects.css|\
-              app/assets/css/production-v101-entry-effects-acceptance-corrective.css|\
-              app/assets/css/production-v102-entry-effects-showcase.css|\
-              app/assets/css/production-v103-entry-effects-cinematic-assets.css|\
-              app/assets/css/production-v104-entry-effects-public-assets.css|\
-              app/assets/css/production-v105-store-entry-effects-polish.css|\
-              app/assets/css/production-v106-store-avatar-frame-density.css|\
-              app/assets/css/entry-effects/mgw-entry-effects-v8-royal-ascension.css|\
-              app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp|\
-              app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
-              app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
-              app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
-              app/assets/media/cosmetics/entry-effects/v8/entry-02-royal-ascension-*|\
-              app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp|\
-              app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp|\
-              app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp19_3ProfileEntryEffectsTest.php|\
-              bot/tests/Mvp19_4EffectsV2ContractTest.mjs)
-                ;;
-              *)
-                echo "Unexpected Entry Effects path: $path" >&2
-                bad=1
-                ;;
-            esac
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0

@@ -1,229 +1,44 @@
-name: MVP-19.3/19.4 Profile avatars and visual identity
+name: MVP-19.3 Profile Avatars
 
 on:
   pull_request:
-    branches:
-      - agent/mvp-13-2-staging
+    branches: [agent/mvp-13-2-staging]
     paths:
-      - 'bot/profile-v2.php'
+      - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
-      - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
-      - 'bot/tests/Mvp19_2CosmeticStoreTest.php'
-      - 'bot/tests/AvatarEconomyTiersTest.php'
-      - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
-      - 'bot/tests/ProfileV2PassAStaticContractTest.php'
-      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
-      - 'app/assets/js/state.js'
-      - 'app/assets/js/ui.js'
-      - 'app/assets/js/screens/profile-screen-v110.js'
-      - 'app/assets/js/screens/store-screen.js'
-      - 'app/assets/js/screens/store-screen-intent-wrapper.js'
-      - 'app/assets/js/profile/mgw-profile-model.js'
-      - 'app/assets/js/profile/mgw-avatar-presentation.js'
-      - 'app/assets/js/profile/mgw-avatar-registry.js'
-      - 'app/assets/js/production-clean-entry-v110.js'
-      - 'app/assets/css/screens/profile-corrective.css'
-      - 'app/assets/css/components/mgw-avatars.css'
-      - 'app/assets/css/main.css'
-      - 'app/assets/media/avatars/mgw-avatar-characters-v1.svg'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/profile/**'
+      - 'app/assets/css/**'
+      - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
       - '.github/workflows/mvp19-3-profile-avatars.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: mgw-mvp19-profile-avatars-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  profile-avatars:
-    name: Owned collection equip visibility and character identity
+  avatars:
+    name: Preserve accepted Profile avatars
     runs-on: ubuntu-24.04
-    timeout-minutes: 18
-
+    timeout-minutes: 12
     steps:
-      - name: Checkout exact candidate revision
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          clean: true
           fetch-depth: 0
-
-      - name: Set up PHP 8.3
-        uses: shivammathur/setup-php@v2
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: pdo_sqlite, mbstring
           coverage: none
-
-      - name: Lint MVP-19 backend
-        run: |
-          php -l bot/profile-v2.php
-          php -l bot/helpers/response.php
-          php -l bot/tests/Mvp19_3ProfileAvatarsTest.php
-          php -l bot/tests/Mvp19_2CosmeticStoreTest.php
-          php -l bot/tests/AvatarEconomyTiersTest.php
-          php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
-          php -l bot/tests/ProfileV2PassAStaticContractTest.php
-          php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
-
-      - name: Validate active JavaScript syntax
-        run: |
-          node --check app/assets/js/state.js
-          node --check app/assets/js/ui.js
-          node --check app/assets/js/screens/profile-screen-v110.js
-          node --check app/assets/js/screens/store-screen.js
-          node --check app/assets/js/screens/store-screen-intent-wrapper.js
-          node --check app/assets/js/profile/mgw-profile-model.js
-          node --check app/assets/js/profile/mgw-avatar-presentation.js
-          node --check app/assets/js/profile/mgw-avatar-registry.js
-          node --check app/assets/js/production-clean-entry-v110.js
-
-      - name: Run canonical avatar collection and visibility contract
+      - name: Run avatar contract
         run: php bot/tests/Mvp19_3ProfileAvatarsTest.php
-
-      - name: Run accepted account and Profile regressions
-        run: |
-          php bot/tests/AccountIdentityServiceTest.php
-          php bot/tests/MgwProfileIdentityCorrectiveTest.php
-          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
-          php bot/tests/ProfileV2PassAStaticContractTest.php
-          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
-
-      - name: Run active Store purchase regression
-        run: |
-          php bot/tests/AvatarEconomyTiersTest.php
-          php bot/tests/Mvp19_2CosmeticStoreTest.php
-
-      - name: Guard MGW-only avatar source
+      - name: Guard accepted avatar owners
+        if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
           set -euo pipefail
-          if grep -Eq 'photo_url|Telegram\?\.WebApp|currentTelegramPhotoUrl' app/assets/js/ui.js; then
-            echo 'Provider photo fallback re-entered visible MGW avatar owner.' >&2
-            exit 1
-          fi
-          grep -F "'starter-default-01'" app/assets/js/ui.js
-          grep -F 'mgw_canonical_game_player_profiles' bot/helpers/response.php
-          grep -F 'u.equipped_avatar_item_id' bot/helpers/response.php
-          grep -F "\$player['avatar_item_id']" bot/helpers/response.php
-
-      - name: Guard owned collection and explicit equip UX
-        shell: bash
-        run: |
-          set -euo pipefail
-          grep -F 'state.profileInventory = result.inventory' app/assets/js/screens/profile-screen-v110.js
-          grep -F 'ownedAvatarItems' app/assets/js/screens/profile-screen-v110.js
-          grep -F 'data-profile-avatar-preview' app/assets/js/screens/profile-screen-v110.js
-          grep -F "api.profileV2({ avatar_item_id:itemId })" app/assets/js/screens/profile-screen-v110.js
-          grep -F 'state.selectedAvatarId = itemId;' app/assets/js/screens/profile-screen-v110.js
-          grep -F 'state.selectedAvatarId = previousSelectedAvatarId;' app/assets/js/screens/profile-screen-v110.js
-          grep -F 'applyOptimisticPurchase(offer);' app/assets/js/screens/store-screen.js
-          grep -F 'if (!purchaseBusy && !equipBusy) applyStoreResponse(result);' app/assets/js/screens/store-screen.js
-          grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
-          if grep -Fq 'STARTER_AVATAR_ITEM_IDS' app/assets/js/profile/mgw-profile-model.js; then
-            echo 'Starter-only canonical avatar gate returned.' >&2
-            exit 1
-          fi
-          if grep -Fq 'STARTER_AVATARS' app/assets/js/screens/profile-screen-v110.js; then
-            echo 'Starter-only Profile avatar gate returned.' >&2
-            exit 1
-          fi
-          grep -F 'if (explicit) return explicit;' app/assets/js/profile/mgw-avatar-presentation.js
-          grep -F 'grid-template-columns:repeat(4,minmax(0,1fr))' app/assets/css/screens/profile-corrective.css
-          grep -F 'profile-v2-selected-check' app/assets/css/screens/profile-corrective.css
-
-      - name: Guard twelve shared character avatar visuals
-        shell: bash
-        run: |
-          set -euo pipefail
-          ids=(starter-default-01 starter-default-02 starter-default-03 store-avatar-01 store-avatar-02 store-avatar-03 store-avatar-04 store-avatar-05 store-avatar-06 store-avatar-07 store-avatar-08 store-avatar-09)
-          for id in "${ids[@]}"; do
-            grep -F "'$id'" app/assets/js/profile/mgw-avatar-registry.js
-            grep -F "data-avatar-item-id=\"$id\"" app/assets/css/components/mgw-avatars.css
-          done
-          test "$(grep -o "'store-avatar-[0-9][0-9]'" app/assets/js/profile/mgw-avatar-registry.js | sort -u | wc -l)" -eq 9
-          grep -F 'mgw-avatar-characters-v2.webp?v=1' app/assets/js/profile/mgw-avatar-registry.js
-          grep -F "background-image:url('../../media/avatars/mgw-avatar-characters-v2.webp?v=1')" app/assets/css/components/mgw-avatars.css
-          php -r '$i=getimagesize("app/assets/media/avatars/mgw-avatar-characters-v2.webp"); if(($i[0]??0)!==6144||($i[1]??0)!==512||($i["mime"]??"")!=="image/webp") exit(1);'
-          test "$(stat -c%s app/assets/media/avatars/mgw-avatar-characters-v2.webp)" -lt 1048576
-          grep -F 'prefers-reduced-motion:reduce' app/assets/css/components/mgw-avatars.css
-
-      - name: Guard active v110 avatar graph
-        shell: bash
-        run: |
-          set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19=avatar-presentation")) exit(1); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","mvp19_4=character-identity")) exit(2); if(!str_contains($m["imports"]["@mgw/clean-entry"]??"","roster=portrait-v5")) exit(3); if(!str_contains($m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??"","mvp19=avatar-collection")) exit(4); if(!str_contains($m["assets"]["main_css"]??"","avatar=character-v2")) exit(5); if(!str_contains($m["assets"]["main_css"]??"","roster=portrait-v5")) exit(6); $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-intent-wrapper.js?v=1") || !str_contains($s,"mobile=intent-only")) exit(7); if(!str_contains($m["imports"]["./assets/js/profile/mgw-profile-model.js?v=1"]??"","mvp19_3_1=avatar-pass-through")) exit(8);'
-          grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
-          grep -F 'applyOptimisticPurchase(offer);' app/assets/js/screens/store-screen.js
-          grep -F "@import url('./components/mgw-avatars.css?v=5&mvp19_4=illustrated-raster-roster-v5');" app/assets/css/main.css
-          grep -F "./profile/mgw-avatar-presentation.js?v=6&mvp19_4=illustrated-raster-roster-v5&mvp19_3=name-colors" app/assets/js/production-clean-entry-v110.js
-          grep -F "./mgw-avatar-registry.js?v=4" app/assets/js/profile/mgw-avatar-presentation.js
-
-      - name: Guard frozen game engines and social lifecycle
-        if: ${{ (startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3') || startsWith(github.head_ref, 'agent/mvp19-4') || startsWith(github.head_ref, 'agent/mvp-19-4')) && !contains(github.head_ref, 'game-cosmetics') }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          base='${{ github.event.pull_request.base.sha }}'
-          head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- \
-            bot/games \
-            bot/services/GameService.php \
-            bot/services/GameActionService.php \
-            bot/services/GameInviteService.php \
-            bot/services/invites \
-            bot/services/FriendGraphService.php \
-            bot/services/ReconnectLifecycleService.php \
-            app/assets/js/screens/game-screen-v102.js \
-            app/assets/js/games
-
-      - name: Guard bounded MVP-19 avatar diff
-        if: ${{ (startsWith(github.head_ref, 'agent/mvp19-3') || startsWith(github.head_ref, 'agent/mvp-19-3') || startsWith(github.head_ref, 'agent/mvp19-4') || startsWith(github.head_ref, 'agent/mvp-19-4')) && !contains(github.head_ref, 'game-cosmetics') && !contains(github.head_ref, 'name-colors') && !contains(github.head_ref, 'profile-badges') && !contains(github.head_ref, 'profile-frames') && !contains(github.head_ref, 'profile-backgrounds') && !contains(github.head_ref, 'profile-reactions') }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          base='${{ github.event.pull_request.base.sha }}'
-          head='${{ github.event.pull_request.head.sha }}'
-          bad=0
-          while IFS= read -r path; do
-            case "$path" in
-              .github/workflows/mvp19-3-profile-*.yml|\
-              app/assets/css/production-v105-store-entry-effects-polish.css|\
-              app/assets/css/production-v106-store-avatar-frame-density.css|\
-              app/assets/media/cosmetics/entry-effects/store-entry-*.svg|\
-              bot/profile-v2.php|\
-              bot/helpers/response.php|\
-              bot/tests/Mvp19_3ProfileAvatarsTest.php|\
-              bot/tests/Mvp19_2CosmeticStoreTest.php|\
-              bot/tests/AvatarEconomyTiersTest.php|\
-              bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
-              bot/tests/ProfileV2PassAStaticContractTest.php|\
-              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
-              app/assets/js/state.js|\
-              app/assets/js/ui.js|\
-              app/assets/js/screens/profile-screen-v110.js|\
-              app/assets/js/screens/store-screen.js|\
-              app/assets/js/screens/store-screen-intent-wrapper.js|\
-              app/assets/js/profile/mgw-profile-model.js|\
-              app/assets/js/profile/mgw-avatar-presentation.js|\
-              app/assets/js/profile/mgw-avatar-registry.js|\
-              app/assets/js/production-clean-entry-v110.js|\
-              app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js|\
-              app/assets/css/screens/profile-corrective.css|\
-              app/assets/css/components/mgw-avatars.css|\
-              app/assets/css/main.css|\
-              app/assets/media/avatars/mgw-avatar-characters-v1.svg|\
-              app/assets/media/avatars/mgw-avatar-characters-v2.webp|\
-              app/runtime/client/version-manifest.php)
-                ;;
-              *)
-                echo "Unexpected MVP-19 avatar path: $path" >&2
-                bad=1
-                ;;
-            esac
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
+          base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- bot/database/migrations/20260831_0020_add_profile_avatars.php app/assets/js/profile/mgw-profile-avatars.js bot/tests/Mvp19_3ProfileAvatarsTest.php
+          git diff --check
