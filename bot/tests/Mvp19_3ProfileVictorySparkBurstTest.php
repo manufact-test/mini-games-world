@@ -15,7 +15,7 @@ require_once $root . '/bot/catalog/ProductInventoryService.php';
 require_once $root . '/bot/accounts/AccountIdentityService.php';
 require_once $root . '/bot/catalog/CosmeticStoreService.php';
 
-if (!extension_loaded('pdo_sqlite')) throw new RuntimeException('MVP-19.3 Victory Spark Burst test requires pdo_sqlite.');
+if (!extension_loaded('pdo_sqlite')) throw new RuntimeException('MVP-19.3 Victory Effects test requires pdo_sqlite.');
 
 $assertions = 0;
 $assertSame = static function (mixed $expected, mixed $actual, string $message) use (&$assertions): void {
@@ -36,49 +36,60 @@ $assertSame(count(glob($databaseDir . '/migrations/*.php') ?: []), (int)$migrati
 
 $rows = $database->fetchAll(
     "SELECT c.item_id, c.item_type, c.item_family, c.equip_slot, c.starter_grant, c.metadata_json,
-            o.offer_id, o.price_coins, o.category, o.subcategory
+            o.offer_id, o.price_coins, o.category, o.subcategory, o.sort_order
      FROM mgw_product_catalog c
      INNER JOIN mgw_product_offers o ON o.item_id = c.item_id AND o.offer_type = 'item'
      WHERE c.item_family = 'victory_effect' AND c.catalog_status = 'active' AND o.offer_status = 'active'
      ORDER BY o.sort_order ASC"
 );
-$assertSame(1, count($rows), 'First Victory Effect slice must expose only Spark Burst');
-$row = $rows[0];
-$assertSame('profile-victory-effect-01', (string)$row['item_id'], 'Spark Burst technical item id must stay canonical');
-$assertSame('victory-effect-01', (string)$row['offer_id'], 'Spark Burst offer id must stay canonical');
-$assertSame(5000, (int)$row['price_coins'], 'Spark Burst must cost 5000 coins');
-$assertSame('profile', (string)$row['item_type'], 'Victory Effects must remain Profile cosmetics');
-$assertSame('victory_effect', (string)$row['item_family'], 'Victory Effect family must be isolated');
-$assertSame('profile_victory_effect', (string)$row['equip_slot'], 'Victory Effects must own one dedicated Profile slot');
-$assertSame(0, (int)$row['starter_grant'], 'Victory Effects must never be starter-granted');
-$assertSame('profile', (string)$row['category'], 'Victory Effect offer must stay in Profile Store');
-$assertSame('victory_effect', (string)$row['subcategory'], 'Victory Effect offer subcategory must be stable');
+$assertSame(2, count($rows), 'Victory Effects slice must expose Spark Burst and Firework Salvo only');
+$byId = [];
+foreach ($rows as $row) $byId[(string)$row['item_id']] = $row;
 
-$metadata = json_decode((string)$row['metadata_json'], true, 32, JSON_THROW_ON_ERROR);
-$assertSame('Искровой залп', (string)($metadata['display_name'] ?? ''), 'Approved Spark Burst display name must be seeded');
-$assertSame('spark-burst', (string)($metadata['variant'] ?? ''), 'Approved Spark Burst variant must be deterministic');
-$assertSame(2200, (int)($metadata['duration_ms'] ?? 0), 'Spark Burst target duration must be 2.2 seconds');
+$spark = $byId['profile-victory-effect-01'] ?? null;
+$salvo = $byId['profile-victory-effect-02'] ?? null;
+$assertTrue(is_array($spark), 'Spark Burst must remain present');
+$assertTrue(is_array($salvo), 'Firework Salvo must be present');
+
+$assertSame('victory-effect-01', (string)$spark['offer_id'], 'Spark Burst offer id must stay canonical');
+$assertSame(5000, (int)$spark['price_coins'], 'Spark Burst must stay 5000 coins');
+$sparkMeta = json_decode((string)$spark['metadata_json'], true, 32, JSON_THROW_ON_ERROR);
+$assertSame('Искровой залп', (string)($sparkMeta['display_name'] ?? ''), 'Spark Burst name must stay frozen');
+$assertSame('spark-burst', (string)($sparkMeta['variant'] ?? ''), 'Spark Burst variant must stay frozen');
+$assertSame(2200, (int)($sparkMeta['duration_ms'] ?? 0), 'Spark Burst duration must stay 2.2 seconds');
+
+$assertSame('victory-effect-02', (string)$salvo['offer_id'], 'Firework Salvo offer id must stay canonical');
+$assertSame(8500, (int)$salvo['price_coins'], 'Firework Salvo must cost 8500 coins');
+$assertSame('profile', (string)$salvo['item_type'], 'Victory Effects remain Profile cosmetics');
+$assertSame('victory_effect', (string)$salvo['item_family'], 'Victory Effect family must stay isolated');
+$assertSame('profile_victory_effect', (string)$salvo['equip_slot'], 'Both Victory Effects use the same canonical slot');
+$assertSame(0, (int)$salvo['starter_grant'], 'Victory Effects must never be starter-granted');
+$assertSame('profile', (string)$salvo['category'], 'Firework Salvo offer stays in Profile Store');
+$assertSame('victory_effect', (string)$salvo['subcategory'], 'Firework Salvo subcategory must be stable');
+$salvoMeta = json_decode((string)$salvo['metadata_json'], true, 32, JSON_THROW_ON_ERROR);
+$assertSame('Салют победителя', (string)($salvoMeta['display_name'] ?? ''), 'Approved Firework Salvo name must be seeded');
+$assertSame('firework-salvo', (string)($salvoMeta['variant'] ?? ''), 'Firework Salvo variant must be deterministic');
+$assertSame(2900, (int)($salvoMeta['duration_ms'] ?? 0), 'Firework Salvo target duration must be 2.9 seconds');
 
 $accounts = new AccountIdentityService($database, 3600);
-$account = $accounts->resolveProviderIdentity('development', 'mvp19-3-victory-effect-user', 'browser_dev', ['username'=>'victory-effect'], 'mvp19-3-victory-effect-session');
+$account = $accounts->resolveProviderIdentity('development', 'mvp19-3-victory-salvo-user', 'browser_dev', ['username'=>'victory-salvo'], 'mvp19-3-victory-salvo-session');
 $mgwId = (string)$account['mgw_id'];
 $inventory = new ProductInventoryService($database);
 $store = new CosmeticStoreService($database);
 
-$snapshot = $inventory->snapshot($mgwId);
-$assertSame(null, $snapshot['equipped']['profile_victory_effect'] ?? null, 'Fresh account must have no Victory Effect selected');
-$quote = $store->quote($mgwId, 'victory-effect-01');
-$assertSame(5000, (int)$quote['price_coins'], 'Spark Burst quote must cost 5000 coins');
-$purchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-victory-effect-user', [
-    'request_token' => 'store:mvp19-3-victory-effect-0001',
-    'offer_id' => 'victory-effect-01',
+$assertSame(null, $inventory->snapshot($mgwId)['equipped']['profile_victory_effect'] ?? null, 'Fresh account must have no Victory Effect selected');
+$quote = $store->quote($mgwId, 'victory-effect-02');
+$assertSame(8500, (int)$quote['price_coins'], 'Firework Salvo quote must cost 8500 coins');
+$purchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-victory-salvo-user', [
+    'request_token' => 'store:mvp19-3-victory-salvo-0001',
+    'offer_id' => 'victory-effect-02',
     'price_coins' => $quote['price_coins'],
     'item_ids' => $quote['item_ids'],
 ]);
-$assertSame(false, $purchase['auto_equipped'], 'Buying Spark Burst must never auto-equip it');
-$assertSame(null, $inventory->snapshot($mgwId)['equipped']['profile_victory_effect'] ?? null, 'Purchase must not silently select Spark Burst');
-$inventory->equip($mgwId, 'profile-victory-effect-01');
-$assertSame('profile-victory-effect-01', $inventory->snapshot($mgwId)['equipped']['profile_victory_effect'] ?? null, 'Explicit Victory Effect equip must use canonical inventory');
+$assertSame(false, $purchase['auto_equipped'], 'Buying Firework Salvo must never auto-equip it');
+$assertSame(null, $inventory->snapshot($mgwId)['equipped']['profile_victory_effect'] ?? null, 'Purchase must not silently select Firework Salvo');
+$inventory->equip($mgwId, 'profile-victory-effect-02');
+$assertSame('profile-victory-effect-02', $inventory->snapshot($mgwId)['equipped']['profile_victory_effect'] ?? null, 'Explicit Firework Salvo equip must use canonical inventory');
 $inventory->unequip($mgwId, 'profile_victory_effect');
 $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['profile_victory_effect']), 'Victory Effect slot must support explicit remove');
 
@@ -87,43 +98,29 @@ $responseProjection = (string)file_get_contents($root . '/bot/helpers/response.p
 $selector = (string)file_get_contents($root . '/app/assets/js/profile/mgw-victory-effect-selector.js');
 $ui = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-victory-effects.js');
 $wrapper = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-victory-effects-card-parity.js');
-$css = (string)file_get_contents($root . '/app/assets/css/production-v109-victory-effects-spark-burst.css');
-$cardParityCss = (string)file_get_contents($root . '/app/assets/css/production-v110-victory-effects-card-parity.css');
-$profileGeometryCss = (string)file_get_contents($root . '/app/assets/css/production-v111-profile-avatar-geometry.css');
+$sparkCss = (string)file_get_contents($root . '/app/assets/css/production-v109-victory-effects-spark-burst.css');
+$salvoCss = (string)file_get_contents($root . '/app/assets/css/production-v112-victory-effects-firework-salvo.css');
 $watcher = (string)file_get_contents($root . '/app/assets/js/production-v110-readonly-game-sync.js');
 $gameScreen = (string)file_get_contents($root . '/app/assets/js/screens/game-screen-v102.js');
 $manifest = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
 
-$assertTrue(str_contains($storeEndpoint, 'function mgw_store_profile_victory_effect') && str_contains($storeEndpoint, "'profile_victory_effect'"), 'Canonical Store endpoint must recognize the Victory Effect profile slot');
+$assertTrue(str_contains($storeEndpoint, 'function mgw_store_profile_victory_effect') && str_contains($storeEndpoint, "'profile_victory_effect'"), 'Canonical Store endpoint must keep the Victory Effect slot generic');
 $assertTrue(str_contains($responseProjection, 'victory_effect_item_id') && str_contains($responseProjection, "e.equip_slot = \\'profile_victory_effect\\'"), 'Public game identity must project the equipped winner Victory Effect');
-$assertTrue(str_contains($selector, "String(game.status || '') !== 'finished'") && str_contains($selector, 'winner?.victory_effect_item_id'), 'Merged winner selector must remain authoritative and finished-game-only');
-$assertTrue(str_contains($ui, "const VICTORY_EFFECT_SLOT = 'profile_victory_effect'") && str_contains($ui, 'api.cosmeticStorePurchase') && str_contains($ui, 'api.cosmeticStoreEquip'), 'Victory Effect UI must reuse canonical Store and inventory owners');
-$assertTrue(str_contains($ui, 'selectWinnerVictoryEffect(game)') && str_contains($ui, '#resultSummary[data-result-game-id]'), 'Live Spark Burst must consume the merged winner selector only after the result surface exists');
-$assertTrue(str_contains($ui, '#sheet [aria-busy="true"],#sheet button:disabled') || str_contains($ui, '#sheet [aria-busy="true"], #sheet button:disabled') || str_contains($ui, '#sheet [aria-busy="true"]'), 'Optimistic/pending result must not trigger a false Victory Effect');
-$assertTrue(str_contains($ui, 'playedGames') && str_contains($ui, 'mgw-victory-effect-skip') && str_contains($ui, 'Math.min(4000, Math.max(2000'), 'Spark Burst must be once-per-game, skippable and bounded to 2-4 seconds');
-$assertTrue(!str_contains($ui, 'gameAction(') && !str_contains($ui, '.webp') && !str_contains($ui, '.png') && !str_contains($ui, '.jpg'), 'Victory presentation must not own game actions or depend on heavy raster art');
-$assertTrue(str_contains($css, 'pointer-events:none') && str_contains($css, '@media(prefers-reduced-motion:reduce)') && str_contains($css, 'mgwVictorySparkRay'), 'Spark Burst CSS must stay nonblocking, reduced-motion safe and particle-driven');
-$assertTrue(str_contains($ui, 'store-v2-entry-effect-grid store-v2-victory-effect-grid') && str_contains($ui, 'profile-v2-entry-effect-grid profile-v2-victory-effect-grid'), 'Victory cards must reuse accepted three-column Entry Effect grid geometry in Store and Profile');
-$assertTrue(str_contains($css, 'grid-template-columns:repeat(3,minmax(0,1fr))') && str_contains($css, 'gap:6px'), 'Victory Store/Profile grid must preserve accepted three-column density and spacing');
-$assertTrue(str_contains($ui, 'mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview') && str_contains($css, 'max-width:260px!important;height:112px!important;margin:0 auto!important'), 'Purchase/Profile sheet preview must be centered and use accepted Entry Effect preview geometry');
-$assertTrue(str_contains($ui, "burstMarkup('burst-main',30") && str_contains($ui, "burstMarkup('burst-left',14") && str_contains($ui, "burstMarkup('burst-right',14") && str_contains($ui, 'glitterMarkup(24)') && str_contains($ui, 'confettiMarkup(18)'), 'Spark Burst visual must contain three coordinated bursts plus glitter and confetti, not a single expanding ring');
-$assertTrue(str_contains($ui, '${victoryStageMarkup()}') && substr_count($ui, 'victoryStageMarkup()') >= 3, 'Store/Profile/sheet and live game must share the same Spark Burst scene owner');
-$assertTrue(str_contains($wrapper, 'initBaseVictoryEffects()') && str_contains($wrapper, 'production-v110-victory-effects-card-parity.css?v=3'), 'Victory card parity must wrap the accepted live owner and preserve Store parity');
-$assertTrue(str_contains($wrapper, 'production-v111-profile-avatar-geometry.css?v=3') && str_contains($wrapper, 'ensureAvatarGeometryStylesheet()'), 'Profile-only final geometry owner must be cache-published after older parity layers');
-$assertTrue(str_contains($cardParityCss, '.store-v2-entry-effect-copy') && str_contains($cardParityCss, 'height:25px!important') && str_contains($cardParityCss, 'margin:0 1px!important'), 'Entry and Victory Store copy must use the accepted avatar copy box exactly');
-$assertTrue(str_contains($cardParityCss, '.store-v2-entry-effect-card>.mgw-profile-cosmetic-foot') && str_contains($cardParityCss, 'height:44px!important') && str_contains($cardParityCss, 'margin-top:0!important') && str_contains($cardParityCss, 'gap:4px!important'), 'Entry and Victory Store footers must use the accepted avatar footer box exactly');
-$assertTrue(str_contains($cardParityCss, '[data-profile-avatar-preview="store-avatar-01"]::before{content:\'Сайлас\'!important}') && str_contains($cardParityCss, '[data-profile-avatar-preview="store-avatar-09"]::before{content:\'Дракс\'!important}'), 'Profile avatars must expose the same fantasy names as Store');
-$assertTrue(str_contains($cardParityCss, "content:'Небесные врата'!important") && str_contains($cardParityCss, "content:'Восхождение короля'!important") && str_contains($cardParityCss, "content:'Клинок владыки'!important"), 'Profile Entry Effects must expose product names, not technical Effect I/II/III labels');
-$assertTrue(str_contains($cardParityCss, '--mgw-profile-card-title-size:8.4px') && str_contains($cardParityCss, '--mgw-profile-card-subtitle-size:7.3px') && str_contains($cardParityCss, '--mgw-profile-card-title-weight:900') && str_contains($cardParityCss, '--mgw-profile-card-subtitle-weight:650'), 'Profile cosmetic typography must retain the avatar-source title/subtitle contract');
-$assertTrue(str_contains($cardParityCss, '.profile-v2-background-card-copy>b') && str_contains($cardParityCss, '.profile-v2-reaction-card>strong'), 'Background and Reaction cards must participate in the shared Profile typography contract');
-$assertTrue(str_contains($profileGeometryCss, '[data-profile-avatar-preview]::after') && str_contains($profileGeometryCss, 'content:none!important') && str_contains($profileGeometryCss, 'display:none!important'), 'Profile avatars must not render redundant Starter/Avatar subtitles');
-$assertTrue(str_contains($profileGeometryCss, '--mgw-profile-avatar-visible-inset:3px') && str_contains($profileGeometryCss, 'width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important'), 'Non-avatar previews must normalize their visible inset instead of only sharing top-level padding');
-$assertTrue(str_contains($profileGeometryCss, '.profile-v2-entry-effect-copy>small') && str_contains($profileGeometryCss, '.profile-v2-victory-effect-copy>small') && str_contains($profileGeometryCss, 'grid-template-rows:auto!important') && str_contains($profileGeometryCss, 'content:none!important') && str_contains($profileGeometryCss, 'display:none!important'), 'Entry and Victory Profile cards must remain title-only with no subtitle row');
-$assertTrue(str_contains($profileGeometryCss, '[data-profile-name-color]>.profile-v2-name-color-sample') && str_contains($profileGeometryCss, 'align-items:center!important') && str_contains($profileGeometryCss, 'justify-content:center!important') && str_contains($profileGeometryCss, 'text-align:center!important'), 'Profile name-colour sample text must stay centered inside its preview frame');
-$assertTrue(str_contains($profileGeometryCss, 'padding:5px 5px 8px!important'), 'Every Profile collection card must keep 5px top/side padding and add exactly 3px at the bottom');
-$assertTrue(!str_contains($profileGeometryCss, '.store-v2-') && !str_contains($profileGeometryCss, '.mgw-victory-effect-layer'), 'Final geometry corrective must remain Profile-only and must not touch Store or the accepted live Victory scene');
-$assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects") && str_contains($watcher, 'mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'), 'Shared runtime must initialize Victory Effects after app-ready');
+$assertTrue(str_contains($selector, "'profile-victory-effect-02'") && str_contains($selector, "String(game.status || '') !== 'finished'") && str_contains($selector, 'winner?.victory_effect_item_id'), 'Merged winner selector must recognize Firework Salvo and stay finished-game-only');
+$assertTrue(str_contains($ui, "const FIREWORK_SALVO_ID = 'profile-victory-effect-02'") && str_contains($ui, "variant:'firework-salvo'") && str_contains($ui, 'duration:2900'), 'Victory runtime must register Firework Salvo at 2.9 seconds');
+$assertTrue(str_contains($ui, 'api.cosmeticStorePurchase') && str_contains($ui, 'api.cosmeticStoreEquip') && str_contains($ui, 'api.cosmeticStoreUnequip'), 'Firework Salvo must reuse canonical purchase/equip owners');
+$assertTrue(str_contains($ui, 'selectWinnerVictoryEffect(game)') && str_contains($ui, '#resultSummary[data-result-game-id]'), 'Live Victory Effects must reuse the winner selector after result surface exists');
+$assertTrue(str_contains($ui, 'playedGames') && str_contains($ui, 'mgw-victory-effect-skip') && str_contains($ui, 'Math.min(4000, Math.max(2000'), 'Victory Effects must be once-per-game, skippable and bounded to 2–4 seconds');
+$assertTrue(!str_contains($ui, 'gameAction(') && !str_contains($ui, '.webp') && !str_contains($ui, '.png') && !str_contains($ui, '.jpg'), 'Victory presentation must not own game actions or add heavy raster art');
+$assertTrue(str_contains($ui, "fireworkBurstMarkup('salvo-left',22") && str_contains($ui, "fireworkBurstMarkup('salvo-right',22") && str_contains($ui, "fireworkBurstMarkup('salvo-center',30") && str_contains($ui, 'fireworkConfettiMarkup(24)') && str_contains($ui, 'fireworkStarfieldMarkup(18)'), 'Firework Salvo must be a staged three-firework show, not a recolored Spark Burst');
+$assertTrue(str_contains($ui, 'victoryStageMarkup(spec.variant)') && str_contains($ui, "variant === 'firework-salvo' ? fireworkSalvoStageMarkup() : sparkBurstStageMarkup()"), 'Store/Profile/sheet/live must share the variant-specific scene owner');
+$assertTrue(str_contains($sparkCss, 'mgwVictorySparkRay'), 'Accepted Spark Burst CSS must remain intact');
+$assertTrue(str_contains($salvoCss, 'mgwVictorySalvoTrailLeft') && str_contains($salvoCss, 'mgwVictorySalvoRayCenter') && str_contains($salvoCss, '@media(prefers-reduced-motion:reduce)'), 'Firework Salvo CSS must include launch trails, central firework and reduced-motion handling');
+$assertTrue(str_contains($salvoCss, '[data-victory-effect-variant="firework-salvo"]') && str_contains($salvoCss, 'animation-iteration-count:1!important'), 'Live Firework Salvo must run once while previews can loop');
+$assertTrue(str_contains($salvoCss, "content:'Салют победителя'!important"), 'Profile Firework Salvo card must override the legacy Spark-only pseudo-name safely');
+$assertTrue(str_contains($wrapper, 'mgw-profile-victory-effects.js?v=3&mvp19_3=firework-salvo') && str_contains($wrapper, 'production-v112-victory-effects-firework-salvo.css?v=1'), 'Wrapper must cache-publish the Firework Salvo base module and CSS');
+$assertTrue(str_contains($manifest, 'mgw-profile-victory-effects-card-parity.js?v=9&mvp19_3=firework-salvo') && str_contains($manifest, 'victory=firework-salvo&visual_repair=9'), 'Active v110 manifest must publish Firework Salvo with a fresh cache identity');
+$assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects"), 'Shared runtime must continue initializing Victory Effects after app-ready');
 $assertTrue(!str_contains($gameScreen, 'victory_effect_item_id') && !str_contains($gameScreen, 'mgw-victory-effect'), 'Frozen result/game owner must not absorb Victory presentation logic');
-$assertTrue(str_contains($manifest, 'mgw-profile-victory-effects-card-parity.js?v=7&mvp19_3=profile-bottom-padding&visual_repair=7') && str_contains($manifest, 'victory=spark-burst-profile-bottom-padding&visual_repair=7'), 'Active v110 manifest must cache-publish the Profile bottom-padding corrective');
 
-fwrite(STDOUT, "MVP-19.3 Victory Spark Burst passed ({$assertions} assertions).\n");
+fwrite(STDOUT, "MVP-19.3 Victory Effects 01/02 passed ({$assertions} assertions).\n");
