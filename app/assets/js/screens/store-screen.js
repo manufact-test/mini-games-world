@@ -11,10 +11,12 @@ const STORE_TABS = Object.freeze([
   { id:'games', label:'Игры' },
   { id:'bundles', label:'Наборы' },
 ]);
+const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess']);
 
 let storeState = null;
 let storeSurface = 'tab';
 let activeTab = 'profile';
+let activeGameCatalog = 'tictactoe';
 let storeLoadPromise = null;
 let purchaseBusy = false;
 let equipBusy = false;
@@ -108,6 +110,8 @@ function applyStoreResponse(result){
     renderBalances(state.user);
   }
   if (!STORE_TABS.some(tab => tab.id === activeTab)) activeTab = 'profile';
+  const catalogs = storeState?.games?.catalogs && typeof storeState.games.catalogs === 'object' ? storeState.games.catalogs : {};
+  if (!catalogs[activeGameCatalog]) activeGameCatalog = orderedGameCatalogs(catalogs)[0]?.game_type || 'tictactoe';
 }
 
 function renderStorePending(){
@@ -267,36 +271,77 @@ function renderNameColorOffer(offer){
   `;
 }
 
+function orderedGameCatalogs(catalogs = storeState?.games?.catalogs || {}){
+  return Object.values(catalogs || {}).filter(Boolean).sort((left, right) => {
+    const li = GAME_CATALOG_ORDER.indexOf(String(left?.game_type || ''));
+    const ri = GAME_CATALOG_ORDER.indexOf(String(right?.game_type || ''));
+    return (li < 0 ? 999 : li) - (ri < 0 ? 999 : ri) || String(left?.title || '').localeCompare(String(right?.title || ''));
+  });
+}
+
+function gamePresentation(gameType){
+  if (gameType === 'chess') {
+    return {
+      mark:'♞♜',
+      groups:[
+        ['Доски','Оформление шахматной доски','themes'],
+        ['Фигуры','Внешний вид фигур обоих игроков','elements'],
+        ['Эффекты','Один выбранный эффект срабатывает в соответствующий момент','effects'],
+      ],
+      kinds:{ theme:'Шахматная доска', elements:'Комплект фигур', effect:'Эффект партии' },
+    };
+  }
+  return {
+    mark:'✕○',
+    groups:[
+      ['Поля','Фон и сетка игрового поля','themes'],
+      ['Знаки','Внешний вид крестиков и ноликов','elements'],
+      ['Эффекты','Один выбранный эффект срабатывает при каждом ходе','effects'],
+    ],
+    kinds:{ theme:'Игровое поле', elements:'Комплект знаков', effect:'Эффект хода' },
+  };
+}
+
 function renderGamesTab(){
-  const catalog = storeState?.games?.catalogs?.tictactoe;
-  if (!catalog) return emptyState('Игровая косметика пока недоступна');
+  const catalogs = orderedGameCatalogs();
+  if (!catalogs.length) return emptyState('Игровая косметика пока недоступна');
+  let catalog = catalogs.find(item => String(item?.game_type || '') === activeGameCatalog) || catalogs[0];
+  activeGameCatalog = String(catalog?.game_type || 'tictactoe');
+  const presentation = gamePresentation(activeGameCatalog);
+  const selector = catalogs.length > 1 ? `
+    <div class="store-v2-game-selector" role="tablist" aria-label="Игры">
+      ${catalogs.map(item => {
+        const gameType = String(item?.game_type || '');
+        const active = gameType === activeGameCatalog;
+        return `<button type="button" role="tab" class="store-v2-game-select${active ? ' active' : ''}" data-store-v2-game="${escapeAttr(gameType)}" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(item?.title || gameType)}</button>`;
+      }).join('')}
+    </div>` : '';
   return `
-    <div class="store-v2-game-head">
+    ${selector}
+    <div class="store-v2-game-head" data-store-game-type="${escapeAttr(activeGameCatalog)}">
       <div>
         <span>Оформление игры</span>
-        <h2>${escapeHtml(catalog.title || 'Крестики-нолики')}</h2>
+        <h2>${escapeHtml(catalog.title || activeGameCatalog)}</h2>
       </div>
-      <div class="store-v2-game-head-marks" aria-hidden="true"><b>✕</b><b>○</b></div>
+      <div class="store-v2-game-head-marks" aria-hidden="true"><b>${escapeHtml(presentation.mark.slice(0,1))}</b><b>${escapeHtml(presentation.mark.slice(1))}</b></div>
     </div>
-    ${renderGameCosmeticGroup('Поля', 'Фон и сетка игрового поля', catalog.themes)}
-    ${renderGameCosmeticGroup('Знаки', 'Внешний вид крестиков и ноликов', catalog.elements)}
-    ${renderGameCosmeticGroup('Эффекты', 'Один выбранный эффект срабатывает при каждом ходе', catalog.effects)}
+    ${presentation.groups.map(([title, subtitle, key]) => renderGameCosmeticGroup(title, subtitle, catalog[key], activeGameCatalog)).join('')}
   `;
 }
 
-function renderGameCosmeticGroup(title, subtitle, offers){
+function renderGameCosmeticGroup(title, subtitle, offers, gameType){
   const items = Array.isArray(offers) ? offers : [];
   return `
     <section class="store-v2-game-group">
       <div class="store-v2-title-row store-v2-game-title-row">
         <div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div>
       </div>
-      <div class="store-v2-game-grid">${items.map(renderGameOffer).join('')}</div>
+      <div class="store-v2-game-grid">${items.map(offer => renderGameOffer(offer, gameType)).join('')}</div>
     </section>
   `;
 }
 
-function renderGameOffer(offer){
+function renderGameOffer(offer, gameType){
   const owned = Boolean(offer?.already_owned);
   const equipped = owned && Boolean(offer?.equipped);
   const itemId = String(offer?.item_ids?.[0] || '');
@@ -304,11 +349,12 @@ function renderGameOffer(offer){
   const layer = String(offer?.metadata?.layer || 'theme');
   const variant = String(offer?.metadata?.variant || 'base');
   const price = formatNumber(offer?.price_coins || 0);
-  const kind = layer === 'theme' ? 'Игровое поле' : (layer === 'elements' ? 'Комплект знаков' : 'Эффект хода');
-  const description = gameCosmeticDescription(layer, variant);
+  const presentation = gamePresentation(gameType);
+  const kind = presentation.kinds[layer] || 'Игровой предмет';
+  const description = gameCosmeticDescription(gameType, layer, variant);
   return `
-    <article class="store-v2-game-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
-      ${gameCosmeticPreview(layer, variant, offer?.display_name || '')}
+    <article class="store-v2-game-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}" data-store-game-product="${escapeAttr(gameType)}">
+      ${gameCosmeticPreview(gameType, layer, variant, offer?.display_name || '')}
       <div class="store-v2-game-product-copy">
         <span>${escapeHtml(kind)}</span>
         <strong>${escapeHtml(offer?.display_name || itemId)}</strong>
@@ -325,7 +371,12 @@ function renderGameOffer(offer){
   `;
 }
 
-function gameCosmeticDescription(layer, variant){
+function gameCosmeticDescription(gameType, layer, variant){
+  if (gameType === 'chess') {
+    if (layer === 'theme') return ({ wood:'Тёплое дерево с мягкой фактурой', 'tournament-dark':'Контрастная турнирная доска', marble:'Холодный мрамор с прожилками', neon:'Тёмная доска с неоновым свечением' })[variant] || 'Меняет оформление шахматной доски';
+    if (layer === 'elements') return ({ wood:'Резные деревянные фигуры', marble:'Светлые мраморные фигуры', metal:'Полированные металлические фигуры', neon:'Фигуры с ярким неоновым контуром' })[variant] || 'Меняет внешний вид шахматных фигур';
+    return ({ move:'Световой импульс отмечает завершённый ход', capture:'Вспышка подчёркивает взятие фигуры', check:'Энергетический ореол появляется при шахе' })[variant] || 'Добавляет визуальный эффект партии';
+  }
   if (layer === 'theme') {
     return ({ classic:'Тёплая классическая доска', dark:'Строгое тёмное оформление', glass:'Объёмное стеклянное поле', neon:'Неоновая сетка и свечение' })[variant] || 'Меняет фон и сетку поля';
   }
@@ -344,18 +395,29 @@ function normalizeEffectVariant(variant){
   return ({ sign:'impact', 'winning-line':'sparks', 'move-pulse':'wave', 'strike-through':'wave' })[variant] || variant;
 }
 
-function gameCosmeticPreview(layer, variant, label = ''){
+function gameCosmeticPreview(gameType, layer, variant, label = ''){
   const safeLayer = ['theme','elements','effect'].includes(String(layer)) ? String(layer) : 'theme';
-  const normalizedVariant = safeLayer === 'effect' ? normalizeEffectVariant(String(variant || 'base')) : String(variant || 'base');
+  const normalizedVariant = gameType === 'tictactoe' && safeLayer === 'effect' ? normalizeEffectVariant(String(variant || 'base')) : String(variant || 'base');
   const safeVariant = normalizedVariant.replace(/[^a-z0-9-]/g, '');
   let content = '';
-  if (safeLayer === 'theme') {
+  if (gameType === 'chess') {
+    if (safeLayer === 'theme') {
+      const pieces = ['♜','','','♚','','♟','', '', '', '', '♙','', '♔','','','♖'];
+      content = `<i class="store-v2-mini-chess-board">${pieces.map(piece => `<span>${piece ? `<b>${piece}</b>` : ''}</span>`).join('')}</i>`;
+    } else if (safeLayer === 'elements') {
+      content = '<i class="store-v2-mini-chess-pieces"><span>♚</span><span>♞</span><span>♟</span></i>';
+    } else {
+      content = `<i class="store-v2-mini-chess-effect chess-store-fx-${safeVariant}" aria-hidden="true"><span>♞</span><b></b><em></em></i>`;
+    }
+  } else if (safeLayer === 'theme') {
     const marks = ['✕','','○','','○','','✕','','✕'];
     content = `<i class="store-v2-mini-board">${marks.map(mark => `<span>${mark ? `<b>${mark}</b>` : ''}</span>`).join('')}</i>`;
+  } else if (safeLayer === 'elements') {
+    content = '<i class="store-v2-mini-marks"><span>✕</span><span>○</span></i>';
+  } else {
+    content = `<i class="store-v2-mini-effect"><span class="ttt-mark ttt-effect-mark ttt-fx-${safeVariant}" aria-hidden="true">✕</span></i>`;
   }
-  else if (safeLayer === 'elements') content = '<i class="store-v2-mini-marks"><span>✕</span><span>○</span></i>';
-  else content = `<i class="store-v2-mini-effect"><span class="ttt-mark ttt-effect-mark ttt-fx-${safeVariant}" aria-hidden="true">✕</span></i>`;
-  return `<div class="store-v2-game-preview" data-cosmetic-layer="${safeLayer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeAttr(label)}">${content}</div>`;
+  return `<div class="store-v2-game-preview" data-game-type="${escapeAttr(gameType)}" data-cosmetic-layer="${safeLayer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeAttr(label)}">${content}</div>`;
 }
 
 function renderBundlesTab(){
@@ -404,6 +466,9 @@ function bindStoreEvents(){
 }
 
 function bindPanelEvents(root){
+  root.querySelectorAll('[data-store-v2-game]').forEach(button => {
+    button.addEventListener('click', () => activateGameCatalog(String(button.dataset.storeV2Game || '')));
+  });
   root.querySelectorAll('[data-store-v2-buy]').forEach(button => {
     button.addEventListener('click', () => {
       const offer = findOffer(String(button.dataset.storeV2Buy || ''));
@@ -446,17 +511,29 @@ function activateStoreTab(nextTab){
   bindPanelEvents(panel);
 }
 
+function activateGameCatalog(gameType){
+  const catalogs = storeState?.games?.catalogs || {};
+  if (!gameType || !catalogs[gameType] || gameType === activeGameCatalog) return;
+  activeGameCatalog = gameType;
+  haptic('light');
+  const root = currentRoot();
+  const panel = root?.querySelector('[data-store-v2-panel="games"]');
+  if (!panel) return;
+  panel.innerHTML = renderGamesTab();
+  bindPanelEvents(panel);
+}
+
 function findOffer(offerId){
   return offersFromSnapshot(storeState).find(item => String(item?.offer_id || '') === offerId) || null;
 }
 
 function offersFromSnapshot(snapshot){
-  const catalog = snapshot?.games?.catalogs?.tictactoe || {};
-  const groups = [catalog.themes, catalog.elements, catalog.effects];
+  const catalogs = snapshot?.games?.catalogs && typeof snapshot.games.catalogs === 'object' ? Object.values(snapshot.games.catalogs) : [];
+  const gameOffers = catalogs.flatMap(catalog => [catalog?.themes, catalog?.elements, catalog?.effects].flatMap(group => Array.isArray(group) ? group : []));
   const offers = [
     ...(Array.isArray(snapshot?.profile?.avatars) ? snapshot.profile.avatars : []),
     ...(Array.isArray(snapshot?.profile?.name_colors) ? snapshot.profile.name_colors : []),
-    ...groups.flatMap(group => Array.isArray(group) ? group : []),
+    ...gameOffers,
   ];
   const avatarBundle = snapshot?.bundles?.avatar_bundle;
   const tictactoeBundle = snapshot?.bundles?.tictactoe_bundle;
@@ -574,7 +651,8 @@ function openPurchaseConfirm(offer){
     const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || 'Игрок');
     visual = `<div class="profile-v2-name-color-preview-wrap"><strong data-name-color-item-id="${escapeAttr(itemId)}">${escapeHtml(nickname)}</strong></div>`;
   } else {
-    visual = `<div class="store-v2-confirm-game">${gameCosmeticPreview(offer?.metadata?.layer, offer?.metadata?.variant, title)}</div>`;
+    const gameType = String(offer?.metadata?.game_type || offer?.subcategory || 'tictactoe');
+    visual = `<div class="store-v2-confirm-game">${gameCosmeticPreview(gameType, offer?.metadata?.layer, offer?.metadata?.variant, title)}</div>`;
   }
 
   openSheet(`
