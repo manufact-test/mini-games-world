@@ -1,9 +1,8 @@
 /* MVP-19.3 Profile cosmetic geometry corrective — 2026-09-10.
  * PROFILE ONLY. Store is manually accepted and intentionally untouched.
  *
- * The visible Profile avatar card is the reference. Previous passes matched only
- * top-level padding, while family-specific preview padding/margins still changed
- * the visible inset. This owner normalizes the immediate visual children instead.
+ * The visible Profile avatar card is the reference. This final owner also keeps
+ * Entry/Victory cards title-only and restores centered name-colour samples.
  */
 
 #screen-profile .profile-v2-collection-section{
@@ -12,7 +11,7 @@
 }
 
 /* Avatars are the accepted reference. Keep their current card/preview geometry
- * and remove only the redundant family/tier subtitle requested in manual review. */
+ * and remove the redundant family/tier subtitle. */
 #screen-profile [data-profile-avatar-preview]::after{
   content:none!important;
   display:none!important;
@@ -51,7 +50,7 @@
 #screen-profile .profile-v2-background-card>.profile-v2-background-card-preview,
 #screen-profile .profile-v2-entry-effect-card>.mgw-entry-effect-preview,
 #screen-profile .profile-v2-victory-effect-card>.mgw-victory-effect-preview,
-#screen-profile .profile-v2-game-card>div:first-child{
+#screen-profile .profile-v2-game-card>.store-v2-game-preview{
   box-sizing:border-box!important;
   width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important;
   max-width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important;
@@ -59,12 +58,25 @@
 }
 
 /* Remove hidden family padding inside the first visual child. The visible edge
- * is now owned by the card + shared 3px inset above, not by a second family box. */
+ * is owned by the card + shared 3px inset, not by a second family box. */
 #screen-profile [data-profile-name-color]>.profile-v2-name-color-sample,
 #screen-profile [data-profile-badge-preview]>.mgw-profile-badge-demo,
 #screen-profile .profile-v2-reaction-card>.profile-v2-reaction-card-preview{
   padding-left:0!important;
   padding-right:0!important;
+}
+
+/* Name-colour sample content was centered before the geometry pass. Preserve
+ * the normalized preview box but center the colour/gradient label inside it. */
+#screen-profile [data-profile-name-color]>.profile-v2-name-color-sample{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+}
+#screen-profile [data-profile-name-color]>.profile-v2-name-color-sample::after{
+  width:100%!important;
+  text-align:center!important;
 }
 
 /* Frames already use the same 58px avatar portrait source. Preserve that exact
@@ -77,8 +89,7 @@
 }
 
 /* All real copy blocks use the same horizontal text inset and finish against the
- * same card bottom edge. Remove old min-height spacers that made Entry/Victory
- * look as if their text floated or disappeared. */
+ * same card bottom edge. */
 #screen-profile .profile-v2-background-card-copy,
 #screen-profile .profile-v2-entry-effect-copy,
 #screen-profile .profile-v2-victory-effect-copy{
@@ -95,11 +106,28 @@
 }
 
 #screen-profile .profile-v2-entry-effect-copy>b,
-#screen-profile .profile-v2-entry-effect-copy>small,
-#screen-profile .profile-v2-victory-effect-copy>b,
-#screen-profile .profile-v2-victory-effect-copy>small{
+#screen-profile .profile-v2-victory-effect-copy>b{
   min-height:0!important;
   height:auto!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+/* Manual acceptance already removed effect subtitles. Older parity layers still
+ * contain pseudo-copy, so the final Profile owner must explicitly suppress it. */
+#screen-profile .profile-v2-entry-effect-copy,
+#screen-profile .profile-v2-victory-effect-copy{
+  grid-template-rows:auto!important;
+  gap:0!important;
+}
+#screen-profile .profile-v2-entry-effect-copy>small,
+#screen-profile .profile-v2-victory-effect-copy>small,
+#screen-profile .profile-v2-entry-effect-copy>small::after,
+#screen-profile .profile-v2-victory-effect-copy>small::after{
+  content:none!important;
+  display:none!important;
+  min-height:0!important;
+  height:0!important;
   margin:0!important;
   padding:0!important;
 }
@@ -115,9 +143,8 @@
   padding:0!important;
 }
 
-/* Name-colour and badge cards render their identity in real <small> nodes while
- * their decorative samples are separate. Remove family-only centering so the
- * visual starts at the same top inset and copy rests at the same bottom inset. */
+/* Badge identity remains bottom-aligned. Name-colour cards keep the same outer
+ * rhythm while their sample itself is centered by the rule above. */
 #screen-profile [data-profile-name-color],
 #screen-profile [data-profile-badge-preview]{
   align-content:start!important;
