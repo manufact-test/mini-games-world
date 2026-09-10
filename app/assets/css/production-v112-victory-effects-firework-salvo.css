@@ -14,7 +14,7 @@
 .mgw-victory-firework-scene{position:absolute;inset:0;overflow:hidden;pointer-events:none;isolation:isolate}
 .mgw-victory-firework-scene::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 78%,rgba(120,84,255,.12),transparent 42%);opacity:.85}
 
-.mgw-victory-firework-trail{position:absolute;bottom:5%;width:3px;height:53%;transform-origin:50% 100%;opacity:0;z-index:2}
+.mgw-victory-firework-trail{position:absolute;bottom:5%;width:3px;height:53%;transform-origin:50% 100%;opacity:1;z-index:2}
 .mgw-victory-firework-trail.trail-left{left:25%;transform:rotate(10deg)}
 .mgw-victory-firework-trail.trail-right{left:75%;transform:rotate(-10deg)}
 .mgw-victory-firework-trail>i{position:absolute;inset:0;border-radius:999px;background:linear-gradient(0deg,rgba(255,180,51,0),#ffc95c 38%,#fff8d2 74%,#fff 100%);filter:drop-shadow(0 0 4px rgba(255,190,63,.9));transform:scaleY(.04);transform-origin:50% 100%;opacity:0}
